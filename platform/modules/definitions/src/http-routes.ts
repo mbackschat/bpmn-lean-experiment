@@ -8,11 +8,7 @@ import type {
   DefinitionDeployResult,
   DefinitionListResponse,
   DefinitionVersionListResponse,
-  DeployedDefinitionVersion,
-  ExactPublicSourceIdentity,
   ProcessInstanceStartResult,
-  PublicApiErrorCode as PublicApiErrorCodeValue,
-  PublicApiErrorResponse,
 } from "@bpmn-lean/platform-contracts";
 
 import {
@@ -22,11 +18,19 @@ import {
 import type {
   DefinitionDeploymentResult,
   DefinitionDiagnostic,
-  DefinitionMetadata,
-  DefinitionSourceIdentity,
   DefinitionVersionStartResult,
 } from "./contracts.js";
 import type { DefinitionDeploymentService } from "./definition-deployment-service.js";
+import {
+  toPublicDefinition,
+  toPublicSource,
+} from "./definition-public-values.js";
+import {
+  errorResponse,
+  jsonResponse,
+  methodNotAllowed,
+  requireNoQuery,
+} from "./definition-http-responses.js";
 import type { DefinitionStartService } from "./definition-start-service.js";
 import {
   decodeProcessId,
@@ -350,30 +354,6 @@ function toPublicDeployment(
   }
 }
 
-function toPublicDefinition(
-  definition: DefinitionMetadata,
-): DeployedDefinitionVersion {
-  return {
-    processId: definition.processId,
-    version: definition.version,
-    source: toPublicSource(definition.source),
-    semanticProfile: definition.semanticProfile,
-  };
-}
-
-function toPublicSource(
-  source: DefinitionSourceIdentity,
-): ExactPublicSourceIdentity {
-  return {
-    kind: source.kind,
-    id: source.id,
-    sha256: source.sha256,
-    byteLength: source.byteLength,
-    declaredEncoding: source.declaredEncoding,
-    decodedAs: source.decodedAs,
-  };
-}
-
 function toPublicDiagnostic(
   diagnostic: DefinitionDiagnostic,
 ): AdmissionDiagnostic {
@@ -390,48 +370,6 @@ function toPublicDiagnostic(
         },
     evidence: diagnostic.evidence,
   };
-}
-
-function requireNoQuery(request: Request, url: URL): void {
-  if (url.search.length > 0 || request.url.includes("?")) {
-    throw new HttpRequestFailure(
-      400,
-      PublicApiErrorCode.InvalidRequest,
-      "This definition route does not accept query parameters.",
-    );
-  }
-}
-
-function jsonResponse(status: number, value: unknown): Response {
-  return new Response(JSON.stringify(value), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
-}
-
-function errorResponse(
-  status: number,
-  code: PublicApiErrorCodeValue,
-  message: string,
-  extraHeaders: Readonly<Record<string, string>> = {},
-): Response {
-  const body = { error: { code, message } } as const satisfies PublicApiErrorResponse;
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...Object.fromEntries(new Headers(extraHeaders)),
-    },
-  });
-}
-
-function methodNotAllowed(allow: string): Response {
-  return errorResponse(
-    405,
-    PublicApiErrorCode.MethodNotAllowed,
-    "The HTTP method is not allowed for this definition route.",
-    { allow },
-  );
 }
 
 function assertNever(value: never): never {

@@ -190,6 +190,7 @@ function assertNever(value: never): never {
 }
 
 export * from "./definition-schedule-gateway.js";
+export * from "./definition-schedule-address.js";
 
 export function createBpmnEngineGatewayRuntime(
   options: BpmnEngineGatewayRuntimeOptions,

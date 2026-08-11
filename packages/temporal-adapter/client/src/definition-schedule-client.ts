@@ -15,6 +15,9 @@ import type {
 
 import {
   bpmnProcessWorkflowType,
+  canonicalTypedTupleEncoding,
+  deterministicSha256Hex,
+  processWorkflowId,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -29,6 +32,38 @@ import type {
 const operationDeadlineMs = 5_000;
 
 export type TemporalDefinitionScheduleClient = TemporalDefinitionStartClient;
+
+export type TemporalDefinitionScheduleAddressReference = Readonly<{
+  processId: string;
+  version: number;
+  scheduleId: string;
+}>;
+
+/** Derives the private Schedule address without exposing protocol ownership to Product 2. */
+export function temporalDefinitionScheduleId(
+  reference: TemporalDefinitionScheduleAddressReference,
+): string {
+  requireWellFormedIdentity(reference.processId, "processId");
+  if (!Number.isSafeInteger(reference.version) || reference.version <= 0) {
+    throw new RangeError("version must be a positive safe integer");
+  }
+  requireWellFormedIdentity(reference.scheduleId, "scheduleId");
+  const encoded = canonicalTypedTupleEncoding([
+    "definitionSchedule",
+    reference.processId,
+    reference.version,
+    reference.scheduleId,
+  ]);
+  return `bpmn-definition-schedule-sha256:${deterministicSha256Hex(encoded)}`;
+}
+
+/** Derives the configured Workflow-ID base in the Process host-address domain. */
+export function temporalDefinitionScheduleWorkflowIdBase(
+  processInstanceId: string,
+): string {
+  requireWellFormedIdentity(processInstanceId, "processInstanceId");
+  return processWorkflowId(processInstanceId);
+}
 
 export type TemporalDefinitionScheduleCreateRequest = Readonly<{
   scheduleId: string;
@@ -398,6 +433,16 @@ function utcCalendarAt(dueAt: Date): CalendarSpec {
 function requireNonempty(value: string, name: string): void {
   if (typeof value !== "string" || value.length === 0) {
     throw new TypeError(`${name} must not be empty`);
+  }
+}
+
+function requireWellFormedIdentity(value: string, name: string): void {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    !value.isWellFormed()
+  ) {
+    throw new TypeError(`${name} must be nonempty well-formed Unicode`);
   }
 }
 

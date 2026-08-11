@@ -151,6 +151,7 @@ test("forwards exact bytes and returns only the closed deployed projection", asy
         decodedAs: "UTF-8",
       },
       semanticProfile: "test/profile",
+      startCapabilities: { timerStarts: [] },
     },
   });
 });
@@ -494,6 +495,7 @@ function createFixture(
         source,
         diagnostics: [],
         definition: { processId, semanticProfile: request.semanticProfile },
+        startCapabilities: { timerStarts: [] },
       } as const satisfies DefinitionCompilationResult;
       compilationResults.push(result);
       return result;

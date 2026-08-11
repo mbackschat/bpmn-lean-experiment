@@ -91,13 +91,20 @@ export function parsePositiveVersion(rawVersion: string): number {
 export async function readBoundedBody(
   request: Request,
   maxSourceBytes: number,
+  messages: Readonly<{
+    empty: string;
+    tooLarge: string;
+  }> = {
+    empty: "The BPMN source body must not be empty.",
+    tooLarge: "The BPMN source exceeds the configured byte limit.",
+  },
 ): Promise<Uint8Array> {
   const claimedLength = parseClaimedLength(request.headers);
   if (claimedLength !== null && claimedLength > maxSourceBytes) {
-    throw payloadTooLarge();
+    throw payloadTooLarge(messages.tooLarge);
   }
   if (request.body === null) {
-    throw invalidRequest("The BPMN source body is required.");
+    throw invalidRequest(messages.empty);
   }
 
   const reader = request.body.getReader();
@@ -111,13 +118,13 @@ export async function readBoundedBody(
     const chunk = result.value;
     if (chunk.byteLength > maxSourceBytes - byteLength) {
       await reader.cancel().catch(() => undefined);
-      throw payloadTooLarge();
+      throw payloadTooLarge(messages.tooLarge);
     }
     byteLength += chunk.byteLength;
     chunks.push(Uint8Array.from(chunk));
   }
   if (byteLength === 0) {
-    throw invalidRequest("The BPMN source body must not be empty.");
+    throw invalidRequest(messages.empty);
   }
   const bytes = new Uint8Array(byteLength);
   let offset = 0;
@@ -130,12 +137,19 @@ export async function readBoundedBody(
 
 /** Start accepts no semantic input; consume the transport stream and require zero bytes. */
 export async function requireEmptyStartBody(request: Request): Promise<void> {
+  return requireEmptyRequestBody(request, "Definition start");
+}
+
+export async function requireEmptyRequestBody(
+  request: Request,
+  subject: string,
+): Promise<void> {
   if (request.headers.get("content-type") !== null) {
-    throw invalidRequest("Definition start does not accept a media type.");
+    throw invalidRequest(`${subject} does not accept a media type.`);
   }
   const claimedLength = parseClaimedLength(request.headers);
   if (claimedLength !== null && claimedLength !== 0) {
-    throw invalidRequest("Definition start does not accept a request body.");
+    throw invalidRequest(`${subject} does not accept a request body.`);
   }
   if (request.body === null) {
     return;
@@ -148,7 +162,7 @@ export async function requireEmptyStartBody(request: Request): Promise<void> {
     }
     if (result.value.byteLength > 0) {
       await reader.cancel().catch(() => undefined);
-      throw invalidRequest("Definition start does not accept a request body.");
+      throw invalidRequest(`${subject} does not accept a request body.`);
     }
   }
 }
@@ -194,10 +208,10 @@ function invalidRequest(message: string): HttpRequestFailure {
   );
 }
 
-function payloadTooLarge(): HttpRequestFailure {
+function payloadTooLarge(message: string): HttpRequestFailure {
   return new HttpRequestFailure(
     413,
     PublicApiErrorCode.PayloadTooLarge,
-    "The BPMN source exceeds the configured byte limit.",
+    message,
   );
 }

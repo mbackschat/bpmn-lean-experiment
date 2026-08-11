@@ -59,6 +59,7 @@ export type {
   PutDefinitionScheduleResult,
 } from "./definition-schedule-contracts.js";
 export { DefinitionScheduleService } from "./definition-schedule-service.js";
+export { DefinitionScheduleHttpRoutes } from "./definition-schedule-http-routes.js";
 export {
   SqliteDefinitionScheduleRepository,
 } from "./sqlite-definition-schedule-repository.js";
