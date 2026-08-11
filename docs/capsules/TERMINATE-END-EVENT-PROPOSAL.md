@@ -347,7 +347,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [Lean execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 48 | Add no proofs; only import or exhaustive dispatch after extraction. |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 76 | Delegate to a new cohesive Terminate lowering owner. |
 | [Lean checked decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 357 | Decode the exact checked node. |
-| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 150 | Decode the exact operation. |
+| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 147 | Decode the exact operation. |
 | [Lean Semantic Process umbrella](../../BpmnSemantics/SemanticProcess.lean) | 571 | Import independently buildable owners only. |
 | [Lean conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 583 | Import conformance evidence only. |
 | [Lean library umbrella](../../BpmnSemantics.lean) | 574 | Import the public conformance module only. |

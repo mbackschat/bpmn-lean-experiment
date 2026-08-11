@@ -250,6 +250,10 @@ type CheckedNode = DeepReadonly<
       error: ErrorReference;
     }
   | {
+      kind: "terminateEndEvent";
+      id: string;
+    }
+  | {
       kind: "noneEndEvent";
       id: string;
     }

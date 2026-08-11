@@ -314,6 +314,15 @@ test("keeps the registered Timer Start capability visible in the exact IL contra
   );
 });
 
+test("keeps the Terminate End checked node visible in the exact IL contract", async () => {
+  const specification = await readFile(semanticProcessIlSpecPath, "utf8");
+
+  assert.match(
+    specification,
+    /kind: "terminateEndEvent";\s+id: string;/u,
+  );
+});
+
 // Contract: every artifact directory under a registered tree is linked from that tree's registry
 // README. The oracle is the directory listing, so a newly registered profile or scenario family
 // fails here instead of leaving a reader-facing index that silently understates the artifact set.

@@ -36,6 +36,8 @@ test("admits only the exact Terminate End checked and IL wire shapes", async () 
   assert.equal(checkedNode({ ...checked, id: "" }), false);
   assert.equal(checkedNode({ ...checked, payload: null }), false);
 
+  assert.equal(operation({ ...terminate, id: "" }), false);
+  assert.equal(operation({ ...terminate, origin: { ...terminate.origin, elementId: "" } }), false);
   assert.equal(operation({ ...terminate, input: "" }), false);
   assert.equal(operation({ ...terminate, scopeId: "" }), false);
   assert.equal(operation({ ...terminate, output: "place:forbidden" }), false);

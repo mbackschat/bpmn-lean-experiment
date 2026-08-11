@@ -45,14 +45,19 @@ def field (json : Json) (key : String) : Except String Json :=
 def stringField (json : Json) (key : String) : Except String String := do
   (← field json key).getStr?
 
+/-- Decode one required string field whose empty value cannot denote an identity. -/
+def decodeNonemptyStringField (json : Json) (key : String) :
+    Except String String := do
+  let value ← stringField json key
+  if SemanticProcess.nonempty value then
+    pure value
+  else
+    throw s!"{key} must be non-empty"
+
 /-- Decode one semantic identity field whose empty string has no legal runtime meaning. -/
 def decodeSemanticIdentityField (json : Json) (key : String) :
     Except String SemanticId := do
-  let value ← stringField json key
-  if SemanticProcess.nonempty value then
-    pure ⟨value⟩
-  else
-    throw s!"{key} must be non-empty"
+  pure ⟨← decodeNonemptyStringField json key⟩
 
 def expectString (json : Json) (expected : String) :
     Except String Unit := do

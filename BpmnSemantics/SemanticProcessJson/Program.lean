@@ -426,10 +426,13 @@ private def decodeOperation (json : Json) :
       pure (.reachNoneEnd id origin ⟨← stringField json "input"⟩)
   | "terminateScope" =>
       requireObjectShape json ["id", "input", "kind", "origin", "scopeId"]
+      let terminateId := OperationId.mk (← decodeNonemptyStringField json "id")
+      let terminateOrigin := BpmnElementOrigin.mk
+        (NodeId.mk (← decodeNonemptyStringField (← field json "origin") "elementId"))
       pure
-        (.terminateScope id origin
-          ⟨← stringField json "input"⟩
-          ⟨← stringField json "scopeId"⟩)
+        (.terminateScope terminateId terminateOrigin
+          ⟨← decodeNonemptyStringField json "input"⟩
+          ⟨← decodeNonemptyStringField json "scopeId"⟩)
   | "completeScope" =>
       requireObjectShape json
         ["id", "kind", "origin", "parentOutput", "scopeId"]
