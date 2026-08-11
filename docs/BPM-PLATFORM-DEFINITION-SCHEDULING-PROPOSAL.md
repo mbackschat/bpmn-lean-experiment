@@ -297,7 +297,7 @@ The approval set is:
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `a4fd274` | `fork-turns-none` | `approve-with-required-edits` | `e2814a5` |
-| Semantic checkpoint | `c111bdb` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `5a0f087` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The cold review of `a4fd274` returned `approve-with-required-edits` across five bounded findings. First correction `5e5c89e` closed the root mechanisms but left three phase and response contradictions. Second correction `e2814a5` closed those residuals, and the same reviewer approved it without another finding.
