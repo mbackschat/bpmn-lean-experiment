@@ -33,12 +33,24 @@ export type AdmissionDiagnostic = Readonly<{
   evidence: string;
 }>;
 
+/** Platform-owned projection of one resolved Timer Start capability. */
+export type PublicTimerStartCapability = Readonly<{
+  startEventId: string;
+  durationMs: number;
+}>;
+
+/** Start capabilities published for one exact deployed definition version. */
+export type PublicDefinitionStartCapabilities = Readonly<{
+  timerStarts: readonly PublicTimerStartCapability[];
+}>;
+
 /** Durable public identity of one deployed definition version. */
 export type DeployedDefinitionVersion = Readonly<{
   processId: string;
   version: number;
   source: ExactPublicSourceIdentity;
   semanticProfile: string;
+  startCapabilities: PublicDefinitionStartCapabilities;
 }>;
 
 export type DeployedDefinitionResult = Readonly<{
@@ -75,6 +87,7 @@ export const PublicApiErrorCode = {
   PayloadTooLarge: "payloadTooLarge",
   NotFound: "notFound",
   InternalFailure: "internalFailure",
+  Conflict: "conflict",
 } as const;
 
 export type PublicApiErrorCode =
@@ -91,7 +104,8 @@ export type PublicApiError =
   | PublicApiErrorFor<typeof PublicApiErrorCode.UnsupportedMediaType>
   | PublicApiErrorFor<typeof PublicApiErrorCode.PayloadTooLarge>
   | PublicApiErrorFor<typeof PublicApiErrorCode.NotFound>
-  | PublicApiErrorFor<typeof PublicApiErrorCode.InternalFailure>;
+  | PublicApiErrorFor<typeof PublicApiErrorCode.InternalFailure>
+  | PublicApiErrorFor<typeof PublicApiErrorCode.Conflict>;
 
 export type PublicApiErrorResponse = Readonly<{
   error: PublicApiError;

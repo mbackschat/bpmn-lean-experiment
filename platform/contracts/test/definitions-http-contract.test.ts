@@ -31,6 +31,9 @@ const deployedDefinition = {
   version: 2,
   source,
   semanticProfile: "cib-seven-2.2.0:sequential-user-task",
+  startCapabilities: {
+    timerStarts: [{ startEventId: "TimerStart_1", durationMs: 1000 }],
+  },
 } as const satisfies DeployedDefinitionVersion;
 
 test("decodes an exact deployed-definition result", () => {
@@ -156,8 +159,17 @@ test("rejects empty process identifiers and unsafe definition versions", () => {
   );
 });
 
-test("publishes a closed method-not-allowed API error code", () => {
+test("preserves public API error order and appends conflict", () => {
   assert.equal(PublicApiErrorCode.MethodNotAllowed, "methodNotAllowed");
+  assert.deepEqual(Object.values(PublicApiErrorCode), [
+    "invalidRequest",
+    "methodNotAllowed",
+    "unsupportedMediaType",
+    "payloadTooLarge",
+    "notFound",
+    "internalFailure",
+    "conflict",
+  ]);
 });
 
 test("decodes every closed public API error response", () => {

@@ -25,6 +25,9 @@ const definition = {
   version: 2,
   source,
   semanticProfile: "cib-seven-2.2.0:sequential-user-task",
+  startCapabilities: {
+    timerStarts: [{ startEventId: "TimerStart_1", durationMs: 1000 }],
+  },
 } as const satisfies DeployedDefinitionVersion;
 
 test("decodes a started instance while reconstructing its complete public identity", () => {

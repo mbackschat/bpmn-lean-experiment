@@ -11,6 +11,7 @@ import {
 import type {
   ProcessInstanceStartFailure,
   ProcessInstanceStartResult,
+  PublicProcessInstanceIdentity,
   RejectedProcessInstanceStartResult,
   StartedProcessInstanceResult,
 } from "./process-instances.js";
@@ -35,21 +36,28 @@ export function decodeProcessInstanceStartResult(
 
 function decodeStartedResult(value: object): StartedProcessInstanceResult {
   requireExactKeys(value, "process instance start result", ["instance", "status"]);
-  const instance = readOwn(value, "instance");
-  requireObject(instance, "instance");
-  requireExactKeys(instance, "instance", ["definition", "processInstanceId"]);
   return {
     status: ProcessInstanceStartStatus.Started,
-    instance: {
-      processInstanceId: requireNonemptyString(
-        readOwn(instance, "processInstanceId"),
-        "instance.processInstanceId",
-      ),
-      definition: decodeDeployedDefinitionVersion(
-        readOwn(instance, "definition"),
-        "definition",
-      ),
-    },
+    instance: decodePublicProcessInstanceIdentity(readOwn(value, "instance")),
+  };
+}
+
+/** Decodes one semantic Process-instance identity and its exact definition. */
+export function decodePublicProcessInstanceIdentity(
+  value: unknown,
+  label = "instance",
+): PublicProcessInstanceIdentity {
+  requireObject(value, label);
+  requireExactKeys(value, label, ["definition", "processInstanceId"]);
+  return {
+    processInstanceId: requireNonemptyString(
+      readOwn(value, "processInstanceId"),
+      `${label}.processInstanceId`,
+    ),
+    definition: decodeDeployedDefinitionVersion(
+      readOwn(value, "definition"),
+      `${label}.definition`,
+    ),
   };
 }
 

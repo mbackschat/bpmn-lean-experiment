@@ -96,6 +96,7 @@ function decodePublicApiErrorCode(value: unknown): PublicApiErrorCodeValue {
     case PublicApiErrorCode.PayloadTooLarge:
     case PublicApiErrorCode.NotFound:
     case PublicApiErrorCode.InternalFailure:
+    case PublicApiErrorCode.Conflict:
       return value;
     default:
       throw new TypeError("API error.code is not a public API error code");

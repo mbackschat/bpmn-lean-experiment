@@ -1,6 +1,8 @@
 import type {
   DeployedDefinitionVersion,
   ExactPublicSourceIdentity,
+  PublicDefinitionStartCapabilities,
+  PublicTimerStartCapability,
 } from "./definitions.js";
 import {
   readOwn,
@@ -20,7 +22,13 @@ export function decodeDeployedDefinitionVersion(
   label: string,
 ): DeployedDefinitionVersion {
   requireObject(value, label);
-  requireExactKeys(value, label, ["processId", "semanticProfile", "source", "version"]);
+  requireExactKeys(value, label, [
+    "processId",
+    "semanticProfile",
+    "source",
+    "startCapabilities",
+    "version",
+  ]);
   return {
     processId: requireNonemptyString(readOwn(value, "processId"), `${label}.processId`),
     version: requirePositiveSafeInteger(readOwn(value, "version"), `${label}.version`),
@@ -31,6 +39,50 @@ export function decodeDeployedDefinitionVersion(
     semanticProfile: requireNonemptyString(
       readOwn(value, "semanticProfile"),
       `${label}.semanticProfile`,
+    ),
+    startCapabilities: decodePublicDefinitionStartCapabilities(
+      readOwn(value, "startCapabilities"),
+      `${label}.startCapabilities`,
+    ),
+  };
+}
+
+/** Decodes the closed platform-owned start-capability projection. */
+export function decodePublicDefinitionStartCapabilities(
+  value: unknown,
+  label = "start capabilities",
+): PublicDefinitionStartCapabilities {
+  requireObject(value, label);
+  requireExactKeys(value, label, ["timerStarts"]);
+  const timerStarts = readOwn(value, "timerStarts");
+  if (!Array.isArray(timerStarts)) {
+    throw new TypeError(`${label}.timerStarts must be an array`);
+  }
+  return {
+    timerStarts: Array.from(timerStarts, (capability, index) =>
+      decodePublicTimerStartCapability(
+        capability,
+        `${label}.timerStarts[${index}]`,
+      )
+    ),
+  };
+}
+
+/** Decodes one closed Timer Start capability without admitting host-private fields. */
+export function decodePublicTimerStartCapability(
+  value: unknown,
+  label = "Timer Start capability",
+): PublicTimerStartCapability {
+  requireObject(value, label);
+  requireExactKeys(value, label, ["durationMs", "startEventId"]);
+  return {
+    startEventId: requireNonemptyString(
+      readOwn(value, "startEventId"),
+      `${label}.startEventId`,
+    ),
+    durationMs: requireNonnegativeSafeInteger(
+      readOwn(value, "durationMs"),
+      `${label}.durationMs`,
     ),
   };
 }
