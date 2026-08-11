@@ -395,6 +395,14 @@ Required M1 end-to-end showcase after installing Playwright's pinned Chromium:
 ./scripts/pnpm.sh run test:showcase:m1
 ```
 
+Required M2 definition-scheduling showcase, including live Temporal evidence and headless-browser acceptance:
+
+```sh
+./scripts/pnpm.sh run test:showcase:m2
+```
+
+Keep the M1 gate as an independent unseen-source deployment regression floor when running M2.
+
 Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:
 
 ```sh
