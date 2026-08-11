@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11; the corrected first green semantic checkpoint is independently approved.** Checkpoint target `7ac0307` received `approve-with-required-edits`; correction `ba3bbf8` closed the stale IL contract and missing XSD regression binding. The approved checkpoint contains exact source admission, checked and IL variants, strict wires, proved Lean and independent TypeScript execution, bounded closure, content-bound command identity, and passive Temporal host admission. Product profile registration, answer-free scenario and differential evidence, the runnable example, and live one-action Temporal Schedule evidence are the active closure lanes. Product 2 scheduling remains excluded. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
+**Owner-approved on 2026-08-11; the corrected first green semantic checkpoint is independently approved; one closure host-contract correction awaits fresh review and owner approval.** Checkpoint target `7ac0307` received `approve-with-required-edits`; correction `ba3bbf8` closed the stale IL contract and missing XSD regression binding. Commit `8aa0cc3` atomically registered the profile, answer-free scenario and differential evidence, and runnable example. The live one-action Temporal Schedule witness then proved that the pinned service assigns an execution Workflow ID by appending the nominal due time to the configured semantic-instance-derived base ID. The proposed correction below consumes the service-returned execution ID instead of incorrectly treating the configured base as the execution ID. Live evidence and closure remain paused until that material host-contract correction is independently reviewed and owner-approved. Product 2 scheduling remains excluded. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
 
 ## Independent cold-review receipt
 
@@ -193,12 +193,14 @@ The durable ingress is Workflow start with a pre-admitted `TriggerTimerStart` va
 The smallest live witness is:
 
 1. compile the exact Timer Start definition and construct its exact resolved trigger;
-2. create a one-action Schedule for one UTC due instant computed as schedule activation plus `PT1S`, with an exact Workflow ID derived from the semantic instance ID;
+2. create a one-action Schedule for one UTC due instant computed as schedule activation plus `PT1S`, with an exact configured Workflow-ID base derived from the semantic instance ID;
 3. keep the Worker absent until after the due occurrence so the Temporal service, not test sleep or Worker code, owns start durability;
 4. start the Worker, observe the exact User Task, complete it, and reach the canonical terminal result;
-5. inspect the Schedule description separately from Workflow history, assert one action and no further action, fetch history, assert no Workflow Timer or Signal family, and replay it exactly.
+5. inspect the Schedule description separately from Workflow history, assert one action and no further action, obtain the actual execution Workflow ID and first Run ID from the service-returned recent action, use that returned execution identity to fetch history, assert no Workflow Timer or Signal family, and replay it exactly.
 
-Delivery and deduplication are host facts. The semantic command identity includes the complete resolved stimulus. A fixed Workflow ID prevents a second live Workflow for the same semantic instance, but accepted-and-response-lost retry remains a host/client outcome and is not claimed as a BPMN result. Schedule overlap, catch-up, pause, backfill, jitter, and recurring action policy are excluded.
+Delivery and deduplication are host facts. The semantic command identity includes the complete resolved stimulus. The Schedule action stores the exact semantic-instance-derived Workflow-ID base. Under the pinned Temporal Server, the actual execution ID is that base plus the nominal due instant in RFC 3339 form and is returned in the Schedule action result. The witness verifies that binding but uses the returned ID rather than reconstructing service naming policy. The one-action Schedule and its single returned action establish one execution for this finite witness; the configured base alone is not claimed to prevent a second Workflow. Accepted-and-response-lost retry remains a host/client outcome and is not claimed as a BPMN result. Schedule overlap, catch-up, pause, backfill, jitter, and recurring action policy are excluded.
+
+The correction is bound to Temporal CLI `1.8.1`, its embedded Temporal Server `1.31.2`, and TypeScript SDK `1.21.0`. Both scheduler implementations in the pinned server append the nominal RFC 3339 instant to the configured base. The installed client exposes the actual Workflow ID and first Run ID through `ScheduleDescription.info.recentActions`; no separate Schedule-result API exists. Consuming that service result is the established SDK boundary and avoids coupling engine code to a server-side naming algorithm.
 
 The relation preserved by hosting equates the admitted input and resulting public semantic state with direct semantic-core execution. Temporal Schedule description is evidence that the start was service-scheduled, not a semantic observation. Schedule service state is not reconstructed from Workflow Event History.
 
@@ -222,7 +224,7 @@ The later Product 2 increment owns schedule persistence, API shape, idempotency 
 | `TSTART-TRIGGER-01` | Start Event identity and selected profile | Exact admission and state identity | Exact admission and state identity | Zero starts for wrong identity | Wrong Start Event with same Process and instance IDs |
 | `TSTART-FLOW-01` | One outgoing Sequence Flow | Relation, evaluator soundness, exact closure | Independent relation/evaluator and closure | User Task reached after service-owned start | Manual/Message arm substitution and output swap |
 | `TSTART-REFUSE-01` | Cross-kind profile boundary | Exhaustive refusal theorems | Exhaustive refusal tests | Pre-start fake-client and live wrong-kind checks | Every identity and state component varied independently |
-| `TSTART-INSTANCE-01` | Each trigger creates a new instance | Distinct root-occurrence theorem | Distinct state witness | Distinct Workflow IDs in isolated runs | Instance-ID alias mutation |
+| `TSTART-INSTANCE-01` | Each trigger creates a new instance | Distinct root-occurrence theorem | Distinct state witness | Distinct configured bases and service-returned execution IDs in isolated runs | Instance-ID alias mutation |
 | `TSTART-OBSERVE-01` | Same downstream Process behavior | Complete normalized observation equality | Independently normalized observation equality | Canonical stable and terminal states | Timer-state leak mutation |
 | `TSTART-CLOSURE-01` | Finite selected profile | Exact two-step trace, limit 2/1, unique enabledness, stable wait | Independent trace, overflow, enabledness, and resumption checks | Stable User Task Query after start | Skip initiation, extra enabled operation, and hidden stable-wait mutations |
 | `TSTART-SCHEDULE-01` | No host-policy claim | Not applicable to semantic transition | Direct core result is the reference | One-action Schedule, exact program input, Worker absence, history inspection, replay | Direct-start-before-action and scheduled-program-identity mutations |
@@ -236,7 +238,8 @@ The registered scenario is standards-only, answer-free, and has `cib: null`. Its
 | `initiationPending` | Existing private runtime flag set by admitted Process start | None | True only between one admitted exact start and its matching internal initiation; exact-one start operation makes the boolean information-preserving. |
 | semantic instance ID | Supplied by the resolved trigger | Existing semantic instance identity | Distinct from definition identity and Temporal Workflow identity. |
 | Temporal Schedule ID | Product/test host addressing | None in semantic state | Exists outside the Process Workflow and does not choose semantic outcomes. |
-| Temporal Workflow ID | Derived from semantic instance identity by host policy | None | Prevents duplicate live Workflow identity without becoming BPMN identity. |
+| configured Temporal Workflow-ID base | Derived from semantic instance identity by project host policy | None | Stored in the Schedule action, but not treated as the service execution ID. |
+| Temporal execution Workflow ID and first Run ID | Returned by the Schedule action result | None | Used for Workflow addressing, history inspection, and replay without reconstructing server naming policy. |
 | schedule action count and description | Temporal service evidence | Test evidence only | Inspected separately from Workflow Event History and never fed into the semantic core. |
 
 No timer occurrence, logical due time, scheduler cursor, open timer, catch-up counter, or recurrence state is added to semantic runtime.
@@ -473,9 +476,9 @@ Owner approval is requested for these exact decisions:
 1. Select one top-level exact-`PT1S` Timer Start Event with `0 -> 1` arity and the linear User Task witness.
 2. Add separate `TimerStartEvent`, `InitiateTimer`, and `TriggerTimerStart` variants while preserving None, Message, and Intermediate Catch Timer values byte-for-byte.
 3. Treat the semantic input as one resolved Timer Start occurrence carrying exact Process, semantic instance, and Start Event identity, with no schedule or due-time field.
-4. Use a test-owned one-action Temporal Schedule for durable hosting, with no Workflow Timer or Signal and with Worker-absence and replay evidence.
+4. Use a test-owned one-action Temporal Schedule for durable hosting, with an exact semantic-instance-derived configured Workflow-ID base, a service-returned execution Workflow ID used for subsequent addressing, no Workflow Timer or Signal, and Worker-absence and replay evidence.
 5. Keep Product 2 schedule API, lifecycle, and exact-version enforcement in the next platform increment while preserving exact compiled-program identity through this engine capsule.
 6. Use a proved Lean lane and require a conditional semantic checkpoint before registered evidence and live Temporal work.
 7. Keep Timer Start standards-only with no new CIB relationship or A12 dependency.
 
-The owner approved all seven decisions on 2026-08-11 and authorized implementation from reviewed correction target `eaaf944`.
+The owner approved decisions 1 through 7 on 2026-08-11 and authorized implementation from reviewed correction target `eaaf944`. Decision 4 above now contains a material correction to the configured-base versus service-returned execution identity boundary. That corrected decision requires an independent cold review and fresh owner approval before the live Schedule lane resumes.
