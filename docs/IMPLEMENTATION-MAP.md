@@ -114,6 +114,9 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - An exact SQLite schedule repository and lifecycle service that reserve immutable definition, capability, semantic instance, Schedule, and configured Workflow-base facts before network work; reconcile create-response loss, startup recovery, pause-confirmed cancellation, action-won races, and terminal cleanup; and never resolve latest definition
 - A narrow engine Schedule host and Temporal client subpath that prepare, create or compare, inspect, pause, and delete the selected one-action policy while keeping Schedule descriptions, SDK handles, and returned execution Workflow/Run identities private
 - Production server composition of the schedule repository, startup reconciler, public routes, exact private address derivation, reverse-order cleanup, and the existing definition and start routes
+- An HTTP-only definition-schedule web client and exact-version panel that list Timer Start capabilities, generate an editable public schedule identity, and create, inspect, refresh, and cancel schedules without engine or Temporal imports
+- A live M2 Temporal witness covering exact version-1 retention after version-2 deployment, SQLite restart, Worker absence and replacement, opaque execution identity, action-won conflict, pre-start cancellation, one-action exhaustion, terminal cleanup, history, replay, and public private-ID exclusion
+- An M2 browser showcase that composes the production server, Worker, Temporal service, and React UI and proves the scheduled version-1 Process instance after later version-2 deployment; the M1 showcase remains a separate unseen-source regression floor
 
 #### Explicitly absent
 
@@ -124,7 +127,6 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - the two engine changes the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as prerequisites: publicly recoverable transitions and token positions, and a profile admission capability plus public projection for User Task assignment and form metadata
-- the definition-schedule web panel, live Temporal Schedule cancellation/refinement witness, and M2 definition-scheduling showcase; these are the active closure lanes after checkpoint approval
 - published Message Start ingress and instance search
 
 ### A12 Workflows downstream adoption
