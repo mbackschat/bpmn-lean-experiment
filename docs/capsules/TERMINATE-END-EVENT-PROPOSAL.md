@@ -31,6 +31,7 @@ BPMN 2.0.2 is the semantic authority for this standards-only capsule.
 - Clause 10.5.6 states that a Terminate End Event terminates every remaining active Activity within the Process.
 - Clause 13.2 states that a Process instance completes when no token remains and no Activity is active, and that a token reaching a Terminate End Event abnormally terminates the entire Process.
 - Clause 13.3.4 defines an embedded Sub-Process as a contained flow scope whose normal completion continues through the Sub-Process's outgoing Sequence Flow.
+- Clause 13.5.6 states directly that a Terminate End Event inside a Sub-Process terminates only that Sub-Process instance and does not affect a higher-level Sub-Process or Process instance.
 - Table 12.22 identifies a Terminate End Event as an End Event containing one TerminateEventDefinition.
 
 The normative CMOF and XSD `EndEvent`, `ThrowEvent`, `TerminateEventDefinition`, `FlowElementsContainer`, `SubProcess`, and `SequenceFlow` facts constrain source structure. `TerminateEventDefinition` carries no additional properties. The diagram marker does not add runtime data.
@@ -39,11 +40,15 @@ The standard permits Terminate End at root Process scope and at nested flow scop
 
 The proposal adds `BPMN-TERMINATE-END-01` to the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md). It remains `unsupported` until implementation and closure evidence graduate this proposal.
 
-- Ledger citation lock for `BPMN-TERMINATE-END-01`: Clauses 10.5.6, 13.2, and 13.3.4 plus Table 12.22
+- Ledger citation lock for `BPMN-TERMINATE-END-01`: Clauses 10.5.6, 13.2, 13.3.4, and 13.5.6 plus Table 12.22
+
+The future profile and all three registered scenarios must carry that same complete normative citation set, including Clause 13.5.6 rather than inferring nested non-interference from the representative topology.
 
 ## CIB relationship
 
 No new CIB relationship, probe, profile delta, or retained result is selected. The pinned CIB implementation cancels concurrent executions in the current flow scope before ending that scope, which agrees with the normative account, but the standard is sufficiently precise and the project does not need CIB-specific public evidence to choose the semantics. Registered scenarios therefore have `cib: null`.
+
+The future profile reuses `CIB-AGR-0001`, `CIB-AGR-0002`, `CIB-AGR-0003`, `CIB-AGR-0007`, and `CIB-OP-0001` only for the already-reviewed sequential User Task, active-task, parallel, ordinary Sub-Process completion, and occurrence-mapping surfaces. None of those relationships is Terminate evidence, and no new Terminate relationship is added.
 
 The CIB source remains selection research only. It is not semantic authority, a runtime dependency, or a reason to copy PVM cancellation machinery. If implementation uncovers an observable CIB result that differs from this account, work stops for classification before any compatibility profile is added.
 
@@ -133,7 +138,7 @@ One committed internal step:
 3. removes every other live runtime owner in that occurrence and every descendant occurrence, including control tokens, User Task, Message, Timer, effect, branch-selection, event-race, called-Process descendant, and Activity-local state covered by the shared regional-cancellation owner;
 4. retains the selected occurrence itself with its parent link and Process identity;
 5. preserves unrelated parent and sibling-scope state, Process variables, monotonic activation counters, and existing end history;
-6. increments the exact End Event's occurrence count once;
+6. increments the existing aggregate `endOccurrences` count once, while the operation origin retains the exact triggering End Event identity;
 7. returns no token and exposes no public termination record.
 
 The selected occurrence is now quiescent, so the next unique internal step is its existing `completeScope`. For a nested occurrence, that removes the child and produces exactly one parent-owned token on the existing Sub-Process output. For a root occurrence, it completes the Process. No new completion branch or parent-output logic is added to termination.
@@ -148,7 +153,7 @@ Canonical observation publishes only the resulting existing state: Trigger and S
 |---|---|
 | `TEND-SOURCE-01` | The selected source has one exact nested Terminate End Event with one inline empty TerminateEventDefinition, `1 -> 0` Sequence Flow arity, and no payload, reference, extension, or unsupported scope property. |
 | `TEND-LOWER-01` | Lowering preserves End Event identity, exact incoming control place, and exact containing definition scope while producing no continuation output. |
-| `TEND-REGION-01` | Firing `terminateScope` consumes its one offered token, removes every other live owner in the selected scope-occurrence subtree, retains the selected occurrence quiescent, preserves unrelated state and monotonic history, and increments the exact End Event once. |
+| `TEND-REGION-01` | Firing `terminateScope` consumes its one offered token, removes every other live owner in the selected scope-occurrence subtree, retains the selected occurrence quiescent, preserves unrelated state and monotonic history, and increments the existing aggregate `endOccurrences` count once while retaining the exact End Event only in operation origin. |
 | `TEND-NESTED-01` | Terminating the representative child scope enables its existing `completeScope`, which continues the parent exactly once and leaves Outer as the only enabled interaction. |
 | `TEND-ROOT-01` | Applying the same operation to a root occurrence enables its existing root `completeScope`, which completes the Process without a parent token. |
 | `TEND-REFUSE-01` | Missing, stale, wrong-owner, wrong-scope, zero-token, multi-token, or non-running inputs yield no successor and preserve the exact input state. A stale cancelled User Task command is rejected with exact committed-state preservation. |
@@ -168,7 +173,7 @@ Required proved facts are:
 - declarative `terminateScope` relation, executable evaluator, and evaluator soundness;
 - complete runtime-owner removal for the selected occurrence subtree, including called-Process descendants and Activity-local state, with selected-root retention;
 - preservation of unrelated parent owners, Process variables, activation counters, prior End occurrences, and parent links;
-- exact End occurrence increment and no continuation token from `terminateScope`;
+- exact aggregate `endOccurrences + 1`, exact triggering identity in operation origin, and no continuation token from `terminateScope`;
 - quiescence of the retained occurrence and immediate enablement of its unique matching `completeScope`;
 - nested continuation exactly once and root completion with no parent output;
 - exact refusal with state identity for zero, multiple, stale, wrong-owner, and wrong-scope offers;
@@ -233,7 +238,7 @@ Three standards-only answer-free scenarios cover Trigger-first success, Sibling-
 | selected scope occurrence | Exact owner of the offered Terminate input token plus `scopeId` | None | Retained only until immediate `completeScope`; never a stable half-terminated state. |
 | subtree-membership relation | Existing scope-occurrence parent graph plus called-Process ownership | None | Decides every live runtime owner consistently across cancellation families. |
 | synthetic completion edge | Program graph relation from `terminateScope` to the matching `completeScope` | None | Used only for admission, closure, and graph laws; no control token is created. |
-| End occurrence counter | Existing monotonic private history keyed by End Event | Existing behavior only | Increments exactly once even though live regional owners are removed. |
+| aggregate End occurrence counter | Existing monotonic private `endOccurrences` scalar | Existing behavior only | Increments exactly once even though live regional owners are removed; exact End identity remains in operation origin rather than this counter. |
 | Temporal Workflow/Run identity and Event History | Existing host lifecycle | None in semantic state | Used for durable addressing and replay, never scope selection or cancellation meaning. |
 
 ## Layer ownership
@@ -287,7 +292,7 @@ Primary common-mode risks are:
 - both interpreters treat nested termination as root completion;
 - termination directly emits the parent output and races or duplicates `completeScope`;
 - the selected occurrence is removed too early or exposed as a stable half-terminated state;
-- counters, prior End history, parent work, or Process variables are erased with live regional owners;
+- counters, the prior aggregate End count, parent work, or Process variables are erased with live regional owners;
 - the Temporal witness uses Workflow cancellation or only reasserts production's stale-command behavior;
 - profile, scenarios, schemas, experiments, and differential inventories land non-atomically.
 
@@ -300,6 +305,8 @@ The nearest realistic unsupported claim is Terminate End inside a called child P
 Pre-release replace-in-place policy applies. Checked-node and Semantic Process operation unions widen atomically across strict JSON Schemas, Lean and TypeScript decoders, exhaustive switches, source projection, admission, lowering, graph validation, runtime execution, profile/scenario registries, Temporal host admission, artifact consistency, experiments, and evidence.
 
 Existing None End, Error End, `reachNoneEnd`, `completeScope`, regional Error/Timer cancellation, runtime state, canonical observations, and all pre-existing artifacts gain no field and retain exact serialized bytes. No retained cross-version Temporal history corpus exists, so cross-version replay remains unclaimed.
+
+The semantic checkpoint uses a separate runtime-frozen `SemanticCheckpointProfileId.TerminateEnd` catalog entry rather than product-registering the profile early. Graduation atomically moves the same literal into `SemanticProfileId`, removes the checkpoint-only catalog, and adds the required runnable product example. This preserves the current product-profile and product-example guards without hiding an implementation prerequisite.
 
 ### Owners this implementation grows
 
@@ -315,6 +322,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 33 | Split the catalog/capability responsibility before profile growth crosses 600. |
 | [runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 240 | Add only one delegated operation arm. |
 | [scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 499 | Own shared subtree classification and selected-root-retaining cancellation. |
+| [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 328 | Add the exact Terminate End projection key set consumed by the shared projector guard. |
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 220 | Delegate exact Terminate End projection without changing None/Error branches. |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 242 | Add exact profile multiset and scope policy. |
 | [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 282 | Recognize Terminate End as a `1 -> 0` sink. |
@@ -322,6 +330,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 4 | Extract an End/termination consistency owner before adding semantic checks. |
 | [contract artifact projection](../../scripts/contract-artifacts.ts) | 16 | Add only an exhaustive classifier arm; extract any new projection responsibility. |
 | [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 397 | Register standards-only scenarios with no CIB target. |
+| [bounded CMOF calibration](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 366 | Verify the newly consumed normative `TerminateEventDefinition` class before source admission uses it. |
 | [differential pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 28 | Put cases in a capsule-owned module and add only catalog registration. |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 398 | Classify `terminateScope` as a passive internal operation. |
 | [test mutation Workflows](../../packages/temporal-adapter/testkit/src/branch-bypass-mutation-workflows.ts) | 512 | Add a cohesive global-cancellation mutation or extract a termination mutation owner. |
@@ -333,6 +342,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 174 | Add the synthetic completion edge and reachability. |
 | [Lean runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 89 | Extract reusable scope cancellation before semantic growth. |
 | [Lean Error propagation](../../BpmnSemantics/SemanticProcess/ErrorPropagation.lean) | 448 | Preserve existing cancellation laws through the extracted primitive. |
+| [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 288 | Classify the new operation as owning no public wait definition. |
 | [Lean transition dispatch](../../BpmnSemantics/SemanticProcess/Transition.lean) | 278 | Add only one delegated relation/evaluator arm. |
 | [Lean execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 48 | Add no proofs; only import or exhaustive dispatch after extraction. |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 78 | Delegate to a new cohesive Terminate lowering owner. |
@@ -349,7 +359,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [checked-source frontier experiment](../../BpmnSemantics/Experiments/CheckedSourceFrontier.lean) | 331 | Add an explicit fail-closed arm if its exhaustive consumer widens. |
 | [checked-source correspondence experiment](../../BpmnSemantics/Experiments/CheckedSourceCorrespondence.lean) | 431 | Preserve exhaustive source/program correspondence classification. |
 
-Strict [checked-process schema](../../contracts/schemas/checked-process.schema.json) and [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json) change atomically but are not hand-written source headroom owners. New cohesive source, lowering, semantic runtime, Lean cancellation, relation, fixture, and conformance owners start below the 600-line threshold and are inventoried before their Red.
+The bounded [CMOF manifest](../../packages/bpmn-source/src/bpmn-2.0.2-semantic-process-metamodel.json) adds `TerminateEventDefinition` together with the calibration owner above. Strict [checked-process schema](../../contracts/schemas/checked-process.schema.json) and [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json) change atomically but are not hand-written source headroom owners. New cohesive source, lowering, semantic runtime, Lean cancellation, relation, fixture, and conformance owners start below the 600-line threshold and are inventoried before their Red.
 
 Existing focused test owners also change where their exhaustive inventories widen:
 
@@ -359,11 +369,12 @@ Existing focused test owners also change where their exhaustive inventories wide
 | [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 338 | Lock `1 -> 0`, nested scope, and synthetic completion edges. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 125 | Reject origin, input, scope, and output drift. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 30 | Extract a termination characterization owner rather than crowding this test. |
+| [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 429 | Require at least one runnable example when the checkpoint-only profile graduates. |
 | [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 295 | Lock additive profiles, cases, standards-only targets, and mutations. |
 
 The seven experiment owners above are the current repository-built exhaustive consumers found by the checked-node and operation discriminant sweep. No experiment gains Terminate semantics. The implementation repeats the sweep after the unions widen and treats any new consumer as part of the same atomic change.
 
-The profile, three scenarios, BPMN fixture, and differential cases are one atomic registration. [profiles/README.md](../../profiles/README.md), [scenarios/README.md](../../scenarios/README.md), [profile-parameterized admission](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md), [Temporal lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [implementation map](../IMPLEMENTATION-MAP.md), [testing specification](../TESTING-SPEC.md), and [plan](../PLAN.md) update atomically at closure.
+The profile, three scenarios, BPMN fixture, runnable product example, and differential cases are one atomic registration. The [semantic-core registry](../../packages/semantic-core/README.md), [BPMN-source registry](../../packages/bpmn-source/README.md), [differential registry](../../packages/differential/README.md), [Temporal adapter registry](../../packages/temporal-adapter/README.md), [profiles registry](../../profiles/README.md), [scenarios registry](../../scenarios/README.md), [profile-parameterized admission](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md), [Temporal lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [implementation map](../IMPLEMENTATION-MAP.md), [testing specification](../TESTING-SPEC.md), and [plan](../PLAN.md) update atomically at closure.
 
 ### Guards and oracles
 
@@ -375,12 +386,13 @@ The profile, three scenarios, BPMN fixture, and differential cases are one atomi
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind End Event origin, input, containing scope, and absent output to lowering. |
 | [projected keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Close the shared projection consumer inventory. |
 | [frozen cyclic baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation.test.ts) | Preserve every pre-M2 source, profile, checked, IL, and registry-origin value. |
-| [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts) and [differential pipeline](../../packages/differential/test/pipeline.test.ts) | Land profile, scenarios, targets, and ordered inventories atomically. |
+| [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts), [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts), and [differential pipeline](../../packages/differential/test/pipeline.test.ts) | Land profile, runnable example, scenarios, targets, and ordered inventories atomically. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | Admit passive termination closure and reject unsupported host shapes. |
 | [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts) | Keep Workflow, Worker, runner, and testkit dependencies in owned packages. |
 | [platform boundary](../../scripts/platform-product-boundary.test.ts) | Keep Product 2 outside private checked, IL, runtime, and cancellation values. |
 | [A12 boundary](../../scripts/a12-boundary.test.ts) and [A12 preservation](../../scripts/a12-preservation.test.ts) | Keep A12 outside this standards-only mechanism. |
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) and [corpus policy](../../scripts/bpmn-corpus-policy.test.ts) | Validate the fixture and retain the pinned normative corpus. |
+| [bounded CMOF calibration](../../scripts/check-bpmn-semantic-process-metamodel.ts) | Derive `TerminateEventDefinition` identity from the pinned normative CMOF instead of accepting a hand-entered type string. |
 | [normative references](../../scripts/normative-reference-resolution.test.ts) | Resolve every named clause, table, CMOF, and XSD anchor. |
 | [source hygiene](../../scripts/source-hygiene.test.ts), [Lean contracts](../../scripts/lean-source-contracts.test.ts), and [what-binds](../../scripts/what-binds.test.ts) | Keep cohesive owners, exhaustive switches, and registries within bounds. |
 | [pre-release architecture](../../scripts/pre-release-architecture.test.ts) | Prevent public termination bags, Event History semantics, and a second semantic core. |
@@ -393,7 +405,7 @@ Closure may establish only one exact nested Terminate End profile, its reusable 
 
 The nearest realistic counterexample is a Terminate End in a called child Process with concurrent parent work. A wrong implementation might cancel the parent or fail to return the Call Activity. That composition is deferred and must be specified before admission.
 
-Meaningful mutations are: terminate the root instead of the containing scope; remove only tokens; retain one wait family; erase unrelated parent work or Process variables; emit the parent token directly; remove the selected occurrence before `completeScope`; skip End history; expose a stable half-terminated state; infer cancellation from Event History; and omit one atomic registration. Each must reach a semantic, public, artifact, proof, or durable-host discriminator.
+Meaningful mutations are: terminate the root instead of the containing scope; remove only tokens; retain one wait family; erase unrelated parent work or Process variables; emit the parent token directly; remove the selected occurrence before `completeScope`; skip the aggregate End-count increment; expose a stable half-terminated state; infer cancellation from Event History; and omit one atomic registration. Each must reach a semantic, public, artifact, proof, or durable-host discriminator.
 
 At closure, [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) records commit-bounded code and documentation churn against Sub-Process Error propagation, the nearest completed increment that changed checked source, regional cancellation, Lean, TypeScript, strict wires, registered evidence, and Temporal Worker-replacement hosting.
 
