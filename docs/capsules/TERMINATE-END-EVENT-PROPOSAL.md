@@ -2,7 +2,7 @@
 
 ## Status
 
-**Independent cold proposal review and the same reviewer's correction audits are closed; owner approval is required before implementation. Not owner-approved and not implemented.** This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
+**Owner-approved on 2026-08-11 after independent cold proposal review and the same reviewer's correction audits closed; implementation is authorized and not complete.** Approval covers exactly the selected account, public contract, required evidence, and exclusions below. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
 
 ## Independent cold-review receipt
 
