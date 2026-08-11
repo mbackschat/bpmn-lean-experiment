@@ -180,10 +180,11 @@ Useful focused gates:
 ./scripts/pnpm.sh run test:pipeline
 ./scripts/pnpm.sh run test:platform-m1
 ./scripts/pnpm.sh run test:showcase:m1
+./scripts/pnpm.sh run test:showcase:m2
 node --test scripts/platform-product-boundary.test.ts
 ```
 
-Run the local platform definition server with `./scripts/pnpm.sh run platform:serve`. It defaults to `http://127.0.0.1:3000` and stores local data under ignored `.data/platform/`. In a second terminal, run `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1` and open the printed local URL for the M1 definition workspace. Browser acceptance uses development-only Playwright and Chromium; install that test browser once with `./scripts/pnpm.sh --filter @bpmn-lean/showcase-m1-definition-deployment exec playwright install chromium`.
+Run the local platform definition server with `./scripts/pnpm.sh run platform:serve`. It defaults to `http://127.0.0.1:3000` and stores local data under ignored `.data/platform/`. In a second terminal, run `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1` and open the printed local URL for the definition workspace. The M1 and M2 browser gates share development-only Playwright and Chromium; install that test browser once with `./scripts/pnpm.sh --filter @bpmn-lean/showcase-m1-definition-deployment exec playwright install chromium`.
 
 When a task explicitly needs the optional A12 exact-source evidence, provision and run it separately with `./scripts/setup-external-sources.sh adoption` followed by `./scripts/test-a12-adoption.sh`.
 

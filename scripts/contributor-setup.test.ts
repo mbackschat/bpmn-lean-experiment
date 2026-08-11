@@ -156,7 +156,8 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
     readme,
     packageManifest,
     webPackageManifest,
-    showcasePackageManifest,
+    m1ShowcasePackageManifest,
+    m2ShowcasePackageManifest,
     caches,
     mavenWrapperProperties,
   ] =
@@ -174,6 +175,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       readFile(path.join(projectRoot, "package.json"), "utf8"),
       readFile(path.join(projectRoot, "platform/apps/web/package.json"), "utf8"),
       readFile(path.join(projectRoot, "showcase/m1-definition-deployment/package.json"), "utf8"),
+      readFile(path.join(projectRoot, "showcase/m2-definition-scheduling/package.json"), "utf8"),
       readFile(path.join(projectRoot, "scripts/workspace-cache.lock"), "utf8"),
       readFile(path.join(projectRoot, "runners/cibseven/.mvn/wrapper/maven-wrapper.properties"), "utf8"),
     ]);
@@ -216,6 +218,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(workflow, /setup-external-sources\.sh verify/u);
   assert.match(workflow, /playwright install --with-deps chromium/u);
   assert.match(workflow, /test:showcase:m1/u);
+  assert.match(workflow, /test:showcase:m2/u);
   assert.match(workflow, /if: runner\.os == 'Linux'/u);
   // The corpus cache path is written as an expression, so the relative-segment guard below can
   // only see the template. `pwd` is what makes the exported root absolute, and absolute is what
@@ -226,24 +229,35 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(guide, /workspace meta-repository/u);
   assert.match(readme, /CONTRIBUTOR-SETUP-GUIDE\.md/u);
   assert.match(readme, /test:showcase:m1/u);
+  assert.match(readme, /test:showcase:m2/u);
   assert.match(guide, /playwright install chromium/u);
   assert.match(guide, /test:showcase:m1/u);
+  assert.match(guide, /test:showcase:m2/u);
   assert.match(packageManifest, /"test:showcase:m1"/u);
+  assert.match(packageManifest, /"test:showcase:m2"/u);
   const webManifest = JSON.parse(webPackageManifest) as {
     dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
   };
   assert.equal(webManifest.dependencies?.["@playwright/test"], undefined);
   assert.equal(webManifest.devDependencies?.["@playwright/test"], undefined);
-  const showcaseManifest = JSON.parse(showcasePackageManifest) as {
-    dependencies?: Record<string, string>;
-    devDependencies?: Record<string, string>;
-  };
-  assert.equal(showcaseManifest.dependencies?.["@playwright/test"], undefined);
-  assert.match(showcaseManifest.devDependencies?.["@playwright/test"] ?? "", /^\d+\.\d+\.\d+$/u);
+  const showcaseManifests = [m1ShowcasePackageManifest, m2ShowcasePackageManifest].map((source) =>
+    JSON.parse(source) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    }
+  );
+  for (const showcaseManifest of showcaseManifests) {
+    assert.equal(showcaseManifest.dependencies?.["@playwright/test"], undefined);
+    assert.match(showcaseManifest.devDependencies?.["@playwright/test"] ?? "", /^\d+\.\d+\.\d+$/u);
+    assert.equal(
+      showcaseManifest.devDependencies?.["@bpmn-lean/temporal-testkit"],
+      "workspace:*",
+    );
+  }
   assert.equal(
-    showcaseManifest.devDependencies?.["@bpmn-lean/temporal-testkit"],
-    "workspace:*",
+    showcaseManifests[1]?.devDependencies?.["@playwright/test"],
+    showcaseManifests[0]?.devDependencies?.["@playwright/test"],
   );
   assert.match(
     mavenWrapperProperties,

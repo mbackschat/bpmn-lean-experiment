@@ -244,6 +244,9 @@ importers:
       '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
         version: link:../../packages/temporal-adapter/testkit
+      '@playwright/test':
+        specifier: 1.62.1
+        version: 1.62.1
 
 packages:
 
