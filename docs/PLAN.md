@@ -148,7 +148,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: cold-review the Terminate End Event proposal.** The selected proposal composes reusable containing-scope regional termination with unchanged ordinary scope completion, distinguishes root completion from nested continuation, and includes the required Temporal preflight and preservation matrix. Commit the immutable target and pass a context-cold proposal review before implementation.
+1. **Active: cold-review the Terminate End Event proposal.** Submit immutable proposal target `26758d0` for review. The selected proposal composes reusable containing-scope regional termination with unchanged ordinary scope completion, distinguishes root completion from nested continuation, and includes the required Temporal preflight and preservation matrix. Pass a context-cold proposal review before implementation.
 
 ## Approved decisions
 
@@ -253,7 +253,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: submit the committed Terminate End Event proposal for context-cold review.** The selected account uses one no-output `terminateScope` operation to clear the chosen live scope subtree while retaining that occurrence for immediate unchanged `completeScope`; this makes nested continuation and root completion consequences of the same forward-compatible representation. Do not implement before the proposal review closes, and do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
+**Next action: submit immutable target `26758d0` of the Terminate End Event proposal for context-cold review.** The selected account uses one no-output `terminateScope` operation to clear the chosen live scope subtree while retaining that occurrence for immediate unchanged `completeScope`; this makes nested continuation and root completion consequences of the same forward-compatible representation. Do not implement before the proposal review closes, and do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
