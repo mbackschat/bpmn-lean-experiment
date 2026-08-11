@@ -346,19 +346,13 @@ An implementation can use token lineage, fork identifiers, or another explicit a
 
 ---
 
-## 3.7 Generic task
+## 3.7 Abstract Task and configured Task extension
 
-**Recommendation: support only with explicit semantics.**
+**Recommendation: preserve the standard Abstract Task meaning and use an explicit extension for executable external work.**
 
-A plain `bpmn:task` is semantically underspecified for an execution engine.
+BPMN 2.0.2 does not leave a plain `bpmn:task` semantically unspecified. Clause 10.3.3.1 calls it an Abstract Task, and Clause 13.3.3 states that it completes upon activation as a conceptual model that is never executed by an IT system. A bounded profile may defer or reject that conforming shape, but it must not reinterpret it as an externally completed work item.
 
-Choose one policy:
-
-1. Treat it as a generic externally completed work item.
-2. Require an engine extension that identifies a handler.
-3. Reject it in executable processes.
-
-Do not execute a generic task as a no-op.
+Clause 10.3.3.1 separately permits Task types to be extended. Useful engine-executed generic work should therefore use an exact, versioned extension that identifies a handler and receives its own profile semantics. That preserves a forward path where plain Abstract Task can later be admitted as immediate completion without changing any extended Task already accepted.
 
 A useful extension might be:
 
@@ -1360,7 +1354,7 @@ Examples:
 
 Examples:
 
-- Generic Task must have an engine task definition.
+- A configured executable Task extension must have the exact engine task definition selected by its profile; a plain Abstract Task retains its separate standard immediate-completion meaning.
 - Service Task must specify a worker type.
 - Message Catch Event must define a message name.
 - Timer expressions must be statically parseable where possible.
@@ -1642,7 +1636,7 @@ Prioritize using models from the actual target domain rather than general public
 - Sequence Flow
 - Conditional Sequence Flow
 - Default Sequence Flow
-- Configured generic Task
+- Configured Task extension for external work, kept distinct from plain Abstract Task
 - Service Task
 - User Task
 - Receive Task

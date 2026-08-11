@@ -174,7 +174,7 @@ All adopted packages are compatible with the repository’s MIT license. They re
 
 The dependency is isolated to one workspace package. Removing it deletes that package’s parser adapter and lockfile entries; the semantic core, Lean theory, scenario contract, comparator, and Temporal Workflow remain unchanged. Project-owned source identity, diagnostics, checked-graph, and Semantic Process contracts prevent moddle objects from becoming persistence or public API types.
 
-Upgrades require rerunning the warning, preservation, security, MIWG, and structural-projection gates. A changed serializer output alone is not a semantic-core change. A changed element graph, reference outcome, warning set, default value, or extension projection is an ingestion compatibility change and must receive a new compiler/importer identity.
+Upgrades require rerunning the warning, preservation, security, MIWG, and structural-projection gates. A changed serializer output alone is not a semantic-core change. A changed element graph, reference outcome, warning set, default value, or extension projection for source bytes and profile identity already admitted by the existing compiler is an ingestion compatibility change and must receive a new compiler/importer identity. Registering a versioned extension namespace that every existing profile previously rejected is additive: the new profile and exact source content bind the new projection while all previously admitted compiler inputs and outputs remain byte-compatible.
 
 ## Implemented first slice
 

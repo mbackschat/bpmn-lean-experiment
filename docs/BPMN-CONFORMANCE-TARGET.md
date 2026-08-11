@@ -97,9 +97,9 @@ Clause 13 classifies the following as non-operational or containing non-operatio
 - `Process.isClosed`;
 - `SequenceFlow.isImmediate`.
 
-The project may optionally define executable extensions for these elements, but those choices are not required for Process Execution Conformance and must be versioned in a profile. CIB Seven behavior for any such extension remains a separate compatibility question.
+The project may optionally define executable extensions for these elements, but those choices are not required for Process Execution Conformance and must be versioned in a profile. Clause 13.3.3 gives Abstract Task an explicit no-work operational account: it completes upon activation and is never executed by an IT system. A configured external-work Task must therefore be a distinct versioned extension, not a reinterpretation of plain Abstract Task. CIB Seven behavior for any such extension remains a separate compatibility question.
 
-Ignoring an element means making an explicit supported, rejected, or unsupported decision. It never means silently converting a construct into a no-op when doing so could change control flow or completion.
+Ignoring an element means making an explicit supported, rejected, or unsupported decision. It never means silently inventing a no-op where the standard assigns another meaning. Abstract Task immediate completion is the standard's explicit meaning, even when a bounded executable profile defers admission of that shape.
 
 The standard’s non-operational “Ad-Hoc Process” entry conflicts with its operational description of Ad-Hoc Sub-Processes. Those terms must remain distinct in the ledger, and the applicable open issue must be resolved before assigning either one an executable disposition.
 
