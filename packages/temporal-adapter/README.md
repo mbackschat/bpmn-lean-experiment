@@ -15,6 +15,8 @@ There is no `@bpmn-lean/temporal-adapter` umbrella export. Product 2 may reach `
 
 Host admission classifies `terminateScope` as passive internal closure. The registered exact nested Terminate profile remains admissible in either operation order, including its parallel split, because scope cancellation is computed only by the semantic core. Its runnable product example uses the existing manual Process start and User Task interaction driver without a Terminate-specific runner branch or Temporal cancellation mechanism. Focused live evidence commits Trigger, replaces the Worker, recovers the result and Outer-only wait, rejects a fresh stale Sibling command with state preservation, completes, inspects and replays the 20-event history, and separates production from a test-owned Workflow that wrongly cancels the root.
 
+The registered configured Task profile is admitted through the unchanged payload-free Activity/Probe effect host followed by the existing User Task Update path. Its runnable example uses the existing Probe handler registry and interaction driver; no configured-Task-specific Workflow, Activity, protocol, state, observation, or production runner branch exists.
+
 `ExternalTemporalRuntime.connect` is the product-facing Worker boundary. It connects one Worker and Workflow client to a caller-managed Temporal address, Namespace, and Task Queue; it never starts an embedded server or binds a server port. `startBpmnProcess` receives that same explicit Task Queue, so the client and Worker cannot drift through hidden defaults. The connection requires explicit effect Activities and registers them with the Worker; the engine runner supplies a deterministic handler registry for effect-bearing profiles.
 
 ## Engine runner command

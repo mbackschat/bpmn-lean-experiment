@@ -68,6 +68,9 @@ import {
 import {
   terminateEndPipelineCases,
 } from "./terminate-end-pipeline-cases.ts";
+import {
+  configuredTaskPipelineCases,
+} from "./configured-task-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -598,4 +601,5 @@ export const pipelineCases = Object.freeze([
   effectCase(),
   mappedSuccessCase(),
   boundaryErrorCase(),
+  ...configuredTaskPipelineCases,
 ]);

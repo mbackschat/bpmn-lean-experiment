@@ -12,6 +12,8 @@ The [Timer Start Event scenario](timer-start-event/README.md) uses one exact res
 
 The [Terminate End Event scenarios](terminate-end-event/README.md) cover Trigger-first containing-scope termination, Sibling-first completion before termination, and refusal of the canceled captured Sibling occurrence after termination. They are answer-free and select no CIB Terminate target.
 
+The [configured Task scenario](configured-task/README.md) binds the byte-identical approved extension source to one empty-success effect completion followed by one User Task completion. It remains answer-free, reuses the existing Probe effect handler, and selects no CIB configured Task target.
+
 Document shape is owned by the current [shared wire contracts](../contracts/README.md); semantic meaning is owned by the selected profile and capsule. Because the project is pre-release, a contract change replaces all scenario producers and consumers atomically instead of preserving parallel prototype formats.
 
 A scenario must have the same meaning for every target its profile declares. It must not expose CIB database entities, Lean constructors, Temporal histories, future commands as current capabilities, or other host internals. A standards-only scenario does not acquire a CIB target merely because its provenance links a separate CIB calibration.

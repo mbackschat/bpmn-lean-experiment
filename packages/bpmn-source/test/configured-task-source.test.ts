@@ -1,4 +1,4 @@
-/** Locks the exact configured generic Task source checkpoint. */
+/** Locks the exact registered configured generic Task source profile. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -13,7 +13,6 @@ import {
 import {
   EffectOperation,
   EffectProtocol,
-  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -22,7 +21,7 @@ import type {
 } from "@bpmn-lean/bpmn-source";
 
 const sourceUrl = new URL("./fixtures/configured-task.bpmn", import.meta.url);
-const checkpointProfile = SemanticCheckpointProfileId.ConfiguredTask;
+const configuredTaskProfile = SemanticProfileId.ConfiguredTask;
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 const descriptor = Object.freeze({
   protocol: EffectProtocol.Activity,
@@ -31,7 +30,7 @@ const descriptor = Object.freeze({
 
 async function compile(
   bytes: Uint8Array,
-  semanticProfile: string = checkpointProfile,
+  semanticProfile: string = configuredTaskProfile,
 ) {
   return await compileBpmnToSemanticProcess({
     bytes,
@@ -50,7 +49,7 @@ function requireAccepted(result: BpmnCompilationResult): AcceptedBpmnCompilation
   return result;
 }
 
-test("compiles the exact configured generic Task checkpoint", async () => {
+test("compiles the exact registered configured generic Task", async () => {
   const bytes = await readFile(sourceUrl);
   const result = requireAccepted(await compile(bytes));
 

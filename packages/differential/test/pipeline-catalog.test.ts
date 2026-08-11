@@ -37,6 +37,9 @@ import {
   terminateEndPipelineCases,
 } from "./terminate-end-pipeline-cases.ts";
 import {
+  configuredTaskPipelineCases,
+} from "./configured-task-pipeline-cases.ts";
+import {
   pipelineCases,
 } from "./pipeline-cases.ts";
 import {
@@ -52,6 +55,8 @@ import {
 
 const timerStartScenarioRelativePath =
   "scenarios/timer-start-event/scenario.json";
+const configuredTaskScenarioRelativePath =
+  "scenarios/configured-task/scenario.json";
 
 test("registers every Event race artifact once with exact Temporal refinement", () => {
   assert.doesNotThrow(() =>
@@ -177,6 +182,53 @@ test("registers Terminate End atomically as three standards-only exact-semantic 
         temporalRelation: TemporalCaseRelation.ExactSemantic,
       },
     ],
+  );
+});
+
+test("registers configured Task atomically as one standards-only exact-semantic case", () => {
+  assert.deepEqual(
+    normativeArtifactCases.filter(
+      ({ scenarioRelativePath }) =>
+        scenarioRelativePath === configuredTaskScenarioRelativePath,
+    ),
+    [{ scenarioRelativePath: configuredTaskScenarioRelativePath }],
+  );
+  assert.deepEqual(
+    pipelineCases.filter(
+      ({ scenarioRelativePath }) =>
+        scenarioRelativePath === configuredTaskScenarioRelativePath,
+    ).map(({ id, cib, temporalRelation }) => ({
+      id,
+      cib,
+      temporalRelation,
+    })),
+    [{
+      id: "configured-task",
+      cib: null,
+      temporalRelation: TemporalCaseRelation.ExactSemantic,
+    }],
+  );
+});
+
+test("detects configured Task effect pass-through and early User Task exposure", async () => {
+  const [context] = await loadAndCompileCases(configuredTaskPipelineCases);
+  assert.ok(context !== undefined);
+  const result = runCoreTargets([context]).results.get(context.scenario.id);
+  assert.ok(result !== undefined);
+  const mutated = mutableClone(result);
+  context.pipelineCase.injectMutation(mutated);
+
+  const comparison = compareTargetResults(
+    { target: DifferentialTarget.SemanticCore, result },
+    [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+  );
+  assert.equal(comparison.kind, ComparisonKind.Disagreement);
+  if (comparison.kind !== ComparisonKind.Disagreement) {
+    throw new Error("configured Task mutation did not create a disagreement");
+  }
+  assert.deepEqual(
+    comparison.disagreement,
+    context.pipelineCase.expectedInjectedDisagreement,
   );
 });
 

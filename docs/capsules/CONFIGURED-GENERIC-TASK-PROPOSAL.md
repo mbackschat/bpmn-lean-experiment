@@ -286,9 +286,9 @@ The owner inventory was mechanically derived with `node scripts/what-binds.ts`. 
 | Owner | Headroom to 600 nonblank lines | Required consequence |
 |---|---:|---|
 | [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 358 | Add the distinct configured Task constructor only. |
-| [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 553 | Add the checkpoint and later registered profile identity without changing prior values. |
-| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 481 | Extract checked/program shape catalogs first, then add exact configured-node and existing-effect cardinalities plus descriptor detail. |
-| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 533 | Keep the new profile whole-graph acyclic. |
+| [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 556 | Add the checkpoint and later registered profile identity without changing prior values. |
+| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 487 | Extract checked/program shape catalogs first, then add exact configured-node and existing-effect cardinalities plus descriptor detail. |
+| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 536 | Keep the new profile whole-graph acyclic. |
 | [moddle adapter](../../packages/bpmn-source/src/moddle-adapter.ts) | 441 | Register one package-local extension descriptor through the standard constructor option. |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 200 | Derive the closed profile-aware projection policy before partitioning and preserve the exact non-selected-profile Task diagnostic. |
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 204 | Accept the same closed projection policy and delegate selected `bpmn:Task` values to a new cohesive configured source reader. |
@@ -308,12 +308,12 @@ The new focused source test owns the complete positive/negative matrix, includin
 |---|---:|---|
 | [artifact consistency](../../scripts/contract-artifact-consistency.ts) | 50 | Extract before change; leave orchestration only. |
 | [contract artifact projection](../../scripts/contract-artifacts.ts) | 13 | Add only the exhaustive classifier arm; extract any additional responsibility. |
-| [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 385 | Register the one product-neutral extension scenario with no CIB target. |
+| [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 381 | Register the one product-neutral extension scenario with no CIB target. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 101 | Keep existing shared tests; add configured effect-origin/profile tests in a new cohesive owner. |
-| [pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 24 | Put configured cases in a capsule-owned module and add only one import/spread. |
-| [pipeline test](../../packages/differential/test/pipeline.test.ts) | 123 | Update only the exact ordered inventory and end-to-end assertion. |
-| [pipeline catalog test](../../packages/differential/test/pipeline-catalog.test.ts) | 246 | Lock additive profile/case classification and meaningful mutation. |
-| [product-example guard](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 379 | Require one runnable example using the existing Probe handler and trailing User Task plan. |
+| [pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 20 | Put configured cases in a capsule-owned module and add only one import/spread. |
+| [pipeline test](../../packages/differential/test/pipeline.test.ts) | 122 | Update only the exact ordered inventory and end-to-end assertion. |
+| [pipeline catalog test](../../packages/differential/test/pipeline-catalog.test.ts) | 197 | Lock additive profile/case classification and meaningful mutation. |
+| [product-example guard](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 346 | Require one runnable example using the existing Probe handler and trailing User Task plan. |
 
 The new `effect-operation-artifact-consistency.ts` accepts only checked `serviceTask | configuredTask` origins. It compares element identity, descriptor, mappings, and Error route. Configured Task requires empty maps and a null route; Service Task keeps its exact current descriptor, mapping, and route rules. A second new `configured-task-profile-consistency.ts` proves the exact namespace/type-to-Probe binding because schema shape alone cannot establish that selected value.
 

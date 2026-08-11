@@ -2,7 +2,7 @@ import {
   CheckedNodeKind,
   EffectOperation,
   EffectProtocol,
-  SemanticCheckpointProfileId,
+  SemanticProfileId,
   SemanticOperationKind,
   SemanticOriginKind,
 } from "../src/index.js";
@@ -44,11 +44,11 @@ const configuredOperation = {
   { kind: SemanticOperationKind.AwaitEffect }
 >;
 
-SemanticCheckpointProfileId.ConfiguredTask;
+SemanticProfileId.ConfiguredTask;
 
 // @ts-expect-error checked configured Tasks are deeply immutable
 configuredTask.descriptor.operation = EffectOperation.MappedSuccess;
 // @ts-expect-error configured Task lowering reuses AwaitEffect, which has no handler source field
 configuredOperation.effect.handlerType;
-// @ts-expect-error checkpoint identities are runtime-frozen readonly values
-SemanticCheckpointProfileId.ConfiguredTask = "mutated-profile";
+// @ts-expect-error registered profile identities are runtime-frozen readonly values
+SemanticProfileId.ConfiguredTask = "mutated-profile";

@@ -14,7 +14,6 @@ import {
   MessageChannelKind,
   EffectOperation,
   EffectProtocol,
-  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
@@ -324,7 +323,7 @@ test("admits configured Task only as a one-to-one graph node", () => {
   assert.notEqual(
     resolveAdmittedCheckedProcessGraph(
       withRootOwnership(nodes, admittedFlows),
-      SemanticCheckpointProfileId.ConfiguredTask,
+      SemanticProfileId.ConfiguredTask,
     ),
     undefined,
   );
@@ -334,7 +333,7 @@ test("admits configured Task only as a one-to-one graph node", () => {
         nodes,
         [...admittedFlows, flow("ConfiguredToStart", configured.id, start.id)],
       ),
-      SemanticCheckpointProfileId.ConfiguredTask,
+      SemanticProfileId.ConfiguredTask,
     ),
     undefined,
   );

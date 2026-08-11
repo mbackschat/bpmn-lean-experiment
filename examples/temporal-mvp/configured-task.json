@@ -1,0 +1,41 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/configured-task/process.bpmn",
+    "sourceId": "configured-task",
+    "semanticProfile": "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_configured_task_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Review",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ]
+}

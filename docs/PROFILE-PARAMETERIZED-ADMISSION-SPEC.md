@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented current pre-release contract.** The registered capability catalog remains the product authority. A separate unregistered configured Task checkpoint now exercises the same structural-plus-profile admission boundary without entering that product catalog.
+**Implemented current pre-release contract.** The registered capability catalog remains the product authority. The configured Task profile now exercises the same structural-plus-profile admission boundary through an exact project-extension binding without changing the reusable effect operation.
 
 ## Scope
 
@@ -46,13 +46,14 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN Message Start Event (`bpmn-2.0.2-message-start-event-draft`) | 1 | one `initiateMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN Timer Start Event (`bpmn-2.0.2-timer-start-event-draft`) | 1 | one `initiateTimer`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN nested Terminate End Event (`bpmn-2.0.2-terminate-end-event-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `terminateScope`, two `reachNoneEnd`, two `completeScope` |
+| BPMN Lean configured Task effect (`bpmn-2.0.2-bpmn-lean-configured-task-effect-draft`) | 1 | one `initiate`, one `awaitEffect`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Message-addressed Receive Task (`cibseven-2.2.0-message-addressed-receive-task-draft`) | 1 | one `initiate`, one `awaitMessage`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven ordinary embedded Sub-Process completion (`cibseven-2.2.0-embedded-subprocess-completion-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
 | CIB Seven embedded Sub-Process Error propagation (`cibseven-2.2.0-subprocess-error-propagation-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `throwError`, three `reachNoneEnd`, two `completeScope` |
 | BPMN called Process Call Activity (`bpmn-2.0.2-called-process-call-activity-draft`) | 2 | one `initiate`, one `invokeProcess`, two `awaitUserTask`, two `reachNoneEnd`, one `returnProcess`, one `completeScope` |
 | BPMN interrupting Sub-Process boundary Timer (`bpmn-2.0.2-subprocess-boundary-timer-draft`) | 2 | one `initiate`, one `enterBoundedScope`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
 
-The unregistered checkpoint `bpmn-2.0.2-bpmn-lean-configured-task-effect-draft` admits one definition scope with one `initiate`, one existing `awaitEffect`, one `awaitUserTask`, one `reachNoneEnd`, and one `completeScope`. Its checked multiset contains one distinct `configuredTask`, not `serviceTask`; the selected descriptor is Activity/Probe, mappings are empty, the BPMN Error route is null, and whole-graph acyclicity remains mandatory. It is intentionally absent from the registered-profile table until checkpoint approval and atomic artifact graduation.
+The configured Task capability admits one definition scope whose checked multiset contains one distinct `configuredTask`, not `serviceTask`; the selected descriptor is Activity/Probe, mappings are empty, the BPMN Error route is null, and whole-graph acyclicity remains mandatory.
 
 Two registered profiles share one operation multiset, and that is the contract rather than a duplicate row. The preserve-enabled successor to the CIB Seven User Task profile admits Diagram Interchange, pools, lanes, artifacts, and documentation that its predecessor rejects, and executes exactly the same program. A differing multiset would mean preserved notation had reached the executed partition, so agreement between these two rows is what [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md) claims and not an omission. Which source each profile admits is decided by the preservation capability, which is disjoint from the operation multiset this table records.
 

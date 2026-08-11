@@ -1,0 +1,92 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-bpmn-lean-configured-task-probe-effect",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 7.7",
+      "Clause 8.3.3",
+      "Clause 10.3",
+      "Clause 10.3.3.1",
+      "Clause 13.3.2",
+      "Clause 13.3.3",
+      "Table 10.4"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "bpmn-lean-configured-task",
+      "expanded-name-task-definition-binding",
+      "activity-probe-effect-descriptor",
+      "empty-effect-input-mappings",
+      "empty-effect-output-mappings",
+      "no-bpmn-error-route",
+      "effect-occurrence-completion",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "urn:bpmn-lean:bpmn:extensions:v1#taskDefinition"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "effectBindings": [
+    {
+      "source": {
+        "taskDefinitionNamespace": "urn:bpmn-lean:bpmn:extensions:v1",
+        "taskDefinitionType": "urn:bpmn-lean:task-handler:probe-v1"
+      },
+      "descriptor": {
+        "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+        "operation": "urn:bpmn-lean:effect-operation:probe-v1"
+      }
+    }
+  ],
+  "excluded": [
+    "plain-bpmn-abstract-task-admission",
+    "configured-task-pass-through",
+    "configured-task-as-service-task",
+    "additional-configured-task-types",
+    "payload-and-data-mapping",
+    "bpmn-error-route",
+    "retries-as-bpmn-semantics",
+    "handler-registry",
+    "new-effect-protocol-or-operation",
+    "cib-configured-task-compatibility-claim",
+    "product-2-task-queue",
+    "arbitrary-task-topology",
+    "loops",
+    "multi-instance",
+    "boundary-events",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

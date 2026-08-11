@@ -10,19 +10,13 @@ import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   requiredProgramShape,
 } from "./semantic-program-profile-shape.js";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
 } from "./semantic-value-contract.js";
 
-export {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+export { SemanticProfileId } from "./semantic-profile-catalog.js";
 
 /** Checks the exact operation capability selected by one reviewed profile. */
 export function profileAllowsProgramShape(
@@ -64,7 +58,7 @@ function profileAllowsProgramOperationDetails(
           operation.kind !== SemanticOperationKind.MergeExclusive ||
           operation.inputs.length === 3,
       );
-    case SemanticCheckpointProfileId.ConfiguredTask:
+    case SemanticProfileId.ConfiguredTask:
       return operations.every(
         (operation) =>
           operation.kind !== SemanticOperationKind.AwaitEffect ||
@@ -97,7 +91,7 @@ export function profileAllowsCheckedProcessShape(
           node.kind !== CheckedNodeKind.TimerStartEvent ||
           node.durationLiteral === "PT1S",
       )) &&
-    (semanticProfile !== SemanticCheckpointProfileId.ConfiguredTask ||
+    (semanticProfile !== SemanticProfileId.ConfiguredTask ||
       nodes.every(
         (node) =>
           node.kind !== CheckedNodeKind.ConfiguredTask ||

@@ -206,6 +206,10 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/terminate-end-event/stale-sibling-after-termination.scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/configured-task/scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

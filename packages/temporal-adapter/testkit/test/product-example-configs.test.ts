@@ -38,6 +38,8 @@ import {
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const exampleRoot = path.join(projectRoot, "examples/temporal-mvp");
 const registeredProfiles = Object.values(SemanticProfileId);
+const configuredTaskProfileId =
+  "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft";
 const timerStartProfileId = "bpmn-2.0.2-timer-start-event-draft";
 const terminateEndProfileId = "bpmn-2.0.2-terminate-end-event-draft";
 
@@ -166,6 +168,38 @@ test("registers Terminate End with one exact manual-start product example", asyn
         instanceId: "MvpExample_terminate_end_event_1",
         initialVariables: [],
       },
+    },
+  );
+});
+
+test("registers configured Task with the existing Probe handler and User Task interaction", async () => {
+  assert.equal(registeredProfiles.includes(configuredTaskProfileId), true);
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) => path.basename(file) === "configured-task.json")
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  assert.deepEqual(
+    {
+      semanticProfile: config.bpmn.semanticProfile,
+      interactions: config.interactions,
+      effectHandlers: config.effectHandlers,
+    },
+    {
+      semanticProfile: configuredTaskProfileId,
+      interactions: [{
+        kind: "completeUserTaskInstance",
+        elementId: "UserTask_Review",
+        delayMs: 250,
+        inputVariableNames: [],
+        submittedValues: [],
+      }],
+      effectHandlers: [{
+        protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+        operation: "urn:bpmn-lean:effect-operation:probe-v1",
+        result: { kind: "success", localPatch: [] },
+      }],
     },
   );
 });

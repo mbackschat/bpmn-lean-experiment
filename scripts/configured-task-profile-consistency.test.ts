@@ -49,6 +49,10 @@ test("rejects every configured Task binding drift", () => {
     }] },
     { ...exactProfile, effectBindings: [{
       ...binding,
+      descriptor: { ...binding.descriptor, protocol: "urn:other" },
+    }] },
+    { ...exactProfile, effectBindings: [{
+      ...binding,
       descriptor: { ...binding.descriptor, operation: "urn:other" },
     }] },
     { ...exactProfile, effectBindings: [] },

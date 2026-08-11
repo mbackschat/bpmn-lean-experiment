@@ -9,7 +9,6 @@ import {
   EffectProtocol,
   ControlStateKind,
   SemanticOperationKind,
-  SemanticCheckpointProfileId,
   SemanticProfileId,
   SemanticProcessCompilerId,
   SemanticProcessKind,
@@ -34,7 +33,7 @@ import {
 } from "./semantic-program-parts.ts";
 import { rootScopedProgram } from "./root-scope-fixture.ts";
 
-const checkpointProfile = SemanticCheckpointProfileId.ConfiguredTask;
+const configuredTaskProfile = SemanticProfileId.ConfiguredTask;
 const descriptor = Object.freeze({
   protocol: EffectProtocol.Activity,
   operation: EffectOperation.Probe,
@@ -55,7 +54,7 @@ const configuredProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: checkpointProfile,
+    semanticProfile: configuredTaskProfile,
     sourceId: "configured-task-process",
     sourceOverlay: null,
     sourceSha256:
@@ -111,24 +110,24 @@ const start = Object.freeze({
 
 test("admits only the exact configured checked and program shape", () => {
   assert.equal(
-    profileAllowsCheckedProcessShape(checkpointProfile, configuredNodes, 1),
+    profileAllowsCheckedProcessShape(configuredTaskProfile, configuredNodes, 1),
     true,
   );
   assert.equal(
     profileAllowsProgramShape(
-      checkpointProfile,
+      configuredTaskProfile,
       configuredProgram.operations,
       configuredProgram.definitionScopes.length,
     ),
     true,
   );
-  assert.deepEqual(semanticGraphPolicyForProfile(checkpointProfile), {
+  assert.deepEqual(semanticGraphPolicyForProfile(configuredTaskProfile), {
     kind: "acyclic",
   });
   assert.equal(supportsSemanticProcessExecution(start, configuredProgram), true);
   assert.equal(
-    new Set<string>(Object.values(SemanticProfileId)).has(checkpointProfile),
-    false,
+    new Set<string>(Object.values(SemanticProfileId)).has(configuredTaskProfile),
+    true,
   );
 });
 
@@ -136,7 +135,7 @@ test("descriptor drift, a Service Task discriminator, and pass-through refuse", 
   const configuredNode = configuredNodes[1];
   assert.ok(configuredNode !== undefined);
   assert.equal(profileAllowsCheckedProcessShape(
-    checkpointProfile,
+    configuredTaskProfile,
     configuredNodes.with(1, {
       ...configuredNode,
       descriptor: { ...descriptor, operation: EffectOperation.MappedSuccess },
@@ -144,7 +143,7 @@ test("descriptor drift, a Service Task discriminator, and pass-through refuse", 
     1,
   ), false);
   assert.equal(profileAllowsCheckedProcessShape(
-    checkpointProfile,
+    configuredTaskProfile,
     configuredNodes.with(1, {
       kind: CheckedNodeKind.ServiceTask,
       id: "ConfiguredTask_Probe",
@@ -171,7 +170,7 @@ test("descriptor drift, a Service Task discriminator, and pass-through refuse", 
       : operation
   );
   assert.equal(profileAllowsProgramShape(
-    checkpointProfile,
+    configuredTaskProfile,
     driftedOperations,
     1,
   ), false);

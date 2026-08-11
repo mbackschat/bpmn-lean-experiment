@@ -1,6 +1,6 @@
 import {
   CheckedNodeKind,
-  SemanticCheckpointProfileId,
+  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import type { CheckedNode } from "@bpmn-lean/semantic-core";
 
@@ -11,7 +11,7 @@ export function hasSelectedConfiguredTaskTopology(
   semanticProfile: string,
   graph: CheckedProcessGraph,
 ): boolean {
-  if (semanticProfile !== SemanticCheckpointProfileId.ConfiguredTask) {
+  if (semanticProfile !== SemanticProfileId.ConfiguredTask) {
     return true;
   }
   const only = <Kind extends CheckedNodeKind>(

@@ -2,7 +2,7 @@ import {
   CheckedNodeKind,
   EffectOperation,
   EffectProtocol,
-  SemanticCheckpointProfileId,
+  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -29,7 +29,7 @@ import {
 const bpmnTypes = metamodelManifest.compilerProjection;
 const taskDefinitionType = `${configuredTaskModdle.prefix}:TaskDefinition`;
 
-/** Closed source-to-neutral-effect policy selected only by the configured Task checkpoint. */
+/** Closed source-to-neutral-effect policy selected only by the configured Task profile. */
 export type ConfiguredTaskProjectionPolicy = Readonly<{
   taskType: string;
   taskDefinitionType: string;
@@ -50,7 +50,7 @@ const configuredTaskPolicy: ConfiguredTaskProjectionPolicy = Object.freeze({
 export function configuredTaskProjectionPolicyForProfile(
   semanticProfile: string,
 ): ConfiguredTaskProjectionPolicy | undefined {
-  return semanticProfile === SemanticCheckpointProfileId.ConfiguredTask
+  return semanticProfile === SemanticProfileId.ConfiguredTask
     ? configuredTaskPolicy
     : undefined;
 }

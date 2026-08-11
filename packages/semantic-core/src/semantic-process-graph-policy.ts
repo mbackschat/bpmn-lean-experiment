@@ -2,10 +2,7 @@
 import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 
 export enum SemanticGraphPolicyKind {
   Acyclic = "acyclic",
@@ -64,7 +61,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskPreservedNotation:
     case SemanticProfileId.TerminateEnd:
-    case SemanticCheckpointProfileId.ConfiguredTask:
+    case SemanticProfileId.ConfiguredTask:
       return acyclicGraphPolicy;
     default:
       return undefined;
