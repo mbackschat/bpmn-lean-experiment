@@ -2,15 +2,17 @@
 
 ## Status
 
-**Draft for independent cold proposal review. Not owner-approved and not implemented.** This proposal selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive.
+**Owner-approved for implementation after independent cold proposal review; not implemented.** This proposal selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `add8367` | `fork-turns-none` | `approve-with-required-edits` | `19591d3` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The context-cold proposal review of `add8367` required four bounded corrections: occurrence-only effect-completion refusal, profile-aware Task classification, raw duplicate-`extensionElements` guarding, and consistent classification of the CIB trace as exclusion evidence. The same reviewer approved correction `19591d3`; the selected semantic account, public contract, exclusions, and evidence strategy did not change.
 
 ## Question
 

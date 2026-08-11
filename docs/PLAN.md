@@ -50,7 +50,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 ### M2 — the file runs its real shape
 
-**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, and Terminate End Event increments are implemented, closure-reviewed, evidence-closed, and graduated. The [configured Task extension proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md) is selected for context-cold proposal review; implementation and the platform increments remain paused behind that review.
+**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, and Terminate End Event increments are implemented, closure-reviewed, evidence-closed, and graduated. The [configured Task extension proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md) is independently reviewed and owner-approved; its first semantic checkpoint is active, while the platform increments remain behind the M2 engine exit gate.
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
@@ -118,7 +118,7 @@ Ordered by the milestone that first needs it, not by size. Each is absent today 
 2. [Message Start Event](capsules/MESSAGE-START-EVENT-SPEC.md), closed for M2.
 3. [Timer Start Event](capsules/TIMER-START-EVENT-SPEC.md), closed for M2.
 4. [Terminate End Event](capsules/TERMINATE-END-EVENT-SPEC.md), closed for M2.
-5. [Configured Task extension](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md), the selected remaining M2 base-element capsule, pending context-cold proposal review.
+5. [Configured Task extension](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md), the selected remaining M2 base-element capsule, owner-approved and active at its first semantic checkpoint.
 6. The value domain beyond string and null — M3.
 7. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
 8. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
@@ -151,7 +151,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: review the configured Task extension proposal.** The forward-compatible account, exact extension, separating fixture, proved Lean lane, and Temporal reuse preflight are selected in [the proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md). Commit its immutable target, run context-cold proposal review, record owner approval after a clean verdict, and only then implement the first semantic checkpoint.
+1. **Active: implement the configured Task first semantic checkpoint.** The owner-approved [proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md) selects the forward-compatible account, exact extension, separating fixture, proved Lean lane, and Temporal reuse preflight. Implement the disjoint semantic-core, BPMN-source, and Lean mechanisms, integrate the shared strict contracts and artifact guards, run the complete applicable checkpoint gate once, commit the immutable green target, and obtain context-cold semantic-checkpoint review before registration or live evidence.
 
 ## Approved decisions
 
@@ -256,7 +256,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit the configured Task extension proposal as an immutable target and submit its generated packet verbatim for context-cold proposal review before implementation.** Product 2 scheduling, message ingress, instance search, and other semantic families remain behind the M2 engine exit gate.
+**Next action: implement and integrate the configured Task first semantic checkpoint, then commit its immutable green target and submit the generated packet verbatim for context-cold semantic-checkpoint review before registration or live evidence.** Product 2 scheduling, message ingress, instance search, and other semantic families remain behind the M2 engine exit gate.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
