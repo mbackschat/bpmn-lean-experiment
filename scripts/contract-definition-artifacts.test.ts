@@ -20,17 +20,12 @@ import {
   parallelDefinitionArtifacts,
   required,
   requiredAt,
-  requireAwaitEffect,
   requireAwaitUserTask,
   requireCheckedUserTask,
   requireMutableState,
-  requireServiceTask,
   requireUserTaskCompletion,
   semanticOperationKind,
   serviceTaskDefinitionArtifacts,
-} from "./contract-artifact-test-fixtures.ts";
-import type {
-  MutableDefinitionArtifacts,
 } from "./contract-artifact-test-fixtures.ts";
 
 import {
@@ -428,42 +423,6 @@ test("accepts the canonical checked-process and Semantic Process contract shapes
     assert.equal(
       await verifyDefinitionArtifacts(projectRoot, artifacts),
       artifacts,
-    );
-  }
-});
-
-test("rejects drift in the neutral Service Task effect identity", async () => {
-  const mutations: ReadonlyArray<
-    (artifacts: MutableDefinitionArtifacts) => void
-  > = [
-    (artifacts) => {
-      const serviceTask = requireServiceTask(
-        artifacts.checkedProcess.nodes[1],
-      );
-      serviceTask.descriptor.protocol =
-        "urn:bpmn-lean:effect-protocol:other-v1";
-    },
-    (artifacts) => {
-      const serviceTask = requireServiceTask(
-        artifacts.checkedProcess.nodes[1],
-      );
-      serviceTask.descriptor.operation =
-        "urn:bpmn-lean:effect-operation:other-v1";
-    },
-    (artifacts) => {
-      const effectOperation = requireAwaitEffect(
-        artifacts.semanticProcess.operations[1],
-      );
-      effectOperation.effect.elementId =
-        "Other_ServiceTask";
-    },
-  ];
-  for (const mutate of mutations) {
-    const artifacts = serviceTaskDefinitionArtifacts();
-    mutate(artifacts);
-    await assert.rejects(
-      verifyDefinitionArtifacts(projectRoot, artifacts),
-      /schema validation failed|effect identity differs|effect descriptor differs/,
     );
   }
 });

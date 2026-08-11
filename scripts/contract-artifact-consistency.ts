@@ -13,6 +13,7 @@ import {
 } from "./strict-json.ts";
 import { verifyMergeExclusiveBindings } from "./merge-exclusive-artifact-consistency.ts";
 import { verifyTerminateScopeBindings } from "./end-operation-artifact-consistency.ts";
+import { verifyEffectOperationBindings } from "./effect-operation-artifact-consistency.ts";
 import {
   referencedStartControlPlaces,
   verifyCanonicalStartOperationOrder,
@@ -434,6 +435,7 @@ export function verifyDefinitionReferences(
     compareCanonicalStrings,
   );
   verifyTerminateScopeBindings(checkedProcess, semanticProcess);
+  verifyEffectOperationBindings(checkedProcess, semanticProcess);
 
   const placeIds = requireUniqueIds(
     "semantic process control places",
@@ -489,58 +491,6 @@ export function verifyDefinitionReferences(
       throw new Error(
         `operation ${operation.id} Message identity differs from its BPMN origin`,
       );
-    }
-    if (
-      operation.kind === "awaitEffect" &&
-      operation.effect.elementId !== operation.origin.elementId
-    ) {
-      throw new Error(
-        `operation ${operation.id} effect identity differs from its BPMN origin`,
-      );
-    }
-    if (operation.kind === "awaitEffect") {
-      const checkedNode = checkedProcess.nodes.find(
-        ({ id }) => id === operation.origin.elementId,
-      );
-      if (
-        checkedNode?.kind !== "serviceTask" ||
-        !isDeepStrictEqual(
-          checkedNode.descriptor,
-          operation.effect.descriptor,
-        )
-      ) {
-        throw new Error(
-          `operation ${operation.id} effect descriptor differs from its checked BPMN origin`,
-        );
-      }
-      const checkedRoute = checkedNode.bpmnErrorRoute;
-      const routeOutput = checkedRoute === null
-        ? undefined
-        : semanticProcess.controlPlaces.find(
-          ({ id, origin }) =>
-            id === `place:${checkedRoute.outputFlowId}` &&
-            origin.elementId === checkedRoute.outputFlowId,
-        );
-      const expectedRoute = checkedRoute === null
-        ? null
-        : routeOutput === undefined
-        ? undefined
-        : {
-            code: checkedRoute.code,
-            output: routeOutput.id,
-            origin: {
-              kind: "bpmnElement",
-              boundaryEventId: checkedRoute.boundaryEventId,
-              errorDefinitionId: checkedRoute.errorDefinitionId,
-              errorElementId: checkedRoute.errorElementId,
-              sequenceFlowId: checkedRoute.outputFlowId,
-            },
-          };
-      if (!isDeepStrictEqual(operation.bpmnErrorRoute, expectedRoute)) {
-        throw new Error(
-          `operation ${operation.id} BPMN Error route differs from its checked BPMN origin`,
-        );
-      }
     }
     if (operation.kind === "choose") {
       const origins = [
