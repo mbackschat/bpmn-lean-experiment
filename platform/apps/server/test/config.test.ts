@@ -17,6 +17,10 @@ test("provides bounded local-MVP defaults", () => {
     temporalNamespace: "default",
     temporalTaskQueue: "bpmn-semantic",
     temporalConnectTimeoutMs: 5000,
+    fakeActorId: "demo-user",
+    fakeActorGroups: ["reviewers"],
+    maxWorkProcesses: 100,
+    maxWorkTasks: 1000,
   });
 });
 
@@ -32,6 +36,10 @@ test("snapshots explicit environment configuration", () => {
     PLATFORM_TEMPORAL_NAMESPACE: "processes",
     PLATFORM_TEMPORAL_TASK_QUEUE: "platform-processes",
     PLATFORM_TEMPORAL_CONNECT_TIMEOUT_MS: "4000",
+    PLATFORM_FAKE_ACTOR_ID: "reviewer-1",
+    PLATFORM_FAKE_ACTOR_GROUPS_JSON: '["reviewers","managers"]',
+    PLATFORM_MAX_WORK_PROCESSES: "40",
+    PLATFORM_MAX_WORK_TASKS: "250",
   };
   const config = readPlatformServerConfig(environment);
   environment.PLATFORM_HOST = "attacker.invalid";
@@ -46,6 +54,10 @@ test("snapshots explicit environment configuration", () => {
     temporalNamespace: "processes",
     temporalTaskQueue: "platform-processes",
     temporalConnectTimeoutMs: 4000,
+    fakeActorId: "reviewer-1",
+    fakeActorGroups: ["reviewers", "managers"],
+    maxWorkProcesses: 40,
+    maxWorkTasks: 250,
   });
 });
 
@@ -57,6 +69,7 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
     "PLATFORM_TEMPORAL_ADDRESS",
     "PLATFORM_TEMPORAL_NAMESPACE",
     "PLATFORM_TEMPORAL_TASK_QUEUE",
+    "PLATFORM_FAKE_ACTOR_ID",
   ]) {
     assert.throws(
       () => readPlatformServerConfig({ [name]: "" }),
@@ -69,6 +82,8 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
     "PLATFORM_MAX_SOURCE_BYTES",
     "PLATFORM_PARSER_DEADLINE_MS",
     "PLATFORM_TEMPORAL_CONNECT_TIMEOUT_MS",
+    "PLATFORM_MAX_WORK_PROCESSES",
+    "PLATFORM_MAX_WORK_TASKS",
   ]) {
     for (const value of ["0", "-1", "1.5", "1e3", "abc", "9007199254740992"]) {
       assert.throws(
@@ -81,4 +96,19 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
     () => readPlatformServerConfig({ PLATFORM_PORT: "65536" }),
     /PLATFORM_PORT/u,
   );
+
+  for (const value of [
+    "not-json",
+    "{}",
+    "[]",
+    '["reviewers",""]',
+    '["reviewers","reviewers"]',
+    '["reviewers",1]',
+    '["reviewers"] trailing',
+  ]) {
+    assert.throws(
+      () => readPlatformServerConfig({ PLATFORM_FAKE_ACTOR_GROUPS_JSON: value }),
+      /PLATFORM_FAKE_ACTOR_GROUPS_JSON/u,
+    );
+  }
 });

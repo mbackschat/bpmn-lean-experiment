@@ -12,6 +12,10 @@ const defaultTemporalAddress = "127.0.0.1:7233";
 const defaultTemporalNamespace = "default";
 const defaultTemporalTaskQueue = "bpmn-semantic";
 const defaultTemporalConnectTimeoutMs = 5_000;
+const defaultFakeActorId = "demo-user";
+const defaultFakeActorGroups = ["reviewers"] as const;
+const defaultMaxWorkProcesses = 100;
+const defaultMaxWorkTasks = 1_000;
 
 export type PlatformServerConfig = Readonly<{
   host: string;
@@ -24,6 +28,10 @@ export type PlatformServerConfig = Readonly<{
   temporalNamespace: string;
   temporalTaskQueue: string;
   temporalConnectTimeoutMs: number;
+  fakeActorId: string;
+  fakeActorGroups: readonly string[];
+  maxWorkProcesses: number;
+  maxWorkTasks: number;
 }>;
 
 export type ValidatedPlatformServerConfig = Readonly<
@@ -81,6 +89,22 @@ export function readPlatformServerConfig(
       "PLATFORM_TEMPORAL_CONNECT_TIMEOUT_MS",
       defaultTemporalConnectTimeoutMs,
     ),
+    fakeActorId: readNonemptyString(
+      environment,
+      "PLATFORM_FAKE_ACTOR_ID",
+      defaultFakeActorId,
+    ),
+    fakeActorGroups: readFakeActorGroups(environment),
+    maxWorkProcesses: readPositiveSafeInteger(
+      environment,
+      "PLATFORM_MAX_WORK_PROCESSES",
+      defaultMaxWorkProcesses,
+    ),
+    maxWorkTasks: readPositiveSafeInteger(
+      environment,
+      "PLATFORM_MAX_WORK_TASKS",
+      defaultMaxWorkTasks,
+    ),
   };
 }
 
@@ -100,7 +124,43 @@ export function snapshotPlatformServerConfig(
     config.temporalConnectTimeoutMs,
     "temporalConnectTimeoutMs",
   );
-  return { ...config, publicOrigin };
+  requireNonempty(config.fakeActorId, "fakeActorId");
+  const fakeActorGroups = snapshotFakeActorGroups(config.fakeActorGroups);
+  requirePositiveSafeInteger(config.maxWorkProcesses, "maxWorkProcesses");
+  requirePositiveSafeInteger(config.maxWorkTasks, "maxWorkTasks");
+  return { ...config, publicOrigin, fakeActorGroups };
+}
+
+function readFakeActorGroups(environment: NodeJS.ProcessEnv): readonly string[] {
+  const encoded = environment.PLATFORM_FAKE_ACTOR_GROUPS_JSON;
+  if (encoded === undefined) return [...defaultFakeActorGroups];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(encoded);
+  } catch {
+    throw new TypeError("PLATFORM_FAKE_ACTOR_GROUPS_JSON must be a strict JSON array");
+  }
+  try {
+    return snapshotFakeActorGroups(parsed);
+  } catch (error: unknown) {
+    throw new TypeError("PLATFORM_FAKE_ACTOR_GROUPS_JSON is invalid", { cause: error });
+  }
+}
+
+function snapshotFakeActorGroups(value: unknown): readonly string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new TypeError("fake actor groups must be a nonempty array");
+  }
+  const groups = value.map((group) => {
+    if (typeof group !== "string" || group.length === 0 || !group.isWellFormed()) {
+      throw new TypeError("fake actor group must be nonempty well-formed Unicode");
+    }
+    return group;
+  });
+  if (new Set(groups).size !== groups.length) {
+    throw new TypeError("fake actor groups must be unique");
+  }
+  return Object.freeze(groups);
 }
 
 function readNonemptyString(
