@@ -1,0 +1,190 @@
+# BPM platform Process-instance search proposal
+
+## Status
+
+**Draft; implementation is prohibited until context-cold proposal review approves an immutable target.** This is the final M2 Product 2 increment. It selects a durable search index over Process starts that Product 2 has itself confirmed through the existing public start, Timer Schedule, or Message Start publication paths. It adds no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, Workflow behavior, Lean theorem, CIB relationship, or Temporal discovery mechanism.
+
+The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary and states that cross-instance discovery is a platform problem. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#what-the-platform-may-consume) forbids reconstructing semantic facts from Temporal Event History, state differences, or platform guesses. [ARCHITECTURE.md](ARCHITECTURE.md#business-modules) assigns instance operations and monitoring to the `operate` module. [PLAN.md](PLAN.md) owns sequencing.
+
+## Product question
+
+What is the smallest truthful Process-instance search surface Product 2 can provide from facts it already receives, without pretending it knows current semantic state?
+
+The engine currently publishes an exact semantic Process-instance identity and deployed definition after a confirmed start. It does not publish a trustworthy current running/completed status, start timestamp, completion timestamp, transition record, token position, or cross-instance feed. M2 search therefore indexes only confirmed start facts and omits every absent fact.
+
+## Selected account
+
+A search item means exactly this:
+
+> Product 2 completed one of its existing public start paths far enough to receive a confirmed semantic Process-instance identity, and durably recorded that exact public fact before returning the successful response that exposed it.
+
+The three admitted producers are:
+
+1. body-free exact-version definition start returning `started`;
+2. one-shot definition Schedule reaching `started`;
+3. Message Start publication reaching `accepted`.
+
+Pending, scheduled, missed, cancelled, rejected, indeterminate, integrity-failed, and host-only executions create no search item. Search absence is not proof that no Temporal Workflow exists. In particular, the existing non-idempotent direct-start route can lose its response after host acceptance but before Product 2 records success. That pre-existing M1 ambiguity is outside this increment and must not be disguised as an empty search result with stronger meaning.
+
+Instances started through the engine runner, a Temporal client, or another adopter outside the Product 2 public API are also absent by definition.
+
+## Public contract
+
+The public contract reuses the existing immutable public Process-instance identity and adds only one request and one page:
+
+```ts
+type ProcessInstanceSearchRequest = Readonly<{
+  processInstanceId?: string;
+  processId?: string;
+  version?: number;
+  sourceSha256?: string;
+  cursor?: string;
+  limit?: number;
+}>;
+
+type ProcessInstanceSearchPage = Readonly<{
+  instances: ReadonlyArray<PublicProcessInstanceIdentity>;
+  nextCursor: string | null;
+}>;
+```
+
+`PublicProcessInstanceIdentity` remains the single owner of semantic instance plus exact deployed-definition identity. Search adds no origin, lifecycle status, or timestamp.
+
+All nested fields are compile-time immutable. Strict unknown decoders reject missing, extra, empty, malformed, unsafe-number, wrong-union, and private host fields. The response decoder reuses the existing exact public Process-instance decoder, so source identity, semantic profile, Process ID, version, and both start-capability collections remain complete.
+
+## Search and cursor semantics
+
+`GET /api/v1/process-instances` is the only new route. It accepts each of `processInstanceId`, `processId`, `version`, `sourceSha256`, `cursor`, and `limit` at most once and rejects every unknown query key.
+
+The first four filters are optional exact matches. `sourceSha256` is exactly 64 lowercase hexadecimal characters. There is no substring, fuzzy, normalized, case-insensitive, variable, task, status, timestamp, payload, origin, or full-text search. `version` is a positive safe integer. `limit` defaults to 50 and is bounded to 1 through 100.
+
+Results use one private positive safe insertion ordinal, newest first. The public cursor is an opaque versioned encoding of the last returned ordinal. A later request returns only records with smaller ordinals. New insertions therefore do not duplicate or skip older rows already behind a cursor. Rows are append-only and never deleted by this increment. The response exposes neither the ordinal nor a total count.
+
+A cursor may be combined with any filter because it means one global insertion boundary, not a digest of the prior request. The client preserves filters while paging, but the server contract remains well-defined if an external client changes them.
+
+## Durable index and integrity
+
+The first implemented `operate` module owns one separate `process-instances.sqlite` database under the configured platform data directory. Keeping the read index in its owning module avoids coupling its schema to the definitions module's `definitions.sqlite` lifecycle. The database has its own pre-release epoch and strict schema check.
+
+Each row stores:
+
+- one private insertion ordinal;
+- one globally unique semantic `processInstanceId`;
+- the exact public deployed-definition snapshot;
+- indexed copies of Process ID, version, and source digest for exact filtering.
+
+The repository enforces one Process-instance identity globally. Re-recording the byte-equivalent public fact is idempotent. Reusing the same Process-instance identity with a changed definition, source, profile, or capabilities is an integrity failure. The full definition snapshot is decoded and compared on every read rather than trusting filter columns independently.
+
+The index is not an engine source of truth and is not a transition-record projection. It is an append-only Product 2 registry of confirmed starts. Deleting or corrupting its database loses or blocks search but does not alter an engine Process. Rebuild from engine Event History or Temporal Visibility is prohibited. Backfill of starts that predate this feature is excluded.
+
+## Producer integration and failure boundary
+
+The definitions module owns one output port accepting a `PublicProcessInstanceIdentity`. The server composition injects the `operate` service into the existing direct-start, Schedule, and Message-publication services without creating a module-to-module import.
+
+Each service records only after its existing host or durable lifecycle has produced the confirmed state, and before it returns the public success containing that instance:
+
+- direct start records after engine result `started` and before HTTP `201`;
+- Schedule projection records only state `started` and before a successful response exposing the instance;
+- Message publication projection records only state `accepted` and before a successful response exposing the instance.
+
+Schedule and publication retries re-project the same confirmed fact and therefore repair a previous index-write failure idempotently. Their existing durable resource identities remain authoritative for retry. Direct start has no caller-owned idempotency identity, retained receipt, or describe reconciliation, so an index-write failure after host acceptance remains the explicit ambiguity named above and returns no successful public start response.
+
+No database transaction spans a host call or crosses the `definitions` and `operate` databases. The index write is synchronous and atomic within its own database.
+
+## HTTP and UI
+
+The `operate` module owns the search service, SQLite repository, and Fetch-compatible route contribution. The server composes it before the generic not-found path and closes it with the other repositories.
+
+The HTTP-only React client owns strict route construction, decoding, filter-to-response checks, duplicate Process-instance refusal across pages, and cursor-preserving pagination. The global Process-instance panel exposes exact Process-instance, Process ID, version, source ID and digest, and semantic profile. It labels the list as confirmed starts and does not display a running/completed badge or inferred time.
+
+The UI provides exact filters for Process-instance ID, Process ID, version, and source digest, plus search and load-more actions. Definition links may use existing public routes, but instance detail, diagram overlay, task state, and history remain absent.
+
+## Temporal hosting and refinement preflight
+
+This increment adds no Temporal client, Workflow, Worker, Query, Update, Signal, Schedule, Search Attribute, Visibility, Memo, Event History, or replay mechanism. It consumes only the public success facts already produced by three independently evidenced Product 2 start paths.
+
+The smallest live witness starts one instance through each admitted producer path using the production HTTP server and real existing Temporal hosting, then searches only through the new public API. Worker absence or replacement remains owned by the existing scheduling and Message ingress specifications and is not re-proved here.
+
+The nearest realistic wrong account is a search implementation backed by Temporal Visibility or Event History. The product-boundary guard must reject those imports, and the witness must recursively reject Workflow IDs, Run IDs, task queues, Memo, history, and insertion ordinals from every public response and browser surface.
+
+## Rules and evidence
+
+| Rule | Required evidence | Separating failure |
+|---|---|---|
+| `PSEARCH-FACT-01` | Direct start, started Schedule, and accepted Message publication each record one exact public identity before success returns | Omitting any one producer makes the three-receipt identity set fail |
+| `PSEARCH-EXACT-01` | Repository reopen and public decoder preserve full definition/source/profile/capability identity | Same Process-instance ID with changed version, source digest, or capability is rejected |
+| `PSEARCH-STATE-01` | Pending, scheduled, missed, cancelled, rejected, indeterminate, and integrity-failed inputs create no item | Treating resource existence as a started Process fails focused service tests |
+| `PSEARCH-PAGE-01` | Newest-first limit-plus-one paging remains stable when a newer row is inserted between pages | Offset pagination duplicates or skips an older row |
+| `PSEARCH-BOUNDARY-01` | Product and Temporal boundary guards plus recursive public-value scan | Any Workflow/Run/task-queue/Memo/history/private-ordinal field fails |
+| `PSEARCH-UI-01` | Browser search and exact filters render three distinct Process instances and their exact definitions | Aliasing Process ID, semantic instance ID, source digest, or definition version fails field-specific assertions |
+
+The live witness uses production public routes to create all three records, restarts the server over the same index, checks stable pagination and each exact filter, and proves a direct engine start outside Product 2 creates no search row. The browser witness uses the production web panel against the same public contract and never calls a private support endpoint.
+
+## Ownership and headroom
+
+New cohesive owners are:
+
+- `platform/contracts/src/process-instance-search.ts`, `process-instance-search-decoders.ts`, `process-instance-search-routes.ts`, and focused runtime/type tests;
+- `platform/modules/operate/` with separate contracts, values, service, SQLite repository, HTTP routes, tests, package manifest, and README;
+- `platform/modules/definitions/src/process-instance-recording.ts`, which owns the output port and exact mapping for the three existing services;
+- `platform/apps/web/src/process-instance-search-api.ts`, `process-instance-search-panel.tsx`, focused tests, and a separate CSS owner if styling is nontrivial;
+- `showcase/m2-process-instance-search/` with one live test and one browser test.
+
+Mechanically measured existing owners are:
+
+| Path | Current nonblank lines | Headroom |
+|---|---:|---:|
+| `platform/contracts/src/index.ts` | 17 | 583 |
+| `platform/modules/definitions/src/definition-start-service.ts` | 155 | 445 |
+| `platform/modules/definitions/src/definition-schedule-service.ts` | 513 | 87 |
+| `platform/modules/definitions/src/message-start-publication-service.ts` | 493 | 107 |
+| `platform/modules/definitions/src/index.ts` | 96 | 504 |
+| `platform/apps/server/src/composition.ts` | 140 | 460 |
+| `platform/apps/web/src/app.tsx` | 232 | 368 |
+| `platform/apps/web/src/main.tsx` | 26 | 574 |
+
+The two larger lifecycle services receive only one recording call each; exact public-identity mapping and validation belong in the new recording owner. New feature tests do not grow the near-limit schedule-service or definition-route test owners. Every listed platform source path is bound by the Product 2, Temporal, source-hygiene, project, and registry guards reported by `what-binds`; the proposal is bound by 31 guards and `docs/README.md`.
+
+## Required, optional, and excluded functionality
+
+Required:
+
+- exact immutable public contract, strict decoders, and safe route builder;
+- append-only SQLite index with strict schema, idempotency, collision refusal, exact snapshots, and cursor paging;
+- all three confirmed Product 2 start producers;
+- global exact-filter HTTP route and HTTP-only React panel;
+- restart, concurrency, pagination, exact-definition, private-field, live, and browser evidence;
+- platform product, Temporal, architecture, source-hygiene, package, registry, and documentation guards.
+
+Optional only if it does not expand the contract:
+
+- links from results to existing definition routes;
+- a UI empty-state explanation that search covers confirmed Product 2 starts only.
+
+Excluded:
+
+- current running/completed/failed/cancelled status, start or completion timestamps, duration, variables, waits, tasks, incidents, tokens, transition history, diagram position, or audit actor;
+- Event History, Temporal Visibility, Search Attributes, Workflow Query fanout, state differencing, polling every Workflow, or a new engine observation;
+- instance detail, command submission, cancellation, task interaction, forms, identity, authorization, retention, deletion, export, aggregation, mining, full-text search, or fuzzy matching;
+- starts outside Product 2, historical backfill, and retry-transparent recovery for the existing body-free direct-start ambiguity;
+- new BPMN semantics, profile, checked graph, IL, semantic-core transition, Workflow behavior, Lean proof, CIB relationship, Schedule policy, Message routing, broker, or fanout.
+
+## Acceptance and review sequencing
+
+After proposal approval, red/green implementation begins with the public contract, `operate` repository/service, and all three producer integrations. Because this changes a public observation and durable schema, that first green target receives a context-cold semantic-checkpoint review before HTTP UI and live evidence continue.
+
+Closure requires the focused package gates, both platform harness type gates, Product 1/Product 2 and Temporal boundary guards, source hygiene, a real three-producer live witness, headless Chromium acceptance, the complete repository and M2 showcase gates, reproducible cost comparison, exact status updates, and governed closure review. Warm closure is eligible only if the approved checkpoint reviewer, descendant target, continuity manifest, and unchanged contract/exclusions/evidence strategy satisfy the guarded rule.
+
+## Common-mode risks and nearest unsupported claim
+
+The three producer paths and the search index are all Product 2 code, so their agreement is not independent evidence that a Temporal Workflow exists or remains live. The live witness uses each existing production start path to separate wiring omissions, but the search claim remains exactly the persisted public confirmation, not host discovery.
+
+The strongest supported claim is stable cross-instance search over confirmed Product 2 starts with exact immutable definition identity. The nearest unsupported claim is complete discovery of every engine Process instance, including a direct start whose successful host RPC lost its Product 2 response. Closing that gap requires a separately approved durable idempotent direct-start receipt or engine publication feed, not a Temporal history scan.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

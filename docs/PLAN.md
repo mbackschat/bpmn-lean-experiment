@@ -155,7 +155,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: design and implement Product 2 Process-instance search.** This final M2 increment needs a durable cross-instance index over engine-published Process facts, strict HTTP and UI surfaces, and an acceptance witness. It must not infer semantic state from Temporal Event History or expose private Workflow identity.
+1. **Active: review and implement Product 2 Process-instance search.** The [draft proposal](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-PROPOSAL.md) selects a durable append-only index over Product 2-confirmed direct, Timer Schedule, and Message publication starts, with exact filters and stable cursor paging. It deliberately omits current semantic status and timestamps because the engine does not publish them. Commit the proposal, obtain context-cold approval, then proceed through the required public-contract checkpoint before HTTP, UI, and acceptance evidence.
 
 ## Approved decisions
 
@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: define the smallest complete Product 2 Process-instance search contract, identify the engine publication facts it can consume without Event History inference, and route the proposal through context-cold review before implementation.** Message Start ingress is graduated at closure target `f13b01f` with approved correction target `875b1e5`.
+**Next action: commit and context-cold review the [Product 2 Process-instance search proposal](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-PROPOSAL.md), then implement its first green public-contract and durable-index checkpoint if approved.** Message Start ingress is graduated at closure target `f13b01f` with approved correction target `875b1e5`.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
