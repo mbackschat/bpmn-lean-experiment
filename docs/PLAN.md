@@ -78,9 +78,9 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 **Platform increments.** The pluggable identity boundary with a fake default, the shared task inbox, claim and release as platform-owned authorization, form projection, and the audit record of who acted.
 
-The [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md) selects one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox. Its cold proposal review may proceed while E2 is paused, but Product 2 implementation may not consume metadata until E2 closure is approved and the human-work proposal is owner-approved.
+The [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md) selects one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox. Its cold proposal review returned `APPROVE WITH REQUIRED EDITS`; the corrected contract and owner plan are awaiting the same reviewer's warm audit. Product 2 implementation may not consume metadata until E2 closure is approved and the human-work proposal is owner-approved.
 
-**Exit gate.** The inbox matches the engine's published open User Tasks exactly; no platform component constructs an occurrence identity; every state-changing action is an authorized engine command; and a non-string value survives the round trip through all declared targets.
+**Exit gate.** The internal system-visible aggregation matches the engine's published open User Tasks exactly before actor-policy projection; no platform component constructs an occurrence identity; every engine state-changing action is authorized against the exact published occurrence; platform claim and audit state remains distinct from BPMN meaning; and a non-string value survives the round trip through all declared targets.
 
 ### M4 — it survives going wrong
 
@@ -264,7 +264,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain owner direction for the E2 review stage while cold-reviewing the M3 human-work proposal.** E2 production behavior is focused-green, but its second correction audit requires admitted decimal/hexadecimal namespace-reference controls, exact duplicate-cardinality diagnostics, and one process-ledger recurrence correction before approval. The project review policy forbids an unattended third audit. Product 2 proposal work may continue, but implementation and E2 graduation remain paused until the owner authorizes another audit, requests redesign, or defers the increment.
+**Next action: obtain owner direction for the E2 review stage while completing the same-reviewer correction audit of the M3 human-work proposal.** E2 production behavior is focused-green, but its second correction audit requires admitted decimal/hexadecimal namespace-reference controls, exact duplicate-cardinality diagnostics, and one process-ledger recurrence correction before approval. The project review policy forbids an unattended third audit. Product 2 proposal work may continue, but implementation and E2 graduation remain paused until the owner authorizes another audit, requests redesign, or defers the increment.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

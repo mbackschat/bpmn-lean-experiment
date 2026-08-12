@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft for independent cold proposal review.** This proposal selects the smallest complete M3 human-work contract: a current cross-instance inbox, platform-owned claim and authorization policy, one typed form field, retry-safe completion, and distinct platform audit. Implementation remains paused until the [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) receives closure approval and this proposal receives owner approval after its cold review.
+**Draft under correction after independent cold proposal review.** This proposal selects the smallest complete M3 human-work contract: a current cross-instance inbox, platform-owned claim and authorization policy, one typed form field, retry-safe completion, and distinct platform audit. The original immutable target received `APPROVE WITH REQUIRED EDITS`; the corrected target must receive a same-reviewer warm audit before owner approval. Implementation remains paused until the [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) receives closure approval and this proposal receives owner approval.
 
 ## Independent cold-review receipt
 
@@ -24,50 +24,64 @@ A work item means one currently open User Task obtained from the engine's commit
 
 The M3 producer set is the same confirmed-start set as [Process-instance search](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md#selected-account): direct exact-version start, a one-shot Schedule that reached `started`, and a Message Start publication that reached `accepted`. Instances started outside Product 2 remain absent. Inbox absence is never evidence that no other engine Process or User Task exists.
 
-An inbox refresh returns one complete actor-visible snapshot or a closed `workSnapshotUnavailable` error. A matching retained engine completion receipt moves a private Process registration to positively closed, after which it needs no task Query. The platform never treats host absence as completion and never silently drops an active or indeterminate registration whose current engine observation is unavailable. A configured Process and task ceiling bounds one request; exceeding it returns the same explicit unavailable result rather than a partial page. M3 therefore has no unstable live-task pagination.
+An inbox refresh first builds one complete system-visible aggregation equal to the fresh engine-published task sets for every nonclosed confirmed registration. Actor policy is a separate projection over that complete aggregation. The equality oracle runs before policy filtering, so an authorization rule cannot hide a missing producer or task from the engine-to-platform agreement check.
+
+A matching retained engine completion receipt moves a private Process registration to positively closed, after which it needs no task Query. The platform never treats host absence as completion and never silently drops an active or indeterminate registration whose current engine observation is unavailable. A configured Process and task ceiling bounds one request; an unresolved nonclosed registration or an exceeded ceiling returns a closed `workSnapshotUnavailable` result rather than a partial system or actor snapshot. M3 therefore has no unstable live-task pagination.
 
 ## Private engine address
 
 Semantic Process-instance identity and Temporal Workflow identity remain distinct. Direct and Message starts use the canonical Process Workflow address, while a Timer Schedule may return an opaque execution Workflow address different from its configured base. Querying every Process by semantic identity would therefore miss or misaddress scheduled work.
 
-Product 1 supplies one opaque private Process-work locator with each confirmed start. The Schedule path binds it to the service-returned execution Workflow address. Only the engine gateway interprets the locator through three narrowed operations: observe current open tasks, read one task detail, and submit one exact completion command.
+Product 1 owns an opaque `EngineProcessWorkLocator` and supplies one with each confirmed start. Direct and Message starts mint it from Product 1's canonical Process Workflow address. The Schedule path mints it only from the service-returned `executionWorkflowId`, never the configured Workflow-ID base. Only the engine gateway interprets the locator through three narrowed operations: `observeOpenWork`, `readWorkDetail`, and `completeWork`.
 
-The private locator is stored with the confirmed Product 2 registration and is immutable for that semantic Process identity. Re-recording the same public identity and locator is idempotent; changing either is an integrity failure. The locator never appears in public contracts, HTTP, browser state, audit, logs intended for adopters, task identity, or Process-instance search.
+The private locator is stored with the confirmed Product 2 registration and is immutable for that semantic Process identity. Re-recording the same public identity and locator is idempotent; changing either is an integrity failure. The locator never appears in public contracts, HTTP, browser state, audit, task identity, Process-instance search, or any logger input. Internal diagnostics use the registration identity and classified gateway outcome instead.
 
 The gateway returns only engine public facts and closed host outcomes. If a task Query cannot run, it may resolve a matching retained completed-Process receipt and return `closed`; unresolved absence returns `unknown`, never `closed`. Product 2 does not import Temporal Event History, derive tasks from state differences, construct task occurrences, infer Workflow completion from absence, or reconstruct a Schedule address from its configured base.
 
+The private registration classification is a closed state machine:
+
+| Stored state | Gateway observation | Next state | Snapshot effect |
+|---|---|---|---|
+| `active` or `indeterminate` | successful Query with zero or more exact open tasks | `active` | contributes the exact task set |
+| `active` or `indeterminate` | matching retained completed-Process receipt | `closed` | contributes no task and is not queried again |
+| `active` or `indeterminate` | unresolved `unknown` or infrastructure `unavailable` | `indeterminate` | fails the complete snapshot as `workSnapshotUnavailable` |
+| `closed` | no gateway call | `closed` | contributes no task |
+
+`indeterminate` remains registered and retryable. A successful zero-task Query establishes `active`; zero tasks alone never establishes `closed`.
+
 ## Public contract
 
-Every transport type is deeply immutable, strictly decoded, and closed to unknown fields. The examples below show the minimal shape; the existing public definition and Process-instance contracts remain their single owners.
+Every transport type is `DeepReadonly`, strictly decoded, and closed to unknown fields. The examples below show the complete semantic shape; route files own the exact encodings, size limits, and status mappings. The existing public definition and Process-instance contracts remain their single owners.
 
 ```ts
-type PublicWorkTask = Readonly<{
-  task: Readonly<{
-    id: Readonly<{
+type PublicWorkTask = DeepReadonly<{
+  task: {
+    id: {
       processInstanceId: string;
       elementId: string;
       activation: number;
-    }>;
+    };
     name: string | null;
     state: "active";
-    metadata?: Readonly<{
-      assignment: Readonly<{
-        candidates: readonly [Readonly<{ kind: "group"; id: string }>];
-      }>;
-      form: Readonly<{
-        fields: readonly [Readonly<{
+    metadata?: {
+      assignment: {
+        candidates: readonly [{ kind: "group"; id: string }];
+      };
+      form: {
+        fields: readonly [{
           key: string;
           type: "string" | "boolean";
-        }>];
-      }>;
-    }>;
-  }>;
+        }];
+      };
+    };
+  };
   hostingInstance: PublicProcessInstanceIdentity;
-  claim: null | Readonly<{ actorId: string; revision: number }>;
+  claimGeneration: number;
+  claim: null | { actorId: string; generation: number };
   claimableByCurrentActor: boolean;
 }>;
 
-type WorkTaskSnapshot = Readonly<{
+type WorkTaskSnapshot = DeepReadonly<{
   tasks: readonly PublicWorkTask[];
 }>;
 ```
@@ -80,9 +94,9 @@ The snapshot is sorted by exact Unicode scalar order of hosting Process identity
 
 The server resolves one `ActorContext` containing a nonempty actor ID and exact group IDs. Requests never choose or override the actor in a body, query, or task identifier. M3 provides a pluggable identity-policy boundary and a configured fake implementation; it selects no authentication provider and makes no authentication-strength claim.
 
-The actor-visible inbox contains tasks the policy permits the actor to view and exposes that policy's current claimability decision. The selected metadata candidate group governs claim eligibility. The default fake policy shows metadata-free tasks for operational awareness with `claimableByCurrentActor: false`; a configured policy may hide them. A metadata-free task is never claimable or form-completable through this contract. Metadata does not become an engine completion precondition.
+The system-visible aggregation contains every task in the fresh engine observations. The actor policy then projects it to the public inbox. The selected metadata candidate group governs claim eligibility. The default fake policy shows eligible unclaimed tasks and the current actor's claims, hides ineligible tasks and another actor's claims, and hides metadata-free tasks. Focused evidence must separately prove the system aggregation still contains eligible, ineligible, and metadata-free tasks before filtering. A metadata-free task is never claimable or form-completable through this contract. Metadata does not become an engine completion precondition.
 
-Claiming is a platform compare-and-set over the complete engine task occurrence. The same actor may retry an identical claim idempotently. Another actor receives a conflict. Only the claimant may release or complete. A release carries the observed revision and refuses stale, absent, or foreign claims without changing state.
+Claiming is a platform compare-and-set over the complete engine task occurrence. Every occurrence owns a monotonic `claimGeneration` that increases on claim and release, is never reset or reused while unclaimed, and survives restart. The same actor may retry the same claim `actionId` idempotently only against the currently live generation. Another actor or a changed `actionId` receives a conflict. Only the claimant may release or complete. A release carries its own action ID and the observed generation and refuses stale, absent, or foreign claims without changing state. A claim, release, reclaim sequence therefore cannot make a stale generation valid again.
 
 Claims are authorization state, not semantic User Task state. Product 2 never reports a claim as a BPMN transition or sends claim/release commands to the engine.
 
@@ -92,26 +106,26 @@ Task detail is re-read from the engine through the stored locator and exact task
 
 ```ts
 type PublicFormValue =
-  | Readonly<{ kind: "absent" }>
-  | Readonly<{ kind: "null" }>
-  | Readonly<{ kind: "string"; value: string }>
-  | Readonly<{ kind: "boolean"; value: boolean }>;
+  | DeepReadonly<{ kind: "absent" }>
+  | DeepReadonly<{ kind: "null" }>
+  | DeepReadonly<{ kind: "string"; value: string }>
+  | DeepReadonly<{ kind: "boolean"; value: boolean }>;
 
-type PublicTaskDetail = Readonly<{
+type PublicFormField =
+  | DeepReadonly<{ key: string; type: "string"; currentValue: Extract<PublicFormValue, { kind: "absent" | "null" | "string" }>; compatibility: "compatible" }>
+  | DeepReadonly<{ key: string; type: "boolean"; currentValue: Extract<PublicFormValue, { kind: "absent" | "null" | "boolean" }>; compatibility: "compatible" }>
+  | DeepReadonly<{ key: string; type: "string"; currentValue: Extract<PublicFormValue, { kind: "boolean" }>; compatibility: "incompatible" }>
+  | DeepReadonly<{ key: string; type: "boolean"; currentValue: Extract<PublicFormValue, { kind: "string" }>; compatibility: "incompatible" }>;
+
+type PublicTaskDetail = DeepReadonly<{
   workTask: PublicWorkTask;
-  form: null | Readonly<{
-    fields: readonly [Readonly<{
-      key: string;
-      type: "string" | "boolean";
-      currentValue: PublicFormValue;
-    }>];
-  }>;
+  form: null | { fields: readonly [PublicFormField] };
 }>;
 ```
 
 Absence, semantic null, Boolean false, and string `"false"` remain distinct. A string field renders as a text field. A Boolean field renders as an unselected `true` or `false` choice when the current value is absent or null, rather than as an unchecked checkbox that would silently convert absence to false.
 
-Completion requires exactly the published field key and exactly one string or Boolean value matching the published field type. This is Product 2 request validation for its generated form, not an engine form-validation claim. Labels, requiredness, defaults, constraints, mapping, and generalized form semantics are absent.
+E2 metadata is passive, so the observed value may disagree with the declared field type. The detail preserves that raw value as `incompatible`, renders it read-only, and disables completion with `formValueIncompatible`; it never stringifies, parses, defaults, or hides the mismatch. Completion requires a compatible detail, exactly the published field key, and exactly one string or Boolean value matching the published field type. This is Product 2 request validation for its generated form, not an engine form-validation claim. Labels, requiredness, defaults, constraints, mapping, and generalized form semantics are absent.
 
 ## HTTP resources
 
@@ -120,35 +134,123 @@ The public surface is:
 - `GET /api/v1/work-tasks` for one complete current actor-visible snapshot;
 - `GET /api/v1/work-tasks/{taskProcessInstanceId}/{elementId}/{activation}` for current task detail;
 - `PUT /api/v1/work-tasks/{taskProcessInstanceId}/{elementId}/{activation}/claim` for an idempotent current-actor claim;
-- `DELETE /api/v1/work-tasks/{taskProcessInstanceId}/{elementId}/{activation}/claim?revision={revision}` for claimant-only release;
+- `DELETE /api/v1/work-tasks/{taskProcessInstanceId}/{elementId}/{activation}/claim?actionId={actionId}&generation={generation}` for claimant-only release;
 - `PUT /api/v1/work-task-completions/{actionId}` for one retry-safe completion action;
 - `GET /api/v1/work-audit` for exact-filtered, opaque-cursor platform audit.
 
 Every path component uses ordinary percent encoding and strict well-formed scalar validation. Query keys are unique and closed. `GET` and `DELETE` accept no body. Mutation bodies have a 4,096-byte decoded JSON ceiling. Wrong methods, duplicate keys, malformed encoding, private fields, unsafe activations, and unknown fields fail before a service call.
 
-The completion action contains the exact task occurrence, observed claim revision, and submitted value. The caller-generated nonempty `actionId` is the engine command identity. Reusing an action ID with byte-equivalent public content is idempotent; changing the task, revision, key, type, or value is a conflict.
+The completion action contains the exact task occurrence, observed claim generation, and submitted value. The caller-generated nonempty `actionId` is the engine command identity. Reusing an action ID with byte-equivalent public content is idempotent; changing the task, generation, key, type, or value is a conflict.
+
+The closed mutation and audit contracts are:
+
+```ts
+type WorkClaimRequest = DeepReadonly<{
+  actionId: string;
+  expectedGeneration: number;
+}>;
+
+type WorkClaimResult = DeepReadonly<{
+  taskId: PublicWorkTask["task"]["id"];
+  claim: { actorId: string; generation: number };
+}>;
+
+type WorkReleaseResult = DeepReadonly<{
+  taskId: PublicWorkTask["task"]["id"];
+  claimGeneration: number;
+  released: true;
+}>;
+
+type WorkReleaseRequest = DeepReadonly<{
+  actionId: string;
+  generation: number;
+}>;
+
+type WorkCompletionRequest = DeepReadonly<{
+  taskId: PublicWorkTask["task"]["id"];
+  expectedClaimGeneration: number;
+  submittedValues: readonly [{ key: string; value: Extract<PublicFormValue, { kind: "string" | "boolean" }> }];
+}>;
+
+type WorkCompletionResult =
+  | DeepReadonly<{ state: "committed"; actionId: string; taskId: PublicWorkTask["task"]["id"] }>
+  | DeepReadonly<{ state: "rejected"; actionId: string; taskId: PublicWorkTask["task"]["id"]; engineResult: { kind: "semantic"; outcome: "rolledBack" | "rejected" | "semanticFailure" | "unsupported" } | { kind: "processClosed" } }>
+  | DeepReadonly<{ state: "indeterminate"; actionId: string; taskId: PublicWorkTask["task"]["id"] }>;
+
+type WorkAuditAction =
+  | DeepReadonly<{ kind: "claim"; actionId: string; outcome: "claimed" | "idempotent" | "forbidden" | "conflict" }>
+  | DeepReadonly<{ kind: "release"; actionId: string; outcome: "released" | "idempotent" | "forbidden" | "conflict" }>
+  | DeepReadonly<{ kind: "completion"; actionId: string; outcome: "reserved" | "committed" | "rejected" | "indeterminate" }>;
+
+type WorkAuditEvent = DeepReadonly<{
+  eventId: string;
+  actorId: string;
+  recordedAt: string;
+  hostingProcessInstanceId: string;
+  taskId: PublicWorkTask["task"]["id"];
+  action: WorkAuditAction;
+}>;
+
+type WorkAuditPage = DeepReadonly<{
+  events: readonly WorkAuditEvent[];
+  nextCursor: string | null;
+}>;
+
+type WorkAuditRequest = DeepReadonly<{
+  actorId?: string;
+  taskProcessInstanceId?: string;
+  hostingProcessInstanceId?: string;
+  actionKind?: "claim" | "release" | "completion";
+  cursor?: string;
+  limit?: number;
+}>;
+
+type WorkApiErrorCode = PublicApiErrorCode | "forbidden" | "formValueIncompatible" | "workSnapshotUnavailable";
+
+type WorkApiErrorResponse = DeepReadonly<{
+  error: { code: WorkApiErrorCode; message: string };
+}>;
+```
+
+Audit uses an opaque `v1.` plus nonempty unpadded base64url cursor, default limit 50, and maximum limit 100. It sorts by its private monotonically increasing insertion ordinal but exposes only the opaque cursor. Filters are exact, query keys are unique, and an unknown or malformed cursor is invalid.
+
+The three new error codes extend the single project-owned `PublicApiErrorCode`, `PublicApiErrorResponse`, and strict decoder rather than introducing a parallel error envelope. Existing routes keep their byte-identical error bodies and accepted code subsets.
+
+`GET` success is HTTP 200. A new claim is 201 and an idempotent claim or release is 200. A completion is 200 for `committed` or `rejected` and 202 for `indeterminate`; an engine nonsuccess is a typed domain result, not an invented HTTP failure. Hidden, unknown, no-longer-current, or policy-filtered tasks are uniformly 404. Actor refusal is 403, stale generation or changed action content is 409, incompatible current form value is 422, and a nonpartial snapshot failure is 503. Transport errors are 400, 405, 415, or 413 as applicable; an unclassified repository or gateway failure is 500. `forbidden`, `formValueIncompatible`, and `workSnapshotUnavailable` have route-owned canonical messages, while the existing codes retain their current canonical messages. Every error uses `WorkApiErrorResponse` and exposes no private evidence.
 
 ## Completion lifecycle
 
 Product 2 durably reserves the exact completion action before any engine call. The lifecycle is closed:
 
 ```text
-reserved -> submitting -> committed
-                      +-> rejected
-                      +-> indeterminate
+reserved      -> submitting -> committed
+                            +-> rejected
+                            +-> indeterminate
+indeterminate -> submitting
 ```
 
-Only `reserved` may initiate the first engine call. A possibly transmitted action never becomes a different dispatchable action. Exact retries use the same content-bound engine command, so response loss or platform restart cannot create a second semantic completion. A retained matching engine result closes the action; a semantic refusal closes it as rejected; host absence that cannot distinguish accepted-then-unretained from never accepted becomes durable indeterminate.
+Only `reserved` may initiate the first engine call. Reconciliation may move `indeterminate` back to `submitting` only for the byte-equivalent retained action. A possibly transmitted action never becomes a different dispatchable action. Exact retries use the same content-bound engine command, so response loss or platform restart cannot create a second semantic completion.
+
+The existing engine result maps exactly:
+
+| Engine result | Platform action | Claim and registration effect |
+|---|---|---|
+| `semantic/committed` with matching command identity | `committed` | increment the claim generation, clear the claim, and await the next fresh task observation |
+| `semantic/rolledBack`, `semantic/rejected`, `semantic/semanticFailure`, or `semantic/unsupported` | `rejected` preserving the exact semantic outcome | retain the current claim, clear its active-action slot, and permit a new action after refresh |
+| `processClosed` with an exact matching retained receipt | `rejected` preserving `processClosed` | close the registration and increment the generation while clearing the claim |
+| `processUnknown`, retention-indistinguishable absence, or infrastructure loss after possible transmission | `indeterminate` | retain the claim and active-action slot; permit only the same action to reconcile |
+
+The `processClosed` receipt is checked against the exact hosting Process before classification and remains engine evidence rather than a new Work HTTP field. Its public engine discriminator is preserved as `processClosed`; success is never inferred from a closed Process.
 
 The public completion result is a closed union. `committed` alone reports success. `rejected` reports the engine's public command outcome without inventing a reason. `indeterminate` returns HTTP 202 and exposes no success claim. Changed-content retry, stale claim, another actor, mismatched current task, or a value-type mismatch never calls the engine.
 
-No database transaction spans the engine call. The reservation, result, claim update, and audit writes use explicit compare-and-set transitions. Startup reconciliation revisits `submitting` and `indeterminate` actions through the same exact gateway request and never derives a result from Workflow history.
+No database transaction spans the engine call. The reservation, result, claim update, and audit writes use explicit compare-and-set transitions. At most one nonterminal completion action may occupy a task occurrence and claim generation. Two distinct action IDs racing through independent connections produce exactly one reservation and at most one engine call; the loser receives conflict. Startup reconciliation revisits `submitting` and `indeterminate` actions through the same exact gateway request and never derives a result from Workflow history.
 
 ## Platform audit
 
 Audit is an append-only Product 2 record of actor, policy decision, wall-clock instant, exact task occurrence, action identity, action kind, and closed platform outcome. It is distinct from BPMN semantic history and Temporal Event History.
 
-Claim, release, completion reservation, committed completion, rejection, and indeterminate resolution each produce an exact typed event. Equivalent retries do not duplicate their logical event. Audit exposes no Workflow ID, Run ID, Task Queue, Schedule identity, command transport payload, Temporal status, Event History field, or private locator.
+Claim and release decisions plus completion reservation, commitment, rejection, and indeterminate resolution each produce an exact typed event. A unique `(actionId, outcome)` key makes equivalent retries idempotent without collapsing distinct transitions. Claim and release use their caller-supplied `actionId`; completion uses its content-bound command identity. Audit exposes no Workflow ID, Run ID, Task Queue, Schedule identity, command transport payload, Temporal status, Event History field, or private locator.
 
 Audit paging uses an opaque insertion cursor and exact filters for actor ID, task Process identity, hosting Process identity, and action kind. It adds no claim that its wall-clock order is semantic execution order.
 
@@ -156,9 +258,9 @@ Audit paging uses an opaque insertion cursor and exact filters for actor ID, tas
 
 Product 2 persists only confirmed Process registrations with their private locators and positive active, closed, or indeterminate observation classification, plus claims, completion actions, and audit. `closed` requires a matching engine receipt. It may cache the latest task snapshot for one request, but a cached task row is never semantic authority and is never returned as current without a fresh successful engine observation.
 
-Independent database connections must serialize two-actor claims on the complete task occurrence. Exactly one claimant wins. Equivalent same-actor retries converge. Concurrent distinct completion actions may both cross the host boundary after the same fresh observation, but the engine's exact occurrence admission permits at most one semantic completion; Product 2 records every returned committed or rejected outcome without rewriting it.
+Independent database connections must serialize two-actor claims on the complete task occurrence. Exactly one claimant wins. Equivalent same-actor retries converge. Release and reclaim advance the durable generation, so an old release cannot affect a later claim. A single active-action slot serializes distinct completion action IDs before the host boundary; only the winning reservation may call the engine. Product 2 records the returned committed or rejected outcome without rewriting it.
 
-The pre-release database schema is exact and fail-closed. Corrupt identities, locators, claim revisions, action content, state transitions, or audit values block the affected operation. Rebuilding semantic task state from Temporal Visibility or Event History is prohibited.
+The pre-release database schema is exact and fail-closed. Corrupt identities, locators, claim generations, action content, state transitions, or audit values block the affected operation. Rebuilding semantic task state from Temporal Visibility or Event History is prohibited.
 
 ## User interface and selected stack
 
@@ -178,13 +280,31 @@ The inbox renders Process identity, definition version, task name and occurrence
 The contract is accepted only with all of the following:
 
 1. direct, Timer Schedule, and Message Start producers register exact public identity plus the correct private locator, with a configured-Schedule-base mutation failing;
-2. one live snapshot discovers tasks from all three producers without Event History, including metadata-free Timer/Message controls and one E2 metadata-bearing direct task;
-3. Worker and platform restart preserve discovery, claims, actions, and audit;
-4. independent connections prove same-actor idempotency and exactly one winner in a two-actor claim race;
-5. candidate mismatch, nonclaimant release/completion, stale revision, cross-host task identity, changed action content, extra/missing field, and Boolean stringification fail before or at their owning boundary;
-6. response loss after engine acceptance converges to one committed completion and one logical audit outcome, while retention-indistinguishable absence remains indeterminate;
-7. recursive HTTP and browser scans exclude Workflow, Run, Task Queue, Schedule, history, locator, and transport command fields;
-8. Chromium acceptance uses the production server, Worker, public HTTP client, React Aria controls, TanStack Table/Query, and CSS Modules to find, claim, complete, and remove one exact Boolean task.
+2. one live system snapshot discovers tasks from all three producers without Event History, including metadata-free Timer/Message controls and one E2 metadata-bearing direct task, then actor policy exposes only its authorized projection;
+3. Worker and platform restart preserve discovery, claims, actions, audit, and recovery from indeterminate observation or completion;
+4. independent connections prove same-actor idempotency, exactly one winner in a two-actor claim race, claim-release-reclaim ABA refusal, and at most one host call for two distinct completion actions;
+5. candidate mismatch, nonclaimant release/completion, stale generation, cross-host task identity, changed action content, extra/missing field, and Boolean stringification fail before or at their owning boundary;
+6. response loss after engine acceptance converges to one committed completion and one logical audit outcome, while retention-indistinguishable absence remains indeterminate and retryable;
+7. active, zero-task active, closed, unknown, unavailable, and configured-ceiling observations prove the all-or-error snapshot state machine;
+8. absent, null, Boolean false, string `"false"`, Boolean-under-string, and string-under-Boolean form values prove exact preservation and fail-closed rendering without coercion;
+9. audit equivalent retries deduplicate, distinct lifecycle transitions remain distinct, exact filters page with an opaque cursor, and engine results are asserted independently before the Work result and audit projections;
+10. recursive HTTP, browser, and adopter-log scans exclude Workflow, Run, Task Queue, Schedule, history, locator, and transport command fields;
+11. Chromium acceptance uses the production server, Worker, public HTTP client, React Aria controls, TanStack Table/Query, and CSS Modules to find, claim, complete, and remove one exact Boolean task.
+
+The rule-to-evidence matrix is:
+
+| Rule | Separating executable failure |
+|---|---|
+| Exact three-producer addressing | Replace the Schedule execution locator with its configured base, or omit any producer publication; system aggregation loses or misaddresses that task |
+| Exact system set before actor policy | Compare an independently captured gateway task multiset before filtering; eligible, ineligible, and metadata-free controls must all be present even when two are hidden publicly |
+| Observation classification | Unknown or unavailable registration silently omitted; zero-task Query classified closed; indeterminate cannot recover to active or closed |
+| Monotonic claim generation | Claim, release, reclaim, then replay the first generation from an independent connection; the later claim must remain unchanged |
+| Claim and completion serialization | Two actors claim or two action IDs complete through independent connections; only one claim or active action may cross its owning CAS |
+| Exact form domain | Collapse absent/null/false/`"false"`, coerce either cross-type value, or submit a value different from the published type |
+| Completion reconciliation | Independently capture every Product 1 result, then require the exact Work state, claim effect, and audit event; no shared projector serves as the oracle |
+| Audit identity and paging | Retry the same transition, change content under one action ID, filter every key, and insert beyond a cursor without duplication or reordering |
+| Private-fact exclusion | Plant locator, Workflow, Run, Task Queue, Schedule, and history-shaped fields in every public decoder, browser model, and configured log sink |
+| Restart durability | Stop after reservation and after possible engine acceptance; reopen the same SQLite files and reconcile without a different command or duplicate audit outcome |
 
 ## Required, optional, and excluded functionality
 
@@ -198,7 +318,6 @@ Required:
 
 Optional only if it changes no public or semantic claim:
 
-- a read-only metadata-free task row from the Timer or Message profile as an additional locator control;
 - an explicit manual refresh control in addition to bounded interval refetch.
 
 Excluded:
@@ -213,11 +332,54 @@ Excluded:
 
 ## Versioning consequences
 
-This proposal adds Product 2 HTTP contracts and private platform persistence only. It does not change BPMN source admission, checked graph, Semantic Process IL, semantic runtime state, engine public `OpenUserTask`, completion stimulus, Workflow definition, Lean, CIB evidence, or registered semantic artifacts.
+This proposal changes the Product 1 client and engine API narrowly enough to address existing observations and commands by an opaque locator, then adds Product 2 gateway, HTTP, persistence, policy, audit, and UI contracts. It also requires a behavior-preserving extraction of the existing tuple-preserving `DeepReadonly<T>` into one neutral type-only workspace package because both product contracts must use the single project-owned utility without reversing the product dependency. It does not change BPMN source admission, checked graph, Semantic Process IL, semantic runtime state, engine public `OpenUserTask`, completion stimulus, Workflow definition, Lean, CIB evidence, or registered semantic artifacts.
 
-The existing public Process-instance search response remains byte-identical. Its private confirmed-start recording is widened atomically to carry an opaque locator to the server composition fan-out. The public search index may store or ignore that private value internally, but it never returns it.
+Product 1 adds a cohesive `process-work` engine API and Temporal client subpath rather than growing the existing Process client. Their closed operations accept only `EngineProcessWorkLocator` and return existing `OpenUserTask`, `UserTaskDetail`, and `ProcessCommandResult` facts. The Product 2 engine gateway wraps that contract without importing Temporal. The locator type is opaque outside Product 1 and the gateway.
+
+The existing public Process-instance search response remains byte-identical. The private confirmed-start output port is widened atomically to publish `{instance, locator}` to a server-owned fan-out adapter. Direct and Message paths receive Product 1's canonical locator; Schedule receives a locator minted from its stored service-returned `executionWorkflowId`. Operate records only `instance`; Work records both. No definitions module imports Operate or Work.
 
 The platform is pre-release. Work and audit databases use exact schema epochs with no compatibility reader. Any retained production-data compatibility promise would require a separate version, migration, rollback, and mixed-version contract before release.
+
+## Atomic owner and guard plan
+
+New cohesive owners have the full 600-line source budget and must be registered in their owning README and package indexes:
+
+- `packages/contract-types/src/index.ts` for the byte-identical, type-only `DeepReadonly<T>` extracted from the semantic core and imported by both products; the architecture and product-boundary guard classify this exact package as neutral rather than as Product 1;
+- `packages/engine-api/src/process-work.ts` for the opaque Product 1 locator and closed observe/detail/complete contract;
+- `packages/temporal-adapter/client/src/process-work-client.ts` and a `./process-work` export for separately addressed Queries and completion;
+- `platform/foundation/engine-gateway/src/process-work-gateway.ts` for the Product 2 structural gateway;
+- `platform/foundation/identity-policy/` for `ActorContext`, fake resolution, and exact visibility/claim policy;
+- `platform/foundation/audit/` for typed append-only action records, opaque paging, and SQLite lifecycle;
+- `platform/modules/work/` for private registration, observation aggregation, claims, completion reconciliation, repositories, and HTTP routes;
+- `platform/contracts/src/work-tasks.ts`, `work-task-decoders.ts`, `work-task-routes.ts`, and focused type/runtime tests;
+- `platform/ui-kit/` for React Aria primitives, the TanStack table wrapper, CSS Modules, and focused accessibility tests;
+- cohesive Work API, inbox, task-detail, and `.module.css` owners in `platform/apps/web/`;
+- `showcase/m3-human-work/` for live Temporal, restart/concurrency/private-field, and Playwright evidence.
+
+Measured existing owners and constraints from `node scripts/what-binds.ts` are:
+
+| Existing owner | Headroom | Bindings | Constraint |
+|---|---:|---:|---|
+| [`packages/temporal-adapter/client/src/process-client.ts`](../packages/temporal-adapter/client/src/process-client.ts) | 465/600 | 20 guards, 1 registry | Extract `process-work-client.ts`; do not add the new family here |
+| [`packages/engine-api/src/index.ts`](../packages/engine-api/src/index.ts) | 112/600 | 20 guards, 1 registry | Export only the new cohesive owner |
+| [`platform/foundation/engine-gateway/src/index.ts`](../platform/foundation/engine-gateway/src/index.ts) | 207/600 | 52 guards, 3 registries | Export and compose; keep locator logic in the new owner |
+| [`platform/modules/definitions/src/process-instance-recording.ts`](../platform/modules/definitions/src/process-instance-recording.ts) | 22/600 | 47 guards, 3 registries | Widen the private output port once |
+| [`platform/modules/definitions/src/definition-start-service.ts`](../platform/modules/definitions/src/definition-start-service.ts) | 165/600 | 47 guards, 3 registries | One narrow publication call only |
+| [`platform/modules/definitions/src/definition-schedule-service.ts`](../platform/modules/definitions/src/definition-schedule-service.ts) | 528/600 | 47 guards, 3 registries | Delegate locator minting/publication; extract before any additional responsibility |
+| [`platform/modules/definitions/src/message-start-publication-service.ts`](../platform/modules/definitions/src/message-start-publication-service.ts) | 511/600 | 47 guards, 3 registries | Delegate locator minting/publication; extract before any additional responsibility |
+| [`platform/apps/server/src/composition.ts`](../platform/apps/server/src/composition.ts) | 163/600 | 47 guards, 3 registries | Own fan-out, configuration, route order, and reverse close only |
+| [`platform/apps/web/src/app.tsx`](../platform/apps/web/src/app.tsx) | 241/600 | 47 guards, 3 registries | Compose the new panel; keep behavior in cohesive feature files |
+| [`platform/contracts/src/index.ts`](../platform/contracts/src/index.ts) | 23/600 | 52 guards, 2 registries | Export only the new contract owners |
+
+Before each implementation lane, rerun `what-binds` on every added or grown path. Package manifests, workspace paths, lockfile, harness types, boundary guards, licences, source hygiene, READMEs, root scripts, and the M3 showcase registry are shared root-integration owners. Apart from the type-only `DeepReadonly<T>` import extraction, semantic-core behavior and artifacts remain byte-identical; BPMN source, Workflow, Lean, CIB, E2 artifacts, and differential owners remain byte-unchanged.
+
+The implementation is atomically specified but lands through three guarded checkpoints:
+
+1. neutral `DeepReadonly<T>` extraction, Product 1 locator plus observe/detail/complete, the widened confirmed-start publication, Product 2 gateway, and strict public contract types;
+2. identity policy, Work registration and observation, claims, completion reconciliation, audit, SQLite, and HTTP composition;
+3. React Aria/TanStack/CSS-Modules UI plus live Temporal and Chromium evidence.
+
+Checkpoint 1 requires the package-boundary and semantic checkpoint review because it changes engine-to-platform addressing and public observation plumbing. Later checkpoints may proceed only against its approved immutable contract. The root integrator alone updates shared manifests, registries, status documents, commits, and the complete applicable gate.
 
 ## Material risks and stop conditions
 
