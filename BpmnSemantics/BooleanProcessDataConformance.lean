@@ -104,7 +104,7 @@ theorem process_scope_merge_preserves_submitted_value
       [submittedBinding value] := by
   rfl
 
-/-- Every old profile refuses Boolean completion data with exact state preservation. -/
+/-- The prior sequential User Task profile refuses Boolean completion data with exact state preservation. -/
 theorem old_profile_boolean_refusal_preserves_exact_state :
     oldProfileBooleanRefusal =
       { outcome := .rejected

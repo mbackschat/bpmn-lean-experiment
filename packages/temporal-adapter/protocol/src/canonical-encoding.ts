@@ -10,7 +10,7 @@ export type CanonicalTupleValue =
  * Encodes domain-separated typed tuples without depending on host object-key ordering.
  *
  * Callers own the tuple shape and domain tag. This function owns the shared wire scalar domain:
- * exact Unicode scalar strings and non-negative JavaScript-safe integers.
+ * Booleans, exact Unicode scalar strings, and non-negative JavaScript-safe integers.
  */
 export function canonicalTypedTupleEncoding(
   value: ReadonlyArray<CanonicalTupleValue>,

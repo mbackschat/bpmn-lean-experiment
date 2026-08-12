@@ -58,7 +58,8 @@ The package script supplies the exact replacement opt-in. The command executes a
 
 | File | Responsibility |
 |---|---|
-| [ScenarioProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | Current typed scenario, trace, outcome, diagnostics, and PVM vocabulary |
+| [ScenarioProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | Current typed scenario, trace, outcome, and semantic observation vocabulary |
+| [ScenarioDiagnosticsProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java) | Diagnostics, raw task/timer/effect evidence, PVM projection, timing, and cleanup vocabulary |
 | [ScenarioInteractionProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | Closed canonical interaction union |
 | [ScenarioMessageProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioMessageProtocol.java) | Message stimulus, channel, subscription, and interaction vocabulary |
 | [ScenarioJson.java](src/main/java/org/bpmnlean/cibseven/ScenarioJson.java) | Strict Jackson codec |

@@ -10,6 +10,26 @@ import org.junit.Test;
 /** Wire-decoder guards that must survive before typed scenario construction. */
 public class ScenarioJsonTest {
 
+  private static String scenarioWithInitialValue(String value) {
+    return """
+        {
+          "kind": "scenario",
+          "id": "boolean-wire",
+          "profile": "profile",
+          "bpmn": {"id": "bpmn", "relativePath": "process.bpmn", "sha256": "x"},
+          "stimuli": [{
+            "kind": "startProcess",
+            "commandId": "start",
+            "processId": "Process_1",
+            "instanceId": "Instance_1",
+            "initialVariables": [{"name": "decision", "value": %s}]
+          }],
+          "observations": [],
+          "provenance": {"normativeRefs": [], "cibRevision": "r", "cibRefs": []}
+        }
+        """.formatted(value);
+  }
+
   @Test
   public void rejectsDuplicateObjectKeys() {
     var duplicateKind =
@@ -29,6 +49,17 @@ public class ScenarioJsonTest {
     assertThrows(
         JsonProcessingException.class,
         () -> ScenarioJson.read(duplicateKind));
+  }
+
+  @Test
+  public void rejectsMissingAndNullBooleanPayloads() {
+    for (var malformed : List.of(
+        "{\"kind\":\"boolean\"}",
+        "{\"kind\":\"boolean\",\"value\":null}")) {
+      assertThrows(
+          JsonProcessingException.class,
+          () -> ScenarioJson.read(scenarioWithInitialValue(malformed)));
+    }
   }
 
   @Test

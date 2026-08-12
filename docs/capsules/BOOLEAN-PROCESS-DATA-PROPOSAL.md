@@ -26,7 +26,7 @@ The M3 demo needs both a non-string value and E2 User Task assignment/form metad
 2. Number would require an exact integer, decimal, range, and cross-language precision policy. Recursive JSON would additionally require object-key ordering, array and depth limits, and serialization ownership. Neither policy is needed to prove the first M3 value round trip.
 3. E2 first would freeze a misleading form contract. BPMN User Task renderings and the selected CIB `formKey` surfaces do not define typed fields, so E2 would either advertise a Boolean field the engine cannot carry or publish string/null-only metadata that this value increment immediately replaces. Assignment alone would not be the named E2 prerequisite.
 
-The selected profile ID is `cibseven-2.2.0-user-task-boolean-completion-data-draft`. It reuses the exact sequential two-User-Task checked graph and Semantic Process program shape of `cibseven-2.2.0-user-task-process-data-draft`. It differs only in its admitted User Task completion value domain and classified CIB extension. Process Start remains the existing string/null extension.
+The selected profile ID is `cibseven-2.2.0-user-task-boolean-completion-data-draft`. It reuses the exact sequential one-User-Task checked graph and Semantic Process program shape of `cibseven-2.2.0-user-task-process-data-draft`. It differs only in its admitted User Task completion value domain and classified CIB extension. Process Start remains the existing string/null extension. The separate CIB phase-zero calibration uses two User Tasks so it can observe the submitted value before Process completion; that probe topology is not the profile graph.
 
 ## Authority and CIB relationship
 
@@ -206,7 +206,7 @@ A new cohesive `semantic-profile-value-domain.ts` and Lean `SemanticProcess/Valu
 | [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 203 |
 | [Lean effect-patch data boundary](../../BpmnSemantics/SemanticProcess/Data.lean) | 479 |
 | [Lean Simple Boolean evaluator](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean) | 471 |
-| [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 167 |
+| [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 163 |
 | [Java scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 19 |
 | [Java state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 318 |
 | [Retained CIB artifact contract](../../scripts/contract-artifacts.ts) | 13 |

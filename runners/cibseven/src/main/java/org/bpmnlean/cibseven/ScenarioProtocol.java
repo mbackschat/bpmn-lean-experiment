@@ -315,7 +315,11 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record BooleanValue(boolean value) implements VariableValue {}
+  public record BooleanValue(Boolean value) implements VariableValue {
+    public BooleanValue {
+      Objects.requireNonNull(value, "value");
+    }
+  }
 
   public record NullValue() implements VariableValue {}
 
