@@ -70,7 +70,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** The owner-approved Boolean Process-data increment is implemented, registered, and evidence-complete. Closure review remains before the real inbox/form work begins.
+**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) is implemented, registered, evidence-closed, independently closure-reviewed, and graduated. E2 User Task assignment and form metadata is the active engine prerequisite for the real inbox/form work.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
@@ -157,7 +157,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close and graduate the M3 Boolean Process-data profile.** The exact profile, answer-free scenario, retained CIB evidence, differential stringify mutation, runnable example, and live Temporal Worker-replacement/refusal/history/replay witness are implemented. Run the complete gate and guarded warm closure review from approved checkpoint correction `bf21f72`, then graduate before E2.
+1. **Active: define and approve E2 User Task assignment and form metadata.** Select the smallest exact source admission and immutable public projection that can support the M3 inbox and typed form without adding authorization, claim semantics, form validation, a new completion command, or a new Temporal primitive. Run the pinned CIB phase-zero probe and independent cold proposal review before implementation.
 
 ## Approved decisions
 
@@ -194,7 +194,7 @@ Only decisions that constrain the next work are kept here. A decision fully owne
 
 ## Last verified baseline
 
-**Latest complete gate: 2026-08-12, exit 0 at graduated M2 head `73fc587`.** All registered cases reached agreement across their declared targets, every seeded semantic mutation produced its required disagreement, and all 44 live histories passed. The post-graduation complete gate took 208.95 seconds. The immutable closure-target run at `8a87cf4` took 190.77 seconds and has output SHA-256 `4b0c65120a18e346e07f23434bb33c8b806a35cb3e6db2f935d3e99a53745793`; that target-bound result remains the governed review evidence. These are correctness results only, not new performance baselines.
+**Latest complete gate: 2026-08-12, exit 0 at Boolean closure target `9669e8c`.** All registered cases reached agreement across their declared targets, every seeded semantic mutation produced its required disagreement, and all 46 live histories passed. The run took 189.26 seconds and has output SHA-256 `e6f47bb9d009bf9b4d47fe16c74c7b057d6e8ba5240945f0ba62e4564181d812`. The independently reviewed closure corrections after that target changed only focused evidence and documentation owners and passed their proportionate gates. This is a correctness result, not a new performance baseline.
 
 **Two performance baselines are retained, because a catalog change breaks comparability and one figure cannot span it.**
 
@@ -262,11 +262,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: run the Boolean Process-data complete gate and guarded warm closure review.** The registration and all evidence lanes are complete. Bind the exact closure target, resolve any reviewer findings, graduate the proposal to a specification, and only then begin E2. Process Start, effects, mappings, expressions, E2, Product 2, and all old profiles remain unchanged.
+**Next action: define and approve E2 User Task assignment and form metadata.** Begin with the pinned CIB phase-zero probe and a governed proposal that classifies the exact candidate-group and form-field extensions, preserves metadata-free artifacts, enriches only the existing User Task wait/public observation, and leaves completion identity, authorization, validation, Product 2, and Temporal primitives unchanged.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
-**Last verified commands:** `env CI=true ./scripts/pnpm.sh run test:showcase:m2` passed all three M2 live Temporal witnesses and all three Chromium acceptances; the Process-instance search live witness was 1/1 and its browser witness was 1/1. `/usr/bin/time -p env CI=true ./scripts/verify.sh` passed at graduated head `73fc587` in 208.95 seconds; the separately hash-bound closure-target run is recorded above. The focused contract/index/producer, HTTP/server, web, platform harness, product-boundary, Temporal-boundary, source-hygiene, cost, and documentation gates are green.
+**Last verified commands:** `env CI=true ./scripts/verify.sh` passed at Boolean closure target `9669e8c` in 189.26 seconds with 46 live history replays. The exact Boolean Temporal mutation, CIB, semantic, cost, documentation, review-policy, link, and source-hygiene corrections passed their focused gates at the final reviewed target `06ec4a3`.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 

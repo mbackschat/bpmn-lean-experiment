@@ -28,7 +28,7 @@ The live Temporal witness proves the effect-only wait, replaces the Worker durin
 
 Pinned CIB passes through the extension to that User Task with zero jobs and incidents; this trace is retained only as an exclusion oracle and creates no CIB target or relationship. The exact selected slice is closure-reviewed, evidence-closed, and graduated.
 
-**Current Boolean Process-data boundary.** One registered profile reuses the sequential User Task graph and program while admitting primitive Boolean only on exact completion. Strict schemas, TypeScript and Lean admission, CIB projection and retained evidence, command identity, differential execution, the runnable example, and live Worker-replacement/refusal/history/replay are green. Process Start and old profiles remain string/null-only; Product 2 consumes no new fact.
+**Current Boolean Process-data boundary.** The independently closure-reviewed [specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) owns one registered profile that reuses the sequential User Task graph and program while admitting primitive Boolean only on exact completion. Strict schemas, TypeScript and Lean admission, CIB projection and retained evidence, command identity, differential execution, the runnable example, and live Worker-replacement/refusal/history/replay are green. Process Start and old profiles remain string/null-only; Product 2 consumes no new fact.
 
 The Java diagnostics/projection protocol was split before semantic growth, and the constrained Lean admission build passes with one CPU, one thread, no swap, and the standing 3 GiB limit. Registration, retained CIB evidence, differential comparison, live Temporal execution, and replay are complete. Closure approval remains pending.
 

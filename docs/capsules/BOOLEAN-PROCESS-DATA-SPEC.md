@@ -1,8 +1,8 @@
-# Boolean Process-data proposal
+# Boolean Process-data specification
 
 ## Status
 
-**Owner-approved on 2026-08-12; implemented, registered, and evidence-complete pending closure review.** The corrected first green semantic checkpoint is independently approved. The registered profile, answer-free scenario, retained CIB evidence, runnable example, differential stringify mutation, and live Temporal Worker-replacement/refusal/history/replay witness establish the selected Boolean completion claim without changing Process Start, effects, mappings, expressions, Product 2, E2, or any old profile.
+**Implemented, registered, evidence-closed, independently closure-reviewed, and graduated on 2026-08-12.** The registered profile, answer-free scenario, retained CIB evidence, runnable example, differential stringify mutation, and live Temporal Worker-replacement/refusal/history/replay witness establish the selected Boolean completion claim without changing Process Start, effects, mappings, expressions, Product 2, E2, or any old profile.
 
 ## Independent cold-review receipt
 
@@ -10,13 +10,13 @@
 |---|---|---|---|---|
 | Proposal | `9937378` | `fork-turns-none` | `approve-with-required-edits` | `389d748` |
 | Semantic checkpoint | `61d41c5` | `fork-turns-none` | `approve-with-required-edits` | `bf21f72` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `9669e8c` | `fork-turns-none` | `approve-with-required-edits` | `06ec4a3` |
 
-## Question
+## Scope decision
 
-May the existing exact User Task completion command carry a primitive Boolean Process-variable value under one new profile, while every existing profile, Process Start, effect mapping, expression language, BPMN source shape, Semantic Process operation, Temporal primitive, and Product 2 contract retains its current meaning?
+The existing exact User Task completion command may carry a primitive Boolean Process-variable value under one new profile, while every existing profile, Process Start, effect mapping, expression language, BPMN source shape, Semantic Process operation, Temporal primitive, and Product 2 contract retains its current meaning.
 
-The recommendation is **yes, for one exact Boolean completion profile and no broader value-domain claim**. This is the smallest dependency-first M3 increment because it proves one non-string value survives the established command, state, observation, CIB, differential, and Temporal boundaries before E2 assigns typed form metadata to a User Task.
+The selected scope is **one exact Boolean completion profile and no broader value-domain claim**. It proves one non-string value survives the established command, state, observation, CIB, differential, and Temporal boundaries before E2 assigns typed form metadata to a User Task.
 
 ## Selection basis and dependency order
 
@@ -30,7 +30,7 @@ The selected profile ID is `cibseven-2.2.0-user-task-boolean-completion-data-dra
 
 ## Authority and CIB relationship
 
-BPMN 2.0.2 Clauses 10.3.3 and 13.3.3 own the User Task lifecycle but do not define `TaskService.complete(taskId, variables)`, primitive variable serialization, or a universal form-submission-to-Process-variable rule. This proposal therefore does not add a BPMN requirement or claim that Boolean variables are BPMN semantics.
+BPMN 2.0.2 Clauses 10.3.3 and 13.3.3 own the User Task lifecycle but do not define `TaskService.complete(taskId, variables)`, primitive variable serialization, or a universal form-submission-to-Process-variable rule. This specification therefore does not add a BPMN requirement or claim that Boolean variables are BPMN semantics.
 
 The existing [`CIB-EXT-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) stays frozen to string/null completion data, and [`CIB-EXT-0006`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0006--public-process-start-installs-initial-process-variables) stays frozen to string/null start data. Selected [`CIB-EXT-0010`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0010--public-user-task-completion-preserves-a-boolean-process-variable) classifies only the additional Java `Boolean` completion fact.
 
@@ -181,7 +181,7 @@ The nearest unsupported claim is routing on a Boolean Process variable. That req
 
 Pre-release atomic replacement applies to the shared value union and every exhaustive producer/consumer, while the new profile is additive. Existing profile and scenario artifact bytes do not change. No retained production history baseline exists; approval of a durable baseline would require explicit migration, patch, replay, and rollback decisions.
 
-The implementation must atomically update or satisfy the strict [scenario schema](../../contracts/schemas/scenario.schema.json), [CIB evidence schema](../../contracts/schemas/cibseven-evidence.schema.json), [semantic value contract](../../packages/semantic-core/src/contract.ts), [stimulus validator](../../packages/semantic-core/src/stimulus.ts), [semantic deployment admission](../../packages/semantic-core/src/semantic-process-admission.ts), [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts), [effect-data boundary](../../packages/semantic-core/src/semantic-process-data.ts), [Simple Boolean evaluator](../../packages/semantic-core/src/simple-boolean-expression.ts), [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts), [checked profile shapes](../../packages/semantic-core/src/checked-process-profile-shape.ts), [program profile shapes](../../packages/semantic-core/src/semantic-program-profile-shape.ts), and [graph-policy selector](../../packages/semantic-core/src/semantic-process-graph-policy.ts).
+Atomic shared-contract replacement covers the strict [scenario schema](../../contracts/schemas/scenario.schema.json), [CIB evidence schema](../../contracts/schemas/cibseven-evidence.schema.json), [semantic value contract](../../packages/semantic-core/src/contract.ts), [stimulus validator](../../packages/semantic-core/src/stimulus.ts), [semantic deployment admission](../../packages/semantic-core/src/semantic-process-admission.ts), [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts), [effect-data boundary](../../packages/semantic-core/src/semantic-process-data.ts), [Simple Boolean evaluator](../../packages/semantic-core/src/simple-boolean-expression.ts), [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts), [checked profile shapes](../../packages/semantic-core/src/checked-process-profile-shape.ts), [program profile shapes](../../packages/semantic-core/src/semantic-program-profile-shape.ts), and [graph-policy selector](../../packages/semantic-core/src/semantic-process-graph-policy.ts).
 
 The Lean consumers are the [scenario contract](../../BpmnSemantics/Scenario.lean), [JSON support](../../BpmnSemantics/SemanticProcess/JsonSupport.lean), [execution admission](../../BpmnSemantics/SemanticProcess/Execution.lean), [profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean), [effect-patch data boundary](../../BpmnSemantics/SemanticProcess/Data.lean), [Simple Boolean evaluator](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean), and [JSON encoder](../../BpmnSemantics/SemanticProcessJsonMain.lean). The source boundary must retain the same exact checked graph and IL through the [registered-profile compilation oracle](../../packages/bpmn-source/test/boolean-process-data-profile-source.test.ts).
 
@@ -189,42 +189,16 @@ The Java consumers are the [scenario protocol](../../runners/cibseven/src/main/j
 
 The Temporal consumers are the shared [canonical typed-tuple encoder](../../packages/temporal-adapter/protocol/src/canonical-encoding.ts), [command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts), [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts), and [host interaction plan](../../packages/temporal-adapter/runner/src/host-interaction-plan.ts), plus the later profile, scenario, artifact, differential, runnable, and live-evidence registries. The shared encoder recognizes primitive Boolean so command and effect encoders remain exhaustive; profile admission still rejects Boolean effect data.
 
-The Lean effect-patch owner must reject Boolean on both success and BPMN Error result paths. The Lean Simple Boolean evaluator must remain total over the widened union with Boolean counted as present, not null, and unequal to every string. The retained raw evidence contract must preserve Java Boolean as a distinct primitive, and the raw-to-canonical projector must map it to the Boolean tagged value without applying string conversion. A new focused `cib-variable-value-projection.test.ts` owns the Boolean-versus-string mutation and is registered in `test:contracts`; the existing 586/600-line artifact-projection test does not grow.
+The Lean effect-patch owner rejects Boolean on both success and BPMN Error result paths. The Lean Simple Boolean evaluator remains total over the widened union with Boolean counted as present, not null, and unequal to every string. The retained raw evidence contract preserves Java Boolean as a distinct primitive, and the raw-to-canonical projector maps it to the Boolean tagged value without applying string conversion. The focused `cib-variable-value-projection.test.ts` owns the Boolean-versus-string mutation and is registered in `test:contracts`.
 
-A new cohesive `semantic-profile-value-domain.ts` and Lean `SemanticProcess/ValueDomain.lean` own the profile/surface matrix so deployment and live admission cannot drift. A new family-specific differential case owner contains the Boolean case body; `pipeline-cases.ts` receives only an import and spread. A new Java value/profile collaborator keeps the scenario runner from acquiring a third responsibility. A new Java protocol owner receives extracted diagnostic/PVM/timing records before `BooleanValue` is added to the remaining variable protocol. These owners are created only after proposal approval.
-
-### Owners this implementation grows
-
-| Owner | Headroom |
-|---|---:|
-| [TypeScript value contract](../../packages/semantic-core/src/contract.ts) | 340 |
-| [TypeScript stimulus validator](../../packages/semantic-core/src/stimulus.ts) | 216 |
-| [TypeScript deployment admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 249 |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 302 |
-| [TypeScript graph-policy selector](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 535 |
-| [Lean external execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 43 |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 203 |
-| [Lean effect-patch data boundary](../../BpmnSemantics/SemanticProcess/Data.lean) | 479 |
-| [Lean Simple Boolean evaluator](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean) | 471 |
-| [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 163 |
-| [Java scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 19 |
-| [Java state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 318 |
-| [Retained CIB artifact contract](../../scripts/contract-artifacts.ts) | 13 |
-| [Raw-to-canonical CIB projector](../../scripts/contract-cib-evidence-projection.ts) | 61 |
-| [Temporal command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 434 |
-| [Temporal canonical typed-tuple encoder](../../packages/temporal-adapter/protocol/src/canonical-encoding.ts) | 556 |
-| [Temporal effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 460 |
-| [Differential case catalog](../../packages/differential/test/pipeline-cases.ts) | 16 |
-| [Effect transport test](../../packages/temporal-adapter/testkit/test/effect-transport.test.ts) | 30 |
-
-The Java scenario protocol measures 598/600 nonblank lines, so its cohesive behavior-preserving extraction is mandatory before adding the value variant. The differential catalog measures 580/600, so it may receive only the family import/spread while the new case body lives in its own owner. The Java runner measures 577/600 and may receive only delegation calls; a larger change triggers extraction. Lean execution measures 552/600 and may receive only narrow value-policy calls. The effect-transport test measures 546/600, so its Boolean discriminator stays small and live evidence belongs in a new dedicated owner. Each condition stops applying when the linked source measurement changes, and the reviewability guard recomputes every headroom figure.
+A cohesive `semantic-profile-value-domain.ts` and Lean `SemanticProcess/ValueDomain.lean` own the profile/surface matrix so deployment and live admission cannot drift. A family-specific differential case owner contains the Boolean case body; `pipeline-cases.ts` only integrates it. A Java value/profile collaborator keeps the scenario runner from acquiring another responsibility. Extracted diagnostic/PVM/timing records remain in their cohesive Java protocol owner.
 
 ### Guards and oracles
 
 | Guard or oracle | Obligation |
 |---|---|
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) and [contract artifacts](../../scripts/contract-artifacts.test.ts) | Reach every Boolean schema arm, retain existing artifact bytes, and reject malformed or wrong-profile values. |
-| New focused `cib-variable-value-projection.test.ts`, registered in `test:contracts`, and [CIB observation fidelity](../../scripts/cib-observation-fidelity.test.ts) | Bind raw Java Boolean evidence to the canonical tagged value, reject text substitution, and keep the general fidelity table complete without growing the 586/600-line [artifact-projection test](../../scripts/contract-artifact-projections.test.ts). |
+| Focused `cib-variable-value-projection.test.ts`, registered in `test:contracts`, and [CIB observation fidelity](../../scripts/cib-observation-fidelity.test.ts) | Bind raw Java Boolean evidence to the canonical tagged value, reject text substitution, and keep the general fidelity table complete. |
 | [source hygiene](../../scripts/source-hygiene.test.ts) and [what-binds](../../scripts/what-binds.test.ts) | Enforce cohesive source ownership, exhaustive variants, registries, and measured line limits. |
 | [Lean source contracts](../../scripts/lean-source-contracts.test.ts) | Keep the widened inductive and profile-aware consumers exhaustive and the conformance theorems public and descriptive. |
 | [differential pipeline](../../packages/differential/test/pipeline.test.ts) and [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | Register one exact case and prove the stringify mutation reaches disagreement. |
@@ -239,7 +213,7 @@ The exact claim to establish is one primitive Boolean value carried by exact Use
 
 Meaningful mutations are Boolean-to-string conversion in Java, schema projection, command encoding, semantic merge, Query/result projection, or replay; old-profile Boolean acceptance; Process-start Boolean acceptance; effect-patch Boolean acceptance; command-ID aliasing; bypass merge outside the core; and non-atomic profile/scenario/example registration.
 
-At closure, [the capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the implementation baseline through the closure target and compares it with User Task completion data, the nearest completed increment changing the same value, CIB, core, Lean, differential, and Temporal layers. The closure review decides whether the widened-domain laws are genuinely value-parametric, whether shared schema/profile authority is an unresolved common mode, and whether the new value can be removed or stringified without an independent lane failing.
+The [capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the implementation baseline through the closure target and compares it with User Task completion data, the nearest completed increment changing the same value, CIB, core, Lean, differential, and Temporal layers. Closure review confirmed that the widened-domain laws are genuinely value-parametric and that the value cannot be removed or stringified without an independent lane failing.
 
 ## Stop conditions
 
@@ -256,9 +230,9 @@ Stop and return to research or owner direction if:
 - the one-thread, one-CPU, no-swap, 3 GiB Lean admission build fails after the ownership split;
 - the complete gate can pass only by weakening an old profile, artifact, schema oracle, mutation, or product boundary.
 
-## Owner decisions requested
+## Selected decisions
 
-Approval of this proposal settles all of these together:
+This specification retains these decisions together:
 
 1. Select Boolean-only User Task completion before E2 because it is the smallest non-string carrier and prevents E2 from freezing a string-only typed-form contract.
 2. Register `cibseven-2.2.0-user-task-boolean-completion-data-draft` with string/null Process Start and string/null/Boolean exact User Task completion.
