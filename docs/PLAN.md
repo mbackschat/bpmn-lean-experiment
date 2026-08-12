@@ -157,7 +157,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: review the first M3 Boolean Process-data proposal.** The dependency preflight selected one primitive Boolean on exact User Task completion under a new profile before E2. The [governed proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md) now owns the profile gate, proved Lean lane, CIB extension, owner inventory, and existing-Update Temporal preflight. Implementation remains paused until independent proposal review and owner-approved status are recorded.
+1. **Active: implement the first M3 Boolean Process-data semantic checkpoint.** The owner-approved [governed proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md) selects one primitive Boolean on exact User Task completion under a new profile before E2. The first checkpoint must widen the strict wire and runtime value union, enforce the profile/surface gate in TypeScript and Lean, preserve effect and expression exclusions, extract the Java protocol owner before adding Boolean, and pass the conditional independent checkpoint review. Profile registration, retained CIB evidence, differential registration, and live Temporal evidence remain paused until that review approves the mechanism.
 
 ## Approved decisions
 
@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: cold-review the [Boolean Process-data proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md), record owner-approved status after any bounded correction audit, then begin the mandatory Java protocol extraction and red/green semantic checkpoint.** The selected first M3 slice adds Boolean only to exact User Task completion under a new profile; Process Start, effects, mappings, expressions, E2, Product 2, old profiles, and Temporal primitives stay unchanged. M2 is closed at Process-instance search closure target `8a87cf4`, correction `326dde5`, and the graduated specification.
+**Next action: implement and independently review the first green Boolean Process-data semantic checkpoint.** The proposal review target `9937378` returned one required owner-inventory correction, the same reviewer approved correction `389d748`, and the owner approved that exact reviewed scope. Begin with the mandatory Java protocol extraction and red witnesses, then implement strict Boolean completion admission under the new unregistered checkpoint profile in TypeScript, Lean, and CIB boundaries. Process Start, effects, mappings, expressions, E2, Product 2, old profiles, artifact registration, and new Temporal primitives stay unchanged until the checkpoint review permits the next lane.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

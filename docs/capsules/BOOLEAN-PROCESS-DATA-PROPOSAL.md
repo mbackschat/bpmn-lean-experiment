@@ -2,13 +2,13 @@
 
 ## Status
 
-**Proposed; independent cold review returned required ownership edits and their correction audit is pending.** This proposal selects one additive Boolean Process-variable value only for exact User Task completion under a new CIB Seven compatibility profile. Implementation, profile registration, retained evidence, and product use remain paused until the correction audit and owner-approval receipt are complete.
+**Owner-approved on 2026-08-12; implementation is at the first red/green semantic checkpoint.** This proposal selects one additive Boolean Process-variable value only for exact User Task completion under a new CIB Seven compatibility profile. The independent cold review returned one required owner-inventory correction, and the same reviewer approved correction target `389d748`. Implementation is authorized for exactly this reviewed scope; profile registration, retained evidence, and product use remain paused until the semantic checkpoint is approved.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `9937378` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `9937378` | `fork-turns-none` | `approve-with-required-edits` | `389d748` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
