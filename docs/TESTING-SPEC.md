@@ -302,9 +302,9 @@ This table classifies the complete current field denominator of `scenario.schema
 | `openEffects[].arguments[].value.value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
 | `variables` | `adapter-derived` | Canonical type projection and Unicode name sort over retained Process-variable runtime/history rows selected only by names from already committed start or completion commands |
 | `variables[].name` | `engine-observed` | Historic Process-variable name within the adapter-selected committed-name boundary |
-| `variables[].value` | `adapter-derived` | Raw nullable string projected into the canonical discriminated value |
-| `variables[].value.kind` | `adapter-derived` | `string` or `null` selected from the raw host value |
-| `variables[].value.value` | `engine-observed` | Exact host string when the value is non-null |
+| `variables[].value` | `adapter-derived` | Raw host `String`, `Boolean`, or `null` projected into the canonical discriminated value |
+| `variables[].value.kind` | `adapter-derived` | `string`, `boolean`, or `null` selected from the raw host value without text coercion |
+| `variables[].value.value` | `engine-observed` | Exact host String or Boolean when the value is non-null |
 | `enabledInteractions` | `adapter-derived` | One project command interaction per retained live User Task or Receive Task Message subscription |
 | `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects task completion or Message delivery from the retained host collection |
 | `enabledInteractions[].subscriptionId` | `adapter-derived` | Reuses the projected Message subscription occurrence |

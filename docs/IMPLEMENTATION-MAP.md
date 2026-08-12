@@ -30,7 +30,7 @@ Pinned CIB passes through the extension to that User Task with zero jobs and inc
 
 **Current Boolean Process-data boundary.** One registered profile reuses the sequential User Task graph and program while admitting primitive Boolean only on exact completion. Strict schemas, TypeScript and Lean admission, CIB projection and retained evidence, command identity, differential execution, the runnable example, and live Worker-replacement/refusal/history/replay are green. Process Start and old profiles remain string/null-only; Product 2 consumes no new fact.
 
-The Java diagnostics/projection protocol was split before semantic growth, and the constrained Lean admission build passes with one CPU, one thread, no swap, and the standing 3 GiB limit. Registration, retained CIB evidence, differential comparison, live Temporal execution, replay, and closure review are absent until the semantic checkpoint is independently approved.
+The Java diagnostics/projection protocol was split before semantic growth, and the constrained Lean admission build passes with one CPU, one thread, no swap, and the standing 3 GiB limit. Registration, retained CIB evidence, differential comparison, live Temporal execution, and replay are complete. Closure approval remains pending.
 
 **What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. There are no incidents, published transitions, or token positions.
 

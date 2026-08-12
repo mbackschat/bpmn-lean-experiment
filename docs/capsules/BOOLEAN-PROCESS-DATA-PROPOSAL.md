@@ -85,7 +85,7 @@ The new profile's source bytes, checked graph, Semantic Process operations, cont
 | `BVAL-PROFILE-01` | Only the new profile admits Boolean in exact User Task completion; Process Start, effects, expressions, mappings, and every existing profile reject it before state change. | Profile-aware admission |
 | `BVAL-COMPLETE-01` | Exact completion atomically creates or replaces Boolean Process bindings before existing continuation closure. | Selected CIB compatibility overlay implemented by the semantic core |
 | `BVAL-REFUSE-01` | Wrong/stale occurrence and profile-value mismatch reject with the complete committed state unchanged; a later admissible command remains usable. | Semantic command admission |
-| `BVAL-OBSERVE-01` | Committed Boolean values appear unchanged in the existing Process-variable observation, CIB raw/canonical evidence, command receipt, Query result, and terminal result without a new observation field. | Existing observation boundary |
+| `BVAL-OBSERVE-01` | Committed Boolean values appear unchanged in the existing Process-variable observation, CIB raw/canonical evidence, terminal Query trace, and completed receipt without a new observation field. | Existing observation boundary |
 | `BVAL-LAW-01` | Value-parametric merge, occurrence, refusal, closure, and projection laws survive the widened type; value-specific effect and expression laws retain explicit string/null hypotheses or exclusions. | Lean and independent TypeScript semantics |
 | `BVAL-HOST-01` | The existing content-bound User Task Update durably carries, commits, replays, and returns the tagged Boolean without a new Workflow command or host-owned write. | Temporal refinement |
 
@@ -115,7 +115,7 @@ The smallest live witness:
 1. compiles and starts the registered new profile with string/null initial data;
 2. observes the exact User Task and replaces the Worker while the semantic wait remains active;
 3. completes through the existing Update with a Boolean patch;
-4. proves the next User Task and terminal receipt expose the exact tagged Boolean;
+4. proves the terminal Query trace and completed receipt expose the exact tagged Boolean;
 5. inspects the recorded Update result, excludes Timer, Signal, Child Workflow, Activity, and cancellation families, and replays the history;
 6. starts the old profile, submits the same Boolean Update, observes state-preserving rejection, then completes successfully with a valid string/null patch.
 
