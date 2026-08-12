@@ -346,7 +346,7 @@ This is an additional CIB public-service extension over the BPMN User Task lifec
 
 **Status:** Proposed bounded extension; implementation blocked pending proposal review and owner approval
 
-CIB Seven `2.2.0` consumes the exact foreign attribute `{http://camunda.org/schema/1.0/bpmn}candidateGroups` on a User Task and exposes each resolved group through public Task Service candidate identity links. The proposed project profile restricts this broader CIB surface to one trimmed nonempty literal group ID, refuses comma lists and expressions, and projects one neutral group candidate into the existing open User Task.
+CIB Seven `2.2.0` consumes the exact foreign attribute `{http://camunda.org/schema/1.0/bpmn}candidateGroups` on a User Task and exposes each resolved group through public Task Service candidate identity links. The proposed project profile restricts this broader CIB surface to one nonempty literal group ID with no boundary code point from the proposal's explicit profile boundary-space set, refuses rather than normalizes boundary space, comma lists, and expressions, and projects one neutral group candidate into the existing open User Task. A leading or trailing U+00A0 is the non-ASCII separating control.
 
 This is a CIB source and public-service extension, not the standard Potential Owner account. BPMN Resource Roles permit a Resource reference or assignment expression, but neither the normative representation nor the selected phase-zero observation identifies a portable literal group ID. A standard `potentialOwner` naming a Resource with the same human-readable value produces no CIB candidate identity link and remains deferred.
 
@@ -364,7 +364,7 @@ This is a CIB generated-form extension, not standard BPMN rendering content. BPM
 
 **Evidence:** The [assignment/form phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskAssignmentFormMetadataPhaseZeroProbeTest.java) uses public Model API and Form Service, proves alternate-prefix namespace identity, distinguishes `boolean` from `string`, and completes the selected task with an actual Java Boolean. The [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) owns the exact source shape, public projection, and Temporal preflight.
 
-**Boundary:** One exact field with one trimmed nonempty key and type `string` or `boolean` is proposed. Multiple fields, labels, defaults, constraints, properties, scripts, form keys, rendering, submission mapping, field validation, task-local data, new value kinds, standard Rendering, WSHumanTask, and general Form Service compatibility remain excluded.
+**Boundary:** One exact field with one nonempty key having no boundary code point from the proposal's explicit profile boundary-space set and type `string` or `boolean` is proposed. Boundary space is refused without normalization; leading or trailing U+00A0 is the non-ASCII control. Multiple fields, labels, defaults, constraints, properties, scripts, form keys, rendering, submission mapping, field validation, task-local data, new value kinds, standard Rendering, WSHumanTask, and general Form Service compatibility remain excluded.
 
 ### Research queue
 
