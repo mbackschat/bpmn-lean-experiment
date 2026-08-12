@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
 import type { WorkAuditEvent } from "@bpmn-lean/platform-contracts";
@@ -13,6 +14,10 @@ import type {
   WorkCompletionOutcomeInput,
   WorkReleaseTransitionInput,
   WorkTaskReference,
+} from "../dist/work-contracts.js";
+import {
+  WorkRepositoryIntegrityError,
+  WorkSchemaResetRequiredError,
 } from "../dist/work-contracts.js";
 
 const task: WorkTaskReference = {
@@ -113,14 +118,78 @@ test("an old release retry cannot clear a later reclaim through another connecti
     assert.equal(first.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1")).kind, "released");
     assert.equal(second.claimTask(claimInput("claim-2", "actor-a", 2, "event-claim-2")).kind, "claimed");
 
-    assert.equal(second.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-retry")).kind, "idempotent");
+    const firstRetry = releaseInput("release-1", "actor-a", 1, "event-release-retry-a");
+    const secondRetry = releaseInput("release-1", "actor-a", 1, "event-release-retry-b");
+    assert.equal(second.releaseTask(firstRetry).kind, "idempotent");
+    assert.equal(second.releaseTask(secondRetry).kind, "idempotent");
     assert.deepEqual(first.getClaim(task), {
       claimGeneration: 3,
       claim: { actorId: "actor-a", generation: 3 },
     });
+    const actionReader = second as unknown as {
+      getClaimReleaseAction(actionId: string): unknown;
+    };
+    assert.deepEqual(actionReader.getClaimReleaseAction("release-1"), {
+      binding: {
+        actionId: "release-1",
+        actorId: "actor-a",
+        task,
+        generation: 1,
+        kind: "release",
+      },
+      result: {
+        taskId: task.taskId,
+        claimGeneration: 2,
+        released: true,
+      },
+    });
+    assert.equal(
+      second.listUndeliveredAuditEvents().filter(({ event }) =>
+        event.action.actionId === "release-1" && event.action.outcome === "idempotent"
+      ).length,
+      1,
+    );
+
+    const changedEvent = {
+      ...secondRetry,
+      audit: {
+        ...secondRetry.audit,
+        idempotent: {
+          ...firstRetry.audit.idempotent,
+          recordedAt: "2026-08-12T10:00:01.000Z",
+        },
+      },
+    };
+    assert.throws(
+      () => second.releaseTask(changedEvent),
+      WorkRepositoryIntegrityError,
+    );
   } finally {
     first.close();
     second.close();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects an epoch-2 database whose schema has drifted", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-work-schema-"));
+  const databaseFile = join(root, "work.sqlite");
+  let unexpectedlyOpened: SqliteWorkRepository | undefined;
+  try {
+    const repository = new SqliteWorkRepository(databaseFile);
+    repository.close();
+    const database = new DatabaseSync(databaseFile);
+    database.exec("ALTER TABLE work_claims ADD COLUMN unexpected TEXT");
+    database.close();
+
+    assert.throws(
+      () => {
+        unexpectedlyOpened = new SqliteWorkRepository(databaseFile);
+      },
+      WorkSchemaResetRequiredError,
+    );
+  } finally {
+    unexpectedlyOpened?.close();
     await rm(root, { recursive: true, force: true });
   }
 });

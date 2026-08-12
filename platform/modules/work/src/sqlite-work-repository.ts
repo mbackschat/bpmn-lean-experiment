@@ -5,7 +5,6 @@ import type { WorkAuditEvent } from "@bpmn-lean/platform-contracts";
 
 import {
   WorkRepositoryIntegrityError,
-  WorkSchemaResetRequiredError,
 } from "./work-contracts.js";
 import type {
   ConfirmedProcessWorkPublication,
@@ -13,6 +12,7 @@ import type {
   WorkClaimSnapshot,
   WorkClaimTransitionInput,
   WorkClaimTransitionResult,
+  StoredWorkClaimReleaseAction,
   StoredWorkCompletionAction,
   WorkCompletionBinding,
   WorkCompletionOutcomeInput,
@@ -28,6 +28,7 @@ import type {
 } from "./work-contracts.js";
 import {
   decodeStoredPublicInstance,
+  decodeStoredClaimReleaseAction,
   completionResult,
   decodeStoredCompletionAction,
   requireAuditMatches,
@@ -41,8 +42,8 @@ import {
   snapshotPublication,
   snapshotTaskReference,
 } from "./work-repository-values.js";
+import { initializeWorkSchema } from "./work-sqlite-schema.js";
 
-const schemaEpoch = 2;
 const defaultBusyTimeoutMs = 5_000;
 
 /** Owns the M3 platform state and audit outbox, never semantic task truth. */
@@ -54,7 +55,7 @@ export class SqliteWorkRepository {
     this.#database = new DatabaseSync(databaseFile);
     this.#database.exec(`PRAGMA busy_timeout = ${busyTimeoutMs}`);
     try {
-      initializeSchema(this.#database);
+      initializeWorkSchema(this.#database);
     } catch (error: unknown) {
       this.#database.close();
       throw error;
@@ -113,20 +114,30 @@ export class SqliteWorkRepository {
     return decodeClaimRow(row);
   }
 
+  getClaimReleaseAction(actionId: string): StoredWorkClaimReleaseAction | null {
+    const row = this.#readAction(requireString(actionId, "actionId"));
+    return row === undefined ? null : decodeActionRow(row);
+  }
+
   claimTask(input: WorkClaimTransitionInput): WorkClaimTransitionResult {
     const task = snapshotTaskReference(input.task);
     validateClaimInput(input, task);
     return this.#transaction(() => {
-      const retained = this.#readAction(input.actionId);
-      if (retained !== undefined) {
-        if (!sameAction(retained, "claim", input.actorId, task, input.expectedGeneration)) {
+      const retained = this.getClaimReleaseAction(input.actionId);
+      if (retained !== null) {
+        const expectedBinding = {
+          actionId: input.actionId,
+          actorId: input.actorId,
+          task,
+          kind: "claim" as const,
+          expectedGeneration: input.expectedGeneration,
+        };
+        if (!isStoredClaimAction(retained) || !sameJson(retained.binding, expectedBinding)) {
           this.#outbox(input.audit.conflict);
           return { kind: "conflict" };
         }
-        const claim = this.getClaim(task);
-        if (claim.claim?.actorId !== input.actorId) return { kind: "conflict" };
         this.#outbox(input.audit.idempotent);
-        return { kind: "idempotent", result: { taskId: task.taskId, claim: claim.claim } };
+        return { kind: "idempotent", result: retained.result };
       }
       const current = this.getClaim(task);
       if (current.claim !== null || current.claimGeneration !== input.expectedGeneration) {
@@ -134,13 +145,21 @@ export class SqliteWorkRepository {
         return { kind: "conflict" };
       }
       const generation = current.claimGeneration + 1;
-      this.#upsertClaim(task, generation, input.actorId);
-      this.#insertAction(input.actionId, "claim", input.actorId, task, input.expectedGeneration);
-      this.#outbox(input.audit.claimed);
-      return {
-        kind: "claimed",
-        result: { taskId: task.taskId, claim: { actorId: input.actorId, generation } },
+      const result = {
+        taskId: task.taskId,
+        claim: { actorId: input.actorId, generation },
       };
+      this.#upsertClaim(task, generation, input.actorId);
+      this.#insertAction(
+        input.actionId,
+        "claim",
+        input.actorId,
+        task,
+        input.expectedGeneration,
+        result,
+      );
+      this.#outbox(input.audit.claimed);
+      return { kind: "claimed", result };
     });
   }
 
@@ -148,15 +167,21 @@ export class SqliteWorkRepository {
     const task = snapshotTaskReference(input.task);
     validateReleaseInput(input, task);
     return this.#transaction(() => {
-      const retained = this.#readAction(input.actionId);
-      if (retained !== undefined) {
-        if (!sameAction(retained, "release", input.actorId, task, input.generation)) {
+      const retained = this.getClaimReleaseAction(input.actionId);
+      if (retained !== null) {
+        const expectedBinding = {
+          actionId: input.actionId,
+          actorId: input.actorId,
+          task,
+          kind: "release" as const,
+          generation: input.generation,
+        };
+        if (!isStoredReleaseAction(retained) || !sameJson(retained.binding, expectedBinding)) {
           this.#outbox(input.audit.conflict);
           return { kind: "conflict" };
         }
-        const retainedResult = JSON.parse(requireString(retained.result_json, "action result_json"));
         this.#outbox(input.audit.idempotent);
-        return { kind: "idempotent", result: retainedResult };
+        return { kind: "idempotent", result: retained.result };
       }
       const current = this.getClaim(task);
       if (current.claim === null) return { kind: "notFound" };
@@ -355,13 +380,13 @@ export class SqliteWorkRepository {
     `).get(actionId);
   }
 
-  #insertAction(actionId: string, kind: string, actorId: string, task: WorkTaskReference, generation: number, result: unknown = null): void {
+  #insertAction(actionId: string, kind: string, actorId: string, task: WorkTaskReference, generation: number, result: unknown): void {
     this.#database.prepare(`
       INSERT INTO work_actions (
         action_id, action_kind, actor_id, hosting_process_instance_id,
         task_process_instance_id, element_id, activation, input_generation, result_json
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(actionId, kind, actorId, ...taskKey(task), generation, result === null ? null : JSON.stringify(result));
+    `).run(actionId, kind, actorId, ...taskKey(task), generation, JSON.stringify(result));
   }
 
   #outbox(event: WorkAuditEvent): void {
@@ -376,81 +401,49 @@ export class SqliteWorkRepository {
       }
       return;
     }
+    const logical = this.#database.prepare(`
+      SELECT event_json FROM work_audit_outbox
+      WHERE action_id = ? AND action_outcome = ?
+    `).get(exact.action.actionId, exact.action.outcome);
+    if (logical !== undefined) {
+      const retained = snapshotAuditEvent(JSON.parse(
+        requireString(logical.event_json, "stored logical event_json"),
+      ));
+      if (!sameAuditLogicalEvent(retained, exact)) {
+        throw new WorkRepositoryIntegrityError(
+          `audit outcome ${exact.action.actionId}/${exact.action.outcome} conflicts`,
+        );
+      }
+      return;
+    }
     this.#database.prepare(`
-      INSERT INTO work_audit_outbox (event_id, event_json, delivered)
-      VALUES (?, ?, 0)
-    `).run(exact.eventId, encoded);
+      INSERT INTO work_audit_outbox (
+        event_id, action_id, action_outcome, event_json, delivered
+      ) VALUES (?, ?, ?, ?, 0)
+    `).run(exact.eventId, exact.action.actionId, exact.action.outcome, encoded);
   }
-}
-
-function initializeSchema(database: DatabaseSync): void {
-  const version = database.prepare("PRAGMA user_version").get()?.user_version;
-  const tables = database.prepare(`
-    SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
-  `).all();
-  if (version === 0 && tables.length === 0) {
-    database.exec(`
-      CREATE TABLE work_processes (
-        process_instance_id TEXT PRIMARY KEY NOT NULL,
-        public_instance_json TEXT NOT NULL,
-        work_locator TEXT NOT NULL,
-        observation TEXT NOT NULL CHECK (observation IN ('active','closed','indeterminate'))
-      ) STRICT;
-      CREATE TABLE work_claims (
-        hosting_process_instance_id TEXT NOT NULL,
-        task_process_instance_id TEXT NOT NULL,
-        element_id TEXT NOT NULL,
-        activation INTEGER NOT NULL CHECK (activation > 0),
-        claim_generation INTEGER NOT NULL CHECK (claim_generation >= 0),
-        actor_id TEXT,
-        PRIMARY KEY (hosting_process_instance_id, task_process_instance_id, element_id, activation)
-      ) STRICT;
-      CREATE TABLE work_actions (
-        action_id TEXT PRIMARY KEY NOT NULL,
-        action_kind TEXT NOT NULL CHECK (action_kind IN ('claim','release')),
-        actor_id TEXT NOT NULL,
-        hosting_process_instance_id TEXT NOT NULL,
-        task_process_instance_id TEXT NOT NULL,
-        element_id TEXT NOT NULL,
-        activation INTEGER NOT NULL CHECK (activation > 0),
-        input_generation INTEGER NOT NULL CHECK (input_generation >= 0),
-        result_json TEXT
-      ) STRICT;
-      CREATE TABLE work_completions (
-        action_id TEXT PRIMARY KEY NOT NULL,
-        actor_id TEXT NOT NULL,
-        hosting_process_instance_id TEXT NOT NULL,
-        task_process_instance_id TEXT NOT NULL,
-        element_id TEXT NOT NULL,
-        activation INTEGER NOT NULL CHECK (activation > 0),
-        claim_generation INTEGER NOT NULL CHECK (claim_generation > 0),
-        binding_json TEXT NOT NULL,
-        state TEXT NOT NULL CHECK (state IN ('reserved','submitting','committed','rejected','indeterminate')),
-        result_json TEXT
-      ) STRICT;
-      CREATE UNIQUE INDEX work_completion_active_slot ON work_completions (
-        hosting_process_instance_id, task_process_instance_id, element_id,
-        activation, claim_generation
-      ) WHERE state IN ('reserved','submitting','indeterminate');
-      CREATE TABLE work_audit_outbox (
-        ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id TEXT NOT NULL UNIQUE,
-        event_json TEXT NOT NULL,
-        delivered INTEGER NOT NULL CHECK (delivered IN (0,1))
-      ) STRICT;
-      PRAGMA user_version = ${schemaEpoch};
-    `);
-    return;
-  }
-  const names = tables.map((row) => row.name).sort();
-  const expected = ["work_actions", "work_audit_outbox", "work_claims", "work_completions", "work_processes"];
-  if (version !== schemaEpoch || !sameJson(names, expected)) throw new WorkSchemaResetRequiredError();
 }
 
 function decodeCompletionRow(row: Record<string, SQLOutputValue>): StoredWorkCompletionAction {
   return decodeStoredCompletionAction(
     row.binding_json,
     row.state,
+    row.result_json,
+  );
+}
+
+function decodeActionRow(
+  row: Record<string, SQLOutputValue>,
+): StoredWorkClaimReleaseAction {
+  return decodeStoredClaimReleaseAction(
+    row.action_id,
+    row.action_kind,
+    row.actor_id,
+    row.hosting_process_instance_id,
+    row.task_process_instance_id,
+    row.element_id,
+    row.activation,
+    row.input_generation,
     row.result_json,
   );
 }
@@ -478,12 +471,23 @@ function taskKey(task: WorkTaskReference): [string, string, string, number] {
   return [task.hostingProcessInstanceId, task.taskId.processInstanceId, task.taskId.elementId, task.taskId.activation];
 }
 
-function sameAction(row: Record<string, SQLOutputValue>, kind: string, actorId: string, task: WorkTaskReference, generation: number): boolean {
-  return row.action_kind === kind && row.actor_id === actorId &&
-    row.hosting_process_instance_id === task.hostingProcessInstanceId &&
-    row.task_process_instance_id === task.taskId.processInstanceId &&
-    row.element_id === task.taskId.elementId && row.activation === task.taskId.activation &&
-    row.input_generation === generation;
+function sameAuditLogicalEvent(left: WorkAuditEvent, right: WorkAuditEvent): boolean {
+  return left.actorId === right.actorId &&
+    left.hostingProcessInstanceId === right.hostingProcessInstanceId &&
+    sameJson(left.taskId, right.taskId) &&
+    sameJson(left.action, right.action);
+}
+
+function isStoredClaimAction(
+  action: StoredWorkClaimReleaseAction,
+): action is Extract<StoredWorkClaimReleaseAction, { binding: { kind: "claim" } }> {
+  return action.binding.kind === "claim";
+}
+
+function isStoredReleaseAction(
+  action: StoredWorkClaimReleaseAction,
+): action is Extract<StoredWorkClaimReleaseAction, { binding: { kind: "release" } }> {
+  return action.binding.kind === "release";
 }
 
 function validateClaimInput(input: WorkClaimTransitionInput, task: WorkTaskReference): void {

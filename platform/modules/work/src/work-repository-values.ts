@@ -2,7 +2,9 @@ import {
   decodePublicProcessInstanceIdentity,
   decodePublicWorkTaskId,
   decodeWorkAuditEvent,
+  decodeWorkClaimResult,
   decodeWorkCompletionResult,
+  decodeWorkReleaseResult,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PublicProcessInstanceIdentity,
@@ -14,6 +16,7 @@ import {
 } from "./work-contracts.js";
 import type {
   ConfirmedProcessWorkPublication,
+  StoredWorkClaimReleaseAction,
   StoredWorkCompletionAction,
   WorkCompletionBinding,
   WorkCompletionOutcome,
@@ -200,6 +203,80 @@ export function decodeStoredCompletionAction(
       throw new TypeError("stored completion result disagrees with its lifecycle state");
     }
     return { binding, state, result };
+  } catch (error: unknown) {
+    if (error instanceof WorkRepositoryStoredValueError) throw error;
+    throw new WorkRepositoryStoredValueError(error);
+  }
+}
+
+export function decodeStoredClaimReleaseAction(
+  actionIdValue: unknown,
+  kindValue: unknown,
+  actorIdValue: unknown,
+  hostingProcessInstanceIdValue: unknown,
+  taskProcessInstanceIdValue: unknown,
+  elementIdValue: unknown,
+  activationValue: unknown,
+  generationValue: unknown,
+  resultJson: unknown,
+): StoredWorkClaimReleaseAction {
+  try {
+    const actionId = requireString(actionIdValue, "stored action_id");
+    const actorId = requireString(actorIdValue, "stored action actor_id");
+    const task = snapshotTaskReference({
+      hostingProcessInstanceId: requireString(
+        hostingProcessInstanceIdValue,
+        "stored action hosting_process_instance_id",
+      ),
+      taskId: {
+        processInstanceId: requireString(
+          taskProcessInstanceIdValue,
+          "stored action task_process_instance_id",
+        ),
+        elementId: requireString(elementIdValue, "stored action element_id"),
+        activation: requirePositiveSafeInteger(
+          activationValue,
+          "stored action activation",
+        ),
+      },
+    });
+    const generation = requireNonnegativeSafeInteger(
+      generationValue,
+      "stored action input_generation",
+    );
+    const parsedResult = parseStoredJson(resultJson, "stored action result_json");
+    switch (kindValue) {
+      case "claim": {
+        const result = decodeWorkClaimResult(parsedResult);
+        if (
+          !sameJson(result.taskId, task.taskId) ||
+          result.claim.actorId !== actorId ||
+          result.claim.generation !== generation + 1
+        ) {
+          throw new TypeError("stored claim result disagrees with its binding");
+        }
+        return {
+          binding: { actionId, actorId, task, kind: "claim", expectedGeneration: generation },
+          result,
+        };
+      }
+      case "release": {
+        const result = decodeWorkReleaseResult(parsedResult);
+        if (
+          !sameJson(result.taskId, task.taskId) ||
+          result.claimGeneration !== generation + 1 ||
+          result.released !== true
+        ) {
+          throw new TypeError("stored release result disagrees with its binding");
+        }
+        return {
+          binding: { actionId, actorId, task, kind: "release", generation },
+          result,
+        };
+      }
+      default:
+        throw new TypeError("stored action kind is invalid");
+    }
   } catch (error: unknown) {
     if (error instanceof WorkRepositoryStoredValueError) throw error;
     throw new WorkRepositoryStoredValueError(error);

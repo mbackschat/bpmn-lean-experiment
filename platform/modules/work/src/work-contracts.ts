@@ -47,6 +47,28 @@ export type WorkClaimTransitionResult =
   | DeepReadonly<{ kind: "idempotent"; result: WorkClaimResult }>
   | DeepReadonly<{ kind: "conflict" }>;
 
+export type StoredWorkClaimReleaseAction =
+  | DeepReadonly<{
+      binding: {
+        actionId: string;
+        actorId: string;
+        task: WorkTaskReference;
+        kind: "claim";
+        expectedGeneration: number;
+      };
+      result: WorkClaimResult;
+    }>
+  | DeepReadonly<{
+      binding: {
+        actionId: string;
+        actorId: string;
+        task: WorkTaskReference;
+        kind: "release";
+        generation: number;
+      };
+      result: WorkReleaseResult;
+    }>;
+
 export type WorkReleaseTransitionInput = DeepReadonly<{
   actionId: string;
   actorId: string;
