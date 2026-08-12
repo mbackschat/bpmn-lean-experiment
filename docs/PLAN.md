@@ -70,7 +70,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) is implemented, registered, evidence-closed, independently closure-reviewed, and graduated. E2 User Task assignment and form metadata is implemented and evidence-closed. The owner-authorized fourth closure audit on 2026-08-12 closed its carried finding and retained only this plan's stale sibling status. That status and its seventeenth recorded recurrence are corrected; graduation and Product 2 use remain paused for owner governance direction on closing the review stage.
+**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) and [E2 User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) are implemented, registered, evidence-closed, owner-accepted, and graduated. The owner accepted final E2 administrative correction `264add2` without another audit on 2026-08-12. The approved Product 2 human-work implementation is now the active M3 work.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
@@ -78,7 +78,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 **Platform increments.** The pluggable identity boundary with a fake default, the shared task inbox, claim and release as platform-owned authorization, form projection, and the audit record of who acted.
 
-The [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md) selects one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox. Exact redesigned target `7444ce3` received context-cold `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed logical audit outcomes, audit-silent policy hiding, the same-transaction Work audit outbox, and configuration/schema ownership and received same-reviewer `APPROVE`. Product 2 implementation may not consume metadata until owner governance direction closes the E2 review stage.
+The [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md) selects one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox. Exact redesigned target `7444ce3` received context-cold `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed logical audit outcomes, audit-silent policy hiding, the same-transaction Work audit outbox, and configuration/schema ownership and received same-reviewer `APPROVE`.
 
 **Exit gate.** The internal system-visible aggregation matches the engine's published open User Tasks exactly before actor-policy projection; no platform component constructs an occurrence identity; every engine state-changing action is authorized against the exact published occurrence; platform claim and audit state remains distinct from BPMN meaning; and a non-string value survives the round trip through all declared targets.
 
@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close E2 User Task assignment and form metadata.** The semantic checkpoint is approved. Registration, retained public-service CIB evidence, differential comparison, runnable configuration, live Worker-replacement/replay evidence, and their separating mutations are implemented; finish root integration, the complete gate, reflection/cost records, and governed closure review.
+1. **Active: implement checkpoint 1 of Product 2 human work.** Add the neutral immutable contract owner, Product 1 opaque work locator and observe/detail/complete operations, durable confirmed-start publication for direct, Schedule, and Message producers, the Product 2 gateway, and the strict public Work contract. Stop at first green for the mandatory semantic checkpoint review before durable claims, audit, HTTP, or UI work.
 
 ## Approved decisions
 
@@ -264,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain owner direction on closing the E2 review stage after the final administrative correction.** The owner-authorized fourth audit closed its carried finding and found two stale sibling sentences in this plan. They are corrected and recorded as the seventeenth stale-status recurrence. The M3 human-work proposal is independently approved, but its Product 2 implementation and E2 graduation remain paused until governance decides whether to accept these status-only corrections administratively or authorize another audit.
+**Next action: implement checkpoint 1 of the approved M3 human-work proposal.** Start with the neutral `DeepReadonly<T>` extraction, Product 1 opaque work locator and observe/detail/complete contract, durable confirmed-start publication across all three producers, Product 2 gateway, and strict public Work contract. Pause after the first green checkpoint for its mandatory semantic checkpoint review.
 
-**No technical or environmental blocker remains.** The owner-authorized fourth audit closed its carried finding and exposed only the status contradiction now corrected above. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+**No technical or environmental blocker remains.** E2 is graduated and Product 2 implementation is authorized. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
 **Last verified commands:** `env CI=true ./scripts/verify.sh` passed at Boolean closure target `9669e8c` in 189.26 seconds with 46 live history replays. The exact Boolean Temporal mutation, CIB, semantic, cost, documentation, review-policy, link, and source-hygiene corrections passed their focused gates at the final reviewed target `06ec4a3`.
 

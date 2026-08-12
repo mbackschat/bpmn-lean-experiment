@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved proposal on 2026-08-12; implementation has not started.** Context-cold target `7444ce3` received `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed its logical-audit identity, policy-hiding, crash-durable audit handoff, and owner-routing findings and received `APPROVE` from the exact reviewer. The proposal selects the current inbox, platform claim and authorization policy, one typed form field, retry-safe completion, distinct platform audit, and CSS-Modules UI scope. Implementation remains paused until the [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) receives closure approval and explicit owner direction permits the next E2 review action.
+**Owner-approved proposal on 2026-08-12; checkpoint 1 implementation is active.** Context-cold target `7444ce3` received `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed its logical-audit identity, policy-hiding, crash-durable audit handoff, and owner-routing findings and received `APPROVE` from the exact reviewer. The proposal selects the current inbox, platform claim and authorization policy, one typed form field, retry-safe completion, distinct platform audit, and CSS-Modules UI scope. The [User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) is graduated and the owner authorized Product 2 implementation.
 
 ## Independent cold-review receipt
 

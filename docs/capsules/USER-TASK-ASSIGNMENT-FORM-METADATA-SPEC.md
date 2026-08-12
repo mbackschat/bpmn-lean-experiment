@@ -1,8 +1,8 @@
-# User Task assignment and form metadata proposal
+# User Task assignment and form metadata specification
 
 ## Status
 
-**Owner-approved proposal with the semantic checkpoint approved on 2026-08-12 and closure corrections green.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, the proved Lean lane, profile/scenario registration, retained public-service CIB evidence, differential comparison, runnable configuration, and live Temporal Worker-replacement/replay evidence are green. The owner-authorized fourth closure audit on 2026-08-12 closed its carried finding and retained only stale sibling status in the plan. That status is corrected, while the closure receipt and Product 2 use remain paused for owner governance direction.
+**Implemented, evidence-closed, owner-accepted, and graduated on 2026-08-12.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, the proved Lean lane, profile/scenario registration, retained public-service CIB evidence, differential comparison, runnable configuration, and live Temporal Worker-replacement/replay evidence are green. The owner accepted final administrative correction `264add2` without another audit after the owner-authorized fourth closure audit closed its carried finding and retained only stale sibling status in the plan. Product 2 may consume this specification's public metadata without changing its passive engine meaning.
 
 ## Independent cold-review receipt
 
@@ -10,7 +10,9 @@
 |---|---|---|---|---|
 | Proposal | `ae9f977` | `fork-turns-none` | `approve-with-required-edits` | `652327c` |
 | Semantic checkpoint | `7670add` | `fork-turns-none` | `approve-with-required-edits` | `845f17e` |
-| Closure | `1e8cc5d` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `1e8cc5d` | `fork-turns-none` | `approve-with-required-edits` | `363e0a5` |
+
+The closure stage used four owner-authorized correction audits. The fourth audit closed its carried finding and retained only two stale sibling status sentences. Final administrative correction `264add2` aligned those sentences and recorded the recurrence; the owner accepted it without a fifth audit under the correction-audit bound.
 
 ## Question
 
@@ -153,40 +155,9 @@ Excluded:
 
 Pre-release atomic replacement applies to checked-process, Semantic Process, scenario, canonical-result, and CIB-evidence shapes because `OpenUserTask` gains an optional public field. Existing metadata-free serialized objects remain byte-identical because the property is omitted. No retained production-history compatibility baseline exists; approval of one would require explicit version, migration, replay, rollback, and old-Worker decisions.
 
-The implementation must atomically update or satisfy the strict [checked-process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), [scenario schema](../../contracts/schemas/scenario.schema.json), [CIB evidence schema](../../contracts/schemas/cibseven-evidence.schema.json), TypeScript [checked contract](../../packages/semantic-core/src/checked-process-contract.ts), [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts), [runtime state](../../packages/semantic-core/src/semantic-process-state.ts), [public contract](../../packages/semantic-core/src/contract.ts), [wait creation](../../packages/semantic-core/src/semantic-process-wait-runtime.ts), [public projection](../../packages/semantic-core/src/scenario.ts), [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts), [checked shape](../../packages/semantic-core/src/checked-process-profile-shape.ts), [program shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts), [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), BPMN [dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts), [exact foreign-attribute classification](../../packages/bpmn-source/src/preserved-element-classification.ts), [compiler](../../packages/bpmn-source/src/checked-process-compiler.ts), [exact key inventory](../../packages/bpmn-source/src/projected-flow-element-keys.ts), [checked projector](../../packages/bpmn-source/src/checked-element-projection.ts), [graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), and [lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts), Lean [checked and IL contract](../../BpmnSemantics/SemanticProcessContract.lean), [public scenario contract](../../BpmnSemantics/Scenario.lean), [strict checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), [strict program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean), [public JSON entry point](../../BpmnSemantics/SemanticProcessJsonMain.lean), [lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean), [runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean), [transition](../../BpmnSemantics/SemanticProcess/Transition.lean), [scenario](../../BpmnSemantics/SemanticProcess/Scenario.lean), [profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean), and [JSON support](../../BpmnSemantics/SemanticProcess/JsonSupport.lean), Java [scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java), [diagnostics protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java), [User Task projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenUserTaskProjector.java), [state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java), and [value policy](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableValuePolicy.java), plus artifact, differential, runnable, and live-evidence registries. The implementation also updates the complete nested-field denominator in [Canonical CIB observation fidelity](../TESTING-SPEC.md#canonical-cib-observation-fidelity) for the new `openUserTasks[].metadata` paths.
+The strict [checked-process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), [scenario schema](../../contracts/schemas/scenario.schema.json), [CIB evidence schema](../../contracts/schemas/cibseven-evidence.schema.json), TypeScript contracts and execution, BPMN source projection, Lean contracts and execution, Java CIB projection, and artifact, differential, runnable, and live-evidence registries atomically carry the selected optional metadata. The complete nested-field denominator in [Canonical CIB observation fidelity](../TESTING-SPEC.md#canonical-cib-observation-fidelity) includes the `openUserTasks[].metadata` paths.
 
-A new cohesive `user-task-metadata.ts` owns the neutral TypeScript contract and the exact boundary-space predicate. A new `user-task-metadata-source.ts` owns URI-expanded source decoding and is the only source owner that reads the CIB extension tree. The selected profile receives its own dispatch entry, which calls `exactForeignAttributeRejections` with one predicate admitting only `bpmn:UserTask` plus the exact candidate-group expanded name; it never enters `foreignAttributeConsumingTypes`, so no User Task whole-type exemption is possible. The existing direct foreign-attribute guard adds wrong-URI, unknown-sibling, and U+00A0 boundary controls. Metadata equality is extracted from [artifact consistency](../../scripts/contract-artifact-consistency.ts), and raw CIB evidence types are extracted from [contract artifacts](../../scripts/contract-artifacts.ts) before either crowded owner grows. A new family-specific `user-task-metadata-pipeline-cases.ts` contains the differential case body; the existing catalog receives only an import and spread. A separate Java metadata projector uses Task Service and Form Service; the scenario runner receives delegation only. New Temporal fixture and test owners carry live evidence without growing the Workflow implementation or Boolean test.
-
-### Owners this implementation grows
-
-| Owner | Headroom |
-|---|---:|
-| [BPMN compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 399 |
-| [BPMN exact foreign-attribute classification](../../packages/bpmn-source/src/preserved-element-classification.ts) | 75 |
-| [BPMN checked projector](../../packages/bpmn-source/src/checked-element-projection.ts) | 169 |
-| [BPMN key inventory](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 267 |
-| [BPMN semantic lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 48 |
-| [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 356 |
-| [TypeScript IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 199 |
-| [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 124 |
-| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 66 |
-| [Lean external execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 17 |
-| [Lean runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 157 |
-| [Lean public scenario contract](../../BpmnSemantics/Scenario.lean) | 383 |
-| [Lean strict checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 339 |
-| [Lean strict program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 142 |
-| [Lean public JSON entry point](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 287 |
-| [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 154 |
-| [Java scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 13 |
-| [Java state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 316 |
-| [Artifact owner](../../scripts/contract-artifacts.ts) | 98 |
-| [Artifact consistency](../../scripts/contract-artifact-consistency.ts) | 50 |
-| [CIB evidence projection](../../scripts/contract-cib-evidence-projection.ts) | 46 |
-| [Differential catalog](../../packages/differential/test/pipeline-cases.ts) | 12 |
-| [Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 |
-| [Boolean Temporal test](../../packages/temporal-adapter/testkit/test/boolean-process-data-temporal.test.ts) | 59 |
-
-At the semantic checkpoint, the BPMN dispatch owner measured 201/600, the exact classifier measured 525/600, and the lowering owner measured 552/600 after receiving only the narrow metadata copy and bounded-task refusal. Parsing stayed in the new source owner. The strict Lean program JSON owner measured 458/600 after cohesive optional task-metadata decoding/encoding. The closure correction added one reusable completion-equivalence law to the external execution owner, leaving 17 lines of headroom, rather than exposing its private admission and closure helpers to the conformance module. Before retained evidence, the artifact owner measured 587/600, so raw CIB evidence types were extracted before metadata evidence was added. The differential catalog and Java runner received only their approved registration and delegation calls. The Workflow implementation and Boolean Temporal test did not grow. The table records the current post-implementation measurements enforced by the reviewability guard.
+A cohesive `user-task-metadata.ts` owns the neutral TypeScript contract and exact boundary-space predicate. `user-task-metadata-source.ts` owns URI-expanded source decoding and is the only source owner that reads the CIB extension tree. The selected profile's dispatch calls `exactForeignAttributeRejections` with one predicate admitting only `bpmn:UserTask` plus the exact candidate-group expanded name; User Task never enters `foreignAttributeConsumingTypes`, so no whole-type exemption exists. Metadata equality and raw CIB evidence types were extracted before their previous owners grew, the family-specific differential case remains separate from the catalog, a separate Java projector uses Task Service and Form Service, and dedicated Temporal fixture/test owners carry live evidence without growing the Workflow implementation or Boolean test.
 
 ### Guards and oracles
 
@@ -209,7 +180,7 @@ The exact claim to establish is one literal group candidate and one exact typed 
 
 The nearest unsupported claims are standard Potential Owner projection and general rendering/form support. The nearest realistic counterexamples are wrong-namespace twins, CIB comma/expression expansion, duplicate parser-retained form children, source-derived CIB projection, field-type stringification, optional-field `null` insertion that changes old artifacts, completion that consults metadata, and Query metadata dropped while completion still succeeds.
 
-At closure, [the capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the implementation baseline through the closure target and compares it with Boolean Process data, the nearest completed increment changing the same User Task, wire, CIB, Lean, differential, and Temporal layers. Closure review decides whether the two extension relationships remain independent, whether shared source/artifact schemas are a common mode, whether passive metadata can be removed without an independent lane failing, and whether E2 actually leaves platform assignment and form behavior unclaimed.
+The [capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the implementation baseline through the closure target and compares it with Boolean Process data, the nearest completed increment changing the same User Task, wire, CIB, Lean, differential, and Temporal layers. The closure review kept the two extension relationships independent, treated shared source/artifact schemas as a common mode, required separate evidence for passive metadata, and confirmed that E2 leaves platform assignment and form behavior unclaimed.
 
 The closure claim is one exact literal group candidate and one exact typed generated-form field preserved as passive neutral metadata from exact source through checked graph, IL, committed wait, public observation, retained CIB public-service facts, independent Lean/core evaluation, and Temporal Query/replay. The closest unsupported claims remain standard Potential Owner projection and general rendering/form behavior. Shared TypeScript compilation is the main common mode between the core and Temporal lanes, so the quote-aware raw-cardinality refusal, Lean checked-to-IL relation, independent CIB public-service projection, source-derived-projection mutation, live Query-omission mutation, and live field-type source variation bind distinct seams. Canonical observation depends only on admitted program/runtime state and explicit completion input; it contains no future command, expected result, CIB host identity, or Temporal identity. The realistic counterexamples are the wrong-namespace source twin, duplicate expanded attributes split by a quoted `>`, changed candidate or field identity/type, source-derived CIB projection, and a host Query that drops metadata while completion still succeeds, all of which have separating failures at the source or public open-task boundary. The proved Lean lane states reusable exact preservation, refusal-state preservation, completion irrelevance for arbitrary admitted metadata and completion patches, physical omission, and JSON identity over the selected value rather than only one serialized scenario. BPMN authority, the two selected CIB extensions, Lean facts, TypeScript realization, and Temporal durability remain distinct claims.
 
@@ -229,9 +200,9 @@ Stop and return to research or owner direction if:
 - the measured extractions cannot preserve old bytes and focused results;
 - the complete gate can pass only by weakening exact foreign-attribute refusal, strict schemas, old-profile equality, a seeded mutation, or a product boundary.
 
-## Owner decisions requested
+## Adopted decisions
 
-Approval of this proposal settles all of these together:
+The owner accepted all of these together:
 
 1. Select `cibseven-2.2.0-user-task-assignment-form-metadata-draft` as a successor composing the Boolean-completion value policy.
 2. Classify exact literal `candidateGroups` and exact generated-form `formData/formField` as separate bounded CIB extensions `CIB-EXT-0011` and `CIB-EXT-0012`.
