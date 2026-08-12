@@ -151,7 +151,7 @@ export function WorkInboxPanel({
       {error === null ? null : <p role="alert" className={styles.error}>{errorMessage(error)}</p>}
       {tasks.isPending ? <p role="status">Loading current tasks…</p> : null}
       {tasks.data?.tasks.length === 0 ? <p>No current tasks.</p> : null}
-      {tasks.data === undefined ? null : (
+      {tasks.data === undefined || tasks.data.tasks.length === 0 ? null : (
         <DataTable
           aria-label="Current tasks"
           columns={columns}

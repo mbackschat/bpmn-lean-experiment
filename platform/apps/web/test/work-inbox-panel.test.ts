@@ -159,6 +159,18 @@ test("uses the complete hosting and semantic occurrence as table row identity", 
   );
 });
 
+test("omits the inbox table when the current actor snapshot is empty", () => {
+  const client = new QueryClient();
+  client.setQueryData(["work", "tasks"], { tasks: [] });
+  const html = renderToStaticMarkup(createElement(QueryClientProvider, {
+    client,
+    children: createElement(WorkInboxPanel, { api: inertApi() }),
+  }));
+
+  assert.match(html, /No current tasks\./u);
+  assert.doesNotMatch(html, /<table/u);
+});
+
 function inertApi() {
   return {
     listTasks: async () => ({ tasks: [] }),
