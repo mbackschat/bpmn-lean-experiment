@@ -386,11 +386,11 @@ Recorded for traceability; the durable owners are [PROJECT-DESIGN.md](../PROJECT
 8. **`react-aria-components` plus TanStack Table, Virtual, and Query** as the selection, per [the recommendation](#3-recommendation).
 9. **`bpmn-js` 18.22.1** for viewer-only diagram rendering, with its exact bpmn.io license notice retained and its required watermark left unchanged, visible, linked, and unobstructed. Owner-approved 2026-08-09 after comparison with `bpmn-visualization`.
 10. **React 19.2.8 and React DOM 19.2.8 with development-only Vite 7.3.6**, plus exact React declaration packages, for the M1 static client. Owner-approved 2026-08-09; no server-side meta-framework or component-kit dependency is introduced by this decision.
+11. **CSS Modules** for the platform-owned component kit. Owner-selected 2026-08-12 because Vite compiles them to ordinary CSS with no added dependency or runtime, while React Aria states remain directly styleable through their public `data-*` attributes.
 
 ## 11. Remaining open decisions
 
 1. **`node:sqlite`** for the read model, verified available without a flag on the pinned Node 24.18.0, exporting `DatabaseSync`, `StatementSync`, `Session`, and `backup`. No approval needed as part of the runtime, but its upstream experimental status should be recorded.
-2. **The styling method** for the platform's own component kit, free per 5.1. CSS Modules costs nothing extra under Vite and has the Dagster precedent.
-3. **Charting**, if hand-rolled SVG proves insufficient. uPlot is dependency-free.
-4. **Long-polling for live views**, on the Temporal pattern of 6.1.
-5. Resolved. `a12/a12-widgets` is registered in [SOURCES.md](../SOURCES.md) and the external-sources lock at revision `f924a85`, because [SOURCES.md](../SOURCES.md) holds that local presence alone never makes a tree a project input, and the finding drawn from it is now a durable owner decision.
+2. **Charting**, if hand-rolled SVG proves insufficient. uPlot is dependency-free.
+3. **Long-polling for live views**, on the Temporal pattern of 6.1.
+4. Resolved. `a12/a12-widgets` is registered in [SOURCES.md](../SOURCES.md) and the external-sources lock at revision `f924a85`, because [SOURCES.md](../SOURCES.md) holds that local presence alone never makes a tree a project input, and the finding drawn from it is now a durable owner decision.

@@ -130,7 +130,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 | Component kit | Platform-owned, written over the primitives | Our source, roughly 2,000 lines expected |
 | Diagram rendering | `bpmn-js` 18.22.1 `NavigatedViewer` with its marker and `overlays` APIs | Owner-approved 2026-08-09 with the bpmn.io watermark and notice obligations retained |
 | Read-model store | `node:sqlite`, part of the pinned Node 24.18.0 | No approval needed; upstream experimental status to be recorded |
-| Styling method | Open; CSS Modules costs nothing extra under Vite | **Open decision** |
+| Styling method | CSS Modules, natively compiled by Vite to ordinary CSS | Owner-selected 2026-08-12 |
 | Charting | Hand-rolled SVG first; a dependency-free library if that proves insufficient | **Open decision** |
 | Live updates | HTTP long-polling on the Temporal pattern, no WebSockets or server-sent events | Proposed |
 | HTTP surface | Fetch-compatible module routes behind the built-in Node HTTP server; deployment uses one bounded raw XML body and exact-version start accepts no body | Implemented for M1 without an external transport dependency |
@@ -199,9 +199,8 @@ A surface is accepted when it has a runnable demonstration under `showcase/`, re
 
 ## Open decisions
 
-1. Styling method for the platform component kit.
-2. Charting, if hand-rolled SVG proves insufficient.
-3. Whether platform-only dependencies follow the same per-item approval as engine dependencies. Currently they do, unchanged.
+1. Charting, if hand-rolled SVG proves insufficient.
+2. Whether platform-only dependencies follow the same per-item approval as engine dependencies. Currently they do, unchanged.
 
 ## Reopen conditions
 
