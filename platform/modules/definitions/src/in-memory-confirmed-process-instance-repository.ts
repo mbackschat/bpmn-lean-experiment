@@ -48,6 +48,7 @@ export class InMemoryConfirmedProcessInstanceRepository
   listForReconciliation(): ReadonlyArray<ConfirmedProcessInstanceRecord> {
     return [...this.#records.values()]
       .filter((record) =>
+        record.state === ConfirmedProcessInstanceState.Reserved ||
         record.state === ConfirmedProcessInstanceState.Starting ||
         record.state === ConfirmedProcessInstanceState.Indeterminate ||
         (record.state === ConfirmedProcessInstanceState.Confirmed &&

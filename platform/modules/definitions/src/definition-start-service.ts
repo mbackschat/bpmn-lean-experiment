@@ -9,6 +9,7 @@ import type {
   DefinitionVersionStartRequest,
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
+import type { DeployedDefinitionVersion } from "@bpmn-lean/platform-contracts";
 
 import {
   DefinitionArtifactIntegrityError,
@@ -157,14 +158,57 @@ export class DefinitionStartService {
     }
   }
 
-  /** Repairs uncertain direct starts and pending subscribers without host redispatch. */
+  /** Dispatches safe reserved starts and describes only already-dispatched starts. */
   async reconcileAll(): Promise<void> {
     await this.#confirmedInstances.reconcileDirect({
       start: async (reservation) => {
-        throw new DefinitionStartIntegrityError({
+        if (reservation.intent.protocol !== "bpmn-direct-start-v1") {
+          return {
+            status: "integrityFailure",
+            evidence: "reserved direct start has an unsupported intent protocol",
+          };
+        }
+        const reference = {
           processId: reservation.instance.definition.processId,
           version: reservation.instance.definition.version,
-        });
+        };
+        const definition = toDefinitionMetadata(
+          reservation.instance.definition,
+        );
+        const artifact = await this.#artifacts.get(definition.source.sha256);
+        if (artifact === null) {
+          throw new DefinitionArtifactIntegrityError(
+            reference,
+            definition.source.sha256,
+          );
+        }
+        if (artifact.byteLength !== definition.source.byteLength) {
+          throw new DefinitionArtifactIntegrityError(
+            reference,
+            definition.source.sha256,
+            {
+              expected: definition.source.byteLength,
+              actual: artifact.byteLength,
+            },
+          );
+        }
+        const request = {
+          bytes: Uint8Array.from(artifact),
+          sourceId: definition.source.id,
+          expectedSha256: definition.source.sha256,
+          semanticProfile: definition.semanticProfile,
+          expectedProcessId: definition.processId,
+          processInstanceId: reservation.instance.processInstanceId,
+        } satisfies DefinitionVersionStartRequest;
+        return this.#directHost(
+          request,
+          {
+            protocol: "bpmn-direct-start-v1",
+            intentSha256: reservation.intent.intentSha256,
+          },
+          definition,
+          reference,
+        ).start(reservation);
       },
       describe: async (reservation) => {
         if (reservation.intent.protocol !== "bpmn-direct-start-v1") {
@@ -234,6 +278,28 @@ export class DefinitionStartService {
       },
     };
   }
+}
+
+function toDefinitionMetadata(
+  definition: DeployedDefinitionVersion,
+): DefinitionMetadata {
+  return {
+    processId: definition.processId,
+    version: definition.version,
+    source: { ...definition.source },
+    semanticProfile: definition.semanticProfile,
+    startCapabilities: {
+      messageStarts: definition.startCapabilities.messageStarts.map(
+        ({ startEventId, channel }) => ({
+          startEventId,
+          channel: { ...channel },
+        }),
+      ),
+      timerStarts: definition.startCapabilities.timerStarts.map(
+        ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
+      ),
+    },
+  };
 }
 
 function requireExactDefinitionBinding(

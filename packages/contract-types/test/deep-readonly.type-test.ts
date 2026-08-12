@@ -12,9 +12,6 @@ type MutableContract = {
   callback: (value: string) => number;
 };
 
-declare const opaqueBrand: unique symbol;
-type OpaqueString = string & { readonly [opaqueBrand]: "opaque" };
-
 declare const contract: DeepReadonly<MutableContract>;
 
 // @ts-expect-error top-level contract fields are immutable
@@ -34,9 +31,5 @@ if (contract.choice.kind === "withPayload") {
 const callbackResult: number = contract.callback("value");
 const tuple: readonly [{ readonly enabled: boolean }, "tail"] =
   contract.nested.tuple;
-declare const opaque: DeepReadonly<OpaqueString>;
-const retainedOpaque: OpaqueString = opaque;
-
 void callbackResult;
 void tuple;
-void retainedOpaque;

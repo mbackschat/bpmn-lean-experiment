@@ -99,7 +99,7 @@ export class SqliteConfirmedProcessInstanceRepository
   listForReconciliation(): ReadonlyArray<ConfirmedProcessInstanceRecord> {
     return this.#database.prepare(`
       SELECT * FROM confirmed_process_instances
-      WHERE state IN ('starting', 'indeterminate')
+      WHERE state IN ('reserved', 'starting', 'indeterminate')
         OR (state = 'confirmed' AND (operate_pending = 1 OR work_pending = 1))
       ORDER BY process_instance_id COLLATE BINARY ASC
     `).all().map(decodeRow);

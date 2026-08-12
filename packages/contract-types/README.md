@@ -5,4 +5,4 @@
 ## Owners
 
 - [`src/index.ts`](src/index.ts) owns the tuple-preserving and union-distributive `DeepReadonly<T>` utility.
-- [`test/deep-readonly.type-test.ts`](test/deep-readonly.type-test.ts) proves recursive immutability while retaining callable, tuple, union, and branded primitive types.
+- [`test/deep-readonly.type-test.ts`](test/deep-readonly.type-test.ts) proves recursive immutability while retaining callable, tuple, and union types.

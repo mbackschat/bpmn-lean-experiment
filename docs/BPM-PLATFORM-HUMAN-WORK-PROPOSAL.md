@@ -33,14 +33,14 @@ The direct-start lifecycle is closed:
 | Stored state | Allowed work | Next state | Public start result |
 |---|---|---|---|
 | no row | prepare only | rejected preparation leaves no row; admitted preparation reserves `reserved` | existing 422 rejection or no result yet |
-| `reserved` | one compare-and-set to `starting` | `starting` | no result yet |
-| `starting` before any returned host result | invoke start at most once, then describe after any thrown or interrupted call | `confirmed`, `indeterminate`, or `integrityFailure` | no result yet |
+| `reserved` | one compare-and-set to `starting`; the winner invokes the exact retained prepared start | `starting`, then `confirmed`, `indeterminate`, or `integrityFailure` | no result yet |
+| `starting` after the dispatch right is won | never dispatch again; describe after any thrown or interrupted call | `confirmed`, `indeterminate`, or `integrityFailure` | no result yet |
 | `indeterminate` | describe only | matching becomes `confirmed`; missing or unavailable stays `indeterminate`; divergent becomes `integrityFailure` | existing 500 `internalFailure` while unresolved |
 | `confirmed` with pending subscriber markers | invoke only the missing idempotent subscriber | `confirmed` with each acknowledgement retained | existing 500 `internalFailure` until both acknowledge |
 | `confirmed` with both acknowledgements | no host or subscriber call | stable | existing 201 start response |
 | `integrityFailure` | no host or subscriber call | stable | existing 500 `internalFailure` |
 
-A crash after the durable `starting` transition but before the SDK call may therefore leave a nonpublic indeterminate row rather than risk duplicate dispatch. A preparation rejection happens before reservation; any rejection or constructor failure after an admitted marker is integrity failure rather than a second semantic outcome. Definitions table access and startup reconciliation occur before route construction. If reconciliation cannot repair a confirmed publication's pending subscriber marker, server composition fails rather than serving a known incomplete confirmed set.
+A crash while still `reserved` is safe to dispatch once after restart because no process won the dispatch right. Once a process wins `reserved -> starting`, every retry and restart is describe-only, including a crash before the SDK call, which may therefore leave a nonpublic indeterminate row rather than risk duplicate dispatch. A preparation rejection happens before reservation; any rejection or constructor failure after an admitted marker is integrity failure rather than a second semantic outcome. Definitions table access and startup reconciliation occur before route construction. If reconciliation cannot repair a confirmed publication's pending subscriber marker, server composition fails rather than serving a known incomplete confirmed set.
 
 This lifecycle closes the M2 orphan-registration gap, not the body-free route's caller-idempotency gap. If the direct-start response is lost, the accepted host instance still converges into Operate and Work, but the caller has no resource identity with which to retrieve that response. A later body-free request intentionally creates a distinct semantic Process identity. Making direct start retry-transparent would require a separate public idempotency contract.
 

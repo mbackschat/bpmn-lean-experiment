@@ -80,36 +80,40 @@ test("serializes the closed direct-start state graph and refuses stale transitio
     assert.equal(reservation.record.state, ConfirmedProcessInstanceState.Reserved);
     assert.equal(reservation.record.operatePending, false);
     assert.equal(reservation.record.workPending, false);
+    repository.close();
 
-    const starting = repository.compareAndSetState(
+    const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
+    assert.deepEqual(reopened.listForReconciliation(), [reservation.record]);
+
+    const starting = reopened.compareAndSetState(
       publication.instance.processInstanceId,
       ConfirmedProcessInstanceState.Reserved,
       ConfirmedProcessInstanceState.Starting,
     );
     assert.equal(starting?.state, ConfirmedProcessInstanceState.Starting);
     assert.equal(
-      repository.compareAndSetState(
+      reopened.compareAndSetState(
         publication.instance.processInstanceId,
         ConfirmedProcessInstanceState.Reserved,
         ConfirmedProcessInstanceState.Starting,
       ),
       null,
     );
-    const indeterminate = repository.compareAndSetState(
+    const indeterminate = reopened.compareAndSetState(
       publication.instance.processInstanceId,
       ConfirmedProcessInstanceState.Starting,
       ConfirmedProcessInstanceState.Indeterminate,
     );
     assert.equal(indeterminate?.state, ConfirmedProcessInstanceState.Indeterminate);
-    const confirmed = repository.compareAndSetState(
+    const confirmed = reopened.compareAndSetState(
       publication.instance.processInstanceId,
       ConfirmedProcessInstanceState.Indeterminate,
       ConfirmedProcessInstanceState.Confirmed,
     );
     assert.equal(confirmed?.operatePending, true);
     assert.equal(confirmed?.workPending, true);
-    assert.deepEqual(repository.listForReconciliation(), [confirmed]);
-    repository.close();
+    assert.deepEqual(reopened.listForReconciliation(), [confirmed]);
+    reopened.close();
   } finally {
     await rm(root, { recursive: true, force: true });
   }

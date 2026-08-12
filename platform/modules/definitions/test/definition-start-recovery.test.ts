@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 import { ArtifactPutStatus } from "@bpmn-lean/platform-artifact-store";
@@ -11,10 +14,12 @@ import type {
 } from "@bpmn-lean/platform-engine-gateway";
 import {
   ConfirmedProcessInstancePublicationService,
+  ConfirmedProcessInstanceState,
   DefinitionStartIntegrityError,
   DefinitionStartService,
   DefinitionVersionStartStatus,
   InMemoryConfirmedProcessInstanceRepository,
+  SqliteConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
@@ -61,6 +66,88 @@ test("restart reconciliation describes an uncertain direct start without redispa
 
   assert.equal(fixture.preparedStarts, 1);
   assert.equal(fixture.describes, 2);
+});
+
+test("restart dispatches one durable reserved direct start and never redispatches starting", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-reserved-direct-recovery-"));
+  const databaseFile = join(root, "definitions.sqlite");
+  const reservation = {
+    instance: {
+      processInstanceId: "reserved-direct-instance",
+      definition: {
+        processId: definition.processId,
+        version: definition.version,
+        source: structuredClone(definition.source),
+        semanticProfile: definition.semanticProfile,
+        startCapabilities: { messageStarts: [], timerStarts: [] },
+      },
+    },
+    locator: "private-reserved-direct-locator",
+    intent: {
+      protocol: "bpmn-direct-start-v1",
+      intentSha256: "e".repeat(64),
+    },
+  } as const;
+  let starts = 0;
+  let describes = 0;
+  try {
+    const initial = new SqliteConfirmedProcessInstanceRepository(databaseFile);
+    initial.reserveDirect(reservation);
+    initial.close();
+
+    const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
+    const publications = new ConfirmedProcessInstancePublicationService({
+      repository: reopened,
+      operate: { recordProcessInstance: async () => undefined },
+      work: { recordConfirmedProcessInstance: async () => undefined },
+    });
+    const starter: DefinitionVersionStarter = {
+      prepareDefinitionVersion: async () => {
+        throw new Error("restart must use the durable reservation");
+      },
+      startPreparedDefinitionVersion: async (request) => {
+        starts += 1;
+        return {
+          status: EngineDefinitionStartStatus.Started,
+          source: structuredClone(definition.source),
+          definition: {
+            processId: definition.processId,
+            semanticProfile: definition.semanticProfile,
+          },
+          processInstanceId: request.processInstanceId,
+        };
+      },
+      describeDefinitionVersionStart: async () => {
+        describes += 1;
+        return {
+          status: "matching" as DefinitionStartDescriptionResult["status"],
+        };
+      },
+      startDefinitionVersion: async () => {
+        throw new Error("legacy single-call direct start must not be used");
+      },
+    };
+    const service = new DefinitionStartService(
+      starter,
+      artifactStore(),
+      definitionRepository(),
+      () => "unused-restart-id",
+      publications,
+    );
+
+    await service.reconcileAll();
+    await service.reconcileAll();
+
+    assert.equal(starts, 1);
+    assert.equal(describes, 0);
+    assert.equal(
+      reopened.get(reservation.instance.processInstanceId)?.state,
+      ConfirmedProcessInstanceState.Confirmed,
+    );
+    reopened.close();
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 function createFixture(initialDescription: "missing" | "matching") {

@@ -88,14 +88,16 @@ export type EngineDefinitionStartFailure = DeepReadonly<{
   evidence: string;
 }>;
 
-export type EnginePreparedDefinitionStart = DeepReadonly<{
-  status: typeof EngineDefinitionStartStatus.Admitted;
-  source: BpmnSourceIdentity;
-  definition: EngineDefinitionIdentity;
-  processInstanceId: string;
-  locator: EngineProcessWorkLocator;
-  intent: EngineDefinitionStartIntent;
-}>;
+export type EnginePreparedDefinitionStart =
+  DeepReadonly<{
+    status: typeof EngineDefinitionStartStatus.Admitted;
+    source: BpmnSourceIdentity;
+    definition: EngineDefinitionIdentity;
+    processInstanceId: string;
+    intent: EngineDefinitionStartIntent;
+  }> & Readonly<{
+    locator: EngineProcessWorkLocator;
+  }>;
 
 export type EngineStartedDefinition = DeepReadonly<{
   status: typeof EngineDefinitionStartStatus.Started;

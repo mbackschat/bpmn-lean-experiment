@@ -115,10 +115,11 @@ export class ConfirmedProcessInstancePublicationService {
     }
   }
 
-  /** Reconciles only already-dispatched direct rows. It never invokes host.start. */
+  /** Dispatches a durable reserved row once; already-dispatched rows are describe-only. */
   async reconcileDirect(host: DirectProcessInstanceHost): Promise<void> {
     for (const initial of this.#repository.listForReconciliation()) {
       if (
+        initial.state !== ConfirmedProcessInstanceState.Reserved &&
         initial.state !== ConfirmedProcessInstanceState.Starting &&
         initial.state !== ConfirmedProcessInstanceState.Indeterminate
       ) {
@@ -135,6 +136,10 @@ export class ConfirmedProcessInstancePublicationService {
         locator: initial.locator,
         intent: { ...initial.intent },
       };
+      if (initial.state === ConfirmedProcessInstanceState.Reserved) {
+        await this.startDirect(reservation, host);
+        continue;
+      }
       const reconciled = await this.#describeOnly(
         initial,
         reservation,
