@@ -9,7 +9,7 @@
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `7444ce3` | `fork-turns-none` | `approve-with-required-edits` | `3b748e2` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `fa53bf9` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Product question
