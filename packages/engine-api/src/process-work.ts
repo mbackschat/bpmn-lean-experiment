@@ -3,9 +3,9 @@ import type {
   CompleteUserTaskInstanceStimulus,
   OpenUserTask,
   UserTaskInstanceId,
-  VariableBinding,
 } from "@bpmn-lean/semantic-core";
 import {
+  StimulusKind,
   VariableValueKind,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
@@ -82,8 +82,21 @@ export type EngineWorkDetailRequest = EngineOpenWorkRequest & Readonly<{
   inputVariableNames: readonly string[];
 }>;
 
+export type EngineWorkCompletionStimulus = Readonly<{
+  kind: "completeUserTaskInstance";
+  commandId: string;
+  taskId: UserTaskInstanceId;
+  submittedValues: readonly Readonly<{
+    name: string;
+    value:
+      | Readonly<{ kind: "null" }>
+      | Readonly<{ kind: "string"; value: string }>
+      | Readonly<{ kind: "boolean"; value: boolean }>;
+  }>[];
+}>;
+
 export type EngineCompleteWorkRequest = EngineOpenWorkRequest & Readonly<{
-  stimulus: CompleteUserTaskInstanceStimulus;
+  stimulus: EngineWorkCompletionStimulus;
 }>;
 
 /** Mints the canonical direct or Message Start locator from semantic Process identity. */
@@ -245,10 +258,10 @@ function requireNonemptyWireString(value: string, name: string): string {
 }
 
 function cloneCompletion(
-  stimulus: CompleteUserTaskInstanceStimulus,
+  stimulus: EngineWorkCompletionStimulus,
 ): CompleteUserTaskInstanceStimulus {
   return {
-    kind: stimulus.kind,
+    kind: StimulusKind.CompleteUserTaskInstance,
     commandId: stimulus.commandId,
     taskId: cloneTaskId(stimulus.taskId),
     submittedValues: stimulus.submittedValues.map(cloneVariableBinding),
@@ -263,19 +276,27 @@ function cloneTaskId(taskId: UserTaskInstanceId): UserTaskInstanceId {
   };
 }
 
-function cloneVariableBinding(binding: VariableBinding): VariableBinding {
+function cloneVariableBinding(
+  binding: EngineWorkCompletionStimulus["submittedValues"][number],
+): CompleteUserTaskInstanceStimulus["submittedValues"][number] {
   switch (binding.value.kind) {
-    case VariableValueKind.Null:
-      return { name: binding.name, value: { kind: binding.value.kind } };
-    case VariableValueKind.Boolean:
+    case "null":
+      return { name: binding.name, value: { kind: VariableValueKind.Null } };
+    case "boolean":
       return {
         name: binding.name,
-        value: { kind: binding.value.kind, value: binding.value.value },
+        value: {
+          kind: VariableValueKind.Boolean,
+          value: binding.value.value,
+        },
       };
-    case VariableValueKind.String:
+    case "string":
       return {
         name: binding.name,
-        value: { kind: binding.value.kind, value: binding.value.value },
+        value: {
+          kind: VariableValueKind.String,
+          value: binding.value.value,
+        },
       };
   }
 }

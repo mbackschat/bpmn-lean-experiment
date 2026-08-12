@@ -167,6 +167,9 @@ importers:
       '@bpmn-lean/platform-artifact-store':
         specifier: workspace:*
         version: link:../../foundation/artifact-store
+      '@bpmn-lean/platform-audit':
+        specifier: workspace:*
+        version: link:../../foundation/audit
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../contracts
@@ -176,6 +179,9 @@ importers:
       '@bpmn-lean/platform-engine-gateway':
         specifier: workspace:*
         version: link:../../foundation/engine-gateway
+      '@bpmn-lean/platform-identity-policy':
+        specifier: workspace:*
+        version: link:../../foundation/identity-policy
       '@bpmn-lean/platform-operate':
         specifier: workspace:*
         version: link:../../modules/operate

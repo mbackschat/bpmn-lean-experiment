@@ -19,10 +19,12 @@
     "test": "pnpm build && node --test --test-concurrency=1 test/*.test.ts"
   },
   "dependencies": {
+    "@bpmn-lean/platform-audit": "workspace:*",
     "@bpmn-lean/platform-artifact-store": "workspace:*",
     "@bpmn-lean/platform-contracts": "workspace:*",
     "@bpmn-lean/platform-definitions": "workspace:*",
     "@bpmn-lean/platform-engine-gateway": "workspace:*",
+    "@bpmn-lean/platform-identity-policy": "workspace:*",
     "@bpmn-lean/platform-operate": "workspace:*",
     "@bpmn-lean/platform-work": "workspace:*"
   }

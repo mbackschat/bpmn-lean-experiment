@@ -7,17 +7,10 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import {
+  type ActorVisibleSystemWorkTask,
   WorkService,
   WorkSnapshotUnavailableError,
 } from "./work-service.js";
-
-type DetailVariable = Readonly<{
-  name: string;
-  value:
-    | Readonly<{ kind: "null" }>
-    | Readonly<{ kind: "string"; value: string }>
-    | Readonly<{ kind: "boolean"; value: boolean }>;
-}>;
 
 type WorkDetailGatewayPort = Readonly<{
   readWorkDetail(request: Readonly<{
@@ -30,7 +23,7 @@ type WorkDetailGatewayPort = Readonly<{
         status: "found";
         detail: Readonly<{
           task: PublicWorkTask["task"];
-          inputVariables: readonly DetailVariable[];
+          inputVariables: readonly unknown[];
         }>;
       }>
     | Readonly<{ status: "notFound" | "closed" | "unknown" | "unavailable" }>
@@ -42,6 +35,10 @@ type WorkTaskDetailServiceOptions = Readonly<{
   gateway: WorkDetailGatewayPort;
 }>;
 
+export type ActorVisibleWorkTaskDetail = ActorVisibleSystemWorkTask & Readonly<{
+  detail: PublicTaskDetail;
+}>;
+
 /** Projects one freshly visible engine task and its exact declared input value. */
 export class WorkTaskDetailService {
   readonly #options: WorkTaskDetailServiceOptions;
@@ -51,11 +48,21 @@ export class WorkTaskDetailService {
   }
 
   async getTaskDetail(taskId: PublicWorkTaskId): Promise<PublicTaskDetail | null> {
+    const visible = await this.findVisibleTaskDetail(taskId);
+    return visible?.detail ?? null;
+  }
+
+  async findVisibleTaskDetail(
+    taskId: PublicWorkTaskId,
+  ): Promise<ActorVisibleWorkTaskDetail | null> {
     const current = await this.#options.work.findVisibleTask(structuredClone(taskId));
     if (current === null) return null;
     const metadata = current.task.metadata;
     if (metadata === undefined) {
-      return { workTask: current.publicTask, form: null };
+      return {
+        ...current,
+        detail: { workTask: current.publicTask, form: null },
+      };
     }
     const field = metadata.form.fields[0];
     const result = await this.#options.gateway.readWorkDetail({
@@ -76,9 +83,12 @@ export class WorkTaskDetailService {
           throw new WorkSnapshotUnavailableError();
         }
         return {
-          workTask: current.publicTask,
-          form: {
-            fields: [projectField(field, result.detail.inputVariables)],
+          ...current,
+          detail: {
+            workTask: current.publicTask,
+            form: {
+              fields: [projectField(field, result.detail.inputVariables)],
+            },
           },
         };
     }
@@ -87,12 +97,12 @@ export class WorkTaskDetailService {
 
 function projectField(
   declared: Readonly<{ key: string; type: "string" | "boolean" }>,
-  variables: readonly DetailVariable[],
+  variables: readonly unknown[],
 ): PublicFormField {
-  if (variables.length > 1 || (variables[0] !== undefined && variables[0].name !== declared.key)) {
-    throw new WorkSnapshotUnavailableError();
-  }
-  const value: PublicFormValue = variables[0]?.value ?? { kind: "absent" };
+  if (variables.length > 1) throw new WorkSnapshotUnavailableError();
+  const value = variables[0] === undefined
+    ? { kind: "absent" } as const
+    : decodeVariable(variables[0], declared.key);
   switch (declared.type) {
     case "string": {
       const exact = { key: declared.key, type: declared.type } as const;
@@ -107,6 +117,53 @@ function projectField(
         : { ...exact, currentValue: value, compatibility: "compatible" };
     }
   }
+}
+
+function decodeVariable(value: unknown, expectedName: string): PublicFormValue {
+  if (!isExactRecord(value, ["name", "value"]) || value.name !== expectedName) {
+    throw new WorkSnapshotUnavailableError();
+  }
+  const rawValue = value.value;
+  if (!isRecord(rawValue) || typeof rawValue.kind !== "string") {
+    throw new WorkSnapshotUnavailableError();
+  }
+  switch (rawValue.kind) {
+    case "null":
+      if (!hasExactKeys(rawValue, ["kind"])) throw new WorkSnapshotUnavailableError();
+      return { kind: "null" };
+    case "string":
+      if (!hasExactKeys(rawValue, ["kind", "value"]) || typeof rawValue.value !== "string") {
+        throw new WorkSnapshotUnavailableError();
+      }
+      return { kind: "string", value: rawValue.value };
+    case "boolean":
+      if (!hasExactKeys(rawValue, ["kind", "value"]) || typeof rawValue.value !== "boolean") {
+        throw new WorkSnapshotUnavailableError();
+      }
+      return { kind: "boolean", value: rawValue.value };
+    default:
+      throw new WorkSnapshotUnavailableError();
+  }
+}
+
+function isExactRecord(
+  value: unknown,
+  keys: readonly string[],
+): value is Record<string, unknown> {
+  return isRecord(value) && hasExactKeys(value, keys);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[],
+): boolean {
+  const keys = Object.keys(value).sort();
+  return keys.length === expected.length &&
+    [...expected].sort().every((key, index) => keys[index] === key);
 }
 
 function sameTask(

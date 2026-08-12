@@ -4,6 +4,15 @@ import { join } from "node:path";
 
 import { FileArtifactStore } from "@bpmn-lean/platform-artifact-store";
 import {
+  AuditEventFactory,
+  AuditSearchService,
+  SqliteAuditRepository,
+} from "@bpmn-lean/platform-audit";
+import {
+  FakeActorResolver,
+  TaskAuthorizationPolicy,
+} from "@bpmn-lean/platform-identity-policy";
+import {
   ConfirmedProcessInstancePublicationService,
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
@@ -31,7 +40,13 @@ import {
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
 import {
-  SqliteConfirmedProcessWorkRepository,
+  SqliteWorkRepository,
+  WorkAuditOutboxService,
+  WorkAuditService,
+  WorkHttpRoutes,
+  WorkMutationService,
+  WorkService,
+  WorkTaskDetailService,
 } from "@bpmn-lean/platform-work";
 
 import {
@@ -74,6 +89,7 @@ export async function createPlatformServer(
     "process-instances.sqlite",
   );
   const workDatabaseFile = join(snapshot.dataDirectory, "work.sqlite");
+  const auditDatabaseFile = join(snapshot.dataDirectory, "audit.sqlite");
   const resources: CloseableResource[] = [engineRuntime];
   try {
     const repository = new SqliteDefinitionRepository(databaseFile);
@@ -95,8 +111,18 @@ export async function createPlatformServer(
     const processInstances = new ProcessInstanceSearchService(
       processInstanceRepository,
     );
-    const work = new SqliteConfirmedProcessWorkRepository(workDatabaseFile);
+    const work = new SqliteWorkRepository(workDatabaseFile);
     resources.push(work);
+    const auditRepository = new SqliteAuditRepository(auditDatabaseFile);
+    resources.push(auditRepository);
+    const auditSearch = new AuditSearchService(auditRepository);
+    const actors = new FakeActorResolver({
+      id: snapshot.fakeActorId,
+      groups: [...snapshot.fakeActorGroups],
+    });
+    const authorization = new TaskAuthorizationPolicy();
+    const auditOutbox = new WorkAuditOutboxService(work, auditRepository);
+    auditOutbox.reconcileAll();
     const confirmedInstances = new ConfirmedProcessInstancePublicationService({
       repository: confirmedRepository,
       operate: processInstances,
@@ -159,9 +185,56 @@ export async function createPlatformServer(
     const processInstanceRoutes = new ProcessInstanceHttpRoutes(
       processInstances,
     );
+    const workService = new WorkService({
+      repository: work,
+      gateway: engineRuntime.processWork,
+      actors,
+      authorization,
+      limits: {
+        maxProcesses: snapshot.maxWorkProcesses,
+        maxTasks: snapshot.maxWorkTasks,
+      },
+    });
+    const workDetails = new WorkTaskDetailService({
+      work: workService,
+      gateway: engineRuntime.processWork,
+    });
+    const workMutations = new WorkMutationService({
+      work: workService,
+      details: workDetails,
+      actors,
+      repository: work,
+      gateway: engineRuntime.processWork,
+      outbox: auditOutbox,
+      auditEvents: new AuditEventFactory({
+        generateId: randomUUID,
+        now: () => new Date(),
+      }),
+    });
+    const workAudit = new WorkAuditService({
+      actors,
+      authorization,
+      outbox: auditOutbox,
+      audit: auditSearch,
+    });
+    const workRoutes = new WorkHttpRoutes({
+      tasks: {
+        listTasks: () => workService.listTasks(),
+        getTaskDetail: (taskId) => workDetails.getTaskDetail(taskId),
+        claimTask: (taskId, request) =>
+          workMutations.claimTask(taskId, request),
+        releaseTask: (taskId, request) =>
+          workMutations.releaseTask(taskId, request),
+        completeTask: (actionId, request) =>
+          workMutations.completeTask(actionId, request),
+      },
+      audit: workAudit,
+      outbox: auditOutbox,
+    });
     const server = createPlatformHttpServerFromValidatedOrigin({
       publicOrigin: snapshot.publicOrigin,
       routes: [
+        (request) => workRoutes.handle(request),
         (request) => processInstanceRoutes.handle(request),
         (request) => publicationRoutes.handle(request),
         (request) => scheduleRoutes.handle(request),

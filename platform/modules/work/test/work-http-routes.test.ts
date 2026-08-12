@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  type PublicWorkTaskId,
+  type WorkClaimRequest,
+} from "@bpmn-lean/platform-contracts";
+
+import {
   WorkHttpRoutes,
   WorkSnapshotUnavailableError,
 } from "../dist/work-http-routes.js";
@@ -55,7 +60,10 @@ test("maps uniform hidden task and snapshot availability without private evidenc
 test("decodes claim JSON within the byte limit and maps the exact result status", async () => {
   let request: unknown;
   const routes = createRoutes({
-    claimTask: async (_taskId, value) => {
+    claimTask: async (
+      _taskId: PublicWorkTaskId,
+      value: WorkClaimRequest,
+    ) => {
       request = value;
       return {
         kind: "claimed",
