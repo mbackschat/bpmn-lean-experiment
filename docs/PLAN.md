@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit and audit the E2 closure corrections.** The quote-aware duplicate-attribute refusal, arbitrary-metadata Lean completion theorem, and live field-type source variation are focused-green. Run the complete gate against the immutable correction target, obtain the same closure reviewer's warm audit, record the receipt, and graduate the capsule. Product 2 use remains paused until that approval is recorded.
+**Next action: audit and record the E2 closure corrections.** The quote-aware and XML-reference-aware duplicate-attribute refusal, arbitrary-metadata Lean completion theorem, and live field-type source variation are ready and focused-green. The complete gate passed at the first immutable correction target `9bf1855`; the final source-only correction has its focused package, source-hygiene, binding, and diff evidence. Close the same reviewer's warm audit on the final correction target, record the receipt, and graduate the capsule. Product 2 use remains paused until that approval is recorded.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

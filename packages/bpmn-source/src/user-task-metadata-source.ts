@@ -42,7 +42,14 @@ export function carriesDuplicateCandidateGroupsAttribute(xml: string): boolean {
     /\bxmlns:([^\s=]+)\s*=\s*(["'])(.*?)\2/gu,
   )) {
     const prefix = declaration[1];
-    const uri = declaration[3];
+    const rawUri = declaration[3];
+    if (rawUri === undefined) {
+      return true;
+    }
+    const uri = decodeXmlAttributeValue(rawUri);
+    if (uri === undefined) {
+      return true;
+    }
     if (prefix !== undefined && uri === camundaBpmnNamespace) {
       candidatePrefixes.add(prefix);
     }
@@ -53,6 +60,65 @@ export function carriesDuplicateCandidateGroupsAttribute(xml: string): boolean {
     }
   }
   return false;
+}
+
+function decodeXmlAttributeValue(value: string): string | undefined {
+  let decoded = "";
+  let cursor = 0;
+  while (cursor < value.length) {
+    const referenceStart = value.indexOf("&", cursor);
+    if (referenceStart === -1) {
+      return decoded + value.slice(cursor);
+    }
+    decoded += value.slice(cursor, referenceStart);
+    const referenceEnd = value.indexOf(";", referenceStart + 1);
+    if (referenceEnd === -1) {
+      return undefined;
+    }
+    const reference = value.slice(referenceStart + 1, referenceEnd);
+    const replacement = decodeXmlReference(reference);
+    if (replacement === undefined) {
+      return undefined;
+    }
+    decoded += replacement;
+    cursor = referenceEnd + 1;
+  }
+  return decoded;
+}
+
+function decodeXmlReference(reference: string): string | undefined {
+  switch (reference) {
+    case "amp":
+      return "&";
+    case "apos":
+      return "'";
+    case "gt":
+      return ">";
+    case "lt":
+      return "<";
+    case "quot":
+      return "\"";
+    default:
+      break;
+  }
+  const hexadecimal = reference.startsWith("#x");
+  const digits = reference.slice(hexadecimal ? 2 : 1);
+  if (
+    (!hexadecimal && !reference.startsWith("#")) ||
+    digits.length === 0 ||
+    !(hexadecimal ? /^[0-9A-Fa-f]+$/u : /^[0-9]+$/u).test(digits)
+  ) {
+    return undefined;
+  }
+  const codePoint = Number.parseInt(digits, hexadecimal ? 16 : 10);
+  return isXmlCharacter(codePoint) ? String.fromCodePoint(codePoint) : undefined;
+}
+
+function isXmlCharacter(codePoint: number): boolean {
+  return codePoint === 0x9 || codePoint === 0xa || codePoint === 0xd ||
+    (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
+    (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
+    (codePoint >= 0x10000 && codePoint <= 0x10ffff);
 }
 
 function userTaskOpeningTags(xml: string): ReadonlyArray<string> {

@@ -255,6 +255,19 @@ test("refuses wrong namespaces, partial metadata, broader siblings, and nonliter
         'xmlns:c7="http://camunda.org/schema/1.0/bpmn" xmlns:c8="http://camunda.org/schema/1.0/bpmn"',
       )
       .replace('c7:candidateGroups="reviewers"', attributes)] as const),
+    ...(["&#110;", "&#x6e;", "&#x06E;"] as const).flatMap(
+      (encodedN) => ([
+        'c7:candidateGroups="review>team" c8:candidateGroups="other"',
+        'c8:candidateGroups="other" c7:candidateGroups="review>team"',
+      ] as const).map((attributes, order) => [
+        `duplicate expanded candidate through decoded namespace ${encodedN} order ${order}`,
+        source
+          .replace(
+            'xmlns:c7="http://camunda.org/schema/1.0/bpmn"',
+            `xmlns:c7="http://camunda.org/schema/1.0/bpmn" xmlns:c8="http://camunda.org/schema/1.0/bpm${encodedN}"`,
+          )
+          .replace('c7:candidateGroups="reviewers"', attributes),
+      ] as const)),
     ["duplicate locally bound candidate", source
       .replace(
         'c7:candidateGroups="reviewers"',
@@ -384,6 +397,37 @@ test("ignores duplicate-like candidate attributes in opaque XML regions", async 
         false,
         opaque,
       );
+    }
+  }
+});
+
+test("decodes bounded XML namespace references and fails closed on invalid references", async () => {
+  const source = await readFile(fixtureUrl, "utf8");
+  for (const reference of ["&amp;", "&apos;", "&gt;", "&lt;", "&quot;"]) {
+    const result = await compile(
+      source.replace("xmlns:c7=", `xmlns:unused="urn:${reference}" xmlns:c7=`),
+      profile,
+    );
+    assert.equal(result.status, BpmnCompilationStatus.Accepted, reference);
+  }
+  const invalidReferences = [
+    ["missing semicolon", "&#110"],
+    ["malformed numeric", "&#x;"],
+    ["unknown", "&unknown;"],
+    ["surrogate", "&#xD800;"],
+    ["out of range", "&#x110000;"],
+    ["XML-illegal scalar", "&#0;"],
+  ] as const;
+  for (const [name, reference] of invalidReferences) {
+    const result = await compile(
+      source.replace("xmlns:c7=", `xmlns:unused="urn:${reference}" xmlns:c7=`),
+      profile,
+    );
+    assert.equal(result.status, BpmnCompilationStatus.Rejected, name);
+    if (result.status === BpmnCompilationStatus.Rejected) {
+      assert.ok(result.diagnostics.some(({ evidence }) =>
+        evidence.includes("one expanded candidateGroups attribute")
+      ), name);
     }
   }
 });
