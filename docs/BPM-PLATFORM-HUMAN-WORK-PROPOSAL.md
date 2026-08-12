@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved proposal on 2026-08-12; checkpoint 1 reached first green and awaits mandatory independent review.** Context-cold target `7444ce3` received `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed its logical-audit identity, policy-hiding, crash-durable audit handoff, and owner-routing findings and received `APPROVE` from the exact reviewer. The proposal selects the current inbox, platform claim and authorization policy, one typed form field, retry-safe completion, distinct platform audit, and CSS-Modules UI scope. The [User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) is graduated and the owner authorized Product 2 implementation. Durable claims, audit, Work HTTP routes, and UI remain paused until the checkpoint review approves the first-green contract and producer lifecycle.
+**Owner-approved proposal on 2026-08-12; checkpoint 1 is independently approved.** Context-cold target `7444ce3` received `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed its proposal findings and received `APPROVE`. First-green checkpoint `fa53bf9` received `APPROVE WITH REQUIRED EDITS`; correction `1626d53` closed durable reserved-start recovery and restored the byte-identical neutral type utility, then received `APPROVE` from the exact reviewer. The [User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) is graduated. Checkpoint 2 implementation of identity, claims, completion, audit, HTTP, and persistence is authorized; UI and live/browser closure remain later lanes.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `7444ce3` | `fork-turns-none` | `approve-with-required-edits` | `3b748e2` |
-| Semantic checkpoint | `fa53bf9` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `fa53bf9` | `fork-turns-none` | `approve-with-required-edits` | `1626d53` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Product question
