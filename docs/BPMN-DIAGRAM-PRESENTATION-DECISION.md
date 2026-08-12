@@ -41,7 +41,7 @@ type BpmnDiagramPresentationSidecar = DeepReadonly<{
 }>;
 ```
 
-`diagramInterchangeXml` contains only one closed BPMN DI fragment. Its SHA-256 is computed over its exact UTF-8 bytes. The resolver inserts that fragment immediately before the exact admitted source's closing `definitions` tag without reserializing or replacing any source byte, then computes `presentationSha256` over the exact resolved UTF-8 presentation. Persisting only DI makes non-DI preservation structural rather than a trust claim about the generator's reserialized output. The adapter still parses the generated candidate and proves that every generated DI reference resolves to an existing exact source ID and that the selected Process, flow nodes, and Sequence Flows have the required plane, shapes, and edges before extracting the fragment. A sidecar is equivalent only when every closed field, all three digests, and all exact UTF-8 payload bytes match.
+`diagramInterchangeXml` contains one namespace-self-contained BPMNDiagram subtree. Its root carries the exact `bpmndi`, `dc`, and `di` namespace bindings required by its descendants, regardless of which prefixes the admitted source declared. Its SHA-256 is computed over its exact UTF-8 bytes. The resolver inserts that subtree immediately before the exact admitted source's closing `definitions` tag without reserializing or replacing any source byte, then validates the complete composed XML with a namespace-strict parser and computes `presentationSha256` over the exact resolved UTF-8 presentation. The original source bytes must remain an ordered byte-for-byte subsequence separated only by the inserted DI subtree. Persisting only DI makes non-DI preservation structural rather than a trust claim about the generator's reserialized output. The adapter still parses the generated candidate and proves that every generated DI reference resolves to an existing exact source ID and that the selected Process, flow nodes, and Sequence Flows have the required plane, shapes, and edges before extracting the subtree. A sidecar is equivalent only when every closed field, all three digests, and all exact UTF-8 payload bytes match.
 
 The sidecar's durable storage representation belongs to the Definitions module. It is not a public filesystem-path contract. The HTTP response exposes presentation bytes and provenance, never the private storage location.
 
@@ -65,7 +65,7 @@ type ResolvedBpmnDiagramPresentation = DeepReadonly<{
 }>;
 ```
 
-It is returned by `GET /api/v1/definitions/{processId}/versions/{version}/presentation`. Source provenance is explicit rather than inferred from absence of a generated field. The strict client recomputes the source and presentation digests, refuses recursive extras/private fields, and binds `definition` to the requested exact version.
+It is returned by `GET /api/v1/definitions/{processId}/versions/{version}/presentation`. Source provenance is explicit rather than inferred from absence of a generated field. The server recomputes `sourceSha256` from the admitted artifact before resolution. The strict client compares that value to `definition.source.sha256`, recomputes `presentationSha256` from the returned UTF-8 presentation, refuses recursive extras/private fields, and binds `definition` to the requested exact version. Returning a second copy of source bytes merely so the browser can hash them is rejected as redundant.
 
 ## Generation lifecycle
 
@@ -107,7 +107,7 @@ The renderer treats BPMN text and generated DI as untrusted presentation input u
 Focused evidence must prove:
 
 1. source-owned DI wins and no sidecar is generated;
-2. a metadata-only M3 model gets a valid generated sidecar and renders a diagram;
+2. the exact metadata-only M3 model gets namespace-valid composed XML, a valid generated sidecar, and a rendered diagram while retaining every admitted source byte in order;
 3. the same source digest is idempotent across restart and across two independent SQLite connections;
 4. a one-byte semantic source change cannot reuse the old sidecar;
 5. a changed source digest, DI digest, presentation digest, provenance value, effective-generator identity, or DI XML is rejected;
