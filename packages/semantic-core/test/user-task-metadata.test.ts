@@ -562,6 +562,15 @@ test("keeps all three wire schemas exact and mutually aligned", async () => {
       true,
       JSON.stringify(validator.errors),
     );
+    const withCandidate = (id: string) => ({
+      ...value,
+      metadata: {
+        ...exactMetadata,
+        assignment: { candidates: [{ kind: "group" as const, id }] },
+      },
+    });
+    assert.equal(validator(withCandidate("review\nteam")), true);
+    assert.equal(validator(withCandidate("review\n,admin")), false);
     assert.equal(validator({ ...value, metadata: null }), false);
     assert.equal(
       validator({
