@@ -18,6 +18,8 @@ import type {
 } from "react-aria-components/Checkbox";
 import type { ReactNode } from "react";
 
+import styles from "./form-controls.module.css";
+
 export type TextFieldProps = Omit<AriaTextFieldProps, "children"> & Readonly<{
   label: ReactNode;
   errorMessage?: ReactNode;
@@ -25,7 +27,7 @@ export type TextFieldProps = Omit<AriaTextFieldProps, "children"> & Readonly<{
 
 export function TextField({ label, errorMessage, ...props }: TextFieldProps) {
   return (
-    <AriaTextField {...props} className="uiTextField">
+    <AriaTextField {...props} className={styles.textField!}>
       <Label>{label}</Label>
       <Input />
       {errorMessage === undefined ? null : <FieldError>{errorMessage}</FieldError>}
@@ -36,7 +38,7 @@ export function TextField({ label, errorMessage, ...props }: TextFieldProps) {
 export type CheckboxProps = AriaCheckboxProps;
 
 export function Checkbox(props: CheckboxProps) {
-  return <AriaCheckbox {...props} className="uiCheckbox" />;
+  return <AriaCheckbox {...props} className={styles.checkbox!} />;
 }
 
 export type BooleanChoiceProps = Readonly<{
@@ -55,7 +57,7 @@ export function BooleanChoice({
 }: BooleanChoiceProps) {
   return (
     <RadioGroup
-      className="uiBooleanChoice"
+      className={styles.booleanChoice!}
       name={name}
       isRequired
       {...(isDisabled === undefined ? {} : { isDisabled })}
@@ -64,9 +66,9 @@ export function BooleanChoice({
         : { defaultValue: String(defaultValue) })}
     >
       <RadioLabel>{label}</RadioLabel>
-      <div className="uiBooleanChoiceOptions">
-        <Radio className="uiRadio" value="true">True</Radio>
-        <Radio className="uiRadio" value="false">False</Radio>
+      <div className={styles.booleanChoiceOptions!}>
+        <Radio className={styles.radio!} value="true">True</Radio>
+        <Radio className={styles.radio!} value="false">False</Radio>
       </div>
     </RadioGroup>
   );

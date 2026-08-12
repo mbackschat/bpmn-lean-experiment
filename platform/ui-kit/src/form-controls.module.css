@@ -1,0 +1,74 @@
+.textField {
+  display: grid;
+  gap: var(--ui-space-2);
+}
+
+.textField label,
+.booleanChoice > span {
+  color: var(--ui-color-text);
+  font: var(--ui-font-label);
+}
+
+.textField input {
+  min-height: 44px;
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  padding: 10px 12px;
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  font: inherit;
+}
+
+.textField input[data-focus-visible],
+.checkbox[data-focus-visible],
+.radio[data-focus-visible] {
+  outline: 2px solid var(--ui-color-focus);
+  outline-offset: 2px;
+  box-shadow: var(--ui-focus-ring);
+}
+
+.checkbox,
+.radio {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  color: var(--ui-color-text);
+  cursor: pointer;
+}
+
+.checkbox::before,
+.radio::before {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: var(--ui-border);
+  background: var(--ui-color-surface);
+  content: "";
+}
+
+.checkbox::before {
+  border-radius: 4px;
+}
+
+.radio::before {
+  border-radius: 50%;
+}
+
+.checkbox[data-selected]::before,
+.radio[data-selected]::before {
+  background: var(--ui-color-accent);
+  box-shadow: inset 0 0 0 4px var(--ui-color-surface);
+}
+
+.booleanChoice {
+  display: grid;
+  gap: var(--ui-space-2);
+  border: 0;
+  padding: 0;
+}
+
+.booleanChoiceOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-4);
+}

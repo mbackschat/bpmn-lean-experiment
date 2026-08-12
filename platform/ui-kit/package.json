@@ -9,14 +9,15 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./style.css": "./src/ui-kit.css"
+    "./style.css": "./dist/index.css"
   },
   "files": [
     "dist",
-    "src/ui-kit.css"
+    "src/ui-kit.css",
+    "src/*.module.css"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && vite build",
     "type-test": "tsc -p tsconfig.test.json",
     "test": "pnpm build && pnpm type-test && node --test --test-concurrency=1 test/*.test.ts"
   },
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "vite": "7.3.6"
   }
 }

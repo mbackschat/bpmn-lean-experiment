@@ -1,5 +1,8 @@
 import { Button as AriaButton } from "react-aria-components/Button";
 import type { ButtonProps as AriaButtonProps } from "react-aria-components/Button";
+import type { Ref } from "react";
+
+import styles from "./button.module.css";
 
 export enum ButtonVariant {
   Primary = "primary",
@@ -7,6 +10,7 @@ export enum ButtonVariant {
 }
 
 export type ButtonProps = AriaButtonProps & Readonly<{
+  ref?: Ref<HTMLButtonElement>;
   variant?: ButtonVariant;
 }>;
 
@@ -17,8 +21,8 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base = variant === ButtonVariant.Plain
-    ? "uiButton uiButtonPlain"
-    : "uiButton";
+    ? `${styles.button} ${styles.plain}`
+    : styles.button!;
   const exactClassName = joinClassName(base, className);
   return <AriaButton {...props} className={exactClassName} />;
 }

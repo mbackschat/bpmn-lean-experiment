@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement } from "react";
 import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { transformWithEsbuild } from "vite";
+import { build } from "vite";
 
 import type {
   PublicFormField,
@@ -24,35 +25,58 @@ import type {
   WorkTaskFormProps,
 } from "../src/work-inbox-panel.tsx";
 
-const source = await readFile(
-  new URL("../src/work-inbox-panel.tsx", import.meta.url),
+const stylesSource = await readFile(
+  new URL("../src/work-inbox.module.css", import.meta.url),
   "utf8",
 );
-const transformed = await transformWithEsbuild(source, "work-inbox-panel.tsx", {
-  format: "esm",
-  jsx: "automatic",
-  loader: "tsx",
-});
 const dependencies = [
   "react/jsx-runtime",
   "react",
   "@tanstack/react-query",
   "@bpmn-lean/platform-ui-kit",
+  "bpmn-js/lib/NavigatedViewer.js",
 ] as const;
-let runnable = transformed.code.replace(
-  /import styles from "\.\/work-inbox\.module\.css";/u,
-  "const styles = new Proxy({}, { get: (_target, key) => String(key) });",
+const built = await build({
+  configFile: false,
+  logLevel: "silent",
+  build: {
+    minify: false,
+    ssr: fileURLToPath(new URL("../src/work-inbox-panel.tsx", import.meta.url)),
+    target: "esnext",
+    write: false,
+    rollupOptions: {
+      external: (id) => dependencies.includes(id as typeof dependencies[number]) ||
+        id.includes("definition-diagram") || id.includes("bpmn-viewer") ||
+        id.includes("bpmn-js-factory"),
+    },
+  },
+});
+if (Array.isArray(built) || !("output" in built)) {
+  throw new Error("Unexpected Work inbox build result.");
+}
+const chunk = built.output.find((entry) => entry.type === "chunk");
+if (chunk === undefined) throw new Error("Work inbox test bundle is missing.");
+let runnable = chunk.code;
+runnable = runnable.replace(
+  /import \{ DefinitionDiagram \} from ['"][^'"]+['"];/u,
+  "const DefinitionDiagram = () => null;",
 );
 for (const dependency of dependencies) {
-  runnable = runnable.replaceAll(
-    JSON.stringify(dependency),
-    JSON.stringify(import.meta.resolve(dependency)),
-  );
+  runnable = runnable.replaceAll(`'${dependency}'`, JSON.stringify(import.meta.resolve(dependency)));
+  runnable = runnable.replaceAll(`"${dependency}"`, JSON.stringify(import.meta.resolve(dependency)));
 }
 const module = await import(
   `data:text/javascript;base64,${Buffer.from(runnable).toString("base64")}`
 ) as Readonly<{
   WorkInboxPanel: ComponentType<WorkInboxPanelProps>;
+  WorkTaskDetailWorkspace: ComponentType<Readonly<{
+    completionView: WorkCompletionView;
+    detail: PublicTaskDetail;
+    onBack: () => void;
+    onComplete: WorkTaskFormProps["onComplete"];
+    onRetry: () => void;
+    task: PublicWorkTask;
+  }>>;
   WorkTaskForm: ComponentType<WorkTaskFormProps>;
   WorkCompletionViewKind: Readonly<{
     Idle: "idle";
@@ -84,6 +108,7 @@ const module = await import(
 }>;
 const {
   WorkInboxPanel,
+  WorkTaskDetailWorkspace,
   WorkTaskForm,
   WorkCompletionViewKind,
   createRetainedCompletionOperation,
@@ -137,13 +162,62 @@ test("renders one global task inbox through TanStack Query and native table sema
     }),
   }));
 
-  assert.match(html, /Human work/u);
+  assert.match(html, />Tasks</u);
   assert.match(html, /<table[^>]*aria-label="Current tasks"/u);
   assert.match(html, /Review request/u);
   assert.match(html, /Review_Process/u);
   assert.match(html, /reviewers/u);
   assert.match(html, />Claim</u);
   assert.doesNotMatch(html, /workflow|run id|task queue|event history/iu);
+});
+
+test("reflows the five-column task row without horizontal scrolling", () => {
+  const client = new QueryClient();
+  client.setQueryData(["work", "tasks"], { tasks: [task] });
+  const html = renderToStaticMarkup(createElement(QueryClientProvider, {
+    client,
+    children: createElement(WorkInboxPanel, {
+      api: inertApi(),
+      createActionId: () => "action-1",
+    }),
+  }));
+
+  for (const label of ["Task", "Process", "Candidate group", "Claim", "Action"]) {
+    assert.match(html, new RegExp(`data-label="${label}"`, "u"));
+  }
+  assert.match(
+    stylesSource,
+    /\.taskTable\s*\{[^}]*container-type:\s*inline-size/su,
+  );
+  assert.match(
+    stylesSource,
+    /@container\s*\(max-width:\s*62rem\)[\s\S]*\.taskTable\s+:global\(tbody tr\)\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/su,
+  );
+  assert.match(
+    stylesSource,
+    /\.taskTable\s+:global\(tbody tr\)[\s\S]*overflow-wrap:\s*anywhere/su,
+  );
+  assert.doesNotMatch(stylesSource, /overflow-x:\s*(?:auto|scroll)/u);
+});
+
+test("renders a selected task as a full content workspace without the inbox table", () => {
+  const detail = claimedBooleanDetail();
+  const html = renderToStaticMarkup(createElement(WorkTaskDetailWorkspace, {
+    completionView: { kind: WorkCompletionViewKind.Idle },
+    detail,
+    onBack: () => undefined,
+    onComplete: () => undefined,
+    onRetry: () => undefined,
+    task: detail.workTask,
+  }));
+
+  assert.match(html, /Back to tasks</u);
+  assert.match(html, /Review request/u);
+  assert.match(html, /aria-label="Task detail views"[^>]*role="tablist"/u);
+  assert.match(html, /aria-selected="true"[^>]*role="tab"[^>]*>Form</u);
+  assert.match(html, /role="tab"[^>]*>Details</u);
+  assert.match(html, /Complete task/u);
+  assert.doesNotMatch(html, /<table/u);
 });
 
 test("renders Boolean as an explicit true-false choice and string as text without coercion", () => {

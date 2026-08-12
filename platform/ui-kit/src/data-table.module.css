@@ -1,0 +1,30 @@
+.collection {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  color: var(--ui-color-text);
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  min-width: 0;
+  border-bottom: var(--ui-border);
+  padding: 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th {
+  color: var(--ui-color-muted);
+  font: var(--ui-font-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

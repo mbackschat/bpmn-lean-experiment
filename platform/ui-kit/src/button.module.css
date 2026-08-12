@@ -1,0 +1,44 @@
+.button {
+  appearance: none;
+  min-height: 44px;
+  border: 1px solid var(--ui-color-accent);
+  border-radius: var(--ui-radius-control);
+  padding: 10px 16px;
+  background: var(--ui-color-accent);
+  color: var(--ui-color-surface);
+  cursor: pointer;
+  font: var(--ui-font-label);
+}
+
+.button[data-hovered],
+.button[data-pressed] {
+  background: var(--ui-color-accent-hover);
+}
+
+.button[data-focus-visible] {
+  outline: 2px solid var(--ui-color-focus);
+  outline-offset: 2px;
+  box-shadow: var(--ui-focus-ring);
+}
+
+.button[data-disabled] {
+  border-color: var(--ui-color-border);
+  background: var(--ui-color-inset);
+  color: var(--ui-color-muted);
+  cursor: not-allowed;
+}
+
+.plain {
+  min-height: auto;
+  border-color: transparent;
+  padding: 4px;
+  background: transparent;
+  color: var(--ui-color-accent);
+}
+
+.plain[data-hovered],
+.plain[data-pressed] {
+  background: var(--ui-color-accent-soft);
+  color: var(--ui-color-accent-hover);
+  text-decoration: none;
+}

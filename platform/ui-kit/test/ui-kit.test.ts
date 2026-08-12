@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import { createElement } from "react";
@@ -11,8 +12,18 @@ import {
   Checkbox,
   DataTable,
   TextField,
+  WorkspaceTabs,
   type DataTableColumn,
 } from "../dist/index.js";
+
+const rootStyles = await readFile(
+  new URL("../src/ui-kit.css", import.meta.url),
+  "utf8",
+);
+const tableStyles = await readFile(
+  new URL("../src/data-table.module.css", import.meta.url),
+  "utf8",
+).catch(() => "");
 
 test("renders accessible React Aria controls with native form semantics", () => {
   const html = renderToStaticMarkup(createElement("div", null,
@@ -29,7 +40,7 @@ test("renders accessible React Aria controls with native form semantics", () => 
 
   assert.match(html, /<button/u);
   assert.match(html, />Claim</u);
-  assert.match(html, /class="uiButton uiButtonPlain"[^>]*>Open task/u);
+  assert.match(html, /class="[^"]+ [^"]+"[^>]*>Open task/u);
   assert.match(html, /<label[^>]*>Decision note<\/label>/u);
   assert.match(html, /name="decision"/u);
   assert.match(html, /type="checkbox"/u);
@@ -44,6 +55,7 @@ test("renders a native TanStack-backed table with stable row identity", () => {
   const columns: readonly DataTableColumn<Row>[] = [{
     id: "name",
     header: "Task",
+    responsiveLabel: "Task",
     cell: (row) => row.name,
   }];
   const html = renderToStaticMarkup(createElement(DataTable<Row>, {
@@ -56,4 +68,29 @@ test("renders a native TanStack-backed table with stable row identity", () => {
   assert.match(html, /<table[^>]*aria-label="Current tasks"/u);
   assert.match(html, /<th[^>]*>Task<\/th>/u);
   assert.match(html, /<td[^>]*>Review request<\/td>/u);
+  assert.match(html, /<td[^>]*data-label="Task"/u);
+});
+
+test("renders shared React Aria tabs with one selected object panel", () => {
+  const html = renderToStaticMarkup(createElement(WorkspaceTabs, {
+    "aria-label": "Task detail views",
+    selectedKey: "form",
+    tabs: [{ id: "form", label: "Form", content: "form-content" }, {
+      id: "diagram",
+      label: "Diagram",
+      content: "diagram-content",
+    }],
+  }));
+
+  assert.match(html, /aria-label="Task detail views"[^>]*role="tablist"/u);
+  assert.match(html, /aria-selected="true"[^>]*role="tab"[^>]*>Form/u);
+  assert.match(html, /role="tabpanel"/u);
+  assert.match(html, /form-content/u);
+  assert.doesNotMatch(html, /diagram-content/u);
+});
+
+test("keeps shared component styling in CSS Modules without a horizontal table scroller", () => {
+  assert.doesNotMatch(rootStyles, /\.ui(?:Button|TextField|Checkbox|BooleanChoice|Radio|DataTable|TableScroller)\b/u);
+  assert.match(tableStyles, /\.collection\s*\{[^}]*overflow:\s*visible/su);
+  assert.doesNotMatch(tableStyles, /overflow-x:\s*(?:auto|scroll)/u);
 });

@@ -1,12 +1,12 @@
 .panel {
-  border: 1px solid #cad6d2;
-  border-radius: 18px;
-  background: rgb(255 255 255 / 92%);
-  box-shadow: 0 18px 55px rgb(25 65 53 / 8%);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-surface);
+  background: var(--ui-color-surface);
+  box-shadow: var(--ui-shadow-surface);
   display: grid;
-  gap: 1rem;
-  margin: 1.25rem 0;
-  padding: 1.25rem;
+  gap: var(--ui-space-4);
+  margin: 0;
+  padding: clamp(1rem, 2vw, 1.5rem);
 }
 
 .heading,
@@ -18,12 +18,12 @@
 }
 
 .heading p:not(.eyebrow) {
-  color: #5b6964;
+  color: var(--ui-color-muted);
   margin-bottom: 0;
 }
 
 .eyebrow {
-  color: #176b56;
+  color: var(--ui-color-accent);
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -32,41 +32,186 @@
 }
 
 .taskLink {
-  color: #0e6b55;
+  color: var(--ui-color-accent);
   text-align: left;
 }
 
-.detail {
-  border-top: 1px solid #dce4e1;
-  display: grid;
-  gap: 1rem;
-  padding-top: 1rem;
+.taskTable {
+  container-type: inline-size;
+  min-width: 0;
 }
 
-.detail h3 {
+.taskTable :global([data-ui="data-table-collection"]) {
+  max-width: 100%;
+}
+
+.taskTable :global(th:nth-child(1)) {
+  width: 26%;
+}
+
+.taskTable :global(th:nth-child(2)) {
+  width: 36%;
+}
+
+.taskTable :global(th:nth-child(3)),
+.taskTable :global(th:nth-child(4)),
+.taskTable :global(th:nth-child(5)) {
+  white-space: nowrap;
+}
+
+.taskTable :global(td:nth-child(1)),
+.taskTable :global(td:nth-child(2)) {
+  overflow-wrap: anywhere;
+}
+
+.taskTable :global(td:nth-child(3)),
+.taskTable :global(td:nth-child(4)),
+.taskTable :global(td:nth-child(5)) {
+  white-space: nowrap;
+}
+
+.taskTable :global(tbody tr) {
+  overflow-wrap: anywhere;
+}
+
+@container (max-width: 62rem) {
+  .taskTable :global([data-ui="data-table"]),
+  .taskTable :global(tbody) {
+    display: block;
+    width: 100%;
+  }
+
+  .taskTable :global(thead) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+.taskTable :global(tbody tr) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.5rem;
+    border: var(--ui-border);
+    border-radius: var(--ui-radius-surface);
+    padding: var(--ui-space-4);
+    background: var(--ui-color-inset);
+  }
+
+  .taskTable :global(tbody tr + tr) {
+    margin-top: 0.75rem;
+  }
+
+  .taskTable :global(td) {
+    display: grid;
+    gap: 0.3rem;
+    width: auto;
+    border: 0;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .taskTable :global(td::before) {
+    content: attr(data-label);
+    color: var(--ui-color-muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .taskTable :global(td:nth-child(1)),
+  .taskTable :global(td:nth-child(2)),
+  .taskTable :global(td:nth-child(5)) {
+    grid-column: 1 / -1;
+  }
+
+  .taskTable :global(td:nth-child(5)) {
+    justify-items: start;
+    border-top: var(--ui-border);
+    padding-top: 0.9rem;
+  }
+}
+
+.detail {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.detail h2 {
   margin: 0;
 }
 
+.detailHeading p:not(.eyebrow) {
+  margin: 0.35rem 0 0;
+  color: var(--ui-color-muted);
+}
+
+.back {
+  justify-self: start;
+}
+
+.claimBadge {
+  border-radius: var(--ui-radius-pill);
+  padding: 0.45rem 0.75rem;
+  background: var(--ui-color-accent-soft);
+  color: var(--ui-color-accent-hover);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
 .form {
-  align-items: end;
+  align-items: start;
   display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(18rem, 44rem);
+  max-width: 60rem;
+}
+
+.form > button {
+  justify-self: start;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(14rem, 1fr));
   gap: 1rem;
-  grid-template-columns: minmax(14rem, 1fr) auto;
-  max-width: 44rem;
+  margin: 0;
+}
+
+.facts div {
+  border-bottom: var(--ui-border);
+  padding-bottom: 0.9rem;
+}
+
+.facts dt {
+  margin-bottom: 0.3rem;
+  color: var(--ui-color-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .error {
-  background: #fff0ed;
-  border-radius: 10px;
-  color: #8b271d;
+  background: var(--ui-color-error-surface);
+  border-radius: var(--ui-radius-surface);
+  color: var(--ui-color-error);
   margin: 0;
   padding: 0.8rem 1rem;
 }
 
 .completionState {
-  background: #fff8df;
-  border-radius: 10px;
-  color: #6c4e00;
+  background: var(--ui-color-warning-surface);
+  border-radius: var(--ui-radius-surface);
+  color: var(--ui-color-warning);
   display: flex;
   gap: 1rem;
   justify-content: space-between;
@@ -87,5 +232,17 @@
 
   .form {
     grid-template-columns: 1fr;
+  }
+
+  .facts {
+    grid-template-columns: 1fr;
+  }
+
+  .taskTable :global(tbody tr) {
+    grid-template-columns: 1fr;
+  }
+
+  .taskTable :global(td) {
+    grid-column: 1;
   }
 }

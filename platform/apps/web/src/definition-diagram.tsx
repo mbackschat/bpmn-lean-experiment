@@ -7,7 +7,7 @@ import { BpmnDiagramViewer } from "./bpmn-viewer";
 import type { DefinitionApiClient } from "./definitions-api";
 
 export type DefinitionDiagramProps = Readonly<{
-  api: DefinitionApiClient;
+  api: Pick<DefinitionApiClient, "getSource">;
   definition: DeployedDefinitionVersion;
 }>;
 

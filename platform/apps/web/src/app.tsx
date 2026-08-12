@@ -7,17 +7,15 @@ import type {
   DeployedDefinitionVersion,
 } from "@bpmn-lean/platform-contracts";
 
-import { DefinitionDiagram } from "./definition-diagram";
-import { DefinitionSchedulePanel } from "./definition-schedule-panel";
-import { DefinitionStartPanel } from "./definition-start-panel";
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
+import { DefinitionWorkspace } from "./definition-workspace";
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
-import { MessageStartPublicationPanel } from "./message-start-publication-panel";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api";
 import { ProcessInstanceSearchPanel } from "./process-instance-search-panel";
 import type { WorkApiClient } from "./work-tasks-api";
 import { WorkInboxPanel } from "./work-inbox-panel";
+import { AppShell, AppWorkspace } from "./app-shell";
 
 export type AppProps = Readonly<{
   api: DefinitionApiClient;
@@ -40,6 +38,7 @@ export function App({
   const [deployment, setDeployment] = useState<DefinitionDeployResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [workspace, setWorkspace] = useState<AppWorkspace>(AppWorkspace.Work);
 
   const openDefinition = useCallback(async (definition: DeployedDefinitionVersion) => {
     setError(null);
@@ -115,144 +114,29 @@ export function App({
   }
 
   return (
-    <main>
-      <header className="product-header">
-        <div>
-          <p className="eyebrow">BPMN Lean Platform</p>
-          <h1>Definition workspace</h1>
-        </div>
-        <p className="product-summary">Deploy exact BPMN, inspect honest admission, view every retained version, and start the selected version.</p>
-      </header>
-
-      <section className="deploy-panel" aria-labelledby="deploy-heading">
-        <div>
-          <p className="eyebrow">Third-party deployment</p>
-          <h2 id="deploy-heading">Add a BPMN definition</h2>
-          <p>The engine validates the exact uploaded bytes against the selected semantic profile.</p>
-        </div>
-        <form onSubmit={(event) => { void deploy(event); }}>
-          <label>
-            BPMN XML file
-            <input name="source" type="file" accept=".bpmn,application/bpmn+xml,application/xml,text/xml" required />
-          </label>
-          <label>
-            Semantic profile ID
-            <input name="semanticProfile" type="text" placeholder="parallel-fork-join-draft" required />
-          </label>
-          <button type="submit" disabled={loading}>Deploy definition</button>
-        </form>
-      </section>
-
-      {error === null ? null : <p className="error" role="alert">{error}</p>}
-      {loading ? <p className="loading" role="status">Refreshing definitions…</p> : null}
-      <DeploymentResult result={deployment} />
-
-      <ProcessInstanceSearchPanel api={processInstanceSearchApi} />
-
-      <WorkInboxPanel api={workApi} />
-
-      <div className="workspace-grid">
-        <aside className="catalog-panel" aria-labelledby="catalog-heading">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Durable catalog</p>
-              <h2 id="catalog-heading">Definitions</h2>
-            </div>
-            <span className="count">{definitions.length}</span>
-          </div>
-          {definitions.length === 0 && !loading ? <p>No admitted definitions yet.</p> : null}
-          <ul className="definition-list">
-            {definitions.map((definition) => (
-              <li key={definition.processId}>
-                <button
-                  type="button"
-                  className={selected?.processId === definition.processId ? "selected" : undefined}
-                  onClick={() => { void openDefinition(definition); }}
-                >
-                  <strong>{definition.processId}</strong>
-                  <span>Latest version {definition.version}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {versions.length > 0 ? (
-            <div className="versions" aria-label="Definition versions">
-              <span>Versions</span>
-              {versions.map((version) => (
-                <button
-                  type="button"
-                  key={version.version}
-                  className={selected?.version === version.version ? "selected" : undefined}
-                  onClick={() => { setSelected(version); }}
-                >
-                  {version.version}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </aside>
-
-        {selected === null ? (
-          <section className="empty-panel">
-            <p>Select or deploy a definition to view its exact source diagram.</p>
-          </section>
-        ) : (
-          <div className="selected-definition">
-            <MessageStartPublicationPanel
-              key={`message-publication:${selected.processId}:${selected.version}`}
-              api={messageStartPublicationApi}
-              definition={selected}
-            />
-            <DefinitionSchedulePanel
-              key={`schedule:${selected.processId}:${selected.version}`}
-              api={scheduleApi}
-              definition={selected}
-            />
-            <DefinitionStartPanel
-              key={`start:${selected.processId}:${selected.version}`}
-              api={api}
-              definition={selected}
-            />
-            <DefinitionDiagram api={api} definition={selected} />
-          </div>
-        )}
-      </div>
-    </main>
+    <AppShell
+      activeWorkspace={workspace}
+      onNavigate={setWorkspace}
+      work={<WorkInboxPanel api={workApi} definitionApi={api} />}
+      processInstances={<ProcessInstanceSearchPanel api={processInstanceSearchApi} />}
+      definitions={(
+        <DefinitionWorkspace
+          api={api}
+          definitions={definitions}
+          deployment={deployment}
+          error={error}
+          loading={loading}
+          messageStartPublicationApi={messageStartPublicationApi}
+          onDeploy={deploy}
+          onOpenDefinition={openDefinition}
+          onSelectVersion={setSelected}
+          scheduleApi={scheduleApi}
+          selected={selected}
+          versions={versions}
+        />
+      )}
+    />
   );
-}
-
-function DeploymentResult({ result }: Readonly<{ result: DefinitionDeployResult | null }>) {
-  if (result === null) {
-    return null;
-  }
-  switch (result.status) {
-    case DefinitionDeployStatus.Deployed:
-      return (
-        <section className="result accepted" aria-live="polite">
-          <strong>Admitted and deployed</strong>
-          <span>{result.definition.processId}, version {result.definition.version}</span>
-        </section>
-      );
-    case DefinitionDeployStatus.Rejected:
-      return (
-        <section className="result rejected" aria-live="polite">
-          <strong>Not deployed</strong>
-          <p>The engine returned {result.diagnostics.length} admission finding{result.diagnostics.length === 1 ? "" : "s"}.</p>
-          <ol>
-            {result.diagnostics.map((diagnostic, index) => (
-              <li key={`${diagnostic.code}:${index}`}>
-                <code>{diagnostic.code}</code>: {diagnostic.evidence}
-                {diagnostic.element === null ? null : (
-                  <small>Element {diagnostic.element.id ?? "without ID"}, {diagnostic.element.containmentPath}</small>
-                )}
-              </li>
-            ))}
-          </ol>
-        </section>
-      );
-    default:
-      return assertNever(result);
-  }
 }
 
 function errorMessage(error: unknown): string {

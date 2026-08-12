@@ -6,11 +6,14 @@ import {
 import type { RowData } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 
+import styles from "./data-table.module.css";
+
 const features = tableFeatures({});
 
 export type DataTableColumn<Row extends RowData> = Readonly<{
   id: string;
   header: ReactNode;
+  responsiveLabel: string;
   cell: (row: Row) => ReactNode;
 }>;
 
@@ -40,8 +43,8 @@ export function DataTable<Row extends RowData>({
     getRowId: rowId,
   });
   return (
-    <div className="uiTableScroller">
-      <table className="uiDataTable" aria-label={ariaLabel}>
+    <div className={styles.collection!} data-ui="data-table-collection">
+      <table className={styles.table!} data-ui="data-table" aria-label={ariaLabel}>
         <thead>
           {table.getHeaderGroups().map((group) => (
             <tr key={group.id}>
@@ -59,7 +62,11 @@ export function DataTable<Row extends RowData>({
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id}>
               {row.getAllCells().map((cell) => (
-                <td key={cell.id}>
+                <td
+                  key={cell.id}
+                  data-label={columns.find(({ id }) => id === cell.column.id)!
+                    .responsiveLabel}
+                >
                   <table.FlexRender cell={cell} />
                 </td>
               ))}
