@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
 import type {
@@ -166,6 +167,11 @@ test("runs the complete durable Human Work slice", async () => {
 
     const initialTasks = capture(publicCaptures, await listWorkTasks(origin));
     assert.equal(initialTasks.value.tasks.length, 1);
+    assertConfirmedRegistrationAgreement(dataDirectory, [
+      direct,
+      scheduled.instance,
+      published.instance,
+    ]);
     const task = requireMetadataTask(initialTasks.value.tasks[0], direct);
     const detail = capture(publicCaptures, await readTaskDetail(origin, task.task.id));
     assert.deepEqual(detail.value.form, {
@@ -327,6 +333,78 @@ function assertDistinctInstances(
   assert.equal(instances.length, 3);
   assert.equal(new Set(instances.map(({ processInstanceId }) => processInstanceId)).size, 3);
   assert.equal(new Set(instances.map(({ definition }) => definition.source.sha256)).size, 3);
+}
+
+function assertConfirmedRegistrationAgreement(
+  dataDirectory: string,
+  expected: readonly PublicProcessInstanceIdentity[],
+): void {
+  const definitions = readRows(
+    join(dataDirectory, "definitions.sqlite"),
+    `SELECT process_instance_id, public_instance_json, state,
+      operate_pending, work_pending
+    FROM confirmed_process_instances ORDER BY process_instance_id COLLATE BINARY`,
+  );
+  const operate = readRows(
+    join(dataDirectory, "process-instances.sqlite"),
+    `SELECT process_instance_id, public_identity_json
+    FROM process_instances ORDER BY process_instance_id COLLATE BINARY`,
+  );
+  const work = readRows(
+    join(dataDirectory, "work.sqlite"),
+    `SELECT process_instance_id, public_instance_json, observation
+    FROM work_processes ORDER BY process_instance_id COLLATE BINARY`,
+  );
+  const expectedById = new Map(expected.map((instance) => [
+    instance.processInstanceId,
+    instance,
+  ]));
+  assert.equal(expectedById.size, 3);
+  assert.deepEqual(
+    definitions.map(({ process_instance_id }) => process_instance_id),
+    [...expectedById.keys()].sort(),
+  );
+  assert.deepEqual(
+    operate.map(({ process_instance_id }) => process_instance_id),
+    definitions.map(({ process_instance_id }) => process_instance_id),
+  );
+  assert.deepEqual(
+    work.map(({ process_instance_id }) => process_instance_id),
+    definitions.map(({ process_instance_id }) => process_instance_id),
+  );
+  for (let index = 0; index < definitions.length; index += 1) {
+    const confirmed = definitions[index]!;
+    const indexed = operate[index]!;
+    const registered = work[index]!;
+    assert.equal(confirmed.state, "confirmed");
+    assert.equal(confirmed.operate_pending, 0);
+    assert.equal(confirmed.work_pending, 0);
+    assert.equal(registered.observation, "active");
+    assert.deepEqual(
+      JSON.parse(String(confirmed.public_instance_json)),
+      expectedById.get(String(confirmed.process_instance_id)),
+    );
+    assert.deepEqual(
+      JSON.parse(String(indexed.public_identity_json)),
+      JSON.parse(String(confirmed.public_instance_json)),
+    );
+    assert.deepEqual(
+      JSON.parse(String(registered.public_instance_json)),
+      JSON.parse(String(confirmed.public_instance_json)),
+    );
+  }
+}
+
+function readRows(
+  databaseFile: string,
+  sql: string,
+): ReadonlyArray<Record<string, unknown>> {
+  const database = new DatabaseSync(databaseFile, { readOnly: true });
+  try {
+    return database.prepare(sql).all();
+  } finally {
+    database.close();
+  }
 }
 
 function capture<Result>(
