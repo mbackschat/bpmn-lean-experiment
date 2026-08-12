@@ -138,7 +138,7 @@ Modules follow durable product capabilities rather than horizontal technical lay
 | `agents` | Agent registry, policy, evaluation, budgets, traces, and human approval |
 | `administration` | Tenancy, identity integration, retention, backup, restore, hosting, and fleet administration |
 
-`definitions` is instantiated for M1. `operate` is instantiated for M2's confirmed-start Process-instance index and search service. The remaining names reserve ownership seams in this document; their directories and packages are created only when an accepted milestone or follow-on proposal needs them.
+`definitions` is instantiated for M1, `operate` for M2's confirmed-start Process-instance index and search service, and `work` for M3's current-task aggregation, claims, typed completion, and audit delivery. The remaining names reserve ownership seams in this document; their directories and packages are created only when an accepted milestone or follow-on proposal needs them.
 
 Each module owns its application service, domain-specific persistence ports, HTTP route contribution, and projections. `projection-runtime` supplies mechanics but never becomes the owner of every read model. This prevents `api/`, `projection/`, or `ui/` from becoming repository-wide catch-all packages as the product grows.
 
@@ -148,9 +148,11 @@ Each module owns its application service, domain-specific persistence ports, HTT
 
 The UI may share public contract types or a generated public client. It may not link a server service merely because both live in the same repository.
 
+The implemented M3 surface uses React Aria Components for accessible behavior, TanStack Table for the native inbox row model, TanStack Query for bounded HTTP state, CSS Modules for feature-local styling, and shared CSS variables from the UI kit. Boolean completion is an explicit true-or-false choice so absence and null never collapse to false. No router, generalized form library, themed component framework, or virtualization is part of the selected slice.
+
 ## Showcases
 
-`showcase/` contains executable acceptance gates organized by milestone, beginning with `showcase/m1-definition-deployment/`. A showcase may configure and drive exact public production-package entry points, and may use private development-only test infrastructure when the milestone requires real hosting. It may not deep-import production internals, enter a production dependency graph, contain reusable production behavior, or expose a private alternative API.
+`showcase/` contains executable acceptance gates organized by milestone, beginning with `showcase/m1-definition-deployment/` and currently extending through `showcase/m3-human-work/`. A showcase may configure and drive exact public production-package entry points, and may use private development-only test infrastructure when the milestone requires real hosting. It may not deep-import production internals, enter a production dependency graph, contain reusable production behavior, or expose a private alternative API.
 
 ## Architecture decision register
 
@@ -173,4 +175,4 @@ The UI may share public contract types or a generated public client. It may not 
 
 The product-boundary guard discovers current and future source files plus package manifests rather than comparing hand-maintained package lists or prefixes. It resolves exact workspace package names and subpaths to their owning repository paths before applying the same dependency matrix used for relative imports. It rejects platform source outside an approved owner; internal platform imports that violate the dependency graph, including a web-to-service import; product-1 imports into `platform/`; platform deep imports into engine internals; public engine imports outside the engine gateway; showcase deep imports into engine internals; platform Event History imports; production imports of showcase evidence; and production JUEL placement under `runners/`. Exact public engine package roots are permitted from showcase evidence only. Malformed or duplicate package identities fail closed, and each prohibited class carries a planted violation in the guard's own tests.
 
-The engine complete gate remains runnable without building the platform tree. Platform packages receive their own focused and showcase gates as implementation lands.
+The engine complete gate remains runnable without building the platform tree. Platform packages receive their own focused and showcase gates. CI maintains the independent M1, M2, and M3 acceptance floors without making the platform a dependency of the engine verifier.

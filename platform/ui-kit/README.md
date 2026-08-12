@@ -1,6 +1,6 @@
 # Platform UI kit
 
-This package owns reusable accessible behavior and platform design tokens. Its React Aria Button, TextField, and Checkbox primitives preserve native interaction semantics, while its TanStack Table wrapper supplies a headless row model rendered as a native table. It contains no deployment, task, operations, or other business workflow.
+This package owns reusable accessible behavior and platform design tokens. Its React Aria Button, TextField, Checkbox, and explicit Boolean radio-choice primitives preserve native interaction semantics, while its TanStack Table wrapper supplies a headless row model rendered as a native table. It contains no deployment, task, operations, or other business workflow.
 
 Feature layout and visual rules remain in the consuming application's CSS Modules. The kit exports one small global stylesheet for shared tokens and primitive states because those classes are an intentional cross-feature contract. [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#user-interface) owns the boundary.
 

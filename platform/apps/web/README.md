@@ -15,6 +15,6 @@ Run the API and web client in separate terminals:
 
 The development server proxies `/api` to `http://127.0.0.1:3000`; `PLATFORM_API_ORIGIN` may select another local API origin for isolated automation. Build and test the distribution with `./scripts/pnpm.sh run test:platform-web`.
 
-Required browser acceptance belongs to the independent [M1](../../../showcase/m1-definition-deployment/README.md) and [M2 Process-instance search](../../../showcase/m2-process-instance-search/README.md) showcases, not this production web package. They compose the production server and Worker around the same static client while keeping Playwright, Chromium, and Temporal test infrastructure out of this package and its distribution.
+Required browser acceptance belongs to the independent [M1](../../../showcase/m1-definition-deployment/README.md), [M2 Process-instance search](../../../showcase/m2-process-instance-search/README.md), and [M3 Human Work](../../../showcase/m3-human-work/README.md) showcases, not this production web package. They compose the production server and Worker around the same static client while keeping Playwright, Chromium, and Temporal test infrastructure out of this package and its distribution.
 
 See [the architecture](../../../docs/ARCHITECTURE.md#user-interface) and [the platform proposal](../../../docs/BPM-PLATFORM-PROPOSAL.md#api-first-architecture) for the durable boundary.

@@ -4,7 +4,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 ## Current claim
 
-**Two products, two end-to-end floors implemented.** The engine executes the bounded BPMN slice owned by twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has a closed M1 definition showcase and a closed M2 covering exact-version scheduling, Message Start ingress, and [Process-instance search](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md). M3 human-work checkpoint 1 is independently approved at correction `1626d53`; checkpoint 2 implementation is active. Later absences are recorded under [BPM platform](#bpm-platform).
+**Two products, three platform showcase floors implemented.** The engine executes the bounded BPMN slice owned by twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has closed M1 and M2 showcases, while M3 human-work implementation and executable evidence are complete against the independently approved checkpoint contract. Independent closure review and graduation remain pending. Later absences are recorded under [BPM platform](#bpm-platform).
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting.
 
@@ -123,20 +123,21 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - Three definitions-owned producer hooks that record before success and let durable Schedule and Message retries repair without repeating host work
 - A strict global HTTP route and HTTP-only panel with duplicate refusal, filter-preserving paging, exact public fields, and no inferred lifecycle, time, origin, or private host fact
 - Live restart, insertion-stable paging, exact-filter, external-start-exclusion, private-fact-scan, and three-distinct-Temporal-execution evidence plus field-specific browser acceptance
-- Neutral deep immutability and strict Work task, form, claim, completion, audit, error, route, and transport contracts, with recursive private-fact refusal and exact absent/null/Boolean distinctions
-- Opaque Product 1 Work locators and handle-free observe/detail/complete; Schedule binds returned execution identity, while direct start persists intent before one dispatch and recovers by description
-- One durable three-producer confirmation lifecycle with independent Operate/Work acknowledgements and checkpoint-only Work registration containing public identity plus private locator, never task state
+- Strict Work contracts and opaque Product 1 locators; all three producers share one durable confirmation lifecycle with independent Operate and Work acknowledgements
+- All-or-error current-task aggregation before fake-actor candidate-group policy, preserving uniform hiding and exact private distinctions for unavailable, over-ceiling, metadata-free, ineligible, and foreign-claimed cases
+- An epoch-2 Work SQLite repository for registrations, claim generations, retry-safe completion, and same-transaction audit outbox, with reopen, corruption, concurrency, response-loss, ABA, retained-retry, and startup-reconciliation evidence
+- Strict Work HTTP routes plus an HTTP-only React Aria, TanStack, and CSS-Modules panel with one string-or-Boolean field and no router or generalized form stack
+- Live Temporal and Chromium evidence proving three-producer Definitions/Operate/Work agreement, platform restart, Worker replacement, actor hiding, Boolean completion, audit, history, replay, recursive private-fact exclusion, and completed-task removal
 
 #### Explicitly absent
 
 - the transition-record projection and every cross-instance read model beyond the bounded confirmed-start index
-- the executable M3 task aggregation, identity policy, claims, completion and audit services, Work HTTP routes, React inbox/form, and live/browser evidence selected by the [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md); only their strict public contract and confirmed-Process registration prerequisite exist at checkpoint 1
-- identity and authorization
-- the platform component kit, routing, and the owner-selected `react-aria-components` and three TanStack packages; the M1 definition workspace uses plain CSS and no client state or routing dependency
-- the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
+- a production identity provider, directory synchronization, administrator role, cross-actor audit export, claim delegation, or authorization model beyond the exact fake actor and group policy
+- a client router, form library, themed component framework, virtualization, generalized form schema, validation engine, or more than one exact string-or-Boolean field
+- complete discovery of engine Process instances started outside Product 2
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - publicly recoverable transitions and token positions, the remaining engine prerequisite recorded by the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary)
-- complete discovery of engine Process instances started outside Product 2 or accepted by the legacy direct-start host after Product 2 loses its response before recording
+- recovery of legacy engine instances that predate the confirmed-start publication contract
 
 ### A12 Workflows downstream adoption
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved proposal on 2026-08-12; checkpoint 1 is independently approved.** Context-cold target `7444ce3` received `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed its proposal findings and received `APPROVE`. First-green checkpoint `fa53bf9` received `APPROVE WITH REQUIRED EDITS`; correction `1626d53` closed durable reserved-start recovery and restored the byte-identical neutral type utility, then received `APPROVE` from the exact reviewer. The [User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) is graduated. Checkpoint 2 implementation of identity, claims, completion, audit, HTTP, and persistence is authorized; UI and live/browser closure remain later lanes.
+**Owner-approved, fully implemented, and awaiting independent closure review.** Context-cold target `7444ce3` received `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed its proposal findings and received `APPROVE`. First-green checkpoint `fa53bf9` received `APPROVE WITH REQUIRED EDITS`; correction `1626d53` closed durable reserved-start recovery and restored the byte-identical neutral type utility, then received `APPROVE` from the exact reviewer. The [User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) is graduated. Identity, claims, completion, audit, persistence, HTTP, CSS-Modules React UI, live Temporal evidence, and Chromium acceptance now implement the approved account. The closure receipt remains pending until one immutable target receives the required context-cold verdict.
 
 ## Independent cold-review receipt
 
