@@ -216,6 +216,12 @@ importers:
 
   platform/foundation/artifact-store: {}
 
+  platform/foundation/audit:
+    dependencies:
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+
   platform/foundation/engine-gateway:
     dependencies:
       '@bpmn-lean/engine-api':
@@ -224,6 +230,12 @@ importers:
       '@bpmn-lean/temporal-client':
         specifier: workspace:*
         version: link:../../../packages/temporal-adapter/client
+
+  platform/foundation/identity-policy:
+    dependencies:
+      '@bpmn-lean/contract-types':
+        specifier: workspace:*
+        version: link:../../../packages/contract-types
 
   platform/modules/definitions:
     dependencies:
