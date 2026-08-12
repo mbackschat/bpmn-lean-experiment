@@ -70,7 +70,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) is implemented, registered, evidence-closed, independently closure-reviewed, and graduated. E2 User Task assignment and form metadata is the active engine prerequisite for the real inbox/form work.
+**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) is implemented, registered, evidence-closed, independently closure-reviewed, and graduated. E2 User Task assignment and form metadata is implemented and evidence-closed; its three bounded closure-review corrections are green and await the same reviewer's audit before graduation and Product 2 use.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: complete the E2 closure gate and independent review.** The registered profile, retained independently observed CIB metadata evidence, four-target differential case, runnable configuration, Worker-replacement live witness, Query mutation, history, and replay are implemented and focused-green. Run the complete gate against the immutable closure target and obtain governed closure approval. Product 2 use remains paused until that approval is recorded.
+**Next action: commit and audit the E2 closure corrections.** The quote-aware duplicate-attribute refusal, arbitrary-metadata Lean completion theorem, and live field-type source variation are focused-green. Run the complete gate against the immutable correction target, obtain the same closure reviewer's warm audit, record the receipt, and graduate the capsule. Product 2 use remains paused until that approval is recorded.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

@@ -1,5 +1,6 @@
 /** Exact source, program, metadata, and command fixtures for Temporal evidence. */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import {
@@ -49,6 +50,11 @@ export const expectedUserTaskMetadata: UserTaskMetadata = {
   form: { fields: [{ key: "approved", type: "boolean" }] },
 };
 
+export const sourceVariationUserTaskMetadata: UserTaskMetadata = {
+  assignment: { candidates: [{ kind: "group", id: "reviewers" }] },
+  form: { fields: [{ key: "approved", type: "string" }] },
+};
+
 export type MetadataFreeControlFixture = Readonly<{
   scenario: Scenario;
   semanticProcess: SemanticProcessProgram;
@@ -64,6 +70,12 @@ export type UserTaskMetadataFixture = Readonly<{
   completion: CompleteUserTaskInstanceStimulus;
   expected: ScenarioResult;
   metadataFreeControl: MetadataFreeControlFixture;
+}>;
+
+export type UserTaskMetadataSourceVariation = Readonly<{
+  scenario: Scenario;
+  semanticProcess: SemanticProcessProgram;
+  metadata: UserTaskMetadata;
 }>;
 
 export async function loadUserTaskMetadataFixture(): Promise<
@@ -104,6 +116,49 @@ export async function loadUserTaskMetadataFixture(): Promise<
     completion,
     expected: runScenario(scenario, semanticProcess),
     metadataFreeControl,
+  };
+}
+
+export async function loadUserTaskMetadataSourceVariation(
+  fixture: UserTaskMetadataFixture,
+): Promise<UserTaskMetadataSourceVariation> {
+  const source = await readFile(bpmnUrl, "utf8");
+  const booleanFieldType = 'type="boolean"';
+  assert.equal(source.split(booleanFieldType).length - 1, 1);
+  const sourceBytes = new TextEncoder().encode(
+    source.replace(booleanFieldType, 'type="string"'),
+  );
+  const scenario: Scenario = {
+    ...fixture.scenario,
+    bpmn: {
+      ...fixture.scenario.bpmn,
+      sha256: createHash("sha256").update(sourceBytes).digest("hex"),
+    },
+  };
+  const compilation = await compileScenario(scenario, sourceBytes);
+  const wait = compilation.semanticProcess.operations.find(
+    (operation) => operation.kind === SemanticOperationKind.AwaitUserTask,
+  );
+  assert.deepEqual(wait?.task.metadata, sourceVariationUserTaskMetadata);
+  assert.deepEqual(compilation.semanticProcess, {
+    ...fixture.semanticProcess,
+    identity: compilation.semanticProcess.identity,
+    operations: fixture.semanticProcess.operations.map((operation) =>
+      operation.kind === SemanticOperationKind.AwaitUserTask
+        ? {
+          ...operation,
+          task: {
+            ...operation.task,
+            metadata: sourceVariationUserTaskMetadata,
+          },
+        }
+        : operation
+    ),
+  });
+  return {
+    scenario,
+    semanticProcess: compilation.semanticProcess,
+    metadata: sourceVariationUserTaskMetadata,
   };
 }
 

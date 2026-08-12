@@ -385,6 +385,33 @@ theorem effect_result_route_failure_is_rejected
     rw [noCompletion]
   simp [applyStimulus, rejectedAdmission]
 
+/-- Matching ordinary User Task completions are equal when admission and the semantic successor agree. -/
+theorem user_task_completion_with_same_successor_is_equal
+    (closureLimit : Nat) (program : Program)
+    (leftState rightState successor : RuntimeState)
+    (completionCommandId : SemanticId)
+    (submittedTaskId : UserTaskInstanceId)
+    (submittedValues : List VariableBinding)
+    (leftRunning : leftState.control = .running submittedTaskId.processInstanceId)
+    (rightRunning : rightState.control = .running submittedTaskId.processInstanceId)
+    (ordinaryTask :
+      isBoundedTaskDefinition program ⟨submittedTaskId.elementId.value⟩ = false ∧
+        isMonitoredTaskDefinition program ⟨submittedTaskId.elementId.value⟩ = false)
+    (ordinaryProgram : isCallActivityProgram program = false)
+    (valuesAdmitted : processDataBindingsAdmitted program.identity.semanticProfile
+      .userTaskCompletion submittedValues = true)
+    (leftCompletion : completeUserTask leftState submittedTaskId.processInstanceId
+      ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation = some successor)
+    (rightCompletion : completeUserTask rightState submittedTaskId.processInstanceId
+      ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation = some successor) :
+    applyStimulus closureLimit program leftState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
+      applyStimulus closureLimit program rightState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) := by
+  simp [applyStimulus, admitStimulus, leftRunning, rightRunning,
+    ordinaryTask.1, ordinaryTask.2, ordinaryProgram, valuesAdmitted,
+    leftCompletion, rightCompletion]
+
 /-- Any mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 theorem task_identity_mismatch_is_rejected
     (program : Program) (wait : UserTaskWait)

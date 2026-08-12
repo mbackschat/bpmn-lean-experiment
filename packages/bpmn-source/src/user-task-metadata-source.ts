@@ -47,27 +47,119 @@ export function carriesDuplicateCandidateGroupsAttribute(xml: string): boolean {
       candidatePrefixes.add(prefix);
     }
   }
-  for (const match of searchableXml.matchAll(
-    /<(?:[^\s<>/:]+:)?userTask\b[^>]*>/gu,
-  )) {
-    const openingTag = match[0];
-    let count = 0;
-    for (const attribute of openingTag.matchAll(
-      /\b([^\s=:/]+):candidateGroups\s*=\s*(?:"[^"]*"|'[^']*')/gu,
-    )) {
-      const prefix = attribute[1];
-      if (
-        prefix !== undefined &&
-        candidatePrefixes.has(prefix)
-      ) {
-        count += 1;
-      }
-    }
-    if (count > 1) {
+  for (const openingTag of userTaskOpeningTags(searchableXml)) {
+    if (countCandidateGroupsAttributes(openingTag, candidatePrefixes) > 1) {
       return true;
     }
   }
   return false;
+}
+
+function userTaskOpeningTags(xml: string): ReadonlyArray<string> {
+  const openingTags: string[] = [];
+  let cursor = 0;
+  while (cursor < xml.length) {
+    const start = xml.indexOf("<", cursor);
+    if (start === -1) {
+      break;
+    }
+    const end = findMarkupEnd(xml, start + 1);
+    if (end === undefined) {
+      break;
+    }
+    const openingTag = xml.slice(start, end + 1);
+    if (/^<(?:[^\s<>/:]+:)?userTask(?=[\s/>])/u.test(openingTag)) {
+      openingTags.push(openingTag);
+    }
+    cursor = end + 1;
+  }
+  return openingTags;
+}
+
+function findMarkupEnd(xml: string, start: number): number | undefined {
+  let quote: "\"" | "'" | null = null;
+  for (let cursor = start; cursor < xml.length; cursor += 1) {
+    const character = xml[cursor];
+    if (character === "\"" || character === "'") {
+      quote = quote === null
+        ? character
+        : quote === character
+          ? null
+          : quote;
+    } else if (character === ">" && quote === null) {
+      return cursor;
+    }
+  }
+  return undefined;
+}
+
+function countCandidateGroupsAttributes(
+  openingTag: string,
+  candidatePrefixes: ReadonlySet<string>,
+): number {
+  const elementName = /^<[^\s/>]+/u.exec(openingTag)?.[0];
+  if (elementName === undefined) {
+    return 0;
+  }
+  let count = 0;
+  let cursor = elementName.length;
+  while (cursor < openingTag.length) {
+    while (isLexicalWhitespace(openingTag[cursor])) {
+      cursor += 1;
+    }
+    if (openingTag[cursor] === ">" || openingTag[cursor] === undefined) {
+      break;
+    }
+    if (openingTag[cursor] === "/") {
+      cursor += 1;
+      continue;
+    }
+    const nameStart = cursor;
+    while (
+      openingTag[cursor] !== undefined &&
+      !isLexicalWhitespace(openingTag[cursor]) &&
+      openingTag[cursor] !== "=" &&
+      openingTag[cursor] !== "/" &&
+      openingTag[cursor] !== ">"
+    ) {
+      cursor += 1;
+    }
+    const qualifiedName = openingTag.slice(nameStart, cursor);
+    while (isLexicalWhitespace(openingTag[cursor])) {
+      cursor += 1;
+    }
+    if (openingTag[cursor] !== "=") {
+      continue;
+    }
+    cursor += 1;
+    while (isLexicalWhitespace(openingTag[cursor])) {
+      cursor += 1;
+    }
+    const quote = openingTag[cursor];
+    if (quote !== "\"" && quote !== "'") {
+      continue;
+    }
+    cursor += 1;
+    const valueEnd = openingTag.indexOf(quote, cursor);
+    if (valueEnd === -1) {
+      break;
+    }
+    const separator = qualifiedName.indexOf(":");
+    if (
+      separator > 0 &&
+      qualifiedName.indexOf(":", separator + 1) === -1 &&
+      candidatePrefixes.has(qualifiedName.slice(0, separator)) &&
+      qualifiedName.slice(separator + 1) === "candidateGroups"
+    ) {
+      count += 1;
+    }
+    cursor = valueEnd + 1;
+  }
+  return count;
+}
+
+function isLexicalWhitespace(character: string | undefined): boolean {
+  return character !== undefined && /\s/u.test(character);
 }
 
 export type UserTaskMetadataSourceProjection =

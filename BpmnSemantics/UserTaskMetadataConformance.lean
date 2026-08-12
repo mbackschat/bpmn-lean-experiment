@@ -309,13 +309,46 @@ theorem metadata_free_values_omit_the_property_physically :
           "metadata" = true := by
   decide +kernel
 
-/-- Metadata does not participate in completion, so distinct waits reach the same committed state. -/
-theorem completion_is_metadata_irrelevant :
+/-- Any two admitted metadata values leave completion admission, variable merge, and continuation equal. -/
+theorem completion_is_metadata_irrelevant
+    (leftMetadata rightMetadata : UserTaskMetadata)
+    (_leftAdmitted : leftMetadata.wellFormed = true)
+    (_rightAdmitted : rightMetadata.wellFormed = true)
+    (commandId : SemanticId) (submittedValues : List VariableBinding)
+    (valuesAdmitted : processDataBindingsAdmitted
+      userTaskAssignmentFormMetadataProfileId .userTaskCompletion submittedValues = true) :
     applyStimulus scenarioClosureLimit (programFor exactMetadata)
-        (waitingStateFor exactMetadata) booleanCompletion =
+        (waitingStateFor leftMetadata)
+        (.completeUserTaskInstance commandId SequentialUserTask.exactTaskInstanceId
+          submittedValues) =
       applyStimulus scenarioClosureLimit (programFor exactMetadata)
-        (waitingStateFor changedCandidateMetadata) booleanCompletion := by
-  decide +kernel
+        (waitingStateFor rightMetadata)
+        (.completeUserTaskInstance commandId SequentialUserTask.exactTaskInstanceId
+          submittedValues) := by
+  let successor : RuntimeState :=
+    { BooleanProcessDataConformance.waitingState with
+      waits := []
+      tokens := addToken BooleanProcessDataConformance.waitingState.tokens
+        SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner }
+  apply user_task_completion_with_same_successor_is_equal
+    (successor := successor)
+  · simpa [waitingStateFor] using
+      (show BooleanProcessDataConformance.waitingState.control =
+        .running SequentialUserTask.exactTaskInstanceId.processInstanceId by
+        decide +kernel)
+  · simpa [waitingStateFor] using
+      (show BooleanProcessDataConformance.waitingState.control =
+        .running SequentialUserTask.exactTaskInstanceId.processInstanceId by
+        decide +kernel)
+  · decide +kernel
+  · decide +kernel
+  · simpa [programFor, checkedProcessFor, lowerCheckedProcess] using valuesAdmitted
+  · simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
+      SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId,
+      successor]
+  · simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
+      SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId,
+      successor]
 
 /-- A wrong occurrence preserves the complete metadata-bearing state. -/
 theorem wrong_occurrence_preserves_full_metadata_state :

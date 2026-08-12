@@ -10,6 +10,7 @@ import {
   applyStimulus,
   initialState,
   projectOpenUserTasks,
+  runScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteUserTaskInstanceStimulus,
@@ -45,6 +46,8 @@ import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
 import {
   expectedUserTaskMetadata,
   loadUserTaskMetadataFixture,
+  loadUserTaskMetadataSourceVariation,
+  sourceVariationUserTaskMetadata,
   withMetadataExecutionIdentity,
 } from "./user-task-metadata-fixture.ts";
 import type {
@@ -117,6 +120,10 @@ test("User Task metadata survives Worker replacement and replay", async () => {
       fixture.metadataFreeControl,
     );
     await assertQueryMutationDiscriminator(environment, fixture);
+    const sourceVariationEvidence = await runSourceVariationControl(
+      environment,
+      fixture,
+    );
 
     await stopBpmnTestWorker(worker);
     worker = undefined;
@@ -129,6 +136,11 @@ test("User Task metadata survives Worker replacement and replay", async () => {
       bundle,
       oldEvidence.replayHistory,
       oldEvidence.workflowId,
+    );
+    await replayBpmnHistory(
+      bundle,
+      sourceVariationEvidence.replayHistory,
+      sourceVariationEvidence.workflowId,
     );
   } finally {
     try {
@@ -356,14 +368,106 @@ async function assertQueryMutationDiscriminator(
   );
 }
 
+async function runSourceVariationControl(
+  environment: TestWorkflowEnvironment,
+  fixture: UserTaskMetadataFixture,
+): Promise<Readonly<{
+  replayHistory: Awaited<ReturnType<WorkflowHandle["fetchHistory"]>>;
+  workflowId: string;
+}>> {
+  const variation = await loadUserTaskMetadataSourceVariation(fixture);
+  const execution = withMetadataExecutionIdentity(
+    fixture,
+    "UserTaskMetadataSourceVariation_1",
+    "complete-user-task-metadata-source-variation",
+  );
+  assert.equal(execution.start.processId, fixture.start.processId);
+  assert.equal(
+    execution.completion.taskId.elementId,
+    fixture.completion.taskId.elementId,
+  );
+  assert.deepEqual(
+    execution.completion.submittedValues,
+    fixture.completion.submittedValues,
+  );
+  assert.notDeepEqual(variation.metadata, expectedUserTaskMetadata);
+
+  const started = await startBpmnProcess(
+    environment.client.workflow,
+    execution.start,
+    variation.semanticProcess,
+    { taskQueue: bpmnSemanticTaskQueue },
+  );
+  assert.equal(started.kind, BpmnProcessStartResultKind.Started);
+  if (started.kind !== BpmnProcessStartResultKind.Started) {
+    throw new TypeError("source-variation Workflow was rejected");
+  }
+  assert.deepEqual(
+    await waitForOpenUserTaskIds(
+      started.handle,
+      [execution.completion.taskId.elementId],
+    ),
+    exactOpenTask(execution.completion, sourceVariationUserTaskMetadata),
+  );
+  assertExactWorkflowStartHistory(
+    await started.handle.fetchHistory() as TemporalHistory,
+    execution.start,
+    variation.semanticProcess,
+  );
+
+  assert.deepEqual(
+    await submitUserTaskCompletion(
+      environment.client.workflow,
+      execution.start.instanceId,
+      execution.completion,
+    ),
+    {
+      kind: ProcessCommandResultKind.Semantic,
+      commandId: execution.completion.commandId,
+      outcome: CommandOutcome.Committed,
+    },
+  );
+  const receipt = await withDeadline(
+    started.handle.result(),
+    operationDeadlineMs,
+    "source-variation completed receipt",
+  );
+  assert.equal(isCompletedProcessReceipt(receipt), true);
+  if (!isCompletedProcessReceipt(receipt)) {
+    throw new TypeError("source-variation Workflow returned no receipt");
+  }
+  const expected = runScenario({
+    ...variation.scenario,
+    stimuli: [execution.start, execution.completion],
+  }, variation.semanticProcess);
+  assert.deepEqual(receipt.finalState, expectedTerminal(expected));
+  const trace = await readBpmnProcessTrace(
+    environment.client.workflow,
+    execution.start.instanceId,
+  );
+  assert.deepEqual(trace, expected.trace);
+  const replayHistory = await started.handle.fetchHistory();
+  const history = replayHistory as TemporalHistory;
+  assertExactWorkflowStartHistory(
+    history,
+    execution.start,
+    variation.semanticProcess,
+  );
+  assertExactAcceptedCompletion(history, execution.completion);
+  reconcileHarnessTraceEvidence(trace, receipt, history);
+  assertNoNonUpdateBpmnHostEvents(history, "source-variation control");
+  return { replayHistory, workflowId: started.handle.workflowId };
+}
+
 function exactOpenTask(
   completion: CompleteUserTaskInstanceStimulus,
+  metadata: OpenUserTask["metadata"] = expectedUserTaskMetadata,
 ): ReadonlyArray<OpenUserTask> {
   return [{
     id: completion.taskId,
     name: "Approve",
     state: UserTaskLifecycleState.Active,
-    metadata: expectedUserTaskMetadata,
+    metadata,
   }];
 }
 

@@ -244,6 +244,17 @@ test("refuses wrong namespaces, partial metadata, broader siblings, and nonliter
         'c7:candidateGroups="reviewers"',
         'c7:candidateGroups="reviewers" camunda:candidateGroups="reviewers"',
       )],
+    ...([
+      ["duplicate expanded candidate after quoted greater-than", 'c7:candidateGroups="review>team" c8:candidateGroups="other"'],
+      ["duplicate expanded candidate after single-quoted greater-than", "c7:candidateGroups='review>team' c8:candidateGroups='other'"],
+      ["duplicate expanded candidate before quoted greater-than", 'c8:candidateGroups="other" c7:candidateGroups="review>team"'],
+      ["duplicate expanded candidate before single-quoted greater-than", "c8:candidateGroups='other' c7:candidateGroups='review>team'"],
+    ] as const).map(([name, attributes]) => [name, source
+      .replace(
+        'xmlns:c7="http://camunda.org/schema/1.0/bpmn"',
+        'xmlns:c7="http://camunda.org/schema/1.0/bpmn" xmlns:c8="http://camunda.org/schema/1.0/bpmn"',
+      )
+      .replace('c7:candidateGroups="reviewers"', attributes)] as const),
     ["duplicate locally bound candidate", source
       .replace(
         'c7:candidateGroups="reviewers"',
