@@ -73,7 +73,7 @@ public final class CibSevenMappedSuccessScenarioRunnerTest {
           mapping.localPatch());
       assertEquals(1, mapping.invocations());
       assertEquals(
-          ScenarioProtocol.CleanupProjection.clean(),
+          ScenarioDiagnosticsProtocol.CleanupProjection.clean(),
           result.diagnostics().cleanup());
     }
   }

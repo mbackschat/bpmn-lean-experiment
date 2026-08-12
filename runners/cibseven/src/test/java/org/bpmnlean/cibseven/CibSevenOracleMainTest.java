@@ -48,7 +48,7 @@ public class CibSevenOracleMainTest {
         results.stream()
             .allMatch(
                 result ->
-                    ScenarioProtocol.CleanupProjection.clean()
+                    ScenarioDiagnosticsProtocol.CleanupProjection.clean()
                         .equals(result.diagnostics().cleanup())));
     assertFalse(output.toString().contains("processDefinitionId"));
   }

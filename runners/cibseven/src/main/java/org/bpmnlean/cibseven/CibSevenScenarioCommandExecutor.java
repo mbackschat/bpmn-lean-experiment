@@ -9,7 +9,7 @@ import org.bpmnlean.cibseven.ScenarioMessageProtocol.DirectMessageChannel;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
-import org.bpmnlean.cibseven.ScenarioProtocol.EffectExecutionSnapshot;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectExecutionSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.SuccessfulEffectResult;
 import org.cibseven.bpm.engine.ProcessEngine;

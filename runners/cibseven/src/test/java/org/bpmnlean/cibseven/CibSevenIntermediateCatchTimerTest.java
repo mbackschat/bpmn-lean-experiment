@@ -14,8 +14,8 @@ import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenTimer;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
-import org.bpmnlean.cibseven.ScenarioProtocol.TimerJob;
-import org.bpmnlean.cibseven.ScenarioProtocol.TimerJobSnapshot;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TimerJob;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TimerJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerOccurrenceId;
 import org.junit.Test;
 
@@ -76,7 +76,7 @@ public class CibSevenIntermediateCatchTimerTest {
                   List.of(new TimerJob("TimerCatch_PT1S", 1000, false))),
               new TimerJobSnapshot(FIRE_COMMAND_ID, List.of())),
           result.diagnostics().timerJobs());
-      assertEquals(ScenarioProtocol.CleanupProjection.clean(), result.diagnostics().cleanup());
+      assertEquals(ScenarioDiagnosticsProtocol.CleanupProjection.clean(), result.diagnostics().cleanup());
     }
   }
 }

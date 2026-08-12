@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.bpmnlean.cibseven.ScenarioProtocol.EffectDescriptor;
-import org.bpmnlean.cibseven.ScenarioProtocol.EffectJob;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectJob;
 import org.bpmnlean.cibseven.ScenarioProtocol.EffectOccurrenceId;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenEffect;
 import org.cibseven.bpm.engine.ProcessEngine;

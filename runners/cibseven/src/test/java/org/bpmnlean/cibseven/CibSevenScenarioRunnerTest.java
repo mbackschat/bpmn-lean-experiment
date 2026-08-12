@@ -16,12 +16,12 @@ import org.bpmnlean.cibseven.ScenarioInteractionProtocol.CompleteUserTaskInstanc
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
-import org.bpmnlean.cibseven.ScenarioProtocol.PvmActivityProjection;
-import org.bpmnlean.cibseven.ScenarioProtocol.PvmDefinitionProjection;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.PvmActivityProjection;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.PvmDefinitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
-import org.bpmnlean.cibseven.ScenarioProtocol.TransitionProjection;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TransitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskInstanceId;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
@@ -73,8 +73,8 @@ public class CibSevenScenarioRunnerTest {
     assertEquals(expectedTrace, second.trace());
     assertEquals(expectedProjection(), first.diagnostics().pvmDefinition());
     assertEquals(first.diagnostics().pvmDefinition(), second.diagnostics().pvmDefinition());
-    assertEquals(ScenarioProtocol.CleanupProjection.clean(), first.diagnostics().cleanup());
-    assertEquals(ScenarioProtocol.CleanupProjection.clean(), second.diagnostics().cleanup());
+    assertEquals(ScenarioDiagnosticsProtocol.CleanupProjection.clean(), first.diagnostics().cleanup());
+    assertEquals(ScenarioDiagnosticsProtocol.CleanupProjection.clean(), second.diagnostics().cleanup());
     assertEquals(
         ProcessEngine.class.getPackage().getImplementationVersion(),
         first.diagnostics().engineVersion());
@@ -109,8 +109,8 @@ public class CibSevenScenarioRunnerTest {
     assertEquals(staleEvidence.trace(), stale.trace());
     assertEquals(rejected.trace().get(2), rejected.trace().get(4));
     assertEquals(stale.trace().get(4), stale.trace().get(6));
-    assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
-    assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
+    assertEquals(ScenarioDiagnosticsProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
+    assertEquals(ScenarioDiagnosticsProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
   }
 
   @Test
@@ -134,7 +134,7 @@ public class CibSevenScenarioRunnerTest {
             .subscriptions()
             .getFirst()
             .eventName());
-    assertEquals(ScenarioProtocol.CleanupProjection.clean(), result.diagnostics().cleanup());
+    assertEquals(ScenarioDiagnosticsProtocol.CleanupProjection.clean(), result.diagnostics().cleanup());
   }
 
   @Test
@@ -167,10 +167,10 @@ public class CibSevenScenarioRunnerTest {
     assertEquals(aThenBResult.trace().get(2), bThenAResult.trace().get(2));
     assertEquals(aThenBResult.trace().get(6), bThenAResult.trace().get(6));
     assertEquals(
-        ScenarioProtocol.CleanupProjection.clean(),
+        ScenarioDiagnosticsProtocol.CleanupProjection.clean(),
         aThenBResult.diagnostics().cleanup());
     assertEquals(
-        ScenarioProtocol.CleanupProjection.clean(),
+        ScenarioDiagnosticsProtocol.CleanupProjection.clean(),
         bThenAResult.diagnostics().cleanup());
   }
 
@@ -228,14 +228,14 @@ public class CibSevenScenarioRunnerTest {
         staleWhileActiveResult.trace().get(4), staleWhileActiveResult.trace().get(6));
     assertEquals(staleAfterScopeResult.trace().get(6), staleAfterScopeResult.trace().get(8));
     assertEquals(
-        ScenarioProtocol.CleanupProjection.clean(), aThenBResult.diagnostics().cleanup());
+        ScenarioDiagnosticsProtocol.CleanupProjection.clean(), aThenBResult.diagnostics().cleanup());
     assertEquals(
-        ScenarioProtocol.CleanupProjection.clean(), bThenAResult.diagnostics().cleanup());
+        ScenarioDiagnosticsProtocol.CleanupProjection.clean(), bThenAResult.diagnostics().cleanup());
     assertEquals(
-        ScenarioProtocol.CleanupProjection.clean(),
+        ScenarioDiagnosticsProtocol.CleanupProjection.clean(),
         staleWhileActiveResult.diagnostics().cleanup());
     assertEquals(
-        ScenarioProtocol.CleanupProjection.clean(),
+        ScenarioDiagnosticsProtocol.CleanupProjection.clean(),
         staleAfterScopeResult.diagnostics().cleanup());
   }
 

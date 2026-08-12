@@ -63,7 +63,7 @@ public final class CibSevenMappedBoundaryErrorScenarioRunnerTest {
               .value());
       assertTrue(completed.variables().getFirst().value() instanceof NullValue);
       assertEquals(
-          ScenarioProtocol.CleanupProjection.clean(),
+          ScenarioDiagnosticsProtocol.CleanupProjection.clean(),
           result.diagnostics().cleanup());
     }
   }
