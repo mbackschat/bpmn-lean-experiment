@@ -95,6 +95,45 @@ test("distinguishes unsupported media type and oversized mutation payload", asyn
   assert.equal(oversized?.status, 413);
 });
 
+test("maps release, completion, and self-audit closed results", async () => {
+  const routes = createRoutes({
+    releaseTask: async () => ({
+      kind: "released",
+      result: { taskId, claimGeneration: 2, released: true },
+    }),
+    completeTask: async () => ({
+      kind: "result",
+      result: { state: "indeterminate", actionId: "complete-1", taskId },
+    }),
+  });
+  const release = await routes.handle(new Request(
+    `${taskUrl()}/claim?actionId=release-1&generation=1`,
+    { method: "DELETE" },
+  ));
+  assert.equal(release?.status, 200);
+  const completion = await routes.handle(new Request(
+    "http://platform.test/api/v1/work-task-completions/complete-1",
+    {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        taskId,
+        expectedClaimGeneration: 1,
+        submittedValues: [{
+          key: "approved",
+          value: { kind: "boolean", value: false },
+        }],
+      }),
+    },
+  ));
+  assert.equal(completion?.status, 202);
+  const audit = await routes.handle(new Request(
+    "http://platform.test/api/v1/work-audit?actionKind=claim",
+  ));
+  assert.equal(audit?.status, 200);
+  assert.deepEqual(await audit?.json(), { events: [], nextCursor: null });
+});
+
 function createRoutes(overrides: Record<string, unknown>): WorkHttpRoutes {
   return new WorkHttpRoutes({
     tasks: {
