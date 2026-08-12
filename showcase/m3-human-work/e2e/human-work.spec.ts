@@ -57,7 +57,7 @@ test("claims and completes a Boolean task through the global Human Work panel", 
       writable: false,
     });
     const originalFetch = globalThis.fetch.bind(globalThis);
-    let returnIndeterminateCompletion = true;
+    let completionAttempt = 0;
     globalThis.fetch = async (input, init) => {
       const request = new Request(input, init);
       const path = new URL(request.url).pathname;
@@ -65,18 +65,12 @@ test("claims and completes a Boolean task through the global Human Work panel", 
         ? null
         : await request.clone().text();
       const parsedRequestBody = parseCapturedJson(requestBody);
-      const response = returnIndeterminateCompletion &&
-          request.method === "PUT" &&
-          path.startsWith("/api/v1/work-task-completions/")
+      const isCompletion = request.method === "PUT" &&
+        path.startsWith("/api/v1/work-task-completions/");
+      if (isCompletion) completionAttempt += 1;
+      const response = isCompletion && completionAttempt === 2
         ? syntheticIndeterminateCompletion(path, parsedRequestBody)
         : await originalFetch(input, init);
-      if (
-        returnIndeterminateCompletion &&
-        request.method === "PUT" &&
-        path.startsWith("/api/v1/work-task-completions/")
-      ) {
-        returnIndeterminateCompletion = false;
-      }
       const responseBody = await response.clone().text();
       captured.push({
         method: request.method,
@@ -87,6 +81,9 @@ test("claims and completes a Boolean task through the global Human Work panel", 
           status: response.status,
         },
       });
+      if (isCompletion && completionAttempt === 1) {
+        throw new TypeError("Synthetic response loss after completion capture");
+      }
       return response;
     };
 
@@ -164,6 +161,10 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   expect(privateFactPaths(await browserHeldState(page))).toEqual([]);
   expect(privateFactPaths(adopterLogger)).toEqual([]);
   await reloadedPanel.getByRole("button", { name: "Complete task" }).click();
+  await expect(reloadedPanel).toContainText("Completion delivery is unknown");
+  await expect(reloadedPanel.getByRole("heading", { name: taskName })).toBeVisible();
+  expect(privateFactPaths(await browserHeldState(page))).toEqual([]);
+  await reloadedPanel.getByRole("button", { name: "Retry completion" }).click();
   await expect(reloadedPanel).toContainText("Completion is indeterminate");
   await expect(reloadedPanel.getByRole("heading", { name: taskName })).toBeVisible();
   expect(privateFactPaths(await browserHeldState(page))).toEqual([]);
@@ -189,8 +190,9 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   expect(privateFactPaths(await browserHeldState(page))).toEqual([]);
   expect(privateFactPaths(adopterLogger)).toEqual([]);
   const completionCalls = await capturedCompletionCalls(page);
-  expect(completionCalls).toHaveLength(2);
+  expect(completionCalls).toHaveLength(3);
   expect(completionCalls[1]).toEqual(completionCalls[0]);
+  expect(completionCalls[2]).toEqual(completionCalls[0]);
 });
 
 async function browserHeldState(

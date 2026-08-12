@@ -221,6 +221,38 @@ test("requires a Boolean choice without defaulting absent or null to false", () 
   }
 });
 
+test("renders incompatible cross-type form values as non-editable alerts", () => {
+  const incompatibleFields = [{
+    key: "approved",
+    type: "string",
+    currentValue: { kind: "boolean", value: false },
+    compatibility: "incompatible",
+  }, {
+    key: "approved",
+    type: "boolean",
+    currentValue: { kind: "string", value: "false" },
+    compatibility: "incompatible",
+  }] as const satisfies readonly PublicFormField[];
+
+  for (const field of incompatibleFields) {
+    const html = renderToStaticMarkup(createElement(WorkTaskForm, {
+      detail: {
+        workTask: { ...task, claim: { actorId: "demo-user", generation: 1 } },
+        form: { fields: [field] },
+      },
+      completionView: { kind: WorkCompletionViewKind.Indeterminate },
+      onComplete: async () => undefined,
+      onRetry: () => undefined,
+    }));
+    assert.match(
+      html,
+      /role="alert"[^>]*>The current value does not match the declared field type\./u,
+    );
+    assert.doesNotMatch(html, /<(?:form|input|textarea)\b/u);
+    assert.doesNotMatch(html, /Complete task|Retry completion/u);
+  }
+});
+
 test("decodes only an explicit Boolean form choice", () => {
   assert.equal(selectedBooleanFormValue("true"), true);
   assert.equal(selectedBooleanFormValue("false"), false);
