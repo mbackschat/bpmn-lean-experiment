@@ -70,7 +70,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** Implementation and executable evidence are complete; the exact closure reviewer is auditing the final bounded correction. The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) and [E2 User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) are implemented, evidence-closed, and graduated. The owner accepted final E2 administrative correction `264add2` without another audit on 2026-08-12. Product 2 human work now includes its independently approved public contract and private engine operations, durable all-producer publication, exact current-task aggregation, fake identity policy, claims, typed detail, retry-safe completion, same-transaction audit outbox, strict HTTP routes, CSS-Modules React inbox, live Temporal evidence, and Chromium acceptance. Context-cold closure target `c72a3bb` required a stale-claim retry correction, stable browser completion retry identity, and additional adversarial evidence. Corrections through `e736a7e` close both correctness findings and the reviewer-requested observation, audit, policy, form, privacy, transport-loss, and browser evidence gaps. Graduation is the remaining M3 work after same-reviewer approval.
+**Status: closed.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md), [E2 User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md), and [Product 2 human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) are implemented, closure-reviewed, evidence-closed, and graduated. Product 2 human work includes independently reviewed public contracts and private engine operations, durable all-producer publication, exact current-task aggregation, fake identity policy, claims, typed detail, retry-safe completion, same-transaction audit outbox, strict HTTP routes, a CSS-Modules React inbox, live Temporal evidence, and Chromium acceptance. Closure target `c72a3bb` and final correction audit `23892a5` close the governed M3 work.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
@@ -78,7 +78,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 **Platform increments.** The pluggable identity boundary with a fake default, the shared task inbox, claim and release as platform-owned authorization, form projection, and the audit record of who acted.
 
-The [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md) selects one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox. Exact redesigned target `7444ce3` received context-cold `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed logical audit outcomes, audit-silent policy hiding, the same-transaction Work audit outbox, and configuration/schema ownership and received same-reviewer `APPROVE`.
+The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox.
 
 **Exit gate.** The internal system-visible aggregation matches the engine's published open User Tasks exactly before actor-policy projection; no platform component constructs an occurrence identity; every engine state-changing action is authorized against the exact published occurrence; platform claim and audit state remains distinct from BPMN meaning; and a non-string value survives the round trip through all declared targets.
 
@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close Product 2 human work.** Obtain the final same-reviewer audit of correction target `e736a7e`, record the closure receipt, and graduate the approved proposal to its maintained specification.
+1. **Blocked: select the M4 incident increment.** M3 is closed. Owner direction is required to choose the first bounded incident, retry, and cancellation contract before a proposal or implementation begins.
 
 ## Approved decisions
 
@@ -264,11 +264,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain the final same-reviewer M3 human-work correction audit.** Context-cold target `c72a3bb` received `APPROVE WITH REQUIRED EDITS`; the first correction audit confirmed both mechanisms and identified three remaining evidence-boundary gaps. Corrections through `e736a7e` close those gaps. Record the receipt and graduate the maintained specification if the exact reviewer approves the correction target.
+**Next action: obtain owner direction for the first bounded M4 incident increment.** M3 is closure-reviewed, evidence-closed, and graduated through correction audit `23892a5`; no M3 implementation work remains.
 
-**No technical or environmental blocker remains.** E2 is graduated and Product 2 implementation is authorized. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+**The next item is blocked on owner direction, not a technical or environmental failure.** M4 must select a bounded semantic incident publication and its retry/cancellation surface before work resumes. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
-**Last verified commands:** `./scripts/doctor.sh verify`, `./scripts/verify.sh`, `./scripts/pnpm.sh run test:platform-work-checkpoint`, and `./scripts/pnpm.sh run test:showcase:m3-human-work` are green through correction target `e736a7e`; the latter three required local loopback execution. Focused Work, audit, public-contract, engine-operation, HTTP, UI, production-server, Product 2 boundary, source-hygiene, and infrastructure gates remain green.
+**Last verified commands:** `./scripts/doctor.sh verify`, `./scripts/verify.sh`, `./scripts/pnpm.sh run test:platform-work-checkpoint`, and `./scripts/pnpm.sh run test:showcase:m3-human-work` are green through M3 implementation target `e736a7e`; the latter three required local loopback execution. Focused Work, audit, public-contract, engine-operation, HTTP, UI, production-server, Product 2 boundary, source-hygiene, and infrastructure gates remain green.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 

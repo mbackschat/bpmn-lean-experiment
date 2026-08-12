@@ -24,7 +24,7 @@ The current producer set is exactly:
 2. one-shot definition Schedule reaching `started`;
 3. Message Start publication reaching `accepted`.
 
-Pending, scheduled, missed, cancelled, rejected, indeterminate, integrity-failed, and host-only executions create no search item. Search absence is not proof that no Temporal Workflow exists. This M2 specification records the boundary implemented at its closure target: the then-current non-idempotent direct-start route could lose its response after host acceptance but before Product 2 recorded success. The later [M3 human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md#selected-account) explicitly supersedes that producer failure boundary by requiring a reviewed durable direct-start reservation, private intent Memo, describe-only recovery, and one shared confirmed-start publication lifecycle before M3 implementation. Until that proposal is approved and implemented, the M2 ambiguity remains the current behavior.
+Pending, scheduled, missed, cancelled, rejected, indeterminate, integrity-failed, and host-only executions create no search item. Search absence is not proof that no Temporal Workflow exists. This M2 specification records the boundary implemented at its closure target: the then-current non-idempotent direct-start route could lose its response after host acceptance but before Product 2 recorded success. The later [M3 human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md#selected-account) supersedes that producer failure boundary with a reviewed durable direct-start reservation, private intent Memo, describe-only recovery, and one shared confirmed-start publication lifecycle. The M2 evidence claim remains historical to its immutable target.
 
 Instances started through the engine runner, a Temporal client, or another adopter outside the Product 2 public API are absent under the current producer set. Adding an engine publication feed is a separate public-observation change and requires its own reviewed contract; the identity-only search result does not prevent that later producer addition.
 
@@ -89,7 +89,7 @@ Each service records only after its existing host or durable lifecycle has produ
 - Schedule projection records only state `started` and before a successful response exposing the instance;
 - Message publication projection records only state `accepted` and before a successful response exposing the instance.
 
-Schedule and publication retries re-project the same confirmed fact and therefore repair a previous index-write failure idempotently. Their existing durable resource identities remain authoritative for retry. At this M2 closure target, direct start has no caller-owned idempotency identity, retained receipt, or describe reconciliation, so an index-write failure after host acceptance remains the explicit ambiguity named above and returns no successful public start response. The M3 human-work proposal supersedes this sentence only when its durable shared producer lifecycle is approved and implemented; it does not retroactively change the evidence claimed by this specification.
+Schedule and publication retries re-project the same confirmed fact and therefore repair a previous index-write failure idempotently. Their existing durable resource identities remain authoritative for retry. At this M2 closure target, direct start has no caller-owned idempotency identity, retained receipt, or describe reconciliation, so an index-write failure after host acceptance remains the explicit ambiguity named above and returns no successful public start response. The M3 human-work specification supersedes the current implementation boundary with its durable shared producer lifecycle; it does not retroactively change the evidence claimed by this specification.
 
 A recorder failure never yields a public success that exposes the unrecorded instance. Direct start leaves no index row and returns `500` with the canonical `internalFailure` body rather than `201`. A Schedule or Message-publication response that would first expose its durable `started` or `accepted` instance leaves no index row and returns its existing route-specific `500`/`internalFailure` response; retrying that exact durable resource records one byte-equivalent identity and then succeeds.
 
@@ -105,7 +105,7 @@ The UI provides exact filters for Process-instance ID, Process ID, version, and 
 
 ## Temporal hosting and refinement preflight
 
-This increment adds no Temporal client, Workflow, Worker, Query, Update, Signal, Schedule, Search Attribute, Visibility, Memo, Event History, or replay mechanism at its immutable M2 closure target. The later M3 human-work proposal may add a private direct-start Memo and handle-free describe contract as a separately governed replacement of the producer failure boundary; those facts remain excluded from the public search item and do not broaden this M2 evidence claim.
+This increment adds no Temporal client, Workflow, Worker, Query, Update, Signal, Schedule, Search Attribute, Visibility, Memo, Event History, or replay mechanism at its immutable M2 closure target. The later M3 human-work specification adds a private direct-start Memo and handle-free describe contract as a separately governed replacement of the producer failure boundary; those facts remain excluded from the public search item and do not broaden this M2 evidence claim.
 
 The smallest live witness starts one instance through each admitted producer path using the production HTTP server and real existing Temporal hosting, then searches only through the new public API. Worker absence or replacement remains owned by the existing scheduling and Message ingress specifications and is not re-proved here.
 
@@ -147,7 +147,7 @@ Excluded:
 - current running/completed/failed/cancelled status, start or completion timestamps, duration, variables, waits, tasks, incidents, tokens, transition history, diagram position, or audit actor;
 - Event History, Temporal Visibility, Search Attributes, Workflow Query fanout, state differencing, polling every Workflow, or a new engine observation;
 - instance detail, command submission, cancellation, task interaction, forms, identity, authorization, retention, deletion, export, aggregation, mining, full-text search, or fuzzy matching;
-- starts outside Product 2, historical backfill, and, at this M2 closure target, retry-transparent recovery for the existing body-free direct-start ambiguity; the later M3 proposal owns any reviewed replacement of that failure boundary;
+- starts outside Product 2, historical backfill, and, at this M2 closure target, retry-transparent recovery for the existing body-free direct-start ambiguity; the later M3 specification owns the reviewed replacement of that failure boundary;
 - new BPMN semantics, profile, checked graph, IL, semantic-core transition, Workflow behavior, Lean proof, CIB relationship, Schedule policy, Message routing, broker, or fanout.
 
 ## Acceptance evidence
@@ -158,7 +158,7 @@ The maintained acceptance boundary is the focused package gates, both platform h
 
 The three producer paths and the search index are all Product 2 code, so their agreement is not independent evidence that a Temporal Workflow exists or remains live. The live witness uses each existing production start path to separate wiring omissions, but the search claim remains exactly the persisted public confirmation, not host discovery.
 
-The strongest supported claim at this M2 closure target is stable cross-instance search over confirmed Product 2 starts with exact immutable definition identity. The nearest unsupported claim at that target is complete discovery of every engine Process instance, including a direct start whose successful host RPC lost its Product 2 response. The later M3 human-work proposal selects the separately reviewed durable reservation, private intent Memo, describe-only recovery, and publication lifecycle needed to close that specific Product 2 producer gap without a Temporal history scan; implementation remains absent until that proposal is approved.
+The strongest supported claim at this M2 closure target is stable cross-instance search over confirmed Product 2 starts with exact immutable definition identity. The nearest unsupported claim at that target is complete discovery of every engine Process instance, including a direct start whose successful host RPC lost its Product 2 response. The later M3 human-work specification implements the separately reviewed durable reservation, private intent Memo, describe-only recovery, and publication lifecycle that closes that specific Product 2 producer gap without a Temporal history scan.
 
 ## Independent cold-review receipt
 

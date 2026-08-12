@@ -1,8 +1,8 @@
-# BPM platform human-work proposal
+# BPM platform human-work specification
 
 ## Status
 
-**Owner-approved, fully implemented, fully gated, and awaiting the final closure correction audit.** Context-cold target `7444ce3` received `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed its proposal findings and received `APPROVE`. First-green checkpoint `fa53bf9` received `APPROVE WITH REQUIRED EDITS`; correction `1626d53` closed durable reserved-start recovery and restored the byte-identical neutral type utility, then received `APPROVE` from the exact reviewer. Context-cold closure target `c72a3bb` received `APPROVE WITH REQUIRED EDITS`. Corrections `5c6cf0a` and `ba9c3d6` reject stale retained claims and preserve one exact browser completion operation across transport and indeterminate retry. The first correction audit confirmed both mechanisms and required three remaining evidence-boundary corrections. Follow-ups `6f8383a`, `1450744`, and `e736a7e` sanitize showcase host failures, prove uniform audit-silent policy hiding for candidate-mismatched and metadata-free tasks, drive real browser transport-loss recovery through three byte-equivalent completion requests, and cover both cross-type form mismatches. The complete repository gate, aggregate platform Work checkpoint, and live Temporal plus Chromium M3 gate are green through correction target `e736a7e`; the closure receipt remains pending until the exact closure reviewer audits that immutable correction.
+**Implemented, closure-reviewed, evidence-closed, and graduated.** Product 2 provides the bounded M3 human-work contract over confirmed starts, exact current User Tasks, fake-actor authorization, claims, typed completion, platform audit, HTTP, and the React inbox. The complete repository gate, aggregate Work checkpoint, live Temporal witness, and Chromium acceptance are green at the reviewed closure boundary.
 
 ## Independent cold-review receipt
 
@@ -10,13 +10,13 @@
 |---|---|---|---|---|
 | Proposal | `7444ce3` | `fork-turns-none` | `approve-with-required-edits` | `3b748e2` |
 | Semantic checkpoint | `fa53bf9` | `fork-turns-none` | `approve-with-required-edits` | `1626d53` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `c72a3bb` | `fork-turns-none` | `approve-with-required-edits` | `23892a5` |
 
 ## Product question
 
 What is the smallest complete Product 2 contract that lets a person find assigned User Tasks, claim one, render its typed input, complete the exact engine occurrence, and see a durable actor audit without turning platform state into BPMN meaning?
 
-The recommendation is **one atomic human-work contract, implemented through internal checkpoints rather than temporary public APIs**. A read-only inbox would immediately be replaced when claim identity, typed input, completion recovery, and audit arrive. Those facts are jointly visible to adopters and must agree from the first public contract.
+The contract is **one atomic human-work contract rather than a temporary read-only API**. Claim identity, typed input, completion recovery, and audit are jointly visible to adopters and agree within the same public contract.
 
 ## Selected account
 
@@ -367,7 +367,7 @@ Excluded:
 
 ## Versioning consequences
 
-This proposal changes the Product 1 client and engine API narrowly enough to prepare, start, describe, observe, and command an exact Process by opaque intent and locator, then adds Product 2 gateway, HTTP, persistence, policy, audit, and UI contracts. The direct-start Memo changes host request metadata only; it changes no Workflow code, Workflow argument, or engine public fact. It also requires a behavior-preserving extraction of the existing tuple-preserving `DeepReadonly<T>` into one neutral type-only workspace package because both product contracts must use the single project-owned utility without reversing the product dependency. It does not change BPMN source admission, checked graph, Semantic Process IL, semantic runtime state, engine public `OpenUserTask`, completion stimulus, Workflow definition, Lean, CIB evidence, or registered semantic artifacts.
+This specification changes the Product 1 client and engine API narrowly enough to prepare, start, describe, observe, and command an exact Process by opaque intent and locator, then adds Product 2 gateway, HTTP, persistence, policy, audit, and UI contracts. The direct-start Memo changes host request metadata only; it changes no Workflow code, Workflow argument, or engine public fact. It also uses the tuple-preserving `DeepReadonly<T>` from one neutral type-only workspace package because both product contracts require the single project-owned utility without reversing the product dependency. It does not change BPMN source admission, checked graph, Semantic Process IL, semantic runtime state, engine public `OpenUserTask`, completion stimulus, Workflow definition, Lean, CIB evidence, or registered semantic artifacts.
 
 Product 1 adds a cohesive `process-work` engine API and Temporal client subpath rather than growing the existing Process client. Their closed operations accept only `EngineProcessWorkLocator` and return existing `OpenUserTask`, `UserTaskDetail`, and `ProcessCommandResult` facts. The Product 2 engine gateway wraps that contract without importing Temporal. The locator type is opaque outside Product 1 and the gateway.
 
@@ -375,86 +375,13 @@ The existing public Process-instance search response remains byte-identical. The
 
 The platform is pre-release. The new Definitions publication tables participate in the exact shared Definitions schema epoch; Work and audit databases use their own exact schema epochs. None has a compatibility reader. Any retained production-data compatibility promise would require a separate version, migration, rollback, and mixed-version contract before release.
 
-## Atomic owner and guard plan
-
-New cohesive owners have the full 600-line source budget and must be registered in their owning README and package indexes:
-
-- `packages/contract-types/src/index.ts` for the byte-identical, type-only `DeepReadonly<T>` extracted from [`packages/semantic-core/src/deep-readonly.ts`](../packages/semantic-core/src/deep-readonly.ts), imported by both products, and registered through the root [`README.md`](../README.md) repository tree; [`ARCHITECTURE.md`](ARCHITECTURE.md#repository-map), [`PROJECT-DESIGN.md`](PROJECT-DESIGN.md#one-repository-for-products-1-and-2), and [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) must classify this exact package as neutral rather than Product 1;
-- `packages/engine-api/src/process-work.ts` for the opaque Product 1 locator and closed observe/detail/complete contract, registered by [`packages/engine-api/README.md`](../packages/engine-api/README.md);
-- `packages/temporal-adapter/client/src/process-work-client.ts` and a `./process-work` export for separately addressed Queries and completion, registered by [`packages/temporal-adapter/README.md`](../packages/temporal-adapter/README.md);
-- `platform/foundation/engine-gateway/src/process-work-gateway.ts` for the Product 2 structural gateway, registered by [`platform/foundation/engine-gateway/README.md`](../platform/foundation/engine-gateway/README.md);
-- `platform/foundation/identity-policy/src/actor-context.ts`, `fake-actor-resolver.ts`, and `task-authorization-policy.ts` for `ActorContext`, configured fake resolution, and exact visibility/claim policy, registered by [`platform/foundation/README.md`](../platform/foundation/README.md);
-- `platform/foundation/audit/src/audit-contracts.ts`, `sqlite-audit-repository.ts`, and `audit-search-service.ts` for typed append-only action records, idempotent event publication, opaque paging, and SQLite lifecycle, registered by [`platform/foundation/README.md`](../platform/foundation/README.md);
-- `platform/modules/work/src/work-contracts.ts`, `work-service.ts`, `sqlite-work-repository.ts`, `work-audit-outbox-service.ts`, and `work-http-routes.ts` for private registration, observation aggregation, claims, completion reconciliation, same-transaction audit outbox, delivery acknowledgement, and HTTP routes, registered by [`platform/modules/README.md`](../platform/modules/README.md);
-- `platform/modules/definitions/src/confirmed-process-instance-contracts.ts`, `confirmed-process-instance-publication-service.ts`, and `sqlite-confirmed-process-instance-repository.ts` for the reserved/starting/indeterminate/confirmed lifecycle, private intent/locator snapshot, independent delivery markers, and restart reconciliation, with focused `confirmed-process-instance-publication-service.test.ts` and `sqlite-confirmed-process-instance-repository.test.ts`, all registered by [`platform/modules/definitions/README.md`](../platform/modules/definitions/README.md);
-- `platform/contracts/src/work-tasks.ts`, `work-task-decoders.ts`, `work-task-routes.ts`, and focused type/runtime tests, registered by [`platform/contracts/README.md`](../platform/contracts/README.md);
-- `platform/ui-kit/` for React Aria primitives, the TanStack table wrapper, CSS Modules, and focused accessibility tests, registered by [`platform/ui-kit/README.md`](../platform/ui-kit/README.md);
-- cohesive Work API, inbox, task-detail, and `.module.css` owners under [`platform/apps/web/README.md`](../platform/apps/web/README.md);
-- `showcase/m3-human-work/` for live Temporal, restart/concurrency/private-field, and Playwright evidence, registered by [`showcase/README.md`](../showcase/README.md).
-
-Existing owners that must change are part of the same atomic plan: [`packages/semantic-core/src/deep-readonly.ts`](../packages/semantic-core/src/deep-readonly.ts), [`packages/semantic-core/src/index.ts`](../packages/semantic-core/src/index.ts), and [`packages/semantic-core/package.json`](../packages/semantic-core/package.json) move/re-export the neutral type and declare its dependency; [`platform/contracts/src/definitions.ts`](../platform/contracts/src/definitions.ts) and [`platform/contracts/src/definition-decoders.ts`](../platform/contracts/src/definition-decoders.ts) own the generic route-code-set error envelope/decoder; the four existing HTTP clients [`definitions-api.ts`](../platform/apps/web/src/definitions-api.ts), [`definition-schedule-api.ts`](../platform/apps/web/src/definition-schedule-api.ts), [`message-start-publication-api.ts`](../platform/apps/web/src/message-start-publication-api.ts), and [`process-instance-search-api.ts`](../platform/apps/web/src/process-instance-search-api.ts) pass their unchanged exact subsets; [`ARCHITECTURE.md`](ARCHITECTURE.md#temporal-adapter-subsystem) and [`packages/temporal-adapter/README.md`](../packages/temporal-adapter/README.md) add only the handle-free `./process-work` client subpath and direct-start describe result; [`packages/engine-api/src/definition-start.ts`](../packages/engine-api/src/definition-start.ts) and [`packages/temporal-adapter/client/src/definition-start-client.ts`](../packages/temporal-adapter/client/src/definition-start-client.ts) add retained-intent comparison and handle-free describe; and the former `platform/modules/definitions/src/process-instance-recording.ts` owner is replaced by the cohesive confirmed-start reservation, SQLite lifecycle, delivery, and reconciliation owners above rather than becoming a multi-responsibility file.
-
-Measured existing owners and constraints from `node scripts/what-binds.ts` are:
-
-| Existing owner | Current occupancy | Remaining headroom | Bindings | Constraint |
-|---|---:|---:|---|---|
-| [`packages/temporal-adapter/client/src/process-client.ts`](../packages/temporal-adapter/client/src/process-client.ts) | 465/600 | 135 | 20 guards, 1 registry | Extract `process-work-client.ts`; do not add the new family here |
-| [`packages/engine-api/src/index.ts`](../packages/engine-api/src/index.ts) | 112/600 | 488 | 20 guards, 1 registry | Export only the new cohesive owner |
-| [`platform/foundation/engine-gateway/src/index.ts`](../platform/foundation/engine-gateway/src/index.ts) | 207/600 | 393 | 52 guards, 3 registries | Export and compose; keep locator logic in the new owner |
-| `platform/modules/definitions/src/process-instance-recording.ts` (removed) | 22/600 | 578 | 47 guards, 3 registries | Replace with cohesive durable publication lifecycle owners |
-| [`platform/modules/definitions/src/database-schema-epoch.ts`](../platform/modules/definitions/src/database-schema-epoch.ts) | 48/600 | 552 | 47 guards, 3 registries | Advance the exact shared epoch before any new publication table access |
-| [`platform/modules/definitions/src/index.ts`](../platform/modules/definitions/src/index.ts) | 100/600 | 500 | 52 guards, 3 registries | Export only the new cohesive publication owners |
-| [`platform/modules/definitions/src/definition-start-service.ts`](../platform/modules/definitions/src/definition-start-service.ts) | 165/600 | 435 | 47 guards, 3 registries | One narrow durable publication call only |
-| [`platform/modules/definitions/src/definition-schedule-service.ts`](../platform/modules/definitions/src/definition-schedule-service.ts) | 528/600 | 72 | 47 guards, 3 registries | Delegate locator minting/publication; extract before any additional responsibility |
-| [`platform/modules/definitions/src/message-start-publication-service.ts`](../platform/modules/definitions/src/message-start-publication-service.ts) | 511/600 | 89 | 47 guards, 3 registries | Delegate locator minting/publication; extract before any additional responsibility |
-| [`platform/apps/server/src/composition.ts`](../platform/apps/server/src/composition.ts) | 163/600 | 437 | 47 guards, 3 registries | Inject subscribers, configuration, route order, and reverse close only |
-| [`platform/apps/server/src/config.ts`](../platform/apps/server/src/config.ts) | 159/600 | 441 | 51 guards, 3 registries | Own positive Process/task ceilings and strict fake actor/group configuration |
-| [`platform/apps/web/src/app.tsx`](../platform/apps/web/src/app.tsx) | 241/600 | 359 | 47 guards, 3 registries | Compose the new panel; keep behavior in cohesive feature files |
-| [`platform/contracts/src/index.ts`](../platform/contracts/src/index.ts) | 23/600 | 577 | 52 guards, 2 registries | Export only the new contract owners |
-| [`platform/contracts/src/definitions.ts`](../platform/contracts/src/definitions.ts) | 108/600 | 492 | 47 guards, 2 registries | Own the generic error code/envelope shape without broadening routes |
-| [`platform/contracts/src/definition-decoders.ts`](../platform/contracts/src/definition-decoders.ts) | 174/600 | 426 | 47 guards, 2 registries | Parameterize the single strict decoder by exact route code set |
-| [`packages/semantic-core/src/deep-readonly.ts`](../packages/semantic-core/src/deep-readonly.ts) | 13/600 | 587 | 20 guards, 1 registry | Move the byte-identical utility and re-export it from the neutral package |
-| [`packages/semantic-core/src/index.ts`](../packages/semantic-core/src/index.ts) | 42/600 | 558 | 20 guards, 1 registry | Re-export the neutral utility without changing semantic behavior |
-| [`packages/engine-api/src/definition-start.ts`](../packages/engine-api/src/definition-start.ts) | 209/600 | 391 | 20 guards, 1 registry | Add direct-start prepare/start/describe around one retained intent |
-| [`packages/temporal-adapter/client/src/definition-start-client.ts`](../packages/temporal-adapter/client/src/definition-start-client.ts) | 136/600 | 464 | 20 guards, 1 registry | Retain and compare Memo/type/Task Queue without exposing a handle |
-| [`platform/apps/web/src/definitions-api.ts`](../platform/apps/web/src/definitions-api.ts) | 236/600 | 364 | 47 guards, 3 registries | Pass the unchanged exact legacy error-code set |
-| [`platform/apps/web/src/definition-schedule-api.ts`](../platform/apps/web/src/definition-schedule-api.ts) | 229/600 | 371 | 47 guards, 3 registries | Pass the unchanged exact Schedule error-code set |
-| [`platform/apps/web/src/message-start-publication-api.ts`](../platform/apps/web/src/message-start-publication-api.ts) | 226/600 | 374 | 47 guards, 3 registries | Pass the unchanged exact publication error-code set |
-| [`platform/apps/web/src/process-instance-search-api.ts`](../platform/apps/web/src/process-instance-search-api.ts) | 166/600 | 434 | 47 guards, 3 registries | Pass the unchanged exact search error-code set |
-| [`docs/BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md`](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md) | not a source owner | not applicable | 31 guards, 1 registry | Preserve the M2 evidence boundary while naming the reviewed M3 supersession |
-
-Before each implementation lane, rerun [`scripts/what-binds.ts`](../scripts/what-binds.ts) on every added or grown path. Package manifests, [`pnpm-workspace.yaml`](../pnpm-workspace.yaml), [`pnpm-lock.yaml`](../pnpm-lock.yaml), harness types, boundary guards, licences, source hygiene, READMEs, root scripts, and the M3 showcase registry are shared root-integration owners. Apart from the type-only `DeepReadonly<T>` import extraction and private direct-start request Memo/describe support, semantic-core behavior and artifacts remain byte-identical; BPMN source, Workflow code/arguments, Lean, CIB, E2 artifacts, and differential owners remain byte-unchanged.
-
-Exact executable guard and oracle routing is mandatory:
-
-| Planned boundary | Existing guard or registry owner | Required focused oracle |
-|---|---|---|
-| Neutral type package and package graph | [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts), [`scripts/temporal-package-boundary.test.ts`](../scripts/temporal-package-boundary.test.ts), [`scripts/pnpm-project-config.test.ts`](../scripts/pnpm-project-config.test.ts), [`scripts/source-hygiene.test.ts`](../scripts/source-hygiene.test.ts) | tuple, union, callable, and nested mutation type test in the new package; semantic-core and platform contract builds consume the same exported symbol |
-| Product 1 process-work client/API | [`packages/temporal-adapter/README.md`](../packages/temporal-adapter/README.md), [`packages/engine-api/README.md`](../packages/engine-api/README.md), [`scripts/temporal-package-boundary.test.ts`](../scripts/temporal-package-boundary.test.ts) | new engine API and client tests covering canonical direct/Message locators, service-returned Schedule locator, direct-start retained intent and describe-only matching/missing/divergent/unavailable results, current Query/detail, every `ProcessCommandResult`, and configured-base mutation |
-| Product 2 gateway and durable producer publication | [`platform/foundation/engine-gateway/README.md`](../platform/foundation/engine-gateway/README.md), [`platform/modules/definitions/README.md`](../platform/modules/definitions/README.md), [`platform/modules/definitions/test/database-schema-epoch.test.ts`](../platform/modules/definitions/test/database-schema-epoch.test.ts), [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) | new gateway/lifecycle/reconciliation tests `confirmed-process-instance-publication-service.test.ts` and `sqlite-confirmed-process-instance-repository.test.ts`, plus [`definition-start-service.test.ts`](../platform/modules/definitions/test/definition-start-service.test.ts), [`definition-schedule-service.test.ts`](../platform/modules/definitions/test/definition-schedule-service.test.ts), and [`message-start-publication-service.test.ts`](../platform/modules/definitions/test/message-start-publication-service.test.ts), with direct response loss and failures after each subscriber |
-| Public Work transport | [`platform/contracts/README.md`](../platform/contracts/README.md), [`platform/contracts/src/definitions.ts`](../platform/contracts/src/definitions.ts), [`platform/contracts/src/definition-decoders.ts`](../platform/contracts/src/definition-decoders.ts), [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) | new runtime and type tests for every request/result/error/status, strict extras, exact legacy and Work code sets, route encoding, cursor, private-field rejection, incompatible form values, canonical UTC timestamps, and exclusive ascending paging |
-| Identity, claims, completion, and audit | [`platform/foundation/README.md`](../platform/foundation/README.md), [`platform/modules/README.md`](../platform/modules/README.md) | new `task-authorization-policy.test.ts`, `sqlite-work-repository.test.ts`, `work-audit-outbox-service.test.ts`, and `sqlite-audit-repository.test.ts` independently cover policy projection, audit-silent uniform 404, race, monotonic generation, release response loss, action collision, all engine result mappings, same-transaction outbox, audit insert/ack crash recovery, self-only filters, cursor paging, restart, and corruption |
-| Server and web composition | [`platform/apps/server/README.md`](../platform/apps/server/README.md), [`platform/apps/server/test/config.test.ts`](../platform/apps/server/test/config.test.ts), [`platform/apps/web/README.md`](../platform/apps/web/README.md), [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) | strict positive ceilings and fake identity/group JSON tests, server route/composition tests, and web build/type/runtime tests for the public HTTP-only client, actor-visible table, form mismatch, and private-field exclusion |
-| Live and browser closure | [`showcase/README.md`](../showcase/README.md), [`scripts/pre-release-architecture.test.ts`](../scripts/pre-release-architecture.test.ts), [`scripts/source-hygiene.test.ts`](../scripts/source-hygiene.test.ts) | `showcase/m3-human-work` live Temporal and Chromium gates across all three producers, restart, Worker replacement, races, response loss, audit, replay, and recursive scans excluding locator, direct-start intent/Memo/describe, Workflow, Run, Task Queue, Schedule, and history fields from public/log/browser surfaces |
-
-The implementation is atomically specified but lands through three guarded checkpoints:
-
-1. neutral `DeepReadonly<T>` extraction, Product 1 locator plus observe/detail/complete, the widened confirmed-start publication, Product 2 gateway, and strict public contract types;
-2. identity policy, Work registration and observation, claims, completion reconciliation, audit, SQLite, and HTTP composition;
-3. React Aria/TanStack/CSS-Modules UI plus live Temporal and Chromium evidence.
-
-Checkpoint 1 requires the package-boundary and semantic checkpoint review because it changes engine-to-platform addressing and public observation plumbing. Later checkpoints may proceed only against its approved immutable contract. The root integrator alone updates shared manifests, registries, status documents, commits, and the complete applicable gate.
-
-## Material risks and stop conditions
+## Reopen conditions
 
 Stop and return to the owner or engine boundary if:
 
-- E2 has not received closure approval before Product 2 code imports or projects its metadata;
 - a confirmed producer cannot supply the actual private Workflow address, especially the service-returned Schedule execution address;
 - current task observation or completion requires Event History, Visibility inference, state differencing, or platform-created occurrence identity;
 - a task completion requires metadata to become an engine precondition or requires a new semantic value kind;
 - M3 must discover Process instances started outside Product 2;
 - implementing the contract requires an unselected router, form, authentication, transport, database, broker, or UI dependency;
 - exact retries cannot distinguish committed, rejected, and retention-indeterminate completion without claiming success from absence.
-
-The recommendation is to approve this contract after cold review. It gives M3 one usable human-work slice without freezing a general form engine, authentication system, or host-derived BPMN model.
