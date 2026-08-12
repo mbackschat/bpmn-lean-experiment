@@ -85,6 +85,18 @@ test("admits alternate-prefix exact User Task metadata and binds it to IL", asyn
       result.semanticProcess.operations,
     );
   }
+
+  for (const terminator of ["\n", "\r", "\u2028", "\u2029"]) {
+    const internalTerminator = await compile(
+      source.replace("reviewers", `review${terminator}team`),
+      profile,
+    );
+    assert.equal(
+      internalTerminator.status,
+      BpmnCompilationStatus.Accepted,
+      JSON.stringify(terminator),
+    );
+  }
 });
 
 test("keeps candidate, field key, and field type distinct in checked source and IL", async () => {
@@ -211,6 +223,18 @@ test("refuses wrong namespaces, partial metadata, broader siblings, and nonliter
       'c7:candidateGroups="reviewers"',
       'c7:candidateGroups="reviewers" c7:priority="1"',
     )],
+    ...["\n", "\r", "\u2028", "\u2029"].map((terminator) => [
+      `duplicate expanded candidate after ${JSON.stringify(terminator)}`,
+      source
+        .replace(
+          'xmlns:c7="http://camunda.org/schema/1.0/bpmn"',
+          'xmlns:c7="http://camunda.org/schema/1.0/bpmn" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"',
+        )
+        .replace(
+          'c7:candidateGroups="reviewers"',
+          `c7:candidateGroups="review${terminator}ers" camunda:candidateGroups="approvers"`,
+        ),
+    ] as const),
     ["duplicate expanded candidate", source
       .replace(
         'xmlns:c7="http://camunda.org/schema/1.0/bpmn"',

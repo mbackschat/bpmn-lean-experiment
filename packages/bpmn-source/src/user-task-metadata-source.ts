@@ -53,7 +53,7 @@ export function carriesDuplicateCandidateGroupsAttribute(xml: string): boolean {
     const openingTag = match[0];
     let count = 0;
     for (const attribute of openingTag.matchAll(
-      /\b([^\s=:/]+):candidateGroups\s*=\s*(["']).*?\2/gu,
+      /\b([^\s=:/]+):candidateGroups\s*=\s*(?:"[^"]*"|'[^']*')/gu,
     )) {
       const prefix = attribute[1];
       if (
