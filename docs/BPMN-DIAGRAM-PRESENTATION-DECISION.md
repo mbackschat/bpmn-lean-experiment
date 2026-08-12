@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-directed draft for independent review.** This decision proposes embedded BPMN DI plus an exact-source-digest-bound generated presentation sidecar for BPM platform diagrams. Owner direction approves the design for review, but implementation remains paused at this decision boundary. It does not change BPMN source admission, checked Process meaning, Semantic Process IL, runtime state, or Temporal execution.
+**Owner-approved for implementation.** This decision selects embedded BPMN DI plus an exact-source-digest-bound generated presentation sidecar for BPM platform diagrams. The context-cold information-architecture reviewer approved the final corrected contract at `c3f6671`. It does not change BPMN source admission, checked Process meaning, Semantic Process IL, runtime state, or Temporal execution.
 
 ## Context
 

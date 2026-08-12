@@ -2,15 +2,17 @@
 
 ## Status
 
-**Owner-directed draft for independent review.** This proposal selects the platform UI's visual language, component styling, responsive rules, interaction states, and CSS ownership. It remains a proposal until the complete M3 shell and browser evidence implement the selected rules. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
+**Owner-approved for implementation after independent proposal review.** This proposal selects the platform UI's visual language, component styling, responsive rules, interaction states, and CSS ownership. It remains a proposal until the complete M3 shell and browser evidence implement the selected rules. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `1f617ef` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `1f617ef` | `fork-turns-none` | `approve-with-required-edits` | `c3f6671` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The same context-cold reviewer completed two warm correction rounds. The final audit of `c3f6671` approved the exact visual foundation, CSS ownership, responsive geometry, focus and motion rules, and isolated Product 2 UI-quality lane.
 
 ## Owner motivation and product vision
 
