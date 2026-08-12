@@ -70,7 +70,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) is implemented, registered, evidence-closed, independently closure-reviewed, and graduated. E2 User Task assignment and form metadata is implemented and evidence-closed. After its second correction audit retained narrow test-oracle and process-record findings, the owner authorized one final same-reviewer correction audit on 2026-08-12. Graduation and Product 2 use remain paused until that audit approves closure.
+**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) is implemented, registered, evidence-closed, independently closure-reviewed, and graduated. E2 User Task assignment and form metadata is implemented and evidence-closed. The owner-authorized fourth closure audit on 2026-08-12 closed its carried finding and retained only this plan's stale sibling status. That status and its seventeenth recorded recurrence are corrected; graduation and Product 2 use remain paused for owner governance direction on closing the review stage.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
@@ -78,7 +78,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 **Platform increments.** The pluggable identity boundary with a fake default, the shared task inbox, claim and release as platform-owned authorization, form projection, and the audit record of who acted.
 
-The [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md) selects one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox. Exact redesigned target `7444ce3` received context-cold `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed logical audit outcomes, audit-silent policy hiding, the same-transaction Work audit outbox, and configuration/schema ownership and received same-reviewer `APPROVE`. Product 2 implementation may not consume metadata until the authorized final E2 audit approves closure.
+The [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md) selects one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox. Exact redesigned target `7444ce3` received context-cold `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed logical audit outcomes, audit-silent policy hiding, the same-transaction Work audit outbox, and configuration/schema ownership and received same-reviewer `APPROVE`. Product 2 implementation may not consume metadata until owner governance direction closes the E2 review stage.
 
 **Exit gate.** The internal system-visible aggregation matches the engine's published open User Tasks exactly before actor-policy projection; no platform component constructs an occurrence identity; every engine state-changing action is authorized against the exact published occurrence; platform claim and audit state remains distinct from BPMN meaning; and a non-string value survives the round trip through all declared targets.
 
@@ -264,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain owner direction for the final E2 closure-status correction.** The owner-authorized final same-reviewer audit closed both carried findings but found that its immutable target still instructed the reader to commit that target. The required administrative correction removes that stale action, records the sixteenth stale-status recurrence, and leaves the closure receipt pending because another audit round is not authorized. The M3 human-work proposal is independently approved, but its Product 2 implementation and E2 graduation remain paused until governance closes the E2 review stage.
+**Next action: obtain owner direction on closing the E2 review stage after the final administrative correction.** The owner-authorized fourth audit closed its carried finding and found two stale sibling sentences in this plan. They are corrected and recorded as the seventeenth stale-status recurrence. The M3 human-work proposal is independently approved, but its Product 2 implementation and E2 graduation remain paused until governance decides whether to accept these status-only corrections administratively or authorize another audit.
 
-**No technical or environmental blocker remains.** The owner explicitly authorized the final bounded E2 audit on 2026-08-12; that audit closed the substantive findings and exposed only the status contradiction above. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+**No technical or environmental blocker remains.** The owner-authorized fourth audit closed its carried finding and exposed only the status contradiction now corrected above. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
 **Last verified commands:** `env CI=true ./scripts/verify.sh` passed at Boolean closure target `9669e8c` in 189.26 seconds with 46 live history replays. The exact Boolean Temporal mutation, CIB, semantic, cost, documentation, review-policy, link, and source-hygiene corrections passed their focused gates at the final reviewed target `06ec4a3`.
 
