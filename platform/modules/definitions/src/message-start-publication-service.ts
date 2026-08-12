@@ -36,6 +36,7 @@ import {
   projectMessageStartPublication,
   requirePublicationId,
 } from "./message-start-publication-values.js";
+import { recordStartedProcessInstance } from "./process-instance-recording.js";
 
 type PreparedTarget = Readonly<{
   definition: DefinitionMetadata;
@@ -287,6 +288,21 @@ export class MessageStartPublicationService {
     record: MessageStartPublicationRecord,
     request: MessageStartPublicationHostRequest,
   ): Promise<MessageStartPublicationRecord> {
+    const reconciled = await this.#reconcileLifecycle(record, request);
+    if (reconciled.state === MessageStartPublicationState.Accepted) {
+      await recordStartedProcessInstance(
+        this.#dependencies.startedInstances,
+        reconciled.identity.processInstanceId,
+        reconciled.definition,
+      );
+    }
+    return reconciled;
+  }
+
+  async #reconcileLifecycle(
+    record: MessageStartPublicationRecord,
+    request: MessageStartPublicationHostRequest,
+  ): Promise<MessageStartPublicationRecord> {
     switch (record.state) {
       case MessageStartPublicationState.Reserved: {
         const starting = this.#dependencies.publications.compareAndSet(
@@ -407,7 +423,10 @@ export class MessageStartPublicationService {
     publicationId: string,
     request: MessageStartPublicationHostRequest,
   ): Promise<MessageStartPublicationRecord> {
-    return await this.#reconcile(this.#requireCurrent(publicationId), request);
+    return await this.#reconcileLifecycle(
+      this.#requireCurrent(publicationId),
+      request,
+    );
   }
 
   #requireCurrent(publicationId: string): MessageStartPublicationRecord {

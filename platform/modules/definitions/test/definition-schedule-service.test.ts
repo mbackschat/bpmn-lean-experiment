@@ -297,6 +297,7 @@ function createFixture() {
       configuredWorkflowIdBase: () => "configured-base-1",
     },
     now: () => now,
+    startedInstances: { recordProcessInstance: async () => undefined },
   } as const;
   const service = new DefinitionScheduleService(dependencies);
   return {

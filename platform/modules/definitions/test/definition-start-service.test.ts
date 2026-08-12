@@ -413,6 +413,7 @@ function createFixture(
       generatedIds += 1;
       return options.generatedId ?? `instance-${generatedIds}`;
     },
+    { recordProcessInstance: async () => undefined },
   );
   return {
     artifactGets,

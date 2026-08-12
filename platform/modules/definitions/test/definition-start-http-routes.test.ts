@@ -305,6 +305,7 @@ function createFixture(
     artifacts,
     repository,
     () => "public-instance-1",
+    { recordProcessInstance: async () => {} },
   );
   const routes = new DefinitionHttpRoutes(
     deployment,

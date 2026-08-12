@@ -554,6 +554,7 @@ function createFixture(
     artifactStore,
     repository,
     () => "unused-instance",
+    { recordProcessInstance: async () => {} },
   );
   return {
     artifacts,

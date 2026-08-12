@@ -23,6 +23,10 @@ import {
   messageStartPublicationProcessInstanceId,
   messageStartPublicationWorkflowId,
 } from "@bpmn-lean/platform-engine-gateway";
+import {
+  ProcessInstanceSearchService,
+  SqliteProcessInstanceRepository,
+} from "@bpmn-lean/platform-operate";
 
 import {
   snapshotPlatformServerConfig,
@@ -59,6 +63,10 @@ export async function createPlatformServer(
     join(snapshot.dataDirectory, "artifacts"),
   );
   const databaseFile = join(snapshot.dataDirectory, "definitions.sqlite");
+  const processInstanceDatabaseFile = join(
+    snapshot.dataDirectory,
+    "process-instances.sqlite",
+  );
   const resources: CloseableResource[] = [engineRuntime];
   try {
     const repository = new SqliteDefinitionRepository(databaseFile);
@@ -69,6 +77,13 @@ export async function createPlatformServer(
       databaseFile,
     );
     resources.push(publicationRepository);
+    const processInstanceRepository = new SqliteProcessInstanceRepository(
+      processInstanceDatabaseFile,
+    );
+    resources.push(processInstanceRepository);
+    const processInstances = new ProcessInstanceSearchService(
+      processInstanceRepository,
+    );
     const service = new DefinitionDeploymentService(
       engineRuntime.gateway,
       artifacts,
@@ -79,6 +94,7 @@ export async function createPlatformServer(
       artifacts,
       repository,
       randomUUID,
+      processInstances,
     );
     const scheduleService = new DefinitionScheduleService({
       artifacts,
@@ -91,6 +107,7 @@ export async function createPlatformServer(
         configuredWorkflowIdBase: definitionScheduleWorkflowIdBase,
       },
       now: Date.now,
+      startedInstances: processInstances,
     });
     await scheduleService.reconcileAll();
     const publicationService = new MessageStartPublicationService({
@@ -103,6 +120,7 @@ export async function createPlatformServer(
         commandId: messageStartPublicationCommandId,
         workflowId: messageStartPublicationWorkflowId,
       },
+      startedInstances: processInstances,
     });
     await publicationService.reconcileAll();
     const definitionRoutes = new DefinitionHttpRoutes(

@@ -59,6 +59,10 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     await runtime.close();
     const database = await readFile(join(dataDirectory, "definitions.sqlite"));
     assert.ok(database.byteLength > 0);
+    const processInstances = await readFile(
+      join(dataDirectory, "process-instances.sqlite"),
+    );
+    assert.ok(processInstances.byteLength > 0);
     await assert.rejects(runtime.listen(), /runtime is closed/u);
   } finally {
     await runtime.close();

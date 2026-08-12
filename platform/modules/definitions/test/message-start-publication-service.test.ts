@@ -306,6 +306,7 @@ function service(
       commandId: (publicationId) => `command:${publicationId}`,
       workflowId: expectedWorkflowId,
     },
+    startedInstances: { recordProcessInstance: async () => undefined },
   });
 }
 

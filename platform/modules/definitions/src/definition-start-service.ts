@@ -19,6 +19,12 @@ import type {
   ExactArtifactStore,
 } from "./contracts.js";
 import { cloneDefinitionMetadata } from "./definition-values.js";
+import {
+  recordStartedProcessInstance,
+} from "./process-instance-recording.js";
+import type {
+  StartedProcessInstancePublisher,
+} from "./process-instance-recording.js";
 
 export type ProcessInstanceIdGenerator = () => string;
 
@@ -28,17 +34,20 @@ export class DefinitionStartService {
   readonly #artifacts: ExactArtifactStore;
   readonly #repository: DefinitionRepository;
   readonly #processInstanceIdGenerator: ProcessInstanceIdGenerator;
+  readonly #startedInstances: StartedProcessInstancePublisher;
 
   constructor(
     starter: DefinitionVersionStarter,
     artifacts: ExactArtifactStore,
     repository: DefinitionRepository,
     processInstanceIdGenerator: ProcessInstanceIdGenerator,
+    startedInstances: StartedProcessInstancePublisher,
   ) {
     this.#starter = starter;
     this.#artifacts = artifacts;
     this.#repository = repository;
     this.#processInstanceIdGenerator = processInstanceIdGenerator;
+    this.#startedInstances = startedInstances;
   }
 
   async start(
@@ -99,10 +108,11 @@ export class DefinitionStartService {
       case EngineDefinitionStartStatus.Started:
         return {
           status: DefinitionVersionStartStatus.Started,
-          instance: {
+          instance: await recordStartedProcessInstance(
+            this.#startedInstances,
             processInstanceId,
-            definition: cloneDefinitionMetadata(definition),
-          },
+            definition,
+          ),
         };
       case EngineDefinitionStartStatus.Rejected:
         return {

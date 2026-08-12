@@ -10,6 +10,9 @@ import type {
   DefinitionStartCapabilities,
   ExactArtifactStore,
 } from "./contracts.js";
+import type {
+  StartedProcessInstancePublisher,
+} from "./process-instance-recording.js";
 
 export const MessageStartPublicationState = {
   Reserved: "reserved",
@@ -132,6 +135,7 @@ export type MessageStartPublicationServiceDependencies = Readonly<{
   publications: MessageStartPublicationRepository;
   host: MessageStartPublicationHost;
   identities: MessageStartPublicationIdentityPolicy;
+  startedInstances: StartedProcessInstancePublisher;
 }>;
 
 export type PutMessageStartPublicationResult = Readonly<{

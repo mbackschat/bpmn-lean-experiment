@@ -389,6 +389,12 @@ Complete implemented M1 platform-package gate:
 
 This platform-only gate uses `tsconfig.platform-harness.json`; the default engine harness excludes `platform/` and `*.platform-test.ts`, so complete engine verification remains independent of platform package builds.
 
+M2 Process-instance search public-contract, durable-index, and producer-recording checkpoint gate:
+
+```sh
+./scripts/pnpm.sh run test:platform-process-search-checkpoint
+```
+
 Required M1 end-to-end showcase after installing Playwright's pinned Chromium:
 
 ```sh

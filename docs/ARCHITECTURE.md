@@ -137,7 +137,7 @@ Modules follow durable product capabilities rather than horizontal technical lay
 | `agents` | Agent registry, policy, evaluation, budgets, traces, and human approval |
 | `administration` | Tenancy, identity integration, retention, backup, restore, hosting, and fleet administration |
 
-Only `definitions` is instantiated for M1. The remaining names reserve ownership seams in this document; their directories and packages are created only when an accepted milestone or follow-on proposal needs them.
+`definitions` is instantiated for M1. `operate` is instantiated for M2's confirmed-start Process-instance index and search service. The remaining names reserve ownership seams in this document; their directories and packages are created only when an accepted milestone or follow-on proposal needs them.
 
 Each module owns its application service, domain-specific persistence ports, HTTP route contribution, and projections. `projection-runtime` supplies mechanics but never becomes the owner of every read model. This prevents `api/`, `projection/`, or `ui/` from becoming repository-wide catch-all packages as the product grows.
 

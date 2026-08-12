@@ -33,6 +33,7 @@ import {
   DefinitionScheduleState,
   DefinitionScheduleValidationError,
 } from "./definition-schedule-contracts.js";
+import { recordStartedProcessInstance } from "./process-instance-recording.js";
 import type {
   DefinitionSchedule,
   DefinitionScheduleHostRequest,
@@ -271,6 +272,21 @@ export class DefinitionScheduleService {
     record: DefinitionScheduleRecord,
     knownBytes?: Uint8Array,
   ): Promise<DefinitionScheduleRecord> {
+    const reconciled = await this.#reconcileLifecycle(record, knownBytes);
+    if (reconciled.state === DefinitionScheduleState.Started) {
+      await recordStartedProcessInstance(
+        this.#dependencies.startedInstances,
+        reconciled.identity.processInstanceId,
+        reconciled.definition,
+      );
+    }
+    return reconciled;
+  }
+
+  async #reconcileLifecycle(
+    record: DefinitionScheduleRecord,
+    knownBytes?: Uint8Array,
+  ): Promise<DefinitionScheduleRecord> {
     switch (record.state) {
       case DefinitionScheduleState.Creating: {
         const dispatched = this.#dependencies.schedules.compareAndSet(
@@ -279,7 +295,7 @@ export class DefinitionScheduleService {
           { state: DefinitionScheduleState.CreatingHost },
         );
         if (dispatched !== null) {
-          return await this.#reconcile(dispatched, knownBytes);
+          return await this.#reconcileLifecycle(dispatched, knownBytes);
         }
         return await this.#reconcileCurrent(record.reference);
       }
@@ -518,7 +534,7 @@ export class DefinitionScheduleService {
   async #reconcileCurrent(
     reference: DefinitionScheduleReference,
   ): Promise<DefinitionScheduleRecord> {
-    return await this.#reconcile(this.#requireCurrent(reference));
+    return await this.#reconcileLifecycle(this.#requireCurrent(reference));
   }
 
   #requireCurrent(reference: DefinitionScheduleReference): DefinitionScheduleRecord {

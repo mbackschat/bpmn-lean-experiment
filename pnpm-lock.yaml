@@ -170,6 +170,9 @@ importers:
       '@bpmn-lean/platform-engine-gateway':
         specifier: workspace:*
         version: link:../../foundation/engine-gateway
+      '@bpmn-lean/platform-operate':
+        specifier: workspace:*
+        version: link:../../modules/operate
 
   platform/apps/web:
     dependencies:
@@ -220,6 +223,12 @@ importers:
       '@bpmn-lean/platform-engine-gateway':
         specifier: workspace:*
         version: link:../../foundation/engine-gateway
+
+  platform/modules/operate:
+    dependencies:
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../contracts
 
   showcase/m1-definition-deployment:
     devDependencies:

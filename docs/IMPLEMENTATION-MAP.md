@@ -10,6 +10,8 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **Current closure boundary.** The standards-only Message Start capability and Product 2 [Message Start ingress specification](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) are closure-reviewed and evidence-closed. Product 2 publishes the complete capability, owns a strict one-target public resource contract, persists the no-redispatch lifecycle through a shared SQLite schema epoch, and uses a handle-free direct-start host with Worker-independent retained comparison. Its strict HTTP routes, production server composition, exact-version UI, response-loss and Worker-replacement live witness, exact production-derived fanout mutation, history/replay evidence, recursive private-fact exclusion, and field-specific browser Process-instance oracle are green. No broker route or definition-version fanout exists.
 
+**Current implementation checkpoint.** Process-instance search is first-green through its contract, SQLite index, and three producers. HTTP, web, live, browser, and closure lanes remain paused pending review.
+
 **Current Timer Start boundary.** The closure-reviewed standards-only Timer Start capability admits an exact top-level `PT1S` Timer Start Event, preserves Start Event and duration identity through checked source and `initiateTimer`, executes an exact-target start stimulus in Lean and the TypeScript core, and closes in two unique internal steps to the existing User Task wait. Its profile, answer-free scenario, product example, and differential case are registered.
 
 The live one-action Temporal Schedule witness keeps the Worker absent through the due occurrence, retains the semantic-instance-derived configured base separately from the opaque service-returned execution Workflow ID and first Run ID, completes through that returned identity, inspects the exhausted Schedule and ten-event history, and replays. The capability is evidence-closed. Product 2 scheduling remains excluded from the engine capsule.
@@ -125,17 +127,19 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - An HTTP-only definition-schedule web client and exact-version panel that list Timer Start capabilities, generate an editable public schedule identity, and create, inspect, refresh, and cancel schedules without engine or Temporal imports
 - A live M2 Temporal witness covering exact version-1 retention after version-2 deployment, SQLite restart, Worker absence and replacement, opaque execution identity, action-won conflict, pre-start cancellation, one-action exhaustion, terminal cleanup, history, replay, and public private-ID exclusion
 - An M2 browser showcase that composes the production server, Worker, Temporal service, and React UI and proves the scheduled version-1 Process instance after later version-2 deployment; the M1 showcase remains a separate unseen-source regression floor
+- A strict identity-only Process-instance search contract and independent `@bpmn-lean/platform-operate` SQLite index with exact filters, bounded opaque-cursor paging, immutable snapshots, classified same-ID races, and no Temporal dependency
+- All three producers record through a definitions-owned output port before public success; durable Schedule and Message retries repair the same record without repeating host work, and the server structurally injects the recorder
 
 #### Explicitly absent
 
-- the transition-record projection, every read model, and cross-instance discovery
+- the transition-record projection and every cross-instance read model beyond the bounded confirmed-start index
 - task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
 - identity and authorization
 - the platform component kit, routing, and the owner-selected `react-aria-components` and three TanStack packages; the M1 definition workspace uses plain CSS and no client state or routing dependency
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - the two engine changes the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as prerequisites: publicly recoverable transitions and token positions, and a profile admission capability plus public projection for User Task assignment and form metadata
-- Process-instance search and every cross-instance read model
+- the Process-instance search HTTP route, web client and panel, live three-producer witness, browser acceptance, and closure evidence
 
 ### A12 Workflows downstream adoption
 

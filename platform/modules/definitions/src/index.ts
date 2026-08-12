@@ -28,6 +28,10 @@ export type {
 export { DefinitionDeploymentService } from "./definition-deployment-service.js";
 export { DefinitionStartService } from "./definition-start-service.js";
 export type { ProcessInstanceIdGenerator } from "./definition-start-service.js";
+export { recordStartedProcessInstance } from "./process-instance-recording.js";
+export type {
+  StartedProcessInstancePublisher,
+} from "./process-instance-recording.js";
 export { DefinitionHttpRoutes } from "./http-routes.js";
 export type { DefinitionHttpRoutesOptions } from "./http-routes.js";
 export { SqliteDefinitionRepository } from "./sqlite-definition-repository.js";

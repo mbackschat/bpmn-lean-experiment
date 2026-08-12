@@ -7,6 +7,9 @@ import type {
   DefinitionTimerStartCapability,
   ExactArtifactStore,
 } from "./contracts.js";
+import type {
+  StartedProcessInstancePublisher,
+} from "./process-instance-recording.js";
 
 export const DefinitionScheduleState = {
   Creating: "creating",
@@ -253,4 +256,5 @@ export type DefinitionScheduleServiceDependencies = Readonly<{
   host: DefinitionScheduleHost;
   identities: DefinitionScheduleIdentityGenerators;
   now: () => number;
+  startedInstances: StartedProcessInstancePublisher;
 }>;

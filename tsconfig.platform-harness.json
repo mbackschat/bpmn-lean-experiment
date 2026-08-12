@@ -26,6 +26,9 @@
       "@bpmn-lean/platform-definitions": [
         "./platform/modules/definitions/src/index.ts"
       ],
+      "@bpmn-lean/platform-operate": [
+        "./platform/modules/operate/src/index.ts"
+      ],
       "@bpmn-lean/semantic-core": [
         "./packages/semantic-core/src/index.ts"
       ],
@@ -46,6 +49,7 @@
     "platform/contracts/test/*.ts",
     "platform/foundation/engine-gateway/test/*.ts",
     "platform/modules/definitions/test/*.ts",
+    "platform/modules/operate/test/*.ts",
     "scripts/*.platform-test.ts"
   ],
   "exclude": []
