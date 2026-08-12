@@ -264,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit and run the owner-authorized final same-reviewer E2 correction audit.** The correction adds admitted decimal and hexadecimal namespace-reference controls, requires the exact duplicate-cardinality diagnostic in both attribute orders, and records the sixteenth syntactic-class recurrence. The M3 human-work proposal is independently approved, but its Product 2 implementation and E2 graduation remain paused until the audit approves closure.
+**Next action: obtain owner direction for the final E2 closure-status correction.** The owner-authorized final same-reviewer audit closed both carried findings but found that its immutable target still instructed the reader to commit that target. The required administrative correction removes that stale action, records the sixteenth stale-status recurrence, and leaves the closure receipt pending because another audit round is not authorized. The M3 human-work proposal is independently approved, but its Product 2 implementation and E2 graduation remain paused until governance closes the E2 review stage.
 
-**No technical or environmental blocker remains.** The owner explicitly authorized the final bounded E2 audit on 2026-08-12. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+**No technical or environmental blocker remains.** The owner explicitly authorized the final bounded E2 audit on 2026-08-12; that audit closed the substantive findings and exposed only the status contradiction above. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
 **Last verified commands:** `env CI=true ./scripts/verify.sh` passed at Boolean closure target `9669e8c` in 189.26 seconds with 46 live history replays. The exact Boolean Temporal mutation, CIB, semantic, cost, documentation, review-policy, link, and source-hygiene corrections passed their focused gates at the final reviewed target `06ec4a3`.
 
