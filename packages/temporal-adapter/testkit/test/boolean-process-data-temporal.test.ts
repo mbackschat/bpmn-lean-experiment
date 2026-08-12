@@ -7,7 +7,6 @@ import {
   CommandOutcome,
   ProcessStatus,
   VariableValueKind,
-  runScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteUserTaskInstanceStimulus,
@@ -45,7 +44,6 @@ import type {
 import {
   loadBooleanProcessDataFixture,
   withExecutionIdentity,
-  withStringifiedBooleanCompletion,
   withSubmittedValue,
 } from "./boolean-process-data-fixture.ts";
 import type {
@@ -68,6 +66,9 @@ import {
   waitForOpenUserTaskIds,
 } from "./temporal-worker-test-support.ts";
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
+import {
+  runBooleanStringificationMutation,
+} from "./boolean-process-data-stringification-mutation.ts";
 
 const operationDeadlineMs = 10_000;
 const identity = "bpmn-lean-boolean-process-data";
@@ -335,21 +336,51 @@ async function assertMutationDiscriminators(
   environment: TestWorkflowEnvironment,
   fixture: BooleanProcessDataFixture,
 ): Promise<void> {
-  const stringified = withStringifiedBooleanCompletion(fixture);
-  const stringifiedResult = runScenario(stringified, fixture.semanticProcess);
-  assert.notDeepEqual(stringifiedResult, fixture.expected);
-  assert.equal(containsTaggedBoolean(stringifiedResult), false);
-  assert.equal(containsTaggedStringTrue(stringifiedResult), true);
-  await assert.rejects(
-    runCompletionDataBypassMutation(
-      environment,
-      stringified,
-      fixture.semanticProcess,
-      "boolean-stringification-workflow-mutation",
-      waitForCompletionTask,
-    ),
-    /Query trace and durable Event History contain different completed Update commands/u,
+  const stringification = await runBooleanStringificationMutation(
+    environment,
+    fixture.start,
+    fixture.semanticProcess,
+    fixture.completion,
   );
+  assert.deepEqual(stringification.result, {
+    kind: ProcessCommandResultKind.Semantic,
+    commandId: fixture.completion.commandId,
+    outcome: CommandOutcome.Committed,
+  });
+  assertExactAcceptedCompletion(
+    stringification.history,
+    fixture.completion,
+  );
+  assert.deepEqual(
+    durableUpdateOutcomes(stringification.history),
+    new Map([[fixture.completion.commandId, CommandOutcome.Committed]]),
+  );
+  reconcileHarnessTraceEvidence(
+    stringification.trace,
+    stringification.receipt,
+    stringification.history,
+  );
+  assert.notDeepEqual(stringification.trace, fixture.expected.trace);
+  assert.notDeepEqual(
+    stringification.receipt.finalState,
+    expectedTerminal(fixture.expected),
+  );
+  assertHistoryReceiptMatches(
+    stringification.history,
+    stringification.receipt,
+  );
+  assert.equal(containsTaggedBoolean(stringification.trace), false);
+  assert.equal(containsTaggedStringTrue(stringification.trace), true);
+  assert.deepEqual(
+    acceptedCompletionOrder(stringification.history),
+    [fixture.completion.commandId],
+  );
+  assertUpdatesCompleteBeforeWorkflow(stringification.history, 1);
+  assertNoAddedHostMechanism(
+    stringification.history,
+    "Boolean stringification mutation",
+  );
+  assert.equal(stringification.replayed, true);
 
   const outsideCore = withExecutionIdentity(
     fixture.scenario,
@@ -423,6 +454,32 @@ function assertExactAcceptedCompletion(
   assert.equal(payloads.length, 1);
   assert.deepEqual(
     decodeJsonPayload(payloads[0], "accepted Boolean completion"),
+    expected,
+  );
+}
+
+function assertHistoryReceiptMatches(
+  history: TemporalHistory,
+  expected: unknown,
+): void {
+  const completed = decodedHistoryEvents(
+    history,
+    "workflowExecutionCompletedEventAttributes",
+  );
+  assert.equal(completed.length, 1);
+  const event = completed[0];
+  assert.ok(event !== undefined);
+  const result = asRecord(
+    event.attributes.result,
+    "Boolean mutation Workflow result",
+  );
+  const payloads = asArray(
+    result.payloads,
+    "Boolean mutation Workflow result payloads",
+  );
+  assert.equal(payloads.length, 1);
+  assert.deepEqual(
+    decodeJsonPayload(payloads[0], "Boolean mutation terminal receipt"),
     expected,
   );
 }

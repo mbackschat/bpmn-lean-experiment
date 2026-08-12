@@ -110,25 +110,6 @@ export async function loadBooleanProcessDataFixture(): Promise<
   };
 }
 
-export function withStringifiedBooleanCompletion(
-  fixture: BooleanProcessDataFixture,
-): Scenario {
-  return withExecutionIdentity(
-    {
-      ...fixture.scenario,
-      stimuli: [
-        fixture.start,
-        withSubmittedValue(fixture.completion, "approved", {
-          kind: VariableValueKind.String,
-          value: "true",
-        }),
-      ],
-    },
-    "BooleanInstance_StringificationMutation",
-    "stringify-boolean-before-application",
-  );
-}
-
 export function withExecutionIdentity(
   scenario: Scenario,
   instanceId: string,
