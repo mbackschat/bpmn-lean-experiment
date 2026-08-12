@@ -279,7 +279,7 @@ test("lets showcases drive exact public packages while rejecting engine internal
   );
 });
 
-test("allows only the exact M2 evidence owner to fetch history", () => {
+test("allows only named showcase evidence owners to fetch history", () => {
   assert.deepEqual(
     assessPlatformProductBoundary([
       {
@@ -312,6 +312,10 @@ test("allows only the exact M2 evidence owner to fetch history", () => {
       },
       {
         path: "showcase/m2-process-instance-search/test/temporal-support.ts",
+        source: "await handle.fetchHistory();",
+      },
+      {
+        path: "showcase/m3-human-work/test/m3-human-work.test.ts",
         source: "await handle.fetchHistory();",
       },
     ]),

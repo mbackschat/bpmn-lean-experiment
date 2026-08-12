@@ -322,6 +322,7 @@ const approvedTemporalHistoryEvidencePaths = new Set([
   "showcase/m2-definition-scheduling/test/m2-definition-scheduling.test.ts",
   "showcase/m2-message-start-ingress/test/m2-message-start-ingress.test.ts",
   "showcase/m2-process-instance-search/test/m2-process-instance-search.test.ts",
+  "showcase/m3-human-work/test/m3-human-work.test.ts",
 ]);
 
 function isApprovedTemporalHistoryEvidence(relativePath: string, apiName: string): boolean {
