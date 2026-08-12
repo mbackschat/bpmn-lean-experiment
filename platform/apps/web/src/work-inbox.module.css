@@ -63,6 +63,21 @@
   padding: 0.8rem 1rem;
 }
 
+.completionState {
+  background: #fff8df;
+  border-radius: 10px;
+  color: #6c4e00;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0.8rem 1rem;
+}
+
+.completionState p {
+  margin: 0;
+}
+
 @media (max-width: 700px) {
   .heading,
   .detailHeading {

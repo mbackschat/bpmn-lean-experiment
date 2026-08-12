@@ -11,7 +11,7 @@ import {
   TextField,
 } from "@bpmn-lean/platform-ui-kit";
 import type { DataTableColumn } from "@bpmn-lean/platform-ui-kit";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 import type {
@@ -19,12 +19,50 @@ import type {
   PublicFormValue,
   PublicTaskDetail,
   PublicWorkTask,
+  WorkCompletionRequest,
+  WorkCompletionResult,
 } from "@bpmn-lean/platform-contracts";
 
 import type { WorkApiClient } from "./work-tasks-api";
 import styles from "./work-inbox.module.css";
 
 const tasksQueryKey = ["work", "tasks"] as const;
+
+export const WorkCompletionViewKind = {
+  Idle: "idle",
+  Submitting: "submitting",
+  TransportFailed: "transportFailed",
+  Indeterminate: "indeterminate",
+  Rejected: "rejected",
+} as const;
+
+export type WorkCompletionView =
+  | Readonly<{ kind: typeof WorkCompletionViewKind.Idle }>
+  | Readonly<{ kind: typeof WorkCompletionViewKind.Submitting }>
+  | Readonly<{ kind: typeof WorkCompletionViewKind.TransportFailed }>
+  | Readonly<{ kind: typeof WorkCompletionViewKind.Indeterminate }>
+  | Readonly<{
+      kind: typeof WorkCompletionViewKind.Rejected;
+      result: Extract<WorkCompletionResult, { state: "rejected" }>;
+    }>;
+
+export type RetainedCompletionOperation = Readonly<{
+  actionId: string;
+  request: WorkCompletionRequest;
+}>;
+
+export type WorkCompletionResolution = Readonly<{
+  operation: RetainedCompletionOperation | null;
+  closeDetail: boolean;
+  view: WorkCompletionView;
+}>;
+
+type CompletionApi = Readonly<{
+  complete: (
+    actionId: string,
+    request: WorkCompletionRequest,
+  ) => Promise<WorkCompletionResult>;
+}>;
 
 export type WorkInboxPanelProps = Readonly<{
   api: Pick<
@@ -40,6 +78,14 @@ export function WorkInboxPanel({
 }: WorkInboxPanelProps) {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<PublicWorkTask | null>(null);
+  const [completionOperation, setCompletionOperation] =
+    useState<RetainedCompletionOperation | null>(null);
+  const completionOperationRef = useRef<RetainedCompletionOperation | null>(
+    null,
+  );
+  const [completionView, setCompletionView] = useState<WorkCompletionView>({
+    kind: WorkCompletionViewKind.Idle,
+  });
   const tasks = useQuery({
     queryKey: tasksQueryKey,
     queryFn: () => api.listTasks(),
@@ -73,23 +119,29 @@ export function WorkInboxPanel({
     onSuccess: refresh,
   });
   const complete = useMutation({
-    mutationFn: (input: Readonly<{
-      detail: PublicTaskDetail;
-      value: Extract<PublicFormValue, { kind: "string" | "boolean" }>;
-    }>) => {
-      const field = input.detail.form?.fields[0];
-      if (field === undefined) throw new Error("The task has no completable field.");
-      return api.complete(createActionId(), {
-        taskId: input.detail.workTask.task.id,
-        expectedClaimGeneration:
-          input.detail.workTask.claim?.generation ??
-          input.detail.workTask.claimGeneration,
-        submittedValues: [{ key: field.key, value: input.value }],
-      });
+    mutationFn: (operation: RetainedCompletionOperation) =>
+      submitRetainedCompletionOperation(api, operation),
+    onMutate: (operation) => {
+      completionOperationRef.current = operation;
+      setCompletionOperation(operation);
+      setCompletionView({ kind: WorkCompletionViewKind.Submitting });
     },
-    onSuccess: async () => {
-      setSelected(null);
-      await queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+    onError: (_error, operation) => {
+      completionOperationRef.current = operation;
+      setCompletionOperation(operation);
+      setCompletionView({ kind: WorkCompletionViewKind.TransportFailed });
+    },
+    onSuccess: async (result, operation) => {
+      const resolution = resolveCompletionResult(operation, result);
+      completionOperationRef.current = resolution.operation;
+      setCompletionOperation(resolution.operation);
+      setCompletionView(resolution.view);
+      if (resolution.closeDetail) {
+        setSelected(null);
+        await queryClient.invalidateQueries({ queryKey: tasksQueryKey });
+      } else if (result.state === "rejected") {
+        await refresh();
+      }
     },
   });
   const columns = useMemo<readonly DataTableColumn<PublicWorkTask>[]>(() => [{
@@ -98,7 +150,13 @@ export function WorkInboxPanel({
     cell: (row) => (
       <Button
         className={styles.taskLink!}
-        onPress={() => setSelected(row)}
+        onPress={() => {
+          if (completionOperation !== null) return;
+          completionOperationRef.current = null;
+          setSelected(row);
+          setCompletionView({ kind: WorkCompletionViewKind.Idle });
+          complete.reset();
+        }}
         variant={ButtonVariant.Plain}
       >
         {row.task.name ?? row.task.id.elementId}
@@ -134,8 +192,8 @@ export function WorkInboxPanel({
         Release
       </Button>
     ),
-  }], [claim, release]);
-  const error = tasks.error ?? detail.error ?? claim.error ?? release.error ?? complete.error;
+  }], [claim, release, complete, completionOperation]);
+  const error = tasks.error ?? detail.error ?? claim.error ?? release.error;
   return (
     <section className={styles.panel} aria-labelledby="human-work-heading">
       <div className={styles.heading}>
@@ -163,14 +221,40 @@ export function WorkInboxPanel({
         <div className={styles.detail}>
           <div className={styles.detailHeading}>
             <h3>{selected.task.name ?? selected.task.id.elementId}</h3>
-            <Button onPress={() => setSelected(null)}>Close</Button>
+            <Button
+              isDisabled={completionOperation !== null}
+              onPress={() => {
+                setSelected(null);
+                completionOperationRef.current = null;
+                setCompletionView({ kind: WorkCompletionViewKind.Idle });
+                complete.reset();
+              }}
+            >
+              Close
+            </Button>
           </div>
           {detail.isPending ? <p role="status">Loading task detail…</p> : null}
           {detail.data === undefined ? null : (
             <WorkTaskForm
               detail={detail.data}
-              pending={complete.isPending}
-              onComplete={(value) => complete.mutateAsync({ detail: detail.data, value }).then(() => undefined)}
+              completionView={completionView}
+              onComplete={(value) => {
+                const operation = completionOperationRef.current ??
+                  createRetainedCompletionOperation(
+                    detail.data,
+                    value,
+                    createActionId,
+                  );
+                completionOperationRef.current = operation;
+                complete.mutate(operation);
+              }}
+              onRetry={() => {
+                const operation = completionOperationRef.current;
+                if (operation === null) {
+                  throw new Error("No retained completion operation is available.");
+                }
+                complete.mutate(operation);
+              }}
             />
           )}
         </div>
@@ -181,13 +265,19 @@ export function WorkInboxPanel({
 
 export type WorkTaskFormProps = Readonly<{
   detail: PublicTaskDetail;
-  pending: boolean;
+  completionView: WorkCompletionView;
   onComplete: (
     value: Extract<PublicFormValue, { kind: "string" | "boolean" }>,
-  ) => Promise<void>;
+  ) => void;
+  onRetry: () => void;
 }>;
 
-export function WorkTaskForm({ detail, pending, onComplete }: WorkTaskFormProps) {
+export function WorkTaskForm({
+  detail,
+  completionView,
+  onComplete,
+  onRetry,
+}: WorkTaskFormProps) {
   const field = detail.form?.fields[0];
   if (field === undefined) return <p>This task has no generated form.</p>;
   if (field.compatibility === "incompatible") {
@@ -195,18 +285,22 @@ export function WorkTaskForm({ detail, pending, onComplete }: WorkTaskFormProps)
   }
   const initial = initialFormValue(field);
   const exactField = field;
-  async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  const pending = completionView.kind === WorkCompletionViewKind.Submitting;
+  const retryable =
+    completionView.kind === WorkCompletionViewKind.TransportFailed ||
+    completionView.kind === WorkCompletionViewKind.Indeterminate;
+  function submit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     switch (exactField.type) {
       case "string":
-        await onComplete({
+        onComplete({
           kind: "string",
           value: String(data.get(exactField.key) ?? ""),
         });
         return;
       case "boolean":
-        await onComplete({
+        onComplete({
           kind: "boolean",
           value: selectedBooleanFormValue(data.get(exactField.key)),
         });
@@ -214,25 +308,132 @@ export function WorkTaskForm({ detail, pending, onComplete }: WorkTaskFormProps)
     }
   }
   return (
-    <form className={styles.form} onSubmit={(event) => { void submit(event); }}>
-      {field.type === "string" ? (
-        <TextField
-          label={field.key}
-          name={field.key}
-          defaultValue={initial.kind === "string" ? initial.value : ""}
-          isDisabled={pending}
-        />
-      ) : (
-        <BooleanChoice
-          label={field.key}
-          name={field.key}
-          {...(initial.kind === "boolean" ? { defaultValue: initial.value } : {})}
-          isDisabled={pending}
-        />
-      )}
-      <Button type="submit" isPending={pending}>Complete task</Button>
-    </form>
+    <>
+      <CompletionState view={completionView} onRetry={onRetry} />
+      <form className={styles.form} onSubmit={submit}>
+        {field.type === "string" ? (
+          <TextField
+            label={field.key}
+            name={field.key}
+            defaultValue={initial.kind === "string" ? initial.value : ""}
+            isDisabled={pending || retryable}
+          />
+        ) : (
+          <BooleanChoice
+            label={field.key}
+            name={field.key}
+            {...(initial.kind === "boolean" ? { defaultValue: initial.value } : {})}
+            isDisabled={pending || retryable}
+          />
+        )}
+        {retryable ? null : (
+          <Button type="submit" isPending={pending}>Complete task</Button>
+        )}
+      </form>
+    </>
   );
+}
+
+function CompletionState({
+  view,
+  onRetry,
+}: Readonly<{ view: WorkCompletionView; onRetry: () => void }>) {
+  switch (view.kind) {
+    case WorkCompletionViewKind.Idle:
+    case WorkCompletionViewKind.Submitting:
+      return null;
+    case WorkCompletionViewKind.TransportFailed:
+      return (
+        <div className={styles.completionState} role="status">
+          <p>Completion delivery is unknown. Retry the exact completion request.</p>
+          <Button onPress={onRetry}>Retry completion</Button>
+        </div>
+      );
+    case WorkCompletionViewKind.Indeterminate:
+      return (
+        <div className={styles.completionState} role="status">
+          <p>Completion is indeterminate. Retry the exact completion request.</p>
+          <Button onPress={onRetry}>Retry completion</Button>
+        </div>
+      );
+    case WorkCompletionViewKind.Rejected:
+      return (
+        <p className={styles.completionState} role="alert">
+          {rejectedCompletionMessage(view.result)}
+        </p>
+      );
+  }
+}
+
+/** Mints and freezes one exact completion operation before its first submission. */
+export function createRetainedCompletionOperation(
+  detail: PublicTaskDetail,
+  value: Extract<PublicFormValue, { kind: "string" | "boolean" }>,
+  createActionId: () => string,
+): RetainedCompletionOperation {
+  const field = detail.form?.fields[0];
+  if (field === undefined) throw new Error("The task has no completable field.");
+  if (field.type !== value.kind) {
+    throw new Error("The completion value does not match the published field type.");
+  }
+  const actionId = createActionId();
+  if (typeof actionId !== "string" || actionId.length === 0) {
+    throw new Error("Completion action identity must not be empty.");
+  }
+  const taskId = Object.freeze({
+    processInstanceId: detail.workTask.task.id.processInstanceId,
+    elementId: detail.workTask.task.id.elementId,
+    activation: detail.workTask.task.id.activation,
+  });
+  const submittedValue = value.kind === "string"
+    ? Object.freeze({ kind: value.kind, value: value.value })
+    : Object.freeze({ kind: value.kind, value: value.value });
+  const submittedValues = Object.freeze([Object.freeze({
+    key: field.key,
+    value: submittedValue,
+  })]) as WorkCompletionRequest["submittedValues"];
+  const request = Object.freeze({
+    taskId,
+    expectedClaimGeneration:
+      detail.workTask.claim?.generation ?? detail.workTask.claimGeneration,
+    submittedValues,
+  });
+  return Object.freeze({ actionId, request });
+}
+
+/** Reuses the already-minted identity and immutable request for every retry. */
+export function submitRetainedCompletionOperation(
+  api: CompletionApi,
+  operation: RetainedCompletionOperation,
+): Promise<WorkCompletionResult> {
+  return api.complete(operation.actionId, operation.request);
+}
+
+/** Resolves only terminal results; indeterminate keeps the exact operation retryable. */
+export function resolveCompletionResult(
+  operation: RetainedCompletionOperation,
+  result: WorkCompletionResult,
+): WorkCompletionResolution {
+  switch (result.state) {
+    case "committed":
+      return {
+        operation: null,
+        closeDetail: true,
+        view: { kind: WorkCompletionViewKind.Idle },
+      };
+    case "rejected":
+      return {
+        operation: null,
+        closeDetail: false,
+        view: { kind: WorkCompletionViewKind.Rejected, result },
+      };
+    case "indeterminate":
+      return {
+        operation,
+        closeDetail: false,
+        view: { kind: WorkCompletionViewKind.Indeterminate },
+      };
+  }
 }
 
 export function initialFormValue(field: PublicFormField): PublicFormValue {
@@ -262,4 +463,15 @@ export function workTaskRowId(task: PublicWorkTask): string {
 
 function errorMessage(value: unknown): string {
   return value instanceof Error ? value.message : "Human work request failed.";
+}
+
+function rejectedCompletionMessage(
+  result: Extract<WorkCompletionResult, { state: "rejected" }>,
+): string {
+  switch (result.engineResult.kind) {
+    case "processClosed":
+      return "Completion was rejected because the Process is closed.";
+    case "semantic":
+      return `Completion was rejected with semantic outcome ${result.engineResult.outcome}.`;
+  }
 }

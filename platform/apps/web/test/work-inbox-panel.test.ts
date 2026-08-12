@@ -13,9 +13,13 @@ import type {
   PublicFormValue,
   PublicTaskDetail,
   PublicWorkTask,
+  WorkCompletionRequest,
+  WorkCompletionResult,
 } from "@bpmn-lean/platform-contracts";
 
 import type {
+  RetainedCompletionOperation,
+  WorkCompletionView,
   WorkInboxPanelProps,
   WorkTaskFormProps,
 } from "../src/work-inbox-panel.tsx";
@@ -50,6 +54,30 @@ const module = await import(
 ) as Readonly<{
   WorkInboxPanel: ComponentType<WorkInboxPanelProps>;
   WorkTaskForm: ComponentType<WorkTaskFormProps>;
+  WorkCompletionViewKind: Readonly<{
+    Idle: "idle";
+    Submitting: "submitting";
+    TransportFailed: "transportFailed";
+    Indeterminate: "indeterminate";
+    Rejected: "rejected";
+  }>;
+  createRetainedCompletionOperation: (
+    detail: PublicTaskDetail,
+    value: Extract<PublicFormValue, { kind: "string" | "boolean" }>,
+    createActionId: () => string,
+  ) => RetainedCompletionOperation;
+  submitRetainedCompletionOperation: (
+    api: Readonly<{ complete: (actionId: string, request: WorkCompletionRequest) => Promise<WorkCompletionResult> }>,
+    operation: RetainedCompletionOperation,
+  ) => Promise<WorkCompletionResult>;
+  resolveCompletionResult: (
+    operation: RetainedCompletionOperation,
+    result: WorkCompletionResult,
+  ) => Readonly<{
+    operation: RetainedCompletionOperation | null;
+    closeDetail: boolean;
+    view: WorkCompletionView;
+  }>;
   initialFormValue: (field: PublicFormField) => PublicFormValue;
   selectedBooleanFormValue: (value: FormDataEntryValue | null) => boolean;
   workTaskRowId: (task: PublicWorkTask) => string;
@@ -57,6 +85,10 @@ const module = await import(
 const {
   WorkInboxPanel,
   WorkTaskForm,
+  WorkCompletionViewKind,
+  createRetainedCompletionOperation,
+  submitRetainedCompletionOperation,
+  resolveCompletionResult,
   initialFormValue,
   selectedBooleanFormValue,
   workTaskRowId,
@@ -136,13 +168,15 @@ test("renders Boolean as an explicit true-false choice and string as text withou
 
   const booleanHtml = renderToStaticMarkup(createElement(WorkTaskForm, {
     detail: booleanDetail,
-    pending: false,
+    completionView: { kind: WorkCompletionViewKind.Idle },
     onComplete: async () => undefined,
+    onRetry: () => undefined,
   }));
   const stringHtml = renderToStaticMarkup(createElement(WorkTaskForm, {
     detail: stringDetail,
-    pending: false,
+    completionView: { kind: WorkCompletionViewKind.Idle },
     onComplete: async () => undefined,
+    onRetry: () => undefined,
   }));
 
   assert.equal(booleanHtml.match(/type="radio"/gu)?.length, 2);
@@ -175,8 +209,9 @@ test("requires a Boolean choice without defaulting absent or null to false", () 
     };
     const html = renderToStaticMarkup(createElement(WorkTaskForm, {
       detail,
-      pending: false,
+      completionView: { kind: WorkCompletionViewKind.Idle },
       onComplete: async () => undefined,
+      onRetry: () => undefined,
     }));
     assert.equal(html.match(/type="radio"/gu)?.length, 2);
     assert.doesNotMatch(html, /checked/u);
@@ -212,6 +247,115 @@ test("omits the inbox table when the current actor snapshot is empty", () => {
   assert.doesNotMatch(html, /<table/u);
 });
 
+test("retains one immutable action and byte-equivalent request after transport failure", async () => {
+  const detail = claimedBooleanDetail();
+  let minted = 0;
+  const operation = createRetainedCompletionOperation(
+    detail,
+    { kind: "boolean", value: true },
+    () => `completion-${++minted}`,
+  );
+  const calls: Readonly<{ actionId: string; requestJson: string }>[] = [];
+  const api = {
+    complete: async (actionId: string, request: WorkCompletionRequest) => {
+      calls.push({ actionId, requestJson: JSON.stringify(request) });
+      if (calls.length === 1) throw new Error("response lost after capture");
+      return committedResult(actionId);
+    },
+  };
+
+  await assert.rejects(
+    submitRetainedCompletionOperation(api, operation),
+    /response lost after capture/u,
+  );
+  assert.deepEqual(
+    await submitRetainedCompletionOperation(api, operation),
+    committedResult(operation.actionId),
+  );
+  assert.equal(minted, 1);
+  assert.deepEqual(calls, [calls[0], calls[0]]);
+  assert.equal(Object.isFrozen(operation), true);
+  assert.equal(Object.isFrozen(operation.request), true);
+  assert.equal(Object.isFrozen(operation.request.submittedValues), true);
+});
+
+test("keeps indeterminate detail controlled and retries the exact retained operation", async () => {
+  const detail = claimedBooleanDetail();
+  const operation = createRetainedCompletionOperation(
+    detail,
+    { kind: "boolean", value: true },
+    () => "completion-indeterminate",
+  );
+  const indeterminate = {
+    state: "indeterminate",
+    actionId: operation.actionId,
+    taskId: task.task.id,
+  } as const satisfies WorkCompletionResult;
+  const resolution = resolveCompletionResult(operation, indeterminate);
+  const calls: string[] = [];
+  const api = {
+    complete: async (actionId: string, request: WorkCompletionRequest) => {
+      calls.push(`${actionId}:${JSON.stringify(request)}`);
+      return calls.length === 1 ? indeterminate : committedResult(actionId);
+    },
+  };
+
+  assert.equal(resolution.operation, operation);
+  assert.equal(resolution.closeDetail, false);
+  assert.equal(resolution.view.kind, WorkCompletionViewKind.Indeterminate);
+  await submitRetainedCompletionOperation(api, operation);
+  await submitRetainedCompletionOperation(api, resolution.operation!);
+  assert.deepEqual(calls, [calls[0], calls[0]]);
+
+  const html = renderToStaticMarkup(createElement(WorkTaskForm, {
+    detail,
+    completionView: resolution.view,
+    onComplete: async () => undefined,
+    onRetry: () => undefined,
+  }));
+  assert.match(html, /Completion is indeterminate/u);
+  assert.match(html, />Retry completion</u);
+  assert.match(html, /Review request|approved/u);
+});
+
+test("clears a committed operation and closes detail while rendering rejection honestly", () => {
+  const detail = claimedBooleanDetail();
+  const operation = createRetainedCompletionOperation(
+    detail,
+    { kind: "boolean", value: true },
+    () => "completion-terminal",
+  );
+  const committed = resolveCompletionResult(
+    operation,
+    committedResult(operation.actionId),
+  );
+  assert.equal(committed.operation, null);
+  assert.equal(committed.closeDetail, true);
+
+  for (const engineResult of [
+    { kind: "semantic", outcome: "rolledBack" },
+    { kind: "processClosed" },
+  ] as const) {
+    const rejectedResult = {
+      state: "rejected",
+      actionId: operation.actionId,
+      taskId: task.task.id,
+      engineResult,
+    } as const satisfies WorkCompletionResult;
+    const rejected = resolveCompletionResult(operation, rejectedResult);
+    assert.equal(rejected.operation, null);
+    assert.equal(rejected.closeDetail, false);
+    const html = renderToStaticMarkup(createElement(WorkTaskForm, {
+      detail,
+      completionView: rejected.view,
+      onComplete: async () => undefined,
+      onRetry: () => undefined,
+    }));
+    assert.match(html, /Completion was rejected/u);
+    assert.doesNotMatch(html, /Completion committed/u);
+  }
+});
+
 function inertApi() {
   return {
     listTasks: async () => ({ tasks: [] }),
@@ -220,4 +364,20 @@ function inertApi() {
     release: async () => ({ taskId: task.task.id, claimGeneration: 2, released: true as const }),
     complete: async () => ({ state: "committed" as const, actionId: "complete-1", taskId: task.task.id }),
   };
+}
+
+function claimedBooleanDetail(): PublicTaskDetail {
+  return {
+    workTask: { ...task, claim: { actorId: "demo-user", generation: 1 } },
+    form: { fields: [{
+      key: "approved",
+      type: "boolean",
+      currentValue: { kind: "absent" },
+      compatibility: "compatible",
+    }] },
+  };
+}
+
+function committedResult(actionId: string): WorkCompletionResult {
+  return { state: "committed", actionId, taskId: task.task.id };
 }
