@@ -136,6 +136,16 @@ export class SqliteWorkRepository {
           this.#outbox(input.audit.conflict);
           return { kind: "conflict" };
         }
+        const current = this.getClaim(task);
+        const retainedGeneration = retained.result.claim.generation;
+        if (
+          current.claim === null ||
+          current.claim.actorId !== retained.binding.actorId ||
+          current.claim.generation !== retainedGeneration ||
+          current.claimGeneration !== retainedGeneration
+        ) {
+          return { kind: "conflict" };
+        }
         this.#outbox(input.audit.idempotent);
         return { kind: "idempotent", result: retained.result };
       }

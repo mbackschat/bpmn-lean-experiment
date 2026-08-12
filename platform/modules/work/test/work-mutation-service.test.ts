@@ -80,6 +80,64 @@ test("claim race has one winner while hidden mutations remain audit-silent", asy
   }
 });
 
+test("hidden release and completion actions leave both audit stores unchanged", async () => {
+  const cases = [
+    {
+      name: "foreign nonclaimant release",
+      prepare: async (harness: Awaited<ReturnType<typeof createHarness>>) => {
+        await claim(harness);
+      },
+      act: (harness: Awaited<ReturnType<typeof createHarness>>) =>
+        harness.serviceFor("foreign-user", ["reviewers"]).releaseTask(task.id, {
+          actionId: "foreign-release",
+          generation: 1,
+        }),
+      expected: { kind: "notFound" },
+    },
+    {
+      name: "stale completion claim generation",
+      prepare: async (harness: Awaited<ReturnType<typeof createHarness>>) => {
+        await claim(harness);
+        assert.equal((await harness.service.releaseTask(task.id, {
+          actionId: "release-1",
+          generation: 1,
+        })).kind, "released");
+        assert.equal((await harness.service.claimTask(task.id, {
+          actionId: "claim-2",
+          expectedGeneration: 2,
+        })).kind, "claimed");
+      },
+      act: (harness: Awaited<ReturnType<typeof createHarness>>) =>
+        harness.service.completeTask("stale-completion", completionRequest()),
+      expected: { kind: "conflict" },
+    },
+    {
+      name: "cross-host completion identity",
+      prepare: async (harness: Awaited<ReturnType<typeof createHarness>>) => {
+        await claim(harness);
+        await harness.moveTaskToHost("host-2");
+      },
+      act: (harness: Awaited<ReturnType<typeof createHarness>>) =>
+        harness.service.completeTask("cross-host-completion", completionRequest()),
+      expected: { kind: "notFound" },
+    },
+  ] as const;
+
+  for (const example of cases) {
+    const harness = await createHarness();
+    try {
+      await example.prepare(harness);
+      const before = auditStores(harness);
+      const completionCalls = harness.completionCalls;
+      assert.deepEqual(await example.act(harness), example.expected, example.name);
+      assert.deepEqual(auditStores(harness), before, example.name);
+      assert.equal(harness.completionCalls, completionCalls, example.name);
+    } finally {
+      await harness.close();
+    }
+  }
+});
+
 test("release retry survives task disappearance without another generation change", async () => {
   const harness = await createHarness();
   try {
@@ -360,6 +418,9 @@ async function createHarness(options: HarnessOptions = {}) {
     locator: "private:host-1",
   });
   const openTasks: PublicWorkTask["task"][] = [structuredClone(task)];
+  const openTasksByHost = new Map<string, PublicWorkTask["task"][]>([
+    ["host-1", openTasks],
+  ]);
   const audit: WorkAuditEvent[] = [];
   let completionCalls = 0;
   let eventOrdinal = 0;
@@ -370,7 +431,10 @@ async function createHarness(options: HarnessOptions = {}) {
     },
   });
   const gateway = {
-    observeOpenWork: async () => ({ status: "open" as const, openUserTasks: structuredClone(openTasks) }),
+    observeOpenWork: async (request: { hostingProcessInstanceId: string }) => ({
+      status: "open" as const,
+      openUserTasks: structuredClone(openTasksByHost.get(request.hostingProcessInstanceId) ?? []),
+    }),
     readWorkDetail: async () => ({
       status: "found" as const,
       detail: {
@@ -420,11 +484,26 @@ async function createHarness(options: HarnessOptions = {}) {
     audit,
     serviceFor,
     service: serviceFor("demo-user", ["reviewers"]),
+    moveTaskToHost: async (hostingProcessInstanceId: string) => {
+      openTasks.length = 0;
+      openTasksByHost.set(hostingProcessInstanceId, [structuredClone(task)]);
+      await repository.recordConfirmedProcessInstance({
+        instance: { processInstanceId: hostingProcessInstanceId, definition },
+        locator: `private:${hostingProcessInstanceId}`,
+      });
+    },
     get completionCalls() { return completionCalls; },
     close: async () => {
       repository.close();
       await rm(root, { recursive: true, force: true });
     },
+  };
+}
+
+function auditStores(harness: Awaited<ReturnType<typeof createHarness>>) {
+  return {
+    outbox: harness.repository.listUndeliveredAuditEvents(),
+    sink: structuredClone(harness.audit),
   };
 }
 

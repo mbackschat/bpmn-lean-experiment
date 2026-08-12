@@ -6,8 +6,16 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import {
+  AuditSearchService,
+  SqliteAuditRepository,
+} from "@bpmn-lean/platform-audit";
+import {
   createPlatformServer,
 } from "@bpmn-lean/platform-server";
+import {
+  SqliteWorkRepository,
+  WorkAuditOutboxService,
+} from "@bpmn-lean/platform-work";
 
 test("composes the definition route and closes its HTTP and SQLite owners idempotently", async () => {
   const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-server-"));
@@ -127,6 +135,101 @@ test("validates all configuration before creating its data directory", async () 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("reconciles exactly one audit row after insertion succeeds and Work acknowledgement crashes", async () => {
+  const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-server-audit-crash-"));
+  const workFile = join(dataDirectory, "work.sqlite");
+  const auditFile = join(dataDirectory, "audit.sqlite");
+  let work: SqliteWorkRepository | undefined;
+  let audit: SqliteAuditRepository | undefined;
+  try {
+    work = new SqliteWorkRepository(workFile);
+    audit = new SqliteAuditRepository(auditFile);
+    await work.recordConfirmedProcessInstance(workPublication);
+    assert.equal(work.claimTask(workClaimInput).kind, "claimed");
+    const crashAfterAuditInsert = new WorkAuditOutboxService({
+      listUndeliveredAuditEvents: () => work!.listUndeliveredAuditEvents(),
+      acknowledgeAuditEvent: () => {
+        throw new Error("crash before Work acknowledgement");
+      },
+    }, audit);
+
+    assert.throws(() => crashAfterAuditInsert.reconcileAll(), /Work acknowledgement/u);
+    assert.deepEqual(new AuditSearchService(audit).search({
+      actorId: "demo-user",
+      limit: 50,
+    }).events, [workClaimInput.audit.claimed]);
+    assert.equal(work.listUndeliveredAuditEvents().length, 1);
+    work.close();
+    audit.close();
+
+    work = new SqliteWorkRepository(workFile);
+    audit = new SqliteAuditRepository(auditFile);
+    new WorkAuditOutboxService(work, audit).reconcileAll();
+    assert.deepEqual(new AuditSearchService(audit).search({
+      actorId: "demo-user",
+      limit: 50,
+    }).events, [workClaimInput.audit.claimed]);
+    assert.deepEqual(work.listUndeliveredAuditEvents(), []);
+  } finally {
+    work?.close();
+    audit?.close();
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
+
+const workTask = {
+  hostingProcessInstanceId: "host-1",
+  taskId: {
+    processInstanceId: "task-process-1",
+    elementId: "ReviewTask",
+    activation: 1,
+  },
+} as const;
+
+const workPublication = {
+  instance: {
+    processInstanceId: "host-1",
+    definition: {
+      processId: "Review_Process",
+      version: 1,
+      source: {
+        kind: "bpmnSource" as const,
+        id: "review.bpmn",
+        sha256: "a".repeat(64),
+        byteLength: 42,
+        declaredEncoding: null,
+        decodedAs: "UTF-8" as const,
+      },
+      semanticProfile: "profile-1",
+      startCapabilities: { messageStarts: [], timerStarts: [] },
+    },
+  },
+  locator: "private:host-1",
+};
+
+const workClaimInput = {
+  actionId: "claim-1",
+  actorId: "demo-user",
+  task: workTask,
+  expectedGeneration: 0,
+  audit: {
+    claimed: workAuditEvent("claimed"),
+    idempotent: workAuditEvent("idempotent"),
+    conflict: workAuditEvent("conflict"),
+  },
+} as const;
+
+function workAuditEvent(outcome: "claimed" | "idempotent" | "conflict") {
+  return {
+    eventId: `claim-1-${outcome}`,
+    actorId: "demo-user",
+    recordedAt: "2026-08-12T10:00:00.000Z",
+    hostingProcessInstanceId: workTask.hostingProcessInstanceId,
+    taskId: workTask.taskId,
+    action: { kind: "claim" as const, actionId: "claim-1", outcome },
+  };
+}
 
 async function allocatePort(): Promise<number> {
   const server = createServer();

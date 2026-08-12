@@ -171,6 +171,69 @@ test("an old release retry cannot clear a later reclaim through another connecti
   }
 });
 
+test("an old claim retry conflicts after its claim was released", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-work-stale-claim-release-"));
+  const databaseFile = join(root, "work.sqlite");
+  const repository = new SqliteWorkRepository(databaseFile);
+  try {
+    await repository.recordConfirmedProcessInstance(publication);
+    assert.equal(
+      repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-1")).kind,
+      "claimed",
+    );
+    assert.equal(
+      repository.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1")).kind,
+      "released",
+    );
+    const auditCount = repository.listUndeliveredAuditEvents().length;
+
+    assert.deepEqual(
+      repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-retry")),
+      { kind: "conflict" },
+    );
+    assert.deepEqual(repository.getClaim(task), { claimGeneration: 2, claim: null });
+    assert.equal(repository.listUndeliveredAuditEvents().length, auditCount);
+  } finally {
+    repository.close();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("an old claim retry conflicts after another actor reclaims the task", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-work-stale-claim-reclaim-"));
+  const databaseFile = join(root, "work.sqlite");
+  const repository = new SqliteWorkRepository(databaseFile);
+  try {
+    await repository.recordConfirmedProcessInstance(publication);
+    assert.equal(
+      repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-1")).kind,
+      "claimed",
+    );
+    assert.equal(
+      repository.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1")).kind,
+      "released",
+    );
+    assert.equal(
+      repository.claimTask(claimInput("claim-2", "actor-b", 2, "event-claim-2")).kind,
+      "claimed",
+    );
+    const auditCount = repository.listUndeliveredAuditEvents().length;
+
+    assert.deepEqual(
+      repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-retry")),
+      { kind: "conflict" },
+    );
+    assert.deepEqual(repository.getClaim(task), {
+      claimGeneration: 3,
+      claim: { actorId: "actor-b", generation: 3 },
+    });
+    assert.equal(repository.listUndeliveredAuditEvents().length, auditCount);
+  } finally {
+    repository.close();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("rejects an epoch-2 database whose schema has drifted", async () => {
   const root = await mkdtemp(join(tmpdir(), "bpmn-lean-work-schema-"));
   const databaseFile = join(root, "work.sqlite");

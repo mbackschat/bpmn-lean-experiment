@@ -73,20 +73,109 @@ test("projects actor-visible tasks only after exact system aggregation", async (
   assert.equal("locator" in snapshot.tasks[0]!, false);
 });
 
+test("classifies every registration state without producing a partial snapshot", async () => {
+  const cases = [
+    {
+      name: "an active host with zero tasks stays active",
+      registrations: [registration("host-a", "active")],
+      observations: { "host-a": { status: "open" as const, openUserTasks: [] } },
+      expected: { tasks: 0, observations: [["host-a", "active"]] },
+    },
+    {
+      name: "a positively closed host is not queried",
+      registrations: [registration("host-a", "closed")],
+      observations: {},
+      expected: { tasks: 0, observations: [] },
+    },
+    {
+      name: "a gateway-closed host becomes positively closed",
+      registrations: [registration("host-a", "active")],
+      observations: { "host-a": { status: "closed" as const } },
+      expected: { tasks: 0, observations: [["host-a", "closed"]] },
+    },
+    {
+      name: "an indeterminate host recovers to active",
+      registrations: [registration("host-a", "indeterminate")],
+      observations: {
+        "host-a": { status: "open" as const, openUserTasks: [openTask("recovered", "reviewers", 1)] },
+      },
+      expected: { tasks: 1, observations: [["host-a", "active"]] },
+    },
+  ] as const;
+  for (const example of cases) {
+    const recorded: [string, string][] = [];
+    const service = createService(example.observations, {
+      registrations: example.registrations,
+      recordObservation: (processInstanceId, observation) => {
+        recorded.push([processInstanceId, observation]);
+      },
+    });
+    assert.equal((await service.observeSystemTasks()).length, example.expected.tasks, example.name);
+    assert.deepEqual(recorded, example.expected.observations, example.name);
+  }
+
+  const recorded: [string, string][] = [];
+  const unknown = createService({ "host-a": { status: "unknown" } }, {
+    registrations: [registration("host-a", "active")],
+    recordObservation: (processInstanceId, observation) => {
+      recorded.push([processInstanceId, observation]);
+    },
+  });
+  await assert.rejects(unknown.observeSystemTasks(), WorkSnapshotUnavailableError);
+  assert.deepEqual(recorded, [["host-a", "indeterminate"]]);
+});
+
+test("enforces both configured aggregation ceilings", async () => {
+  const cases = [
+    {
+      name: "Process ceiling",
+      registrations: [registration("host-a"), registration("host-b")],
+      observations: {},
+      limits: { maxProcesses: 1, maxTasks: 10 },
+    },
+    {
+      name: "task ceiling",
+      registrations: [registration("host-a")],
+      observations: {
+        "host-a": {
+          status: "open" as const,
+          openUserTasks: [openTask("first", "reviewers", 1), openTask("second", "reviewers", 2)],
+        },
+      },
+      limits: { maxProcesses: 1, maxTasks: 1 },
+    },
+  ] as const;
+  for (const example of cases) {
+    const service = createService(example.observations, {
+      registrations: example.registrations,
+      limits: example.limits,
+    });
+    await assert.rejects(service.observeSystemTasks(), WorkSnapshotUnavailableError, example.name);
+  }
+});
+
 type WorkObservation =
-  | { status: "open"; openUserTasks: ReturnType<typeof openTask>[] | unknown[] }
+  | { status: "open"; openUserTasks: readonly ReturnType<typeof openTask>[] | readonly unknown[] }
   | { status: "closed" | "unknown" | "unavailable" };
 
-function createService(observations: Record<string, WorkObservation>): WorkService {
-  const registrations = ["host-b", "host-a"].map((processInstanceId) => ({
-    instance: { processInstanceId, definition },
-    locator: `private:${processInstanceId}`,
-    observation: "indeterminate" as const,
-  }));
+type ServiceOptions = Readonly<{
+  registrations?: readonly ReturnType<typeof registration>[];
+  recordObservation?: (
+    processInstanceId: string,
+    observation: "active" | "closed" | "indeterminate",
+  ) => void;
+  limits?: Readonly<{ maxProcesses: number; maxTasks: number }>;
+}>;
+
+function createService(
+  observations: Record<string, WorkObservation>,
+  options: ServiceOptions = {},
+): WorkService {
+  const registrations = options.registrations ?? [registration("host-b"), registration("host-a")];
   return new WorkService({
     repository: {
       listProcessRegistrations: () => structuredClone(registrations),
-      recordObservation: () => undefined,
+      recordObservation: options.recordObservation ?? (() => undefined),
       getClaim: () => ({ claimGeneration: 0, claim: null }),
     },
     gateway: {
@@ -95,8 +184,19 @@ function createService(observations: Record<string, WorkObservation>): WorkServi
     },
     actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
     authorization: new TaskAuthorizationPolicy(),
-    limits: { maxProcesses: 10, maxTasks: 20 },
+    limits: options.limits ?? { maxProcesses: 10, maxTasks: 20 },
   });
+}
+
+function registration(
+  processInstanceId: string,
+  observation: "active" | "closed" | "indeterminate" = "indeterminate",
+) {
+  return {
+    instance: { processInstanceId, definition },
+    locator: `private:${processInstanceId}`,
+    observation,
+  };
 }
 
 function openTask(elementId: string, group: string, activation: number) {

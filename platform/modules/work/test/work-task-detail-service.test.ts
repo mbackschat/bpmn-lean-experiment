@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  type PublicWorkTask,
+} from "@bpmn-lean/platform-contracts";
+import {
   FakeActorResolver,
   TaskAuthorizationPolicy,
 } from "@bpmn-lean/platform-identity-policy";
@@ -61,6 +64,39 @@ test("preserves absent, null, Boolean false, and string false without coercion",
   }
 });
 
+test("preserves Boolean false as incompatible with a string declaration", async () => {
+  const stringTask: PublicWorkTask["task"] = {
+    ...task,
+    metadata: {
+      ...task.metadata,
+      form: { fields: [{ key: "approved", type: "string" }] },
+    },
+  };
+  const booleanDetail = createDetailService(
+    [{ name: "approved", value: { kind: "boolean", value: false } }],
+    stringTask,
+    stringTask,
+  ).service;
+  const stringDetail = createDetailService(
+    [{ name: "approved", value: { kind: "string", value: "false" } }],
+    stringTask,
+    stringTask,
+  ).service;
+
+  assert.deepEqual((await booleanDetail.getTaskDetail(task.id))?.form?.fields[0], {
+    key: "approved",
+    type: "string",
+    currentValue: { kind: "boolean", value: false },
+    compatibility: "incompatible",
+  });
+  assert.deepEqual((await stringDetail.getTaskDetail(task.id))?.form?.fields[0], {
+    key: "approved",
+    type: "string",
+    currentValue: { kind: "string", value: "false" },
+    compatibility: "compatible",
+  });
+});
+
 test("fails closed when detail drifts from the freshly observed occurrence", async () => {
   const { service } = createDetailService([], {
     ...task,
@@ -72,7 +108,8 @@ test("fails closed when detail drifts from the freshly observed occurrence", asy
 
 function createDetailService(
   inputVariables: readonly unknown[],
-  detailTask: typeof task = task,
+  detailTask: PublicWorkTask["task"] = task,
+  observedTask: PublicWorkTask["task"] = task,
 ): { service: WorkTaskDetailService } {
   const registration = {
     instance: { processInstanceId: "host-1", definition },
@@ -86,7 +123,7 @@ function createDetailService(
       getClaim: () => ({ claimGeneration: 0, claim: null }),
     },
     gateway: {
-      observeOpenWork: async () => ({ status: "open", openUserTasks: [structuredClone(task)] }),
+      observeOpenWork: async () => ({ status: "open", openUserTasks: [structuredClone(observedTask)] }),
     },
     actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
     authorization: new TaskAuthorizationPolicy(),
