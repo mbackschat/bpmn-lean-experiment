@@ -202,6 +202,7 @@ test(
         "mapped-success-service-task",
         "mapped-boundary-error-service-task-caught",
         "configured-task",
+        "user-task-boolean-completion",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);

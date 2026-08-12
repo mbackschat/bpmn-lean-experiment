@@ -1,0 +1,214 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "user-task-boolean-completion",
+    "sha256": "24e555adb776bc4a80ecf4b6b227794426cb34b8ac103e3ff9546898b670e243"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-user-task-boolean-completion-data-draft",
+    "sha256": "e1ad4d96d23dbe6cb703567c4576acb7b45c9bddeed8aefece98370e12a055c5"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "initialNote",
+            "value": null
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review Boolean decision"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "initialNote",
+            "value": null
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review Boolean decision"
+          },
+          {
+            "name": "approved",
+            "value": true
+          },
+          {
+            "name": "decisionLabel",
+            "value": "approved"
+          },
+          {
+            "name": "reviewNote",
+            "value": null
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "jobs": []
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BooleanInstance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Approve",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "BooleanInstance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "name": "Approve",
+            "state": "active"
+          }
+        ],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "initialNote",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review Boolean decision"
+            }
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "BooleanInstance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-user-task-instance",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BooleanInstance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "approved",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "decisionLabel",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "initialNote",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review Boolean decision"
+            }
+          },
+          {
+            "name": "reviewNote",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

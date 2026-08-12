@@ -111,6 +111,12 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/subprocess-error-propagation/stale-sibling-after-error.cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/user-task-boolean-completion/scenario.json",
+    evidenceRelativePath:
+      "scenarios/user-task-boolean-completion/cibseven-evidence.json",
+  }),
 ]);
 
 export const normativeArtifactCases = Object.freeze([

@@ -6,7 +6,7 @@ import type {
   Stimulus,
   VariableBinding,
 } from "./contract.js";
-import { SemanticCheckpointProfileId } from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 
 export enum VariableWriteSurface {
   ProcessStart = "processStart",
@@ -24,7 +24,7 @@ export function profileAllowsVariableBindings(
     switch (value.kind) {
       case VariableValueKind.Boolean:
         return semanticProfile ===
-            SemanticCheckpointProfileId.UserTaskBooleanCompletionData &&
+            SemanticProfileId.UserTaskBooleanCompletionData &&
           surface === VariableWriteSurface.UserTaskCompletion;
       case VariableValueKind.String:
       case VariableValueKind.Null:

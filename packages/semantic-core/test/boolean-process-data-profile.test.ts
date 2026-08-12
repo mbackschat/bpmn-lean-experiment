@@ -11,7 +11,6 @@ import {
   MappingExpressionKind,
   ObservationRequestKind,
   ScenarioDocumentKind,
-  SemanticCheckpointProfileId,
   SemanticGraphPolicyKind,
   SemanticOriginKind,
   SemanticProfileId,
@@ -37,14 +36,13 @@ import type {
 
 import { semanticProcessFor } from "./user-task-fixture.ts";
 
-const checkpointProfile =
-  SemanticCheckpointProfileId.UserTaskBooleanCompletionData;
+const booleanProfile = SemanticProfileId.UserTaskBooleanCompletionData;
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 const scenarioIdentity = Object.freeze({
   kind: ScenarioDocumentKind.Scenario,
-  id: "boolean-process-data-checkpoint",
-  profile: checkpointProfile,
+  id: "boolean-process-data-profile",
+  profile: booleanProfile,
   bpmn: {
     id: "sequential-user-task-process",
     relativePath: "test-only/sequential-user-task-process.bpmn",
@@ -54,7 +52,7 @@ const scenarioIdentity = Object.freeze({
   },
 } as const);
 
-const checkpointProgram = semanticProcessFor({
+const booleanProgram = semanticProcessFor({
   ...scenarioIdentity,
   stimuli: [],
   observations: [],
@@ -65,16 +63,16 @@ const checkpointProgram = semanticProcessFor({
   },
 });
 
-const checkpointStart: StartProcessStimulus = {
+const booleanStart: StartProcessStimulus = {
   kind: StimulusKind.StartProcess,
   commandId: "start-checkpoint",
-  processId: checkpointProgram.processId,
+  processId: booleanProgram.processId,
   instanceId: "Instance_Boolean",
   initialVariables: [],
 };
 
 const taskId = Object.freeze({
-  processInstanceId: checkpointStart.instanceId,
+  processInstanceId: booleanStart.instanceId,
   elementId: "UserTask_Approve",
   activation: 1,
 });
@@ -95,27 +93,50 @@ function completeBoolean(value: boolean): CompleteUserTaskInstanceStimulus {
   };
 }
 
-test("admits the checkpoint profile only with its exact sequential User Task shape", () => {
-  assert.equal(
-    new Set<string>(Object.values(SemanticProfileId)).has(checkpointProfile),
-    false,
-  );
-  assert.deepEqual(semanticGraphPolicyForProfile(checkpointProfile), {
+test("registers the Boolean profile with the exact sequential User Task shape", () => {
+  assert.deepEqual(Object.values(SemanticProfileId), [
+    "bpmn-2.0.2-activity-boundary-timer-draft",
+    "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+    "bpmn-2.0.2-called-process-call-activity-draft",
+    "cibseven-2.0.0-mapped-success-service-task-draft",
+    "bpmn-2.0.2-message-start-event-draft",
+    "bpmn-2.0.2-timer-start-event-draft",
+    "bpmn-2.0.2-terminate-end-event-draft",
+    "cibseven-2.2.0-embedded-subprocess-completion-draft",
+    "bpmn-2.0.2-subprocess-boundary-timer-draft",
+    "cibseven-2.2.0-subprocess-error-propagation-draft",
+    "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+    "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+    "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+    "cibseven-2.2.0-intermediate-catch-timer-draft",
+    "bpmn-2.0.2-intermediate-catch-message-draft",
+    "cibseven-2.2.0-message-addressed-receive-task-draft",
+    "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+    "parallel-fork-join-draft",
+    "cibseven-2.2.0-service-task-effect-draft",
+    "bpmn-2.0.2-timer-user-task-composition-draft",
+    "cibseven-2.2.0-user-task-process-data-draft",
+    "bpmn-2.0.2-user-task-cycle-draft",
+    "bpmn-2.0.2-user-task-preserved-notation-draft",
+    "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+    booleanProfile,
+  ]);
+  assert.deepEqual(semanticGraphPolicyForProfile(booleanProfile), {
     kind: SemanticGraphPolicyKind.Acyclic,
   });
   assert.equal(
-    supportsSemanticProcessExecution(checkpointStart, checkpointProgram),
+    supportsSemanticProcessExecution(booleanStart, booleanProgram),
     true,
   );
 });
 
 test("applies the same profile value domain at scenario deployment", () => {
-  const checkpointScenario: Scenario = {
+  const booleanScenario: Scenario = {
     kind: ScenarioDocumentKind.Scenario,
     id: scenarioIdentity.id,
-    profile: checkpointProfile,
+    profile: booleanProfile,
     bpmn: scenarioIdentity.bpmn,
-    stimuli: [checkpointStart, completeBoolean(true)],
+    stimuli: [booleanStart, completeBoolean(true)],
     observations: Object.values(ObservationRequestKind),
     provenance: {
       normativeRefs: ["BPMN 2.0.2 §10.3.1"],
@@ -124,30 +145,30 @@ test("applies the same profile value domain at scenario deployment", () => {
     },
   };
   assert.equal(
-    supportsSemanticProcessScenario(checkpointScenario, checkpointProgram),
+    supportsSemanticProcessScenario(booleanScenario, booleanProgram),
     true,
   );
   assert.equal(
     supportsSemanticProcessScenario(
       {
-        ...checkpointScenario,
+        ...booleanScenario,
         stimuli: [{
-          ...checkpointStart,
+          ...booleanStart,
           initialVariables: [booleanBinding(true)],
         }, completeBoolean(true)],
       },
-      checkpointProgram,
+      booleanProgram,
     ),
     false,
   );
-  const oldProfile = "cibseven-2.2.0-user-task-process-data-draft";
+  const oldProfile = SemanticProfileId.UserTask;
   assert.equal(
     supportsSemanticProcessScenario(
-      { ...checkpointScenario, profile: oldProfile },
+      { ...booleanScenario, profile: oldProfile },
       {
-        ...checkpointProgram,
+        ...booleanProgram,
         identity: {
-          ...checkpointProgram.identity,
+          ...booleanProgram.identity,
           semanticProfile: oldProfile,
         },
       },
@@ -156,34 +177,34 @@ test("applies the same profile value domain at scenario deployment", () => {
   );
 });
 
-test("rejects Boolean Process Start even under the Boolean-completion checkpoint", () => {
-  const booleanStart: StartProcessStimulus = {
-    ...checkpointStart,
+test("rejects Boolean Process Start even under the Boolean-completion profile", () => {
+  const rejectedStart: StartProcessStimulus = {
+    ...booleanStart,
     commandId: "reject-boolean-start",
     initialVariables: [booleanBinding(true)],
   };
 
-  assert.equal(isWellFormedStimulus(booleanStart), true);
+  assert.equal(isWellFormedStimulus(rejectedStart), true);
   assert.equal(
-    supportsSemanticProcessExecution(booleanStart, checkpointProgram),
+    supportsSemanticProcessExecution(rejectedStart, booleanProgram),
     false,
   );
-  const rejected = applyStimulus(checkpointProgram, initialState, booleanStart);
+  const rejected = applyStimulus(booleanProgram, initialState, rejectedStart);
   assert.equal(rejected.outcome, CommandOutcome.Rejected);
   assert.deepEqual(rejected.state, initialState);
 });
 
-test("commits Boolean true and false distinctly on exact checkpoint User Task completion", () => {
+test("commits Boolean true and false distinctly on exact User Task completion", () => {
   for (const value of [false, true]) {
     const waiting = applyStimulus(
-      checkpointProgram,
+      booleanProgram,
       initialState,
-      checkpointStart,
+      booleanStart,
     );
     assert.equal(waiting.outcome, CommandOutcome.Committed);
 
     const completed = applyStimulus(
-      checkpointProgram,
+      booleanProgram,
       waiting.state,
       completeBoolean(value),
     );
@@ -197,13 +218,13 @@ test("commits Boolean true and false distinctly on exact checkpoint User Task co
 
 test("old profile rejects direct Boolean completion without consuming the task", () => {
   const oldProgram = {
-    ...checkpointProgram,
+    ...booleanProgram,
     identity: {
-      ...checkpointProgram.identity,
-      semanticProfile: "cibseven-2.2.0-user-task-process-data-draft",
+      ...booleanProgram.identity,
+      semanticProfile: SemanticProfileId.UserTask,
     },
   };
-  const waiting = applyStimulus(oldProgram, initialState, checkpointStart);
+  const waiting = applyStimulus(oldProgram, initialState, booleanStart);
   assert.equal(waiting.outcome, CommandOutcome.Committed);
 
   const rejected = applyStimulus(
@@ -231,14 +252,14 @@ test("old profile rejects direct Boolean completion without consuming the task",
 
 test("rejects Boolean effect success and BPMN Error patches with exact state preservation", () => {
   const waiting = applyStimulus(
-    checkpointProgram,
+    booleanProgram,
     initialState,
-    checkpointStart,
+    booleanStart,
   ).state;
   const owner = waiting.userTaskWaits[0]?.owner;
   assert.ok(owner !== undefined);
   const effectId = {
-    processInstanceId: checkpointStart.instanceId,
+    processInstanceId: booleanStart.instanceId,
     elementId: "Effect_Boolean_Probe",
     activation: 1,
   } as const;
@@ -300,7 +321,7 @@ test("rejects Boolean effect success and BPMN Error patches with exact state pre
     };
     assert.equal(isWellFormedStimulus(stimulus), true);
     const rejected = applyStimulus(
-      checkpointProgram,
+      booleanProgram,
       effectWaiting,
       stimulus,
     );

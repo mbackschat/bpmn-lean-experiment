@@ -33,7 +33,6 @@ export * from "./semantic-process-data.js";
 export * from "./semantic-process-graph-admission.js";
 export * from "./semantic-process-graph-policy.js";
 export * from "./semantic-process-profile.js";
-export { SemanticCheckpointProfileId } from "./semantic-profile-catalog.js";
 export * from "./semantic-process-runtime.js";
 export * from "./simple-boolean-expression.js";
 export * from "./source-overlay-identity.js";

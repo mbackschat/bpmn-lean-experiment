@@ -1,0 +1,70 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/user-task-discovery-completion/process.bpmn",
+    "sourceId": "sequential-user-task-process",
+    "semanticProfile": "cibseven-2.2.0-user-task-boolean-completion-data-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_user_task_boolean_completion_1",
+    "initialVariables": [
+      {
+        "name": "initialNote",
+        "value": {
+          "kind": "null"
+        }
+      },
+      {
+        "name": "requestTitle",
+        "value": {
+          "kind": "string",
+          "value": "Review Boolean decision"
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Approve",
+      "delayMs": 250,
+      "inputVariableNames": [
+        "initialNote",
+        "requestTitle"
+      ],
+      "submittedValues": [
+        {
+          "name": "approved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "decisionLabel",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        },
+        {
+          "name": "reviewNote",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

@@ -1,0 +1,91 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-user-task-boolean-completion-data-draft",
+  "status": "draft",
+  "claim": "user-task-boolean-completion-data-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "process-start-string-null-data",
+      "user-task-string-null-boolean-completion-data",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "runtime-service-process-start-variable-map",
+      "task-service-process-variable-completion-patch",
+      "task-service-boolean-process-variable-completion-patch"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0010",
+      "CIB-OP-0001",
+      "CIB-CFG-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "boolean-process-start-data",
+    "boolean-effect-data",
+    "boolean-mapping-data",
+    "boolean-expression-routing",
+    "claiming",
+    "assignment",
+    "authorization",
+    "forms",
+    "task-local-variables",
+    "variable-deletion",
+    "variable-values-beyond-string-null-boolean",
+    "expressions",
+    "gateways",
+    "timers",
+    "messages",
+    "boundary-events",
+    "event-subprocesses",
+    "multi-instance",
+    "compensation",
+    "listeners",
+    "history",
+    "search-attributes",
+    "global-task-inbox",
+    "external-services",
+    "vendor-extensions"
+  ]
+}

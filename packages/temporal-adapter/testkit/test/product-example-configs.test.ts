@@ -42,6 +42,8 @@ const configuredTaskProfileId =
   "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft";
 const timerStartProfileId = "bpmn-2.0.2-timer-start-event-draft";
 const terminateEndProfileId = "bpmn-2.0.2-terminate-end-event-draft";
+const booleanCompletionProfileId =
+  "cibseven-2.2.0-user-task-boolean-completion-data-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -200,6 +202,49 @@ test("registers configured Task with the existing Probe handler and User Task in
         operation: "urn:bpmn-lean:effect-operation:probe-v1",
         result: { kind: "success", localPatch: [] },
       }],
+    },
+  );
+});
+
+test("registers Boolean completion with the existing User Task interaction", async () => {
+  assert.equal(registeredProfiles.at(-1), booleanCompletionProfileId);
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) => path.basename(file) === "user-task-boolean-completion.json")
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  assert.deepEqual(
+    {
+      source: config.bpmn.file,
+      semanticProfile: config.bpmn.semanticProfile,
+      interactions: config.interactions,
+      effectHandlers: config.effectHandlers,
+    },
+    {
+      source: path.join(
+        projectRoot,
+        "scenarios/user-task-discovery-completion/process.bpmn",
+      ),
+      semanticProfile: booleanCompletionProfileId,
+      interactions: [{
+        kind: "completeUserTaskInstance",
+        elementId: "UserTask_Approve",
+        delayMs: 250,
+        inputVariableNames: ["initialNote", "requestTitle"],
+        submittedValues: [
+          {
+            name: "approved",
+            value: { kind: "boolean", value: true },
+          },
+          {
+            name: "decisionLabel",
+            value: { kind: "string", value: "approved" },
+          },
+          { name: "reviewNote", value: { kind: "null" } },
+        ],
+      }],
+      effectHandlers: [],
     },
   );
 });

@@ -1,9 +1,6 @@
 /** Exact Semantic Process operation multisets admitted by reviewed semantic profiles. */
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 
 export type RequiredProgramShape = Readonly<{
   definitionScopeCount: number;
@@ -31,7 +28,7 @@ export function requiredProgramShape(
       ]);
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskPreservedNotation:
-    case SemanticCheckpointProfileId.UserTaskBooleanCompletionData:
+    case SemanticProfileId.UserTaskBooleanCompletionData:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitUserTask,

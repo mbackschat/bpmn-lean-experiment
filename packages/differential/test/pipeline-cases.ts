@@ -71,6 +71,9 @@ import {
 import {
   configuredTaskPipelineCases,
 } from "./configured-task-pipeline-cases.ts";
+import {
+  booleanProcessDataPipelineCases,
+} from "./boolean-process-data-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -602,4 +605,5 @@ export const pipelineCases = Object.freeze([
   mappedSuccessCase(),
   boundaryErrorCase(),
   ...configuredTaskPipelineCases,
+  ...booleanProcessDataPipelineCases,
 ]);

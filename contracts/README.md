@@ -37,7 +37,7 @@ Wire readers reject duplicate object keys after escape decoding and reject unpai
 
 ## Portable semantic assertions
 
-A target scenario contains only admitted model/profile identity and explicit semantic inputs. The shared value union recognizes exact tagged string, null, and primitive Boolean arms, while profile-aware execution decides which surface may use each arm. `startProcess.initialVariables` remains string/null for every current and checkpoint profile; only the unregistered M3 checkpoint admits Boolean on User Task completion. Target runners produce canonical results without receiving expected outcomes, rule verdicts, oracle traces, or comparison tolerances.
+A target scenario contains only admitted model/profile identity and explicit semantic inputs. The shared value union recognizes exact tagged string, null, and primitive Boolean arms, while profile-aware execution decides which surface may use each arm. `startProcess.initialVariables` remains string/null for every registered profile; only the Boolean completion profile admits Boolean on User Task completion. Target runners produce canonical results without receiving expected outcomes, rule verdicts, oracle traces, or comparison tolerances.
 
 Portable assertions are verifier-side claims over canonical results or relations between results. A future assertion artifact must bind the exact scenario content digest, semantic profile, applicable canonical observation contract, and stable rule identifiers. A general assertion language remains deferred until repeated semantic capsules demonstrate the smallest useful contract.
 

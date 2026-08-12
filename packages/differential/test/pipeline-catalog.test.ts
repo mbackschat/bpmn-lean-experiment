@@ -40,6 +40,9 @@ import {
   configuredTaskPipelineCases,
 } from "./configured-task-pipeline-cases.ts";
 import {
+  booleanProcessDataPipelineCases,
+} from "./boolean-process-data-pipeline-cases.ts";
+import {
   pipelineCases,
 } from "./pipeline-cases.ts";
 import {
@@ -50,6 +53,9 @@ import {
   runCoreTargets,
 } from "./pipeline-targets.ts";
 import {
+  CibCaseRelation,
+  CibEffectExecutionSchedule,
+  PipelineReplaySelection,
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
 
@@ -57,6 +63,8 @@ const timerStartScenarioRelativePath =
   "scenarios/timer-start-event/scenario.json";
 const configuredTaskScenarioRelativePath =
   "scenarios/configured-task/scenario.json";
+const booleanScenarioRelativePath =
+  "scenarios/user-task-boolean-completion/scenario.json";
 
 test("registers every Event race artifact once with exact Temporal refinement", () => {
   assert.doesNotThrow(() =>
@@ -207,6 +215,61 @@ test("registers configured Task atomically as one standards-only exact-semantic 
       cib: null,
       temporalRelation: TemporalCaseRelation.ExactSemantic,
     }],
+  );
+});
+
+test("appends Boolean completion as one four-target exact-semantic case", () => {
+  const [booleanCase] = booleanProcessDataPipelineCases;
+  assert.ok(booleanCase !== undefined);
+  assert.deepEqual(artifactCases.at(-1), {
+    scenarioRelativePath: booleanScenarioRelativePath,
+    evidenceRelativePath:
+      "scenarios/user-task-boolean-completion/cibseven-evidence.json",
+  });
+  assert.equal(pipelineCases.at(-1), booleanCase);
+  assert.deepEqual(
+    {
+      id: booleanCase.id,
+      scenarioRelativePath: booleanCase.scenarioRelativePath,
+      cib: booleanCase.cib,
+      temporalRelation: booleanCase.temporalRelation,
+      replaySelection: booleanCase.replaySelection,
+    },
+    {
+      id: "user-task-boolean-completion",
+      scenarioRelativePath: booleanScenarioRelativePath,
+      cib: {
+        evidenceRelativePath:
+          "scenarios/user-task-boolean-completion/cibseven-evidence.json",
+        version: "2.2.0",
+        relation: CibCaseRelation.ExactSemantic,
+        effectExecutionSchedule: CibEffectExecutionSchedule.None,
+      },
+      temporalRelation: TemporalCaseRelation.ExactSemantic,
+      replaySelection: PipelineReplaySelection.PrimaryAndIsolation,
+    },
+  );
+});
+
+test("makes Boolean-to-string conversion reach the exact value-kind disagreement", async () => {
+  const [context] = await loadAndCompileCases(booleanProcessDataPipelineCases);
+  assert.ok(context !== undefined);
+  const result = runCoreTargets([context]).results.get(context.scenario.id);
+  assert.ok(result !== undefined);
+  const mutated = mutableClone(result);
+  context.pipelineCase.injectMutation(mutated);
+
+  const comparison = compareTargetResults(
+    { target: DifferentialTarget.SemanticCore, result },
+    [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+  );
+  assert.equal(comparison.kind, ComparisonKind.Disagreement);
+  if (comparison.kind !== ComparisonKind.Disagreement) {
+    throw new Error("Boolean stringification did not create a disagreement");
+  }
+  assert.deepEqual(
+    comparison.disagreement,
+    context.pipelineCase.expectedInjectedDisagreement,
   );
 });
 

@@ -3,10 +3,7 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
 } from "./checked-process-contract.js";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 
 /** One profile's exact checked-graph capability. */
 export type RequiredCheckedProcessShape = Readonly<{
@@ -25,7 +22,7 @@ export function requiredCheckedProcessShape(
     // Preserved notation never enters the checked graph, so both profiles have the same shape.
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskPreservedNotation:
-    case SemanticCheckpointProfileId.UserTaskBooleanCompletionData:
+    case SemanticProfileId.UserTaskBooleanCompletionData:
       return rootChecked([start, CheckedNodeKind.UserTask, end]);
     case SemanticProfileId.MessageStart:
       return rootChecked([

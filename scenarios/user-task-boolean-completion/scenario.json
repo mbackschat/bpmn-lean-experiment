@@ -1,0 +1,89 @@
+{
+  "kind": "scenario",
+  "id": "user-task-boolean-completion",
+  "profile": "cibseven-2.2.0-user-task-boolean-completion-data-draft",
+  "bpmn": {
+    "id": "sequential-user-task-process",
+    "relativePath": "scenarios/user-task-discovery-completion/process.bpmn",
+    "sha256": "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_SequentialUserTask",
+      "instanceId": "BooleanInstance_1",
+      "initialVariables": [
+        {
+          "name": "initialNote",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "requestTitle",
+          "value": {
+            "kind": "string",
+            "value": "Review Boolean decision"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-user-task-instance",
+      "taskId": {
+        "processInstanceId": "BooleanInstance_1",
+        "elementId": "UserTask_Approve",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "approved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "decisionLabel",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        },
+        {
+          "name": "reviewNote",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBooleanProcessDataPhaseZeroProbeTest.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/TaskService.java#complete(String,Map)"
+    ]
+  }
+}
