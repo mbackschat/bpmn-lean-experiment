@@ -2,13 +2,13 @@
 
 ## Status
 
-**Redesigned draft for a new independent cold proposal review.** This proposal selects the smallest complete M3 human-work contract: a current cross-instance inbox, platform-owned claim and authorization policy, one typed form field, retry-safe completion, and distinct platform audit. The original immutable target received `APPROVE WITH REQUIRED EDITS`; correction target `55d87e8` was ineligible for warm approval because it materially changed completion serialization, default policy visibility, and shared contract ownership. This redesigned target retains those choices, closes the remaining transport and owner-routing gaps, and requires a new context-cold review before owner approval. Implementation remains paused until the [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) receives closure approval and this proposal receives owner approval.
+**Draft under correction after independent context-cold proposal review.** This proposal selects the smallest complete M3 human-work contract: a current cross-instance inbox, platform-owned claim and authorization policy, one typed form field, retry-safe completion, and distinct platform audit. Redesigned target `58aa25e` received `APPROVE WITH REQUIRED EDITS`; this correction closes its producer-publication, completion-retry, error-contract, closed-state, audit, and owner-routing findings without changing the selected account, public feature scope, exclusions, or evidence strategy. Implementation remains paused until the [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) receives closure approval and this proposal receives owner approval.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `58aa25e` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
@@ -23,6 +23,10 @@ The recommendation is **one atomic human-work contract, implemented through inte
 A work item means one currently open User Task obtained from the engine's committed public observation for one Process instance confirmed by Product 2. The engine owns the task occurrence, name, active state, optional assignment/form metadata, input variables, and completion outcome. Product 2 owns cross-instance discovery, actor resolution, claim state, authorization, completion intent recovery, wall-clock audit, HTTP, and UI.
 
 The M3 producer set is the same confirmed-start set as [Process-instance search](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md#selected-account): direct exact-version start, a one-shot Schedule that reached `started`, and a Message Start publication that reached `accepted`. Instances started outside Product 2 remain absent. Inbox absence is never evidence that no other engine Process or User Task exists.
+
+Definitions owns one durable confirmed-start publication lifecycle containing the exact public instance and private locator. Direct start reserves its generated Process identity, exact definition binding, canonical locator, and private start-intent digest before the engine call. The Product 1 direct-start request carries that digest in retained Workflow metadata and gains a handle-free describe operation. Once a start call may have been transmitted, the lifecycle never dispatches again: a matching description confirms the start, a divergent description is integrity failure, and absence or unavailable description stays nonpublic indeterminate and remains describe-only retryable. Schedule and Message reuse their existing pre-host durable lifecycle and confirm publication only from `started` or `accepted`.
+
+Each confirmed publication starts with independent `operatePending` and `workPending` delivery markers. The server composition supplies idempotent Operate and Work subscribers, but it does not fan out directly from a producer call. Definitions persists confirmation before invoking either subscriber, marks each delivery separately after that subscriber succeeds, and reconciles every pending marker plus every direct-start indeterminate record on startup and producer retry. Direct start returns HTTP success only after confirmation exists and both subscribers have acknowledged. A crash after host acceptance, after confirmation, or after either subscriber therefore converges after restart without another start, and the durable confirmed Definitions publication set is the independent oracle for exact equality of the Operate and Work confirmed-start sets.
 
 An inbox refresh first builds one complete system-visible aggregation equal to the fresh engine-published task sets for every nonclosed confirmed registration. Actor policy is a separate projection over that complete aggregation. The equality oracle runs before policy filtering, so an authorization rule cannot hide a missing producer or task from the engine-to-platform agreement check.
 
@@ -42,6 +46,7 @@ The private registration classification is a closed state machine:
 
 | Stored state | Gateway observation | Next state | Snapshot effect |
 |---|---|---|---|
+| newly delivered publication | no observation yet | `indeterminate` | remains registered and must be observed before any snapshot succeeds |
 | `active` or `indeterminate` | successful Query with zero or more exact open tasks | `active` | contributes the exact task set |
 | `active` or `indeterminate` | matching retained completed-Process receipt | `closed` | contributes no task and is not queried again |
 | `active` or `indeterminate` | unresolved `unknown` or infrastructure `unavailable` | `indeterminate` | fails the complete snapshot as `workSnapshotUnavailable` |
@@ -146,6 +151,8 @@ Every path component uses ordinary percent encoding and strict well-formed scala
 
 The completion action contains the exact task occurrence, observed claim generation, and submitted value. The caller-generated nonempty `actionId` is the engine command identity. Reusing an action ID with byte-equivalent public content is idempotent; changing the task, generation, key, type, or value is a conflict.
 
+Every completion action is durably bound before dispatch to the resolved actor ID, operation kind `completion`, exact task occurrence, observed claim generation, field key, declared field type, and submitted tagged value. Completion handling first looks up an existing action by `actionId`, before refreshing task visibility. An equivalent retry by the bound actor returns or reconciles its retained result even after commitment has removed the task and cleared the claim; a foreign actor receives 404 and changed content receives 409. Only an unseen action proceeds through fresh engine observation, actor policy, current claim, field-compatibility, and reservation checks. This narrow precedence preserves idempotency without making a completed task newly visible.
+
 The closed mutation and audit contracts are:
 
 ```ts
@@ -211,16 +218,18 @@ type WorkAuditRequest = DeepReadonly<{
 
 type WorkApiErrorCode = PublicApiErrorCode | "forbidden" | "formValueIncompatible" | "workSnapshotUnavailable";
 
-type WorkApiErrorResponse = DeepReadonly<{
-  error: { code: WorkApiErrorCode; message: string };
+type PublicApiErrorResponse<Code extends string> = DeepReadonly<{
+  error: { code: Code; message: string };
 }>;
+
+type WorkApiErrorResponse = PublicApiErrorResponse<WorkApiErrorCode>;
 ```
 
-Audit uses an opaque `v1.` plus nonempty unpadded base64url cursor, default limit 50, and maximum limit 100. It sorts by its private monotonically increasing insertion ordinal but exposes only the opaque cursor. Filters are exact, query keys are unique, and an unknown or malformed cursor is invalid.
+Audit uses an opaque `v1.` plus nonempty unpadded base64url cursor, default limit 50, and maximum limit 100. It sorts by private monotonically increasing insertion ordinal ascending. A cursor identifies the last returned ordinal exclusively, so the next page returns only later ordinals; inserting a later event never duplicates or reorders earlier pages. Filters are exact, query keys are unique, and an unknown or malformed cursor is invalid. `eventId` is a globally unique opaque public identity with no encoded order. `recordedAt` is the canonical UTC RFC 3339 form `YYYY-MM-DDTHH:mm:ss.sssZ`; offsets, missing milliseconds, and noncanonical equivalents are rejected.
 
 The default fake policy permits an actor to read only audit events whose `actorId` equals its resolved actor ID. Omitting the filter implicitly selects that ID; explicitly selecting the same ID is equivalent; selecting another actor is 403 before repository search. Hosting-Process, task-Process, and action-kind filters narrow only that self-owned set. M3 has no administrator, cross-actor audit role, or audit-export authorization.
 
-The three new error codes extend the single project-owned `PublicApiErrorCode`, `PublicApiErrorResponse`, and strict decoder rather than introducing a parallel error envelope. Existing routes keep their byte-identical error bodies and accepted code subsets.
+The three new error codes extend the single project-owned code catalog and generic `PublicApiErrorResponse<Code>` envelope rather than introducing a parallel error shape. The single public error-decoder owner accepts an explicit route-owned readonly code set and returns the corresponding parameterized envelope. Existing clients pass their exact legacy subsets and keep byte-identical error bodies and accepted codes; the Work client alone passes the Work subset. The no-argument global decoder is replaced rather than broadened.
 
 `GET` success is HTTP 200. A new claim is 201 and an idempotent claim or release is 200. A completion is 200 for `committed` or `rejected` and 202 for `indeterminate`; an engine nonsuccess is a typed domain result, not an invented HTTP failure. Hidden, unknown, no-longer-current, or policy-filtered tasks are uniformly 404. A disallowed cross-actor audit filter is 403, a claim race loss, stale generation, or changed action content is 409, incompatible current form value is 422, and a nonpartial snapshot failure is 503. Transport errors are 400, 405, 415, or 413 as applicable; an unclassified repository or gateway failure is 500. `forbidden`, `formValueIncompatible`, and `workSnapshotUnavailable` have route-owned canonical messages, while the existing codes retain their current canonical messages. Every error uses `WorkApiErrorResponse` and exposes no private evidence.
 
@@ -237,13 +246,15 @@ indeterminate -> submitting
 
 Only `reserved` may initiate the first engine call. Reconciliation may move `indeterminate` back to `submitting` only for the byte-equivalent retained action. A possibly transmitted action never becomes a different dispatchable action. Exact retries use the same content-bound engine command, so response loss or platform restart cannot create a second semantic completion.
 
+The retained-action lookup and actor/content binding run before current-task authorization only when `actionId` already exists. That rule applies equally to retained `committed`, `rejected`, `indeterminate`, and `processClosed` results. It lets an exact response-loss retry observe the original result after the engine task and platform claim have disappeared, while a new action still requires a fresh visible task and live claim.
+
 The existing engine result maps exactly:
 
 | Engine result | Platform action | Claim and registration effect |
 |---|---|---|
-| `semantic/committed` with matching command identity | `committed` | increment the claim generation, clear the claim, and await the next fresh task observation |
-| `semantic/rolledBack`, `semantic/rejected`, `semantic/semanticFailure`, or `semantic/unsupported` | `rejected` preserving the exact semantic outcome | retain the current claim, clear its active-action slot, and permit a new action after refresh |
-| `processClosed` with an exact matching retained receipt | `rejected` preserving `processClosed` | close the registration and increment the generation while clearing the claim |
+| `semantic/committed` with matching command identity | `committed` | increment the claim generation, clear the claim, retain the terminal action result, and await the next fresh task observation |
+| `semantic/rolledBack`, `semantic/rejected`, `semantic/semanticFailure`, or `semantic/unsupported` | `rejected` preserving the exact semantic outcome | retain the current claim, retain the terminal action result, clear its active-action slot, and permit a new action after refresh |
+| `processClosed` with an exact matching retained receipt | `rejected` preserving `processClosed` | close the registration, increment the generation, clear the claim, and retain the terminal action result |
 | `processUnknown`, retention-indistinguishable absence, or infrastructure loss after possible transmission | `indeterminate` | retain the claim and active-action slot; permit only the same action to reconcile |
 
 The `processClosed` receipt is checked against the exact hosting Process before classification and remains engine evidence rather than a new Work HTTP field. Its public engine discriminator is preserved as `processClosed`; success is never inferred from a closed Process.
@@ -285,12 +296,12 @@ The inbox renders Process identity, definition version, task name and occurrence
 
 The contract is accepted only with all of the following:
 
-1. direct, Timer Schedule, and Message Start producers register exact public identity plus the correct private locator, with a configured-Schedule-base mutation failing;
+1. direct, Timer Schedule, and Message Start producers durably publish exact public identity plus the correct private locator once, with direct-start reservation before host dispatch, describe-only recovery after possible transmission, independent Operate/Work delivery markers, failure after host acceptance and after either subscriber, restart convergence, direct-start success suppression until both acknowledgements, and a configured-Schedule-base mutation failing;
 2. one live system snapshot discovers tasks from all three producers without Event History, including metadata-free Timer/Message controls and one E2 metadata-bearing direct task, then actor policy exposes only its authorized projection;
 3. Worker and platform restart preserve discovery, claims, actions, audit, and recovery from indeterminate observation or completion;
 4. independent connections prove same-actor idempotency, exactly one winner in a two-actor claim race, claim-release-reclaim ABA refusal, and at most one host call for two distinct completion actions;
 5. candidate mismatch, nonclaimant release/completion, stale generation, cross-host task identity, changed action content, extra/missing field, and Boolean stringification fail before or at their owning boundary;
-6. response loss after engine acceptance converges to one committed completion and one logical audit outcome, while retention-indistinguishable absence remains indeterminate and retryable;
+6. response loss after engine acceptance converges to one committed completion and one logical audit outcome even after claim removal, while `processClosed` preserves its exact retained rejection, retention-indistinguishable absence remains indeterminate and retryable, a foreign actor sees 404, and changed action content conflicts;
 7. active, zero-task active, closed, unknown, unavailable, and configured-ceiling observations prove the all-or-error snapshot state machine;
 8. absent, null, Boolean false, string `"false"`, Boolean-under-string, and string-under-Boolean form values prove exact preservation and fail-closed rendering without coercion;
 9. audit equivalent retries deduplicate, distinct lifecycle transitions remain distinct, exact filters page with an opaque cursor, and engine results are asserted independently before the Work result and audit projections;
@@ -301,13 +312,13 @@ The rule-to-evidence matrix is:
 
 | Rule | Separating executable failure |
 |---|---|
-| Exact three-producer addressing | Replace the Schedule execution locator with its configured base, or omit any producer publication; system aggregation loses or misaddresses that task |
+| Exact three-producer addressing | Replace the Schedule execution locator with its configured base, omit any producer publication, or fail after direct host acceptance, confirmation, or either durable subscriber; the Definitions lifecycle must use describe-only direct recovery, retain missing delivery, and reconcile Operate and Work before public success |
 | Exact system set before actor policy | Compare an independently captured gateway task multiset before filtering; eligible, ineligible, and metadata-free controls must all be present even when two are hidden publicly |
 | Observation classification | Unknown or unavailable registration silently omitted; zero-task Query classified closed; indeterminate cannot recover to active or closed |
 | Monotonic claim generation | Claim, release, reclaim, then replay the first generation from an independent connection; the later claim must remain unchanged |
 | Claim and completion serialization | Two actors claim or two action IDs complete through independent connections; only one claim or active action may cross its owning CAS |
 | Exact form domain | Collapse absent/null/false/`"false"`, coerce either cross-type value, or submit a value different from the published type |
-| Completion reconciliation | Independently capture every Product 1 result, then require the exact Work state, claim effect, and audit event; no shared projector serves as the oracle |
+| Completion reconciliation | Independently capture every Product 1 result, then require the exact Work state, claim effect, actor decision, HTTP result, and audit event across retained-action retry after task removal; no shared projector serves as the oracle |
 | Audit identity and paging | Retry the same transition, change content under one action ID, filter every key, and insert beyond a cursor without duplication or reordering |
 | Private-fact exclusion | Plant locator, Workflow, Run, Task Queue, Schedule, and history-shaped fields in every public decoder, browser model, and configured log sink |
 | Restart durability | Stop after reservation and after possible engine acceptance; reopen the same SQLite files and reconcile without a different command or duplicate audit outcome |
@@ -342,7 +353,7 @@ This proposal changes the Product 1 client and engine API narrowly enough to add
 
 Product 1 adds a cohesive `process-work` engine API and Temporal client subpath rather than growing the existing Process client. Their closed operations accept only `EngineProcessWorkLocator` and return existing `OpenUserTask`, `UserTaskDetail`, and `ProcessCommandResult` facts. The Product 2 engine gateway wraps that contract without importing Temporal. The locator type is opaque outside Product 1 and the gateway.
 
-The existing public Process-instance search response remains byte-identical. The private confirmed-start output port is widened atomically to publish `{instance, locator}` to a server-owned fan-out adapter. Direct and Message paths receive Product 1's canonical locator; Schedule receives a locator minted from its stored service-returned `executionWorkflowId`. Operate records only `instance`; Work records both. No definitions module imports Operate or Work.
+The existing public Process-instance search response remains byte-identical. The private confirmed-start output port is replaced by a durable Definitions-owned publication lifecycle. Direct start persists reservation plus private intent before Product 1 dispatch and confirms through start or describe; Schedule and Message confirm from their existing durable terminal states. Direct and Message paths receive Product 1's canonical locator; Schedule receives a locator minted from its stored service-returned `executionWorkflowId`. Definitions knows only two structural subscriber ports, never Operate or Work implementations. It tracks each idempotent subscriber acknowledgement independently and reconciles direct-start indeterminate state plus both deliveries after restart. Operate records only `instance`; Work records both. No definitions module imports Operate or Work.
 
 The platform is pre-release. Work and audit databases use exact schema epochs with no compatibility reader. Any retained production-data compatibility promise would require a separate version, migration, rollback, and mixed-version contract before release.
 
@@ -362,20 +373,25 @@ New cohesive owners have the full 600-line source budget and must be registered 
 - cohesive Work API, inbox, task-detail, and `.module.css` owners under [`platform/apps/web/README.md`](../platform/apps/web/README.md);
 - `showcase/m3-human-work/` for live Temporal, restart/concurrency/private-field, and Playwright evidence, registered by [`showcase/README.md`](../showcase/README.md).
 
+Existing owners that must change are part of the same atomic plan: [`packages/semantic-core/src/deep-readonly.ts`](../packages/semantic-core/src/deep-readonly.ts), [`packages/semantic-core/src/index.ts`](../packages/semantic-core/src/index.ts), and [`packages/semantic-core/package.json`](../packages/semantic-core/package.json) move/re-export the neutral type and declare its dependency; [`platform/contracts/src/definitions.ts`](../platform/contracts/src/definitions.ts) and [`platform/contracts/src/definition-decoders.ts`](../platform/contracts/src/definition-decoders.ts) own the generic route-code-set error envelope/decoder; the four existing HTTP clients [`definitions-api.ts`](../platform/apps/web/src/definitions-api.ts), [`definition-schedule-api.ts`](../platform/apps/web/src/definition-schedule-api.ts), [`message-start-publication-api.ts`](../platform/apps/web/src/message-start-publication-api.ts), and [`process-instance-search-api.ts`](../platform/apps/web/src/process-instance-search-api.ts) pass their unchanged exact subsets; [`ARCHITECTURE.md`](ARCHITECTURE.md#temporal-adapter-subsystem) and [`packages/temporal-adapter/README.md`](../packages/temporal-adapter/README.md) add only the handle-free `./process-work` client subpath and direct-start describe result; [`packages/engine-api/src/definition-start.ts`](../packages/engine-api/src/definition-start.ts) and [`packages/temporal-adapter/client/src/definition-start-client.ts`](../packages/temporal-adapter/client/src/definition-start-client.ts) add retained-intent comparison and handle-free describe; and [`platform/modules/definitions/src/process-instance-recording.ts`](../platform/modules/definitions/src/process-instance-recording.ts) is replaced by cohesive confirmed-start reservation, SQLite lifecycle, delivery, and reconciliation owners rather than becoming a multi-responsibility file.
+
 Measured existing owners and constraints from `node scripts/what-binds.ts` are:
 
-| Existing owner | Headroom | Bindings | Constraint |
+| Existing owner | Current occupancy | Remaining headroom | Bindings | Constraint |
 |---|---:|---:|---|
-| [`packages/temporal-adapter/client/src/process-client.ts`](../packages/temporal-adapter/client/src/process-client.ts) | 465/600 | 20 guards, 1 registry | Extract `process-work-client.ts`; do not add the new family here |
-| [`packages/engine-api/src/index.ts`](../packages/engine-api/src/index.ts) | 112/600 | 20 guards, 1 registry | Export only the new cohesive owner |
-| [`platform/foundation/engine-gateway/src/index.ts`](../platform/foundation/engine-gateway/src/index.ts) | 207/600 | 52 guards, 3 registries | Export and compose; keep locator logic in the new owner |
-| [`platform/modules/definitions/src/process-instance-recording.ts`](../platform/modules/definitions/src/process-instance-recording.ts) | 22/600 | 47 guards, 3 registries | Widen the private output port once |
-| [`platform/modules/definitions/src/definition-start-service.ts`](../platform/modules/definitions/src/definition-start-service.ts) | 165/600 | 47 guards, 3 registries | One narrow publication call only |
-| [`platform/modules/definitions/src/definition-schedule-service.ts`](../platform/modules/definitions/src/definition-schedule-service.ts) | 528/600 | 47 guards, 3 registries | Delegate locator minting/publication; extract before any additional responsibility |
-| [`platform/modules/definitions/src/message-start-publication-service.ts`](../platform/modules/definitions/src/message-start-publication-service.ts) | 511/600 | 47 guards, 3 registries | Delegate locator minting/publication; extract before any additional responsibility |
-| [`platform/apps/server/src/composition.ts`](../platform/apps/server/src/composition.ts) | 163/600 | 47 guards, 3 registries | Own fan-out, configuration, route order, and reverse close only |
-| [`platform/apps/web/src/app.tsx`](../platform/apps/web/src/app.tsx) | 241/600 | 47 guards, 3 registries | Compose the new panel; keep behavior in cohesive feature files |
-| [`platform/contracts/src/index.ts`](../platform/contracts/src/index.ts) | 23/600 | 52 guards, 2 registries | Export only the new contract owners |
+| [`packages/temporal-adapter/client/src/process-client.ts`](../packages/temporal-adapter/client/src/process-client.ts) | 465/600 | 135 | 20 guards, 1 registry | Extract `process-work-client.ts`; do not add the new family here |
+| [`packages/engine-api/src/index.ts`](../packages/engine-api/src/index.ts) | 112/600 | 488 | 20 guards, 1 registry | Export only the new cohesive owner |
+| [`platform/foundation/engine-gateway/src/index.ts`](../platform/foundation/engine-gateway/src/index.ts) | 207/600 | 393 | 52 guards, 3 registries | Export and compose; keep locator logic in the new owner |
+| [`platform/modules/definitions/src/process-instance-recording.ts`](../platform/modules/definitions/src/process-instance-recording.ts) | 22/600 | 578 | 47 guards, 3 registries | Replace with cohesive durable publication/outbox owners |
+| [`platform/modules/definitions/src/definition-start-service.ts`](../platform/modules/definitions/src/definition-start-service.ts) | 165/600 | 435 | 47 guards, 3 registries | One narrow durable publication call only |
+| [`platform/modules/definitions/src/definition-schedule-service.ts`](../platform/modules/definitions/src/definition-schedule-service.ts) | 528/600 | 72 | 47 guards, 3 registries | Delegate locator minting/publication; extract before any additional responsibility |
+| [`platform/modules/definitions/src/message-start-publication-service.ts`](../platform/modules/definitions/src/message-start-publication-service.ts) | 511/600 | 89 | 47 guards, 3 registries | Delegate locator minting/publication; extract before any additional responsibility |
+| [`platform/apps/server/src/composition.ts`](../platform/apps/server/src/composition.ts) | 163/600 | 437 | 47 guards, 3 registries | Inject subscribers, configuration, route order, and reverse close only |
+| [`platform/apps/web/src/app.tsx`](../platform/apps/web/src/app.tsx) | 241/600 | 359 | 47 guards, 3 registries | Compose the new panel; keep behavior in cohesive feature files |
+| [`platform/contracts/src/index.ts`](../platform/contracts/src/index.ts) | 23/600 | 577 | 52 guards, 2 registries | Export only the new contract owners |
+| [`platform/contracts/src/definitions.ts`](../platform/contracts/src/definitions.ts) | 108/600 | 492 | 47 guards, 2 registries | Own the generic error code/envelope shape without broadening routes |
+| [`platform/contracts/src/definition-decoders.ts`](../platform/contracts/src/definition-decoders.ts) | 174/600 | 426 | 47 guards, 2 registries | Parameterize the single strict decoder by exact route code set |
+| [`packages/semantic-core/src/deep-readonly.ts`](../packages/semantic-core/src/deep-readonly.ts) | 13/600 | 587 | 20 guards, 1 registry | Move the byte-identical utility and re-export it from the neutral package |
 
 Before each implementation lane, rerun [`scripts/what-binds.ts`](../scripts/what-binds.ts) on every added or grown path. Package manifests, [`pnpm-workspace.yaml`](../pnpm-workspace.yaml), [`pnpm-lock.yaml`](../pnpm-lock.yaml), harness types, boundary guards, licences, source hygiene, READMEs, root scripts, and the M3 showcase registry are shared root-integration owners. Apart from the type-only `DeepReadonly<T>` import extraction, semantic-core behavior and artifacts remain byte-identical; BPMN source, Workflow, Lean, CIB, E2 artifacts, and differential owners remain byte-unchanged.
 
@@ -384,9 +400,9 @@ Exact executable guard and oracle routing is mandatory:
 | Planned boundary | Existing guard or registry owner | Required focused oracle |
 |---|---|---|
 | Neutral type package and package graph | [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts), [`scripts/temporal-package-boundary.test.ts`](../scripts/temporal-package-boundary.test.ts), [`scripts/pnpm-project-config.test.ts`](../scripts/pnpm-project-config.test.ts), [`scripts/source-hygiene.test.ts`](../scripts/source-hygiene.test.ts) | tuple, union, callable, and nested mutation type test in the new package; semantic-core and platform contract builds consume the same exported symbol |
-| Product 1 process-work client/API | [`packages/temporal-adapter/README.md`](../packages/temporal-adapter/README.md), [`packages/engine-api/README.md`](../packages/engine-api/README.md), [`scripts/temporal-package-boundary.test.ts`](../scripts/temporal-package-boundary.test.ts) | new engine API and client tests covering canonical direct/Message locators, service-returned Schedule locator, current Query/detail, every `ProcessCommandResult`, and configured-base mutation |
-| Product 2 gateway and producer fan-out | [`platform/foundation/engine-gateway/README.md`](../platform/foundation/engine-gateway/README.md), [`platform/modules/definitions/README.md`](../platform/modules/definitions/README.md), [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) | new gateway tests plus [`platform/modules/definitions/test/process-instance-recording.test.ts`](../platform/modules/definitions/test/process-instance-recording.test.ts), [`definition-start-service.test.ts`](../platform/modules/definitions/test/definition-start-service.test.ts), [`definition-schedule-service.test.ts`](../platform/modules/definitions/test/definition-schedule-service.test.ts), and [`message-start-publication-service.test.ts`](../platform/modules/definitions/test/message-start-publication-service.test.ts) |
-| Public Work transport | [`platform/contracts/README.md`](../platform/contracts/README.md), [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) | new runtime and type tests for every request/result/error/status, strict extras, route encoding, cursor, private-field rejection, and incompatible form values |
+| Product 1 process-work client/API | [`packages/temporal-adapter/README.md`](../packages/temporal-adapter/README.md), [`packages/engine-api/README.md`](../packages/engine-api/README.md), [`scripts/temporal-package-boundary.test.ts`](../scripts/temporal-package-boundary.test.ts) | new engine API and client tests covering canonical direct/Message locators, service-returned Schedule locator, direct-start retained intent and describe-only matching/missing/divergent/unavailable results, current Query/detail, every `ProcessCommandResult`, and configured-base mutation |
+| Product 2 gateway and durable producer publication | [`platform/foundation/engine-gateway/README.md`](../platform/foundation/engine-gateway/README.md), [`platform/modules/definitions/README.md`](../platform/modules/definitions/README.md), [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) | new gateway/lifecycle/outbox/reconciliation tests plus [`platform/modules/definitions/test/process-instance-recording.test.ts`](../platform/modules/definitions/test/process-instance-recording.test.ts), [`definition-start-service.test.ts`](../platform/modules/definitions/test/definition-start-service.test.ts), [`definition-schedule-service.test.ts`](../platform/modules/definitions/test/definition-schedule-service.test.ts), and [`message-start-publication-service.test.ts`](../platform/modules/definitions/test/message-start-publication-service.test.ts), with direct response loss and failures after each subscriber |
+| Public Work transport | [`platform/contracts/README.md`](../platform/contracts/README.md), [`platform/contracts/src/definitions.ts`](../platform/contracts/src/definitions.ts), [`platform/contracts/src/definition-decoders.ts`](../platform/contracts/src/definition-decoders.ts), [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) | new runtime and type tests for every request/result/error/status, strict extras, exact legacy and Work code sets, route encoding, cursor, private-field rejection, incompatible form values, canonical UTC timestamps, and exclusive ascending paging |
 | Identity, claims, completion, and audit | [`platform/foundation/README.md`](../platform/foundation/README.md), [`platform/modules/README.md`](../platform/modules/README.md) | new independent-connection tests for policy projection, race, monotonic generation, release response loss, action collision, all engine result mappings, audit self-only filters, cursor paging, restart, and corruption |
 | Server and web composition | [`platform/apps/server/README.md`](../platform/apps/server/README.md), [`platform/apps/web/README.md`](../platform/apps/web/README.md), [`scripts/platform-product-boundary.test.ts`](../scripts/platform-product-boundary.test.ts) | server route/composition tests and web build/type/runtime tests for the public HTTP-only client, actor-visible table, form mismatch, and private-field exclusion |
 | Live and browser closure | [`showcase/README.md`](../showcase/README.md), [`scripts/pre-release-architecture.test.ts`](../scripts/pre-release-architecture.test.ts), [`scripts/source-hygiene.test.ts`](../scripts/source-hygiene.test.ts) | `showcase/m3-human-work` live Temporal and Chromium gates across all three producers, restart, Worker replacement, races, response loss, audit, replay, and recursive private-fact scans |
