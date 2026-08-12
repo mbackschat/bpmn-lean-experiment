@@ -164,6 +164,12 @@ jobs:
           CI: "true"
         run: ./scripts/pnpm.sh run test:showcase:m2
 
+      - name: Verify M3 human-work acceptance
+        if: runner.os == 'Linux'
+        env:
+          CI: "true"
+        run: ./scripts/pnpm.sh run test:showcase:m3-human-work
+
       - name: Verify
         env:
           CI: "true"
