@@ -2,13 +2,13 @@
 
 ## Status
 
-**Proposed and awaiting independent cold review.** This proposal selects one additive User Task metadata capability under a new CIB Seven compatibility profile. Implementation, profile registration, retained evidence, and Product 2 use remain paused until proposal review and owner approval are recorded.
+**Owner-approved for first-green semantic implementation after independent cold review on 2026-08-12.** This proposal selects one additive User Task metadata capability under a new CIB Seven compatibility profile. Profile registration, retained evidence, and Product 2 use remain paused until the required semantic checkpoint is approved.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `ae9f977` | `fork-turns-none` | `approve-with-required-edits` | `652327c` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
