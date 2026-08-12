@@ -51,9 +51,16 @@ const module = await import(
   WorkInboxPanel: ComponentType<WorkInboxPanelProps>;
   WorkTaskForm: ComponentType<WorkTaskFormProps>;
   initialFormValue: (field: PublicFormField) => PublicFormValue;
+  selectedBooleanFormValue: (value: FormDataEntryValue | null) => boolean;
   workTaskRowId: (task: PublicWorkTask) => string;
 }>;
-const { WorkInboxPanel, WorkTaskForm, initialFormValue, workTaskRowId } = module;
+const {
+  WorkInboxPanel,
+  WorkTaskForm,
+  initialFormValue,
+  selectedBooleanFormValue,
+  workTaskRowId,
+} = module;
 
 const task: PublicWorkTask = {
   task: {
@@ -107,7 +114,7 @@ test("renders one global task inbox through TanStack Query and native table sema
   assert.doesNotMatch(html, /workflow|run id|task queue|event history/iu);
 });
 
-test("renders Boolean as a checkbox and string as text without coercion", () => {
+test("renders Boolean as an explicit true-false choice and string as text without coercion", () => {
   const booleanDetail: PublicTaskDetail = {
     workTask: { ...task, claim: { actorId: "demo-user", generation: 1 } },
     form: { fields: [{
@@ -138,8 +145,11 @@ test("renders Boolean as a checkbox and string as text without coercion", () => 
     onComplete: async () => undefined,
   }));
 
-  assert.match(booleanHtml, /type="checkbox"/u);
-  assert.doesNotMatch(booleanHtml, /value="false"/u);
+  assert.equal(booleanHtml.match(/type="radio"/gu)?.length, 2);
+  const falseInput = booleanHtml.match(/<input(?=[^>]*value="false")(?=[^>]*checked)[^>]*>/u);
+  assert.notEqual(falseInput, null);
+  assert.match(booleanHtml, />False</u);
+  assert.match(booleanHtml, />True</u);
   assert.match(stringHtml, /name="decision"/u);
   assert.match(stringHtml, /value="false"/u);
   assert.deepEqual(initialFormValue(booleanDetail.form!.fields[0]), {
@@ -150,6 +160,37 @@ test("renders Boolean as a checkbox and string as text without coercion", () => 
     kind: "string",
     value: "false",
   });
+});
+
+test("requires a Boolean choice without defaulting absent or null to false", () => {
+  for (const currentValue of [{ kind: "absent" }, { kind: "null" }] as const) {
+    const detail: PublicTaskDetail = {
+      workTask: { ...task, claim: { actorId: "demo-user", generation: 1 } },
+      form: { fields: [{
+        key: "approved",
+        type: "boolean",
+        currentValue,
+        compatibility: "compatible",
+      }] },
+    };
+    const html = renderToStaticMarkup(createElement(WorkTaskForm, {
+      detail,
+      pending: false,
+      onComplete: async () => undefined,
+    }));
+    assert.equal(html.match(/type="radio"/gu)?.length, 2);
+    assert.doesNotMatch(html, /checked/u);
+    const radioInputs = html.match(/<input[^>]*type="radio"[^>]*>/gu) ?? [];
+    assert.equal(radioInputs.length, 2);
+    assert.equal(radioInputs.every((input) => input.includes("required")), true);
+  }
+});
+
+test("decodes only an explicit Boolean form choice", () => {
+  assert.equal(selectedBooleanFormValue("true"), true);
+  assert.equal(selectedBooleanFormValue("false"), false);
+  assert.throws(() => selectedBooleanFormValue(null), /Choose true or false/u);
+  assert.throws(() => selectedBooleanFormValue("on"), /Choose true or false/u);
 });
 
 test("uses the complete hosting and semantic occurrence as table row identity", () => {

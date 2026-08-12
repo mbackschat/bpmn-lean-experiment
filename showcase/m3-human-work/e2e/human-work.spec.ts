@@ -44,10 +44,13 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   await expect(reloadedRow).toContainText("Claimed by demo-user");
 
   await reloadedRow.getByRole("button", { name: taskName }).click();
-  const checkbox = reloadedPanel.getByRole("checkbox", { name: "approved" });
-  await expect(checkbox).not.toBeChecked();
-  await checkbox.press("Space");
-  await expect(checkbox).toBeChecked();
+  const trueChoice = reloadedPanel.getByRole("radio", { name: "True" });
+  const falseChoice = reloadedPanel.getByRole("radio", { name: "False" });
+  await expect(trueChoice).not.toBeChecked();
+  await expect(falseChoice).not.toBeChecked();
+  await trueChoice.press("Space");
+  await expect(trueChoice).toBeChecked();
+  await expect(falseChoice).not.toBeChecked();
   await reloadedPanel.getByRole("button", { name: "Complete task" }).click();
   await expect(reloadedPanel).toContainText("No current tasks.");
   await expect(reloadedPanel.getByRole("table", { name: "Current tasks" }))

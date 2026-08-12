@@ -6,7 +6,7 @@ import {
 import {
   Button,
   ButtonVariant,
-  Checkbox,
+  BooleanChoice,
   DataTable,
   TextField,
 } from "@bpmn-lean/platform-ui-kit";
@@ -208,7 +208,7 @@ export function WorkTaskForm({ detail, pending, onComplete }: WorkTaskFormProps)
       case "boolean":
         await onComplete({
           kind: "boolean",
-          value: data.get(exactField.key) === "on",
+          value: selectedBooleanFormValue(data.get(exactField.key)),
         });
         return;
     }
@@ -223,13 +223,12 @@ export function WorkTaskForm({ detail, pending, onComplete }: WorkTaskFormProps)
           isDisabled={pending}
         />
       ) : (
-        <Checkbox
+        <BooleanChoice
+          label={field.key}
           name={field.key}
-          defaultSelected={initial.kind === "boolean" ? initial.value : false}
+          {...(initial.kind === "boolean" ? { defaultValue: initial.value } : {})}
           isDisabled={pending}
-        >
-          {field.key}
-        </Checkbox>
+        />
       )}
       <Button type="submit" isPending={pending}>Complete task</Button>
     </form>
@@ -238,6 +237,17 @@ export function WorkTaskForm({ detail, pending, onComplete }: WorkTaskFormProps)
 
 export function initialFormValue(field: PublicFormField): PublicFormValue {
   return structuredClone(field.currentValue);
+}
+
+export function selectedBooleanFormValue(value: FormDataEntryValue | null): boolean {
+  switch (value) {
+    case "true":
+      return true;
+    case "false":
+      return false;
+    default:
+      throw new Error("Choose true or false.");
+  }
 }
 
 export function workTaskRowId(task: PublicWorkTask): string {

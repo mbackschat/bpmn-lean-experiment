@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   Button,
   ButtonVariant,
+  BooleanChoice,
   Checkbox,
   DataTable,
   TextField,
@@ -23,6 +24,7 @@ test("renders accessible React Aria controls with native form semantics", () => 
       defaultValue: "Review",
     }),
     createElement(Checkbox, { name: "approved" }, "Approved"),
+    createElement(BooleanChoice, { label: "Decision", name: "decision" }),
   ));
 
   assert.match(html, /<button/u);
@@ -32,6 +34,9 @@ test("renders accessible React Aria controls with native form semantics", () => 
   assert.match(html, /name="decision"/u);
   assert.match(html, /type="checkbox"/u);
   assert.match(html, />Approved</u);
+  assert.equal(html.match(/type="radio"/gu)?.length, 2);
+  assert.match(html, /role="radiogroup"/u);
+  assert.doesNotMatch(html, /type="radio"[^>]*checked/u);
 });
 
 test("renders a native TanStack-backed table with stable row identity", () => {
