@@ -207,7 +207,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 #### Explicitly absent
 
 - Parallel legacy schemas, migration readers, compatibility switches, general assertion language
-- value kinds beyond string/null or general variable domain
+- Boolean and every other value kind beyond string/null; the pending [proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md) remains unimplemented
 - wider or decimal numeric domain
 - identifier normalization or locale-sensitive ordering
 

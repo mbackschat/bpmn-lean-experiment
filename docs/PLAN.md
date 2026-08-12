@@ -157,7 +157,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: select the first M3 increment.** Compare the value-domain and E2 User Task metadata prerequisites from the [M3 exit gate](#m3--real-work-with-real-data), select the smallest dependency-first increment, complete its owner and Temporal preflight inventory, and route a governed proposal before implementation.
+1. **Active: review the first M3 Boolean Process-data proposal.** The dependency preflight selected one primitive Boolean on exact User Task completion under a new profile before E2. The [governed proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md) now owns the profile gate, proved Lean lane, CIB extension, owner inventory, and existing-Update Temporal preflight. Implementation remains paused until independent proposal review and owner-approved status are recorded.
 
 ## Approved decisions
 
@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: select the first M3 increment from the value-domain and E2 User Task metadata prerequisites, then prepare its bounded owner inventory, Temporal preflight, and governed proposal.** M2 is closed at Process-instance search closure target `8a87cf4`, correction `326dde5`, and the graduated specification.
+**Next action: cold-review the [Boolean Process-data proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md), record owner-approved status after any bounded correction audit, then begin the mandatory Java protocol extraction and red/green semantic checkpoint.** The selected first M3 slice adds Boolean only to exact User Task completion under a new profile; Process Start, effects, mappings, expressions, E2, Product 2, old profiles, and Temporal primitives stay unchanged. M2 is closed at Process-instance search closure target `8a87cf4`, correction `326dde5`, and the graduated specification.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
