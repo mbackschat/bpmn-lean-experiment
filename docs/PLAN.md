@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit and context-cold review the [Product 2 Process-instance search proposal](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-PROPOSAL.md), then implement its first green public-contract and durable-index checkpoint if approved.** Message Start ingress is graduated at closure target `f13b01f` with approved correction target `875b1e5`.
+**Next action: context-cold review immutable Process-instance search proposal target `3fbaf27`, then implement its first green public-contract and durable-index checkpoint if approved.** Message Start ingress is graduated at closure target `f13b01f` with approved correction target `875b1e5`.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
