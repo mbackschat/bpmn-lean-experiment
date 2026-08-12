@@ -70,7 +70,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** Implementation and executable evidence are complete; independent closure review remains. The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) and [E2 User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) are implemented, evidence-closed, and graduated. The owner accepted final E2 administrative correction `264add2` without another audit on 2026-08-12. Product 2 human work now includes its independently approved public contract and private engine operations, durable all-producer publication, exact current-task aggregation, fake identity policy, claims, typed detail, retry-safe completion, same-transaction audit outbox, strict HTTP routes, CSS-Modules React inbox, live Temporal evidence, and Chromium acceptance. The closure review and graduation record are the remaining M3 work.
+**Status: in progress.** Implementation and executable evidence are complete; the exact closure reviewer is auditing the bounded correction. The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) and [E2 User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) are implemented, evidence-closed, and graduated. The owner accepted final E2 administrative correction `264add2` without another audit on 2026-08-12. Product 2 human work now includes its independently approved public contract and private engine operations, durable all-producer publication, exact current-task aggregation, fake identity policy, claims, typed detail, retry-safe completion, same-transaction audit outbox, strict HTTP routes, CSS-Modules React inbox, live Temporal evidence, and Chromium acceptance. Context-cold closure target `c72a3bb` required a stale-claim retry correction, stable browser completion retry identity, and additional adversarial evidence. Corrections `5c6cf0a` and `ba9c3d6` close those findings, and graduation is the remaining M3 work after same-reviewer approval.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close Product 2 human work.** Run the complete applicable M3 gate at one immutable target, obtain the required context-cold closure review, record the cost and receipt, and graduate the approved proposal to its maintained specification.
+1. **Active: close Product 2 human work.** Obtain the same-reviewer audit of correction target `ba9c3d6`, record the closure receipt, and graduate the approved proposal to its maintained specification.
 
 ## Approved decisions
 
@@ -264,11 +264,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain the context-cold M3 human-work closure verdict.** The complete engine, aggregate platform Work, and live Temporal plus Chromium gates are green through implementation target `ba89eb6`; review the immutable documentation-binding target, then record the receipt and graduate the maintained specification if approved.
+**Next action: obtain the same-reviewer M3 human-work correction audit.** Context-cold target `c72a3bb` received `APPROVE WITH REQUIRED EDITS`; corrections `5c6cf0a` and `ba9c3d6` close the three findings. Record the receipt and graduate the maintained specification if the exact reviewer approves the correction target.
 
 **No technical or environmental blocker remains.** E2 is graduated and Product 2 implementation is authorized. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
-**Last verified commands:** `./scripts/doctor.sh verify`, `./scripts/verify.sh`, `./scripts/pnpm.sh run test:platform-work-checkpoint`, and `./scripts/pnpm.sh run test:showcase:m3-human-work` are green through implementation target `ba89eb6`; the latter two required local loopback execution. Focused Work, public-contract, engine-operation, HTTP, UI, production-server, Product 2 boundary, source-hygiene, and infrastructure gates remain green.
+**Last verified commands:** `./scripts/doctor.sh verify`, `./scripts/verify.sh`, `./scripts/pnpm.sh run test:platform-work-checkpoint`, and `./scripts/pnpm.sh run test:showcase:m3-human-work` are green through correction target `ba9c3d6`; the latter two required local loopback execution. Focused Work, audit, public-contract, engine-operation, HTTP, UI, production-server, Product 2 boundary, source-hygiene, and infrastructure gates remain green.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 

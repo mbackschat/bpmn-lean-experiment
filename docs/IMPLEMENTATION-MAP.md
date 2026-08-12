@@ -4,7 +4,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 ## Current claim
 
-**Two products, three platform showcase floors implemented.** The engine executes the bounded BPMN slice owned by twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has closed M1 and M2 showcases, while M3 human-work implementation and executable evidence are complete against the independently approved checkpoint contract. Independent closure review and graduation remain pending. Later absences are recorded under [BPM platform](#bpm-platform).
+**Two products, three platform showcase floors implemented.** The engine executes the bounded BPMN slice owned by twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has closed M1 and M2 showcases, while M3 human-work implementation and evidence are complete. Correction `ba9c3d6` awaits audit and graduation. Later absences are recorded under [BPM platform](#bpm-platform).
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting.
 
