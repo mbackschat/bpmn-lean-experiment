@@ -1,8 +1,8 @@
-# BPM platform Process-instance search proposal
+# BPM platform Process-instance search specification
 
 ## Status
 
-**Owner-approved; complete implementation, evidence, and cost reflection are ready for closure review.** The strict public route, production server composition, HTTP-only global panel, three-producer live witness, restart and paging evidence, and browser acceptance extend the independently approved first-green checkpoint at `5bd9d13` without changing its contract. The target-bound complete repository gate and guarded warm closure review remain before graduation. This is the final M2 Product 2 increment. It adds no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, Workflow behavior, Lean theorem, CIB relationship, or Temporal discovery mechanism.
+**Implemented, closure-reviewed, evidence-closed, and graduated.** Closure target `8a87cf4` passed the complete repository gate and guarded warm-continuity review; correction `326dde5` closed the sole cost-accounting finding. The strict public route, production server composition, HTTP-only global panel, three-producer live witness, restart and paging evidence, and browser acceptance retain the independently approved first-green contract at `5bd9d13`. This is the final closed M2 Product 2 increment. It adds no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, Workflow behavior, Lean theorem, CIB relationship, or Temporal discovery mechanism.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary and states that cross-instance discovery is a platform problem. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#what-the-platform-may-consume) forbids reconstructing semantic facts from Temporal Event History, state differences, or platform guesses. [ARCHITECTURE.md](ARCHITECTURE.md#business-modules) assigns instance operations and monitoring to the `operate` module. [PLAN.md](PLAN.md) owns sequencing.
 
@@ -126,31 +126,6 @@ The nearest realistic wrong account is a search implementation backed by Tempora
 
 The live witness uses production public routes to create all three records, restarts the server over the same index, checks stable pagination and each exact filter, and proves a direct engine start outside Product 2 creates no search row. The browser witness uses the production web panel against the same public contract and never calls a private support endpoint.
 
-## Ownership and headroom
-
-New cohesive owners are:
-
-- `platform/contracts/src/process-instance-search.ts`, `process-instance-search-decoders.ts`, `process-instance-search-routes.ts`, and focused runtime/type tests;
-- `platform/modules/operate/` with separate contracts, values, service, SQLite repository, HTTP routes, tests, package manifest, and README;
-- `platform/modules/definitions/src/process-instance-recording.ts`, which owns the output port and exact mapping for the three existing services;
-- `platform/apps/web/src/process-instance-search-api.ts`, `process-instance-search-panel.tsx`, focused tests, and a separate CSS owner if styling is nontrivial;
-- `showcase/m2-process-instance-search/` with one live test and one browser test.
-
-Mechanically measured existing owners are:
-
-| Path | Current nonblank lines | Headroom |
-|---|---:|---:|
-| `platform/contracts/src/index.ts` | 17 | 583 |
-| `platform/modules/definitions/src/definition-start-service.ts` | 155 | 445 |
-| `platform/modules/definitions/src/definition-schedule-service.ts` | 513 | 87 |
-| `platform/modules/definitions/src/message-start-publication-service.ts` | 493 | 107 |
-| `platform/modules/definitions/src/index.ts` | 96 | 504 |
-| `platform/apps/server/src/composition.ts` | 140 | 460 |
-| `platform/apps/web/src/app.tsx` | 232 | 368 |
-| `platform/apps/web/src/main.tsx` | 26 | 574 |
-
-The two larger lifecycle services receive only one recording call each; exact public-identity mapping and validation belong in the new recording owner. New feature tests do not grow the near-limit schedule-service or definition-route test owners. Every listed platform source path is bound by the Product 2, Temporal, source-hygiene, project, and registry guards reported by `what-binds`; the proposal is bound by 31 guards and `docs/README.md`.
-
 ## Required, optional, and excluded functionality
 
 Required:
@@ -175,11 +150,9 @@ Excluded:
 - starts outside Product 2, historical backfill, and retry-transparent recovery for the existing body-free direct-start ambiguity;
 - new BPMN semantics, profile, checked graph, IL, semantic-core transition, Workflow behavior, Lean proof, CIB relationship, Schedule policy, Message routing, broker, or fanout.
 
-## Acceptance and review sequencing
+## Acceptance evidence
 
-After proposal approval, red/green implementation begins with the public contract, `operate` repository/service, and all three producer integrations. Because this changes a public observation and durable schema, that first green target receives a context-cold semantic-checkpoint review before HTTP UI and live evidence continue.
-
-Closure requires the focused package gates, both platform harness type gates, Product 1/Product 2 and Temporal boundary guards, source hygiene, a real three-producer live witness, headless Chromium acceptance, the complete repository and M2 showcase gates, reproducible cost comparison, exact status updates, and governed closure review. Warm closure is eligible only if the approved checkpoint reviewer, descendant target, continuity manifest, and unchanged contract/exclusions/evidence strategy satisfy the guarded rule.
+The maintained acceptance boundary is the focused package gates, both platform harness type gates, Product 1/Product 2 and Temporal boundary guards, source hygiene, the real three-producer live witness, headless Chromium acceptance, and the complete repository and M2 showcase gates. The live and browser witnesses are registered under `showcase/m2-process-instance-search/`; [TESTING-SPEC.md](TESTING-SPEC.md) owns their execution procedure, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact current evidence boundary, and [PLAN.md](PLAN.md) owns the latest measured result.
 
 ## Common-mode risks and nearest unsupported claim
 
@@ -193,4 +166,4 @@ The strongest supported claim is stable cross-instance search over confirmed Pro
 |---|---|---|---|---|
 | Proposal | `3fbaf27` | `fork-turns-none` | `approve-with-required-edits` | `e1d037f` |
 | Semantic checkpoint | `5bd9d13` | `fork-turns-none` | `approve` | `not-required` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `8a87cf4` | `checkpoint-reviewer-warm` | `approve-with-required-edits` | `326dde5` |

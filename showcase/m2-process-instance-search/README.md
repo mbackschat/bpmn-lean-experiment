@@ -1,6 +1,6 @@
 # M2 Process-instance search
 
-This private development package owns the live and browser acceptance witnesses for the [approved Process-instance search account](../../docs/BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-PROPOSAL.md#rules-and-evidence). It composes the production Worker, platform server, and HTTP-only web client through public package roots.
+This private development package owns the live and browser acceptance witnesses for the [Process-instance search specification](../../docs/BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md#rules-and-evidence). It composes the production Worker, platform server, and HTTP-only web client through public package roots.
 
 The live witness creates one confirmed Process instance through each current Product 2 producer, proves those exact identities through Temporal test inspection, restarts the platform over the same data directory, and searches only through `GET /api/v1/process-instances`. It covers newest-first cursor stability under a concurrent newer insertion, every exact filter, full deployed-definition identity, an outside-Product-2 direct-start exclusion, and recursive rejection of private host and absent lifecycle facts.
 

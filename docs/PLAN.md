@@ -18,7 +18,7 @@ This document owns the current checkpoint, ordered next work, unresolved decisio
 
 **Product 2 definition scheduling is implemented, closure-reviewed, evidence-closed, and graduated.** The [specification](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md) owns exact Timer Start capability publication, the strict one-shot schedule API, durable lifecycle, handle-free host operations, public UI, live exact-version and cancellation evidence, and headless-browser acceptance. Closure target `2b5cc40` passed the complete repository gate and approved warm-continuity review. M1 remains an independent regression floor.
 
-**Product 2 Process-instance search is fully implemented and evidence-green pending closure review.** The exact public identity contract, independent `operate` SQLite index, all three confirmed-start producer hooks, global HTTP route, HTTP-only panel, restart-stable cursor paging, exact filters, private-fact exclusion, live production-host witness, and browser acceptance are green. The first-green target `5bd9d13` is independently approved and its selected account, contract, exclusions, and evidence strategy remain unchanged.
+**Product 2 Process-instance search is implemented, closure-reviewed, evidence-closed, and graduated.** The [specification](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md) owns the exact public identity contract, independent `operate` SQLite index, all three confirmed-start producer hooks, global HTTP route, HTTP-only panel, restart-stable cursor paging, exact filters, private-fact exclusion, live production-host witness, and browser acceptance. Closure target `8a87cf4` and correction `326dde5` closed the governed review.
 
 **One generic standards profile now admits the complete selected notation set.** `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them. Every other standards profile rejects that set through an exact key allowlist. The two product-neutral mapped Service Task profiles may consume only a content-bound data-only overlay that maps alternate exact source bindings to an existing profile-owned descriptor and names exact inert expanded-name loci; it adds no reader or semantic operation. The preserve-enabled profile is registered with its own answer-free scenario, pipeline case, and live example, and a rejected file names each element the classification refused. Five structural requirement rows record what it admits without letting retention read as executable support. M1 is closed across engine admission, storage, versioning, public HTTP, exact-source rendering, selected-version start, real Temporal hosting, and required headless Chromium acceptance.
 
@@ -56,7 +56,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 ### M2 — the file runs its real shape
 
-**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, Terminate End Event, [configured Task extension](capsules/CONFIGURED-GENERIC-TASK-SPEC.md), [exact-version definition scheduling](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md), and [published Message Start ingress](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) increments are implemented, closure-reviewed, evidence-closed, and graduated. Process-instance search is fully implemented and evidence-green; its governed closure review and graduation are the only remaining M2 work.
+**Status: closed.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, Terminate End Event, [configured Task extension](capsules/CONFIGURED-GENERIC-TASK-SPEC.md), [exact-version definition scheduling](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md), [published Message Start ingress](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md), and [Process-instance search](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md) increments are implemented, closure-reviewed, evidence-closed, and graduated.
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
@@ -157,7 +157,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close Product 2 Process-instance search and M2.** The [owner-approved proposal](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-PROPOSAL.md) is fully implemented without changing its approved account. Run the target-bound complete repository gate, perform guarded same-reviewer warm closure review, apply any required corrections, graduate the proposal to its specification, and mark M2 closed.
+1. **Active: select the first M3 increment.** Compare the value-domain and E2 User Task metadata prerequisites from the [M3 exit gate](#m3--real-work-with-real-data), select the smallest dependency-first increment, complete its owner and Temporal preflight inventory, and route a governed proposal before implementation.
 
 ## Approved decisions
 
@@ -194,7 +194,7 @@ Only decisions that constrain the next work are kept here. A decision fully owne
 
 ## Last verified baseline
 
-**Latest complete gate: 2026-08-11, exit 0 at `2b5cc40`.** All **42** registered cases reached agreement across their declared targets, all 42 seeded semantic mutations produced their required disagreement, all 18 retained-CIB evidence comparisons agreed, and all 44 live histories passed. The complete gate took 192.53 seconds and its output has SHA-256 `61e4f763564a884a05f09e78cf05efb0bef7df3fd2de8e726a53256f170d0bcc`. This is correctness evidence only, not a new performance baseline.
+**Latest complete gate: 2026-08-12, exit 0 at `8a87cf4`.** All registered cases reached agreement across their declared targets, every seeded semantic mutation produced its required disagreement, and all 44 live histories passed. The complete gate took 190.77 seconds and its output has SHA-256 `4b0c65120a18e346e07f23434bb33c8b806a35cb3e6db2f935d3e99a53745793`. This is correctness evidence only, not a new performance baseline.
 
 **Two performance baselines are retained, because a catalog change breaks comparability and one figure cannot span it.**
 
@@ -262,11 +262,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit the Process-instance search closure target, run the target-bound complete repository gate, obtain guarded warm closure review from the approved checkpoint reviewer, and graduate the increment and M2.** Proposal target `3fbaf27` was approved after correction target `e1d037f`; first-green checkpoint `5bd9d13`, HTTP delivery `431c9db`, web delivery `45f285c`, and live/browser evidence `bc5ef9d` are green.
+**Next action: select the first M3 increment from the value-domain and E2 User Task metadata prerequisites, then prepare its bounded owner inventory, Temporal preflight, and governed proposal.** M2 is closed at Process-instance search closure target `8a87cf4`, correction `326dde5`, and the graduated specification.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
-**Last verified commands:** `env CI=true ./scripts/pnpm.sh run test:showcase:m2` passed all three M2 live Temporal witnesses and all three Chromium acceptances after Process-instance search evidence commit `bc5ef9d`; the Process-instance search live witness was 1/1 and its browser witness was 1/1. The focused contract/index/producer checkpoint, HTTP/server, web, platform harness, product-boundary, Temporal-boundary, source-hygiene, and package gates are green. The target-bound complete repository gate remains the next closure command.
+**Last verified commands:** `env CI=true ./scripts/pnpm.sh run test:showcase:m2` passed all three M2 live Temporal witnesses and all three Chromium acceptances; the Process-instance search live witness was 1/1 and its browser witness was 1/1. `/usr/bin/time -p env CI=true ./scripts/verify.sh` passed at exact target `8a87cf4` in 190.77 seconds with output SHA-256 `4b0c65120a18e346e07f23434bb33c8b806a35cb3e6db2f935d3e99a53745793`. The focused contract/index/producer, HTTP/server, web, platform harness, product-boundary, Temporal-boundary, source-hygiene, cost, and documentation gates are green.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 
