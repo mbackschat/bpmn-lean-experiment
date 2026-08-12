@@ -17,7 +17,7 @@ A definition diagram resolves in this order:
 1. Use usable BPMN DI already embedded in the exact admitted BPMN XML.
 2. Otherwise use a persisted sidecar whose `sourceSha256` exactly equals the admitted source digest.
 3. Otherwise generate one sidecar through the selected deterministic layout adapter, persist it, and return it on subsequent reads.
-4. Reject a stale, malformed, differently bound, or digest-invalid sidecar. Never try it as a best-effort fallback.
+4. Treat a stale, malformed, differently bound, corrupt, or digest-invalid stored sidecar as an integrity failure. It blocks presentation until an explicit repair removes or replaces it; an ordinary read never regenerates over corruption.
 
 The source BPMN XML remains the only admitted and executable source. The sidecar is presentation data and never enters BPMN source import, checked graph construction, Semantic Process IL, the semantic core, the Temporal Workflow, CIB evidence, or definition identity.
 
@@ -29,23 +29,49 @@ The logical sidecar is a closed immutable record:
 type BpmnDiagramPresentationSidecar = DeepReadonly<{
   schemaEpoch: 1;
   sourceSha256: string;
+  diagramInterchangeSha256: string;
   presentationSha256: string;
   provenance: {
     kind: "generated";
     generatorId: "bpmn-auto-layout";
     generatorVersion: "1.3.0";
+    effectiveGeneratorSha256: string;
   };
+  diagramInterchangeXml: string;
+}>;
+```
+
+`diagramInterchangeXml` contains only one closed BPMN DI fragment. Its SHA-256 is computed over its exact UTF-8 bytes. The resolver inserts that fragment immediately before the exact admitted source's closing `definitions` tag without reserializing or replacing any source byte, then computes `presentationSha256` over the exact resolved UTF-8 presentation. Persisting only DI makes non-DI preservation structural rather than a trust claim about the generator's reserialized output. The adapter still parses the generated candidate and proves that every generated DI reference resolves to an existing exact source ID and that the selected Process, flow nodes, and Sequence Flows have the required plane, shapes, and edges before extracting the fragment. A sidecar is equivalent only when every closed field, all three digests, and all exact UTF-8 payload bytes match.
+
+The sidecar's durable storage representation belongs to the Definitions module. It is not a public filesystem-path contract. The HTTP response exposes presentation bytes and provenance, never the private storage location.
+
+The public closed response is:
+
+```ts
+type ResolvedBpmnDiagramPresentation = DeepReadonly<{
+  schemaEpoch: 1;
+  definition: DeployedDefinitionVersion;
+  sourceSha256: string;
+  presentationSha256: string;
+  provenance:
+    | { kind: "source" }
+    | {
+        kind: "generated";
+        generatorId: "bpmn-auto-layout";
+        generatorVersion: "1.3.0";
+        effectiveGeneratorSha256: string;
+      };
   presentationBpmnXml: string;
 }>;
 ```
 
-`presentationBpmnXml` is a rendering derivative that contains the exact semantic model plus generated BPMN DI needed by the existing viewer. `presentationSha256` binds the returned bytes. A sidecar is equivalent only when every closed field and both digests match exactly.
-
-The sidecar's durable storage representation belongs to the Definitions module. It is not a public filesystem-path contract. The HTTP response exposes presentation bytes and provenance, never the private storage location.
+It is returned by `GET /api/v1/definitions/{processId}/versions/{version}/presentation`. Source provenance is explicit rather than inferred from absence of a generated field. The strict client recomputes the source and presentation digests, refuses recursive extras/private fields, and binds `definition` to the requested exact version.
 
 ## Generation lifecycle
 
-Generation occurs at the Definitions presentation boundary after semantic admission and durable definition identity are known. It is idempotent for one exact source digest. Concurrent equivalent generation converges on one equivalent sidecar; conflicting output for the same generator identity and source digest is an integrity failure.
+Generation is invoked by the Definitions presentation service after semantic admission and durable definition identity are known. The Product 2 presentation foundation owns the adapter and its presentation-only parser graph; Definitions owns the durable record and public route. The durable key is `{schemaEpoch, sourceSha256, effectiveGeneratorSha256}`. `effectiveGeneratorSha256` binds adapter epoch 1 plus the exact locked `bpmn-auto-layout@1.3.0`, `bpmn-moddle@10.0.0`, and `min-dash@5.1.0` graph. An SQLite `BEGIN IMMEDIATE` insert-or-compare transaction makes generation idempotent across independent connections: an equivalent candidate reuses the winner, while any field or byte conflict is an integrity failure.
+
+Generation runs in a killable worker with bounded source and output bytes. The deadline terminates that worker, rather than racing a Promise on the blocked main thread. A crash or termination before commit leaves no row and restart may generate again; after commit restart must reuse and revalidate the exact row. An existing corrupt row blocks automatic regeneration so ordinary reads cannot silently rewrite forensic evidence.
 
 The browser never generates layout. It requests one resolved presentation and renders it through `bpmn-js`. The UI identifies source-owned versus generated layout and keeps the viewer attribution visible.
 
@@ -53,9 +79,11 @@ Every definition registered in the M3 showcase must resolve either source DI or 
 
 ## Selected generator
 
-Use [`bpmn-auto-layout@1.3.0`](https://github.com/bpmn-io/bpmn-auto-layout/tree/v1.3.0) behind a small Definitions-owned adapter. It is MIT-licensed, produces BPMN DI from BPMN XML, and belongs to the same `bpmn-io` representation ecosystem as the selected viewer.
+Use [`bpmn-auto-layout@1.3.0`](https://github.com/bpmn-io/bpmn-auto-layout/tree/v1.3.0) behind a small Product 2 presentation-foundation adapter. It is MIT-licensed, produces BPMN DI from BPMN XML, and belongs to the same `bpmn-io` representation ecosystem as the selected viewer. This is a presentation-only exception to the semantic parser boundary: raw moddle objects and generator diagnostics remain private to the adapter, no parser type or generated non-DI model escapes, and the adapter has no semantic authority. `@bpmn-lean/bpmn-source`, Lean, semantic-core, engine APIs, and Temporal remain byte-unchanged by presentation generation.
 
-Its documented limitations include incomplete collaboration and artifact layout and simplified behavior for some advanced constructs. The adapter must fail closed on an unsupported or timed-out input. Extending generator coverage is a presentation task and must not modify semantic admission to fit the generator.
+The generated arm deliberately supports exactly one root Process composed of the ordinary flow-node and Sequence Flow shapes exercised by the M3 human-work model. Multiple root Processes, collaborations, participants, message flows, collapsed or expanded Sub-Processes, Call Activities requiring another root plane, groups, text annotations, associations, and data artifacts require usable source DI and otherwise fail closed. The repository's two-root Call Activity source is the retained negative. Extending generator coverage is a presentation task and must not modify semantic admission to fit the generator.
+
+Source DI is usable when the selected executable Process has exactly one BPMNPlane bound to its exact ID; every displayed flow node has exactly one finite positive-bounds BPMNShape; every displayed Sequence Flow has exactly one BPMNEdge with at least two finite waypoints; and all DI references resolve to exact source IDs. Duplicate diagram IDs, duplicate coverage, a plane for a different root, non-finite geometry, or missing required coverage makes source DI unusable. Source-owned diagrams may contain other valid presentation elements, but the task highlight still requires its exact element in the imported registry.
 
 ## Alternatives
 
@@ -70,7 +98,7 @@ Its documented limitations include incomplete collaboration and artifact layout 
 
 ## Integrity and security
 
-The presentation boundary decodes a closed sidecar, recomputes both digests, and refuses recursive extra or private fields at its public transport. Generation has a bounded input size and an explicit per-call deadline. A generator exception or timeout is a presentation failure, never a semantic outcome.
+The presentation boundary decodes a closed sidecar, recomputes all digests, validates DI-to-source references and coverage, and refuses recursive extra or private fields at its public transport. Generation has bounded input/output sizes and an OS-terminable per-call deadline. A generator exception or timeout is a presentation failure, never a semantic outcome.
 
 The renderer treats BPMN text and generated DI as untrusted presentation input under its existing viewer boundary. Sidecar provenance must not include host paths, internal database keys, Workflow IDs, or generator logs.
 
@@ -80,12 +108,15 @@ Focused evidence must prove:
 
 1. source-owned DI wins and no sidecar is generated;
 2. a metadata-only M3 model gets a valid generated sidecar and renders a diagram;
-3. the same source digest is idempotent across restart;
+3. the same source digest is idempotent across restart and across two independent SQLite connections;
 4. a one-byte semantic source change cannot reuse the old sidecar;
-5. a changed source digest, presentation digest, provenance value, or generated XML is rejected;
-6. unsupported or timed-out generation does not modify admitted source or engine identity;
-7. the UI visibly distinguishes source DI from generated layout;
-8. every registered M3 showcase definition resolves a diagram.
+5. a changed source digest, DI digest, presentation digest, provenance value, effective-generator identity, or DI XML is rejected;
+6. a conflicting independent-connection candidate and a corrupt retained row fail closed without replacement;
+7. a genuinely stalled worker is terminated at the deadline without modifying admitted source or engine identity;
+8. generated output can contribute only validated DI and cannot change any non-DI source byte;
+9. the two-root Call Activity and every other excluded construct fail closed without source DI;
+10. the UI visibly distinguishes source DI from generated layout and renders an honest unavailable task diagram when exact host binding is insufficient;
+11. every registered M3 showcase definition resolves a diagram.
 
 ## Related owners
 

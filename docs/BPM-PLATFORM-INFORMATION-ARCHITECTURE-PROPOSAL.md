@@ -67,7 +67,9 @@ Claim, release, completion, retry, and indeterminate delivery states stay adjace
 
 The Definitions workspace begins with selectors for an existing definition and exact version. Adding BPMN is a secondary action in the same workspace, not a separate third-party deployment product area. Selecting a definition opens Diagram by default, with Start and Triggers as related tabs for that exact version.
 
-Diagram resolution follows the [BPMN diagram presentation decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md): prefer BPMN DI embedded in the admitted source and otherwise use a digest-bound generated presentation sidecar. The UI labels generated layout honestly and never presents the derivative as admitted or executable source.
+Diagram resolution follows the [BPMN diagram presentation decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md): prefer usable BPMN DI embedded in the admitted source and otherwise use a digest-bound generated-DI sidecar. The UI labels generated layout honestly and never presents generated DI or the resolved presentation as admitted or executable source.
+
+Definitions use one closed `GET /api/v1/definitions/{processId}/versions/{version}/presentation` result carrying exact public definition identity, source digest, presentation digest, UTF-8 presentation XML, and a closed `source` or `generated` provenance arm. A selected task may request that hosting definition only when its semantic `processInstanceId` equals the public hosting root instance. After import, the exact task `elementId` must exist in the rendered element registry before it is highlighted. A task in a called semantic instance, an absent element, an unsupported generator shape, or a presentation failure produces an honest unavailable Diagram state. The UI never guesses a called definition from element names, host state, or Temporal facts.
 
 ## Responsive composition
 
@@ -102,7 +104,7 @@ Excluded behavior is a dashboard of unrelated panels, a permanent narrow task-fo
 
 ## Acceptance
 
-Static component tests lock navigation and collection-to-detail ownership. Focused browser evidence exercises the real Work lifecycle and Definitions selection. Visual QA captures the active work surface at all four required widths and checks that document width equals viewport width and every primary action remains within its owning surface.
+Static component tests lock navigation and collection-to-detail ownership. Focused browser evidence exercises the real Work lifecycle, Definitions selection, source-owned DI, generated DI, and honest task-diagram unavailability for a called-instance identity. Product 2 visual QA uses the separate path-filtered lane owned by the [UI design proposal](BPM-PLATFORM-UI-DESIGN-PROPOSAL.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
 
 ## Research and related owners
 

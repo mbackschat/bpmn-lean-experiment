@@ -26,7 +26,7 @@ The owner's live browser review found that the first M3 composition made the pro
 
 ## Method and limits
 
-The study uses current official product documentation and the screenshots embedded in that documentation. CIB Seven, Camunda 8, Flowable, Bonita, IBM Business Automation Workflow, Appian, ServiceNow, and ProcessMaker were inspected. Their documented functions are more reliable than visual details that may change between releases; no product is treated as a design authority.
+The study uses official product documentation and the screenshots embedded in that documentation. Current documentation is preferred. One CIB Seven `manual/1.0` page is retained explicitly as historical evidence for the older Form/History/Diagram/Description tab arrangement, while the current `2.2` Tasklist, configuration, and latest form documentation corroborate the durable task-list, focus-region, Process-start, claim, and form relationships. CIB Seven, Camunda 8, Flowable, Bonita, IBM Business Automation Workflow, Appian, ServiceNow, and ProcessMaker were inspected. Their documented functions are more reliable than visual details that may change between releases; no product is treated as a design authority.
 
 The products span different scopes. CIB Seven and Camunda 8 are direct BPM references. Flowable and Bonita combine process, case, task, and form work. IBM BAW and Appian emphasize enterprise work portals. ServiceNow provides a mature record-workspace pattern. ProcessMaker contributes role-oriented process participation. The comparison therefore separates transferable interaction patterns from product-specific data and permissions.
 
@@ -144,7 +144,9 @@ No separate proposal is recommended now for tokens, a router, a form framework, 
 
 ## Primary sources
 
-- [CIB Seven Tasklist dashboard](https://docs.cibseven.org/manual/1.0/webapps/tasklist/dashboard/) documents filters, result list, task view, Form, History, Diagram, and Description tabs.
+- [Current CIB Seven 2.2 Tasklist](https://docs.cibseven.org/manual/2.2/webapps/tasklist/) documents the current Tasklist surface and its dashboard, filters, assignment, lifecycle, and accessibility owners.
+- [Current CIB Seven webclient configuration](https://docs.cibseven.org/manual/2.2/webapps/configuration-options/) documents current keyboard focus regions for filters, tasks, task detail, claim, Process list, and Process start.
+- [Historical CIB Seven 1.0 Tasklist dashboard](https://docs.cibseven.org/manual/1.0/webapps/tasklist/dashboard/) documents the versioned Form/History/Diagram/Description tab arrangement used only as historical interaction evidence.
 - [CIB Seven User Task forms](https://docs.cibseven.org/manual/latest/user-guide/task-forms/) documents generated, embedded, external, and generic task-form relationships.
 - [Camunda 8 Tasklist overview](https://docs.camunda.io/docs/components/tasklist/userguide/using-tasklist/) documents the queue, selected task detail, forms, Process tab, filters, and ordering.
 - [Camunda 8 Tasklist Process starts](https://docs.camunda.io/docs/components/tasklist/userguide/starting-processes/) documents a separate Processes page and start-form flow.
@@ -161,6 +163,6 @@ No separate proposal is recommended now for tokens, a router, a form framework, 
 
 ## Confidence and recheck boundary
 
-Confidence is high for the recurring collection-to-detail, form-plus-context, claim gate, and model-to-instance patterns because they occur across multiple independent products and are documented in current official sources. Confidence is medium for visual-composition details because screenshots can lag product releases and several products expose configurable layouts. Recommendations remain bounded to M3's actual public facts.
+Confidence is high for the recurring collection-to-detail, form-plus-context, claim gate, and model-to-instance patterns because they occur across multiple independent products and are documented in current official sources. The exact historical CIB tab arrangement has medium confidence as a current-product detail and is used only where current CIB and independent product evidence support the broader form-plus-context pattern. Confidence is medium for visual composition because screenshots can lag product releases and several products expose configurable layouts. Recommendations remain bounded to M3's actual public facts.
 
 Recheck the source set before selecting a later dashboard, case-management, collaboration, saved-view, or full form-engine increment. Those are product areas where the vendors' data models and current feature releases materially affect the comparison.

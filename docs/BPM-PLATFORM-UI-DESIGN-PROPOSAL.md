@@ -28,27 +28,43 @@ The visual language is project-owned. The [pattern-first UI/UX and information-a
 
 ## Technology and ownership
 
-React Aria Components owns accessible interaction behavior for controls. TanStack Query owns bounded HTTP state, and TanStack Table may own collection row modeling. CSS Modules own feature-local styles. `platform/ui-kit/` owns shared interaction components and visual tokens; `platform/apps/web/` owns workspace composition and feature-specific layout.
+React Aria Components owns accessible interaction behavior for controls. TanStack Query owns bounded HTTP state, and TanStack Table may own collection row modeling. `platform/ui-kit/` owns shared interaction components, one root-token and document-reset sheet, and co-located CSS Modules for every styled component. `platform/apps/web/` owns workspace composition and feature CSS Modules. A feature may place a shared component through its public `className`, but it may not restyle the component's internal structure or interaction state.
 
-Global CSS is limited to document defaults, font inheritance, root tokens, and intentionally global third-party viewer surfaces. Feature selectors, responsive rules, and business-state styling belong in CSS Modules. A component accepts a class name when the feature must place it, while interaction state is styled through React Aria's documented data attributes such as `data-hovered`, `data-focused`, `data-pressed`, `data-disabled`, and `data-pending`.
+Global CSS is limited to document defaults, font inheritance, root tokens, and the intentionally global `bpmn-js` viewer surface. Feature selectors, responsive rules, and business-state styling belong in CSS Modules. React Aria data attributes such as `data-hovered`, `data-focused`, `data-pressed`, `data-disabled`, and `data-pending` are selected only beneath the owning module root. No second global component sheet, feature-wide selector, or application override becomes an implicit theme layer.
 
 ## Visual foundations
 
-The base palette uses warm-neutral page surfaces, white working surfaces, a restrained teal accent, high-contrast near-black text, and distinct semantic colors for error, warning, and success. Color is never the only status discriminator.
+The visual foundation is the following exact token contract. Token names are stable CSS custom properties; values change only through this owner rather than through local near-matches.
 
-Use a compact radius scale rather than rounding every container:
+| Token | Exact value | Use |
+|---|---:|---|
+| `--ui-color-canvas` | `#f4f7f6` | Page and shell canvas |
+| `--ui-color-surface` | `#ffffff` | Primary working surface |
+| `--ui-color-inset` | `#f7faf9` | Rows, grouped fields, and other inset surfaces |
+| `--ui-color-text` | `#17211f` | Primary text |
+| `--ui-color-muted` | `#52645f` | Secondary text |
+| `--ui-color-border` | `#c8d6d1` | Ordinary borders and dividers |
+| `--ui-color-accent` | `#0f6b5c` | Primary action and selected state |
+| `--ui-color-accent-hover` | `#0b584d` | Hovered or pressed primary action |
+| `--ui-color-accent-soft` | `#e6f2ef` | Selected navigation and contextual accent surface |
+| `--ui-color-focus` | `#1769aa` | Visible focus ring |
+| `--ui-color-error` / `--ui-color-error-surface` | `#982b22` / `#fdecea` | Error text and surface |
+| `--ui-color-warning` / `--ui-color-warning-surface` | `#775400` / `#fff5d6` | Warning or indeterminate text and surface |
+| `--ui-color-success` / `--ui-color-success-surface` | `#176b45` / `#e8f5ed` | Success text and surface |
+| `--ui-font-family` | `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` | Product text; system fallback is authoritative when Inter is unavailable |
+| `--ui-font-page` | `700 1.75rem/1.2 var(--ui-font-family)` | One workspace title |
+| `--ui-font-section` | `700 1.25rem/1.3 var(--ui-font-family)` | Collection or selected-object heading |
+| `--ui-font-body` | `400 0.9375rem/1.5 var(--ui-font-family)` | Body text |
+| `--ui-font-label` | `650 0.8125rem/1.3 var(--ui-font-family)` | Control and responsive-cell labels |
+| `--ui-space-1` through `--ui-space-7` | `4px`, `8px`, `12px`, `16px`, `24px`, `32px`, `48px` | Closed spacing scale |
+| `--ui-radius-control` / `--ui-radius-surface` / `--ui-radius-pill` | `6px` / `10px` / `999px` | Controls, working surfaces, short badges |
+| `--ui-border` | `1px solid var(--ui-color-border)` | Ordinary boundary |
+| `--ui-shadow-surface` | `0 8px 24px rgb(23 33 31 / 8%)` | At most one primary floating or working surface |
+| `--ui-focus-ring` | `0 0 0 3px rgb(23 105 170 / 32%)` | Focus-visible affordance with a solid `2px` focus outline |
 
-| Token role | Contract |
-|---|---|
-| Control | 6 to 8 px |
-| Working surface | 8 to 12 px |
-| Pill or badge | Fully rounded only for short status content |
+The surface hierarchy is closed. The canvas has no border or shadow. One primary working surface may use `--ui-color-surface`, `--ui-border`, `--ui-radius-surface`, and `--ui-shadow-surface`. An inset or row uses `--ui-color-inset` plus a border or divider and never repeats the shadow. Controls use the surface color, control radius, and border. Status surfaces pair their semantic text and background tokens with an icon or explicit status word, so color is never the only discriminator. Decorative gradients are excluded from operational workspaces.
 
-Working surfaces use one subtle border and at most one low-contrast shadow. Nested surfaces reduce elevation instead of repeating the same card treatment. Decorative background gradients are excluded from operational workspaces.
-
-Typography uses the system sans-serif stack. One page heading identifies the workspace; one section heading identifies the collection or selected object. Eyebrows are reserved for a material object class or status and are not repeated as decoration. Long Process, task, and source identities wrap at safe boundaries without shrinking action controls.
-
-Spacing uses a consistent 4 px base with ordinary steps of 8, 12, 16, 24, 32, and 48 px. Closely related labels and values use the smaller steps; separate functional groups use the larger steps. Empty height is not added merely to make a panel look substantial.
+One page heading identifies the workspace; one section heading identifies the collection or selected object. Eyebrows are reserved for a material object class or status and are not repeated as decoration. Long Process, task, source, actor, and group identities use `overflow-wrap: anywhere` while action labels remain whole. Closely related labels and values use spaces 1 through 4; separate functional groups use spaces 5 through 7. Empty height is not added merely to make a panel look substantial.
 
 ## Components and patterns
 
@@ -56,7 +72,7 @@ Primary actions use a filled accent button. Secondary navigation and low-risk co
 
 Tabs organize related views of one selected object. They must use the React Aria Tabs pattern once the shared component is introduced. Until that extraction, native roles, selected state, focus behavior, and keyboard behavior must remain equivalent. Tabs do not switch between unrelated products.
 
-Task collections use semantic table markup at widths where columns are genuinely scannable. Each responsive cell carries an explicit label so the same semantic row can reflow into a card. Reflow is based on the component's container width, not only on viewport width. The task collection never relies on a horizontal scrollbar.
+Task collections use one native table, row, header-cell, and data-cell DOM at every width. Each data cell carries one visible responsive label in card mode; desktop headers are visually hidden only after those labels become visible. A collection-container query reflows the same row into a labeled card before controls or content need horizontal overflow. Desktop and card variants never duplicate task content or actions, and the task collection never uses `overflow-x: auto`, an inner horizontal scrollbar, clipped cells, or a second mobile-only DOM.
 
 Forms give each field a visible label, an explicit semantic type, compatible current value, validation state, and nearby completion action. Boolean is an explicit true-or-false choice rather than an unchecked checkbox whose absence could be confused with false. An incompatible value displays a blocking explanation and no editable control.
 
@@ -86,11 +102,19 @@ Error, warning, indeterminate, empty, and success states use semantic text plus 
 
 Native semantics are preferred. A visual card remains a table row where comparison is the primary task; a navigation control remains navigation; and tabs are not simulated by unrelated buttons without the complete tab contract.
 
+Selecting a task transfers focus to the selected task heading after detail content is ready. Back returns focus to the exact task-selection control when it still exists, otherwise to the collection heading. A committed completion returns focus to the refreshed collection heading. Rejected, transport-failed, and indeterminate completion keep focus in the detail and move it to the explicit status or retry control without losing the retained operation. Definition selection keeps focus on the selector. Arrow-key tab changes keep focus on the selected tab and associate it with the visible panel. A diagram import failure moves no focus automatically but exposes an alert adjacent to the diagram heading.
+
+Under `prefers-reduced-motion: reduce`, nonessential transitions, smooth scrolling, loading animation, and diagram viewport animation are disabled. State changes remain immediate and perceivable through text and focus. Loading, error, empty, pending, indeterminate, incompatible-value, source-DI diagram, generated-DI diagram, unavailable diagram, and rendering-failure fixtures are deterministic acceptance inputs rather than manually improvised states.
+
 ## Visual review protocol
 
-Every material workspace or shared responsive pattern is reviewed at 1600, 1280, 1024, and 768 CSS pixels using production CSS and representative real data. The reviewer checks alignment, hierarchy, text wrapping, action reachability, focus visibility, surface nesting, and both document and component overflow.
+The authoritative automated UI-quality lane belongs to Product 2 and is separate from `verify.sh`, Lean, semantic-core, BPMN-source semantic admission, CIB, differential, and Temporal refinement loops. It is path-filtered to `platform/ui-kit/`, `platform/apps/web/`, browser showcases, their public UI-facing contracts, and its own workflow/configuration. It also runs explicitly for M3 release acceptance and by manual dispatch. A semantic-only change does not install Chromium, build the web application, start the M3 host, or execute a screenshot comparison.
 
-Automated measurements prove only geometry and state. Screenshots are still inspected because an interface can fit numerically while remaining crowded, repetitive, or visually unbalanced. A screenshot review produces actionable findings against this specification rather than subjective requests to make the UI more modern.
+The UI-quality lane serves a production-built web bundle with Vite preview and fixed closed API-boundary fixtures independent of Temporal. Four pinned Chromium projects use `1600x900`, `1280x900`, `1024x900`, and `768x900` viewports. At every width they assert `scrollWidth <= clientWidth` for the document, workspace content, task collection wrapper, every row or card, selected form, and diagram surface; every primary action's bounding box remains inside its owning surface. Fixtures include multiple task states and deliberately long task, Process, actor, group, and occurrence identities. Role/name, Tab and arrow-key behavior, focus transfer/return, retained completion context, and reduced-motion behavior are executable assertions.
+
+Committed `toHaveScreenshot` baselines cover the collection, selected form, and diagram states using production CSS. Pixel comparison is authoritative only in the repository-pinned Linux Chromium environment. The test waits for fonts, intercepted network completion, and diagram import, disables animation and carets, and masks only a field proven nondeterministic by a separate assertion. CI never updates baselines. Expected, actual, diff, report, and retained trace artifacts are uploaded on failure; baseline regeneration runs in the same pinned Linux environment and requires human review of every image diff before commit. macOS may run geometry and interaction checks but does not decide shared pixel baselines.
+
+Automated measurements prove geometry and state, not visual quality. Screenshots are therefore inspected against this token, surface, hierarchy, and responsive contract. `@axe-core/playwright` is not selected: it would require its own pinned dependency and licence review and could only add an audit, never replace keyboard, focus, role, name, and state behavior tests.
 
 ## Exclusions
 
