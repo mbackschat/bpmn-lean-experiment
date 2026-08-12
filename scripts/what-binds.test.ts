@@ -6,9 +6,24 @@ import {
   bindingsFor,
   loadBindingCorpus,
   ownerMeasurement,
+  presentBindingCorpusCandidates,
   reportLines,
   searchTerms,
 } from "./what-binds.ts";
+
+test("binding corpus excludes tracked paths deleted by an unstaged rename", () => {
+  assert.deepEqual(
+    presentBindingCorpusCandidates(
+      [
+        "scripts/kept.test.ts",
+        "scripts/renamed-away.test.ts",
+        "packages/semantic-core/README.md",
+      ],
+      (candidate) => candidate !== "scripts/renamed-away.test.ts",
+    ),
+    ["scripts/kept.test.ts", "packages/semantic-core/README.md"],
+  );
+});
 
 /**
  * Contract: the enumerator answers "which executable guards and registries already constrain this

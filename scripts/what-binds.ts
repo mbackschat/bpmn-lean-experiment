@@ -14,6 +14,7 @@
  */
 
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -141,6 +142,15 @@ export function ownerMeasurement(
     : { path: target, lines: nonblankLines(source) };
 }
 
+export function presentBindingCorpusCandidates(
+  candidates: ReadonlyArray<string>,
+  isPresent: (candidate: string) => boolean,
+): ReadonlyArray<string> {
+  return candidates
+    .filter((candidate) => corpusKind(candidate) !== null)
+    .filter(isPresent);
+}
+
 function counted(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
@@ -171,9 +181,10 @@ export async function loadBindingCorpus(): Promise<ReadonlyArray<CorpusFile>> {
     ["ls-files", "--cached", "--others", "--exclude-standard"],
     { cwd: projectRoot, maxBuffer: 16 * 1024 * 1024 },
   );
-  const candidates = stdout
-    .split("\n")
-    .filter((candidate) => corpusKind(candidate) !== null);
+  const candidates = presentBindingCorpusCandidates(
+    stdout.split("\n"),
+    (candidate) => existsSync(path.join(projectRoot, candidate)),
+  );
   return Promise.all(
     candidates.map(async (candidate) => ({
       path: candidate,
