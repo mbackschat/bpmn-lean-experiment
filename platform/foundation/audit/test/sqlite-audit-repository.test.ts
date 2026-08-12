@@ -86,9 +86,10 @@ test("pages in stable insertion order across newer inserts", () => {
     assert.deepEqual(first.events.map(({ eventId }) => eventId), ["event-1"]);
     assert.notEqual(first.nextCursor, null);
     repository.record(event({ eventId: "event-3", recordedAt: "2026-08-12T10:00:02.000Z" }));
+    assert.notEqual(first.nextCursor, null);
     const second = service.search({
       actorId: "demo-user",
-      cursor: first.nextCursor ?? undefined,
+      cursor: first.nextCursor as string,
       limit: 2,
     });
     assert.deepEqual(second.events.map(({ eventId }) => eventId), ["event-2", "event-3"]);

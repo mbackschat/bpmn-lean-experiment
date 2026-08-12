@@ -257,6 +257,9 @@ importers:
 
   platform/modules/work:
     dependencies:
+      '@bpmn-lean/contract-types':
+        specifier: workspace:*
+        version: link:../../../packages/contract-types
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../contracts

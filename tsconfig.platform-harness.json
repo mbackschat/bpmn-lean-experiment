@@ -17,6 +17,12 @@
       "@bpmn-lean/platform-engine-gateway": [
         "./platform/foundation/engine-gateway/src/index.ts"
       ],
+      "@bpmn-lean/platform-audit": [
+        "./platform/foundation/audit/src/index.ts"
+      ],
+      "@bpmn-lean/platform-identity-policy": [
+        "./platform/foundation/identity-policy/src/index.ts"
+      ],
       "@bpmn-lean/platform-server": [
         "./platform/apps/server/src/index.ts"
       ],
@@ -56,7 +62,9 @@
     "packages/bpmn-source/src/bpmn-moddle.d.ts",
     "platform/apps/server/test/*.ts",
     "platform/contracts/test/*.ts",
+    "platform/foundation/audit/test/*.ts",
     "platform/foundation/engine-gateway/test/*.ts",
+    "platform/foundation/identity-policy/test/*.ts",
     "platform/modules/definitions/test/*.ts",
     "platform/modules/operate/test/*.ts",
     "platform/modules/work/test/*.ts",
