@@ -2,13 +2,13 @@
 
 ## Status
 
-**Draft under correction after independent context-cold proposal review.** Target `7444ce3` received `APPROVE WITH REQUIRED EDITS`. This correction closes its logical-audit identity, policy-hiding, crash-durable audit handoff, and owner-routing findings without changing the selected producer, task, form, completion, or UI account. Implementation remains paused until the [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) receives closure approval and this proposal receives owner approval.
+**Owner-approved proposal on 2026-08-12; implementation has not started.** Context-cold target `7444ce3` received `APPROVE WITH REQUIRED EDITS`; correction `3b748e2` closed its logical-audit identity, policy-hiding, crash-durable audit handoff, and owner-routing findings and received `APPROVE` from the exact reviewer. The proposal selects the current inbox, platform claim and authorization policy, one typed form field, retry-safe completion, distinct platform audit, and CSS-Modules UI scope. Implementation remains paused until the [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) receives closure approval and explicit owner direction permits the next E2 review action.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `7444ce3` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `7444ce3` | `fork-turns-none` | `approve-with-required-edits` | `3b748e2` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
