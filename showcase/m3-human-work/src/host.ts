@@ -14,6 +14,8 @@ import {
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
 
+import { reportM3HostFailure } from "./host-log.ts";
+
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
 const temporalCacheDirectory = fileURLToPath(
@@ -96,6 +98,6 @@ async function closeShowcase(
 }
 
 await runShowcaseHost().catch((error: unknown) => {
-  console.error(error);
+  reportM3HostFailure(error);
   process.exitCode = 1;
 });
