@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved proposal with the first-green semantic checkpoint implemented on 2026-08-12.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, and the proved Lean lane are green. The required context-cold semantic checkpoint review is now the active boundary. Profile registration, retained evidence, differential and live Temporal evidence, and Product 2 use remain paused until that review is approved.
+**Owner-approved proposal with the semantic checkpoint approved on 2026-08-12.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, and the proved Lean lane are green. Profile registration, retained CIB evidence, differential registration, runnable configuration, and live Temporal evidence are the active closure lanes. Product 2 use remains paused until semantic closure.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `ae9f977` | `fork-turns-none` | `approve-with-required-edits` | `652327c` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `7670add` | `fork-turns-none` | `approve-with-required-edits` | `845f17e` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question
