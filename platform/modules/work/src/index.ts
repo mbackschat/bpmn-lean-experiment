@@ -8,3 +8,15 @@ export type {
 } from "./sqlite-confirmed-process-work-repository.js";
 export * from "./work-contracts.js";
 export { SqliteWorkRepository } from "./sqlite-work-repository.js";
+export {
+  WorkService,
+  WorkSnapshotUnavailableError,
+} from "./work-service.js";
+export type { SystemWorkTask } from "./work-service.js";
+export {
+  WorkAuditOutboxService,
+} from "./work-audit-outbox-service.js";
+export type {
+  WorkAuditOutboxRepository,
+  WorkAuditSink,
+} from "./work-audit-outbox-service.js";

@@ -24,6 +24,10 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     temporalNamespace: "default",
     temporalTaskQueue: "bpmn-semantic",
     temporalConnectTimeoutMs: 5000,
+    fakeActorId: "demo-user",
+    fakeActorGroups: ["reviewers"],
+    maxWorkProcesses: 100,
+    maxWorkTasks: 1000,
   });
   try {
     assert.equal(await runtime.listen(), origin);
@@ -96,6 +100,10 @@ test("validates all configuration before creating its data directory", async () 
       temporalNamespace: "default",
       temporalTaskQueue: "bpmn-semantic",
       temporalConnectTimeoutMs: 5000,
+      fakeActorId: "demo-user",
+      fakeActorGroups: ["reviewers"],
+      maxWorkProcesses: 100,
+      maxWorkTasks: 1000,
     }), /publicOrigin/u);
     await assert.rejects(stat(dataDirectory), { code: "ENOENT" });
   } finally {
