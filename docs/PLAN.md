@@ -54,7 +54,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 ### M2 — the file runs its real shape
 
-**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, Terminate End Event, [configured Task extension](capsules/CONFIGURED-GENERIC-TASK-SPEC.md), [exact-version definition scheduling](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md), and [published Message Start ingress](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) increments are implemented, closure-reviewed, evidence-closed, and graduated. Process-instance search is the only remaining increment; its public contract, durable index, and three producer integrations are first-green and awaiting the required independent checkpoint review before HTTP, UI, and acceptance evidence.
+**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, Terminate End Event, [configured Task extension](capsules/CONFIGURED-GENERIC-TASK-SPEC.md), [exact-version definition scheduling](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md), and [published Message Start ingress](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) increments are implemented, closure-reviewed, evidence-closed, and graduated. Process-instance search is the only remaining increment; its public contract, durable index, and three producer integrations passed independent first-green review at `5bd9d13`. HTTP, UI, live, and browser delivery evidence is active.
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
@@ -155,7 +155,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: review the Product 2 Process-instance search first-green checkpoint.** The [owner-approved proposal](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-PROPOSAL.md) selects a durable append-only index over Product 2-confirmed direct, Timer Schedule, and Message publication starts, with exact filters and stable cursor paging. The public contract, independent SQLite index, server-injected recorder, and all three producer integrations are green. Freeze and independently review that target; HTTP, UI, live, and browser lanes remain paused until approval.
+1. **Active: deliver Product 2 Process-instance search.** The [owner-approved proposal](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-PROPOSAL.md) selects a durable append-only index over Product 2-confirmed direct, Timer Schedule, and Message publication starts, with exact filters and stable cursor paging. The independently approved first-green checkpoint owns the public contract, index, and producer integrations. Add the strict HTTP route, HTTP-only UI, live three-producer witness, browser acceptance, closure evidence, and governed closure review.
 
 ## Approved decisions
 
@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit and context-cold review the first-green Process-instance search checkpoint, then resume HTTP, UI, live, and browser lanes only after approval.** Proposal target `3fbaf27` was approved after correction target `e1d037f`; Message Start ingress remains graduated at closure target `f13b01f` with approved correction target `875b1e5`.
+**Next action: implement the Process-instance search HTTP route, HTTP-only UI, live three-producer witness, and browser acceptance from approved checkpoint `5bd9d13`, then close and graduate the increment.** Proposal target `3fbaf27` was approved after correction target `e1d037f`; Message Start ingress remains graduated at closure target `f13b01f` with approved correction target `875b1e5`.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

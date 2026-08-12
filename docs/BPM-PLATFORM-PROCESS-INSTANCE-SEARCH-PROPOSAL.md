@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-12 after context-cold proposal review and two bounded correction audits; implementation is authorized.** This is the final M2 Product 2 increment. It selects a durable search index over Process starts that Product 2 has itself confirmed through the existing public start, Timer Schedule, or Message Start publication paths. It adds no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, Workflow behavior, Lean theorem, CIB relationship, or Temporal discovery mechanism.
+**Owner-approved on 2026-08-12 after context-cold proposal review and two bounded correction audits; the first-green semantic checkpoint at `5bd9d13` is independently approved and delivery implementation is authorized.** This is the final M2 Product 2 increment. It selects a durable search index over Process starts that Product 2 has itself confirmed through the existing public start, Timer Schedule, or Message Start publication paths. It adds no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, Workflow behavior, Lean theorem, CIB relationship, or Temporal discovery mechanism.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary and states that cross-instance discovery is a platform problem. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#what-the-platform-may-consume) forbids reconstructing semantic facts from Temporal Event History, state differences, or platform guesses. [ARCHITECTURE.md](ARCHITECTURE.md#business-modules) assigns instance operations and monitoring to the `operate` module. [PLAN.md](PLAN.md) owns sequencing.
 
@@ -192,5 +192,5 @@ The strongest supported claim is stable cross-instance search over confirmed Pro
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `3fbaf27` | `fork-turns-none` | `approve-with-required-edits` | `e1d037f` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `5bd9d13` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

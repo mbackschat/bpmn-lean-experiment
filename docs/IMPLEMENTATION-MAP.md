@@ -10,7 +10,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **Current closure boundary.** The standards-only Message Start capability and Product 2 [Message Start ingress specification](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) are closure-reviewed and evidence-closed. Product 2 publishes the complete capability, owns a strict one-target public resource contract, persists the no-redispatch lifecycle through a shared SQLite schema epoch, and uses a handle-free direct-start host with Worker-independent retained comparison. Its strict HTTP routes, production server composition, exact-version UI, response-loss and Worker-replacement live witness, exact production-derived fanout mutation, history/replay evidence, recursive private-fact exclusion, and field-specific browser Process-instance oracle are green. No broker route or definition-version fanout exists.
 
-**Current implementation checkpoint.** Process-instance search is first-green through its contract, SQLite index, and three producers. HTTP, web, live, browser, and closure lanes remain paused pending review.
+**Current implementation checkpoint.** Process-instance search is approved first-green through its contract, index, and three producers. HTTP, web, live, browser, and closure remain absent until evidenced.
 
 **Current Timer Start boundary.** The closure-reviewed standards-only Timer Start capability admits an exact top-level `PT1S` Timer Start Event, preserves Start Event and duration identity through checked source and `initiateTimer`, executes an exact-target start stimulus in Lean and the TypeScript core, and closes in two unique internal steps to the existing User Task wait. Its profile, answer-free scenario, product example, and differential case are registered.
 
