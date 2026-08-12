@@ -255,19 +255,6 @@ test("refuses wrong namespaces, partial metadata, broader siblings, and nonliter
         'xmlns:c7="http://camunda.org/schema/1.0/bpmn" xmlns:c8="http://camunda.org/schema/1.0/bpmn"',
       )
       .replace('c7:candidateGroups="reviewers"', attributes)] as const),
-    ...(["&#110;", "&#x6e;", "&#x06E;"] as const).flatMap(
-      (encodedN) => ([
-        'c7:candidateGroups="review>team" c8:candidateGroups="other"',
-        'c8:candidateGroups="other" c7:candidateGroups="review>team"',
-      ] as const).map((attributes, order) => [
-        `duplicate expanded candidate through decoded namespace ${encodedN} order ${order}`,
-        source
-          .replace(
-            'xmlns:c7="http://camunda.org/schema/1.0/bpmn"',
-            `xmlns:c7="http://camunda.org/schema/1.0/bpmn" xmlns:c8="http://camunda.org/schema/1.0/bpm${encodedN}"`,
-          )
-          .replace('c7:candidateGroups="reviewers"', attributes),
-      ] as const)),
     ["duplicate locally bound candidate", source
       .replace(
         'c7:candidateGroups="reviewers"',
@@ -339,6 +326,63 @@ test("refuses wrong namespaces, partial metadata, broader siblings, and nonliter
   for (const [name, xml] of refusals) {
     const result = await compile(xml, profile);
     assert.equal(result.status, BpmnCompilationStatus.Rejected, name);
+  }
+});
+
+test("admits decimal and hexadecimal namespace references as the same expanded name", async () => {
+  const exact = await acceptedFixture();
+  const source = await readFile(fixtureUrl, "utf8");
+  for (const encodedN of ["&#110;", "&#x6e;", "&#x06E;"]) {
+    const result = await compile(
+      source.replace(
+        'xmlns:c7="http://camunda.org/schema/1.0/bpmn"',
+        `xmlns:c7="http://camunda.org/schema/1.0/bpm${encodedN}"`,
+      ),
+      profile,
+    );
+    assert.equal(
+      result.status,
+      BpmnCompilationStatus.Accepted,
+      JSON.stringify({ encodedN, diagnostics: result.diagnostics }),
+    );
+    if (result.status === BpmnCompilationStatus.Accepted) {
+      assert.deepEqual(result.checkedProcess.nodes, exact.checkedProcess.nodes);
+      assert.deepEqual(
+        result.semanticProcess.operations,
+        exact.semanticProcess.operations,
+      );
+    }
+  }
+});
+
+test("retains the exact cardinality diagnostic for decoded namespace duplicates", async () => {
+  const source = await readFile(fixtureUrl, "utf8");
+  for (const encodedN of ["&#110;", "&#x6e;", "&#x06E;"]) {
+    for (const attributes of [
+      'c7:candidateGroups="review>team" c8:candidateGroups="other"',
+      'c8:candidateGroups="other" c7:candidateGroups="review>team"',
+    ]) {
+      const result = await compile(
+        source
+          .replace(
+            'xmlns:c7="http://camunda.org/schema/1.0/bpmn"',
+            `xmlns:c7="http://camunda.org/schema/1.0/bpmn" xmlns:c8="http://camunda.org/schema/1.0/bpm${encodedN}"`,
+          )
+          .replace('c7:candidateGroups="reviewers"', attributes),
+        profile,
+      );
+      assert.equal(result.status, BpmnCompilationStatus.Rejected, encodedN);
+      if (result.status === BpmnCompilationStatus.Rejected) {
+        assert.deepEqual(
+          result.diagnostics.map(({ code, evidence }) => ({ code, evidence })),
+          [{
+            code: "unsupportedModel",
+            evidence: "Exact source requires one expanded candidateGroups attribute on the selected User Task.",
+          }],
+          JSON.stringify({ encodedN, attributes }),
+        );
+      }
+    }
   }
 });
 
