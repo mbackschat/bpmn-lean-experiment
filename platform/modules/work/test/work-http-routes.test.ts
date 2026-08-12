@@ -9,7 +9,7 @@ import {
 import {
   WorkHttpRoutes,
   WorkSnapshotUnavailableError,
-} from "../dist/work-http-routes.js";
+} from "@bpmn-lean/platform-work";
 
 const taskId = {
   processInstanceId: "process-1",

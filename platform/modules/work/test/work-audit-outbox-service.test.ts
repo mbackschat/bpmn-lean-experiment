@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import {
   WorkAuditOutboxService,
-} from "../dist/work-audit-outbox-service.js";
+} from "@bpmn-lean/platform-work";
 
 const event = {
   eventId: "event-1",

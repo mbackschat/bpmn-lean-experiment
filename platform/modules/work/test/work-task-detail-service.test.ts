@@ -10,7 +10,7 @@ import {
   WorkService,
   WorkSnapshotUnavailableError,
   WorkTaskDetailService,
-} from "../dist/index.js";
+} from "@bpmn-lean/platform-work";
 
 const definition = {
   processId: "Review_Process",

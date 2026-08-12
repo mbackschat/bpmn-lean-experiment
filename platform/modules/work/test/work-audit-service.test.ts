@@ -9,7 +9,7 @@ import {
 import {
   WorkAuditForbiddenError,
   WorkAuditService,
-} from "../dist/work-audit-service.js";
+} from "@bpmn-lean/platform-work";
 
 test("reconciles pending audit before a self-only read", () => {
   const calls: string[] = [];

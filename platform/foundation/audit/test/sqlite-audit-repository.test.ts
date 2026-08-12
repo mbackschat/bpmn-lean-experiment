@@ -10,7 +10,7 @@ import {
   AuditEventIntegrityError,
   AuditSearchService,
   SqliteAuditRepository,
-} from "../dist/index.js";
+} from "@bpmn-lean/platform-audit";
 
 const event = (overrides: Partial<WorkAuditEvent> = {}): WorkAuditEvent => ({
   eventId: "event-1",

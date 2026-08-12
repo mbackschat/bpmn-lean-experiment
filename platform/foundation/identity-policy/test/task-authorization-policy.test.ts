@@ -7,7 +7,7 @@ import {
   isTaskVisible,
   TaskAuthorizationDecision,
   TaskAuthorizationPolicy,
-} from "../dist/index.js";
+} from "@bpmn-lean/platform-identity-policy";
 
 const actor = Object.freeze({
   id: "demo-user",

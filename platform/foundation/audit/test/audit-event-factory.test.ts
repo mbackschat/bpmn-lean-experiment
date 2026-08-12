@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { AuditEventFactory } from "../dist/index.js";
+import { AuditEventFactory } from "@bpmn-lean/platform-audit";
 
 test("mints one canonical wall-clock audit event from a defensive snapshot", () => {
   let ordinal = 0;
@@ -35,4 +35,3 @@ test("mints one canonical wall-clock audit event from a defensive snapshot", () 
     action: { kind: "claim", actionId: "claim-1", outcome: "claimed" },
   });
 });
-

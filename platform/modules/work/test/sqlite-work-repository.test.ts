@@ -7,18 +7,18 @@ import { test } from "node:test";
 
 import type { WorkAuditEvent } from "@bpmn-lean/platform-contracts";
 
-import { SqliteWorkRepository } from "../dist/sqlite-work-repository.js";
+import { SqliteWorkRepository } from "@bpmn-lean/platform-work";
 import type {
   WorkCompletionBinding,
   WorkClaimTransitionInput,
   WorkCompletionOutcomeInput,
   WorkReleaseTransitionInput,
   WorkTaskReference,
-} from "../dist/work-contracts.js";
+} from "@bpmn-lean/platform-work";
 import {
   WorkRepositoryIntegrityError,
   WorkSchemaResetRequiredError,
-} from "../dist/work-contracts.js";
+} from "@bpmn-lean/platform-work";
 
 const task: WorkTaskReference = {
   hostingProcessInstanceId: "host-1",

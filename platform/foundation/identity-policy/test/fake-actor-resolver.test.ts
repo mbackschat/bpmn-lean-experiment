@@ -4,7 +4,7 @@ import test from "node:test";
 import {
   FakeActorResolver,
   InvalidActorContextError,
-} from "../dist/index.js";
+} from "@bpmn-lean/platform-identity-policy";
 
 test("snapshots and freezes configured identity values", () => {
   const configured = { id: "demo-user", groups: ["reviewers"] };
