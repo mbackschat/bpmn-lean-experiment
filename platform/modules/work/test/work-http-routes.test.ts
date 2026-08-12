@@ -1,0 +1,110 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import {
+  WorkHttpRoutes,
+  WorkSnapshotUnavailableError,
+} from "../dist/work-http-routes.js";
+
+const taskId = {
+  processInstanceId: "process-1",
+  elementId: "Review",
+  activation: 1,
+};
+
+test("serves the strict task snapshot and refuses a GET body before service entry", async () => {
+  let calls = 0;
+  const routes = createRoutes({
+    listTasks: async () => {
+      calls += 1;
+      return { tasks: [] };
+    },
+  });
+
+  const success = await routes.handle(new Request("http://platform.test/api/v1/work-tasks"));
+  assert.equal(success?.status, 200);
+  assert.deepEqual(await success?.json(), { tasks: [] });
+  const invalid = await routes.handle(new Request("http://platform.test/api/v1/work-tasks", {
+    method: "GET",
+    headers: { "content-type": "application/json" },
+  }));
+  assert.equal(invalid?.status, 400);
+  assert.equal(calls, 1);
+});
+
+test("maps uniform hidden task and snapshot availability without private evidence", async () => {
+  const routes = createRoutes({
+    getTaskDetail: async () => null,
+    listTasks: async () => { throw new WorkSnapshotUnavailableError(); },
+  });
+
+  const missing = await routes.handle(new Request(taskUrl()));
+  assert.equal(missing?.status, 404);
+  const unavailable = await routes.handle(new Request("http://platform.test/api/v1/work-tasks"));
+  assert.equal(unavailable?.status, 503);
+  assert.deepEqual(await unavailable?.json(), {
+    error: {
+      code: "workSnapshotUnavailable",
+      message: "The current Work snapshot is unavailable.",
+    },
+  });
+});
+
+test("decodes claim JSON within the byte limit and maps the exact result status", async () => {
+  let request: unknown;
+  const routes = createRoutes({
+    claimTask: async (_taskId, value) => {
+      request = value;
+      return {
+        kind: "claimed",
+        result: { taskId, claim: { actorId: "demo-user", generation: 1 } },
+      };
+    },
+  });
+
+  const response = await routes.handle(new Request(`${taskUrl()}/claim`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ actionId: "claim-1", expectedGeneration: 0 }),
+  }));
+
+  assert.equal(response?.status, 201);
+  assert.deepEqual(request, { actionId: "claim-1", expectedGeneration: 0 });
+  assert.deepEqual(await response?.json(), {
+    taskId,
+    claim: { actorId: "demo-user", generation: 1 },
+  });
+});
+
+test("distinguishes unsupported media type and oversized mutation payload", async () => {
+  const routes = createRoutes({});
+  const unsupported = await routes.handle(new Request(`${taskUrl()}/claim`, {
+    method: "PUT",
+    headers: { "content-type": "text/plain" },
+    body: "not json",
+  }));
+  assert.equal(unsupported?.status, 415);
+  const oversized = await routes.handle(new Request(`${taskUrl()}/claim`, {
+    method: "PUT",
+    headers: {
+      "content-type": "application/json",
+      "content-length": "4097",
+    },
+    body: "{}",
+  }));
+  assert.equal(oversized?.status, 413);
+});
+
+function createRoutes(overrides: Record<string, unknown>): WorkHttpRoutes {
+  return new WorkHttpRoutes({
+    tasks: {
+      listTasks: async () => ({ tasks: [] }),
+      ...overrides,
+    } as never,
+    audit: { search: () => ({ events: [], nextCursor: null }) },
+  });
+}
+
+function taskUrl(): string {
+  return "http://platform.test/api/v1/work-tasks/process-1/Review/1";
+}

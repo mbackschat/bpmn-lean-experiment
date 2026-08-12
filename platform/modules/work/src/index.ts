@@ -26,3 +26,4 @@ export {
   WorkAuditForbiddenError,
   WorkAuditService,
 } from "./work-audit-service.js";
+export { WorkHttpRoutes } from "./work-http-routes.js";
