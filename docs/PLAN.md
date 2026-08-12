@@ -157,7 +157,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: independently review the first green M3 Boolean Process-data semantic checkpoint.** The owner-approved [governed proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md) selects one primitive Boolean on exact User Task completion under a new profile before E2. The strict wire, TypeScript, Lean, CIB-runner, and shared Temporal-encoding mechanism is green under an unregistered checkpoint identity, and the mandatory Java extraction and constrained Lean admission audit are complete. Profile registration, retained CIB evidence, differential registration, and live Temporal evidence remain paused until the context-cold checkpoint review approves the mechanism.
+1. **Active: register and evidence the approved M3 Boolean Process-data profile.** The context-cold review of checkpoint `61d41c5` approved corrections `ecb86ed` and `bf21f72`. Register the exact profile, answer-free scenario, retained CIB evidence, differential stringify mutation, runnable example, and live Temporal Worker-replacement/refusal/history/replay witness atomically, then run closure review before E2.
 
 ## Approved decisions
 
@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: mint and independently review the immutable first green Boolean Process-data semantic checkpoint.** The checkpoint implements strict Boolean completion admission under one unregistered identity in TypeScript, Lean, and the CIB runner, plus exhaustive shared Temporal command encoding. Process Start, effects, mappings, expressions, E2, Product 2, old profiles, artifact registration, differential registration, retained CIB evidence, and live Temporal execution remain unchanged or paused until the checkpoint review permits the next lane.
+**Next action: register and evidence the independently approved Boolean Process-data checkpoint.** Promote the unchanged checkpoint identity into the profile catalog, add one answer-free exact scenario and retained CIB evidence, register one differential stringify mutation and runnable example, and prove live Worker replacement, old-profile refusal, history, and replay before closure review. Process Start, effects, mappings, expressions, E2, Product 2, and all old profiles remain unchanged.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

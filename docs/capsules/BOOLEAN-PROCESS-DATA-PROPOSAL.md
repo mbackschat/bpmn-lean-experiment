@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved on 2026-08-12; the first green semantic checkpoint awaits independent review.** This proposal selects one additive Boolean Process-variable value only for exact User Task completion under a new CIB Seven compatibility profile. The checkpoint implements the unregistered wire, TypeScript, Lean, CIB-runner, and shared Temporal-encoding mechanism. Profile registration, retained evidence, differential and live Temporal lanes, and product use remain paused until the semantic checkpoint is approved.
+**Owner-approved on 2026-08-12; the corrected first green semantic checkpoint is independently approved.** This proposal selects one additive Boolean Process-variable value only for exact User Task completion under a new CIB Seven compatibility profile. The approved checkpoint implements the unregistered wire, TypeScript, Lean, CIB-runner, and shared Temporal-encoding mechanism. Profile registration, retained evidence, differential, and live Temporal lanes are now active; Product 2 and E2 remain outside this increment.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `9937378` | `fork-turns-none` | `approve-with-required-edits` | `389d748` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `61d41c5` | `fork-turns-none` | `approve-with-required-edits` | `bf21f72` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question
