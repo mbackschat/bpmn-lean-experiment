@@ -91,7 +91,7 @@ Each service records only after its existing host or durable lifecycle has produ
 
 Schedule and publication retries re-project the same confirmed fact and therefore repair a previous index-write failure idempotently. Their existing durable resource identities remain authoritative for retry. Direct start has no caller-owned idempotency identity, retained receipt, or describe reconciliation, so an index-write failure after host acceptance remains the explicit ambiguity named above and returns no successful public start response.
 
-A recorder failure never yields a public success that exposes the unrecorded instance. Direct start leaves no index row and returns `500` with the canonical `internalFailure` body rather than `201`. A Schedule or Message-publication response that would first expose its durable `started` or `accepted` instance leaves no index row and returns the same `500` response; retrying that exact durable resource records one byte-equivalent identity and then succeeds.
+A recorder failure never yields a public success that exposes the unrecorded instance. Direct start leaves no index row and returns `500` with the canonical `internalFailure` body rather than `201`. A Schedule or Message-publication response that would first expose its durable `started` or `accepted` instance leaves no index row and returns its existing route-specific `500`/`internalFailure` response; retrying that exact durable resource records one byte-equivalent identity and then succeeds.
 
 No database transaction spans a host call or crosses the `definitions` and `operate` databases. The index write is synchronous and atomic within its own database.
 
