@@ -44,6 +44,8 @@ const timerStartProfileId = "bpmn-2.0.2-timer-start-event-draft";
 const terminateEndProfileId = "bpmn-2.0.2-terminate-end-event-draft";
 const booleanCompletionProfileId =
   "cibseven-2.2.0-user-task-boolean-completion-data-draft";
+const userTaskMetadataProfileId =
+  "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -207,7 +209,7 @@ test("registers configured Task with the existing Probe handler and User Task in
 });
 
 test("registers Boolean completion with the existing User Task interaction", async () => {
-  assert.equal(registeredProfiles.at(-1), booleanCompletionProfileId);
+  assert.equal(registeredProfiles.includes(booleanCompletionProfileId), true);
   const [config] = await Promise.all(
     (await exampleConfigPaths())
       .filter((file) => path.basename(file) === "user-task-boolean-completion.json")
@@ -243,6 +245,42 @@ test("registers Boolean completion with the existing User Task interaction", asy
           },
           { name: "reviewNote", value: { kind: "null" } },
         ],
+      }],
+      effectHandlers: [],
+    },
+  );
+});
+
+test("registers User Task metadata with the existing User Task interaction", async () => {
+  assert.equal(registeredProfiles.at(-1), userTaskMetadataProfileId);
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) => path.basename(file) === "user-task-assignment-form-metadata.json")
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  assert.deepEqual(
+    {
+      source: config.bpmn.file,
+      semanticProfile: config.bpmn.semanticProfile,
+      interactions: config.interactions,
+      effectHandlers: config.effectHandlers,
+    },
+    {
+      source: path.join(
+        projectRoot,
+        "scenarios/user-task-assignment-form-metadata/process.bpmn",
+      ),
+      semanticProfile: userTaskMetadataProfileId,
+      interactions: [{
+        kind: "completeUserTaskInstance",
+        elementId: "UserTask_Approve",
+        delayMs: 250,
+        inputVariableNames: ["requestTitle"],
+        submittedValues: [{
+          name: "approved",
+          value: { kind: "boolean", value: true },
+        }],
       }],
       effectHandlers: [],
     },

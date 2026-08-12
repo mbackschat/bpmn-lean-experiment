@@ -80,7 +80,7 @@ import type {
   ConfiguredTaskProjectionPolicy,
 } from "./configured-task-source.js";
 import {
-  userTaskMetadataCheckpointProfile,
+  userTaskMetadataProfile,
 } from "./user-task-metadata-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
@@ -211,7 +211,7 @@ export function compileCheckedProcess(
   const flowKeyRejections = projectedFlowElementKeyRejections(
     definitions,
     [...sourceNodes, ...sourceFlows].map(({ element }) => element),
-    semanticProfile === userTaskMetadataCheckpointProfile
+    semanticProfile === userTaskMetadataProfile
       ? FlowElementProjectionProfile.UserTaskMetadata
       : FlowElementProjectionProfile.Generic,
     capability,

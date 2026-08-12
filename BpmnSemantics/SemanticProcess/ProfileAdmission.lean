@@ -159,7 +159,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1, { timerStarts := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
       profile = booleanProcessDataCheckpointProfileId.value ||
-      profile = userTaskMetadataCheckpointProfileId.value ||
+      profile = userTaskAssignmentFormMetadataProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     -- The preserve-enabled profile reaches this shape by construction: Lean receives only the
     -- executed partition, so a source carrying retained notation and its notation-free twin
@@ -246,7 +246,7 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
       { timerInitiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
       profile = booleanProcessDataCheckpointProfileId.value ||
-      profile = userTaskMetadataCheckpointProfileId.value ||
+      profile = userTaskAssignmentFormMetadataProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
@@ -332,7 +332,7 @@ private def checkedUserTaskMetadataValid (profile : ProfileId)
     (nodes : List CheckedNode) : Bool :=
   nodes.all fun
     | .userTask _ _ metadata =>
-        if profile = userTaskMetadataCheckpointProfileId then
+        if profile = userTaskAssignmentFormMetadataProfileId then
           UserTaskMetadata.optionWellFormed metadata
         else
           metadata.isNone
@@ -342,7 +342,7 @@ private def programUserTaskMetadataValid (profile : ProfileId)
     (operations : List SemanticOperation) : Bool :=
   operations.all fun
     | .awaitUserTask _ _ _ _ task =>
-        if profile = userTaskMetadataCheckpointProfileId then
+        if profile = userTaskAssignmentFormMetadataProfileId then
           UserTaskMetadata.optionWellFormed task.metadata
         else
           task.metadata.isNone

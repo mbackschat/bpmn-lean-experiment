@@ -4,7 +4,6 @@ import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
-import { UserTaskMetadataCheckpointProfileId } from "./user-task-metadata.js";
 
 /** One profile's exact checked-graph capability. */
 export type RequiredCheckedProcessShape = Readonly<{
@@ -24,7 +23,7 @@ export function requiredCheckedProcessShape(
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskPreservedNotation:
     case SemanticProfileId.UserTaskBooleanCompletionData:
-    case UserTaskMetadataCheckpointProfileId:
+    case SemanticProfileId.UserTaskAssignmentFormMetadata:
       return rootChecked([start, CheckedNodeKind.UserTask, end]);
     case SemanticProfileId.MessageStart:
       return rootChecked([

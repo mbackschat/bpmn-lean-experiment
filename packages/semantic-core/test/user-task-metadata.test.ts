@@ -15,7 +15,6 @@ import {
   SemanticProfileId,
   StimulusKind,
   UserTaskLifecycleState,
-  UserTaskMetadataCheckpointProfileId,
   VariableValueKind,
   applyStimulus,
   initialState,
@@ -53,8 +52,8 @@ const exactMetadata = Object.freeze({
 
 const metadataScenario = {
   kind: ScenarioDocumentKind.Scenario,
-  id: "user-task-metadata-checkpoint",
-  profile: UserTaskMetadataCheckpointProfileId,
+  id: "user-task-assignment-form-metadata",
+  profile: SemanticProfileId.UserTaskAssignmentFormMetadata,
   bpmn: {
     id: "sequential-user-task-process",
     relativePath: "test-only/user-task-metadata.bpmn",
@@ -73,7 +72,7 @@ const metadataScenario = {
 
 const start: StartProcessStimulus = {
   kind: StimulusKind.StartProcess,
-  commandId: "start-metadata-checkpoint",
+  commandId: "start-user-task-metadata",
   processId: "Process_SequentialUserTask",
   instanceId: "Instance_Metadata",
   initialVariables: [],
@@ -81,7 +80,7 @@ const start: StartProcessStimulus = {
 
 function programWithMetadata(
   metadata: UserTaskMetadata | undefined,
-  profile: string = UserTaskMetadataCheckpointProfileId,
+  profile: string = SemanticProfileId.UserTaskAssignmentFormMetadata,
 ): SemanticProcessProgram {
   const base = semanticProcessFor({ ...metadataScenario, profile });
   return {
@@ -123,19 +122,15 @@ function complete(
   };
 }
 
-test("keeps the checkpoint profile outside the product registry", () => {
+test("registers the approved metadata profile without changing its identity", () => {
   assert.equal(
-    UserTaskMetadataCheckpointProfileId,
+    SemanticProfileId.UserTaskAssignmentFormMetadata,
     "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
   );
-  assert.equal(
-    Object.values(SemanticProfileId).includes(
-      UserTaskMetadataCheckpointProfileId as never,
-    ),
-    false,
-  );
   assert.deepEqual(
-    semanticGraphPolicyForProfile(UserTaskMetadataCheckpointProfileId),
+    semanticGraphPolicyForProfile(
+      SemanticProfileId.UserTaskAssignmentFormMetadata,
+    ),
     { kind: SemanticGraphPolicyKind.Acyclic },
   );
 });
@@ -285,7 +280,7 @@ test("admits only the complete one-candidate one-field metadata shape", () => {
   assert.notDeepEqual(typeDrift, exactMetadata);
 });
 
-test("selects the exact checked and IL checkpoint shapes", () => {
+test("selects the exact checked and IL metadata profile shapes", () => {
   const checkedNodes = [
     { kind: CheckedNodeKind.NoneStartEvent, id: "StartEvent_1" },
     {
@@ -300,7 +295,7 @@ test("selects the exact checked and IL checkpoint shapes", () => {
 
   assert.equal(
     profileAllowsCheckedProcessShape(
-      UserTaskMetadataCheckpointProfileId,
+      SemanticProfileId.UserTaskAssignmentFormMetadata,
       checkedNodes,
       1,
     ),
@@ -309,7 +304,7 @@ test("selects the exact checked and IL checkpoint shapes", () => {
   assert.equal(isWellFormedSemanticProcessProgram(metadataProgram), true);
   assert.equal(
     profileAllowsProgramShape(
-      UserTaskMetadataCheckpointProfileId,
+      SemanticProfileId.UserTaskAssignmentFormMetadata,
       metadataProgram.operations,
       1,
     ),
@@ -338,7 +333,7 @@ test("selects the exact checked and IL checkpoint shapes", () => {
   assert.equal(isWellFormedSemanticProcessProgram(omissionControl), true);
   assert.equal(
     profileAllowsProgramShape(
-      UserTaskMetadataCheckpointProfileId,
+      SemanticProfileId.UserTaskAssignmentFormMetadata,
       omissionControl.operations,
       1,
     ),

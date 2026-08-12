@@ -1,0 +1,204 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "user-task-assignment-form-metadata",
+    "sha256": "325458f5bbae5ee0f3fab3d7d973a16da1b5cdf90b60e9b430dc993ab99d5e55"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+    "sha256": "57711188e531e739db2af463ce269f0f7a16678537d8f9fb5a21f3b4668eec97"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": "Review Boolean decision"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": "Review Boolean decision"
+          },
+          {
+            "name": "approved",
+            "value": true
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "reviewers"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "approved",
+                "typeName": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "jobs": []
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "UserTaskMetadataInstance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Approve",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "UserTaskMetadataInstance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "name": "Approve",
+            "state": "active",
+            "metadata": {
+              "assignment": {
+                "candidates": [
+                  {
+                    "kind": "group",
+                    "id": "reviewers"
+                  }
+                ]
+              },
+              "form": {
+                "fields": [
+                  {
+                    "key": "approved",
+                    "type": "boolean"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review Boolean decision"
+            }
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "UserTaskMetadataInstance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-user-task-instance",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "UserTaskMetadataInstance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "approved",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review Boolean decision"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

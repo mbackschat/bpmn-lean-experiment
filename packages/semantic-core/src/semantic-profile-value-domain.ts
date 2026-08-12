@@ -7,7 +7,6 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
-import { UserTaskMetadataCheckpointProfileId } from "./user-task-metadata.js";
 
 export enum VariableWriteSurface {
   ProcessStart = "processStart",
@@ -26,7 +25,8 @@ export function profileAllowsVariableBindings(
       case VariableValueKind.Boolean:
         return (semanticProfile ===
             SemanticProfileId.UserTaskBooleanCompletionData ||
-          semanticProfile === UserTaskMetadataCheckpointProfileId) &&
+          semanticProfile ===
+            SemanticProfileId.UserTaskAssignmentFormMetadata) &&
           surface === VariableWriteSurface.UserTaskCompletion;
       case VariableValueKind.String:
       case VariableValueKind.Null:

@@ -36,6 +36,7 @@ public class CibSevenScenarioStateProjectorTest {
             new CibSevenScenarioStateProjector(
                 engine,
                 new CibSevenUserTaskProjector(),
+                new CibSevenUserTaskMetadataProjector(engine),
                 new CibSevenEffectProjector(),
                 new CibSevenMessageProjector(
                     new CibSevenMessageSubscriptionGateway(engine)),
@@ -45,7 +46,11 @@ public class CibSevenScenarioStateProjectorTest {
         assertThrows(
             IllegalStateException.class,
             () -> projector.observeState(
-                root.getId(), "Instance_1", "start-process", java.util.List.of()));
+                root.getId(),
+                "Instance_1",
+                "start-process",
+                java.util.List.of(),
+                "cibseven-2.2.0-user-task-process-data-draft"));
       } finally {
         engine
             .getRepositoryService()

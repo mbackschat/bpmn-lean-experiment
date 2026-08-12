@@ -20,7 +20,7 @@ import {
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 import type { DeepMutable } from "../../../scripts/contract-artifact-test-fixtures.ts";
 
-const profile = "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
+const profile = SemanticProfileId.UserTaskAssignmentFormMetadata;
 const fixtureUrl = new URL(
   "./fixtures/user-task-assignment-form-metadata.bpmn",
   import.meta.url,
@@ -398,7 +398,7 @@ test("preserves metadata-free old-profile checked and IL shapes", async () => {
   assert.deepEqual(Object.keys(operation.task), ["elementId", "name"]);
 });
 
-test("admits a metadata-free User Task under the checkpoint profile with physical omission", async () => {
+test("admits a metadata-free User Task under the metadata profile with physical omission", async () => {
   const source = (await readFile(fixtureUrl, "utf8"))
     .replace(' c7:candidateGroups="reviewers"', "")
     .replace(

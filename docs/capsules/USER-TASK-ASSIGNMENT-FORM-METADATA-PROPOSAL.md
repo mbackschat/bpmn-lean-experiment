@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved proposal with the semantic checkpoint approved on 2026-08-12.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, and the proved Lean lane are green. Profile registration, retained CIB evidence, differential registration, runnable configuration, and live Temporal evidence are the active closure lanes. Product 2 use remains paused until semantic closure.
+**Owner-approved proposal with the semantic checkpoint approved on 2026-08-12 and closure evidence complete.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, the proved Lean lane, profile/scenario registration, retained public-service CIB evidence, differential comparison, runnable configuration, and live Temporal Worker-replacement/replay evidence are green. Independent closure review is pending. Product 2 use remains paused until that review approves semantic closure.
 
 ## Independent cold-review receipt
 
@@ -26,8 +26,8 @@ Those standard constructs are not reinterpreted here. A Resource name does not e
 
 The selected source instead uses two separately classified CIB extensions:
 
-- selected [`CIB-EXT-0011`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0011--one-literal-candidate-group-on-a-user-task) for exact `{http://camunda.org/schema/1.0/bpmn}candidateGroups`;
-- selected [`CIB-EXT-0012`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0012--one-typed-generated-form-field-on-a-user-task) for exact `{http://camunda.org/schema/1.0/bpmn}formData/formField`.
+- selected [`CIB-EXT-0011`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0011-one-literal-candidate-group-on-a-user-task) for exact `{http://camunda.org/schema/1.0/bpmn}candidateGroups`;
+- selected [`CIB-EXT-0012`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0012-one-typed-generated-form-field-on-a-user-task) for exact `{http://camunda.org/schema/1.0/bpmn}formData/formField`.
 
 This restriction is forward-compatible because the checked and public metadata representation carries neutral candidate and field concepts rather than Camunda XML names. A later standard Resource Role, WSHumanTask rendering, or another reviewed vendor source can project the same neutral values when its own identity and type account is independently selected. No already admitted source is reinterpreted.
 
@@ -175,17 +175,17 @@ A new cohesive `user-task-metadata.ts` owns the neutral TypeScript contract and 
 | [Lean strict checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 339 |
 | [Lean strict program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 142 |
 | [Lean public JSON entry point](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 287 |
-| [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 163 |
-| [Java scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 19 |
-| [Java state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 318 |
-| [Artifact owner](../../scripts/contract-artifacts.ts) | 13 |
+| [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 154 |
+| [Java scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 13 |
+| [Java state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 316 |
+| [Artifact owner](../../scripts/contract-artifacts.ts) | 98 |
 | [Artifact consistency](../../scripts/contract-artifact-consistency.ts) | 50 |
-| [CIB evidence projection](../../scripts/contract-cib-evidence-projection.ts) | 61 |
-| [Differential catalog](../../packages/differential/test/pipeline-cases.ts) | 16 |
+| [CIB evidence projection](../../scripts/contract-cib-evidence-projection.ts) | 46 |
+| [Differential catalog](../../packages/differential/test/pipeline-cases.ts) | 12 |
 | [Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 |
 | [Boolean Temporal test](../../packages/temporal-adapter/testkit/test/boolean-process-data-temporal.test.ts) | 59 |
 
-At the semantic checkpoint, the BPMN dispatch owner measures 201/600, the exact classifier remains 525/600, and the lowering owner measures 552/600 after receiving only the narrow metadata copy and bounded-task refusal. Parsing stays in the new source owner. The strict Lean program JSON owner measures 458/600 after cohesive optional task-metadata decoding/encoding. The artifact owner remains 587/600, so extracting raw CIB evidence types is mandatory before adding metadata evidence. The differential catalog remains 584/600 and may receive only the new family import/spread. The Java runner remains 581/600 and may receive only delegation; any larger change triggers a cohesive extraction. The Workflow implementation remains 552/600 and needs no production change if existing Query projection is exhaustive. The Boolean Temporal test remains 541/600 and does not grow. Each condition stops applying when the linked measurement changes, and the reviewability guard recomputes every headroom figure.
+At the semantic checkpoint, the BPMN dispatch owner measured 201/600, the exact classifier measured 525/600, and the lowering owner measured 552/600 after receiving only the narrow metadata copy and bounded-task refusal. Parsing stayed in the new source owner. The strict Lean program JSON owner measured 458/600 after cohesive optional task-metadata decoding/encoding. Before retained evidence, the artifact owner measured 587/600, so raw CIB evidence types were extracted before metadata evidence was added. The differential catalog and Java runner received only their approved registration and delegation calls. The Workflow implementation and Boolean Temporal test did not grow. The table records the current post-implementation measurements enforced by the reviewability guard.
 
 ### Guards and oracles
 

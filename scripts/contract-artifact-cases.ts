@@ -117,6 +117,12 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/user-task-boolean-completion/cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/user-task-assignment-form-metadata/scenario.json",
+    evidenceRelativePath:
+      "scenarios/user-task-assignment-form-metadata/cibseven-evidence.json",
+  }),
 ]);
 
 export const normativeArtifactCases = Object.freeze([

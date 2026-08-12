@@ -25,27 +25,31 @@ import {
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type {
   AnySchema,
-  ValidateFunction,
 } from "ajv/dist/2020.js";
 
 import type {
-  CanonicalObservation,
   CheckedProcess,
-  EffectDescriptor,
-  OccurrenceId,
   ProcessStartStimulus,
   Scenario,
-  ScenarioResult,
-  SemanticOperation,
   SemanticProcessProgram,
-  StateObservation,
   Stimulus,
-  VariableBinding,
 } from "../packages/semantic-core/src/index.ts";
+import type {
+  CibSevenEvidence,
+} from "./contract-cib-evidence.ts";
+export type {
+  CibSevenEvidence,
+  EffectJob,
+  EffectJobSnapshot,
+  MappingExecutionSnapshot,
+  MessageSubscriptionEvidence,
+  ProcessVariableSnapshot,
+  TaskQueryTask,
+  TimerJob,
+} from "./contract-cib-evidence.ts";
 
 import {
   parseStrictJson,
-  requireUnicodeScalarString,
 } from "./strict-json.ts";
 
 const schemaBaseId = "https://bpmn-lean.local/schemas";
@@ -58,11 +62,6 @@ const semanticProcessSchemaId = `${schemaBaseId}/semantic-process.schema.json`;
 type JsonDocument<Value> = Readonly<{
   bytes: Buffer;
   value: Value;
-}>;
-
-type ContentIdentity = Readonly<{
-  id: string;
-  sha256: string;
 }>;
 
 type SemanticProfileBase = Readonly<{
@@ -92,104 +91,6 @@ type NormativeSemanticProfile = SemanticProfileBase & Readonly<{
 }>;
 
 type SemanticProfile = CibSemanticProfile | NormativeSemanticProfile;
-
-export type TaskQueryTask = Readonly<{
-  elementId: string;
-  name: string | null;
-}>;
-
-export type ProcessVariableSnapshot = Readonly<{
-  name: string;
-  value: string | boolean | null;
-}>;
-
-export type StateQuerySnapshot = Readonly<{
-  afterCommandId: string;
-  processInstanceCount: number;
-  engineClockTimeMs: number;
-  variables: ReadonlyArray<ProcessVariableSnapshot>;
-}>;
-
-type TaskQuerySnapshot = Readonly<{
-  afterCommandId: string;
-  tasks: ReadonlyArray<TaskQueryTask>;
-}>;
-
-export type TimerJob = Readonly<{
-  elementId: string;
-  dueDateDeltaMs: number;
-  executable: boolean;
-}>;
-
-type TimerJobSnapshot = Readonly<{
-  afterCommandId: string;
-  jobs: ReadonlyArray<TimerJob>;
-}>;
-
-export type MessageSubscriptionEvidence = Readonly<{
-  elementId: string;
-  eventName: string;
-  messageId: string;
-  processInstanceIdMatches: boolean;
-  executionIdPresent: boolean;
-}>;
-
-type MessageSubscriptionSnapshot = Readonly<{
-  afterCommandId: string;
-  subscriptions: ReadonlyArray<MessageSubscriptionEvidence>;
-}>;
-
-export type EffectJob = Readonly<{
-  elementId: string;
-  activation: number;
-  protocol: string;
-  handler: string;
-  retries: number;
-  executable: boolean;
-  dueDatePresent: boolean;
-}>;
-
-export type EffectJobSnapshot = Readonly<{
-  afterCommandId: string;
-  jobs: ReadonlyArray<EffectJob>;
-}>;
-
-type EffectExecutionSnapshot = Readonly<{
-  afterCommandId: string;
-  schedule: string;
-  invocations: number;
-  mutations: number;
-  initialRetries: number;
-  retriesAfterFirstFailure: number | null;
-}>;
-
-export type MappingExecutionSnapshot = Readonly<{
-  afterCommandId: string;
-  handler: string;
-  arguments: ReadonlyArray<VariableBinding>;
-  localPatch: ReadonlyArray<VariableBinding>;
-  invocations: number;
-}>;
-
-export type CibSevenEvidence = Readonly<{
-  kind: "cibSevenScenarioEvidence";
-  scenario: ContentIdentity;
-  profile: ContentIdentity;
-  producer: Readonly<{
-    engineVersion: string;
-    engineRevision: string;
-  }>;
-  producerObservations: Readonly<{
-    stateQueries: ReadonlyArray<StateQuerySnapshot>;
-    taskQueries: ReadonlyArray<TaskQuerySnapshot>;
-    messageSubscriptions?: ReadonlyArray<MessageSubscriptionSnapshot>;
-    timerJobs: ReadonlyArray<TimerJobSnapshot>;
-    effectJobs?: ReadonlyArray<EffectJobSnapshot>;
-    effectExecutions?: ReadonlyArray<EffectExecutionSnapshot>;
-    mappingExecutions?: ReadonlyArray<MappingExecutionSnapshot>;
-  }>;
-  result: ScenarioResult;
-}>;
 
 export type DefinitionArtifacts = Readonly<{
   checkedProcess: CheckedProcess;

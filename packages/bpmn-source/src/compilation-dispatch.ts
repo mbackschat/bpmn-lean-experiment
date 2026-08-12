@@ -31,7 +31,7 @@ import {
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 import {
   admitsUserTaskMetadataForeignAttribute,
-  userTaskMetadataCheckpointProfile,
+  userTaskMetadataProfile,
 } from "./user-task-metadata-source.js";
 
 export const CompilationDispatchId = Object.freeze({
@@ -103,7 +103,7 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
     },
     {
       id: CompilationDispatchId.UserTaskMetadata,
-      semanticProfile: userTaskMetadataCheckpointProfile,
+      semanticProfile: userTaskMetadataProfile,
       reader: compileUserTaskMetadataSource,
     },
   ]);
@@ -153,7 +153,7 @@ function compileUserTaskMetadataSource(
     ? compileCheckedProcess(
         rootElement,
         source,
-        userTaskMetadataCheckpointProfile,
+        userTaskMetadataProfile,
         (definitions, located) =>
           exactForeignAttributeRejections(
             definitions,

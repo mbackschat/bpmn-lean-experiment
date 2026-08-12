@@ -25,6 +25,9 @@ import {
   projectEffectJobs,
   statesWithEmptyEffectSnapshots,
 } from "./contract-effect-projection.ts";
+import {
+  projectCibUserTaskMetadata,
+} from "./contract-cib-user-task-metadata-projection.ts";
 
 const activeWaitKindRank = {
   userTask: 0,
@@ -99,6 +102,7 @@ export function verifyProducerProjection(
 
     const stateProjection = projectStateQuery(stateSnapshot);
     const taskProjection = projectTaskQuery(
+      evidence.profile.id,
       expectedInstanceId,
       taskSnapshot.tasks,
     );
@@ -474,6 +478,7 @@ function projectMessageSubscriptions(
 }
 
 function projectTaskQuery(
+  profileId: string,
   instanceId: string,
   tasks: ReadonlyArray<TaskQueryTask>,
 ): Pick<
@@ -519,6 +524,7 @@ function projectTaskQuery(
         name: task.name,
         state:
           "active" as StateObservation["openUserTasks"][number]["state"],
+        ...projectOptionalTaskMetadata(profileId, task),
       }))
       .sort((left, right) =>
         compareTaskIdentities(left.id, right.id));
@@ -531,6 +537,16 @@ function projectTaskQuery(
       taskId: task.id,
     })),
   };
+}
+
+function projectOptionalTaskMetadata(
+  profileId: string,
+  task: TaskQueryTask,
+): Readonly<{ metadata?: never } | {
+  metadata: NonNullable<StateObservation["openUserTasks"][number]["metadata"]>;
+}> {
+  const metadata = projectCibUserTaskMetadata(profileId, task);
+  return metadata === undefined ? {} : { metadata };
 }
 
 function compareTaskIdentities(

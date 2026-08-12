@@ -1,5 +1,6 @@
 package org.bpmnlean.cibseven;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.Objects;
 
@@ -51,9 +52,33 @@ public final class ScenarioDiagnosticsProtocol {
     }
   }
 
-  public record TaskQueryTask(String elementId, String name) {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record TaskQueryTask(
+      String elementId,
+      String name,
+      List<IdentityLinkEvidence> identityLinks,
+      List<FormFieldEvidence> formFields) {
+    public TaskQueryTask(String elementId, String name) {
+      this(elementId, name, null, null);
+    }
+
     public TaskQueryTask {
       Objects.requireNonNull(elementId, "elementId");
+      identityLinks = identityLinks == null ? null : List.copyOf(identityLinks);
+      formFields = formFields == null ? null : List.copyOf(formFields);
+    }
+  }
+
+  public record IdentityLinkEvidence(String type, String userId, String groupId) {
+    public IdentityLinkEvidence {
+      Objects.requireNonNull(type, "type");
+    }
+  }
+
+  public record FormFieldEvidence(String id, String typeName) {
+    public FormFieldEvidence {
+      Objects.requireNonNull(id, "id");
+      Objects.requireNonNull(typeName, "typeName");
     }
   }
 

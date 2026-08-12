@@ -1,0 +1,108 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+  "status": "draft",
+  "claim": "user-task-assignment-form-metadata-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "user-task-literal-group-candidate-metadata",
+      "user-task-generated-form-field-metadata",
+      "process-start-string-null-data",
+      "user-task-string-null-boolean-completion-data",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "runtime-service-process-start-variable-map",
+      "task-service-process-variable-completion-patch",
+      "task-service-boolean-process-variable-completion-patch",
+      "camunda-user-task-literal-candidate-group",
+      "camunda-user-task-generated-form-field"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-OP-0001",
+      "CIB-CFG-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "boolean-process-start-data",
+    "boolean-effect-data",
+    "boolean-mapping-data",
+    "boolean-expression-routing",
+    "standard-resource-roles",
+    "standard-human-performers",
+    "standard-potential-owners",
+    "standard-renderings",
+    "candidate-users",
+    "multiple-candidates",
+    "assignee",
+    "owner",
+    "claiming",
+    "authorization",
+    "identity-resolution",
+    "multiple-form-fields",
+    "form-labels-defaults-constraints-properties",
+    "form-rendering",
+    "form-validation",
+    "task-local-variables",
+    "variable-deletion",
+    "variable-values-beyond-string-null-boolean",
+    "expressions",
+    "gateways",
+    "timers",
+    "messages",
+    "boundary-events",
+    "event-subprocesses",
+    "multi-instance",
+    "compensation",
+    "listeners",
+    "history",
+    "search-attributes",
+    "global-task-inbox",
+    "external-services",
+    "vendor-extensions-beyond-selected-candidate-group-and-form-field"
+  ]
+}

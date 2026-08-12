@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:c7="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_UserTaskMetadata"
+  targetNamespace="https://bpmn-lean.local/scenarios/user-task-metadata">
+  <bpmn:process id="Process_UserTaskMetadata" name="User task metadata" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_Approve" name="Approve" c7:candidateGroups="reviewers">
+      <bpmn:extensionElements>
+        <c7:formData>
+          <c7:formField id="approved" type="boolean" />
+        </c7:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_TaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="StartEvent_1" targetRef="UserTask_Approve" />
+    <bpmn:sequenceFlow id="Flow_TaskToEnd" sourceRef="UserTask_Approve" targetRef="EndEvent_1" />
+  </bpmn:process>
+</bpmn:definitions>

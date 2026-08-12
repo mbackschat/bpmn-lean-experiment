@@ -1,0 +1,73 @@
+{
+  "kind": "scenario",
+  "id": "user-task-assignment-form-metadata",
+  "profile": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+  "bpmn": {
+    "id": "user-task-assignment-form-metadata",
+    "relativePath": "scenarios/user-task-assignment-form-metadata/process.bpmn",
+    "sha256": "ee52c64a7365c47ba95a520b19a2d91ae37fe224e526473c4ebec46bb8af1aaf",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_UserTaskMetadata",
+      "instanceId": "UserTaskMetadataInstance_1",
+      "initialVariables": [
+        {
+          "name": "requestTitle",
+          "value": {
+            "kind": "string",
+            "value": "Review Boolean decision"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-user-task-instance",
+      "taskId": {
+        "processInstanceId": "UserTaskMetadataInstance_1",
+        "elementId": "UserTask_Approve",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "approved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.1",
+      "BPMN 2.0.2 §10.3.4",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskAssignmentFormMetadataPhaseZeroProbeTest.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/TaskService.java#getIdentityLinksForTask(String)",
+      "engine/src/main/java/org/cibseven/bpm/engine/FormService.java#getTaskFormData(String)"
+    ]
+  }
+}

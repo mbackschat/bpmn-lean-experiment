@@ -36,7 +36,8 @@ final class ScenarioVariableValuePolicy {
             case NullValue ignored -> true;
             case BooleanValue ignored ->
                 surface == Surface.USER_TASK_COMPLETION
-                    && BOOLEAN_COMPLETION_PROFILE.equals(profile);
+                    && (BOOLEAN_COMPLETION_PROFILE.equals(profile)
+                        || CibSevenUserTaskMetadataProjector.PROFILE.equals(profile));
           };
       if (!admitted) {
         return false;

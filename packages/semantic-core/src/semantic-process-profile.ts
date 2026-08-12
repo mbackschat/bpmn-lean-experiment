@@ -17,7 +17,6 @@ import {
 } from "./semantic-value-contract.js";
 import {
   hasExactOptionalUserTaskMetadata,
-  UserTaskMetadataCheckpointProfileId,
 } from "./user-task-metadata.js";
 
 export { SemanticProfileId } from "./semantic-profile-catalog.js";
@@ -44,7 +43,7 @@ function profileAllowsProgramOperationDetails(
 ): boolean {
   const userTaskMetadataMatchesProfile = operations.every((operation) =>
     operation.kind !== SemanticOperationKind.AwaitUserTask ||
-    (semanticProfile === UserTaskMetadataCheckpointProfileId
+    (semanticProfile === SemanticProfileId.UserTaskAssignmentFormMetadata
       ? hasExactOptionalUserTaskMetadata(operation.task)
       : !Object.hasOwn(operation.task, "metadata"))
   );
@@ -52,7 +51,7 @@ function profileAllowsProgramOperationDetails(
     return false;
   }
   switch (semanticProfile) {
-    case UserTaskMetadataCheckpointProfileId:
+    case SemanticProfileId.UserTaskAssignmentFormMetadata:
       return true;
     case SemanticProfileId.TimerStart:
       return operations.every(
@@ -102,7 +101,7 @@ export function profileAllowsCheckedProcessShape(
     ) &&
     nodes.every((node) =>
       node.kind !== CheckedNodeKind.UserTask ||
-      (semanticProfile === UserTaskMetadataCheckpointProfileId
+      (semanticProfile === SemanticProfileId.UserTaskAssignmentFormMetadata
         ? hasExactOptionalUserTaskMetadata(node)
         : !Object.hasOwn(node, "metadata"))
     ) &&

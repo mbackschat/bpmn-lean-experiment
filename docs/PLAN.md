@@ -157,7 +157,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: implement the E2 User Task assignment and form metadata semantic checkpoint.** The pinned CIB phase-zero probe and governed proposal are owner-approved after independent cold review. Implement source admission, checked/IL/runtime/public metadata, strict wire contracts, and the proved Lean lane, then pause before profile registration, retained CIB evidence, differential, and live Temporal evidence for the required semantic checkpoint review.
+1. **Active: close E2 User Task assignment and form metadata.** The semantic checkpoint is approved. Registration, retained public-service CIB evidence, differential comparison, runnable configuration, live Worker-replacement/replay evidence, and their separating mutations are implemented; finish root integration, the complete gate, reflection/cost records, and governed closure review.
 
 ## Approved decisions
 
@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: close E2 User Task assignment and form metadata.** The semantic checkpoint is approved after the line-terminator-total raw-cardinality correction. Register the profile and scenario, retain independently observed CIB metadata evidence, add differential and live Temporal evidence plus one runnable configuration, then run the complete gate and governed closure review. Product 2 use remains paused until that closure is approved.
+**Next action: complete the E2 closure gate and independent review.** The registered profile, retained independently observed CIB metadata evidence, four-target differential case, runnable configuration, Worker-replacement live witness, Query mutation, history, and replay are implemented and focused-green. Run the complete gate against the immutable closure target and obtain governed closure approval. Product 2 use remains paused until that approval is recorded.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

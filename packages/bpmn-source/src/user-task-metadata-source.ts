@@ -1,8 +1,8 @@
 /** Exact source projection for the bounded User Task assignment/form metadata profile. */
 import {
   CheckedNodeKind,
+  SemanticProfileId,
   SemanticOperationKind,
-  UserTaskMetadataCheckpointProfileId,
   isUserTaskMetadata,
   isUserTaskMetadataIdentity,
 } from "@bpmn-lean/semantic-core";
@@ -21,8 +21,8 @@ import {
 import type { ElementRecord } from "./moddle-graph.js";
 import { removeOpaqueXmlRegions } from "./singleton-containment-admission.js";
 
-export const userTaskMetadataCheckpointProfile =
-  UserTaskMetadataCheckpointProfileId;
+export const userTaskMetadataProfile =
+  SemanticProfileId.UserTaskAssignmentFormMetadata;
 
 export const camundaBpmnNamespace =
   "http://camunda.org/schema/1.0/bpmn";
@@ -188,7 +188,7 @@ export function userTaskMetadataBindingValid(
   ) {
     return false;
   }
-  if (checked.identity.semanticProfile !== userTaskMetadataCheckpointProfile) {
+  if (checked.identity.semanticProfile !== userTaskMetadataProfile) {
     return true;
   }
   const tasks = checked.nodes.filter(

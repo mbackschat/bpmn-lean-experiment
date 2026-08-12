@@ -43,6 +43,10 @@ import {
   booleanProcessDataPipelineCases,
 } from "./boolean-process-data-pipeline-cases.ts";
 import {
+  userTaskMetadataMutations,
+  userTaskMetadataPipelineCases,
+} from "./user-task-metadata-pipeline-cases.ts";
+import {
   pipelineCases,
 } from "./pipeline-cases.ts";
 import {
@@ -65,6 +69,8 @@ const configuredTaskScenarioRelativePath =
   "scenarios/configured-task/scenario.json";
 const booleanScenarioRelativePath =
   "scenarios/user-task-boolean-completion/scenario.json";
+const metadataScenarioRelativePath =
+  "scenarios/user-task-assignment-form-metadata/scenario.json";
 
 test("registers every Event race artifact once with exact Temporal refinement", () => {
   assert.doesNotThrow(() =>
@@ -221,12 +227,15 @@ test("registers configured Task atomically as one standards-only exact-semantic 
 test("appends Boolean completion as one four-target exact-semantic case", () => {
   const [booleanCase] = booleanProcessDataPipelineCases;
   assert.ok(booleanCase !== undefined);
-  assert.deepEqual(artifactCases.at(-1), {
+  assert.deepEqual(artifactCases.find(
+    ({ scenarioRelativePath }) =>
+      scenarioRelativePath === booleanScenarioRelativePath,
+  ), {
     scenarioRelativePath: booleanScenarioRelativePath,
     evidenceRelativePath:
       "scenarios/user-task-boolean-completion/cibseven-evidence.json",
   });
-  assert.equal(pipelineCases.at(-1), booleanCase);
+  assert.equal(pipelineCases.includes(booleanCase), true);
   assert.deepEqual(
     {
       id: booleanCase.id,
@@ -249,6 +258,94 @@ test("appends Boolean completion as one four-target exact-semantic case", () => 
       replaySelection: PipelineReplaySelection.PrimaryAndIsolation,
     },
   );
+});
+
+test("appends User Task metadata as one four-target exact-semantic case", () => {
+  const [metadataCase] = userTaskMetadataPipelineCases;
+  assert.ok(metadataCase !== undefined);
+  assert.deepEqual(artifactCases.at(-1), {
+    scenarioRelativePath: metadataScenarioRelativePath,
+    evidenceRelativePath:
+      "scenarios/user-task-assignment-form-metadata/cibseven-evidence.json",
+  });
+  assert.equal(pipelineCases.at(-1), metadataCase);
+  assert.deepEqual(
+    {
+      id: metadataCase.id,
+      scenarioRelativePath: metadataCase.scenarioRelativePath,
+      cib: metadataCase.cib,
+      temporalRelation: metadataCase.temporalRelation,
+      replaySelection: metadataCase.replaySelection,
+    },
+    {
+      id: "user-task-assignment-form-metadata",
+      scenarioRelativePath: metadataScenarioRelativePath,
+      cib: {
+        evidenceRelativePath:
+          "scenarios/user-task-assignment-form-metadata/cibseven-evidence.json",
+        version: "2.2.0",
+        relation: CibCaseRelation.ExactSemantic,
+        effectExecutionSchedule: CibEffectExecutionSchedule.None,
+      },
+      temporalRelation: TemporalCaseRelation.ExactSemantic,
+      replaySelection: PipelineReplaySelection.PrimaryAndIsolation,
+    },
+  );
+});
+
+test("seeds candidate, form-key, and Boolean-to-string metadata disagreements", () => {
+  assert.deepEqual(
+    userTaskMetadataMutations.map(({ id, expectedDisagreement }) => ({
+      id,
+      path: expectedDisagreement.path,
+      expected: expectedDisagreement.expected,
+      actual: expectedDisagreement.actual,
+    })),
+    [
+      {
+        id: "candidate-group",
+        path: "trace[2].openUserTasks[0].metadata.assignment.candidates[0].id",
+        expected: "reviewers",
+        actual: "approvers",
+      },
+      {
+        id: "form-key",
+        path: "trace[2].openUserTasks[0].metadata.form.fields[0].key",
+        expected: "approved",
+        actual: "decision",
+      },
+      {
+        id: "field-type",
+        path: "trace[2].openUserTasks[0].metadata.form.fields[0].type",
+        expected: "boolean",
+        actual: "string",
+      },
+    ],
+  );
+});
+
+test("makes every User Task metadata mutation reach its exact open-task locus", async () => {
+  const [context] = await loadAndCompileCases(userTaskMetadataPipelineCases);
+  assert.ok(context !== undefined);
+  const result = runCoreTargets([context]).results.get(context.scenario.id);
+  assert.ok(result !== undefined);
+  for (const mutation of userTaskMetadataMutations) {
+    const mutated = mutableClone(result);
+    mutation.injectMutation(mutated);
+    const comparison = compareTargetResults(
+      { target: DifferentialTarget.SemanticCore, result },
+      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+    );
+    assert.equal(comparison.kind, ComparisonKind.Disagreement, mutation.id);
+    if (comparison.kind !== ComparisonKind.Disagreement) {
+      throw new Error(`${mutation.id} did not create a disagreement`);
+    }
+    assert.deepEqual(
+      comparison.disagreement,
+      mutation.expectedDisagreement,
+      mutation.id,
+    );
+  }
 });
 
 test("makes Boolean-to-string conversion reach the exact value-kind disagreement", async () => {

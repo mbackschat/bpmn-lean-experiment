@@ -123,6 +123,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
         new CibSevenScenarioStateProjector(
             processEngine,
             userTaskProjector,
+            new CibSevenUserTaskMetadataProjector(processEngine),
             effectProjector,
             new CibSevenMessageProjector(messageGateway),
             activeWaitProjector,
@@ -283,7 +284,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     start.commandId(),
-                    committedProcessVariableNames);
+                    committedProcessVariableNames,
+                    scenario.profile());
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -317,7 +319,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     complete.commandId(),
-                    committedProcessVariableNames);
+                    committedProcessVariableNames,
+                    scenario.profile());
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -346,7 +349,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     delivery.commandId(),
-                    committedProcessVariableNames);
+                    committedProcessVariableNames,
+                    scenario.profile());
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -374,7 +378,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     fire.commandId(),
-                    committedProcessVariableNames);
+                    committedProcessVariableNames,
+                    scenario.profile());
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -424,7 +429,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     complete.commandId(),
-                    committedProcessVariableNames);
+                    committedProcessVariableNames,
+                    scenario.profile());
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());

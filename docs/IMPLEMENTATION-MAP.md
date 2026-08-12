@@ -8,7 +8,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting.
 
-The active E2 checkpoint additionally carries one exact optional passive User Task assignment/form metadata value through source, checked graph, IL, committed wait, and public observation without registration or downstream evidence. Each capsule owns its own meaning and exclusions; this document owns only their status.
+The active E2 closure additionally carries one exact optional passive User Task assignment/form metadata value through source, checked graph, IL, committed wait, and public observation, with registered cross-target evidence. Each capsule owns its own meaning and exclusions; this document owns only their status.
 
 **Current Message Start boundary.** The standards profile and Product 2 [Message Start ingress specification](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) are closure-reviewed and evidence-closed. Product 2 publishes one exact target with durable no-redispatch recovery; broker routing and version fanout remain absent.
 
@@ -24,7 +24,7 @@ The active E2 checkpoint additionally carries one exact optional passive User Ta
 
 The Java diagnostics/projection protocol was split before semantic growth, and the constrained Lean admission build passes with one CPU, one thread, no swap, and the standing 3 GiB limit. Registration, retained CIB evidence, differential comparison, live Temporal execution, replay, and closure approval are complete.
 
-**Current E2 User Task metadata boundary.** The owner-approved first-green checkpoint admits either no metadata or one exact alternate-prefix-safe CIB extension block containing one literal group candidate and one string-or-boolean generated-form field. The neutral optional value is carried through the checked User Task, ordinary `awaitUserTask.task`, committed wait, and public `OpenUserTask`; old profiles and metadata-free artifacts physically omit it. Independent TypeScript and Lean execution prove exact preservation, refusal-state preservation, Boolean-completion composition, completion irrelevance, strict JSON identity, and old-profile exclusion. Registration, selected CIB relationships and retained evidence, differential registration, runnable configuration, live Temporal evidence, and every Product 2 consumer remain absent pending semantic checkpoint approval.
+**Current E2 User Task metadata boundary.** The registered profile admits either no metadata or one exact alternate-prefix-safe CIB extension block containing one literal group candidate and one string-or-boolean generated-form field. The neutral optional value is carried through the checked User Task, ordinary `awaitUserTask.task`, committed wait, and public `OpenUserTask`; old profiles and metadata-free artifacts physically omit it. Independent TypeScript and Lean execution prove exact preservation, refusal-state preservation, Boolean-completion composition, completion irrelevance, strict JSON identity, and old-profile exclusion. Retained public Task Service and Form Service facts, exact CIB/Lean/core/Temporal differential evidence, a runnable configuration, live Worker replacement, Query mutation, history, and replay are green. Independent closure review and every Product 2 consumer remain absent.
 
 **What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. There are no incidents, published transitions, or token positions.
 
@@ -282,7 +282,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - `awaitEventRace` carries one named operation-addressed Message arm and one named exact-`PT1S` Timer arm with their configuration-flow origins, catch identities, and distinct winner outputs; its configuration Flows are not control places
 - `mergeExclusive` carries a canonical nonempty input collection and one output, with reusable per-offered-token declarative pass-through and a unique-offer executable subset; only the registered cycle profile fixes its input count at three
 - `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across payload-free, mapped-success, and mapped-boundary-Error contracts
-- ordinary `awaitUserTask.task` carries exact optional passive E2 metadata under the unregistered checkpoint profile; bounded and monitored User Task operations remain unchanged
+- ordinary `awaitUserTask.task` carries exact optional passive E2 metadata under the registered assignment/form profile; bounded and monitored User Task operations remain unchanged
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted scope ownership, condition, mapping, route, and exact source data
 - exact Message Start lowering preserves Process, Start Event, Interface, Interface Operation, input Message, and every validated outgoing-flow identity; reusable `initiateMessage` admits canonical nonempty outputs while the registered capability fixes one
 - exact Timer Start lowering preserves Process, Start Event, `PT1S -> 1000`, and every validated outgoing-flow identity; reusable `initiateTimer` admits canonical nonempty outputs while the registered capability fixes one
@@ -306,7 +306,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - warning/reference-loss rejection
 - bounded compilers for the sequential User Task, balanced parallel, exact `PT1S` timer, profile-parameterized finite acyclic Timer/User Task composition, operation-addressed payload-free Intermediate Catch Message in both Message/User Task orders, one direct-Message payload-free Receive Task, one top-level operation-addressed payload-free Message Start Event, one top-level exact `PT1S` Timer Start Event, one exact operation-addressed Message-versus-`PT1S` Event-Based Gateway configuration, payload-free Service Task, one exact configured Task extension, and bounded mapped-success and mapped-boundary-Error Service Task shapes
 - bounded compilers for the exact two-condition-plus-default Simple Boolean Exclusive Gateway, one exact resumption-bounded User Task cycle with an identity-only converging Exclusive Gateway, one structured two-condition-plus-default Inclusive Gateway split/direct-User-Task/join region, one-level ordinary embedded Sub-Process completion, one direct exact-code Sub-Process Error-propagation shape, one exact nested Terminate End shape with omitted or parser-safe false `triggeredByEvent`, and one exact namespace-qualified in-document called Process
-- one unregistered E2 source reader for exact URI-expanded `candidateGroups` plus one exact `formData/formField`, including local or root alternate prefixes, raw duplicate-attribute parser-erasure refusal, exact boundary-space and literal restrictions, checked-to-IL metadata binding, and physical omission on metadata-free tasks
+- one registered E2 source reader for exact URI-expanded `candidateGroups` plus one exact `formData/formField`, including local or root alternate prefixes, raw duplicate-attribute parser-erasure refusal, exact boundary-space and literal restrictions, checked-to-IL metadata binding, and physical omission on metadata-free tasks
 - reusable checked-source scope ownership, reference, arity, scope-local reachability, co-reachability, and profile-selected whole-graph or User-Task-cut acyclicity validation separated from profile mechanism/cardinality capability
 - explicit expression-language admission, strict five-form parsing, exact checked-body retention, and process-level Sequence Flow declaration order independent of gateway reference order
 - exact source/profile admission maps built-in or overlay-supplied source bindings to profile-owned neutral effect descriptors while checked graphs retain only generic conditions, mappings, route/reference metadata, resolved Message channels, names, and source-overlay identity
@@ -378,7 +378,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - registered Terminate End admission and execution with no external stimulus, selected-occurrence-retaining subtree cancellation, exact higher-level preservation, aggregate End increment, unchanged scope completion, exact refusal, and 5/3/2 closure bounds
 - registered configured Task admission and execution with exact checked descriptor binding, the existing payload-free Probe effect, effect-only initial exposure, occurrence-only refusal, trailing User Task continuation, and no runtime, stimulus, state, or observation widening
 - exact Process-start installation and User Task completion merge over canonical string/null bindings, plus one registered-profile Boolean completion guarded at deployment and every live command
-- unregistered E2 metadata admission and independent preservation through checked User Task, ordinary operation, committed wait, and public projection, with passive completion, exact refusal preservation, strict wire values, and old-profile exclusion
+- registered E2 metadata admission and independent preservation through checked User Task, ordinary operation, committed wait, and public projection, with passive completion, exact refusal preservation, strict wire values, and old-profile exclusion
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
 - executable enabled-count and stable-state-resumability checks, with malformed-topology and stranded-state witnesses
 
@@ -399,7 +399,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - verifier reconstruction of canonical status, logical time, variables, waits, interactions, and semantic instance identity from those raw observations
 - reconstruction deliberately reuses the Java projector's ordering and raw-binding translation, so it checks raw-to-canonical consistency rather than independently deriving projection semantics
 - phase-zero public-service probes for start and completion data, Service Task binding and retry, direct-Message Receive Task, Sub-Process Error propagation, and both product-neutral mapped Service Task host relations
-- a public-service E2 phase-zero calibration proving one candidate group and one typed form field remain observable independently of unclaimed completion
+- public-service E2 raw evidence retains one candidate-group identity link and one typed Form Service field independently of completion
 - meaningful raw-observation, projection, binding, deadline, sibling, mapping, and variable mutations
 - release-grouped evidence replacement, isolated engine configurations, zero-state checks, timings, and full cleanup
 
@@ -415,7 +415,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - reused CIB PVM algorithms/types as project semantics
 - broad CIB corpus adoption
 - general compatibility claim
-- selected `CIB-EXT-0011/0012` registration, E2 raw/canonical evidence, and any assignment or form compatibility claim
+- Product 2 assignment, inbox, authorization, claiming, rendering, validation, or form submission behavior
 
 ### Temporal adapter
 
@@ -437,6 +437,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - passive hosting for the registered Terminate End profile through existing User Task Updates, including Worker replacement after Trigger, committed-result recovery, Outer-only Query, stale Sibling refusal with exact state preservation, terminal completion, 20-event history inspection and replay, plus a test-owned Workflow whose wrong global cancellation closes instead of publishing Outer
 - configured Task hosting through the existing Probe Activity and User Task Update path, including Worker replacement during the active Activity attempt, idempotent result reconciliation, exact terminal state, history inspection and replay, plus a test-owned effect bypass that exposes the User Task early
 - registered Boolean completion through the existing Update path, with Worker replacement, old-profile refusal then valid completion, tagged projections, history/replay, and stringification/outside-core mutations
+- registered User Task assignment/form metadata through the existing Query and Update path, with Worker replacement, exact passive projection, Boolean completion, metadata-free terminal state, history/replay, old-profile control, and a Query-omission mutation
 
 #### Explicitly absent
 
@@ -448,7 +449,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - Message payloads, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
 - Message ingress broker/router, definition-version fanout, or multi-target publication receipt
 - committed Event History fixtures
-- E2 metadata live execution, Query mutation, history/replay evidence, or any new Temporal primitive for metadata
+- any new Temporal primitive for User Task metadata
 - patch branches
 - legacy representation fallback
 - production history baseline
@@ -480,6 +481,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - three exact Terminate End schedules across Lean, the core, and Temporal with CIB absent, plus source, checked-to-IL, regional-cancellation, stale-command, and supplied-instance mutation discriminators
 - one exact configured Task schedule across Lean, the core, and Temporal with CIB absent, plus binding-drift and premature-User-Task-exposure mutation discriminators
 - one exact Boolean User Task completion schedule across CIB, Lean, the core, and Temporal, plus Boolean-to-string mutation and live outside-core/stringification discriminators
+- one exact User Task assignment/form metadata schedule across CIB, Lean, the core, and Temporal, plus candidate, field-key, field-type, source-derived-projection, and live Query-omission discriminators
 - isolated target execution, complete fetched-history replay, cleanup, timings, and feedback budgets
 
 #### Explicitly absent

@@ -43,4 +43,6 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
   UserTaskBooleanCompletionData:
     "cibseven-2.2.0-user-task-boolean-completion-data-draft",
+  UserTaskAssignmentFormMetadata:
+    "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
 } as const);

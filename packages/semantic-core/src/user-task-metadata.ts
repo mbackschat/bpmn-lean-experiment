@@ -1,10 +1,6 @@
 import type { DeepReadonly } from "./deep-readonly.js";
 import { isWellFormedWireString } from "./wire.js";
 
-/** Checkpoint-only profile identity excluded from ordinary product registration. */
-export const UserTaskMetadataCheckpointProfileId =
-  "cibseven-2.2.0-user-task-assignment-form-metadata-draft" as const;
-
 /** Passive assignment and form facts carried without vendor vocabulary or task authorization. */
 export type UserTaskMetadata = DeepReadonly<{
   assignment: {

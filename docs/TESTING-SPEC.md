@@ -270,15 +270,15 @@ This table classifies the complete current field denominator of `scenario.schema
 | `openUserTasks[].id.elementId` | `engine-observed` | Public task definition key |
 | `openUserTasks[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated live elements are refused |
 | `openUserTasks[].name` | `engine-observed` | Public task name, including `null` |
-| `openUserTasks[].metadata` | `not-claimed` | Optional E2 checkpoint field; retained CIB compatibility evidence is active closure work |
-| `openUserTasks[].metadata.assignment` | `not-claimed` | Neutral checkpoint structure without a retained CIB claim yet |
-| `openUserTasks[].metadata.assignment.candidates` | `not-claimed` | Exact one-candidate checkpoint tuple without a retained CIB claim yet |
-| `openUserTasks[].metadata.assignment.candidates[].kind` | `not-claimed` | Neutral `group` discriminator pending independent raw identity-link evidence |
-| `openUserTasks[].metadata.assignment.candidates[].id` | `not-claimed` | Candidate identity pending independent raw identity-link evidence |
-| `openUserTasks[].metadata.form` | `not-claimed` | Neutral checkpoint structure without a retained CIB claim yet |
-| `openUserTasks[].metadata.form.fields` | `not-claimed` | Exact one-field checkpoint tuple without a retained CIB claim yet |
-| `openUserTasks[].metadata.form.fields[].key` | `not-claimed` | Form field identity pending independent raw Form Service evidence |
-| `openUserTasks[].metadata.form.fields[].type` | `not-claimed` | Neutral string/boolean type pending independent raw Form Service evidence |
+| `openUserTasks[].metadata` | `adapter-derived` | Optional neutral projection over retained Task Service identity-link and Form Service field rows |
+| `openUserTasks[].metadata.assignment` | `adapter-derived` | Exact neutral assignment structure over retained public identity-link facts |
+| `openUserTasks[].metadata.assignment.candidates` | `adapter-derived` | Exact one-candidate tuple after refusing missing, extra, or non-group identity links |
+| `openUserTasks[].metadata.assignment.candidates[].kind` | `adapter-derived` | Neutral `group` discriminator selected only from one raw group candidate identity link |
+| `openUserTasks[].metadata.assignment.candidates[].id` | `engine-observed` | Public Task Service candidate-group identity-link `groupId` |
+| `openUserTasks[].metadata.form` | `adapter-derived` | Exact neutral form structure over retained public Form Service facts |
+| `openUserTasks[].metadata.form.fields` | `adapter-derived` | Exact one-field tuple after refusing missing or extra Form Service rows |
+| `openUserTasks[].metadata.form.fields[].key` | `engine-observed` | Public Form Service field `id` |
+| `openUserTasks[].metadata.form.fields[].type` | `adapter-derived` | Neutral `string` or `boolean` selected from the public Form Service `typeName` |
 | `openUserTasks[].state` | `adapter-decided` | Canonical `active` stamp for rows returned by the live-task query |
 | `openMessageSubscriptions` | `adapter-derived` | Canonical singleton projection over the retained public Receive Task subscription under `CIB-OP-0005`; other retained CIB cases are empty |
 | `openMessageSubscriptions[].id` | `adapter-derived` | Composite semantic subscription occurrence identity |

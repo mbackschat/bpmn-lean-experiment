@@ -34,6 +34,7 @@ final class CibSevenScenarioStateProjector {
 
   private final ProcessEngine processEngine;
   private final CibSevenUserTaskProjector userTaskProjector;
+  private final CibSevenUserTaskMetadataProjector userTaskMetadataProjector;
   private final CibSevenEffectProjector effectProjector;
   private final CibSevenMessageProjector messageProjector;
   private final CibSevenActiveWaitProjector activeWaitProjector;
@@ -42,12 +43,14 @@ final class CibSevenScenarioStateProjector {
   CibSevenScenarioStateProjector(
       ProcessEngine processEngine,
       CibSevenUserTaskProjector userTaskProjector,
+      CibSevenUserTaskMetadataProjector userTaskMetadataProjector,
       CibSevenEffectProjector effectProjector,
       CibSevenMessageProjector messageProjector,
       CibSevenActiveWaitProjector activeWaitProjector,
       Date logicalEpoch) {
     this.processEngine = processEngine;
     this.userTaskProjector = userTaskProjector;
+    this.userTaskMetadataProjector = userTaskMetadataProjector;
     this.effectProjector = effectProjector;
     this.messageProjector = messageProjector;
     this.activeWaitProjector = activeWaitProjector;
@@ -58,7 +61,8 @@ final class CibSevenScenarioStateProjector {
       String engineInstanceId,
       String stableInstanceId,
       String afterCommandId,
-      Iterable<String> committedCompletionVariableNames) {
+      Iterable<String> committedCompletionVariableNames,
+      String scenarioProfile) {
     var runtime = processEngine.getRuntimeService();
     var childInstances =
         runtime
@@ -91,15 +95,13 @@ final class CibSevenScenarioStateProjector {
         tasks.stream()
             .map(task -> new HostUserTask(task.getTaskDefinitionKey(), task.getName()))
             .toList();
-    var taskQuery =
-        new TaskQuerySnapshot(
-            afterCommandId,
-            hostTasks.stream()
-                .map(task -> new TaskQueryTask(task.elementId(), task.name()))
-                .toList());
     var activeWaits = userTaskProjector.activeWaits(hostTasks);
-    var openUserTasks =
+    var baseOpenUserTasks =
         userTaskProjector.openUserTasks(stableInstanceId, hostTasks);
+    var taskMetadata =
+        userTaskMetadataProjector.project(scenarioProfile, tasks, baseOpenUserTasks);
+    var taskQuery = new TaskQuerySnapshot(afterCommandId, taskMetadata.rawTasks());
+    var openUserTasks = taskMetadata.openUserTasks();
     var taskInteractions =
         openUserTasks.stream()
             .<EnabledInteraction>map(

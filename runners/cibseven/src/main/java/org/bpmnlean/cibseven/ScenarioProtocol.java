@@ -1,6 +1,7 @@
 package org.bpmnlean.cibseven;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -277,8 +278,17 @@ public final class ScenarioProtocol {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   public record OpenUserTask(
-      UserTaskInstanceId id, String name, UserTaskLifecycleState state) {
+      UserTaskInstanceId id,
+      String name,
+      UserTaskLifecycleState state,
+      UserTaskMetadataProtocol.UserTaskMetadata metadata) {
+    public OpenUserTask(
+        UserTaskInstanceId id, String name, UserTaskLifecycleState state) {
+      this(id, name, state, null);
+    }
+
     public OpenUserTask {
       Objects.requireNonNull(id, "id");
       Objects.requireNonNull(state, "state");

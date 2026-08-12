@@ -1,0 +1,50 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/user-task-assignment-form-metadata/process.bpmn",
+    "sourceId": "user-task-assignment-form-metadata",
+    "semanticProfile": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_user_task_assignment_form_metadata_1",
+    "initialVariables": [
+      {
+        "name": "requestTitle",
+        "value": {
+          "kind": "string",
+          "value": "Review Boolean decision"
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Approve",
+      "delayMs": 250,
+      "inputVariableNames": [
+        "requestTitle"
+      ],
+      "submittedValues": [
+        {
+          "name": "approved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

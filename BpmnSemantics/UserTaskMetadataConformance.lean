@@ -43,7 +43,7 @@ def checkedProcessFor (metadata : UserTaskMetadata) : CheckedProcess :=
   { sequentialCheckedProcess with
     identity :=
       { sequentialCheckedProcess.identity with
-        semanticProfile := userTaskMetadataCheckpointProfileId }
+        semanticProfile := userTaskAssignmentFormMetadataProfileId }
     nodes := sequentialCheckedProcess.nodes.map fun
       | .userTask id name _ => .userTask id name (some metadata)
       | node => node }
@@ -190,7 +190,7 @@ theorem checkpoint_profile_admits_exact_checked_and_program_shapes :
       programWellFormed (programFor exactMetadata) = true ∧
       checkedProfileCapabilitiesValid (checkedProcessFor exactMetadata) = true ∧
       programProfileCapabilitiesValid (programFor exactMetadata) = true ∧
-      profileGraphPolicy? userTaskMetadataCheckpointProfileId.value = some .acyclic := by
+      profileGraphPolicy? userTaskAssignmentFormMetadataProfileId.value = some .acyclic := by
   decide +kernel
 
 /-- The same metadata-bearing definitions are excluded from every earlier data-only profile. -/
@@ -344,7 +344,7 @@ theorem inadmissible_boolean_profile_preserves_full_metadata_state :
 
 /-- The metadata profile composes the existing Boolean completion value policy and unchanged closure. -/
 theorem boolean_completion_result_and_finite_closure_are_unchanged :
-    variableValueAdmitted userTaskMetadataCheckpointProfileId
+    variableValueAdmitted userTaskAssignmentFormMetadataProfileId
         .userTaskCompletion (.boolean true) = true ∧
       applyStimulus scenarioClosureLimit (programFor exactMetadata)
           (waitingStateFor exactMetadata) booleanCompletion =

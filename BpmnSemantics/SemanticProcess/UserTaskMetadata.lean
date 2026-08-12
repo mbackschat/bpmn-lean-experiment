@@ -80,7 +80,7 @@ def candidateIdWellFormed (value : String) : Bool :=
 def fieldKeyWellFormed (value : String) : Bool :=
   boundaryClean value
 
-/-- Exact singleton metadata shape admitted by the checkpoint profile. -/
+/-- Exact singleton metadata shape admitted by the assignment/form metadata profile. -/
 def wellFormed (metadata : UserTaskMetadata) : Bool :=
   match metadata.assignment.candidates, metadata.form.fields with
   | [{ kind := .group, id }], [{ key, type := .string }]

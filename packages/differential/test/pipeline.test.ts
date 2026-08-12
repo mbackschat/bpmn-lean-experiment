@@ -203,6 +203,7 @@ test(
         "mapped-boundary-error-service-task-caught",
         "configured-task",
         "user-task-boolean-completion",
+        "user-task-assignment-form-metadata",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);

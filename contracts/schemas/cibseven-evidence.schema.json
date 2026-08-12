@@ -128,6 +128,102 @@
       "$ref": "https://bpmn-lean.local/schemas/canonical-result.schema.json"
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "cibseven-2.2.0-user-task-assignment-form-metadata-draft"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "required": [
+          "profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "producerObservations": {
+            "type": "object",
+            "properties": {
+              "taskQueries": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tasks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "identityLinks": {},
+                          "formFields": {}
+                        },
+                        "required": [
+                          "identityLinks",
+                          "formFields"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "producerObservations": {
+            "type": "object",
+            "properties": {
+              "taskQueries": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tasks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "not": {
+                          "anyOf": [
+                            {
+                              "properties": {
+                                "identityLinks": {}
+                              },
+                              "required": [
+                                "identityLinks"
+                              ]
+                            },
+                            {
+                              "properties": {
+                                "formFields": {}
+                              },
+                              "required": [
+                                "formFields"
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "contentIdentity": {
       "type": "object",
@@ -243,6 +339,63 @@
             "string",
             "null"
           ]
+        },
+        "identityLinks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identityLinkEvidence"
+          }
+        },
+        "formFields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/formFieldEvidence"
+          }
+        }
+      }
+    },
+    "identityLinkEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "userId",
+        "groupId"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "userId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "groupId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "formFieldEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "typeName"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "typeName": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
