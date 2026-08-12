@@ -313,6 +313,23 @@ Owner-supplied research document received on 2026-08-07 as `process-engine-compe
 
 The imported document compares enterprise BPM, durable orchestration, automation-suite, and process-intelligence products. It is research input, not a project dependency, implementation claim, product contract, or substitute for current primary-source verification. The project-authored [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records the findings and recommendations this project draws from it, while retaining its own limits and authority boundary.
 
+## BPM platform UI/UX and information-architecture sources
+
+The project-authored [BPM platform UI/UX and information-architecture research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md) inspected current official documentation and documentation screenshots on 2026-08-13. These sources establish product interaction precedents only. They do not select an implementation stack, define BPMN meaning, prove accessibility or responsive quality beyond each product's documented claims, or authorize copying proprietary visual design.
+
+| Product surface | Primary source | Research role |
+|---|---|---|
+| CIB Seven Tasklist | [Tasklist dashboard](https://docs.cibseven.org/manual/1.0/webapps/tasklist/dashboard/) and [User Task forms](https://docs.cibseven.org/manual/latest/user-guide/task-forms/) | Filter, result, selected-task, Form, Diagram, assignment, and generated-form precedent |
+| Camunda 8 Tasklist and Operate | [Tasklist overview](https://docs.camunda.io/docs/components/tasklist/userguide/using-tasklist/), [starting Processes](https://docs.camunda.io/docs/components/tasklist/userguide/starting-processes/), and [Operate navigation](https://docs.camunda.io/docs/components/operate/userguide/basic-operate-navigation/) | Task queue, selected form, Process context, startable Process catalog, and model-to-instance detail precedent |
+| Flowable Work and Control | [Work tasks](https://documentation.flowable.com/latest/user/work/work-tasks) and [Control Processes](https://documentation.flowable.com/latest/user/control/processes) | Inbox, substantial task detail, contextual tabs, definition/instance diagrams, and operations navigation precedent |
+| Bonita User Application | [User Task list](https://documentation.bonitasoft.com/bonita/2025.1/runtime/user-task-list) and [User Case list](https://documentation.bonitasoft.com/bonita/latest/runtime/user-application-case-list) | Master/detail, wide-form expansion, responsive case collection, and case overview precedent |
+| IBM Business Automation Workflow Process Portal | [Dashboards](https://www.ibm.com/docs/en/baw/25.0.x?topic=ipp-dashboards) and [working with tasks](https://www.ibm.com/docs/en/baw/26.0.x?topic=mw-completing-work-tasks) | Work queues, saved searches, Process context, and explicit responsive-subset limitation |
+| Appian Tempo | [Tasks](https://docs.appian.com/suite/help/26.3/Tasks.html) | Task views, filtering, acceptance, form validation, save-draft, and completion precedent |
+| ServiceNow Workspace | [Working with lists](https://www.servicenow.com/docs/en-US/bundle/zurich-platform-user-interface/page/administer/workspace/task/work-with-lists.html) and [workspace lists](https://www.servicenow.com/docs/r/platform-user-interface/lists-configurable-workspace.html) | Default/personal filtered lists, list-to-record navigation, optional preview, and bookmarkable-list precedent |
+| ProcessMaker participant experience | [ProcessMaker Knowledge Center](https://docs.processmaker.com/) | Role-oriented Process participant and inbox framing; insufficient evidence for detailed M3 layout selection |
+
+The same research uses [React Aria styling guidance](https://react-spectrum.adobe.com/react-aria/getting-started.html) and [React Spectrum layout guidance](https://react-spectrum.adobe.com/v3/layout.html) only for interaction-state styling and responsive layout practice. The already selected dependency and licence assessment remains owned by [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md).
+
 ## Parallel independent research effort
 
 Colleague-authored review of this project's architecture and feasibility summary, inspected as local read-only documents on 2026-07-29 and 2026-07-30. External authorship; the documents are retained outside this repository and are deliberately neither committed nor summarized here. Their content digests are recorded so that a later citation can be bound to the exact text reviewed:
