@@ -22,3 +22,7 @@ export type {
   WorkAuditOutboxRepository,
   WorkAuditSink,
 } from "./work-audit-outbox-service.js";
+export {
+  WorkAuditForbiddenError,
+  WorkAuditService,
+} from "./work-audit-service.js";
