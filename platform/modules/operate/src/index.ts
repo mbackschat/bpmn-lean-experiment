@@ -10,5 +10,6 @@ export type {
 export {
   ProcessInstanceSchemaResetRequiredError,
 } from "./database-schema-epoch.js";
+export { ProcessInstanceHttpRoutes } from "./process-instance-http-routes.js";
 export { ProcessInstanceSearchService } from "./process-instance-search-service.js";
 export { SqliteProcessInstanceRepository } from "./sqlite-process-instance-repository.js";

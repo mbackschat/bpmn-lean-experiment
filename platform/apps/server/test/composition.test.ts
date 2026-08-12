@@ -32,6 +32,15 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     });
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { definitions: [] });
+    const processInstances = await fetch(
+      `${origin}/api/v1/process-instances`,
+      { signal: AbortSignal.timeout(1_000) },
+    );
+    assert.equal(processInstances.status, 200);
+    assert.deepEqual(await processInstances.json(), {
+      instances: [],
+      nextCursor: null,
+    });
     const schedules = await fetch(
       `${origin}/api/v1/definitions/missing/versions/1/schedules`,
       { signal: AbortSignal.timeout(1_000) },
@@ -59,10 +68,10 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     await runtime.close();
     const database = await readFile(join(dataDirectory, "definitions.sqlite"));
     assert.ok(database.byteLength > 0);
-    const processInstances = await readFile(
+    const processInstanceDatabase = await readFile(
       join(dataDirectory, "process-instances.sqlite"),
     );
-    assert.ok(processInstances.byteLength > 0);
+    assert.ok(processInstanceDatabase.byteLength > 0);
     await assert.rejects(runtime.listen(), /runtime is closed/u);
   } finally {
     await runtime.close();

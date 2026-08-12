@@ -24,6 +24,7 @@ import {
   messageStartPublicationWorkflowId,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
+  ProcessInstanceHttpRoutes,
   ProcessInstanceSearchService,
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
@@ -135,9 +136,13 @@ export async function createPlatformServer(
     const publicationRoutes = new MessageStartPublicationHttpRoutes(
       publicationService,
     );
+    const processInstanceRoutes = new ProcessInstanceHttpRoutes(
+      processInstances,
+    );
     const server = createPlatformHttpServerFromValidatedOrigin({
       publicOrigin: snapshot.publicOrigin,
       routes: [
+        (request) => processInstanceRoutes.handle(request),
         (request) => publicationRoutes.handle(request),
         (request) => scheduleRoutes.handle(request),
         (request) => definitionRoutes.handle(request),
