@@ -18,7 +18,7 @@ import type {
 export function evaluateInputMappings(
   mappings: ReadonlyArray<VariableMapping>,
 ): ReadonlyArray<VariableBinding> {
-  return mappings.map((mapping) => {
+  return mappings.map((mapping): VariableBinding => {
     switch (mapping.expression.kind) {
       case MappingExpressionKind.StringLiteral:
         return {
@@ -171,6 +171,8 @@ function isPermittedValue(
   allowNull: boolean,
 ): boolean {
   switch (binding.value.kind) {
+    case VariableValueKind.Boolean:
+      return false;
     case VariableValueKind.String:
       return true;
     case VariableValueKind.Null:

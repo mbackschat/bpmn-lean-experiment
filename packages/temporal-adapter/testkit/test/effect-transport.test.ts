@@ -204,6 +204,31 @@ test("domain-separates the exact typed BPMN Error result", () => {
   }
 });
 
+test("keeps Boolean values typed in effect transport identity", () => {
+  const booleanArguments: EffectTransportMaterial = {
+    ...mappedSuccessMaterial,
+    arguments: [{
+      name: "requestValue",
+      value: { kind: VariableValueKind.Boolean, value: true },
+    }],
+  };
+  const stringArguments: EffectTransportMaterial = {
+    ...mappedSuccessMaterial,
+    arguments: [{
+      name: "requestValue",
+      value: { kind: VariableValueKind.String, value: "true" },
+    }],
+  };
+  assert.equal(
+    canonicalEffectTransportEncoding(booleanArguments),
+    '["effectTransport",["cibseven-2.0.0-mapped-success-service-task-draft","mapped-success-service-task","3b5bcd5167f4d48753f8efede35f47484bddf9c278cc8fe2f4dc87549da26b4a",["none"],"Process_MappedSuccess"],["Instance_1","MappedSuccessTask",1],["urn:bpmn-lean:effect-protocol:activity-v1","urn:bpmn-lean:effect-operation:mapped-success-v1"],[["requestValue",["boolean",true]]]]',
+  );
+  assert.notEqual(
+    effectTransportKey(booleanArguments),
+    effectTransportKey(stringArguments),
+  );
+});
+
 test("argument and result omission mutations collapse discriminating pairs", () => {
   const otherArguments: EffectTransportMaterial = {
     ...mappedSuccessMaterial,

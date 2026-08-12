@@ -16,6 +16,7 @@ import {
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
+  RuntimeState,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -150,7 +151,7 @@ test("atomically creates, replaces, preserves, and nulls Process variables on ex
     initialState,
     requiredAt(scenario.stimuli, 0, "scenario stimuli"),
   );
-  const stateWithExistingData = {
+  const stateWithExistingData: RuntimeState = {
     ...started.state,
     variables: {
       ...started.state.variables,

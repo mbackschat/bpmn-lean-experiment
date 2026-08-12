@@ -56,6 +56,16 @@ test("accepts both canonical response variants together", () => {
   );
 });
 
+test("accepts a canonical Boolean User Task completion patch", () => {
+  assert.doesNotThrow(() => validateHostInteractionPlan([{
+    ...completion,
+    submittedValues: [{
+      name: "decision",
+      value: { kind: VariableValueKind.Boolean, value: true },
+    }],
+  }]));
+});
+
 test("rejects an unknown response field", () => {
   assert.throws(
     () => validateHostInteractionPlan([{ ...completion, formKey: "x" }]),
@@ -80,7 +90,7 @@ test("rejects a non-canonical completion patch", () => {
           submittedValues: [{ name: "decision", value: { kind: "number", value: 1 } }],
         },
       ]),
-    /canonical string\/null patch/u,
+    /canonical typed patch/u,
   );
 });
 

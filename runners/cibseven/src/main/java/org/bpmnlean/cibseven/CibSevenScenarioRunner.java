@@ -296,8 +296,13 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             requireStarted(engineInstanceId, stableInstanceId);
             var completeStartedAt = System.nanoTime();
             var outcome =
-                commandExecutor.completeUserTaskInstance(
-                    engineInstanceId, stableInstanceId, complete);
+                ScenarioVariableValuePolicy.admits(
+                        scenario.profile(),
+                        ScenarioVariableValuePolicy.Surface.USER_TASK_COMPLETION,
+                        complete.submittedValues())
+                    ? commandExecutor.completeUserTaskInstance(
+                        engineInstanceId, stableInstanceId, complete)
+                    : REJECTED;
             timings.completeNanos = positiveElapsedSince(completeStartedAt);
             trace.add(new CommandObservation(complete.commandId(), outcome));
             if (outcome == COMMITTED) {
@@ -485,6 +490,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   private void validateScenario(ScenarioDefinition scenario) {
     Objects.requireNonNull(scenario, "scenario");
+    ScenarioVariableValuePolicy.requireScenarioSurfaces(scenario);
     release.requireScenarioRevision(scenario);
     if (!ScenarioProtocol.SCENARIO_KIND.equals(scenario.kind())
         || scenario.profile().isBlank()) {

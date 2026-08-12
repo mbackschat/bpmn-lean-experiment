@@ -56,6 +56,7 @@ structure EffectDescriptor where
 
 inductive VariableValue where
   | string (value : String)
+  | boolean (value : Bool)
   | null
   deriving Repr, DecidableEq
 

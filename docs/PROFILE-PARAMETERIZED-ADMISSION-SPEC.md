@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented current pre-release contract.** The registered capability catalog remains the product authority. The configured Task profile now exercises the same structural-plus-profile admission boundary through an exact project-extension binding without changing the reusable effect operation.
+**Implemented current pre-release contract.** The registered capability catalog remains the product authority. The configured Task profile exercises the same structural-plus-profile admission boundary through an exact project-extension binding. One unregistered Boolean Process-data checkpoint reuses the existing User Task shape and acyclic graph policy while its separate value-domain owner restricts Boolean to completion; it is deliberately absent from the registered table below.
 
 ## Scope
 
@@ -54,6 +54,8 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN interrupting Sub-Process boundary Timer (`bpmn-2.0.2-subprocess-boundary-timer-draft`) | 2 | one `initiate`, one `enterBoundedScope`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
 
 The configured Task capability admits one definition scope whose checked multiset contains one distinct `configuredTask`, not `serviceTask`; the selected descriptor is Activity/Probe, mappings are empty, the BPMN Error route is null, and whole-graph acyclicity remains mandatory.
+
+The unregistered `cibseven-2.2.0-user-task-boolean-completion-data-draft` checkpoint has the same checked and operation multisets as the CIB Seven User Task row and selects the same whole-graph acyclic policy. Its distinct capability is the external value-domain rule, not another graph or IL shape. Registration must add its own guarded row only after checkpoint approval.
 
 Two registered profiles share one operation multiset, and that is the contract rather than a duplicate row. The preserve-enabled successor to the CIB Seven User Task profile admits Diagram Interchange, pools, lanes, artifacts, and documentation that its predecessor rejects, and executes exactly the same program. A differing multiset would mean preserved notation had reached the executed partition, so agreement between these two rows is what [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md) claims and not an omission. Which source each profile admits is decided by the preservation capability, which is disjoint from the operation multiset this table records.
 

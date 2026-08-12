@@ -96,6 +96,7 @@ def applyEffectPatch
       if source = name &&
           (match value with
             | .string _ => true
+            | .boolean _ => false
             | .null => allowNull) then
         some
           ({ name := target, value } ::

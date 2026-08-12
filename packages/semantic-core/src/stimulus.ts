@@ -291,6 +291,11 @@ function isVariableBinding(
 
 function isVariableValue(value: Record<string, unknown>): boolean {
   switch (value.kind) {
+    case VariableValueKind.Boolean:
+      return (
+        hasOnlyKeys(value, ["kind", "value"]) &&
+        typeof value.value === "boolean"
+      );
     case VariableValueKind.String:
       return (
         hasOnlyKeys(value, ["kind", "value"]) &&
@@ -339,6 +344,11 @@ function sameVariableValue(
     return false;
   }
   switch (left.kind) {
+    case VariableValueKind.Boolean:
+      return (
+        right.kind === VariableValueKind.Boolean &&
+        left.value === right.value
+      );
     case VariableValueKind.String:
       return (
         right.kind === VariableValueKind.String &&

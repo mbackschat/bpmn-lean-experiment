@@ -29,9 +29,13 @@ public final class CibStateQueryEvidence {
     }
   }
 
-  public record ProcessVariableSnapshot(String name, String value) {
+  public record ProcessVariableSnapshot(String name, Object value) {
     public ProcessVariableSnapshot {
       Objects.requireNonNull(name, "name");
+      if (value != null && !(value instanceof String) && !(value instanceof Boolean)) {
+        throw new IllegalArgumentException(
+            "Process variable snapshot must retain string, Boolean, or null");
+      }
     }
   }
 

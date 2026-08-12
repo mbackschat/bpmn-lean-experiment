@@ -371,7 +371,7 @@ test("keeps private local bindings outside canonical observations", () => {
   const waiting = applyStimulus(program, initialState, start).state;
   const activity = waiting.variables.activities[0];
   assert.ok(activity !== undefined);
-  const withPrivateLocal = {
+  const withPrivateLocal: RuntimeState = {
     ...waiting,
     variables: {
       ...waiting.variables,

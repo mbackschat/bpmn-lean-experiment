@@ -192,9 +192,16 @@
           "minLength": 1
         },
         "value": {
-          "type": [
-            "string",
-            "null"
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       }

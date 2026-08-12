@@ -113,11 +113,16 @@ export type FireTimerStimulus = DeepReadonly<{
 export type EffectOccurrenceId = OccurrenceId;
 
 export enum VariableValueKind {
+  Boolean = "boolean",
   String = "string",
   Null = "null",
 }
 
 export type VariableValue =
+  | DeepReadonly<{
+      kind: VariableValueKind.Boolean;
+      value: boolean;
+    }>
   | DeepReadonly<{
       kind: VariableValueKind.String;
       value: string;

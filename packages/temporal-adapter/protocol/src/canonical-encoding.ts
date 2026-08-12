@@ -1,6 +1,7 @@
 import { isWellFormedWireString } from "@bpmn-lean/semantic-core";
 
 export type CanonicalTupleValue =
+  | boolean
   | string
   | number
   | ReadonlyArray<CanonicalTupleValue>;
@@ -21,6 +22,9 @@ export function canonicalTypedTupleEncoding(
 function requireCanonicalTupleValue(
   value: unknown,
 ): asserts value is CanonicalTupleValue {
+  if (typeof value === "boolean") {
+    return;
+  }
   if (isWellFormedWireString(value)) {
     return;
   }
@@ -38,6 +42,6 @@ function requireCanonicalTupleValue(
     return;
   }
   throw new TypeError(
-    "Expected a canonical typed-tuple value: nested arrays of exact strings and non-negative safe integers",
+    "Expected a canonical typed-tuple value: nested arrays of Booleans, exact strings, and non-negative safe integers",
   );
 }

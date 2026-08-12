@@ -232,7 +232,7 @@ function projectStateQuery(
         );
       }
       names.add(variable.name);
-      return projectVariable(variable);
+      return projectCibProcessVariable(variable);
     })
     .sort((left, right) =>
       compareCanonicalStrings(left.name, right.name));
@@ -243,18 +243,39 @@ function projectStateQuery(
   };
 }
 
-function projectVariable(
+export function projectCibProcessVariable(
   variable: ProcessVariableSnapshot,
 ): VariableBinding {
+  let value: VariableBinding["value"];
+  switch (typeof variable.value) {
+    case "string":
+      value = {
+        kind: "string" as VariableValueKind.String,
+        value: variable.value,
+      };
+      break;
+    case "boolean":
+      value = {
+        kind: "boolean" as VariableValueKind.Boolean,
+        value: variable.value,
+      };
+      break;
+    case "object":
+      if (variable.value !== null) {
+        throw new TypeError("unsupported raw CIB variable object");
+      }
+      value = { kind: "null" as VariableValueKind.Null };
+      break;
+    default: {
+      const unsupported: never = variable.value;
+      throw new TypeError(
+        `unsupported raw CIB variable: ${String(unsupported)}`,
+      );
+    }
+  }
   return {
     name: variable.name,
-    value:
-      variable.value === null
-        ? { kind: "null" as VariableValueKind.Null }
-        : {
-            kind: "string" as VariableValueKind.String,
-            value: variable.value,
-          },
+    value,
   };
 }
 

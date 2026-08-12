@@ -132,6 +132,8 @@ function variableValueTuple(
   binding: VariableBinding,
 ): ReadonlyArray<CanonicalTupleValue> {
   switch (binding.value.kind) {
+    case VariableValueKind.Boolean:
+      return [binding.value.kind, binding.value.value];
     case VariableValueKind.String:
       return [binding.value.kind, binding.value.value];
     case VariableValueKind.Null:

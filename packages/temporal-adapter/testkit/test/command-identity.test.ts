@@ -14,6 +14,7 @@ import {
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import type { Stimulus } from "@bpmn-lean/semantic-core";
+import type { VariableValue } from "@bpmn-lean/semantic-core";
 import {
   canonicalStimulusEncoding,
   canonicalTimerFiringEncoding,
@@ -175,6 +176,37 @@ test("content-binds every Timer Start target field", () => {
   ];
   for (const mutation of mutations) {
     assert.notEqual(contentBoundUpdateId(exact), contentBoundUpdateId(mutation));
+  }
+});
+
+test("distinguishes Boolean completion values from strings, null, and each other", () => {
+  const withValue = (value: VariableValue): Stimulus => ({
+    kind: StimulusKind.CompleteUserTaskInstance,
+    commandId: "complete-boolean-task",
+    taskId: completion.taskId,
+    submittedValues: [{
+      name: "approved",
+      value,
+    }],
+  });
+  const booleanTrue = withValue({
+    kind: VariableValueKind.Boolean,
+    value: true,
+  });
+  const variants = [
+    withValue({ kind: VariableValueKind.Boolean, value: false }),
+    withValue({ kind: VariableValueKind.String, value: "true" }),
+    withValue({ kind: VariableValueKind.Null }),
+  ];
+  assert.equal(
+    canonicalStimulusEncoding(booleanTrue),
+    '["completeUserTaskInstance","complete-boolean-task",["Instance_1","Task_1",1],[["approved",["boolean",true]]]]',
+  );
+  for (const variant of variants) {
+    assert.notEqual(
+      contentBoundUpdateId(booleanTrue),
+      contentBoundUpdateId(variant),
+    );
   }
 });
 

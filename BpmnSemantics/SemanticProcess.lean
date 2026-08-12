@@ -6,6 +6,7 @@ import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 import BpmnSemantics.SemanticProcess.ErrorDefinition
+import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.ScopeCompletion

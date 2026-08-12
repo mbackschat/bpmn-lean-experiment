@@ -304,15 +304,18 @@ public final class ScenarioProtocol {
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
     @JsonSubTypes.Type(value = StringValue.class, name = "string"),
+    @JsonSubTypes.Type(value = BooleanValue.class, name = "boolean"),
     @JsonSubTypes.Type(value = NullValue.class, name = "null")
   })
-  public sealed interface VariableValue permits StringValue, NullValue {}
+  public sealed interface VariableValue permits StringValue, BooleanValue, NullValue {}
 
   public record StringValue(String value) implements VariableValue {
     public StringValue {
       Objects.requireNonNull(value, "value");
     }
   }
+
+  public record BooleanValue(boolean value) implements VariableValue {}
 
   public record NullValue() implements VariableValue {}
 

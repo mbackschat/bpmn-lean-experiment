@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Semantic profile shape capabilities
 
@@ -158,6 +158,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-timer-start-event-draft" then
     some (1, { timerStarts := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
+      profile = booleanProcessDataCheckpointProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     -- The preserve-enabled profile reaches this shape by construction: Lean receives only the
     -- executed partition, so a source carrying retained notation and its notation-free twin
@@ -243,6 +244,7 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1, withScopeCompletions 1
       { timerInitiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
+      profile = booleanProcessDataCheckpointProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then

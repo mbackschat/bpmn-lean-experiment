@@ -122,12 +122,14 @@ def evaluateSimpleBooleanExpression
       | [] => some false
       | [{ value := .null, .. }] => some true
       | [{ value := .string _, .. }] => some false
+      | [{ value := .boolean _, .. }] => some false
       | _ => none
   | .stringEquals name expected =>
       match bindings.filter fun binding => decide (binding.name = name) with
       | [] => some false
       | [{ value := .string actual, .. }] => some (actual = expected)
       | [{ value := .null, .. }] => some false
+      | [{ value := .boolean _, .. }] => some false
       | _ => none
 
 /-- Select the first true candidate in declaration order, or the default when every candidate is false. -/

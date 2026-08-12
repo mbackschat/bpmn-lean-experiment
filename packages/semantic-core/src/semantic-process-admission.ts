@@ -34,6 +34,9 @@ import {
   isWellFormedStimulus,
 } from "./stimulus.js";
 import {
+  profileAllowsStimulusValueDomain,
+} from "./semantic-profile-value-domain.js";
+import {
   processStartMatchesProgram,
 } from "./semantic-process-triggered-start.js";
 import {
@@ -74,6 +77,9 @@ export function supportsSemanticProcessScenario(
       program.definitionScopes.length,
     ) &&
     program.identity.semanticProfile === scenario.profile &&
+    scenario.stimuli.every((stimulus) =>
+      profileAllowsStimulusValueDomain(scenario.profile, stimulus)
+    ) &&
     program.identity.sourceId === scenario.bpmn.id &&
     program.identity.sourceSha256 === scenario.bpmn.sha256 &&
     sameSourceOverlayIdentity(
@@ -97,6 +103,7 @@ export function supportsSemanticProcessExecution(
       program.operations,
       program.definitionScopes.length,
     ) &&
+    profileAllowsStimulusValueDomain(program.identity.semanticProfile, start) &&
     processStartMatchesProgram(start, program)
   );
 }

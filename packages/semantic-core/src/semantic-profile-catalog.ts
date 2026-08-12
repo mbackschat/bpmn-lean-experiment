@@ -42,3 +42,9 @@ export const SemanticProfileId = Object.freeze({
   ConfiguredTask:
     "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
 } as const);
+
+/** Profiles admitted only at an immutable semantic implementation checkpoint. */
+export const SemanticCheckpointProfileId = Object.freeze({
+  UserTaskBooleanCompletionData:
+    "cibseven-2.2.0-user-task-boolean-completion-data-draft",
+} as const);

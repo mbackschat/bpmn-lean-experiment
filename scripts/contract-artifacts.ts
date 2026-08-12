@@ -100,7 +100,7 @@ export type TaskQueryTask = Readonly<{
 
 export type ProcessVariableSnapshot = Readonly<{
   name: string;
-  value: string | null;
+  value: string | boolean | null;
 }>;
 
 export type StateQuerySnapshot = Readonly<{

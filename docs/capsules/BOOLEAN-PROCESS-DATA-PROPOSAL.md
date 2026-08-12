@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-12; implementation is at the first red/green semantic checkpoint.** This proposal selects one additive Boolean Process-variable value only for exact User Task completion under a new CIB Seven compatibility profile. The independent cold review returned one required owner-inventory correction, and the same reviewer approved correction target `389d748`. Implementation is authorized for exactly this reviewed scope; profile registration, retained evidence, and product use remain paused until the semantic checkpoint is approved.
+**Owner-approved on 2026-08-12; the first green semantic checkpoint awaits independent review.** This proposal selects one additive Boolean Process-variable value only for exact User Task completion under a new CIB Seven compatibility profile. The checkpoint implements the unregistered wire, TypeScript, Lean, CIB-runner, and shared Temporal-encoding mechanism. Profile registration, retained evidence, differential and live Temporal lanes, and product use remain paused until the semantic checkpoint is approved.
 
 ## Independent cold-review receipt
 
@@ -181,7 +181,13 @@ The nearest unsupported claim is routing on a Boolean Process variable. That req
 
 Pre-release atomic replacement applies to the shared value union and every exhaustive producer/consumer, while the new profile is additive. Existing profile and scenario artifact bytes do not change. No retained production history baseline exists; approval of a durable baseline would require explicit migration, patch, replay, and rollback decisions.
 
-The implementation must atomically update or satisfy the strict [scenario schema](../../contracts/schemas/scenario.schema.json), [CIB evidence schema](../../contracts/schemas/cibseven-evidence.schema.json), [semantic value contract](../../packages/semantic-core/src/contract.ts), [stimulus validator](../../packages/semantic-core/src/stimulus.ts), [semantic deployment admission](../../packages/semantic-core/src/semantic-process-admission.ts), [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts), [effect-data boundary](../../packages/semantic-core/src/semantic-process-data.ts), [Simple Boolean evaluator](../../packages/semantic-core/src/simple-boolean-expression.ts), [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts), [checked profile shapes](../../packages/semantic-core/src/checked-process-profile-shape.ts), [program profile shapes](../../packages/semantic-core/src/semantic-program-profile-shape.ts), Lean [scenario contract](../../BpmnSemantics/Scenario.lean), [JSON support](../../BpmnSemantics/SemanticProcess/JsonSupport.lean), [execution admission](../../BpmnSemantics/SemanticProcess/Execution.lean), [profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean), [effect-patch data boundary](../../BpmnSemantics/SemanticProcess/Data.lean), [Simple Boolean evaluator](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean), and [JSON encoder](../../BpmnSemantics/SemanticProcessJsonMain.lean), Java [scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java), [variable binding bridge](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableBindings.java), [scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java), [raw query evidence](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibStateQueryEvidence.java), and [state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java), retained-artifact [raw value contract](../../scripts/contract-artifacts.ts) and [raw-to-canonical projector](../../scripts/contract-cib-evidence-projection.ts), Temporal [command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts), [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts), and [host interaction plan](../../packages/temporal-adapter/runner/src/host-interaction-plan.ts), plus the profile, scenario, artifact, differential, runnable, and live-evidence registries.
+The implementation must atomically update or satisfy the strict [scenario schema](../../contracts/schemas/scenario.schema.json), [CIB evidence schema](../../contracts/schemas/cibseven-evidence.schema.json), [semantic value contract](../../packages/semantic-core/src/contract.ts), [stimulus validator](../../packages/semantic-core/src/stimulus.ts), [semantic deployment admission](../../packages/semantic-core/src/semantic-process-admission.ts), [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts), [effect-data boundary](../../packages/semantic-core/src/semantic-process-data.ts), [Simple Boolean evaluator](../../packages/semantic-core/src/simple-boolean-expression.ts), [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts), [checked profile shapes](../../packages/semantic-core/src/checked-process-profile-shape.ts), [program profile shapes](../../packages/semantic-core/src/semantic-program-profile-shape.ts), and [graph-policy selector](../../packages/semantic-core/src/semantic-process-graph-policy.ts).
+
+The Lean consumers are the [scenario contract](../../BpmnSemantics/Scenario.lean), [JSON support](../../BpmnSemantics/SemanticProcess/JsonSupport.lean), [execution admission](../../BpmnSemantics/SemanticProcess/Execution.lean), [profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean), [effect-patch data boundary](../../BpmnSemantics/SemanticProcess/Data.lean), [Simple Boolean evaluator](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean), and [JSON encoder](../../BpmnSemantics/SemanticProcessJsonMain.lean). The source boundary must retain the same exact checked graph and IL through the [checkpoint compilation oracle](../../packages/bpmn-source/test/boolean-process-data-checkpoint-source.test.ts).
+
+The Java consumers are the [scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java), [variable binding bridge](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableBindings.java), [scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java), [raw query evidence](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibStateQueryEvidence.java), and [state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java). The retained-artifact consumers are the [raw value contract](../../scripts/contract-artifacts.ts) and [raw-to-canonical projector](../../scripts/contract-cib-evidence-projection.ts).
+
+The Temporal consumers are the shared [canonical typed-tuple encoder](../../packages/temporal-adapter/protocol/src/canonical-encoding.ts), [command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts), [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts), and [host interaction plan](../../packages/temporal-adapter/runner/src/host-interaction-plan.ts), plus the later profile, scenario, artifact, differential, runnable, and live-evidence registries. The shared encoder recognizes primitive Boolean so command and effect encoders remain exhaustive; profile admission still rejects Boolean effect data.
 
 The Lean effect-patch owner must reject Boolean on both success and BPMN Error result paths. The Lean Simple Boolean evaluator must remain total over the widened union with Boolean counted as present, not null, and unequal to every string. The retained raw evidence contract must preserve Java Boolean as a distinct primitive, and the raw-to-canonical projector must map it to the Boolean tagged value without applying string conversion. A new focused `cib-variable-value-projection.test.ts` owns the Boolean-versus-string mutation and is registered in `test:contracts`; the existing 586/600-line artifact-projection test does not grow.
 
@@ -191,23 +197,25 @@ A new cohesive `semantic-profile-value-domain.ts` and Lean `SemanticProcess/Valu
 
 | Owner | Headroom |
 |---|---:|
-| [TypeScript value contract](../../packages/semantic-core/src/contract.ts) | 345 |
-| [TypeScript stimulus validator](../../packages/semantic-core/src/stimulus.ts) | 226 |
-| [TypeScript deployment admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 256 |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 311 |
-| [Lean external execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 48 |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 205 |
-| [Lean effect-patch data boundary](../../BpmnSemantics/SemanticProcess/Data.lean) | 480 |
-| [Lean Simple Boolean evaluator](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean) | 473 |
-| [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 2 |
-| [Java scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 23 |
-| [Java state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 327 |
+| [TypeScript value contract](../../packages/semantic-core/src/contract.ts) | 340 |
+| [TypeScript stimulus validator](../../packages/semantic-core/src/stimulus.ts) | 216 |
+| [TypeScript deployment admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 249 |
+| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 302 |
+| [TypeScript graph-policy selector](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 532 |
+| [Lean external execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 43 |
+| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 203 |
+| [Lean effect-patch data boundary](../../BpmnSemantics/SemanticProcess/Data.lean) | 479 |
+| [Lean Simple Boolean evaluator](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean) | 471 |
+| [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 167 |
+| [Java scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 19 |
+| [Java state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 318 |
 | [Retained CIB artifact contract](../../scripts/contract-artifacts.ts) | 13 |
-| [Raw-to-canonical CIB projector](../../scripts/contract-cib-evidence-projection.ts) | 82 |
-| [Temporal command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 439 |
-| [Temporal effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 462 |
+| [Raw-to-canonical CIB projector](../../scripts/contract-cib-evidence-projection.ts) | 61 |
+| [Temporal command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 434 |
+| [Temporal canonical typed-tuple encoder](../../packages/temporal-adapter/protocol/src/canonical-encoding.ts) | 556 |
+| [Temporal effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 460 |
 | [Differential case catalog](../../packages/differential/test/pipeline-cases.ts) | 20 |
-| [Effect transport test](../../packages/temporal-adapter/testkit/test/effect-transport.test.ts) | 54 |
+| [Effect transport test](../../packages/temporal-adapter/testkit/test/effect-transport.test.ts) | 30 |
 
 The Java scenario protocol measures 598/600 nonblank lines, so its cohesive behavior-preserving extraction is mandatory before adding the value variant. The differential catalog measures 580/600, so it may receive only the family import/spread while the new case body lives in its own owner. The Java runner measures 577/600 and may receive only delegation calls; a larger change triggers extraction. Lean execution measures 552/600 and may receive only narrow value-policy calls. The effect-transport test measures 546/600, so its Boolean discriminator stays small and live evidence belongs in a new dedicated owner. Each condition stops applying when the linked source measurement changes, and the reviewability guard recomputes every headroom figure.
 

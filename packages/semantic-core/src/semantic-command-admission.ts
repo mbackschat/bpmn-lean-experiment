@@ -51,6 +51,9 @@ import {
 } from "./semantic-process-monitored-task-runtime.js";
 import { SemanticProfileId } from "./semantic-process-profile.js";
 import {
+  profileAllowsStimulusValueDomain,
+} from "./semantic-profile-value-domain.js";
+import {
   addToken,
   ControlStateKind,
   sameOccurrence,
@@ -72,6 +75,12 @@ export function admit(
   state: RuntimeState,
   stimulus: Stimulus,
 ): CommandAdmission {
+  if (!profileAllowsStimulusValueDomain(
+    program.identity.semanticProfile,
+    stimulus,
+  )) {
+    return { outcome: CommandOutcome.Rejected, state };
+  }
   switch (stimulus.kind) {
     case StimulusKind.StartProcess: {
       const entryScopes = program.definitionScopes.filter(

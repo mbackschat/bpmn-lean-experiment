@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
@@ -34,6 +35,7 @@ final class ScenarioVariableBindings {
       Object value =
           switch (binding.value()) {
             case StringValue stringValue -> stringValue.value();
+            case BooleanValue booleanValue -> booleanValue.value();
             case NullValue ignored -> null;
           };
       variables.put(binding.name(), value);

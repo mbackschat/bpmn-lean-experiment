@@ -144,7 +144,7 @@ function validateCompletionResponse(value: Record<string, unknown>): void {
   };
   if (!isWellFormedStimulus(probe)) {
     throw new TypeError(
-      "Completion response submittedValues must be a canonical string/null patch",
+      "Completion response submittedValues must be a canonical typed patch",
     );
   }
 }

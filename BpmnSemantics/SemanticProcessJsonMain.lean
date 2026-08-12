@@ -83,18 +83,10 @@ private def effectDescriptorJson (descriptor : EffectDescriptor) : Json :=
     [ ("protocol", toJson descriptor.protocol)
     , ("operation", toJson descriptor.operation) ]
 
-private def variableValueJson : VariableValue → Json
-  | .string value =>
-      Json.mkObj
-        [ ("kind", toJson "string")
-        , ("value", toJson value) ]
-  | .null =>
-      Json.mkObj [("kind", toJson "null")]
-
 private def variableBindingJson (binding : VariableBinding) : Json :=
   Json.mkObj
     [ ("name", toJson binding.name)
-    , ("value", variableValueJson binding.value) ]
+    , ("value", encodeVariableValue binding.value) ]
 
 private def effectExecutionResultJson : EffectExecutionResult → Json
   | .success localPatch =>

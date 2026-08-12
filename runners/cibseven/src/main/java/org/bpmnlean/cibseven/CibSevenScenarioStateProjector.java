@@ -10,6 +10,7 @@ import org.bpmnlean.cibseven.CibStateQueryEvidence.ProcessVariableSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.MessageSubscriptionSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
 import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
+import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioInteractionProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectJobSnapshot;
@@ -207,16 +208,24 @@ final class CibSevenScenarioStateProjector {
     if (value instanceof String stringValue) {
       return new ProcessVariableSnapshot(name, stringValue);
     }
+    if (value instanceof Boolean booleanValue) {
+      return new ProcessVariableSnapshot(name, booleanValue);
+    }
     throw new IllegalStateException(
-        "Canonical Process variable must be string or null: " + name);
+        "Canonical Process variable must be string, Boolean, or null: " + name);
   }
 
   private VariableBinding projectVariable(ProcessVariableSnapshot variable) {
-    return new VariableBinding(
-        variable.name(),
-        variable.value() == null
-            ? new NullValue()
-            : new StringValue(variable.value()));
+    var value =
+        switch (variable.value()) {
+          case null -> new NullValue();
+          case String stringValue -> new StringValue(stringValue);
+          case Boolean booleanValue -> new BooleanValue(booleanValue);
+          default ->
+              throw new IllegalStateException(
+                  "Unsupported retained Process variable " + variable.name());
+        };
+    return new VariableBinding(variable.name(), value);
   }
 
   CleanupProjection observeCleanup() {

@@ -149,10 +149,26 @@ def decodeVariableValue (json : Json) :
   | "string" =>
       requireObjectShape json ["kind", "value"]
       pure (.string (← stringField json "value"))
+  | "boolean" =>
+      requireObjectShape json ["kind", "value"]
+      pure (.boolean (← (← field json "value").getBool?))
   | "null" =>
       requireObjectShape json ["kind"]
       pure .null
   | kind => throw s!"unsupported variable value {kind}"
+
+/-- Encode one typed variable value without collapsing Boolean, String, and null identities. -/
+def encodeVariableValue : VariableValue → Json
+  | .string value =>
+      Json.mkObj
+        [ ("kind", toJson "string")
+        , ("value", toJson value) ]
+  | .boolean value =>
+      Json.mkObj
+        [ ("kind", toJson "boolean")
+        , ("value", toJson value) ]
+  | .null =>
+      Json.mkObj [("kind", toJson "null")]
 
 def decodeVariableBinding (json : Json) :
     Except String VariableBinding := do

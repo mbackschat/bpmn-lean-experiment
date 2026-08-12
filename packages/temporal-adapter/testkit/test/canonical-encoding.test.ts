@@ -55,10 +55,13 @@ test("matches native SHA-256 for the proposed multi-block effect transport bytes
   );
 });
 
-test("encodes only nested strings and non-negative safe integers", () => {
+test("encodes only nested Booleans, strings, and non-negative safe integers", () => {
   assert.equal(
-    canonicalTypedTupleEncoding(["domain", ["😀", 0, 9007199254740991]]),
-    '["domain",["😀",0,9007199254740991]]',
+    canonicalTypedTupleEncoding([
+      "domain",
+      [true, false, "😀", 0, 9007199254740991],
+    ]),
+    '["domain",[true,false,"😀",0,9007199254740991]]',
   );
   // Every rejected case is deliberately outside `CanonicalTupleValue`, so the
   // list stays untyped input for the runtime validator under test.

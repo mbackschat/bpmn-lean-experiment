@@ -144,6 +144,11 @@ function variableBindingTuple(
   binding: VariableBinding,
 ): ReadonlyArray<import("./canonical-encoding.js").CanonicalTupleValue> {
   switch (binding.value.kind) {
+    case VariableValueKind.Boolean:
+      return [
+        binding.name,
+        [binding.value.kind, binding.value.value],
+      ];
     case VariableValueKind.String:
       return [
         binding.name,
