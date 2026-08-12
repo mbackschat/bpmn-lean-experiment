@@ -8,9 +8,9 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting. Each capsule owns its own meaning and exclusions; this document owns only their status.
 
-**Current closure boundary.** The standards-only Message Start capability and Product 2 [Message Start ingress specification](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) are closure-reviewed and evidence-closed. Product 2 publishes the complete capability, owns a strict one-target public resource contract, persists the no-redispatch lifecycle through a shared SQLite schema epoch, and uses a handle-free direct-start host with Worker-independent retained comparison. Its strict HTTP routes, production server composition, exact-version UI, response-loss and Worker-replacement live witness, exact production-derived fanout mutation, history/replay evidence, recursive private-fact exclusion, and field-specific browser Process-instance oracle are green. No broker route or definition-version fanout exists.
+**Current closure boundary.** The standards-only Message Start capability and Product 2 [Message Start ingress specification](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) are closure-reviewed and evidence-closed. Product 2 owns the strict one-target resource, no-redispatch SQLite lifecycle, handle-free host, HTTP and UI surfaces, response-loss and Worker-replacement witness, fanout mutation, history/replay, private-fact exclusion, and browser identity oracle. No broker route or version fanout exists.
 
-**Current implementation checkpoint.** Process-instance search is approved first-green through its contract, index, and three producers. HTTP, web, live, browser, and closure remain absent until evidenced.
+**Current closure boundary.** Process-instance search is green through its identity contract, SQLite index, three producers, HTTP/web, live restart/paging/filter/private-fact evidence, and browser acceptance. Review and graduation remain.
 
 **Current Timer Start boundary.** The closure-reviewed standards-only Timer Start capability admits an exact top-level `PT1S` Timer Start Event, preserves Start Event and duration identity through checked source and `initiateTimer`, executes an exact-target start stimulus in Lean and the TypeScript core, and closes in two unique internal steps to the existing User Task wait. Its profile, answer-free scenario, product example, and differential case are registered.
 
@@ -127,8 +127,10 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - An HTTP-only definition-schedule web client and exact-version panel that list Timer Start capabilities, generate an editable public schedule identity, and create, inspect, refresh, and cancel schedules without engine or Temporal imports
 - A live M2 Temporal witness covering exact version-1 retention after version-2 deployment, SQLite restart, Worker absence and replacement, opaque execution identity, action-won conflict, pre-start cancellation, one-action exhaustion, terminal cleanup, history, replay, and public private-ID exclusion
 - An M2 browser showcase that composes the production server, Worker, Temporal service, and React UI and proves the scheduled version-1 Process instance after later version-2 deployment; the M1 showcase remains a separate unseen-source regression floor
-- A strict identity-only Process-instance search contract and independent `@bpmn-lean/platform-operate` SQLite index with exact filters, bounded opaque-cursor paging, immutable snapshots, classified same-ID races, and no Temporal dependency
-- All three producers record through a definitions-owned output port before public success; durable Schedule and Message retries repair the same record without repeating host work, and the server structurally injects the recorder
+- An identity-only Process-instance search contract and independent `@bpmn-lean/platform-operate` SQLite index with exact filters, stable opaque-cursor paging, immutable snapshots, classified same-ID races, and no Temporal dependency
+- Three definitions-owned producer hooks that record before success and let durable Schedule and Message retries repair without repeating host work
+- A strict global HTTP route and HTTP-only panel with duplicate refusal, filter-preserving paging, exact public fields, and no inferred lifecycle, time, origin, or private host fact
+- Live restart, insertion-stable paging, exact-filter, external-start-exclusion, private-fact-scan, and three-distinct-Temporal-execution evidence plus field-specific browser acceptance
 
 #### Explicitly absent
 
@@ -139,7 +141,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - the two engine changes the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as prerequisites: publicly recoverable transitions and token positions, and a profile admission capability plus public projection for User Task assignment and form metadata
-- the Process-instance search HTTP route, web client and panel, live three-producer witness, browser acceptance, and closure evidence
+- complete discovery of engine Process instances started outside Product 2 or accepted by the legacy direct-start host after Product 2 loses its response before recording
 
 ### A12 Workflows downstream adoption
 
