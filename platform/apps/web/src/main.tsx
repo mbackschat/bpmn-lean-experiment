@@ -9,6 +9,8 @@ import { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import { DefinitionApiClient } from "./definitions-api";
 import { MessageStartPublicationApiClient } from "./message-start-publication-api";
 import "./message-start-publication.css";
+import { ProcessInstanceSearchApiClient } from "./process-instance-search-api";
+import "./process-instance-search.css";
 import "./styles.css";
 
 const container = document.getElementById("root");
@@ -18,12 +20,14 @@ if (container === null) {
 
 const api = new DefinitionApiClient(window.location.origin);
 const messageStartPublicationApi = new MessageStartPublicationApiClient(window.location.origin);
+const processInstanceSearchApi = new ProcessInstanceSearchApiClient(window.location.origin);
 const scheduleApi = new DefinitionScheduleApiClient(window.location.origin);
 createRoot(container).render(
   <StrictMode>
     <App
       api={api}
       messageStartPublicationApi={messageStartPublicationApi}
+      processInstanceSearchApi={processInstanceSearchApi}
       scheduleApi={scheduleApi}
     />
   </StrictMode>,

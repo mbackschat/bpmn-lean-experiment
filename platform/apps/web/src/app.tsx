@@ -14,14 +14,22 @@ import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
 import { MessageStartPublicationPanel } from "./message-start-publication-panel";
+import type { ProcessInstanceSearchApi } from "./process-instance-search-api";
+import { ProcessInstanceSearchPanel } from "./process-instance-search-panel";
 
 export type AppProps = Readonly<{
   api: DefinitionApiClient;
   messageStartPublicationApi: MessageStartPublicationApiClient;
+  processInstanceSearchApi: ProcessInstanceSearchApi;
   scheduleApi: DefinitionScheduleApiClient;
 }>;
 
-export function App({ api, messageStartPublicationApi, scheduleApi }: AppProps) {
+export function App({
+  api,
+  messageStartPublicationApi,
+  processInstanceSearchApi,
+  scheduleApi,
+}: AppProps) {
   const [definitions, setDefinitions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
   const [versions, setVersions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
   const [selected, setSelected] = useState<DeployedDefinitionVersion | null>(null);
@@ -134,6 +142,8 @@ export function App({ api, messageStartPublicationApi, scheduleApi }: AppProps) 
       {error === null ? null : <p className="error" role="alert">{error}</p>}
       {loading ? <p className="loading" role="status">Refreshing definitions…</p> : null}
       <DeploymentResult result={deployment} />
+
+      <ProcessInstanceSearchPanel api={processInstanceSearchApi} />
 
       <div className="workspace-grid">
         <aside className="catalog-panel" aria-labelledby="catalog-heading">
