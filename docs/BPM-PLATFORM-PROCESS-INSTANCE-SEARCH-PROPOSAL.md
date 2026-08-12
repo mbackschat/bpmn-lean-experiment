@@ -16,9 +16,9 @@ The engine currently publishes an exact semantic Process-instance identity and d
 
 A search item means exactly this:
 
-> Product 2 completed one of its existing public start paths far enough to receive a confirmed semantic Process-instance identity, and durably recorded that exact public fact before returning the successful response that exposed it.
+> The platform durably accepted one exact engine-confirmed public Process-instance identity from an admitted producer.
 
-The three admitted producers are:
+The current producer set is exactly:
 
 1. body-free exact-version definition start returning `started`;
 2. one-shot definition Schedule reaching `started`;
@@ -26,7 +26,7 @@ The three admitted producers are:
 
 Pending, scheduled, missed, cancelled, rejected, indeterminate, integrity-failed, and host-only executions create no search item. Search absence is not proof that no Temporal Workflow exists. In particular, the existing non-idempotent direct-start route can lose its response after host acceptance but before Product 2 records success. That pre-existing M1 ambiguity is outside this increment and must not be disguised as an empty search result with stronger meaning.
 
-Instances started through the engine runner, a Temporal client, or another adopter outside the Product 2 public API are also absent by definition.
+Instances started through the engine runner, a Temporal client, or another adopter outside the Product 2 public API are absent under the current producer set. Adding an engine publication feed is a separate public-observation change and requires its own reviewed contract; the identity-only search result does not prevent that later producer addition.
 
 ## Public contract
 
@@ -75,6 +75,8 @@ Each row stores:
 
 The repository enforces one Process-instance identity globally. Re-recording the byte-equivalent public fact is idempotent. Reusing the same Process-instance identity with a changed definition, source, profile, or capabilities is an integrity failure. The full definition snapshot is decoded and compared on every read rather than trusting filter columns independently.
 
+Independent repository connections preserve those outcomes under a same-identity race. Concurrent byte-equivalent records both resolve idempotently to one row and one ordinal. Concurrent conflicting records produce one winner and one classified integrity failure, leaving the winner byte-identical and unchanged.
+
 The index is not an engine source of truth and is not a transition-record projection. It is an append-only Product 2 registry of confirmed starts. Deleting or corrupting its database loses or blocks search but does not alter an engine Process. Rebuild from engine Event History or Temporal Visibility is prohibited. Backfill of starts that predate this feature is excluded.
 
 ## Producer integration and failure boundary
@@ -88,6 +90,8 @@ Each service records only after its existing host or durable lifecycle has produ
 - Message publication projection records only state `accepted` and before a successful response exposing the instance.
 
 Schedule and publication retries re-project the same confirmed fact and therefore repair a previous index-write failure idempotently. Their existing durable resource identities remain authoritative for retry. Direct start has no caller-owned idempotency identity, retained receipt, or describe reconciliation, so an index-write failure after host acceptance remains the explicit ambiguity named above and returns no successful public start response.
+
+A recorder failure never yields a public success that exposes the unrecorded instance. Direct start leaves no index row and returns `500` with the canonical `internalFailure` body rather than `201`. A Schedule or Message-publication response that would first expose its durable `started` or `accepted` instance leaves no index row and returns the same `500` response; retrying that exact durable resource records one byte-equivalent identity and then succeeds.
 
 No database transaction spans a host call or crosses the `definitions` and `operate` databases. The index write is synchronous and atomic within its own database.
 
@@ -112,7 +116,9 @@ The nearest realistic wrong account is a search implementation backed by Tempora
 | Rule | Required evidence | Separating failure |
 |---|---|---|
 | `PSEARCH-FACT-01` | Direct start, started Schedule, and accepted Message publication each record one exact public identity before success returns | Omitting any one producer makes the three-receipt identity set fail |
+| `PSEARCH-RECORD-01` | Throwing recorder faults on direct start, Schedule, and Message publication leave no row and suppress public success; retry of each durable Schedule/publication resource repairs to one record | Catching recorder failure and returning `201` or an instance-bearing `200`, or duplicating the repaired row, fails |
 | `PSEARCH-EXACT-01` | Repository reopen and public decoder preserve full definition/source/profile/capability identity | Same Process-instance ID with changed version, source digest, or capability is rejected |
+| `PSEARCH-RACE-01` | Two independent connections race equivalent and conflicting same-ID records | Select-then-insert admits duplicates, two ordinals, an unclassified database error, or replacement of the winning bytes |
 | `PSEARCH-STATE-01` | Pending, scheduled, missed, cancelled, rejected, indeterminate, and integrity-failed inputs create no item | Treating resource existence as a started Process fails focused service tests |
 | `PSEARCH-PAGE-01` | Newest-first limit-plus-one paging remains stable when a newer row is inserted between pages | Offset pagination duplicates or skips an older row |
 | `PSEARCH-BOUNDARY-01` | Product and Temporal boundary guards plus recursive public-value scan | Any Workflow/Run/task-queue/Memo/history/private-ordinal field fails |
