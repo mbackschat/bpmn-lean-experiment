@@ -1,5 +1,6 @@
 import type {
   PublicWorkTask,
+  PublicWorkTaskId,
   WorkTaskSnapshot,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -28,6 +29,10 @@ export type SystemWorkTask = Readonly<{
   registration: WorkProcessRegistration;
   task: PublicWorkTask["task"];
   claim: WorkClaimSnapshot;
+}>;
+
+export type ActorVisibleSystemWorkTask = SystemWorkTask & Readonly<{
+  publicTask: PublicWorkTask;
 }>;
 
 type WorkRepositoryPort = Readonly<{
@@ -117,25 +122,49 @@ export class WorkService {
   }
 
   async listTasks(): Promise<WorkTaskSnapshot> {
-    const actor = this.#options.actors.resolveActor();
     const visible: PublicWorkTask[] = [];
     for (const item of await this.observeSystemTasks()) {
-      const decision = this.#options.authorization.decideTask(actor, {
-        candidateGroupId: item.task.metadata?.assignment.candidates[0].id ?? null,
-        claimActorId: item.claim.claim?.actorId ?? null,
-      });
-      if (!isTaskVisible(decision)) continue;
-      visible.push({
+      const projected = this.#projectVisible(item);
+      if (projected !== null) visible.push(projected.publicTask);
+    }
+    visible.sort(compareWorkTasks);
+    return { tasks: visible };
+  }
+
+  async findVisibleTask(
+    taskId: PublicWorkTaskId,
+  ): Promise<ActorVisibleSystemWorkTask | null> {
+    const matches = (await this.observeSystemTasks()).filter((item) =>
+      sameTaskId(item.task.id, taskId)
+    );
+    if (matches.length > 1) throw new WorkSnapshotUnavailableError();
+    return matches.length === 0 ? null : this.#projectVisible(matches[0]!);
+  }
+
+  #projectVisible(item: SystemWorkTask): ActorVisibleSystemWorkTask | null {
+    const actor = this.#options.actors.resolveActor();
+    const decision = this.#options.authorization.decideTask(actor, {
+      candidateGroupId: item.task.metadata?.assignment.candidates[0].id ?? null,
+      claimActorId: item.claim.claim?.actorId ?? null,
+    });
+    if (!isTaskVisible(decision)) return null;
+    return {
+      ...item,
+      publicTask: {
         task: item.task,
         hostingInstance: item.registration.instance,
         claimGeneration: item.claim.claimGeneration,
         claim: item.claim.claim,
         claimableByCurrentActor: isTaskClaimable(decision),
-      });
-    }
-    visible.sort(compareWorkTasks);
-    return { tasks: visible };
+      },
+    };
   }
+}
+
+function sameTaskId(left: PublicWorkTaskId, right: PublicWorkTaskId): boolean {
+  return left.processInstanceId === right.processInstanceId &&
+    left.elementId === right.elementId &&
+    left.activation === right.activation;
 }
 
 function compareWorkTasks(left: PublicWorkTask, right: PublicWorkTask): number {

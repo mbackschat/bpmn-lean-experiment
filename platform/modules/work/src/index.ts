@@ -13,6 +13,8 @@ export {
   WorkSnapshotUnavailableError,
 } from "./work-service.js";
 export type { SystemWorkTask } from "./work-service.js";
+export type { ActorVisibleSystemWorkTask } from "./work-service.js";
+export { WorkTaskDetailService } from "./work-task-detail-service.js";
 export {
   WorkAuditOutboxService,
 } from "./work-audit-outbox-service.js";
