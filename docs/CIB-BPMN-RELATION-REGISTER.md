@@ -26,7 +26,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Permitted operational details | 7 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 9 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution; one Boolean-completion extension is proposed and awaits owner approval |
+| Selected CIB extensions | 10 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution; Boolean completion is selected while its profile registration and retained evidence remain pending |
 | Configuration-specific realizations | 7 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -340,7 +340,7 @@ This is an additional CIB public-service extension over the BPMN User Task lifec
 
 **Evidence:** The Java-21 [Boolean phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBooleanProcessDataPhaseZeroProbeTest.java) uses pinned CIB Seven `2.2.0`, the public Model API, Task Service, Runtime Service, and History Service under `CIB-CFG-0001`. The [Boolean Process-data proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md) owns the selected project rules, profile gate, Lean question, and Temporal preflight. The [checkpoint CIB test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBooleanProcessDataCheckpointTest.java) separately locks the project representation, value-domain admission, actual Java Boolean projection, and old-profile refusal.
 
-**Boundary:** Only primitive Java Boolean on one exact active User Task completion, Process-scope create/replace/preserve merge, continuation visibility, final-history visibility, and unknown/stale refusal are proposed. Boolean Process Start, task-local/transient data, nested or serialized values, numbers, deletion, BPMN input/output specifications and Data Associations, forms, field validation, authorization, assignment, expression evaluation, effects, multiple active dummy tasks, and general Task Service compatibility remain excluded. Existing `CIB-EXT-0005` and `CIB-EXT-0006` remain frozen to string/null values.
+**Boundary:** Only primitive Java Boolean on one exact active User Task completion, Process-scope create/replace/preserve merge, continuation visibility, final-history visibility, and unknown/stale refusal are selected. Boolean Process Start, task-local/transient data, nested or serialized values, numbers, deletion, BPMN input/output specifications and Data Associations, forms, field validation, authorization, assignment, expression evaluation, effects, multiple active dummy tasks, and general Task Service compatibility remain excluded. Existing `CIB-EXT-0005` and `CIB-EXT-0006` remain frozen to string/null values.
 
 ### Research queue
 
