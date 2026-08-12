@@ -270,7 +270,7 @@ This table classifies the complete current field denominator of `scenario.schema
 | `openUserTasks[].id.elementId` | `engine-observed` | Public task definition key |
 | `openUserTasks[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated live elements are refused |
 | `openUserTasks[].name` | `engine-observed` | Public task name, including `null` |
-| `openUserTasks[].metadata` | `not-claimed` | Optional E2 checkpoint field; retained CIB compatibility evidence is paused until semantic checkpoint approval |
+| `openUserTasks[].metadata` | `not-claimed` | Optional E2 checkpoint field; retained CIB compatibility evidence is active closure work |
 | `openUserTasks[].metadata.assignment` | `not-claimed` | Neutral checkpoint structure without a retained CIB claim yet |
 | `openUserTasks[].metadata.assignment.candidates` | `not-claimed` | Exact one-candidate checkpoint tuple without a retained CIB claim yet |
 | `openUserTasks[].metadata.assignment.candidates[].kind` | `not-claimed` | Neutral `group` discriminator pending independent raw identity-link evidence |

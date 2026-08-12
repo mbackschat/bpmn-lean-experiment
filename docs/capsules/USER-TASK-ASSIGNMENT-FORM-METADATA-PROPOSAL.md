@@ -26,14 +26,14 @@ Those standard constructs are not reinterpreted here. A Resource name does not e
 
 The selected source instead uses two separately classified CIB extensions:
 
-- proposed [`CIB-EXT-0011`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0011--one-literal-candidate-group-on-a-user-task) for exact `{http://camunda.org/schema/1.0/bpmn}candidateGroups`;
-- proposed [`CIB-EXT-0012`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0012--one-typed-generated-form-field-on-a-user-task) for exact `{http://camunda.org/schema/1.0/bpmn}formData/formField`.
+- selected [`CIB-EXT-0011`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0011--one-literal-candidate-group-on-a-user-task) for exact `{http://camunda.org/schema/1.0/bpmn}candidateGroups`;
+- selected [`CIB-EXT-0012`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0012--one-typed-generated-form-field-on-a-user-task) for exact `{http://camunda.org/schema/1.0/bpmn}formData/formField`.
 
 This restriction is forward-compatible because the checked and public metadata representation carries neutral candidate and field concepts rather than Camunda XML names. A later standard Resource Role, WSHumanTask rendering, or another reviewed vendor source can project the same neutral values when its own identity and type account is independently selected. No already admitted source is reinterpreted.
 
 ## Selected source profile
 
-The proposed profile ID is `cibseven-2.2.0-user-task-assignment-form-metadata-draft`. It composes the registered Boolean-completion value policy and reuses the exact root `None Start Event -> User Task -> None End Event` graph. Process Start stays string/null-only. Exact User Task completion stays string/null/Boolean and continues to match only the existing semantic occurrence identity.
+The selected profile ID is `cibseven-2.2.0-user-task-assignment-form-metadata-draft`. It composes the registered Boolean-completion value policy and reuses the exact root `None Start Event -> User Task -> None End Event` graph. Process Start stays string/null-only. Exact User Task completion stays string/null/Boolean and continues to match only the existing semantic occurrence identity.
 
 The one User Task may have no metadata or one complete metadata block. Metadata is complete only when all of these hold:
 
