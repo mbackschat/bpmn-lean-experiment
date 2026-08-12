@@ -407,6 +407,12 @@ Required M2 definition-scheduling showcase, including live Temporal evidence and
 ./scripts/pnpm.sh run test:showcase:m2
 ```
 
+Focused M2 Process-instance search live and browser gate:
+
+```sh
+./scripts/pnpm.sh run test:showcase:m2-process-instance-search
+```
+
 Keep the M1 gate as an independent unseen-source deployment regression floor when running M2.
 
 Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:

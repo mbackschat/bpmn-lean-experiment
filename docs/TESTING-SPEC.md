@@ -82,6 +82,7 @@ git diff --check
 | M1 deployment, versioning, exact-source rendering, attribution, exact-version start, real Temporal hosting, or rejection acceptance | `./scripts/pnpm.sh run test:showcase:m1` after installing the pinned Playwright Chromium |
 | M2 exact-version Timer Start scheduling or Message Start publication, including lifecycle/refinement evidence, web composition, and browser acceptance | `./scripts/pnpm.sh run test:showcase:m2` after installing the pinned Playwright Chromium; use `test:showcase:m2-message-start-ingress` for the Message Start lane alone |
 | M2 Process-instance search public contract, durable index, or producer recording checkpoint | `./scripts/pnpm.sh run test:platform-process-search-checkpoint` |
+| M2 Process-instance search HTTP, UI, three-producer live evidence, restart/paging, or browser acceptance | `./scripts/pnpm.sh run test:showcase:m2-process-instance-search`; the complete M2 gate includes it through `test:showcase:m2` |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` (strict harness types plus runtime tests) |
 | Provisional representation experiment | `./scripts/lake.sh build checkSemanticRepresentationSpike && ./scripts/lake.sh exe checkSemanticRepresentationSpike` |
 | Checked-source relation experiment | `./scripts/lake.sh build checkCheckedSourceRelationExperiment && ./scripts/lake.sh exe checkCheckedSourceRelationExperiment` |
