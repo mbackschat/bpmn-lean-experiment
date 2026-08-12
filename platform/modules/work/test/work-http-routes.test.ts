@@ -14,12 +14,13 @@ const taskId = {
 
 test("serves the strict task snapshot and refuses a GET body before service entry", async () => {
   let calls = 0;
+  let reconciliations = 0;
   const routes = createRoutes({
     listTasks: async () => {
       calls += 1;
       return { tasks: [] };
     },
-  });
+  }, () => { reconciliations += 1; });
 
   const success = await routes.handle(new Request("http://platform.test/api/v1/work-tasks"));
   assert.equal(success?.status, 200);
@@ -30,6 +31,7 @@ test("serves the strict task snapshot and refuses a GET body before service entr
   }));
   assert.equal(invalid?.status, 400);
   assert.equal(calls, 1);
+  assert.equal(reconciliations, 2);
 });
 
 test("maps uniform hidden task and snapshot availability without private evidence", async () => {
@@ -134,13 +136,17 @@ test("maps release, completion, and self-audit closed results", async () => {
   assert.deepEqual(await audit?.json(), { events: [], nextCursor: null });
 });
 
-function createRoutes(overrides: Record<string, unknown>): WorkHttpRoutes {
+function createRoutes(
+  overrides: Record<string, unknown>,
+  reconcileAll: () => void = () => undefined,
+): WorkHttpRoutes {
   return new WorkHttpRoutes({
     tasks: {
       listTasks: async () => ({ tasks: [] }),
       ...overrides,
     } as never,
     audit: { search: () => ({ events: [], nextCursor: null }) },
+    outbox: { reconcileAll },
   });
 }
 

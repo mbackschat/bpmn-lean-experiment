@@ -64,6 +64,7 @@ type WorkAuditOperations = Readonly<{
 type WorkHttpRoutesOptions = Readonly<{
   tasks: WorkTaskOperations;
   audit: WorkAuditOperations;
+  outbox: Readonly<{ reconcileAll(): void }>;
 }>;
 
 const RouteKind = {
@@ -103,6 +104,7 @@ export class WorkHttpRoutes {
     }
     if (route === null) return null;
     try {
+      this.options.outbox.reconcileAll();
       return await this.#dispatch(route, request);
     } catch (error: unknown) {
       if (error instanceof WorkHttpRequestError) {
