@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-12; the corrected first green semantic checkpoint is independently approved.** This proposal selects one additive Boolean Process-variable value only for exact User Task completion under a new CIB Seven compatibility profile. The approved checkpoint implements the unregistered wire, TypeScript, Lean, CIB-runner, and shared Temporal-encoding mechanism. Profile registration, retained evidence, differential, and live Temporal lanes are now active; Product 2 and E2 remain outside this increment.
+**Owner-approved on 2026-08-12; implemented, registered, and evidence-complete pending closure review.** The corrected first green semantic checkpoint is independently approved. The registered profile, answer-free scenario, retained CIB evidence, runnable example, differential stringify mutation, and live Temporal Worker-replacement/refusal/history/replay witness establish the selected Boolean completion claim without changing Process Start, effects, mappings, expressions, Product 2, E2, or any old profile.
 
 ## Independent cold-review receipt
 

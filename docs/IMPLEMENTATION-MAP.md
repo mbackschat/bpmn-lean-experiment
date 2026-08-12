@@ -28,11 +28,11 @@ The live Temporal witness proves the effect-only wait, replaces the Worker durin
 
 Pinned CIB passes through the extension to that User Task with zero jobs and incidents; this trace is retained only as an exclusion oracle and creates no CIB target or relationship. The exact selected slice is closure-reviewed, evidence-closed, and graduated.
 
-**Current Boolean Process-data checkpoint boundary.** One unregistered checkpoint identity reuses the exact acyclic sequential User Task checked graph and Semantic Process program while admitting primitive Boolean only on exact User Task completion. Strict schemas, TypeScript and Lean profile/surface admission, effect exclusion, total non-routing Simple Boolean behavior, CIB Java Boolean projection, raw-to-canonical evidence projection, and content-bound command identity are green. Process Start and every old profile remain string/null-only, and no registered artifact or product consumes the checkpoint identity.
+**Current Boolean Process-data boundary.** One registered profile reuses the sequential User Task graph and program while admitting primitive Boolean only on exact completion. Strict schemas, TypeScript and Lean admission, CIB projection and retained evidence, command identity, differential execution, the runnable example, and live Worker-replacement/refusal/history/replay are green. Process Start and old profiles remain string/null-only; Product 2 consumes no new fact.
 
 The Java diagnostics/projection protocol was split before semantic growth, and the constrained Lean admission build passes with one CPU, one thread, no swap, and the standing 3 GiB limit. Registration, retained CIB evidence, differential comparison, live Temporal execution, replay, and closure review are absent until the semantic checkpoint is independently approved.
 
-**What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the one bounded User Task cycle remain acyclic. Registered variables are string or null; the unregistered M3 checkpoint admits Boolean completion only. There are no incidents, published transitions, or token positions.
+**What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. There are no incidents, published transitions, or token positions.
 
 **The evidence model.** Registered answer-free scenarios run through their declared Lean, TypeScript, Temporal, and pinned CIB lanes with seeded mutations and content-bound evidence. The TypeScript compiler remains the shared checked-graph/program producer; Lean independently checks lowering but does not parse BPMN XML.
 
@@ -189,7 +189,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - exact Call Activity checked-node arm and paired `invokeProcess`/`returnProcess` operations with called definition, root, entry, return, and caller-output identities
 - explicit checked boundary Error and Error End variants plus one resolved direct-parent `throwError` handler with exact Error and Sequence Flow provenance
 - one canonical definition-scope forest with exact node/Sequence-Flow and operation/control-place ownership, retaining one rooted tree for existing profiles and one distinct called root for the bounded Call profile, plus one shared occurrence-ID shape reused by User Tasks, Message subscriptions, timers, effects, and Call records
-- one strict shared string/null/Boolean value union; executable registered profiles remain string/null-only while the unregistered M3 checkpoint admits Boolean only on User Task completion
+- one strict shared string/null/Boolean value union; one exact registered profile admits Boolean only on User Task completion while every other registered value surface remains string/null-only
 - Process-variable observation, immutable effect arguments, and closed string/null successful/business-error patches
 - required canonical `submittedValues` on exact User Task completion, with empty-patch preservation and no legacy reader
 - raw CIB state-query, task-query, timer-job, effect-job, effect-execution, and mapping-execution observations with verifier-reconstructed canonical projections that reuse the adapter's ordering and constant-field rules
@@ -208,7 +208,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 #### Explicitly absent
 
 - Parallel legacy schemas, migration readers, compatibility switches, general assertion language
-- registered Boolean execution and every value kind beyond string/null/Boolean; the [Boolean proposal](capsules/BOOLEAN-PROCESS-DATA-PROPOSAL.md) remains at an unregistered semantic checkpoint
+- every value kind beyond string/null/Boolean and Boolean use outside the exact registered User Task completion profile
 - wider or decimal numeric domain
 - identifier normalization or locale-sensitive ordering
 
@@ -380,14 +380,14 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - registered Timer Start admission and execution with a distinct exact-target stimulus, one fresh root occurrence, generic canonical nonempty outgoing-token production, profile-local exact-one output, exact refusal and 2/1 closure bounds, stable User Task resumption, normalized cross-start observation equality, and no runtime Timer or clock state
 - registered Terminate End admission and execution with no external stimulus, selected-occurrence-retaining subtree cancellation, exact higher-level preservation, aggregate End increment, unchanged scope completion, exact refusal, and 5/3/2 closure bounds
 - registered configured Task admission and execution with exact checked descriptor binding, the existing payload-free Probe effect, effect-only initial exposure, occurrence-only refusal, trailing User Task continuation, and no runtime, stimulus, state, or observation widening
-- exact Process-start installation and User Task completion merge over canonical string/null bindings, plus checkpoint-only Boolean completion guarded at deployment and every live command
+- exact Process-start installation and User Task completion merge over canonical string/null bindings, plus one registered-profile Boolean completion guarded at deployment and every live command
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
 - executable enabled-count and stable-state-resumability checks, with malformed-topology and stranded-state witnesses
 
 #### Explicitly absent
 
 - an ambiguity refusal matching Lean's `ambiguousInternalChoice`: the closure selector advances the lowest canonical operation ID without signalling an unresolved semantic choice, so agreement with Lean at the admitted independent two-User-Task states rests on canonical operation order, explicit activation-order equality for both the static parallel and data-dependent Inclusive cases, and per-profile rejection or unreachability of every other multiple-enabled shape
-- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, registered Boolean execution or value kinds beyond string/null/Boolean, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
+- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, Boolean execution outside the exact registered User Task completion profile or value kinds beyond string/null/Boolean, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
 
 ### CIB oracle
 
@@ -397,6 +397,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - exact deploy, start, public query, task or Message delivery, timer control, job execution, and completion probes for every CIB-backed family named in [the current claim](#current-claim)
 - controlled epoch time, stale-command rejection, multiple-task projection, Process-variable mapping, effect retry, scope completion, and direct-parent Error propagation
 - raw Process, task, subscription, timer, job, history, effect, and mapping observations retained as release-specific content-bound evidence
+- retained actual Java Boolean Process-variable observations and canonical tagged Boolean projection for the exact completion profile
 - verifier reconstruction of canonical status, logical time, variables, waits, interactions, and semantic instance identity from those raw observations
 - reconstruction deliberately reuses the Java projector's ordering and raw-binding translation, so it checks raw-to-canonical consistency rather than independently deriving projection semantics
 - phase-zero public-service probes for start and completion data, Service Task binding and retry, direct-Message Receive Task, Sub-Process Error propagation, and both product-neutral mapped Service Task host relations
@@ -435,6 +436,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - test-owned one-action Temporal Schedule hosting for the registered Timer Start profile, with pre-Schedule zero-create refusal, Worker absence through the due occurrence, an exact stored Workflow-ID base kept distinct from the opaque service-returned Workflow/Run identity, base-as-execution refusal, exact downstream User Task completion, ten-event history inspection, action exhaustion, stored-action and direct-start mutations, and replay
 - passive hosting for the registered Terminate End profile through existing User Task Updates, including Worker replacement after Trigger, committed-result recovery, Outer-only Query, stale Sibling refusal with exact state preservation, terminal completion, 20-event history inspection and replay, plus a test-owned Workflow whose wrong global cancellation closes instead of publishing Outer
 - configured Task hosting through the existing Probe Activity and User Task Update path, including Worker replacement during the active Activity attempt, idempotent result reconciliation, exact terminal state, history inspection and replay, plus a test-owned effect bypass that exposes the User Task early
+- registered Boolean completion through the existing Update path, with Worker replacement, old-profile refusal then valid completion, tagged projections, history/replay, and stringification/outside-core mutations
 
 #### Explicitly absent
 
@@ -451,7 +453,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - production history baseline
 - general Worker versioning
 - expression evaluation beyond pure Simple Boolean v1
-- registered Boolean values, values beyond string/null/Boolean, or general effect faults/Error propagation beyond the direct-parent internal slice
+- Boolean values outside the exact registered User Task completion profile, values beyond string/null/Boolean, or general effect faults/Error propagation beyond the direct-parent internal slice
 - Activity heartbeats
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
@@ -476,6 +478,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - exact Timer Start agreement across Lean, the core, and Temporal with CIB absent, plus Start Event/instance-identity, stored-action, direct-start, and returned-execution-identity discriminators
 - three exact Terminate End schedules across Lean, the core, and Temporal with CIB absent, plus source, checked-to-IL, regional-cancellation, stale-command, and supplied-instance mutation discriminators
 - one exact configured Task schedule across Lean, the core, and Temporal with CIB absent, plus binding-drift and premature-User-Task-exposure mutation discriminators
+- one exact Boolean User Task completion schedule across CIB, Lean, the core, and Temporal, plus Boolean-to-string mutation and live outside-core/stringification discriminators
 - isolated target execution, complete fetched-history replay, cleanup, timings, and feedback budgets
 
 #### Explicitly absent

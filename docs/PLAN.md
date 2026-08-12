@@ -70,7 +70,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** The owner-approved Boolean Process-data increment has reached its first green semantic checkpoint. Profile registration and the real inbox/form work remain open.
+**Status: in progress.** The owner-approved Boolean Process-data increment is implemented, registered, and evidence-complete. Closure review remains before the real inbox/form work begins.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
@@ -157,7 +157,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: register and evidence the approved M3 Boolean Process-data profile.** The context-cold review of checkpoint `61d41c5` approved corrections `ecb86ed` and `bf21f72`. Register the exact profile, answer-free scenario, retained CIB evidence, differential stringify mutation, runnable example, and live Temporal Worker-replacement/refusal/history/replay witness atomically, then run closure review before E2.
+1. **Active: close and graduate the M3 Boolean Process-data profile.** The exact profile, answer-free scenario, retained CIB evidence, differential stringify mutation, runnable example, and live Temporal Worker-replacement/refusal/history/replay witness are implemented. Run the complete gate and guarded warm closure review from approved checkpoint correction `bf21f72`, then graduate before E2.
 
 ## Approved decisions
 
@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: register and evidence the independently approved Boolean Process-data checkpoint.** Promote the unchanged checkpoint identity into the profile catalog, add one answer-free exact scenario and retained CIB evidence, register one differential stringify mutation and runnable example, and prove live Worker replacement, old-profile refusal, history, and replay before closure review. Process Start, effects, mappings, expressions, E2, Product 2, and all old profiles remain unchanged.
+**Next action: run the Boolean Process-data complete gate and guarded warm closure review.** The registration and all evidence lanes are complete. Bind the exact closure target, resolve any reviewer findings, graduate the proposal to a specification, and only then begin E2. Process Start, effects, mappings, expressions, E2, Product 2, and all old profiles remain unchanged.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
