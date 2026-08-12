@@ -157,6 +157,9 @@ function lowerNode(
     case CheckedNodeKind.UserTask: {
       const boundaryTimer = timerBoundaryFor(source, node.id);
       if (boundaryTimer !== undefined) {
+        if (node.metadata !== undefined) {
+          return [];
+        }
         return scoped({
           ...base,
           // The disposition selects the operation kind, and the kind is the whole difference: one
@@ -178,7 +181,11 @@ function lowerNode(
         kind: SemanticOperationKind.AwaitUserTask,
         input: requireOnly(incoming, node.id, "incoming"),
         output: requireOnly(outgoing, node.id, "outgoing"),
-        task: { elementId: node.id, name: node.name },
+        task: {
+          elementId: node.id,
+          name: node.name,
+          ...(node.metadata === undefined ? {} : { metadata: node.metadata }),
+        },
       });
     }
     case CheckedNodeKind.IntermediateCatchTimerEvent:

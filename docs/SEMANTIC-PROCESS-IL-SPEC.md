@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, the evidence-closed resumption-bounded cyclic-control-flow specification, the evidence-closed Message Start Event specification, the registered Timer Start Event capability, the registered Terminate End capability, and the registered configured Task capability. The configured Task retains a distinct checked constructor and lowers to the existing neutral effect operation without widening runtime or public contracts.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, the evidence-closed resumption-bounded cyclic-control-flow specification, the evidence-closed Message Start Event specification, the registered Timer Start Event capability, the registered Terminate End capability, the registered configured Task capability, and the unregistered E2 User Task metadata checkpoint. The configured Task retains a distinct checked constructor and lowers to the existing neutral effect operation. E2 adds only optional passive task metadata to the ordinary User Task path; registration and downstream evidence remain paused for semantic checkpoint review.
 
 The implemented language slice is deliberately bounded to the approved none Start Event, one exact top-level Message Start Event, one exact top-level `PT1S` Timer Start Event in its registered profile, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact versioned configured Task extension under its registered profile, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, one identity-only Terminate End under its registered profile, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
@@ -158,6 +158,15 @@ type CheckedConfiguredTask = DeepReadonly<{
   descriptor: EffectDescriptor;
 }>;
 
+type UserTaskMetadata = DeepReadonly<{
+  assignment: {
+    candidates: [{ kind: "group"; id: string }];
+  };
+  form: {
+    fields: [{ key: string; type: "string" | "boolean" }];
+  };
+}>;
+
 type CheckedNode = DeepReadonly<
   | {
       kind: "noneStartEvent";
@@ -197,6 +206,7 @@ type CheckedNode = DeepReadonly<
       kind: "userTask";
       id: string;
       name: string | null;
+      metadata?: UserTaskMetadata;
     }
   | {
       kind: "intermediateCatchTimerEvent";
@@ -460,6 +470,7 @@ type SemanticOperation = DeepReadonly<
       task: {
         elementId: string;
         name: string | null;
+        metadata?: UserTaskMetadata;
       };
     })
   | (OperationBase & {
@@ -563,7 +574,7 @@ Definition arrays and unordered references are canonically sorted by identifier.
 
 ### Runtime state
 
-Runtime state is not part of `SemanticProcessProgram`. It includes definition-scope occurrences, scope-owned control-place token multiplicities, enabled external interactions, scope-owned semantic task, Message-subscription, timer, and effect occurrences, committed immutable effect arguments, explicitly scoped variables, the logical clock, committed command outcomes, and any explicit semantic choices.
+Runtime state is not part of `SemanticProcessProgram`. It includes definition-scope occurrences, scope-owned control-place token multiplicities, enabled external interactions, scope-owned semantic task, Message-subscription, timer, and effect occurrences, committed immutable effect arguments, explicitly scoped variables, the logical clock, committed command outcomes, and any explicit semantic choices. An ordinary User Task wait may carry the operation's exact optional passive metadata, and public open-task projection copies it without deriving authorization or form behavior.
 
 Each runtime definition-scope occurrence has the complete identity `(processInstanceId, definitionScopeId, activation)` and either one parent occurrence or no parent for the root. Every token and wait carries exactly one occurrence owner. This prevents tokens or waits in one child activation from satisfying or blocking another scope and lets quiescence be checked against the complete owned region.
 
@@ -592,7 +603,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | Event-Based Gateway-to-catch configuration Flow | retained exactly once as one `awaitEventRace.configurationOrigin`; no control place |
 | ordinary embedded Sub-Process | `enterScope` with the child definition scope and child entry place |
 | exact in-document called-Process Call Activity | caller-owned `invokeProcess` with the distinct called root and called entry, plus called-owned `returnProcess` to the caller output |
-| User Task | `awaitUserTask` |
+| User Task | `awaitUserTask`; the selected E2 checkpoint copies exact optional passive metadata into `task.metadata` |
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
 | exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
 | exact payload-free direct-Message Receive Task | `awaitMessage` with Receive Task identity and the resolved direct Message arm; no Interface or Operation is synthesized |
@@ -647,9 +658,9 @@ An accepted `triggerTimerStart` stimulus must match the program Process and Time
 
 ### User Task wait
 
-`awaitUserTask` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token and creates one semantic task occurrence bound to the task definition and occurrence identity.
+`awaitUserTask` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token and creates one semantic task occurrence bound to the task definition and occurrence identity. When the operation carries selected E2 metadata, the wait and public open-task observation copy that exact value; metadata is physically absent when the operation omits it.
 
-An accepted completion for that occurrence removes the wait and adds one token to the output control place. A completion for an unknown, stale, duplicate, or otherwise ineligible occurrence follows the capsule-owned command outcome rules and does not invent control-flow progress.
+An accepted completion for that occurrence removes the wait and adds one token to the output control place. Metadata is passive and does not participate in occurrence matching, value admission, or transition choice. A completion for an unknown, stale, duplicate, or otherwise ineligible occurrence follows the capsule-owned command outcome rules, preserves the complete wait including metadata, and does not invent control-flow progress.
 
 ### Relative timer wait
 
@@ -871,6 +882,7 @@ The maintained implementation supports exactly:
 - `initiate`, `initiateMessage`, `initiateTimer`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `awaitEventRace`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `terminateScope`, `reachNoneEnd`, and `completeScope`;
 - definition-scope ownership and occurrence identity plus token multiplicity per Sequence Flow and scope occurrence;
 - semantic task, Message-subscription, timer, and effect occurrence identity, hidden occurrence-owned Inclusive selected-branch and Event-Based Gateway race records, registered-profile Boolean Process data on exact User Task completion, closed string-or-null Activity-local data for the exact mapping slices, logical time, and command closure;
+- exact optional passive User Task assignment/form metadata under the unregistered E2 checkpoint, preserved from checked source through `awaitUserTask`, the committed wait, and public open-task observation without changing completion;
 - the canonical observation boundary including `openMessageSubscriptions`, `openTimers`, effect arguments in `openEffects`, and Process `variables`.
 
 The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, mapped-success Service Task, mapped-boundary-Error Service Task, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
@@ -880,6 +892,7 @@ The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/Use
 The following remain unsupported:
 
 - general BPMN 2.0.2 import or conformance;
+- User Task metadata outside the unregistered E2 checkpoint, multiple candidates or fields, assignment expressions, authorization, claim lifecycle, form rendering or validation, and metadata on bounded or monitored User Task operations;
 - event subtypes beyond the admitted none Start, exact top-level payload-free Message Start, exact top-level `PT1S` Timer Start, exact normal-flow and Event-Based-Gateway-configured `PT1S` Intermediate Catch Timer, exact normal-flow and Event-Based-Gateway-configured payload-free Intermediate Catch Message, exact attached interrupting Error route, and none End Events;
 - other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, boundary Events beyond the exact Task-attached and Sub-Process-attached Error slices, catch-all or unmatched Errors, handler search beyond one direct parent, Error payloads, Intermediate Throw Errors, signals as BPMN semantics, escalation, cancellation Events, compensation, and Terminate End outside the exact registered topology and generic root-capable checked/IL representation;
 - arbitrary Sub-Process nesting, Call Activities outside the exact two-Process empty-data normal-return slice, external/deployed called definitions, Global Tasks, recursion, repeated/concurrent calls, transactions, event Sub-Processes, and exceptional scope cancellation or event propagation beyond the exact direct-parent Error slice;

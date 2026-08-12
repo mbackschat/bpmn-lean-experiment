@@ -137,7 +137,7 @@ private def inclusiveBranchReachesJoin (source : CheckedProcess)
   | some branch =>
       branch.sourceId = splitId &&
         source.nodes.any fun
-          | .userTask taskId _ =>
+          | .userTask taskId _ _ =>
               taskId = branch.targetId &&
                 match source.sequenceFlows.filter fun flow =>
                     decide (flow.sourceId = taskId && flow.targetId = joinId) with
@@ -215,7 +215,7 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       durationLiteral = "PT1S" &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
-  | .userTask id _ =>
+  | .userTask id _ _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
   | .intermediateCatchTimerEvent id durationLiteral =>
       durationLiteral = "PT1S" &&
@@ -282,7 +282,7 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
 def checkedOwnsBoundaryTimerDeadline (node : CheckedNode)
     (interruption : BoundaryInterruption) (host : NodeId) : Bool :=
   match node, interruption with
-  | .userTask hostId _, _ => decide (hostId = host)
+  | .userTask hostId _ _, _ => decide (hostId = host)
   | .embeddedSubProcess hostId _, .interrupting => decide (hostId = host)
   | _, _ => false
 

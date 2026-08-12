@@ -44,13 +44,14 @@ def nodeArityValid (source : CheckedProcess) :
   | .noneEndEvent id =>
       (incomingFlows source id).length = 1 &&
         (outgoingFlows source id).isEmpty
-  | .userTask id _
+  | .userTask id _ none
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .receiveTask id _
   | .serviceTask id _ _ _ _ =>
       (incomingFlows source id).length = 1 &&
         (outgoingFlows source id).length = 1
+  | .userTask _ _ (some _) => false
   | .configuredTask .. => false
   | .embeddedSubProcess _ _
   | .callActivity _ _

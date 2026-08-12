@@ -36,6 +36,7 @@ const consumers = [
   { source: "configured-task-source.ts", anchor: "projectConfiguredTask", elementName: "element", shape: "ConfiguredTask" },
   { source: "checked-element-projection.ts", anchor: "isExactPt1sTimerEvent", elementName: "element", shape: "IntermediateCatchEvent" },
   { source: "checked-element-projection.ts", anchor: "isPlainFlowNode", elementName: "element", shape: "PlainNode" },
+  { source: "checked-element-projection.ts", anchor: "projectUserTaskMetadata", elementName: "element", shape: "UserTaskMetadata" },
   { source: "checked-element-projection.ts", anchor: "isProjectableEmbeddedSubProcess", elementName: "element", shape: "EmbeddedSubProcess" },
   { source: "event-based-gateway-source.ts", anchor: "projectEventBasedGateway", elementName: "element", shape: "EventBasedGateway" },
   { source: "inclusive-gateway-source.ts", anchor: "projectInclusiveGateway", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
@@ -91,6 +92,20 @@ const inventoryCases = [
   ["callActivityShapes", "endEventType", ["PlainNode"]],
   ["callActivityShapes", "callActivityType", ["CallActivity"]],
   ["callActivityShapes", "sequenceFlowType", ["StandardSequenceFlow"]],
+  ["userTaskMetadataShapes", "startEventType", ["PlainNode", "MessageStartEvent", "TimerStartEvent"]],
+  ["userTaskMetadataShapes", "userTaskType", ["UserTaskMetadata"]],
+  ["userTaskMetadataShapes", "endEventType", ["PlainNode", "ErrorEndEvent", "TerminateEndEvent"]],
+  ["userTaskMetadataShapes", "subProcessType", ["EmbeddedSubProcess"]],
+  ["userTaskMetadataShapes", "sequenceFlowType", ["StandardSequenceFlow"]],
+  ["userTaskMetadataShapes", "serviceTaskType", ["GenericServiceTask"]],
+  ["userTaskMetadataShapes", "taskType", ["ConfiguredTask"]],
+  ["userTaskMetadataShapes", "parallelGatewayType", ["ParallelGateway"]],
+  ["userTaskMetadataShapes", "exclusiveGatewayType", ["ExclusiveOrInclusiveGateway"]],
+  ["userTaskMetadataShapes", "inclusiveGatewayType", ["ExclusiveOrInclusiveGateway"]],
+  ["userTaskMetadataShapes", "eventBasedGatewayType", ["EventBasedGateway"]],
+  ["userTaskMetadataShapes", "intermediateCatchEventType", ["IntermediateCatchEvent"]],
+  ["userTaskMetadataShapes", "receiveTaskType", ["ReceiveTask"]],
+  ["userTaskMetadataShapes", "boundaryEventType", ["BoundaryEvent"]],
 ] as const;
 
 test("rejects a restored private list before accepting the inventory and every live consumer", async () => {
@@ -232,6 +247,7 @@ function assertInventoryOwnership(files: ReadonlyMap<string, SourceFile>): void 
     MappedSuccessServiceTask: "mappedSuccessShapes",
     MappedBoundaryErrorServiceTask: "mappedBoundaryShapes",
     CallActivity: "callActivityShapes",
+    UserTaskMetadata: "userTaskMetadataShapes",
   });
 }
 

@@ -37,6 +37,9 @@ import {
 import {
   isWellFormedInitiateTimerOperation,
 } from "./semantic-process-timer-start.js";
+import {
+  hasExactOptionalUserTaskMetadata,
+} from "./user-task-metadata.js";
 
 /** Validates one operation independently of profile topology and graph reachability. */
 export function isWellFormedSemanticOperation(
@@ -104,7 +107,13 @@ export function isWellFormedSemanticOperation(
         isPlaceReference(value.input, placeIds) &&
         isPlaceReference(value.output, placeIds) &&
         isRecord(value.task) &&
-        hasOnlyKeys(value.task, ["elementId", "name"]) &&
+        hasOnlyKeys(
+          value.task,
+          Object.hasOwn(value.task, "metadata")
+            ? ["elementId", "name", "metadata"]
+            : ["elementId", "name"],
+        ) &&
+        hasExactOptionalUserTaskMetadata(value.task) &&
         value.task.elementId === value.origin.elementId &&
         (value.task.name === null || typeof value.task.name === "string")
       );

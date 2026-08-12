@@ -42,6 +42,12 @@ def requireObjectShape (json : Json) (keys : List String) :
 def field (json : Json) (key : String) : Except String Json :=
   json.getObjVal? key
 
+def optionalField (json : Json) (key : String) :
+    Except String (Option Json) :=
+  match json with
+  | .obj object => pure (object.get? key)
+  | _ => throw "object expected"
+
 def stringField (json : Json) (key : String) : Except String String := do
   (← field json key).getStr?
 
@@ -80,6 +86,74 @@ def decodeOptionalString : Json → Except String (Option String)
   | .null => pure none
   | .str value => pure (some value)
   | _ => throw "string or null expected"
+
+private def decodeUserTaskCandidate (json : Json) :
+    Except String UserTaskCandidate := do
+  requireObjectShape json ["id", "kind"]
+  expectStringField json "kind" "group"
+  pure { kind := .group, id := ← stringField json "id" }
+
+private def decodeUserTaskFormField (json : Json) :
+    Except String UserTaskFormField := do
+  requireObjectShape json ["key", "type"]
+  let fieldType ←
+    match ← stringField json "type" with
+    | "string" => pure UserTaskFormFieldType.string
+    | "boolean" => pure UserTaskFormFieldType.boolean
+    | value => throw s!"unsupported User Task field type {value}"
+  pure { key := ← stringField json "key", type := fieldType }
+
+/-- Strictly decode the exact neutral singleton metadata contract and its literal-domain predicate. -/
+def decodeUserTaskMetadata (json : Json) : Except String UserTaskMetadata := do
+  requireObjectShape json ["assignment", "form"]
+  let assignment ← field json "assignment"
+  requireObjectShape assignment ["candidates"]
+  let form ← field json "form"
+  requireObjectShape form ["fields"]
+  let metadata : UserTaskMetadata :=
+    { assignment :=
+        { candidates :=
+            ← decodeArray decodeUserTaskCandidate
+              (← field assignment "candidates") }
+      form :=
+        { fields :=
+            ← decodeArray decodeUserTaskFormField (← field form "fields") } }
+  if metadata.wellFormed then pure metadata
+  else throw "User Task metadata is not well formed"
+
+/-- Decode an optional metadata member while preserving physical absence and refusing `null`. -/
+def decodeOptionalUserTaskMetadataField (json : Json) :
+    Except String (Option UserTaskMetadata) := do
+  match ← optionalField json "metadata" with
+  | none => pure none
+  | some value => some <$> decodeUserTaskMetadata value
+
+private def userTaskCandidateJson (candidate : UserTaskCandidate) : Json :=
+  match candidate.kind with
+  | .group =>
+      Json.mkObj
+        [ ("kind", toJson "group")
+        , ("id", toJson candidate.id) ]
+
+private def userTaskFormFieldJson (field : UserTaskFormField) : Json :=
+  let type := match field.type with
+    | .string => "string"
+    | .boolean => "boolean"
+  Json.mkObj
+    [ ("key", toJson field.key)
+    , ("type", toJson type) ]
+
+/-- Canonically encode the exact neutral metadata shape without optional-field policy. -/
+def encodeUserTaskMetadata (metadata : UserTaskMetadata) : Json :=
+  Json.mkObj
+    [ ("assignment",
+        Json.mkObj
+          [("candidates",
+            .arr (metadata.assignment.candidates.map userTaskCandidateJson).toArray)])
+    , ("form",
+        Json.mkObj
+          [("fields",
+            .arr (metadata.form.fields.map userTaskFormFieldJson).toArray)]) ]
 
 def decodeSourceOverlayIdentity : Json →
     Except String (Option SourceOverlayIdentity)

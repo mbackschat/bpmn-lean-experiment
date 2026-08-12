@@ -79,6 +79,9 @@ import {
 import type {
   ConfiguredTaskProjectionPolicy,
 } from "./configured-task-source.js";
+import {
+  userTaskMetadataCheckpointProfile,
+} from "./user-task-metadata-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -208,7 +211,9 @@ export function compileCheckedProcess(
   const flowKeyRejections = projectedFlowElementKeyRejections(
     definitions,
     [...sourceNodes, ...sourceFlows].map(({ element }) => element),
-    FlowElementProjectionProfile.Generic,
+    semanticProfile === userTaskMetadataCheckpointProfile
+      ? FlowElementProjectionProfile.UserTaskMetadata
+      : FlowElementProjectionProfile.Generic,
     capability,
   );
   if (flowKeyRejections === undefined) {
@@ -243,6 +248,7 @@ export function compileCheckedProcess(
     selection,
     capability,
     configuredTaskPolicy,
+    semanticProfile,
   );
   const nodeScopes = projectOwnership(
     sourceNodes,

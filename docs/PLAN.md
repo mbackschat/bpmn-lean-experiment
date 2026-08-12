@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: implement the first green E2 User Task assignment and form metadata semantic checkpoint.** The proposal is owner-approved after independent cold review. Implement only source admission, checked/IL/runtime/public metadata, strict wire contracts, and the proved Lean lane, then stop before registration and downstream evidence for the required semantic checkpoint review.
+**Next action: obtain the required context-cold semantic checkpoint review for E2 User Task assignment and form metadata.** The first-green target now implements only exact source admission, checked/IL/runtime/public metadata, strict wire contracts, and the proved Lean lane. Registration, retained CIB evidence, differential registration, runnable configuration, and live Temporal evidence remain paused until the checkpoint is approved.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

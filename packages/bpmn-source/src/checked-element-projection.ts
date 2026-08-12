@@ -80,6 +80,10 @@ import {
 import type {
   ConfiguredTaskProjectionPolicy,
 } from "./configured-task-source.js";
+import {
+  readUserTaskMetadataSource,
+  userTaskMetadataCheckpointProfile,
+} from "./user-task-metadata-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
@@ -93,6 +97,7 @@ export function projectCheckedNodes(
   rootSelection: RootDefinitionSelection,
   capability: PreservationCapability | undefined,
   configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
+  semanticProfile: string,
 ): ReadonlyArray<CheckedNode> | undefined {
   const projected = elements.map((source) => {
     const element = executedProjectionView(source, capability);
@@ -135,9 +140,14 @@ export function projectCheckedNodes(
         );
       case bpmnTypes.userTaskType: {
         const name = readOptionalName(element);
-        return isPlainFlowNode(element) && name !== undefined
-          ? { kind: CheckedNodeKind.UserTask, id, name }
-          : undefined;
+        if (name === undefined) {
+          return undefined;
+        }
+        return semanticProfile === userTaskMetadataCheckpointProfile
+          ? projectUserTaskMetadata(element, definitions, id, name)
+          : isPlainFlowNode(element)
+            ? { kind: CheckedNodeKind.UserTask, id, name }
+            : undefined;
       }
       case bpmnTypes.intermediateCatchEventType:
         return isExactPt1sTimerEvent(element)
@@ -195,6 +205,32 @@ export function projectCheckedNodes(
   return projected.every((node) => node !== undefined)
     ? (projected as ReadonlyArray<CheckedNode>)
     : undefined;
+}
+
+function projectUserTaskMetadata(
+  element: ElementRecord,
+  definitions: ElementRecord,
+  id: string,
+  name: string | null,
+): Extract<CheckedNode, { kind: CheckedNodeKind.UserTask }> | undefined {
+  const projection = readUserTaskMetadataSource(element, definitions);
+  if (
+    projection === undefined ||
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.UserTaskMetadata,
+    )
+  ) {
+    return undefined;
+  }
+  return projection.kind === "present"
+    ? {
+        kind: CheckedNodeKind.UserTask,
+        id,
+        name,
+        metadata: projection.metadata,
+      }
+    : { kind: CheckedNodeKind.UserTask, id, name };
 }
 
 function projectExclusiveMerge(

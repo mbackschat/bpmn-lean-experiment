@@ -10,12 +10,13 @@ namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 open BpmnSemantics.SemanticProcess
 
 def isWaitNode : CheckedNode → Bool
-  | .userTask ..
+  | .userTask _ _ none
   | .intermediateCatchTimerEvent ..
   | .serviceTask .. => true
   | .intermediateCatchMessageEvent .. => false
   | .receiveTask .. => false
   | .configuredTask .. => false
+  | .userTask _ _ (some _) => false
   | _ => false
 
 inductive SegmentAt (source : CheckedProcess) :
@@ -37,9 +38,11 @@ inductive SegmentAt (source : CheckedProcess) :
         outgoingFlows source fork = [leftInput, rightInput] ∨
           outgoingFlows source fork = [rightInput, leftInput])
       (leftFact :
-        nodeAt source leftInput.targetId = some (.userTask leftNode leftName))
+        nodeAt source leftInput.targetId =
+          some (.userTask leftNode leftName none))
       (rightFact :
-        nodeAt source rightInput.targetId = some (.userTask rightNode rightName))
+        nodeAt source rightInput.targetId =
+          some (.userTask rightNode rightName none))
       (leftOutputFact :
         outgoingFlows source leftInput.targetId = [leftOutput])
       (rightOutputFact :
@@ -171,8 +174,10 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
         | boundaryErrorEvent _ _ _ _ => simp [parseFrom, nodeResult] at result
         | errorEndEvent _ _ => simp [parseFrom, nodeResult] at result
         | terminateEndEvent _ => simp [parseFrom, nodeResult] at result
-        | userTask id name =>
-            grind [parseFrom, mappedWait_sound, isWaitNode]
+        | userTask id name metadata =>
+            cases metadata with
+            | none => grind [parseFrom, mappedWait_sound, isWaitNode]
+            | some metadata => simp [parseFrom, nodeResult] at result
         | intermediateCatchTimerEvent id duration =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | intermediateCatchMessageEvent id channel =>

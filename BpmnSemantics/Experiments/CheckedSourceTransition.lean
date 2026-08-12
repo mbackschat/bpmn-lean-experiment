@@ -64,7 +64,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
       else none
   | .messageStartEvent .. => none
   | .timerStartEvent .. => none
-  | .userTask id name =>
+  | .userTask id name none =>
       match state.control with
       | .running instanceId =>
           let input := firstFlowId (incomingFlowIds source id)
@@ -75,6 +75,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
           else none
       | .notStarted
       | .completed _ => none
+  | .userTask _ _ (some _) => none
   | .intermediateCatchTimerEvent _ _ => none
   | .intermediateCatchMessageEvent _ _ => none
   | .receiveTask _ _ => none
@@ -129,17 +130,21 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
       simp [fireNode?] at result
   | timerStartEvent id durationLiteral =>
       simp [fireNode?] at result
-  | userTask id name =>
-      cases controlEq : before.control with
-      | notStarted => simp [fireNode?, controlEq] at result
-      | completed instanceId => simp [fireNode?, controlEq] at result
-      | running instanceId =>
-          by_cases enabled :
-              hasToken before (firstFlowId (incomingFlowIds source id)) = true
-          · simp [fireNode?, controlEq, enabled] at result
-            subst after
-            exact .userTask id name before instanceId controlEq enabled
-          · simp [fireNode?, controlEq, enabled] at result
+  | userTask id name metadata =>
+      cases metadata with
+      | none =>
+          cases controlEq : before.control with
+          | notStarted => simp [fireNode?, controlEq] at result
+          | completed instanceId => simp [fireNode?, controlEq] at result
+          | running instanceId =>
+              by_cases enabled :
+                  hasToken before
+                    (firstFlowId (incomingFlowIds source id)) = true
+              · simp [fireNode?, controlEq, enabled] at result
+                subst after
+                exact .userTask id name before instanceId controlEq enabled
+              · simp [fireNode?, controlEq, enabled] at result
+      | some metadata => simp [fireNode?] at result
   | intermediateCatchTimerEvent id durationLiteral =>
       simp [fireNode?] at result
   | intermediateCatchMessageEvent id channel =>

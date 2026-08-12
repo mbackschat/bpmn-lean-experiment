@@ -49,11 +49,15 @@ private def activeWaitJson (wait : ActiveWait) : Json :=
 private def userTaskLifecycleStateJson : UserTaskLifecycleState → Json
   | .active => toJson "active"
 
-private def openUserTaskJson (task : OpenUserTask) : Json :=
-  Json.mkObj
+/-- Encode one public User Task and omit metadata physically when the contract value is absent. -/
+def encodeOpenUserTask (task : OpenUserTask) : Json :=
+  let fields :=
     [ ("id", occurrenceIdJson task.id)
     , ("name", toJson task.name)
     , ("state", userTaskLifecycleStateJson task.state) ]
+  Json.mkObj <| match task.metadata with
+    | none => fields
+    | some metadata => fields ++ [("metadata", encodeUserTaskMetadata metadata)]
 
 private def messageChannelJson : MessageChannel → Json
   | .operationMessage interfaceId interfaceOperationId messageId =>
@@ -123,7 +127,7 @@ private def stateObservationJson (state : StateObservation) : Json :=
     , ("instanceId", toJson state.instanceId.value)
     , ("status", processStatusJson state.status)
     , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson))
-    , ("openUserTasks", jsonArray (state.openUserTasks.map openUserTaskJson))
+    , ("openUserTasks", jsonArray (state.openUserTasks.map encodeOpenUserTask))
     , ("openMessageSubscriptions",
         jsonArray
           (state.openMessageSubscriptions.map openMessageSubscriptionJson))

@@ -270,6 +270,15 @@ This table classifies the complete current field denominator of `scenario.schema
 | `openUserTasks[].id.elementId` | `engine-observed` | Public task definition key |
 | `openUserTasks[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated live elements are refused |
 | `openUserTasks[].name` | `engine-observed` | Public task name, including `null` |
+| `openUserTasks[].metadata` | `not-claimed` | Optional E2 checkpoint field; retained CIB compatibility evidence is paused until semantic checkpoint approval |
+| `openUserTasks[].metadata.assignment` | `not-claimed` | Neutral checkpoint structure without a retained CIB claim yet |
+| `openUserTasks[].metadata.assignment.candidates` | `not-claimed` | Exact one-candidate checkpoint tuple without a retained CIB claim yet |
+| `openUserTasks[].metadata.assignment.candidates[].kind` | `not-claimed` | Neutral `group` discriminator pending independent raw identity-link evidence |
+| `openUserTasks[].metadata.assignment.candidates[].id` | `not-claimed` | Candidate identity pending independent raw identity-link evidence |
+| `openUserTasks[].metadata.form` | `not-claimed` | Neutral checkpoint structure without a retained CIB claim yet |
+| `openUserTasks[].metadata.form.fields` | `not-claimed` | Exact one-field checkpoint tuple without a retained CIB claim yet |
+| `openUserTasks[].metadata.form.fields[].key` | `not-claimed` | Form field identity pending independent raw Form Service evidence |
+| `openUserTasks[].metadata.form.fields[].type` | `not-claimed` | Neutral string/boolean type pending independent raw Form Service evidence |
 | `openUserTasks[].state` | `adapter-decided` | Canonical `active` stamp for rows returned by the live-task query |
 | `openMessageSubscriptions` | `adapter-derived` | Canonical singleton projection over the retained public Receive Task subscription under `CIB-OP-0005`; other retained CIB cases are empty |
 | `openMessageSubscriptions[].id` | `adapter-derived` | Composite semantic subscription occurrence identity |

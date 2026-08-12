@@ -48,7 +48,14 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
         | errorEndEvent _ _ => simp [parseFrom, nodeResult] at result
         | terminateEndEvent _ => simp [parseFrom, nodeResult] at result
         | configuredTask _ _ => simp [parseFrom, nodeResult] at result
-        | userTask _ _
+        | userTask _ _ metadata =>
+            cases metadata with
+            | none =>
+                simp only [parseFrom, nodeResult] at result
+                split at result <;> try simp at result
+                obtain ⟨remaining, parsed, rfl⟩ := result
+                simp [segmentNodes, ih _ _ parsed]
+            | some metadata => simp [parseFrom, nodeResult] at result
         | intermediateCatchTimerEvent _ _
         | serviceTask _ _ _ _ _ =>
             simp only [parseFrom, nodeResult] at result

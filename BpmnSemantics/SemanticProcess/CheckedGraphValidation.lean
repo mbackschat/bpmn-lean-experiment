@@ -16,7 +16,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
-  | .userTask id _
+  | .userTask id _ _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .receiveTask id _

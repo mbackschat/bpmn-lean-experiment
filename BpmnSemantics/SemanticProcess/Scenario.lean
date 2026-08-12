@@ -163,7 +163,8 @@ private def openUserTasks (program : Program) (state : RuntimeState) :
             elementId := ⟨task.id.value⟩
             activation := wait.activation }
         name := task.name
-        state := .active }
+        state := .active
+        metadata := wait.metadata }
 
 private def openTimers (program : Program) (state : RuntimeState) :
     List OpenTimer :=

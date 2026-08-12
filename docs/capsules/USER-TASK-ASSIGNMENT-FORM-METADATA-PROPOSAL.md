@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved for first-green semantic implementation after independent cold review on 2026-08-12.** This proposal selects one additive User Task metadata capability under a new CIB Seven compatibility profile. Profile registration, retained evidence, and Product 2 use remain paused until the required semantic checkpoint is approved.
+**Owner-approved proposal with the first-green semantic checkpoint implemented on 2026-08-12.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, and the proved Lean lane are green. The required context-cold semantic checkpoint review is now the active boundary. Profile registration, retained evidence, differential and live Temporal evidence, and Product 2 use remain paused until that review is approved.
 
 ## Independent cold-review receipt
 
@@ -161,20 +161,20 @@ A new cohesive `user-task-metadata.ts` owns the neutral TypeScript contract and 
 
 | Owner | Headroom |
 |---|---:|
-| [BPMN compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 431 |
+| [BPMN compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 399 |
 | [BPMN exact foreign-attribute classification](../../packages/bpmn-source/src/preserved-element-classification.ts) | 75 |
-| [BPMN checked projector](../../packages/bpmn-source/src/checked-element-projection.ts) | 204 |
-| [BPMN key inventory](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 317 |
-| [BPMN semantic lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 55 |
-| [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 358 |
-| [TypeScript IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 201 |
-| [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 133 |
-| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 68 |
-| [Lean runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 160 |
-| [Lean public scenario contract](../../BpmnSemantics/Scenario.lean) | 385 |
-| [Lean strict checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 347 |
-| [Lean strict program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 147 |
-| [Lean public JSON entry point](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 291 |
+| [BPMN checked projector](../../packages/bpmn-source/src/checked-element-projection.ts) | 169 |
+| [BPMN key inventory](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 267 |
+| [BPMN semantic lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 48 |
+| [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 356 |
+| [TypeScript IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 199 |
+| [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 124 |
+| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 66 |
+| [Lean runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 157 |
+| [Lean public scenario contract](../../BpmnSemantics/Scenario.lean) | 383 |
+| [Lean strict checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 339 |
+| [Lean strict program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 142 |
+| [Lean public JSON entry point](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 287 |
 | [Java scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 163 |
 | [Java scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 19 |
 | [Java state projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 318 |
@@ -185,7 +185,7 @@ A new cohesive `user-task-metadata.ts` owns the neutral TypeScript contract and 
 | [Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 |
 | [Boolean Temporal test](../../packages/temporal-adapter/testkit/test/boolean-process-data-temporal.test.ts) | 59 |
 
-The BPMN dispatch owner measures 169/600 and receives one selected profile branch; the existing exact classifier measures 525/600 and is reused without widening its responsibility. The BPMN lowering owner measures 545/600 and receives only a narrow metadata-copy call; parsing belongs in the new source owner. The strict Lean program JSON owner measures 453/600 and receives only cohesive optional task-metadata decoding/encoding; if that cannot remain below 600, metadata JSON moves to a new narrowly named module rather than being compressed. The artifact owner measures 587/600, so extracting raw CIB evidence types is mandatory before adding metadata. The differential catalog measures 584/600 and receives only the new family import/spread. The Java runner measures 581/600 and receives only delegation; any larger change triggers a cohesive extraction. The Workflow implementation measures 552/600 and needs no production change if existing Query projection is exhaustive. The Boolean Temporal test measures 541/600 and does not grow. Each condition stops applying when the linked measurement changes, and the reviewability guard recomputes every headroom figure.
+At the semantic checkpoint, the BPMN dispatch owner measures 201/600, the exact classifier remains 525/600, and the lowering owner measures 552/600 after receiving only the narrow metadata copy and bounded-task refusal. Parsing stays in the new source owner. The strict Lean program JSON owner measures 458/600 after cohesive optional task-metadata decoding/encoding. The artifact owner remains 587/600, so extracting raw CIB evidence types is mandatory before adding metadata evidence. The differential catalog remains 584/600 and may receive only the new family import/spread. The Java runner remains 581/600 and may receive only delegation; any larger change triggers a cohesive extraction. The Workflow implementation remains 552/600 and needs no production change if existing Query projection is exhaustive. The Boolean Temporal test remains 541/600 and does not grow. Each condition stops applying when the linked measurement changes, and the reviewability guard recomputes every headroom figure.
 
 ### Guards and oracles
 

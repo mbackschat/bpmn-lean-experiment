@@ -15,6 +15,10 @@ import {
   EffectOperation,
   EffectProtocol,
 } from "./semantic-value-contract.js";
+import {
+  hasExactOptionalUserTaskMetadata,
+  UserTaskMetadataCheckpointProfileId,
+} from "./user-task-metadata.js";
 
 export { SemanticProfileId } from "./semantic-profile-catalog.js";
 
@@ -38,7 +42,18 @@ function profileAllowsProgramOperationDetails(
   semanticProfile: string,
   operations: ReadonlyArray<SemanticOperation>,
 ): boolean {
+  const userTaskMetadataMatchesProfile = operations.every((operation) =>
+    operation.kind !== SemanticOperationKind.AwaitUserTask ||
+    (semanticProfile === UserTaskMetadataCheckpointProfileId
+      ? hasExactOptionalUserTaskMetadata(operation.task)
+      : !Object.hasOwn(operation.task, "metadata"))
+  );
+  if (!userTaskMetadataMatchesProfile) {
+    return false;
+  }
   switch (semanticProfile) {
+    case UserTaskMetadataCheckpointProfileId:
+      return true;
     case SemanticProfileId.TimerStart:
       return operations.every(
         (operation) =>
@@ -84,6 +99,12 @@ export function profileAllowsCheckedProcessShape(
     nodes.every((node) =>
       node.kind !== CheckedNodeKind.TimerBoundaryEvent ||
       node.interruption === required.boundaryInterruption
+    ) &&
+    nodes.every((node) =>
+      node.kind !== CheckedNodeKind.UserTask ||
+      (semanticProfile === UserTaskMetadataCheckpointProfileId
+        ? hasExactOptionalUserTaskMetadata(node)
+        : !Object.hasOwn(node, "metadata"))
     ) &&
     (semanticProfile !== SemanticProfileId.TimerStart ||
       nodes.every(

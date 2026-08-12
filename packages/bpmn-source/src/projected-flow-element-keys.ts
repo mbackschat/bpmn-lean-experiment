@@ -35,6 +35,7 @@ export const FlowElementProjectionProfile = Object.freeze({
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
   CallActivity: "callActivity",
+  UserTaskMetadata: "userTaskMetadata",
 } as const);
 
 export type FlowElementProjectionProfile =
@@ -42,6 +43,7 @@ export type FlowElementProjectionProfile =
 
 export const ProjectedFlowElementShape = Object.freeze({
   PlainNode: "plainNode",
+  UserTaskMetadata: "userTaskMetadata",
   EmbeddedSubProcess: "embeddedSubProcess",
   StandardSequenceFlow: "standardSequenceFlow",
   GenericServiceTask: "genericServiceTask",
@@ -71,6 +73,9 @@ export type ProjectedFlowElementShape =
 export const projectedFlowElementKeys = Object.freeze({
   [ProjectedFlowElementShape.PlainNode]: Object.freeze([
     "$type", "id", "name",
+  ]),
+  [ProjectedFlowElementShape.UserTaskMetadata]: Object.freeze([
+    "$type", "id", "name", "extensionElements",
   ]),
   [ProjectedFlowElementShape.EmbeddedSubProcess]: Object.freeze([
     "$type", "id", "name", "triggeredByEvent", "flowElements",
@@ -195,6 +200,52 @@ export function projectedFlowElementShapes(
       return mappedBoundaryShapes(type);
     case FlowElementProjectionProfile.CallActivity:
       return callActivityShapes(type);
+    case FlowElementProjectionProfile.UserTaskMetadata:
+      return userTaskMetadataShapes(type);
+  }
+}
+
+function userTaskMetadataShapes(
+  type: unknown,
+): ReadonlyArray<ProjectedFlowElementShape> | undefined {
+  switch (type) {
+    case bpmnTypes.startEventType:
+      return [
+        ProjectedFlowElementShape.PlainNode,
+        ProjectedFlowElementShape.MessageStartEvent,
+        ProjectedFlowElementShape.TimerStartEvent,
+      ];
+    case bpmnTypes.userTaskType:
+      return [ProjectedFlowElementShape.UserTaskMetadata];
+    case bpmnTypes.endEventType:
+      return [
+        ProjectedFlowElementShape.PlainNode,
+        ProjectedFlowElementShape.ErrorEndEvent,
+        ProjectedFlowElementShape.TerminateEndEvent,
+      ];
+    case bpmnTypes.subProcessType:
+      return [ProjectedFlowElementShape.EmbeddedSubProcess];
+    case bpmnTypes.sequenceFlowType:
+      return [ProjectedFlowElementShape.StandardSequenceFlow];
+    case bpmnTypes.serviceTaskType:
+      return [ProjectedFlowElementShape.GenericServiceTask];
+    case bpmnTypes.taskType:
+      return [ProjectedFlowElementShape.ConfiguredTask];
+    case bpmnTypes.parallelGatewayType:
+      return [ProjectedFlowElementShape.ParallelGateway];
+    case bpmnTypes.exclusiveGatewayType:
+    case bpmnTypes.inclusiveGatewayType:
+      return [ProjectedFlowElementShape.ExclusiveOrInclusiveGateway];
+    case bpmnTypes.eventBasedGatewayType:
+      return [ProjectedFlowElementShape.EventBasedGateway];
+    case bpmnTypes.intermediateCatchEventType:
+      return [ProjectedFlowElementShape.IntermediateCatchEvent];
+    case bpmnTypes.receiveTaskType:
+      return [ProjectedFlowElementShape.ReceiveTask];
+    case bpmnTypes.boundaryEventType:
+      return [ProjectedFlowElementShape.BoundaryEvent];
+    default:
+      return undefined;
   }
 }
 

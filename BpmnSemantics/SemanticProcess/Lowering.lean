@@ -293,11 +293,11 @@ private def lowerNode (source : CheckedProcess) :
   -- The deadline has no operation of its own: it belongs to the Activity it is attached to, so no
   -- program can express the two waits as unrelated siblings.
   | .timerBoundaryEvent .. => none
-  | .userTask id name =>
-      match timerBoundaryFor source id with
+  | .userTask id name metadata =>
+      match timerBoundaryFor source id, metadata with
       -- The disposition selects the operation kind, and that kind is the whole difference: one
       -- family's firing removes the task occurrence and the other's preserves it.
-      | some (timerId, interruption, durationLiteral, outputFlowId) =>
+      | some (timerId, interruption, durationLiteral, outputFlowId), none =>
           checkedNodeScopeId? source id |>.map fun scopeId =>
           ((match interruption with
             | .interrupting => SemanticOperation.awaitBoundedUserTask
@@ -312,14 +312,15 @@ private def lowerNode (source : CheckedProcess) :
               durationMs := normalizeTimerDuration durationLiteral
               output := firstPlace (outgoingPlaces source timerId)
               origin := { elementId := outputFlowId } }, scopeId)
-      | none =>
+      | some _, some _ => none
+      | none, _ =>
           checkedNodeScopeId? source id |>.map fun scopeId =>
           (.awaitUserTask
             (nodeOperationId id)
             { elementId := id }
             (firstPlace (incomingPlaces source id))
             (firstPlace (outgoingPlaces source id))
-            { id := ⟨id.value⟩, name }, scopeId)
+            { id := ⟨id.value⟩, name, metadata }, scopeId)
   | .intermediateCatchTimerEvent id durationLiteral =>
       if configuredByEventGateway source id then none
       else
@@ -455,19 +456,20 @@ theorem lower_exclusive_merge_uses_checked_flow_endpoints
 /-- Ordinary User Task lowering preserves the exact checked/IL resumption-cut classification when no boundary deadline changes the operation family. -/
 theorem lowering_preserves_user_task_resumption_cut
     (source : CheckedProcess) (id : NodeId) (name : Option String)
+    (metadata : Option UserTaskMetadata)
     (scopeId : DefinitionScopeId)
     (scope : checkedNodeScopeId? source id = some scopeId)
     (unbounded : timerBoundaryFor source id = none) :
     ∃ operation,
-      lowerNode source (.userTask id name) = some (operation, scopeId) ∧
-        checkedNodeIsResumptionCut (.userTask id name) = true ∧
+      lowerNode source (.userTask id name metadata) = some (operation, scopeId) ∧
+        checkedNodeIsResumptionCut (.userTask id name metadata) = true ∧
         semanticOperationIsResumptionCut operation = true := by
   refine ⟨.awaitUserTask
       (nodeOperationId id)
       { elementId := id }
       (firstPlace (incomingPlaces source id))
       (firstPlace (outgoingPlaces source id))
-      { id := ⟨id.value⟩, name }, ?_, rfl, rfl⟩
+      { id := ⟨id.value⟩, name, metadata }, ?_, rfl, rfl⟩
   simp [lowerNode, unbounded, scope]
 
 private def lowerScopeCompletion (source : CheckedProcess)

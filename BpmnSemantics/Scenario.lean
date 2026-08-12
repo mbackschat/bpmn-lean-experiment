@@ -1,4 +1,5 @@
 import BpmnSemantics.Contract
+import BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # BpmnSemantics.Scenario — implementation-neutral runner contract
 
@@ -83,6 +84,7 @@ structure OpenUserTask where
   id : UserTaskInstanceId
   name : Option String
   state : UserTaskLifecycleState
+  metadata : Option UserTaskMetadata := none
   deriving Repr, DecidableEq
 
 inductive MessageChannel where

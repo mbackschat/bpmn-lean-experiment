@@ -8,6 +8,7 @@
  */
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
+import type { UserTaskMetadata } from "./user-task-metadata.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
   DefinitionScope,
@@ -155,6 +156,7 @@ export type CheckedNode =
       kind: CheckedNodeKind.UserTask;
       id: string;
       name: string | null;
+      metadata?: UserTaskMetadata;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.IntermediateCatchTimerEvent;

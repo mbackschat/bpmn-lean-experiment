@@ -44,6 +44,11 @@ import {
 import {
   terminateEndContainmentCardinalities,
 } from "./terminate-end-event-source.js";
+import {
+  carriesDuplicateCandidateGroupsAttribute,
+  userTaskMetadataBindingValid,
+  userTaskMetadataCheckpointProfile,
+} from "./user-task-metadata-source.js";
 
 export async function compileBpmnToSemanticProcess(
   request: CompileBpmnToSemanticProcessRequest,
@@ -152,6 +157,17 @@ export async function compileBpmnToSemanticProcess(
       ),
     ]);
   }
+  if (
+    request.semanticProfile === userTaskMetadataCheckpointProfile &&
+    carriesDuplicateCandidateGroupsAttribute(xml)
+  ) {
+    return reject([
+      diagnostic(
+        BpmnSourceDiagnosticCode.UnsupportedModel,
+        "Exact source requires one expanded candidateGroups attribute on the selected User Task.",
+      ),
+    ]);
+  }
 
   let imported;
   try {
@@ -201,6 +217,17 @@ export async function compileBpmnToSemanticProcess(
     return reject(projection.diagnostics);
   }
   const semanticProcess = lowerCheckedProcess(projection.checkedProcess);
+  if (
+    request.semanticProfile === userTaskMetadataCheckpointProfile &&
+    !userTaskMetadataBindingValid(projection.checkedProcess, semanticProcess)
+  ) {
+    return reject([
+      diagnostic(
+        BpmnSourceDiagnosticCode.UnsupportedModel,
+        "The selected User Task metadata is not exactly bound from checked source to Semantic Process.",
+      ),
+    ]);
+  }
   if (
     request.semanticProfile === SemanticProfileId.CalledProcessCallActivity &&
     (!isWellFormedSemanticProcessProgram(semanticProcess) ||

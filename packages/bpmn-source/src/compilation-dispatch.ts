@@ -24,16 +24,22 @@ import {
   asElement,
 } from "./moddle-graph.js";
 import {
+  exactForeignAttributeRejections,
   foreignAttributeConsumingTypes,
   foreignAttributeRejections,
 } from "./preserved-element-classification.js";
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
+import {
+  admitsUserTaskMetadataForeignAttribute,
+  userTaskMetadataCheckpointProfile,
+} from "./user-task-metadata-source.js";
 
 export const CompilationDispatchId = Object.freeze({
   Generic: "generic",
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
   CallActivity: "callActivity",
+  UserTaskMetadata: "userTaskMetadata",
 } as const);
 
 export type CompilationDispatchId =
@@ -95,6 +101,11 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
           ? compileCallActivityWithClassification(rootElement, source)
           : unsupported("The Call Activity profile does not admit a source overlay."),
     },
+    {
+      id: CompilationDispatchId.UserTaskMetadata,
+      semanticProfile: userTaskMetadataCheckpointProfile,
+      reader: compileUserTaskMetadataSource,
+    },
   ]);
 
 export function compileDispatchedCheckedProcess(
@@ -126,10 +137,32 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.MappedSuccessServiceTask:
     case CompilationDispatchId.MappedBoundaryErrorServiceTask:
     case CompilationDispatchId.CallActivity:
+    case CompilationDispatchId.UserTaskMetadata:
       return dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);
   }
+}
+
+function compileUserTaskMetadataSource(
+  rootElement: unknown,
+  source: BpmnSourceIdentity,
+  overlay: AdmittedSourceOverlay | null,
+): CheckedCompilationProjection {
+  return overlay === null
+    ? compileCheckedProcess(
+        rootElement,
+        source,
+        userTaskMetadataCheckpointProfile,
+        (definitions, located) =>
+          exactForeignAttributeRejections(
+            definitions,
+            located,
+            admitsUserTaskMetadataForeignAttribute,
+          ),
+        null,
+      )
+    : unsupported("The User Task metadata profile does not admit a source overlay.");
 }
 
 function compileCallActivityWithClassification(

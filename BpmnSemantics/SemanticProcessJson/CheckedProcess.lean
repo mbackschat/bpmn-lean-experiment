@@ -61,6 +61,19 @@ private def decodeBoundaryInterruption (value : String) :
   | "nonInterrupting" => pure .nonInterrupting
   | other => throw s!"unknown boundary interruption: {other}"
 
+/-- Decode one User Task node while preserving physical metadata absence and refusing every extra key. -/
+def decodeCheckedUserTask (json : Json) : Except String CheckedNode := do
+  let metadata ← decodeOptionalUserTaskMetadataField json
+  requireObjectShape json
+    (if metadata.isSome then ["id", "kind", "metadata", "name"]
+      else ["id", "kind", "name"])
+  expectStringField json "kind" "userTask"
+  pure
+    (.userTask
+      ⟨← stringField json "id"⟩
+      (← decodeOptionalString (← field json "name"))
+      metadata)
+
 private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   let kind ← stringField json "kind"
   match kind with
@@ -116,11 +129,7 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← stringField json "durationLiteral")
           ⟨← stringField json "outputFlowId"⟩)
   | "userTask" =>
-      requireObjectShape json ["id", "kind", "name"]
-      pure
-        (.userTask
-          ⟨← stringField json "id"⟩
-          (← decodeOptionalString (← field json "name")))
+      decodeCheckedUserTask json
   | "intermediateCatchTimerEvent" =>
       requireObjectShape json ["durationLiteral", "id", "kind"]
       pure

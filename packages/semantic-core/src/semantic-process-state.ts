@@ -13,6 +13,7 @@ import type {
   VariableMapping,
 } from "./semantic-value-contract.js";
 import type { BpmnErrorRoute } from "./semantic-process-contract.js";
+import type { UserTaskMetadata } from "./user-task-metadata.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export enum ControlStateKind {
@@ -53,6 +54,7 @@ export type SemanticUserTaskWait = DeepReadonly<{
   id: UserTaskInstanceId;
   owner: ScopeOccurrenceId;
   name: string | null;
+  metadata?: UserTaskMetadata;
   output: string;
 }>;
 

@@ -37,6 +37,7 @@ structure UserTaskWait where
   task : UserTaskDefinition
   activation : Nat
   output : ControlPlaceId
+  metadata : Option UserTaskMetadata := none
   deriving Repr, DecidableEq
 
 structure TimerWait where
@@ -353,7 +354,8 @@ def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
         owner
         task
         activation
-        output } state.waits
+        output
+        metadata := task.metadata } state.waits
     activations := setActivationCount state.activations task.id activation }
 
 def activateTimer (state : RuntimeState) (instanceId : SemanticId)
@@ -387,7 +389,8 @@ def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
         owner
         task := { id := task.id, name := task.name }
         activation := taskActivation
-        output := task.output } state.waits
+        output := task.output
+        metadata := none } state.waits
     timerWaits :=
       { processInstanceId := instanceId
         owner

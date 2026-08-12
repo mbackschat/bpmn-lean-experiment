@@ -44,12 +44,17 @@ private def decodeControlPlace (json : Json) : Except String ControlPlace := do
     { id := ⟨← stringField json "id"⟩
       origin := ← decodeSequenceFlowOrigin (← field json "origin") }
 
-private def decodeTaskDefinition (json : Json) :
+/-- Decode the exact ordinary User Task definition, preserving physical metadata absence. -/
+def decodeTaskDefinition (json : Json) :
     Except String UserTaskDefinition := do
-  requireObjectShape json ["elementId", "name"]
+  let metadata ← decodeOptionalUserTaskMetadataField json
+  requireObjectShape json
+    (if metadata.isSome then ["elementId", "metadata", "name"]
+      else ["elementId", "name"])
   pure
     { id := ⟨← stringField json "elementId"⟩
-      name := ← decodeOptionalString (← field json "name") }
+      name := ← decodeOptionalString (← field json "name")
+      metadata }
 
 private def decodeTimerDefinition (json : Json) :
     Except String TimerDefinition := do

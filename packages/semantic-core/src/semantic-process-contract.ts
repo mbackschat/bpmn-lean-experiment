@@ -11,6 +11,7 @@
  */
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
+import type { UserTaskMetadata } from "./user-task-metadata.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
   DefinitionScope,
@@ -337,6 +338,7 @@ export type SemanticOperation =
         task: {
           elementId: string;
           name: string | null;
+          metadata?: UserTaskMetadata;
         };
       }>)
   | (OperationBase &

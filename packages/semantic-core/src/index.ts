@@ -39,3 +39,4 @@ export * from "./source-overlay-identity.js";
 export * from "./scenario.js";
 export * from "./stimulus.js";
 export * from "./wire.js";
+export * from "./user-task-metadata.js";

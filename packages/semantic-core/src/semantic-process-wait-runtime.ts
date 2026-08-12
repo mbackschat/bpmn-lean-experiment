@@ -45,6 +45,9 @@ export function createUserTaskWait(
         },
         owner,
         name: operation.task.name,
+        ...(operation.task.metadata === undefined
+          ? {}
+          : { metadata: operation.task.metadata }),
         output: operation.output,
       },
     ].sort(compareUserTaskWaits),

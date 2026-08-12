@@ -130,7 +130,7 @@ function countOpeningElements(xml: string, localName: string): number {
   return [...xml.matchAll(opening)].length;
 }
 
-function removeOpaqueXmlRegions(xml: string): string {
+export function removeOpaqueXmlRegions(xml: string): string {
   return xml
     .replace(/<!--[\s\S]*?-->/gu, "")
     .replace(/<!\[CDATA\[[\s\S]*?\]\]>/gu, "")

@@ -271,6 +271,16 @@ const dispatchFixtures = {
     semanticProfile: SemanticProfileId.CalledProcessCallActivity,
     find: '<bpmn:startEvent id="CallerStart"',
   },
+  userTaskMetadata: {
+    path: "the User Task metadata reader",
+    source: new URL(
+      "./fixtures/user-task-assignment-form-metadata.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "user-task-assignment-form-metadata",
+    semanticProfile: "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+    find: '<bpmn:startEvent id="StartEvent_1"',
+  },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 
 test("applies foreign-attribute admission through every registered compilation dispatch", async () => {

@@ -1,4 +1,5 @@
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { UserTaskMetadata } from "./user-task-metadata.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type { MessageChannel } from "./semantic-value-contract.js";
@@ -216,6 +217,7 @@ export type OpenUserTask = DeepReadonly<{
   id: UserTaskInstanceId;
   name: string | null;
   state: UserTaskLifecycleState;
+  metadata?: UserTaskMetadata;
 }>;
 
 export type CompleteUserTaskInstanceInteraction = DeepReadonly<{

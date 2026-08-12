@@ -116,6 +116,7 @@ inductive CheckedNode where
       (interruption : BoundaryInterruption)
       (durationLiteral : String) (outputFlowId : SequenceFlowId)
   | userTask (id : NodeId) (name : Option String)
+      (metadata : Option UserTaskMetadata := none)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
   | receiveTask (id : NodeId) (channel : MessageChannel)
@@ -153,7 +154,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
-  | .userTask id _
+  | .userTask id _ _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .receiveTask id _
@@ -226,6 +227,7 @@ structure ControlPlace where
 structure UserTaskDefinition where
   id : TaskDefinitionId
   name : Option String
+  metadata : Option UserTaskMetadata := none
   deriving Repr, DecidableEq
 
 structure TimerDefinition where

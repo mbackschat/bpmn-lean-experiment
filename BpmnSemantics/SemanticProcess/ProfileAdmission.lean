@@ -159,6 +159,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1, { timerStarts := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
       profile = booleanProcessDataCheckpointProfileId.value ||
+      profile = userTaskMetadataCheckpointProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     -- The preserve-enabled profile reaches this shape by construction: Lean receives only the
     -- executed partition, so a source carrying retained notation and its notation-free twin
@@ -245,6 +246,7 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
       { timerInitiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
       profile = booleanProcessDataCheckpointProfileId.value ||
+      profile = userTaskMetadataCheckpointProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
@@ -326,6 +328,26 @@ private def configuredTaskDescriptorValid (descriptor : EffectDescriptor) : Bool
   descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
     descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1"
 
+private def checkedUserTaskMetadataValid (profile : ProfileId)
+    (nodes : List CheckedNode) : Bool :=
+  nodes.all fun
+    | .userTask _ _ metadata =>
+        if profile = userTaskMetadataCheckpointProfileId then
+          UserTaskMetadata.optionWellFormed metadata
+        else
+          metadata.isNone
+    | _ => true
+
+private def programUserTaskMetadataValid (profile : ProfileId)
+    (operations : List SemanticOperation) : Bool :=
+  operations.all fun
+    | .awaitUserTask _ _ _ _ task =>
+        if profile = userTaskMetadataCheckpointProfileId then
+          UserTaskMetadata.optionWellFormed task.metadata
+        else
+          task.metadata.isNone
+    | _ => true
+
 private def exactUncheckedEdge (source : CheckedProcess)
     (sourceId targetId : NodeId) : Bool :=
   source.sequenceFlows.any fun flow =>
@@ -341,7 +363,7 @@ private def configuredTaskCheckedPayloadValid (source : CheckedProcess) : Bool :
         | .configuredTask id descriptor => some (id, descriptor)
         | _ => none,
       source.nodes.filterMap fun
-        | .userTask id _ => some id
+        | .userTask id _ _ => some id
         | _ => none,
       source.nodes.filterMap fun
         | .noneEndEvent id => some id
@@ -374,6 +396,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
   | some (scopeCount, shape) =>
       source.definitionScopes.length = scopeCount &&
         nodeCardinalities source.nodes = shape &&
+        checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
         configuredTaskCheckedPayloadValid source
   | none => false
 
@@ -410,6 +433,8 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
   | some (scopeCount, shape) =>
       program.definitionScopes.length = scopeCount &&
         operationCardinalities program.operations = shape &&
+        programUserTaskMetadataValid program.identity.semanticProfile
+          program.operations &&
         operationPayloadCapabilitiesValid
           program.identity.semanticProfile.value program.operations
   | none => false

@@ -85,6 +85,7 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty origin.elementId.value &&
         nonempty task.id.value &&
         decide (origin.elementId.value = task.id.value) &&
+        UserTaskMetadata.optionWellFormed task.metadata &&
         placeExists places input &&
         placeExists places output
   | .awaitTimer id origin input output timer =>

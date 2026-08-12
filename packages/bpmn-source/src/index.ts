@@ -48,5 +48,8 @@ export {
   callActivityDefinitionBindingValid,
 } from "./call-activity-lowering.js";
 export {
+  userTaskMetadataBindingValid,
+} from "./user-task-metadata-source.js";
+export {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";

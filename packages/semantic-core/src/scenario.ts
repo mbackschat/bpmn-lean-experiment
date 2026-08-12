@@ -97,6 +97,7 @@ export function projectOpenUserTasks(
       id: wait.id,
       name: wait.name,
       state: UserTaskLifecycleState.Active,
+      ...(wait.metadata === undefined ? {} : { metadata: wait.metadata }),
     }))
     .sort(compareOpenOccurrences);
 }

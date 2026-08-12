@@ -44,7 +44,7 @@ def parseFrom (source : CheckedProcess) :
       match nodeAt source current with
       | some (.noneEndEvent _) =>
           some { segments := [], visited := [current], finishId := current }
-      | some (.userTask ..)
+      | some (.userTask _ _ none)
       | some (.intermediateCatchTimerEvent ..)
       | some (.serviceTask ..) =>
           match outgoingFlows source current with
@@ -60,7 +60,7 @@ def parseFrom (source : CheckedProcess) :
           | [leftInput, rightInput] =>
               match nodeAt source leftInput.targetId,
                   nodeAt source rightInput.targetId with
-              | some (.userTask ..), some (.userTask ..) =>
+              | some (.userTask _ _ none), some (.userTask _ _ none) =>
                   match outgoingFlows source leftInput.targetId,
                       outgoingFlows source rightInput.targetId with
                   | [leftOutput], [rightOutput] =>
@@ -90,6 +90,7 @@ def parseFrom (source : CheckedProcess) :
               | _, _ => none
           | _ => none
       | some (.noneStartEvent _)
+      | some (.userTask _ _ (some _))
       | some (.messageStartEvent ..)
       | some (.timerStartEvent ..)
       | some (.embeddedSubProcess ..)
@@ -136,8 +137,9 @@ def parseProcess? (source : CheckedProcess) :
 def composedNodeSurfaceValid : CheckedNode → Bool
   | .noneStartEvent _
   | .noneEndEvent _
-  | .userTask ..
+  | .userTask _ _ none
   | .parallelGateway .. => true
+  | .userTask _ _ (some _) => false
   | .embeddedSubProcess ..
   | .callActivity ..
   | .boundaryErrorEvent ..

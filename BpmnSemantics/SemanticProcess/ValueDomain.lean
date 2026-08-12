@@ -13,6 +13,10 @@ open BpmnSemantics
 def booleanProcessDataCheckpointProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-user-task-boolean-completion-data-draft"⟩
 
+/-- Runtime-frozen profile identity used only by the owner-approved User Task metadata checkpoint. -/
+def userTaskMetadataCheckpointProfileId : ProfileId :=
+  ⟨"cibseven-2.2.0-user-task-assignment-form-metadata-draft"⟩
+
 /-- External Process-data surfaces whose admitted value domains differ in the selected checkpoint. -/
 inductive ProcessDataIngress where
   | processStart
@@ -26,7 +30,8 @@ def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress) :
   | .null => true
   | .boolean _ =>
       surface = .userTaskCompletion &&
-        profile = booleanProcessDataCheckpointProfileId
+        (profile = booleanProcessDataCheckpointProfileId ||
+          profile = userTaskMetadataCheckpointProfileId)
 
 /-- A submitted patch is admitted only when every value belongs to the exact surface/profile domain. -/
 def processDataBindingsAdmitted (profile : ProfileId)
