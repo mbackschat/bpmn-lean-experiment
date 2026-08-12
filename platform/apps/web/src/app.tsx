@@ -16,12 +16,15 @@ import type { MessageStartPublicationApiClient } from "./message-start-publicati
 import { MessageStartPublicationPanel } from "./message-start-publication-panel";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api";
 import { ProcessInstanceSearchPanel } from "./process-instance-search-panel";
+import type { WorkApiClient } from "./work-tasks-api";
+import { WorkInboxPanel } from "./work-inbox-panel";
 
 export type AppProps = Readonly<{
   api: DefinitionApiClient;
   messageStartPublicationApi: MessageStartPublicationApiClient;
   processInstanceSearchApi: ProcessInstanceSearchApi;
   scheduleApi: DefinitionScheduleApiClient;
+  workApi: WorkApiClient;
 }>;
 
 export function App({
@@ -29,6 +32,7 @@ export function App({
   messageStartPublicationApi,
   processInstanceSearchApi,
   scheduleApi,
+  workApi,
 }: AppProps) {
   const [definitions, setDefinitions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
   const [versions, setVersions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
@@ -144,6 +148,8 @@ export function App({
       <DeploymentResult result={deployment} />
 
       <ProcessInstanceSearchPanel api={processInstanceSearchApi} />
+
+      <WorkInboxPanel api={workApi} />
 
       <div className="workspace-grid">
         <aside className="catalog-panel" aria-labelledby="catalog-heading">

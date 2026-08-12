@@ -1,0 +1,111 @@
+:root {
+  --ui-accent: #12635f;
+  --ui-accent-strong: #0b4542;
+  --ui-border: #c7d3d1;
+  --ui-focus: #e87b35;
+  --ui-surface: #ffffff;
+  --ui-text: #18302e;
+}
+
+.uiButton {
+  appearance: none;
+  border: 1px solid var(--ui-accent);
+  border-radius: 0.45rem;
+  background: var(--ui-accent);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  padding: 0.55rem 0.9rem;
+}
+
+.uiButton[data-hovered] {
+  background: var(--ui-accent-strong);
+}
+
+.uiButtonPlain {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ui-accent);
+  padding: 0;
+}
+
+.uiButtonPlain[data-hovered] {
+  background: transparent;
+  color: var(--ui-accent-strong);
+  text-decoration: underline;
+}
+
+.uiButton[data-focus-visible],
+.uiTextField input[data-focus-visible],
+.uiCheckbox[data-focus-visible] {
+  outline: 3px solid color-mix(in srgb, var(--ui-focus) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.uiButton[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.uiTextField {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.uiTextField label {
+  color: var(--ui-text);
+  font-weight: 650;
+}
+
+.uiTextField input {
+  border: 1px solid var(--ui-border);
+  border-radius: 0.4rem;
+  font: inherit;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.6rem;
+}
+
+.uiCheckbox {
+  align-items: center;
+  color: var(--ui-text);
+  display: flex;
+  gap: 0.55rem;
+}
+
+.uiCheckbox::before {
+  border: 1px solid var(--ui-border);
+  border-radius: 0.25rem;
+  content: "";
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+.uiCheckbox[data-selected]::before {
+  background: var(--ui-accent);
+  box-shadow: inset 0 0 0 0.22rem var(--ui-surface);
+}
+
+.uiTableScroller {
+  overflow-x: auto;
+}
+
+.uiDataTable {
+  border-collapse: collapse;
+  color: var(--ui-text);
+  min-width: 100%;
+}
+
+.uiDataTable th,
+.uiDataTable td {
+  border-bottom: 1px solid var(--ui-border);
+  padding: 0.7rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.uiDataTable th {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

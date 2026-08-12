@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
@@ -12,6 +13,8 @@ import "./message-start-publication.css";
 import { ProcessInstanceSearchApiClient } from "./process-instance-search-api";
 import "./process-instance-search.css";
 import "./styles.css";
+import { WorkApiClient } from "./work-tasks-api";
+import "@bpmn-lean/platform-ui-kit/style.css";
 
 const container = document.getElementById("root");
 if (container === null) {
@@ -22,13 +25,18 @@ const api = new DefinitionApiClient(window.location.origin);
 const messageStartPublicationApi = new MessageStartPublicationApiClient(window.location.origin);
 const processInstanceSearchApi = new ProcessInstanceSearchApiClient(window.location.origin);
 const scheduleApi = new DefinitionScheduleApiClient(window.location.origin);
+const workApi = new WorkApiClient(window.location.origin);
+const queryClient = new QueryClient();
 createRoot(container).render(
   <StrictMode>
-    <App
-      api={api}
-      messageStartPublicationApi={messageStartPublicationApi}
-      processInstanceSearchApi={processInstanceSearchApi}
-      scheduleApi={scheduleApi}
-    />
+    <QueryClientProvider client={queryClient}>
+      <App
+        api={api}
+        messageStartPublicationApi={messageStartPublicationApi}
+        processInstanceSearchApi={processInstanceSearchApi}
+        scheduleApi={scheduleApi}
+        workApi={workApi}
+      />
+    </QueryClientProvider>
   </StrictMode>,
 );

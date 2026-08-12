@@ -1,0 +1,33 @@
+{
+  "name": "@bpmn-lean/platform-ui-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./src/ui-kit.css"
+  },
+  "files": [
+    "dist",
+    "src/ui-kit.css"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-test": "tsc -p tsconfig.test.json",
+    "test": "pnpm build && pnpm type-test && node --test --test-concurrency=1 test/*.test.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "9.0.1",
+    "react": "19.2.8",
+    "react-aria-components": "1.20.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "react-dom": "19.2.8"
+  }
+}
