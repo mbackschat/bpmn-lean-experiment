@@ -157,7 +157,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: define and approve E2 User Task assignment and form metadata.** Select the smallest exact source admission and immutable public projection that can support the M3 inbox and typed form without adding authorization, claim semantics, form validation, a new completion command, or a new Temporal primitive. Run the pinned CIB phase-zero probe and independent cold proposal review before implementation.
+1. **Active: approve E2 User Task assignment and form metadata.** The pinned CIB phase-zero probe and governed proposal are complete. Run the independent cold proposal review before implementation, then pause at the first green source/checked/IL/runtime/proof checkpoint for the required semantic review.
 
 ## Approved decisions
 
@@ -262,7 +262,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: define and approve E2 User Task assignment and form metadata.** Begin with the pinned CIB phase-zero probe and a governed proposal that classifies the exact candidate-group and form-field extensions, preserves metadata-free artifacts, enriches only the existing User Task wait/public observation, and leaves completion identity, authorization, validation, Product 2, and Temporal primitives unchanged.
+**Next action: independently cold-review the E2 User Task assignment and form metadata proposal.** The pinned CIB phase-zero probe is green and the proposal classifies the exact candidate-group and form-field extensions, preserves metadata-free artifacts, enriches only the existing User Task wait/public observation, and leaves completion identity, authorization, validation, Product 2, and Temporal primitives unchanged.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

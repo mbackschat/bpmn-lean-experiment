@@ -26,7 +26,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Permitted operational details | 7 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 10 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution; the selected Boolean-completion profile is registered, evidence-closed, and independently closure-reviewed |
+| Selected CIB extensions | 10 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; two User Task metadata extensions are proposed and await owner approval |
 | Configuration-specific realizations | 7 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -341,6 +341,30 @@ This is an additional CIB public-service extension over the BPMN User Task lifec
 **Evidence:** The Java-21 [Boolean phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBooleanProcessDataPhaseZeroProbeTest.java) uses pinned CIB Seven `2.2.0`, the public Model API, Task Service, Runtime Service, and History Service under `CIB-CFG-0001`. The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) owns the selected project rules, profile gate, Lean question, and Temporal account. The [registered scenario](../scenarios/user-task-boolean-completion/scenario.json) and [retained evidence](../scenarios/user-task-boolean-completion/cibseven-evidence.json) bind the actual Java Boolean observation to the same answer-free target that Lean, the independent core, differential comparison, and Temporal consume. The [checkpoint CIB test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBooleanProcessDataCheckpointTest.java) separately locks the project representation, value-domain admission, actual Java Boolean projection, and old-profile refusal.
 
 **Boundary:** Only primitive Java Boolean on one exact active User Task completion, Process-scope create/replace/preserve merge, continuation visibility, final-history visibility, and unknown/stale refusal are selected. Boolean Process Start, task-local/transient data, nested or serialized values, numbers, deletion, BPMN input/output specifications and Data Associations, forms, field validation, authorization, assignment, expression evaluation, effects, multiple active dummy tasks, and general Task Service compatibility remain excluded. Existing `CIB-EXT-0005` and `CIB-EXT-0006` remain frozen to string/null values.
+
+### CIB-EXT-0011 — one literal candidate group on a User Task
+
+**Status:** Proposed bounded extension; implementation blocked pending proposal review and owner approval
+
+CIB Seven `2.2.0` consumes the exact foreign attribute `{http://camunda.org/schema/1.0/bpmn}candidateGroups` on a User Task and exposes each resolved group through public Task Service candidate identity links. The proposed project profile restricts this broader CIB surface to one trimmed nonempty literal group ID, refuses comma lists and expressions, and projects one neutral group candidate into the existing open User Task.
+
+This is a CIB source and public-service extension, not the standard Potential Owner account. BPMN Resource Roles permit a Resource reference or assignment expression, but neither the normative representation nor the selected phase-zero observation identifies a portable literal group ID. A standard `potentialOwner` naming a Resource with the same human-readable value produces no CIB candidate identity link and remains deferred.
+
+**Evidence:** The [assignment/form phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskAssignmentFormMetadataPhaseZeroProbeTest.java) uses pinned CIB Seven `2.2.0`, public Model API, Task Service task queries, and public identity-link queries under `CIB-CFG-0001`. It distinguishes the selected literal group from a changed group, CIB's comma-list expansion, CIB expression evaluation, a foreign-namespace twin, and a standard Potential Owner Resource reference. The [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) owns the proposed neutral projection and exclusions.
+
+**Boundary:** One exact literal candidate group on one User Task is proposed. Candidate users, multiple groups, expressions, assignee, owner, claim, release, identity lookup, authorization, organization semantics, Resource Roles, Human Performer, Potential Owner, Lane inference, due dates, follow-up dates, priority, notifications, and general Task Service compatibility remain excluded.
+
+### CIB-EXT-0012 — one typed generated-form field on a User Task
+
+**Status:** Proposed bounded extension; implementation blocked pending proposal review and owner approval
+
+CIB Seven `2.2.0` consumes one exact `{http://camunda.org/schema/1.0/bpmn}formData` container with one `{http://camunda.org/schema/1.0/bpmn}formField`, and public Form Service exposes the field's unqualified `id` plus exact `string` or `boolean` type. Completing the task through public Task Service with a Java Boolean remains the separately selected `CIB-EXT-0010` value fact.
+
+This is a CIB generated-form extension, not standard BPMN rendering content. BPMN Table 10.13 and the normative Rendering type define an opaque extension hook but no portable field identity, field type, rendering, validation, or submission mapping. The proposed project profile therefore projects only neutral immutable field metadata and does not claim a form engine.
+
+**Evidence:** The [assignment/form phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskAssignmentFormMetadataPhaseZeroProbeTest.java) uses public Model API and Form Service, proves alternate-prefix namespace identity, distinguishes `boolean` from `string`, and completes the selected task with an actual Java Boolean. The [User Task assignment and form metadata proposal](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-PROPOSAL.md) owns the exact source shape, public projection, and Temporal preflight.
+
+**Boundary:** One exact field with one trimmed nonempty key and type `string` or `boolean` is proposed. Multiple fields, labels, defaults, constraints, properties, scripts, form keys, rendering, submission mapping, field validation, task-local data, new value kinds, standard Rendering, WSHumanTask, and general Form Service compatibility remain excluded.
 
 ### Research queue
 
