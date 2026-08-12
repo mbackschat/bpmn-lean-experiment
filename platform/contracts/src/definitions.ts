@@ -1,3 +1,5 @@
+import type { DeepReadonly } from "@bpmn-lean/contract-types";
+
 /** Public deployment outcomes. Engine reason codes remain deliberately opaque to product 2. */
 export const DefinitionDeployStatus = {
   Deployed: "deployed",
@@ -103,25 +105,39 @@ export const PublicApiErrorCode = {
   NotFound: "notFound",
   InternalFailure: "internalFailure",
   Conflict: "conflict",
+  Forbidden: "forbidden",
+  FormValueIncompatible: "formValueIncompatible",
+  WorkSnapshotUnavailable: "workSnapshotUnavailable",
 } as const;
 
 export type PublicApiErrorCode =
+  | typeof PublicApiErrorCode.InvalidRequest
+  | typeof PublicApiErrorCode.MethodNotAllowed
+  | typeof PublicApiErrorCode.UnsupportedMediaType
+  | typeof PublicApiErrorCode.PayloadTooLarge
+  | typeof PublicApiErrorCode.NotFound
+  | typeof PublicApiErrorCode.InternalFailure
+  | typeof PublicApiErrorCode.Conflict;
+
+/** Exact error set retained by every pre-Work route. */
+export const LegacyPublicApiErrorCodes = [
+  PublicApiErrorCode.InvalidRequest,
+  PublicApiErrorCode.MethodNotAllowed,
+  PublicApiErrorCode.UnsupportedMediaType,
+  PublicApiErrorCode.PayloadTooLarge,
+  PublicApiErrorCode.NotFound,
+  PublicApiErrorCode.InternalFailure,
+  PublicApiErrorCode.Conflict,
+] as const satisfies readonly PublicApiErrorCode[];
+
+/** Every code in the single public catalog, including route-specific Work codes. */
+export type PublicApiErrorCatalogCode =
   typeof PublicApiErrorCode[keyof typeof PublicApiErrorCode];
 
-type PublicApiErrorFor<Code extends PublicApiErrorCode> = Readonly<{
+export type PublicApiError<Code extends string = PublicApiErrorCode> = DeepReadonly<{
   code: Code;
   message: string;
 }>;
 
-export type PublicApiError =
-  | PublicApiErrorFor<typeof PublicApiErrorCode.InvalidRequest>
-  | PublicApiErrorFor<typeof PublicApiErrorCode.MethodNotAllowed>
-  | PublicApiErrorFor<typeof PublicApiErrorCode.UnsupportedMediaType>
-  | PublicApiErrorFor<typeof PublicApiErrorCode.PayloadTooLarge>
-  | PublicApiErrorFor<typeof PublicApiErrorCode.NotFound>
-  | PublicApiErrorFor<typeof PublicApiErrorCode.InternalFailure>
-  | PublicApiErrorFor<typeof PublicApiErrorCode.Conflict>;
-
-export type PublicApiErrorResponse = Readonly<{
-  error: PublicApiError;
-}>;
+export type PublicApiErrorResponse<Code extends string = PublicApiErrorCode> =
+  DeepReadonly<{ error: PublicApiError<Code> }>;

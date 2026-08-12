@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 
-const currentDefinitionDatabaseSchemaEpoch = 1;
+const currentDefinitionDatabaseSchemaEpoch = 2;
 
 /** Raised before table access when durable Product 2 data predates the current pre-release schema. */
 export class DefinitionSchemaResetRequiredError extends Error {

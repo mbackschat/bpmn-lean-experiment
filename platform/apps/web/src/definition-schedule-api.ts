@@ -6,6 +6,7 @@ import {
   definitionSchedulePath,
   definitionSchedulesPath,
   DefinitionScheduleStatus,
+  LegacyPublicApiErrorCodes,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionSchedule,
@@ -170,7 +171,7 @@ export class DefinitionScheduleApiClient {
   async #throwApiError(response: Response): Promise<never> {
     const decoded = decodeResponse(
       await readJson(response),
-      decodePublicApiErrorResponse,
+      (value) => decodePublicApiErrorResponse(value, LegacyPublicApiErrorCodes),
       "definition-schedule API error response",
     );
     throw new DefinitionApiError(

@@ -15,9 +15,11 @@ import type {
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
+  ConfirmedProcessInstancePublicationService,
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
   DefinitionStartService,
+  InMemoryConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
@@ -545,6 +547,15 @@ function createFixture(
     ) ?? null,
   };
   const unusedStarter: DefinitionVersionStarter = {
+    prepareDefinitionVersion: async () => {
+      throw new Error("start is outside this fixture");
+    },
+    startPreparedDefinitionVersion: async () => {
+      throw new Error("start is outside this fixture");
+    },
+    describeDefinitionVersionStart: async () => {
+      throw new Error("start is outside this fixture");
+    },
     startDefinitionVersion: async () => {
       throw new Error("start is outside this fixture");
     },
@@ -554,7 +565,11 @@ function createFixture(
     artifactStore,
     repository,
     () => "unused-instance",
-    { recordProcessInstance: async () => {} },
+    new ConfirmedProcessInstancePublicationService({
+      repository: new InMemoryConfirmedProcessInstanceRepository(),
+      operate: { recordProcessInstance: async () => undefined },
+      work: { recordConfirmedProcessInstance: async () => undefined },
+    }),
   );
   return {
     artifacts,

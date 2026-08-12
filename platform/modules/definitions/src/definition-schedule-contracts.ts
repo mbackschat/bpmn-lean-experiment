@@ -8,8 +8,11 @@ import type {
   ExactArtifactStore,
 } from "./contracts.js";
 import type {
-  StartedProcessInstancePublisher,
-} from "./process-instance-recording.js";
+  ProcessWorkLocatorFactory,
+} from "./confirmed-process-instance-contracts.js";
+import type {
+  ConfirmedProcessInstancePublicationService,
+} from "./confirmed-process-instance-publication-service.js";
 
 export const DefinitionScheduleState = {
   Creating: "creating",
@@ -256,5 +259,6 @@ export type DefinitionScheduleServiceDependencies = Readonly<{
   host: DefinitionScheduleHost;
   identities: DefinitionScheduleIdentityGenerators;
   now: () => number;
-  startedInstances: StartedProcessInstancePublisher;
+  confirmedInstances: ConfirmedProcessInstancePublicationService;
+  locators: ProcessWorkLocatorFactory;
 }>;

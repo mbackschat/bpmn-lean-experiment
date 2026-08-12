@@ -7,6 +7,7 @@ import { test } from "node:test";
 
 import {
   DefinitionSchemaResetRequiredError,
+  SqliteConfirmedProcessInstanceRepository,
   SqliteDefinitionRepository,
   SqliteDefinitionScheduleRepository,
 } from "@bpmn-lean/platform-definitions";
@@ -17,6 +18,7 @@ test("rejects a prior-epoch database before old definition or terminal schedule 
   try {
     const legacy = new DatabaseSync(databaseFile);
     legacy.exec(`
+      PRAGMA user_version = 1;
       CREATE TABLE definition_versions (
         process_id TEXT NOT NULL,
         version INTEGER NOT NULL,
@@ -43,6 +45,10 @@ test("rejects a prior-epoch database before old definition or terminal schedule 
     legacy.close();
 
     assert.throws(
+      () => new SqliteConfirmedProcessInstanceRepository(databaseFile),
+      (error: unknown) => error instanceof DefinitionSchemaResetRequiredError,
+    );
+    assert.throws(
       () => new SqliteDefinitionScheduleRepository(databaseFile),
       (error: unknown) => error instanceof DefinitionSchemaResetRequiredError,
     );
@@ -63,11 +69,13 @@ test("sets one shared epoch on an empty database before either repository create
     schedules.close();
     const definitions = new SqliteDefinitionRepository(databaseFile);
     definitions.close();
+    const confirmed = new SqliteConfirmedProcessInstanceRepository(databaseFile);
+    confirmed.close();
 
     const database = new DatabaseSync(databaseFile, { readOnly: true });
     try {
       const row = database.prepare("PRAGMA user_version").get();
-      assert.equal(row?.user_version, 1);
+      assert.equal(row?.user_version, 2);
     } finally {
       database.close();
     }

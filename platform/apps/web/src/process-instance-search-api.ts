@@ -3,6 +3,7 @@ import {
   decodeProcessInstanceSearchRequest,
   decodePublicApiErrorResponse,
   processInstancesPath,
+  LegacyPublicApiErrorCodes,
 } from "@bpmn-lean/platform-contracts";
 import type {
   ProcessInstanceSearchPage,
@@ -78,7 +79,7 @@ export class ProcessInstanceSearchApiClient implements ProcessInstanceSearchApi 
   async #throwApiError(response: Response): Promise<never> {
     const decoded = decodeResponse(
       await readJson(response),
-      decodePublicApiErrorResponse,
+      (value) => decodePublicApiErrorResponse(value, LegacyPublicApiErrorCodes),
       "Process-instance search API error response",
     );
     throw new DefinitionApiError(

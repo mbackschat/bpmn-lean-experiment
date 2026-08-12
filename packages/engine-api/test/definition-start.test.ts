@@ -9,8 +9,13 @@ import { test } from "node:test";
 
 import {
   EngineDefinitionStartIntegrityCode,
+  EngineDefinitionStartDescriptionStatus,
   EngineDefinitionStartStatus,
+  describeBpmnDefinitionVersionStart,
+  prepareBpmnDefinitionVersionStart,
+  serializeEngineProcessWorkLocator,
   startBpmnDefinitionVersion,
+  startPreparedBpmnDefinitionVersion,
 } from "@bpmn-lean/engine-api";
 import type {
   EngineDefinitionStartRequest,
@@ -26,6 +31,68 @@ const limits = {
   maxBytes: 1_048_576,
   parserDeadlineMs: 1_000,
 } as const;
+
+test("prepares a durable intent and canonical locator with zero SDK calls", async () => {
+  const bytes = await readFile(admittedSource);
+  const calls: unknown[] = [];
+  const request = requestFor(bytes, fakeClient(calls));
+  const { temporalClient: _unused, ...preparationRequest } = request;
+  const prepared = await prepareBpmnDefinitionVersionStart(preparationRequest);
+
+  assert.equal(prepared.status, EngineDefinitionStartStatus.Admitted);
+  assert.equal(calls.length, 0);
+  if (prepared.status !== EngineDefinitionStartStatus.Admitted) {
+    throw new TypeError("Expected admitted Direct Start preparation");
+  }
+  assert.match(
+    serializeEngineProcessWorkLocator(prepared.locator),
+    /^bpmn-process-work-v1:/u,
+  );
+  assert.equal(prepared.intent.protocol, "bpmn-direct-start-v1");
+  assert.match(prepared.intent.intentSha256, /^[0-9a-f]{64}$/u);
+
+  assert.equal((await startPreparedBpmnDefinitionVersion({
+    ...request,
+    expectedIntent: prepared.intent,
+  })).status, EngineDefinitionStartStatus.Started);
+  assert.equal(calls.length, 1);
+});
+
+test("classifies retained type and Task Queue drift as divergent", async () => {
+  const bytes = await readFile(admittedSource);
+  const request = requestFor(bytes, fakeClient([]));
+  const { temporalClient: _unused, ...preparationRequest } = request;
+  const prepared = await prepareBpmnDefinitionVersionStart(preparationRequest);
+  if (prepared.status !== EngineDefinitionStartStatus.Admitted) {
+    throw new TypeError("Expected admitted Direct Start preparation");
+  }
+  for (const [type, taskQueue, expected] of [
+    ["runBpmnProcess", "m1-start-queue", EngineDefinitionStartDescriptionStatus.Matching],
+    ["wrongWorkflow", "m1-start-queue", EngineDefinitionStartDescriptionStatus.Divergent],
+    ["runBpmnProcess", "wrong-queue", EngineDefinitionStartDescriptionStatus.Divergent],
+  ] as const) {
+    const temporalClient = {
+      getHandle: () => ({
+        describe: async () => ({
+          workflowId: decodeLocatorWorkflowId(serializeEngineProcessWorkLocator(prepared.locator)),
+          type,
+          taskQueue,
+          status: { name: "RUNNING" },
+          memo: { bpmnLeanDirectStartIntentSha256: prepared.intent.intentSha256 },
+        }),
+      }),
+    } as unknown as EngineDefinitionStartRequest["temporalClient"];
+    assert.deepEqual(
+      await describeBpmnDefinitionVersionStart({
+        temporalClient,
+        processInstanceId: request.processInstanceId,
+        taskQueue: request.taskQueue,
+        expectedIntent: prepared.intent,
+      }),
+      { status: expected },
+    );
+  }
+});
 
 test("rejects stored process identity drift before calling Temporal start", async () => {
   const bytes = await readFile(admittedSource);
@@ -192,4 +259,8 @@ function requireStartCall(value: unknown): CapturedStartCall {
 
 function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
+}
+
+function decodeLocatorWorkflowId(locator: string): string {
+  return decodeURIComponent(locator.slice("bpmn-process-work-v1:".length));
 }

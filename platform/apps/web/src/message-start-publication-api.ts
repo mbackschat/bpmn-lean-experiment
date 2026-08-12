@@ -4,6 +4,7 @@ import {
   decodePutMessageStartPublicationRequest,
   messageStartPublicationPath,
   MessageStartPublicationStatus,
+  LegacyPublicApiErrorCodes,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DeployedDefinitionVersion,
@@ -88,7 +89,7 @@ export class MessageStartPublicationApiClient {
   async #throwApiError(response: Response): Promise<never> {
     const decoded = decodeResponse(
       await readJson(response),
-      decodePublicApiErrorResponse,
+      (value) => decodePublicApiErrorResponse(value, LegacyPublicApiErrorCodes),
       "Message Start publication API error response",
     );
     throw new DefinitionApiError(

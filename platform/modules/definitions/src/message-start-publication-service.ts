@@ -36,7 +36,7 @@ import {
   projectMessageStartPublication,
   requirePublicationId,
 } from "./message-start-publication-values.js";
-import { recordStartedProcessInstance } from "./process-instance-recording.js";
+import { toPublicDefinition } from "./definition-public-values.js";
 
 type PreparedTarget = Readonly<{
   definition: DefinitionMetadata;
@@ -290,11 +290,15 @@ export class MessageStartPublicationService {
   ): Promise<MessageStartPublicationRecord> {
     const reconciled = await this.#reconcileLifecycle(record, request);
     if (reconciled.state === MessageStartPublicationState.Accepted) {
-      await recordStartedProcessInstance(
-        this.#dependencies.startedInstances,
-        reconciled.identity.processInstanceId,
-        reconciled.definition,
-      );
+      await this.#dependencies.confirmedInstances.publishConfirmed({
+        instance: {
+          processInstanceId: reconciled.identity.processInstanceId,
+          definition: toPublicDefinition(reconciled.definition),
+        },
+        locator: this.#dependencies.locators.canonicalLocator(
+          reconciled.identity.processInstanceId,
+        ),
+      });
     }
     return reconciled;
   }

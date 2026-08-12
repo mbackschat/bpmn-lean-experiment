@@ -12,6 +12,8 @@ import type {
   DefinitionMessageStartHost,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
+  ConfirmedProcessInstancePublicationService,
+  InMemoryConfirmedProcessInstanceRepository,
   MessageStartPublicationConflictError,
   MessageStartPublicationDeliveryUnavailableError,
   MessageStartPublicationIntegrityError,
@@ -75,7 +77,8 @@ test("accepted is the only state exposing the reserved semantic instance", async
       observedStarting = repository.get("accepted")?.state ===
         MessageStartPublicationState.Starting;
     };
-    const sut = service(repository, host, artifacts, definitions);
+    const capture = publicationCapture();
+    const sut = service(repository, host, artifacts, definitions, capture);
 
     const first = await sut.put("accepted", request());
     const retried = await sut.put("accepted", request());
@@ -87,6 +90,21 @@ test("accepted is the only state exposing the reserved semantic instance", async
     assert.equal(first.publication.instance?.processInstanceId, "instance:accepted");
     assert.deepEqual(retried.publication, first.publication);
     assert.equal(retried.created, false);
+    assert.deepEqual(capture.canonicalInputs, [
+      "instance:accepted",
+      "instance:accepted",
+    ]);
+    assert.deepEqual(capture.confirmedPublications, [{
+      instance: {
+        processInstanceId: "instance:accepted",
+        definition: definition(),
+      },
+      locator: "canonical-locator:instance%3Aaccepted",
+    }]);
+    assert.doesNotMatch(
+      JSON.stringify(capture.confirmedPublications),
+      /private-workflow/u,
+    );
     repository.close();
   });
 });
@@ -295,7 +313,17 @@ function service(
   host: MessageStartPublicationHost,
   artifacts: ExactArtifactStore,
   definitions: DefinitionRepository,
+  capture = publicationCapture(),
 ): MessageStartPublicationService {
+  const confirmedInstances = new ConfirmedProcessInstancePublicationService({
+    repository: new InMemoryConfirmedProcessInstanceRepository(),
+    operate: { recordProcessInstance: async () => undefined },
+    work: {
+      recordConfirmedProcessInstance: async (publication) => {
+        capture.confirmedPublications.push(structuredClone(publication));
+      },
+    },
+  });
   return new MessageStartPublicationService({
     publications,
     host,
@@ -306,12 +334,34 @@ function service(
       commandId: (publicationId) => `command:${publicationId}`,
       workflowId: expectedWorkflowId,
     },
-    startedInstances: { recordProcessInstance: async () => undefined },
+    confirmedInstances,
+    locators: {
+      canonicalLocator: (processInstanceId) => {
+        capture.canonicalInputs.push(processInstanceId);
+        return `canonical-locator:${encodeURIComponent(processInstanceId)}`;
+      },
+      scheduleExecutionLocator: () => {
+        throw new Error("Message Start must not mint a Schedule locator");
+      },
+    },
   });
 }
 
 function expectedWorkflowId(processInstanceId: string): string {
-  return `workflow:${processInstanceId}`;
+  return `private-workflow:${processInstanceId}`;
+}
+
+function publicationCapture() {
+  return {
+    canonicalInputs: [] as string[],
+    confirmedPublications: [] as Array<Readonly<{
+      instance: Readonly<{
+        processInstanceId: string;
+        definition: DefinitionMetadata;
+      }>;
+      locator: string;
+    }>>,
+  };
 }
 
 async function withDatabase(

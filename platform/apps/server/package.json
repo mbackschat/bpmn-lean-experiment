@@ -23,6 +23,7 @@
     "@bpmn-lean/platform-contracts": "workspace:*",
     "@bpmn-lean/platform-definitions": "workspace:*",
     "@bpmn-lean/platform-engine-gateway": "workspace:*",
-    "@bpmn-lean/platform-operate": "workspace:*"
+    "@bpmn-lean/platform-operate": "workspace:*",
+    "@bpmn-lean/platform-work": "workspace:*"
   }
 }

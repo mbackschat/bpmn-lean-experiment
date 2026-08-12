@@ -2,7 +2,11 @@ import {
   DefinitionStartStatus as EngineDefinitionStartStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
+  DefinitionStartIntent,
+  DefinitionStartPreparationResult,
   DefinitionStartResult as EngineDefinitionStartResult,
+  DefinitionVersionStartDescriptionRequest,
+  DefinitionVersionStartRequest,
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
 
@@ -20,11 +24,16 @@ import type {
 } from "./contracts.js";
 import { cloneDefinitionMetadata } from "./definition-values.js";
 import {
-  recordStartedProcessInstance,
-} from "./process-instance-recording.js";
+  ConfirmedProcessInstanceIntegrityError,
+  ConfirmedProcessInstanceState,
+} from "./confirmed-process-instance-contracts.js";
 import type {
-  StartedProcessInstancePublisher,
-} from "./process-instance-recording.js";
+  DirectProcessInstanceHost,
+} from "./confirmed-process-instance-contracts.js";
+import type {
+  ConfirmedProcessInstancePublicationService,
+} from "./confirmed-process-instance-publication-service.js";
+import { toPublicDefinition } from "./definition-public-values.js";
 
 export type ProcessInstanceIdGenerator = () => string;
 
@@ -34,20 +43,20 @@ export class DefinitionStartService {
   readonly #artifacts: ExactArtifactStore;
   readonly #repository: DefinitionRepository;
   readonly #processInstanceIdGenerator: ProcessInstanceIdGenerator;
-  readonly #startedInstances: StartedProcessInstancePublisher;
+  readonly #confirmedInstances: ConfirmedProcessInstancePublicationService;
 
   constructor(
     starter: DefinitionVersionStarter,
     artifacts: ExactArtifactStore,
     repository: DefinitionRepository,
     processInstanceIdGenerator: ProcessInstanceIdGenerator,
-    startedInstances: StartedProcessInstancePublisher,
+    confirmedInstances: ConfirmedProcessInstancePublicationService,
   ) {
     this.#starter = starter;
     this.#artifacts = artifacts;
     this.#repository = repository;
     this.#processInstanceIdGenerator = processInstanceIdGenerator;
-    this.#startedInstances = startedInstances;
+    this.#confirmedInstances = confirmedInstances;
   }
 
   async start(
@@ -89,47 +98,146 @@ export class DefinitionStartService {
 
     const processInstanceId = this.#processInstanceIdGenerator();
     requireProcessInstanceId(processInstanceId);
-    const result = await this.#starter.startDefinitionVersion({
+    const request = {
       bytes: Uint8Array.from(bytes),
       sourceId: definition.source.id,
       expectedSha256: definition.source.sha256,
       semanticProfile: definition.semanticProfile,
       expectedProcessId: definition.processId,
       processInstanceId,
-    });
+    } satisfies DefinitionVersionStartRequest;
+    const prepared = await this.#starter.prepareDefinitionVersion(request);
     requireExactDefinitionBinding(
-      result,
+      prepared,
       processInstanceId,
       definition,
       selectedReference,
     );
 
-    switch (result.status) {
-      case EngineDefinitionStartStatus.Started:
+    switch (prepared.status) {
+      case EngineDefinitionStartStatus.Admitted: {
+        const instance = {
+          processInstanceId,
+          definition: toPublicDefinition(definition),
+        };
+        let record;
+        try {
+          record = await this.#confirmedInstances.startDirect(
+            {
+              instance,
+              locator: prepared.locator,
+              intent: prepared.intent,
+            },
+            this.#directHost(request, prepared.intent, definition, selectedReference),
+          );
+        } catch (error: unknown) {
+          if (error instanceof ConfirmedProcessInstanceIntegrityError) {
+            throw new DefinitionStartIntegrityError(selectedReference);
+          }
+          throw error;
+        }
+        if (record.state !== ConfirmedProcessInstanceState.Confirmed) {
+          throw new DefinitionStartIntegrityError(selectedReference);
+        }
         return {
           status: DefinitionVersionStartStatus.Started,
-          instance: await recordStartedProcessInstance(
-            this.#startedInstances,
-            processInstanceId,
-            definition,
-          ),
+          instance: structuredClone(record.instance),
         };
+      }
       case EngineDefinitionStartStatus.Rejected:
         return {
           status: DefinitionVersionStartStatus.Rejected,
           definition: cloneDefinitionMetadata(definition),
-          failure: { ...result.failure },
+          failure: { ...prepared.failure },
         };
       case EngineDefinitionStartStatus.IntegrityFailure:
         throw new DefinitionStartIntegrityError(selectedReference);
       default:
-        return assertNever(result);
+        return assertNever(prepared);
     }
+  }
+
+  /** Repairs uncertain direct starts and pending subscribers without host redispatch. */
+  async reconcileAll(): Promise<void> {
+    await this.#confirmedInstances.reconcileDirect({
+      start: async (reservation) => {
+        throw new DefinitionStartIntegrityError({
+          processId: reservation.instance.definition.processId,
+          version: reservation.instance.definition.version,
+        });
+      },
+      describe: async (reservation) => {
+        if (reservation.intent.protocol !== "bpmn-direct-start-v1") {
+          return { status: "divergent" };
+        }
+        const result = await this.#starter.describeDefinitionVersionStart({
+          processInstanceId: reservation.instance.processInstanceId,
+          expectedIntent: {
+            protocol: "bpmn-direct-start-v1",
+            intentSha256: reservation.intent.intentSha256,
+          },
+        });
+        return { status: result.status };
+      },
+    });
+    await this.#confirmedInstances.reconcileDeliveries();
+  }
+
+  #directHost(
+    request: DefinitionVersionStartRequest,
+    expectedIntent: DefinitionStartIntent,
+    definition: DefinitionMetadata,
+    reference: DefinitionReference,
+  ): DirectProcessInstanceHost {
+    return {
+      start: async () => {
+        const result = await this.#starter.startPreparedDefinitionVersion({
+          ...request,
+          bytes: Uint8Array.from(request.bytes),
+          expectedIntent: { ...expectedIntent },
+        });
+        try {
+          requireExactDefinitionBinding(
+            result,
+            request.processInstanceId,
+            definition,
+            reference,
+          );
+        } catch (error: unknown) {
+          if (error instanceof DefinitionStartIntegrityError) {
+            return {
+              status: "integrityFailure",
+              evidence: "prepared direct start returned divergent identity",
+            };
+          }
+          throw error;
+        }
+        switch (result.status) {
+          case EngineDefinitionStartStatus.Started:
+            return { status: "started" };
+          case EngineDefinitionStartStatus.Rejected:
+          case EngineDefinitionStartStatus.IntegrityFailure:
+            return { status: result.status, evidence: result.failure.evidence };
+          default:
+            return assertNever(result);
+        }
+      },
+      describe: async () => {
+        const descriptionRequest = {
+          processInstanceId: request.processInstanceId,
+          expectedIntent: { ...expectedIntent },
+        } satisfies DefinitionVersionStartDescriptionRequest;
+        const result = await this.#starter.describeDefinitionVersionStart(
+          descriptionRequest,
+        );
+        return { status: result.status };
+      },
+    };
   }
 }
 
 function requireExactDefinitionBinding(
-  result: EngineDefinitionStartResult,
+  result: EngineDefinitionStartResult | DefinitionStartPreparationResult,
   processInstanceId: string,
   definition: DefinitionMetadata,
   reference: DefinitionReference,
@@ -144,7 +252,10 @@ function requireExactDefinitionBinding(
     result.definition.processId !== definition.processId ||
     result.definition.semanticProfile !== definition.semanticProfile ||
     (
-      result.status === EngineDefinitionStartStatus.Started &&
+      (
+        result.status === EngineDefinitionStartStatus.Started ||
+        result.status === EngineDefinitionStartStatus.Admitted
+      ) &&
       result.processInstanceId !== processInstanceId
     )
   ) {

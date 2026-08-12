@@ -6,6 +6,7 @@ import {
   decodePublicApiErrorResponse,
   definitionsCollectionPath,
   messageStartPublicationPath,
+  LegacyPublicApiErrorCodes,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DeployedDefinitionVersion,
@@ -112,7 +113,7 @@ export async function getMissingMessageStartPublication(
   return {
     status: captured.status,
     text: captured.text,
-    value: decodePublicApiErrorResponse(captured.json),
+    value: decodePublicApiErrorResponse(captured.json, LegacyPublicApiErrorCodes),
   };
 }
 

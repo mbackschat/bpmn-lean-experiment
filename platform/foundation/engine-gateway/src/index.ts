@@ -3,10 +3,17 @@ import {
   EngineDefinitionCompilationStatus,
   EngineDefinitionStartStatus,
   compileBpmnDefinition,
+  describeBpmnDefinitionVersionStart,
+  prepareBpmnDefinitionVersionStart,
+  serializeEngineProcessWorkLocator,
+  startPreparedBpmnDefinitionVersion,
   startBpmnDefinitionVersion,
 } from "@bpmn-lean/engine-api";
 import type {
   EngineDefinitionCompilationResult,
+  EngineDefinitionStartDescriptionResult,
+  EngineDefinitionStartIntent,
+  EngineDefinitionStartPreparationResult,
   EngineDefinitionStartResult,
 } from "@bpmn-lean/engine-api";
 import {
@@ -35,6 +42,10 @@ import type {
   LazyTemporalClientRuntime,
   TemporalDefinitionStartClient,
 } from "@bpmn-lean/temporal-client/definition-start";
+import type {
+  TemporalProcessWorkClient,
+} from "@bpmn-lean/temporal-client/process-work";
+import { BpmnProcessWorkGateway } from "./process-work-gateway.js";
 
 export const DefinitionCompilationStatus = EngineDefinitionCompilationStatus;
 
@@ -48,6 +59,15 @@ export type DefinitionCompilationResult =
 export const DefinitionStartStatus = EngineDefinitionStartStatus;
 
 export type DefinitionStartResult = EngineDefinitionStartResult;
+export type DefinitionStartIntent = EngineDefinitionStartIntent;
+export type DefinitionStartDescriptionResult = EngineDefinitionStartDescriptionResult;
+
+export type DefinitionStartPreparationResult =
+  | (Omit<
+      Extract<EngineDefinitionStartPreparationResult, { status: "admitted" }>,
+      "locator"
+    > & Readonly<{ locator: string }>)
+  | Exclude<EngineDefinitionStartPreparationResult, { status: "admitted" }>;
 
 export type DefinitionCompilationRequest = Readonly<{
   bytes: Uint8Array;
@@ -70,6 +90,16 @@ export type DefinitionVersionStartRequest = Readonly<{
   processInstanceId: string;
 }>;
 
+export type PreparedDefinitionVersionStartRequest =
+  DefinitionVersionStartRequest & Readonly<{
+    expectedIntent: DefinitionStartIntent;
+  }>;
+
+export type DefinitionVersionStartDescriptionRequest = Readonly<{
+  processInstanceId: string;
+  expectedIntent: DefinitionStartIntent;
+}>;
+
 export type BpmnEngineGatewayOptions = EngineGatewayLimits & Readonly<{
   temporalClient: TemporalDefinitionStartClient;
   temporalTaskQueue: string;
@@ -89,6 +119,15 @@ export interface DefinitionCompiler {
 }
 
 export interface DefinitionVersionStarter {
+  prepareDefinitionVersion(
+    request: DefinitionVersionStartRequest,
+  ): Promise<DefinitionStartPreparationResult>;
+  startPreparedDefinitionVersion(
+    request: PreparedDefinitionVersionStartRequest,
+  ): Promise<DefinitionStartResult>;
+  describeDefinitionVersionStart(
+    request: DefinitionVersionStartDescriptionRequest,
+  ): Promise<DefinitionStartDescriptionResult>;
   startDefinitionVersion(
     request: DefinitionVersionStartRequest,
   ): Promise<DefinitionStartResult>;
@@ -157,6 +196,49 @@ export class BpmnEngineGateway
       taskQueue: this.temporalTaskQueue,
     });
   }
+
+  async prepareDefinitionVersion(
+    request: DefinitionVersionStartRequest,
+  ): Promise<DefinitionStartPreparationResult> {
+    const result = await prepareBpmnDefinitionVersionStart({
+      ...request,
+      limits: {
+        maxBytes: this.limits.maxSourceBytes,
+        parserDeadlineMs: this.limits.parserDeadlineMs,
+      },
+      taskQueue: this.temporalTaskQueue,
+    });
+    return result.status === EngineDefinitionStartStatus.Admitted
+      ? {
+          ...result,
+          locator: serializeEngineProcessWorkLocator(result.locator),
+        }
+      : result;
+  }
+
+  startPreparedDefinitionVersion(
+    request: PreparedDefinitionVersionStartRequest,
+  ): Promise<DefinitionStartResult> {
+    return startPreparedBpmnDefinitionVersion({
+      ...request,
+      limits: {
+        maxBytes: this.limits.maxSourceBytes,
+        parserDeadlineMs: this.limits.parserDeadlineMs,
+      },
+      temporalClient: this.temporalClient,
+      taskQueue: this.temporalTaskQueue,
+    });
+  }
+
+  describeDefinitionVersionStart(
+    request: DefinitionVersionStartDescriptionRequest,
+  ): Promise<DefinitionStartDescriptionResult> {
+    return describeBpmnDefinitionVersionStart({
+      ...request,
+      temporalClient: this.temporalClient,
+      taskQueue: this.temporalTaskQueue,
+    });
+  }
 }
 
 /** Composition-facing owner of one gateway and its lazy Temporal connection lifecycle. */
@@ -164,6 +246,7 @@ export class BpmnEngineGatewayRuntime {
   readonly gateway: BpmnEngineGateway;
   readonly scheduleHost: BpmnDefinitionScheduleGateway;
   readonly messageStartHost: BpmnDefinitionMessageStartGateway;
+  readonly processWork: BpmnProcessWorkGateway;
   readonly #temporalRuntime: LazyTemporalClientRuntime;
 
   constructor(options: BpmnEngineGatewayRuntimeOptions) {
@@ -196,6 +279,9 @@ export class BpmnEngineGatewayRuntime {
         BpmnDefinitionMessageStartGatewayOptions["temporalClient"],
       temporalTaskQueue: snapshot.temporalTaskQueue,
     });
+    this.processWork = new BpmnProcessWorkGateway(
+      this.#temporalRuntime.client as unknown as TemporalProcessWorkClient,
+    );
   }
 
   close(): Promise<void> {
@@ -212,6 +298,7 @@ export * from "./definition-schedule-address.js";
 export * from "./definition-capabilities.js";
 export * from "./definition-message-start-gateway.js";
 export * from "./message-start-publication-address.js";
+export * from "./process-work-gateway.js";
 
 export function createBpmnEngineGatewayRuntime(
   options: BpmnEngineGatewayRuntimeOptions,

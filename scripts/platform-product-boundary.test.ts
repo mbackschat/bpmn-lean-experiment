@@ -98,6 +98,10 @@ test("permits only explicitly named narrow engine entry points through the gatew
       path: "platform/foundation/engine-gateway/src/schedule.ts",
       source: 'import { schedule } from "@bpmn-lean/temporal-client/definition-schedule";',
     },
+    {
+      path: "platform/foundation/engine-gateway/src/work.ts",
+      source: 'import { observe } from "@bpmn-lean/temporal-client/process-work";',
+    },
   ] as const;
   assert.deepEqual(
     assessPlatformProductBoundary(gatewaySources, { packageRoots }),
@@ -105,6 +109,7 @@ test("permits only explicitly named narrow engine entry points through the gatew
       "platform/foundation/engine-gateway/src/compile.ts: engine internal import @bpmn-lean/engine-api",
       "platform/foundation/engine-gateway/src/schedule.ts: engine internal import @bpmn-lean/temporal-client/definition-schedule",
       "platform/foundation/engine-gateway/src/start.ts: engine internal import @bpmn-lean/temporal-client/definition-start",
+      "platform/foundation/engine-gateway/src/work.ts: engine internal import @bpmn-lean/temporal-client/process-work",
     ],
   );
   assert.deepEqual(
@@ -115,6 +120,7 @@ test("permits only explicitly named narrow engine entry points through the gatew
           "@bpmn-lean/engine-api",
           "@bpmn-lean/temporal-client/definition-schedule",
           "@bpmn-lean/temporal-client/definition-start",
+          "@bpmn-lean/temporal-client/process-work",
         ]),
         packageRoots,
       },
@@ -213,6 +219,34 @@ test("applies path-based ownership to exact package names and subpaths", () => {
       "packages/semantic-core/src/platform-escape.ts: engine import of product-2 module @bpmn-lean/platform-definitions",
       "platform/apps/web/src/view.ts: disallowed platform dependency @bpmn-lean/platform-definitions/deploy",
       "platform/foundation/engine-gateway/src/compile.ts: engine internal import @bpmn-lean/bpmn-source/src/compile.js",
+    ],
+  );
+});
+
+test("classifies only contract-types as a neutral cross-product package", () => {
+  const packageRoots = packageRootsFromManifests([
+    {
+      path: "packages/contract-types/package.json",
+      source: '{"name":"@bpmn-lean/contract-types"}',
+    },
+    {
+      path: "packages/semantic-core/package.json",
+      source: '{"name":"@bpmn-lean/semantic-core"}',
+    },
+  ]);
+  assert.deepEqual(
+    assessPlatformProductBoundary([
+      {
+        path: "platform/contracts/src/immutable.ts",
+        source: 'import type { DeepReadonly } from "@bpmn-lean/contract-types";',
+      },
+      {
+        path: "platform/contracts/src/escape.ts",
+        source: 'import type { Scenario } from "@bpmn-lean/semantic-core";',
+      },
+    ], { packageRoots }),
+    [
+      "platform/contracts/src/escape.ts: engine internal import @bpmn-lean/semantic-core",
     ],
   );
 });
@@ -319,6 +353,7 @@ test("keeps tracked and pending sources and manifests inside the product boundar
         "@bpmn-lean/engine-api",
         "@bpmn-lean/temporal-client/definition-schedule",
         "@bpmn-lean/temporal-client/definition-start",
+        "@bpmn-lean/temporal-client/process-work",
       ]),
       packageRoots: repository.packageRoots,
     }),

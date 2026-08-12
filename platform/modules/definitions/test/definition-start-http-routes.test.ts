@@ -12,12 +12,15 @@ import {
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
   DefinitionCompiler,
+  DefinitionStartDescriptionResult,
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
+  ConfirmedProcessInstancePublicationService,
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
   DefinitionStartService,
+  InMemoryConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
@@ -241,11 +244,8 @@ function createFixture(
   };
   let startCalls = 0;
   const starter: DefinitionVersionStarter = {
-    startDefinitionVersion: async (request) => {
+    prepareDefinitionVersion: async (request) => {
       startCalls += 1;
-      if (behavior === StartBehavior.Throw) {
-        throw new Error("private start detail");
-      }
       const common = {
         source: { ...storedDefinition.source },
         definition: {
@@ -255,10 +255,16 @@ function createFixture(
       } as const;
       switch (behavior) {
         case StartBehavior.Started:
+        case StartBehavior.Throw:
           return {
-            status: EngineDefinitionStartStatus.Started,
+            status: EngineDefinitionStartStatus.Admitted,
             ...common,
             processInstanceId: request.processInstanceId,
+            locator: "private-direct-locator",
+            intent: {
+              protocol: "bpmn-direct-start-v1",
+              intentSha256: "b".repeat(64),
+            },
           };
         case StartBehavior.Rejected:
           return {
@@ -281,6 +287,26 @@ function createFixture(
         default:
           throw new Error("unreachable throw behavior");
       }
+    },
+    startPreparedDefinitionVersion: async (request) => {
+      if (behavior === StartBehavior.Throw) {
+        throw new Error("private start detail");
+      }
+      return {
+        status: EngineDefinitionStartStatus.Started,
+        source: { ...storedDefinition.source },
+        definition: {
+          processId: storedDefinition.processId,
+          semanticProfile: storedDefinition.semanticProfile,
+        },
+        processInstanceId: request.processInstanceId,
+      };
+    },
+    describeDefinitionVersionStart: async () => ({
+      status: "unavailable" as DefinitionStartDescriptionResult["status"],
+    }),
+    startDefinitionVersion: async () => {
+      throw new Error("legacy direct start must not be used");
     },
   };
   const compiler: DefinitionCompiler = {
@@ -305,7 +331,11 @@ function createFixture(
     artifacts,
     repository,
     () => "public-instance-1",
-    { recordProcessInstance: async () => {} },
+    new ConfirmedProcessInstancePublicationService({
+      repository: new InMemoryConfirmedProcessInstanceRepository(),
+      operate: { recordProcessInstance: async () => undefined },
+      work: { recordConfirmedProcessInstance: async () => undefined },
+    }),
   );
   const routes = new DefinitionHttpRoutes(
     deployment,

@@ -206,6 +206,7 @@ async function assessProduct2TemporalDependencies(
 const allowedProduct2TemporalClientImports = new Set([
   "@bpmn-lean/temporal-client/definition-schedule",
   "@bpmn-lean/temporal-client/definition-start",
+  "@bpmn-lean/temporal-client/process-work",
 ]);
 
 async function assessWorkflowSafeSources(

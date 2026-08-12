@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { FileArtifactStore } from "@bpmn-lean/platform-artifact-store";
 import {
+  ConfirmedProcessInstancePublicationService,
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
   DefinitionScheduleHttpRoutes,
@@ -13,6 +14,7 @@ import {
   MessageStartPublicationService,
   SqliteDefinitionRepository,
   SqliteDefinitionScheduleRepository,
+  SqliteConfirmedProcessInstanceRepository,
   SqliteMessageStartPublicationRepository,
 } from "@bpmn-lean/platform-definitions";
 import {
@@ -28,6 +30,9 @@ import {
   ProcessInstanceSearchService,
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
+import {
+  SqliteConfirmedProcessWorkRepository,
+} from "@bpmn-lean/platform-work";
 
 import {
   snapshotPlatformServerConfig,
@@ -68,6 +73,7 @@ export async function createPlatformServer(
     snapshot.dataDirectory,
     "process-instances.sqlite",
   );
+  const workDatabaseFile = join(snapshot.dataDirectory, "work.sqlite");
   const resources: CloseableResource[] = [engineRuntime];
   try {
     const repository = new SqliteDefinitionRepository(databaseFile);
@@ -78,6 +84,10 @@ export async function createPlatformServer(
       databaseFile,
     );
     resources.push(publicationRepository);
+    const confirmedRepository = new SqliteConfirmedProcessInstanceRepository(
+      databaseFile,
+    );
+    resources.push(confirmedRepository);
     const processInstanceRepository = new SqliteProcessInstanceRepository(
       processInstanceDatabaseFile,
     );
@@ -85,6 +95,13 @@ export async function createPlatformServer(
     const processInstances = new ProcessInstanceSearchService(
       processInstanceRepository,
     );
+    const work = new SqliteConfirmedProcessWorkRepository(workDatabaseFile);
+    resources.push(work);
+    const confirmedInstances = new ConfirmedProcessInstancePublicationService({
+      repository: confirmedRepository,
+      operate: processInstances,
+      work,
+    });
     const service = new DefinitionDeploymentService(
       engineRuntime.gateway,
       artifacts,
@@ -95,8 +112,9 @@ export async function createPlatformServer(
       artifacts,
       repository,
       randomUUID,
-      processInstances,
+      confirmedInstances,
     );
+    await startService.reconcileAll();
     const scheduleService = new DefinitionScheduleService({
       artifacts,
       definitions: repository,
@@ -108,7 +126,8 @@ export async function createPlatformServer(
         configuredWorkflowIdBase: definitionScheduleWorkflowIdBase,
       },
       now: Date.now,
-      startedInstances: processInstances,
+      confirmedInstances,
+      locators: engineRuntime.processWork,
     });
     await scheduleService.reconcileAll();
     const publicationService = new MessageStartPublicationService({
@@ -121,7 +140,8 @@ export async function createPlatformServer(
         commandId: messageStartPublicationCommandId,
         workflowId: messageStartPublicationWorkflowId,
       },
-      startedInstances: processInstances,
+      confirmedInstances,
+      locators: engineRuntime.processWork,
     });
     await publicationService.reconcileAll();
     const definitionRoutes = new DefinitionHttpRoutes(

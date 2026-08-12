@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ConfirmedProcessInstancePublicationService,
   DefinitionScheduleConflictError,
   DefinitionScheduleHostPhase,
   DefinitionScheduleIntegrityError,
@@ -9,6 +10,7 @@ import {
   DefinitionScheduleService,
   DefinitionScheduleState,
   DefinitionScheduleValidationError,
+  InMemoryConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
@@ -81,6 +83,21 @@ test("accepted response lost after action exhaustion persists one started instan
   assert.equal(first.schedule.instance?.processInstanceId, "process-instance-1");
   assert.equal(fixture.host.createCalls.length, 1);
   assert.equal(fixture.schedules.records.size, 1);
+  assert.deepEqual(fixture.scheduleLocatorInputs, [
+    "opaque-workflow",
+    "opaque-workflow",
+  ]);
+  assert.deepEqual(fixture.confirmedPublications, [{
+    instance: {
+      processInstanceId: "process-instance-1",
+      definition: timerDefinition(),
+    },
+    locator: "schedule-locator:opaque-workflow",
+  }]);
+  assert.doesNotMatch(
+    JSON.stringify(fixture.confirmedPublications),
+    /configured-base-1/u,
+  );
 });
 
 test("restart completes terminal cleanup after a successful delete response is lost", async () => {
@@ -286,6 +303,20 @@ function createFixture() {
     get: async () => Uint8Array.from(bytes),
   };
   let now = Date.parse("2026-08-11T11:59:00.000Z");
+  const confirmedPublications: Array<Readonly<{
+    instance: Readonly<{ processInstanceId: string; definition: DefinitionMetadata }>;
+    locator: string;
+  }>> = [];
+  const scheduleLocatorInputs: string[] = [];
+  const confirmedInstances = new ConfirmedProcessInstancePublicationService({
+    repository: new InMemoryConfirmedProcessInstanceRepository(),
+    operate: { recordProcessInstance: async () => undefined },
+    work: {
+      recordConfirmedProcessInstance: async (publication) => {
+        confirmedPublications.push(structuredClone(publication));
+      },
+    },
+  });
   const dependencies = {
     artifacts,
     definitions,
@@ -297,7 +328,16 @@ function createFixture() {
       configuredWorkflowIdBase: () => "configured-base-1",
     },
     now: () => now,
-    startedInstances: { recordProcessInstance: async () => undefined },
+    confirmedInstances,
+    locators: {
+      canonicalLocator: () => {
+        throw new Error("Schedule must not mint a canonical Process locator");
+      },
+      scheduleExecutionLocator: (executionWorkflowId: string) => {
+        scheduleLocatorInputs.push(executionWorkflowId);
+        return `schedule-locator:${executionWorkflowId}`;
+      },
+    },
   } as const;
   const service = new DefinitionScheduleService(dependencies);
   return {
@@ -305,6 +345,8 @@ function createFixture() {
     definitions,
     schedules,
     host,
+    confirmedPublications,
+    scheduleLocatorInputs,
     setNow: (value: string) => {
       now = Date.parse(value);
     },

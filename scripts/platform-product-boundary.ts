@@ -15,6 +15,7 @@ const productTwoRoots = ["platform", "showcase"] as const;
 const repositoryRoots = [...engineRoots, ...productTwoRoots] as const;
 const projectSourceExtension = /\.(?:cts|java|mts|tsx?)$/u;
 const engineGatewayRoot = "platform/foundation/engine-gateway";
+const neutralPackageRoots = ["packages/contract-types"] as const;
 
 export type ProjectSource = {
   readonly path: string;
@@ -446,17 +447,21 @@ export function assessPlatformProductBoundary(
       }
       if (isProductTwo) {
         const approvedEngineImport = allowedEngineImports.has(specifier);
+        const neutralImport = target !== null &&
+          isWithinRoot(target, neutralPackageRoots);
         const publicShowcaseEngineImport = isShowcase &&
           packageRoots.has(specifier) &&
           target !== null &&
           isWithinRoot(target, engineRoots);
         const packageInternal = specifier.startsWith("@bpmn-lean/") &&
           (target === null || isWithinRoot(target, engineRoots)) &&
+          !neutralImport &&
           !approvedEngineImport &&
           !publicShowcaseEngineImport;
         const publicEngineOutsideGateway = approvedEngineImport && !isEngineGateway;
         const relativeInternal = target !== null &&
           isWithinRoot(target, engineRoots) &&
+          !neutralImport &&
           !approvedEngineImport &&
           !publicShowcaseEngineImport;
         if (packageInternal || relativeInternal) {

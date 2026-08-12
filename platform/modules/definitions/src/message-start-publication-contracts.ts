@@ -11,8 +11,11 @@ import type {
   ExactArtifactStore,
 } from "./contracts.js";
 import type {
-  StartedProcessInstancePublisher,
-} from "./process-instance-recording.js";
+  ProcessWorkLocatorFactory,
+} from "./confirmed-process-instance-contracts.js";
+import type {
+  ConfirmedProcessInstancePublicationService,
+} from "./confirmed-process-instance-publication-service.js";
 
 export const MessageStartPublicationState = {
   Reserved: "reserved",
@@ -135,7 +138,8 @@ export type MessageStartPublicationServiceDependencies = Readonly<{
   publications: MessageStartPublicationRepository;
   host: MessageStartPublicationHost;
   identities: MessageStartPublicationIdentityPolicy;
-  startedInstances: StartedProcessInstancePublisher;
+  confirmedInstances: ConfirmedProcessInstancePublicationService;
+  locators: ProcessWorkLocatorFactory;
 }>;
 
 export type PutMessageStartPublicationResult = Readonly<{

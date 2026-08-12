@@ -13,6 +13,7 @@
     "pnpm": "11.20.0"
   },
   "scripts": {
+    "build:contract-types": "pnpm --filter @bpmn-lean/contract-types... --if-present run build",
     "build:semantic-core": "pnpm --filter @bpmn-lean/semantic-core... --if-present run build",
     "build:bpmn-source": "pnpm --filter @bpmn-lean/bpmn-source... --if-present run build",
     "build:differential": "pnpm --filter @bpmn-lean/differential... --if-present run build",
@@ -22,6 +23,7 @@
     "build:platform-definitions": "pnpm --filter @bpmn-lean/platform-definitions... --if-present run build",
     "build:platform-engine-gateway": "pnpm --filter @bpmn-lean/platform-engine-gateway... --if-present run build",
     "build:platform-operate": "pnpm --filter @bpmn-lean/platform-operate... --if-present run build",
+    "build:platform-work": "pnpm --filter @bpmn-lean/platform-work... --if-present run build",
     "build:platform-server": "pnpm --filter @bpmn-lean/platform-server... --if-present run build",
     "build:platform-web": "pnpm --filter @bpmn-lean/platform-web... --if-present run build",
     "build:showcase-m1": "pnpm --filter @bpmn-lean/showcase-m1-definition-deployment... --if-present run build",
@@ -56,6 +58,7 @@
     "test:platform-foundation": "pnpm test:platform-engine-gateway && pnpm --filter @bpmn-lean/platform-artifact-store test",
     "test:platform-m1": "pnpm test:platform-policy && pnpm test:platform-foundation && pnpm --filter @bpmn-lean/platform-contracts test && pnpm --filter @bpmn-lean/platform-definitions test && pnpm test:platform-server && pnpm test:platform-web",
     "test:platform-process-search-checkpoint": "pnpm test:platform-m1 && pnpm --filter @bpmn-lean/platform-operate test",
+    "test:platform-work-checkpoint": "pnpm --filter @bpmn-lean/contract-types test && pnpm --filter @bpmn-lean/temporal-client test && pnpm test:platform-process-search-checkpoint && pnpm --filter @bpmn-lean/platform-work test",
     "test:platform-policy": "pnpm check:platform-harness-types && node --test --test-concurrency=1 scripts/*.platform-test.ts",
     "test:platform-server": "pnpm build:platform-server && node --test --test-concurrency=1 platform/apps/server/test/*.test.ts",
     "test:showcase:m1": "pnpm build:showcase-m1 && pnpm --filter @bpmn-lean/showcase-m1-definition-deployment test:e2e",

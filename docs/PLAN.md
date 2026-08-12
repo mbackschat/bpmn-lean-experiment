@@ -70,7 +70,7 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) and [E2 User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) are implemented, registered, evidence-closed, owner-accepted, and graduated. The owner accepted final E2 administrative correction `264add2` without another audit on 2026-08-12. The approved Product 2 human-work implementation is now the active M3 work.
+**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) and [E2 User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) are implemented, registered, evidence-closed, owner-accepted, and graduated. The owner accepted final E2 administrative correction `264add2` without another audit on 2026-08-12. Product 2 human-work checkpoint 1 has reached first green with its public contract, private engine operations, durable all-producer publication, and Work registration implemented; claims, audit, HTTP, and UI remain paused for independent review.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: implement checkpoint 1 of Product 2 human work.** Add the neutral immutable contract owner, Product 1 opaque work locator and observe/detail/complete operations, durable confirmed-start publication for direct, Schedule, and Message producers, the Product 2 gateway, and the strict public Work contract. Stop at first green for the mandatory semantic checkpoint review before durable claims, audit, HTTP, or UI work.
+1. **Active: obtain the mandatory independent review of Product 2 human-work checkpoint 1.** Review the neutral immutable contract owner, Product 1 opaque work locator and observe/detail/complete operations, durable confirmed-start publication for direct, Schedule, and Message producers, Product 2 gateway, strict public Work contract, and checkpoint-only Work registration. Do not begin durable claims, audit, HTTP, or UI work until the review approves the immutable checkpoint.
 
 ## Approved decisions
 
@@ -264,11 +264,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: implement checkpoint 1 of the approved M3 human-work proposal.** Start with the neutral `DeepReadonly<T>` extraction, Product 1 opaque work locator and observe/detail/complete contract, durable confirmed-start publication across all three producers, Product 2 gateway, and strict public Work contract. Pause after the first green checkpoint for its mandatory semantic checkpoint review.
+**Next action: commit and independently review the first-green M3 human-work checkpoint.** The target contains the neutral `DeepReadonly<T>` owner, Product 1 opaque work locator and observe/detail/complete contract, durable confirmed-start publication across all three producers, Product 2 gateway, strict public Work contract, and checkpoint-only Work registration. Durable claims, audit, HTTP, and UI remain paused until approval.
 
 **No technical or environmental blocker remains.** E2 is graduated and Product 2 implementation is authorized. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
-**Last verified commands:** `env CI=true ./scripts/verify.sh` passed at Boolean closure target `9669e8c` in 189.26 seconds with 46 live history replays. The exact Boolean Temporal mutation, CIB, semantic, cost, documentation, review-policy, link, and source-hygiene corrections passed their focused gates at the final reviewed target `06ec4a3`.
+**Last verified commands:** the checkpoint package suites passed for contract types, public contracts, Temporal client, engine API, engine gateway, Definitions, Work, and the production server; the server suite required its approved loopback-capable path. The exact immutable checkpoint command and repository-wide engine gate are recorded with the review packet after commit.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 

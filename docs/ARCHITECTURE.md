@@ -20,6 +20,7 @@ The modular monolith keeps atomic engine-to-platform contract changes possible, 
 
 ```text
 packages/                         product 1 TypeScript engine packages
+  contract-types/                neutral type-only contract utilities shared by products 1 and 2
   temporal-adapter/              product 1 Temporal subsystem package container
 BpmnSemantics/                    product 1 Lean reference
 profiles/ scenarios/ contracts/   product 1 semantic artifacts
@@ -67,7 +68,7 @@ testkit ---> protocol + client + workflow + worker + runner
 
 `protocol` may depend on the semantic core but on no Temporal SDK package. `client` owns the production `@temporalio/client` dependency. `workflow` owns `@temporalio/workflow`. `worker` owns `@temporalio/worker`. `runner` composes production engine packages and the client/worker surfaces without exporting test infrastructure. `testkit` alone owns `@temporalio/testing` and may depend on every sibling because it is excluded from production dependency graphs.
 
-Product 2 may consume only the handle-free `@bpmn-lean/temporal-client/definition-start`, `@bpmn-lean/temporal-client/definition-schedule`, and `@bpmn-lean/temporal-client/message-start` entry points, and only through `platform/foundation/engine-gateway`. The gateway owns one lazy reusable concrete client connection and closes it with the server composition lifecycle. No other Product 2 package reaches the client package, Workflow code, Worker hosting, the product-1 runner, mutation Workflows, ephemeral servers, replay harnesses, or `@temporalio/testing`. This is dependency-closure isolation around the accepted Temporal investment, not a vendor-neutral abstraction.
+Product 2 may consume only the handle-free `@bpmn-lean/temporal-client/definition-start`, `@bpmn-lean/temporal-client/definition-schedule`, `@bpmn-lean/temporal-client/message-start`, and `@bpmn-lean/temporal-client/process-work` entry points, and only through `platform/foundation/engine-gateway`. The gateway owns one lazy reusable concrete client connection and closes it with the server composition lifecycle. No other Product 2 package reaches the client package, Workflow code, Worker hosting, the product-1 runner, mutation Workflows, ephemeral servers, replay harnesses, or `@temporalio/testing`. This is dependency-closure isolation around the accepted Temporal investment, not a vendor-neutral abstraction.
 
 ## Product 2 dependency direction
 
@@ -106,7 +107,7 @@ The first deployment is deliberately small. The server is one modular-monolith p
 
 ## Public contracts
 
-`platform/contracts/` owns the transport-visible request, response, error, pagination, cursor, and event shapes of the public platform API. It contains no service implementation and no BPMN interpretation. A later OpenAPI description, typed SDK, or event-subscription contract belongs here or is generated from this owner.
+`platform/contracts/` owns the transport-visible request, response, error, pagination, cursor, and event shapes of the public platform API. It contains no service implementation and no BPMN interpretation. Its deeply immutable shapes use the type-only `@bpmn-lean/contract-types` package, the sole neutral package shared by products 1 and 2. A later OpenAPI description, typed SDK, or event-subscription contract belongs here or is generated from this owner.
 
 ## Foundation packages
 
@@ -166,6 +167,7 @@ The UI may share public contract types or a generated public client. It may not 
 | ARC-009 | Confine `bpmn-js` to a viewer-only web adapter and retain its required visible bpmn.io watermark and exact license notice | Uses the mature BPMN DI renderer without granting browser parsing semantic authority or misrepresenting its license as MIT | Reopen if the renderer is replaced or the upstream license changes |
 | ARC-010 | Build the static web client with React 19.2.8, React DOM 19.2.8, and development-only Vite 7.3.6, using plain CSS for the M1 workspace and no server-side meta-framework | Fits the HTTP-only static-client boundary, keeps build tooling out of production, and avoids selecting a component system before M1 needs one | Reopen when an accepted surface requires routing, a shared accessible component layer, or build behavior the current static composition cannot supply |
 | ARC-011 | Make `packages/temporal-adapter/` a subsystem container of separate protocol, client, workflow, worker, runner, and testkit workspace packages with no production umbrella export | Isolates real execution environments and production dependency closures while keeping Temporal explicit as product-1 infrastructure; product 2 can use the client boundary without pulling Worker and test infrastructure into its server graph | A measured deployment or build constraint proves two adjacent packages have one inseparable lifecycle and dependency closure, or a new Temporal execution environment needs its own package |
+| ARC-012 | Build M3 human work with React Aria Components, TanStack Table and Query, CSS Modules, and platform CSS variables, without a router, form library, component theme framework, or virtualization | Uses accessible behavior and standard table/request-state mechanics while keeping styling locally scoped and the HTTP-only static-client boundary intact | A measured UX or routing requirement cannot be met by the selected slice, or a shared theme package becomes independently necessary |
 
 ## Verification
 

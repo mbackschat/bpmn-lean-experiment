@@ -15,6 +15,9 @@
       "@bpmn-lean/bpmn-source": [
         "./packages/bpmn-source/src/index.ts"
       ],
+      "@bpmn-lean/contract-types": [
+        "./packages/contract-types/src/index.ts"
+      ],
       "@bpmn-lean/differential": [
         "./packages/differential/src/index.ts"
       ],
@@ -29,6 +32,9 @@
       ],
       "@bpmn-lean/temporal-client/definition-start": [
         "./packages/temporal-adapter/client/src/definition-start-client.ts"
+      ],
+      "@bpmn-lean/temporal-client/process-work": [
+        "./packages/temporal-adapter/client/src/process-work-client.ts"
       ],
       "@bpmn-lean/temporal-protocol": [
         "./packages/temporal-adapter/protocol/src/index.ts"

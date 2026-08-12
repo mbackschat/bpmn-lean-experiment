@@ -128,6 +128,39 @@ test("starts through the exact gateway boundary without exposing the SDK handle"
   assert.equal(JSON.stringify(result).includes("must-not-escape"), false);
 });
 
+test("prepares without SDK calls and retains an opaque locator for exact start", async () => {
+  const bytes = await readFile(admittedSource);
+  const calls: unknown[] = [];
+  const gateway = new BpmnEngineGateway({
+    maxSourceBytes: 1_048_576,
+    parserDeadlineMs: 1_000,
+    temporalClient: fakeClient(calls),
+    temporalTaskQueue: "m1-start-queue",
+  });
+  const request = {
+    bytes,
+    sourceId: "uploaded-review-process",
+    expectedSha256: sha256(bytes),
+    semanticProfile,
+    expectedProcessId: "Process_SequentialUserTask",
+    processInstanceId: "prepared-instance-1",
+  };
+
+  const prepared = await gateway.prepareDefinitionVersion(request);
+  assert.equal(prepared.status, DefinitionStartStatus.Admitted);
+  assert.equal(calls.length, 0);
+  assert.equal("locator" in prepared, true);
+  if (prepared.status !== DefinitionStartStatus.Admitted) return;
+  assert.match(prepared.locator, /^bpmn-process-work-v1:/u);
+
+  const started = await gateway.startPreparedDefinitionVersion({
+    ...request,
+    expectedIntent: prepared.intent,
+  });
+  assert.equal(started.status, DefinitionStartStatus.Started);
+  assert.equal(calls.length, 1);
+});
+
 test("constructs a close-idempotent gateway runtime without connecting", async () => {
   const runtime = createBpmnEngineGatewayRuntime({
     maxSourceBytes: 1_048_576,

@@ -27,6 +27,8 @@ importers:
         specifier: 10.0.0
         version: 10.0.0
 
+  packages/contract-types: {}
+
   packages/differential:
     dependencies:
       '@bpmn-lean/semantic-core':
@@ -52,7 +54,11 @@ importers:
         specifier: workspace:*
         version: link:../temporal-adapter/client
 
-  packages/semantic-core: {}
+  packages/semantic-core:
+    dependencies:
+      '@bpmn-lean/contract-types':
+        specifier: workspace:*
+        version: link:../contract-types
 
   packages/temporal-adapter/client:
     dependencies:
@@ -173,6 +179,9 @@ importers:
       '@bpmn-lean/platform-operate':
         specifier: workspace:*
         version: link:../../modules/operate
+      '@bpmn-lean/platform-work':
+        specifier: workspace:*
+        version: link:../../modules/work
 
   platform/apps/web:
     dependencies:
@@ -199,7 +208,11 @@ importers:
         specifier: 7.3.6
         version: 7.3.6(@types/node@24.13.3)(terser@5.49.0)
 
-  platform/contracts: {}
+  platform/contracts:
+    dependencies:
+      '@bpmn-lean/contract-types':
+        specifier: workspace:*
+        version: link:../../packages/contract-types
 
   platform/foundation/artifact-store: {}
 
@@ -225,6 +238,12 @@ importers:
         version: link:../../foundation/engine-gateway
 
   platform/modules/operate:
+    dependencies:
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+
+  platform/modules/work:
     dependencies:
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*

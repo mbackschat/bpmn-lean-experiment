@@ -33,7 +33,7 @@ import {
   DefinitionScheduleState,
   DefinitionScheduleValidationError,
 } from "./definition-schedule-contracts.js";
-import { recordStartedProcessInstance } from "./process-instance-recording.js";
+import { toPublicDefinition } from "./definition-public-values.js";
 import type {
   DefinitionSchedule,
   DefinitionScheduleHostRequest,
@@ -274,11 +274,20 @@ export class DefinitionScheduleService {
   ): Promise<DefinitionScheduleRecord> {
     const reconciled = await this.#reconcileLifecycle(record, knownBytes);
     if (reconciled.state === DefinitionScheduleState.Started) {
-      await recordStartedProcessInstance(
-        this.#dependencies.startedInstances,
-        reconciled.identity.processInstanceId,
-        reconciled.definition,
-      );
+      if (reconciled.executionWorkflowId === null) {
+        throw new DefinitionScheduleIntegrityError(
+          "started Schedule has no execution Workflow identity",
+        );
+      }
+      await this.#dependencies.confirmedInstances.publishConfirmed({
+        instance: {
+          processInstanceId: reconciled.identity.processInstanceId,
+          definition: toPublicDefinition(reconciled.definition),
+        },
+        locator: this.#dependencies.locators.scheduleExecutionLocator(
+          reconciled.executionWorkflowId,
+        ),
+      });
     }
     return reconciled;
   }

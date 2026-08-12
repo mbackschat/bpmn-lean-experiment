@@ -132,6 +132,7 @@ test("permits only the concrete client through the Product 2 engine gateway", as
     [
       'import { Worker } from "@bpmn-lean/temporal-worker";',
       'import { schedule } from "@bpmn-lean/temporal-client/definition-schedule";',
+      'import { work } from "@bpmn-lean/temporal-client/process-work";',
       'import { broad } from "@bpmn-lean/temporal-client";',
     ].join("\n"),
   );

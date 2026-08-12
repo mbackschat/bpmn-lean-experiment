@@ -17,5 +17,8 @@
     "build": "tsc -p tsconfig.json",
     "type-test": "tsc -p tsconfig.type-test.json",
     "test": "pnpm run build && pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts"
+  },
+  "dependencies": {
+    "@bpmn-lean/contract-types": "workspace:*"
   }
 }

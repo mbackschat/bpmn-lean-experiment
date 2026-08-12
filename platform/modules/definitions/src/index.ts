@@ -28,10 +28,38 @@ export type {
 export { DefinitionDeploymentService } from "./definition-deployment-service.js";
 export { DefinitionStartService } from "./definition-start-service.js";
 export type { ProcessInstanceIdGenerator } from "./definition-start-service.js";
-export { recordStartedProcessInstance } from "./process-instance-recording.js";
+export {
+  ConfirmedProcessInstanceIntegrityError,
+  ConfirmedProcessInstanceState,
+  ConfirmedProcessInstanceStoredValueError,
+} from "./confirmed-process-instance-contracts.js";
 export type {
-  StartedProcessInstancePublisher,
-} from "./process-instance-recording.js";
+  ConfirmedProcessInstanceOperateSubscriber,
+  ConfirmedProcessInstancePublication,
+  ConfirmedProcessInstanceRecord,
+  ConfirmedProcessInstanceRepository,
+  ConfirmedProcessInstanceReservationResult,
+  ConfirmedProcessInstanceSubscriber,
+  ConfirmedProcessInstanceWorkSubscriber,
+  DirectProcessInstanceDescription,
+  DirectProcessInstanceDispatchResult,
+  DirectProcessInstanceHost,
+  DirectProcessInstanceIntent,
+  DirectProcessInstanceReservation,
+  ProcessWorkLocatorFactory,
+} from "./confirmed-process-instance-contracts.js";
+export {
+  ConfirmedProcessInstancePublicationService,
+} from "./confirmed-process-instance-publication-service.js";
+export type {
+  ConfirmedProcessInstancePublicationDependencies,
+} from "./confirmed-process-instance-publication-service.js";
+export {
+  InMemoryConfirmedProcessInstanceRepository,
+} from "./in-memory-confirmed-process-instance-repository.js";
+export {
+  SqliteConfirmedProcessInstanceRepository,
+} from "./sqlite-confirmed-process-instance-repository.js";
 export { DefinitionHttpRoutes } from "./http-routes.js";
 export type { DefinitionHttpRoutesOptions } from "./http-routes.js";
 export { SqliteDefinitionRepository } from "./sqlite-definition-repository.js";

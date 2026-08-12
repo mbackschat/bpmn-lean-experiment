@@ -39,6 +39,7 @@ The engine keeps its existing paths and the platform is added as a sibling tree:
 
 ```text
 packages/                         product 1 TypeScript engine packages
+  contract-types/                neutral type-only contract utilities shared by products 1 and 2
 BpmnSemantics/                    product 1 Lean reference
 profiles/ scenarios/ contracts/   product 1 semantic artifacts
 runners/                          product 1 external-oracle adapters
@@ -49,7 +50,7 @@ showcase/                         product 2 milestone acceptance gates
 
 [ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete application, contract, foundation, business-module, UI, Worker, and showcase layout. [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) records which of those locations and mechanisms exist. This document does not duplicate the package tree because it owns the product boundary and rationale rather than implementation structure.
 
-Because the repository wall is gone, the boundary must be executable instead. An owned guard must fail when a product-1 tree references `platform/`; when a platform package deep-imports an engine internal path instead of its public entry point; when a platform package imports Temporal Event History APIs at all; and when a production JUEL Worker appears under the external-oracle `runners/` tree. The engine's complete gate must additionally keep passing without building any platform package, which is what demonstrates that the engine remains self-contained.
+Because the repository wall is gone, the boundary must be executable instead. An owned guard must fail when a product-1 tree references `platform/`; when a platform package deep-imports an engine internal path instead of its public entry point; when a platform package imports Temporal Event History APIs at all; and when a production JUEL Worker appears under the external-oracle `runners/` tree. The only neutral cross-product package is `@bpmn-lean/contract-types`, which owns type-level immutability and no runtime, BPMN, engine, platform, or transport behavior. The engine's complete gate must additionally keep passing without building any platform package, which is what demonstrates that the engine remains self-contained.
 
 Sharing the tree also makes one check possible that separate repositories would not: for every registered scenario, the platform's projected task set must equal the engine's published open User Tasks, and its projected history must be complete with respect to the engine's committed transition records. That turns "the platform reconstructs no semantic fact" from a rule into a test.
 

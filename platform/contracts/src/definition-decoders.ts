@@ -20,7 +20,7 @@ import type {
   DefinitionVersionListResponse,
   DeployedDefinitionVersion,
   LocatedAdmissionElement,
-  PublicApiErrorCode as PublicApiErrorCodeValue,
+  PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
   RejectedDefinitionResult,
 } from "./definitions.js";
@@ -72,9 +72,13 @@ export function decodeDefinitionVersionListResponse(
 }
 
 /** Decodes a closed public API error response without accepting private details. */
-export function decodePublicApiErrorResponse(
+export function decodePublicApiErrorResponse<
+  Code extends PublicApiErrorCatalogCode,
+>(
   value: unknown,
-): PublicApiErrorResponse {
+  allowedCodes: readonly Code[],
+): PublicApiErrorResponse<Code> {
+  const exactAllowedCodes = requireExactAllowedCodes(allowedCodes);
   requireObject(value, "API error response");
   requireExactKeys(value, "API error response", ["error"]);
   const error = readOwn(value, "error");
@@ -82,25 +86,45 @@ export function decodePublicApiErrorResponse(
   requireExactKeys(error, "API error", ["code", "message"]);
   return {
     error: {
-      code: decodePublicApiErrorCode(readOwn(error, "code")),
+      code: decodePublicApiErrorCode(
+        readOwn(error, "code"),
+        exactAllowedCodes,
+      ),
       message: requireNonemptyString(readOwn(error, "message"), "API error.message"),
     },
-  };
+  } as PublicApiErrorResponse<Code>;
 }
 
-function decodePublicApiErrorCode(value: unknown): PublicApiErrorCodeValue {
-  switch (value) {
-    case PublicApiErrorCode.InvalidRequest:
-    case PublicApiErrorCode.MethodNotAllowed:
-    case PublicApiErrorCode.UnsupportedMediaType:
-    case PublicApiErrorCode.PayloadTooLarge:
-    case PublicApiErrorCode.NotFound:
-    case PublicApiErrorCode.InternalFailure:
-    case PublicApiErrorCode.Conflict:
-      return value;
-    default:
-      throw new TypeError("API error.code is not a public API error code");
+function decodePublicApiErrorCode<Code extends PublicApiErrorCatalogCode>(
+  value: unknown,
+  allowedCodes: ReadonlySet<Code>,
+): Code {
+  if (typeof value !== "string" || !allowedCodes.has(value as Code)) {
+    throw new TypeError("API error.code is not allowed by this route");
   }
+  return value as Code;
+}
+
+function requireExactAllowedCodes<Code extends PublicApiErrorCatalogCode>(
+  allowedCodes: readonly Code[],
+): ReadonlySet<Code> {
+  if (!Array.isArray(allowedCodes) || allowedCodes.length === 0) {
+    throw new TypeError("allowed API error codes must be a nonempty array");
+  }
+  const catalog = new Set<PublicApiErrorCatalogCode>(
+    Object.values(PublicApiErrorCode),
+  );
+  const exact = new Set<Code>();
+  for (const code of allowedCodes) {
+    if (!catalog.has(code)) {
+      throw new TypeError("allowed API error codes must come from the public catalog");
+    }
+    if (exact.has(code)) {
+      throw new TypeError("allowed API error codes must not contain duplicates");
+    }
+    exact.add(code);
+  }
+  return exact;
 }
 
 function decodeRejectedDefinition(value: object): RejectedDefinitionResult {

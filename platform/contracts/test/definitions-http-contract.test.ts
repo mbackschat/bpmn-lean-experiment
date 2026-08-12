@@ -26,6 +26,16 @@ const source = {
   decodedAs: "UTF-8",
 } as const satisfies ExactPublicSourceIdentity;
 
+const legacyErrorCodes = [
+  PublicApiErrorCode.InvalidRequest,
+  PublicApiErrorCode.MethodNotAllowed,
+  PublicApiErrorCode.UnsupportedMediaType,
+  PublicApiErrorCode.PayloadTooLarge,
+  PublicApiErrorCode.NotFound,
+  PublicApiErrorCode.InternalFailure,
+  PublicApiErrorCode.Conflict,
+] as const;
+
 const deployedDefinition = {
   processId: "order/process alpha",
   version: 2,
@@ -160,7 +170,7 @@ test("rejects empty process identifiers and unsafe definition versions", () => {
   );
 });
 
-test("preserves public API error order and appends conflict", () => {
+test("preserves legacy public API error order and appends Work-only codes", () => {
   assert.equal(PublicApiErrorCode.MethodNotAllowed, "methodNotAllowed");
   assert.deepEqual(Object.values(PublicApiErrorCode), [
     "invalidRequest",
@@ -170,37 +180,65 @@ test("preserves public API error order and appends conflict", () => {
     "notFound",
     "internalFailure",
     "conflict",
+    "forbidden",
+    "formValueIncompatible",
+    "workSnapshotUnavailable",
   ]);
 });
 
-test("decodes every closed public API error response", () => {
-  for (const code of Object.values(PublicApiErrorCode)) {
+test("decodes every code in one exact route-owned public API error set", () => {
+  for (const code of legacyErrorCodes) {
     const input = { error: { code, message: `${code} response` } };
-    assert.deepEqual(decodePublicApiErrorResponse(input), input);
+    assert.deepEqual(decodePublicApiErrorResponse(input, legacyErrorCodes), input);
+  }
+});
+
+test("legacy Definition, Schedule, Message, and Search sets reject every Work-only code", () => {
+  const legacyRoutes = ["Definition", "Schedule", "Message", "Search"];
+  const workOnlyCodes = [
+    PublicApiErrorCode.Forbidden,
+    PublicApiErrorCode.FormValueIncompatible,
+    PublicApiErrorCode.WorkSnapshotUnavailable,
+  ];
+  for (const route of legacyRoutes) {
+    for (const code of workOnlyCodes) {
+      assert.throws(
+        () => decodePublicApiErrorResponse(
+          { error: { code, message: `${route} must reject this code` } },
+          legacyErrorCodes,
+        ),
+        /not allowed by this route/u,
+      );
+    }
   }
 });
 
 test("rejects unknown, empty, and private API error fields", () => {
   assert.throws(
-    () => decodePublicApiErrorResponse({
-      error: { code: "privateError", message: "not public" },
-    }),
-    /not a public API error code/u,
+    () => decodePublicApiErrorResponse(
+      { error: { code: "privateError", message: "not public" } },
+      legacyErrorCodes,
+    ),
+    /not allowed by this route/u,
   );
   assert.throws(
-    () => decodePublicApiErrorResponse({
-      error: { code: PublicApiErrorCode.InvalidRequest, message: "" },
-    }),
+    () => decodePublicApiErrorResponse(
+      { error: { code: PublicApiErrorCode.InvalidRequest, message: "" } },
+      legacyErrorCodes,
+    ),
     /message must not be empty/u,
   );
   assert.throws(
-    () => decodePublicApiErrorResponse({
-      error: {
-        code: PublicApiErrorCode.InternalFailure,
-        message: "generic",
-        privateStack: "must not cross",
+    () => decodePublicApiErrorResponse(
+      {
+        error: {
+          code: PublicApiErrorCode.InternalFailure,
+          message: "generic",
+          privateStack: "must not cross",
+        },
       },
-    }),
+      legacyErrorCodes,
+    ),
     /API error must contain exactly its public fields/u,
   );
 });

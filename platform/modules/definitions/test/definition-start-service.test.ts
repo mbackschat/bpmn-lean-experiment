@@ -12,14 +12,17 @@ import {
   DefinitionStartStatus as EngineDefinitionStartStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
+  DefinitionStartDescriptionResult,
   DefinitionVersionStartRequest,
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
+  ConfirmedProcessInstancePublicationService,
   DefinitionArtifactIntegrityError,
   DefinitionStartIntegrityError,
   DefinitionStartService,
   DefinitionVersionStartStatus,
+  InMemoryConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
@@ -202,6 +205,15 @@ test("treats every started identity drift and gateway integrity result as an int
       (error: unknown) => error instanceof DefinitionStartIntegrityError,
     );
   }
+  const returnedDrift = createFixture(
+    [stored],
+    new Map([[stored.source.sha256, bytes]]),
+    { startedDrift: { processInstanceId: "returned-other-instance" }, startOnlyDrift: true },
+  );
+  await assert.rejects(
+    returnedDrift.service.start({ processId: "Process_A", version: 1 }),
+    (error: unknown) => error instanceof DefinitionStartIntegrityError,
+  );
 
   const integrityFixture = createFixture(
     [stored],
@@ -292,10 +304,14 @@ function mutableDefinition(
 
 type StartFixtureOptions = Readonly<{
   generatedId?: string;
-  resultStatus?: typeof EngineDefinitionStartStatus[keyof typeof EngineDefinitionStartStatus];
+  resultStatus?:
+    | typeof EngineDefinitionStartStatus.Started
+    | typeof EngineDefinitionStartStatus.Rejected
+    | typeof EngineDefinitionStartStatus.IntegrityFailure;
   failure?: Readonly<{ code: string; evidence: string }>;
   startGate?: Promise<void>;
   redirectExactGetToLatest?: boolean;
+  startOnlyDrift?: boolean;
   startedDrift?: Readonly<{
     processInstanceId?: string;
     sourceId?: string;
@@ -357,10 +373,8 @@ function createFixture(
     markStartEntered = resolve;
   });
   const starter: DefinitionVersionStarter = {
-    startDefinitionVersion: async (request) => {
+    prepareDefinitionVersion: async (request) => {
       startCalls.push({ ...request, bytes: Uint8Array.from(request.bytes) });
-      markStartEntered();
-      await options.startGate;
       const failure = options.failure ?? {
         code: "unsupportedHostShape",
         evidence: "rejected by host admission",
@@ -368,26 +382,37 @@ function createFixture(
       const common = {
         source: {
           kind: "bpmnSource",
-          id: options.startedDrift?.sourceId ?? request.sourceId,
-          sha256: options.startedDrift?.sourceSha256 ?? request.expectedSha256,
+          id: options.startOnlyDrift ? request.sourceId :
+            options.startedDrift?.sourceId ?? request.sourceId,
+          sha256: options.startOnlyDrift ? request.expectedSha256 :
+            options.startedDrift?.sourceSha256 ?? request.expectedSha256,
           byteLength:
-            options.startedDrift?.sourceByteLength ?? request.bytes.byteLength,
+            options.startOnlyDrift ? request.bytes.byteLength :
+              options.startedDrift?.sourceByteLength ?? request.bytes.byteLength,
           declaredEncoding: null,
           decodedAs: "UTF-8",
         },
         definition: {
-          processId: options.startedDrift?.processId ?? request.expectedProcessId,
+          processId: options.startOnlyDrift ? request.expectedProcessId :
+            options.startedDrift?.processId ?? request.expectedProcessId,
           semanticProfile:
-            options.startedDrift?.semanticProfile ?? request.semanticProfile,
+            options.startOnlyDrift ? request.semanticProfile :
+              options.startedDrift?.semanticProfile ?? request.semanticProfile,
         },
       } as const;
       switch (options.resultStatus ?? EngineDefinitionStartStatus.Started) {
         case EngineDefinitionStartStatus.Started:
           return {
-            status: EngineDefinitionStartStatus.Started,
+            status: EngineDefinitionStartStatus.Admitted,
             ...common,
             processInstanceId:
-              options.startedDrift?.processInstanceId ?? request.processInstanceId,
+              options.startOnlyDrift ? request.processInstanceId :
+                options.startedDrift?.processInstanceId ?? request.processInstanceId,
+            locator: "private-direct-locator",
+            intent: {
+              protocol: "bpmn-direct-start-v1",
+              intentSha256: "a".repeat(64),
+            },
           };
         case EngineDefinitionStartStatus.Rejected:
           return {
@@ -403,6 +428,35 @@ function createFixture(
           };
       }
     },
+    startPreparedDefinitionVersion: async (request) => {
+      markStartEntered();
+      await options.startGate;
+      return {
+        status: EngineDefinitionStartStatus.Started,
+        source: {
+          kind: "bpmnSource",
+          id: options.startedDrift?.sourceId ?? request.sourceId,
+          sha256: options.startedDrift?.sourceSha256 ?? request.expectedSha256,
+          byteLength:
+            options.startedDrift?.sourceByteLength ?? request.bytes.byteLength,
+          declaredEncoding: null,
+          decodedAs: "UTF-8",
+        },
+        definition: {
+          processId: options.startedDrift?.processId ?? request.expectedProcessId,
+          semanticProfile:
+            options.startedDrift?.semanticProfile ?? request.semanticProfile,
+        },
+        processInstanceId:
+          options.startedDrift?.processInstanceId ?? request.processInstanceId,
+      };
+    },
+    describeDefinitionVersionStart: async () => ({
+      status: "matching" as DefinitionStartDescriptionResult["status"],
+    }),
+    startDefinitionVersion: async () => {
+      throw new Error("legacy direct start is outside this fixture");
+    },
   };
   let generatedIds = 0;
   const service = new DefinitionStartService(
@@ -413,7 +467,11 @@ function createFixture(
       generatedIds += 1;
       return options.generatedId ?? `instance-${generatedIds}`;
     },
-    { recordProcessInstance: async () => undefined },
+    new ConfirmedProcessInstancePublicationService({
+      repository: new InMemoryConfirmedProcessInstanceRepository(),
+      operate: { recordProcessInstance: async () => undefined },
+      work: { recordConfirmedProcessInstance: async () => undefined },
+    }),
   );
   return {
     artifactGets,

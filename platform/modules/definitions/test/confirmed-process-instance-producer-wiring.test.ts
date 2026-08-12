@@ -5,13 +5,18 @@ import {
   DefinitionStartStatus as EngineDefinitionStartStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
+  ConfirmedProcessInstancePublicationService,
   DefinitionScheduleHostPhase,
   DefinitionScheduleService,
   DefinitionScheduleState,
   DefinitionStartService,
   MessageStartPublicationService,
   MessageStartPublicationState,
+  InMemoryConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
+import type {
+  DefinitionStartDescriptionResult,
+} from "@bpmn-lean/platform-engine-gateway";
 import type {
   DefinitionMetadata,
   DefinitionReference,
@@ -31,7 +36,7 @@ import type {
   NewDefinitionMetadata,
   NewDefinitionScheduleRecord,
   NewMessageStartPublicationRecord,
-  StartedProcessInstancePublisher,
+  ConfirmedProcessInstanceOperateSubscriber,
 } from "@bpmn-lean/platform-definitions";
 import type {
   PublicProcessInstanceIdentity,
@@ -45,7 +50,21 @@ test("direct start suppresses success when recording the exact identity fails", 
   let hostStarts = 0;
   const service = new DefinitionStartService(
     {
-      startDefinitionVersion: async (request) => {
+      prepareDefinitionVersion: async (request) => ({
+        status: EngineDefinitionStartStatus.Admitted,
+        source: structuredClone(definition.source),
+        definition: {
+          processId: definition.processId,
+          semanticProfile: definition.semanticProfile,
+        },
+        processInstanceId: request.processInstanceId,
+        locator: "direct-locator",
+        intent: {
+          protocol: "bpmn-direct-start-v1",
+          intentSha256: "a".repeat(64),
+        },
+      }),
+      startPreparedDefinitionVersion: async (request) => {
         hostStarts += 1;
         return {
           status: EngineDefinitionStartStatus.Started,
@@ -57,11 +76,17 @@ test("direct start suppresses success when recording the exact identity fails", 
           processInstanceId: request.processInstanceId,
         };
       },
+      describeDefinitionVersionStart: async () => ({
+        status: "matching" as DefinitionStartDescriptionResult["status"],
+      }),
+      startDefinitionVersion: async () => {
+        throw new Error("legacy direct start must not be used");
+      },
     },
     artifactStore(),
     new OneDefinitionRepository(),
     () => "direct-instance",
-    publisher,
+    confirmedInstances(publisher),
   );
 
   await assert.rejects(
@@ -90,7 +115,8 @@ test("started Schedule retry repairs recording without repeating its host action
       configuredWorkflowIdBase: () => "configured-workflow",
     },
     now: () => Date.parse("2026-08-12T09:59:00.000Z"),
-    startedInstances: publisher,
+    confirmedInstances: confirmedInstances(publisher),
+    locators: testLocators,
   });
   const request = {
     processId: definition.processId,
@@ -127,7 +153,8 @@ test("accepted Message publication retry repairs recording without repeating sta
       commandId: () => "message-command",
       workflowId: () => "message-workflow",
     },
-    startedInstances: publisher,
+    confirmedInstances: confirmedInstances(publisher),
+    locators: testLocators,
   });
   const request = {
     definition: { processId: definition.processId, version: definition.version },
@@ -150,7 +177,7 @@ test("non-confirmed producer states never record an instance", async () => {
   const publisher = new RecordingPublisher();
   const rejectedStart = new DefinitionStartService(
     {
-      startDefinitionVersion: async () => ({
+      prepareDefinitionVersion: async () => ({
         status: EngineDefinitionStartStatus.Rejected,
         source: structuredClone(definition.source),
         definition: {
@@ -159,11 +186,20 @@ test("non-confirmed producer states never record an instance", async () => {
         },
         failure: { code: "rejected", evidence: "not started" },
       }),
+      startPreparedDefinitionVersion: async () => {
+        throw new Error("rejected preparation must not start");
+      },
+      describeDefinitionVersionStart: async () => {
+        throw new Error("rejected preparation must not describe");
+      },
+      startDefinitionVersion: async () => {
+        throw new Error("legacy direct start must not be used");
+      },
     },
     artifactStore(),
     new OneDefinitionRepository(),
     () => "rejected-instance",
-    publisher,
+    confirmedInstances(publisher),
   );
   await rejectedStart.start({
     processId: definition.processId,
@@ -182,7 +218,8 @@ test("non-confirmed producer states never record an instance", async () => {
       configuredWorkflowIdBase: () => "configured-workflow",
     },
     now: () => Date.parse("2026-08-12T09:59:00.000Z"),
-    startedInstances: publisher,
+    confirmedInstances: confirmedInstances(publisher),
+    locators: testLocators,
   }).put({
     processId: definition.processId,
     version: definition.version,
@@ -241,7 +278,8 @@ test("non-confirmed producer states never record an instance", async () => {
       describe: async () => ({ status: "missing" }),
     },
     identities: publicationIdentities(),
-    startedInstances: publisher,
+    confirmedInstances: confirmedInstances(publisher),
+    locators: testLocators,
   }).put("indeterminate", publicationRequest);
   assert.equal(indeterminate.publication.status, "indeterminate");
 
@@ -260,7 +298,8 @@ test("non-confirmed producer states never record an instance", async () => {
         describe: async () => ({ status: "divergent" }),
       },
       identities: publicationIdentities(),
-      startedInstances: publisher,
+      confirmedInstances: confirmedInstances(publisher),
+      locators: testLocators,
     }).put("integrity", publicationRequest),
   );
   assert.equal(
@@ -271,7 +310,7 @@ test("non-confirmed producer states never record an instance", async () => {
   assert.deepEqual(publisher.attempts, []);
 });
 
-class RecordingPublisher implements StartedProcessInstancePublisher {
+class RecordingPublisher implements ConfirmedProcessInstanceOperateSubscriber {
   readonly attempts: PublicProcessInstanceIdentity[] = [];
 
   async recordProcessInstance(instance: PublicProcessInstanceIdentity): Promise<void> {
@@ -462,7 +501,7 @@ function scheduleHost(
 }
 
 function scheduleService(
-  startedInstances: StartedProcessInstancePublisher,
+  startedInstances: ConfirmedProcessInstanceOperateSubscriber,
   schedules: DefinitionScheduleRepository,
   phase: typeof DefinitionScheduleHostPhase.Pending |
     typeof DefinitionScheduleHostPhase.Missed,
@@ -478,7 +517,8 @@ function scheduleService(
       configuredWorkflowIdBase: () => `${phase}-configured-workflow`,
     },
     now: () => Date.parse("2026-08-12T09:59:00.000Z"),
-    startedInstances,
+    confirmedInstances: confirmedInstances(startedInstances),
+    locators: testLocators,
   });
 }
 
@@ -502,6 +542,23 @@ function publicationIdentities() {
     commandId: (publicationId: string) => `${publicationId}-command`,
     workflowId: (processInstanceId: string) => `${processInstanceId}-workflow`,
   };
+}
+
+const testLocators = {
+  canonicalLocator: (processInstanceId: string) =>
+    `canonical:${encodeURIComponent(processInstanceId)}`,
+  scheduleExecutionLocator: (executionWorkflowId: string) =>
+    `schedule:${encodeURIComponent(executionWorkflowId)}`,
+} as const;
+
+function confirmedInstances(
+  publisher: ConfirmedProcessInstanceOperateSubscriber,
+): ConfirmedProcessInstancePublicationService {
+  return new ConfirmedProcessInstancePublicationService({
+    repository: new InMemoryConfirmedProcessInstanceRepository(),
+    operate: publisher,
+    work: { recordConfirmedProcessInstance: async () => undefined },
+  });
 }
 
 function exactIdentity(processInstanceId: string): PublicProcessInstanceIdentity {
