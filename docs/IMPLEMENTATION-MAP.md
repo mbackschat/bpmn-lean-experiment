@@ -129,7 +129,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 #### Explicitly absent
 
 - the transition-record projection and every cross-instance read model beyond the bounded confirmed-start index
-- task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
+- the [proposed M3 human-work contract](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md), including task list, claims, task interaction, form rendering, identity policy, completion lifecycle, and audit; operations and monitoring console, incident handling and retry, execution history, and mining views
 - identity and authorization
 - the platform component kit, routing, and the owner-selected `react-aria-components` and three TanStack packages; the M1 definition workspace uses plain CSS and no client state or routing dependency
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded

@@ -70,13 +70,15 @@ This is the milestone that must be preceded by the decided-fixture cost review r
 
 ### M3 — real work with real data
 
-**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) is implemented, registered, evidence-closed, independently closure-reviewed, and graduated. E2 User Task assignment and form metadata is implemented and evidence-closed; its three bounded closure-review corrections are green and await the same reviewer's audit before graduation and Product 2 use.
+**Status: in progress.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) is implemented, registered, evidence-closed, independently closure-reviewed, and graduated. E2 User Task assignment and form metadata is implemented and evidence-closed, but its second correction audit retained narrow test-oracle and process-record findings. The two-audit limit now requires explicit owner direction before another correction audit, graduation, or Product 2 use.
 
 **Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
 
 **Engine capsules.** The value domain, widening variables beyond the current string-and-null contract; and E2, the admission capability and public projection for User Task assignment and form metadata that [the platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as its second engine prerequisite.
 
 **Platform increments.** The pluggable identity boundary with a fake default, the shared task inbox, claim and release as platform-owned authorization, form projection, and the audit record of who acted.
+
+The [human-work proposal](BPM-PLATFORM-HUMAN-WORK-PROPOSAL.md) selects one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox. Its cold proposal review may proceed while E2 is paused, but Product 2 implementation may not consume metadata until E2 closure is approved and the human-work proposal is owner-approved.
 
 **Exit gate.** The inbox matches the engine's published open User Tasks exactly; no platform component constructs an occurrence identity; every state-changing action is an authorized engine command; and a non-string value survives the round trip through all declared targets.
 
@@ -262,7 +264,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: audit and record the E2 closure corrections.** The quote-aware and XML-reference-aware duplicate-attribute refusal, arbitrary-metadata Lean completion theorem, and live field-type source variation are ready and focused-green. The complete gate passed at the first immutable correction target `9bf1855`; the final source-only correction has its focused package, source-hygiene, binding, and diff evidence. Close the same reviewer's warm audit on the final correction target, record the receipt, and graduate the capsule. Product 2 use remains paused until that approval is recorded.
+**Next action: obtain owner direction for the E2 review stage while cold-reviewing the M3 human-work proposal.** E2 production behavior is focused-green, but its second correction audit requires admitted decimal/hexadecimal namespace-reference controls, exact duplicate-cardinality diagnostics, and one process-ledger recurrence correction before approval. The project review policy forbids an unattended third audit. Product 2 proposal work may continue, but implementation and E2 graduation remain paused until the owner authorizes another audit, requests redesign, or defers the increment.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
