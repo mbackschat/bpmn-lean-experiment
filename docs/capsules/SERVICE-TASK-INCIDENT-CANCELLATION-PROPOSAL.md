@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposal review approved; owner approval and implementation remain paused.** Context-cold review of immutable target `d03f5285a9e16852e2d08da6da29864275e75c6b` returned `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf1f893d24ee282b89a5fdef0a37d1b920e` with no retained finding. This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
+**Proposal review and owner approval are complete; implementation is authorized and in progress.** Context-cold review of immutable target `d03f5285a9e16852e2d08da6da29864275e75c6b` returned `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf1f893d24ee282b89a5fdef0a37d1b920e` with no retained finding. On 2026-08-13, the owner explicitly approved this proposal and all eight decisions in [Decisions requested from the owner](#decisions-requested-from-the-owner). This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
 
 ## Independent cold-review receipt
 
