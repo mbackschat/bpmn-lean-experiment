@@ -5,6 +5,8 @@ import type { EffectActivities } from "@bpmn-lean/temporal-protocol";
 import {
   EffectActivityPolicyKind,
   effectActivityPolicyForProfile,
+  legacyEffectActivityPolicy,
+  serviceTaskIncidentEffectActivityPolicy,
 } from "./effect-activity-policy.js";
 
 const commonOptions = {
@@ -18,12 +20,18 @@ const commonOptions = {
 
 const legacyActivities = proxyActivities<EffectActivities>({
   ...commonOptions,
-  retry: { ...commonOptions.retry, maximumAttempts: 2 },
+  retry: {
+    ...commonOptions.retry,
+    maximumAttempts: legacyEffectActivityPolicy.maximumAttempts,
+  },
 });
 
 const incidentActivities = proxyActivities<EffectActivities>({
   ...commonOptions,
-  retry: { ...commonOptions.retry, maximumAttempts: 1 },
+  retry: {
+    ...commonOptions.retry,
+    maximumAttempts: serviceTaskIncidentEffectActivityPolicy.maximumAttempts,
+  },
 });
 
 export function executeEffectForProfile(

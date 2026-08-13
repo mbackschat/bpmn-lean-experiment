@@ -12,25 +12,22 @@ export enum EffectActivityPolicyKind {
 export type EffectActivityPolicy = DeepReadonly<{
   kind: EffectActivityPolicyKind;
   maximumAttempts: 1 | 2;
-  acceptsTechnicalFailure: boolean;
 }>;
 
-const legacyPolicy: EffectActivityPolicy = {
+export const legacyEffectActivityPolicy: EffectActivityPolicy = {
   kind: EffectActivityPolicyKind.Legacy,
   maximumAttempts: 2,
-  acceptsTechnicalFailure: false,
 };
 
-const incidentPolicy: EffectActivityPolicy = {
+export const serviceTaskIncidentEffectActivityPolicy: EffectActivityPolicy = {
   kind: EffectActivityPolicyKind.ServiceTaskIncident,
   maximumAttempts: 1,
-  acceptsTechnicalFailure: true,
 };
 
 export function effectActivityPolicyForProfile(
   semanticProfile: string,
 ): EffectActivityPolicy {
   return semanticProfile === SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID
-    ? incidentPolicy
-    : legacyPolicy;
+    ? serviceTaskIncidentEffectActivityPolicy
+    : legacyEffectActivityPolicy;
 }

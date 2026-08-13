@@ -38,7 +38,6 @@ test("the successor alone admits one-attempt typed technical failure hosting", (
     {
       kind: EffectActivityPolicyKind.ServiceTaskIncident,
       maximumAttempts: 1,
-      acceptsTechnicalFailure: true,
     },
   );
   assert.deepEqual(
@@ -48,7 +47,6 @@ test("the successor alone admits one-attempt typed technical failure hosting", (
     {
       kind: EffectActivityPolicyKind.Legacy,
       maximumAttempts: 2,
-      acceptsTechnicalFailure: false,
     },
   );
   assert.deepEqual(
