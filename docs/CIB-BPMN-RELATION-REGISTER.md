@@ -23,10 +23,10 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
 | Reviewed normative agreements | 10 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
-| Permitted operational details | 8 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Permitted operational details | 8 | 1 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations; one incident-scoped external-termination mapping awaits owner approval |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 13 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Selected CIB extensions | 13 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution; one incident-scoped root-deletion extension awaits owner approval |
 | Configuration-specific realizations | 8 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -378,6 +378,18 @@ This is a CIB job-management extension, not general BPMN service-fault meaning. 
 
 **Boundary:** One failed async-before job, one `failedJob` incident, one public retry reset, same job and Process retention, literal generation 1, and later success are selected. A second failed execution may occur only as raw CIB research evidence or a Temporal host failure and creates no second canonical incident. General incidents, further retry cycles, backoff, due dates, incident messages, job deletion, batch retry, arbitrary Management Service operations, external tasks, Process cancellation, BPMN Error, compensation, and production operator UI remain excluded.
 
+### CIB-EXT-0014: public external deletion of one incident-bearing root Process
+
+**Status:** Proposed bounded extension; owner approval and implementation pending
+
+CIB Seven `2.2.0` accepts public `RuntimeService.deleteProcessInstance(processInstanceId, reason, false, true)` for the root Process retained by the selected failed-job incident. The operation removes the live Process, job, incident, execution, and task region and records the historic root as `EXTERNALLY_TERMINATED`. A committed Process variable remains readable through public History Service after deletion.
+
+This is a CIB public lifecycle extension beyond bare BPMN Process execution. BPMN 2.0.2 does not define an incident-addressed external root-deletion API, delete reason, or externally terminated historic-state code. The proposed project profile maps one exact published generation-1 incident and root semantic Process identity to a typed cancelled terminal state without exposing CIB identity or making runtime absence sufficient evidence.
+
+**Evidence:** The [Service Task incident phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) starts the exact selected Process with one string variable, drives the configured job to one `failedJob` incident, invokes the public deletion operation, and checks zero live Process/job/incident/execution/task state, historic `EXTERNALLY_TERMINATED`, and the preserved historic variable. Its successful control separately requires historic `COMPLETED`. The proposed [incident-scoped Process cancellation capsule](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-PROPOSAL.md) owns the project command, typed state, cleanup, and evidence boundary.
+
+**Boundary:** Only the exact incident-bearing root Process, one exact public deletion call, cascade cleanup, externally terminated history, and one retained string Process variable are proposed. Arbitrary Process deletion, nested-scope cancellation, deletion reason, listener or I/O-mapping policy, compensation, Transaction Cancel, modeled Terminate, batch deletion, process modification, suspension, activation, restart, job deletion, Product 2 authorization, and general Runtime Service compatibility remain excluded.
+
 ### Research queue
 
 | Hint | Status | Required investigation |
@@ -478,6 +490,18 @@ Retrying removes the incident while retaining the same occurrence. A later techn
 **Evidence:** The [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) proves that CIB retains the same raw job and Process through the selected incident reset; its later replacement incident remains unselected research evidence. The [retained evidence](../scenarios/service-task-incident/cibseven-evidence.json), [CIB incident projector](../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentProjector.java), [incident command executor](../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentCommandExecutor.java), and [incident runner test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenIncidentRunnerTest.java) bind and guard the raw-to-canonical mapping. The [Service Task incident capsule](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns the projection refusal matrix, literal Lean/core identity account, and transport/semantic result separation.
 
 **Boundary:** The mapping does not claim CIB independently derives semantic effect identity or generation. It does not expose job, incident, execution, Workflow, Run, Activity, attempt, retry-budget, cause, or stack identity and does not authorize Process cancellation or Product 2 action state.
+
+### CIB-OP-0009: incident-scoped external termination mapped to semantic root cancellation
+
+**Status:** Proposed operational mapping; owner approval and implementation pending
+
+CIB addresses public deletion with its generated root Process-instance ID and records `EXTERNALLY_TERMINATED` in history. The proposed project profile instead publishes one stable semantic root identity and one exact generation-1 incident identity. Its adapter privately binds those facts to the exact live CIB root and matching failed-job incident before invoking deletion, then requires the externally terminated historic root before projecting typed `cancelled` state.
+
+The semantic core independently derives the unique root occurrence, removes its complete live region, preserves Process variables and monotonic counters, and commits cancellation. CIB does not define that runtime representation or the project command identity. Runtime absence alone is insufficient because ordinary completion has the same absence; the historic-state discriminator and successful control make the mapping non-vacuous.
+
+**Evidence:** The [phase-zero cancellation probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java), proposed [`CIB-EXT-0014`](#cib-ext-0014-public-external-deletion-of-one-incident-bearing-root-process), and the [incident-scoped Process cancellation proposal](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-PROPOSAL.md).
+
+**Boundary:** Raw CIB Process, job, incident, execution, historic, and reason identity remains producer diagnostics only. This mapping does not claim that CIB derives semantic occurrence identity, cleanup invariants, counter preservation, Temporal closure behavior, authorization, audit, or Product 2 action state.
 
 ## Configuration-specific register
 
