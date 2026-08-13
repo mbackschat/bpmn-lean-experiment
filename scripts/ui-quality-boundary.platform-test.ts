@@ -53,6 +53,43 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.match(browserTest, /toHaveScreenshot/u);
 });
 
+test("keeps feature styling inside CSS Modules and the exact UI token vocabulary", async () => {
+  const [main, uiKit, definitionWorkspace, definitionDiagram] = await Promise.all([
+    read("platform/apps/web/src/main.tsx"),
+    read("platform/ui-kit/src/ui-kit.css"),
+    read("platform/apps/web/src/definition-workspace.module.css"),
+    read("platform/apps/web/src/definition-diagram.module.css"),
+  ]);
+
+  assert.doesNotMatch(main, /import "\.\/(?:styles|message-start-publication|process-instance-search)\.css"/u);
+  assert.match(uiKit, /\*,\s*\*::before,\s*\*::after \{\s*box-sizing: border-box;/u);
+  assert.match(uiKit, /body \{[\s\S]*font: var\(--ui-font-body\);/u);
+
+  const featureOwners = [
+    "definition-start-panel",
+    "definition-schedule-panel",
+    "message-start-publication-panel",
+    "process-instance-search-panel",
+  ] as const;
+  for (const owner of featureOwners) {
+    const [component, module] = await Promise.all([
+      read(`platform/apps/web/src/${owner}.tsx`),
+      read(`platform/apps/web/src/${owner}.module.css`),
+    ]);
+    assert.match(component, new RegExp(`import styles from "\\./${owner}\\.module\\.css";`, "u"));
+    assert.doesNotMatch(component, /className="/u);
+    assert.doesNotMatch(
+      module,
+      /#[0-9a-f]{3,8}\b|rgb\(|box-shadow:\s*(?!var\(--ui-focus-ring\))/iu,
+      `${owner} must use the exact shared token vocabulary`,
+    );
+    assert.doesNotMatch(module, /:disabled[\s\S]{0,100}opacity\s*:/u);
+  }
+
+  assert.doesNotMatch(definitionWorkspace, /box-shadow/u);
+  assert.doesNotMatch(definitionDiagram, /box-shadow/u);
+});
+
 async function read(relativePath: string): Promise<string> {
   return await readFile(path.join(projectRoot, relativePath), "utf8");
 }

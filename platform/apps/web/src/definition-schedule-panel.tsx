@@ -8,6 +8,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
+import styles from "./definition-schedule-panel.module.css";
 
 export type DefinitionSchedulePanelProps = Readonly<{
   api: DefinitionScheduleApiClient;
@@ -85,10 +86,10 @@ export function DefinitionSchedulePanel({
   }
 
   return (
-    <section className="schedule-panel" aria-labelledby="schedule-heading">
-      <div className="schedule-heading">
+    <section className={styles.panel} aria-labelledby="schedule-heading">
+      <div className={styles.heading}>
         <div>
-          <p className="eyebrow">Exact-version Timer Start</p>
+          <p className={styles.eyebrow}>Exact-version Timer Start</p>
           <h2 id="schedule-heading">Definition schedules</h2>
           <p>
             Every schedule remains bound to {definition.processId}, version {definition.version}.
@@ -96,7 +97,7 @@ export function DefinitionSchedulePanel({
         </div>
         <button
           type="button"
-          className="secondary-action"
+          className={styles.secondaryAction}
           disabled={busy !== null}
           onClick={() => { void refreshList(); }}
         >
@@ -104,7 +105,7 @@ export function DefinitionSchedulePanel({
         </button>
       </div>
 
-      <div className="timer-capabilities" aria-label="Published Timer Start capabilities">
+      <div className={styles.capabilities} aria-label="Published Timer Start capabilities">
         {timerStarts.length === 0 ? (
           <p>This exact version publishes no Timer Start capability.</p>
         ) : timerStarts.map((timerStart) => (
@@ -122,7 +123,7 @@ export function DefinitionSchedulePanel({
       </div>
 
       {timerStarts.length === 1 ? (
-        <form className="schedule-form" onSubmit={(event) => { void create(event); }}>
+        <form className={styles.form} onSubmit={(event) => { void create(event); }}>
           <label>
             Schedule ID
             <input
@@ -150,23 +151,23 @@ export function DefinitionSchedulePanel({
           </button>
         </form>
       ) : timerStarts.length > 1 ? (
-        <p className="schedule-notice">
+        <p className={styles.notice}>
           Creation is unavailable because this version publishes multiple Timer Start capabilities.
         </p>
       ) : null}
 
-      {error === null ? null : <p className="error" role="alert">{error}</p>}
+      {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       {schedules.length === 0 && busy !== "list" ? (
-        <p className="schedule-empty">No schedules exist for this exact definition version.</p>
+        <p className={styles.empty}>No schedules exist for this exact definition version.</p>
       ) : (
-        <ul className="schedule-list" aria-label="Definition schedules">
+        <ul className={styles.list} aria-label="Definition schedules">
           {schedules.map((schedule) => (
             <li key={schedule.scheduleId}>
-              <div className="schedule-identity">
+              <div className={styles.identity}>
                 <strong>{schedule.status}</strong>
                 <code>{schedule.scheduleId}</code>
               </div>
-              <dl className="schedule-facts">
+              <dl className={styles.facts}>
                 <div>
                   <dt>Activation</dt>
                   <dd><time dateTime={schedule.activationAt}>{schedule.activationAt}</time></dd>
@@ -189,10 +190,10 @@ export function DefinitionSchedulePanel({
                   </div>
                 ) : null}
               </dl>
-              <div className="schedule-actions">
+              <div className={styles.actions}>
                 <button
                   type="button"
-                  className="secondary-action"
+                  className={styles.secondaryAction}
                   disabled={busy !== null}
                   onClick={() => { void refresh(schedule); }}
                 >
@@ -201,7 +202,7 @@ export function DefinitionSchedulePanel({
                 {schedule.status === DefinitionScheduleStatus.Scheduled ? (
                   <button
                     type="button"
-                    className="cancel-action"
+                    className={styles.cancelAction}
                     disabled={busy !== null}
                     onClick={() => { void cancel(schedule); }}
                   >

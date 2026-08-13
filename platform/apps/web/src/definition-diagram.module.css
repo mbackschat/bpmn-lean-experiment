@@ -6,7 +6,6 @@
   border-radius: var(--ui-radius-surface);
   padding: var(--ui-space-4);
   background: var(--ui-color-surface);
-  box-shadow: var(--ui-shadow-surface);
 }
 
 .heading {

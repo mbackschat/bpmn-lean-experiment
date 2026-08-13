@@ -25,6 +25,10 @@ const transformedPanel = await transformWithEsbuild(
   { format: "esm", jsx: "automatic", loader: "tsx" },
 );
 const runnablePanel = transformedPanel.code
+  .replace(
+    /import styles from "\.\/process-instance-search-panel\.module\.css";/u,
+    "const styles = new Proxy({}, { get: (_target, key) => String(key) });",
+  )
   .replaceAll(
     '"react/jsx-runtime"',
     JSON.stringify(import.meta.resolve("react/jsx-runtime")),

@@ -9,6 +9,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
+import styles from "./message-start-publication-panel.module.css";
 
 export type MessageStartPublicationPanelProps = Readonly<{
   api: MessageStartPublicationApiClient;
@@ -68,10 +69,10 @@ export function MessageStartPublicationPanel({
   }
 
   return (
-    <section className="message-publication-panel" aria-labelledby="message-publication-heading">
-      <div className="message-publication-heading">
+    <section className={styles.panel} aria-labelledby="message-publication-heading">
+      <div className={styles.heading}>
         <div>
-          <p className="eyebrow">Exact-version Message Start</p>
+          <p className={styles.eyebrow}>Exact-version Message Start</p>
           <h2 id="message-publication-heading">Message Start publication</h2>
           <p>
             One publication remains bound to {definition.processId}, version {definition.version}.
@@ -80,7 +81,7 @@ export function MessageStartPublicationPanel({
         {publication === null ? null : (
           <button
             type="button"
-            className="secondary-action"
+            className={styles.secondaryAction}
             disabled={busy !== null}
             onClick={() => { void refresh(); }}
           >
@@ -89,7 +90,7 @@ export function MessageStartPublicationPanel({
         )}
       </div>
 
-      <div className="message-capabilities" aria-label="Published Message Start capabilities">
+      <div className={styles.capabilities} aria-label="Published Message Start capabilities">
         {messageStarts.length === 0 ? (
           <p>This exact version publishes no Message Start capability.</p>
         ) : messageStarts.map((messageStart, index) => (
@@ -102,13 +103,13 @@ export function MessageStartPublicationPanel({
 
       {selectedCapability === undefined ? (
         messageStarts.length > 1 ? (
-          <p className="message-publication-notice">
+          <p className={styles.notice}>
             Publication is unavailable because this version publishes multiple Message Start capabilities.
           </p>
         ) : null
       ) : publication === null ? (
         <form
-          className="message-publication-form"
+          className={styles.form}
           onSubmit={(event) => { void publish(event); }}
         >
           <label>
@@ -128,7 +129,7 @@ export function MessageStartPublicationPanel({
         </form>
       ) : null}
 
-      {error === null ? null : <p className="error" role="alert">{error}</p>}
+      {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       <PublicationResult publication={publication} />
     </section>
   );
@@ -172,7 +173,7 @@ function PublicationResult({
   switch (publication.status) {
     case MessageStartPublicationStatus.Pending:
       return (
-        <div className="message-publication-result pending" aria-live="polite">
+        <div className={`${styles.result} ${styles.pending}`} aria-live="polite">
           <strong>Delivery pending</strong>
           <code>{publication.publicationId}</code>
           <p>The durable publication has not reached a terminal delivery classification.</p>
@@ -180,7 +181,7 @@ function PublicationResult({
       );
     case MessageStartPublicationStatus.Accepted:
       return (
-        <div className="message-publication-result accepted" aria-live="polite">
+        <div className={`${styles.result} ${styles.accepted}`} aria-live="polite">
           <strong>Publication accepted</strong>
           <code>{publication.publicationId}</code>
           <dl>
@@ -199,7 +200,7 @@ function PublicationResult({
       );
     case MessageStartPublicationStatus.Indeterminate:
       return (
-        <div className="message-publication-result indeterminate" aria-live="polite">
+        <div className={`${styles.result} ${styles.indeterminate}`} aria-live="polite">
           <strong>Delivery indeterminate</strong>
           <code>{publication.publicationId}</code>
           <p>No retained host execution establishes acceptance. No Process instance is published.</p>

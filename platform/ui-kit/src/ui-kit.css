@@ -34,3 +34,49 @@
   --ui-shadow-surface: 0 8px 24px rgb(23 33 31 / 8%);
   --ui-focus-ring: 0 0 0 3px rgb(23 105 170 / 32%);
 }
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  color: var(--ui-color-text);
+  background: var(--ui-color-canvas);
+  font-family: var(--ui-font-family);
+  font-synthesis: none;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--ui-color-canvas);
+  font: var(--ui-font-body);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--ui-color-focus);
+  outline-offset: 2px;
+  box-shadow: var(--ui-focus-ring);
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}

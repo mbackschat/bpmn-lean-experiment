@@ -7,6 +7,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api.ts";
+import styles from "./process-instance-search-panel.module.css";
 
 export type ProcessInstanceSearchPanelProps = Readonly<{
   api: ProcessInstanceSearchApi;
@@ -80,19 +81,19 @@ export function ProcessInstanceSearchPanel({
 
   return (
     <section
-      className="process-instance-search-panel"
+      className={styles.panel}
       aria-labelledby="process-instance-search-heading"
     >
-      <div className="process-instance-search-heading">
+      <div className={styles.heading}>
         <div>
-          <p className="eyebrow">Global Process-instance search</p>
+          <p className={styles.eyebrow}>Global Process-instance search</p>
           <h2 id="process-instance-search-heading">Confirmed Product 2 starts</h2>
           <p>Search only the exact public identity recorded after a confirmed start.</p>
         </div>
       </div>
 
       <form
-        className="process-instance-search-form"
+        className={styles.form}
         onSubmit={(event) => { void search(event); }}
       >
         <label>
@@ -141,16 +142,16 @@ export function ProcessInstanceSearchPanel({
         </button>
       </form>
 
-      {error === null ? null : <p className="error" role="alert">{error}</p>}
+      {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       {searched && instances.length === 0 ? (
-        <p className="process-instance-search-empty">No confirmed starts match these exact filters.</p>
+        <p className={styles.empty}>No confirmed starts match these exact filters.</p>
       ) : (
         <ProcessInstanceSearchTable instances={instances} />
       )}
       {nextCursor === null ? null : (
         <button
           type="button"
-          className="secondary-action process-instance-load-more"
+          className={styles.loadMore}
           disabled={busy !== null}
           onClick={() => { void loadMore(); }}
         >
@@ -170,7 +171,7 @@ export function ProcessInstanceSearchTable({
     return null;
   }
   return (
-    <div className="process-instance-search-results">
+    <div className={styles.results}>
       <table aria-label="Confirmed Product 2 starts">
         <thead>
           <tr>

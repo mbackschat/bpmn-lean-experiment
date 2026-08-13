@@ -9,10 +9,7 @@ import { App } from "./app";
 import { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import { DefinitionApiClient } from "./definitions-api";
 import { MessageStartPublicationApiClient } from "./message-start-publication-api";
-import "./message-start-publication.css";
 import { ProcessInstanceSearchApiClient } from "./process-instance-search-api";
-import "./process-instance-search.css";
-import "./styles.css";
 import { WorkApiClient } from "./work-tasks-api";
 import "@bpmn-lean/platform-ui-kit/style.css";
 

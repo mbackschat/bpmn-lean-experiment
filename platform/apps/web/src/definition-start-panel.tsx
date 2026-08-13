@@ -7,6 +7,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import type { DefinitionApiClient } from "./definitions-api";
+import styles from "./definition-start-panel.module.css";
 
 export type DefinitionStartPanelProps = Readonly<{
   api: DefinitionApiClient;
@@ -35,18 +36,18 @@ export function DefinitionStartPanel({
   }
 
   return (
-    <section className="start-panel" aria-labelledby="start-heading">
+    <section className={styles.panel} aria-labelledby="start-heading">
       <div>
-        <p className="eyebrow">Exact version command</p>
+        <p className={styles.eyebrow}>Exact version command</p>
         <h2 id="start-heading">Start this definition</h2>
         <p>
           The platform sends version {definition.version} and its stored source identity to the engine.
         </p>
       </div>
-      <button type="button" disabled={starting} onClick={() => { void start(); }}>
+      <button className={styles.action} type="button" disabled={starting} onClick={() => { void start(); }}>
         {starting ? "Starting…" : `Start version ${definition.version}`}
       </button>
-      {error === null ? null : <p className="error" role="alert">{error}</p>}
+      {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       <StartResult result={result} />
     </section>
   );
@@ -59,7 +60,7 @@ function StartResult({ result }: Readonly<{ result: ProcessInstanceStartResult |
   switch (result.status) {
     case ProcessInstanceStartStatus.Started:
       return (
-        <div className="start-result accepted" aria-live="polite">
+        <div className={`${styles.result} ${styles.accepted}`} aria-live="polite">
           <strong>Process instance started</strong>
           <span data-testid="started-instance-definition">
             {result.instance.definition.processId}, version {result.instance.definition.version}
@@ -69,7 +70,7 @@ function StartResult({ result }: Readonly<{ result: ProcessInstanceStartResult |
       );
     case ProcessInstanceStartStatus.Rejected:
       return (
-        <div className="start-result rejected" aria-live="polite">
+        <div className={`${styles.result} ${styles.rejected}`} aria-live="polite">
           <strong>Process instance not started</strong>
           <span>{result.definition.processId}, version {result.definition.version}</span>
           <code>{result.failure.code}</code>
