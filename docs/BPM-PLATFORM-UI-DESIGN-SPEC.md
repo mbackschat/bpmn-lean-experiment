@@ -1,8 +1,8 @@
-# BPM platform UI design proposal
+# BPM platform UI design specification
 
 ## Status
 
-**Implementation-complete; independent closure review pending.** The M3 shell, shared UI kit, feature CSS Modules, responsive collection, complete declared-state fixtures, real-host showcases, and deterministic four-width browser evidence now implement this selected visual and interaction contract. The document remains a proposal until the closure review approves the maintained contract and it graduates atomically to `BPM-PLATFORM-UI-DESIGN-SPEC.md`. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
+**Implemented, independently closure-reviewed, and maintained.** The M3 shell, shared UI kit, feature CSS Modules, responsive collection, complete declared-state fixtures, real-host showcases, and deterministic four-width browser evidence implement this visual and interaction contract. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Independent cold-review receipt
 
@@ -10,9 +10,9 @@
 |---|---|---|---|---|
 | Proposal | `1f617ef` | `fork-turns-none` | `approve-with-required-edits` | `c3f6671` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `45c4bfc` | `fork-turns-none` | `approve-with-required-edits` | `afc4b63` |
 
-The same context-cold proposal reviewer completed two warm correction rounds. The final audit of `c3f6671` approved the exact visual foundation, CSS ownership, responsive geometry, focus and motion rules, and isolated Product 2 UI-quality lane. Closure remains pending against the complete implementation target.
+The context-cold proposal reviewer completed two warm correction rounds and approved `c3f6671`. A separate context-cold closure reviewer required four bounded corrections at `45c4bfc`; two warm audits approved the final correction target `afc4b63`.
 
 ## Owner motivation and product vision
 
@@ -26,7 +26,7 @@ The project-specific result should improve on the references where possible: one
 
 The UI is a professional operational work surface: calm, dense enough for real work, clear under failure, and usable without learning internal architecture. Visual hierarchy comes from typography, spacing, alignment, borders, and state, not from repeated oversized cards, decorative gradients, or excessive all-caps labels.
 
-The visual language is project-owned. The [pattern-first UI/UX and information-architecture research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md) and [information architecture proposal](BPM-PLATFORM-INFORMATION-ARCHITECTURE-PROPOSAL.md) inform functional grouping, while React Aria supplies accessible behavior and state attributes. None of these sources dictates this product's appearance.
+The visual language is project-owned. The [pattern-first UI/UX and information-architecture research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md) and [information architecture specification](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) inform functional grouping, while React Aria supplies accessible behavior and state attributes. None of these sources dictates this product's appearance.
 
 ## Technology and ownership
 
@@ -127,5 +127,5 @@ This specification does not select a themed component framework, utility-CSS fra
 - [React Aria getting started](https://react-spectrum.adobe.com/react-aria/getting-started.html) documents custom styling, class names, and interaction-state data attributes.
 - [React Spectrum layout guidance](https://react-spectrum.adobe.com/v3/layout.html) provides established responsive Grid and Flex principles without becoming a project dependency.
 - [BPM platform UI/UX and information-architecture research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md) owns the product comparison and pattern evidence.
-- [BPM platform information architecture proposal](BPM-PLATFORM-INFORMATION-ARCHITECTURE-PROPOSAL.md) owns workspace and flow decisions.
+- [BPM platform information architecture specification](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) owns workspace and flow decisions.
 - [Architecture](ARCHITECTURE.md#user-interface) owns the selected packages and package boundaries.

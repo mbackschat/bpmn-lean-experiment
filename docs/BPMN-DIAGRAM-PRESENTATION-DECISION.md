@@ -132,7 +132,7 @@ Focused evidence must prove:
 ## Related owners
 
 - [BPM platform UI/UX and information-architecture research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md) owns the diagram-as-orientation product finding.
-- [BPM platform information architecture proposal](BPM-PLATFORM-INFORMATION-ARCHITECTURE-PROPOSAL.md) owns where definitions and task diagrams appear.
-- [BPM platform UI design proposal](BPM-PLATFORM-UI-DESIGN-PROPOSAL.md) owns diagram sizing, loading, failure, and provenance presentation.
+- [BPM platform information architecture specification](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) owns where definitions and task diagrams appear.
+- [BPM platform UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md) owns diagram sizing, loading, failure, and provenance presentation.
 - [BPMN XML ingestion decision](BPMN-XML-INGESTION-DECISION.md) owns exact admitted source and parser boundaries.
 - [Architecture](ARCHITECTURE.md#user-interface) owns package direction and the selected viewer.

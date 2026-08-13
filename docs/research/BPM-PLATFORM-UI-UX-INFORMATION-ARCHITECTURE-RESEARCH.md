@@ -2,7 +2,7 @@
 
 ## Status
 
-**Current bounded research.** This document studies recurring UI/UX and information-architecture patterns in BPM task products, process operations tools, and adjacent enterprise workspaces. It is evidence for the project-specific [information architecture proposal](../BPM-PLATFORM-INFORMATION-ARCHITECTURE-PROPOSAL.md) and [UI design proposal](../BPM-PLATFORM-UI-DESIGN-PROPOSAL.md), not authority for BPMN meaning, product scope, or implementation technology.
+**Current bounded research.** This document studies recurring UI/UX and information-architecture patterns in BPM task products, process operations tools, and adjacent enterprise workspaces. It is evidence for the project-specific [information architecture specification](../BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) and [UI design specification](../BPM-PLATFORM-UI-DESIGN-SPEC.md), not authority for BPMN meaning, product scope, or implementation technology.
 
 ## Research question
 
@@ -136,11 +136,11 @@ Reject for M3:
 
 ## Further recommended artifacts
 
-The two project-specific proposals should graduate to stable specifications when their browser acceptance evidence is green. The [BPMN diagram presentation decision](../BPMN-DIAGRAM-PRESENTATION-DECISION.md) separately owns provenance and lifecycle because generated layout is not merely a visual-style choice.
+The two project-specific UI contracts have graduated to stable specifications after their browser acceptance evidence and independent closure reviews completed. The [BPMN diagram presentation decision](../BPMN-DIAGRAM-PRESENTATION-DECISION.md) separately owns provenance and lifecycle because generated layout is not merely a visual-style choice.
 
 After implementation, add a concise M3 browser walkthrough under `docs/` that shows how to select or add a definition, see its diagram, start an instance, claim the resulting task, complete its typed form, and inspect the resulting public Process instance. A walkthrough is preferable to another proposal because it explains an implemented path rather than selecting new scope.
 
-No separate proposal is recommended now for tokens, a router, a form framework, dashboards, or saved views. The UI design proposal already owns tokens and responsive component rules, while the other topics have no approved M3 contract.
+No separate proposal is recommended now for tokens, a router, a form framework, dashboards, or saved views. The UI design specification already owns tokens and responsive component rules, while the other topics have no approved M3 contract.
 
 ## Primary sources
 

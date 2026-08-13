@@ -1,8 +1,8 @@
-# BPM platform information architecture proposal
+# BPM platform information architecture specification
 
 ## Status
 
-**Implementation-complete; independent closure review pending.** The implemented platform shell, workspace flows, responsive evidence, and diagram presentation contract now realize this selected information architecture. The document remains a proposal until the closure review approves the maintained contract and it graduates atomically to `BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md`. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
+**Implemented, independently closure-reviewed, and maintained.** The platform shell, workspace flows, responsive evidence, and diagram presentation contract realize this information architecture. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Independent cold-review receipt
 
@@ -10,9 +10,9 @@
 |---|---|---|---|---|
 | Proposal | `1f617ef` | `fork-turns-none` | `approve-with-required-edits` | `c3f6671` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `45c4bfc` | `fork-turns-none` | `approve-with-required-edits` | `83de531` |
 
-The same context-cold proposal reviewer completed two warm correction rounds. The final audit of `c3f6671` approved the corrected public presentation contract, DI composition boundary, dependency ownership, and source records. Closure remains pending against the complete implementation target.
+The context-cold proposal reviewer completed two warm correction rounds and approved `c3f6671`. A separate context-cold closure reviewer required four bounded corrections at `45c4bfc`; one warm audit approved the correction target `83de531`.
 
 ## Owner motivation and product vision
 
@@ -106,11 +106,11 @@ Excluded behavior is a dashboard of unrelated panels, a permanent narrow task-fo
 
 ## Acceptance
 
-Static component tests lock navigation and collection-to-detail ownership. Real-host browser evidence exercises the M1 source-owned Collaboration DI lifecycle, generated DI in M2 and M3, accessible Definitions and Work navigation, exact task selection, claim, completion, and version operation. The deterministic Product 2 browser lane separately locks called-instance and missing-element task-diagram unavailability, source and generated provenance, all declared failure states, focus, reduced motion, and four-width geometry. Product 2 visual QA uses the separate path-filtered lane owned by the [UI design proposal](BPM-PLATFORM-UI-DESIGN-PROPOSAL.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
+Static component tests lock navigation and collection-to-detail ownership. Real-host browser evidence exercises the M1 source-owned Collaboration DI lifecycle, generated DI in M2 and M3, accessible Definitions and Work navigation, exact task selection, claim, completion, and version operation. The deterministic Product 2 browser lane separately locks called-instance and missing-element task-diagram unavailability, source and generated provenance, all declared failure states, focus, reduced motion, and four-width geometry. Product 2 visual QA uses the separate path-filtered lane owned by the [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
 
 ## Research and related owners
 
 - [BPM platform UI/UX and information-architecture research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md) owns the product comparison and pattern evidence.
-- [BPM platform UI design proposal](BPM-PLATFORM-UI-DESIGN-PROPOSAL.md) owns visual language and responsive styling rules.
+- [BPM platform UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md) owns visual language and responsive styling rules.
 - [BPMN diagram presentation decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md) owns embedded DI and digest-bound sidecar precedence and provenance.
 - [Architecture](ARCHITECTURE.md#user-interface) owns packages and dependency direction.
