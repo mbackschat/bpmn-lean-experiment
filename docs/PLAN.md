@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: finish the owner-directed Product 2 UI foundation.** The responsive BPM workspaces and reviewed BPMN presentation sidecar are implemented. Add the isolated four-width headless Playwright UI-quality lane, complete the visual and responsive browser audit, then graduate the approved information-architecture and UI-design proposals into specifications with their implementation evidence. This work remains outside Product 1 semantic, Lean, CIB, differential, and complete-verifier loops.
+1. **In progress: close the owner-directed Product 2 UI foundation reviews.** The responsive BPM workspaces, reviewed BPMN presentation sidecar, isolated four-width headless Playwright UI-quality lane, visual and responsive browser audit, and real-host showcase migrations are implemented. Correct the bounded findings from the two independent closure reviews, obtain their warm audits, then graduate the approved information-architecture and UI-design proposals into specifications with their implementation evidence. This work remains outside Product 1 semantic, Lean, CIB, differential, and complete-verifier loops.
 
 ## Approved decisions
 

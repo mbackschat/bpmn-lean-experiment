@@ -172,7 +172,6 @@ export function validateDiagramCoverage(
   if (typeof selection === "string") return selection;
 
   const diagramIds = new Set<string>();
-  const selectedDiagram = selection.diagram;
   const coverage = new Map<string, ModdleElement[]>();
   for (const diagram of diagrams) {
     const plane = diagram.plane;
@@ -200,20 +199,10 @@ export function validateDiagramCoverage(
       if (target === undefined || /^(?:bpmndi|dc|di):/u.test(target.$type)) {
         return "every DI reference must resolve to an exact source ID";
       }
+      const existing = coverage.get(targetId) ?? [];
+      existing.push(element);
+      coverage.set(targetId, existing);
     }
-  }
-  const planeElements = selectedDiagram?.plane?.planeElement ?? [];
-  for (const element of planeElements) {
-    if (element.id === undefined) {
-      return "diagram element IDs must be present and unique";
-    }
-    const targetId = element.bpmnElement?.id;
-    if (targetId === undefined) {
-      return "every DI reference must resolve to an exact source ID";
-    }
-    const existing = coverage.get(targetId) ?? [];
-    existing.push(element);
-    coverage.set(targetId, existing);
   }
 
   if (selection.participant !== null) {

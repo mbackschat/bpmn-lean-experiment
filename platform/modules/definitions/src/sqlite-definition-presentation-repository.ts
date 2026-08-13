@@ -217,7 +217,18 @@ function requireEquivalent(
   left: BpmnDiagramPresentationSidecar,
   right: BpmnDiagramPresentationSidecar,
 ): void {
-  if (JSON.stringify(left) !== JSON.stringify(right)) {
+  if (
+    left.schemaEpoch !== right.schemaEpoch ||
+    left.sourceSha256 !== right.sourceSha256 ||
+    left.diagramInterchangeSha256 !== right.diagramInterchangeSha256 ||
+    left.presentationSha256 !== right.presentationSha256 ||
+    left.provenance.kind !== right.provenance.kind ||
+    left.provenance.generatorId !== right.provenance.generatorId ||
+    left.provenance.generatorVersion !== right.provenance.generatorVersion ||
+    left.provenance.effectiveGeneratorSha256 !==
+      right.provenance.effectiveGeneratorSha256 ||
+    left.diagramInterchangeXml !== right.diagramInterchangeXml
+  ) {
     throw new DefinitionPresentationIntegrityError(
       "stored definition presentation conflicts with the candidate sidecar",
     );

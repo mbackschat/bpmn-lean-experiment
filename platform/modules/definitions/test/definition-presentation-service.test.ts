@@ -147,6 +147,25 @@ test("generated DI persists and restart reuses the validated sidecar", async () 
   assert.equal(fixture.adapter.validationCalls, 3);
 });
 
+test("a one-byte source change uses a distinct durable sidecar", async () => {
+  const sourceXml = await readFile(sourcePath, "utf8");
+  const presentations = new MemoryPresentations();
+  const adapter = new FakeAdapter();
+  const original = fixtureFor(sourceXml, { presentations, adapter });
+  const changed = fixtureFor(sourceXml.replace("reviewers", "reviewert"), {
+    presentations,
+    adapter,
+  });
+
+  const first = await original.service.resolve(original.reference);
+  const second = await changed.service.resolve(changed.reference);
+
+  assert.notEqual(first?.sourceSha256, second?.sourceSha256);
+  assert.equal(adapter.generations, 2);
+  assert.equal(presentations.inserts, 2);
+  assert.equal(presentations.content.size, 2);
+});
+
 test("generated DI preserves an admitted UTF-8 BOM and every other source byte", async () => {
   const sourceXml = `\uFEFF${await readFile(sourcePath, "utf8")}`;
   const fixture = fixtureFor(sourceXml);
@@ -198,7 +217,72 @@ test("unusable source DI and digest-invalid retained sidecars fail closed", asyn
   assert.equal(corrupt.adapter.generations, 1);
 });
 
-function fixtureFor(sourceXml: string) {
+test("each retained sidecar binding field and byte surface fails closed independently", async () => {
+  const sourceXml = await readFile(sourcePath, "utf8");
+  const mutations: ReadonlyArray<Readonly<{
+    name: string;
+    mutate: (sidecar: BpmnDiagramPresentationSidecar) => BpmnDiagramPresentationSidecar;
+  }>> = [
+    {
+      name: "source digest",
+      mutate: (sidecar) => ({ ...sidecar, sourceSha256: "a".repeat(64) }),
+    },
+    {
+      name: "DI digest",
+      mutate: (sidecar) => ({ ...sidecar, diagramInterchangeSha256: "b".repeat(64) }),
+    },
+    {
+      name: "presentation digest",
+      mutate: (sidecar) => ({ ...sidecar, presentationSha256: "c".repeat(64) }),
+    },
+    {
+      name: "provenance",
+      mutate: (sidecar) => ({
+        ...sidecar,
+        provenance: { ...sidecar.provenance, generatorVersion: "1.3.1" },
+      }) as unknown as BpmnDiagramPresentationSidecar,
+    },
+    {
+      name: "effective generator identity",
+      mutate: (sidecar) => ({
+        ...sidecar,
+        provenance: {
+          ...sidecar.provenance,
+          effectiveGeneratorSha256: "d".repeat(64),
+        },
+      }),
+    },
+    {
+      name: "DI XML",
+      mutate: (sidecar) => ({
+        ...sidecar,
+        diagramInterchangeXml: sidecar.diagramInterchangeXml.replace("Diagram_1", "Diagram_2"),
+      }),
+    },
+  ];
+
+  for (const mutation of mutations) {
+    const fixture = fixtureFor(sourceXml);
+    await fixture.service.resolve(fixture.reference);
+    const key = fixture.presentations.content.keys().next().value!;
+    const retained = fixture.presentations.content.get(key)!;
+    fixture.presentations.content.set(key, mutation.mutate(retained));
+
+    await assert.rejects(
+      fixture.service.resolve(fixture.reference),
+      DefinitionPresentationIntegrityError,
+      mutation.name,
+    );
+  }
+});
+
+function fixtureFor(
+  sourceXml: string,
+  overrides: Readonly<{
+    presentations?: MemoryPresentations;
+    adapter?: FakeAdapter;
+  }> = {},
+) {
   const bytes = new TextEncoder().encode(sourceXml);
   const metadata: DefinitionMetadata = {
     processId: "Process_UserTaskMetadata",
@@ -225,8 +309,8 @@ function fixtureFor(sourceXml: string) {
     put: async () => ({ status: "stored" }),
     get: async (digest) => digest === metadata.source.sha256 ? bytes.slice() : null,
   };
-  const presentations = new MemoryPresentations();
-  const adapter = new FakeAdapter();
+  const presentations = overrides.presentations ?? new MemoryPresentations();
+  const adapter = overrides.adapter ?? new FakeAdapter();
   return {
     adapter,
     presentations,

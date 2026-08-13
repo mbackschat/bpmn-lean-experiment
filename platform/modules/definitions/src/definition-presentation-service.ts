@@ -196,6 +196,9 @@ function requireSidecarBinding(
   if (
     sidecar.schemaEpoch !== 1 ||
     sidecar.sourceSha256 !== sourceSha256 ||
+    sidecar.provenance.kind !== "generated" ||
+    sidecar.provenance.generatorId !== "bpmn-auto-layout" ||
+    sidecar.provenance.generatorVersion !== "1.3.0" ||
     sidecar.provenance.effectiveGeneratorSha256 !== effectiveGeneratorSha256 ||
     sha256Text(sidecar.diagramInterchangeXml) !== sidecar.diagramInterchangeSha256
   ) {

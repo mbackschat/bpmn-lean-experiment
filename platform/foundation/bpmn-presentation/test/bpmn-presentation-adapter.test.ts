@@ -154,6 +154,24 @@ test("source DI resolves the selected Process when another root has its own diag
     ),
     { kind: "source" },
   );
+
+  const withCrossPlaneDuplicate = withTwoRootDiagrams.replace(
+    "</bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>",
+    [
+      '<bpmndi:BPMNShape id="Duplicate_Selected_Task" bpmnElement="UserTask_Approve">',
+      '<dc:Bounds x="300" y="300" width="100" height="80" />',
+      "</bpmndi:BPMNShape>",
+      "</bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>",
+    ].join(""),
+  );
+  const duplicateResolution = await adapter.resolveSourceDiagram(
+    withCrossPlaneDuplicate,
+    "Process_UserTaskMetadata",
+  );
+  assert.equal(duplicateResolution.kind, "unusable");
+  if (duplicateResolution.kind === "unusable") {
+    assert.match(duplicateResolution.evidence, /flow node UserTask_Approve/u);
+  }
 });
 
 test("source DI resolves a runtime-renamed Process through its exact Collaboration participant", async () => {

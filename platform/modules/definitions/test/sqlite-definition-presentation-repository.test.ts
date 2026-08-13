@@ -77,6 +77,33 @@ test("two independent connections insert-or-compare one exact sidecar", async ()
   });
 });
 
+test("sidecar equivalence is field-based and independent of object insertion order", async () => {
+  await withDatabase((databaseFile) => {
+    const repository = new SqliteDefinitionPresentationRepository(databaseFile);
+    try {
+      const exact = sidecar();
+      repository.insertOrCompare(exact);
+      const reordered = {
+        diagramInterchangeXml: exact.diagramInterchangeXml,
+        provenance: {
+          effectiveGeneratorSha256: exact.provenance.effectiveGeneratorSha256,
+          generatorVersion: exact.provenance.generatorVersion,
+          generatorId: exact.provenance.generatorId,
+          kind: exact.provenance.kind,
+        },
+        presentationSha256: exact.presentationSha256,
+        diagramInterchangeSha256: exact.diagramInterchangeSha256,
+        sourceSha256: exact.sourceSha256,
+        schemaEpoch: exact.schemaEpoch,
+      } satisfies BpmnDiagramPresentationSidecar;
+
+      assert.deepEqual(repository.insertOrCompare(reordered), exact);
+    } finally {
+      repository.close();
+    }
+  });
+});
+
 test("a corrupt retained row fails closed without replacement", async () => {
   await withDatabase((databaseFile) => {
     const repository = new SqliteDefinitionPresentationRepository(databaseFile);
