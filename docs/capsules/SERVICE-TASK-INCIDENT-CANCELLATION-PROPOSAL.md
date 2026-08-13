@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft; immutable proposal target `d03f5285a9e16852e2d08da6da29864275e75c6b` awaits context-cold review. Owner approval and implementation remain paused.** This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
+**Draft; immutable proposal target `d03f5285a9e16852e2d08da6da29864275e75c6b` received `APPROVE WITH REQUIRED EDITS` in context-cold review. Its bounded contract-completeness correction awaits the same reviewer's audit. Owner approval and implementation remain paused.** This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
 
 ## Independent cold-review receipt
 
@@ -93,7 +93,7 @@ type TerminalProcessReceipt =
 
 ### ICANCEL-ADMIT-01
 
-Before dispatch, require the exact successor profile and its exact reviewed Program shape, `Running` control, valid generation-1 incident associations, and the exact published cancellation stimulus. Every old profile, including the Stage 1 incident profile, rejects cancellation with exact state preservation. The Stage 1 profile continues to report and retry its incident unchanged.
+Before dispatch, require the exact successor profile and its exact reviewed Program shape, `Running` control, `initiationPending = false`, valid generation-1 incident associations, and the exact published cancellation stimulus. Every old profile, including the Stage 1 incident profile, rejects cancellation with exact state preservation. The Stage 1 profile continues to report and retry its incident unchanged.
 
 ### ICANCEL-ROOT-01
 
@@ -103,21 +103,21 @@ Require `stimulus.processInstanceId = state.control.instanceId` and `stimulus.in
 
 Extend the shared scope-subtree cleanup relation so it removes every live owner in the root region, including tokens, ordinary waits, effect waits, effect incidents and their suspended waits, selected branch sets, event races, transitive called-Process regions, called-process ownership links, scope occurrences, and Activity-local variables owned by either an open or incident-suspended effect. Invoke that relation exactly once for the derived root and set control to `Cancelled(instanceId)`.
 
-The transition preserves the complete Process-variable binding list, every activation high-water counter, `endOccurrences`, and logical time exactly. It emits no token, End occurrence, compensation, Event handler, output mapping, or internal closure step. The Process becomes terminal with empty live work, empty incidents, and no enabled interactions.
+The transition preserves the complete Process-variable binding list, every activation high-water counter, `endOccurrences`, and logical time exactly. It emits no token, End occurrence, compensation, Event handler, output mapping, or internal closure step. The Process becomes terminal with `initiationPending = false`, empty live work, empty incidents, and no enabled interactions.
 
 ### ICANCEL-REFUSE-01
 
-A wrong root identity, wrong or stale incident, duplicate cancellation, cancelled or completed state, malformed association, caller-supplied extra owner, incident-free state, or command under another profile rejects with exact state identity. Deleting only the incident while leaving its root running is not a valid transition.
+A wrong root identity, wrong or stale incident, duplicate cancellation, cancelled or completed state, malformed association, `initiationPending = true`, caller-supplied extra owner, incident-free state, or command under another profile rejects with exact state identity. A pending initiation is malformed for this command and is never repaired during cancellation. Deleting only the incident while leaving its root running is not a valid transition.
 
 ### ICANCEL-ORDER-01
 
-Retry and cancellation are two distinct external semantic inputs. Deterministic queue order is the explicit scheduler choice. If cancellation commits first, retry rejects against the terminal state. If retry commits first, cancellation rejects because the submitted incident is stale and the Process remains running with the reopened effect. The capsule does not claim confluence across those two orders.
+Retry and cancellation are two distinct external semantic inputs. Canonical `enabledInteractions` family order remains User Task completion, Message delivery, incident Retry, then incident Cancel; adding Cancel preserves the complete Stage 1 ordering prefix. Swapping the simultaneously published Retry and Cancel entries is a strict projection and JSON-identity failure. Publication order grants neither command scheduling priority. Deterministic queue order is the explicit scheduler choice. If cancellation commits first, retry rejects against the terminal state. If retry commits first, cancellation rejects because the submitted incident is stale and the Process remains running with the reopened effect. The capsule does not claim confluence across those two orders.
 
 ## Runtime and observation consequences
 
 The runtime gains typed `Cancelled(instanceId)`. `StateObservation.status` gains `cancelled`, and `EnabledInteraction` gains the exact cancellation interaction only for one eligible incident under the successor profile. `ObservationRequestKind` does not change.
 
-A cancelled observation contains the preserved Process variables and logical time, with empty active waits, open tasks, Message subscriptions, timers, effects, incidents, and enabled interactions. Activation counters and End history remain private state and are checked directly in TypeScript and Lean rather than projected as new public fields.
+A cancelled observation contains the preserved Process variables and logical time, with empty active waits, open tasks, Message subscriptions, timers, effects, incidents, and enabled interactions. The private terminal runtime has `initiationPending = false`. Activation counters and End history remain private state and are checked directly in TypeScript and Lean rather than projected as new public fields.
 
 The unique-root and cleanup invariants apply to the complete runtime state. A malformed extra parentless occurrence, an incident outside the selected root, a duplicate incident, or an incident-owned Activity-local binding outside the cleanup region makes the command inadmissible rather than allowing partial cleanup.
 
@@ -141,8 +141,8 @@ The Lean lane is **proved**. A new `IncidentCancellation.lean` module owns the d
 - unique-root derivation from the submitted public identity;
 - complete removal of every represented live owner in the selected root and transitive called regions;
 - exact preservation of Process variables, activation counters, End history, and logical time;
-- terminal cancelled projection with no live work or enabled interaction;
-- exact state preservation for wrong root, wrong/stale incident, old profile, malformed association, and terminal-state refusal;
+- terminal cancelled projection with `initiationPending = false`, no live work, and no enabled interaction;
+- exact state preservation for wrong root, wrong/stale incident, old profile, malformed association including `initiationPending = true`, and terminal-state refusal;
 - the two specified retry/cancel queue orders without claiming order independence;
 - strict JSON identity for the new stimulus, interaction, status, state, and receipt-relevant projection.
 
@@ -151,6 +151,8 @@ The Lean lane is **proved**. A new `IncidentCancellation.lean` module owns the d
 ## Temporal hosting and refinement preflight
 
 The cancellation stimulus arrives through Update name `bpmn-cancel-incident-process`. The adapter derives the Update ID through the existing canonical content-bound encoding of every stimulus field. A handler validates transport shape, enqueues the exact stimulus, and waits for the single semantic input loop; only that loop invokes `applyStimulus` and changes semantic state.
+
+The exact Stage 1 incident profile and the exact cancellation successor select the same one-attempt incident Activity/report policy. Every unrelated profile retains the legacy Activity policy and exact prior result bytes. A focused policy oracle must prove that both incident profiles can turn the first typed technical failure into `reportEffectFailure`, while the Service Task effect profile and every other registered non-incident profile still reject that transport arm as unsupported.
 
 After a committed cancellation, the Workflow drains already accepted handlers and returns `CancelledProcessReceipt` through ordinary Workflow completion. It does not request Temporal Workflow cancellation or termination, create a Cancellation Scope as semantic authority, cancel an Activity, inspect Event History, or derive cancellation from Workflow absence. The incident state has no in-flight Activity.
 
@@ -170,11 +172,11 @@ Lean and TypeScript consume explicit report and cancellation stimuli. CIB realiz
 
 | Rule | CIB/profile | Lean | TypeScript | Temporal | Separating evidence |
 |---|---|---|---|---|---|
-| `ICANCEL-ADMIT-01` | exact successor and incident partners | profile/program admission theorem | strict gate before dispatch | profile-aware Update | old-profile and extra-owner-field refusal |
+| `ICANCEL-ADMIT-01` | exact successor and incident partners | profile/program admission theorem | strict gate before dispatch | successor shares the exact Stage 1 incident Activity/report policy, then profile-aware Update | old-profile, pending-initiation, and extra-owner-field refusal |
 | `ICANCEL-ROOT-01` | raw root linked privately | unique-root theorem | identity-first root selection | hosting address plus semantic identity | substituted nested/root identity and duplicate-parentless mutations |
 | `ICANCEL-COMMIT-01` | runtime cleanup plus externally terminated history | cleanup and preservation theorem | one shared subtree removal | ordinary terminal completion | incident-only deletion, variable/counter loss, and completed-status mutations |
 | `ICANCEL-REFUSE-01` | missing partner refuses projection | state-identity theorems | exact unchanged state | retained-result-first resolution | stale incident, terminal retry, and target-substitution cases |
-| `ICANCEL-ORDER-01` | one selected schedule only | both ordered evaluations | both ordered tests | queue-order live test | winner-priority or confluent-result mutation |
+| `ICANCEL-ORDER-01` | one selected schedule only | both ordered evaluations plus exact Retry-before-Cancel projection | both ordered tests plus strict swapped-interaction rejection | queue-order live test | swapped canonical entries, winner-priority, or confluent-result mutation |
 
 The complete differential case compares the public cancellation trace across CIB, Lean, TypeScript, and Temporal. TypeScript and Lean separately compare private counters and full runtime preservation. The live Temporal witness stops the Worker at the incident, submits cancellation around Worker replacement, recovers the same Update result, validates the cancelled receipt, submits one distinct later command for `processClosed`, inspects Event families, replays, and includes a host-cancel mutation.
 
@@ -208,7 +210,7 @@ Core owners include [`contract.ts`](../../packages/semantic-core/src/contract.ts
 
 Lean owners include [`RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) at 452/600, [`CommandAdmission.lean`](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) at 170/600, [`ScopeCancellation.lean`](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) at 96/600, [`Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) at 469/600, and [`SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) at 370/600. New cohesive owners are `BpmnSemantics/SemanticProcess/IncidentCancellation.lean` and `BpmnSemantics/ServiceTaskIncidentCancellationConformance.lean`.
 
-The Temporal Workflow implementation is [`workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) at 560/600 and must first extract terminal-state detection and receipt construction to `terminal-process-receipt.ts`; the cancellation Update belongs in `incident-cancellation-update-handler.ts`. New evidence must not grow [`harness-evidence.ts`](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) beyond its current 500/600 owner.
+The Temporal Workflow implementation is [`workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) at 560/600 and must first extract terminal-state detection and receipt construction to `terminal-process-receipt.ts`; the cancellation Update belongs in `incident-cancellation-update-handler.ts`. [`effect-activity-policy.ts`](../../packages/temporal-adapter/workflow/src/effect-activity-policy.ts) at 28/600 must admit the exact cancellation successor beside the exact Stage 1 incident profile without widening any unrelated profile. The focused oracle remains [`service-task-incident-hosting.test.ts`](../../packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts) at 141/600 and must prove both incident profiles select the same report path while all registered non-incident profiles retain their prior policy. New evidence must not grow [`harness-evidence.ts`](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) beyond its current 500/600 owner.
 
 The CIB engine runner [`CibSevenEngineScenarioRunner.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java) is 584/600 and must first extract scenario/resource validation into `CibSevenScenarioValidator.java`. Cancellation execution and terminal projection belong in `CibSevenIncidentCancellationCommandExecutor.java` and `CibSevenProcessTerminationProjector.java`.
 
@@ -276,9 +278,11 @@ These headroom values are the exact `node scripts/what-binds.ts` measurements at
 | [`packages/temporal-adapter/client/src/semantic-update-client.ts`](../../packages/temporal-adapter/client/src/semantic-update-client.ts) | 534 |
 | [`packages/temporal-adapter/client/src/process-client.ts`](../../packages/temporal-adapter/client/src/process-client.ts) | 166 |
 | [`packages/temporal-adapter/client/src/process-work-client.ts`](../../packages/temporal-adapter/client/src/process-work-client.ts) | 385 |
+| [`packages/temporal-adapter/workflow/src/effect-activity-policy.ts`](../../packages/temporal-adapter/workflow/src/effect-activity-policy.ts) | 572 |
 | [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 40 |
 | [`packages/temporal-adapter/workflow/src/workflows.ts`](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 |
 | [`packages/temporal-adapter/runner/src/host-interaction-driver.ts`](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 235 |
+| [`packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts`](../../packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts) | 459 |
 | [`packages/temporal-adapter/testkit/src/incident-scenario-execution.ts`](../../packages/temporal-adapter/testkit/src/incident-scenario-execution.ts) | 262 |
 | [`packages/temporal-adapter/testkit/src/runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 98 |
 | [`packages/temporal-adapter/testkit/src/harness-evidence.ts`](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) | 100 |
