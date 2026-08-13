@@ -11,10 +11,11 @@ import { fileURLToPath } from "node:url";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 test("keeps Product 2 UI quality outside every Product 1 feedback loop", async () => {
-  const [verify, hostedVerify, workflow, rootManifest, showcaseManifest, playwrightConfig] =
+  const [verify, hostedVerify, testingSpec, workflow, rootManifest, showcaseManifest, playwrightConfig] =
     await Promise.all([
       read("scripts/verify.sh"),
       read(".github/workflows/verify.yml"),
+      read("docs/TESTING-SPEC.md"),
       read(".github/workflows/ui-quality.yml"),
       read("package.json"),
       read("showcase/platform-ui-quality/package.json"),
@@ -48,6 +49,10 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.match(workflow, /product-2-ui-quality-baseline-candidates/u);
   assert.doesNotMatch(hostedVerify, /playwright install|Install Chromium/iu);
   assert.doesNotMatch(hostedVerify, /test:showcase:m[123]/u);
+  assert.doesNotMatch(hostedVerify, /test:platform-m1|test:platform-web/u);
+  assert.match(workflow, /test:platform-m1/u);
+  assert.match(testingSpec, /Product 2 browser work remains outside `verify\.sh` and the hosted verification workflow/u);
+  assert.doesNotMatch(testingSpec, /Linux matrix leg also installs Playwright/u);
 
   const root = JSON.parse(rootManifest) as Readonly<{
     scripts?: Readonly<Record<string, string>>;

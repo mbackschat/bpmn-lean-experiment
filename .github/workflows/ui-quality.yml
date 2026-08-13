@@ -105,7 +105,9 @@ jobs:
 
       - name: Verify Product 2 UI quality
         if: github.event_name != 'workflow_dispatch' || (inputs.regenerate_baselines != true && inputs.release_acceptance != true)
-        run: ./scripts/pnpm.sh run test:ui-quality
+        run: |
+          ./scripts/pnpm.sh run test:platform-m1
+          ./scripts/pnpm.sh run test:ui-quality
 
       - name: Verify Product 2 M1 through M3 release acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.release_acceptance == true && inputs.regenerate_baselines != true
