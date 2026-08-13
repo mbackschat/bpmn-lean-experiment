@@ -56,39 +56,6 @@ private def sameCallIdentity (record : CalledProcessOccurrence)
     (caller : ScopeOccurrenceId) (elementId : NodeId) : Bool :=
   record.caller = caller && record.id.elementId.value = elementId.value
 
-/-- The hidden call collection and parentless called roots form a one-to-one identity association. -/
-def calledProcessAssociationsValid (state : RuntimeState) : Bool :=
-  match rootInstanceId? state with
-  | none => false
-  | some hostingInstanceId =>
-      match state.scopeOccurrences.filter fun occurrence =>
-          decide (occurrence.parent.isNone &&
-            occurrence.id.processInstanceId = hostingInstanceId) with
-      | [hostingRoot] =>
-          (state.calledProcessOccurrences.all fun record =>
-              record.id.processInstanceId = record.caller.processInstanceId &&
-              record.id.activation > 0 &&
-              record.caller = hostingRoot.id &&
-              record.calledRoot.processInstanceId =
-                deriveCalledProcessInstanceId record.caller.processInstanceId
-                  ⟨record.id.elementId.value⟩ record.id.activation &&
-              record.calledRoot.processInstanceId ≠ hostingInstanceId &&
-              record.calledRoot.definitionScopeId ≠ record.caller.definitionScopeId &&
-              record.calledRoot.activation = 1 &&
-              (state.calledProcessOccurrences.filter fun candidate =>
-                sameCallIdentity candidate record.caller
-                  ⟨record.id.elementId.value⟩).length = 1 &&
-              (state.scopeOccurrences.filter fun occurrence =>
-                decide (occurrence.id = record.calledRoot &&
-                  occurrence.parent.isNone)).length = 1) &&
-            (state.scopeOccurrences.all fun occurrence =>
-              if occurrence.parent.isNone &&
-                  occurrence.id.processInstanceId ≠ hostingInstanceId then
-                (state.calledProcessOccurrences.filter fun record =>
-                  decide (record.calledRoot = occurrence.id)).length = 1
-              else true)
-      | _ => false
-
 private def processInstanceClosureWithin
     (records : List CalledProcessOccurrence) (seed : List SemanticId) :
     Nat → List SemanticId
@@ -100,6 +67,47 @@ private def processInstanceClosureWithin
         else none).eraseDups
       if expanded.length = seed.length then expanded
       else processInstanceClosureWithin records expanded fuel
+
+/-- The hidden call collection and parentless called roots form a one-to-one identity association. -/
+def calledProcessAssociationsValid (state : RuntimeState) : Bool :=
+  match rootInstanceId? state with
+  | none => false
+  | some hostingInstanceId =>
+      match state.scopeOccurrences.filter fun occurrence =>
+          decide (occurrence.parent.isNone &&
+            occurrence.id.processInstanceId = hostingInstanceId) with
+      | [hostingRoot] =>
+          let recordsValid := state.calledProcessOccurrences.all fun record =>
+              record.id.processInstanceId = record.caller.processInstanceId &&
+              record.id.activation > 0 &&
+              (state.scopeOccurrences.filter fun occurrence =>
+                decide (occurrence.id = record.caller &&
+                  occurrence.parent.isNone)).length = 1 &&
+              record.calledRoot.processInstanceId =
+                deriveCalledProcessInstanceId record.caller.processInstanceId
+                  ⟨record.id.elementId.value⟩ record.id.activation &&
+              record.calledRoot.processInstanceId ≠ hostingInstanceId &&
+              record.calledRoot.definitionScopeId ≠ record.caller.definitionScopeId &&
+              record.calledRoot.activation = 1 &&
+              (state.calledProcessOccurrences.filter fun candidate =>
+                sameCallIdentity candidate record.caller
+                  ⟨record.id.elementId.value⟩).length = 1 &&
+              (state.scopeOccurrences.filter fun occurrence =>
+                decide (occurrence.id = record.calledRoot &&
+                  occurrence.parent.isNone)).length = 1
+          let rootsValid := state.scopeOccurrences.all fun occurrence =>
+              if occurrence.parent.isNone &&
+                  occurrence.id.processInstanceId ≠ hostingInstanceId then
+                (state.calledProcessOccurrences.filter fun record =>
+                  decide (record.calledRoot = occurrence.id)).length = 1
+              else true
+          let reachable := processInstanceClosureWithin
+            state.calledProcessOccurrences [hostingRoot.id.processInstanceId]
+            (state.calledProcessOccurrences.length + 1)
+          recordsValid && rootsValid &&
+            state.calledProcessOccurrences.all fun record =>
+              reachable.contains record.calledRoot.processInstanceId
+      | _ => false
 
 private def removeCalledProcessTree (state : RuntimeState)
     (record : CalledProcessOccurrence) : RuntimeState :=

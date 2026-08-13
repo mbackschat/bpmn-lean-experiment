@@ -304,12 +304,63 @@ theorem report_effect_failure_stimulus_json_is_exact
         , ("generation", toJson 1) ] := by
   rfl
 
+theorem cancel_incident_process_stimulus_json_is_exact
+    (commandId processInstanceId : SemanticId)
+    (incidentId : EffectIncidentId) :
+    stimulusJson (.cancelIncidentProcess commandId processInstanceId incidentId) =
+      Json.mkObj
+        [ ("kind", toJson "cancelIncidentProcess")
+        , ("commandId", toJson commandId.value)
+        , ("processInstanceId", toJson processInstanceId.value)
+        , ("incidentId", effectIncidentIdJson incidentId) ] := by
+  rfl
+
 theorem retry_interaction_json_retains_complete_incident_identity
     (incidentId : EffectIncidentId) :
     enabledInteractionJson (.retryIncident incidentId) =
       Json.mkObj
         [ ("kind", toJson "retryIncident")
         , ("incidentId", effectIncidentIdJson incidentId) ] := by
+  rfl
+
+theorem cancel_interaction_json_retains_process_and_incident_identity
+    (processInstanceId : SemanticId) (incidentId : EffectIncidentId) :
+    enabledInteractionJson
+        (.cancelIncidentProcess processInstanceId incidentId) =
+      Json.mkObj
+        [ ("kind", toJson "cancelIncidentProcess")
+        , ("processInstanceId", toJson processInstanceId.value)
+        , ("incidentId", effectIncidentIdJson incidentId) ] := by
+  rfl
+
+theorem cancelled_state_observation_json_is_exact
+    (instanceId : SemanticId) (variables : List VariableBinding)
+    (logicalTimeMs : Nat) :
+    stateObservationJson
+        { instanceId
+          status := .cancelled
+          activeWaits := []
+          openUserTasks := []
+          openMessageSubscriptions := []
+          openTimers := []
+          openEffects := []
+          openIncidents := []
+          variables
+          enabledInteractions := []
+          logicalTimeMs } =
+      Json.mkObj
+        [ ("kind", toJson "state")
+        , ("instanceId", toJson instanceId.value)
+        , ("status", toJson "cancelled")
+        , ("activeWaits", jsonArray [])
+        , ("openUserTasks", jsonArray [])
+        , ("openMessageSubscriptions", jsonArray [])
+        , ("openTimers", jsonArray [])
+        , ("openEffects", jsonArray [])
+        , ("openIncidents", jsonArray [])
+        , ("variables", jsonArray (variables.map variableBindingJson))
+        , ("enabledInteractions", jsonArray [])
+        , ("logicalTimeMs", toJson logicalTimeMs) ] := by
   rfl
 
 theorem open_incident_json_retains_equal_nested_effect_identity

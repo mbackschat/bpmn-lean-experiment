@@ -144,7 +144,7 @@ The Lean lane is **proved**. A new `IncidentCancellation.lean` module owns the d
 - terminal cancelled projection with `initiationPending = false`, no live work, and no enabled interaction;
 - exact state preservation for wrong root, wrong/stale incident, old profile, malformed association including `initiationPending = true`, and terminal-state refusal;
 - the two specified retry/cancel queue orders without claiming order independence;
-- strict JSON identity for the new stimulus, interaction, status, state, and receipt-relevant projection.
+- strict JSON identity for the new stimulus, interaction, status, and canonical state projection.
 
 `ScopeCancellation.lean` must gain incident-aware cleanup before the new transition delegates to it. `Execution.lean` has only 131 lines of reviewed headroom, so it receives only a narrow delegation arm; the new relation and proofs stay in their cohesive owners.
 
@@ -208,7 +208,7 @@ This is one additive pre-release profile and strict-wire replacement. Existing p
 
 Core owners include [`contract.ts`](../../packages/semantic-core/src/contract.ts) at 293/600, [`stimulus.ts`](../../packages/semantic-core/src/stimulus.ts) at 430/600, [`scenario.ts`](../../packages/semantic-core/src/scenario.ts) at 449/600, [`semantic-command-admission.ts`](../../packages/semantic-core/src/semantic-command-admission.ts) at 320/600, [`semantic-process-scope-cancellation.ts`](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) at 116/600, and [`semantic-process-call-runtime.ts`](../../packages/semantic-core/src/semantic-process-call-runtime.ts) at 312/600. New cohesive owners are `packages/semantic-core/src/semantic-process-incident-cancellation.ts` and its focused test.
 
-Lean owners include [`RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) at 452/600, [`CommandAdmission.lean`](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) at 170/600, [`ScopeCancellation.lean`](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) at 96/600, [`Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) at 469/600, and [`SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) at 370/600. New cohesive owners are `BpmnSemantics/SemanticProcess/IncidentCancellation.lean` and `BpmnSemantics/ServiceTaskIncidentCancellationConformance.lean`.
+Lean owners include [`RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) at 452/600, [`CommandAdmission.lean`](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) at 170/600, [`ScopeCancellation.lean`](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) at 96/600, [`Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) at 469/600, and [`SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) at 430/600. New cohesive owners are `BpmnSemantics/SemanticProcess/IncidentCancellation.lean` and `BpmnSemantics/ServiceTaskIncidentCancellationConformance.lean`.
 
 The Temporal Workflow implementation is [`workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) at 560/600 and must first extract terminal-state detection and receipt construction to `terminal-process-receipt.ts`; the cancellation Update belongs in `incident-cancellation-update-handler.ts`. [`effect-activity-policy.ts`](../../packages/temporal-adapter/workflow/src/effect-activity-policy.ts) at 28/600 must admit the exact cancellation successor beside the exact Stage 1 incident profile without widening any unrelated profile. The focused oracle remains [`service-task-incident-hosting.test.ts`](../../packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts) at 141/600 and must prove both incident profiles select the same report path while all registered non-incident profiles retain their prior policy. New evidence must not grow [`harness-evidence.ts`](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) beyond its current 500/600 owner.
 
@@ -246,11 +246,11 @@ These headroom values are the exact `node scripts/what-binds.ts` measurements at
 | [`BpmnSemantics/SemanticProcess/ScopeCancellation.lean`](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 498 |
 | [`BpmnSemantics/SemanticProcess/CommandAdmission.lean`](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 405 |
 | [`BpmnSemantics/SemanticProcess/Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) | 131 |
-| [`BpmnSemantics/SemanticProcess/Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 232 |
+| [`BpmnSemantics/SemanticProcess/Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 228 |
 | [`BpmnSemantics/SemanticProcess/Incident.lean`](../../BpmnSemantics/SemanticProcess/Incident.lean) | 450 |
 | [`BpmnSemantics/SemanticProcess/ProfileAdmission.lean`](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 161 |
 | [`BpmnSemantics/SemanticProcessJson/Scenario.lean`](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 452 |
-| [`BpmnSemantics/SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 218 |
+| [`BpmnSemantics/SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 170 |
 | [`scripts/contract-artifacts.ts`](../../scripts/contract-artifacts.ts) | 88 |
 | [`scripts/contract-artifact-cases.ts`](../../scripts/contract-artifact-cases.ts) | 365 |
 | [`scripts/contract-artifact-projections.test.ts`](../../scripts/contract-artifact-projections.test.ts) | 5 |

@@ -33,7 +33,7 @@ import {
   openEffectIncidentAssociationIsValid,
 } from "./semantic-process-incident-validation.js";
 import {
-  incidentCancellationTarget,
+  incidentCancellationEligibility,
 } from "./semantic-process-incident-cancellation.js";
 import {
   ControlStateKind,
@@ -170,7 +170,7 @@ function observeStableState(
     case ControlStateKind.Running:
     case ControlStateKind.Completed:
     case ControlStateKind.Cancelled: {
-      const cancellation = incidentCancellationTarget(program, state);
+      const cancellation = incidentCancellationEligibility(program, state, null);
       return {
         kind: CanonicalObservationKind.State,
         instanceId: state.control.instanceId,

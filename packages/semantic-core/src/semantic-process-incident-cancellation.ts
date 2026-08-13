@@ -33,9 +33,10 @@ import type {
   SemanticEffectIncident,
 } from "./semantic-process-state.js";
 
-type IncidentCancellationTarget = Readonly<{
+type IncidentCancellationEligibility = Readonly<{
   root: RuntimeScopeOccurrence;
   incident: SemanticEffectIncident;
+  cleaned: RuntimeState;
 }>;
 
 /** Requires the exact cancellation profile and predecessor-equivalent Service Task program. */
@@ -52,11 +53,12 @@ export function programAllowsIncidentCancellation(
     );
 }
 
-/** Derives the sole publishable root/incident pair without accepting caller-owned scope data. */
-export function incidentCancellationTarget(
+/** Computes the sole cancellation whose exact root cleanup can commit. */
+export function incidentCancellationEligibility(
   program: SemanticProcessProgram,
   state: RuntimeState,
-): IncidentCancellationTarget | null {
+  stimulus: CancelIncidentProcessStimulus | null,
+): IncidentCancellationEligibility | null {
   if (
     !programAllowsIncidentCancellation(program) ||
     state.control.kind !== ControlStateKind.Running ||
@@ -86,7 +88,19 @@ export function incidentCancellationTarget(
   ) {
     return null;
   }
-  return { root, incident };
+  if (
+    stimulus !== null &&
+    (stimulus.processInstanceId !== processInstanceId ||
+      stimulus.incidentId.effectId.processInstanceId !== processInstanceId ||
+      stimulus.incidentId.generation !== incident.id.generation ||
+      !sameOccurrence(stimulus.incidentId.effectId, incident.id.effectId))
+  ) {
+    return null;
+  }
+  const cleaned = removeScopeOccurrenceSubtree(state, root);
+  return hasLiveExecutionRegion(cleaned)
+    ? null
+    : { root, incident, cleaned };
 }
 
 /** Removes the selected root region once and enters the distinct terminal cancelled state. */
@@ -95,33 +109,15 @@ export function cancelIncidentProcess(
   state: RuntimeState,
   stimulus: CancelIncidentProcessStimulus,
 ): RuntimeState | null {
-  if (state.control.kind !== ControlStateKind.Running) {
-    return null;
-  }
-  const processInstanceId = state.control.instanceId;
-  const target = incidentCancellationTarget(program, state);
-  if (
-    target === null ||
-    stimulus.processInstanceId !== processInstanceId ||
-    stimulus.incidentId.effectId.processInstanceId !== processInstanceId ||
-    stimulus.incidentId.generation !== target.incident.id.generation ||
-    !sameOccurrence(
-      stimulus.incidentId.effectId,
-      target.incident.id.effectId,
-    )
-  ) {
-    return null;
-  }
-
-  const cleaned = removeScopeOccurrenceSubtree(state, target.root);
-  if (hasLiveExecutionRegion(cleaned)) {
+  const eligibility = incidentCancellationEligibility(program, state, stimulus);
+  if (eligibility === null) {
     return null;
   }
   return {
-    ...cleaned,
+    ...eligibility.cleaned,
     control: {
       kind: ControlStateKind.Cancelled,
-      instanceId: processInstanceId,
+      instanceId: eligibility.root.id.processInstanceId,
     },
     initiationPending: false,
   };

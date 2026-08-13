@@ -240,12 +240,16 @@ def observeStableState (program : Program) (state : RuntimeState) :
         let tasks := openUserTasks program state
         let messages := openMessageSubscriptions program state
         let incidents := openIncidents program state
-        let incidentInteractions := incidents.flatMap fun incident =>
-          [.retryIncident incident.id] ++
-            if program.identity.semanticProfile =
-                serviceTaskIncidentCancellationCheckpointProfileId then
-              [.cancelIncidentProcess instanceId incident.id]
-            else []
+        let cancellationInteractions := match incidents with
+          | [incident] =>
+              if (incidentProcessCancellationEligibility? program state instanceId
+                  incident.id).isSome then
+                [.cancelIncidentProcess instanceId incident.id]
+              else []
+          | _ => []
+        let incidentInteractions :=
+          incidents.map (fun incident => .retryIncident incident.id) ++
+            cancellationInteractions
         some
           { instanceId
             status := .running

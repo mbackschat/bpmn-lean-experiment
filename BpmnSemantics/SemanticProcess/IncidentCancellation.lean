@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.Incident
+import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ScopeCancellation
@@ -28,31 +29,11 @@ private def exactIncident? (state : RuntimeState)
   | [incident] => some incident
   | _ => none
 
-/-- Decide the complete pre-dispatch cancellation gate and return only the root derived from state. -/
-def incidentProcessCancellationRoot? (program : Program) (state : RuntimeState)
-    (processInstanceId : SemanticId) (incidentId : EffectIncidentId) :
-    Option ScopeOccurrenceId :=
-  if program.identity.semanticProfile ≠
-      serviceTaskIncidentCancellationCheckpointProfileId ||
-      !programWellFormed program ||
-      !programProfileCapabilitiesValid program ||
-      state.initiationPending ||
-      state.effectIncidents.length ≠ 1 ||
-      !effectIncidentAssociationsValid state then none
-  else
-    match state.control with
-    | .running instanceId =>
-        if processInstanceId ≠ instanceId ||
-            incidentId.effectId.processInstanceId ≠ instanceId then none
-        else
-          match incidentCancellationRoot? state instanceId,
-              exactIncident? state incidentId with
-          | some root, some incident =>
-              if occurrenceInSubtree state.scopeOccurrences root incident.wait.owner then
-                some root
-              else none
-          | _, _ => none
-    | .notStarted | .completed _ | .cancelled _ => none
+/-- The exact derived root and its single cleanup result for one committable cancellation. -/
+structure IncidentProcessCancellationEligibility where
+  root : ScopeOccurrenceId
+  cleaned : RuntimeState
+  deriving DecidableEq
 
 /-- Whether cleanup left no live execution owner in any represented runtime family. -/
 def incidentCancellationLiveRegionEmpty (state : RuntimeState) : Bool :=
@@ -67,6 +48,59 @@ def incidentCancellationLiveRegionEmpty (state : RuntimeState) : Bool :=
     state.eventRaces.isEmpty &&
     state.calledProcessOccurrences.isEmpty &&
     state.variables.activities.isEmpty
+
+/-- Decide every commit precondition and retain the one validated cleanup result. -/
+def incidentProcessCancellationEligibility? (program : Program)
+    (state : RuntimeState)
+    (processInstanceId : SemanticId) (incidentId : EffectIncidentId) :
+    Option IncidentProcessCancellationEligibility :=
+  if program.identity.semanticProfile ≠
+      serviceTaskIncidentCancellationCheckpointProfileId ||
+      !programWellFormed program ||
+      !programProfileCapabilitiesValid program ||
+      state.initiationPending ||
+      state.effectIncidents.length ≠ 1 ||
+      !effectIncidentAssociationsValid state ||
+      !calledProcessAssociationsValid state then none
+  else
+    match state.control with
+    | .running instanceId =>
+        if processInstanceId ≠ instanceId ||
+            incidentId.effectId.processInstanceId ≠ instanceId then none
+        else
+          match incidentCancellationRoot? state instanceId,
+              exactIncident? state incidentId with
+          | some root, some incident =>
+              if occurrenceInSubtree state.scopeOccurrences root incident.wait.owner then
+                let cleaned := cancelScopeSubtree state root .remove
+                if incidentCancellationLiveRegionEmpty cleaned then
+                  some { root, cleaned }
+                else none
+              else none
+          | _, _ => none
+    | .notStarted | .completed _ | .cancelled _ => none
+
+/-- Project only the root from the exact cancellation eligibility result. -/
+def incidentProcessCancellationRoot? (program : Program) (state : RuntimeState)
+    (processInstanceId : SemanticId) (incidentId : EffectIncidentId) :
+    Option ScopeOccurrenceId :=
+  (incidentProcessCancellationEligibility? program state processInstanceId incidentId).map
+    (fun eligibility => eligibility.root)
+
+/-- Every admitted eligibility retains exactly the one cleanup it validated as live-region empty. -/
+theorem incidentProcessCancellationEligibility_exact
+    (program : Program) (state : RuntimeState)
+    (processInstanceId : SemanticId) (incidentId : EffectIncidentId)
+    (eligibility : IncidentProcessCancellationEligibility)
+    (admitted : incidentProcessCancellationEligibility? program state
+      processInstanceId incidentId = some eligibility) :
+    cancelScopeSubtree state eligibility.root .remove = eligibility.cleaned ∧
+      incidentCancellationLiveRegionEmpty eligibility.cleaned = true := by
+  unfold incidentProcessCancellationEligibility? at admitted
+  repeat' split at admitted
+  all_goals simp_all
+  obtain ⟨noLiveRegion, rfl⟩ := admitted
+  exact ⟨rfl, noLiveRegion⟩
 
 /-- Enter the terminal control state only after the selected region has been cleaned completely. -/
 def cancelledIncidentRootState (cleaned : RuntimeState)
@@ -83,26 +117,23 @@ inductive IncidentProcessCancellationStep :
       (state : RuntimeState)
       (processInstanceId : SemanticId)
       (incidentId : EffectIncidentId)
-      (root : ScopeOccurrenceId)
-      (cleaned : RuntimeState)
-      (admitted : incidentProcessCancellationRoot? program state
-        processInstanceId incidentId = some root)
-      (cleanup : cancelScopeSubtree state root .remove = cleaned)
-      (noLiveRegion : incidentCancellationLiveRegionEmpty cleaned = true) :
+      (eligibility : IncidentProcessCancellationEligibility)
+      (admitted : incidentProcessCancellationEligibility? program state
+        processInstanceId incidentId = some eligibility)
+      (cleanup : cancelScopeSubtree state eligibility.root .remove =
+        eligibility.cleaned)
+      (noLiveRegion : incidentCancellationLiveRegionEmpty eligibility.cleaned = true) :
       IncidentProcessCancellationStep program state processInstanceId incidentId
-        (cancelledIncidentRootState cleaned processInstanceId)
+        (cancelledIncidentRootState eligibility.cleaned processInstanceId)
 
 /-- Cancel the exact hosting root selected by the public Process and incident identities. -/
 def cancelIncidentProcess (program : Program) (state : RuntimeState)
     (processInstanceId : SemanticId) (incidentId : EffectIncidentId) :
     Option RuntimeState :=
-  match incidentProcessCancellationRoot? program state processInstanceId incidentId with
+  match incidentProcessCancellationEligibility? program state processInstanceId incidentId with
   | none => none
-  | some root =>
-      let cleaned := cancelScopeSubtree state root .remove
-      if incidentCancellationLiveRegionEmpty cleaned then
-        some (cancelledIncidentRootState cleaned processInstanceId)
-      else none
+  | some eligibility =>
+      some (cancelledIncidentRootState eligibility.cleaned processInstanceId)
 
 /-- Every successful executable cancellation is permitted by the declarative relation. -/
 theorem cancelIncidentProcess_sound
@@ -114,13 +145,12 @@ theorem cancelIncidentProcess_sound
   unfold cancelIncidentProcess at success
   split at success
   · contradiction
-  · rename_i root admitted
-    simp only at success
-    split at success
-    · rename_i noLiveRegion
-      cases success
-      exact .commit program state processInstanceId incidentId root
-        (cancelScopeSubtree state root .remove) admitted rfl noLiveRegion
-    · contradiction
+  · rename_i eligibility admitted
+    cases success
+    obtain ⟨cleanup, noLiveRegion⟩ :=
+      incidentProcessCancellationEligibility_exact program state
+        processInstanceId incidentId eligibility admitted
+    exact .commit program state processInstanceId incidentId eligibility admitted
+      cleanup noLiveRegion
 
 end BpmnSemantics.SemanticProcess

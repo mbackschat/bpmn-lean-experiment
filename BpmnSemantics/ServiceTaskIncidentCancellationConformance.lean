@@ -46,7 +46,10 @@ def incidentState : RuntimeState :=
       { ServiceTaskIncidentRetryConformance.incidentState.variables with
         process := { bindings := preservedProcessBindings } } }
 
-def calledInstanceId : SemanticId := ⟨"CalledCancellationInstance"⟩
+def firstCallElementId : NodeId := ⟨"Call_Cancellation"⟩
+
+def calledInstanceId : SemanticId :=
+  deriveCalledProcessInstanceId instanceId firstCallElementId 1
 
 def calledRootOwner : ScopeOccurrenceId :=
   { processInstanceId := calledInstanceId
@@ -61,6 +64,21 @@ def childOwner : ScopeOccurrenceId :=
 def calledChildOwner : ScopeOccurrenceId :=
   { processInstanceId := calledInstanceId
     definitionScopeId := ⟨"scope:CalledCancellationChild"⟩
+    activation := 1 }
+
+def nestedCallElementId : NodeId := ⟨"Call_NestedCancellation"⟩
+
+def nestedCalledInstanceId : SemanticId :=
+  deriveCalledProcessInstanceId calledInstanceId nestedCallElementId 1
+
+def nestedCalledRootOwner : ScopeOccurrenceId :=
+  { processInstanceId := nestedCalledInstanceId
+    definitionScopeId := ⟨"scope:NestedCalledCancellationRoot"⟩
+    activation := 1 }
+
+def nestedCalledChildOwner : ScopeOccurrenceId :=
+  { processInstanceId := nestedCalledInstanceId
+    definitionScopeId := ⟨"scope:NestedCalledCancellationChild"⟩
     activation := 1 }
 
 def extraEffectId : EffectOccurrenceId :=
@@ -79,11 +97,13 @@ def extraEffectWait : EffectWait :=
     output := ⟨"place:ExtraEffectOutput"⟩
     bpmnErrorRoute := none }
 
-/-- The separating state combines a valid suspended incident with every represented owner family and a distinct parentless transitive called root. -/
+/-- The separating state combines a valid suspended incident with every represented owner family and a two-level derived called tree. -/
 def cancellationCounterexampleState : RuntimeState :=
   { incidentState with
     scopeOccurrences :=
-      [ { id := calledChildOwner, parent := some calledRootOwner }
+      [ { id := nestedCalledChildOwner, parent := some nestedCalledRootOwner }
+      , { id := nestedCalledRootOwner, parent := none }
+      , { id := calledChildOwner, parent := some calledRootOwner }
       , { id := calledRootOwner, parent := none }
       , { id := childOwner, parent := some rootOwner }
       , { id := rootOwner, parent := none } ]
@@ -97,8 +117,8 @@ def cancellationCounterexampleState : RuntimeState :=
          activation := 1
          output := ⟨"place:CancellationTaskOutput"⟩ }]
     messageWaits :=
-      [{ processInstanceId := calledInstanceId
-         owner := calledChildOwner
+      [{ processInstanceId := nestedCalledInstanceId
+         owner := nestedCalledChildOwner
          elementId := ⟨"CalledMessage"⟩
          activation := 1
          channel := .directMessage ⟨"CancellationMessage"⟩
@@ -117,16 +137,16 @@ def cancellationCounterexampleState : RuntimeState :=
          expectedInputs := [⟨"place:Selected"⟩] }]
     eventRaces :=
       [{ id :=
-          { processInstanceId := calledInstanceId
+          { processInstanceId := nestedCalledInstanceId
             elementId := ⟨"CalledRace"⟩
             activation := 1 }
-         owner := calledChildOwner
+         owner := nestedCalledChildOwner
          messageSubscriptionId :=
-          { processInstanceId := calledInstanceId
+          { processInstanceId := nestedCalledInstanceId
             elementId := ⟨"CalledMessage"⟩
             activation := 1 }
          timerOccurrenceId :=
-          { processInstanceId := calledInstanceId
+          { processInstanceId := nestedCalledInstanceId
             elementId := ⟨"CalledTimer"⟩
             activation := 1 } }]
     calledProcessOccurrences :=
@@ -137,7 +157,15 @@ def cancellationCounterexampleState : RuntimeState :=
          caller := rootOwner
          calledProcessId := ⟨"CalledCancellationProcess"⟩
          calledRoot := calledRootOwner
-         returnOperationId := ⟨"operation:return:cancellation"⟩ }]
+         returnOperationId := ⟨"operation:return:cancellation"⟩ },
+       { id :=
+          { processInstanceId := calledInstanceId
+            elementId := ⟨"Call_NestedCancellation"⟩
+            activation := 1 }
+         caller := calledRootOwner
+         calledProcessId := ⟨"NestedCalledCancellationProcess"⟩
+         calledRoot := nestedCalledRootOwner
+         returnOperationId := ⟨"operation:return:nested-cancellation"⟩ }]
     variables :=
       { process := { bindings := preservedProcessBindings }
         activities :=
@@ -199,9 +227,13 @@ theorem successor_profile_reports_the_same_literal_generation_one_incident :
   decide +kernel
 
 theorem valid_incident_with_distinct_parentless_called_root_derives_hosting_root :
-    effectIncidentAssociationsValid cancellationCounterexampleState = true ∧
+    calledProcessAssociationsValid cancellationCounterexampleState = true ∧
+      effectIncidentAssociationsValid cancellationCounterexampleState = true ∧
       incidentCancellationRoot? cancellationCounterexampleState instanceId =
         some rootOwner ∧
+      incidentProcessCancellationEligibility? program cancellationCounterexampleState
+        instanceId incidentId =
+          some { root := rootOwner, cleaned := cleanedCounterexampleState } ∧
       incidentProcessCancellationRoot? program cancellationCounterexampleState
         instanceId incidentId = some rootOwner := by
   decide +kernel
@@ -293,11 +325,56 @@ def orphanLiveRegionState : RuntimeState :=
          activation := 1
          output := ⟨"place:OrphanTaskOutput"⟩ }] }
 
+def residualActivityState : RuntimeState :=
+  { incidentState with
+    variables :=
+      { incidentState.variables with
+        activities := incidentState.variables.activities ++
+          [{ owner := extraEffectId
+             bindings := [{ name := "orphan", value := .string "live" }] }] } }
+
+def malformedDerivedRootOwner : ScopeOccurrenceId :=
+  { nestedCalledRootOwner with
+    processInstanceId := ⟨"not-derived-from-the-nested-caller"⟩ }
+
+def malformedDerivedCallState : RuntimeState :=
+  { cancellationCounterexampleState with
+    scopeOccurrences :=
+      cancellationCounterexampleState.scopeOccurrences.map fun occurrence =>
+        if occurrence.id = nestedCalledRootOwner then
+          { occurrence with id := malformedDerivedRootOwner }
+        else if occurrence.parent = some nestedCalledRootOwner then
+          { occurrence with parent := some malformedDerivedRootOwner }
+        else occurrence
+    calledProcessOccurrences :=
+      cancellationCounterexampleState.calledProcessOccurrences.map fun record =>
+        if record.calledRoot = nestedCalledRootOwner then
+          { record with calledRoot := malformedDerivedRootOwner }
+        else record }
+
+def malformedCallerState : RuntimeState :=
+  { cancellationCounterexampleState with
+    calledProcessOccurrences :=
+      cancellationCounterexampleState.calledProcessOccurrences.map fun record =>
+        if record.calledRoot = nestedCalledRootOwner then
+          { record with caller := calledChildOwner }
+        else record }
+
+def duplicateHostingRootState : RuntimeState :=
+  { incidentState with
+    scopeOccurrences :=
+      { id := { rootOwner with definitionScopeId := ⟨"scope:DuplicateRoot"⟩ }
+        parent := none } :: incidentState.scopeOccurrences }
+
+def duplicateIncidentState : RuntimeState :=
+  { incidentState with
+    effectIncidents := incidentState.effectIncidents ++ incidentState.effectIncidents }
+
 theorem valid_incident_with_orphan_live_region_refuses_unchanged :
     effectIncidentAssociationsValid orphanLiveRegionState = true ∧
       incidentCancellationRoot? orphanLiveRegionState instanceId = some rootOwner ∧
       incidentProcessCancellationRoot? program orphanLiveRegionState instanceId
-        incidentId = some rootOwner ∧
+        incidentId = none ∧
       incidentCancellationLiveRegionEmpty
         (cancelScopeSubtree orphanLiveRegionState rootOwner .remove) = false ∧
       applyStimulus 0 program orphanLiveRegionState cancellationStimulus =
@@ -307,9 +384,39 @@ theorem valid_incident_with_orphan_live_region_refuses_unchanged :
           ambiguousInternalChoice := false } := by
   decide +kernel
 
-def duplicateIncidentState : RuntimeState :=
-  { incidentState with
-    effectIncidents := incidentState.effectIncidents ++ incidentState.effectIncidents }
+theorem cancellation_publication_requires_exact_commit_eligibility :
+    (observeStableState program orphanLiveRegionState).map
+        (fun observation => observation.enabledInteractions) =
+      some [.retryIncident incidentId] ∧
+    (observeStableState program residualActivityState).map
+        (fun observation => observation.enabledInteractions) =
+      some [.retryIncident incidentId] ∧
+    (observeStableState program malformedDerivedCallState).map
+        (fun observation => observation.enabledInteractions) =
+      some [.retryIncident incidentId] ∧
+    (observeStableState program malformedCallerState).map
+        (fun observation => observation.enabledInteractions) =
+      some [.retryIncident incidentId] ∧
+    (observeStableState program duplicateHostingRootState).map
+        (fun observation => observation.enabledInteractions) =
+      some [.retryIncident incidentId] ∧
+    observeStableState program duplicateIncidentState = none := by
+  decide +kernel
+
+theorem malformed_called_associations_refuse_with_exact_state_identity :
+    calledProcessAssociationsValid malformedDerivedCallState = false ∧
+      calledProcessAssociationsValid malformedCallerState = false ∧
+      applyStimulus 0 program malformedDerivedCallState cancellationStimulus =
+        { outcome := .rejected
+          state := malformedDerivedCallState
+          internalStepBoundExceeded := false
+          ambiguousInternalChoice := false } ∧
+      applyStimulus 0 program malformedCallerState cancellationStimulus =
+        { outcome := .rejected
+          state := malformedCallerState
+          internalStepBoundExceeded := false
+          ambiguousInternalChoice := false } := by
+  decide +kernel
 
 theorem non_singleton_incident_collection_refuses_before_cleanup_unchanged :
     duplicateIncidentState.effectIncidents.length = 2 ∧
