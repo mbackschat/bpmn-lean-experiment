@@ -1,8 +1,8 @@
-# Service Task incident and retry proposal
+# Service Task incident and retry specification
 
 ## Status
 
-Implementation complete; closure review pending. Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint review of `818f642` returned `approve with required edits`; the same reviewer approved correction target `1f20c00`, closing both findings. The configured CIB mapping, registered differential case, runnable example, and Temporal hosting are implemented at `b01a5ae`; Activity-policy cleanup `be46057` changes no selected account, public contract, exclusion, or evidence strategy. The complete repository gate is green and the implementation cost is recorded through that cleanup. Product 2 incident operations remain paused.
+**Implemented, closure-reviewed, evidence-closed, and graduated.** This specification owns one configured CIB-profile Service Task incident, literal generation 1, and one exact retry of the same effect occurrence across the strict wire, TypeScript semantic core, proved Lean lane, configured CIB execution and projection, four-target differential evidence, runnable configuration, and Temporal Worker-replacement/history/replay evidence. A second semantic incident, generalized retry policy, cancellation, Product 2 incident operations, host causes, and retry counts remain excluded.
 
 ## Independent cold-review receipt
 
@@ -10,25 +10,25 @@ Implementation complete; closure review pending. Owner-approved on 2026-08-13. C
 |---|---|---|---|---|
 | Proposal | `56b9398` | `fork-turns-none` | `approve-with-required-edits` | `43228e3` |
 | Semantic checkpoint | `818f642` | `fork-turns-none` | `approve-with-required-edits` | `1f20c00` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `9146be0` | `checkpoint-reviewer-warm` | `approve-with-required-edits` | `2fa4360` |
 
-The superseded first proposal target `8be7e5f` and superseded first redesign target `278e63b` each received an isolated `fork-turns-none` review with verdict `reject`. This redesign changes the Activity transport and incident representation selected at `278e63b`, so it requires a new context-cold review rather than a warm correction audit.
+The superseded first proposal target `8be7e5f` and superseded first redesign target `278e63b` each received an isolated `fork-turns-none` review with verdict `reject`. The selected redesign therefore received a new context-cold proposal review. Closure used the approved checkpoint reviewer after augmented continuity manifest `13873c585671521f39db716b411bda8d555bae2e2fe0ed720cb8833ee676261f` proved the complete selected account, public contract, exclusions, and evidence strategy byte-identical. Two correction audits closed three owner/evidence findings; `2fa4360` is the final audited correction.
 
 ## Question
 
-May one successor profile turn one explicit technical Service Task execution result into a committed, publicly observable incident and permit one exact retry of the same effect occurrence while keeping later failures, Temporal attempts, CIB job identity, host exceptions, Product 2 state, cancellation, and general BPMN service-fault meaning outside this capsule?
+Should one successor profile turn one explicit technical Service Task execution result into a committed, publicly observable incident and permit one exact retry of the same effect occurrence while keeping later failures, Temporal attempts, CIB job identity, host exceptions, Product 2 state, cancellation, and general BPMN service-fault meaning outside this capsule?
 
-The recommendation is **yes, through one bounded CIB compatibility-overlay profile and one incident transition family**. This is the smallest complete first stage of M4. It makes a failure visible and permits one controlled retry without deriving semantic state from Temporal Event History, Workflow failure, a missing effect, CIB identity, or platform persistence.
+The selected account uses one bounded CIB compatibility-overlay profile and one incident transition family. It makes a failure visible and permits one controlled retry without deriving semantic state from Temporal Event History, Workflow failure, a missing effect, CIB identity, or platform persistence.
 
 ## Authority and forward-compatible boundary
 
-BPMN 2.0.2 Clause 13.3.3 describes a service fault as interrupting the Activity and being treated as an error. This proposal does not claim that general account. It does not turn a thrown exception into BPMN Error, define WSDL faults, or broaden the existing exact-code boundary-Error capsule.
+BPMN 2.0.2 Clause 13.3.3 describes a service fault as interrupting the Activity and being treated as an error. This specification does not claim that general account. It does not turn a thrown exception into BPMN Error, define WSDL faults, or broaden the existing exact-code boundary-Error capsule.
 
 CIB Seven adds job retries and failed-job incidents outside bare BPMN execution. The new profile `cibseven-2.2.0-service-task-incident-draft` selects:
 
-- proposed [`CIB-EXT-0013`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0013-failed-job-service-task-incident-and-retry) for the failed async-before Service Task job, its public `failedJob` incident, and public retry reset;
-- proposed [`CIB-OP-0008`](../CIB-BPMN-RELATION-REGISTER.md#cib-op-0008-cib-failed-job-incident-mapped-to-a-semantic-effect-incident) for mapping raw CIB job and incident facts to a project-owned effect occurrence and literal semantic generation 1;
-- proposed `CIB-CFG-0008` for `createIncidentOnFailedJobEnabled = true`, independently separated from the disabled setting by the packaged-engine phase-zero probe.
+- selected [`CIB-EXT-0013`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0013-failed-job-service-task-incident-and-retry) for the failed async-before Service Task job, its public `failedJob` incident, and public retry reset;
+- selected [`CIB-OP-0008`](../CIB-BPMN-RELATION-REGISTER.md#cib-op-0008-cib-failed-job-incident-mapped-to-a-semantic-effect-incident) for mapping raw CIB job and incident facts to a project-owned effect occurrence and literal semantic generation 1;
+- selected `CIB-CFG-0008` for `createIncidentOnFailedJobEnabled = true`, independently separated from the disabled setting by the packaged-engine phase-zero probe.
 
 The profile composes the existing `CIB-EXT-0001` Service Task binding and `CIB-CFG-0002` manual job-release configuration. It references the exact existing BPMN source path and produces the same structural checked graph and Semantic Process IL content. Checked graphs and IL programs are generated artifacts registered by pipeline cases, not retained JSON files. A structural-equivalence guard erases only `identity.semanticProfile` before comparing the predecessor and successor generated values; every other field must remain exactly equal.
 
@@ -209,7 +209,6 @@ Required:
 - new successor pipeline cases and structural checked/IL equivalence modulo profile identity;
 - strict TypeScript, Lean, Java, schema, artifact, differential, runnable, and Temporal consumers;
 - packaged phase-zero evidence, one answer-free scenario, content-bound raw evidence, Worker replacement, Update, Query, history, replay, post-retry host-failure evidence, and mutation discrimination;
-- a conditional semantic checkpoint review after the first green runtime/wire/Lean checkpoint and before CIB registration, differential registration, and live Temporal closure.
 
 Optional only if it changes no claim:
 
@@ -231,123 +230,9 @@ The strict schema change is owned by the [scenario schema](../../contracts/schem
 
 The successor profile adds its profile and README, and the new answer-free schedule shares the existing `scenarios/service-task-effect/process.bpmn` source. All twenty retained CIB evidence files replace only canonical states to add `openIncidents: []`; their raw producer observations remain exact. The two current A12 evidence files receive the same canonical field, while frozen legacy A12 evidence is normalized only at the current-versus-legacy comparison boundary.
 
-The following mechanically measured existing owners grow. Each TypeScript owner carries its package or script guard set and nearest README registry; every Lean owner has six guards; every Java owner has five guards plus both CIB runner registries. The stated number is remaining headroom under the 600-nonblank-line review boundary.
+### Implemented ownership
 
-### Owners this implementation grows
-
-#### TypeScript semantic and artifact owners
-
-| Owner | Headroom |
-|---|---:|
-| [Public contract](../../packages/semantic-core/src/contract.ts) | 307 |
-| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 238 |
-| [Wait construction](../../packages/semantic-core/src/semantic-process-wait-runtime.ts) | 454 |
-| [Normal scope completion and quiescence](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 415 |
-| [Stimuli](../../packages/semantic-core/src/stimulus.ts) | 170 |
-| [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 |
-| [Semantic runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 227 |
-| [Triggered-start exhaustive stimulus classifier](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 484 |
-| [Scenario projection](../../packages/semantic-core/src/scenario.ts) | 151 |
-| [Profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 547 |
-| [Profile capability details](../../packages/semantic-core/src/semantic-process-profile.ts) | 452 |
-| [Checked profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 366 |
-| [Program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 353 |
-| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 531 |
-| [Semantic admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 245 |
-| [Profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 521 |
-| [Semantic exports](../../packages/semantic-core/src/index.ts) | 557 |
-| [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 365 |
-| [Contract artifact owner](../../scripts/contract-artifacts.ts) | 89 |
-| [Contract artifact fixtures](../../scripts/contract-artifact-test-fixtures.ts) | 77 |
-| [CIB evidence contract](../../scripts/contract-cib-evidence.ts) | 475 |
-| [CIB evidence projection](../../scripts/contract-cib-evidence-projection.ts) | 16 |
-| [CIB evidence replacement](../../scripts/replace-cibseven-evidence.ts) | 250 |
-| [A12 evidence reader](../../scripts/a12-adoption-evidence.ts) | 261 |
-| [A12 evidence replacement](../../scripts/replace-a12-adoption-evidence.ts) | 534 |
-
-Add cohesive `semantic-process-incident-runtime.ts`, `semantic-process-incident-validation.ts`, `service-task-incident-retry.test.ts`, `semantic-test-enabled-interaction-normalization.ts`, `contract-cib-incident-projection.ts`, `contract-incident-artifact-test-fixtures.ts`, `contract-incident-artifact-projections.test.ts`, and `service-task-incident-profile-consistency.ts` owners. Do not add incident projection to the 46-line-headroom general CIB projector, the general 550-line artifact-consistency owner, or the 14-line-headroom general projection test. The existing effect projector remains exact and the new incident projector partitions its result. Every existing exhaustive `Stimulus`, `EnabledInteraction`, `WaitKind`, runtime-state, and observation consumer must add an explicit incident arm, empty collection, or fail-closed old-profile arm. This includes exact states with no effect, such as `sequential-user-task.test.ts` at 312/600, and effect-wait literals in Boolean-data, Parallel, Sub-Process Error, and Terminate tests at 357/600, 367/600, 482/600, and 508/600. Move shared enabled-interaction normalization from the Message Start, Parallel, and Timer Start tests at 532/600, 367/600, and 527/600 to the new focused helper before growing them. Centralize exact empty-state fixture construction where an existing shared fixture owner already exists; do not create a universal test-state builder.
-
-#### Lean owners
-
-| Owner | Headroom |
-|---|---:|
-| [Scenario wire](../../BpmnSemantics/Scenario.lean) | 358 |
-| [Runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 148 |
-| [Normal scope completion and quiescence](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 497 |
-| [Execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 131 |
-| [Profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 167 |
-| [Scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 253 |
-| [Strict scenario JSON](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 460 |
-| [JSON entry point](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 230 |
-| [Semantic umbrella](../../BpmnSemantics/SemanticProcess.lean) | 568 |
-| [JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 418 |
-| [Conformance entry point](../../BpmnSemantics/ConformanceMain.lean) | 581 |
-| [Timer Start interaction normalizer](../../BpmnSemantics/TimerStartConformance.lean) | 193 |
-| [Message Start exhaustive admission](../../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) | 547 |
-| [Checked-source scenario experiment](../../BpmnSemantics/Experiments/CheckedSourceScenario.lean) | 443 |
-| [Checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 277 |
-
-Before adding incident delegation, move external command admission from `Execution.lean` into a new `SemanticProcess/CommandAdmission.lean`. New `SemanticProcess/Incident.lean` and `ServiceTaskIncidentRetryConformance.lean` owners contain the report/retry account and its proofs. `ScopeCompletion.lean` makes any incident-owned wait nonquiescent, and `Execution.lean` counts a nonempty incident collection as stable-state resumability. The runtime structure may default `openIncidents` to an empty list for legacy Lean fixtures, but strict JSON must require and emit the field. TypeScript and Lean command admission prove and enforce that a nonempty incident collection is paired only with the exact successor profile and Program shape; a synthetic incident paired with a cancellation, Error, Terminate, Call Activity, or old-profile Program is the required state-preserving counterexample. The broad ScopeCancellation comments narrow from every represented state to every state admitted by those families. The Message Start and frozen checked-source readers add fail-closed arms for both new stimuli rather than acquiring incident meaning.
-
-#### Temporal owners
-
-| Owner | Headroom |
-|---|---:|
-| [Effect protocol contract](../../packages/temporal-adapter/protocol/src/effect-contract.ts) | 581 |
-| [Protocol contracts](../../packages/temporal-adapter/protocol/src/contracts.ts) | 418 |
-| [Command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 412 |
-| [Lifecycle results](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 444 |
-| [Protocol exports](../../packages/temporal-adapter/protocol/src/index.ts) | 585 |
-| [Workflow entry points](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 |
-| [Workflow wire validation](../../packages/temporal-adapter/workflow/src/workflow-wire-validation.ts) | 513 |
-| [Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 40 |
-| [Workflow exports](../../packages/temporal-adapter/workflow/src/index.ts) | 587 |
-| [Process client](../../packages/temporal-adapter/client/src/process-client.ts) | 166 |
-| [Client exports](../../packages/temporal-adapter/client/src/index.ts) | 596 |
-| [Runner effect Activities](../../packages/temporal-adapter/runner/src/host-effect-activities.ts) | 551 |
-| [Runnable effect handlers](../../packages/temporal-adapter/runner/src/host-interaction-plan.ts) | 390 |
-| [Runnable composition](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 257 |
-| [Effect probe](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 356 |
-| [Testkit runner](../../packages/temporal-adapter/testkit/src/runner.ts) | 98 |
-| [Testkit runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 169 |
-| [Stimulus sequencing](../../packages/temporal-adapter/testkit/src/scenario-stimulus-sequencing.ts) | 557 |
-| [Test contracts](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 474 |
-| [Harness evidence](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) | 100 |
-| [History evidence](../../packages/temporal-adapter/testkit/src/history-evidence-decoding.ts) | 307 |
-| [Worker host](../../packages/temporal-adapter/testkit/src/temporal-worker-host.ts) | 345 |
-| [Testkit exports](../../packages/temporal-adapter/testkit/src/index.ts) | 583 |
-
-Add outer Activity-result and incident-operation protocol owners, process-command Update and incident client owners, plus focused policy, runnable, and live Temporal test owners. Extract Activity-result handling to `effect-execution-host.ts`, proxy selection to `effect-activity-policy.ts`, retry Update handling to `incident-update-handler.ts`, and shared retained-Update lookup before changing the 48-line-headroom Workflow or copying the client mechanism. The existing semantic `effect-transport.ts`, old effect scenario execution, Boundary-Error execution, and old effect mutation Workflow remain byte-identical. The operation-only host-capability classifier does not change because the successor has the same isolated `AwaitEffect` shape. Before Worker connection, runnable configuration validation admits a `technicalFailure` handler only when the requested profile is the registered Service Task incident profile. Inside the Workflow, the compiled program profile selects the immutable one-attempt incident Activity policy; predecessor profiles retain the existing retry policy. Focused runnable tests require the successor to accept `technicalFailure` and every registered non-incident profile to reject it without changing existing semantic results. An enabled retry with no configured Product 1 response already yields the truthful unmatched-interaction refusal, so the production interaction driver changes only if a focused test proves otherwise.
-
-#### CIB and differential owners
-
-| Owner | Headroom |
-|---|---:|
-| [Scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 109 |
-| [Interaction protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | 565 |
-| [Diagnostics protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java) | 387 |
-| [Active-wait projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenActiveWaitProjector.java) | 528 |
-| [Effect probe](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEffectProbe.java) | 539 |
-| [Command executor](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioCommandExecutor.java) | 411 |
-| [State projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 277 |
-| [Scenario value policy](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableValuePolicy.java) | 526 |
-| [Effect schedule](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibEffectExecutionSchedule.java) | 578 |
-| [JSON-lines oracle entry point](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | 542 |
-| [Pipeline export bridge](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPipelineExportBridge.java) | 566 |
-| [Scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 539 |
-| [Differential cases](../../packages/differential/test/pipeline-cases.ts) | 8 |
-| [Differential types](../../packages/differential/test/pipeline-types.ts) | 404 |
-| [CIB targets](../../packages/differential/test/pipeline-cib-targets.ts) | 445 |
-| [Target support](../../packages/differential/test/pipeline-target-support.ts) | 533 |
-| [Pipeline targets](../../packages/differential/test/pipeline-targets.ts) | 121 |
-| [Pipeline harness](../../packages/differential/test/pipeline-harness.ts) | 345 |
-| [Pipeline comparison](../../packages/differential/test/pipeline-comparison.ts) | 36 |
-| [Pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 43 |
-| [Pipeline execution](../../packages/differential/test/pipeline.test.ts) | 114 |
-
-Add separate incident protocol, `CibSevenEngineBundleFactory`, incident projector, incident command executor, and focused incident runner/JSON test owners. The factory is keyed by the validated profile environment: the successor bundle explicitly sets `createIncidentOnFailedJobEnabled = true`, while an absent legacy property preserves the pinned engine's effective setting. An alignment guard accepts the incident schedule if and only if the successor profile is selected. The streaming oracle never mutates an already built engine setting between scenarios. Extract engine/configuration construction from the 13-line-headroom Java runner before selecting the profile. Existing direct `StateObservation` constructors in `CibSevenMappedSuccessScenarioRunnerTest` (527 headroom), `CibSevenIntermediateCatchTimerTest` (525), `CibSevenScenarioRunnerTest` (254), and `ScenarioJsonTest` (481) add the required empty list. Add separate incident pipeline cases, comparison, and focused test owners; the 12-line-headroom case catalog receives only registration, while the 46-line-headroom comparator delegates raw incident fidelity.
-
-The implementation also updates the relevant focused test fixtures, all strict canonical result files, the new profile and scenario registries, [CIB relationship register](../CIB-BPMN-RELATION-REGISTER.md), [implementation map](../IMPLEMENTATION-MAP.md), [plan](../PLAN.md), [testing specification](../TESTING-SPEC.md), [Temporal lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [Temporal research](../research/TEMPORAL-EXECUTION-RESEARCH.md), capsule and package registries, and this proposal. The [capsule cost ledger](../CAPSULE-COST-LEDGER.md) changes only at closure.
+The implementation separates incident runtime and validation, strict artifact and raw CIB projection, Lean incident semantics and command admission, Temporal Activity-result policy and retry Update handling, configured CIB engine bundles and incident execution, and the four-target incident pipeline into focused owners. Existing Service Task success, typed BPMN Error, checked graph, Semantic Process IL, and cancellation owners retain their previous responsibilities.
 
 ### Guards and oracles
 
@@ -370,7 +255,7 @@ The strongest common-mode risk is the project-owned mapping from a raw CIB job/i
 
 The nearest wrong accounts are: existing semantic Activity results are wrapped; Activity transport failure enters `completeEffect`; Temporal attempt defines identity; retry creates a new activation; a second semantic incident is created; the incident fails to block normal scope completion; its nested effect identity drifts; old profile/scenario bytes change; or a missing open effect is treated as incident evidence. Each has a direct rejection, structural guard, theorem, mutation, or history discriminator.
 
-At closure, [the capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the implementation range and compares it with the existing Service Task effect capsule.
+[The capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the implementation range and compares it with the existing Service Task effect capsule.
 
 ## Implementation result
 
@@ -393,12 +278,12 @@ Stop and return to research or owner direction if:
 - existing profile, scenario, source, and raw-producer bytes cannot remain exact, or generated checked/IL structure cannot remain equal modulo profile identity;
 - the full gate can pass only by weakening schemas, raw CIB fidelity, Worker replacement, replay, or a seeded mutation.
 
-## Owner decisions requested
+## Adopted decisions
 
-Approval settles these together:
+The owner approved these decisions on 2026-08-13:
 
 1. Select `cibseven-2.2.0-service-task-incident-draft` as a configured successor to the success-only Service Task profile.
-2. Select `CIB-EXT-0013`, `CIB-OP-0008`, and configured failed-job incident creation under proposed `CIB-CFG-0008`.
+2. Select `CIB-EXT-0013`, `CIB-OP-0008`, and configured failed-job incident creation under `CIB-CFG-0008`.
 3. Keep semantic `EffectExecutionResult` and its existing Activity payload bytes unchanged by widening the bare wire union with one transport-only technical failure arm.
 4. Add one committed literal-generation-1 incident, required `openIncidents`, incident-owned suspended waits, exact retry, and report/retry stimuli while keeping later technical results as host failures.
 5. Preserve exact old profile, scenario, source, and raw-producer bytes while replacing canonical result shapes and adding successor pipeline artifacts equal modulo profile identity.

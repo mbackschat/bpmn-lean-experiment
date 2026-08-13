@@ -84,7 +84,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### M4 — it survives going wrong
 
-**Status: in progress.** Stage 1, one bounded Service Task incident and exact retry, is implemented across the strict wire, TypeScript semantic core, Lean, configured CIB projection and execution, answer-free four-target differential evidence, runnable configuration, and live Temporal hosting. Its checkpoint is approved and its closure review is pending. Incident-scoped cancellation remains Stage 2 and Product 2 incident operations remain Stage 3.
+**Status: in progress.** [Stage 1](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md), one bounded Service Task incident and exact retry, is implemented, closure-reviewed, evidence-closed, and graduated across the strict wire, TypeScript semantic core, Lean, configured CIB projection and execution, answer-free four-target differential evidence, runnable configuration, and live Temporal hosting. Incident-scoped cancellation remains Stage 2 and Product 2 incident operations remain Stage 3.
 
 **Demo.** A failing Service Task raises an incident an operator can see, retry, and cancel, and a cancelled scope leaves no orphaned work.
 
@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: close M4 Service Task incident and retry.** The checkpoint review of `818f642` required exact TypeScript enforcement of the predecessor-equivalent effect program and fail-closed public observation for malformed incident state; the same reviewer approved correction `1f20c00`. The selected configured CIB lifecycle, answer-free four-target schedule, runnable example, and live Temporal technical-failure, retry, race, history, and replay evidence are implemented at `b01a5ae`; `be46057` removes the last duplicated Activity-policy fact. The complete repository gate is green and the implementation cost is recorded through that cleanup. Commit this corrective measurement binding and submit the immutable closure target to the eligible checkpoint reviewer. Incident-scoped cancellation remains Stage 2 and Product 2 incident operations remain Stage 3.
+1. **In progress: define M4 incident-scoped cancellation.** Stage 1 graduated through closure target `9146be0` and final correction audit `2fa4360`. Prepare the smallest Stage 2 semantic proposal for incident-scoped root-Process cancellation, route it through context-cold proposal review, and obtain owner approval before implementation. Product 2 incident operations remain Stage 3.
 
 ## Approved decisions
 
@@ -196,7 +196,7 @@ Only decisions that constrain the next work are kept here. A decision fully owne
 
 ## Last verified baseline
 
-**Latest complete gate: 2026-08-12, exit 0 at Boolean closure target `9669e8c`.** All registered cases reached agreement across their declared targets, every seeded semantic mutation produced its required disagreement, and all 46 live histories passed. The run took 189.26 seconds and has output SHA-256 `e6f47bb9d009bf9b4d47fe16c74c7b057d6e8ba5240945f0ba62e4564181d812`. The independently reviewed closure corrections after that target changed only focused evidence and documentation owners and passed their proportionate gates. This is a correctness result, not a new performance baseline.
+**Latest complete gate: 2026-08-13, exit 0 at Service Task incident closure target `9146be0`.** The complete `./scripts/verify.sh` run took 174.192 seconds and has output SHA-256 `bf90242424b22e91b05694638e06b214c449b491faa67d66cc8d40cb5ea9b159`. The independently reviewed closure corrections after that target changed only focused evidence and documentation owners and passed their proportionate gates. This is a correctness result, not a new performance baseline.
 
 **Two performance baselines are retained, because a catalog change breaks comparability and one figure cannot span it.**
 
@@ -264,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain the governed closure review for M4 Service Task incident and retry.** Commit the measurement rebinding through cleanup target `be46057`, mint the exact review packet and continuity manifest, and submit the immutable closure target to the eligible checkpoint reviewer. Cancellation and Product 2 operations remain outside this closure target.
+**Next action: define the governed M4 Stage 2 incident-scoped cancellation proposal.** Inventory the current incident, root-Process cancellation, scope cleanup, public terminal receipt, Lean, CIB, and Temporal owners; select the smallest forward-compatible contract; then mint an immutable context-cold proposal target. Do not implement Stage 2 before proposal review and owner approval. Product 2 operations remain Stage 3.
 
-Item 1 is **in progress at closure**. Context-cold proposal review of `56b9398` returned `approve with required edits`; the same reviewer closed the bounded corrections at `43228e3`, and the owner approved implementation on 2026-08-13. The checkpoint correction `1f20c00` is approved. The implemented target preserves existing bare semantic Activity payloads, moves the full effect wait into an identity-bound incident that blocks scope completion, permits one exact retry without a generation-two semantic state, projects configured raw CIB job and incident facts without importing host identity, and hosts the lifecycle through one-attempt Temporal Activities plus a content-bound retained Update. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
+Item 1 is **in progress at Stage 2 design**. Stage 1 context-cold proposal review of `56b9398`, checkpoint review of `818f642`, and warm closure review of `9146be0` each closed through their recorded corrections, with final correction audit `2fa4360`. The graduated specification preserves existing bare semantic Activity payloads, moves the full effect wait into an identity-bound incident that blocks scope completion, permits one exact retry without a generation-two semantic state, projects configured raw CIB job and incident facts without importing host identity, and hosts the lifecycle through one-attempt Temporal Activities plus a content-bound retained Update. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
 
 **Last verified commands:** the integrated target passed the complete `./scripts/verify.sh`, the 64-test incident artifact/CIB/differential set, the 39-test Temporal incident set, the 27-test standard differential set, every affected build and type gate, the complete four-target incident pipeline, and the configured CIB runner's 68 Maven tests. The complete run coincided with unrelated external CPU contention, while the isolated Temporal gate remains the applicable feedback-budget measurement. `c77b6e8` keeps Playwright in the approved separate Product 2 workflow; the retained Product 2 browser evidence remains unchanged and separate.
 

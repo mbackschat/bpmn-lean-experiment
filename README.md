@@ -29,7 +29,7 @@ The showcase ladder is a dependency order, not a delivery schedule. [PLAN.md](do
 | M1 | Closed | A third party uploads an unseen BPMN file, receives honest admission diagnostics, stores and versions it, views the diagram, and starts an admitted instance |
 | M2 | Closed | Cyclic execution, four essential elements, exact-version Timer scheduling, Message Start ingress, and Process-instance search are implemented and evidence-closed |
 | M3 | Closed | Boolean Process-data, User Task metadata, the real inbox, typed form, claims, completion, audit, and live/browser evidence are closure-reviewed and evidence-closed |
-| M4 | In progress | One bounded incident and exact retry are implemented pending closure; incident-scoped cancellation and Product 2 operations remain |
+| M4 | In progress | Stage 1 incident and exact retry are closure-reviewed; incident-scoped cancellation and Product 2 operations remain |
 | M5 | Not started | Rebuild and explain committed execution history, diagram position, and operational views |
 
 M1 remains the first proper platform demonstration and an independent regression floor. M3 adds the real task inbox and form interaction after the engine publishes the required metadata and wider value domain.
