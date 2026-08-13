@@ -138,6 +138,8 @@ The aggregate is ordered by hosting Process-instance ID, effect Process-instance
 
 The existing Definitions durable publication lifecycle retains its independent Operate and Work acknowledgement markers. Its Operate subscriber changes from `recordProcessInstance(instance)` to `recordConfirmedProcessInstance({ instance, locator })`; no new subscriber or delivery state is added. Operate persists the immutable locator with the existing exact public identity. Re-recording equivalent bytes is idempotent and any identity or locator drift is integrity failure.
 
+Changing the subscriber alone cannot repair registrations whose existing Operate delivery was already acknowledged. Definitions therefore adds one read-only enumeration of every retained `confirmed` publication, including rows whose Operate and Work acknowledgement markers are both false. Before incident handlers, producer reconciliation, or the public server become ready, the composition root runs one bootstrap sweep that idempotently delivers every enumerated `{ instance, locator }` to Operate. A partial failure aborts readiness; restart repeats the complete sweep, and already-delivered equivalent publications remain idempotent. The sweep has no acknowledgement marker because every startup repeats it. An existing Operate row with identity or locator drift fails startup as an integrity error. Once the bootstrap completes, newly confirmed publications continue through the ordinary acknowledged delivery lifecycle.
+
 Operate classifies each registration privately as active, closed, or indeterminate. Initial confirmed registration is active. `observed`, including an empty incident set, records active; an exact terminal receipt records closed; unknown or unavailable records indeterminate and makes the request fail. A later successful observation may recover indeterminate to active or closed. Process-instance search remains identity-only and byte-identical.
 
 Every incident list request queries every nonclosed registration. Separate positive configuration ceilings bound registrations and incidents, defaulting to 100 and 1,000. One unknown or unavailable registration, one invalid Product 1 result, or an exceeded ceiling yields `incidentSnapshotUnavailable`; no partial snapshot or cached incident is returned. Operate persists no incident row as current semantic authority.
@@ -222,7 +224,30 @@ type IncidentAuditEvent = DeepReadonly<{
 
 Action transition and exact event snapshot commit in one `BEGIN IMMEDIATE` transaction. A globally unique `eventId` makes sink insertion idempotent and changed content under the same ID an integrity failure. Unique `(actionId, outcome)` prevents equivalent retries or repeated indeterminate reconciliation from adding another logical event, while a later terminal outcome remains distinct. The reserved event is delivered and acknowledged before the first Product 1 call; a sink failure therefore suppresses the call and public reservation success. Startup and every incident or audit handler reconcile pending events before exposing success or current state. Authorization denial and pre-reservation conflict create no event.
 
-Audit filters are actor ID, hosting Process ID, exact incident occurrence, and action kind, with an opaque insertion cursor. Wall-clock order is platform audit order, never semantic execution order. Audit contains no private locator, Workflow or Run identity, Task Queue, Event History, Activity attempt, retry count, stack trace, inferred cause, or transport payload.
+The strict public audit transport is:
+
+```ts
+type IncidentAuditRequest = DeepReadonly<{
+  actorId?: string;
+  hostingProcessInstanceId?: string;
+  incidentProcessInstanceId?: string;
+  incidentElementId?: string;
+  incidentActivation?: number;
+  incidentGeneration?: 1;
+  actionKind?: "retryIncident" | "cancelIncidentProcess";
+  cursor?: string;
+  limit?: number;
+}>;
+
+type IncidentAuditPage = DeepReadonly<{
+  events: IncidentAuditEvent[];
+  nextCursor: string | null;
+}>;
+```
+
+The four flattened `incidentProcessInstanceId`, `incidentElementId`, `incidentActivation`, and `incidentGeneration` fields are either all absent or all present and reconstruct one complete exact incident identity. Query keys are unique and emitted in the canonical order shown by the type. Actor, hosting Process, exact incident, and action kind are exact filters. The default limit is 50 and the maximum is 100. Results use private monotonically increasing insertion ordinal ascending; a cursor resumes exclusively after the last returned ordinal, so later insertion cannot duplicate or reorder an earlier page. The cursor is canonical `v1.` plus nonempty unpadded base64url and exposes no ordinal. `eventId` remains a globally unique opaque identity without public ordering. `recordedAt` is canonical UTC RFC 3339 with millisecond precision, `YYYY-MM-DDTHH:mm:ss.sssZ`. Unknown or duplicate keys, partial incident identity, malformed cursor, noncanonical integer, timestamp, or equivalent encoding are invalid.
+
+Wall-clock insertion order is platform audit order, never semantic execution order. Audit contains no private locator, Workflow or Run identity, Task Queue, Event History, Activity attempt, retry count, stack trace, inferred cause, or transport payload.
 
 ## HTTP contract
 
@@ -233,7 +258,41 @@ The public routes are:
 - `PUT /api/v1/incident-actions/{actionId}` with one strict `IncidentActionRequest`;
 - `GET /api/v1/incident-audit` with exact optional filters and cursor.
 
-List, detail, committed, and rejected results use HTTP 200. Indeterminate uses 202. Authorization denial is 403, an absent current incident is 404, changed action content or a requested interaction not currently published is 409, and an incomplete aggregate is 503 `incidentSnapshotUnavailable`. Existing strict 400, 405, 413, 415, and 500 envelopes remain. Bodies reject missing, extra, duplicate, malformed, noncanonical, wrong-generation, cross-Process, and mismatched nested identity fields.
+List, detail, audit pages, committed, and rejected results use HTTP 200. Indeterminate uses 202. Authorization denial is 403, an absent current incident is 404, changed action content or a requested interaction not currently published is 409, and an incomplete aggregate is 503 `incidentSnapshotUnavailable`. Bodies reject missing, extra, duplicate, malformed, noncanonical, wrong-generation, cross-Process, and mismatched nested identity fields.
+
+The single public error catalog gains `incidentSnapshotUnavailable`; existing codes and envelopes stay byte-identical. The exact route-owned unions are:
+
+```ts
+type IncidentListApiErrorCode =
+  | "invalidRequest"
+  | "methodNotAllowed"
+  | "forbidden"
+  | "incidentSnapshotUnavailable"
+  | "internalFailure";
+
+type IncidentDetailApiErrorCode =
+  | IncidentListApiErrorCode
+  | "notFound";
+
+type IncidentActionApiErrorCode =
+  | "invalidRequest"
+  | "methodNotAllowed"
+  | "unsupportedMediaType"
+  | "payloadTooLarge"
+  | "notFound"
+  | "conflict"
+  | "forbidden"
+  | "incidentSnapshotUnavailable"
+  | "internalFailure";
+
+type IncidentAuditApiErrorCode =
+  | "invalidRequest"
+  | "methodNotAllowed"
+  | "forbidden"
+  | "internalFailure";
+```
+
+Snapshot list accepts only its list union, detail adds only `notFound`, action accepts only its action union, and audit accepts only its audit union. Error bodies use the existing generic `PublicApiErrorResponse<Code>`. GET routes have no request body and therefore do not claim unsupported-media or payload-too-large failures. Action bodies retain the 4,096-byte limit used by existing platform mutations. An unseen action whose required fresh snapshot is incomplete returns 503 `incidentSnapshotUnavailable` and reserves nothing.
 
 ## Operations workspace
 
@@ -241,7 +300,11 @@ The primary navigation label `Process instances` becomes `Operations`. Its conte
 
 The Incidents tab opens on the responsive collection. A row contains Process ID, Process-instance ID, Service Task element ID, activation, generation, and available action labels, but no mutation control. Selecting it replaces the collection with a full-width detail. Overview shows exact public identity, effect descriptor, and currently published actions. Diagram uses the existing definition presentation route and highlights the exact effect element. Audit shows retained platform action facts for that incident. Back returns focus to the exact row when present or the collection heading otherwise.
 
-Retry is the primary action. Cancel uses the shared destructive button and an explicit React Aria confirmation dialog stating that it cancels the hosting root Process, removes its remaining live work, and preserves already committed Process data. Pending and indeterminate state stays in detail with the same retained action ID. Semantic rejection and `processClosed` remain visible and do not masquerade as success.
+The top-level Audit tab is a paged platform-event collection, not an incident-state view. It shows Recorded at, actor, hosting Process instance, complete incident occurrence, action kind, and outcome; it offers the exact audit request filters, loading, empty, error, and next-page states. Its copy states that rows record platform actions and do not prove that an incident is currently open. Applying filters moves focus to the results heading or empty/error status. Paging appends in insertion order and moves focus to the first newly appended row; if no row is added, focus moves to the collection status. It reuses the shared responsive collection/card contract with no horizontal scrolling at the four governed widths.
+
+Retry is the primary action. Cancel uses the shared destructive button and an explicit React Aria confirmation dialog stating that it cancels the hosting root Process, removes its remaining live work, and preserves already committed Process data. Opening the dialog initially focuses its non-destructive `Keep Process running` action; Escape or dismissal returns focus to Cancel. Confirming Cancel or submitting Retry synchronously mints and retains one action ID and exact request before transport. Pending and indeterminate retries resubmit that same action ID and request. A later new user intent mints a new ID only after the earlier action reached a terminal result and the interaction is still freshly published.
+
+Pending and indeterminate state stays in detail and focuses its explicit status region. Semantic rejection, including `processClosed`, stays visibly classified in detail, focuses its status, and never masquerades as success. A committed Retry or Cancel returns to the incident collection heading, announces the exact action and committed result, refreshes the current snapshot, and leaves no stale detail labelled current.
 
 The shared DataTable collection/card pattern must remain one semantic DOM with no horizontal page or row scrolling at 1600, 1280, 1024, and 768 CSS pixels. No right inspector is introduced. Product 2 Playwright evidence remains path-scoped and outside `verify.sh` and every Product 1 semantic feedback loop.
 
@@ -257,7 +320,7 @@ The smallest executable witness starts two Product 2-confirmed instances through
 
 ## Required evidence
 
-1. Direct, Timer Schedule, and Message Start registrations retain their exact locator and remain separately addressable; replacing a Schedule execution locator with its configured base fails.
+1. Direct, Timer Schedule, and Message Start registrations retain their exact locator and remain separately addressable; replacing a Schedule execution locator with its configured base fails. A fully acknowledged pre-M4 registration is bootstrapped, a partial bootstrap failure converges after restart, and identity or locator drift fails startup.
 2. The dedicated Query returns current incident and interaction bytes from one committed state; trace use, missing or duplicate interactions, reordered Cancel-before-Retry, cross-incident identity, Stage 1 Cancel synthesis, and nonempty effect arguments fail.
 3. The complete aggregate distinguishes active zero-incident, active incident, closed, unknown, unavailable, recovered indeterminate, and both configured ceilings; any unresolved registration makes the whole request unavailable.
 4. Unauthorized list, detail, action, and audit requests perform zero engine calls and zero writes; the exact configured group grants all four surfaces without changing M3 task authorization.
@@ -266,7 +329,7 @@ The smallest executable witness starts two Product 2-confirmed instances through
 7. Independent equivalent requests make one live Product 1 call. Distinct concurrent Retry and Cancel requests may make two calls, and independently captured engine results prove no more than one semantic commit without platform priority.
 8. Action and outbox transaction, sink insert, and acknowledgement crash points converge to one exact event per `(actionId, outcome)`; changed event content is integrity failure and both stores are inspected independently.
 9. Recursive public JSON, browser state, audit, and captured logs exclude locator, Workflow ID, Run ID, Task Queue, history, Activity attempt, retry count, cause, exception, stack trace, and transport command payload.
-10. Component and four-width Playwright evidence proves Operations tabs, collection-to-detail focus, exact diagram highlight, confirmation, retained indeterminate action, honest rejection, and no horizontal overflow.
+10. Component and four-width Playwright evidence proves Operations tabs, top-level paged audit filters, collection-to-detail focus, confirmation dismissal, pending/indeterminate/rejected status focus, retained action identity, committed return and announcement, exact diagram highlight, and no horizontal overflow.
 11. The real M4 showcase proves current incident discovery, exact Retry and Cancel through Product 2, server and Worker replacement, terminal outcomes, history mutations, and replay while Playwright remains isolated from Product 1 development gates.
 
 The rule-to-evidence matrix is:
@@ -308,11 +371,31 @@ Excluded:
 - arbitrary Process cancellation, nested-scope selection, compensation, variable repair, token movement, job editing, second incidents, or incident migration;
 - authentication providers, tenancy, production security, external starts, M5 history/mining, and Temporal operator-console replacement.
 
-## Versioning and owner feasibility
+## Versioning and atomic owner inventory
 
 This is a material additive Product 1 public-observation change because it adds a production Workflow Query and exact incident projection, even though the underlying semantic state, interactions, Updates, receipts, Lean account, CIB relationship, checked graph, and IL remain unchanged. It requires a cold proposal review, owner approval, and a conditional semantic checkpoint after the first green Query, engine API, and strict wire checkpoint. Closure is governed before this proposal may graduate to a specification.
 
-The implementation uses new cohesive owners for incident projection/Query, Product 1 process operations, Operate aggregation/actions/outbox, incident HTTP, incident audit, and the Operations UI. It must not grow the near-full Workflow implementation, Work mutation service, Work repository, existing identity-only Operate repository, or task-shaped audit contracts into mixed-responsibility owners. The existing Process-instance search API and Work API remain byte-identical.
+The following measurements were produced by `node scripts/what-binds.ts` against review target `c3bcd44`. New owners begin at zero lines and inherit their package's listed guards and registries.
+
+| Atomic boundary | Existing owner and measured size | Required new owner or delegation | Focused oracle |
+|---|---|---|---|
+| Temporal incident wire | [`incident-operation.ts`](../packages/temporal-adapter/protocol/src/incident-operation.ts), 47/600 | Add the closed Query wire beside the incident operation without changing existing Update bytes | [`incident-cancellation-contract.test.ts`](../packages/temporal-adapter/protocol/test/incident-cancellation-contract.test.ts) plus a new strict current-incident Query contract test |
+| Workflow Query | [`workflow-implementation.ts`](../packages/temporal-adapter/workflow/src/workflow-implementation.ts), 567/600 | Extract projection and Query registration to a cohesive `incident-operations-query-handler.ts`; the 567-line owner must have no net growth | [`incident-cancellation-update-handler.test.ts`](../packages/temporal-adapter/workflow/test/incident-cancellation-update-handler.test.ts) plus new current-state, zero-incident, terminal, malformed-interaction, and replay cases |
+| Temporal client | [`incident-client.ts`](../packages/temporal-adapter/client/src/incident-client.ts), 135/600 | Add observation to a new `process-operations-client.ts`; keep action result recovery delegated to the existing incident client | [`incident-client.test.ts`](../packages/temporal-adapter/client/test/incident-client.test.ts) plus new absent Query, retained receipt, and strict result cases |
+| Product 1 API and gateway | [`process-work.ts`](../packages/engine-api/src/process-work.ts), 277/600, and [`process-work-gateway.ts`](../platform/foundation/engine-gateway/src/process-work-gateway.ts), 92/600 | Add separate `process-operations.ts` and `process-operations-gateway.ts`; extract the byte-identical locator codec to a neutral owner rather than importing Work | [`process-work.test.ts`](../packages/engine-api/test/process-work.test.ts) and [`process-work-gateway.test.ts`](../platform/foundation/engine-gateway/test/process-work-gateway.test.ts) plus new observation/action mapping tests |
+| Confirmed publication and bootstrap | [`confirmed-process-instance-contracts.ts`](../platform/modules/definitions/src/confirmed-process-instance-contracts.ts), 106/600, [`sqlite-confirmed-process-instance-repository.ts`](../platform/modules/definitions/src/sqlite-confirmed-process-instance-repository.ts), 264/600, and [`confirmed-process-instance-publication-service.ts`](../platform/modules/definitions/src/confirmed-process-instance-publication-service.ts), 256/600 | Add all-confirmed enumeration and a cohesive startup Operate bootstrap; ordinary acknowledgement delivery remains in the publication service | [`sqlite-confirmed-process-instance-repository.test.ts`](../platform/modules/definitions/test/sqlite-confirmed-process-instance-repository.test.ts), [`confirmed-process-instance-publication-service.test.ts`](../platform/modules/definitions/test/confirmed-process-instance-publication-service.test.ts), and a seeded acknowledged-row, partial-failure/restart, and drift bootstrap oracle |
+| Operate registrations and aggregation | [`sqlite-process-instance-repository.ts`](../platform/modules/operate/src/sqlite-process-instance-repository.ts), 370/600, and [`process-instance-search-service.ts`](../platform/modules/operate/src/process-instance-search-service.ts), 100/600 | Retain locator and private classification in the identity repository; put fresh all-or-error aggregation in a new `incident-aggregation-service.ts` | [`sqlite-process-instance-repository.test.ts`](../platform/modules/operate/test/sqlite-process-instance-repository.test.ts) and [`process-instance-search-service.test.ts`](../platform/modules/operate/test/process-instance-search-service.test.ts) plus independent-connection classification and ceiling cases |
+| Operate actions and outbox | [`contracts.ts`](../platform/modules/operate/src/contracts.ts), 40/600 | Add cohesive incident contracts, SQLite action/outbox repository, mutation service, and reconciliation service; do not grow the Work mutation or repository owners | New red/green action binding, response-loss/restart, distinct Retry/Cancel, outbox crash, and changed-content tests under [`platform/modules/operate/test`](../platform/modules/operate/test) |
+| Public contract and HTTP | [`process-instance-http-routes.ts`](../platform/modules/operate/src/process-instance-http-routes.ts), 136/600, and [`work-task-decoders.ts`](../platform/contracts/src/work-task-decoders.ts), 597/600 | Add incident contracts/routes/decoders and incident HTTP routes in separate owners; no incident decoding may enter the 597-line Work decoder | [`process-instance-search-contract.test.ts`](../platform/contracts/test/process-instance-search-contract.test.ts) and [`process-instance-http-routes.test.ts`](../platform/modules/operate/test/process-instance-http-routes.test.ts) plus new route-owned request/page/error and strict identity cases |
+| Incident audit | [`sqlite-audit-repository.ts`](../platform/foundation/audit/src/sqlite-audit-repository.ts), 208/600, and [`audit-search-service.ts`](../platform/foundation/audit/src/audit-search-service.ts), 61/600 | Add a separately typed incident audit repository/search service and table owner; Work event JSON and `work_audit_events` remain byte-identical | [`sqlite-audit-repository.test.ts`](../platform/foundation/audit/test/sqlite-audit-repository.test.ts) plus new cursor, paging, timestamp, exact-filter, idempotence, and changed-content tests |
+| Server composition | [`composition.ts`](../platform/apps/server/src/composition.ts), 273/600 | Compose bootstrap, policy, gateways, repositories, reconcilers, and routes without moving semantics into the composition root | [`composition.test.ts`](../platform/apps/server/test/composition.test.ts) plus startup-before-handler and cross-store reopen cases |
+| Operations UI | [`app-shell.tsx`](../platform/apps/web/src/app-shell.tsx), 100/600, and [`data-table.tsx`](../platform/ui-kit/src/data-table.tsx), 91/600 | Add cohesive Operations workspace, Incidents detail, audit collection, and confirmation components; shared table retains responsive ownership | [`app-shell.test.ts`](../platform/apps/web/test/app-shell.test.ts), [`process-instance-search-panel.test.ts`](../platform/apps/web/test/process-instance-search-panel.test.ts), and the isolated [`ui-quality.spec.ts`](../showcase/platform-ui-quality/e2e/ui-quality.spec.ts) plus the M4 live showcase |
+
+The implementation must run the existing [`platform-product-boundary`](../scripts/platform-product-boundary.test.ts), [`temporal-package-boundary`](../scripts/temporal-package-boundary.test.ts), [`pre-release-architecture`](../scripts/pre-release-architecture.test.ts), [`source-hygiene`](../scripts/source-hygiene.test.ts), [`what-binds`](../scripts/what-binds.test.ts), [`harness-source-policy`](../scripts/harness-source-policy.test.ts), [`platform-harness-policy`](../scripts/platform-harness-policy.platform-test.ts), and [`ui-quality-boundary`](../scripts/ui-quality-boundary.platform-test.ts) guards. The new public route test is the HTTP contract oracle, and the UI-quality boundary must continue proving that Chromium remains outside Product 1 verification. Every added or grown source path must be remeasured before implementation delegation and before commit.
+
+The Workflow Query is a deterministic, read-only handler over already replayed state. It adds no command, marker, timer, side effect, or history event and therefore selects no Workflow patch or Build ID policy. Existing Stage 1, Stage 2, and nonincident histories must replay under the new bundle, and the exact pre-change histories are retained as the compatibility oracle. Any implementation that needs a history-producing branch or version marker reopens this proposal.
+
+The platform remains pre-release. Operate raises its exact SQLite schema epoch from 1 to 2 for private locator/classification plus incident actions and outbox. An epoch-1, unknown, partially upgraded, or structurally divergent Operate store is rejected with the existing reset-required policy; there is no migration, mixed-version reader, or rollback promise. After an approved reset, the startup bootstrap repopulates all confirmed registrations from the unchanged Definitions store, while pre-reset Product 2 actions and audit-outbox rows are intentionally not retained. The separate incident-audit database starts at its own exact epoch 1; the existing Work audit database, `work_audit_events` schema, and bytes remain unchanged. Within one supported epoch, equivalent action replay, submitting/indeterminate reconciliation, and outbox delivery use retained exact content as specified above. Retained production-data compatibility requires a future migration proposal before release.
 
 No new dependency is selected. Existing React Aria, TanStack Query/Table, SQLite, Temporal client, and bpmn-js boundaries are sufficient.
 
