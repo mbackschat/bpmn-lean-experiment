@@ -48,9 +48,9 @@ export type HostInteractionResponse = DeepReadonly<
  * One deterministic host simulation of an external effect, keyed by neutral descriptor.
  *
  * This is a configured stand-in with the same status as the simulated form actor: it is not a real
- * integration and is not evidence about any external service. `result` reuses the core's complete
- * union, so a configured handler can express the typed business-error arm that a boundary Error
- * route requires as well as ordinary success.
+ * integration and is not evidence about any external service. `result` uses the host-only Activity
+ * result union, which preserves the semantic success and business-error arms and adds the bounded
+ * technical-failure arm selected by the incident profile.
  */
 export type HostEffectHandler = DeepReadonly<{
   protocol: string;

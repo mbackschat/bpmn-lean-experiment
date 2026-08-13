@@ -8,12 +8,14 @@ import test from "node:test";
 
 import {
   MessageChannelKind,
+  SemanticProfileId,
   StimulusKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 
 import {
   loadRunnableMvpConfig,
+  validateRunnableMvpConfig,
 } from "../../runner/cli/runnable-mvp-config.ts";
 import {
   createRunnableMvpStartStimulus,
@@ -110,6 +112,42 @@ const config = {
   ],
   effectHandlers: [],
 } as const;
+
+test("admits technical failure only for the registered incident profile", () => {
+  const technicalFailureConfig = {
+    ...config,
+    effectHandlers: [
+      {
+        protocol: "activity",
+        operation: "probe",
+        result: { kind: "technicalFailure" },
+      },
+    ],
+  } as const;
+
+  assert.doesNotThrow(() =>
+    validateRunnableMvpConfig({
+      ...technicalFailureConfig,
+      bpmn: {
+        ...technicalFailureConfig.bpmn,
+        semanticProfile: SemanticProfileId.ServiceTaskIncident,
+      },
+    })
+  );
+  for (const semanticProfile of Object.values(SemanticProfileId)) {
+    if (semanticProfile === SemanticProfileId.ServiceTaskIncident) {
+      continue;
+    }
+    assert.throws(
+      () =>
+        validateRunnableMvpConfig({
+          ...technicalFailureConfig,
+          bpmn: { ...technicalFailureConfig.bpmn, semanticProfile },
+        }),
+      /Technical failure handlers require the Service Task incident profile/u,
+    );
+  }
+});
 
 test("loads an exact config and resolves its BPMN path from the config file", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-mvp-config-"));
