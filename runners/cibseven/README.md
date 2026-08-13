@@ -2,7 +2,7 @@
 
 This Java 21 module embeds pinned CIB Seven `2.2.0` as the behavioral oracle for the bounded User Task, normative balanced parallel fork/join, exact `PT1S` Intermediate Catch Timer, success-only Service Task effect, and one configured failed-job incident/retry draft profile. It deploys the exact BPMN resource, invokes public engine services, projects canonical observations, removes all scenario-owned state, and keeps immutable environment-keyed engines warm across compact JSON-lines requests.
 
-The differential harness may execute release and schedule batches concurrently. Each Maven invocation therefore receives a batch-owned build directory rather than sharing `target/`; the ordinary standalone runner keeps the default `target/` path.
+The differential harness may execute release and schedule batches concurrently. Each Maven invocation therefore receives a batch-owned build directory rather than sharing `target/`. The complete standalone runner likewise gives every engine release its own compiler output, so its older-release check cannot reuse newer-release bytecode and hide a source-level API incompatibility.
 
 It is calibration infrastructure, not a reusable BPMN semantic kernel. A read-only PVM definition projection explains compilation choices but is never a compatibility key or an input to Lean or the TypeScript semantic core.
 

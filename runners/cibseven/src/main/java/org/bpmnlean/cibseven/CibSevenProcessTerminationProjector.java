@@ -83,7 +83,9 @@ final class CibSevenProcessTerminationProjector {
             engine
                 .getRuntimeService()
                 .createProcessInstanceQuery()
-                .rootProcessInstanceId(rawRootId)
+                .list()
+                .stream()
+                .filter(process -> rawRootId.equals(process.getRootProcessInstanceId()))
                 .count(),
             engine
                 .getManagementService()

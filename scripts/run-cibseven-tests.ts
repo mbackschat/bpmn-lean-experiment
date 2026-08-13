@@ -4,6 +4,7 @@ import {
   resolveCibSevenMavenTimeoutMs,
   wrapCibSevenMavenFailure,
 } from "./cibseven-maven-budget.ts";
+import { cibSevenReleaseBuildDirectory } from "./cibseven-maven-build.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { runCommand } from "./run-command.ts";
 
@@ -35,6 +36,7 @@ async function runTests(
     `${runnerDirectory}/pom.xml`,
     "--no-transfer-progress",
     "-Dstyle.color=never",
+    `-Dbpmn.build.directory=${cibSevenReleaseBuildDirectory(runnerDirectory, release)}`,
     ...extraArguments,
     "test",
   ];
