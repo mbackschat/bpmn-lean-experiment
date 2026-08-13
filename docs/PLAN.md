@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: close M4 Service Task incident and retry.** The checkpoint review of `818f642` required exact TypeScript enforcement of the predecessor-equivalent effect program and fail-closed public observation for malformed incident state; the same reviewer approved correction `1f20c00`. The selected configured CIB lifecycle, answer-free four-target schedule, runnable example, and live Temporal technical-failure, retry, race, history, and replay evidence are implemented and green in their focused gates. Reconcile the status owners, run the complete repository gate, measure the implementation, and submit the immutable closure target to the eligible checkpoint reviewer. Incident-scoped cancellation remains Stage 2 and Product 2 incident operations remain Stage 3.
+1. **In progress: close M4 Service Task incident and retry.** The checkpoint review of `818f642` required exact TypeScript enforcement of the predecessor-equivalent effect program and fail-closed public observation for malformed incident state; the same reviewer approved correction `1f20c00`. The selected configured CIB lifecycle, answer-free four-target schedule, runnable example, and live Temporal technical-failure, retry, race, history, and replay evidence are implemented at `b01a5ae`, the complete repository gate is green, and the implementation cost is recorded. Commit this measurement binding and submit the immutable closure target to the eligible checkpoint reviewer. Incident-scoped cancellation remains Stage 2 and Product 2 incident operations remain Stage 3.
 
 ## Approved decisions
 
@@ -264,7 +264,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: close the implemented M4 Service Task incident target.** Reconcile the current status owners, run the complete repository gate, record the implementation cost, commit the immutable closure target, and obtain the governed closure review. Cancellation and Product 2 operations remain outside this closure target.
+**Next action: obtain the governed closure review for M4 Service Task incident and retry.** Commit the measurement binding over implementation target `b01a5ae`, mint the exact review packet and continuity manifest, and submit the immutable closure target to the eligible checkpoint reviewer. Cancellation and Product 2 operations remain outside this closure target.
 
 Item 1 is **in progress at closure**. Context-cold proposal review of `56b9398` returned `approve with required edits`; the same reviewer closed the bounded corrections at `43228e3`, and the owner approved implementation on 2026-08-13. The checkpoint correction `1f20c00` is approved. The implemented target preserves existing bare semantic Activity payloads, moves the full effect wait into an identity-bound incident that blocks scope completion, permits one exact retry without a generation-two semantic state, projects configured raw CIB job and incident facts without importing host identity, and hosts the lifecycle through one-attempt Temporal Activities plus a content-bound retained Update. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
 
