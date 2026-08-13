@@ -23,10 +23,10 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
 | Reviewed normative agreements | 10 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
-| Permitted operational details | 7 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Permitted operational details | 7 | 1 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations; one incident-identity mapping awaits owner approval |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 12 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Selected CIB extensions | 12 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution; one failed-job incident extension awaits owner approval |
 | Configuration-specific realizations | 7 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -366,6 +366,18 @@ This is a CIB generated-form extension, not standard BPMN rendering content. BPM
 
 **Boundary:** One exact field with one nonempty key having no boundary code point from the proposal's explicit profile boundary-space set and type `string` or `boolean` is selected. Boundary space is refused without normalization; leading or trailing U+00A0 is the non-ASCII control. Multiple fields, labels, defaults, constraints, properties, scripts, form keys, rendering, submission mapping, field validation, task-local data, new value kinds, standard Rendering, WSHumanTask, and general Form Service compatibility remain excluded.
 
+### CIB-EXT-0013: failed-job Service Task incident and retry
+
+**Status:** Proposed bounded extension; implementation blocked pending proposal review and owner approval
+
+CIB Seven `2.2.0` decrements the selected async-before Service Task job after failed public execution, creates one `failedJob` incident when retries reach zero, and removes that incident when public Management Service resets the same job to a positive retry count. The proposed project profile restricts this operational surface to one exact Service Task effect, one payload-free technical failure, one public incident kind, and one retry that reopens the same semantic effect occurrence.
+
+This is a CIB job-management extension, not general BPMN service-fault meaning. BPMN 2.0.2 does not define engine job retry counts, failed-job incidents, Management Service retry reset, or incident identity. The project therefore names the public semantic fact `effectExecutionFailed` and does not expose CIB job or incident IDs, retry count, exception details, or administrative retry policy.
+
+**Evidence:** The [Service Task incident and retry proposal](capsules/SERVICE-TASK-INCIDENT-RETRY-PROPOSAL.md) owns the proposed profile, phase-zero probe, semantic generation, retry preservation, and Temporal preflight. Pinned CIB source records the positive-to-zero incident creation and zero-to-positive incident resolution mechanism; packaged-engine phase-zero evidence remains required before approval.
+
+**Boundary:** One failed async-before job, one `failedJob` incident, public retry reset, same job and Process retention, and later successful or failed re-execution are proposed. General incidents, retry cycles, backoff, due dates, incident messages, job deletion, batch retry, arbitrary Management Service operations, external tasks, Process cancellation, BPMN Error, compensation, and production operator UI remain excluded.
+
 ### Research queue
 
 | Hint | Status | Required investigation |
@@ -454,6 +466,18 @@ CIB Seven `2.0.0` invokes the neutral mapped-boundary delegate, catches its Java
 **Evidence:** [Mapped-boundary-Error scenario](../scenarios/mapped-boundary-error-service-task/README.md), its content-bound CIB evidence, the product-neutral Lean and TypeScript fixtures, and Temporal Activity history/replay.
 
 **Boundary:** This compares final selected observations while retaining distinct host transaction boundaries. It does not claim rollback equivalence, Java exception transport through Temporal, or compatibility for unmatched Errors.
+
+### CIB-OP-0008: CIB failed-job incident mapped to a semantic effect incident
+
+**Status:** Proposed operational mapping; implementation blocked pending proposal review and owner approval
+
+CIB exposes a raw job ID, incident ID, retry count, execution association, and incident configuration. The project semantic core instead owns one stable effect occurrence and a monotonically increasing incident generation. The proposed adapter requires exact raw job and incident partners, then maps them to `EffectIncidentId { effectId, generation }`; neither raw identity nor retry count enters canonical state.
+
+The first incident on one effect occurrence is generation one. Retrying removes the incident while retaining the same occurrence. A later technical failure becomes generation two even if CIB reuses or replaces its raw incident identity. This semantic generation prevents an old operator command from acting on a later failure without presenting CIB engine storage as semantic authority.
+
+**Evidence:** The [Service Task incident and retry proposal](capsules/SERVICE-TASK-INCIDENT-RETRY-PROPOSAL.md) owns the exact raw evidence, projection refusal matrix, Lean/core generation account, and Temporal result separation. Packaged-engine phase-zero evidence remains required.
+
+**Boundary:** The mapping does not claim CIB independently derives semantic effect identity or generation. It does not expose job, incident, execution, Workflow, Run, Activity, attempt, retry-budget, cause, or stack identity and does not authorize Process cancellation or Product 2 action state.
 
 ## Configuration-specific register
 
