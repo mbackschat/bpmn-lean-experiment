@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: review M4 incident-scoped cancellation.** The [Stage 2 proposal](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-PROPOSAL.md) selects one exact incident-gated root-Process cancellation command, typed cancelled state and receipt, incident-aware subtree cleanup, CIB external-termination mapping, and ordinary-completion Temporal hosting. Commit the immutable proposal target, route context-cold review, and obtain owner approval before implementation. Product 2 incident operations remain Stage 3.
+1. **In progress: review M4 incident-scoped cancellation.** Immutable proposal target `d03f528` selects one exact incident-gated root-Process cancellation command, typed cancelled state and receipt, incident-aware subtree cleanup, CIB external-termination mapping, and ordinary-completion Temporal hosting. Route context-cold review and obtain owner approval before implementation. Product 2 incident operations remain Stage 3.
 
 ## Approved decisions
 
@@ -264,7 +264,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: run context-cold review of the governed M4 Stage 2 incident-scoped cancellation proposal.** The selected contract and phase-zero CIB discriminator are recorded. Mint the immutable proposal target and review packet, complete the proposal review and any bounded correction audit, then obtain owner approval before implementation. Product 2 operations remain Stage 3.
+**Next action: run context-cold review of immutable M4 Stage 2 proposal target `d03f528`.** The selected contract and phase-zero CIB discriminator are recorded. Mint its review packet, complete the proposal review and any bounded correction audit, then obtain owner approval before implementation. Product 2 operations remain Stage 3.
 
 Item 1 is **in progress at Stage 2 proposal review**. Stage 1 remains graduated. The Stage 2 draft requires exact public root and incident identity, derives rather than accepts the root scope, applies incident-aware shared subtree cleanup once, preserves Process variables and monotonic history, closes as typed cancelled through ordinary Workflow completion, and keeps general BPMN cancellation, native Temporal cancellation, and Product 2 operations excluded. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
 
