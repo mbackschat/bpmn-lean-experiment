@@ -27,7 +27,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | Selected CIB extensions | 12 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution; one failed-job incident extension awaits owner approval |
-| Configuration-specific realizations | 7 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Configuration-specific realizations | 7 | 1 | Behavior is permitted or meaningful only under a declared CIB environment; one explicit failed-job incident setting awaits proposal approval |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
@@ -374,9 +374,9 @@ CIB Seven `2.2.0` decrements the selected async-before Service Task job after fa
 
 This is a CIB job-management extension, not general BPMN service-fault meaning. BPMN 2.0.2 does not define engine job retry counts, failed-job incidents, Management Service retry reset, or incident identity. The project therefore names the public semantic fact `effectExecutionFailed` and does not expose CIB job or incident IDs, retry count, exception details, or administrative retry policy.
 
-**Evidence:** The [Service Task incident and retry proposal](capsules/SERVICE-TASK-INCIDENT-RETRY-PROPOSAL.md) owns the proposed profile, phase-zero probe, semantic generation, retry preservation, and Temporal preflight. Pinned CIB source records the positive-to-zero incident creation and zero-to-positive incident resolution mechanism; packaged-engine phase-zero evidence remains required before approval.
+**Evidence:** The [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) uses the exact selected Service Task source, public job execution, public incident query, and public retry reset. Under `createIncidentOnFailedJobEnabled = true`, it proves `3 -> 2 -> 1 -> 0`, one self-rooted public `failedJob` incident configured by the same job, incident removal after reset to one retry, replacement by a new raw incident after another failure, and later success through the same job and Process. The disabled-setting control reaches retries zero with no incident. The [redesigned proposal](capsules/SERVICE-TASK-INCIDENT-RETRY-PROPOSAL.md) owns the bounded semantic generations, retry preservation, and Temporal preflight.
 
-**Boundary:** One failed async-before job, one `failedJob` incident, public retry reset, same job and Process retention, and later successful or failed re-execution are proposed. General incidents, retry cycles, backoff, due dates, incident messages, job deletion, batch retry, arbitrary Management Service operations, external tasks, Process cancellation, BPMN Error, compensation, and production operator UI remain excluded.
+**Boundary:** One failed async-before job, one `failedJob` incident, one public retry reset, same job and Process retention, later success or one second failed execution, generation 1 retryability, and generation 2 non-retryability are proposed. General incidents, further retry cycles, backoff, due dates, incident messages, job deletion, batch retry, arbitrary Management Service operations, external tasks, Process cancellation, BPMN Error, compensation, and production operator UI remain excluded.
 
 ### Research queue
 
@@ -475,7 +475,7 @@ CIB exposes a raw job ID, incident ID, retry count, execution association, and i
 
 The first incident on one effect occurrence is generation one. Retrying removes the incident while retaining the same occurrence. A later technical failure becomes generation two even if CIB reuses or replaces its raw incident identity. This semantic generation prevents an old operator command from acting on a later failure without presenting CIB engine storage as semantic authority.
 
-**Evidence:** The [Service Task incident and retry proposal](capsules/SERVICE-TASK-INCIDENT-RETRY-PROPOSAL.md) owns the exact raw evidence, projection refusal matrix, Lean/core generation account, and Temporal result separation. Packaged-engine phase-zero evidence remains required.
+**Evidence:** The [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) proves that CIB retains the same raw job and Process while replacing a resolved failed-job incident with a later raw incident. The [redesigned proposal](capsules/SERVICE-TASK-INCIDENT-RETRY-PROPOSAL.md) owns the exact raw evidence, projection refusal matrix, bounded Lean/core generation account, and transport/semantic result separation.
 
 **Boundary:** The mapping does not claim CIB independently derives semantic effect identity or generation. It does not expose job, incident, execution, Workflow, Run, Activity, attempt, retry-budget, cause, or stack identity and does not authorize Process cancellation or Product 2 action state.
 
@@ -540,6 +540,16 @@ The product-neutral mapped-success profile pins CIB Seven `2.0.0` at revision `5
 **Status:** Reviewed configuration dependency
 
 The product-neutral mapped-boundary-Error profile pins the same CIB Seven `2.0.0` revision, Java, H2, scheduler, clock, history, and TTL settings as a distinct profile identity. Evidence for another release or another profile does not establish this configuration-specific claim.
+
+### CIB-CFG-0008 - explicit failed-job incident creation
+
+**Status:** Proposed configuration dependency; packaged-engine phase-zero evidence complete, selection pending proposal approval
+
+The proposed Service Task incident profile explicitly sets `createIncidentOnFailedJobEnabled` to `true`. Pinned CIB Seven creates the public `failedJob` incident only under that setting. Relying on the engine default would make the profile's public incident fact depend on an undeclared host choice.
+
+**Evidence:** The [Service Task incident phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) runs the same exact BPMN and failure schedule under both values. The enabled engine exposes and resolves the failed-job incident while retaining the job and Process; the disabled engine reaches retries zero with no incident.
+
+**Boundary:** This setting selects only creation of the one failed-job incident used by `CIB-EXT-0013`. It does not authorize other incident handlers, automatic execution, retry scheduling, arbitrary configuration, or semantic use of CIB retry counts and identities.
 
 ## Audit of previously visited findings
 
