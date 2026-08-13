@@ -25,9 +25,13 @@ import {
   statesWithEmptyEffectSnapshots,
 } from "./contract-effect-projection.ts";
 import {
-  projectCibIncidentState,
-  serviceTaskIncidentProfileId,
-} from "./contract-cib-incident-projection.ts";
+  projectCibIncidentCancellationState,
+  projectCibIncidentCancellationStatus,
+  profileIsStageOneIncident,
+  profileRequiresIncidentSnapshots,
+  verifyCibIncidentCancellationExecution,
+  verifyCibIncidentCancellationHistory,
+} from "./contract-cib-incident-cancellation-projection.ts";
 import {
   projectCibUserTaskMetadata,
 } from "./contract-cib-user-task-metadata-projection.ts";
@@ -61,13 +65,18 @@ export function verifyProducerProjection(
     evidence.producerObservations.effectJobs ??
     statesWithEmptyEffectSnapshots(evidence.result.trace);
   const incidentSnapshots = evidence.producerObservations.incidentJobs;
+  const historicSnapshots = verifyCibIncidentCancellationHistory(
+    evidence.profile.id,
+    stateSnapshots,
+    evidence.producerObservations.historicProcessStates,
+  );
   if (
     states.length !== stateSnapshots.length ||
     states.length !== taskSnapshots.length ||
     states.length !== messageSnapshots.length ||
     states.length !== timerSnapshots.length ||
     states.length !== effectSnapshots.length ||
-    (evidence.profile.id === serviceTaskIncidentProfileId
+    (profileRequiresIncidentSnapshots(evidence.profile.id)
       ? incidentSnapshots?.length !== states.length
       : incidentSnapshots !== undefined)
   ) {
@@ -123,7 +132,7 @@ export function verifyProducerProjection(
       expectedInstanceId,
       messageSnapshot.subscriptions,
     );
-    const effectProjection = projectCibIncidentState(
+    const effectProjection = projectCibIncidentCancellationState(
       evidence.profile.id,
       expectedInstanceId,
       effectSnapshot,
@@ -154,7 +163,10 @@ export function verifyProducerProjection(
       | "enabledInteractions"
       | "logicalTimeMs"
     > = {
-      status: stateProjection.status,
+      status: projectCibIncidentCancellationStatus(
+        stateProjection.status,
+        historicSnapshots?.[index],
+      ),
       activeWaits,
       openUserTasks: taskProjection.openUserTasks,
       openMessageSubscriptions:
@@ -300,11 +312,15 @@ export function projectCibProcessVariable(
 function verifyEffectExecutions(evidence: CibSevenEvidence): void {
   const effectExecutions =
     evidence.producerObservations.effectExecutions ?? [];
+  if (verifyCibIncidentCancellationExecution(
+    evidence.profile.id,
+    effectExecutions,
+  )) return;
   if (effectExecutions.length === 0) {
     return;
   }
   const execution = effectExecutions[0];
-  if (evidence.profile.id === serviceTaskIncidentProfileId) {
+  if (profileIsStageOneIncident(evidence.profile.id)) {
     if (
       effectExecutions.length !== 1 ||
       execution === undefined ||

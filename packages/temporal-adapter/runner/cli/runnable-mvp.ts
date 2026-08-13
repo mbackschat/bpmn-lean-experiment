@@ -27,16 +27,20 @@ import {
   assessBpmnProcessAdmission,
   createHostEffectActivities,
   driveHostInteractions,
+  isCancelledProcessReceipt,
   isCompletedProcessReceipt,
+  isTerminalProcessReceipt,
   processWorkflowId,
   readBpmnProcessTrace,
   readUserTaskDetail,
   startBpmnProcess,
   submitMessageDelivery,
+  submitIncidentProcessCancellation,
   submitUserTaskCompletion,
 } from "@bpmn-lean/temporal-runner";
 import type {
   BpmnProcessAdmissionFailure,
+  CancelledProcessReceipt,
   CompletedProcessReceipt,
   ExternalTemporalRuntimeOptions,
   HostInteractionEvent,
@@ -62,6 +66,7 @@ export const RunnableMvpEventKind = {
   HostWaitObserved: HostInteractionEventKind.HostWaitObserved,
   InteractionRefused: "interactionRefused",
   ProcessCompleted: "processCompleted",
+  ProcessCancelled: "processCancelled",
 } as const;
 
 export type RunnableMvpEvent = DeepReadonly<
@@ -109,10 +114,15 @@ export type RunnableMvpEvent = DeepReadonly<
       kind: typeof RunnableMvpEventKind.ProcessCompleted;
       receipt: CompletedProcessReceipt;
     }
+  | {
+      kind: typeof RunnableMvpEventKind.ProcessCancelled;
+      receipt: CancelledProcessReceipt;
+    }
 >;
 
 export const RunnableMvpResultKind = {
   Completed: "completed",
+  Cancelled: "cancelled",
   SourceAdmissionRejected: "sourceAdmissionRejected",
   ProcessAdmissionRejected: "processAdmissionRejected",
   InteractionRefused: "interactionRefused",
@@ -122,6 +132,10 @@ export type RunnableMvpResult = DeepReadonly<
   | {
       kind: typeof RunnableMvpResultKind.Completed;
       receipt: CompletedProcessReceipt;
+    }
+  | {
+      kind: typeof RunnableMvpResultKind.Cancelled;
+      receipt: CancelledProcessReceipt;
     }
   | {
       kind: typeof RunnableMvpResultKind.SourceAdmissionRejected;
@@ -273,6 +287,12 @@ export async function runRunnableTemporalMvp(
           start.instanceId,
           stimulus,
         ),
+        submitCancellation: (stimulus) =>
+          submitIncidentProcessCancellation(
+            runtime.workflowClient,
+            start.instanceId,
+            stimulus,
+          ),
       },
       undefined,
       (event) => observeDriverEvent(event, observe),
@@ -294,14 +314,21 @@ export async function runRunnableTemporalMvp(
     }
 
     const receipt: unknown = await started.handle.result();
-    if (!isCompletedProcessReceipt(receipt)) {
+    if (!isTerminalProcessReceipt(receipt)) {
       throw new TypeError(
-        "Temporal Workflow returned a malformed completed Process receipt",
+        "Temporal Workflow returned a malformed terminal Process receipt",
       );
     }
-    observe({ kind: RunnableMvpEventKind.ProcessCompleted, receipt });
     runtime.assertHealthy();
-    return { kind: RunnableMvpResultKind.Completed, receipt };
+    if (isCompletedProcessReceipt(receipt)) {
+      observe({ kind: RunnableMvpEventKind.ProcessCompleted, receipt });
+      return { kind: RunnableMvpResultKind.Completed, receipt };
+    }
+    if (isCancelledProcessReceipt(receipt)) {
+      observe({ kind: RunnableMvpEventKind.ProcessCancelled, receipt });
+      return { kind: RunnableMvpResultKind.Cancelled, receipt };
+    }
+    throw new TypeError("Terminal receipt status was not recognized");
   } finally {
     await runtime.shutdown();
   }

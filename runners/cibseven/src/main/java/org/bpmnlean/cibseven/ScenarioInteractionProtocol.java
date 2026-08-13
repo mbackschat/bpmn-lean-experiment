@@ -17,12 +17,16 @@ public final class ScenarioInteractionProtocol {
     @JsonSubTypes.Type(
         value = ScenarioMessageProtocol.DeliverMessageInteraction.class,
         name = "deliverMessage"),
-    @JsonSubTypes.Type(value = RetryIncidentInteraction.class, name = "retryIncident")
+    @JsonSubTypes.Type(value = RetryIncidentInteraction.class, name = "retryIncident"),
+    @JsonSubTypes.Type(
+        value = CancelIncidentProcessInteraction.class,
+        name = "cancelIncidentProcess")
   })
   public sealed interface EnabledInteraction
       permits CompleteUserTaskInstanceInteraction,
           ScenarioMessageProtocol.DeliverMessageInteraction,
-          RetryIncidentInteraction {}
+          RetryIncidentInteraction,
+          CancelIncidentProcessInteraction {}
 
   public record CompleteUserTaskInstanceInteraction(
       ScenarioProtocol.UserTaskInstanceId taskId)
@@ -35,6 +39,15 @@ public final class ScenarioInteractionProtocol {
   public record RetryIncidentInteraction(
       ScenarioProtocol.EffectIncidentId incidentId) implements EnabledInteraction {
     public RetryIncidentInteraction {
+      Objects.requireNonNull(incidentId, "incidentId");
+    }
+  }
+
+  public record CancelIncidentProcessInteraction(
+      String processInstanceId, ScenarioProtocol.EffectIncidentId incidentId)
+      implements EnabledInteraction {
+    public CancelIncidentProcessInteraction {
+      Objects.requireNonNull(processInstanceId, "processInstanceId");
       Objects.requireNonNull(incidentId, "incidentId");
     }
   }

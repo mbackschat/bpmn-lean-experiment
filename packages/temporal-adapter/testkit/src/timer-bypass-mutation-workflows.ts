@@ -6,6 +6,7 @@ import type {
 import type {
   CompletedProcessReceipt,
 } from "./contracts.js";
+import { requireCompletedProcessReceipt } from "./contracts.js";
 import {
   runBpmnProcessWithHostEffects,
 } from "@bpmn-lean/temporal-workflow";
@@ -23,5 +24,5 @@ export function runBpmnProcessTimerBypassMutation(
         "Timer-bypass mutation does not host Service Task effects",
       );
     },
-  );
+  ).then(requireCompletedProcessReceipt);
 }

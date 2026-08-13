@@ -71,6 +71,18 @@ const booleanScenarioRelativePath =
   "scenarios/user-task-boolean-completion/scenario.json";
 const metadataScenarioRelativePath =
   "scenarios/user-task-assignment-form-metadata/scenario.json";
+const incidentCancellationScenarioRelativePath =
+  "scenarios/service-task-incident-cancellation/scenario.json";
+
+test("registers the incident cancellation scenario in the pipeline catalog", () => {
+  assert.equal(
+    pipelineCases.some(
+      ({ scenarioRelativePath }) =>
+        scenarioRelativePath === incidentCancellationScenarioRelativePath,
+    ),
+    true,
+  );
+});
 
 test("registers every Event race artifact once with exact Temporal refinement", () => {
   assert.doesNotThrow(() =>

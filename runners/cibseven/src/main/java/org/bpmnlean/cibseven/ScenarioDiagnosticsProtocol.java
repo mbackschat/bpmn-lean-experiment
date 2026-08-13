@@ -24,6 +24,8 @@ public final class ScenarioDiagnosticsProtocol {
       List<EffectJobSnapshot> effectJobs,
       @JsonInclude(JsonInclude.Include.NON_NULL)
           List<CibSevenIncidentProtocol.IncidentJobSnapshot> incidentJobs,
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          List<HistoricProcessStateSnapshot> historicProcessStates,
       List<EffectExecutionSnapshot> effectExecutions,
       List<MappingExecutionSnapshot> mappingExecutions,
       CleanupProjection cleanup) {
@@ -41,6 +43,8 @@ public final class ScenarioDiagnosticsProtocol {
       timerJobs = List.copyOf(timerJobs);
       effectJobs = List.copyOf(effectJobs);
       incidentJobs = incidentJobs == null ? null : List.copyOf(incidentJobs);
+      historicProcessStates =
+          historicProcessStates == null ? null : List.copyOf(historicProcessStates);
       effectExecutions = List.copyOf(effectExecutions);
       mappingExecutions = List.copyOf(mappingExecutions);
       Objects.requireNonNull(cleanup, "cleanup");
@@ -72,9 +76,18 @@ public final class ScenarioDiagnosticsProtocol {
           timerJobs,
           effectJobs,
           null,
+          null,
           effectExecutions,
           mappingExecutions,
           cleanup);
+    }
+  }
+
+  /** Raw public historic Process state retained only by the cancellation successor. */
+  public record HistoricProcessStateSnapshot(String afterCommandId, String state) {
+    public HistoricProcessStateSnapshot {
+      Objects.requireNonNull(afterCommandId, "afterCommandId");
+      Objects.requireNonNull(state, "state");
     }
   }
 

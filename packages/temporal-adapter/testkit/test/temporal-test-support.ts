@@ -36,8 +36,12 @@ import type {
   SemanticProcessProgram,
   StateObservation,
 } from "@bpmn-lean/semantic-core";
+import {
+  isCompletedProcessReceipt,
+} from "@bpmn-lean/temporal-testkit";
 import type {
   CompletedProcessReceipt,
+  TerminalProcessReceipt,
 } from "@bpmn-lean/temporal-testkit";
 
 export const capsuleUrl = new URL(
@@ -283,13 +287,16 @@ export function completionStimulus(
 /**
  * The completed receipt an execution must have produced.
  *
- * A `null` receipt means the adapter terminated a still-running Workflow, which
- * is a harness failure for every case that reads final state.
+ * A `null` or cancelled receipt is a harness failure for a case that requires
+ * ordinary completion.
  */
 export function requireCompletedReceipt(
-  receipt: CompletedProcessReceipt | null,
+  receipt: TerminalProcessReceipt | null,
 ): CompletedProcessReceipt {
-  assert.ok(receipt !== null, "the execution produced no completed receipt");
+  assert.ok(
+    isCompletedProcessReceipt(receipt),
+    "the execution produced no completed receipt",
+  );
   return receipt;
 }
 

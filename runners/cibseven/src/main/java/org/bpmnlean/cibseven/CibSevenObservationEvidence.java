@@ -6,6 +6,7 @@ import org.bpmnlean.cibseven.CibStateQueryEvidence.MessageSubscriptionSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
 import org.bpmnlean.cibseven.CibSevenIncidentProtocol.IncidentJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectJobSnapshot;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.HistoricProcessStateSnapshot;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TaskQuerySnapshot;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TimerJobSnapshot;
 
@@ -18,6 +19,7 @@ final class CibSevenObservationEvidence {
   private final List<TimerJobSnapshot> timerJobs = new ArrayList<>();
   private final List<EffectJobSnapshot> effectJobs = new ArrayList<>();
   private final List<IncidentJobSnapshot> incidentJobs = new ArrayList<>();
+  private final List<HistoricProcessStateSnapshot> historicProcessStates = new ArrayList<>();
 
   void add(CibSevenScenarioStateProjector.ObservedState observed) {
     stateQueries.add(observed.stateQuery());
@@ -27,6 +29,9 @@ final class CibSevenObservationEvidence {
     effectJobs.add(observed.effectJobs());
     if (observed.incidentJobs() != null) {
       incidentJobs.add(observed.incidentJobs());
+    }
+    if (observed.historicProcessState() != null) {
+      historicProcessStates.add(observed.historicProcessState());
     }
   }
 
@@ -52,5 +57,9 @@ final class CibSevenObservationEvidence {
 
   List<IncidentJobSnapshot> incidentJobs() {
     return List.copyOf(incidentJobs);
+  }
+
+  List<HistoricProcessStateSnapshot> historicProcessStates() {
+    return List.copyOf(historicProcessStates);
   }
 }

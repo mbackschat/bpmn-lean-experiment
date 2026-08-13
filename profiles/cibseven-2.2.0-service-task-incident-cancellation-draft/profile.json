@@ -1,0 +1,110 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-service-task-incident-cancellation-draft",
+  "status": "immutable",
+  "claim": "service-task-effect-generation-one-incident-root-process-cancellation-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true,
+    "createIncidentOnFailedJobEnabled": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "string-process-start-variable",
+      "service-task",
+      "failed-effect-incident",
+      "literal-generation-one-incident-root-process-cancellation",
+      "none-end-event",
+      "sequence-flow"
+    ],
+    "extensions": [
+      "camunda-delegate-expression-exact-bean-token",
+      "camunda-async-before",
+      "camunda-failed-job-incident",
+      "camunda-public-root-process-deletion"
+    ],
+    "relationships": [
+      "CIB-EXT-0001",
+      "CIB-EXT-0006",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0008"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "effectBindings": [
+    {
+      "source": {
+        "implementation": "urn:bpmn-lean:effect:probe-v1",
+        "delegateExpression": "${bpmnLeanEffectHandler}"
+      },
+      "descriptor": {
+        "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+        "operation": "urn:bpmn-lean:effect-operation:probe-v1"
+      }
+    }
+  ],
+  "excluded": [
+    "effect-payloads",
+    "process-variables-other-than-the-selected-string-start-binding",
+    "general-juel",
+    "arbitrary-beans",
+    "java-class-loading",
+    "delegate-execution-compatibility",
+    "field-injection",
+    "data-associations",
+    "bpmn-operation",
+    "messages",
+    "general-service-faults",
+    "bpmn-errors",
+    "boundary-events",
+    "incident-kinds-other-than-failed-effect",
+    "second-semantic-incident",
+    "retry-budgets",
+    "retry-cycles",
+    "general-process-deletion",
+    "nested-scope-cancellation",
+    "deletion-reason",
+    "compensation",
+    "transaction-cancel",
+    "modeled-terminate",
+    "native-host-cancellation",
+    "heartbeats",
+    "local-activities",
+    "multiple-effects",
+    "effect-races",
+    "external-tasks",
+    "product-2-incident-state"
+  ]
+}

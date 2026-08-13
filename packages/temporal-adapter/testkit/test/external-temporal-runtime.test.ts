@@ -87,6 +87,7 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
     switch (result.kind) {
       case RunnableMvpResultKind.Completed:
         break;
+      case RunnableMvpResultKind.Cancelled:
       case RunnableMvpResultKind.SourceAdmissionRejected:
       case RunnableMvpResultKind.ProcessAdmissionRejected:
       case RunnableMvpResultKind.InteractionRefused:

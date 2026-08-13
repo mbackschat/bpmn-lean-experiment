@@ -9,6 +9,7 @@ import {
 import type {
   CompletedProcessReceipt,
 } from "./contracts.js";
+import { requireCompletedProcessReceipt } from "./contracts.js";
 import {
   ActivationDrain,
 } from "@bpmn-lean/temporal-workflow";
@@ -31,5 +32,5 @@ export function runBpmnProcessEventRaceBarrierRemovalMutation(
       );
     },
     ActivationDrain.RemovedMutation,
-  );
+  ).then(requireCompletedProcessReceipt);
 }

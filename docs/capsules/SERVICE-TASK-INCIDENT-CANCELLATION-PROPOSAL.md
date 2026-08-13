@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposal review, owner approval, and the first-green semantic checkpoint are complete; downstream evidence implementation is in progress.** Context-cold review of immutable target `d03f5285a9e16852e2d08da6da29864275e75c6b` returned `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf1f893d24ee282b89a5fdef0a37d1b920e`. On 2026-08-13, the owner explicitly approved this proposal and all eight decisions in [Decisions requested from the owner](#decisions-requested-from-the-owner). Context-cold semantic-checkpoint review of `189c56f146fceab543d734bc5cba5f9a1fb0657c` returned `APPROVE WITH REQUIRED EDITS`; bounded correction `f86a8250332f61ca0d5ff8b17669643df04c575c` closed all findings. The approved checkpoint implements the strict wire and schema, exact shared TypeScript and Lean cancellation eligibility and transitions, cancelled public observation, and additive Temporal Update and terminal receipt. CIB execution and projection, registered artifacts, differential execution, and live Temporal refinement remain unimplemented and are the active work. This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
+**Proposal review, owner approval, the semantic checkpoint, and all implementation/evidence lanes are complete; independent closure review is pending.** Context-cold review of immutable target `d03f5285a9e16852e2d08da6da29864275e75c6b` returned `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf1f893d24ee282b89a5fdef0a37d1b920e`. On 2026-08-13, the owner explicitly approved this proposal and all eight decisions in [Decisions requested from the owner](#decisions-requested-from-the-owner). Context-cold semantic-checkpoint review of `189c56f146fceab543d734bc5cba5f9a1fb0657c` returned `APPROVE WITH REQUIRED EDITS`; bounded correction `f86a8250332f61ca0d5ff8b17669643df04c575c` closed all findings. The implementation now includes the strict wire and schema, shared cleanup-qualified TypeScript and Lean cancellation eligibility and transitions, configured CIB execution and positive external-termination projection, registered artifacts, exact four-target differential execution, the runnable example, and live Temporal Worker-replacement, retained-Update, terminal-receipt, history, replay, and mutation evidence. This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
 
 ## Independent cold-review receipt
 
@@ -251,11 +251,11 @@ These headroom values are the exact `node scripts/what-binds.ts` measurements at
 | [`BpmnSemantics/SemanticProcess/ProfileAdmission.lean`](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 161 |
 | [`BpmnSemantics/SemanticProcessJson/Scenario.lean`](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 452 |
 | [`BpmnSemantics/SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 170 |
-| [`scripts/contract-artifacts.ts`](../../scripts/contract-artifacts.ts) | 88 |
-| [`scripts/contract-artifact-cases.ts`](../../scripts/contract-artifact-cases.ts) | 365 |
+| [`scripts/contract-artifacts.ts`](../../scripts/contract-artifacts.ts) | 83 |
+| [`scripts/contract-artifact-cases.ts`](../../scripts/contract-artifact-cases.ts) | 361 |
 | [`scripts/contract-artifact-projections.test.ts`](../../scripts/contract-artifact-projections.test.ts) | 5 |
-| [`scripts/contract-cib-evidence.ts`](../../scripts/contract-cib-evidence.ts) | 475 |
-| [`scripts/contract-cib-evidence-projection.ts`](../../scripts/contract-cib-evidence-projection.ts) | 16 |
+| [`scripts/contract-cib-evidence.ts`](../../scripts/contract-cib-evidence.ts) | 470 |
+| [`scripts/contract-cib-evidence-projection.ts`](../../scripts/contract-cib-evidence-projection.ts) | 0 |
 | [`scripts/contract-cib-incident-projection.ts`](../../scripts/contract-cib-incident-projection.ts) | 465 |
 | [`scripts/contract-cib-incident-projection.test.ts`](../../scripts/contract-cib-incident-projection.test.ts) | 465 |
 | [`scripts/contract-incident-artifact-case.ts`](../../scripts/contract-incident-artifact-case.ts) | 591 |
@@ -263,13 +263,13 @@ These headroom values are the exact `node scripts/what-binds.ts` measurements at
 | [`scripts/service-task-incident-contract-schema.test.ts`](../../scripts/service-task-incident-contract-schema.test.ts) | 445 |
 | [`scripts/service-task-incident-profile-consistency.ts`](../../scripts/service-task-incident-profile-consistency.ts) | 416 |
 | [`scripts/service-task-incident-profile-consistency.test.ts`](../../scripts/service-task-incident-profile-consistency.test.ts) | 484 |
-| [`scripts/replace-cibseven-evidence.ts`](../../scripts/replace-cibseven-evidence.ts) | 250 |
-| [`packages/differential/test/pipeline-cases.ts`](../../packages/differential/test/pipeline-cases.ts) | 8 |
-| [`packages/differential/test/pipeline-comparison.ts`](../../packages/differential/test/pipeline-comparison.ts) | 36 |
-| [`packages/differential/test/pipeline-cib-targets.ts`](../../packages/differential/test/pipeline-cib-targets.ts) | 445 |
-| [`packages/differential/test/pipeline-types.ts`](../../packages/differential/test/pipeline-types.ts) | 404 |
-| [`packages/differential/test/pipeline.test.ts`](../../packages/differential/test/pipeline.test.ts) | 114 |
-| [`packages/differential/test/pipeline-catalog.test.ts`](../../packages/differential/test/pipeline-catalog.test.ts) | 43 |
+| [`scripts/replace-cibseven-evidence.ts`](../../scripts/replace-cibseven-evidence.ts) | 224 |
+| [`packages/differential/test/pipeline-cases.ts`](../../packages/differential/test/pipeline-cases.ts) | 4 |
+| [`packages/differential/test/pipeline-comparison.ts`](../../packages/differential/test/pipeline-comparison.ts) | 51 |
+| [`packages/differential/test/pipeline-cib-targets.ts`](../../packages/differential/test/pipeline-cib-targets.ts) | 435 |
+| [`packages/differential/test/pipeline-types.ts`](../../packages/differential/test/pipeline-types.ts) | 402 |
+| [`packages/differential/test/pipeline.test.ts`](../../packages/differential/test/pipeline.test.ts) | 96 |
+| [`packages/differential/test/pipeline-catalog.test.ts`](../../packages/differential/test/pipeline-catalog.test.ts) | 32 |
 | [`packages/temporal-adapter/protocol/src/command-identity.ts`](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 400 |
 | [`packages/temporal-adapter/protocol/src/contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 406 |
 | [`packages/temporal-adapter/protocol/src/lifecycle-results.ts`](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 416 |
@@ -281,25 +281,25 @@ These headroom values are the exact `node scripts/what-binds.ts` measurements at
 | [`packages/temporal-adapter/workflow/src/effect-activity-policy.ts`](../../packages/temporal-adapter/workflow/src/effect-activity-policy.ts) | 567 |
 | [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 33 |
 | [`packages/temporal-adapter/workflow/src/workflows.ts`](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 |
-| [`packages/temporal-adapter/runner/src/host-interaction-driver.ts`](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 235 |
+| [`packages/temporal-adapter/runner/src/host-interaction-driver.ts`](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 214 |
 | [`packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts`](../../packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts) | 459 |
 | [`packages/temporal-adapter/testkit/src/incident-scenario-execution.ts`](../../packages/temporal-adapter/testkit/src/incident-scenario-execution.ts) | 261 |
-| [`packages/temporal-adapter/testkit/src/runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 98 |
+| [`packages/temporal-adapter/testkit/src/runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 77 |
 | [`packages/temporal-adapter/testkit/src/harness-evidence.ts`](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) | 100 |
-| [`packages/temporal-adapter/testkit/src/test-contracts.ts`](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 467 |
-| [`packages/temporal-adapter/testkit/src/runner-support.ts`](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 152 |
-| [`packages/temporal-adapter/testkit/src/history-evidence-decoding.ts`](../../packages/temporal-adapter/testkit/src/history-evidence-decoding.ts) | 307 |
-| [`packages/temporal-adapter/testkit/src/mutation-probes.ts`](../../packages/temporal-adapter/testkit/src/mutation-probes.ts) | 338 |
-| [`packages/temporal-adapter/testkit/src/temporal-worker-host.ts`](../../packages/temporal-adapter/testkit/src/temporal-worker-host.ts) | 345 |
+| [`packages/temporal-adapter/testkit/src/test-contracts.ts`](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 466 |
+| [`packages/temporal-adapter/testkit/src/runner-support.ts`](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 151 |
+| [`packages/temporal-adapter/testkit/src/history-evidence-decoding.ts`](../../packages/temporal-adapter/testkit/src/history-evidence-decoding.ts) | 304 |
+| [`packages/temporal-adapter/testkit/src/mutation-probes.ts`](../../packages/temporal-adapter/testkit/src/mutation-probes.ts) | 317 |
+| [`packages/temporal-adapter/testkit/src/temporal-worker-host.ts`](../../packages/temporal-adapter/testkit/src/temporal-worker-host.ts) | 337 |
 | [`packages/temporal-adapter/testkit/test/temporal-history-facts.ts`](../../packages/temporal-adapter/testkit/test/temporal-history-facts.ts) | 284 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 109 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | 565 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 539 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java) | 16 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 277 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentProjector.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentProjector.java) | 475 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentCommandExecutor.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentCommandExecutor.java) | 488 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java) | 387 |
+| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 97 |
+| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | 553 |
+| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 526 |
+| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java) | 64 |
+| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 248 |
+| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentProjector.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentProjector.java) | 466 |
+| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentCommandExecutor.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentCommandExecutor.java) | 471 |
+| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java) | 375 |
 | [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibStateQueryEvidence.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibStateQueryEvidence.java) | 545 |
 | [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioJson.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioJson.java) | 558 |
 

@@ -153,9 +153,19 @@ function selectEffectSchedule(
   if (configuration === null) {
     throw new Error("CIB target group received a standards-only case");
   }
-  return requested === EffectExecutionSchedule.PlainSuccess &&
-      configuration.effectExecutionSchedule ===
-        CibEffectExecutionSchedule.IncidentReportRetrySuccess
-    ? CibEffectExecutionSchedule.IncidentReportRetrySuccess
-    : requested;
+  if (requested !== EffectExecutionSchedule.PlainSuccess) {
+    return requested;
+  }
+  switch (configuration.effectExecutionSchedule) {
+    case CibEffectExecutionSchedule.IncidentReportRetrySuccess:
+    case CibEffectExecutionSchedule.IncidentReportCancel:
+      return configuration.effectExecutionSchedule;
+    case CibEffectExecutionSchedule.None:
+    case CibEffectExecutionSchedule.FailAfterMutationOnce:
+      return requested;
+    default: {
+      const unsupported: never = configuration.effectExecutionSchedule;
+      throw new TypeError(`unsupported CIB effect schedule: ${unsupported}`);
+    }
+  }
 }

@@ -19,6 +19,12 @@ import {
   runIncidentRetryFailure,
 } from "./incident-scenario-execution.js";
 import {
+  runIncidentTerminationMutation,
+} from "./incident-cancellation-mutation-probe.js";
+import type {
+  TemporalIncidentTerminationMutation,
+} from "./incident-cancellation-mutation-probe.js";
+import {
   runBranchBypassMutation,
   runCompletionDataBypassMutation,
   runEffectBypassMutation,
@@ -216,6 +222,22 @@ export class TemporalMutationProbes {
       this.host.environment,
       this.host.effectProbeRegistry,
       effectExecution,
+      scenario,
+      semanticProcess,
+      workflowId,
+      (handle, minimumLength) => this.waitForTrace(handle, minimumLength),
+    );
+  }
+
+  async runIncidentTerminationMutation(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalIncidentTerminationMutation> {
+    this.host.assertAvailable();
+    return runIncidentTerminationMutation(
+      this.host.environment,
+      this.host.effectProbeRegistry,
       scenario,
       semanticProcess,
       workflowId,

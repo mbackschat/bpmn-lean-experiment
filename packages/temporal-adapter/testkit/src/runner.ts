@@ -49,6 +49,9 @@ import {
   runIncidentRetryRace,
   runIncidentScenario,
 } from "./incident-scenario-execution.js";
+import {
+  runIncidentCancellationAsTemporalScenario,
+} from "./incident-cancellation-live-evidence.js";
 import { EffectExecutionSchedule } from "./effect-probe.js";
 import {
   requireDurableTimerHistory,
@@ -180,6 +183,24 @@ export class TemporalScenarioRunner {
     semanticProcess: SemanticProcessProgram,
     options: TemporalScenarioExecutionOptions,
   ): Promise<TemporalScenarioExecution> {
+    if (
+      options.effectExecutionSchedule ===
+        EffectExecutionSchedule.IncidentReportCancel
+    ) {
+      validateExecutionOptions(scenario, options);
+      return runIncidentCancellationAsTemporalScenario(
+        this.environment,
+        this.effectProbeRegistry,
+        scenario,
+        semanticProcess,
+        options,
+        (handle, minimumLength) => this.waitForTrace(handle, minimumLength),
+        {
+          stop: () => this.workerHost.stopAfterCommittedIncident(),
+          start: () => this.workerHost.startAfterCommittedIncident(),
+        },
+      );
+    }
     const effectExecution = requireOptionalEffectExecution(
       scenario,
       semanticProcess,

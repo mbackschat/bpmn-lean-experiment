@@ -42,6 +42,10 @@ export type HostInteractionResponse = DeepReadonly<
       channel: MessageChannel;
       delayMs: number;
     }
+  | {
+      kind: StimulusKind.CancelIncidentProcess;
+      delayMs: number;
+    }
 >;
 
 /**
@@ -113,11 +117,26 @@ function validateHostInteractionResponse(
     case StimulusKind.DeliverMessage:
       validateDeliveryResponse(value);
       return;
+    case StimulusKind.CancelIncidentProcess:
+      validateCancellationResponse(value);
+      return;
     default:
       throw new TypeError(
         `Interaction response kind must be a canonical stimulus kind: ${String(value.kind)}`,
       );
   }
+}
+
+function validateCancellationResponse(value: Record<string, unknown>): void {
+  const record = requireExactObject(
+    value,
+    ["kind", "delayMs"],
+    "Incident cancellation response",
+  );
+  requirePositiveSafeInteger(
+    record.delayMs,
+    "Incident cancellation response delayMs",
+  );
 }
 
 function validateCompletionResponse(value: Record<string, unknown>): void {

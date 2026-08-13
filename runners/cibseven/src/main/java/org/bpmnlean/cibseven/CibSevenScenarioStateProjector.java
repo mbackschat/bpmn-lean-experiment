@@ -9,11 +9,13 @@ import java.util.List;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.ProcessVariableSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.MessageSubscriptionSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
+import org.bpmnlean.cibseven.CibSevenIncidentProtocol.IncidentJobSnapshot;
 import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioInteractionProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectJobSnapshot;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.HistoricProcessStateSnapshot;
 import org.bpmnlean.cibseven.ScenarioInteractionProtocol.EnabledInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenTimer;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
@@ -39,6 +41,7 @@ final class CibSevenScenarioStateProjector {
   private final CibSevenMessageProjector messageProjector;
   private final CibSevenActiveWaitProjector activeWaitProjector;
   private final CibSevenIncidentProjector incidentProjector;
+  private final CibSevenProcessTerminationProjector terminationProjector;
   private final boolean incidentCreationEnabled;
   private final Date logicalEpoch;
 
@@ -59,6 +62,7 @@ final class CibSevenScenarioStateProjector {
     this.messageProjector = messageProjector;
     this.activeWaitProjector = activeWaitProjector;
     this.incidentProjector = incidentProjector;
+    this.terminationProjector = new CibSevenProcessTerminationProjector();
     this.incidentCreationEnabled = incidentCreationEnabled;
     this.logicalEpoch = logicalEpoch;
   }
@@ -109,6 +113,28 @@ final class CibSevenScenarioStateProjector {
           "Engine Process-instance identity is not unique");
     }
     var isRunning = processInstanceCount == 1;
+    var engineClockTimeMs = ClockUtil.getCurrentTime().getTime();
+    var logicalTimeMs = engineClockTimeMs - logicalEpoch.getTime();
+    if (!isRunning && CibSevenScenarioRunner.CANCELLATION_PROFILE.equals(scenarioProfile)) {
+      var terminated =
+          terminationProjector.project(
+              processEngine,
+              engineInstanceId,
+              stableInstanceId,
+              afterCommandId,
+              committedCompletionVariableNames,
+              engineClockTimeMs,
+              logicalTimeMs);
+      return new ObservedState(
+          terminated.state(),
+          terminated.stateQuery(),
+          new TaskQuerySnapshot(afterCommandId, List.of()),
+          new MessageSubscriptionSnapshot(afterCommandId, List.of()),
+          new TimerJobSnapshot(afterCommandId, List.of()),
+          new EffectJobSnapshot(afterCommandId, List.of()),
+          new IncidentJobSnapshot(afterCommandId, true, List.of()),
+          terminated.historicProcessState());
+    }
     var tasks =
         isRunning
             ? processEngine
@@ -176,8 +202,6 @@ final class CibSevenScenarioStateProjector {
                 incidents.enabledInteractions())
             .flatMap(List::stream)
             .toList();
-    var engineClockTimeMs = ClockUtil.getCurrentTime().getTime();
-    var logicalTimeMs = engineClockTimeMs - logicalEpoch.getTime();
     var rawVariables =
         observeProcessVariables(
             engineInstanceId, committedCompletionVariableNames);
@@ -214,7 +238,11 @@ final class CibSevenScenarioStateProjector {
             projectedEffects.stream()
                 .map(CibSevenEffectProjector.ProjectedEffectWait::evidence)
                 .toList()),
-        incidents.evidence());
+        incidents.evidence(),
+        CibSevenScenarioRunner.CANCELLATION_PROFILE.equals(scenarioProfile)
+            ? terminationProjector.projectRunningHistory(
+                processEngine, engineInstanceId, afterCommandId)
+            : null);
   }
 
   private List<ProcessVariableSnapshot> observeProcessVariables(
@@ -332,5 +360,6 @@ final class CibSevenScenarioStateProjector {
       MessageSubscriptionSnapshot messageSubscriptions,
       TimerJobSnapshot timerJobs,
       EffectJobSnapshot effectJobs,
-      CibSevenIncidentProtocol.IncidentJobSnapshot incidentJobs) {}
+      CibSevenIncidentProtocol.IncidentJobSnapshot incidentJobs,
+      HistoricProcessStateSnapshot historicProcessState) {}
 }

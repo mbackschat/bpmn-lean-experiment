@@ -13,6 +13,7 @@ import type {
 import type {
   CompletedProcessReceipt,
   ProcessCommandResult,
+  TerminalProcessReceipt,
 } from "@bpmn-lean/temporal-protocol";
 import {
   ProcessCommandResultKind,
@@ -72,7 +73,7 @@ export type TemporalScenarioExecution = DeepReadonly<{
   waitTrace: CanonicalObservation[];
   interactionEvidence: TemporalInteractionEvidence;
   result: ScenarioResult;
-  receipt: CompletedProcessReceipt | null;
+  receipt: TerminalProcessReceipt | null;
   history: TemporalHistory;
   effectProbeEvidence: EffectProbeEvidence | null;
 }>;

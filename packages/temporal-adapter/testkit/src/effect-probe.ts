@@ -20,6 +20,7 @@ export enum EffectExecutionSchedule {
   FailAfterMutationOnce = "failAfterMutationOnce",
   IncidentReportRetrySuccess = "incidentReportRetrySuccess",
   IncidentReportRetryFailure = "incidentReportRetryFailure",
+  IncidentReportCancel = "incidentReportCancel",
 }
 
 export type EffectProbeEvidence = DeepReadonly<{
@@ -81,6 +82,7 @@ export class EffectProbeStore {
           ? { kind: "technicalFailure" }
           : effectResultFor(request);
       case EffectExecutionSchedule.IncidentReportRetryFailure:
+      case EffectExecutionSchedule.IncidentReportCancel:
         return { kind: "technicalFailure" };
       default:
         return assertNever(schedule);

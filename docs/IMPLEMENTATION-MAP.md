@@ -24,9 +24,9 @@ The graduated E2 specification additionally carries one exact optional passive U
 
 **Current E2 User Task metadata boundary.** The graduated registered profile admits either no metadata or one exact alternate-prefix-safe CIB extension block containing one literal group candidate and one string-or-boolean generated-form field. The neutral optional value is carried through the checked User Task, ordinary `awaitUserTask.task`, committed wait, and public `OpenUserTask`; old profiles and metadata-free artifacts physically omit it. Independent TypeScript and Lean execution prove exact preservation, refusal-state preservation, Boolean-completion composition, completion irrelevance, strict JSON identity, and old-profile exclusion. Retained public Task Service and Form Service facts, exact CIB/Lean/core/Temporal differential evidence, a runnable configuration, live Worker replacement, Query mutation, history, and replay are green. Product 2 consumes the published task and form facts only through the approved M3 Work contract.
 
-**Incident cancellation.** The approved checkpoint includes strict wire, cleanup-qualified root/incident eligibility shared by projection and execution, transitive local/called cleanup, typed TypeScript/Lean cancellation, and additive Temporal Update/receipt. CIB, artifacts, differential, runnable/live Temporal, general/native cancellation, compensation, and Product 2 remain absent.
+**Incident cancellation.** The approved Stage 2 implementation includes strict wire, cleanup-qualified root/incident eligibility shared by projection and execution, transitive local/called cleanup, typed TypeScript/Lean cancellation, configured CIB external-termination projection, registered artifacts, exact four-target differential evidence, a runnable example, and live Temporal Update/receipt, Worker-replacement, history, replay, and mutation evidence. General or native cancellation, compensation, a second incident, and Product 2 operations remain absent.
 
-**What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident, one exact retry, configured CIB mapping, four-target differential evidence, and Temporal technical-failure hosting. The approved Stage 2 checkpoint above does not yet add its CIB, artifact, differential, live Temporal, or Product 2 evidence.
+**What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Stage 2 adds only the exact incident-gated hosting-root cancellation successor; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
 
 **Evidence and product boundary.** Registered answer-free scenarios run through their declared Lean, TypeScript, Temporal, and pinned CIB lanes with seeded mutations and content-bound evidence. The TypeScript compiler produces the shared checked graph and program, while Lean checks lowering independently without parsing BPMN XML. The product driver answers published `enabledInteractions` with published occurrence identity. Admission is checked for every registered profile, but live durable execution is required only once per distinct host mechanism. Product examples compose the evidenced compiler, core, Workflow, and client and are not an independent semantic lane.
 
@@ -65,7 +65,6 @@ The graduated E2 specification additionally carries one exact optional passive U
 - executable Status, suffixless-singleton, registry, file-link, and heading-anchor documentation discipline; the supplied architecture handoff's current release/readiness obligations have active owners while the original brief and two residual proposals are archived provenance
 - the non-redistributed OMG BPMN 2.0.2 corpus at external sibling `../oss/omg-bpmn-2.0.2`, with overrideable XSD/CMOF consumer paths, official-source-only atomic fetch, a 15-file tracked hash manifest, and an offline verifier; the optional Markdown/image conversion remains a non-authoritative cache
 - portable external-input setup through a 14-repository/four-submodule canonical-remote/commit/tag/gitlink lock plus the per-file OMG digest manifest, separate `verify`/`adoption`/`research`/`all` provisioning scopes, a read-only doctor that derives all workspace manifests and package build caches from pnpm while hashing the fixed non-pnpm owners and inventorying registered shared caches, A12-free CI provisioning, custom-root support, and fail-closed CMOF, MIWG, breadth, and selected adoption lanes; no contributor machine is presumed to contain `../oss`
-- initial A12 boundary checks over product-source and built-in-artifact inventories, optional-root imports, source-license headers, dependency coordinates, exact external fixture bytes, external-checkout links, and the frozen legacy product-decision manifest, plus an explicit optional exact-source adoption gate outside complete MIT engine verification
 - enforced implementation-surface reviewability through per-surface implemented/absent sections and a 120-word review-unit ceiling
 - commit-bounded nonblank code/document capsule-cost measurement with a parser self-test and explicit unknown treatment for missing historical baselines
 - dependency-free source-hygiene enforcement over tracked and pending Lean/TypeScript/JavaScript/Java source with a 600-nonblank-line review target, 1000-line hard ceiling, exact import-only Lean umbrellas, allowlist-free rejection of every hand-written `.js`/`.cjs`/`.mjs` module, required Lean module-document placement, descriptive public names for maintained non-experimental conformance facts, one composed Lean assessment shared by the live scan and explicit sparse-valid anti-boilerplate fixture, literal-aware diagnostics, and no current reviewed exceptions
@@ -395,6 +394,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - public-service E2 raw evidence retains one candidate-group identity link and one typed Form Service field independently of completion
 - a separate configured successor engine bundle projects one exact retries-zero public job plus its self-rooted `failedJob` incident partner to one literal-generation-1 semantic incident, partitions that job out of `openEffects`, and resets the same public job for one retry before successful completion
 - incident-specific raw diagnostics, exact profile/schedule alignment, strict job/incident association validation, retained evidence, and mutations for missing, duplicate, mismatched, disabled, and old-profile facts
+- one exact incident-cancellation successor that requires the matching retries-zero public job and self-rooted incident partner, invokes public root deletion through private CIB identity, and projects typed cancelled state only from zero live state, exact `EXTERNALLY_TERMINATED` root history, and preserved committed Process data
 - meaningful raw-observation, projection, binding, deadline, sibling, mapping, and variable mutations
 - release-grouped evidence replacement, isolated engine configurations, zero-state checks, timings, and full cleanup
 
@@ -410,7 +410,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - reused CIB PVM algorithms/types as project semantics
 - broad CIB corpus adoption
 - general compatibility claim
-- a second canonical semantic incident, general Management Service retry policy, exception/cause projection, or incident cancellation
+- a second canonical semantic incident, general Management Service retry policy, exception/cause projection, or cancellation beyond the exact incident-gated root command
 - Product 2 assignment, inbox, authorization, claiming, rendering, validation, or form submission behavior
 
 ### Temporal adapter
@@ -435,6 +435,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - registered Boolean completion through the existing Update path, with Worker replacement, old-profile refusal then valid completion, tagged projections, history/replay, and stringification/outside-core mutations
 - registered User Task assignment/form metadata through the existing Query and Update path, with Worker replacement, exact passive projection, Boolean completion, metadata-free terminal state, history/replay, old-profile control, a Query-omission mutation, and a same-task source field-type variation bound in the Workflow-start program and Query
 - registered Service Task incident hosting with an unchanged bare semantic Activity result union, exact successor-only one-attempt policy, host-only `technicalFailure`, Workflow-derived report command, committed incident Query, content-bound retained retry Update, exact effect restoration, Worker replacement, terminal result recovery, two-command race, typed post-retry host failure, history assertions, and replay
+- registered incident-cancellation hosting with the shared one-attempt Activity/report policy, content-bound exact-root/exact-incident Update, Worker replacement while the incident is open, retained accepted-result recovery, typed cancelled receipt through ordinary Workflow completion, distinct late `processClosed`, preserved committed data, history and replay, and native-termination/completed-receipt mutations
 
 #### Explicitly absent
 
@@ -447,7 +448,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - Message ingress broker/router, definition-version fanout, or multi-target publication receipt
 - committed Event History fixtures
 - any new Temporal primitive for User Task metadata
-- a second semantic incident, arbitrary retry count or backoff, exception/cause projection, incident cancellation, or Product 2 incident ingress
+- a second semantic incident, arbitrary retry count or backoff, exception/cause projection, cancellation beyond the exact incident-gated root command, or Product 2 incident ingress
 - patch branches
 - legacy representation fallback
 - production history baseline
@@ -473,7 +474,6 @@ The graduated E2 specification additionally carries one exact optional passive U
 - exact case-specific relations across every implemented family, with retained-CIB comparison only where the selected profile declares a CIB target
 - separate synchronous CIB host relations for the two product-neutral mapped Service Task slices
 - Query, Update, Signal, durable-Timer, Activity, result-recovery, replay, and cleanup evidence for each applicable host mechanism
-- definition, provenance, admission, semantic-state, projection, host-bypass, and evidence mutations, including one required semantic disagreement per registered case
 - exact Message Start agreement across Lean, the core, and Temporal with CIB absent, plus Interface Operation, instance-identity, and Signal-With-Start discriminators
 - exact Timer Start agreement across Lean, the core, and Temporal with CIB absent, plus Start Event/instance-identity, stored-action, direct-start, and returned-execution-identity discriminators
 - three exact Terminate End schedules across Lean, the core, and Temporal with CIB absent, plus source, checked-to-IL, regional-cancellation, stale-command, and supplied-instance mutation discriminators
@@ -481,6 +481,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - one exact Boolean User Task completion schedule across CIB, Lean, the core, and Temporal, plus Boolean-to-string mutation and live outside-core/stringification discriminators
 - one exact User Task assignment/form metadata schedule across CIB, Lean, the core, and Temporal, plus candidate, field-key, field-type, source-derived-projection, live source field-type, and live Query-omission discriminators
 - one exact Service Task incident schedule across CIB, Lean, the core, and Temporal, plus raw job/incident association, nested effect identity, checked/IL profile-only equivalence, technical-result routing, same-occurrence restoration, target substitution, post-retry host failure, and distinct-command race discriminators
+- one exact Service Task incident-cancellation schedule across CIB, Lean, the core, and Temporal, plus public job/incident partner, historic-state, preserved-data, exact root/generation/owner, Retry-before-Cancel, completed-state, definition-drift, schedule, target-substitution, native-termination, and completed-receipt discriminators
 - isolated target execution, complete fetched-history replay, cleanup, timings, and feedback budgets
 
 #### Explicitly absent
@@ -546,19 +547,7 @@ This section is the owner of a cross-cutting admission rule that no single capsu
 
 **Per-scenario requirements are owned by the guarded artifact catalogs and each capsule's rule-to-evidence matrix**, and are deliberately not restated in this inventory. The registered scenarios, their declared target relations, their seeded mutations, and the exact cases the pipeline ran are emitted by the generated pipeline report; [TESTING-SPEC.md](TESTING-SPEC.md#complete-differentialrefinement-pipeline) owns what the gate requires.
 
-What this inventory does own is the set of cross-cutting invariants the complete prepared pipeline must satisfy over their declared case sets, whatever the catalog currently contains. Each applies where its lane applies: the CIB bullets bind only CIB-backed cases, the host bullets only cases declaring a Temporal target.
-
-- equality between current CIB execution and content-bound retained CIB evidence;
-- the same waiting projection for successful and wrong-activation inputs before completion, and exact state preservation after wrong and stale completion rejection;
-- equality between the pure core and each isolated Temporal result under that case's declared target relation, with correct Query projection and Update outcomes;
-- proof that the Temporal runner never delivers `fireTimer` or `completeEffect`, that the Workflow derives each from committed semantic state, and that Event History contains the exact timer or Activity mechanism;
-- duplicate logical-command stability, and classified disagreement when an activation ordinal is mutated;
-- a rejected Lean scenario document carrying an injected extra answer field, plus exact equality between the admitted scenario and Lean's decoded echo;
-- exact Lean definition identity and lowering equality, plus rejection of a schema-valid operation-origin mutation and of erased parallel control-place Sequence-Flow provenance;
-- a seeded semantic mutation per registered case that produces its required disagreement;
-- every fetched live history replayed before server shutdown, and clean CIB and Temporal teardown.
-
-The warm-pipeline measures are two tiers owned by [TESTING-SPEC.md](TESTING-SPEC.md#default-verification): a reported 15-second soft target and a 40-second hard ceiling, with a separate sub-45-second cold budget. Exact counts and latest measurements belong to the generated report and [PLAN.md](PLAN.md). A hand-copied replay count here once drifted from the run's actual figure without any gate noticing, which is why counts are no longer restated in this document.
+The complete prepared pipeline enforces the cross-cutting CIB, Lean, core, Temporal, mutation, replay, and teardown invariants defined by [TESTING-SPEC.md](TESTING-SPEC.md#complete-differentialrefinement-pipeline). Exact counts and latest measurements belong to the generated report and [PLAN.md](PLAN.md).
 
 ## Nearest unsupported claim
 
@@ -573,7 +562,7 @@ One nearest boundary per family. The owning capsule holds the full exclusion set
 - **Non-interrupting boundary Timer:** a deadline that fires more than once, which `timeCycle` admits and Table 10.91 contemplates. A second firing makes the element-identity-to-activation join ambiguous, so a capsule admitting repetition must add the occurrence record rather than inherit the argument. See [the capsule](capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md).
 - **Error:** handler search beyond one exact match attached to the directly enclosing embedded Sub-Process. Catch-all matching, multiple candidates, ancestor propagation, unmatched outcomes, Event Sub-Processes, payload mapping, and concurrent command races stay outside. See [the capsule](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md).
 - **Expressions:** conditional routing beyond the exact Simple Boolean profile. JUEL remains demand-driven, deferred, and separately classified.
-- **Service Task incidents:** CIB projection and execution plus Temporal technical-failure hosting for the independently reviewed first-green report/retry account. A second semantic incident, arbitrary retry policy, exception data, cancellation, and Product 2 operations remain outside the stage-one proposal.
+- **Service Task incidents:** one literal-generation-1 report/retry account and one successor-only incident-gated hosting-root cancellation are implemented across CIB, Lean, the core, and Temporal. A second semantic incident, arbitrary retry policy, exception data, general or native cancellation, compensation, and Product 2 operations remain outside.
 - **Unsupported across families:** arbitrary serial composition, arbitrary graph progress, repeated or nested scope activation, cycles outside the exact registered root-scope User Task profile, concurrent Multi-Merge execution, Standard Loop Characteristics, multi-instance, Message payload, key, and global correlation, compensation, and general Event semantics.
 
 **A12 adoption.** The optional adoption lane admits the exact external `CreateDocument.bpmn` bytes through the product-neutral mapped-success profile plus a content-bound data-only overlay. Its current oracle proves the two project-authored adoption projections equal the selected frozen generation outside the approved profile/overlay identity translation. The frozen manifest at immutable target `02330ad` derives the complete A12-specific baseline set plus the original validator, projector, and effect-projection roots independently of its own entries. Closure correction `8d6ea1a` is approved, and the [handoff](../adoption/a12/current/README.md#resume-point-for-a-future-a12-add-on) records how future product-3 work resumes.

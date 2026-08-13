@@ -316,6 +316,7 @@ export function requireOptionalEffectExecution(
     case EffectExecutionSchedule.FailAfterMutationOnce:
     case EffectExecutionSchedule.IncidentReportRetrySuccess:
     case EffectExecutionSchedule.IncidentReportRetryFailure:
+    case EffectExecutionSchedule.IncidentReportCancel:
       break;
     case null:
       throw new TypeError(

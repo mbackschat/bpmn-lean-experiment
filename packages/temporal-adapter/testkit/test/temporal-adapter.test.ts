@@ -79,6 +79,9 @@ import {
   registerServiceTaskIncidentTemporalTests,
 } from "./service-task-incident-temporal-tests.ts";
 import {
+  registerServiceTaskIncidentCancellationTemporalTests,
+} from "./service-task-incident-cancellation-temporal-tests.ts";
+import {
   registerMappedSuccessTemporalTests,
 } from "./mapped-success-temporal-tests.ts";
 import {
@@ -503,6 +506,7 @@ test("batch execution rejects duplicate Workflow identities before start", async
 registerParallelTemporalTests(activeRunner);
 registerServiceTaskEffectTemporalTests(activeRunner);
 registerServiceTaskIncidentTemporalTests(activeRunner);
+registerServiceTaskIncidentCancellationTemporalTests(activeRunner);
 registerMappedSuccessTemporalTests(activeRunner);
 registerMappedBoundaryErrorTemporalTests(activeRunner);
 registerExclusiveGatewayTemporalTests(activeRunner);

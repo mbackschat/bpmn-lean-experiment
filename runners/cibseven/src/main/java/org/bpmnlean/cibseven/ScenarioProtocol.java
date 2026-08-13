@@ -50,7 +50,8 @@ public final class ScenarioProtocol {
   public enum ProcessStatus implements ScenarioWireValue {
     NOT_STARTED("notStarted"),
     RUNNING("running"),
-    COMPLETED("completed");
+    COMPLETED("completed"),
+    CANCELLED("cancelled");
 
     private final String wireValue;
 
@@ -210,7 +211,8 @@ public final class ScenarioProtocol {
     @JsonSubTypes.Type(value = FireTimerStimulus.class, name = "fireTimer"),
     @JsonSubTypes.Type(value = CompleteEffectStimulus.class, name = "completeEffect"),
     @JsonSubTypes.Type(value = ReportEffectFailureStimulus.class, name = "reportEffectFailure"),
-    @JsonSubTypes.Type(value = RetryIncidentStimulus.class, name = "retryIncident")
+    @JsonSubTypes.Type(value = RetryIncidentStimulus.class, name = "retryIncident"),
+    @JsonSubTypes.Type(value = CancelIncidentProcessStimulus.class, name = "cancelIncidentProcess")
   })
   public sealed interface Stimulus
       permits StartProcessStimulus,
@@ -219,7 +221,8 @@ public final class ScenarioProtocol {
           FireTimerStimulus,
           CompleteEffectStimulus,
           ReportEffectFailureStimulus,
-          RetryIncidentStimulus {
+          RetryIncidentStimulus,
+          CancelIncidentProcessStimulus {
     String commandId();
   }
 
@@ -450,6 +453,16 @@ public final class ScenarioProtocol {
       String commandId, EffectIncidentId incidentId) implements Stimulus {
     public RetryIncidentStimulus {
       Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(incidentId, "incidentId");
+    }
+  }
+
+  public record CancelIncidentProcessStimulus(
+      String commandId, String processInstanceId, EffectIncidentId incidentId)
+      implements Stimulus {
+    public CancelIncidentProcessStimulus {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(processInstanceId, "processInstanceId");
       Objects.requireNonNull(incidentId, "incidentId");
     }
   }

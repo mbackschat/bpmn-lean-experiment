@@ -113,7 +113,7 @@ const config = {
   effectHandlers: [],
 } as const;
 
-test("admits technical failure only for the registered incident profile", () => {
+test("admits technical failure only for the registered incident profiles", () => {
   const technicalFailureConfig = {
     ...config,
     effectHandlers: [
@@ -125,17 +125,22 @@ test("admits technical failure only for the registered incident profile", () => 
     ],
   } as const;
 
-  assert.doesNotThrow(() =>
-    validateRunnableMvpConfig({
-      ...technicalFailureConfig,
-      bpmn: {
-        ...technicalFailureConfig.bpmn,
-        semanticProfile: SemanticProfileId.ServiceTaskIncident,
-      },
-    })
-  );
+  for (const semanticProfile of [
+    SemanticProfileId.ServiceTaskIncident,
+    SemanticProfileId.ServiceTaskIncidentCancellation,
+  ]) {
+    assert.doesNotThrow(() =>
+      validateRunnableMvpConfig({
+        ...technicalFailureConfig,
+        bpmn: { ...technicalFailureConfig.bpmn, semanticProfile },
+      })
+    );
+  }
   for (const semanticProfile of Object.values(SemanticProfileId)) {
-    if (semanticProfile === SemanticProfileId.ServiceTaskIncident) {
+    if (
+      semanticProfile === SemanticProfileId.ServiceTaskIncident ||
+      semanticProfile === SemanticProfileId.ServiceTaskIncidentCancellation
+    ) {
       continue;
     }
     assert.throws(

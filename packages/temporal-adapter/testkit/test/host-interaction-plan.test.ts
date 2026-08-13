@@ -39,6 +39,11 @@ const delivery = {
   delayMs: 1_000,
 } as const;
 
+const cancellation = {
+  kind: StimulusKind.CancelIncidentProcess,
+  delayMs: 250,
+} as const;
+
 const handler = {
   protocol: "activity",
   operation: "probe",
@@ -50,9 +55,26 @@ test("accepts an empty plan, which a pure timer model requires", () => {
   assert.doesNotThrow(() => validateHostEffectHandlers([]));
 });
 
-test("accepts both canonical response variants together", () => {
+test("accepts every canonical response variant together", () => {
   assert.doesNotThrow(() =>
-    validateHostInteractionPlan([completion, delivery])
+    validateHostInteractionPlan([completion, delivery, cancellation])
+  );
+});
+
+test("keeps cancellation identity out of runnable configuration", () => {
+  assert.throws(
+    () => validateHostInteractionPlan([{
+      ...cancellation,
+      incidentId: {
+        effectId: {
+          processInstanceId: "Privately_Constructed",
+          elementId: "ServiceTask_Record",
+          activation: 1,
+        },
+        generation: 1,
+      },
+    }]),
+    /unknown field incidentId/u,
   );
 });
 

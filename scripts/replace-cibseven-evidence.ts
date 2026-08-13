@@ -55,6 +55,7 @@ type CibRunnerResult = Readonly<{
       jobs: ReadonlyArray<unknown>;
     }>>;
     incidentJobs?: ReadonlyArray<unknown>;
+    historicProcessStates?: ReadonlyArray<unknown>;
     effectExecutions: ReadonlyArray<unknown>;
     mappingExecutions: ReadonlyArray<unknown>;
   }>;
@@ -140,7 +141,10 @@ async function runCibBatch(
   scenarios: ReadonlyArray<Scenario>,
   temporaryDirectory: string,
   engineVersion: string,
-  effectSchedule: "plainSuccess" | "incidentReportRetrySuccess",
+  effectSchedule:
+    | "plainSuccess"
+    | "incidentReportRetrySuccess"
+    | "incidentReportCancel",
 ): Promise<ReadonlyArray<CibRunnerResult>> {
   const inputPath = path.join(
     temporaryDirectory,
@@ -199,6 +203,19 @@ async function runCibBatch(
       ));
 }
 
+export function cibEvidenceEffectSchedule(
+  profileId: string,
+): "plainSuccess" | "incidentReportRetrySuccess" | "incidentReportCancel" {
+  switch (profileId) {
+    case "cibseven-2.2.0-service-task-incident-draft":
+      return "incidentReportRetrySuccess";
+    case "cibseven-2.2.0-service-task-incident-cancellation-draft":
+      return "incidentReportCancel";
+    default:
+      return "plainSuccess";
+  }
+}
+
 async function replaceEvidence() {
   const sources = await Promise.all(
     artifactCases.map(async (artifactCase) => {
@@ -219,10 +236,7 @@ async function replaceEvidence() {
       sources,
       ({ profile }) => JSON.stringify([
         profile.value.oracle.version,
-        profile.value.id ===
-            "cibseven-2.2.0-service-task-incident-draft"
-          ? "incidentReportRetrySuccess"
-          : "plainSuccess",
+        cibEvidenceEffectSchedule(profile.value.id),
       ]),
     );
     const results: CibRunnerResult[] = [];
@@ -233,7 +247,8 @@ async function replaceEvidence() {
         typeof parsed[0] !== "string" ||
         (
           parsed[1] !== "plainSuccess" &&
-          parsed[1] !== "incidentReportRetrySuccess"
+          parsed[1] !== "incidentReportRetrySuccess" &&
+          parsed[1] !== "incidentReportCancel"
         )
       ) {
         throw new TypeError("invalid CIB evidence replacement group");
@@ -314,12 +329,24 @@ async function replaceEvidence() {
               )
                 ? {
                     effectJobs: result.diagnostics.effectJobs,
-                    effectExecutions:
-                      result.diagnostics.effectExecutions,
                   }
                 : {}),
               ...(result.diagnostics.incidentJobs !== undefined
                 ? { incidentJobs: result.diagnostics.incidentJobs }
+                : {}),
+              ...(result.diagnostics.historicProcessStates !== undefined
+                ? {
+                    historicProcessStates:
+                      result.diagnostics.historicProcessStates,
+                  }
+                : {}),
+              ...(result.diagnostics.effectJobs.some(
+                ({ jobs }) => jobs.length > 0,
+              )
+                ? {
+                    effectExecutions:
+                      result.diagnostics.effectExecutions,
+                  }
                 : {}),
               ...(result.diagnostics.mappingExecutions.length > 0
                 ? {

@@ -4,7 +4,8 @@ package org.bpmnlean.cibseven;
 public enum CibEffectExecutionSchedule {
   PLAIN_SUCCESS("plainSuccess"),
   FAIL_AFTER_MUTATION_ONCE("failAfterMutationOnce"),
-  INCIDENT_REPORT_RETRY_SUCCESS("incidentReportRetrySuccess");
+  INCIDENT_REPORT_RETRY_SUCCESS("incidentReportRetrySuccess"),
+  INCIDENT_REPORT_CANCEL("incidentReportCancel");
 
   private final String wireValue;
 

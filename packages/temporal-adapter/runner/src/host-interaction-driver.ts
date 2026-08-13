@@ -29,6 +29,7 @@ import {
   sameMessageChannel,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CancelIncidentProcessStimulus,
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
   DeliverMessageStimulus,
@@ -56,6 +57,9 @@ export type HostInteractionPort = Readonly<{
   ) => Promise<ProcessCommandResult>;
   submitMessage: (
     stimulus: DeliverMessageStimulus,
+  ) => Promise<ProcessCommandResult>;
+  submitCancellation: (
+    stimulus: CancelIncidentProcessStimulus,
   ) => Promise<ProcessCommandResult>;
 }>;
 
@@ -157,12 +161,15 @@ export async function driveHostInteractions(
   for (let step = 0; step < observationLimit; step += 1) {
     const state = await port.readState();
     observe({ kind: HostInteractionEventKind.StateObserved, state });
-    if (state.status === ProcessStatus.Completed) {
+    if (
+      state.status === ProcessStatus.Completed ||
+      state.status === ProcessStatus.Cancelled
+    ) {
       const unconsumed = pending.filter(({ consumed }) => !consumed).length;
       if (unconsumed > 0) {
         return refuse(
           HostInteractionRefusalCode.UnconsumedResponses,
-          `Process completed with ${unconsumed} configured interaction response(s) never answered.`,
+          `Process terminated with ${unconsumed} configured interaction response(s) never answered.`,
         );
       }
       return { kind: HostInteractionResultKind.Driven, submitted };
@@ -272,6 +279,8 @@ function answersInteraction(
     case StimulusKind.DeliverMessage:
       return interaction.kind === StimulusKind.DeliverMessage &&
         sameMessageChannel(interaction.channel, response.channel);
+    case StimulusKind.CancelIncidentProcess:
+      return interaction.kind === StimulusKind.CancelIncidentProcess;
     default:
       return assertNever(response);
   }
@@ -364,6 +373,18 @@ async function submitAnswer(
         `mvp-deliver-message:${interaction.subscriptionId.elementId}:${interaction.subscriptionId.activation}`,
       subscriptionId: interaction.subscriptionId,
       channel: interaction.channel,
+    });
+  }
+  if (
+    interaction.kind === StimulusKind.CancelIncidentProcess &&
+    response.kind === StimulusKind.CancelIncidentProcess
+  ) {
+    return port.submitCancellation({
+      kind: StimulusKind.CancelIncidentProcess,
+      commandId:
+        `mvp-cancel-incident-process:${interaction.incidentId.effectId.elementId}:${interaction.incidentId.effectId.activation}:${interaction.incidentId.generation}`,
+      processInstanceId: interaction.processInstanceId,
+      incidentId: interaction.incidentId,
     });
   }
   throw new TypeError(

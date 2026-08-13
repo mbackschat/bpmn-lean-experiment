@@ -18,6 +18,7 @@ import {
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CancelIncidentProcessStimulus,
   DeliverMessageStimulus,
   CompleteUserTaskInstanceStimulus,
   StateObservation,
@@ -122,6 +123,25 @@ function deliverResponse(messageId: string): HostInteractionResponse {
   };
 }
 
+function cancellationInteraction(activation = 7) {
+  return {
+    kind: StimulusKind.CancelIncidentProcess,
+    processInstanceId: instanceId,
+    incidentId: {
+      effectId: {
+        processInstanceId: instanceId,
+        elementId: "ServiceTask_Record",
+        activation,
+      },
+      generation: 1,
+    },
+  } as const;
+}
+
+function cancelResponse(): HostInteractionResponse {
+  return { kind: StimulusKind.CancelIncidentProcess, delayMs: 1 };
+}
+
 /** Scripts one committed state per read so a test fixes the exact observation sequence. */
 function scriptedPort(
   states: ReadonlyArray<StateObservation>,
@@ -129,13 +149,16 @@ function scriptedPort(
   readonly port: HostInteractionPort;
   readonly completions: CompleteUserTaskInstanceStimulus[];
   readonly deliveries: DeliverMessageStimulus[];
+  readonly cancellations: CancelIncidentProcessStimulus[];
 } {
   const completions: CompleteUserTaskInstanceStimulus[] = [];
   const deliveries: DeliverMessageStimulus[] = [];
+  const cancellations: CancelIncidentProcessStimulus[] = [];
   let index = 0;
   return {
     completions,
     deliveries,
+    cancellations,
     port: {
       readState: async () => {
         const next = states[Math.min(index, states.length - 1)];
@@ -157,9 +180,50 @@ function scriptedPort(
         deliveries.push(stimulus);
         return committed;
       },
+      submitCancellation: async (stimulus) => {
+        cancellations.push(stimulus);
+        return committed;
+      },
     },
   };
 }
+
+test("cancels only the exact incident identity published by the committed state", async () => {
+  const published = cancellationInteraction();
+  const { port, cancellations } = scriptedPort([
+    state({ enabledInteractions: [published] }),
+    state({ status: ProcessStatus.Cancelled }),
+  ]);
+
+  const result = await driveHostInteractions([cancelResponse()], port, noWait);
+
+  assert.equal(result.kind, HostInteractionResultKind.Driven);
+  assert.deepEqual(cancellations, [{
+    kind: StimulusKind.CancelIncidentProcess,
+    commandId: "mvp-cancel-incident-process:ServiceTask_Record:7:1",
+    processInstanceId: instanceId,
+    incidentId: published.incidentId,
+  }]);
+});
+
+test("refuses two published cancellation identities instead of choosing one", async () => {
+  const { port, cancellations } = scriptedPort([
+    state({
+      enabledInteractions: [
+        cancellationInteraction(1),
+        cancellationInteraction(2),
+      ],
+    }),
+  ]);
+
+  const result = await driveHostInteractions([cancelResponse()], port, noWait);
+
+  assert.equal(
+    result.kind === HostInteractionResultKind.Refused ? result.code : null,
+    HostInteractionRefusalCode.AmbiguousResponse,
+  );
+  assert.deepEqual(cancellations, []);
+});
 
 const noWait = async (): Promise<void> => undefined;
 
@@ -391,6 +455,7 @@ test("reports an uncommitted interaction with its typed result unchanged", async
     }),
     submitCompletion: async () => rejected,
     submitMessage: async () => rejected,
+    submitCancellation: async () => rejected,
   };
 
   const result = await driveHostInteractions(

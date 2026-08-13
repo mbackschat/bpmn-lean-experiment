@@ -104,6 +104,11 @@ export type IncidentJobSnapshot = Readonly<{
   jobs: ReadonlyArray<IncidentJob>;
 }>;
 
+export type HistoricProcessStateSnapshot = Readonly<{
+  afterCommandId: string;
+  state: "ACTIVE" | "COMPLETED" | "EXTERNALLY_TERMINATED";
+}>;
+
 type EffectExecutionSnapshot = Readonly<{
   afterCommandId: string;
   schedule: string;
@@ -136,6 +141,7 @@ export type CibSevenEvidence = Readonly<{
     timerJobs: ReadonlyArray<TimerJobSnapshot>;
     effectJobs?: ReadonlyArray<EffectJobSnapshot>;
     incidentJobs?: ReadonlyArray<IncidentJobSnapshot>;
+    historicProcessStates?: ReadonlyArray<HistoricProcessStateSnapshot>;
     effectExecutions?: ReadonlyArray<EffectExecutionSnapshot>;
     mappingExecutions?: ReadonlyArray<MappingExecutionSnapshot>;
   }>;

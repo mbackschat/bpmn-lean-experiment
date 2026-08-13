@@ -5,6 +5,7 @@ import { Buffer } from "node:buffer";
 import { isDeepStrictEqual } from "node:util";
 
 import type {
+  CancelIncidentProcessStimulus,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
   RetryIncidentStimulus,
@@ -172,7 +173,8 @@ function decodeAcceptedStimulus(
   if (
     !isWellFormedStimulus(stimulus) ||
     stimulus.kind !== StimulusKind.CompleteUserTaskInstance &&
-    stimulus.kind !== StimulusKind.RetryIncident
+    stimulus.kind !== StimulusKind.RetryIncident &&
+    stimulus.kind !== StimulusKind.CancelIncidentProcess
   ) {
     throw new TypeError(
       "Accepted Workflow Update payload is not an admitted Update stimulus",
@@ -182,6 +184,7 @@ function decodeAcceptedStimulus(
 }
 
 type DurableUpdateStimulus =
+  | CancelIncidentProcessStimulus
   | CompleteUserTaskInstanceStimulus
   | RetryIncidentStimulus;
 

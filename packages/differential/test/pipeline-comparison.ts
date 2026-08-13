@@ -20,7 +20,6 @@ import type {
   TargetScenarioResult,
 } from "@bpmn-lean/differential";
 import {
-  ProcessCommandResultKind,
   TemporalScenarioRunner,
 } from "@bpmn-lean/temporal-testkit";
 
@@ -48,6 +47,12 @@ import {
 import {
   verifyServiceTaskIncidentCibExecution,
 } from "./service-task-incident-pipeline-comparison.ts";
+import {
+  verifyServiceTaskIncidentCancellationCibExecution,
+} from "./service-task-incident-cancellation-pipeline-comparison.ts";
+import {
+  verifyTemporalPostTerminalLifecycle,
+} from "./pipeline-temporal-lifecycle.ts";
 
 function mutableClone<T>(value: T): DeepMutable<T> {
   return structuredClone(value) as DeepMutable<T>;
@@ -154,8 +159,8 @@ export function compareCase(
     },
   ];
   if (
-    pipelineCase.temporalRelation ===
-      TemporalCaseRelation.ExactSemantic
+    pipelineCase.temporalRelation !==
+      TemporalCaseRelation.PostTerminalClosed
   ) {
     semanticCandidates.push({
       target: DifferentialTarget.Temporal,
@@ -235,35 +240,11 @@ export function compareCase(
             },
           ],
         );
-  const expectedPostTerminalCommand =
-    pipelineCase.temporalRelation ===
-      TemporalCaseRelation.PostTerminalClosed
-      ? scenario.stimuli.at(-1)
-        ?? null
-      : null;
-  const postTerminalResult =
-    temporalResult.primary.interactionEvidence.postTerminalResult;
-  if (
-    expectedPostTerminalCommand !== null &&
-    (
-      postTerminalResult?.kind !==
-        ProcessCommandResultKind.ProcessClosed ||
-      postTerminalResult.commandId !==
-        expectedPostTerminalCommand.commandId
-    )
-  ) {
-    throw new Error(
-      `Temporal did not classify ${expectedPostTerminalCommand.commandId} as processClosed`,
-    );
-  }
-  if (
-    expectedPostTerminalCommand === null &&
-    postTerminalResult !== null
-  ) {
-    throw new Error(
-      `Temporal returned an unexpected post-terminal result for ${scenario.id}`,
-    );
-  }
+  const expectedPostTerminalResultKind = verifyTemporalPostTerminalLifecycle(
+    scenario,
+    pipelineCase.temporalRelation,
+    temporalResult.primary,
+  );
   const evidenceComparison =
     retainedEvidence === null || canonicalCib === null
       ? null
@@ -314,6 +295,13 @@ export function compareCase(
       CibEffectExecutionSchedule.IncidentReportRetrySuccess
   ) {
     verifyServiceTaskIncidentCibExecution(
+      requiredCibResult(cibResult, scenario.id),
+    );
+  } else if (
+    cibConfiguration?.effectExecutionSchedule ===
+      CibEffectExecutionSchedule.IncidentReportCancel
+  ) {
+    verifyServiceTaskIncidentCancellationCibExecution(
       requiredCibResult(cibResult, scenario.id),
     );
   } else if (cibEffectRetryResult !== null) {
@@ -385,10 +373,7 @@ export function compareCase(
         temporalResult.isolation.effectProbeEvidence,
       temporalInteractionEvidence:
         temporalResult.primary.interactionEvidence,
-      expectedPostTerminalResultKind:
-        expectedPostTerminalCommand === null
-          ? null
-          : ProcessCommandResultKind.ProcessClosed,
+      expectedPostTerminalResultKind,
       expectedCompletionOutcomes: expectations.completionOutcomes,
       expectedOpenUserTasksAfterCompletions:
         expectations.openUserTasksAfterCompletions,

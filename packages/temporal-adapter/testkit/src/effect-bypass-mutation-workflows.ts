@@ -10,6 +10,7 @@ import type {
 } from "./contracts.js";
 import {
   EffectExecutionResultKind,
+  requireCompletedProcessReceipt,
 } from "./contracts.js";
 import {
   runBpmnProcessWithHostEffects,
@@ -56,5 +57,5 @@ export function runBpmnProcessEffectBypassMutation(
                 : [],
           }),
     }),
-  );
+  ).then(requireCompletedProcessReceipt);
 }

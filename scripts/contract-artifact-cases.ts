@@ -5,6 +5,9 @@
 import {
   serviceTaskIncidentArtifactCases,
 } from "./contract-incident-artifact-case.ts";
+import {
+  serviceTaskIncidentCancellationArtifactCases,
+} from "./contract-incident-cancellation-artifact-case.ts";
 
 export const artifactCases = Object.freeze([
   Object.freeze({
@@ -62,6 +65,7 @@ export const artifactCases = Object.freeze([
       "scenarios/service-task-effect/cibseven-evidence.json",
   }),
   ...serviceTaskIncidentArtifactCases,
+  ...serviceTaskIncidentCancellationArtifactCases,
   Object.freeze({
     scenarioRelativePath:
       "scenarios/mapped-success-service-task/scenario.json",

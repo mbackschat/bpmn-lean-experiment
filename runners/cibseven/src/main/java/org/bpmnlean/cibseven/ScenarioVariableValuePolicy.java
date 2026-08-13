@@ -1,6 +1,7 @@
 package org.bpmnlean.cibseven;
 
 import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.CancelIncidentProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.BpmnErrorEffectResult;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
@@ -68,6 +69,7 @@ final class ScenarioVariableValuePolicy {
         case FireTimerStimulus ignored -> {}
         case ReportEffectFailureStimulus ignored -> {}
         case RetryIncidentStimulus ignored -> {}
+        case CancelIncidentProcessStimulus ignored -> {}
       }
     }
   }

@@ -104,6 +104,12 @@
             "$ref": "#/$defs/incidentJobSnapshot"
           }
         },
+        "historicProcessStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/historicProcessStateSnapshot"
+          }
+        },
         "effectExecutions": {
           "type": "array",
           "items": {
@@ -142,7 +148,10 @@
             "type": "object",
             "properties": {
               "id": {
-                "const": "cibseven-2.2.0-service-task-incident-draft"
+                "enum": [
+                  "cibseven-2.2.0-service-task-incident-draft",
+                  "cibseven-2.2.0-service-task-incident-cancellation-draft"
+                ]
               }
             },
             "required": [
@@ -177,6 +186,54 @@
               },
               "required": [
                 "incidentJobs"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "cibseven-2.2.0-service-task-incident-cancellation-draft"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "required": [
+          "profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "producerObservations": {
+            "type": "object",
+            "properties": {
+              "historicProcessStates": {}
+            },
+            "required": [
+              "historicProcessStates"
+            ]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "producerObservations": {
+            "type": "object",
+            "not": {
+              "properties": {
+                "historicProcessStates": {}
+              },
+              "required": [
+                "historicProcessStates"
               ]
             }
           }
@@ -636,6 +693,27 @@
         }
       }
     },
+    "historicProcessStateSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterCommandId",
+        "state"
+      ],
+      "properties": {
+        "afterCommandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "enum": [
+            "ACTIVE",
+            "COMPLETED",
+            "EXTERNALLY_TERMINATED"
+          ]
+        }
+      }
+    },
     "incidentJob": {
       "type": "object",
       "additionalProperties": false,
@@ -746,7 +824,8 @@
           "enum": [
             "plainSuccess",
             "failAfterMutationOnce",
-            "incidentReportRetrySuccess"
+            "incidentReportRetrySuccess",
+            "incidentReportCancel"
           ]
         },
         "invocations": {

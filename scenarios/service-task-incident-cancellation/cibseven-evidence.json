@@ -1,0 +1,356 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "service-task-effect-incident-root-cancellation",
+    "sha256": "0ab4e4c1be94a21b9a3f2fd354d49387b4521d7758c3938a13f1dc80f5b3c013"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-service-task-incident-cancellation-draft",
+    "sha256": "849ce7c7f8ef3f449917af3c2262610b65d0f9da307ea1f303313d70b6f02218"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "preserved",
+            "value": "before-cancel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "preserved",
+            "value": "before-cancel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "cancel-incident-process",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "preserved",
+            "value": "before-cancel"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "cancel-incident-process",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "cancel-incident-process",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Record",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Record",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 0,
+            "executable": false,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "cancel-incident-process",
+        "jobs": []
+      }
+    ],
+    "incidentJobs": [
+      {
+        "afterCommandId": "start-process",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "8",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "5",
+            "elementId": "ServiceTask_Record",
+            "incident": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "8",
+            "retries": 0,
+            "executable": false,
+            "dueDatePresent": false,
+            "processInstanceId": "5",
+            "elementId": "ServiceTask_Record",
+            "incident": {
+              "publicIncidentId": "13",
+              "type": "failedJob",
+              "configurationJobId": "8",
+              "processInstanceId": "5",
+              "elementId": "ServiceTask_Record",
+              "causeIncidentId": "13",
+              "rootCauseIncidentId": "13"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "cancel-incident-process",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "cancel-incident-process",
+        "state": "EXTERNALLY_TERMINATED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "schedule": "incidentReportCancel",
+        "invocations": 3,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": 2
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "ServiceTask_Record",
+            "kind": "effect",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Record",
+              "activation": 1
+            },
+            "descriptor": {
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1"
+            },
+            "arguments": []
+          }
+        ],
+        "openIncidents": [],
+        "variables": [
+          {
+            "name": "preserved",
+            "value": {
+              "kind": "string",
+              "value": "before-cancel"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "ServiceTask_Record",
+            "kind": "incident",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "openIncidents": [
+          {
+            "kind": "effectExecutionFailed",
+            "id": {
+              "effectId": {
+                "processInstanceId": "Instance_1",
+                "elementId": "ServiceTask_Record",
+                "activation": 1
+              },
+              "generation": 1
+            },
+            "effect": {
+              "id": {
+                "processInstanceId": "Instance_1",
+                "elementId": "ServiceTask_Record",
+                "activation": 1
+              },
+              "descriptor": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1"
+              },
+              "arguments": []
+            }
+          }
+        ],
+        "variables": [
+          {
+            "name": "preserved",
+            "value": {
+              "kind": "string",
+              "value": "before-cancel"
+            }
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "retryIncident",
+            "incidentId": {
+              "effectId": {
+                "processInstanceId": "Instance_1",
+                "elementId": "ServiceTask_Record",
+                "activation": 1
+              },
+              "generation": 1
+            }
+          },
+          {
+            "kind": "cancelIncidentProcess",
+            "processInstanceId": "Instance_1",
+            "incidentId": {
+              "effectId": {
+                "processInstanceId": "Instance_1",
+                "elementId": "ServiceTask_Record",
+                "activation": 1
+              },
+              "generation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "cancel-incident-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "cancelled",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "openIncidents": [],
+        "variables": [
+          {
+            "name": "preserved",
+            "value": {
+              "kind": "string",
+              "value": "before-cancel"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

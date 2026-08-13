@@ -8,6 +8,7 @@ import org.bpmnlean.cibseven.CibSevenIncidentProtocol.FailedJobIncident;
 import org.bpmnlean.cibseven.CibSevenIncidentProtocol.IncidentJob;
 import org.bpmnlean.cibseven.CibSevenIncidentProtocol.IncidentJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioInteractionProtocol.EnabledInteraction;
+import org.bpmnlean.cibseven.ScenarioInteractionProtocol.CancelIncidentProcessInteraction;
 import org.bpmnlean.cibseven.ScenarioInteractionProtocol.RetryIncidentInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.ActiveWait;
 import org.bpmnlean.cibseven.ScenarioProtocol.EffectIncidentId;
@@ -25,7 +26,8 @@ final class CibSevenIncidentProjector {
       String afterCommandId,
       List<CibSevenEffectProjector.ProjectedEffectWait> effects,
       boolean incidentCreationEnabled) {
-    if (!CibSevenScenarioRunner.INCIDENT_PROFILE.equals(profile)) {
+    var cancellationProfile = CibSevenScenarioRunner.CANCELLATION_PROFILE.equals(profile);
+    if (!CibSevenScenarioRunner.INCIDENT_PROFILE.equals(profile) && !cancellationProfile) {
       if (incidentCreationEnabled) {
         throw new IllegalStateException("old profile leaked into incident-enabled engine");
       }
@@ -106,10 +108,17 @@ final class CibSevenIncidentProjector {
     var incidentId = new EffectIncidentId(effect.openEffect().id(), 1);
     var openIncident =
         new OpenEffectIncident("effectExecutionFailed", incidentId, effect.openEffect());
+    var enabledInteractions = new ArrayList<EnabledInteraction>();
+    enabledInteractions.add(new RetryIncidentInteraction(incidentId));
+    if (cancellationProfile) {
+      enabledInteractions.add(
+          new CancelIncidentProcessInteraction(
+              effect.openEffect().id().processInstanceId(), incidentId));
+    }
     return new IncidentProjection(
         List.of(),
         List.of(openIncident),
-        List.of(new RetryIncidentInteraction(incidentId)),
+        enabledInteractions,
         List.of(new ActiveWait(effect.openEffect().id().elementId(), INCIDENT, 1)),
         snapshot);
   }

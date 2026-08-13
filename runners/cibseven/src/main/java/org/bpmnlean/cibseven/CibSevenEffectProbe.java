@@ -49,6 +49,8 @@ final class CibSevenEffectProbe implements JavaDelegate {
           throw new IllegalStateException("scripted incident technical failure");
         }
       }
+      case INCIDENT_REPORT_CANCEL ->
+          throw new IllegalStateException("scripted incident technical failure");
     }
   }
 

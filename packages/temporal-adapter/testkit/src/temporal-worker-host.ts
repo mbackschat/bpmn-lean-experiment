@@ -133,6 +133,11 @@ export class TemporalWorkerHost {
   }
 
   async restartAfterCommittedIncident(): Promise<void> {
+    await this.stopAfterCommittedIncident();
+    await this.startAfterCommittedIncident();
+  }
+
+  async stopAfterCommittedIncident(): Promise<void> {
     this.worker.shutdown();
     await withDeadline(
       this.workerRun,
@@ -140,7 +145,12 @@ export class TemporalWorkerHost {
       "incident-state Temporal Worker shutdown",
     );
     this.assertHealthy();
-    await this.startReplacement("replacement incident Temporal Worker startup");
+  }
+
+  async startAfterCommittedIncident(): Promise<void> {
+    await this.startReplacement(
+      "replacement incident Temporal Worker startup",
+    );
   }
 
   async replayHistories(

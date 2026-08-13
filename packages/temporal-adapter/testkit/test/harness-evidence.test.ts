@@ -53,6 +53,12 @@ const incidentRetry = {
     generation: 1,
   },
 } as const;
+const incidentCancellation = {
+  kind: StimulusKind.CancelIncidentProcess,
+  commandId: "cancel-incident-process",
+  processInstanceId: "Instance_1",
+  incidentId: incidentRetry.incidentId,
+} as const;
 const completedState: CompletedProcessReceipt["finalState"] = {
   kind: CanonicalObservationKind.State,
   instanceId: "Instance_1",
@@ -168,12 +174,18 @@ test("reconciles Query command outcomes and terminal state with durable history"
   );
 });
 
-test("binds the incident retry Update without admitting another Update stimulus family", () => {
+test("binds both incident Updates without admitting internal failure reporting", () => {
   assert.deepEqual(
     durableUpdateOutcomes(
       historyWithStimulus(incidentRetry, CommandOutcome.Committed),
     ),
     new Map([[incidentRetry.commandId, CommandOutcome.Committed]]),
+  );
+  assert.deepEqual(
+    durableUpdateOutcomes(
+      historyWithStimulus(incidentCancellation, CommandOutcome.Committed),
+    ),
+    new Map([[incidentCancellation.commandId, CommandOutcome.Committed]]),
   );
 
   assert.throws(

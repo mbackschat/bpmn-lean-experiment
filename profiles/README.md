@@ -8,6 +8,8 @@ The registry also contains the [BPMN 2.0.2 resumption-bounded User Task cycle dr
 
 The [CIB Seven 2.2.0 Service Task incident profile](cibseven-2.2.0-service-task-incident-draft/README.md) is the configured successor to the success-only Service Task effect profile. It reuses the exact source shape and selects one failed-effect incident plus one exact retry.
 
+The [CIB Seven 2.2.0 Service Task incident cancellation profile](cibseven-2.2.0-service-task-incident-cancellation-draft/README.md) is the additive successor that preserves the exact executable definition shape while selecting one string Process-start variable and incident-gated root Process cancellation.
+
 The [BPMN 2.0.2 Message Start Event draft profile](bpmn-2.0.2-message-start-event-draft/README.md) selects one payload-free, top-level, operation-addressed Message Start Event. Its exact Message, Interface Operation, Start Event, and semantic instance identities are resolved before Process creation, and it declares no CIB Message Start target.
 
 The [BPMN 2.0.2 Timer Start Event draft profile](bpmn-2.0.2-timer-start-event-draft/README.md) selects one top-level exact-`PT1S` Timer Start Event. One resolved occurrence identifies the Start Event and semantic instance before Process creation, while schedule timing and lifecycle remain host and product policy, and the profile declares no CIB Timer Start target.

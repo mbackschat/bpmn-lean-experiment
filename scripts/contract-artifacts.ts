@@ -13,6 +13,9 @@ import { verifyConfiguredTaskProfileBinding } from "./configured-task-profile-co
 import {
   verifyServiceTaskIncidentArtifactBinding,
 } from "./service-task-incident-profile-consistency.ts";
+import {
+  verifyServiceTaskIncidentCancellationArtifactBinding,
+} from "./service-task-incident-cancellation-profile-consistency.ts";
 export { compareCanonicalStrings } from "./contract-artifact-consistency.ts";
 import {
   artifactCases,
@@ -328,6 +331,7 @@ function verifyProfile(
   validateWith(validator, profileSchemaId, "profile", profile);
   verifyConfiguredTaskProfileBinding(profile);
   verifyServiceTaskIncidentArtifactBinding(profile);
+  verifyServiceTaskIncidentCancellationArtifactBinding(profile);
   for (const relationshipId of profile.bpmn.relationships) {
     if (!registeredRelationshipIds.has(relationshipId)) {
       throw new Error(
@@ -360,6 +364,7 @@ function verifyScenarioSourceBinding(
     throw new Error("profile identity does not match scenario");
   }
   verifyServiceTaskIncidentArtifactBinding(profile, scenario);
+  verifyServiceTaskIncidentCancellationArtifactBinding(profile, scenario);
   if (
     !scenario.observations.every((observation) =>
       profile.observations.includes(observation),

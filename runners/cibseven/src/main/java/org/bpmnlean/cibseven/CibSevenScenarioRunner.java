@@ -11,6 +11,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   static final String INCIDENT_PROFILE =
       "cibseven-2.2.0-service-task-incident-draft";
+  static final String CANCELLATION_PROFILE =
+      "cibseven-2.2.0-service-task-incident-cancellation-draft";
 
   private final EnumMap<EngineEnvironment, CibSevenEngineScenarioRunner> runners =
       new EnumMap<>(EngineEnvironment.class);
@@ -35,13 +37,24 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     if (closed) {
       throw new IllegalStateException("Runner is closed");
     }
-    var incidentProfile = INCIDENT_PROFILE.equals(scenario.profile());
-    var incidentSchedule =
-        effectSchedule == CibEffectExecutionSchedule.INCIDENT_REPORT_RETRY_SUCCESS;
-    if (incidentProfile != incidentSchedule) {
+    var requiredSchedule =
+        switch (scenario.profile()) {
+          case INCIDENT_PROFILE -> CibEffectExecutionSchedule.INCIDENT_REPORT_RETRY_SUCCESS;
+          case CANCELLATION_PROFILE -> CibEffectExecutionSchedule.INCIDENT_REPORT_CANCEL;
+          default -> CibEffectExecutionSchedule.PLAIN_SUCCESS;
+        };
+    var selectedIncidentSchedule =
+        effectSchedule == CibEffectExecutionSchedule.INCIDENT_REPORT_RETRY_SUCCESS
+            || effectSchedule == CibEffectExecutionSchedule.INCIDENT_REPORT_CANCEL;
+    if (effectSchedule != requiredSchedule
+        && (selectedIncidentSchedule
+            || requiredSchedule != CibEffectExecutionSchedule.PLAIN_SUCCESS)) {
       throw new IllegalArgumentException(
-          "incident profile and incident CIB schedule must be selected together");
+          "profile and incident CIB schedule must be selected together");
     }
+    var incidentProfile =
+        INCIDENT_PROFILE.equals(scenario.profile())
+            || CANCELLATION_PROFILE.equals(scenario.profile());
     var environment =
         incidentProfile ? EngineEnvironment.INCIDENT_ENABLED : EngineEnvironment.LEGACY_DEFAULT;
     var runner =

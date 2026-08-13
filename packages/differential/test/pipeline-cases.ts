@@ -80,6 +80,9 @@ import {
 import {
   serviceTaskIncidentPipelineCases,
 } from "./service-task-incident-pipeline-cases.ts";
+import {
+  serviceTaskIncidentCancellationPipelineCases,
+} from "./service-task-incident-cancellation-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -609,6 +612,7 @@ export const pipelineCases = Object.freeze([
   ...terminateEndPipelineCases,
   effectCase(),
   ...serviceTaskIncidentPipelineCases,
+  ...serviceTaskIncidentCancellationPipelineCases,
   mappedSuccessCase(),
   boundaryErrorCase(),
   ...configuredTaskPipelineCases,

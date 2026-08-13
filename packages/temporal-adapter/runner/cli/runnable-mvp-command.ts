@@ -73,6 +73,7 @@ export async function runRunnableMvpCommand(
     );
     switch (result.kind) {
       case RunnableMvpResultKind.Completed:
+      case RunnableMvpResultKind.Cancelled:
         return RunnableMvpExitCode.Completed;
       case RunnableMvpResultKind.SourceAdmissionRejected:
       case RunnableMvpResultKind.ProcessAdmissionRejected:

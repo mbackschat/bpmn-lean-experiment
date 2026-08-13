@@ -28,6 +28,7 @@ import type {
 
 export const TemporalCaseRelation = Object.freeze({
   ExactSemantic: "exactSemantic",
+  ExactSemanticWithClosedReceipt: "exactSemanticWithClosedReceipt",
   PostTerminalClosed: "postTerminalClosed",
 });
 
@@ -68,6 +69,7 @@ export const CibEffectExecutionSchedule = {
   None: "none",
   FailAfterMutationOnce: "failAfterMutationOnce",
   IncidentReportRetrySuccess: "incidentReportRetrySuccess",
+  IncidentReportCancel: "incidentReportCancel",
 } as const;
 
 export type CibEffectExecutionSchedule =

@@ -132,3 +132,66 @@ test("runs every distinct host interaction mechanism live", async () => {
     );
   }
 });
+
+test("runs the exact incident-cancellation example to a cancelled product result", async () => {
+  const environment = await withDeadline(
+    createCachedLocalEnvironment({
+      identity: "bpmn-mvp-cancellation-live",
+      downloadDirectory: temporalCacheDirectory,
+    }),
+    serverStartupDeadlineMs,
+    "live cancellation product server startup",
+  );
+  try {
+    const config = await loadRunnableMvpConfig(
+      path.join(exampleRoot, "service-task-incident-cancellation.json"),
+    );
+    const events: RunnableMvpEvent[] = [];
+    const result = await withDeadline(
+      runRunnableTemporalMvp({
+        ...config,
+        process: {
+          ...config.process,
+          instanceId: "MvpLive_incident_cancellation_1",
+        },
+        interactions: config.interactions.map((response) => ({
+          ...response,
+          delayMs: 5,
+        })),
+        temporal: {
+          ...config.temporal,
+          address: environment.address,
+          namespace: environment.namespace ?? "default",
+          taskQueue: "bpmn-mvp-live-incident-cancellation",
+        },
+      }, (event) => events.push(event)),
+      runDeadlineMs,
+      "live product incident cancellation",
+    );
+
+    assert.equal(result.kind, RunnableMvpResultKind.Cancelled);
+    if (result.kind !== RunnableMvpResultKind.Cancelled) {
+      return;
+    }
+    assert.equal(
+      events.at(-1)?.kind,
+      RunnableMvpEventKind.ProcessCancelled,
+    );
+    assert.equal(
+      events.filter(
+        (event) => event.kind === RunnableMvpEventKind.InteractionResolved,
+      ).length,
+      1,
+    );
+    assert.deepEqual(result.receipt.finalState.variables, [{
+      name: "preserved",
+      value: { kind: "string", value: "before-cancel" },
+    }]);
+  } finally {
+    await withDeadline(
+      environment.teardown(),
+      10_000,
+      "live cancellation product server teardown",
+    );
+  }
+});

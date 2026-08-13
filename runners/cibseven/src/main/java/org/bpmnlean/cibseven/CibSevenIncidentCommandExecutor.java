@@ -4,6 +4,7 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
+import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectExecutionSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.ReportEffectFailureStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.RetryIncidentStimulus;
 import org.cibseven.bpm.engine.ProcessEngine;
@@ -24,15 +25,18 @@ final class CibSevenIncidentCommandExecutor {
     this.effectProbe = effectProbe;
   }
 
-  CommandOutcome report(
+  IncidentReportExecution report(
       String engineInstanceId,
       String stableInstanceId,
-      ReportEffectFailureStimulus report) {
+      ReportEffectFailureStimulus report,
+      CibEffectExecutionSchedule schedule) {
     var wait = matchingWait(engineInstanceId, stableInstanceId, report.effectId());
     if (wait == null || incidentCount(engineInstanceId) != 0) {
-      return REJECTED;
+      return new IncidentReportExecution(REJECTED, null);
     }
     var management = engine.getManagementService();
+    var initialRetries = wait.evidence().retries();
+    Long retriesAfterFirstFailure = null;
     while (true) {
       var job = management.createJobQuery().jobId(wait.jobId()).singleResult();
       if (job == null) {
@@ -53,6 +57,9 @@ final class CibSevenIncidentCommandExecutor {
         if (failed == null || failed.getRetries() != before - 1) {
           throw new IllegalStateException("CIB did not decrement the failed public job", failure);
         }
+        if (retriesAfterFirstFailure == null) {
+          retriesAfterFirstFailure = (long) failed.getRetries();
+        }
       }
     }
     var incidents =
@@ -65,7 +72,15 @@ final class CibSevenIncidentCommandExecutor {
         || !wait.jobId().equals(incidents.getFirst().getConfiguration())) {
       throw new IllegalStateException("CIB did not create one matching failed-job incident");
     }
-    return COMMITTED;
+    return new IncidentReportExecution(
+        COMMITTED,
+        new EffectExecutionSnapshot(
+            report.commandId(),
+            schedule.wireValue(),
+            effectProbe.invocations(),
+            effectProbe.mutations(),
+            initialRetries,
+            retriesAfterFirstFailure));
   }
 
   CommandOutcome retry(
@@ -118,4 +133,7 @@ final class CibSevenIncidentCommandExecutor {
         .processInstanceId(engineInstanceId)
         .count();
   }
+
+  record IncidentReportExecution(
+      CommandOutcome outcome, EffectExecutionSnapshot evidence) {}
 }

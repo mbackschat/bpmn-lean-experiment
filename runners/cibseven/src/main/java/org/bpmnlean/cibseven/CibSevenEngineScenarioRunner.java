@@ -2,29 +2,19 @@ package org.bpmnlean.cibseven;
 
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
-import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
-import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
-import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.EFFECT;
-import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.TIMER;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
-import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
 import org.bpmnlean.cibseven.ScenarioMessageProtocol.DeliverMessageStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
+import org.bpmnlean.cibseven.ScenarioProtocol.CancelIncidentProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
@@ -34,8 +24,6 @@ import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.Diagnostics;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectExecutionSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
-import org.bpmnlean.cibseven.ScenarioProtocol.ObservationKind;
-import org.bpmnlean.cibseven.ScenarioProtocol.OpenTimer;
 import org.bpmnlean.cibseven.ScenarioProtocol.ReportEffectFailureStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.RetryIncidentStimulus;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.PhaseTimings;
@@ -45,12 +33,10 @@ import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioResult;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StartProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
-import org.bpmnlean.cibseven.ScenarioProtocol.TimerOccurrenceId;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
-import org.cibseven.bpm.engine.task.Task;
 
 /**
  * Embedded, single-threaded CIB-seven calibration oracle.
@@ -67,25 +53,14 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   private static final String MAPPED_BOUNDARY_ERROR_PROFILE =
       "cibseven-2.0.0-mapped-boundary-error-service-task-draft";
   private static final String H2_VERSION = "2.3.232";
-  private static final EnumSet<ObservationKind> SUPPORTED_OBSERVATIONS =
-      EnumSet.of(
-          ObservationKind.DEPLOYMENT,
-          ObservationKind.COMMAND_RESULTS,
-          ObservationKind.PROCESS_STATUS,
-          ObservationKind.ACTIVE_WAITS,
-          ObservationKind.OPEN_USER_TASKS,
-          ObservationKind.OPEN_TIMERS,
-          ObservationKind.OPEN_EFFECTS,
-          ObservationKind.VARIABLES,
-          ObservationKind.ENABLED_INTERACTIONS,
-          ObservationKind.LOGICAL_TIME);
-
   private final ProcessEngine processEngine;
   private final CibSevenRelease release;
+  private final CibSevenScenarioValidator scenarioValidator;
   private final ProcessEngineConfigurationImpl configuration;
   private final PvmDefinitionProjector pvmProjector;
   private final CibSevenScenarioCommandExecutor commandExecutor;
   private final CibSevenIncidentCommandExecutor incidentCommandExecutor;
+  private final CibSevenIncidentCancellationCommandExecutor incidentCancellationCommandExecutor;
   private final CibSevenScenarioStateProjector stateProjector;
   private final CibSevenEffectProbe effectProbe;
   private final CibSevenMappedSuccessProbe mappedSuccessProbe;
@@ -103,6 +78,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       long startupNanos) {
     this.processEngine = processEngine;
     this.release = CibSevenRelease.current();
+    this.scenarioValidator = new CibSevenScenarioValidator(release);
     this.configuration = configuration;
     this.pvmProjector = new PvmDefinitionProjector();
     this.effectProbe = effectProbe;
@@ -117,6 +93,9 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
             processEngine, effectProjector, effectProbe, LOGICAL_EPOCH);
     this.incidentCommandExecutor =
         new CibSevenIncidentCommandExecutor(processEngine, effectProjector, effectProbe);
+    this.incidentCancellationCommandExecutor =
+        new CibSevenIncidentCancellationCommandExecutor(
+            processEngine, effectProjector, incidentCreationEnabled);
     this.stateProjector =
         new CibSevenScenarioStateProjector(
             processEngine,
@@ -169,12 +148,8 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       CibEffectExecutionSchedule effectSchedule)
       throws IOException {
     ensureOpen();
-    validateScenario(scenario);
-    Objects.requireNonNull(projectRoot, "projectRoot");
-
-    var bpmnPath = projectRoot.resolve(scenario.bpmn().relativePath()).normalize();
-    requireContainedByProject(projectRoot, bpmnPath);
-    verifySha256(bpmnPath, scenario.bpmn().sha256());
+    var validated = scenarioValidator.validate(scenario, projectRoot);
+    var bpmnPath = validated.bpmnPath();
 
     var totalStartedAt = System.nanoTime();
     var timings = new MutableTimings();
@@ -206,7 +181,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       timings.deploymentNanos = positiveElapsedSince(deploymentStartedAt);
       trace.add(new DeploymentObservation(COMMITTED));
 
-      var processId = startStimulus(scenario).processId();
+      var processId = validated.start().processId();
       var deployedDefinition =
           processEngine
               .getRepositoryService()
@@ -400,8 +375,14 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
           }
           case ReportEffectFailureStimulus report -> {
             requireStarted(engineInstanceId, stableInstanceId);
-            var outcome =
-                incidentCommandExecutor.report(engineInstanceId, stableInstanceId, report);
+            var execution =
+                incidentCommandExecutor.report(
+                    engineInstanceId, stableInstanceId, report, effectSchedule);
+            var outcome = execution.outcome();
+            if (CibSevenScenarioRunner.CANCELLATION_PROFILE.equals(scenario.profile())
+                && execution.evidence() != null) {
+              effectExecutions.add(execution.evidence());
+            }
             trace.add(new CommandObservation(report.commandId(), outcome));
             var observed =
                 stateProjector.observeState(
@@ -427,6 +408,29 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     retry.commandId(),
+                    committedProcessVariableNames,
+                    scenario.profile());
+            trace.add(observed.state());
+            observations.add(observed);
+            if (outcome == REJECTED) {
+              scenarioOutcome = REJECTED;
+              break stimulusLoop;
+            }
+          }
+          case CancelIncidentProcessStimulus cancellation -> {
+            requireStarted(engineInstanceId, stableInstanceId);
+            var outcome =
+                incidentCancellationCommandExecutor.cancel(
+                    scenario.profile(),
+                    engineInstanceId,
+                    stableInstanceId,
+                    cancellation);
+            trace.add(new CommandObservation(cancellation.commandId(), outcome));
+            var observed =
+                stateProjector.observeState(
+                    engineInstanceId,
+                    stableInstanceId,
+                    cancellation.commandId(),
                     committedProcessVariableNames,
                     scenario.profile());
             trace.add(observed.state());
@@ -470,8 +474,12 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
             observations.messageSubscriptions(),
             observations.timerJobs(),
             observations.effectJobs(),
-            CibSevenScenarioRunner.INCIDENT_PROFILE.equals(scenario.profile())
+            (CibSevenScenarioRunner.INCIDENT_PROFILE.equals(scenario.profile())
+                    || CibSevenScenarioRunner.CANCELLATION_PROFILE.equals(scenario.profile()))
                 ? observations.incidentJobs()
+                : null,
+            CibSevenScenarioRunner.CANCELLATION_PROFILE.equals(scenario.profile())
+                ? observations.historicProcessStates()
                 : null,
             effectExecutions,
             mappingExecutions,
@@ -487,43 +495,6 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
         closed = true;
       }
     }
-  }
-
-  private void validateScenario(ScenarioDefinition scenario) {
-    Objects.requireNonNull(scenario, "scenario");
-    ScenarioVariableValuePolicy.requireScenarioSurfaces(scenario);
-    release.requireScenarioRevision(scenario);
-    if (!ScenarioProtocol.SCENARIO_KIND.equals(scenario.kind())
-        || scenario.profile().isBlank()) {
-      throw new IllegalArgumentException("Scenario kind and profile identity are required");
-    }
-    if (scenario.observations().size() != SUPPORTED_OBSERVATIONS.size()
-        || !EnumSet.copyOf(scenario.observations()).equals(SUPPORTED_OBSERVATIONS)) {
-      throw new IllegalArgumentException(
-          "Scenario requires its canonical observation kinds exactly once");
-    }
-    var startsOnce =
-        !scenario.stimuli().isEmpty()
-            && scenario.stimuli().getFirst() instanceof StartProcessStimulus;
-    var hasExpectedCompletions =
-        startsOnce
-            && scenario.stimuli().subList(1, scenario.stimuli().size()).stream()
-                .allMatch(
-                    stimulus ->
-                        stimulus instanceof CompleteUserTaskInstanceStimulus
-                            || stimulus instanceof DeliverMessageStimulus
-                            || stimulus instanceof FireTimerStimulus
-                            || stimulus instanceof CompleteEffectStimulus
-                            || stimulus instanceof ReportEffectFailureStimulus
-                            || stimulus instanceof RetryIncidentStimulus);
-    if (!startsOnce || !hasExpectedCompletions) {
-      throw new IllegalArgumentException(
-          "Scenario supports startProcess followed by task, Message, timer, effect, or incident commands");
-    }
-  }
-
-  private StartProcessStimulus startStimulus(ScenarioDefinition scenario) {
-    return (StartProcessStimulus) scenario.stimuli().getFirst();
   }
 
   private void requireSynchronousMappedSuccessCompletion(String engineInstanceId) {
@@ -555,31 +526,6 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   private static void requireStarted(String engineInstanceId, String stableInstanceId) {
     if (engineInstanceId == null || stableInstanceId == null) {
       throw new IllegalStateException("No process instance has been started");
-    }
-  }
-
-  private static void requireContainedByProject(Path projectRoot, Path resource)
-      throws IOException {
-    var realRoot = projectRoot.toRealPath();
-    var realResource = resource.toRealPath();
-    if (!realResource.startsWith(realRoot)) {
-      throw new IllegalArgumentException("BPMN resource escapes project root: " + resource);
-    }
-  }
-
-  private static void verifySha256(Path path, String expected) throws IOException {
-    try {
-      var digest = MessageDigest.getInstance("SHA-256");
-      try (var input = new DigestInputStream(Files.newInputStream(path), digest)) {
-        input.transferTo(OutputStream.nullOutputStream());
-      }
-      var actual = HexFormat.of().formatHex(digest.digest());
-      if (!actual.equals(expected)) {
-        throw new IllegalArgumentException(
-            "BPMN SHA-256 mismatch for " + path + ": expected " + expected + ", got " + actual);
-      }
-    } catch (NoSuchAlgorithmException impossible) {
-      throw new IllegalStateException("Java runtime does not provide SHA-256", impossible);
     }
   }
 

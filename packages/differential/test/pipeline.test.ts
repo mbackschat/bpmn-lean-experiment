@@ -23,6 +23,7 @@ import {
   CibCaseRelation,
   CibEffectExecutionSchedule,
   PipelineReplaySelection,
+  TemporalCaseRelation,
 } from "./pipeline-types.ts";
 import {
   pipelineCases,
@@ -200,6 +201,7 @@ test(
         "terminate-end-event-stale-sibling-after-termination",
         "service-task-effect-success",
         "service-task-effect-incident-retry-success",
+        "service-task-effect-incident-root-cancellation",
         "mapped-success-service-task",
         "mapped-boundary-error-service-task-caught",
         "configured-task",
@@ -239,10 +241,13 @@ test(
       const isServiceTaskIncident =
         caseReport.scenario.id ===
           "service-task-effect-incident-retry-success";
+      const isServiceTaskIncidentCancellation =
+        caseReport.scenario.id ===
+          "service-task-effect-incident-root-cancellation";
       const expectedWaitState = requireStateObservation(
         requiredAt(
           caseEvidence.expectedWaitTrace,
-          isServiceTaskIncident ? 4 : 2,
+          isServiceTaskIncident || isServiceTaskIncidentCancellation ? 4 : 2,
           "expected wait trace",
         ),
       );
@@ -353,9 +358,9 @@ test(
       );
       assert.equal(
         caseEvidence.expectedPostTerminalResultKind,
-        isPostTerminal
-          ? ProcessCommandResultKind.ProcessClosed
-          : null,
+        pipelineCase.temporalRelation === TemporalCaseRelation.ExactSemantic
+          ? null
+          : ProcessCommandResultKind.ProcessClosed,
       );
       assert.equal(
         caseEvidence.temporalInteractionEvidence
@@ -433,8 +438,21 @@ test(
         );
       } else {
         assert.equal(caseEvidence.cibEffectRetryEvidence, null);
-        assert.equal(caseEvidence.primaryEffectProbeEvidence, null);
-        assert.equal(caseEvidence.isolationEffectProbeEvidence, null);
+        if (isServiceTaskIncidentCancellation) {
+          assert.deepEqual(caseEvidence.primaryEffectProbeEvidence, {
+            invocations: 1,
+            mutations: 1,
+            keys: caseEvidence.primaryEffectProbeEvidence?.keys ?? [],
+          });
+          assert.deepEqual(caseEvidence.isolationEffectProbeEvidence, {
+            invocations: 1,
+            mutations: 1,
+            keys: caseEvidence.isolationEffectProbeEvidence?.keys ?? [],
+          });
+        } else {
+          assert.equal(caseEvidence.primaryEffectProbeEvidence, null);
+          assert.equal(caseEvidence.isolationEffectProbeEvidence, null);
+        }
       }
     }
     assert.deepEqual(report.replay, {

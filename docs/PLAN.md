@@ -84,7 +84,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### M4 — it survives going wrong
 
-**Status: in progress.** [Stage 1](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md), one bounded Service Task incident and exact retry, is implemented, closure-reviewed, evidence-closed, and graduated across the strict wire, TypeScript semantic core, Lean, configured CIB projection and execution, answer-free four-target differential evidence, runnable configuration, and live Temporal hosting. Incident-scoped cancellation remains Stage 2 and Product 2 incident operations remain Stage 3.
+**Status: in progress.** [Stage 1](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md), one bounded Service Task incident and exact retry, is implemented, closure-reviewed, evidence-closed, and graduated. Stage 2 incident-scoped root Process cancellation is implemented across the strict wire, TypeScript semantic core, Lean, configured CIB external-termination projection, answer-free four-target differential evidence, runnable configuration, and live Temporal Worker-replacement/history/replay; independent closure review and specification graduation remain. Product 2 incident operations remain Stage 3.
 
 **Demo.** A failing Service Task raises an incident an operator can see, retry, and cancel, and a cancelled scope leaves no orphaned work.
 
@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: close M4 incident-scoped cancellation evidence.** Context-cold semantic-checkpoint target `189c56f` received `APPROVE WITH REQUIRED EDITS`; bounded correction `f86a825` closed all findings. Implement the registered CIB, artifact, differential, runnable, and live Temporal evidence, then run closure review and graduate the specification. Product 2 incident operations remain Stage 3.
+1. **In progress: close M4 incident-scoped cancellation review.** Context-cold semantic-checkpoint target `189c56f` received `APPROVE WITH REQUIRED EDITS`; bounded correction `f86a825` closed all findings. The registered CIB, artifact, differential, runnable, and live Temporal evidence is implemented and focused-green. Run the complete gate, record commit-bounded cost, obtain context-cold closure review, and graduate the specification. Product 2 incident operations remain Stage 3.
 
 ## Approved decisions
 
@@ -264,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: implement the approved M4 Stage 2 cancellation evidence lanes.** Context-cold semantic-checkpoint target `189c56f` and approved correction `f86a825` close the required checkpoint review. Add registered CIB, artifact, differential, runnable, and live Temporal evidence without changing the approved account, public contract, exclusions, or evidence strategy. Product 2 operations remain Stage 3.
+**Next action: close the implemented M4 Stage 2 cancellation capsule.** The registered CIB, artifact, differential, runnable, and live Temporal lanes are integrated. Run the complete gate, bind the cost and closure target, obtain a new context-cold closure review, and graduate the specification without changing the approved account, public contract, exclusions, or evidence strategy. Product 2 operations remain Stage 3.
 
-Item 1 is **in progress after the approved Stage 2 semantic checkpoint**. Stage 1 remains graduated. The approved checkpoint requires exact public root and incident identity, derives rather than accepts the root scope, refuses pending initiation, publishes Retry before Cancel only when the exact cleanup can commit and without assigning scheduling priority, shares the exact Stage 1 incident Activity/report policy under the successor profile, applies incident-aware shared subtree cleanup once, preserves Process variables and monotonic history, and closes as typed cancelled through ordinary Workflow completion. CIB, artifact, differential, runnable, and live Temporal evidence are the active lanes. General BPMN cancellation, native Temporal cancellation, and Product 2 operations stay excluded. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
+Item 1 is **in progress at closure review**. Stage 1 remains graduated. Stage 2 now proves exact public root and incident identity, derives rather than accepts the root scope, refuses pending initiation and residual live regions, publishes Retry before Cancel only when the same cleanup-qualified transition can commit, applies incident-aware subtree cleanup once across transitive called regions, preserves Process variables and monotonic history, maps exact CIB external termination without raw identity, and closes as typed cancelled through ordinary Temporal Workflow completion with Worker replacement, retained Update recovery, history, replay, and native-termination discrimination. General BPMN cancellation, native Temporal cancellation, compensation, a second incident, and Product 2 operations stay excluded. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
 
 **Last verified commands:** The Stage 2 checkpoint passed the complete 224-test semantic-core suite, strict schema and contract suite, protocol/client/Workflow focused tests, harness types, source hygiene, and the complete Lean test gate. Stage 1 previously passed the complete `./scripts/verify.sh`, its focused artifact/CIB/differential and Temporal sets, the complete four-target incident pipeline, and the configured CIB runner's 68 Maven tests. The post-approval CI repair at `c670fbd` passed the complete local verifier and hosted Ubuntu, macOS, and `verify-complete` jobs. `c77b6e8` keeps Playwright in the approved separate Product 2 workflow; the retained Product 2 browser evidence remains unchanged and separate.
 
