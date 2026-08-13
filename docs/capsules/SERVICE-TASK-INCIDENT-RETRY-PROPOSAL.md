@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation complete; closure review pending. Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint review of `818f642` returned `approve with required edits`; the same reviewer approved correction target `1f20c00`, closing both findings. The configured CIB mapping, registered differential case, runnable example, and Temporal hosting are implemented at `b01a5ae` without changing the selected account, public contract, exclusions, or evidence strategy. The complete repository gate is green and the implementation cost is recorded. Product 2 incident operations remain paused.
+Implementation complete; closure review pending. Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint review of `818f642` returned `approve with required edits`; the same reviewer approved correction target `1f20c00`, closing both findings. The configured CIB mapping, registered differential case, runnable example, and Temporal hosting are implemented at `b01a5ae`; Activity-policy cleanup `be46057` changes no selected account, public contract, exclusion, or evidence strategy. The complete repository gate is green and the implementation cost is recorded through that cleanup. Product 2 incident operations remain paused.
 
 ## Independent cold-review receipt
 
