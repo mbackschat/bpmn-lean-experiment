@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: close review findings and approve M4 Product 2 incident operations.** The [draft proposal](BPM-PLATFORM-INCIDENT-OPERATIONS-PROPOSAL.md) selects exact private locator retention plus retrospective startup bootstrap, one dedicated current-incident Query, all-or-error Operate aggregation, configured operator authorization, durable content-bound Retry/Cancel actions without platform priority, separate paged incident audit, and an Operations collection/detail workspace. Commit the bounded proposal corrections, obtain the same reviewer's warm audit, and request owner approval before implementation.
+1. **Next: owner approval for M4 Product 2 incident operations.** The [independently reviewed proposal](BPM-PLATFORM-INCIDENT-OPERATIONS-PROPOSAL.md) selects exact private locator retention plus retrospective startup bootstrap, one dedicated current-incident Query, all-or-error Operate aggregation, configured operator authorization, durable content-bound Retry/Cancel actions without platform priority, separate paged incident audit, and an Operations collection/detail workspace. Obtain explicit owner approval before implementation.
 
 ## Approved decisions
 
@@ -264,7 +264,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: audit the bounded M4 Stage 3 proposal corrections.** Context-cold review of target `c3bcd44` returned approve-with-required-edits for retrospective acknowledged-registration delivery, atomic owner/versioning inventory, and the complete audit/UI interaction contract. Commit the corrections, have the same reviewer audit the immutable correction target, record the receipt, and request explicit owner approval before implementation.
+**Next action: request owner approval for M4 Stage 3 Product 2 incident operations.** Context-cold review of target `c3bcd44` returned approve-with-required-edits; warm audits of corrections `f66c174` and `fe0e639` closed retrospective acknowledged-registration delivery, atomic owner/versioning inventory, and the complete audit/UI interaction contract. Implementation remains unauthorized until explicit owner approval.
 
 Item 1 is **at draft proposal review**. Stages 1 and 2 are graduated. Stage 2 proves exact public root and incident identity, derives rather than accepts the root scope, refuses pending initiation and residual live regions, publishes Retry before Cancel only when the same cleanup-qualified transition can commit, applies incident-aware subtree cleanup once across transitive called regions, preserves Process variables and monotonic history, maps exact CIB external termination without raw identity, and closes as typed cancelled through ordinary Temporal Workflow completion with Worker replacement, retained Update recovery, history, replay, and native-termination discrimination. General BPMN cancellation, native Temporal cancellation, compensation, and a second incident stay excluded. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
 

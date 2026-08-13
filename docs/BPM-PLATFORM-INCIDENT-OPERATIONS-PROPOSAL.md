@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft; independently unreviewed; owner approval pending; implementation is not authorized.** This proposal selects the smallest M4 Stage 3 Product 2 contract for an authorized operator to see current engine-published Service Task incidents, inspect one exact incident, submit the published Retry or root-Process Cancel interaction, and audit those platform actions without making Product 2 a semantic authority.
+**Independently reviewed; owner approval pending; implementation is not authorized.** This proposal selects the smallest M4 Stage 3 Product 2 contract for an authorized operator to see current engine-published Service Task incidents, inspect one exact incident, submit the published Retry or root-Process Cancel interaction, and audit those platform actions without making Product 2 a semantic authority.
 
 [PLAN.md](PLAN.md) owns sequencing. The graduated [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) and [incident-root-cancellation specification](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md) own the existing semantic facts and transitions. The [platform proposal](BPM-PLATFORM-PROPOSAL.md#operations-and-monitoring), [information architecture](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md), [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md), [architecture](ARCHITECTURE.md), and [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) own the surrounding Product 2 boundaries and reusable patterns.
 
@@ -409,8 +409,8 @@ Stop and return to the owner if the dedicated Query cannot be implemented withou
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `c3bcd44` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `c3bcd44` | `fork-turns-none` | `approve-with-required-edits` | `fe0e639` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal target will be recorded in a docs-only follow-up before the context-cold review prompt is minted. No implementation may begin before the proposal review closes and the owner approves the selected decisions.
+Context-cold review of `c3bcd44` required three bounded correction groups. Warm audits of `f66c174` and final correction target `fe0e639` closed them without changing the selected account. No implementation may begin before the owner approves the selected decisions.
