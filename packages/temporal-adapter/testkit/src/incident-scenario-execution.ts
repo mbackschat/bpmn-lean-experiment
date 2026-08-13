@@ -299,6 +299,7 @@ export async function runIncidentScenario(
         openEffectsAtWait: [],
         openUserTasksAfterCompletions: [],
         completionOutcomes: [],
+        completionClosureResults: [],
         duplicateCompletionOutcome: null,
         postTerminalResult: null,
       },

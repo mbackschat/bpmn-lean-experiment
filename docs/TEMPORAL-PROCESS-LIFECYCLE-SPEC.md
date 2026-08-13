@@ -142,7 +142,7 @@ While semantic state is nonterminal, the loop waits for queued accepted inputs. 
 
 Temporal decides whether a racing Update was accepted before the Workflow completion boundary. If accepted, it must complete with a semantic result before Workflow completion. If not accepted, the ingress contract resolves it through retained-result lookup and then `processClosed`.
 
-Accepted-handler draining does not reserve acceptance for a future request and does not impose caller order on concurrent requests. Two distinct concurrent completions for one occurrence may therefore be durably accepted in either order; exactly one commits, one is rejected, and both orders must reach the same final semantic state. A caller that awaits terminal completion before submitting another distinct command chooses an explicit post-terminal schedule and receives `processClosed`.
+Accepted-handler draining does not reserve acceptance for a future request and does not impose caller order on concurrent requests. Two distinct concurrent completions for one occurrence therefore have two valid lifecycle resolutions. If both are durably accepted, exactly one commits and one is rejected. If only the winner is durably accepted before Workflow completion, it commits and the losing request resolves through ingress as `processClosed`. Both resolutions reach the same final semantic state. `processUnknown` is not a valid result for this retained-address witness. A caller that awaits terminal completion before submitting another distinct command chooses an explicit post-terminal schedule and receives `processClosed`.
 
 ## Command-ingress resolution
 

@@ -11,16 +11,12 @@ import type {
   CompleteUserTaskInstanceStimulus,
   OpenUserTask,
 } from "@bpmn-lean/semantic-core";
-import {
-  WorkflowUpdateStage,
-} from "@temporalio/client";
 import type {
   WorkflowClient,
   WorkflowHandle,
 } from "@temporalio/client";
 
 import {
-  bpmnCompleteUserTaskUpdateName,
   bpmnOpenUserTasksQueryName,
   ProcessCommandResultKind,
   TemporalCompletionDelivery,
@@ -29,13 +25,11 @@ import {
 import type {
   BpmnProcessWorkflow,
   CompletedProcessReceipt,
+  ProcessCommandResult,
   TemporalInteractionEvidence,
   TemporalScenarioExecutionOptions,
 } from "./contracts.js";
-import {
-  contentBoundUpdateId,
-  requireCompletedProcessReceipt,
-} from "./contracts.js";
+import { requireCompletedProcessReceipt } from "./contracts.js";
 import {
   submitUserTaskCompletionAtWorkflowId,
 } from "@bpmn-lean/temporal-client";
@@ -85,13 +79,13 @@ export async function deliverCompletions(
         duplicateFirstCompletion,
         assertWorkerHealthy,
       );
-    case TemporalCompletionDelivery.AcceptedBatch:
-      return deliverAcceptedBatch(
+    case TemporalCompletionDelivery.LifecycleRace:
+      return deliverLifecycleRace(
         client,
         handle,
         processInstanceId,
         completions,
-        duplicateFirstCompletion,
+        assertWorkerHealthy,
       );
     case TemporalCompletionDelivery.Concurrent:
       return deliverConcurrentCompletions(
@@ -160,6 +154,7 @@ async function deliverOrderedCompletions(
   return {
     openUserTasksAfterCompletions,
     completionOutcomes,
+    completionClosureResults: [],
     duplicateCompletionOutcome,
     postTerminalResult: null,
   };
@@ -224,52 +219,70 @@ async function deliverPostTerminalCompletion(
   };
 }
 
-async function deliverAcceptedBatch(
+async function deliverLifecycleRace(
   client: WorkflowClient,
   handle: WorkflowHandle<BpmnProcessWorkflow>,
   processInstanceId: string,
   completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
-  duplicateFirstCompletion: boolean,
+  assertWorkerHealthy: () => void,
 ): Promise<CompletionDeliveryEvidence> {
-  // Every request is in flight before an acceptance response is awaited. Temporal may receive these concurrent requests in a different order, so this is an acceptance-race discriminator rather than an ordering guarantee.
-  const updateHandlePromises = completions.map((stimulus) =>
-    handle.startUpdate<
-      CommandOutcome,
-      [CompleteUserTaskInstanceStimulus]
-    >(bpmnCompleteUserTaskUpdateName, {
-      args: [stimulus],
-      updateId: contentBoundUpdateId(stimulus),
-      waitForStage: WorkflowUpdateStage.ACCEPTED,
-    })
-  );
-  const updateHandles = await Promise.all(updateHandlePromises);
-  const completionOutcomes = await Promise.all(
-    updateHandles.map((updateHandle) =>
-      withDeadline(
-        updateHandle.result(),
-        operationDeadlineMs,
-        `Workflow accepted Update ${updateHandle.updateId}`,
-      )
-    ),
-  );
-  let duplicateCompletionOutcome: CommandOutcome | null = null;
-  const first = completions[0];
-  if (duplicateFirstCompletion && first !== undefined) {
-    duplicateCompletionOutcome = requireSemanticOutcome(
-      await submitUserTaskCompletionAtWorkflowId(
+  const results = await Promise.all(
+    completions.map((stimulus) => {
+      assertWorkerHealthy();
+      return submitUserTaskCompletionAtWorkflowId(
         client,
         handle.workflowId,
         processInstanceId,
-        first,
-      ),
-    );
-  }
+        stimulus,
+      );
+    }),
+  );
+  const classified = classifyConcurrentCompletionResults(results);
   return {
     openUserTasksAfterCompletions: [],
-    completionOutcomes,
-    duplicateCompletionOutcome,
+    ...classified,
+    duplicateCompletionOutcome: null,
     postTerminalResult: null,
   };
+}
+
+export type ConcurrentCompletionEvidence = Readonly<{
+  completionOutcomes: CommandOutcome[];
+  completionClosureResults: Array<Extract<
+    ProcessCommandResult,
+    { kind: ProcessCommandResultKind.ProcessClosed }
+  >>;
+}>;
+
+/**
+ * Separates semantic Update results from requests that reached ingress only after Workflow closure.
+ * An unknown Process address is an infrastructure failure because the harness retains the exact
+ * Workflow address for the whole race.
+ */
+export function classifyConcurrentCompletionResults(
+  results: ReadonlyArray<ProcessCommandResult>,
+): ConcurrentCompletionEvidence {
+  const completionOutcomes: CommandOutcome[] = [];
+  const completionClosureResults: ConcurrentCompletionEvidence[
+    "completionClosureResults"
+  ] = [];
+  for (const result of results) {
+    switch (result.kind) {
+      case ProcessCommandResultKind.Semantic:
+        completionOutcomes.push(result.outcome);
+        break;
+      case ProcessCommandResultKind.ProcessClosed:
+        completionClosureResults.push(result);
+        break;
+      case ProcessCommandResultKind.ProcessUnknown:
+        throw new Error(
+          `Concurrent completion resolved to an unknown Process: ${result.processInstanceId}`,
+        );
+      default:
+        assertNever(result);
+    }
+  }
+  return { completionOutcomes, completionClosureResults };
 }
 
 async function deliverConcurrentCompletions(
@@ -295,6 +308,7 @@ async function deliverConcurrentCompletions(
   return {
     openUserTasksAfterCompletions: [],
     completionOutcomes,
+    completionClosureResults: [],
     duplicateCompletionOutcome: null,
     postTerminalResult: null,
   };

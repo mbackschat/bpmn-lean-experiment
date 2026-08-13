@@ -118,8 +118,21 @@ export function validateExecutionOptions(
   }
   switch (options.completionDelivery) {
     case TemporalCompletionDelivery.Ordered:
-    case TemporalCompletionDelivery.AcceptedBatch:
       break;
+    case TemporalCompletionDelivery.LifecycleRace: {
+      const completions = requireCompletionStimuli(scenario);
+      if (
+        completions.length !== 2 ||
+        !isDeepStrictEqual(completions[0]?.taskId, completions[1]?.taskId) ||
+        completions[0]?.commandId === completions[1]?.commandId ||
+        options.executionSchedule !== TemporalExecutionSchedule.Normal
+      ) {
+        throw new TypeError(
+          "Lifecycle-race delivery requires two distinct commands for one task occurrence under the normal schedule",
+        );
+      }
+      break;
+    }
     case TemporalCompletionDelivery.PostTerminal:
       if (requireCompletionStimuli(scenario).length < 2) {
         throw new TypeError(

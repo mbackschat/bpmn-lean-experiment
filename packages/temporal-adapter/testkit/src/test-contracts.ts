@@ -14,6 +14,9 @@ import type {
   CompletedProcessReceipt,
   ProcessCommandResult,
 } from "@bpmn-lean/temporal-protocol";
+import {
+  ProcessCommandResultKind,
+} from "@bpmn-lean/temporal-protocol";
 import type {
   EffectExecutionSchedule,
   EffectProbeEvidence,
@@ -32,7 +35,7 @@ export type TemporalTimeSkippingRunnerOptions = DeepReadonly<{
 export enum TemporalCompletionDelivery {
   Ordered = "ordered",
   PostTerminal = "postTerminal",
-  AcceptedBatch = "acceptedBatch",
+  LifecycleRace = "lifecycleRace",
   Concurrent = "concurrent",
 }
 
@@ -141,6 +144,10 @@ export type TemporalInteractionEvidence = DeepReadonly<{
   openEffectsAtWait: OpenEffect[];
   openUserTasksAfterCompletions: OpenUserTask[][];
   completionOutcomes: CommandOutcome[];
+  completionClosureResults: Array<Extract<
+    ProcessCommandResult,
+    { kind: ProcessCommandResultKind.ProcessClosed }
+  >>;
   duplicateCompletionOutcome: CommandOutcome | null;
   postTerminalResult: ProcessCommandResult | null;
 }>;

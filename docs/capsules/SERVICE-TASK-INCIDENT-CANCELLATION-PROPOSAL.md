@@ -283,11 +283,11 @@ These headroom values are the exact `node scripts/what-binds.ts` measurements at
 | [`packages/temporal-adapter/workflow/src/workflows.ts`](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 |
 | [`packages/temporal-adapter/runner/src/host-interaction-driver.ts`](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 235 |
 | [`packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts`](../../packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts) | 459 |
-| [`packages/temporal-adapter/testkit/src/incident-scenario-execution.ts`](../../packages/temporal-adapter/testkit/src/incident-scenario-execution.ts) | 262 |
+| [`packages/temporal-adapter/testkit/src/incident-scenario-execution.ts`](../../packages/temporal-adapter/testkit/src/incident-scenario-execution.ts) | 261 |
 | [`packages/temporal-adapter/testkit/src/runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 98 |
 | [`packages/temporal-adapter/testkit/src/harness-evidence.ts`](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) | 100 |
-| [`packages/temporal-adapter/testkit/src/test-contracts.ts`](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 474 |
-| [`packages/temporal-adapter/testkit/src/runner-support.ts`](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 169 |
+| [`packages/temporal-adapter/testkit/src/test-contracts.ts`](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 467 |
+| [`packages/temporal-adapter/testkit/src/runner-support.ts`](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 156 |
 | [`packages/temporal-adapter/testkit/src/history-evidence-decoding.ts`](../../packages/temporal-adapter/testkit/src/history-evidence-decoding.ts) | 307 |
 | [`packages/temporal-adapter/testkit/src/mutation-probes.ts`](../../packages/temporal-adapter/testkit/src/mutation-probes.ts) | 338 |
 | [`packages/temporal-adapter/testkit/src/temporal-worker-host.ts`](../../packages/temporal-adapter/testkit/src/temporal-worker-host.ts) | 345 |

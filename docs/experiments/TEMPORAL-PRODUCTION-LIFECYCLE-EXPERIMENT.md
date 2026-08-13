@@ -80,7 +80,7 @@ Two delivery accounts fail different halves of that contract:
 
 `allHandlersFinished()` closes neither gap. It ensures that handlers already accepted by Temporal finish before Workflow return; it does not reserve acceptance for a later request or impose caller-selected order on concurrent requests.
 
-The retained red run received the stale command first and produced `[rejected, committed]`. Its green race contract now asserts exactly one committed and one rejected outcome with identical final state, without pinning which command wins. This preserves the discovered, semantically permitted host nondeterminism as executable evidence.
+The retained red run received the stale command first and produced `[rejected, committed]`. The first green race contract asserted exactly one committed and one rejected outcome with identical final state, without pinning which command won. A later hosted macOS run exposed the remaining assumption: creating both raw SDK promises did not prove that both requests were durably accepted before the first closed the Workflow. The corrected witness uses production ingress and admits the two lifecycle resolutions selected by the specification: committed plus rejected when both requests are accepted, or committed plus `processClosed` when closure wins the loser's acceptance race. This preserves the discovered host nondeterminism without treating JavaScript promise construction as Temporal acceptance.
 
 The owner selected the evidence correction rather than an explicit sequence protocol, ordered-batch production ingress, or grace period:
 

@@ -10,6 +10,7 @@ import {
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import {
+  ProcessCommandResultKind,
   TemporalCompletionDelivery,
   TemporalExecutionSchedule,
   isCompletedProcessReceipt,
@@ -34,12 +35,12 @@ import {
 export function registerParallelTemporalTests(
   getRunner: () => TemporalScenarioRunner,
 ): void {
-  test("concurrent distinct commands retain an unordered completion race witness", async () => {
+  test("concurrent distinct commands retain the Update acceptance race", async () => {
     const input = await loadExecutionInput(requiredScenarioUrl(2));
     const execution = await withDeadline(
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "user-task-concurrent-race",
-        completionDelivery: TemporalCompletionDelivery.AcceptedBatch,
+        completionDelivery: TemporalCompletionDelivery.LifecycleRace,
         executionSchedule: TemporalExecutionSchedule.Normal,
         effectExecutionSchedule: null,
       }),
@@ -47,15 +48,29 @@ export function registerParallelTemporalTests(
       "User Task concurrent completion race",
     );
 
-    assert.deepEqual(
-      [...execution.interactionEvidence.completionOutcomes].sort(),
-      [CommandOutcome.Committed, CommandOutcome.Rejected].sort(),
+    const outcomes = execution.interactionEvidence.completionOutcomes;
+    const closures = execution.interactionEvidence.completionClosureResults;
+    assert.equal(
+      outcomes.filter((outcome) => outcome === CommandOutcome.Committed).length,
+      1,
     );
-    const terminalStates = stateObservations(execution.result).slice(-2);
-    assert.equal(terminalStates.length, 2);
-    assert.deepEqual(terminalStates[0], terminalStates[1]);
+    if (outcomes.length === 2) {
+      assert.deepEqual(
+        [...outcomes].sort(),
+        [CommandOutcome.Committed, CommandOutcome.Rejected].sort(),
+      );
+      assert.deepEqual(closures, []);
+      const terminalStates = stateObservations(execution.result).slice(-2);
+      assert.equal(terminalStates.length, 2);
+      assert.deepEqual(terminalStates[0], terminalStates[1]);
+    } else {
+      assert.deepEqual(outcomes, [CommandOutcome.Committed]);
+      assert.equal(closures.length, 1);
+      assert.equal(closures[0]?.kind, ProcessCommandResultKind.ProcessClosed);
+      assert.deepEqual(closures[0]?.receipt, execution.receipt);
+    }
     assert.equal(isCompletedProcessReceipt(execution.receipt), true);
-    assertUpdatesCompleteBeforeWorkflow(execution.history, 2);
+    assertUpdatesCompleteBeforeWorkflow(execution.history, outcomes.length);
 
     await withDeadline(
       getRunner().replayHistory(
