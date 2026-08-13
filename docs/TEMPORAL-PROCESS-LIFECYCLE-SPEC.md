@@ -240,7 +240,10 @@ The focused Temporal gate must demonstrate:
 - incident retry uses a content-bound retained Update, restores the exact occurrence, and can recover the same committed outcome after terminal Workflow closure;
 - a second technical result after retry creates no second semantic incident, leaves the last committed restored effect observable, fails with `BPMN_EFFECT_INCIDENT_RETRY_EXHAUSTED`, and replays;
 - two distinct retry Updates race to exactly one committed and one rejected semantic outcome without duplicating the Activity;
-- incident Activity history contains two separate one-attempt executions, durable history contains the accepted retry Update, and no host identifier appears in canonical state.
+- incident Activity history contains two separate one-attempt executions, durable history contains the accepted retry Update, and no host identifier appears in canonical state;
+- the cancellation successor reaches the exact generation-1 incident after one Activity attempt, publishes the exact root Process and incident identity, stops the Worker, and submits the content-bound cancellation Update before replacement;
+- replacement recovers one committed cancellation and its retained Update result, preserves committed Process data in a typed cancelled receipt, and makes a distinct later command return `processClosed` carrying that same receipt;
+- the cancellation Workflow closes through ordinary Workflow completion, contains no Workflow cancellation-request, cancellation, or termination Event family, and replays; native Workflow termination and a completed-for-cancelled receipt substitution fail the refinement relation.
 
 The complete applicable pipeline must remain green. No production legacy lifecycle, finite scenario-stimulus-count lifetime, or compatibility branch is retained during pre-release.
 
