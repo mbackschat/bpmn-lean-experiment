@@ -152,6 +152,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
     adoptionCheck,
     corpusFetch,
     workflow,
+    uiQualityWorkflow,
     guide,
     readme,
     packageManifest,
@@ -171,6 +172,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       readFile(path.join(projectRoot, "packages/bpmn-source/calibration/a12-adoption-source.ts"), "utf8"),
       readFile(path.join(projectRoot, "scripts/fetch-bpmn-corpus.sh"), "utf8"),
       readFile(path.join(projectRoot, ".github/workflows/verify.yml"), "utf8"),
+      readFile(path.join(projectRoot, ".github/workflows/ui-quality.yml"), "utf8"),
       readFile(path.join(projectRoot, "docs/CONTRIBUTOR-SETUP-GUIDE.md"), "utf8"),
       readFile(path.join(projectRoot, "README.md"), "utf8"),
       readFile(path.join(projectRoot, "package.json"), "utf8"),
@@ -218,10 +220,11 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(packageManifest, /"test:a12-adoption"/u);
   assert.match(corpusFetch, /mktemp -d "\$corpus_parent\/\.bpmn-corpus-fetch\.XXXXXX"/u);
   assert.match(workflow, /setup-external-sources\.sh verify/u);
-  assert.match(workflow, /playwright install --with-deps chromium/u);
-  assert.match(workflow, /test:showcase:m1/u);
-  assert.match(workflow, /test:showcase:m2/u);
-  assert.match(workflow, /test:showcase:m3-human-work/u);
+  assert.doesNotMatch(workflow, /playwright|chromium|test:showcase:m[123]/iu);
+  assert.match(uiQualityWorkflow, /mcr\.microsoft\.com\/playwright@sha256:/u);
+  assert.match(uiQualityWorkflow, /test:showcase:m1/u);
+  assert.match(uiQualityWorkflow, /test:showcase:m2/u);
+  assert.match(uiQualityWorkflow, /test:release:m3/u);
   assert.match(workflow, /if: runner\.os == 'Linux'/u);
   // The corpus cache path is written as an expression, so the relative-segment guard below can
   // only see the template. `pwd` is what makes the exported root absolute, and absolute is what
