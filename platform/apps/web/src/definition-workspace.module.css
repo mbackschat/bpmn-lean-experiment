@@ -1,4 +1,5 @@
 .workspace {
+  container-type: inline-size;
   display: grid;
   gap: var(--ui-space-4);
 }
@@ -25,7 +26,7 @@
 .toolbar select,
 .deployForm input {
   width: 100%;
-  min-height: 2.75rem;
+  min-height: 44px;
   border: var(--ui-border);
   border-radius: var(--ui-radius-control);
   padding: var(--ui-space-3);
@@ -45,12 +46,12 @@
 }
 
 .deployDisclosure summary {
-  min-height: 2.75rem;
+  min-height: 44px;
   border-radius: var(--ui-radius-control);
-  padding: 0.7rem 1rem;
+  padding: var(--ui-space-3) var(--ui-space-4);
   background: var(--ui-color-accent);
   color: var(--ui-color-surface);
-  font-weight: 800;
+  font: var(--ui-font-label);
   list-style: none;
   cursor: pointer;
 }
@@ -65,7 +66,7 @@
   top: calc(100% + var(--ui-space-2));
   right: 0;
   display: grid;
-  width: min(48rem, calc(100vw - 18rem));
+  width: min(48rem, 100cqw);
   grid-template-columns: minmax(14rem, 1fr) minmax(15rem, 1fr) auto;
   align-items: end;
   gap: var(--ui-space-4);
@@ -141,7 +142,7 @@
   color: var(--ui-color-muted);
 }
 
-@media (max-width: 900px) {
+@container (max-width: 56rem) {
   .toolbar,
   .deployForm {
     grid-template-columns: 1fr;

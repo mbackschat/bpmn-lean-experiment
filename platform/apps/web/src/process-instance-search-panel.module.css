@@ -1,4 +1,5 @@
 .panel {
+  container-type: inline-size;
   display: grid;
   gap: var(--ui-space-4);
   border: var(--ui-border);
@@ -38,7 +39,7 @@
 
 .form input {
   width: 100%;
-  min-height: 2.75rem;
+  min-height: 44px;
   border: var(--ui-border);
   border-radius: var(--ui-radius-control);
   padding: var(--ui-space-3);
@@ -46,33 +47,8 @@
   color: var(--ui-color-text);
 }
 
-.form button,
-.loadMore {
-  min-height: 2.75rem;
-  border-radius: var(--ui-radius-control);
-  padding: var(--ui-space-3) var(--ui-space-4);
-  font-weight: 800;
-}
-
-.form button {
-  border: 0;
-  background: var(--ui-color-accent);
-  color: var(--ui-color-surface);
-}
-
 .loadMore {
   justify-self: start;
-  border: var(--ui-border);
-  background: var(--ui-color-surface);
-  color: var(--ui-color-accent-hover);
-}
-
-.form button:disabled,
-.loadMore:disabled {
-  cursor: wait;
-  border-color: var(--ui-color-border);
-  background: var(--ui-color-inset);
-  color: var(--ui-color-muted);
 }
 
 .results {
@@ -83,7 +59,7 @@
 .results table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font: var(--ui-font-body);
   text-align: left;
 }
 
@@ -115,7 +91,7 @@
   color: var(--ui-color-error);
 }
 
-@media (max-width: 1100px) {
+@container (max-width: 68rem) {
   .form {
     grid-template-columns: repeat(2, minmax(12rem, 1fr));
   }
@@ -155,7 +131,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@container (max-width: 44rem) {
   .form {
     grid-template-columns: 1fr;
   }

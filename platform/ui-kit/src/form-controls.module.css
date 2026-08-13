@@ -13,7 +13,7 @@
   min-height: 44px;
   border: var(--ui-border);
   border-radius: var(--ui-radius-control);
-  padding: 10px 12px;
+  padding: var(--ui-space-3);
   background: var(--ui-color-surface);
   color: var(--ui-color-text);
   font: inherit;
@@ -47,11 +47,11 @@
 }
 
 .checkbox::before {
-  border-radius: 4px;
+  border-radius: var(--ui-radius-control);
 }
 
 .radio::before {
-  border-radius: 50%;
+  border-radius: var(--ui-radius-pill);
 }
 
 .checkbox[data-selected]::before,

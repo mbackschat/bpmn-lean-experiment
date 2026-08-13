@@ -189,18 +189,7 @@ test("reflows the five-column task row without horizontal scrolling", () => {
   for (const label of ["Task", "Process", "Candidate group", "Claim", "Action"]) {
     assert.match(html, new RegExp(`data-label="${label}"`, "u"));
   }
-  assert.match(
-    stylesSource,
-    /\.taskTable\s*\{[^}]*container-type:\s*inline-size/su,
-  );
-  assert.match(
-    stylesSource,
-    /@container\s*\(max-width:\s*62rem\)[\s\S]*\.taskTable\s+:global\(tbody tr\)\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/su,
-  );
-  assert.match(
-    stylesSource,
-    /\.taskTable\s+:global\(tbody tr\)[\s\S]*overflow-wrap:\s*anywhere/su,
-  );
+  assert.doesNotMatch(stylesSource, /:global\(/u);
   assert.doesNotMatch(stylesSource, /overflow-x:\s*(?:auto|scroll)/u);
 });
 

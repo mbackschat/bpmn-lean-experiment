@@ -5,6 +5,10 @@
   overflow: visible;
 }
 
+.collection[data-responsive="cards"] {
+  container-type: inline-size;
+}
+
 .table {
   width: 100%;
   min-width: 0;
@@ -17,9 +21,83 @@
 .table td {
   min-width: 0;
   border-bottom: var(--ui-border);
-  padding: 12px;
+  padding: var(--ui-space-3);
   text-align: left;
   vertical-align: middle;
+}
+
+.table td {
+  overflow-wrap: anywhere;
+}
+
+@container (max-width: 62rem) {
+  .collection[data-responsive="cards"] .table,
+  .collection[data-responsive="cards"] tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .collection[data-responsive="cards"] thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .collection[data-responsive="cards"] tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ui-space-4) var(--ui-space-5);
+    border: var(--ui-border);
+    border-radius: var(--ui-radius-surface);
+    padding: var(--ui-space-4);
+    background: var(--ui-color-inset);
+    overflow-wrap: anywhere;
+  }
+
+  .collection[data-responsive="cards"] tbody tr + tr {
+    margin-top: var(--ui-space-3);
+  }
+
+  .collection[data-responsive="cards"] td {
+    display: grid;
+    gap: var(--ui-space-1);
+    width: auto;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .collection[data-responsive="cards"] td::before {
+    color: var(--ui-color-muted);
+    content: attr(data-label);
+    font: var(--ui-font-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .collection[data-responsive="cards"] td[data-card-width="full"] {
+    grid-column: 1 / -1;
+  }
+
+  .collection[data-responsive="cards"] td > * {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+
+@container (max-width: 45rem) {
+  .collection[data-responsive="cards"] tbody tr {
+    grid-template-columns: 1fr;
+  }
+
+  .collection[data-responsive="cards"] td {
+    grid-column: 1;
+  }
 }
 
 .table th {

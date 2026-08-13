@@ -48,6 +48,11 @@ test("task collection remains usable and contained at the declared viewport", as
   await expect(taskCollection).toContainText(fixtureLabels.process);
   await expect(taskCollection).toContainText(fixtureLabels.actor);
   await expect(taskCollection).toContainText(fixtureLabels.group);
+  await expect(taskCollection.locator("tbody td").evaluateAll((cells) =>
+    cells.flatMap((cell, index) =>
+      getComputedStyle(cell).overflowWrap === "anywhere" ? [] : [index]
+    )
+  ), "every table cell must wrap identifier-shaped content").resolves.toEqual([]);
 
   await assertNoOverflow(page.locator("html"), "document");
   await assertNoOverflow(workspace, "workspace");
@@ -55,6 +60,13 @@ test("task collection remains usable and contained at the declared viewport", as
   const rows = taskCollection.getByRole("row");
   for (let index = 1; index < await rows.count(); index += 1) {
     await assertNoOverflow(rows.nth(index), `task row ${index}`);
+  }
+  if (test.info().project.name === "chromium-768") {
+    const firstTaskRow = rows.nth(1);
+    const columnCount = await firstTaskRow.evaluate((element) =>
+      getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length
+    );
+    expect(columnCount, "768px task cards must use one content column").toBe(1);
   }
   await assertOwnedActionsFit(page.getByRole("region", { name: "Tasks" }));
 
@@ -105,14 +117,25 @@ test("reduced motion is active and task-detail diagram stays contained", async (
   await page.getByRole("button", { name: fixtureLabels.task }).click();
   await page.getByRole("tab", { name: "Diagram" }).click();
   await waitForStableUi(page);
+  const completeDiagram = page.getByRole("region", {
+    name: `Complete diagram workspace for ${fixtureLabels.process}, version 7`,
+    exact: true,
+  });
+  await expect(completeDiagram).toBeVisible();
   const diagram = page.getByLabel(`BPMN diagram for ${fixtureLabels.process}, version 7`);
   await expect(diagram).toBeVisible();
-  await expect(page.getByText("Generated layout", { exact: true })).toBeVisible();
-  await assertNoOverflow(page.locator("main"), "diagram workspace");
-  await assertNoOverflow(diagram, "diagram");
-  await assertOwnedActionsFit(page.getByRole("region", {
+  await expect(completeDiagram.getByRole("heading", {
     name: `${fixtureLabels.process}, version 7`,
-  }));
+  })).toBeVisible();
+  await expect(completeDiagram.getByText("Generated layout", { exact: true })).toBeVisible();
+  await expect(completeDiagram.getByText("Derived presentation copy, not admitted source.")).toBeVisible();
+  await expect(completeDiagram.getByRole("button", {
+    name: "Download diagrammed BPMN",
+  })).toBeVisible();
+  await expect(completeDiagram.getByText(/aaaaaaaaaaaa/u)).toBeVisible();
+  await assertNoOverflow(page.locator("main"), "diagram workspace");
+  await assertNoOverflow(completeDiagram, "complete diagram workspace");
+  await assertOwnedActionsFit(completeDiagram);
   expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
   const motion = await page.getByRole("tablist", { name: "Task detail views" }).evaluate(
     (element) => {
@@ -260,7 +283,8 @@ test("generated definition diagram visual @visual", async ({ page }) => {
   await waitForStableUi(page);
   await expect(page.getByText("Generated layout", { exact: true })).toBeVisible();
   await expect(page.getByRole("region", {
-    name: `${fixtureLabels.process}, version 7`,
+    name: `Complete diagram workspace for ${fixtureLabels.process}, version 7`,
+    exact: true,
   })).toHaveScreenshot("definition-generated-diagram.png", screenshotOptions);
 });
 

@@ -65,7 +65,7 @@ export function AppShell({
             <Button
               key={id}
               className={styles.navigationItem!}
-              variant={ButtonVariant.Plain}
+              variant={ButtonVariant.Navigation}
               {...(id === activeWorkspace ? { "aria-current": "page" } : {})}
               onPress={() => { onNavigate(id); }}
             >

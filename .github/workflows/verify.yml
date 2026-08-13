@@ -143,32 +143,10 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Chromium for browser acceptance
-        if: runner.os == 'Linux'
-        run: pnpm --filter @bpmn-lean/showcase-m1-definition-deployment exec playwright install --with-deps chromium
-
       - name: Verify M1 platform
         env:
           CI: "true"
         run: ./scripts/pnpm.sh run test:platform-m1
-
-      - name: Verify M1 browser acceptance
-        if: runner.os == 'Linux'
-        env:
-          CI: "true"
-        run: ./scripts/pnpm.sh run test:showcase:m1
-
-      - name: Verify M2 scheduling acceptance
-        if: runner.os == 'Linux'
-        env:
-          CI: "true"
-        run: ./scripts/pnpm.sh run test:showcase:m2
-
-      - name: Verify M3 human-work acceptance
-        if: runner.os == 'Linux'
-        env:
-          CI: "true"
-        run: ./scripts/pnpm.sh run test:showcase:m3-human-work
 
       - name: Verify
         env:

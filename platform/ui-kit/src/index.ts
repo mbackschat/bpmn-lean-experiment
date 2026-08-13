@@ -8,7 +8,11 @@ export type {
   CheckboxProps,
   TextFieldProps,
 } from "./form-controls.js";
-export { DataTable } from "./data-table.js";
+export {
+  DataTable,
+  DataTableCardWidth,
+  DataTableResponsiveMode,
+} from "./data-table.js";
 export type { DataTableColumn, DataTableProps } from "./data-table.js";
 export { WorkspaceTabs } from "./tabs.js";
 export type { WorkspaceTab, WorkspaceTabsProps } from "./tabs.js";

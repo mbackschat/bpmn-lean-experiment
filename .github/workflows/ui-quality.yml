@@ -4,29 +4,54 @@ on:
   pull_request:
     paths:
       - ".github/workflows/ui-quality.yml"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
+      - "platform/apps/server/**"
       - "platform/apps/web/**"
       - "platform/contracts/**"
+      - "platform/foundation/audit/**"
+      - "platform/foundation/bpmn-presentation/**"
+      - "platform/foundation/engine-gateway/**"
+      - "platform/foundation/identity-policy/**"
+      - "platform/modules/definitions/**"
+      - "platform/modules/operate/**"
+      - "platform/modules/work/**"
       - "platform/ui-kit/**"
+      - "showcase/m1-definition-deployment/**"
+      - "showcase/m2-definition-scheduling/**"
+      - "showcase/m2-message-start-ingress/**"
+      - "showcase/m2-process-instance-search/**"
+      - "showcase/m3-human-work/**"
       - "showcase/platform-ui-quality/**"
   push:
     branches:
       - main
     paths:
       - ".github/workflows/ui-quality.yml"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
+      - "platform/apps/server/**"
       - "platform/apps/web/**"
       - "platform/contracts/**"
+      - "platform/foundation/audit/**"
+      - "platform/foundation/bpmn-presentation/**"
+      - "platform/foundation/engine-gateway/**"
+      - "platform/foundation/identity-policy/**"
+      - "platform/modules/definitions/**"
+      - "platform/modules/operate/**"
+      - "platform/modules/work/**"
       - "platform/ui-kit/**"
+      - "showcase/m1-definition-deployment/**"
+      - "showcase/m2-definition-scheduling/**"
+      - "showcase/m2-message-start-ingress/**"
+      - "showcase/m2-process-instance-search/**"
+      - "showcase/m3-human-work/**"
       - "showcase/platform-ui-quality/**"
   workflow_dispatch:
     inputs:
       regenerate_baselines:
         description: Generate candidate Linux screenshot baselines as a downloadable artifact
+        required: false
+        default: false
+        type: boolean
+      release_acceptance:
+        description: Run the real M1, M2, and M3 Product 2 browser acceptance lanes
         required: false
         default: false
         type: boolean
@@ -79,8 +104,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify Product 2 UI quality
-        if: github.event_name != 'workflow_dispatch' || inputs.regenerate_baselines != true
+        if: github.event_name != 'workflow_dispatch' || (inputs.regenerate_baselines != true && inputs.release_acceptance != true)
         run: ./scripts/pnpm.sh run test:ui-quality
+
+      - name: Verify Product 2 M1 through M3 release acceptance
+        if: github.event_name == 'workflow_dispatch' && inputs.release_acceptance == true && inputs.regenerate_baselines != true
+        run: |
+          ./scripts/pnpm.sh run test:showcase:m1
+          ./scripts/pnpm.sh run test:showcase:m2
+          ./scripts/pnpm.sh run test:release:m3
 
       - name: Generate candidate Linux baselines
         if: github.event_name == 'workflow_dispatch' && inputs.regenerate_baselines == true

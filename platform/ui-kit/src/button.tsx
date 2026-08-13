@@ -5,8 +5,11 @@ import type { Ref } from "react";
 import styles from "./button.module.css";
 
 export enum ButtonVariant {
+  Danger = "danger",
+  Navigation = "navigation",
   Primary = "primary",
   Plain = "plain",
+  Secondary = "secondary",
 }
 
 export type ButtonProps = AriaButtonProps & Readonly<{
@@ -20,11 +23,24 @@ export function Button({
   variant = ButtonVariant.Primary,
   ...props
 }: ButtonProps) {
-  const base = variant === ButtonVariant.Plain
-    ? `${styles.button} ${styles.plain}`
-    : styles.button!;
+  const base = `${styles.button} ${variantClassName(variant)}`;
   const exactClassName = joinClassName(base, className);
   return <AriaButton {...props} className={exactClassName} />;
+}
+
+function variantClassName(variant: ButtonVariant): string {
+  switch (variant) {
+    case ButtonVariant.Danger:
+      return styles.danger!;
+    case ButtonVariant.Navigation:
+      return styles.navigation!;
+    case ButtonVariant.Plain:
+      return styles.plain!;
+    case ButtonVariant.Primary:
+      return styles.primary!;
+    case ButtonVariant.Secondary:
+      return styles.secondary!;
+  }
 }
 
 function joinClassName(

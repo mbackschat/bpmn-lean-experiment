@@ -7,6 +7,7 @@ import type {
   MessageStartPublication,
   PublicMessageStartCapability,
 } from "@bpmn-lean/platform-contracts";
+import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
 import styles from "./message-start-publication-panel.module.css";
@@ -79,14 +80,13 @@ export function MessageStartPublicationPanel({
           </p>
         </div>
         {publication === null ? null : (
-          <button
-            type="button"
-            className={styles.secondaryAction}
-            disabled={busy !== null}
-            onClick={() => { void refresh(); }}
+          <Button
+            variant={ButtonVariant.Secondary}
+            isPending={busy !== null}
+            onPress={() => { void refresh(); }}
           >
             {busy === "refresh" ? "Refreshing…" : "Refresh publication"}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -123,9 +123,9 @@ export function MessageStartPublicationPanel({
             />
             <small>This caller-owned ID makes an identical retry refer to the same publication.</small>
           </label>
-          <button type="submit" disabled={busy !== null}>
+          <Button type="submit" isPending={busy !== null}>
             {busy === "publish" ? "Publishing…" : "Publish Message Start"}
-          </button>
+          </Button>
         </form>
       ) : null}
 

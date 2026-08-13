@@ -100,7 +100,11 @@ export function DefinitionDiagram({
   }, [activeElementId, api, definition]);
 
   return (
-    <section className={styles.panel} aria-labelledby="diagram-heading">
+    <section
+      className={styles.panel}
+      aria-label={`Complete diagram workspace for ${definition.processId}, version ${definition.version}`}
+      data-ui="definition-diagram-surface"
+    >
       <div className={styles.heading}>
         <div>
           <p className={styles.eyebrow}>Resolved BPMN presentation</p>

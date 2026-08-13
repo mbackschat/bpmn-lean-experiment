@@ -5,6 +5,7 @@ import type {
   ProcessInstanceSearchRequest,
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
+import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api.ts";
 import styles from "./process-instance-search-panel.module.css";
@@ -137,9 +138,9 @@ export function ProcessInstanceSearchPanel({
             onChange={(event) => { setSourceSha256(event.currentTarget.value); }}
           />
         </label>
-        <button type="submit" disabled={busy !== null}>
+        <Button type="submit" isPending={busy !== null}>
           {busy === "search" ? "Searching…" : "Search"}
-        </button>
+        </Button>
       </form>
 
       {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
@@ -149,14 +150,14 @@ export function ProcessInstanceSearchPanel({
         <ProcessInstanceSearchTable instances={instances} />
       )}
       {nextCursor === null ? null : (
-        <button
-          type="button"
-          className={styles.loadMore}
-          disabled={busy !== null}
-          onClick={() => { void loadMore(); }}
+        <Button
+          className={styles.loadMore!}
+          variant={ButtonVariant.Secondary}
+          isPending={busy !== null}
+          onPress={() => { void loadMore(); }}
         >
           {busy === "more" ? "Loading…" : "Load more"}
-        </button>
+        </Button>
       )}
     </section>
   );

@@ -17,11 +17,11 @@
 }
 
 .heading code {
-  border-radius: 999px;
-  padding: 0.3rem 0.55rem;
+  border-radius: var(--ui-radius-pill);
+  padding: var(--ui-space-1) var(--ui-space-2);
   background: var(--ui-color-inset);
   color: var(--ui-color-muted);
-  font-size: 0.76rem;
+  font: var(--ui-font-label);
 }
 
 .eyebrow {

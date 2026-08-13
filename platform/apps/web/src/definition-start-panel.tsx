@@ -5,6 +5,7 @@ import type {
   DeployedDefinitionVersion,
   ProcessInstanceStartResult,
 } from "@bpmn-lean/platform-contracts";
+import { Button } from "@bpmn-lean/platform-ui-kit";
 
 import type { DefinitionApiClient } from "./definitions-api";
 import styles from "./definition-start-panel.module.css";
@@ -37,16 +38,18 @@ export function DefinitionStartPanel({
 
   return (
     <section className={styles.panel} aria-labelledby="start-heading">
-      <div>
-        <p className={styles.eyebrow}>Exact version command</p>
-        <h2 id="start-heading">Start this definition</h2>
-        <p>
-          The platform sends version {definition.version} and its stored source identity to the engine.
-        </p>
+      <div className={styles.layout}>
+        <div>
+          <p className={styles.eyebrow}>Exact version command</p>
+          <h2 id="start-heading">Start this definition</h2>
+          <p>
+            The platform sends version {definition.version} and its stored source identity to the engine.
+          </p>
+        </div>
+        <Button isPending={starting} onPress={() => { void start(); }}>
+          {starting ? "Starting…" : `Start version ${definition.version}`}
+        </Button>
       </div>
-      <button className={styles.action} type="button" disabled={starting} onClick={() => { void start(); }}>
-        {starting ? "Starting…" : `Start version ${definition.version}`}
-      </button>
       {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       <StartResult result={result} />
     </section>

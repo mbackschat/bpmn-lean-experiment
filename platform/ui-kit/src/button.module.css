@@ -1,17 +1,23 @@
 .button {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
-  border: 1px solid var(--ui-color-accent);
   border-radius: var(--ui-radius-control);
-  padding: 10px 16px;
-  background: var(--ui-color-accent);
-  color: var(--ui-color-surface);
+  padding: var(--ui-space-3) var(--ui-space-4);
   cursor: pointer;
   font: var(--ui-font-label);
 }
 
-.button[data-hovered],
-.button[data-pressed] {
+.primary {
+  border: 1px solid var(--ui-color-accent);
+  background: var(--ui-color-accent);
+  color: var(--ui-color-surface);
+}
+
+.primary[data-hovered],
+.primary[data-pressed] {
   background: var(--ui-color-accent-hover);
 }
 
@@ -29,11 +35,13 @@
 }
 
 .plain {
+  justify-content: flex-start;
   min-height: auto;
   border-color: transparent;
-  padding: 4px;
+  padding: var(--ui-space-1);
   background: transparent;
   color: var(--ui-color-accent);
+  text-align: left;
 }
 
 .plain[data-hovered],
@@ -41,4 +49,52 @@
   background: var(--ui-color-accent-soft);
   color: var(--ui-color-accent-hover);
   text-decoration: none;
+}
+
+.secondary,
+.danger {
+  border: var(--ui-border);
+  background: var(--ui-color-surface);
+}
+
+.secondary {
+  color: var(--ui-color-accent-hover);
+}
+
+.secondary[data-hovered],
+.secondary[data-pressed] {
+  background: var(--ui-color-accent-soft);
+}
+
+.danger {
+  border-color: var(--ui-color-error);
+  color: var(--ui-color-error);
+}
+
+.danger[data-hovered],
+.danger[data-pressed] {
+  background: var(--ui-color-error-surface);
+}
+
+.navigation {
+  width: 100%;
+  justify-content: flex-start;
+  border-color: transparent;
+  padding: var(--ui-space-3);
+  background: transparent;
+  color: var(--ui-color-text);
+  text-align: left;
+  text-decoration: none;
+}
+
+.navigation[data-hovered],
+.navigation[data-pressed] {
+  background: var(--ui-color-inset);
+  text-decoration: none;
+}
+
+.navigation[aria-current="page"] {
+  background: var(--ui-color-accent-soft);
+  color: var(--ui-color-accent-hover);
+  font-weight: 750;
 }

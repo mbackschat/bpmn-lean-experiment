@@ -11,6 +11,8 @@ import {
   BooleanChoice,
   Checkbox,
   DataTable,
+  DataTableCardWidth,
+  DataTableResponsiveMode,
   TextField,
   WorkspaceTabs,
   type DataTableColumn,
@@ -53,6 +55,7 @@ test("renders accessible React Aria controls with native form semantics", () => 
 test("renders a native TanStack-backed table with stable row identity", () => {
   type Row = Readonly<{ id: string; name: string }>;
   const columns: readonly DataTableColumn<Row>[] = [{
+    cardWidth: DataTableCardWidth.Full,
     id: "name",
     header: "Task",
     responsiveLabel: "Task",
@@ -63,12 +66,15 @@ test("renders a native TanStack-backed table with stable row identity", () => {
     columns,
     rows: [{ id: "task-1", name: "Review request" }],
     rowId: (row) => row.id,
+    responsiveMode: DataTableResponsiveMode.Cards,
   }));
 
   assert.match(html, /<table[^>]*aria-label="Current tasks"/u);
   assert.match(html, /<th[^>]*>Task<\/th>/u);
   assert.match(html, /<td[^>]*>Review request<\/td>/u);
   assert.match(html, /<td[^>]*data-label="Task"/u);
+  assert.match(html, /data-responsive="cards"/u);
+  assert.match(html, /data-card-width="full"/u);
 });
 
 test("renders shared React Aria tabs with one selected object panel", () => {
@@ -93,4 +99,6 @@ test("keeps shared component styling in CSS Modules without a horizontal table s
   assert.doesNotMatch(rootStyles, /\.ui(?:Button|TextField|Checkbox|BooleanChoice|Radio|DataTable|TableScroller)\b/u);
   assert.match(tableStyles, /\.collection\s*\{[^}]*overflow:\s*visible/su);
   assert.doesNotMatch(tableStyles, /overflow-x:\s*(?:auto|scroll)/u);
+  assert.match(tableStyles, /@container \(max-width: 45rem\)/u);
+  assert.match(tableStyles, /grid-template-columns: 1fr/u);
 });

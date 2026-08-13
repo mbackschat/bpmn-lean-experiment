@@ -14,7 +14,7 @@
 .tab {
   min-height: 44px;
   border-bottom: 3px solid transparent;
-  padding: 11px 16px 9px;
+  padding: var(--ui-space-3) var(--ui-space-4);
   color: var(--ui-color-muted);
   cursor: pointer;
   font: var(--ui-font-label);

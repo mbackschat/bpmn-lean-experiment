@@ -7,6 +7,8 @@ import {
   Button,
   ButtonVariant,
   DataTable,
+  DataTableCardWidth,
+  DataTableResponsiveMode,
 } from "@bpmn-lean/platform-ui-kit";
 import type { DataTableColumn } from "@bpmn-lean/platform-ui-kit";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -140,12 +142,12 @@ export function WorkInboxPanel({
     },
   });
   const columns = useMemo<readonly DataTableColumn<PublicWorkTask>[]>(() => [{
+    cardWidth: DataTableCardWidth.Full,
     id: "task",
     header: "Task",
     responsiveLabel: "Task",
     cell: (row) => (
       <Button
-        className={styles.taskLink!}
         ref={(element) => {
           const taskId = workTaskRowId(row);
           if (element === null) taskButtonRefs.current.delete(taskId);
@@ -165,6 +167,7 @@ export function WorkInboxPanel({
       </Button>
     ),
   }, {
+    cardWidth: DataTableCardWidth.Full,
     id: "process",
     header: "Process",
     responsiveLabel: "Process",
@@ -180,6 +183,7 @@ export function WorkInboxPanel({
     responsiveLabel: "Claim",
     cell: (row) => row.claim === null ? "Unclaimed" : `Claimed by ${row.claim.actorId}`,
   }, {
+    cardWidth: DataTableCardWidth.Full,
     id: "action",
     header: "Action",
     responsiveLabel: "Action",
@@ -262,6 +266,7 @@ export function WorkInboxPanel({
             columns={columns}
             rows={tasks.data.tasks}
             rowId={workTaskRowId}
+            responsiveMode={DataTableResponsiveMode.Cards}
           />
         </div>
       )}

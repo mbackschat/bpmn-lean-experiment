@@ -6,6 +6,7 @@ import type {
   DefinitionSchedule,
   DeployedDefinitionVersion,
 } from "@bpmn-lean/platform-contracts";
+import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import styles from "./definition-schedule-panel.module.css";
@@ -95,14 +96,13 @@ export function DefinitionSchedulePanel({
             Every schedule remains bound to {definition.processId}, version {definition.version}.
           </p>
         </div>
-        <button
-          type="button"
-          className={styles.secondaryAction}
-          disabled={busy !== null}
-          onClick={() => { void refreshList(); }}
+        <Button
+          variant={ButtonVariant.Secondary}
+          isPending={busy !== null}
+          onPress={() => { void refreshList(); }}
         >
           {busy === "list" ? "Refreshing…" : "Refresh schedules"}
-        </button>
+        </Button>
       </div>
 
       <div className={styles.capabilities} aria-label="Published Timer Start capabilities">
@@ -146,9 +146,9 @@ export function DefinitionSchedulePanel({
             />
             <small>Canonical UTC whole second ending in <code>.000Z</code></small>
           </label>
-          <button type="submit" disabled={busy !== null}>
+          <Button type="submit" isPending={busy !== null}>
             {busy === "create" ? "Creating…" : "Create schedule"}
-          </button>
+          </Button>
         </form>
       ) : timerStarts.length > 1 ? (
         <p className={styles.notice}>
@@ -191,23 +191,21 @@ export function DefinitionSchedulePanel({
                 ) : null}
               </dl>
               <div className={styles.actions}>
-                <button
-                  type="button"
-                  className={styles.secondaryAction}
-                  disabled={busy !== null}
-                  onClick={() => { void refresh(schedule); }}
+                <Button
+                  variant={ButtonVariant.Secondary}
+                  isPending={busy !== null}
+                  onPress={() => { void refresh(schedule); }}
                 >
                   {busy === schedule.scheduleId ? "Working…" : "Refresh"}
-                </button>
+                </Button>
                 {schedule.status === DefinitionScheduleStatus.Scheduled ? (
-                  <button
-                    type="button"
-                    className={styles.cancelAction}
-                    disabled={busy !== null}
-                    onClick={() => { void cancel(schedule); }}
+                  <Button
+                    variant={ButtonVariant.Danger}
+                    isPending={busy !== null}
+                    onPress={() => { void cancel(schedule); }}
                   >
                     Cancel
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </li>

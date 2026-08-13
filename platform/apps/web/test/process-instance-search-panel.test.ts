@@ -33,6 +33,10 @@ const runnablePanel = transformedPanel.code
     '"react/jsx-runtime"',
     JSON.stringify(import.meta.resolve("react/jsx-runtime")),
   )
+  .replaceAll(
+    '"@bpmn-lean/platform-ui-kit"',
+    JSON.stringify(import.meta.resolve("@bpmn-lean/platform-ui-kit")),
+  )
   .replaceAll('"react"', JSON.stringify(import.meta.resolve("react")));
 const panelModule = await import(
   `data:text/javascript;base64,${Buffer.from(runnablePanel).toString("base64")}`

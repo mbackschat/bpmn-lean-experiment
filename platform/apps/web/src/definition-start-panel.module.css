@@ -1,12 +1,18 @@
 .panel {
+  container-type: inline-size;
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: var(--ui-space-4) var(--ui-space-5);
+  gap: var(--ui-space-4);
   border: var(--ui-border);
   border-radius: var(--ui-radius-surface);
   padding: var(--ui-space-4);
   background: var(--ui-color-surface);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--ui-space-4) var(--ui-space-5);
 }
 
 .eyebrow {
@@ -20,31 +26,6 @@
 .panel p:not(.eyebrow, .error) {
   margin-bottom: 0;
   color: var(--ui-color-muted);
-}
-
-.action {
-  min-height: 2.75rem;
-  border: 0;
-  border-radius: var(--ui-radius-control);
-  padding: var(--ui-space-3) var(--ui-space-4);
-  background: var(--ui-color-accent);
-  color: var(--ui-color-surface);
-  font-weight: 800;
-}
-
-.action:hover:not(:disabled) {
-  background: var(--ui-color-accent-hover);
-}
-
-.action:disabled {
-  cursor: wait;
-  background: var(--ui-color-inset);
-  color: var(--ui-color-muted);
-}
-
-.error,
-.result {
-  grid-column: 1 / -1;
 }
 
 .error {
@@ -84,8 +65,8 @@
   margin: 0;
 }
 
-@media (max-width: 900px) {
-  .panel,
+@container (max-width: 44rem) {
+  .layout,
   .result {
     grid-template-columns: 1fr;
   }
