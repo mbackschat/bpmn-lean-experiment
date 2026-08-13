@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: close M4 incident-scoped cancellation proposal review.** Immutable proposal target `d03f528` received `APPROVE WITH REQUIRED EDITS`. Its bounded correction closes successor-profile Temporal incident reachability, canonical Retry-before-Cancel publication order, and pending-initiation refusal. Route the correction to the same reviewer, then obtain owner approval before implementation. Product 2 incident operations remain Stage 3.
+1. **In progress: obtain owner approval for M4 incident-scoped cancellation.** Context-cold proposal target `d03f528` received `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf` with no retained finding. Owner approval remains the only proposal-stage release condition before implementation. Product 2 incident operations remain Stage 3.
 
 ## Approved decisions
 
@@ -264,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: complete the same-reviewer audit of the bounded M4 Stage 2 proposal correction.** Context-cold target `d03f528` received `APPROVE WITH REQUIRED EDITS`; the selected semantic account and CIB classification remain intact. After the correction audit, obtain owner approval before implementation. Product 2 operations remain Stage 3.
+**Next action: obtain owner approval for the reviewed M4 Stage 2 cancellation account.** Context-cold target `d03f528` and approved correction `4505dbf` close proposal review with no retained finding. Implementation remains paused until the owner approves the eight decisions listed in the proposal. Product 2 operations remain Stage 3.
 
-Item 1 is **in progress at Stage 2 proposal correction audit**. Stage 1 remains graduated. The Stage 2 draft requires exact public root and incident identity, derives rather than accepts the root scope, refuses pending initiation, publishes Retry before Cancel without assigning scheduling priority, shares the exact Stage 1 incident Activity/report policy under the successor profile, applies incident-aware shared subtree cleanup once, preserves Process variables and monotonic history, closes as typed cancelled through ordinary Workflow completion, and keeps general BPMN cancellation, native Temporal cancellation, and Product 2 operations excluded. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
+Item 1 is **in progress at Stage 2 owner approval**. Stage 1 remains graduated. The reviewed Stage 2 account requires exact public root and incident identity, derives rather than accepts the root scope, refuses pending initiation, publishes Retry before Cancel without assigning scheduling priority, shares the exact Stage 1 incident Activity/report policy under the successor profile, applies incident-aware shared subtree cleanup once, preserves Process variables and monotonic history, closes as typed cancelled through ordinary Workflow completion, and keeps general BPMN cancellation, native Temporal cancellation, and Product 2 operations excluded. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
 
 **Last verified commands:** Stage 1 passed the complete `./scripts/verify.sh`, its focused artifact/CIB/differential and Temporal sets, the complete four-target incident pipeline, and the configured CIB runner's 68 Maven tests. Stage 2 proposal preflight passed the focused CIB phase-zero cancellation probe and the documentation, review-policy, plan, source-hygiene, and ownership gates. `c77b6e8` keeps Playwright in the approved separate Product 2 workflow; the retained Product 2 browser evidence remains unchanged and separate.
 

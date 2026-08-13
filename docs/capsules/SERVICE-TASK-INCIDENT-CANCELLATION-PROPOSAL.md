@@ -2,13 +2,13 @@
 
 ## Status
 
-**Draft; immutable proposal target `d03f5285a9e16852e2d08da6da29864275e75c6b` received `APPROVE WITH REQUIRED EDITS` in context-cold review. Its bounded contract-completeness correction awaits the same reviewer's audit. Owner approval and implementation remain paused.** This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
+**Proposal review approved; owner approval and implementation remain paused.** Context-cold review of immutable target `d03f5285a9e16852e2d08da6da29864275e75c6b` returned `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf1f893d24ee282b89a5fdef0a37d1b920e` with no retained finding. This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `d03f5285a9e16852e2d08da6da29864275e75c6b` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `d03f5285a9e16852e2d08da6da29864275e75c6b` | `fork-turns-none` | `approve-with-required-edits` | `4505dbf1f893d24ee282b89a5fdef0a37d1b920e` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
