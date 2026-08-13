@@ -138,7 +138,7 @@ Reject for M3:
 
 The two project-specific UI contracts have graduated to stable specifications after their browser acceptance evidence and independent closure reviews completed. The [BPMN diagram presentation decision](../BPMN-DIAGRAM-PRESENTATION-DECISION.md) separately owns provenance and lifecycle because generated layout is not merely a visual-style choice.
 
-After implementation, add a concise M3 browser walkthrough under `docs/` that shows how to select or add a definition, see its diagram, start an instance, claim the resulting task, complete its typed form, and inspect the resulting public Process instance. A walkthrough is preferable to another proposal because it explains an implemented path rather than selecting new scope.
+The maintained [M3 human-work browser walkthrough](../M3-HUMAN-WORK-WALKTHROUGH.md) shows how to select or add a definition, inspect and download its diagram presentation, start an instance, claim the resulting task, complete its typed form, and inspect the resulting public Process instance. A walkthrough is preferable to another proposal because it explains an implemented path rather than selecting new scope.
 
 No separate proposal is recommended now for tokens, a router, a form framework, dashboards, or saved views. The UI design specification already owns tokens and responsive component rules, while the other topics have no approved M3 contract.
 

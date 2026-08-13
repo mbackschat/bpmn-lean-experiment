@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Not started: publish the M3 browser walkthrough.** Add the concise user-facing path retained by the UI/UX research: run the Product 2 host, select or add a definition, inspect source-owned or generated diagram presentation, download the modeller-ready presentation copy, start an instance, find and claim its task, complete the typed form, and inspect the public Process-instance result. Keep setup and troubleshooting grounded in maintained commands and public UI labels.
+1. **Not started: define the M4 failure-operations slice.** Inventory the implemented direct-parent cancellation, Service Task effect failure, CIB incident and retry evidence, Temporal transport outcomes, and Product 2 operation boundaries. Select the smallest complete account that makes failure visible and operable without deriving semantic facts from Temporal Event History or platform state, record it in an owner-reviewable proposal or semantic capsule as appropriate, and obtain its required context-cold review before implementation.
 
 ## Approved decisions
 
@@ -264,7 +264,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: publish and verify the concise M3 browser walkthrough retained by the UI/UX research, then begin M4 inventory.** The M3 semantic and human-work contract is graduated through correction audit `23892a5`, diagram presentation integrity is approved through `83de531`, and the reusable Product 2 information architecture and UI design are approved through `83de531` and `afc4b63` respectively.
+**Next action: inventory and specify the smallest complete M4 failure-operations slice.** M3 is closed end to end: the semantic and human-work contract is graduated through correction audit `23892a5`, diagram presentation integrity is approved through `83de531`, the reusable Product 2 information architecture and UI design are approved through `83de531` and `afc4b63` respectively, and the maintained browser walkthrough exposes the complete owner-review path.
 
 Item 1 is **not started and unblocked for proposal work**. Playwright remains a Product 2 showcase and UI-quality harness and does not enter `verify.sh`, the hosted Product 1 workflow, or Product 1 semantic, Lean, BPMN-source, CIB, differential, or ordinary Temporal adapter feedback loops. `test:release:m3` explicitly composes the real-host M3 showcase with the fixed-fixture UI-quality lane only for Product 2 release acceptance.
 
