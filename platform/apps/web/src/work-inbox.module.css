@@ -46,28 +46,33 @@
 }
 
 .taskTable :global(th:nth-child(1)) {
-  width: 26%;
+  width: 25%;
 }
 
 .taskTable :global(th:nth-child(2)) {
-  width: 36%;
+  width: 27%;
 }
 
-.taskTable :global(th:nth-child(3)),
-.taskTable :global(th:nth-child(4)),
+.taskTable :global(th:nth-child(3)) {
+  width: 19%;
+}
+
+.taskTable :global(th:nth-child(4)) {
+  width: 18%;
+}
+
 .taskTable :global(th:nth-child(5)) {
-  white-space: nowrap;
+  width: 11%;
 }
 
-.taskTable :global(td:nth-child(1)),
-.taskTable :global(td:nth-child(2)) {
+.taskTable :global(td) {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.taskTable :global(td:nth-child(3)),
-.taskTable :global(td:nth-child(4)),
-.taskTable :global(td:nth-child(5)) {
-  white-space: nowrap;
+.taskTable :global(td > *) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .taskTable :global(tbody tr) {

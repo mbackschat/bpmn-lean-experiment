@@ -29,6 +29,10 @@ const stylesSource = await readFile(
   new URL("../src/work-inbox.module.css", import.meta.url),
   "utf8",
 );
+const workInboxSource = await readFile(
+  new URL("../src/work-inbox-panel.tsx", import.meta.url),
+  "utf8",
+);
 const dependencies = [
   "react/jsx-runtime",
   "react",
@@ -218,6 +222,13 @@ test("renders a selected task as a full content workspace without the inbox tabl
   assert.match(html, /role="tab"[^>]*>Details</u);
   assert.match(html, /Complete task/u);
   assert.doesNotMatch(html, /<table/u);
+});
+
+test("keeps the selected task inside the named Tasks workspace region", () => {
+  assert.match(
+    workInboxSource,
+    /<section className=\{styles\.panel\} aria-label="Tasks">/u,
+  );
 });
 
 test("renders Boolean as an explicit true-false choice and string as text without coercion", () => {

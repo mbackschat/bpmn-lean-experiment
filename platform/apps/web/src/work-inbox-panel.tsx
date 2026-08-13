@@ -198,7 +198,7 @@ export function WorkInboxPanel({
   const error = tasks.error ?? detail.error ?? claim.error ?? release.error;
   if (selected !== null) {
     return (
-      <section className={styles.panel} aria-labelledby="human-work-heading">
+      <section className={styles.panel} aria-label="Tasks">
         {error === null ? null : <p role="alert" className={styles.error}>{errorMessage(error)}</p>}
         {detail.isPending ? <p role="status">Loading task detail…</p> : null}
         {detail.data === undefined ? null : (

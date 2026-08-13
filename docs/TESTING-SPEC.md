@@ -86,6 +86,7 @@ git diff --check
 | M3 Work contract, identity, audit, persistence, HTTP, or web composition | `./scripts/pnpm.sh run test:platform-work-checkpoint` |
 | M3 cross-instance inbox, claim, typed completion, response-loss recovery, audit, live Temporal, replay, or browser acceptance | `./scripts/pnpm.sh run test:showcase:m3-human-work` after installing the pinned Playwright Chromium |
 | Product 2 BPMN diagram presentation contract, generated sidecar, durable reuse, public route, rendering, task highlight, or modeller download | `./scripts/pnpm.sh run test:platform-m1`; this platform-only gate remains outside `verify.sh` and the Product 1 semantic feedback loop |
+| Product 2 information architecture, visual foundation, responsive geometry, focus, reduced motion, or visual baselines | `./scripts/pnpm.sh run test:ui-quality` after installing the pinned Playwright Chromium; this fixed-fixture lane is path-filtered in CI, uses no Temporal service, and remains outside `verify.sh` and every Product 1 feedback loop |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` (strict harness types plus runtime tests) |
 | Provisional representation experiment | `./scripts/lake.sh build checkSemanticRepresentationSpike && ./scripts/lake.sh exe checkSemanticRepresentationSpike` |
 | Checked-source relation experiment | `./scripts/lake.sh build checkCheckedSourceRelationExperiment && ./scripts/lake.sh exe checkCheckedSourceRelationExperiment` |

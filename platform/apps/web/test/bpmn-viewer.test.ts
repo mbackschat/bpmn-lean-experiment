@@ -45,8 +45,8 @@ function viewerFixture() {
         removeMarker(elementId, marker) {
           canvasCalls.push(`remove:${elementId}:${marker}`);
         },
-        zoom(scale) {
-          canvasCalls.push(`zoom:${scale}`);
+        zoom(scale, center) {
+          canvasCalls.push(`zoom:${scale}:${String(center)}`);
           return 1;
         },
       };
@@ -74,7 +74,7 @@ test("renders a synchronous byte snapshot as strict UTF-8 and fits the viewport"
   await pending;
 
   assert.deepEqual(fixture.imported, ["<definitions id=\"original\"/>"]);
-  assert.deepEqual(fixture.canvasCalls, ["zoom:fit-viewport"]);
+  assert.deepEqual(fixture.canvasCalls, ["zoom:fit-viewport:true"]);
   await assert.rejects(
     viewer.render(Uint8Array.from([0xff])),
     (error: unknown) => error instanceof BpmnViewerProtocolError && /UTF-8/u.test(error.message),

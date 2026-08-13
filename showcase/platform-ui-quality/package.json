@@ -1,0 +1,16 @@
+{
+  "name": "@bpmn-lean/showcase-platform-ui-quality",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "type-test": "tsc -p tsconfig.json",
+    "test:e2e": "pnpm run type-test && playwright test",
+    "test:e2e:functional": "pnpm run type-test && playwright test --grep-invert @visual",
+    "test:e2e:visual": "pnpm run type-test && playwright test --grep @visual"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

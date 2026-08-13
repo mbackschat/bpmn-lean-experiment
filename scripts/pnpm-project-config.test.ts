@@ -98,10 +98,10 @@ test("derives workspace build order from package manifests", async () => {
       "utf8",
     )) as PackageManifest;
     if (manifest.files?.includes("dist") === true) {
-      assert.equal(
-        manifest.scripts?.build,
-        "tsc -p tsconfig.json",
-        `${workspacePackage.name} must own its build command`,
+      assert.match(
+        manifest.scripts?.build ?? "",
+        /^tsc -p tsconfig\.json(?: && vite build)?$/u,
+        `${workspacePackage.name} must own a deterministic TypeScript build with only an optional package-owned Vite bundle`,
       );
     }
   }

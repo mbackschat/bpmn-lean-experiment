@@ -3,7 +3,7 @@ const activeMarker = "bpmn-platform-active";
 export type BpmnCanvasPort = Readonly<{
   addMarker(elementId: string, marker: string): void;
   removeMarker(elementId: string, marker: string): void;
-  zoom(scale: "fit-viewport"): number;
+  zoom(scale: "fit-viewport", center?: boolean): number;
 }>;
 
 export type BpmnViewerPort = Readonly<{
@@ -52,7 +52,7 @@ export class BpmnDiagramViewer {
     const operation = this.#renderQueue.then(async () => {
       this.#requireLive();
       await this.#viewer.importXML(xml);
-      this.#canvas.zoom("fit-viewport");
+      this.#canvas.zoom("fit-viewport", true);
     });
     this.#renderQueue = operation.catch(() => undefined);
     await operation;

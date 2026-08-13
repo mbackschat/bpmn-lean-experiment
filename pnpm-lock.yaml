@@ -400,6 +400,12 @@ importers:
         specifier: 1.62.1
         version: 1.62.1
 
+  showcase/platform-ui-quality:
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.62.1
+        version: 1.62.1
+
 packages:
 
   '@bpmn-io/diagram-js-ui@0.2.4':

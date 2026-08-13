@@ -62,7 +62,7 @@
 .canvas {
   position: relative;
   width: 100%;
-  min-height: 29rem;
+  height: clamp(22rem, 48vh, 36rem);
   overflow: hidden;
   border: var(--ui-border);
   border-radius: var(--ui-radius-surface);
@@ -82,6 +82,6 @@
   }
 
   .canvas {
-    min-height: 24rem;
+    height: clamp(20rem, 46vh, 28rem);
   }
 }

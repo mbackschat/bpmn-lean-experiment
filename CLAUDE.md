@@ -425,6 +425,14 @@ Required M3 human-work live Temporal and headless-browser gate:
 ./scripts/pnpm.sh run test:showcase:m3-human-work
 ```
 
+Product 2 fixed-fixture responsive, focus, reduced-motion, and visual-regression gate after installing Playwright's pinned Chromium:
+
+```sh
+./scripts/pnpm.sh run test:ui-quality
+```
+
+This path-filtered browser lane is independent from Temporal and remains outside `verify.sh` and every Product 1 semantic feedback loop.
+
 Keep the M1 gate as an independent unseen-source deployment regression floor when running M2.
 
 Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:
