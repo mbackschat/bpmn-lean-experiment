@@ -578,6 +578,10 @@ async function startPlatform(
     temporalNamespace,
     temporalTaskQueue: taskQueue,
     temporalConnectTimeoutMs: 5_000,
+    fakeActorId: "demo-user",
+    fakeActorGroups: ["reviewers"],
+    maxWorkProcesses: 100,
+    maxWorkTasks: 1_000,
   });
   try {
     assert.equal(await runtime.listen(), origin);

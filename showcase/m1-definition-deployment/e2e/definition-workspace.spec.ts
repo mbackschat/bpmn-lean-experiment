@@ -17,35 +17,42 @@ test("deploys, versions, renders, starts, and rejects a runtime-created third-pa
   const secondSource = await sourceRevision(processId, secondTaskName, "two");
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Definition workspace" })).toBeVisible();
+  await openDefinitions(page);
 
   await deploy(page, processId, firstSource);
   await expect(page.getByText("Admitted and deployed")).toBeVisible();
-  await expect(page.getByRole("button", { name: new RegExp(processId, "u") })).toContainText("Latest version 1");
-  const diagram = page.locator(".diagram-canvas svg[data-element-id]");
-  await expect(diagram).toContainText(diagramText(firstTaskName));
-  const attribution = page.locator("a.bjs-powered-by");
-  await expect(attribution).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Definition" })).toHaveValue(processId);
+  await expect(page.getByRole("combobox", { name: "Version" })).toHaveValue("1");
+  const diagram = page.getByLabel(`BPMN diagram for ${processId}, version 1`);
+  await expect(page.getByText("Source layout", { exact: true })).toBeVisible();
+  await expect(diagram.getByText(diagramText(firstTaskName))).toBeVisible();
+  const attribution = diagram.getByRole("link", { name: "Powered by bpmn.io" });
   await expect(attribution).toHaveAttribute("href", /bpmn\.io/u);
 
   await deploy(page, processId, secondSource);
-  await expect(page.getByRole("button", { name: new RegExp(processId, "u") })).toContainText("Latest version 2");
-  await expect(page.locator(".versions button")).toHaveCount(2);
-  await expect(diagram).toContainText(diagramText(secondTaskName));
+  const versionSelect = page.getByRole("combobox", { name: "Version" });
+  await expect(versionSelect).toHaveValue("2");
+  await expect(versionSelect.getByRole("option")).toHaveCount(2);
+  const revisedDiagram = page.getByLabel(`BPMN diagram for ${processId}, version 2`);
+  await expect(revisedDiagram.getByText(diagramText(secondTaskName))).toBeVisible();
 
-  await page.locator(".versions button", { hasText: "1" }).click();
+  await versionSelect.selectOption("1");
+  await page.getByRole("tab", { name: "Start" }).click();
+  const startPanel = page.getByRole("region", { name: "Start this definition" });
   await page.getByRole("button", { name: "Start version 1" }).click();
-  await expect(page.getByText("Process instance started")).toBeVisible();
-  await expect(page.getByTestId("started-instance-definition")).toHaveText(
-    `${processId}, version 1`,
-  );
-  await expect(page.getByTestId("started-instance-id")).not.toBeEmpty();
+  await expect(startPanel.getByText("Process instance started")).toBeVisible();
+  await expect(startPanel.getByText(`${processId}, version 1`, { exact: true })).toBeVisible();
+  await expect(startPanel.getByText(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+  )).toBeVisible();
 
   const rejectedSource = secondSource.replaceAll("bpmn:userTask", "bpmn:scriptTask");
   await deploy(page, processId, rejectedSource);
   await expect(page.getByText("Not deployed")).toBeVisible();
   await expect(page.getByText(/Element UserTask_Approve/u)).toBeVisible();
-  await expect(page.getByRole("button", { name: new RegExp(processId, "u") })).toContainText("Latest version 2");
+  await expect(versionSelect).toHaveValue("1");
+  await versionSelect.selectOption("2");
+  await expect(versionSelect).toHaveValue("2");
 });
 
 function diagramText(value: string): RegExp {
@@ -57,13 +64,24 @@ async function deploy(
   processId: string,
   source: string,
 ): Promise<void> {
-  await page.locator('input[name="source"]').setInputFiles({
+  const sourceInput = page.getByLabel("BPMN XML file");
+  if (!await sourceInput.isVisible()) {
+    await page.getByText("Add BPMN definition", { exact: true }).click();
+  }
+  await sourceInput.setInputFiles({
     name: `${processId}.bpmn`,
     mimeType: "application/bpmn+xml",
     buffer: Buffer.from(source, "utf8"),
   });
-  await page.locator('input[name="semanticProfile"]').fill(profileId);
+  await page.getByRole("textbox", { name: "Semantic profile ID" }).fill(profileId);
   await page.getByRole("button", { name: "Deploy definition" }).click();
+}
+
+async function openDefinitions(page: import("@playwright/test").Page): Promise<void> {
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: "Definitions", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Definitions", level: 1 })).toBeVisible();
 }
 
 async function sourceRevision(

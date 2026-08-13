@@ -10,7 +10,7 @@ import {
   metadataProfile,
 } from "../test/fixture.ts";
 
-const apiOrigin = "http://127.0.0.1:3203";
+const apiOrigin = process.env.PLATFORM_API_ORIGIN ?? "http://127.0.0.1:3203";
 const privateFactKeys = new Set([
   "bpmnleandirectstartintentsha256",
   "commandtransportpayload",
@@ -130,20 +130,24 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   const started = (await startDefinition(apiOrigin, definition)).value.instance;
 
   await page.goto("/", { timeout: 10_000 });
-  const panel = page.getByRole("region", { name: "Human work" });
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: "Work", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Work", level: 1 })).toBeVisible();
+  const panel = page.getByRole("region", { name: "Tasks" });
   await expect(panel).toBeVisible();
   const table = panel.getByRole("table", { name: "Current tasks" });
   const taskName = `Review request ${token}`;
   const row = table.getByRole("row").filter({ hasText: taskName });
   await expect(row).toHaveCount(1);
-  await expect(row.locator("th, td")).toHaveCount(5);
+  await expect(row.getByRole("cell")).toHaveCount(5);
   await expect(row).toContainText("reviewers");
   await expect(row).toContainText("Unclaimed");
 
   await row.getByRole("button", { name: "Claim", exact: true }).click();
   await expect(row).toContainText("Claimed by demo-user");
   await page.reload();
-  const reloadedPanel = page.getByRole("region", { name: "Human work" });
+  const reloadedPanel = page.getByRole("region", { name: "Tasks" });
   const reloadedRow = reloadedPanel
     .getByRole("table", { name: "Current tasks" })
     .getByRole("row")
@@ -151,6 +155,15 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   await expect(reloadedRow).toContainText("Claimed by demo-user");
 
   await reloadedRow.getByRole("button", { name: taskName }).click();
+  const detailTabs = reloadedPanel.getByRole("tablist", { name: "Task detail views" });
+  await detailTabs.getByRole("tab", { name: "Diagram" }).click();
+  await expect(reloadedPanel.getByText("Generated layout", { exact: true })).toBeVisible();
+  const taskDiagram = reloadedPanel.getByLabel(
+    `BPMN diagram for ${definition.processId}, version ${definition.version}`,
+  );
+  await expect(taskDiagram).toBeVisible();
+  await expect(taskDiagram.getByText(taskName, { exact: true })).toBeVisible();
+  await detailTabs.getByRole("tab", { name: "Form" }).click();
   const trueChoice = reloadedPanel.getByRole("radio", { name: "True" });
   const falseChoice = reloadedPanel.getByRole("radio", { name: "False" });
   await expect(trueChoice).not.toBeChecked();

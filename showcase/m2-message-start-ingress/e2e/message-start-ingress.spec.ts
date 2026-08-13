@@ -28,17 +28,20 @@ test("publishes the exact version-1 Message Start capability after version 2 exi
   );
 
   await page.goto("/", { timeout: 10_000 });
-  await expect(page.getByRole("heading", { name: "Definition workspace" })).toBeVisible();
+  await openDefinitions(page);
 
   await deploy(page, processId, versionOneSource);
-  await expect(page.locator(".result.accepted")).toContainText(`${processId}, version 1`);
+  await expect(page.getByRole("combobox", { name: "Definition" })).toHaveValue(processId);
+  await expect(page.getByRole("combobox", { name: "Version" })).toHaveValue("1");
+  await expect(page.getByText("Generated layout", { exact: true })).toBeVisible();
+  await expect(page.getByLabel(`BPMN diagram for ${processId}, version 1`)).toBeVisible();
   await deploy(page, processId, versionTwoSource);
-  await expect(page.getByRole("button", { name: new RegExp(processId, "u") })).toContainText(
-    "Latest version 2",
-  );
-  await expect(page.locator(".result.accepted")).toContainText(`${processId}, version 2`);
+  const versionSelect = page.getByRole("combobox", { name: "Version" });
+  await expect(versionSelect).toHaveValue("2");
+  await expect(versionSelect.getByRole("option")).toHaveCount(2);
 
-  await page.locator(".versions button", { hasText: "1" }).click();
+  await versionSelect.selectOption("1");
+  await page.getByRole("tab", { name: "Triggers" }).click();
   const publication = page.getByRole("region", { name: "Message Start publication" });
   await expect(publication).toContainText(`${processId}, version 1`);
   const capabilities = publication.getByLabel("Published Message Start capabilities");
@@ -55,16 +58,14 @@ test("publishes the exact version-1 Message Start capability after version 2 exi
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
   );
   await publication.getByRole("button", { name: "Publish Message Start" }).click();
-  const result = publication.locator(".message-publication-result");
-  await expect(result).toContainText("Publication accepted");
+  await expect(publication.getByText("Publication accepted")).toBeVisible();
   await publication.getByRole("button", { name: "Refresh publication" }).click();
-  await expect(result).toContainText("Publication accepted");
-  await expect(result).toContainText(publicationId);
-  await expect(result).toContainText(`${processId}, version 1`);
-  const processInstance = result
-    .getByText("Process instance", { exact: true })
-    .locator("..")
-    .locator("code");
+  await expect(publication.getByText("Publication accepted")).toBeVisible();
+  await expect(publication.getByText(publicationId, { exact: true })).toBeVisible();
+  await expect(publication.getByText(`${processId}, version 1`, { exact: true })).toBeVisible();
+  const processInstance = publication.getByText(
+    /^bpmn-platform-message-start-instance-sha256:[0-9a-f]{64}$/u,
+  );
   await expect(processInstance).toBeVisible();
   const processInstanceId = requireDistinctProcessInstance(
     await processInstance.textContent(),
@@ -76,8 +77,8 @@ test("publishes the exact version-1 Message Start capability after version 2 exi
   expect(() => requireDistinctProcessInstance(publicationId, publicationId)).toThrow(
     /must differ from the publication identity/u,
   );
-  await expect(result).not.toContainText("version 2");
-  await expect(result).not.toContainText(/workflow|run id|task queue|memo|command|checked|program/iu);
+  await expect(publication).not.toContainText("version 2");
+  await expect(publication).not.toContainText(/workflow|run id|task queue|memo|command|checked|program/iu);
 });
 
 function requireDistinctProcessInstance(
@@ -94,13 +95,24 @@ function requireDistinctProcessInstance(
 }
 
 async function deploy(page: Page, processId: string, source: string): Promise<void> {
-  await page.locator('input[name="source"]').setInputFiles({
+  const sourceInput = page.getByLabel("BPMN XML file");
+  if (!await sourceInput.isVisible()) {
+    await page.getByText("Add BPMN definition", { exact: true }).click();
+  }
+  await sourceInput.setInputFiles({
     name: `${processId}.bpmn`,
     mimeType: "application/bpmn+xml",
     buffer: Buffer.from(source, "utf8"),
   });
-  await page.locator('input[name="semanticProfile"]').fill(profileId);
+  await page.getByRole("textbox", { name: "Semantic profile ID" }).fill(profileId);
   await page.getByRole("button", { name: "Deploy definition" }).click();
+}
+
+async function openDefinitions(page: Page): Promise<void> {
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: "Definitions", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Definitions", level: 1 })).toBeVisible();
 }
 
 async function sourceRevision(

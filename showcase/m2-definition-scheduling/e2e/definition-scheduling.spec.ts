@@ -20,16 +20,17 @@ test("schedules exact version 1 before publishing version 2 and displays the sta
   const dueAt = new Date(Date.parse(activationAt) + 1_000).toISOString();
 
   await page.goto("/", { timeout: 10_000 });
-  await expect(page.getByRole("heading", { name: "Definition workspace" })).toBeVisible();
+  await openDefinitions(page);
 
   await deploy(page, processId, versionOneSource);
   await expect(page.getByText("Admitted and deployed")).toBeVisible();
-  await expect(page.getByRole("button", { name: new RegExp(processId, "u") })).toContainText(
-    "Latest version 1",
-  );
-  await expect(page.locator(".result.accepted")).toContainText(`${processId}, version 1`);
-  await expect(page.locator(".diagram-canvas svg[data-element-id]")).toBeVisible();
-  await expect(page.locator("a.bjs-powered-by")).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Definition" })).toHaveValue(processId);
+  await expect(page.getByRole("combobox", { name: "Version" })).toHaveValue("1");
+  await expect(page.getByText("Generated layout", { exact: true })).toBeVisible();
+  const diagram = page.getByLabel(`BPMN diagram for ${processId}, version 1`);
+  await expect(diagram).toBeVisible();
+  await expect(diagram.getByRole("link", { name: "Powered by bpmn.io" })).toBeVisible();
+  await page.getByRole("tab", { name: "Triggers" }).click();
   const schedules = page.getByRole("region", { name: "Definition schedules" });
   await expect(schedules.getByLabel("Published Timer Start capabilities")).toContainText(
     "TimerStart_PT1S",
@@ -48,38 +49,48 @@ test("schedules exact version 1 before publishing version 2 and displays the sta
   await expect(schedule.getByText(dueAt, { exact: true })).toBeVisible();
 
   await deploy(page, processId, versionTwoSource);
-  await expect(page.getByRole("button", { name: new RegExp(processId, "u") })).toContainText(
-    "Latest version 2",
-  );
-  await expect(page.locator(".result.accepted")).toContainText(`${processId}, version 2`);
-  await expect(page.locator(".versions button")).toHaveCount(2);
+  const versionSelect = page.getByRole("combobox", { name: "Version" });
+  await expect(versionSelect).toHaveValue("2");
+  await expect(versionSelect.getByRole("option")).toHaveCount(2);
   expect(Date.now()).toBeLessThan(Date.parse(dueAt));
-  await page.locator(".versions button", { hasText: "1" }).click();
+  await versionSelect.selectOption("1");
+  await page.getByRole("tab", { name: "Triggers" }).click();
   await expect(schedules).toContainText(`Every schedule remains bound to ${processId}, version 1.`);
 
   await expect.poll(
     async () => {
       await schedule.getByRole("button", { name: /^(?:Refresh|Working…)$/u }).click();
-      return await schedule.locator("strong").textContent();
+      return await schedule.getByText("started", { exact: true }).isVisible();
     },
     {
       message: "exact-version schedule should publish its started Process instance",
       timeout: 15_000,
       intervals: [250, 500, 1_000],
     },
-  ).toBe("started");
+  ).toBe(true);
   await expect(schedule).toContainText(`${processId}, version 1`);
   await expect(schedule).not.toContainText("version 2");
 });
 
 async function deploy(page: Page, processId: string, source: string): Promise<void> {
-  await page.locator('input[name="source"]').setInputFiles({
+  const sourceInput = page.getByLabel("BPMN XML file");
+  if (!await sourceInput.isVisible()) {
+    await page.getByText("Add BPMN definition", { exact: true }).click();
+  }
+  await sourceInput.setInputFiles({
     name: `${processId}.bpmn`,
     mimeType: "application/bpmn+xml",
     buffer: Buffer.from(source, "utf8"),
   });
-  await page.locator('input[name="semanticProfile"]').fill(profileId);
+  await page.getByRole("textbox", { name: "Semantic profile ID" }).fill(profileId);
   await page.getByRole("button", { name: "Deploy definition" }).click();
+}
+
+async function openDefinitions(page: Page): Promise<void> {
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: "Definitions", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Definitions", level: 1 })).toBeVisible();
 }
 
 async function sourceRevision(

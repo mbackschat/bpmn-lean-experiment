@@ -88,6 +88,11 @@ test("searches three exact confirmed starts through the global public panel", as
 
   expectDistinctPublicIdentities([direct, scheduled, message]);
   await page.goto("/", { timeout: 10_000 });
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: "Process instances", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Process instances", level: 1 }))
+    .toBeVisible();
   const panel = page.getByRole("region", { name: "Confirmed Product 2 starts" });
   await expect(panel).toBeVisible();
   await panel.getByRole("button", { name: "Search", exact: true }).click();
@@ -180,24 +185,25 @@ async function assertRenderedIdentity(
     .getByRole("row")
     .filter({ hasText: expected.processInstanceId });
   await expect(row, `Process-instance row ${expected.processInstanceId}`).toHaveCount(1);
-  const cells = row.locator("th, td");
-  await expect(cells, "complete public identity column count").toHaveCount(6);
-  await expect(cells.nth(0), "Process-instance ID rendering").toHaveText(
+  const rowHeader = row.getByRole("rowheader");
+  const cells = row.getByRole("cell");
+  await expect(rowHeader, "Process-instance ID rendering").toHaveText(
     expected.processInstanceId,
   );
-  await expect(cells.nth(1), "BPMN Process ID rendering").toHaveText(
+  await expect(cells, "complete public identity value count").toHaveCount(5);
+  await expect(cells.nth(0), "BPMN Process ID rendering").toHaveText(
     expected.definition.processId,
   );
-  await expect(cells.nth(2), "exact deployed version rendering").toHaveText(
+  await expect(cells.nth(1), "exact deployed version rendering").toHaveText(
     String(expected.definition.version),
   );
-  await expect(cells.nth(3), "exact source ID rendering").toHaveText(
+  await expect(cells.nth(2), "exact source ID rendering").toHaveText(
     expected.definition.source.id,
   );
-  await expect(cells.nth(4), "exact source digest rendering").toHaveText(
+  await expect(cells.nth(3), "exact source digest rendering").toHaveText(
     expected.definition.source.sha256,
   );
-  await expect(cells.nth(5), "exact semantic profile rendering").toHaveText(
+  await expect(cells.nth(4), "exact semantic profile rendering").toHaveText(
     expected.definition.semanticProfile,
   );
 }
