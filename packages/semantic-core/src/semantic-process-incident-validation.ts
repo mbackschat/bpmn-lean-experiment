@@ -1,6 +1,9 @@
 /** Closed association and profile admission for the bounded Service Task incident state. */
 import type { OpenEffectIncident } from "./contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
+import {
+  isWellFormedSemanticProcessProgram,
+} from "./semantic-process-admission.js";
 import { profileAllowsProgramShape } from "./semantic-process-profile.js";
 import {
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
@@ -19,7 +22,8 @@ import type {
 export function programAllowsEffectIncidents(
   program: SemanticProcessProgram,
 ): boolean {
-  return program.identity.semanticProfile ===
+  return isWellFormedSemanticProcessProgram(program) &&
+    program.identity.semanticProfile ===
       SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID &&
     profileAllowsProgramShape(
       program.identity.semanticProfile,

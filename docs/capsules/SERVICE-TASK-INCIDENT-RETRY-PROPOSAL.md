@@ -2,7 +2,7 @@
 
 ## Status
 
-Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint now implements the strict wire replacement, TypeScript semantic account, and proved Lean account and is pending the required independent checkpoint review. CIB mapping, differential registration, Temporal hosting, and Product 2 incident operations remain paused.
+Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint review of `818f642` returned `approve with required edits`; the bounded TypeScript admission and observation corrections are ready for the required same-reviewer audit. CIB mapping, differential registration, Temporal hosting, and Product 2 incident operations remain paused.
 
 ## Independent cold-review receipt
 
@@ -247,8 +247,9 @@ The following mechanically measured existing owners grow. Each TypeScript owner 
 | [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 |
 | [Semantic runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 227 |
 | [Triggered-start exhaustive stimulus classifier](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 484 |
-| [Scenario projection](../../packages/semantic-core/src/scenario.ts) | 165 |
+| [Scenario projection](../../packages/semantic-core/src/scenario.ts) | 151 |
 | [Profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 549 |
+| [Profile capability details](../../packages/semantic-core/src/semantic-process-profile.ts) | 451 |
 | [Checked profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 365 |
 | [Program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 352 |
 | [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 530 |

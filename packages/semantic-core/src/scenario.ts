@@ -29,6 +29,10 @@ import {
 } from "./semantic-process-admission.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
+  incidentStateAllowsDispatch,
+  openEffectIncidentAssociationIsValid,
+} from "./semantic-process-incident-validation.js";
+import {
   ControlStateKind,
   applyStimulus,
   initialState,
@@ -135,7 +139,7 @@ export function projectOpenEffects(
 export function projectOpenIncidents(
   state: RuntimeState,
 ): ReadonlyArray<OpenEffectIncident> {
-  return state.effectIncidents
+  const projected = state.effectIncidents
     .map(({ id, wait }) => ({
       kind: "effectExecutionFailed",
       id,
@@ -146,9 +150,19 @@ export function projectOpenIncidents(
       },
     } as const))
     .sort((left, right) => compareOpenOccurrences(left.effect, right.effect));
+  if (!projected.every(openEffectIncidentAssociationIsValid)) {
+    throw new TypeError("Cannot publish a malformed effect incident association");
+  }
+  return projected;
 }
 
-function observeStableState(state: RuntimeState): StateObservation | null {
+function observeStableState(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): StateObservation | null {
+  if (!incidentStateAllowsDispatch(program, state)) {
+    return null;
+  }
   switch (state.control.kind) {
     case ControlStateKind.Running:
     case ControlStateKind.Completed:
@@ -308,7 +322,7 @@ export function advanceScenario(
     };
   }
 
-  const snapshot = observeStableState(result.state);
+  const snapshot = observeStableState(program, result.state);
   if (snapshot === null) {
     return {
       kind: ScenarioStepKind.HarnessFailure,

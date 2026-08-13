@@ -6,7 +6,11 @@ import {
   CommandOutcome,
   ControlStateKind,
   EffectExecutionResultKind,
+  EffectOperation,
+  MappingExpressionKind,
+  ScenarioStepKind,
   SemanticOperationKind,
+  SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
@@ -21,6 +25,7 @@ import {
   isWellFormedSemanticProcessProgram,
   isWellFormedStimulus,
   openEffectIncidentAssociationIsValid,
+  programAllowsEffectIncidents,
   profileAllowsProgramShape,
   projectOpenEffects,
   projectOpenIncidents,
@@ -158,6 +163,126 @@ test("registers only literal generation 1 on the exact successor Service Task sh
   }), false);
   assert.equal(sameStimulus(report, { ...report }), true);
   assert.equal(sameStimulus(retry, { ...retry }), true);
+});
+
+test("incident admission rejects mapped and structurally malformed effect programs", () => {
+  const mappedInput = [{
+    target: "requestValue",
+    expression: {
+      kind: MappingExpressionKind.StringLiteral,
+      value: "example-input",
+    },
+  }] as const;
+  const mappedOutput = [{
+    target: "resultValue",
+    expression: {
+      kind: MappingExpressionKind.LocalVariable,
+      name: "result",
+    },
+  }] as const;
+  const mappedSuccessProgram = {
+    ...program,
+    operations: program.operations.map((operation) =>
+      operation.kind === SemanticOperationKind.AwaitEffect
+        ? {
+            ...operation,
+            effect: {
+              ...operation.effect,
+              descriptor: {
+                ...descriptor,
+                operation: EffectOperation.MappedSuccess,
+              },
+              inputMappings: mappedInput,
+              outputMappings: mappedOutput,
+            },
+          }
+        : operation
+    ),
+  } as const;
+  const mappedBoundaryErrorProgram = rootScopedProgram({
+    ...program,
+    controlPlaces: [
+      controlPlace("Flow_ErrorToReview"),
+      controlPlace("Flow_ReviewToEnd"),
+      controlPlace("Flow_ServiceToEnd"),
+      controlPlace("Flow_StartToService"),
+    ],
+    operations: [
+      {
+        ...operationBase("EndEvent_Error"),
+        kind: SemanticOperationKind.ReachNoneEnd,
+        input: "place:Flow_ReviewToEnd",
+      },
+      {
+        ...operationBase("EndEvent_Normal"),
+        kind: SemanticOperationKind.ReachNoneEnd,
+        input: "place:Flow_ServiceToEnd",
+      },
+      {
+        ...operationBase("ReviewMappedError"),
+        kind: SemanticOperationKind.AwaitUserTask,
+        input: "place:Flow_ErrorToReview",
+        output: "place:Flow_ReviewToEnd",
+        task: {
+          elementId: "ReviewMappedError",
+          name: "Review mapped error",
+        },
+      },
+      {
+        ...operationBase("ServiceTask_Record"),
+        kind: SemanticOperationKind.AwaitEffect,
+        input: "place:Flow_StartToService",
+        output: "place:Flow_ServiceToEnd",
+        effect: {
+          elementId: "ServiceTask_Record",
+          descriptor: {
+            ...descriptor,
+            operation: EffectOperation.MappedBoundaryError,
+          },
+          inputMappings: mappedInput,
+          outputMappings: mappedOutput,
+        },
+        bpmnErrorRoute: {
+          code: "MappedBusinessError",
+          output: "place:Flow_ErrorToReview",
+          origin: {
+            kind: SemanticOriginKind.BpmnElement,
+            boundaryEventId: "BoundaryEvent_MappedBusinessError",
+            errorDefinitionId: "ErrorEventDefinition_MappedBusinessError",
+            errorElementId: "Error_MappedBusinessError",
+            sequenceFlowId: "Flow_ErrorToReview",
+          },
+        },
+      },
+      {
+        ...operationBase("StartEvent_1"),
+        kind: SemanticOperationKind.Initiate,
+        output: "place:Flow_StartToService",
+      },
+    ],
+  });
+  const malformedProgram = {
+    ...program,
+    controlPlaces: [...program.controlPlaces, program.controlPlaces[0]!],
+  } as const;
+
+  assert.equal(isWellFormedSemanticProcessProgram(mappedSuccessProgram), true);
+  assert.equal(
+    isWellFormedSemanticProcessProgram(mappedBoundaryErrorProgram),
+    true,
+  );
+  assert.equal(isWellFormedSemanticProcessProgram(malformedProgram), false);
+  for (const candidate of [
+    mappedSuccessProgram,
+    mappedBoundaryErrorProgram,
+    malformedProgram,
+  ]) {
+    const waiting = startedState();
+    assert.equal(programAllowsEffectIncidents(candidate), false);
+    const refused = applyStimulus(candidate, waiting, report);
+    assert.equal(refused.outcome, CommandOutcome.Rejected);
+    assert.strictEqual(refused.state, waiting);
+  }
 });
 
 test("report atomically moves the complete wait into one stable public incident", () => {
@@ -325,6 +450,34 @@ test("wrong, duplicate, stale, and mismatched incident commands preserve exact s
     assert.equal(refusedMalformed.outcome, CommandOutcome.Rejected);
     assert.strictEqual(refusedMalformed.state, malformed);
   }
+
+  const malformedPublishedState = malformedStates[0]!;
+  assert.throws(
+    () => projectOpenIncidents(malformedPublishedState),
+    /Cannot publish a malformed effect incident association/u,
+  );
+  const refusedPublication = advanceScenario(
+    program,
+    malformedPublishedState,
+    retry,
+  );
+  assert.equal(refusedPublication.kind, ScenarioStepKind.HarnessFailure);
+  assert.deepEqual(refusedPublication.observations, []);
+
+  const oldProgram = {
+    ...program,
+    identity: {
+      ...program.identity,
+      semanticProfile: SemanticProfileId.ServiceTaskEffect,
+    },
+  };
+  const refusedOldProfilePublication = advanceScenario(
+    oldProgram,
+    incident,
+    retry,
+  );
+  assert.equal(refusedOldProfilePublication.kind, ScenarioStepKind.HarnessFailure);
+  assert.deepEqual(refusedOldProfilePublication.observations, []);
 });
 
 test("pre-dispatch admission rejects old, Terminate, and Call programs before closure", () => {

@@ -273,22 +273,7 @@ test("active wait projection orders by semantic kind before element ID", () => {
         incidentAlreadyRetried: false,
       },
     ],
-    effectIncidents: [{
-      id: { effectId: taskId("E_Incident"), generation: 1 },
-      wait: {
-        id: taskId("E_Incident"),
-        owner,
-        descriptor: {
-          protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
-          operation: "urn:bpmn-lean:effect-operation:probe-v1",
-        },
-        arguments: [],
-        outputMappings: [],
-        bpmnErrorRoute: null,
-        output: "place:Flow_IncidentToEnd",
-        incidentAlreadyRetried: false,
-      },
-    }],
+    effectIncidents: [],
   };
   const step = advanceScenario(parallelProgram, state, {
     kind: StimulusKind.CompleteUserTaskInstance,
@@ -323,11 +308,6 @@ test("active wait projection orders by semantic kind before element ID", () => {
     {
       elementId: "D_Effect",
       kind: WaitKind.Effect,
-      multiplicity: 1,
-    },
-    {
-      elementId: "E_Incident",
-      kind: WaitKind.Incident,
       multiplicity: 1,
     },
   ]);

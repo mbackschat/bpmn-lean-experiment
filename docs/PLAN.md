@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: review the first green M4 Service Task incident and retry semantic checkpoint.** The first green target now carries the strict wire replacement, literal-generation incident runtime, exact same-occurrence retry, fail-closed cross-program admission, TypeScript evidence, and proved Lean account. Obtain the required independent semantic-checkpoint review before CIB mapping, differential registration, and live Temporal closure work. Incident-scoped cancellation remains Stage 2 and Product 2 incident operations remain Stage 3.
+1. **In progress: audit the bounded correction to the first green M4 Service Task incident and retry semantic checkpoint.** The checkpoint review of `818f642` required exact TypeScript enforcement of the predecessor-equivalent effect program and fail-closed public observation for malformed incident state. Obtain the same-reviewer correction audit before CIB mapping, differential registration, and live Temporal closure work. Incident-scoped cancellation remains Stage 2 and Product 2 incident operations remain Stage 3.
 
 ## Approved decisions
 
@@ -264,7 +264,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: independently review the committed first green M4 Service Task incident and retry semantic checkpoint.** The target contains only the current wire/schema replacement, TypeScript semantic core, Lean account, and exhaustive carrier updates needed to keep existing targets strict. CIB semantic projection and execution, differential registration, the technical-failure Activity result, retry Update, live Temporal evidence, cancellation, and Product 2 operations remain paused until the checkpoint approves.
+**Next action: obtain the same-reviewer audit of the committed bounded M4 checkpoint correction.** The correction adds only the exact incident-profile program checks and the fail-closed observation gate required by the review of `818f642`. CIB semantic projection and execution, differential registration, the technical-failure Activity result, retry Update, live Temporal evidence, cancellation, and Product 2 operations remain paused until the audit approves.
 
 Item 1 is **in progress**. Context-cold proposal review of `56b9398` returned `approve with required edits`; the same reviewer closed the bounded corrections at `43228e3`, and the owner approved implementation on 2026-08-13. The first green checkpoint preserves existing bare semantic Activity payloads, moves the full effect wait into an identity-bound incident that blocks scope completion and counts as a retry resumption surface, and permits one exact retry without a generation-two semantic state. Packaged CIB research at `ee6c244` remains evidence for the post-checkpoint CIB lane. Playwright remains a Product 2 harness outside every Product 1 feedback loop.
 

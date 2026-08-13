@@ -10,7 +10,10 @@ import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   requiredProgramShape,
 } from "./semantic-program-profile-shape.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
@@ -76,10 +79,11 @@ function profileAllowsProgramOperationDetails(
           operation.inputs.length === 3,
       );
     case SemanticProfileId.ConfiguredTask:
+    case SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID:
       return operations.every(
         (operation) =>
           operation.kind !== SemanticOperationKind.AwaitEffect ||
-          (hasConfiguredTaskDescriptor(operation.effect.descriptor) &&
+          (hasProbeEffectDescriptor(operation.effect.descriptor) &&
             operation.effect.inputMappings.length === 0 &&
             operation.effect.outputMappings.length === 0 &&
             operation.bpmnErrorRoute === null),
@@ -118,11 +122,20 @@ export function profileAllowsCheckedProcessShape(
       nodes.every(
         (node) =>
           node.kind !== CheckedNodeKind.ConfiguredTask ||
-          hasConfiguredTaskDescriptor(node.descriptor),
+          hasProbeEffectDescriptor(node.descriptor),
+      )) &&
+    (semanticProfile !== SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID ||
+      nodes.every(
+        (node) =>
+          node.kind !== CheckedNodeKind.ServiceTask ||
+          (hasProbeEffectDescriptor(node.descriptor) &&
+            node.inputMappings.length === 0 &&
+            node.outputMappings.length === 0 &&
+            node.bpmnErrorRoute === null),
       ));
 }
 
-function hasConfiguredTaskDescriptor(
+function hasProbeEffectDescriptor(
   descriptor: Readonly<{ protocol: string; operation: string }>,
 ): boolean {
   return descriptor.protocol === EffectProtocol.Activity &&
