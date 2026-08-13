@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented current pre-release contract.** The registered capability catalog remains the product authority. The configured Task profile exercises the same structural-plus-profile admission boundary through an exact project-extension binding. The registered Boolean Process-data profile reuses the existing User Task shape and acyclic graph policy while its separate value-domain owner restricts Boolean to completion. The registered E2 profile composes that same Boolean completion domain with an exact optional User Task metadata shape and retained public-service compatibility evidence. The first-green M4 checkpoint adds one cataloged but not artifact-registered Service Task incident successor with the exact predecessor operation multiset; it authorizes no CIB or Temporal claim before checkpoint approval.
+**Implemented current pre-release contract.** The registered capability catalog remains the product authority. The configured Task profile exercises the same structural-plus-profile admission boundary through an exact project-extension binding. The registered Boolean Process-data profile reuses the existing User Task shape and acyclic graph policy while its separate value-domain owner restricts Boolean to completion. The registered E2 profile composes that same Boolean completion domain with an exact optional User Task metadata shape and retained public-service compatibility evidence. The approved M4 checkpoint adds one cataloged but not artifact-registered Service Task incident successor with the exact predecessor operation multiset; CIB and Temporal claims remain absent until closure.
 
 ## Scope
 

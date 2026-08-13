@@ -2,14 +2,14 @@
 
 ## Status
 
-Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint review of `818f642` returned `approve with required edits`; the bounded TypeScript admission and observation corrections are ready for the required same-reviewer audit. CIB mapping, differential registration, Temporal hosting, and Product 2 incident operations remain paused.
+Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint review of `818f642` returned `approve with required edits`; the same reviewer approved correction target `1f20c00`, closing both findings. CIB mapping, differential registration, and Temporal hosting may now proceed toward closure; Product 2 incident operations remain paused.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `56b9398` | `fork-turns-none` | `approve-with-required-edits` | `43228e3` |
-| Semantic checkpoint | `818f642` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `818f642` | `fork-turns-none` | `approve-with-required-edits` | `1f20c00` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The superseded first proposal target `8be7e5f` and superseded first redesign target `278e63b` each received an isolated `fork-turns-none` review with verdict `reject`. This redesign changes the Activity transport and incident representation selected at `278e63b`, so it requires a new context-cold review rather than a warm correction audit.
