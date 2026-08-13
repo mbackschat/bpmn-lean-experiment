@@ -170,6 +170,9 @@ importers:
       '@bpmn-lean/platform-audit':
         specifier: workspace:*
         version: link:../../foundation/audit
+      '@bpmn-lean/platform-bpmn-presentation':
+        specifier: workspace:*
+        version: link:../../foundation/bpmn-presentation
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../contracts
@@ -234,6 +237,21 @@ importers:
         specifier: workspace:*
         version: link:../../contracts
 
+  platform/foundation/bpmn-presentation:
+    dependencies:
+      bpmn-auto-layout:
+        specifier: 1.3.0
+        version: 1.3.0
+      bpmn-moddle:
+        specifier: 10.0.0
+        version: 10.0.0
+      min-dash:
+        specifier: 5.1.0
+        version: 5.1.0
+      saxen:
+        specifier: 11.1.0
+        version: 11.1.0
+
   platform/foundation/engine-gateway:
     dependencies:
       '@bpmn-lean/engine-api':
@@ -251,9 +269,15 @@ importers:
 
   platform/modules/definitions:
     dependencies:
+      '@bpmn-lean/contract-types':
+        specifier: workspace:*
+        version: link:../../../packages/contract-types
       '@bpmn-lean/platform-artifact-store':
         specifier: workspace:*
         version: link:../../foundation/artifact-store
+      '@bpmn-lean/platform-bpmn-presentation':
+        specifier: workspace:*
+        version: link:../../foundation/bpmn-presentation
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../contracts
@@ -1270,6 +1294,10 @@ packages:
     resolution: {integrity: sha512-HYXq73DDpCtNzOmrFsm9eSwCvWCql0RzqjpDzXN9EadiLJ4DNat0nsZ/Bzmy+Ud12mb4/zKDY0cQ805ZzN+i0A==}
     engines: {node: '>=6.0.0'}
     hasBin: true
+
+  bpmn-auto-layout@1.3.0:
+    resolution: {integrity: sha512-ufjMy1MaaZxkQF7f2wY6EL6TnRMSFr/r9eBhp0QvS41UHXW77aQVt65+dn2MmVMlHdyvZyOMNYXO2qYpgX6bQA==}
+    engines: {node: '>= 18'}
 
   bpmn-js@18.22.1:
     resolution: {integrity: sha512-rO2WTTHGtnCejd4QwzIAXhy0cdSWzM1tU+SSd0WQCpmO5Xq/YsEpNKU+oOD+piboEi0P98RZbQ98JrjyKb+NZg==}
@@ -2590,6 +2618,11 @@ snapshots:
       tslib: 2.8.1
 
   baseline-browser-mapping@2.11.1: {}
+
+  bpmn-auto-layout@1.3.0:
+    dependencies:
+      bpmn-moddle: 10.0.0
+      min-dash: 5.1.0
 
   bpmn-js@18.22.1:
     dependencies:

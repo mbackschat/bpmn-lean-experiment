@@ -1,0 +1,111 @@
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import { test } from "node:test";
+
+import {
+  DefinitionPresentationIntegrityError,
+  SqliteDefinitionPresentationRepository,
+} from "@bpmn-lean/platform-definitions";
+import type {
+  BpmnDiagramPresentationSidecar,
+} from "@bpmn-lean/platform-definitions";
+
+const sourceSha256 = "1".repeat(64);
+const effectiveGeneratorSha256 = "2".repeat(64);
+const presentationSha256 = "4".repeat(64);
+
+function sidecar(
+  diagramInterchangeXml: string = "<bpmndi:BPMNDiagram/>",
+): BpmnDiagramPresentationSidecar {
+  return {
+    schemaEpoch: 1,
+    sourceSha256,
+    diagramInterchangeSha256: createHash("sha256")
+      .update(diagramInterchangeXml, "utf8")
+      .digest("hex"),
+    presentationSha256,
+    provenance: {
+      kind: "generated",
+      generatorId: "bpmn-auto-layout",
+      generatorVersion: "1.3.0",
+      effectiveGeneratorSha256,
+    },
+    diagramInterchangeXml,
+  };
+}
+
+async function withDatabase(
+  run: (databaseFile: string) => void,
+): Promise<void> {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-diagram-sidecars-"));
+  try {
+    run(join(root, "definitions.sqlite"));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+test("two independent connections insert-or-compare one exact sidecar", async () => {
+  await withDatabase((databaseFile) => {
+    const first = new SqliteDefinitionPresentationRepository(databaseFile);
+    const second = new SqliteDefinitionPresentationRepository(databaseFile);
+    try {
+      assert.deepEqual(first.insertOrCompare(sidecar()), sidecar());
+      assert.deepEqual(second.insertOrCompare(sidecar()), sidecar());
+      assert.deepEqual(second.get({
+        schemaEpoch: 1,
+        sourceSha256,
+        effectiveGeneratorSha256,
+      }), sidecar());
+      assert.throws(
+        () => second.insertOrCompare(sidecar("<bpmndi:BPMNDiagram id=\"drift\"/>")),
+        DefinitionPresentationIntegrityError,
+      );
+      assert.deepEqual(first.get({
+        schemaEpoch: 1,
+        sourceSha256,
+        effectiveGeneratorSha256,
+      }), sidecar());
+    } finally {
+      first.close();
+      second.close();
+    }
+  });
+});
+
+test("a corrupt retained row fails closed without replacement", async () => {
+  await withDatabase((databaseFile) => {
+    const repository = new SqliteDefinitionPresentationRepository(databaseFile);
+    repository.insertOrCompare(sidecar());
+    repository.close();
+    const database = new DatabaseSync(databaseFile);
+    database.prepare(`
+      UPDATE definition_diagram_presentations
+      SET diagram_interchange_xml = ?
+      WHERE source_sha256 = ?
+    `).run("<corrupt/>", sourceSha256);
+    database.close();
+
+    const reopened = new SqliteDefinitionPresentationRepository(databaseFile);
+    try {
+      assert.throws(
+        () => reopened.get({
+          schemaEpoch: 1,
+          sourceSha256,
+          effectiveGeneratorSha256,
+        }),
+        DefinitionPresentationIntegrityError,
+      );
+      assert.throws(
+        () => reopened.insertOrCompare(sidecar()),
+        DefinitionPresentationIntegrityError,
+      );
+    } finally {
+      reopened.close();
+    }
+  });
+});

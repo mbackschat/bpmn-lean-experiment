@@ -24,7 +24,7 @@ import styles from "./work-inbox.module.css";
 
 export type WorkTaskDetailWorkspaceProps = Readonly<{
   completionView: WorkCompletionView;
-  definitionApi?: Pick<DefinitionApiClient, "getSource">;
+  definitionApi?: Pick<DefinitionApiClient, "getPresentation">;
   detail: PublicTaskDetail;
   onBack: () => void;
   onComplete: WorkTaskFormProps["onComplete"];
@@ -58,14 +58,7 @@ export function WorkTaskDetailWorkspace({
   }, {
     id: "diagram",
     label: "Diagram",
-    content: definitionApi === undefined
-      ? <p>Diagram viewing is unavailable in this host.</p>
-      : (
-        <DefinitionDiagram
-          api={definitionApi}
-          definition={task.hostingInstance.definition}
-        />
-      ),
+    content: <WorkTaskDiagram definitionApi={definitionApi} task={task} />,
   }, {
     id: "details",
     label: "Details",
@@ -88,6 +81,34 @@ export function WorkTaskDetailWorkspace({
       </div>
       <WorkspaceTabs aria-label="Task detail views" tabs={tabs} />
     </div>
+  );
+}
+
+function WorkTaskDiagram({
+  definitionApi,
+  task,
+}: Readonly<{
+  definitionApi: WorkTaskDetailWorkspaceProps["definitionApi"];
+  task: PublicWorkTask;
+}>) {
+  if (definitionApi === undefined) {
+    return <p role="status">Diagram viewing is unavailable in this host.</p>;
+  }
+  const hasExactDiagramBinding = task.task.id.processInstanceId ===
+    task.hostingInstance.processInstanceId;
+  if (!hasExactDiagramBinding) {
+    return (
+      <p role="status">
+        Task diagram is unavailable because this task belongs to a called Process whose exact diagram binding is not published.
+      </p>
+    );
+  }
+  return (
+    <DefinitionDiagram
+      activeElementId={task.task.id.elementId}
+      api={definitionApi}
+      definition={task.hostingInstance.definition}
+    />
   );
 }
 

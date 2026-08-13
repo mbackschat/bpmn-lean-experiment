@@ -38,7 +38,7 @@ export type WorkInboxPanelProps = Readonly<{
     "listTasks" | "getTask" | "claim" | "release" | "complete"
   >;
   createActionId?: () => string;
-  definitionApi?: Pick<DefinitionApiClient, "getSource">;
+  definitionApi?: Pick<DefinitionApiClient, "getPresentation">;
 }>;
 
 export function WorkInboxPanel({

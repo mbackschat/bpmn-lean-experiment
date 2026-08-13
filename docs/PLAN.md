@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Blocked: select the M4 incident increment.** M3 is closed. Owner direction is required to choose the first bounded incident, retry, and cancellation contract before a proposal or implementation begins.
+1. **In progress: finish the owner-directed Product 2 UI foundation.** The responsive BPM workspaces and reviewed BPMN presentation sidecar are implemented. Add the isolated four-width headless Playwright UI-quality lane, complete the visual and responsive browser audit, then graduate the approved information-architecture and UI-design proposals into specifications with their implementation evidence. This work remains outside Product 1 semantic, Lean, CIB, differential, and complete-verifier loops.
 
 ## Approved decisions
 
@@ -264,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain owner direction for the first bounded M4 incident increment.** M3 is closure-reviewed, evidence-closed, and graduated through correction audit `23892a5`; no M3 implementation work remains.
+**Next action: finish item 1's isolated Product 2 UI-quality lane and four-width visual audit.** The M3 semantic and human-work contract remains closure-reviewed, evidence-closed, and graduated through correction audit `23892a5`; the owner has explicitly selected a post-graduation M3 UI foundation pass to settle the reusable Product 2 information architecture, visual system, responsive behavior, diagram presentation, and headless UI evidence before M4.
 
-**The next item is blocked on owner direction, not a technical or environmental failure.** M4 must select a bounded semantic incident publication and its retry/cancellation surface before work resumes. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+Item 1 is **blocked on nothing**. Playwright remains a Product 2 showcase and UI-quality harness and must not enter `verify.sh`, Product 1 semantic, Lean, BPMN-source, CIB, differential, or ordinary Temporal adapter feedback loops. The approved diagram presentation decision and UI proposals supply the implementation contract; the proposals graduate only after their complete implementation and evidence are recorded.
 
 **Last verified commands:** `./scripts/doctor.sh verify`, `./scripts/verify.sh`, `./scripts/pnpm.sh run test:platform-work-checkpoint`, and `./scripts/pnpm.sh run test:showcase:m3-human-work` are green through M3 implementation target `e736a7e`; the latter three required local loopback execution. Focused Work, audit, public-contract, engine-operation, HTTP, UI, production-server, Product 2 boundary, source-hygiene, and infrastructure gates remain green.
 

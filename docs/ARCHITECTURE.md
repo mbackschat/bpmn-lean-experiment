@@ -120,7 +120,7 @@ Foundation packages provide reusable infrastructure mechanisms and must not beco
 | `projection-runtime` | Generic cursoring, ordering, deduplication, reconciliation, and rebuild mechanics; no domain projection |
 | `identity-policy` | Pluggable identity and platform authorization mechanisms |
 | `audit` | Platform-owned actor, policy, and wall-clock audit facts, kept distinct from BPMN semantic history |
-| `bpmn-presentation` | Proposed Product 2-only generated-DI adapter selected by the reviewed diagram decision; instantiate only with the accepted implementation and exact dependency graph |
+| `bpmn-presentation` | Product 2-only generated-DI adapter, private presentation parser graph, killable layout worker, exact coverage validation, and closed DI provenance |
 
 Create a foundation package only when its first real module needs it. A second consumer is normally required before extracting a general mechanism, except for the engine gateway and public trust boundaries whose separation is itself required.
 
@@ -151,7 +151,7 @@ The UI may share public contract types or a generated public client. It may not 
 
 The implemented M3 surface uses React Aria Components for accessible behavior, TanStack Table for the native inbox row model, TanStack Query for bounded HTTP state, CSS Modules for feature-local styling, and shared CSS variables from the UI kit. Boolean completion is an explicit true-or-false choice so absence and null never collapse to false. No router, generalized form library, themed component framework, or virtualization is part of the selected slice.
 
-The reviewed diagram decision selects a future `platform/foundation/bpmn-presentation/` Product 2 boundary. When instantiated, it privately owns the exact selected parser graph, returns only closed DI bytes and provenance, and has no semantic authority. It is the sole presentation-only exception to the semantic `bpmn-moddle` boundary: raw moddle values and generated non-DI XML may not escape it. Definitions will own digest-bound persistence, resolution, and the public presentation route; the browser will own rendering and task highlighting. No Product 1 semantic, Lean, engine API, or Temporal gate may import this foundation package or invoke its Playwright acceptance.
+The implemented `platform/foundation/bpmn-presentation/` Product 2 boundary privately owns the exact selected parser graph, returns only closed DI bytes and provenance, and has no semantic authority. It is the sole presentation-only exception to the semantic `bpmn-moddle` boundary: raw moddle values and generated non-DI XML may not escape it. Definitions owns digest-bound SQLite persistence, source-first resolution, and the public presentation route; the browser owns rendering, exact task highlighting, provenance display, and the derived diagrammed-BPMN download. No Product 1 semantic, Lean, engine API, or Temporal gate may import this foundation package or invoke its Playwright acceptance.
 
 Product 2 browser quality is a separate path-filtered CI lane. It never runs from `verify.sh`, a Lean/semantic-core/BPMN-source/CIB/differential gate, or an ordinary Product 1 change. The lane uses fixed public-API fixtures for responsive and visual evidence, while the M3 showcase separately retains the real Temporal browser acceptance.
 

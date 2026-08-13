@@ -18,6 +18,14 @@ export function definitionVersionSourcePath(
   return `${definitionVersionPath(processId, version)}/source`;
 }
 
+/** Public endpoint returning the resolved diagram presentation for one exact version. */
+export function definitionVersionPresentationPath(
+  processId: string,
+  version: number,
+): string {
+  return `${definitionVersionPath(processId, version)}/presentation`;
+}
+
 /** Public command endpoint that starts one exact definition version. */
 export function definitionVersionStartPath(
   processId: string,

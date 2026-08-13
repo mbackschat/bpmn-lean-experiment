@@ -90,8 +90,7 @@ select {
 .deploy-panel,
 .catalog-panel,
 .start-panel,
-.schedule-panel,
-.diagram-panel {
+.schedule-panel {
   border: 1px solid #cad6d2;
   border-radius: 12px;
   background: #fff;
@@ -172,8 +171,7 @@ form button:disabled {
   margin-top: 1.25rem;
 }
 
-.catalog-panel,
-.diagram-panel {
+.catalog-panel {
   min-height: 34rem;
   padding: 1.25rem;
 }
@@ -463,32 +461,6 @@ form button:disabled {
   color: #fff;
 }
 
-.diagram-panel {
-  position: relative;
-}
-
-.diagram-status {
-  position: absolute;
-  top: 1.2rem;
-  right: 1.2rem;
-  color: #5b6964;
-}
-
-.diagram-canvas {
-  position: relative;
-  width: 100%;
-  min-height: 29rem;
-  overflow: hidden;
-  border: 1px solid #dce4e1;
-  border-radius: 12px;
-  background: #fff;
-}
-
-.diagram-canvas .bpmn-platform-active .djs-visual > :first-child {
-  stroke: #e76f51 !important;
-  stroke-width: 4px !important;
-}
-
 @media (max-width: 900px) {
   .product-header,
   .deploy-panel {
@@ -513,12 +485,7 @@ form button:disabled {
     justify-content: start;
   }
 
-  .catalog-panel,
-  .diagram-panel {
+  .catalog-panel {
     min-height: auto;
-  }
-
-  .diagram-canvas {
-    min-height: 24rem;
   }
 }

@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { FileArtifactStore } from "@bpmn-lean/platform-artifact-store";
+import { BpmnAutoLayoutPresentationAdapter } from "@bpmn-lean/platform-bpmn-presentation";
 import {
   AuditEventFactory,
   AuditSearchService,
@@ -21,9 +22,11 @@ import {
   DefinitionStartService,
   MessageStartPublicationHttpRoutes,
   MessageStartPublicationService,
+  DefinitionPresentationService,
   SqliteDefinitionRepository,
   SqliteDefinitionScheduleRepository,
   SqliteConfirmedProcessInstanceRepository,
+  SqliteDefinitionPresentationRepository,
   SqliteMessageStartPublicationRepository,
 } from "@bpmn-lean/platform-definitions";
 import {
@@ -65,6 +68,8 @@ import type {
   PlatformServerRuntime,
 } from "./runtime.js";
 
+const presentationGenerationDeadlineMs = 1_000;
+
 /** Creates the M1 modular-monolith runtime from published package entry points. */
 export async function createPlatformServer(
   config: PlatformServerConfig,
@@ -94,6 +99,10 @@ export async function createPlatformServer(
   try {
     const repository = new SqliteDefinitionRepository(databaseFile);
     resources.push(repository);
+    const presentationRepository = new SqliteDefinitionPresentationRepository(
+      databaseFile,
+    );
+    resources.push(presentationRepository);
     const scheduleRepository = new SqliteDefinitionScheduleRepository(databaseFile);
     resources.push(scheduleRepository);
     const publicationRepository = new SqliteMessageStartPublicationRepository(
@@ -140,6 +149,14 @@ export async function createPlatformServer(
       randomUUID,
       confirmedInstances,
     );
+    const presentationService = new DefinitionPresentationService({
+      definitions: repository,
+      artifacts,
+      presentations: presentationRepository,
+      adapter: new BpmnAutoLayoutPresentationAdapter(),
+      maxSourceBytes: snapshot.maxSourceBytes,
+      generationDeadlineMs: presentationGenerationDeadlineMs,
+    });
     await startService.reconcileAll();
     const scheduleService = new DefinitionScheduleService({
       artifacts,
@@ -174,6 +191,7 @@ export async function createPlatformServer(
       service,
       startService,
       { maxSourceBytes: snapshot.maxSourceBytes },
+      presentationService,
     );
     const scheduleRoutes = new DefinitionScheduleHttpRoutes(
       scheduleService,

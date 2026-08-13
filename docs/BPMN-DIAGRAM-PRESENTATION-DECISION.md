@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved for implementation.** This decision selects embedded BPMN DI plus an exact-source-digest-bound generated presentation sidecar for BPM platform diagrams. The context-cold information-architecture reviewer approved the final corrected contract at `c3f6671`. It does not change BPMN source admission, checked Process meaning, Semantic Process IL, runtime state, or Temporal execution.
+**Implemented.** This decision selects embedded BPMN DI plus an exact-source-digest-bound generated presentation sidecar for BPM platform diagrams. The context-cold information-architecture reviewer approved the final corrected contract at `c3f6671`. The implementation is a non-semantic Product 2 increment covered by the presentation-foundation, Definitions, public-contract, server, web, package-boundary, source-hygiene, and platform-harness gates. It does not change BPMN source admission, checked Process meaning, Semantic Process IL, runtime state, or Temporal execution.
 
 ## Context
 
@@ -69,11 +69,21 @@ It is returned by `GET /api/v1/definitions/{processId}/versions/{version}/presen
 
 ## Generation lifecycle
 
-Generation is invoked by the Definitions presentation service after semantic admission and durable definition identity are known. The Product 2 presentation foundation owns the adapter and its presentation-only parser graph; Definitions owns the durable record and public route. The durable key is `{schemaEpoch, sourceSha256, effectiveGeneratorSha256}`. `effectiveGeneratorSha256` binds adapter epoch 1 plus the exact locked `bpmn-auto-layout@1.3.0`, `bpmn-moddle@10.0.0`, and `min-dash@5.1.0` graph. An SQLite `BEGIN IMMEDIATE` insert-or-compare transaction makes generation idempotent across independent connections: an equivalent candidate reuses the winner, while any field or byte conflict is an integrity failure.
+Generation is invoked by the Definitions presentation service after semantic admission and durable definition identity are known. The Product 2 presentation foundation owns the adapter and its presentation-only parser graph; Definitions owns the durable record and public route. The durable key is `{schemaEpoch, sourceSha256, effectiveGeneratorSha256}`. `effectiveGeneratorSha256` binds adapter epoch 1 plus the complete output-affecting locked graph: `bpmn-auto-layout@1.3.0`, `bpmn-moddle@10.0.0`, `moddle@8.2.0`, `moddle-xml@12.1.0`, `min-dash@5.1.0`, and `saxen@11.1.0`. An SQLite `BEGIN IMMEDIATE` insert-or-compare transaction makes generation idempotent across independent connections: an equivalent candidate reuses the winner, while any field or byte conflict is an integrity failure.
 
 Generation runs in a killable worker with bounded source and output bytes. The deadline terminates that worker, rather than racing a Promise on the blocked main thread. A crash or termination before commit leaves no row and restart may generate again; after commit restart must reuse and revalidate the exact row. An existing corrupt row blocks automatic regeneration so ordinary reads cannot silently rewrite forensic evidence.
 
 The browser never generates layout. It requests one resolved presentation and renders it through `bpmn-js`. The UI identifies source-owned versus generated layout and keeps the viewer attribution visible.
+
+## External modeller handoff
+
+The sidecar is an internal storage and provenance format, not a standalone modeller interchange file. Existing BPMN modelers generally open one complete BPMN XML document containing both the semantic model and BPMN DI, so they are not expected to understand this repository's sidecar record.
+
+The Definitions Diagram tab therefore provides **Download diagrammed BPMN**. It downloads `presentationBpmnXml` as `application/bpmn+xml`, whether the DI came from the admitted source or from a generated sidecar. The generated arm is the exact admitted BPMN XML plus the validated namespace-self-contained BPMNDiagram subtree. It is a complete derived BPMN document that can be opened in standards-oriented modelers such as the Camunda Modeler or other BPMN DI-capable tools. The UI labels it as a derived presentation copy, not the admitted source.
+
+After a modeller edits or saves the downloaded document, its bytes and authorship have changed. Importing it back into this platform creates and admits a new definition version through the ordinary BPMN source boundary; it never overwrites the original admitted artifact or mutates its sidecar in place. A modeller-saved document with usable embedded DI then resolves through the source-owned arm on that new version. This round trip is the recommended path for replacing generated layout with deliberately authored layout.
+
+Downloading the raw DI subtree as if it were a complete BPMN model is excluded. A future layout-only editor could emit a replacement sidecar only if it preserves the same digest, namespace, reference, validation, and insert-or-compare contract, but no such public editing surface is selected for M3.
 
 Every definition registered in the M3 showcase must resolve either source DI or a valid sidecar. Future registered models without source DI must either be supported by the selected generator or supply source DI before they can satisfy the platform diagram acceptance gate. Failure to produce presentation does not reinterpret or reject otherwise admitted engine source, but it blocks claiming complete platform presentation for that definition.
 
@@ -117,6 +127,7 @@ Focused evidence must prove:
 9. the two-root Call Activity and every other excluded construct fail closed without source DI;
 10. the UI visibly distinguishes source DI from generated layout and renders an honest unavailable task diagram when exact host binding is insufficient;
 11. every registered M3 showcase definition resolves a diagram.
+12. the Definitions Diagram tab downloads the exact resolved complete BPMN XML, labels generated output as a derived presentation copy, and never exposes the raw sidecar as a modeller file.
 
 ## Related owners
 

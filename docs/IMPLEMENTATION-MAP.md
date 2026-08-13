@@ -128,6 +128,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - An epoch-2 Work SQLite repository for registrations, claim generations, retry-safe completion, and same-transaction audit outbox, with reopen, corruption, concurrency, response-loss, ABA, retained-retry, and startup-reconciliation evidence
 - Strict Work HTTP routes plus an HTTP-only React Aria, TanStack, and CSS-Modules panel with one string-or-Boolean field and no router or generalized form stack
 - Live Temporal and Chromium evidence proving three-producer Definitions/Operate/Work agreement, platform restart, Worker replacement, actor hiding, Boolean completion, audit, history, replay, recursive private-fact exclusion, and completed-task removal
+- Deterministic BPMN diagram presentation that prefers usable source DI and otherwise persists an exact-source-digest-bound generated DI sidecar through a killable, resource-bounded Product 2 adapter; the public route returns verified complete presentation XML with explicit provenance, the Definitions Diagram tab renders it and downloads a modeller-ready derived BPMN document, and task diagrams highlight only an exact published task binding
 
 #### Explicitly absent
 
@@ -138,6 +139,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - publicly recoverable transitions and token positions, the remaining engine prerequisite recorded by the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary)
 - recovery of legacy engine instances that predate the confirmed-start publication contract
+- BPMN diagram editing, a public raw-sidecar format, automatic layout for multiple root Processes, collaborations, Call Activities without complete source DI, Sub-Processes, groups, annotations, associations, or data artifacts
 
 ### A12 Workflows downstream adoption
 

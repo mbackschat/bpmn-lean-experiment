@@ -9,6 +9,7 @@ import type {
   DefinitionListResponse,
   DefinitionVersionListResponse,
   ProcessInstanceStartResult,
+  ResolvedBpmnDiagramPresentation,
 } from "@bpmn-lean/platform-contracts";
 
 import {
@@ -45,12 +46,14 @@ import {
 const definitionsPath = "/api/v1/definitions";
 const versionsRoute = /^\/api\/v1\/definitions\/([^/]*)\/versions$/u;
 const sourceRoute = /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/source$/u;
+const presentationRoute = /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/presentation$/u;
 const startRoute = /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/start$/u;
 
 const DefinitionRouteKind = {
   Collection: "collection",
   Versions: "versions",
   Source: "source",
+  Presentation: "presentation",
   Start: "start",
 } as const;
 
@@ -66,6 +69,11 @@ type DefinitionRoute =
       rawVersion: string;
     }>
   | Readonly<{
+      kind: typeof DefinitionRouteKind.Presentation;
+      rawProcessId: string;
+      rawVersion: string;
+    }>
+  | Readonly<{
       kind: typeof DefinitionRouteKind.Start;
       rawProcessId: string;
       rawVersion: string;
@@ -75,16 +83,25 @@ export type DefinitionHttpRoutesOptions = Readonly<{
   maxSourceBytes: number;
 }>;
 
+export interface DefinitionPresentationResolver {
+  resolve(reference: Readonly<{
+    processId: string;
+    version: number;
+  }>): Promise<ResolvedBpmnDiagramPresentation | null>;
+}
+
 /** Definition module contribution to the platform's Fetch-compatible HTTP boundary. */
 export class DefinitionHttpRoutes {
   readonly #deploymentService: DefinitionDeploymentService;
   readonly #startService: DefinitionStartService;
+  readonly #presentationService: DefinitionPresentationResolver | undefined;
   readonly #maxSourceBytes: number;
 
   constructor(
     deploymentService: DefinitionDeploymentService,
     startService: DefinitionStartService,
     options: DefinitionHttpRoutesOptions,
+    presentationService?: DefinitionPresentationResolver,
   ) {
     if (
       !Number.isSafeInteger(options.maxSourceBytes) ||
@@ -94,6 +111,7 @@ export class DefinitionHttpRoutes {
     }
     this.#deploymentService = deploymentService;
     this.#startService = startService;
+    this.#presentationService = presentationService;
     this.#maxSourceBytes = options.maxSourceBytes;
   }
 
@@ -139,6 +157,16 @@ export class DefinitionHttpRoutes {
           return methodNotAllowed("GET");
         }
         return await this.#getSource(
+          route.rawProcessId,
+          route.rawVersion,
+          request,
+          url,
+        );
+      case DefinitionRouteKind.Presentation:
+        if (request.method !== "GET") {
+          return methodNotAllowed("GET");
+        }
+        return await this.#getPresentation(
           route.rawProcessId,
           route.rawVersion,
           request,
@@ -269,6 +297,25 @@ export class DefinitionHttpRoutes {
         return assertNever(result);
     }
   }
+
+  async #getPresentation(
+    rawProcessId: string,
+    rawVersion: string,
+    request: Request,
+    url: URL,
+  ): Promise<Response> {
+    requireNoQuery(request, url);
+    if (this.#presentationService === undefined) {
+      throw new Error("definition presentation service is unavailable");
+    }
+    const result = await this.#presentationService.resolve({
+      processId: decodeProcessId(rawProcessId),
+      version: parsePositiveVersion(rawVersion),
+    });
+    return result === null
+      ? errorResponse(404, PublicApiErrorCode.NotFound, "The definition version was not found.")
+      : jsonResponse(200, result);
+  }
 }
 
 function matchRoute(pathname: string): DefinitionRoute | null {
@@ -289,6 +336,14 @@ function matchRoute(pathname: string): DefinitionRoute | null {
       kind: DefinitionRouteKind.Source,
       rawProcessId: sourceMatch[1] ?? "",
       rawVersion: sourceMatch[2] ?? "",
+    };
+  }
+  const presentationMatch = presentationRoute.exec(pathname);
+  if (presentationMatch !== null) {
+    return {
+      kind: DefinitionRouteKind.Presentation,
+      rawProcessId: presentationMatch[1] ?? "",
+      rawVersion: presentationMatch[2] ?? "",
     };
   }
   const versionsMatch = versionsRoute.exec(pathname);

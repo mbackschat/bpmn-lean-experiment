@@ -61,7 +61,28 @@ export {
   SqliteConfirmedProcessInstanceRepository,
 } from "./sqlite-confirmed-process-instance-repository.js";
 export { DefinitionHttpRoutes } from "./http-routes.js";
-export type { DefinitionHttpRoutesOptions } from "./http-routes.js";
+export type {
+  DefinitionHttpRoutesOptions,
+  DefinitionPresentationResolver,
+} from "./http-routes.js";
+export {
+  DefinitionPresentationIntegrityError,
+} from "./definition-presentation-contracts.js";
+export type {
+  BpmnDiagramPresentationSidecar,
+  DefinitionPresentationKey,
+  DefinitionPresentationRepository,
+  GeneratedDiagramProvenance,
+} from "./definition-presentation-contracts.js";
+export {
+  SqliteDefinitionPresentationRepository,
+} from "./sqlite-definition-presentation-repository.js";
+export {
+  DefinitionPresentationService,
+} from "./definition-presentation-service.js";
+export type {
+  DefinitionPresentationServiceDependencies,
+} from "./definition-presentation-service.js";
 export { SqliteDefinitionRepository } from "./sqlite-definition-repository.js";
 export { DefinitionSchemaResetRequiredError } from "./database-schema-epoch.js";
 export {

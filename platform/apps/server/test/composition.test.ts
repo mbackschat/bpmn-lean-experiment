@@ -10,12 +10,21 @@ import {
   SqliteAuditRepository,
 } from "@bpmn-lean/platform-audit";
 import {
+  decodeResolvedBpmnDiagramPresentation,
+  DefinitionDeployStatus,
+} from "@bpmn-lean/platform-contracts";
+import {
   createPlatformServer,
 } from "@bpmn-lean/platform-server";
 import {
   SqliteWorkRepository,
   WorkAuditOutboxService,
 } from "@bpmn-lean/platform-work";
+
+const metadataSourcePath = new URL(
+  "../../../../scenarios/user-task-assignment-form-metadata/process.bpmn",
+  import.meta.url,
+);
 
 test("composes the definition route and closes its HTTP and SQLite owners idempotently", async () => {
   const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-server-"));
@@ -104,6 +113,56 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     const auditDatabase = await readFile(join(dataDirectory, "audit.sqlite"));
     assert.ok(auditDatabase.byteLength > 0);
     await assert.rejects(runtime.listen(), /runtime is closed/u);
+  } finally {
+    await runtime.close();
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
+
+test("serves a generated presentation while retaining exact admitted M3 source", async () => {
+  const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-presentation-"));
+  const port = await allocatePort();
+  const origin = `http://127.0.0.1:${port}`;
+  const sourceBytes = await readFile(metadataSourcePath);
+  const runtime = await createPlatformServer(platformConfig(
+    origin,
+    port,
+    dataDirectory,
+  ));
+  try {
+    assert.equal(await runtime.listen(), origin);
+    const deploy = await fetch(
+      `${origin}/api/v1/definitions?sourceId=m3.bpmn&semanticProfile=cibseven-2.2.0-user-task-assignment-form-metadata-draft`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/bpmn+xml" },
+        body: sourceBytes,
+        signal: AbortSignal.timeout(2_000),
+      },
+    );
+    assert.equal(deploy.status, 201);
+    const deployed = await deploy.json() as Readonly<{
+      status: string;
+      definition: Readonly<{ processId: string; version: number }>;
+    }>;
+    assert.equal(deployed.status, DefinitionDeployStatus.Deployed);
+
+    const presentationResponse = await fetch(
+      `${origin}/api/v1/definitions/${deployed.definition.processId}/versions/${deployed.definition.version}/presentation`,
+      { signal: AbortSignal.timeout(2_000) },
+    );
+    assert.equal(presentationResponse.status, 200);
+    const presentation = decodeResolvedBpmnDiagramPresentation(
+      await presentationResponse.json(),
+    );
+    assert.equal(presentation.provenance.kind, "generated");
+    assert.match(presentation.presentationBpmnXml, /<bpmndi:BPMNDiagram\b/u);
+
+    const sourceResponse = await fetch(
+      `${origin}/api/v1/definitions/${deployed.definition.processId}/versions/${deployed.definition.version}/source`,
+      { signal: AbortSignal.timeout(2_000) },
+    );
+    assert.deepEqual(Buffer.from(await sourceResponse.arrayBuffer()), sourceBytes);
   } finally {
     await runtime.close();
     await rm(dataDirectory, { recursive: true, force: true });
@@ -248,4 +307,27 @@ async function allocatePort(): Promise<number> {
     server.close((error) => error === undefined ? resolve() : reject(error));
   });
   return address.port;
+}
+
+function platformConfig(
+  origin: string,
+  port: number,
+  dataDirectory: string,
+) {
+  return {
+    host: "127.0.0.1",
+    port,
+    publicOrigin: origin,
+    dataDirectory,
+    maxSourceBytes: 1024 * 1024,
+    parserDeadlineMs: 1_000,
+    temporalAddress: "127.0.0.1:7233",
+    temporalNamespace: "default",
+    temporalTaskQueue: "bpmn-semantic",
+    temporalConnectTimeoutMs: 5_000,
+    fakeActorId: "demo-user",
+    fakeActorGroups: ["reviewers"],
+    maxWorkProcesses: 100,
+    maxWorkTasks: 1_000,
+  } as const;
 }

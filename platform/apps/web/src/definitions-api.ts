@@ -3,10 +3,12 @@ import {
   ProcessInstanceStartStatus,
   decodeDefinitionDeployResult,
   decodeDefinitionListResponse,
+  decodeResolvedBpmnDiagramPresentation,
   decodeDefinitionVersionListResponse,
   decodeProcessInstanceStartResult,
   decodePublicApiErrorResponse,
   definitionsCollectionPath,
+  definitionVersionPresentationPath,
   definitionVersionStartPath,
   definitionVersionsPath,
   definitionVersionSourcePath,
@@ -19,6 +21,7 @@ import type {
   DeployedDefinitionVersion,
   ProcessInstanceStartResult,
   PublicApiErrorCode,
+  ResolvedBpmnDiagramPresentation,
 } from "@bpmn-lean/platform-contracts";
 
 import {
@@ -148,6 +151,45 @@ export class DefinitionApiClient {
       throw new DefinitionProtocolError("definition source ETag does not match its deployed identity");
     }
     return bytes.slice();
+  }
+
+  async getPresentation(
+    definition: DeployedDefinitionVersion,
+  ): Promise<ResolvedBpmnDiagramPresentation> {
+    const expected = snapshotExactDefinition(definition);
+    const response = await this.#fetch(this.#url(definitionVersionPresentationPath(
+      expected.processId,
+      expected.version,
+    )), {
+      headers: { accept: "application/json" },
+    });
+    if (response.status !== 200) {
+      return await this.#throwApiError(response);
+    }
+    const presentation = decodeResponse(
+      await readJson(response),
+      decodeResolvedBpmnDiagramPresentation,
+      "definition presentation response",
+    );
+    if (!sameExactDefinition(presentation.definition, expected)) {
+      throw new DefinitionProtocolError(
+        "definition presentation response does not match the requested definition identity",
+      );
+    }
+    if (presentation.sourceSha256 !== presentation.definition.source.sha256) {
+      throw new DefinitionProtocolError(
+        "definition presentation source digest does not match its deployed identity",
+      );
+    }
+    const digest = await sha256(new TextEncoder().encode(
+      presentation.presentationBpmnXml,
+    ));
+    if (digest !== presentation.presentationSha256) {
+      throw new DefinitionProtocolError(
+        "definition presentation digest does not match its exact UTF-8 bytes",
+      );
+    }
+    return presentation;
   }
 
   async start(definition: DeployedDefinitionVersion): Promise<ProcessInstanceStartResult> {
