@@ -33,8 +33,6 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
   ParallelForkJoin: "parallel-fork-join-draft",
   ServiceTaskEffect: "cibseven-2.2.0-service-task-effect-draft",
-  ServiceTaskIncident:
-    "cibseven-2.2.0-service-task-incident-draft",
   TimerUserTaskComposition:
     "bpmn-2.0.2-timer-user-task-composition-draft",
   UserTask: "cibseven-2.2.0-user-task-process-data-draft",
@@ -48,3 +46,7 @@ export const SemanticProfileId = Object.freeze({
   UserTaskAssignmentFormMetadata:
     "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
 } as const);
+
+/** Checkpoint-only identity pending profile artifacts and product registration. */
+export const SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID =
+  "cibseven-2.2.0-service-task-incident-draft";

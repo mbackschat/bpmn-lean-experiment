@@ -248,12 +248,12 @@ The following mechanically measured existing owners grow. Each TypeScript owner 
 | [Semantic runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 227 |
 | [Triggered-start exhaustive stimulus classifier](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 484 |
 | [Scenario projection](../../packages/semantic-core/src/scenario.ts) | 165 |
-| [Profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 550 |
-| [Checked profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 368 |
-| [Program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 355 |
-| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 533 |
+| [Profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 549 |
+| [Checked profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 365 |
+| [Program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 352 |
+| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 530 |
 | [Semantic admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 245 |
-| [Profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 523 |
+| [Profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 520 |
 | [Semantic exports](../../packages/semantic-core/src/index.ts) | 557 |
 | [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 369 |
 | [Contract artifact owner](../../scripts/contract-artifacts.ts) | 96 |

@@ -9,6 +9,7 @@ import {
   SemanticOperationKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
   StimulusKind,
   WaitKind,
@@ -49,7 +50,7 @@ const program = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: SemanticProfileId.ServiceTaskIncident,
+    semanticProfile: SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
     sourceId: "service-task-effect-process",
     sourceOverlay: null,
     sourceSha256: "0".repeat(64),
@@ -144,7 +145,7 @@ test("registers only literal generation 1 on the exact successor Service Task sh
   assert.equal(isWellFormedSemanticProcessProgram(program), true);
   assert.equal(supportsSemanticProcessExecution(start, program), true);
   assert.equal(profileAllowsProgramShape(
-    SemanticProfileId.ServiceTaskIncident,
+    SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
     program.operations,
     program.definitionScopes.length,
   ), true);

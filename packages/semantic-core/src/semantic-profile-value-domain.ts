@@ -6,7 +6,10 @@ import type {
   Stimulus,
   VariableBinding,
 } from "./contract.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 
 export enum VariableWriteSurface {
   ProcessStart = "processStart",
@@ -63,7 +66,7 @@ export function profileAllowsStimulusValueDomain(
       );
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
-      return semanticProfile === SemanticProfileId.ServiceTaskIncident;
+      return semanticProfile === SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID;
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
     case StimulusKind.DeliverMessage:

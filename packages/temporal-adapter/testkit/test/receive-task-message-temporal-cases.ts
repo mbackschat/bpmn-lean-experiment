@@ -89,6 +89,7 @@ export async function exerciseReceiveTaskPrimary(
     }],
     openTimers: [],
     openEffects: [],
+    openIncidents: [],
     variables: [],
     enabledInteractions: [{
       kind: StimulusKind.DeliverMessage,
@@ -163,6 +164,7 @@ export async function exerciseReceiveTaskPrimary(
     openMessageSubscriptions: [],
     openTimers: [],
     openEffects: [],
+    openIncidents: [],
     variables: [],
     enabledInteractions: [],
     logicalTimeMs: 0,

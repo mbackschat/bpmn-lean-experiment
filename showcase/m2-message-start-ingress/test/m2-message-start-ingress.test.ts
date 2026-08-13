@@ -263,6 +263,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       openMessageSubscriptions: [],
       openTimers: [],
       openEffects: [],
+      openIncidents: [],
       variables: [],
       enabledInteractions: [],
       logicalTimeMs: 0,

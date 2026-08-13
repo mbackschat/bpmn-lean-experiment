@@ -2,7 +2,9 @@
 import type { OpenEffectIncident } from "./contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { profileAllowsProgramShape } from "./semantic-process-profile.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
+} from "./semantic-profile-catalog.js";
 import {
   ControlStateKind,
   sameOccurrence,
@@ -18,7 +20,7 @@ export function programAllowsEffectIncidents(
   program: SemanticProcessProgram,
 ): boolean {
   return program.identity.semanticProfile ===
-      SemanticProfileId.ServiceTaskIncident &&
+      SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID &&
     profileAllowsProgramShape(
       program.identity.semanticProfile,
       program.operations,

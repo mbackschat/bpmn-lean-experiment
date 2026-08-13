@@ -226,6 +226,7 @@ function completedReceipt(processInstanceId: string): unknown {
       openMessageSubscriptions: [],
       openTimers: [],
       openEffects: [],
+      openIncidents: [],
       variables: [],
       enabledInteractions: [],
       logicalTimeMs: 0,

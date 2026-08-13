@@ -19,7 +19,10 @@ import {
   hasExactOptionalUserTaskMetadata,
 } from "./user-task-metadata.js";
 
-export { SemanticProfileId } from "./semantic-profile-catalog.js";
+export {
+  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 
 /** Checks the exact operation capability selected by one reviewed profile. */
 export function profileAllowsProgramShape(

@@ -32,7 +32,6 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN User Task with preserved notation (`bpmn-2.0.2-user-task-preserved-notation-draft`) | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Intermediate Catch Timer (`cibseven-2.2.0-intermediate-catch-timer-draft`) | 1 | one `initiate`, one `awaitTimer`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Service Task effect (`cibseven-2.2.0-service-task-effect-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
-| CIB Seven Service Task incident checkpoint (`cibseven-2.2.0-service-task-incident-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven mapped-success Service Task (`cibseven-2.0.0-mapped-success-service-task-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven mapped-boundary-Error Service Task (`cibseven-2.0.0-mapped-boundary-error-service-task-draft`) | 1 | one `initiate`, one `awaitEffect`, one `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | Normative parallel fork/join (`parallel-fork-join-draft`) | 1 | one `initiate`, one `duplicate`, two `awaitUserTask`, one `synchronize`, one `reachNoneEnd`, one `completeScope` |

@@ -70,6 +70,7 @@ function state(
     openMessageSubscriptions: [],
     openTimers: [],
     openEffects: [],
+    openIncidents: [],
     variables: [],
     enabledInteractions: [],
     logicalTimeMs: 0,

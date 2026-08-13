@@ -3,7 +3,10 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
 } from "./checked-process-contract.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 
 /** One profile's exact checked-graph capability. */
 export type RequiredCheckedProcessShape = Readonly<{
@@ -57,7 +60,7 @@ export function requiredCheckedProcessShape(
         end,
       ]);
     case SemanticProfileId.ServiceTaskEffect:
-    case SemanticProfileId.ServiceTaskIncident:
+    case SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.MappedSuccessServiceTask:
       return rootChecked([start, CheckedNodeKind.ServiceTask, end]);
     case SemanticProfileId.MappedBoundaryErrorServiceTask:
