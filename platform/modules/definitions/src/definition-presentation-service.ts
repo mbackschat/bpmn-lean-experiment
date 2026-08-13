@@ -74,6 +74,11 @@ export class DefinitionPresentationService {
       );
     }
     const sourceXml = decodeUtf8(exactBytes);
+    if (sha256Text(sourceXml) !== definition.source.sha256) {
+      throw new DefinitionPresentationIntegrityError(
+        "decoded definition source does not preserve its exact admitted UTF-8 bytes",
+      );
+    }
     const sourceResolution = await this.#dependencies.adapter.resolveSourceDiagram(
       sourceXml,
       definition.processId,
@@ -120,6 +125,11 @@ export class DefinitionPresentationService {
         definition.processId,
         sidecar.diagramInterchangeXml,
       );
+    requireExactSourceComposition(
+      sourceXml,
+      sidecar.diagramInterchangeXml,
+      presentationBpmnXml,
+    );
     if (sha256Text(presentationBpmnXml) !== sidecar.presentationSha256) {
       throw new DefinitionPresentationIntegrityError(
         "retained presentation digest does not match the exact composed XML",
@@ -161,6 +171,11 @@ export class DefinitionPresentationService {
         processId,
         generated.diagramInterchangeXml,
       );
+    requireExactSourceComposition(
+      sourceXml,
+      generated.diagramInterchangeXml,
+      presentationBpmnXml,
+    );
     const candidate = {
       schemaEpoch: 1 as const,
       sourceSha256,
@@ -192,12 +207,46 @@ function requireSidecarBinding(
 
 function decodeUtf8(bytes: Uint8Array): string {
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch (error: unknown) {
     throw new DefinitionPresentationIntegrityError(
       `stored definition source is not exact UTF-8: ${errorMessage(error)}`,
     );
   }
+}
+
+function requireExactSourceComposition(
+  sourceXml: string,
+  diagramInterchangeXml: string,
+  presentationBpmnXml: string,
+): void {
+  if (
+    presentationBpmnXml.length === sourceXml.length + diagramInterchangeXml.length &&
+    hasSingleExactInsertion(sourceXml, diagramInterchangeXml, presentationBpmnXml)
+  ) {
+    return;
+  }
+  throw new DefinitionPresentationIntegrityError(
+    "generated BPMN presentation does not preserve the exact admitted source bytes",
+  );
+}
+
+function hasSingleExactInsertion(
+  source: string,
+  insertion: string,
+  composition: string,
+): boolean {
+  let insertionAt = composition.indexOf(insertion);
+  while (insertionAt >= 0) {
+    if (
+      composition.slice(0, insertionAt) === source.slice(0, insertionAt) &&
+      composition.slice(insertionAt + insertion.length) === source.slice(insertionAt)
+    ) {
+      return true;
+    }
+    insertionAt = composition.indexOf(insertion, insertionAt + 1);
+  }
+  return false;
 }
 
 function sha256(bytes: Uint8Array): string {

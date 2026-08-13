@@ -4,6 +4,8 @@ interface ModdleElement {
   readonly $type: string;
   readonly id?: string;
   readonly rootElements?: readonly ModdleElement[];
+  readonly participants?: readonly ModdleElement[];
+  readonly processRef?: ModdleElement;
   readonly diagrams?: readonly ModdleElement[];
   readonly flowElements?: readonly ModdleElement[];
   readonly artifacts?: readonly ModdleElement[];
@@ -51,6 +53,11 @@ export type ProcessInventory = Readonly<{
   process: ModdleElement;
   flowNodes: readonly ModdleElement[];
   sequenceFlows: readonly ModdleElement[];
+}>;
+
+type ProcessDiagramSelection = Readonly<{
+  diagram: ModdleElement;
+  participant: ModdleElement | null;
 }>;
 
 export async function parsePresentationModel(
@@ -148,21 +155,24 @@ export function validateDiagramCoverage(
   model: ParsedPresentationModel,
   inventory: ProcessInventory,
   exactSourceModel: ParsedPresentationModel = model,
-  requireExactlyOneDiagram = false,
+  generatedPresentation = false,
 ): string | null {
   const diagrams = model.definitions.diagrams ?? [];
-  if (requireExactlyOneDiagram && diagrams.length !== 1) {
-    return "expected exactly one BPMNDiagram";
+  if (generatedPresentation) {
+    try {
+      validateGenerationScope(model.definitions, inventory);
+    } catch (error: unknown) {
+      return error instanceof Error ? error.message : "generated layout is outside its supported scope";
+    }
+    if (diagrams.length !== 1) {
+      return "expected exactly one BPMNDiagram";
+    }
   }
-  const diagramsForProcess = diagrams.filter(
-    (diagram) => diagram.plane?.bpmnElement?.id === inventory.process.id,
-  );
-  if (diagramsForProcess.length !== 1) {
-    return `expected exactly one BPMNPlane for Process ${inventory.process.id ?? "<missing>"}`;
-  }
+  const selection = selectProcessDiagram(diagrams, inventory.process);
+  if (typeof selection === "string") return selection;
 
   const diagramIds = new Set<string>();
-  const selectedDiagram = diagramsForProcess[0];
+  const selectedDiagram = selection.diagram;
   const coverage = new Map<string, ModdleElement[]>();
   for (const diagram of diagrams) {
     const plane = diagram.plane;
@@ -206,6 +216,21 @@ export function validateDiagramCoverage(
     coverage.set(targetId, existing);
   }
 
+  if (selection.participant !== null) {
+    const participantId = requiredId(selection.participant);
+    const covered = coverage.get(participantId) ?? [];
+    const shapes = covered.filter(
+      (element) => element.$type === "bpmndi:BPMNShape",
+    );
+    if (
+      covered.length !== 1 ||
+      shapes.length !== 1 ||
+      !hasPositiveFiniteBounds(shapes[0])
+    ) {
+      return `Participant ${participantId} needs exactly one finite positive-bounds BPMNShape`;
+    }
+  }
+
   for (const node of inventory.flowNodes) {
     const covered = coverage.get(requiredId(node)) ?? [];
     const shapes = covered.filter(
@@ -233,6 +258,43 @@ export function validateDiagramCoverage(
     }
   }
   return null;
+}
+
+function selectProcessDiagram(
+  diagrams: readonly ModdleElement[],
+  process: ModdleElement,
+): ProcessDiagramSelection | string {
+  const processId = process.id ?? "<missing>";
+  const candidates: ProcessDiagramSelection[] = [];
+  for (const diagram of diagrams) {
+    const planeTarget = diagram.plane?.bpmnElement;
+    if (planeTarget?.$type === "bpmn:Process" && planeTarget.id === process.id) {
+      candidates.push({ diagram, participant: null });
+      continue;
+    }
+    if (planeTarget?.$type !== "bpmn:Collaboration") continue;
+    const participants = (planeTarget.participants ?? []).filter(
+      (participant) =>
+        participant.$type === "bpmn:Participant" &&
+        participant.processRef?.id === process.id,
+    );
+    if (participants.length > 1) {
+      return `Collaboration ${planeTarget.id ?? "<missing>"} must contain exactly one Participant for Process ${processId}`;
+    }
+    if (participants.length === 1) {
+      const participant = participants[0];
+      if (participant === undefined) continue;
+      candidates.push({
+        diagram,
+        participant,
+      });
+    }
+  }
+  const selected = candidates[0];
+  if (candidates.length !== 1 || selected === undefined) {
+    return `expected exactly one BPMNPlane for Process ${processId} or a Collaboration containing exactly one Participant for that Process`;
+  }
+  return selected;
 }
 
 function requiredId(element: ModdleElement): string {

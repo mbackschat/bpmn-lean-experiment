@@ -6,6 +6,8 @@ import {
   BpmnViewerProtocolError,
 } from "../src/bpmn-viewer.ts";
 import type {
+  BpmnCanvasPort,
+  BpmnElementRegistryPort,
   BpmnViewerFactory,
   BpmnViewerPort,
 } from "../src/bpmn-viewer.ts";
@@ -27,30 +29,47 @@ function poweredContainer(href: string | null = "http://bpmn.io"): HTMLElement {
   } as unknown as HTMLElement;
 }
 
-function viewerFixture() {
+function viewerFixture(elementIds: readonly string[] = ["Task_A", "Task_B"]) {
   const imported: string[] = [];
   const canvasCalls: string[] = [];
+  const registryCalls: string[] = [];
   let destroyed = false;
+  const registry: BpmnElementRegistryPort = {
+    get(elementId) {
+      registryCalls.push(elementId);
+      return elementIds.includes(elementId) ? { id: elementId } : undefined;
+    },
+  };
+  const canvas: BpmnCanvasPort = {
+    addMarker(elementId, marker) {
+      canvasCalls.push(`add:${elementId}:${marker}`);
+    },
+    removeMarker(elementId, marker) {
+      canvasCalls.push(`remove:${elementId}:${marker}`);
+    },
+    zoom(scale, center) {
+      canvasCalls.push(`zoom:${scale}:${String(center)}`);
+      return 1;
+    },
+  };
+  function getViewerService(name: "canvas"): BpmnCanvasPort;
+  function getViewerService(name: "elementRegistry"): BpmnElementRegistryPort;
+  function getViewerService(
+    name: "canvas" | "elementRegistry",
+  ): BpmnCanvasPort | BpmnElementRegistryPort {
+    switch (name) {
+      case "canvas":
+        return canvas;
+      case "elementRegistry":
+        return registry;
+    }
+  }
   const port: BpmnViewerPort = {
     async importXML(xml) {
       imported.push(xml);
       return { warnings: [] };
     },
-    get(name) {
-      assert.equal(name, "canvas");
-      return {
-        addMarker(elementId, marker) {
-          canvasCalls.push(`add:${elementId}:${marker}`);
-        },
-        removeMarker(elementId, marker) {
-          canvasCalls.push(`remove:${elementId}:${marker}`);
-        },
-        zoom(scale, center) {
-          canvasCalls.push(`zoom:${scale}:${String(center)}`);
-          return 1;
-        },
-      };
-    },
+    get: getViewerService,
     destroy() {
       destroyed = true;
     },
@@ -61,6 +80,7 @@ function viewerFixture() {
     factory,
     imported,
     isDestroyed: () => destroyed,
+    registryCalls,
   };
 }
 
@@ -97,6 +117,20 @@ test("uses one fixed marker and clears the prior highlighted element", () => {
     "remove:Task_B:bpmn-platform-active",
   ]);
   assert.equal(fixture.isDestroyed(), true);
+});
+
+test("refuses a missing rendered element before mutating the active marker", () => {
+  const fixture = viewerFixture(["Task_A"]);
+  const viewer = new BpmnDiagramViewer(poweredContainer(), fixture.factory);
+  viewer.highlight("Task_A");
+
+  assert.throws(
+    () => { viewer.highlight("Task_Missing"); },
+    (error: unknown) => error instanceof BpmnViewerProtocolError &&
+      /Task_Missing.*not present in the rendered diagram/u.test(error.message),
+  );
+  assert.deepEqual(fixture.registryCalls, ["Task_A", "Task_Missing"]);
+  assert.deepEqual(fixture.canvasCalls, ["add:Task_A:bpmn-platform-active"]);
 });
 
 test("fails closed if the supplied bpmn.io watermark is absent or retargeted", () => {

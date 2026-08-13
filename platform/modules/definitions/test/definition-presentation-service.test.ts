@@ -59,6 +59,7 @@ class FakeAdapter implements BpmnPresentationAdapter {
   resolution: SourceDiagramResolution = { kind: "absent" };
   generations = 0;
   validationCalls = 0;
+  corruptsComposedSource = false;
 
   async resolveSourceDiagram(): Promise<SourceDiagramResolution> {
     return structuredClone(this.resolution);
@@ -90,7 +91,10 @@ class FakeAdapter implements BpmnPresentationAdapter {
     diagramInterchangeXml: string,
   ): Promise<string> {
     this.validationCalls += 1;
-    return sourceXml.replace(
+    const compositionSource = this.corruptsComposedSource
+      ? sourceXml.replace("Process_UserTaskMetadata", "Process_Corrupted")
+      : sourceXml;
+    return compositionSource.replace(
       "</bpmn:definitions>",
       `${diagramInterchangeXml}</bpmn:definitions>`,
     );
@@ -108,6 +112,18 @@ test("source-owned DI wins without generation or persistence", async () => {
   assert.equal(result?.presentationBpmnXml, sourceXml);
   assert.equal(fixture.adapter.generations, 0);
   assert.equal(fixture.presentations.inserts, 0);
+});
+
+test("source-owned DI preserves an admitted UTF-8 BOM in the digest-bound presentation", async () => {
+  const sourceXml = "\uFEFF<bpmn:definitions><bpmndi:BPMNDiagram/></bpmn:definitions>";
+  const fixture = fixtureFor(sourceXml);
+  fixture.adapter.resolution = { kind: "source" };
+
+  const result = await fixture.service.resolve(fixture.reference);
+
+  assert.equal(result?.presentationBpmnXml, sourceXml);
+  assert.equal(result?.sourceSha256, sha256(sourceXml));
+  assert.equal(result?.presentationSha256, sha256(result.presentationBpmnXml));
 });
 
 test("generated DI persists and restart reuses the validated sidecar", async () => {
@@ -129,6 +145,33 @@ test("generated DI persists and restart reuses the validated sidecar", async () 
     sourceXml,
   );
   assert.equal(fixture.adapter.validationCalls, 3);
+});
+
+test("generated DI preserves an admitted UTF-8 BOM and every other source byte", async () => {
+  const sourceXml = `\uFEFF${await readFile(sourcePath, "utf8")}`;
+  const fixture = fixtureFor(sourceXml);
+
+  const result = await fixture.service.resolve(fixture.reference);
+  const retained = fixture.presentations.content.values().next().value!;
+
+  assert.equal(
+    result?.presentationBpmnXml.replace(retained.diagramInterchangeXml, ""),
+    sourceXml,
+  );
+  assert.equal(result?.sourceSha256, sha256(sourceXml));
+  assert.equal(result?.presentationSha256, sha256(result.presentationBpmnXml));
+});
+
+test("generated DI rejects a composition that changes an admitted source byte", async () => {
+  const sourceXml = await readFile(sourcePath, "utf8");
+  const fixture = fixtureFor(sourceXml);
+  fixture.adapter.corruptsComposedSource = true;
+
+  await assert.rejects(
+    fixture.service.resolve(fixture.reference),
+    /preserve the exact admitted source/u,
+  );
+  assert.equal(fixture.presentations.inserts, 0);
 });
 
 test("unusable source DI and digest-invalid retained sidecars fail closed", async () => {

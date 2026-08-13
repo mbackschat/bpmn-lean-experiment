@@ -17,6 +17,10 @@ const callActivitySourcePath = new URL(
   "../../../../scenarios/called-process-call-activity/process.bpmn",
   import.meta.url,
 );
+const preservedNotationSourcePath = new URL(
+  "../../../../scenarios/user-task-preserved-notation/process.bpmn",
+  import.meta.url,
+);
 
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -149,6 +153,79 @@ test("source DI resolves the selected Process when another root has its own diag
       "Process_UserTaskMetadata",
     ),
     { kind: "source" },
+  );
+});
+
+test("source DI resolves a runtime-renamed Process through its exact Collaboration participant", async () => {
+  const sourceXml = await readFile(preservedNotationSourcePath, "utf8");
+  const runtimeProcessId = "Process_Runtime_Review_42";
+  const runtimeSource = sourceXml.replaceAll(
+    "Process_SequentialUserTask",
+    runtimeProcessId,
+  );
+  const adapter = new BpmnAutoLayoutPresentationAdapter();
+
+  assert.deepEqual(
+    await adapter.resolveSourceDiagram(runtimeSource, runtimeProcessId),
+    { kind: "source" },
+  );
+  await assert.rejects(
+    adapter.generate(runtimeSource, runtimeProcessId),
+    /Collaborations/u,
+  );
+
+  const foreignProcess = runtimeSource
+    .replace(
+      `<bpmn:process id="${runtimeProcessId}"`,
+      `<bpmn:process id="Process_Foreign" isExecutable="true"/>\n  <bpmn:process id="${runtimeProcessId}"`,
+    )
+    .replace(
+      `processRef="${runtimeProcessId}"`,
+      'processRef="Process_Foreign"',
+    );
+  assert.equal(
+    (await adapter.resolveSourceDiagram(foreignProcess, runtimeProcessId)).kind,
+    "unusable",
+  );
+
+  const duplicateParticipant = runtimeSource.replace(
+    '<bpmn:participant id="Participant_Reviewers" name="Reviewers"',
+    `<bpmn:participant id="Participant_Duplicate" processRef="${runtimeProcessId}"/>\n    <bpmn:participant id="Participant_Reviewers" name="Reviewers"`,
+  );
+  const duplicateResolution = await adapter.resolveSourceDiagram(
+    duplicateParticipant,
+    runtimeProcessId,
+  );
+  assert.equal(duplicateResolution.kind, "unusable");
+  if (duplicateResolution.kind === "unusable") {
+    assert.match(duplicateResolution.evidence, /exactly one Participant/u);
+  }
+
+  const withoutParticipantShape = runtimeSource.replace(
+    /\s*<bpmndi:BPMNShape id="Participant_Reviewers_di"[\s\S]*?<\/bpmndi:BPMNShape>/u,
+    "",
+  );
+  const missingShapeResolution = await adapter.resolveSourceDiagram(
+    withoutParticipantShape,
+    runtimeProcessId,
+  );
+  assert.equal(missingShapeResolution.kind, "unusable");
+  if (missingShapeResolution.kind === "unusable") {
+    assert.match(missingShapeResolution.evidence, /Participant.*BPMNShape/u);
+  }
+
+  const withSecondCandidatePlane = runtimeSource.replace(
+    "</bpmn:definitions>",
+    [
+      '<bpmndi:BPMNDiagram id="BPMNDiagram_Direct">',
+      `<bpmndi:BPMNPlane id="BPMNPlane_Direct" bpmnElement="${runtimeProcessId}"/>`,
+      "</bpmndi:BPMNDiagram>",
+      "</bpmn:definitions>",
+    ].join(""),
+  );
+  assert.equal(
+    (await adapter.resolveSourceDiagram(withSecondCandidatePlane, runtimeProcessId)).kind,
+    "unusable",
   );
 });
 

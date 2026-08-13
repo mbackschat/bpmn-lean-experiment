@@ -6,9 +6,14 @@ export type BpmnCanvasPort = Readonly<{
   zoom(scale: "fit-viewport", center?: boolean): number;
 }>;
 
+export type BpmnElementRegistryPort = Readonly<{
+  get(elementId: string): unknown | undefined;
+}>;
+
 export type BpmnViewerPort = Readonly<{
   importXML(xml: string): Promise<Readonly<{ warnings: ReadonlyArray<unknown> }>>;
   get(name: "canvas"): BpmnCanvasPort;
+  get(name: "elementRegistry"): BpmnElementRegistryPort;
   destroy(): void;
 }>;
 
@@ -25,6 +30,7 @@ export class BpmnViewerProtocolError extends Error {
 export class BpmnDiagramViewer {
   readonly #viewer: BpmnViewerPort;
   readonly #canvas: BpmnCanvasPort;
+  readonly #elementRegistry: BpmnElementRegistryPort;
   #highlightedElement: string | null = null;
   #renderQueue: Promise<void> = Promise.resolve();
   #destroyed = false;
@@ -38,6 +44,7 @@ export class BpmnDiagramViewer {
       throw error;
     }
     this.#canvas = this.#viewer.get("canvas");
+    this.#elementRegistry = this.#viewer.get("elementRegistry");
   }
 
   async render(sourceBytes: Uint8Array): Promise<void> {
@@ -62,6 +69,11 @@ export class BpmnDiagramViewer {
     this.#requireLive();
     if (elementId.length === 0) {
       throw new TypeError("highlighted BPMN element ID must not be empty");
+    }
+    if (this.#elementRegistry.get(elementId) === undefined) {
+      throw new BpmnViewerProtocolError(
+        `BPMN element ${elementId} is not present in the rendered diagram`,
+      );
     }
     this.clearHighlight();
     this.#canvas.addMarker(elementId, activeMarker);

@@ -112,13 +112,14 @@ function WorkTaskDiagram({
   );
 }
 
-function WorkTaskFacts({ task }: Readonly<{ task: PublicWorkTask }>) {
+export function WorkTaskFacts({ task }: Readonly<{ task: PublicWorkTask }>) {
   return (
     <dl className={styles.facts}>
       <div><dt>Task element</dt><dd>{task.task.id.elementId}</dd></div>
       <div><dt>Activation</dt><dd>{task.task.id.activation}</dd></div>
       <div><dt>Candidate group</dt><dd>{task.task.metadata?.assignment.candidates[0].id ?? "Unavailable"}</dd></div>
-      <div><dt>Process instance</dt><dd>{task.hostingInstance.processInstanceId}</dd></div>
+      <div><dt>Task Process instance</dt><dd>{task.task.id.processInstanceId}</dd></div>
+      <div><dt>Hosting root Process instance</dt><dd>{task.hostingInstance.processInstanceId}</dd></div>
     </dl>
   );
 }
