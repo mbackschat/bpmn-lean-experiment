@@ -2,13 +2,13 @@
 
 ## Status
 
-Second redesigned draft awaiting correction audit and owner approval. Context-cold proposal review of target `56b9398` returned `approve with required edits`; this correction makes wrong generation a strict decode refusal, keys CIB engine construction by the validated profile environment, and names the runnable profile-policy composition owner. The first proposal target `8be7e5f` was rejected because its Activity transport, artifact versioning, CIB configuration, generation domain, owner inventory, and Stage 1 cancellation boundaries were not jointly implementable. The first redesign target `278e63b` was rejected because it changed existing Activity payload bytes, failed to make an incident-owned suspension block normal scope completion, and omitted exhaustive consumers of the widened unions. Test-only packaged-CIB research is complete; no profile, runtime, wire, Lean, differential, Temporal, or Product 2 implementation is authorized yet.
+Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The approved correction makes wrong generation a strict decode refusal, keys CIB engine construction by the validated profile environment, and names the runnable profile-policy composition owner. Test-only packaged-CIB research is complete. Profile, runtime, wire, Lean, differential, CIB, and Temporal implementation may now proceed through the required semantic checkpoint and closure reviews; Product 2 incident operations remain a separately governed later stage.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `56b9398` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `56b9398` | `fork-turns-none` | `approve-with-required-edits` | `43228e3` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 

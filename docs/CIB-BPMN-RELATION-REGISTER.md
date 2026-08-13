@@ -368,7 +368,7 @@ This is a CIB generated-form extension, not standard BPMN rendering content. BPM
 
 ### CIB-EXT-0013: failed-job Service Task incident and retry
 
-**Status:** Proposed bounded extension; implementation blocked pending proposal review and owner approval
+**Status:** Selected bounded extension; implementation pending
 
 CIB Seven `2.2.0` decrements the selected async-before Service Task job after failed public execution, creates one `failedJob` incident when retries reach zero, and removes that incident when public Management Service resets the same job to a positive retry count. The proposed project profile restricts this operational surface to one exact Service Task effect, one payload-free technical failure, one public incident kind, and one retry that reopens the same semantic effect occurrence.
 
@@ -469,7 +469,7 @@ CIB Seven `2.0.0` invokes the neutral mapped-boundary delegate, catches its Java
 
 ### CIB-OP-0008: CIB failed-job incident mapped to a semantic effect incident
 
-**Status:** Proposed operational mapping; implementation blocked pending proposal review and owner approval
+**Status:** Selected operational mapping; implementation pending
 
 CIB exposes a raw job ID, incident ID, retry count, execution association, and incident configuration. The project semantic core instead owns one stable effect occurrence and one literal-generation-1 incident. The proposed adapter requires exact raw job and incident partners, then maps them to `EffectIncidentId { effectId, generation: 1 }`; neither raw identity nor retry count enters canonical state.
 
@@ -543,7 +543,7 @@ The product-neutral mapped-boundary-Error profile pins the same CIB Seven `2.0.0
 
 ### CIB-CFG-0008 - explicit failed-job incident creation
 
-**Status:** Proposed configuration dependency; packaged-engine phase-zero evidence complete, selection pending proposal approval
+**Status:** Selected configuration dependency; packaged-engine phase-zero evidence complete, implementation pending
 
 The proposed Service Task incident profile explicitly sets `createIncidentOnFailedJobEnabled` to `true`. Pinned CIB Seven creates the public `failedJob` incident only under that setting. Relying on the engine default would make the profile's public incident fact depend on an undeclared host choice.
 
