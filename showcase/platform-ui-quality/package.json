@@ -9,7 +9,7 @@
     "test:e2e": "pnpm run type-test && playwright test",
     "test:e2e:functional": "pnpm run type-test && playwright test --grep-invert @visual",
     "test:e2e:visual": "pnpm run type-test && playwright test --grep @visual",
-    "test:e2e:update-snapshots": "pnpm run type-test && playwright test --update-snapshots"
+    "test:e2e:update-snapshots": "pnpm run type-test && playwright test --grep @visual --update-snapshots"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1"

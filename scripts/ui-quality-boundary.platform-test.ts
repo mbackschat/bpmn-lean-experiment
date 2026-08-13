@@ -63,7 +63,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.deepEqual(showcase.devDependencies, { "@playwright/test": "1.62.1" });
   assert.equal(
     showcase.scripts?.["test:e2e:update-snapshots"],
-    "pnpm run type-test && playwright test --update-snapshots",
+    "pnpm run type-test && playwright test --grep @visual --update-snapshots",
   );
   assert.doesNotMatch(playwrightConfig, /Temporal|platform-server|showcase:m3-human-work/iu);
   assert.match(playwrightConfig, /vite preview/u);
