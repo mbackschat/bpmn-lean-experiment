@@ -425,7 +425,13 @@ Required M3 human-work live Temporal and headless-browser gate:
 ./scripts/pnpm.sh run test:showcase:m3-human-work
 ```
 
-Product 2 fixed-fixture responsive, focus, reduced-motion, and visual-regression gate after installing Playwright's pinned Chromium:
+Complete Product 2 M3 release acceptance, composing the real-host gate with the isolated deterministic UI-quality lane:
+
+```sh
+./scripts/pnpm.sh run test:release:m3
+```
+
+Product 2 fixed-fixture responsive, focus, reduced-motion, and visual-regression gate; authoritative pixels run in the digest-pinned Linux container owned by its workflow:
 
 ```sh
 ./scripts/pnpm.sh run test:ui-quality

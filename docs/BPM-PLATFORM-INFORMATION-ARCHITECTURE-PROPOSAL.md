@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved for implementation after independent proposal review.** This proposal selects the platform UI's product navigation, workspace boundaries, list-to-detail flows, and functional grouping. It remains a proposal until the complete shell, workspace flows, responsive evidence, and diagram presentation contract are implemented. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
+**Implementation-complete; independent closure review pending.** The implemented platform shell, workspace flows, responsive evidence, and diagram presentation contract now realize this selected information architecture. The document remains a proposal until the closure review approves the maintained contract and it graduates atomically to `BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md`. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Independent cold-review receipt
 
@@ -12,7 +12,7 @@
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The same context-cold reviewer completed two warm correction rounds. The final audit of `c3f6671` approved the corrected public presentation contract, DI composition boundary, dependency ownership, and source records.
+The same context-cold proposal reviewer completed two warm correction rounds. The final audit of `c3f6671` approved the corrected public presentation contract, DI composition boundary, dependency ownership, and source records. Closure remains pending against the complete implementation target.
 
 ## Owner motivation and product vision
 
@@ -75,7 +75,7 @@ Definitions use one closed `GET /api/v1/definitions/{processId}/versions/{versio
 
 ## Responsive composition
 
-At wide and ordinary desktop widths, primary navigation is a persistent left rail and the selected workspace occupies the remaining content area. At narrow widths, the navigation moves above the content and wraps without horizontal page scrolling. Feature components use container queries when their available width can differ materially from the viewport width because of the product shell.
+At wide and ordinary desktop widths, primary navigation is a persistent left rail and the selected workspace occupies the remaining content area. At narrow widths, the navigation moves above the content and wraps without horizontal page scrolling. Feature components use container queries when their available width can differ materially from the viewport width because of the product shell. The task collection keeps one native table, row, and cell DOM at every width; responsive card labels are visible in narrow mode rather than synthesized only for assistive technology.
 
 The required review widths are 1600, 1280, 1024, and 768 CSS pixels. At each width:
 
@@ -106,7 +106,7 @@ Excluded behavior is a dashboard of unrelated panels, a permanent narrow task-fo
 
 ## Acceptance
 
-Static component tests lock navigation and collection-to-detail ownership. Focused browser evidence exercises the real Work lifecycle, Definitions selection, source-owned DI, generated DI, and honest task-diagram unavailability for a called-instance identity. Product 2 visual QA uses the separate path-filtered lane owned by the [UI design proposal](BPM-PLATFORM-UI-DESIGN-PROPOSAL.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
+Static component tests lock navigation and collection-to-detail ownership. Real-host browser evidence exercises the M1 source-owned Collaboration DI lifecycle, generated DI in M2 and M3, accessible Definitions and Work navigation, exact task selection, claim, completion, and version operation. The deterministic Product 2 browser lane separately locks called-instance and missing-element task-diagram unavailability, source and generated provenance, all declared failure states, focus, reduced motion, and four-width geometry. Product 2 visual QA uses the separate path-filtered lane owned by the [UI design proposal](BPM-PLATFORM-UI-DESIGN-PROPOSAL.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
 
 ## Research and related owners
 
