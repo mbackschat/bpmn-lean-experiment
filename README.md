@@ -12,7 +12,7 @@ This project builds two MIT products in one repository: a Temporal-hosted BPMN 2
 |---|---|
 | BPMN execution engine | Implemented, runnable product floor over a bounded semantic profile catalog |
 | BPM platform | M1, M2, and M3 closed |
-| Active work | Select the first bounded M4 incident increment |
+| Active work | Close the implemented first bounded M4 incident increment |
 | A12 Workflows | Separate downstream product outside this repository; reusable neutral mechanisms and an optional evidence handoff are preserved without placing A12 decisions in core |
 
 Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. Its adapter is split by execution environment into protocol, client, Workflow, Worker, runner, and testkit packages, with no production umbrella package. Product 2 exposes deployment, admission diagnostics, definition lists, version lists, exact admitted source, exact-version start, one-shot Timer Start scheduling, one-target Message Start publication, identity-only Process-instance search, and current human work over confirmed Product 2 starts. The HTTP-only React workspace now includes an actor-filtered task inbox, explicit claim and release, a typed string-or-Boolean form, retry-safe completion, and self-owned platform audit. Independent SQLite owners retain definition publication, Process identity, Work action state, and audit delivery without turning any platform fact into BPMN meaning. The registered M1 and M2 showcases remain independent regression floors, while the M3 showcase proves all three start producers, Worker and platform replacement, response-loss recovery, Boolean completion, audit, replay, private-fact exclusion, and Chromium acceptance. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
@@ -29,7 +29,7 @@ The showcase ladder is a dependency order, not a delivery schedule. [PLAN.md](do
 | M1 | Closed | A third party uploads an unseen BPMN file, receives honest admission diagnostics, stores and versions it, views the diagram, and starts an admitted instance |
 | M2 | Closed | Cyclic execution, four essential elements, exact-version Timer scheduling, Message Start ingress, and Process-instance search are implemented and evidence-closed |
 | M3 | Closed | Boolean Process-data, User Task metadata, the real inbox, typed form, claims, completion, audit, and live/browser evidence are closure-reviewed and evidence-closed |
-| M4 | Not started | Diagnose, retry, and cancel failed work without confusing BPMN incidents with Temporal retries |
+| M4 | In progress | One bounded incident and exact retry are implemented pending closure; incident-scoped cancellation and Product 2 operations remain |
 | M5 | Not started | Rebuild and explain committed execution history, diagram position, and operational views |
 
 M1 remains the first proper platform demonstration and an independent regression floor. M3 adds the real task inbox and form interaction after the engine publishes the required metadata and wider value domain.

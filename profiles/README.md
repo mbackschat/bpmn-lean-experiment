@@ -6,6 +6,8 @@ The artifact registry contains the [BPMN 2.0.2 Simple Boolean Exclusive Gateway 
 
 The registry also contains the [BPMN 2.0.2 resumption-bounded User Task cycle draft profile](bpmn-2.0.2-user-task-cycle-draft/README.md). BPMN 2.0.2 owns its cycle and Exclusive Merge meaning; `CIB-AGR-0001` and `CIB-OP-0001` apply only to the reused User Task boundary, and the profile declares no CIB cycle target.
 
+The [CIB Seven 2.2.0 Service Task incident profile](cibseven-2.2.0-service-task-incident-draft/README.md) is the configured successor to the success-only Service Task effect profile. It reuses the exact source shape and selects one failed-effect incident plus one exact retry.
+
 The [BPMN 2.0.2 Message Start Event draft profile](bpmn-2.0.2-message-start-event-draft/README.md) selects one payload-free, top-level, operation-addressed Message Start Event. Its exact Message, Interface Operation, Start Event, and semantic instance identities are resolved before Process creation, and it declares no CIB Message Start target.
 
 The [BPMN 2.0.2 Timer Start Event draft profile](bpmn-2.0.2-timer-start-event-draft/README.md) selects one top-level exact-`PT1S` Timer Start Event. One resolved occurrence identifies the Start Event and semantic instance before Process creation, while schedule timing and lifecycle remain host and product policy, and the profile declares no CIB Timer Start target.

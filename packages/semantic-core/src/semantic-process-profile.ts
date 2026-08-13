@@ -11,7 +11,6 @@ import {
   requiredProgramShape,
 } from "./semantic-program-profile-shape.js";
 import {
-  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import {
@@ -79,7 +78,7 @@ function profileAllowsProgramOperationDetails(
           operation.inputs.length === 3,
       );
     case SemanticProfileId.ConfiguredTask:
-    case SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.ServiceTaskIncident:
       return operations.every(
         (operation) =>
           operation.kind !== SemanticOperationKind.AwaitEffect ||
@@ -124,7 +123,7 @@ export function profileAllowsCheckedProcessShape(
           node.kind !== CheckedNodeKind.ConfiguredTask ||
           hasProbeEffectDescriptor(node.descriptor),
       )) &&
-    (semanticProfile !== SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID ||
+    (semanticProfile !== SemanticProfileId.ServiceTaskIncident ||
       nodes.every(
         (node) =>
           node.kind !== CheckedNodeKind.ServiceTask ||

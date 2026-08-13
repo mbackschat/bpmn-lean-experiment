@@ -4,7 +4,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 ## Current claim
 
-**Two products, three platform showcase floors closed.** The engine executes the bounded BPMN slice owned by twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has closed M1, M2, and M3 showcases. The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns the M3 contract and exclusions. Later absences are recorded under [BPM platform](#bpm-platform).
+**Two products, three platform showcase floors closed.** The engine executes the bounded BPMN slice owned by twenty closed semantic capsules and one implementation-complete Service Task incident proposal pending closure review. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has closed M1, M2, and M3 showcases. The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns the M3 contract and exclusions. Later absences are recorded under [BPM platform](#bpm-platform).
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting.
 
@@ -24,7 +24,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 
 **Current E2 User Task metadata boundary.** The graduated registered profile admits either no metadata or one exact alternate-prefix-safe CIB extension block containing one literal group candidate and one string-or-boolean generated-form field. The neutral optional value is carried through the checked User Task, ordinary `awaitUserTask.task`, committed wait, and public `OpenUserTask`; old profiles and metadata-free artifacts physically omit it. Independent TypeScript and Lean execution prove exact preservation, refusal-state preservation, Boolean-completion composition, completion irrelevance, strict JSON identity, and old-profile exclusion. Retained public Task Service and Form Service facts, exact CIB/Lean/core/Temporal differential evidence, a runnable configuration, live Worker replacement, Query mutation, history, and replay are green. Product 2 consumes the published task and form facts only through the approved M3 Work contract.
 
-**What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. The independently approved [Service Task incident and retry checkpoint](capsules/SERVICE-TASK-INCIDENT-RETRY-PROPOSAL.md) exists in the strict wire, TypeScript semantic core, and Lean, but authorizes no compatibility or hosting claim until closure. CIB incident mapping, differential registration, Temporal technical-failure hosting, cancellation, published transitions, and token positions remain absent.
+**What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. The independently reviewed [Service Task incident and retry proposal](capsules/SERVICE-TASK-INCIDENT-RETRY-PROPOSAL.md) has one registered literal-generation-1 incident, one exact retry, configured CIB mapping, four-target differential evidence, and Temporal technical-failure hosting, but remains pending closure review. A second semantic incident, generalized retry policy, incident-scoped cancellation, published transitions, token positions, and Product 2 incident operations remain absent.
 
 **Evidence and product boundary.** Registered answer-free scenarios run through their declared Lean, TypeScript, Temporal, and pinned CIB lanes with seeded mutations and content-bound evidence. The TypeScript compiler produces the shared checked graph and program, while Lean checks lowering independently without parsing BPMN XML. The product driver answers published `enabledInteractions` with published occurrence identity. Admission is checked for every registered profile, but live durable execution is required only once per distinct host mechanism. Product examples compose the evidenced compiler, core, Workflow, and client and are not an independent semantic lane.
 
@@ -177,7 +177,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - exhaustive schema-depth CIB fidelity classification for all twelve top-level state fields and every nested field
 - required `openMessageSubscriptions`, `openTimers`, and separate `openEffects`
 - typed `deliverMessage`, `fireTimer`, and `completeEffect`
-- checkpoint-candidate literal-generation-1 effect-incident identity, strict `reportEffectFailure` and `retryIncident` stimuli, required `openIncidents`, incident active waits, and retry interactions, including nested public occurrence-equality validation outside JSON Schema
+- registered literal-generation-1 effect-incident identity, strict `reportEffectFailure` and `retryIncident` stimuli, required `openIncidents`, incident active waits, and retry interactions, including nested public occurrence-equality validation outside JSON Schema
 - JavaScript-safe non-negative integer maxima
 - exact non-normalized Unicode-scalar identifier order
 - byte-aware duplicate-key and unpaired-surrogate rejection
@@ -205,7 +205,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - one registered Timer Start capability requires one `initiateTimer` output, normalized duration `1000`, and a matching exact Timer-start stimulus
 - one registered Terminate End capability fixes the exact nested definition-scope, operation-kind, and control-place cardinalities without adding an external stimulus
 - immutable CIB artifact status freezes only evidence calibration, not a production deployment or history baseline
-- one unregistered checkpoint profile identity selects the predecessor-equivalent Service Task shape and the literal-generation incident transition family; no profile artifact or compatibility target is registered before checkpoint approval
+- one registered successor profile selects the predecessor-equivalent Service Task shape, literal-generation incident transition family, configured CIB failed-job incident projection, and one exact retry schedule while preserving predecessor checked-graph and IL content modulo profile identity
 
 #### Explicitly absent
 
@@ -334,7 +334,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - Terminate End proofs for exact checked/program admission and lowering, reusable selected-root-retaining subtree cancellation, every represented owner family, aggregate End increment and unrelated-state preservation, root and nested completion, stale and multiplicity refusal, exact 5/3/2 closure bounds, strict decoding, and global-versus-incomplete cancellation non-laws
 - configured Task proofs for strict source binding, distinct checked identity, exact checked/program admission, endpoint lowering to the existing Probe effect, normalized Service Task control-shape agreement, exact effect-to-User-Task closure, occurrence refusal, descriptor drift, and pass-through non-laws
 - E2 proofs for exact optional metadata admission, source-independent lowering, committed wait and public projection, completion equivalence across arbitrary admitted metadata and submitted patches, refusal preservation, strict JSON identity, boundary-space and literal restrictions, metadata-free byte omission, and old-profile exclusion
-- checkpoint-candidate proved incident report/retry relations and evaluator soundness, exact wait suspension and restoration, public projection, quiescence blocking, resumability, runtime-context preservation, typed refusal, old-profile and cross-program fail-closed admission, strict JSON identity, and success/BPMN-Error separation
+- proved incident report/retry relations and evaluator soundness, exact wait suspension and restoration, public projection, quiescence blocking, resumability, runtime-context preservation, typed refusal, old-profile and cross-program fail-closed admission, strict JSON identity, and success/BPMN-Error separation
 - bounded internal closure for one enabled operation or the exact admitted two-task pair, rejecting every other multiple-enabled shape
 - one catalog-driven result emitter that consumes and echoes answer-free scenarios, with strict role decoders and independent cross-artifact validation
 - the separately gated checked-source experiment with bounded structural, decomposition, reachability, and enabled-frontier results
@@ -369,7 +369,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - registered configured Task admission and execution with exact checked descriptor binding, the existing payload-free Probe effect, effect-only initial exposure, occurrence-only refusal, trailing User Task continuation, and no runtime, stimulus, state, or observation widening
 - exact Process-start installation and User Task completion merge over canonical string/null bindings, plus one registered-profile Boolean completion guarded at deployment and every live command
 - registered E2 metadata admission and independent preservation through checked User Task, ordinary operation, committed wait, and public projection, with passive completion, exact refusal preservation, strict wire values, and old-profile exclusion
-- checkpoint-candidate literal-generation incident report and exact retry transitions, private and public association validation, incident-aware quiescence and resumability, and pre-dispatch refusal of malformed or cross-program injected incident states
+- registered literal-generation incident report and exact retry transitions, private and public association validation, incident-aware quiescence and resumability, and pre-dispatch refusal of malformed or cross-program injected incident states
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
 - executable enabled-count and stable-state-resumability checks, with malformed-topology and stranded-state witnesses
 
@@ -391,6 +391,8 @@ The graduated E2 specification additionally carries one exact optional passive U
 - reconstruction deliberately reuses the Java projector's ordering and raw-binding translation, so it checks raw-to-canonical consistency rather than independently deriving projection semantics
 - phase-zero public-service probes for start and completion data, Service Task binding and retry, direct-Message Receive Task, Sub-Process Error propagation, and both product-neutral mapped Service Task host relations
 - public-service E2 raw evidence retains one candidate-group identity link and one typed Form Service field independently of completion
+- a separate configured successor engine bundle projects one exact retries-zero public job plus its self-rooted `failedJob` incident partner to one literal-generation-1 semantic incident, partitions that job out of `openEffects`, and resets the same public job for one retry before successful completion
+- incident-specific raw diagnostics, exact profile/schedule alignment, strict job/incident association validation, retained evidence, and mutations for missing, duplicate, mismatched, disabled, and old-profile facts
 - meaningful raw-observation, projection, binding, deadline, sibling, mapping, and variable mutations
 - release-grouped evidence replacement, isolated engine configurations, zero-state checks, timings, and full cleanup
 
@@ -406,7 +408,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - reused CIB PVM algorithms/types as project semantics
 - broad CIB corpus adoption
 - general compatibility claim
-- canonical CIB incident projection, configured successor engine bundle, failed-job report/reset execution, incident raw evidence, or successor profile registration; the Java wire recognizes the new strict carriers only so every existing result remains decodable
+- a second canonical semantic incident, general Management Service retry policy, exception/cause projection, or incident cancellation
 - Product 2 assignment, inbox, authorization, claiming, rendering, validation, or form submission behavior
 
 ### Temporal adapter
@@ -430,6 +432,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - configured Task hosting through the existing Probe Activity and User Task Update path, including Worker replacement during the active Activity attempt, idempotent result reconciliation, exact terminal state, history inspection and replay, plus a test-owned effect bypass that exposes the User Task early
 - registered Boolean completion through the existing Update path, with Worker replacement, old-profile refusal then valid completion, tagged projections, history/replay, and stringification/outside-core mutations
 - registered User Task assignment/form metadata through the existing Query and Update path, with Worker replacement, exact passive projection, Boolean completion, metadata-free terminal state, history/replay, old-profile control, a Query-omission mutation, and a same-task source field-type variation bound in the Workflow-start program and Query
+- registered Service Task incident hosting with an unchanged bare semantic Activity result union, exact successor-only one-attempt policy, host-only `technicalFailure`, Workflow-derived report command, committed incident Query, content-bound retained retry Update, exact effect restoration, Worker replacement, terminal result recovery, two-command race, typed post-retry host failure, history assertions, and replay
 
 #### Explicitly absent
 
@@ -442,7 +445,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - Message ingress broker/router, definition-version fanout, or multi-target publication receipt
 - committed Event History fixtures
 - any new Temporal primitive for User Task metadata
-- the incident technical-failure Activity-result arm, per-profile Activity retry policy, report command, retry Update, committed incident Query evidence, or live replay; current protocol and testkit changes are exhaustive strict-carrier updates only
+- a second semantic incident, arbitrary retry count or backoff, exception/cause projection, incident cancellation, or Product 2 incident ingress
 - patch branches
 - legacy representation fallback
 - production history baseline
@@ -475,6 +478,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - one exact configured Task schedule across Lean, the core, and Temporal with CIB absent, plus binding-drift and premature-User-Task-exposure mutation discriminators
 - one exact Boolean User Task completion schedule across CIB, Lean, the core, and Temporal, plus Boolean-to-string mutation and live outside-core/stringification discriminators
 - one exact User Task assignment/form metadata schedule across CIB, Lean, the core, and Temporal, plus candidate, field-key, field-type, source-derived-projection, live source field-type, and live Query-omission discriminators
+- one exact Service Task incident schedule across CIB, Lean, the core, and Temporal, plus raw job/incident association, nested effect identity, checked/IL profile-only equivalence, technical-result routing, same-occurrence restoration, target substitution, post-retry host failure, and distinct-command race discriminators
 - isolated target execution, complete fetched-history replay, cleanup, timings, and feedback budgets
 
 #### Explicitly absent

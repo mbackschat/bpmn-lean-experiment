@@ -2,6 +2,10 @@
  * Exact scenario registries for retained CIB evidence and normative-only
  * profile validation.
  */
+import {
+  serviceTaskIncidentArtifactCases,
+} from "./contract-incident-artifact-case.ts";
+
 export const artifactCases = Object.freeze([
   Object.freeze({
     scenarioRelativePath:
@@ -57,6 +61,7 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/service-task-effect/cibseven-evidence.json",
   }),
+  ...serviceTaskIncidentArtifactCases,
   Object.freeze({
     scenarioRelativePath:
       "scenarios/mapped-success-service-task/scenario.json",

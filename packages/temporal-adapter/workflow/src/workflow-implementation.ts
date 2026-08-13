@@ -2,28 +2,24 @@ import {
   CanonicalObservationKind,
   CommandOutcome,
   ControlStateKind,
-  EffectExecutionResultKind,
   ProcessStatus,
   ScenarioStepKind,
   StimulusKind,
   advanceScenario,
   deployProcess,
   initialState,
-  isWellFormedStimulus,
-  isWellFormedEffectExecutionResult,
   projectEffectTransportMaterial,
   projectOpenEffects,
   projectOpenTimers,
   projectOpenUserTasks,
-  sameStimulus,
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
 import type {
   CanonicalObservation,
-  CompleteEffectStimulus,
   CompleteUserTaskInstanceStimulus,
   DeliverMessageStimulus,
   OpenUserTask,
+  RetryIncidentStimulus,
   RuntimeState,
   SemanticProcessProgram,
   ProcessStartStimulus,
@@ -61,7 +57,7 @@ import type {
   UserTaskDetail,
 } from "@bpmn-lean/temporal-protocol";
 import type {
-  EffectExecutionResult,
+  EffectActivityResult,
   EffectRequest,
 } from "@bpmn-lean/temporal-protocol";
 import {
@@ -70,10 +66,7 @@ import {
   findMessageDeliveryResolution,
   recordMessageDeliveryOutcome,
 } from "./message-delivery-ledger.js";
-import {
-  completeEffectStimulus,
-  effectTransportKey,
-} from "@bpmn-lean/temporal-protocol";
+import { effectTransportKey } from "@bpmn-lean/temporal-protocol";
 import {
   acceptedStimulus,
   requireSameCommandStimulus,
@@ -101,6 +94,17 @@ import {
 import {
   projectUserTaskDetail,
 } from "@bpmn-lean/temporal-protocol";
+import {
+  EffectHostFailureKind,
+  effectActivityResultCommand,
+  failRejectedHostEffectResult,
+  throwEffectHostFailure,
+} from "./effect-execution-host.js";
+import { effectActivityPolicyForProfile } from "./effect-activity-policy.js";
+import {
+  bpmnRetryEffectIncidentUpdate,
+  validateRetryEffectIncidentUpdate,
+} from "./incident-update-handler.js";
 
 export const bpmnTraceQuery =
   defineQuery<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName);
@@ -135,7 +139,7 @@ export async function runBpmnProcessWithHostEffects(
   waitForTimer: (durationMs: number) => Promise<void>,
   executeEffect: (
     request: EffectRequest,
-  ) => Promise<EffectExecutionResult>,
+  ) => Promise<EffectActivityResult>,
   eventRaceActivationDrain: ActivationDrain = ActivationDrain.Required,
 ): Promise<CompletedProcessReceipt> {
   const deployment = deployProcess(start, semanticProcess);
@@ -152,6 +156,9 @@ export async function runBpmnProcessWithHostEffects(
   const commandResults: CommandResultLedgerEntry[] = [];
   const messageDeliveryResolutions: MessageDeliveryResolution[] = [];
   let state: RuntimeState = initialState;
+  const effectActivityPolicy = effectActivityPolicyForProfile(
+    semanticProcess.identity.semanticProfile,
+  );
   const eventRaceScheduler = createEventRaceReadinessScheduler(
     waitForTimer,
     eventRaceActivationDrain,
@@ -257,6 +264,27 @@ export async function runBpmnProcessWithHostEffects(
         validateCompleteUserTaskUpdate(acceptedStimuli, stimulus),
     },
   );
+  setHandler(
+    bpmnRetryEffectIncidentUpdate,
+    async (stimulus: RetryIncidentStimulus) => {
+      enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
+      await condition(
+        () => commandOutcome(commandResults, stimulus.commandId) !== undefined,
+      );
+      const outcome = commandOutcome(commandResults, stimulus.commandId);
+      if (outcome === undefined) {
+        throw ApplicationFailure.nonRetryable(
+          `Semantic loop ended without an outcome for ${stimulus.commandId}`,
+          "BpmnCommandOutcomeMissing",
+        );
+      }
+      return outcome;
+    },
+    {
+      validator: (stimulus) =>
+        validateRetryEffectIncidentUpdate(acceptedStimuli, stimulus),
+    },
+  );
 
   while (true) {
     if (
@@ -358,7 +386,7 @@ export async function runBpmnProcessWithHostEffects(
           idempotencyKey: effectTransportKey(material),
           arguments: material.arguments,
         };
-        let result: EffectExecutionResult;
+        let result: EffectActivityResult;
         try {
           result = await executeEffect(request);
         } catch (error: unknown) {
@@ -377,17 +405,25 @@ export async function runBpmnProcessWithHostEffects(
             error,
           );
         }
-        if (!isWellFormedEffectExecutionResult(result)) {
-          throw ApplicationFailure.nonRetryable(
-            "Effect Activity returned an invalid result",
-            "BpmnEffectExecutionResultInvalid",
-          );
-        }
-        enqueueStimulus(
-          acceptedStimuli,
-          pendingStimuli,
-          completeEffectStimulus(effect.id, result),
+        const command = effectActivityResultCommand(
+          effectActivityPolicy,
+          state,
+          effect,
+          result,
         );
+        switch (command.kind) {
+          case "command":
+            enqueueStimulus(
+              acceptedStimuli,
+              pendingStimuli,
+              command.stimulus,
+            );
+            break;
+          case "failure":
+            throwEffectHostFailure(command.failure);
+          default:
+            assertNever(command);
+        }
       }
     }
     while (pendingStimuli.length > 0) {
@@ -458,35 +494,6 @@ export async function runBpmnProcessWithHostEffects(
       messageDeliveryResolutions,
     ),
   };
-}
-
-function failRejectedHostEffectResult(
-  state: RuntimeState,
-  stimulus: CompleteEffectStimulus,
-): never {
-  const wait = state.effectWaits.find(
-    ({ id }) =>
-      id.processInstanceId === stimulus.effectId.processInstanceId &&
-      id.elementId === stimulus.effectId.elementId &&
-      id.activation === stimulus.effectId.activation,
-  );
-  if (
-    stimulus.result.kind === EffectExecutionResultKind.BpmnError &&
-    wait !== undefined &&
-    (
-      wait.bpmnErrorRoute === null ||
-      wait.bpmnErrorRoute.code !== stimulus.result.code
-    )
-  ) {
-    throw ApplicationFailure.nonRetryable(
-      "Effect Activity returned a BPMN Error with no admitted matching route",
-      "BPMN_UNHANDLED_BPMN_ERROR",
-    );
-  }
-  throw ApplicationFailure.nonRetryable(
-    "Effect Activity returned a result refused by the committed semantic intent",
-    "BpmnEffectExecutionResultRejected",
-  );
 }
 
 function enqueueStimulus(

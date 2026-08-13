@@ -77,6 +77,9 @@ import {
 import {
   userTaskMetadataPipelineCases,
 } from "./user-task-metadata-pipeline-cases.ts";
+import {
+  serviceTaskIncidentPipelineCases,
+} from "./service-task-incident-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -605,6 +608,7 @@ export const pipelineCases = Object.freeze([
   ...timerStartPipelineCases,
   ...terminateEndPipelineCases,
   effectCase(),
+  ...serviceTaskIncidentPipelineCases,
   mappedSuccessCase(),
   boundaryErrorCase(),
   ...configuredTaskPipelineCases,

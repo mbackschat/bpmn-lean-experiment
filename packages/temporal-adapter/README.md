@@ -92,10 +92,12 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - one accepted Update result remains retrievable after Workflow closure, while a distinct late command returns `processClosed` and Workflow-ID reuse is refused;
 - an unknown address returns `processUnknown`;
 - same-Update-ID payload aliasing is visible, while a conflicting command ID under a distinct Update ID fails explicitly without wedging the Workflow;
+- the registered incident successor converts one typed one-attempt technical Activity result into a committed literal-generation-1 incident, survives Worker replacement, retries the same effect through a retained content-bound Update, and replays;
+- a later technical result produces typed host failure without another semantic incident, while two distinct retry Updates produce exactly one committed and one rejected outcome;
 - semantic results do not contain the Temporal Workflow ID;
 - Query-derived command outcomes reconcile with durable Update results and terminal state reconciles with the completed receipt.
 
-The adapter does not implement retained results beyond Temporal retention, a production canonical-observation API, evaluator Activities for Simple Boolean expressions, timer races or forms beyond the exact Intermediate Catch Timer capsule, Message payloads or key-based/global routing, modeled Message throw, Activities beyond the admitted Service Task success/data/error slices, Error propagation beyond one direct parent, Search Attributes, Continue-As-New, general Worker Versioning, general fault injection, a global task inbox, production authorization/forms, or BPMN beyond the admitted execution surfaces.
+The adapter does not implement retained results beyond Temporal retention, a production canonical-observation API, evaluator Activities for Simple Boolean expressions, timer races or forms beyond the exact Intermediate Catch Timer capsule, Message payloads or key-based/global routing, modeled Message throw, effect incidents beyond the one literal-generation-1 retry profile, a second semantic incident, arbitrary retry policy, Error propagation beyond one direct parent, Search Attributes, Continue-As-New, general Worker Versioning, general fault injection, a global task inbox, production authorization/forms, or BPMN beyond the admitted execution surfaces.
 
 Run the focused gate:
 

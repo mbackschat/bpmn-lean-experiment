@@ -25,6 +25,15 @@ final class CibSevenActiveWaitProjector {
       List<ActiveWait> messageWaits,
       List<OpenTimer> openTimers,
       List<OpenEffect> openEffects) {
+    return project(userTaskWaits, messageWaits, openTimers, openEffects, List.of());
+  }
+
+  List<ActiveWait> project(
+      List<ActiveWait> userTaskWaits,
+      List<ActiveWait> messageWaits,
+      List<OpenTimer> openTimers,
+      List<OpenEffect> openEffects,
+      List<ActiveWait> incidentWaits) {
     var projected = new ArrayList<>(userTaskWaits);
     projected.addAll(messageWaits);
     var timerElements = new HashSet<String>();
@@ -38,6 +47,7 @@ final class CibSevenActiveWaitProjector {
       var elementId = effect.id().elementId();
       projected.add(new ActiveWait(elementId, EFFECT, 1));
     }
+    projected.addAll(incidentWaits);
     projected.sort(
         Comparator.comparingInt((ActiveWait wait) -> kindRank(wait.kind()))
             .thenComparing(ActiveWait::elementId, WireStrings::compare));

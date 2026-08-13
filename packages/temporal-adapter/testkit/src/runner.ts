@@ -20,12 +20,14 @@ import {
   bpmnOpenUserTasksQueryName,
   bpmnTraceQueryName,
   requireCompletedProcessReceipt,
+  TemporalCompletionDelivery,
   TemporalExecutionSchedule,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
   CompletedProcessReceipt,
   TemporalHistory,
+  TemporalIncidentRetryRaceExecution,
   TemporalReplayItem,
   TemporalScenarioBatchItem,
   TemporalScenarioExecution,
@@ -43,6 +45,11 @@ import {
 import {
   runEffectScenario,
 } from "./effect-scenario-execution.js";
+import {
+  runIncidentRetryRace,
+  runIncidentScenario,
+} from "./incident-scenario-execution.js";
+import { EffectExecutionSchedule } from "./effect-probe.js";
 import {
   requireDurableTimerHistory,
   reconcileHarnessTraceEvidence,
@@ -185,6 +192,23 @@ export class TemporalScenarioRunner {
         options,
       );
     }
+    if (
+      effectExecution.schedule ===
+        EffectExecutionSchedule.IncidentReportRetrySuccess ||
+      effectExecution.schedule ===
+        EffectExecutionSchedule.IncidentReportRetryFailure
+    ) {
+      return runIncidentScenario(
+        this.environment,
+        this.effectProbeRegistry,
+        effectExecution,
+        scenario,
+        semanticProcess,
+        options,
+        (handle, minimumLength) => this.waitForTrace(handle, minimumLength),
+        () => this.workerHost.restartAfterCommittedIncident(),
+      );
+    }
     return runEffectScenario(
       this.effectProbeRegistry,
       effectExecution,
@@ -198,6 +222,37 @@ export class TemporalScenarioRunner {
           registeredOptions,
           store,
         ),
+    );
+  }
+
+  async runIncidentRetryRace(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalIncidentRetryRaceExecution> {
+    this.assertAvailable();
+    const options: TemporalScenarioExecutionOptions = {
+      workflowId,
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.Normal,
+      effectExecutionSchedule: EffectExecutionSchedule.IncidentReportRetrySuccess,
+    };
+    const effectExecution = requireOptionalEffectExecution(
+      scenario,
+      semanticProcess,
+      options,
+    );
+    if (effectExecution === undefined) {
+      throw new TypeError("Incident retry race requires one effect execution");
+    }
+    return runIncidentRetryRace(
+      this.environment,
+      this.effectProbeRegistry,
+      effectExecution,
+      scenario,
+      semanticProcess,
+      workflowId,
+      (handle, minimumLength) => this.waitForTrace(handle, minimumLength),
     );
   }
 

@@ -22,9 +22,12 @@ import {
   compareCanonicalStrings,
 } from "./contract-artifact-consistency.ts";
 import {
-  projectEffectJobs,
   statesWithEmptyEffectSnapshots,
 } from "./contract-effect-projection.ts";
+import {
+  projectCibIncidentState,
+  serviceTaskIncidentProfileId,
+} from "./contract-cib-incident-projection.ts";
 import {
   projectCibUserTaskMetadata,
 } from "./contract-cib-user-task-metadata-projection.ts";
@@ -57,12 +60,16 @@ export function verifyProducerProjection(
   const effectSnapshots =
     evidence.producerObservations.effectJobs ??
     statesWithEmptyEffectSnapshots(evidence.result.trace);
+  const incidentSnapshots = evidence.producerObservations.incidentJobs;
   if (
     states.length !== stateSnapshots.length ||
     states.length !== taskSnapshots.length ||
     states.length !== messageSnapshots.length ||
     states.length !== timerSnapshots.length ||
-    states.length !== effectSnapshots.length
+    states.length !== effectSnapshots.length ||
+    (evidence.profile.id === serviceTaskIncidentProfileId
+      ? incidentSnapshots?.length !== states.length
+      : incidentSnapshots !== undefined)
   ) {
     throw new Error(
       "producer observation count does not match canonical state count",
@@ -75,6 +82,7 @@ export function verifyProducerProjection(
     const timerSnapshot = timerSnapshots[index];
     const messageSnapshot = messageSnapshots[index];
     const effectSnapshot = effectSnapshots[index];
+    const incidentSnapshot = incidentSnapshots?.[index];
     if (
       stateSnapshot === undefined ||
       taskSnapshot === undefined ||
@@ -115,9 +123,11 @@ export function verifyProducerProjection(
       expectedInstanceId,
       messageSnapshot.subscriptions,
     );
-    const effectProjection = projectEffectJobs(
+    const effectProjection = projectCibIncidentState(
+      evidence.profile.id,
       expectedInstanceId,
-      effectSnapshot.jobs,
+      effectSnapshot,
+      incidentSnapshot,
     );
     const activeWaits = [
       ...taskProjection.activeWaits,
@@ -151,11 +161,12 @@ export function verifyProducerProjection(
         messageProjection.openMessageSubscriptions,
       openTimers: timerProjection.openTimers,
       openEffects: effectProjection.openEffects,
-      openIncidents: [],
+      openIncidents: effectProjection.openIncidents,
       variables: stateProjection.variables,
       enabledInteractions: [
         ...taskProjection.enabledInteractions,
         ...messageProjection.enabledInteractions,
+        ...effectProjection.enabledInteractions,
       ],
       logicalTimeMs: stateProjection.logicalTimeMs,
     };
@@ -293,6 +304,22 @@ function verifyEffectExecutions(evidence: CibSevenEvidence): void {
     return;
   }
   const execution = effectExecutions[0];
+  if (evidence.profile.id === serviceTaskIncidentProfileId) {
+    if (
+      effectExecutions.length !== 1 ||
+      execution === undefined ||
+      execution.schedule !== "incidentReportRetrySuccess" ||
+      execution.invocations !== 4 ||
+      execution.mutations !== 1 ||
+      execution.initialRetries !== 1 ||
+      execution.retriesAfterFirstFailure !== null
+    ) {
+      throw new Error(
+        "retained CIB incident evidence must bind report, retry, and success",
+      );
+    }
+    return;
+  }
   if (
     effectExecutions.length !== 1 ||
     execution === undefined ||

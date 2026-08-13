@@ -10,6 +10,9 @@ import {
   verifyDefinitionReferences,
 } from "./contract-artifact-consistency.ts";
 import { verifyConfiguredTaskProfileBinding } from "./configured-task-profile-consistency.ts";
+import {
+  verifyServiceTaskIncidentArtifactBinding,
+} from "./service-task-incident-profile-consistency.ts";
 export { compareCanonicalStrings } from "./contract-artifact-consistency.ts";
 import {
   artifactCases,
@@ -41,6 +44,8 @@ export type {
   CibSevenEvidence,
   EffectJob,
   EffectJobSnapshot,
+  IncidentJob,
+  IncidentJobSnapshot,
   MappingExecutionSnapshot,
   MessageSubscriptionEvidence,
   ProcessVariableSnapshot,
@@ -322,6 +327,7 @@ function verifyProfile(
 ): void {
   validateWith(validator, profileSchemaId, "profile", profile);
   verifyConfiguredTaskProfileBinding(profile);
+  verifyServiceTaskIncidentArtifactBinding(profile);
   for (const relationshipId of profile.bpmn.relationships) {
     if (!registeredRelationshipIds.has(relationshipId)) {
       throw new Error(
@@ -353,6 +359,7 @@ function verifyScenarioSourceBinding(
   if (profile.id !== scenario.profile) {
     throw new Error("profile identity does not match scenario");
   }
+  verifyServiceTaskIncidentArtifactBinding(profile, scenario);
   if (
     !scenario.observations.every((observation) =>
       profile.observations.includes(observation),

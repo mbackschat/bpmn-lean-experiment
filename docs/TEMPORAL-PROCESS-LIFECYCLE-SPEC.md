@@ -111,7 +111,7 @@ The semantic Process-instance ID, Temporal Workflow ID, Run ID, semantic command
 
 The production adapter encodes the semantic Process-instance address as the typed tuple `["semanticProcessInstance", processInstanceId]`, hashes its UTF-8 JSON form with SHA-256, and prefixes the digest with `bpmn-process-sha256:`. It starts that Workflow ID with `workflowIdReusePolicy: "REJECT_DUPLICATE"`. The conformance harness may supply isolated Workflow IDs for independent disposable executions, but production start and command ingress derive the same ID from the semantic address. The encoding is host policy and never appears in canonical semantic state.
 
-The Temporal Update ID must be a deterministic content-bound key over:
+The Temporal Update ID for User Task completion and incident retry must be a deterministic content-bound key over:
 
 1. the semantic command ID;
 2. the stimulus kind;
@@ -120,6 +120,8 @@ The Temporal Update ID must be a deterministic content-bound key over:
 It must not be the command ID alone. The lifecycle experiment proves that the pinned server returns the first Update result when the same Update ID is reused with a different payload, without invoking the Workflow handler. A command-ID-only Update key would therefore bypass the semantic core’s conflicting-payload check.
 
 The adapter defines one canonical typed stimulus encoding and a SHA-256 digest. An exact retry produces the same Update ID and recovers the same semantic result. Reusing a command ID with a different stimulus produces a different Update ID, so it cannot silently alias the first result.
+
+The registered Service Task incident profile uses Update name `bpmn-retry-effect-incident` with one complete `retryIncident` stimulus. The same retained-Update-first resolver owns both User Task completion and incident retry, so response loss, Workflow closure, and exact retries have one lifecycle classification rather than two similar implementations.
 
 ## Workflow lifetime contract
 
@@ -158,6 +160,16 @@ For one well-formed command and known hosting Process address:
 Looking up the Update result before classifying closure closes the race where Temporal accepted the command but the caller lost its response as the Workflow completed.
 
 The hosting/root Process-instance ID selects the Workflow and validates its retained receipt. The completion stimulus independently retains the semantic task occurrence ID, which may belong to a distinct called Process hosted inside that Workflow. Client admission validates both shapes but does not require those identities to match; the semantic core accepts only the exact live task occurrence and rejects an unrelated occurrence without routing to another Workflow.
+
+## Service Task incident hosting
+
+The successor incident profile reuses the existing effect Activity type and every existing semantic success and `bpmnError` result byte. It selects `maximumAttempts: 1` and additionally accepts the payload-free host-only `{ kind: "technicalFailure" }` result. Every old profile retains `maximumAttempts: 2` and rejects that host-only arm before it can reach the semantic core.
+
+For the first technical result, the Workflow derives `reportEffectFailure` from the one committed open effect and its private never-retried wait. The semantic command atomically suspends that exact wait in one literal-generation-1 incident. Query then exposes `openIncidents` and one `retryIncident` interaction while exposing no corresponding open effect. No Temporal attempt, Activity ID, exception, or Event History fact becomes incident identity.
+
+The dedicated Update submits the exact published incident identity. A committed retry restores the same effect occurrence with its private one-retry marker set, and the Workflow schedules a new one-attempt Activity. Worker replacement between incident publication and retry preserves the Query, retained Update result, restored effect, and replay. An exact retry after Workflow completion recovers its original semantic outcome from Temporal's retained Update result.
+
+If the restored effect returns `technicalFailure`, the Workflow raises typed host failure `BPMN_EFFECT_INCIDENT_RETRY_EXHAUSTED`. It submits no second report command, creates no generation-two semantic incident, and replay reconstructs the last committed state with the restored effect wait. Two different generation-1 retry command IDs may both be durably accepted, but deterministic Workflow queue order permits one commit and makes the other a semantic rejection.
 
 ## Message Signal ingress resolution
 
@@ -221,6 +233,12 @@ The focused Temporal gate must demonstrate:
 - the produced histories replay and every Worker/server resource is cleaned up;
 - every non-Message Workflow path retains zero Signal Events, while each approved Intermediate Catch Message and Receive Task path contains its own exact ordered delivery Signal payloads and a seeded payload or history substitution fails the history check;
 - a seeded command-ID-only Update-key mutation makes the payload-conflict witness fail.
+- the successor profile alone selects one Activity attempt and admits the host-only technical-failure result, while every old profile keeps two attempts and refuses that arm;
+- the first technical result submits `reportEffectFailure`, exposes one literal-generation-1 incident and no open effect, and survives Worker replacement before retry;
+- incident retry uses a content-bound retained Update, restores the exact occurrence, and can recover the same committed outcome after terminal Workflow closure;
+- a second technical result after retry creates no second semantic incident, leaves the last committed restored effect observable, fails with `BPMN_EFFECT_INCIDENT_RETRY_EXHAUSTED`, and replays;
+- two distinct retry Updates race to exactly one committed and one rejected semantic outcome without duplicating the Activity;
+- incident Activity history contains two separate one-attempt executions, durable history contains the accepted retry Update, and no host identifier appears in canonical state.
 
 The complete applicable pipeline must remain green. No production legacy lifecycle, finite scenario-stimulus-count lifetime, or compatibility branch is retained during pre-release.
 

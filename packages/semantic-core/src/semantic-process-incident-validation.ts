@@ -6,7 +6,7 @@ import {
 } from "./semantic-process-admission.js";
 import { profileAllowsProgramShape } from "./semantic-process-profile.js";
 import {
-  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import {
   ControlStateKind,
@@ -24,7 +24,7 @@ export function programAllowsEffectIncidents(
 ): boolean {
   return isWellFormedSemanticProcessProgram(program) &&
     program.identity.semanticProfile ===
-      SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID &&
+      SemanticProfileId.ServiceTaskIncident &&
     profileAllowsProgramShape(
       program.identity.semanticProfile,
       program.operations,

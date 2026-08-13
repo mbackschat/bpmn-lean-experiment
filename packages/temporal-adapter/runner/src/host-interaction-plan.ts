@@ -11,16 +11,16 @@ import {
   StimulusKind,
   compareCanonicalStrings,
   isMessageChannel,
-  isWellFormedEffectExecutionResult,
   isWellFormedStimulus,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
-  EffectExecutionResult,
   MessageChannel,
   UserTaskCompletionBinding,
 } from "@bpmn-lean/semantic-core";
+import type { EffectActivityResult } from "@bpmn-lean/temporal-protocol";
+import { isWellFormedEffectActivityResult } from "@bpmn-lean/temporal-protocol";
 
 /**
  * One declared answer to a published interaction.
@@ -55,7 +55,7 @@ export type HostInteractionResponse = DeepReadonly<
 export type HostEffectHandler = DeepReadonly<{
   protocol: string;
   operation: string;
-  result: EffectExecutionResult;
+  result: EffectActivityResult;
 }>;
 
 export function validateHostInteractionPlan(
@@ -85,9 +85,9 @@ export function validateHostEffectHandlers(
     );
     requireNonemptyWireString(record.protocol, "Effect handler protocol");
     requireNonemptyWireString(record.operation, "Effect handler operation");
-    if (!isWellFormedEffectExecutionResult(record.result)) {
+    if (!isWellFormedEffectActivityResult(record.result)) {
       throw new TypeError(
-        "Effect handler result must be a canonical effect execution result",
+        "Effect handler result must be one canonical effect execution result or technical failure",
       );
     }
     const descriptor = JSON.stringify([record.protocol, record.operation]);

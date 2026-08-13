@@ -10,6 +10,7 @@ import type {
   VariableBinding,
 } from "@bpmn-lean/semantic-core";
 import type {
+  EffectActivityResult,
   EffectActivities,
   EffectRequest,
 } from "@bpmn-lean/temporal-protocol";
@@ -17,6 +18,8 @@ import type {
 export enum EffectExecutionSchedule {
   PlainSuccess = "plainSuccess",
   FailAfterMutationOnce = "failAfterMutationOnce",
+  IncidentReportRetrySuccess = "incidentReportRetrySuccess",
+  IncidentReportRetryFailure = "incidentReportRetryFailure",
 }
 
 export type EffectProbeEvidence = DeepReadonly<{
@@ -49,7 +52,7 @@ export class EffectProbeStore {
   async execute(
     request: EffectRequest,
     schedule: EffectExecutionSchedule,
-  ): Promise<EffectExecutionResult> {
+  ): Promise<EffectActivityResult> {
     requireEffectRequest(request);
     const priorInvocations =
       this.invocationCountByKey.get(request.idempotencyKey) ?? 0;
@@ -73,6 +76,12 @@ export class EffectProbeStore {
           );
         }
         return effectResultFor(request);
+      case EffectExecutionSchedule.IncidentReportRetrySuccess:
+        return priorInvocations === 0
+          ? { kind: "technicalFailure" }
+          : effectResultFor(request);
+      case EffectExecutionSchedule.IncidentReportRetryFailure:
+        return { kind: "technicalFailure" };
       default:
         return assertNever(schedule);
     }
@@ -92,7 +101,7 @@ export class EffectProbeStore {
 
 type EffectProbeRegistration = DeepReadonly<{
   request: EffectRequest;
-  execute(request: EffectRequest): Promise<EffectExecutionResult>;
+  execute(request: EffectRequest): Promise<EffectActivityResult>;
 }>;
 
 /**

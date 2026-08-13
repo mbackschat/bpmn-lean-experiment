@@ -67,6 +67,7 @@ export type ObservationValueDisagreement = Extract<
 export const CibEffectExecutionSchedule = {
   None: "none",
   FailAfterMutationOnce: "failAfterMutationOnce",
+  IncidentReportRetrySuccess: "incidentReportRetrySuccess",
 } as const;
 
 export type CibEffectExecutionSchedule =

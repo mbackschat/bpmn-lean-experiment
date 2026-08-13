@@ -199,6 +199,7 @@ test(
         "terminate-end-event-sibling-first",
         "terminate-end-event-stale-sibling-after-termination",
         "service-task-effect-success",
+        "service-task-effect-incident-retry-success",
         "mapped-success-service-task",
         "mapped-boundary-error-service-task-caught",
         "configured-task",
@@ -218,13 +219,6 @@ test(
         "pipeline cases",
       );
       const caseEvidence = requiredAt(evidence, index, "case evidence");
-      const expectedWaitState = requireStateObservation(
-        requiredAt(
-          caseEvidence.expectedWaitTrace,
-          2,
-          "expected wait trace",
-        ),
-      );
       assert.equal(caseReport.scenario.id, pipelineCase.id);
       assert.equal(caseEvidence.scenarioId, pipelineCase.id);
       assert.equal(
@@ -242,6 +236,16 @@ test(
       const isSynchronousCibHost =
         isSynchronousMappedSuccess ||
         isSynchronousBoundaryError;
+      const isServiceTaskIncident =
+        caseReport.scenario.id ===
+          "service-task-effect-incident-retry-success";
+      const expectedWaitState = requireStateObservation(
+        requiredAt(
+          caseEvidence.expectedWaitTrace,
+          isServiceTaskIncident ? 4 : 2,
+          "expected wait trace",
+        ),
+      );
       const hasCib = pipelineCase.cib !== null;
       assert.equal(
         caseReport.comparison.targets.includes(
@@ -408,7 +412,7 @@ test(
         }
         assert.equal(
           caseEvidence.primaryEffectProbeEvidence.invocations,
-          1,
+          isServiceTaskIncident ? 2 : 1,
         );
         assert.equal(
           caseEvidence.primaryEffectProbeEvidence.mutations,
@@ -416,10 +420,12 @@ test(
         );
         assert.equal(
           caseEvidence.isolationEffectProbeEvidence.invocations,
-          pipelineCase.effectSchedules?.isolation ===
-            EffectExecutionSchedule.FailAfterMutationOnce
+          isServiceTaskIncident
             ? 2
-            : 1,
+            : pipelineCase.effectSchedules?.isolation ===
+                EffectExecutionSchedule.FailAfterMutationOnce
+              ? 2
+              : 1,
         );
         assert.equal(
           caseEvidence.isolationEffectProbeEvidence.mutations,

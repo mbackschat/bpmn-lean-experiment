@@ -54,6 +54,7 @@ type CibRunnerResult = Readonly<{
     effectJobs: ReadonlyArray<Readonly<{
       jobs: ReadonlyArray<unknown>;
     }>>;
+    incidentJobs?: ReadonlyArray<unknown>;
     effectExecutions: ReadonlyArray<unknown>;
     mappingExecutions: ReadonlyArray<unknown>;
   }>;
@@ -139,6 +140,7 @@ async function runCibBatch(
   scenarios: ReadonlyArray<Scenario>,
   temporaryDirectory: string,
   engineVersion: string,
+  effectSchedule: "plainSuccess" | "incidentReportRetrySuccess",
 ): Promise<ReadonlyArray<CibRunnerResult>> {
   const inputPath = path.join(
     temporaryDirectory,
@@ -167,6 +169,7 @@ async function runCibBatch(
     `-Dbpmn.pipeline.projectRoot=${projectRoot}`,
     `-Dbpmn.pipeline.input=${inputPath}`,
     `-Dbpmn.pipeline.output=${outputPath}`,
+    `-Dbpmn.pipeline.effectSchedule=${effectSchedule}`,
     "test",
   ];
   if (process.env.BPMN_MAVEN_REPO_LOCAL !== undefined) {
@@ -214,15 +217,35 @@ async function replaceEvidence() {
   try {
     const sourcesByVersion = Map.groupBy(
       sources,
-      ({ profile }) => profile.value.oracle.version,
+      ({ profile }) => JSON.stringify([
+        profile.value.oracle.version,
+        profile.value.id ===
+            "cibseven-2.2.0-service-task-incident-draft"
+          ? "incidentReportRetrySuccess"
+          : "plainSuccess",
+      ]),
     );
     const results: CibRunnerResult[] = [];
-    for (const [engineVersion, versionSources] of sourcesByVersion) {
+    for (const [group, versionSources] of sourcesByVersion) {
+      const parsed: unknown = JSON.parse(group);
+      if (
+        !Array.isArray(parsed) ||
+        typeof parsed[0] !== "string" ||
+        (
+          parsed[1] !== "plainSuccess" &&
+          parsed[1] !== "incidentReportRetrySuccess"
+        )
+      ) {
+        throw new TypeError("invalid CIB evidence replacement group");
+      }
+      const engineVersion = parsed[0];
+      const effectSchedule = parsed[1];
       results.push(
         ...await runCibBatch(
           versionSources.map(({ scenario }) => scenario.value),
           temporaryDirectory,
           engineVersion,
+          effectSchedule,
         ),
       );
     }
@@ -294,6 +317,9 @@ async function replaceEvidence() {
                     effectExecutions:
                       result.diagnostics.effectExecutions,
                   }
+                : {}),
+              ...(result.diagnostics.incidentJobs !== undefined
+                ? { incidentJobs: result.diagnostics.incidentJobs }
                 : {}),
               ...(result.diagnostics.mappingExecutions.length > 0
                 ? {

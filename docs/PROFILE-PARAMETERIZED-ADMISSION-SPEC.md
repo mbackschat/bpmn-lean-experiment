@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented current pre-release contract.** The registered capability catalog remains the product authority. The configured Task profile exercises the same structural-plus-profile admission boundary through an exact project-extension binding. The registered Boolean Process-data profile reuses the existing User Task shape and acyclic graph policy while its separate value-domain owner restricts Boolean to completion. The registered E2 profile composes that same Boolean completion domain with an exact optional User Task metadata shape and retained public-service compatibility evidence. The approved M4 checkpoint adds one cataloged but not artifact-registered Service Task incident successor with the exact predecessor operation multiset; CIB and Temporal claims remain absent until closure.
+**Implemented current pre-release contract.** The registered capability catalog remains the product authority. The configured Task profile exercises the same structural-plus-profile admission boundary through an exact project-extension binding. The registered Boolean Process-data profile reuses the existing User Task shape and acyclic graph policy while its separate value-domain owner restricts Boolean to completion. The registered E2 profile composes that same Boolean completion domain with an exact optional User Task metadata shape and retained public-service compatibility evidence. The registered M4 Service Task incident successor reuses the predecessor's exact operation multiset while selecting the separately reviewed incident report-and-retry transition family.
 
 ## Scope
 
@@ -32,6 +32,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN User Task with preserved notation (`bpmn-2.0.2-user-task-preserved-notation-draft`) | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Intermediate Catch Timer (`cibseven-2.2.0-intermediate-catch-timer-draft`) | 1 | one `initiate`, one `awaitTimer`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Service Task effect (`cibseven-2.2.0-service-task-effect-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
+| CIB Seven Service Task incident (`cibseven-2.2.0-service-task-incident-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven mapped-success Service Task (`cibseven-2.0.0-mapped-success-service-task-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven mapped-boundary-Error Service Task (`cibseven-2.0.0-mapped-boundary-error-service-task-draft`) | 1 | one `initiate`, one `awaitEffect`, one `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | Normative parallel fork/join (`parallel-fork-join-draft`) | 1 | one `initiate`, one `duplicate`, two `awaitUserTask`, one `synchronize`, one `reachNoneEnd`, one `completeScope` |

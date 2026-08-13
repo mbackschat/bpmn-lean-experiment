@@ -1,7 +1,6 @@
 /** Exact Semantic Process operation multisets admitted by reviewed semantic profiles. */
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
-  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 
@@ -62,7 +61,7 @@ export function requiredProgramShape(
         SemanticOperationKind.CompleteScope,
       ]);
     case SemanticProfileId.ServiceTaskEffect:
-    case SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.ServiceTaskIncident:
     case SemanticProfileId.MappedSuccessServiceTask:
       return rootProgram([
         SemanticOperationKind.Initiate,

@@ -45,6 +45,9 @@ import type {
 import {
   canonicalCibResult,
 } from "./pipeline-targets.ts";
+import {
+  verifyServiceTaskIncidentCibExecution,
+} from "./service-task-incident-pipeline-comparison.ts";
 
 function mutableClone<T>(value: T): DeepMutable<T> {
   return structuredClone(value) as DeepMutable<T>;
@@ -306,6 +309,13 @@ export function compareCase(
         "CIB retry schedule omitted its raw decrement/re-execution facts",
       );
     }
+  } else if (
+    cibConfiguration?.effectExecutionSchedule ===
+      CibEffectExecutionSchedule.IncidentReportRetrySuccess
+  ) {
+    verifyServiceTaskIncidentCibExecution(
+      requiredCibResult(cibResult, scenario.id),
+    );
   } else if (cibEffectRetryResult !== null) {
     throw new Error(
       `Unexpected CIB retry execution for ${scenario.id}`,

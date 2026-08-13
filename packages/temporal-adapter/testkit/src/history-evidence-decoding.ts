@@ -7,6 +7,7 @@ import { isDeepStrictEqual } from "node:util";
 import type {
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  RetryIncidentStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
   CommandOutcome as CommandOutcomeValue,
@@ -56,7 +57,7 @@ export function durableUpdateOutcomes(
 ): ReadonlyMap<string, CommandOutcome> {
   const acceptedCommands = new Map<
     string,
-    CompleteUserTaskInstanceStimulus
+    DurableUpdateStimulus
   >();
   const outcomes = new Map<string, CommandOutcome>();
 
@@ -145,7 +146,7 @@ export function requiredNonNegativeInteger(
 
 function decodeAcceptedStimulus(
   attributes: Readonly<Record<string, unknown>>,
-): CompleteUserTaskInstanceStimulus {
+): DurableUpdateStimulus {
   const acceptedRequest = asRecord(
     attributes.acceptedRequest,
     "Accepted Workflow Update request",
@@ -170,14 +171,19 @@ function decodeAcceptedStimulus(
   );
   if (
     !isWellFormedStimulus(stimulus) ||
-    stimulus.kind !== StimulusKind.CompleteUserTaskInstance
+    stimulus.kind !== StimulusKind.CompleteUserTaskInstance &&
+    stimulus.kind !== StimulusKind.RetryIncident
   ) {
     throw new TypeError(
-      "Accepted Workflow Update payload is not a completion stimulus",
+      "Accepted Workflow Update payload is not an admitted Update stimulus",
     );
   }
   return stimulus;
 }
+
+type DurableUpdateStimulus =
+  | CompleteUserTaskInstanceStimulus
+  | RetryIncidentStimulus;
 
 function decodeCompletedOutcome(
   attributes: Readonly<Record<string, unknown>>,

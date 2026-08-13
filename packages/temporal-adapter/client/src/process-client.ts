@@ -62,6 +62,7 @@ import {
   semanticCommandResult,
 } from "@bpmn-lean/temporal-protocol";
 import { withDeadline } from "@bpmn-lean/temporal-protocol";
+import { resolveSemanticUpdate } from "./semantic-update-client.js";
 
 const operationDeadlineMs = 5_000;
 const messageResolutionPollMs = 20;
@@ -260,8 +261,11 @@ export async function submitUserTaskCompletionAtWorkflowId(
   }
   const updateId = contentBoundUpdateId(stimulus);
   const handle = client.getHandle<BpmnProcessWorkflow>(workflowId);
-  try {
-    const outcome = await withDeadline(
+  return resolveSemanticUpdate({
+    commandId: stimulus.commandId,
+    processInstanceId: hostingProcessInstanceId,
+    updateId,
+    execute: () => withDeadline(
       handle.executeUpdate<
         CommandOutcome,
         [CompleteUserTaskInstanceStimulus]
@@ -271,55 +275,18 @@ export async function submitUserTaskCompletionAtWorkflowId(
       }),
       operationDeadlineMs,
       `Workflow Update ${updateId}`,
-    );
-    return semanticCommandResult(stimulus.commandId, outcome);
-  } catch (error: unknown) {
-    if (!(error instanceof WorkflowNotFoundError)) {
-      throw error;
-    }
-  }
-
-  try {
-    const retainedOutcome = await withDeadline(
+    ),
+    retained: () => withDeadline(
       handle.getUpdateHandle<CommandOutcome>(updateId).result(),
       operationDeadlineMs,
       `retained Workflow Update ${updateId}`,
-    );
-    return semanticCommandResult(stimulus.commandId, retainedOutcome);
-  } catch (error: unknown) {
-    if (!(error instanceof WorkflowNotFoundError)) {
-      throw error;
-    }
-  }
-
-  try {
-    const receipt = requireCompletedProcessReceipt(
-      await withDeadline(
-        handle.result(),
-        operationDeadlineMs,
-        "retained completed Process receipt",
-      ),
-    );
-    if (receipt.processInstanceId !== hostingProcessInstanceId) {
-      throw new TypeError(
-        "Temporal Workflow receipt does not match the addressed Process instance",
-      );
-    }
-    return {
-      kind: ProcessCommandResultKind.ProcessClosed,
-      commandId: stimulus.commandId,
-      receipt,
-    };
-  } catch (error: unknown) {
-    if (error instanceof WorkflowNotFoundError) {
-      return {
-        kind: ProcessCommandResultKind.ProcessUnknown,
-        commandId: stimulus.commandId,
-        processInstanceId: hostingProcessInstanceId,
-      };
-    }
-    throw error;
-  }
+    ),
+    completedReceipt: () => withDeadline(
+      handle.result(),
+      operationDeadlineMs,
+      "retained completed Process receipt",
+    ),
+  });
 }
 
 export async function submitMessageDelivery(

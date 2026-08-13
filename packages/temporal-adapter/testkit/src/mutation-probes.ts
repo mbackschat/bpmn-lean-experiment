@@ -16,6 +16,9 @@ import type {
 import type { WorkflowHandle } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import {
+  runIncidentRetryFailure,
+} from "./incident-scenario-execution.js";
+import {
   runBranchBypassMutation,
   runCompletionDataBypassMutation,
   runEffectBypassMutation,
@@ -35,6 +38,7 @@ import type {
   TemporalBranchBypassMutationExecution,
   TemporalEffectBypassMutationExecution,
   TemporalEffectFailureExecution,
+  TemporalIncidentRetryFailureExecution,
   TemporalErrorPropagationBypassMutationExecution,
   TemporalScenarioBatchItem,
   TemporalScenarioExecution,
@@ -44,6 +48,11 @@ import type {
   TemporalTimerBypassMutationExecution,
   TemporalUnhandledBpmnErrorExecution,
 } from "./contracts.js";
+import {
+  EffectExecutionSchedule,
+  TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
+} from "./contracts.js";
 import type {
   EffectProbeActivityRegistry,
   EffectProbeStore,
@@ -52,6 +61,7 @@ import {
   waitForOpenUserTask,
   waitForTraceLength,
 } from "./runner-query-waits.js";
+import { requireOptionalEffectExecution } from "./runner-support.js";
 
 /**
  * The runner-owned capabilities a probe needs, and nothing more.
@@ -175,6 +185,37 @@ export class TemporalMutationProbes {
     return runEffectExhaustion(
       this.host.environment,
       this.host.effectProbeRegistry,
+      scenario,
+      semanticProcess,
+      workflowId,
+      (handle, minimumLength) => this.waitForTrace(handle, minimumLength),
+    );
+  }
+
+  async runIncidentRetryFailure(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalIncidentRetryFailureExecution> {
+    this.host.assertAvailable();
+    const options: TemporalScenarioExecutionOptions = {
+      workflowId,
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.Normal,
+      effectExecutionSchedule: EffectExecutionSchedule.IncidentReportRetryFailure,
+    };
+    const effectExecution = requireOptionalEffectExecution(
+      scenario,
+      semanticProcess,
+      options,
+    );
+    if (effectExecution === undefined) {
+      throw new TypeError("Incident failure requires one effect execution");
+    }
+    return runIncidentRetryFailure(
+      this.host.environment,
+      this.host.effectProbeRegistry,
+      effectExecution,
       scenario,
       semanticProcess,
       workflowId,

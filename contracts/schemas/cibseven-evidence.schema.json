@@ -98,6 +98,12 @@
             "$ref": "#/$defs/effectJobSnapshot"
           }
         },
+        "incidentJobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/incidentJobSnapshot"
+          }
+        },
         "effectExecutions": {
           "type": "array",
           "items": {
@@ -129,6 +135,54 @@
     }
   },
   "allOf": [
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "cibseven-2.2.0-service-task-incident-draft"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "required": [
+          "profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "producerObservations": {
+            "type": "object",
+            "properties": {
+              "incidentJobs": {}
+            },
+            "required": [
+              "incidentJobs"
+            ]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "producerObservations": {
+            "type": "object",
+            "not": {
+              "properties": {
+                "incidentJobs": {}
+              },
+              "required": [
+                "incidentJobs"
+              ]
+            }
+          }
+        }
+      }
+    },
     {
       "if": {
         "properties": {
@@ -557,6 +611,121 @@
         }
       }
     },
+    "incidentJobSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterCommandId",
+        "createIncidentOnFailedJobEnabled",
+        "jobs"
+      ],
+      "properties": {
+        "afterCommandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createIncidentOnFailedJobEnabled": {
+          "const": true
+        },
+        "jobs": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/incidentJob"
+          }
+        }
+      }
+    },
+    "incidentJob": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publicJobId",
+        "retries",
+        "executable",
+        "dueDatePresent",
+        "processInstanceId",
+        "elementId",
+        "incident"
+      ],
+      "properties": {
+        "publicJobId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "executable": {
+          "type": "boolean"
+        },
+        "dueDatePresent": {
+          "type": "boolean"
+        },
+        "processInstanceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "elementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "incident": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/failedJobIncident"
+            }
+          ]
+        }
+      }
+    },
+    "failedJobIncident": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publicIncidentId",
+        "type",
+        "configurationJobId",
+        "processInstanceId",
+        "elementId",
+        "causeIncidentId",
+        "rootCauseIncidentId"
+      ],
+      "properties": {
+        "publicIncidentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "failedJob"
+        },
+        "configurationJobId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "processInstanceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "elementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "causeIncidentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rootCauseIncidentId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "effectExecutionSnapshot": {
       "type": "object",
       "additionalProperties": false,
@@ -576,7 +745,8 @@
         "schedule": {
           "enum": [
             "plainSuccess",
-            "failAfterMutationOnce"
+            "failAfterMutationOnce",
+            "incidentReportRetrySuccess"
           ]
         },
         "invocations": {

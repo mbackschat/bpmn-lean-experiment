@@ -23,6 +23,7 @@ import type {
 
 import {
   isCompletedProcessReceipt,
+  durableUpdateOutcomes,
   reconcileHarnessTraceEvidence,
 } from "@bpmn-lean/temporal-testkit";
 import type {
@@ -40,6 +41,18 @@ const completion = {
   },
   submittedValues: [],
 };
+const incidentRetry = {
+  kind: StimulusKind.RetryIncident,
+  commandId: "retry-incident",
+  incidentId: {
+    effectId: {
+      processInstanceId: "Instance_1",
+      elementId: "ServiceTask_Record",
+      activation: 1,
+    },
+    generation: 1,
+  },
+} as const;
 const completedState: CompletedProcessReceipt["finalState"] = {
   kind: CanonicalObservationKind.State,
   instanceId: "Instance_1",
@@ -155,6 +168,30 @@ test("reconciles Query command outcomes and terminal state with durable history"
   );
 });
 
+test("binds the incident retry Update without admitting another Update stimulus family", () => {
+  assert.deepEqual(
+    durableUpdateOutcomes(
+      historyWithStimulus(incidentRetry, CommandOutcome.Committed),
+    ),
+    new Map([[incidentRetry.commandId, CommandOutcome.Committed]]),
+  );
+
+  assert.throws(
+    () =>
+      durableUpdateOutcomes(
+        historyWithStimulus(
+          {
+            kind: StimulusKind.ReportEffectFailure,
+            commandId: "report-effect-failure",
+            incidentId: incidentRetry.incidentId,
+          },
+          CommandOutcome.Committed,
+        ),
+      ),
+    /not an admitted Update stimulus/,
+  );
+});
+
 test("rejects a Query command outcome that differs from Update history", () => {
   assert.throws(
     () =>
@@ -202,6 +239,13 @@ test("classifies a failed durable Update as harness infrastructure failure", () 
 });
 
 function historyWithOutcome(outcome: CommandOutcome): TemporalHistory {
+  return historyWithStimulus(completion, outcome);
+}
+
+function historyWithStimulus(
+  stimulus: unknown,
+  outcome: CommandOutcome,
+): TemporalHistory {
   return {
     events: [
       {
@@ -210,7 +254,7 @@ function historyWithOutcome(outcome: CommandOutcome): TemporalHistory {
           acceptedRequest: {
             input: {
               args: {
-                payloads: [jsonPayload(completion)],
+                payloads: [jsonPayload(stimulus)],
               },
             },
           },

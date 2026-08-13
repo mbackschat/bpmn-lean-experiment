@@ -7,7 +7,6 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
-  SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 
@@ -66,7 +65,7 @@ export function profileAllowsStimulusValueDomain(
       );
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
-      return semanticProfile === SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID;
+      return semanticProfile === SemanticProfileId.ServiceTaskIncident;
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
     case StimulusKind.DeliverMessage:

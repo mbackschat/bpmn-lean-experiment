@@ -25,13 +25,19 @@ import type {
   PipelineContext,
   TargetBatch,
 } from "./pipeline-types.ts";
+import { CibEffectExecutionSchedule } from "./pipeline-types.ts";
+
+type CibTargetEffectSchedule =
+  | EffectExecutionSchedule
+  | CibEffectExecutionSchedule;
 
 export async function runCibTargets(
   scenarios: ReadonlyArray<Scenario>,
   inputPath: string,
   outputPath: string,
   engineVersion: CibPipelineConfiguration["version"],
-  effectSchedule = EffectExecutionSchedule.PlainSuccess,
+  effectSchedule: CibTargetEffectSchedule =
+    EffectExecutionSchedule.PlainSuccess,
 ): Promise<TargetBatch<CibPipelineResult>> {
   const started = performance.now();
   await writeFile(
@@ -82,13 +88,14 @@ export async function runCibTargetGroups(
   contexts: ReadonlyArray<PipelineContext>,
   temporaryDirectory: string,
   filePrefix: string,
-  effectSchedule = EffectExecutionSchedule.PlainSuccess,
+  effectSchedule: CibTargetEffectSchedule =
+    EffectExecutionSchedule.PlainSuccess,
 ): Promise<TargetBatch<CibPipelineResult>> {
   const started = performance.now();
   const cibContexts = contexts.filter(
     ({ pipelineCase }) => pipelineCase.cib !== null,
   );
-  const groups = Map.groupBy(
+  const versionGroups = Map.groupBy(
     cibContexts,
     ({ pipelineCase }) => {
       const configuration = pipelineCase.cib;
@@ -99,20 +106,27 @@ export async function runCibTargetGroups(
     },
   );
   const batches = await Promise.all(
-    [...groups.entries()].map(([engineVersion, versionContexts]) =>
-      runCibTargets(
-        versionContexts.map(({ scenario }) => scenario),
-        path.join(
-          temporaryDirectory,
-          `${filePrefix}-${engineVersion}-input.jsonl`,
+    [...versionGroups.entries()].flatMap(
+      ([engineVersion, versionContexts]) =>
+        [...Map.groupBy(
+          versionContexts,
+          ({ pipelineCase }) =>
+            selectEffectSchedule(pipelineCase.cib, effectSchedule),
+        )].map(([selectedSchedule, scheduleContexts]) =>
+          runCibTargets(
+            scheduleContexts.map(({ scenario }) => scenario),
+            path.join(
+              temporaryDirectory,
+              `${filePrefix}-${engineVersion}-${selectedSchedule}-input.jsonl`,
+            ),
+            path.join(
+              temporaryDirectory,
+              `${filePrefix}-${engineVersion}-${selectedSchedule}-output.jsonl`,
+            ),
+            engineVersion,
+            selectedSchedule,
+          )
         ),
-        path.join(
-          temporaryDirectory,
-          `${filePrefix}-${engineVersion}-output.jsonl`,
-        ),
-        engineVersion,
-        effectSchedule,
-      )
     ),
   );
   const results = new Map<string, CibPipelineResult>();
@@ -130,4 +144,18 @@ export async function runCibTargetGroups(
     results,
     totalMs: elapsedMs(started),
   };
+}
+
+function selectEffectSchedule(
+  configuration: CibPipelineConfiguration | null,
+  requested: CibTargetEffectSchedule,
+): CibTargetEffectSchedule {
+  if (configuration === null) {
+    throw new Error("CIB target group received a standards-only case");
+  }
+  return requested === EffectExecutionSchedule.PlainSuccess &&
+      configuration.effectExecutionSchedule ===
+        CibEffectExecutionSchedule.IncidentReportRetrySuccess
+    ? CibEffectExecutionSchedule.IncidentReportRetrySuccess
+    : requested;
 }

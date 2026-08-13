@@ -14,11 +14,13 @@ final class CibSevenEffectProbe implements JavaDelegate {
   private CibEffectExecutionSchedule schedule = CibEffectExecutionSchedule.PLAIN_SUCCESS;
   private int invocations;
   private int mutations;
+  private boolean incidentRetryOpened;
 
   void beginExecution(CibEffectExecutionSchedule nextSchedule) {
     schedule = nextSchedule;
     invocations = 0;
     mutations = 0;
+    incidentRetryOpened = false;
     requireEmpty();
   }
 
@@ -33,11 +35,29 @@ final class CibSevenEffectProbe implements JavaDelegate {
     invocations += 1;
     if (mutations == 0) {
       mutations += 1;
-      if (schedule == CibEffectExecutionSchedule.FAIL_AFTER_MUTATION_ONCE) {
-        throw new IllegalStateException(
-            "scripted failure after test-local external mutation");
+    }
+    switch (schedule) {
+      case PLAIN_SUCCESS -> {}
+      case FAIL_AFTER_MUTATION_ONCE -> {
+        if (invocations == 1) {
+          throw new IllegalStateException(
+              "scripted failure after test-local external mutation");
+        }
+      }
+      case INCIDENT_REPORT_RETRY_SUCCESS -> {
+        if (!incidentRetryOpened) {
+          throw new IllegalStateException("scripted incident technical failure");
+        }
       }
     }
+  }
+
+  void beginIncidentRetry() {
+    if (schedule != CibEffectExecutionSchedule.INCIDENT_REPORT_RETRY_SUCCESS
+        || incidentRetryOpened) {
+      throw new IllegalStateException("incident retry is not enabled exactly once");
+    }
+    incidentRetryOpened = true;
   }
 
   int invocations() {

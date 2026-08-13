@@ -6,6 +6,8 @@ The [User Task discovery and completion capsule](user-task-discovery-completion/
 
 The [resumption-bounded User Task cycle scenario](user-task-cycle/README.md) runs the same task definition through fresh activations 1, 2, and 3, exercises both conditional back-edges, and then takes the default exit. Its target remains answer-free and has no CIB cycle lane.
 
+The [Service Task incident and retry scenario](service-task-incident/README.md) reuses the exact Service Task effect source and adds one answer-free literal-generation report, exact retry, and final success schedule.
+
 The [Message Start Event scenario](message-start-event/README.md) uses an exact operation-addressed `triggerMessageStart` stimulus to create one semantic Process instance, then completes the resulting User Task. It remains answer-free and has no CIB Message Start lane.
 
 The [Timer Start Event scenario](timer-start-event/README.md) uses one exact resolved `triggerTimerStart` occurrence to create a semantic Process instance from a top-level `PT1S` Timer Start Event, then completes the resulting User Task. It remains answer-free, carries no due time or schedule policy, and has no CIB Timer Start lane.

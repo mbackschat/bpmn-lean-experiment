@@ -2,7 +2,7 @@
 
 ## Status
 
-Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint review of `818f642` returned `approve with required edits`; the same reviewer approved correction target `1f20c00`, closing both findings. CIB mapping, differential registration, and Temporal hosting may now proceed toward closure; Product 2 incident operations remain paused.
+Implementation complete; closure review pending. Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint review of `818f642` returned `approve with required edits`; the same reviewer approved correction target `1f20c00`, closing both findings. The configured CIB mapping, registered differential case, runnable example, and Temporal hosting are implemented without changing the selected account, public contract, exclusions, or evidence strategy. Product 2 incident operations remain paused.
 
 ## Independent cold-review receipt
 
@@ -248,20 +248,20 @@ The following mechanically measured existing owners grow. Each TypeScript owner 
 | [Semantic runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 227 |
 | [Triggered-start exhaustive stimulus classifier](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 484 |
 | [Scenario projection](../../packages/semantic-core/src/scenario.ts) | 151 |
-| [Profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 549 |
-| [Profile capability details](../../packages/semantic-core/src/semantic-process-profile.ts) | 451 |
-| [Checked profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 365 |
-| [Program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 352 |
-| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 530 |
+| [Profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 547 |
+| [Profile capability details](../../packages/semantic-core/src/semantic-process-profile.ts) | 452 |
+| [Checked profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 366 |
+| [Program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 353 |
+| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 531 |
 | [Semantic admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 245 |
-| [Profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 520 |
+| [Profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 521 |
 | [Semantic exports](../../packages/semantic-core/src/index.ts) | 557 |
-| [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 369 |
-| [Contract artifact owner](../../scripts/contract-artifacts.ts) | 96 |
+| [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 365 |
+| [Contract artifact owner](../../scripts/contract-artifacts.ts) | 89 |
 | [Contract artifact fixtures](../../scripts/contract-artifact-test-fixtures.ts) | 77 |
-| [CIB evidence contract](../../scripts/contract-cib-evidence.ts) | 499 |
-| [CIB evidence projection](../../scripts/contract-cib-evidence-projection.ts) | 43 |
-| [CIB evidence replacement](../../scripts/replace-cibseven-evidence.ts) | 276 |
+| [CIB evidence contract](../../scripts/contract-cib-evidence.ts) | 475 |
+| [CIB evidence projection](../../scripts/contract-cib-evidence-projection.ts) | 16 |
+| [CIB evidence replacement](../../scripts/replace-cibseven-evidence.ts) | 250 |
 | [A12 evidence reader](../../scripts/a12-adoption-evidence.ts) | 261 |
 | [A12 evidence replacement](../../scripts/replace-a12-adoption-evidence.ts) | 534 |
 
@@ -293,29 +293,29 @@ Before adding incident delegation, move external command admission from `Executi
 
 | Owner | Headroom |
 |---|---:|
-| [Effect protocol contract](../../packages/temporal-adapter/protocol/src/effect-contract.ts) | 582 |
+| [Effect protocol contract](../../packages/temporal-adapter/protocol/src/effect-contract.ts) | 581 |
 | [Protocol contracts](../../packages/temporal-adapter/protocol/src/contracts.ts) | 418 |
 | [Command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 412 |
 | [Lifecycle results](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 444 |
-| [Protocol exports](../../packages/temporal-adapter/protocol/src/index.ts) | 587 |
-| [Workflow entry points](../../packages/temporal-adapter/workflow/src/workflows.ts) | 561 |
+| [Protocol exports](../../packages/temporal-adapter/protocol/src/index.ts) | 585 |
+| [Workflow entry points](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 |
 | [Workflow wire validation](../../packages/temporal-adapter/workflow/src/workflow-wire-validation.ts) | 513 |
-| [Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 |
-| [Workflow exports](../../packages/temporal-adapter/workflow/src/index.ts) | 590 |
-| [Process client](../../packages/temporal-adapter/client/src/process-client.ts) | 135 |
-| [Client exports](../../packages/temporal-adapter/client/src/index.ts) | 598 |
+| [Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 40 |
+| [Workflow exports](../../packages/temporal-adapter/workflow/src/index.ts) | 587 |
+| [Process client](../../packages/temporal-adapter/client/src/process-client.ts) | 166 |
+| [Client exports](../../packages/temporal-adapter/client/src/index.ts) | 596 |
 | [Runner effect Activities](../../packages/temporal-adapter/runner/src/host-effect-activities.ts) | 551 |
 | [Runnable effect handlers](../../packages/temporal-adapter/runner/src/host-interaction-plan.ts) | 390 |
 | [Runnable composition](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 257 |
-| [Effect probe](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 365 |
-| [Testkit runner](../../packages/temporal-adapter/testkit/src/runner.ts) | 152 |
-| [Testkit runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 171 |
+| [Effect probe](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 356 |
+| [Testkit runner](../../packages/temporal-adapter/testkit/src/runner.ts) | 98 |
+| [Testkit runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 169 |
 | [Stimulus sequencing](../../packages/temporal-adapter/testkit/src/scenario-stimulus-sequencing.ts) | 557 |
-| [Test contracts](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 486 |
-| [Harness evidence](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) | 181 |
-| [History evidence](../../packages/temporal-adapter/testkit/src/history-evidence-decoding.ts) | 312 |
-| [Worker host](../../packages/temporal-adapter/testkit/src/temporal-worker-host.ts) | 355 |
-| [Testkit exports](../../packages/temporal-adapter/testkit/src/index.ts) | 584 |
+| [Test contracts](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 474 |
+| [Harness evidence](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) | 100 |
+| [History evidence](../../packages/temporal-adapter/testkit/src/history-evidence-decoding.ts) | 307 |
+| [Worker host](../../packages/temporal-adapter/testkit/src/temporal-worker-host.ts) | 345 |
+| [Testkit exports](../../packages/temporal-adapter/testkit/src/index.ts) | 583 |
 
 Add outer Activity-result and incident-operation protocol owners, process-command Update and incident client owners, plus focused policy, runnable, and live Temporal test owners. Extract Activity-result handling to `effect-execution-host.ts`, proxy selection to `effect-activity-policy.ts`, retry Update handling to `incident-update-handler.ts`, and shared retained-Update lookup before changing the 48-line-headroom Workflow or copying the client mechanism. The existing semantic `effect-transport.ts`, old effect scenario execution, Boundary-Error execution, and old effect mutation Workflow remain byte-identical. The operation-only host-capability classifier does not change because the successor has the same isolated `AwaitEffect` shape. Before Worker connection, `runnable-mvp.ts` passes the compiled semantic profile's exact Activity-result policy to `createHostEffectActivities`; focused runnable tests require the successor to accept `technicalFailure` and every old profile to reject it without changing existing semantic results. An enabled retry with no configured Product 1 response already yields the truthful unmatched-interaction refusal, so the production interaction driver changes only if a focused test proves otherwise.
 
@@ -325,25 +325,25 @@ Add outer Activity-result and incident-operation protocol owners, process-comman
 |---|---:|
 | [Scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 109 |
 | [Interaction protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | 565 |
-| [Diagnostics protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java) | 420 |
-| [Active-wait projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenActiveWaitProjector.java) | 537 |
-| [Effect probe](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEffectProbe.java) | 558 |
+| [Diagnostics protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java) | 387 |
+| [Active-wait projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenActiveWaitProjector.java) | 528 |
+| [Effect probe](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEffectProbe.java) | 539 |
 | [Command executor](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioCommandExecutor.java) | 411 |
-| [State projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 315 |
+| [State projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 277 |
 | [Scenario value policy](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableValuePolicy.java) | 526 |
-| [Effect schedule](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibEffectExecutionSchedule.java) | 579 |
+| [Effect schedule](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibEffectExecutionSchedule.java) | 578 |
 | [JSON-lines oracle entry point](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | 542 |
 | [Pipeline export bridge](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPipelineExportBridge.java) | 566 |
-| [Scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 3 |
-| [Differential cases](../../packages/differential/test/pipeline-cases.ts) | 12 |
-| [Differential types](../../packages/differential/test/pipeline-types.ts) | 405 |
-| [CIB targets](../../packages/differential/test/pipeline-cib-targets.ts) | 471 |
+| [Scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 539 |
+| [Differential cases](../../packages/differential/test/pipeline-cases.ts) | 8 |
+| [Differential types](../../packages/differential/test/pipeline-types.ts) | 404 |
+| [CIB targets](../../packages/differential/test/pipeline-cib-targets.ts) | 445 |
 | [Target support](../../packages/differential/test/pipeline-target-support.ts) | 533 |
 | [Pipeline targets](../../packages/differential/test/pipeline-targets.ts) | 121 |
 | [Pipeline harness](../../packages/differential/test/pipeline-harness.ts) | 345 |
-| [Pipeline comparison](../../packages/differential/test/pipeline-comparison.ts) | 46 |
+| [Pipeline comparison](../../packages/differential/test/pipeline-comparison.ts) | 36 |
 | [Pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 43 |
-| [Pipeline execution](../../packages/differential/test/pipeline.test.ts) | 120 |
+| [Pipeline execution](../../packages/differential/test/pipeline.test.ts) | 114 |
 
 Add separate incident protocol, `CibSevenEngineBundleFactory`, incident projector, incident command executor, and focused incident runner/JSON test owners. The factory is keyed by the validated profile environment: the successor bundle explicitly sets `createIncidentOnFailedJobEnabled = true`, while an absent legacy property preserves the pinned engine's effective setting. An alignment guard accepts the incident schedule if and only if the successor profile is selected. The streaming oracle never mutates an already built engine setting between scenarios. Extract engine/configuration construction from the 13-line-headroom Java runner before selecting the profile. Existing direct `StateObservation` constructors in `CibSevenMappedSuccessScenarioRunnerTest` (527 headroom), `CibSevenIntermediateCatchTimerTest` (525), `CibSevenScenarioRunnerTest` (254), and `ScenarioJsonTest` (481) add the required empty list. Add separate incident pipeline cases, comparison, and focused test owners; the 12-line-headroom case catalog receives only registration, while the 46-line-headroom comparator delegates raw incident fidelity.
 
@@ -371,6 +371,14 @@ The strongest common-mode risk is the project-owned mapping from a raw CIB job/i
 The nearest wrong accounts are: existing semantic Activity results are wrapped; Activity transport failure enters `completeEffect`; Temporal attempt defines identity; retry creates a new activation; a second semantic incident is created; the incident fails to block normal scope completion; its nested effect identity drifts; old profile/scenario bytes change; or a missing open effect is treated as incident evidence. Each has a direct rejection, structural guard, theorem, mutation, or history discriminator.
 
 At closure, [the capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the implementation range and compares it with the existing Service Task effect capsule.
+
+## Implementation result
+
+The implementation realizes the selected account without widening it. The strict public state and stimuli, TypeScript semantic core, and proved Lean relation commit one literal-generation-1 incident by moving the complete effect wait, block ordinary scope completion, and restore the exact wait once with the private retried marker set. A pre-dispatch profile, shape, and association gate rejects malformed or cross-program incident state before any transition or closure work.
+
+The configured CIB bundle retains independent public job and `failedJob` incident facts, projects exactly one matching retries-zero pair, resets the same job for retry, and records incident-specific raw diagnostics without adding host identity to canonical state. The registered answer-free case compares CIB, Lean, TypeScript, and Temporal and rejects checked/IL non-profile drift, raw association drift, nested effect-identity drift, target substitution, and lifecycle mutations.
+
+Temporal preserves every existing semantic Activity result byte, selects one attempt only for the successor profile, converts the first host-only technical result into the deterministic report command, and accepts retry through the shared content-bound retained-Update mechanism. Live evidence covers Worker replacement, the restored effect, successful completion, response recovery after closure, two distinct retry commands with one commit and one rejection, a second technical result becoming typed host failure without another semantic incident, exact Activity and Update history, and replay. Product 2, cancellation, a second semantic incident, host causes, retry counts, and arbitrary policy remain absent.
 
 ## Stop conditions
 

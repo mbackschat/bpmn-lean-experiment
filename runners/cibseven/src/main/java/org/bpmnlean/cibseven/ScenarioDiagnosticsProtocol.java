@@ -22,6 +22,8 @@ public final class ScenarioDiagnosticsProtocol {
       List<CibStateQueryEvidence.MessageSubscriptionSnapshot> messageSubscriptions,
       List<TimerJobSnapshot> timerJobs,
       List<EffectJobSnapshot> effectJobs,
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          List<CibSevenIncidentProtocol.IncidentJobSnapshot> incidentJobs,
       List<EffectExecutionSnapshot> effectExecutions,
       List<MappingExecutionSnapshot> mappingExecutions,
       CleanupProjection cleanup) {
@@ -38,9 +40,41 @@ public final class ScenarioDiagnosticsProtocol {
       messageSubscriptions = List.copyOf(messageSubscriptions);
       timerJobs = List.copyOf(timerJobs);
       effectJobs = List.copyOf(effectJobs);
+      incidentJobs = incidentJobs == null ? null : List.copyOf(incidentJobs);
       effectExecutions = List.copyOf(effectExecutions);
       mappingExecutions = List.copyOf(mappingExecutions);
       Objects.requireNonNull(cleanup, "cleanup");
+    }
+
+    public Diagnostics(
+        String engineVersion,
+        String databaseVersion,
+        long startupNanos,
+        PhaseTimings phases,
+        PvmDefinitionProjection pvmDefinition,
+        List<CibStateQueryEvidence.StateQuerySnapshot> stateQueries,
+        List<TaskQuerySnapshot> taskQueries,
+        List<CibStateQueryEvidence.MessageSubscriptionSnapshot> messageSubscriptions,
+        List<TimerJobSnapshot> timerJobs,
+        List<EffectJobSnapshot> effectJobs,
+        List<EffectExecutionSnapshot> effectExecutions,
+        List<MappingExecutionSnapshot> mappingExecutions,
+        CleanupProjection cleanup) {
+      this(
+          engineVersion,
+          databaseVersion,
+          startupNanos,
+          phases,
+          pvmDefinition,
+          stateQueries,
+          taskQueries,
+          messageSubscriptions,
+          timerJobs,
+          effectJobs,
+          null,
+          effectExecutions,
+          mappingExecutions,
+          cleanup);
     }
   }
 

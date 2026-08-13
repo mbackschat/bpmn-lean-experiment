@@ -78,6 +78,32 @@ export type EffectJobSnapshot = Readonly<{
   jobs: ReadonlyArray<EffectJob>;
 }>;
 
+export type CibFailedJobIncident = Readonly<{
+  publicIncidentId: string;
+  type: string;
+  configurationJobId: string;
+  processInstanceId: string;
+  elementId: string;
+  causeIncidentId: string;
+  rootCauseIncidentId: string;
+}>;
+
+export type IncidentJob = Readonly<{
+  publicJobId: string;
+  retries: number;
+  executable: boolean;
+  dueDatePresent: boolean;
+  processInstanceId: string;
+  elementId: string;
+  incident: CibFailedJobIncident | null;
+}>;
+
+export type IncidentJobSnapshot = Readonly<{
+  afterCommandId: string;
+  createIncidentOnFailedJobEnabled: true;
+  jobs: ReadonlyArray<IncidentJob>;
+}>;
+
 type EffectExecutionSnapshot = Readonly<{
   afterCommandId: string;
   schedule: string;
@@ -109,6 +135,7 @@ export type CibSevenEvidence = Readonly<{
     messageSubscriptions?: ReadonlyArray<MessageSubscriptionSnapshot>;
     timerJobs: ReadonlyArray<TimerJobSnapshot>;
     effectJobs?: ReadonlyArray<EffectJobSnapshot>;
+    incidentJobs?: ReadonlyArray<IncidentJobSnapshot>;
     effectExecutions?: ReadonlyArray<EffectExecutionSnapshot>;
     mappingExecutions?: ReadonlyArray<MappingExecutionSnapshot>;
   }>;

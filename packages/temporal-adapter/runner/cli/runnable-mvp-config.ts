@@ -9,6 +9,8 @@ import {
   isWellFormedStimulus,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
+import { SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
+import { isEffectTechnicalFailure } from "@bpmn-lean/temporal-protocol";
 import type {
   DeepReadonly,
   MessageChannel,
@@ -133,6 +135,16 @@ export function validateRunnableMvpConfig(
 
   validateHostInteractionPlan(root.interactions);
   validateHostEffectHandlers(root.effectHandlers);
+  for (const handler of root.effectHandlers) {
+    if (
+      isEffectTechnicalFailure(handler.result) &&
+      bpmn.semanticProfile !== SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID
+    ) {
+      throw new TypeError(
+        "Technical failure handlers require the Service Task incident profile",
+      );
+    }
+  }
 }
 
 function validateRunnableMvpProcessConfig(

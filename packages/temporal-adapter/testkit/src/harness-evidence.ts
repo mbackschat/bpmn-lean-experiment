@@ -19,6 +19,7 @@ import type {
   CompletedProcessReceipt,
   TemporalHistory,
 } from "./contracts.js";
+import type { EffectActivityResult } from "./contracts.js";
 import {
   EffectExecutionResultKind,
 } from "./contracts.js";
@@ -261,6 +262,85 @@ export function requireDurableEffectActivityHistory(
   }
 }
 
+/** Requires two separately scheduled one-attempt Activities around one committed incident retry. */
+export function requireDurableIncidentActivityHistory(
+  history: TemporalHistory,
+  expectedRequest: EffectRequest,
+  expectedResults: readonly [EffectActivityResult, EffectActivityResult],
+): void {
+  const scheduled = historyEvents(
+    history,
+    "activityTaskScheduledEventAttributes",
+  );
+  const started = historyEvents(
+    history,
+    "activityTaskStartedEventAttributes",
+  );
+  const completed = historyEvents(
+    history,
+    "activityTaskCompletedEventAttributes",
+  );
+  const failed = historyEvents(
+    history,
+    "activityTaskFailedEventAttributes",
+  );
+  if (
+    scheduled.length !== 2 ||
+    started.length !== 2 ||
+    completed.length !== 2 ||
+    failed.length !== 0
+  ) {
+    throw new TypeError(
+      "Incident history must contain two separate completed one-attempt effect Activities",
+    );
+  }
+  for (let index = 0; index < 2; index += 1) {
+    const scheduledEvent = scheduled[index];
+    const startedEvent = started[index];
+    const completedEvent = completed[index];
+    const expectedResult = expectedResults[index];
+    if (
+      scheduledEvent === undefined ||
+      startedEvent === undefined ||
+      completedEvent === undefined ||
+      expectedResult === undefined
+    ) {
+      throw new TypeError("Incident Activity history lost one indexed event");
+    }
+    const scheduledEventId = requireEffectActivitySchedule(
+      scheduledEvent,
+      expectedRequest,
+      1,
+    );
+    requireFinalEffectAttempt(startedEvent, scheduledEventId, 1);
+    if (
+      requiredEventId(
+        completedEvent.attributes.scheduledEventId,
+        "Incident Activity completed scheduled-event ID",
+      ) !== scheduledEventId
+    ) {
+      throw new TypeError("Incident Activity completion identifies another schedule");
+    }
+    const result = asRecord(
+      completedEvent.attributes.result,
+      "Incident Activity completed result",
+    );
+    const payloads = asArray(
+      result.payloads,
+      "Incident Activity completed result payloads",
+    );
+    if (
+      payloads.length !== 1 ||
+      !isDeepStrictEqual(
+        decodeJsonPayload(payloads[0], "Incident Activity completed result"),
+        expectedResult,
+      )
+    ) {
+      throw new TypeError("Incident Activity history has the wrong typed result");
+    }
+  }
+}
+
 export function requireExhaustedEffectActivityHistory(
   history: TemporalHistory,
   expectedRequest: EffectRequest,
@@ -328,6 +408,7 @@ export type HistoryEvent = Readonly<{
 function requireEffectActivitySchedule(
   scheduledEvent: HistoryEvent,
   expectedRequest: EffectRequest,
+  expectedMaximumAttempts = 2,
 ): string {
   const activityType = asRecord(
     scheduledEvent.attributes.activityType,
@@ -390,7 +471,8 @@ function requireEffectActivitySchedule(
     "Effect Activity retry policy",
   );
   if (
-    integerToBigInt(retryPolicy.maximumAttempts) !== 2n ||
+    integerToBigInt(retryPolicy.maximumAttempts) !==
+      BigInt(expectedMaximumAttempts) ||
     durationMilliseconds(
       retryPolicy.initialInterval,
       "Effect Activity initial retry interval",

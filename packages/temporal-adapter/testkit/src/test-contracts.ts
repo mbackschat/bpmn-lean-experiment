@@ -108,6 +108,20 @@ export type TemporalEffectFailureExecution = DeepReadonly<{
   effectProbeEvidence: EffectProbeEvidence;
 }>;
 
+export type TemporalIncidentRetryFailureExecution = DeepReadonly<{
+  failureType: "BPMN_EFFECT_INCIDENT_RETRY_EXHAUSTED";
+  lastCommittedTrace: CanonicalObservation[];
+  history: TemporalHistory;
+  effectProbeEvidence: EffectProbeEvidence;
+}>;
+
+export type TemporalIncidentRetryRaceExecution = DeepReadonly<{
+  outcomes: CommandOutcome[];
+  trace: CanonicalObservation[];
+  receipt: CompletedProcessReceipt;
+  history: TemporalHistory;
+}>;
+
 export type TemporalUnhandledBpmnErrorExecution = DeepReadonly<{
   failureType: "BPMN_UNHANDLED_BPMN_ERROR";
   lastCommittedTrace: CanonicalObservation[];
