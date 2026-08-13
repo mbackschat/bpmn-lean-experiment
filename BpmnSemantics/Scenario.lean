@@ -119,6 +119,9 @@ inductive EnabledInteraction where
       (subscriptionId : MessageSubscriptionId)
       (channel : MessageChannel)
   | retryIncident (incidentId : EffectIncidentId)
+  | cancelIncidentProcess
+      (processInstanceId : SemanticId)
+      (incidentId : EffectIncidentId)
   deriving Repr, DecidableEq
 
 /-- External inputs currently admitted by the User Task scenario boundary. -/
@@ -159,6 +162,10 @@ inductive Stimulus where
   | retryIncident
       (commandId : SemanticId)
       (incidentId : EffectIncidentId)
+  | cancelIncidentProcess
+      (commandId : SemanticId)
+      (processInstanceId : SemanticId)
+      (incidentId : EffectIncidentId)
   deriving Repr, DecidableEq
 
 /-- Process status visible through the canonical observation boundary. -/
@@ -166,6 +173,7 @@ inductive ProcessStatus where
   | notStarted
   | running
   | completed
+  | cancelled
   deriving Repr, DecidableEq
 
 /-- Semantic wait categories supported by the current milestone contract. -/

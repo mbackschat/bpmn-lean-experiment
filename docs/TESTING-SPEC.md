@@ -264,7 +264,7 @@ This table classifies the complete current field denominator of `scenario.schema
 |---|---|---|
 | `kind` | `not-claimed` | Canonical wire discriminator |
 | `instanceId` | `not-claimed` | Scenario-supplied semantic identity, never a generated CIB Process-instance ID |
-| `status` | `adapter-derived` | `running` or `completed` from retained public Process-instance query count |
+| `status` | `adapter-derived` | Existing `running` or `completed` values come from retained public Process-instance query count; the approved cancellation-successor value remains unclaimed by CIB until its historic-state evidence lands |
 | `activeWaits` | `adapter-derived` | Merge, semantic-kind rank, and Unicode element-ID sort over retained task/subscription/timer/effect facts |
 | `activeWaits[].elementId` | `engine-observed` | Task definition key, Message-subscription Activity ID, or job-definition Activity ID |
 | `activeWaits[].kind` | `adapter-derived` | Classification by the engine collection and admitted host relation |
@@ -340,8 +340,9 @@ This table classifies the complete current field denominator of `scenario.schema
 | `variables[].value` | `adapter-derived` | Raw host `String`, `Boolean`, or `null` projected into the canonical discriminated value |
 | `variables[].value.kind` | `adapter-derived` | `string`, `boolean`, or `null` selected from the raw host value without text coercion |
 | `variables[].value.value` | `engine-observed` | Exact host String or Boolean when the value is non-null |
-| `enabledInteractions` | `adapter-derived` | One project command interaction per retained live User Task or Receive Task Message subscription |
-| `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects task completion or Message delivery from the retained host collection |
+| `enabledInteractions` | `adapter-derived` | One project command interaction per retained live User Task, Receive Task Message subscription, or effect incident; cancellation remains unclaimed by CIB until its successor evidence lands |
+| `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects task completion, Message delivery, incident retry, or the approved successor cancellation from the retained host collection |
+| `enabledInteractions[].processInstanceId` | `not-claimed` | Scenario-supplied semantic root identity for the approved cancellation interaction, never a generated CIB Process-instance ID |
 | `enabledInteractions[].subscriptionId` | `adapter-derived` | Reuses the projected Message subscription occurrence |
 | `enabledInteractions[].subscriptionId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
 | `enabledInteractions[].subscriptionId.elementId` | `engine-observed` | Public Message-subscription Activity ID |

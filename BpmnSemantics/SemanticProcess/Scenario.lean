@@ -29,7 +29,8 @@ private def commandId : Stimulus → SemanticId
   | .fireTimer id _ _
   | .completeEffect id _ _
   | .reportEffectFailure id _ _
-  | .retryIncident id _ => id
+  | .retryIncident id _
+  | .cancelIncidentProcess id _ _ => id
 
 /-- The external waits one operation can own, so every public projection reads one inventory. -/
 private structure OwnedWaitDefinitions where
@@ -239,6 +240,12 @@ def observeStableState (program : Program) (state : RuntimeState) :
         let tasks := openUserTasks program state
         let messages := openMessageSubscriptions program state
         let incidents := openIncidents program state
+        let incidentInteractions := incidents.flatMap fun incident =>
+          [.retryIncident incident.id] ++
+            if program.identity.semanticProfile =
+                serviceTaskIncidentCancellationCheckpointProfileId then
+              [.cancelIncidentProcess instanceId incident.id]
+            else []
         some
           { instanceId
             status := .running
@@ -253,12 +260,25 @@ def observeStableState (program : Program) (state : RuntimeState) :
               tasks.map (fun task => .completeUserTaskInstance task.id) ++
                 messages.map (fun subscription =>
                   .deliverMessage subscription.id subscription.channel) ++
-                incidents.map fun incident => .retryIncident incident.id
+                incidentInteractions
             logicalTimeMs := state.logicalTimeMs }
   | .completed instanceId =>
       some
         { instanceId
           status := .completed
+          activeWaits := []
+          openUserTasks := []
+          openMessageSubscriptions := []
+          openTimers := []
+          openEffects := []
+          openIncidents := []
+          variables := state.variables.process.bindings
+          enabledInteractions := []
+          logicalTimeMs := state.logicalTimeMs }
+  | .cancelled instanceId =>
+      some
+        { instanceId
+          status := .cancelled
           activeWaits := []
           openUserTasks := []
           openMessageSubscriptions := []
@@ -337,7 +357,8 @@ private def requiredObservations : List ObservationKind :=
 private def isProcessStartStimulus : Stimulus → Bool
   | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => true
   | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
-  | .completeEffect .. | .reportEffectFailure .. | .retryIncident .. => false
+  | .completeEffect .. | .reportEffectFailure .. | .retryIncident ..
+  | .cancelIncidentProcess .. => false
 
 /-- A scenario starts exactly once, in its first position, through one member of the closed start family. -/
 def stimulusSequenceSupported : List Stimulus → Bool

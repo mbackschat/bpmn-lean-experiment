@@ -334,7 +334,10 @@ theorem post_retry_report_is_rejected_with_exact_state :
 theorem incident_bearing_non_successor_program_rejects_before_closure
     (candidate : Program) (closureLimit : Nat) (commandId : SemanticId)
     (profileMismatch :
-      candidate.identity.semanticProfile ≠ serviceTaskIncidentCheckpointProfileId) :
+      candidate.identity.semanticProfile ≠ serviceTaskIncidentCheckpointProfileId)
+    (cancellationProfileMismatch :
+      candidate.identity.semanticProfile ≠
+        serviceTaskIncidentCancellationCheckpointProfileId) :
     applyStimulus closureLimit candidate incidentState
         (.retryIncident commandId incidentId) =
       { outcome := .rejected
@@ -342,7 +345,8 @@ theorem incident_bearing_non_successor_program_rejects_before_closure
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   simp [applyStimulus, admitStimulus, incidentStateAdmitted,
-    incidentState, incident, profileMismatch]
+    serviceTaskIncidentProfileAdmitted, incidentState, incident,
+    profileMismatch, cancellationProfileMismatch]
 
 theorem predecessor_profile_rejects_injected_incident_unchanged :
     applyStimulus 0 ServiceTaskEffectConformance.program incidentState
@@ -352,6 +356,7 @@ theorem predecessor_profile_rejects_injected_incident_unchanged :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   apply incident_bearing_non_successor_program_rejects_before_closure
+  decide +kernel
   decide +kernel
 
 theorem success_and_bpmn_error_never_create_incidents :

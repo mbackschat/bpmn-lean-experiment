@@ -7,7 +7,7 @@ import {
 } from "@temporalio/workflow";
 
 import type {
-  CompletedProcessReceipt,
+  TerminalProcessReceipt,
 } from "@bpmn-lean/temporal-protocol";
 import {
   runBpmnProcessWithHostEffects,
@@ -17,7 +17,7 @@ import { executeEffectForProfile } from "./effect-activities.js";
 export function runBpmnProcess(
   start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
-): Promise<CompletedProcessReceipt> {
+): Promise<TerminalProcessReceipt> {
   return runBpmnProcessWithHostEffects(
     start,
     semanticProcess,

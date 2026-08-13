@@ -46,7 +46,8 @@ def startStimulusMatchesProgram (program : Program) : Stimulus → Bool
   | .triggerTimerStart _ processId _ startEventId =>
       timerStartTargetMatchesProgram program processId startEventId
   | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
-  | .completeEffect .. | .reportEffectFailure .. | .retryIncident .. => false
+  | .completeEffect .. | .reportEffectFailure .. | .retryIncident ..
+  | .cancelIncidentProcess .. => false
 
 /-- Admit one resolved operation-addressed Message trigger against one exact checked IL start. -/
 def admitMessageStart? (program : Program) (state : RuntimeState)
@@ -58,6 +59,6 @@ def admitMessageStart? (program : Program) (state : RuntimeState)
           channel then
         runningProgramStartState? program instanceId []
       else none
-  | .running _ | .completed _ => none
+  | .running _ | .completed _ | .cancelled _ => none
 
 end BpmnSemantics.SemanticProcess

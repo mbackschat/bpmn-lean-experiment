@@ -40,6 +40,9 @@ import {
   retryEffectIncident,
 } from "./semantic-process-incident-runtime.js";
 import {
+  cancelIncidentProcess,
+} from "./semantic-process-incident-cancellation.js";
+import {
   incidentStateAllowsDispatch,
 } from "./semantic-process-incident-validation.js";
 import { deliverMessage } from "./semantic-process-message.js";
@@ -306,6 +309,12 @@ export function admit(
     }
     case StimulusKind.RetryIncident: {
       const next = retryEffectIncident(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
+    }
+    case StimulusKind.CancelIncidentProcess: {
+      const next = cancelIncidentProcess(program, state, stimulus);
       return next === null
         ? { outcome: CommandOutcome.Rejected, state }
         : { outcome: CommandOutcome.Committed, state: next };

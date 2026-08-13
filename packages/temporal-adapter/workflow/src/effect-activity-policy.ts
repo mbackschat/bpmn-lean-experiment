@@ -1,6 +1,7 @@
 /** Profile-owned Activity retry and result policy. */
 import {
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import type { DeepReadonly } from "@bpmn-lean/semantic-core";
 
@@ -27,7 +28,11 @@ export const serviceTaskIncidentEffectActivityPolicy: EffectActivityPolicy = {
 export function effectActivityPolicyForProfile(
   semanticProfile: string,
 ): EffectActivityPolicy {
-  return semanticProfile === SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID
-    ? serviceTaskIncidentEffectActivityPolicy
-    : legacyEffectActivityPolicy;
+  switch (semanticProfile) {
+    case SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.ServiceTaskIncidentCancellation:
+      return serviceTaskIncidentEffectActivityPolicy;
+    default:
+      return legacyEffectActivityPolicy;
+  }
 }

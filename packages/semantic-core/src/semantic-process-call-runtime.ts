@@ -199,31 +199,59 @@ export function calledProcessAssociationsAreValid(state: RuntimeState): boolean 
     ({ parent, id }) =>
       parent === null && id.processInstanceId !== hostingInstanceId,
   );
-  return state.calledProcessOccurrences.every((record, index, records) =>
-    record.id.processInstanceId === record.caller.processInstanceId &&
-    record.id.activation > 0 &&
-    sameScopeOccurrence(record.caller, hostingRoot.id) &&
-    record.calledRoot.processInstanceId === deriveCalledProcessInstanceId(
-      record.caller.processInstanceId,
-      record.id.elementId,
-      record.id.activation,
-    ) &&
-    record.calledRoot.processInstanceId !== hostingInstanceId &&
-    record.calledRoot.definitionScopeId !== record.caller.definitionScopeId &&
-    record.calledRoot.activation === 1 &&
-    records.findIndex(
-      (candidate) =>
-        sameScopeOccurrence(candidate.caller, record.caller) &&
-        candidate.id.elementId === record.id.elementId,
-    ) ===
-      index &&
-    state.scopeOccurrences.filter(({ id, parent }) =>
-      parent === null && sameScopeOccurrence(id, record.calledRoot)
-    ).length === 1
-  ) && rootRecords.every(({ id }) =>
-    state.calledProcessOccurrences.filter(({ calledRoot }) =>
-      sameScopeOccurrence(calledRoot, id)
-    ).length === 1
+  const recordsValid = state.calledProcessOccurrences.every(
+    (record, index, records) => {
+      const callers = state.scopeOccurrences.filter(({ id, parent }) =>
+        parent === null && sameScopeOccurrence(id, record.caller)
+      );
+      return record.id.processInstanceId === record.caller.processInstanceId &&
+        record.id.activation > 0 &&
+        callers.length === 1 &&
+        record.calledRoot.processInstanceId === deriveCalledProcessInstanceId(
+          record.caller.processInstanceId,
+          record.id.elementId,
+          record.id.activation,
+        ) &&
+        record.calledRoot.processInstanceId !== hostingInstanceId &&
+        record.calledRoot.definitionScopeId !== record.caller.definitionScopeId &&
+        record.calledRoot.activation === 1 &&
+        records.findIndex(
+          (candidate) =>
+            sameScopeOccurrence(candidate.caller, record.caller) &&
+            candidate.id.elementId === record.id.elementId,
+        ) === index &&
+        state.scopeOccurrences.filter(({ id, parent }) =>
+          parent === null && sameScopeOccurrence(id, record.calledRoot)
+        ).length === 1;
+    },
+  );
+  if (
+    !recordsValid ||
+    !rootRecords.every(({ id }) =>
+      state.calledProcessOccurrences.filter(({ calledRoot }) =>
+        sameScopeOccurrence(calledRoot, id)
+      ).length === 1
+    )
+  ) {
+    return false;
+  }
+
+  const reachableInstanceIds = new Set([hostingInstanceId]);
+  let expanded = true;
+  while (expanded) {
+    expanded = false;
+    for (const record of state.calledProcessOccurrences) {
+      if (
+        reachableInstanceIds.has(record.caller.processInstanceId) &&
+        !reachableInstanceIds.has(record.calledRoot.processInstanceId)
+      ) {
+        reachableInstanceIds.add(record.calledRoot.processInstanceId);
+        expanded = true;
+      }
+    }
+  }
+  return state.calledProcessOccurrences.every((record) =>
+    reachableInstanceIds.has(record.calledRoot.processInstanceId)
   );
 }
 
@@ -265,6 +293,9 @@ function removeCalledProcessTree(
     messageWaits: state.messageWaits.filter(({ owner }) => !removedOwner(owner)),
     timerWaits: state.timerWaits.filter(({ owner }) => !removedOwner(owner)),
     effectWaits: state.effectWaits.filter(({ owner }) => !removedOwner(owner)),
+    effectIncidents: state.effectIncidents.filter(
+      ({ wait }) => !removedOwner(wait.owner),
+    ),
     selectedBranchSets: state.selectedBranchSets.filter(({ owner }) => !removedOwner(owner)),
     eventRaces: state.eventRaces.filter(({ owner }) => !removedOwner(owner)),
     calledProcessOccurrences: state.calledProcessOccurrences.filter(

@@ -256,6 +256,7 @@ def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
   | .completeEffect _ _ _ => { outcome := .unsupported, state }
   | .reportEffectFailure _ _ _ => { outcome := .unsupported, state }
   | .retryIncident _ _ => { outcome := .unsupported, state }
+  | .cancelIncidentProcess _ _ _ => { outcome := .unsupported, state }
 
 def enabledTransitions (source : CheckedProcess)
     (state : SourceRuntimeState) :

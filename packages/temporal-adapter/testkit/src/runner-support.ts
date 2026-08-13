@@ -186,6 +186,7 @@ export function requireCompletionStimuli(
       case StimulusKind.CompleteEffect:
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:
+      case StimulusKind.CancelIncidentProcess:
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
@@ -211,6 +212,7 @@ export function requireMessageDeliveryStimuli(
       case StimulusKind.CompleteEffect:
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:
+      case StimulusKind.CancelIncidentProcess:
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
@@ -235,6 +237,7 @@ export function requireOptionalTimerStimulus(
       case StimulusKind.CompleteEffect:
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:
+      case StimulusKind.CancelIncidentProcess:
         break;
       case StimulusKind.FireTimer:
         if (timer !== undefined) {
@@ -282,6 +285,7 @@ export function requireOptionalEffectExecution(
       case StimulusKind.FireTimer:
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:
+      case StimulusKind.CancelIncidentProcess:
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:

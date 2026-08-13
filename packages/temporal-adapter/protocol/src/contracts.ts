@@ -112,6 +112,20 @@ export type CompletedProcessReceipt = DeepReadonly<{
   messageDeliveryRecords: MessageDeliveryRecord[];
 }>;
 
+export type CancelledProcessReceipt = DeepReadonly<{
+  definition: SemanticProcessIdentity;
+  processId: string;
+  processInstanceId: string;
+  finalState: StateObservation & {
+    status: ProcessStatus.Cancelled;
+  };
+  messageDeliveryRecords: MessageDeliveryRecord[];
+}>;
+
+export type TerminalProcessReceipt =
+  | CompletedProcessReceipt
+  | CancelledProcessReceipt;
+
 /** Caller-selected detail for one exact currently open semantic User Task. */
 export type UserTaskDetailRequest = DeepReadonly<{
   taskId: UserTaskInstanceId;
@@ -171,7 +185,7 @@ export type ProcessCommandResult =
   | DeepReadonly<{
       kind: ProcessCommandResultKind.ProcessClosed;
       commandId: string;
-      receipt: CompletedProcessReceipt;
+      receipt: TerminalProcessReceipt;
     }>
   | DeepReadonly<{
       kind: ProcessCommandResultKind.ProcessUnknown;
@@ -182,7 +196,7 @@ export type ProcessCommandResult =
 export type BpmnProcessWorkflow = (
   start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
-) => Promise<CompletedProcessReceipt>;
+) => Promise<TerminalProcessReceipt>;
 
 export type BpmnCompleteUserTaskUpdateArguments = [
   stimulus: CompleteUserTaskInstanceStimulus,

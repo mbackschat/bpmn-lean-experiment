@@ -44,6 +44,7 @@ export enum StimulusKind {
   CompleteEffect = "completeEffect",
   ReportEffectFailure = "reportEffectFailure",
   RetryIncident = "retryIncident",
+  CancelIncidentProcess = "cancelIncidentProcess",
 }
 
 export type StartProcessStimulus = DeepReadonly<{
@@ -184,6 +185,13 @@ export type RetryIncidentStimulus = DeepReadonly<{
   incidentId: EffectIncidentId;
 }>;
 
+export type CancelIncidentProcessStimulus = DeepReadonly<{
+  kind: StimulusKind.CancelIncidentProcess;
+  commandId: string;
+  processInstanceId: string;
+  incidentId: EffectIncidentId;
+}>;
+
 export type Stimulus =
   | ProcessStartStimulus
   | CompleteUserTaskInstanceStimulus
@@ -191,12 +199,14 @@ export type Stimulus =
   | FireTimerStimulus
   | CompleteEffectStimulus
   | ReportEffectFailureStimulus
-  | RetryIncidentStimulus;
+  | RetryIncidentStimulus
+  | CancelIncidentProcessStimulus;
 
 export enum ProcessStatus {
   NotStarted = "notStarted",
   Running = "running",
   Completed = "completed",
+  Cancelled = "cancelled",
 }
 
 export enum WaitKind {
@@ -259,10 +269,17 @@ export type RetryIncidentInteraction = DeepReadonly<{
   incidentId: EffectIncidentId;
 }>;
 
+export type CancelIncidentProcessInteraction = DeepReadonly<{
+  kind: StimulusKind.CancelIncidentProcess;
+  processInstanceId: string;
+  incidentId: EffectIncidentId;
+}>;
+
 export type EnabledInteraction =
   | CompleteUserTaskInstanceInteraction
   | DeliverMessageInteraction
-  | RetryIncidentInteraction;
+  | RetryIncidentInteraction
+  | CancelIncidentProcessInteraction;
 
 export type OpenMessageSubscription = DeepReadonly<{
   id: MessageSubscriptionId;

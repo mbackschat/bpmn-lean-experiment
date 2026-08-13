@@ -4,7 +4,7 @@ import { WorkflowNotFoundError } from "@temporalio/client";
 
 import {
   ProcessCommandResultKind,
-  requireCompletedProcessReceipt,
+  requireTerminalProcessReceipt,
   semanticCommandResult,
 } from "@bpmn-lean/temporal-protocol";
 import type { ProcessCommandResult } from "@bpmn-lean/temporal-protocol";
@@ -40,7 +40,7 @@ export async function resolveSemanticUpdate(
   }
 
   try {
-    const receipt = requireCompletedProcessReceipt(
+    const receipt = requireTerminalProcessReceipt(
       await resolution.completedReceipt(),
     );
     if (receipt.processInstanceId !== resolution.processInstanceId) {

@@ -33,6 +33,9 @@ import {
   openEffectIncidentAssociationIsValid,
 } from "./semantic-process-incident-validation.js";
 import {
+  incidentCancellationTarget,
+} from "./semantic-process-incident-cancellation.js";
+import {
   ControlStateKind,
   applyStimulus,
   initialState,
@@ -166,13 +169,12 @@ function observeStableState(
   switch (state.control.kind) {
     case ControlStateKind.Running:
     case ControlStateKind.Completed:
+    case ControlStateKind.Cancelled: {
+      const cancellation = incidentCancellationTarget(program, state);
       return {
         kind: CanonicalObservationKind.State,
         instanceId: state.control.instanceId,
-        status:
-          state.control.kind === ControlStateKind.Running
-            ? ProcessStatus.Running
-            : ProcessStatus.Completed,
+        status: processStatus(state.control.kind),
         activeWaits: projectActiveWaits(state),
         openUserTasks: projectOpenUserTasks(state),
         openMessageSubscriptions: projectOpenMessageSubscriptions(state),
@@ -196,13 +198,39 @@ function observeStableState(
             kind: StimulusKind.RetryIncident,
             incidentId: incident.id,
           } as const)),
+          ...(cancellation === null
+            ? []
+            : [{
+                kind: StimulusKind.CancelIncidentProcess,
+                processInstanceId: state.control.instanceId,
+                incidentId: cancellation.incident.id,
+              } as const]),
         ],
         logicalTimeMs: state.logicalTimeMs,
       };
+    }
     case ControlStateKind.NotStarted:
       return null;
     default:
       return assertNever(state.control);
+  }
+}
+
+function processStatus(
+  kind:
+    | ControlStateKind.Running
+    | ControlStateKind.Completed
+    | ControlStateKind.Cancelled,
+): ProcessStatus {
+  switch (kind) {
+    case ControlStateKind.Running:
+      return ProcessStatus.Running;
+    case ControlStateKind.Completed:
+      return ProcessStatus.Completed;
+    case ControlStateKind.Cancelled:
+      return ProcessStatus.Cancelled;
+    default:
+      return assertNever(kind);
   }
 }
 

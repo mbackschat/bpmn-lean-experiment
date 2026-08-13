@@ -21,6 +21,7 @@ export enum ControlStateKind {
   NotStarted = "notStarted",
   Running = "running",
   Completed = "completed",
+  Cancelled = "cancelled",
 }
 
 type NotStartedControl = DeepReadonly<{
@@ -28,7 +29,10 @@ type NotStartedControl = DeepReadonly<{
 }>;
 
 type InstancedControl = DeepReadonly<{
-  kind: ControlStateKind.Running | ControlStateKind.Completed;
+  kind:
+    | ControlStateKind.Running
+    | ControlStateKind.Completed
+    | ControlStateKind.Cancelled;
   instanceId: string;
 }>;
 

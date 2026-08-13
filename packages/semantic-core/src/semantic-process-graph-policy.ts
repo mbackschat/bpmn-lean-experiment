@@ -60,6 +60,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.ParallelForkJoin:
     case SemanticProfileId.ServiceTaskEffect:
     case SemanticProfileId.ServiceTaskIncident:
+    case SemanticProfileId.ServiceTaskIncidentCancellation:
     case SemanticProfileId.TimerUserTaskComposition:
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskPreservedNotation:

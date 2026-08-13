@@ -48,7 +48,8 @@ private def insertScopeOccurrence (occurrence : RuntimeScopeOccurrence) :
 private def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId
-  | .completed instanceId => some instanceId
+  | .completed instanceId
+  | .cancelled instanceId => some instanceId
   | .notStarted => none
 
 private def sameCallIdentity (record : CalledProcessOccurrence)

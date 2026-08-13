@@ -15,7 +15,7 @@ import {
   bpmnOpenUserTasksQueryName,
   bpmnUserTaskDetailQueryName,
   processWorkflowId,
-  requireCompletedProcessReceipt,
+  requireTerminalProcessReceipt,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -195,7 +195,7 @@ async function classifyAbsence(
   | TemporalProcessWorkObservationStatus.Unavailable
 > {
   try {
-    const receipt = requireCompletedProcessReceipt(
+    const receipt = requireTerminalProcessReceipt(
       await withDeadline(
         handle.result(),
         operationDeadlineMs,

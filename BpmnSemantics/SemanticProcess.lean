@@ -24,6 +24,7 @@ import BpmnSemantics.SemanticProcess.TimerStartAdmission
 import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.Incident
+import BpmnSemantics.SemanticProcess.IncidentCancellation
 import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.CommandAdmission
 import BpmnSemantics.SemanticProcess.Execution

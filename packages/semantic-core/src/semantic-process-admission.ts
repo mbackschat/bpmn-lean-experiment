@@ -286,7 +286,8 @@ function isSupportedScenario(value: unknown): value is Scenario {
           stimulus.kind === StimulusKind.FireTimer ||
           stimulus.kind === StimulusKind.CompleteEffect ||
           stimulus.kind === StimulusKind.ReportEffectFailure ||
-          stimulus.kind === StimulusKind.RetryIncident,
+          stimulus.kind === StimulusKind.RetryIncident ||
+          stimulus.kind === StimulusKind.CancelIncidentProcess,
       ) &&
     observations !== undefined &&
     observations.length === supportedObservations.length &&
@@ -310,6 +311,7 @@ function isProcessStartStimulus(
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
+    case StimulusKind.CancelIncidentProcess:
       return false;
     default:
       return assertNever(stimulus);

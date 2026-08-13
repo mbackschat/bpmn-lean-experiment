@@ -330,6 +330,7 @@ theorem interruptBoundedScope_sound (program : Program) (before after : RuntimeS
   cases running : before.control with
   | notStarted => simp [running] at success
   | completed => simp [running] at success
+  | cancelled => simp [running] at success
   | running instanceId =>
       cases deadlineFound : boundedScopeDeadlineWait? before timerId with
       | none => simp [running, deadlineFound] at success
@@ -534,6 +535,7 @@ theorem interruptBoundedScope_logical_time (program : Program) (before after : R
   cases running : before.control with
   | notStarted => simp [running] at success
   | completed => simp [running] at success
+  | cancelled => simp [running] at success
   | running instanceId =>
       cases deadlineFound : boundedScopeDeadlineWait? before timerId with
       | none => simp [running, deadlineFound] at success

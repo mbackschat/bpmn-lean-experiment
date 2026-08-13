@@ -28,6 +28,14 @@ export function normalizeEnabledInteraction(
           effectId: normalizeOccurrence(interaction.incidentId.effectId),
         },
       };
+    case StimulusKind.CancelIncidentProcess: {
+      const effectId = normalizeOccurrence(interaction.incidentId.effectId);
+      return {
+        ...interaction,
+        processInstanceId: effectId.processInstanceId,
+        incidentId: { ...interaction.incidentId, effectId },
+      };
+    }
     default:
       return assertNever(interaction);
   }

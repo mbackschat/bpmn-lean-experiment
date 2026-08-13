@@ -16,6 +16,7 @@ export * from "./event-race-admission.js";
 export * from "./semantic-process-inclusive-gateway-runtime.js";
 export * from "./semantic-process-event-race-runtime.js";
 export * from "./semantic-process-incident-validation.js";
+export * from "./semantic-process-incident-cancellation.js";
 export {
   isBoundaryTimerDefinition,
   isBoundedTaskDefinition,

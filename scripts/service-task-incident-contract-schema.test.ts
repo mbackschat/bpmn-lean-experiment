@@ -40,6 +40,40 @@ test("admits only literal-generation report and retry stimuli", async () => {
   assert.equal(retry({ ...exactRetry, incidentId: { ...incidentId, jobId: "private" } }), false);
 });
 
+test("admits only the exact incident-root cancellation stimulus and interaction", async () => {
+  const schema = await readScenarioSchema();
+  const cancel = compileDefinition(schema, "cancelIncidentProcess");
+  const enabledCancel = compileDefinition(
+    schema,
+    "enabledCancelIncidentProcess",
+  );
+  const exactCancel = {
+    kind: "cancelIncidentProcess",
+    commandId: "cancel-incident-process",
+    processInstanceId: effectId.processInstanceId,
+    incidentId,
+  } as const;
+  const exactInteraction = {
+    kind: "cancelIncidentProcess",
+    processInstanceId: effectId.processInstanceId,
+    incidentId,
+  } as const;
+
+  assert.equal(cancel(exactCancel), true, JSON.stringify(cancel.errors));
+  assert.equal(
+    enabledCancel(exactInteraction),
+    true,
+    JSON.stringify(enabledCancel.errors),
+  );
+  assert.equal(cancel({ ...exactCancel, owner: "caller-selected" }), false);
+  assert.equal(cancel({ ...exactCancel, reason: "private" }), false);
+  assert.equal(cancel({ ...exactCancel, force: true }), false);
+  assert.equal(
+    enabledCancel({ ...exactInteraction, scopeOccurrenceId: "nested" }),
+    false,
+  );
+});
+
 test("requires the exact public incident and state field shapes", async () => {
   const schema = await readScenarioSchema();
   const incident = compileDefinition(schema, "openEffectIncident");
@@ -76,6 +110,21 @@ test("requires the exact public incident and state field shapes", async () => {
   const { openIncidents: _openIncidents, ...withoutIncidents } = exactState;
   assert.equal(state(withoutIncidents), false);
   assert.equal(state({ ...exactState, openIncidents: [{ ...openIncident, hostCause: "private" }] }), false);
+  assert.equal(state({ ...exactState, status: "cancelled" }), true);
+  assert.equal(
+    state({
+      ...exactState,
+      enabledInteractions: [
+        { kind: "retryIncident", incidentId },
+        {
+          kind: "cancelIncidentProcess",
+          processInstanceId: effectId.processInstanceId,
+          incidentId,
+        },
+      ],
+    }),
+    true,
+  );
 });
 
 test("permits only a Boolean incident-creation environment setting", async () => {

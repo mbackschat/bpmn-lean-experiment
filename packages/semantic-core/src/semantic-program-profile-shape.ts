@@ -62,6 +62,7 @@ export function requiredProgramShape(
       ]);
     case SemanticProfileId.ServiceTaskEffect:
     case SemanticProfileId.ServiceTaskIncident:
+    case SemanticProfileId.ServiceTaskIncidentCancellation:
     case SemanticProfileId.MappedSuccessServiceTask:
       return rootProgram([
         SemanticOperationKind.Initiate,

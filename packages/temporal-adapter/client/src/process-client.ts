@@ -41,9 +41,9 @@ import {
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
-  CompletedProcessReceipt,
   MessageDeliveryResolution,
   ProcessCommandResult,
+  TerminalProcessReceipt,
   TemporalHostAdmissionFailure,
   UserTaskDetail,
   UserTaskDetailRequest,
@@ -58,7 +58,7 @@ import {
   processWorkflowId,
 } from "@bpmn-lean/temporal-protocol";
 import {
-  requireCompletedProcessReceipt,
+  requireTerminalProcessReceipt,
   semanticCommandResult,
 } from "@bpmn-lean/temporal-protocol";
 import { withDeadline } from "@bpmn-lean/temporal-protocol";
@@ -390,7 +390,7 @@ async function resolveClosedMessageDelivery(
   stimulus: DeliverMessageStimulus,
 ): Promise<ProcessCommandResult> {
   try {
-    const receipt = requireCompletedProcessReceipt(
+    const receipt = requireTerminalProcessReceipt(
       await withDeadline(
         handle.result(),
         operationDeadlineMs,
@@ -444,7 +444,7 @@ function resolveMessageDeliveryRecord(
 
 function closedCommandResult(
   stimulus: DeliverMessageStimulus,
-  receipt: CompletedProcessReceipt,
+  receipt: TerminalProcessReceipt,
 ): ProcessCommandResult {
   return {
     kind: ProcessCommandResultKind.ProcessClosed,

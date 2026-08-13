@@ -159,6 +159,7 @@ export function isStableStateResumable(state: RuntimeState): boolean {
         state.effectWaits.length > 0 ||
         state.effectIncidents.length > 0);
     case ControlStateKind.Completed:
+    case ControlStateKind.Cancelled:
       return true;
     default:
       return assertNever(state.control);
@@ -360,6 +361,13 @@ export function applyStimulus(
   const admission = admit(program, state, stimulus);
   switch (admission.outcome) {
     case CommandOutcome.Committed: {
+      if (admission.state.control.kind === ControlStateKind.Cancelled) {
+        return {
+          outcome: CommandOutcome.Committed,
+          state: admission.state,
+          internalStepBoundExceeded: false,
+        };
+      }
       const closure = closeInternal(
         program,
         admission.state,

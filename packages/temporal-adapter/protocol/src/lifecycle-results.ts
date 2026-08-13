@@ -15,9 +15,11 @@ import {
   ProcessCommandResultKind,
 } from "./contracts.js";
 import type {
+  CancelledProcessReceipt,
   CompletedProcessReceipt,
   MessageDeliveryRecord,
   ProcessCommandResult,
+  TerminalProcessReceipt,
 } from "./contracts.js";
 
 export function semanticCommandResult(
@@ -56,6 +58,25 @@ export function isMessageDeliveryRecord(
 export function isCompletedProcessReceipt(
   value: unknown,
 ): value is CompletedProcessReceipt {
+  return isProcessReceiptWithStatus(value, ProcessStatus.Completed);
+}
+
+export function isCancelledProcessReceipt(
+  value: unknown,
+): value is CancelledProcessReceipt {
+  return isProcessReceiptWithStatus(value, ProcessStatus.Cancelled);
+}
+
+export function isTerminalProcessReceipt(
+  value: unknown,
+): value is TerminalProcessReceipt {
+  return isCompletedProcessReceipt(value) || isCancelledProcessReceipt(value);
+}
+
+function isProcessReceiptWithStatus(
+  value: unknown,
+  status: ProcessStatus.Completed | ProcessStatus.Cancelled,
+): boolean {
   if (!isRecord(value) || !hasOnlyKeys(value, [
     "definition",
     "processId",
@@ -102,7 +123,7 @@ export function isCompletedProcessReceipt(
     ]) &&
     finalState.kind === CanonicalObservationKind.State &&
     finalState.instanceId === value.processInstanceId &&
-    finalState.status === ProcessStatus.Completed &&
+    finalState.status === status &&
     Array.isArray(finalState.activeWaits) &&
     finalState.activeWaits.length === 0 &&
     Array.isArray(finalState.openUserTasks) &&
@@ -131,6 +152,17 @@ export function requireCompletedProcessReceipt(
   if (!isCompletedProcessReceipt(value)) {
     throw new TypeError(
       "Temporal Workflow returned a malformed completed Process receipt",
+    );
+  }
+  return value;
+}
+
+export function requireTerminalProcessReceipt(
+  value: unknown,
+): TerminalProcessReceipt {
+  if (!isTerminalProcessReceipt(value)) {
+    throw new TypeError(
+      "Temporal Workflow returned a malformed terminal Process receipt",
     );
   }
   return value;

@@ -79,6 +79,7 @@ function profileAllowsProgramOperationDetails(
       );
     case SemanticProfileId.ConfiguredTask:
     case SemanticProfileId.ServiceTaskIncident:
+    case SemanticProfileId.ServiceTaskIncidentCancellation:
       return operations.every(
         (operation) =>
           operation.kind !== SemanticOperationKind.AwaitEffect ||
@@ -123,7 +124,9 @@ export function profileAllowsCheckedProcessShape(
           node.kind !== CheckedNodeKind.ConfiguredTask ||
           hasProbeEffectDescriptor(node.descriptor),
       )) &&
-    (semanticProfile !== SemanticProfileId.ServiceTaskIncident ||
+    ((semanticProfile !== SemanticProfileId.ServiceTaskIncident &&
+        semanticProfile !==
+          SemanticProfileId.ServiceTaskIncidentCancellation) ||
       nodes.every(
         (node) =>
           node.kind !== CheckedNodeKind.ServiceTask ||

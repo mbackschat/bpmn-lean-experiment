@@ -115,6 +115,18 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         ],
         stimulus.incidentId.generation,
       ]);
+    case StimulusKind.CancelIncidentProcess:
+      return canonicalTypedTupleEncoding([
+        stimulus.kind,
+        stimulus.commandId,
+        stimulus.processInstanceId,
+        [
+          stimulus.incidentId.effectId.processInstanceId,
+          stimulus.incidentId.effectId.elementId,
+          stimulus.incidentId.effectId.activation,
+        ],
+        stimulus.incidentId.generation,
+      ]);
     default:
       return assertNever(stimulus);
   }

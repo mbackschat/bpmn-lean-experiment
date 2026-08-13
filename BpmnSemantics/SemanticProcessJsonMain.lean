@@ -27,6 +27,7 @@ private def processStatusJson : ProcessStatus → Json
   | .notStarted => toJson "notStarted"
   | .running => toJson "running"
   | .completed => toJson "completed"
+  | .cancelled => toJson "cancelled"
 
 private def waitKindJson : WaitKind → Json
   | .userTask => toJson "userTask"
@@ -136,6 +137,11 @@ def enabledInteractionJson : EnabledInteraction → Json
   | .retryIncident incidentId =>
       Json.mkObj
         [ ("kind", toJson "retryIncident")
+        , ("incidentId", effectIncidentIdJson incidentId) ]
+  | .cancelIncidentProcess processInstanceId incidentId =>
+      Json.mkObj
+        [ ("kind", toJson "cancelIncidentProcess")
+        , ("processInstanceId", toJson processInstanceId.value)
         , ("incidentId", effectIncidentIdJson incidentId) ]
 
 def stateObservationJson (state : StateObservation) : Json :=
@@ -247,6 +253,12 @@ def stimulusJson : Stimulus → Json
       Json.mkObj
         [ ("kind", toJson "retryIncident")
         , ("commandId", toJson commandId.value)
+        , ("incidentId", effectIncidentIdJson incidentId) ]
+  | .cancelIncidentProcess commandId processInstanceId incidentId =>
+      Json.mkObj
+        [ ("kind", toJson "cancelIncidentProcess")
+        , ("commandId", toJson commandId.value)
+        , ("processInstanceId", toJson processInstanceId.value)
         , ("incidentId", effectIncidentIdJson incidentId) ]
 
 private def observationKindJson : ObservationKind → Json

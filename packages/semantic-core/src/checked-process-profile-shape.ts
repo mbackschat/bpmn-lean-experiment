@@ -60,6 +60,7 @@ export function requiredCheckedProcessShape(
       ]);
     case SemanticProfileId.ServiceTaskEffect:
     case SemanticProfileId.ServiceTaskIncident:
+    case SemanticProfileId.ServiceTaskIncidentCancellation:
     case SemanticProfileId.MappedSuccessServiceTask:
       return rootChecked([start, CheckedNodeKind.ServiceTask, end]);
     case SemanticProfileId.MappedBoundaryErrorServiceTask:

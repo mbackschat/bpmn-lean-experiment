@@ -42,7 +42,7 @@ def stableStateResumable (state : RuntimeState) : Bool :=
           !state.timerWaits.isEmpty ||
           !state.effectWaits.isEmpty ||
           !state.effectIncidents.isEmpty)
-  | .completed _ => true
+  | .completed _ | .cancelled _ => true
 
 private def independentParallelTaskChoices :
     List (SemanticOperation × RuntimeState) → Bool

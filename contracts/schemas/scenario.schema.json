@@ -62,6 +62,9 @@
           },
           {
             "$ref": "#/$defs/retryIncident"
+          },
+          {
+            "$ref": "#/$defs/cancelIncidentProcess"
           }
         ]
       },
@@ -623,6 +626,30 @@
         }
       }
     },
+    "cancelIncidentProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "processInstanceId",
+        "incidentId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "cancelIncidentProcess"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "processInstanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "incidentId": {
+          "$ref": "#/$defs/effectIncidentId"
+        }
+      }
+    },
     "variableValue": {
       "oneOf": [
         {
@@ -812,6 +839,26 @@
       "properties": {
         "kind": {
           "const": "retryIncident"
+        },
+        "incidentId": {
+          "$ref": "#/$defs/effectIncidentId"
+        }
+      }
+    },
+    "enabledCancelIncidentProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "processInstanceId",
+        "incidentId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "cancelIncidentProcess"
+        },
+        "processInstanceId": {
+          "$ref": "#/$defs/nonEmptyString"
         },
         "incidentId": {
           "$ref": "#/$defs/effectIncidentId"
@@ -1038,7 +1085,8 @@
           "enum": [
             "notStarted",
             "running",
-            "completed"
+            "completed",
+            "cancelled"
           ]
         },
         "activeWaits": {
@@ -1095,6 +1143,9 @@
               },
               {
                 "$ref": "#/$defs/enabledRetryIncident"
+              },
+              {
+                "$ref": "#/$defs/enabledCancelIncidentProcess"
               }
             ]
           }

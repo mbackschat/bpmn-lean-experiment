@@ -2,6 +2,7 @@
 import { StimulusKind } from "@bpmn-lean/semantic-core";
 import type {
   CommandOutcome,
+  CancelIncidentProcessStimulus,
   EffectOccurrenceId,
   ReportEffectFailureStimulus,
   RetryIncidentStimulus,
@@ -12,12 +13,20 @@ import { deterministicSha256Hex } from "./deterministic-sha256.js";
 
 export const bpmnRetryEffectIncidentUpdateName =
   "bpmn-retry-effect-incident";
+export const bpmnCancelIncidentProcessUpdateName =
+  "bpmn-cancel-incident-process";
 
 export type BpmnRetryEffectIncidentUpdateArguments = [
   stimulus: RetryIncidentStimulus,
 ];
 
 export type BpmnRetryEffectIncidentUpdateResult = CommandOutcome;
+
+export type BpmnCancelIncidentProcessUpdateArguments = [
+  stimulus: CancelIncidentProcessStimulus,
+];
+
+export type BpmnCancelIncidentProcessUpdateResult = CommandOutcome;
 
 export function reportEffectFailureCommandId(
   effectId: EffectOccurrenceId,

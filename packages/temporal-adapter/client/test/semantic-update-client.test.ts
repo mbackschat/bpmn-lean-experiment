@@ -62,6 +62,22 @@ test("distinguishes a matching closed Process from an unknown one", async () => 
   });
 });
 
+test("classifies a strict cancelled receipt as retained Process closure", async () => {
+  const closed = await resolveSemanticUpdate({
+    commandId: "after-cancellation",
+    processInstanceId: "Instance_1",
+    updateId: "after-cancellation-update",
+    execute: missing,
+    retained: missing,
+    completedReceipt: async () => receipt("Instance_1", "cancelled"),
+  });
+  assert.equal(closed.kind, "processClosed");
+  assert.equal(
+    closed.kind === "processClosed" && closed.receipt.finalState.status,
+    "cancelled",
+  );
+});
+
 async function missing(): Promise<never> {
   throw notFound();
 }
@@ -70,7 +86,7 @@ function notFound(): WorkflowNotFoundError {
   return new WorkflowNotFoundError("not found", "workflow", undefined);
 }
 
-function receipt(processInstanceId: string) {
+function receipt(processInstanceId: string, status = "completed") {
   return {
     definition: {
       compiler: "bpmn-source-semantic-process",
@@ -84,7 +100,7 @@ function receipt(processInstanceId: string) {
     finalState: {
       kind: "state",
       instanceId: processInstanceId,
-      status: "completed",
+      status,
       activeWaits: [],
       openUserTasks: [],
       openMessageSubscriptions: [],

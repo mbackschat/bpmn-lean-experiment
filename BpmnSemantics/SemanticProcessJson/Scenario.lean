@@ -102,6 +102,14 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
         (.retryIncident
           ⟨← stringField json "commandId"⟩
           (← decodeEffectIncidentId (← field json "incidentId")))
+  | "cancelIncidentProcess" =>
+      requireObjectShape json
+        ["commandId", "incidentId", "kind", "processInstanceId"]
+      pure
+        (.cancelIncidentProcess
+          (← decodeSemanticIdentityField json "commandId")
+          (← decodeSemanticIdentityField json "processInstanceId")
+          (← decodeEffectIncidentId (← field json "incidentId")))
   | _ => throw s!"unsupported scenario stimulus {kind}"
 
 private def decodeObservationKind (json : Json) :

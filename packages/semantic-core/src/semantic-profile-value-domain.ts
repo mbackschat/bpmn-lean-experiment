@@ -65,7 +65,12 @@ export function profileAllowsStimulusValueDomain(
       );
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
-      return semanticProfile === SemanticProfileId.ServiceTaskIncident;
+      return semanticProfile === SemanticProfileId.ServiceTaskIncident ||
+        semanticProfile ===
+          SemanticProfileId.ServiceTaskIncidentCancellation;
+    case StimulusKind.CancelIncidentProcess:
+      return semanticProfile ===
+        SemanticProfileId.ServiceTaskIncidentCancellation;
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
     case StimulusKind.DeliverMessage:

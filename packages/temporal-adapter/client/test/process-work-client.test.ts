@@ -156,6 +156,12 @@ test("classifies matching retained closure, unresolved absence, and infrastructu
       },
       result: async () => completedReceipt("different-host"),
     },
+    cancelled: {
+      query: async () => {
+        throw notFound("cancelled");
+      },
+      result: async () => terminalReceipt(hostingProcessInstanceId, "cancelled"),
+    },
     unavailable: {
       query: async () => {
         throw new Error("transport down");
@@ -165,6 +171,10 @@ test("classifies matching retained closure, unresolved absence, and infrastructu
 
   assert.deepEqual(
     await observeTemporalProcessWork(closed, "closed", hostingProcessInstanceId),
+    { status: TemporalProcessWorkObservationStatus.Closed },
+  );
+  assert.deepEqual(
+    await observeTemporalProcessWork(closed, "cancelled", hostingProcessInstanceId),
     { status: TemporalProcessWorkObservationStatus.Closed },
   );
   assert.deepEqual(
@@ -207,6 +217,10 @@ function notFound(workflowId: string): WorkflowNotFoundError {
 }
 
 function completedReceipt(processInstanceId: string): unknown {
+  return terminalReceipt(processInstanceId, "completed");
+}
+
+function terminalReceipt(processInstanceId: string, status: string): unknown {
   return {
     definition: {
       compiler: "bpmn-source-semantic-process",
@@ -220,7 +234,7 @@ function completedReceipt(processInstanceId: string): unknown {
     finalState: {
       kind: "state",
       instanceId: processInstanceId,
-      status: "completed",
+      status,
       activeWaits: [],
       openUserTasks: [],
       openMessageSubscriptions: [],

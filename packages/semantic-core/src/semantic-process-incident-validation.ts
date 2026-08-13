@@ -18,13 +18,15 @@ import type {
   SemanticEffectWait,
 } from "./semantic-process-state.js";
 
-/** Requires the exact successor profile and its predecessor-equivalent Service Task shape. */
+/** Requires either exact incident profile and its predecessor-equivalent Service Task shape. */
 export function programAllowsEffectIncidents(
   program: SemanticProcessProgram,
 ): boolean {
   return isWellFormedSemanticProcessProgram(program) &&
-    program.identity.semanticProfile ===
-      SemanticProfileId.ServiceTaskIncident &&
+    (program.identity.semanticProfile ===
+        SemanticProfileId.ServiceTaskIncident ||
+      program.identity.semanticProfile ===
+        SemanticProfileId.ServiceTaskIncidentCancellation) &&
     profileAllowsProgramShape(
       program.identity.semanticProfile,
       program.operations,

@@ -236,6 +236,11 @@ test("binds canonical semantic instance identity to the start stimulus", async (
         interaction.incidentId.effectId.processInstanceId =
           state.instanceId;
         break;
+      case "cancelIncidentProcess":
+        interaction.processInstanceId = state.instanceId;
+        interaction.incidentId.effectId.processInstanceId =
+          state.instanceId;
+        break;
       default: {
         const unreachable: never = interaction;
         throw new Error(

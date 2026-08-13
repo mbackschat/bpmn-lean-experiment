@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.Incident
+import BpmnSemantics.SemanticProcess.IncidentCancellation
 import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
@@ -21,10 +22,15 @@ def isCallActivityProgram (program : Program) : Bool :=
   program.identity.semanticProfile.value =
     "bpmn-2.0.2-called-process-call-activity-draft"
 
-/-- An incident-free state remains admissible to every existing profile. A nonempty incident state is admitted only by the exact successor profile and program shape with valid private associations. -/
+/-- Whether one exact selected profile admits the literal-generation incident family. -/
+def serviceTaskIncidentProfileAdmitted (profile : ProfileId) : Bool :=
+  profile = serviceTaskIncidentCheckpointProfileId ||
+    profile = serviceTaskIncidentCancellationCheckpointProfileId
+
+/-- An incident-free state remains admissible to every existing profile. A nonempty incident state is admitted only by one selected incident profile and its exact program shape with valid private associations. -/
 def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
   state.effectIncidents.isEmpty ||
-    (program.identity.semanticProfile = serviceTaskIncidentCheckpointProfileId &&
+    (serviceTaskIncidentProfileAdmitted program.identity.semanticProfile &&
       programWellFormed program &&
       programProfileCapabilitiesValid program &&
       effectIncidentAssociationsValid state)
@@ -45,7 +51,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
           else
             { outcome := .rejected, state }
       | .running _
-      | .completed _ => { outcome := .rejected, state }
+      | .completed _
+      | .cancelled _ => { outcome := .rejected, state }
   | .triggerMessageStart _ processId instanceId startEventId channel =>
       match admitMessageStart? program state processId instanceId startEventId
           channel with
@@ -100,7 +107,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                 { outcome := .rejected, state }
           | none => { outcome := .rejected, state }
       | .notStarted
-      | .completed _ => { outcome := .rejected, state }
+      | .completed _
+      | .cancelled _ => { outcome := .rejected, state }
   | .deliverMessage _ subscriptionId channel =>
       match state.control with
       | .running instanceId =>
@@ -112,7 +120,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                 { outcome := .rejected, state }
           | none => { outcome := .rejected, state }
       | .notStarted
-      | .completed _ => { outcome := .rejected, state }
+      | .completed _
+      | .cancelled _ => { outcome := .rejected, state }
   | .fireTimer _ timerId logicalTimeMs =>
       match state.control with
       | .running instanceId =>
@@ -124,7 +133,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                 { outcome := .rejected, state }
           | none => { outcome := .rejected, state }
       | .notStarted
-      | .completed _ => { outcome := .rejected, state }
+      | .completed _
+      | .cancelled _ => { outcome := .rejected, state }
   | .completeEffect _ effectId result =>
       match state.control with
       | .running instanceId =>
@@ -136,14 +146,15 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                 { outcome := .rejected, state }
           | none => { outcome := .rejected, state }
       | .notStarted
-      | .completed _ => { outcome := .rejected, state }
+      | .completed _
+      | .cancelled _ => { outcome := .rejected, state }
   | .reportEffectFailure _ effectId generation =>
       match state.control with
       | .running instanceId =>
           match reportEffectFailure state effectId generation with
           | some successor =>
-              if program.identity.semanticProfile =
-                    serviceTaskIncidentCheckpointProfileId &&
+              if serviceTaskIncidentProfileAdmitted
+                    program.identity.semanticProfile &&
                   programWellFormed program &&
                   programProfileCapabilitiesValid program &&
                   effectId.processInstanceId = instanceId then
@@ -152,7 +163,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                 { outcome := .rejected, state }
           | none => { outcome := .rejected, state }
       | .notStarted
-      | .completed _ => { outcome := .rejected, state }
+      | .completed _
+      | .cancelled _ => { outcome := .rejected, state }
   | .retryIncident _ incidentId =>
       match state.control with
       | .running instanceId =>
@@ -164,17 +176,31 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                 { outcome := .rejected, state }
           | none => { outcome := .rejected, state }
       | .notStarted
-      | .completed _ => { outcome := .rejected, state }
+      | .completed _
+      | .cancelled _ => { outcome := .rejected, state }
+  | .cancelIncidentProcess _ processInstanceId incidentId =>
+      match cancelIncidentProcess program state processInstanceId incidentId with
+      | some successor => { outcome := .committed, state := successor }
+      | none => { outcome := .rejected, state }
 
 /-- Apply the fail-closed incident/program association gate before any external command dispatch. Refusal preserves the exact submitted state and never enters internal closure. -/
 def admitStimulus (program : Program) (state : RuntimeState)
     (stimulus : Stimulus) : ExternalAdmission :=
-  match state.effectIncidents with
-  | [] => dispatchStimulus program state stimulus
-  | _ :: _ =>
-      if incidentStateAdmitted program state then
+  match stimulus with
+  | .cancelIncidentProcess _ processInstanceId incidentId =>
+      if (incidentProcessCancellationRoot? program state processInstanceId incidentId).isSome then
         dispatchStimulus program state stimulus
       else
         { outcome := .rejected, state }
+  | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart ..
+  | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
+  | .completeEffect .. | .reportEffectFailure .. | .retryIncident .. =>
+      match state.effectIncidents with
+      | [] => dispatchStimulus program state stimulus
+      | _ :: _ =>
+          if incidentStateAdmitted program state then
+            dispatchStimulus program state stimulus
+          else
+            { outcome := .rejected, state }
 
 end BpmnSemantics.SemanticProcess

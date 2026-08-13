@@ -25,7 +25,7 @@ import type {
  * Removes every live runtime owner belonging to `attached` or one of its descendant occurrences.
  *
  * Effect-produced Activity variable bindings are keyed by the effect occurrence rather than by a scope
- * occurrence, so they are matched through the interrupted effect waits rather than by owner.
+ * occurrence, so they are matched through open or incident-suspended effect waits rather than by owner.
  */
 export function removeScopeOccurrenceSubtree(
   state: RuntimeState,
@@ -52,7 +52,12 @@ function removeScopeOccurrenceRegion(
     interrupted.some(({ id }) => sameScopeOccurrence(id, owner));
   const interruptedEffects = state.effectWaits
     .filter(({ owner }) => isInterrupted(owner))
-    .map(({ id }) => id);
+    .map(({ id }) => id)
+    .concat(
+      state.effectIncidents
+        .filter(({ wait }) => isInterrupted(wait.owner))
+        .map(({ id }) => id.effectId),
+    );
   const withoutCalledProcesses = removeCalledProcessSubtreesForCallers(
     state,
     interrupted.map(({ id }) => id),
@@ -78,6 +83,9 @@ function removeScopeOccurrenceRegion(
     ),
     effectWaits: withoutCalledProcesses.effectWaits.filter(
       ({ owner }) => !isInterrupted(owner),
+    ),
+    effectIncidents: withoutCalledProcesses.effectIncidents.filter(
+      ({ wait }) => !isInterrupted(wait.owner),
     ),
     selectedBranchSets: withoutCalledProcesses.selectedBranchSets.filter(
       ({ owner }) => !isInterrupted(owner),

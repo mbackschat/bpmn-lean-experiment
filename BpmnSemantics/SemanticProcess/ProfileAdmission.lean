@@ -156,6 +156,10 @@ def configuredTaskCheckpointProfileId : ProfileId :=
 def serviceTaskIncidentCheckpointProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-service-task-incident-draft"⟩
 
+/-- Runtime-frozen identity of the owner-approved Service Task incident cancellation checkpoint. -/
+def serviceTaskIncidentCancellationCheckpointProfileId : ProfileId :=
+  ⟨"cibseven-2.2.0-service-task-incident-cancellation-draft"⟩
+
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   if profile = "bpmn-2.0.2-message-start-event-draft" then
     some (1, { messageStarts := 1, userTasks := 1, ends := 1 })
@@ -173,6 +177,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1, { starts := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
       profile = serviceTaskIncidentCheckpointProfileId.value ||
+      profile = serviceTaskIncidentCancellationCheckpointProfileId.value ||
       profile = "cibseven-2.0.0-mapped-success-service-task-draft" then
     some (1, { starts := 1, effects := 1, ends := 1 })
   else if profile =
@@ -258,6 +263,7 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1, withScopeCompletions 1 { initiates := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
       profile = serviceTaskIncidentCheckpointProfileId.value ||
+      profile = serviceTaskIncidentCancellationCheckpointProfileId.value ||
       profile = "cibseven-2.0.0-mapped-success-service-task-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, effects := 1, ends := 1 })
   else if profile =
@@ -431,7 +437,8 @@ private def operationPayloadCapabilitiesValid (profile : String)
             effect.inputMappings.isEmpty && effect.outputMappings.isEmpty &&
             route.isNone
       | _ => true
-  else if profile = serviceTaskIncidentCheckpointProfileId.value then
+  else if profile = serviceTaskIncidentCheckpointProfileId.value ||
+      profile = serviceTaskIncidentCancellationCheckpointProfileId.value then
     operations.all fun
       | .awaitEffect _ origin _ _ effect route =>
           origin.elementId = effect.elementId &&

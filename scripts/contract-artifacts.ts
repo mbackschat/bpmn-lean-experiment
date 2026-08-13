@@ -392,6 +392,7 @@ function isProcessStartStimulus(
     case "completeEffect":
     case "reportEffectFailure":
     case "retryIncident":
+    case "cancelIncidentProcess":
       return false;
     default: {
       const unsupported: never = stimulus;

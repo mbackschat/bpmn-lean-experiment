@@ -93,7 +93,10 @@ export function projectCibIncidentState(
     enabledInteractions: [{
       kind: "retryIncident" as Extract<
         StateObservation["enabledInteractions"][number],
-        { readonly incidentId: unknown }
+        {
+          readonly incidentId: unknown;
+          readonly processInstanceId?: never;
+        }
       >["kind"],
       incidentId,
     }],

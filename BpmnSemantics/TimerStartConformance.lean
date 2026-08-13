@@ -236,6 +236,9 @@ private def normalizeEnabledInteraction : EnabledInteraction → EnabledInteract
   | .retryIncident incidentId =>
       .retryIncident
         { incidentId with effectId := normalizeOccurrenceId incidentId.effectId }
+  | .cancelIncidentProcess _ incidentId =>
+      .cancelIncidentProcess ⟨"NormalizedInstance"⟩
+        { incidentId with effectId := normalizeOccurrenceId incidentId.effectId }
 
 private def normalizeObservation (observation : StateObservation) :
     StateObservation :=

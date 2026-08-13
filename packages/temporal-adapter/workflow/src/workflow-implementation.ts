@@ -1,8 +1,6 @@
 import {
   CanonicalObservationKind,
   CommandOutcome,
-  ControlStateKind,
-  ProcessStatus,
   ScenarioStepKind,
   StimulusKind,
   advanceScenario,
@@ -15,6 +13,7 @@ import {
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CancelIncidentProcessStimulus,
   CanonicalObservation,
   CompleteUserTaskInstanceStimulus,
   DeliverMessageStimulus,
@@ -23,7 +22,6 @@ import type {
   RuntimeState,
   SemanticProcessProgram,
   ProcessStartStimulus,
-  StateObservation,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -52,8 +50,8 @@ import type {
   BpmnDeliverMessageSignalArguments,
   BpmnMessageDeliveryResultQueryArguments,
   BpmnUserTaskDetailQueryArguments,
-  CompletedProcessReceipt,
   MessageDeliveryResolution,
+  TerminalProcessReceipt,
   UserTaskDetail,
 } from "@bpmn-lean/temporal-protocol";
 import type {
@@ -105,6 +103,14 @@ import {
   bpmnRetryEffectIncidentUpdate,
   validateRetryEffectIncidentUpdate,
 } from "./incident-update-handler.js";
+import {
+  bpmnCancelIncidentProcessUpdate,
+  validateCancelIncidentProcessUpdate,
+} from "./incident-cancellation-update-handler.js";
+import {
+  isTerminalProcessState,
+  terminalProcessReceipt,
+} from "./terminal-process-receipt.js";
 
 export const bpmnTraceQuery =
   defineQuery<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName);
@@ -141,7 +147,7 @@ export async function runBpmnProcessWithHostEffects(
     request: EffectRequest,
   ) => Promise<EffectActivityResult>,
   eventRaceActivationDrain: ActivationDrain = ActivationDrain.Required,
-): Promise<CompletedProcessReceipt> {
+): Promise<TerminalProcessReceipt> {
   const deployment = deployProcess(start, semanticProcess);
   if (deployment.outcome !== CommandOutcome.Committed) {
     throw ApplicationFailure.nonRetryable(
@@ -285,11 +291,36 @@ export async function runBpmnProcessWithHostEffects(
         validateRetryEffectIncidentUpdate(acceptedStimuli, stimulus),
     },
   );
+  setHandler(
+    bpmnCancelIncidentProcessUpdate,
+    async (stimulus: CancelIncidentProcessStimulus) => {
+      enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
+      await condition(
+        () => commandOutcome(commandResults, stimulus.commandId) !== undefined,
+      );
+      const outcome = commandOutcome(commandResults, stimulus.commandId);
+      if (outcome === undefined) {
+        throw ApplicationFailure.nonRetryable(
+          `Semantic loop ended without an outcome for ${stimulus.commandId}`,
+          "BpmnCommandOutcomeMissing",
+        );
+      }
+      return outcome;
+    },
+    {
+      validator: (stimulus) =>
+        validateCancelIncidentProcessUpdate(
+          acceptedStimuli,
+          start.instanceId,
+          stimulus,
+        ),
+    },
+  );
 
   while (true) {
     if (
       pendingStimuli.length === 0 &&
-      state.control.kind !== ControlStateKind.Completed
+      !isTerminalProcessState(state)
     ) {
       const timers = projectOpenTimers(state);
       const effects = projectOpenEffects(state);
@@ -318,7 +349,7 @@ export async function runBpmnProcessWithHostEffects(
         await condition(
           () =>
             pendingStimuli.length > 0 ||
-            state.control.kind === ControlStateKind.Completed,
+            isTerminalProcessState(state),
         );
       } else if (timers.length > 0) {
         // A boundary deadline races the completion Update, so the generic path below is unsound for
@@ -476,7 +507,7 @@ export async function runBpmnProcessWithHostEffects(
       }
     }
 
-    if (state.control.kind !== ControlStateKind.Completed) {
+    if (!isTerminalProcessState(state)) {
       continue;
     }
     await condition(allHandlersFinished);
@@ -485,15 +516,15 @@ export async function runBpmnProcessWithHostEffects(
     }
   }
 
-  return {
-    definition: semanticProcess.identity,
-    processId: semanticProcess.processId,
-    processInstanceId: start.instanceId,
-    finalState: requireCompletedState(trace, start.instanceId),
-    messageDeliveryRecords: completedMessageDeliveryRecords(
+  return terminalProcessReceipt(
+    semanticProcess,
+    start.instanceId,
+    state,
+    trace,
+    completedMessageDeliveryRecords(
       messageDeliveryResolutions,
     ),
-  };
+  );
 }
 
 function enqueueStimulus(
@@ -543,35 +574,6 @@ function commandOutcome(
   commandId: string,
 ): CommandOutcome | undefined {
   return results.find((entry) => entry.commandId === commandId)?.outcome;
-}
-
-
-
-
-
-function requireCompletedState(
-  trace: ReadonlyArray<CanonicalObservation>,
-  processInstanceId: string,
-): StateObservation & { status: ProcessStatus.Completed } {
-  const finalState = trace.findLast(
-    (
-      observation,
-    ): observation is StateObservation & {
-      status: ProcessStatus.Completed;
-    } =>
-      observation.kind === CanonicalObservationKind.State &&
-      observation.status === ProcessStatus.Completed,
-  );
-  if (
-    finalState === undefined ||
-    finalState.instanceId !== processInstanceId
-  ) {
-    throw ApplicationFailure.nonRetryable(
-      "Completed semantic Process has no valid final observation",
-      "BpmnCompletedReceiptFailure",
-    );
-  }
-  return finalState;
 }
 
 function assertNever(value: never): never {

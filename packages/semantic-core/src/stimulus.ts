@@ -27,6 +27,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
+    case StimulusKind.CancelIncidentProcess:
       return stimulus.commandId;
     default:
       return assertNever(stimulus);
@@ -106,6 +107,13 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
       return (
         right.kind === StimulusKind.RetryIncident &&
         left.commandId === right.commandId &&
+        sameEffectIncidentId(left.incidentId, right.incidentId)
+      );
+    case StimulusKind.CancelIncidentProcess:
+      return (
+        right.kind === StimulusKind.CancelIncidentProcess &&
+        left.commandId === right.commandId &&
+        left.processInstanceId === right.processInstanceId &&
         sameEffectIncidentId(left.incidentId, right.incidentId)
       );
     default:
@@ -245,6 +253,18 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
       return (
         hasOnlyKeys(value, ["kind", "commandId", "incidentId"]) &&
         isNonEmptyString(value.commandId) &&
+        isEffectIncidentId(value.incidentId)
+      );
+    case StimulusKind.CancelIncidentProcess:
+      return (
+        hasOnlyKeys(value, [
+          "kind",
+          "commandId",
+          "processInstanceId",
+          "incidentId",
+        ]) &&
+        isNonEmptyString(value.commandId) &&
+        isNonEmptyString(value.processInstanceId) &&
         isEffectIncidentId(value.incidentId)
       );
     default:

@@ -153,6 +153,7 @@ test("both orders expose the approved stable public observations", () => {
             "parallel User Task state exposed a Message interaction",
           );
         case StimulusKind.RetryIncident:
+        case StimulusKind.CancelIncidentProcess:
           throw new Error(
             "parallel User Task state exposed an incident interaction",
           );

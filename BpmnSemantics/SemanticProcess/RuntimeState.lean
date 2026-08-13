@@ -13,6 +13,7 @@ inductive ProcessControl where
   | notStarted
   | running (instanceId : SemanticId)
   | completed (instanceId : SemanticId)
+  | cancelled (instanceId : SemanticId)
   deriving Repr, DecidableEq
 
 structure ScopeOccurrenceId where

@@ -81,6 +81,8 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
       calledInstances.contains owner.processInstanceId
   let cancelledEffects := state.effectWaits.filter fun wait =>
     cancelled wait.owner
+  let cancelledIncidents := state.effectIncidents.filter fun incident =>
+    cancelled incident.wait.owner
   { state with
     tokens := state.tokens.filter fun token => !cancelled token.owner
     scopeOccurrences := state.scopeOccurrences.filter
@@ -89,6 +91,8 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     messageWaits := state.messageWaits.filter fun wait => !cancelled wait.owner
     timerWaits := state.timerWaits.filter fun wait => !cancelled wait.owner
     effectWaits := state.effectWaits.filter fun wait => !cancelled wait.owner
+    effectIncidents :=
+      state.effectIncidents.filter fun incident => !cancelled incident.wait.owner
     selectedBranchSets :=
       state.selectedBranchSets.filter fun record => !cancelled record.owner
     eventRaces := state.eventRaces.filter fun race => !cancelled race.owner
@@ -100,7 +104,9 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
         activities := state.variables.activities.filter fun activity =>
           !calledInstances.contains activity.owner.processInstanceId &&
             !(cancelledEffects.any fun wait =>
-              activityScopeMatches (effectOccurrenceId wait) activity) } }
+              activityScopeMatches (effectOccurrenceId wait) activity) &&
+            !(cancelledIncidents.any fun incident =>
+              activityScopeMatches incident.id.effectId activity) } }
 
 /-- Regional interruption removes the selected occurrence and then emits the caught route token in its live parent. -/
 def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
