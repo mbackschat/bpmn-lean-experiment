@@ -23,11 +23,11 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
 | Reviewed normative agreements | 10 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
-| Permitted operational details | 7 | 1 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations; one incident-identity mapping awaits owner approval |
+| Permitted operational details | 8 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 12 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution; one failed-job incident extension awaits owner approval |
-| Configuration-specific realizations | 7 | 1 | Behavior is permitted or meaningful only under a declared CIB environment; one explicit failed-job incident setting awaits proposal approval |
+| Selected CIB extensions | 13 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Configuration-specific realizations | 8 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
