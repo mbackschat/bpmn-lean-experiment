@@ -3,6 +3,7 @@ package org.bpmnlean.cibseven;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import java.nio.file.Files;
@@ -11,6 +12,7 @@ import java.util.Map;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.delegate.DelegateExecution;
 import org.cibseven.bpm.engine.delegate.JavaDelegate;
+import org.cibseven.bpm.engine.history.HistoricProcessInstance;
 import org.cibseven.bpm.engine.runtime.Incident;
 import org.junit.Test;
 
@@ -68,6 +70,14 @@ public final class CibSevenServiceTaskIncidentPhaseZeroProbeTest {
               .createProcessInstanceQuery()
               .processInstanceId(processInstanceId)
               .count());
+      var completedHistory =
+          engine
+              .getHistoryService()
+              .createHistoricProcessInstanceQuery()
+              .processInstanceId(processInstanceId)
+              .singleResult();
+      assertNotNull(completedHistory);
+      assertEquals(HistoricProcessInstance.STATE_COMPLETED, completedHistory.getState());
     } finally {
       deleteDeployment(engine, deploymentId);
       engine.close();
@@ -91,6 +101,89 @@ public final class CibSevenServiceTaskIncidentPhaseZeroProbeTest {
 
       assertEquals(0, incidentCount(engine, processInstance.getId()));
       assertEquals(0, requireJob(engine, processInstance.getId()).getRetries());
+    } finally {
+      deleteDeployment(engine, deploymentId);
+      engine.close();
+    }
+  }
+
+  @Test
+  public void provesExternalRootDeletionRemovesIncidentWorkAndPreservesCommittedHistory()
+      throws Exception {
+    var engine =
+        createEngine(
+            "service-task-incident-cancellation",
+            true,
+            new ModeControlledDelegate());
+    String deploymentId = null;
+    try {
+      deploymentId = deploy(engine);
+      var processInstance =
+          engine
+              .getRuntimeService()
+              .startProcessInstanceByKey(PROCESS_ID, Map.of("preserved", "before-cancel"));
+      var processInstanceId = processInstance.getId();
+      var job = requireJob(engine, processInstanceId);
+
+      failUntilRetriesReachZero(engine, job.getId(), 3);
+      requireSingleIncident(engine, processInstanceId, job.getId());
+
+      engine
+          .getRuntimeService()
+          .deleteProcessInstance(processInstanceId, "owner-requested", false, true);
+
+      assertEquals(
+          0,
+          engine
+              .getRuntimeService()
+              .createProcessInstanceQuery()
+              .processInstanceId(processInstanceId)
+              .count());
+      assertEquals(0, incidentCount(engine, processInstanceId));
+      assertEquals(
+          0,
+          engine
+              .getManagementService()
+              .createJobQuery()
+              .processInstanceId(processInstanceId)
+              .count());
+      assertEquals(
+          0,
+          engine
+              .getRuntimeService()
+              .createExecutionQuery()
+              .processInstanceId(processInstanceId)
+              .count());
+      assertEquals(
+          0,
+          engine
+              .getTaskService()
+              .createTaskQuery()
+              .processInstanceId(processInstanceId)
+              .count());
+      var history =
+          engine
+              .getHistoryService()
+              .createHistoricProcessInstanceQuery()
+              .processInstanceId(processInstanceId)
+              .singleResult();
+      assertNotNull(history);
+      assertEquals(HistoricProcessInstance.STATE_EXTERNALLY_TERMINATED, history.getState());
+      var preserved =
+          engine
+              .getHistoryService()
+              .createHistoricVariableInstanceQuery()
+              .processInstanceId(processInstanceId)
+              .variableName("preserved")
+              .singleResult();
+      assertNotNull(preserved);
+      assertEquals("before-cancel", preserved.getValue());
+      assertNull(
+          engine
+              .getRuntimeService()
+              .createIncidentQuery()
+              .processInstanceId(processInstanceId)
+              .singleResult());
     } finally {
       deleteDeployment(engine, deploymentId);
       engine.close();
