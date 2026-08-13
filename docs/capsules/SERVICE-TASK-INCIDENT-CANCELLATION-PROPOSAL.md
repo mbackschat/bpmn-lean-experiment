@@ -2,14 +2,14 @@
 
 ## Status
 
-**Proposal review and owner approval are complete; the first green semantic checkpoint is reached and blocks downstream evidence until independent review.** Context-cold review of immutable target `d03f5285a9e16852e2d08da6da29864275e75c6b` returned `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf1f893d24ee282b89a5fdef0a37d1b920e` with no retained finding. On 2026-08-13, the owner explicitly approved this proposal and all eight decisions in [Decisions requested from the owner](#decisions-requested-from-the-owner). The checkpoint implements the strict wire and schema, TypeScript and Lean root-cancellation transitions, cancelled public observation, and additive Temporal Update and terminal receipt. CIB execution and projection, registered artifacts, differential execution, and live Temporal refinement remain unimplemented and paused. This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
+**Proposal review and owner approval are complete; immutable first-green semantic checkpoint `41eea4c041ba230657f031cf99f39d30e96f573a` is reached and blocks downstream evidence until independent review.** Context-cold review of immutable target `d03f5285a9e16852e2d08da6da29864275e75c6b` returned `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf1f893d24ee282b89a5fdef0a37d1b920e` with no retained finding. On 2026-08-13, the owner explicitly approved this proposal and all eight decisions in [Decisions requested from the owner](#decisions-requested-from-the-owner). The checkpoint implements the strict wire and schema, TypeScript and Lean root-cancellation transitions, cancelled public observation, and additive Temporal Update and terminal receipt. CIB execution and projection, registered artifacts, differential execution, and live Temporal refinement remain unimplemented and paused. This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `d03f5285a9e16852e2d08da6da29864275e75c6b` | `fork-turns-none` | `approve-with-required-edits` | `4505dbf1f893d24ee282b89a5fdef0a37d1b920e` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `41eea4c041ba230657f031cf99f39d30e96f573a` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question and recommendation
