@@ -364,6 +364,20 @@ test("omits the inbox table when the current actor snapshot is empty", () => {
   assert.doesNotMatch(html, /<table/u);
 });
 
+test("falls back to the collection heading when the selected task disappears", () => {
+  assert.match(
+    workInboxSource,
+    /taskButtonRefs\.current\.get\(taskId\) \?\? null;[\s\S]*taskButton \?\? collectionHeadingRef\.current/u,
+  );
+});
+
+test("surfaces a complete task snapshot failure without hidden query retries", () => {
+  assert.match(
+    workInboxSource,
+    /queryFn: \(\) => api\.listTasks\(\),[\s\S]*refetchInterval: 5_000,[\s\S]*retry: false,/u,
+  );
+});
+
 test("retains one immutable action and byte-equivalent request after transport failure", async () => {
   const detail = claimedBooleanDetail();
   let minted = 0;

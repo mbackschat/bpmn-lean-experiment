@@ -24,6 +24,12 @@ on:
       - "platform/ui-kit/**"
       - "showcase/platform-ui-quality/**"
   workflow_dispatch:
+    inputs:
+      regenerate_baselines:
+        description: Generate candidate Linux screenshot baselines as a downloadable artifact
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -36,9 +42,13 @@ jobs:
   ui-quality:
     name: ui-quality (pinned Linux Chromium)
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright@sha256:c091b21d9fae78c76e85cd4356431e9b018402f172a214fc7d7a5e9a7e29d8ac
+      options: --init
     timeout-minutes: 10
     env:
       CI: "true"
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -68,11 +78,22 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install pinned Chromium
-        run: pnpm --filter @bpmn-lean/showcase-platform-ui-quality exec playwright install --with-deps chromium
-
       - name: Verify Product 2 UI quality
+        if: github.event_name != 'workflow_dispatch' || inputs.regenerate_baselines != true
         run: ./scripts/pnpm.sh run test:ui-quality
+
+      - name: Generate candidate Linux baselines
+        if: github.event_name == 'workflow_dispatch' && inputs.regenerate_baselines == true
+        run: ./scripts/pnpm.sh run test:ui-quality:update-snapshots
+
+      - name: Upload candidate Linux baselines
+        if: github.event_name == 'workflow_dispatch' && inputs.regenerate_baselines == true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: product-2-ui-quality-baseline-candidates
+          if-no-files-found: error
+          retention-days: 14
+          path: showcase/platform-ui-quality/e2e/snapshots/
 
       - name: Upload UI-quality failure evidence
         if: failure()

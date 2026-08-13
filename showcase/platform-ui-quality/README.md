@@ -24,6 +24,12 @@ Run the complete gate only in the pinned Linux Chromium environment:
 ./scripts/pnpm.sh run test:ui-quality
 ```
 
-Authoritative screenshot baselines are generated and reviewed only in that pinned Linux environment. Do not generate or commit Darwin baselines. Regeneration uses Playwright's explicit `--update-snapshots` option in the same pinned Linux image; ordinary local and CI commands never update baselines.
+Authoritative screenshot baselines are generated and reviewed only in the digest-pinned `mcr.microsoft.com/playwright:v1.62.1-noble` container declared by [the Product 2 UI-quality workflow](../../.github/workflows/ui-quality.yml). Do not generate or commit Darwin baselines. Start that workflow manually with `regenerate_baselines` enabled to run Playwright's explicit `--update-snapshots` option. The workflow uploads candidate images without modifying the repository. Review the complete image changes before copying them into a normal pull request. Ordinary local and CI commands never update baselines.
+
+M3 release acceptance composes the real Temporal-backed human-work showcase with this deterministic UI-quality lane:
+
+```sh
+./scripts/pnpm.sh run test:release:m3
+```
 
 This lane is intentionally absent from `scripts/verify.sh` and Product 1 feedback loops. A UI-quality failure does not slow or redefine semantic work, and semantic verification does not need a browser.

@@ -34,7 +34,9 @@ export async function assertOwnedActionsFit(owner: Locator): Promise<void> {
       : candidate.getAttribute("aria-label") === null
         ? candidate.tagName.toLowerCase()
         : `${candidate.tagName.toLowerCase()}[aria-label=${JSON.stringify(candidate.getAttribute("aria-label"))}]`;
-    return Array.from(candidate.querySelectorAll("button, a, input, select"))
+    return Array.from(candidate.querySelectorAll(
+      "button, a, input:not([type=radio]):not([type=checkbox]), select, label[data-rac]",
+    ))
       .flatMap((action) => {
         if (!(action instanceof HTMLElement)) return [];
         const box = action.getBoundingClientRect();

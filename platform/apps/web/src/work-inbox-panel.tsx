@@ -68,7 +68,10 @@ export function WorkInboxPanel({
         break;
       case "task": {
         const taskId = lastSelectedTaskIdRef.current;
-        if (taskId !== null) taskButtonRefs.current.get(taskId)?.focus();
+        const taskButton = taskId === null
+          ? null
+          : taskButtonRefs.current.get(taskId) ?? null;
+        (taskButton ?? collectionHeadingRef.current)?.focus();
         break;
       }
       case null:
@@ -80,6 +83,7 @@ export function WorkInboxPanel({
     queryKey: tasksQueryKey,
     queryFn: () => api.listTasks(),
     refetchInterval: 5_000,
+    retry: false,
   });
   const detail = useQuery({
     queryKey: ["work", "task", selected === null ? "none" : workTaskRowId(selected)],

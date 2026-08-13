@@ -75,6 +75,8 @@
     "test:showcase:m2-process-instance-search": "pnpm build:showcase-m2-process-instance-search && pnpm --filter @bpmn-lean/showcase-m2-process-instance-search test && pnpm --filter @bpmn-lean/showcase-m2-process-instance-search test:e2e",
     "test:showcase:m3-human-work": "pnpm build:showcase-m3-human-work && pnpm --filter @bpmn-lean/showcase-m3-human-work test && pnpm --filter @bpmn-lean/showcase-m3-human-work test:e2e",
     "test:ui-quality": "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e",
+    "test:ui-quality:update-snapshots": "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:update-snapshots",
+    "test:release:m3": "pnpm test:showcase:m3-human-work && pnpm test:ui-quality",
     "test:platform-ui-kit": "pnpm --filter @bpmn-lean/platform-ui-kit test",
     "test:platform-web": "pnpm test:platform-ui-kit && pnpm --filter @bpmn-lean/platform-web test",
     "test:platform-engine-gateway": "pnpm build:platform-engine-gateway && node --test --test-concurrency=1 packages/engine-api/test/*.test.ts platform/foundation/engine-gateway/test/*.test.ts",
