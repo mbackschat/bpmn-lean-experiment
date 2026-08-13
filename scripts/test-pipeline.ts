@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { runCommand } from "./run-command.ts";
 import { resolveJavaHome } from "./java-home.ts";
+import { warmPipelineCommandTimeoutMs } from "./pipeline-budget.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const javaHome = resolveJavaHome();
@@ -102,7 +103,7 @@ const testRun = await runProjectCommand(
       BPMN_PIPELINE_BUILD_MODE: isPrebuilt ? "prebuilt" : "measured",
       BPMN_JAVA_HOME: javaHome,
     },
-    timeoutMs: 45_000,
+    timeoutMs: warmPipelineCommandTimeoutMs(process.env),
   },
 );
 

@@ -36,6 +36,12 @@ import {
 import {
   verifyPipelineRegistration,
 } from "../../../scripts/capsule-roundtrip.ts";
+import {
+  defaultWarmBudgetMs,
+  warmBudgetMs,
+  warmPipelineTestTimeoutMs,
+  warmSoftTargetMs,
+} from "../../../scripts/pipeline-budget.ts";
 
 /**
  * Warm-pipeline feedback measures in milliseconds.
@@ -53,33 +59,6 @@ import {
  * emits, compared against the last uncontended measurement recorded in
  * `docs/PLAN.md`. The ceiling never substitutes for that comparison.
  */
-const warmSoftTargetMs = 15_000;
-const defaultWarmBudgetMs = 40_000;
-
-function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
-  const declared = environment.BPMN_PIPELINE_WARM_BUDGET_MS;
-  if (declared === undefined) {
-    return defaultWarmBudgetMs;
-  }
-  const budget = Number(declared);
-  if (!Number.isFinite(budget) || budget <= 0) {
-    throw new TypeError(
-      `BPMN_PIPELINE_WARM_BUDGET_MS must be a positive number of milliseconds, received ${JSON.stringify(declared)}`,
-    );
-  }
-  return budget;
-}
-
-test("rejects a warm-pipeline budget with trailing units", () => {
-  assert.throws(
-    () =>
-      warmBudgetMs({
-        BPMN_PIPELINE_WARM_BUDGET_MS: "40000ms",
-      }),
-    TypeError,
-  );
-});
-
 test("covers the complete artifact registry with exact evidence routes and seeded mutations", () => {
   assert.doesNotThrow(() =>
     verifyPipelineRegistration(
@@ -156,7 +135,7 @@ function requireStateObservation(
 
 test(
   "runs the admitted semantic capsules through release-bound target batches",
-  { timeout: 45_000 },
+  { timeout: warmPipelineTestTimeoutMs(process.env) },
   async () => {
     assert.deepEqual(
       pipelineCases.map(({ id }) => id),

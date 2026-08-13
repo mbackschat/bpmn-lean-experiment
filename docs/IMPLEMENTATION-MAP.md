@@ -71,7 +71,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - a Lean semantic-surplus comment contract with one shared runtime representation invariant and selected execution, strict-JSON, artifact-admission, and scenario support/run boundary documentation; no blanket declaration backfill was performed
 - responsibility-owned Lean semantics, Temporal lifecycle, differential pipeline, contract verification, and CIB runner collaborators
 - focused and full gates
-- GitHub Actions verification on Ubuntu and macOS with the warm feedback budget unchanged
+- GitHub Actions verification on Ubuntu and macOS with unchanged warm feedback reporting, a wider hosted pathology ceiling, and derived test-process deadlines
 
 #### Explicitly absent
 

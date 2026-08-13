@@ -5,8 +5,22 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { defaultWarmBudgetMs } from "./pipeline-budget.ts";
+
 const verifyScriptPath = fileURLToPath(
   new URL("./verify.sh", import.meta.url),
+);
+const pipelineRunnerPath = fileURLToPath(
+  new URL("./test-pipeline.ts", import.meta.url),
+);
+const pipelineTestPath = fileURLToPath(
+  new URL(
+    "../packages/differential/test/pipeline.test.ts",
+    import.meta.url,
+  ),
+);
+const verificationWorkflowPath = fileURLToPath(
+  new URL("../.github/workflows/verify.yml", import.meta.url),
 );
 const cibOracleScriptPath = fileURLToPath(
   new URL("./test-cibseven-oracle.sh", import.meta.url),
@@ -133,6 +147,37 @@ test("default verification includes the focused Temporal history gate", async ()
   await assertLineOccursOnce(
     verifyScriptPath,
     "./scripts/pnpm.sh run test:temporal",
+  );
+});
+
+test("hosted warm-pipeline budget has real headroom and the runner derives its deadline", async () => {
+  const [pipelineTest, pipelineRunner, workflow] = await Promise.all([
+    readFile(pipelineTestPath, "utf8"),
+    readFile(pipelineRunnerPath, "utf8"),
+    readFile(verificationWorkflowPath, "utf8"),
+  ]);
+  const hostedBudgetMatch = workflow.match(
+    /BPMN_PIPELINE_WARM_BUDGET_MS: "(\d+)"/u,
+  );
+  assert.notEqual(hostedBudgetMatch, null);
+  if (hostedBudgetMatch === null) {
+    throw new Error("warm-pipeline budget owners are absent");
+  }
+  const hostedBudget = Number(hostedBudgetMatch[1]);
+
+  assert.ok(
+    hostedBudget >= defaultWarmBudgetMs * 1.5,
+    `hosted warm-pipeline budget ${hostedBudget}ms must retain at least 50% headroom above the portable default ${defaultWarmBudgetMs}ms`,
+  );
+  assert.match(
+    pipelineRunner,
+    /timeoutMs: warmPipelineCommandTimeoutMs\(process\.env\)/u,
+    "the process deadline must be derived from the selected warm budget instead of becoming a second lower ceiling",
+  );
+  assert.match(
+    pipelineTest,
+    /timeout: warmPipelineTestTimeoutMs\(process\.env\)/u,
+    "the Node test deadline must be derived from the selected warm budget instead of becoming a second lower ceiling",
   );
 });
 

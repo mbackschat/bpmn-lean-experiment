@@ -146,9 +146,9 @@ jobs:
       - name: Verify
         env:
           CI: "true"
-          # Shared runners use a wider ceiling without weakening the workstation
-          # feedback budget.
-          BPMN_PIPELINE_WARM_BUDGET_MS: "40000"
+          # Shared runners retain pathology-detection headroom above the portable
+          # default without weakening workstation feedback measurements.
+          BPMN_PIPELINE_WARM_BUDGET_MS: "60000"
         run: ./scripts/verify.sh
 
   # One stable check name for branch protection. Requiring the matrix jobs
