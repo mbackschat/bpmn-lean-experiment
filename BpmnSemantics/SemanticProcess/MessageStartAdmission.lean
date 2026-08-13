@@ -46,7 +46,7 @@ def startStimulusMatchesProgram (program : Program) : Stimulus → Bool
   | .triggerTimerStart _ processId _ startEventId =>
       timerStartTargetMatchesProgram program processId startEventId
   | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
-  | .completeEffect .. => false
+  | .completeEffect .. | .reportEffectFailure .. | .retryIncident .. => false
 
 /-- Admit one resolved operation-addressed Message trigger against one exact checked IL start. -/
 def admitMessageStart? (program : Program) (state : RuntimeState)

@@ -171,6 +171,8 @@ export function requireCompletionStimuli(
       case StimulusKind.DeliverMessage:
       case StimulusKind.FireTimer:
       case StimulusKind.CompleteEffect:
+      case StimulusKind.ReportEffectFailure:
+      case StimulusKind.RetryIncident:
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
@@ -194,6 +196,8 @@ export function requireMessageDeliveryStimuli(
       case StimulusKind.CompleteUserTaskInstance:
       case StimulusKind.FireTimer:
       case StimulusKind.CompleteEffect:
+      case StimulusKind.ReportEffectFailure:
+      case StimulusKind.RetryIncident:
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
@@ -216,6 +220,8 @@ export function requireOptionalTimerStimulus(
       case StimulusKind.CompleteUserTaskInstance:
       case StimulusKind.DeliverMessage:
       case StimulusKind.CompleteEffect:
+      case StimulusKind.ReportEffectFailure:
+      case StimulusKind.RetryIncident:
         break;
       case StimulusKind.FireTimer:
         if (timer !== undefined) {
@@ -261,6 +267,8 @@ export function requireOptionalEffectExecution(
       case StimulusKind.CompleteUserTaskInstance:
       case StimulusKind.DeliverMessage:
       case StimulusKind.FireTimer:
+      case StimulusKind.ReportEffectFailure:
+      case StimulusKind.RetryIncident:
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:

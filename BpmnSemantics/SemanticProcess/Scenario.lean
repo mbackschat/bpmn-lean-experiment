@@ -27,7 +27,9 @@ private def commandId : Stimulus → SemanticId
   | .completeUserTaskInstance id _ _
   | .deliverMessage id _ _
   | .fireTimer id _ _
-  | .completeEffect id _ _ => id
+  | .completeEffect id _ _
+  | .reportEffectFailure id _ _
+  | .retryIncident id _ => id
 
 /-- The external waits one operation can own, so every public projection reads one inventory. -/
 private structure OwnedWaitDefinitions where
@@ -92,6 +94,10 @@ def effectWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
   (state.effectWaits.filter fun wait =>
     decide (wait.elementId = elementId)).length
 
+def incidentWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
+  (state.effectIncidents.filter fun incident =>
+    decide (incident.wait.elementId = elementId)).length
+
 private def insertActiveWaitByElementId (wait : ActiveWait) :
     List ActiveWait → List ActiveWait
   | [] => [wait]
@@ -149,10 +155,21 @@ private def activeWaits (program : Program) (state : RuntimeState) :
           { elementId := ⟨effect.elementId.value⟩
             kind := .effect
             multiplicity }
+  let incidentWaits :=
+    (effectDefinitions program).filterMap fun effect =>
+      let multiplicity := incidentWaitMultiplicity state effect.elementId
+      if multiplicity = 0 then
+        none
+      else
+        some
+          { elementId := ⟨effect.elementId.value⟩
+            kind := .incident
+            multiplicity }
   sortActiveWaitsByElementId taskWaits ++
     sortActiveWaitsByElementId messageWaits ++
     sortActiveWaitsByElementId timerWaits ++
-    sortActiveWaitsByElementId effectWaits
+    sortActiveWaitsByElementId effectWaits ++
+    sortActiveWaitsByElementId incidentWaits
 
 private def openUserTasks (program : Program) (state : RuntimeState) :
     List OpenUserTask :=
@@ -200,27 +217,44 @@ private def openEffects (program : Program) (state : RuntimeState) :
           descriptor := wait.descriptor
           arguments := wait.arguments }
 
+private def openIncidents (program : Program) (state : RuntimeState) :
+    List OpenEffectIncident :=
+  (effectDefinitions program).flatMap fun effect =>
+    (state.effectIncidents.filter fun incident =>
+      decide (incident.wait.elementId = effect.elementId)).map fun incident =>
+        { kind := .effectExecutionFailed
+          id := incident.id
+          effect :=
+            { id := effectWaitOccurrenceId incident.wait
+              descriptor := incident.wait.descriptor
+              arguments := incident.wait.arguments } }
+
 def observeStableState (program : Program) (state : RuntimeState) :
     Option StateObservation :=
   match state.control with
   | .notStarted => none
   | .running instanceId =>
-      let tasks := openUserTasks program state
-      let messages := openMessageSubscriptions program state
-      some
-        { instanceId
-          status := .running
-          activeWaits := activeWaits program state
-          openUserTasks := tasks
-          openMessageSubscriptions := messages
-          openTimers := openTimers program state
-          openEffects := openEffects program state
-          variables := state.variables.process.bindings
-          enabledInteractions :=
-            tasks.map (fun task => .completeUserTaskInstance task.id) ++
-              messages.map fun subscription =>
-                .deliverMessage subscription.id subscription.channel
-          logicalTimeMs := state.logicalTimeMs }
+      if !incidentStateAdmitted program state then none
+      else
+        let tasks := openUserTasks program state
+        let messages := openMessageSubscriptions program state
+        let incidents := openIncidents program state
+        some
+          { instanceId
+            status := .running
+            activeWaits := activeWaits program state
+            openUserTasks := tasks
+            openMessageSubscriptions := messages
+            openTimers := openTimers program state
+            openEffects := openEffects program state
+            openIncidents := incidents
+            variables := state.variables.process.bindings
+            enabledInteractions :=
+              tasks.map (fun task => .completeUserTaskInstance task.id) ++
+                messages.map (fun subscription =>
+                  .deliverMessage subscription.id subscription.channel) ++
+                incidents.map fun incident => .retryIncident incident.id
+            logicalTimeMs := state.logicalTimeMs }
   | .completed instanceId =>
       some
         { instanceId
@@ -230,6 +264,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openMessageSubscriptions := []
           openTimers := []
           openEffects := []
+          openIncidents := []
           variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
@@ -302,7 +337,7 @@ private def requiredObservations : List ObservationKind :=
 private def isProcessStartStimulus : Stimulus → Bool
   | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => true
   | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
-  | .completeEffect .. => false
+  | .completeEffect .. | .reportEffectFailure .. | .retryIncident .. => false
 
 /-- A scenario starts exactly once, in its first position, through one member of the closed start family. -/
 def stimulusSequenceSupported : List Stimulus → Bool

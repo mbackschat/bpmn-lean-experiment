@@ -34,6 +34,7 @@ const activeWaitKindRank = {
   message: 1,
   timer: 2,
   effect: 3,
+  incident: 4,
 } as const satisfies Record<
   StateObservation["activeWaits"][number]["kind"],
   number
@@ -138,6 +139,7 @@ export function verifyProducerProjection(
       | "openMessageSubscriptions"
       | "openTimers"
       | "openEffects"
+      | "openIncidents"
       | "variables"
       | "enabledInteractions"
       | "logicalTimeMs"
@@ -149,6 +151,7 @@ export function verifyProducerProjection(
         messageProjection.openMessageSubscriptions,
       openTimers: timerProjection.openTimers,
       openEffects: effectProjection.openEffects,
+      openIncidents: [],
       variables: stateProjection.variables,
       enabledInteractions: [
         ...taskProjection.enabledInteractions,

@@ -10,6 +10,18 @@ namespace BpmnSemantics.SemanticProcessJson
 open BpmnSemantics
 open Lean
 
+def admitEffectIncidentGeneration (generation : Nat) : Except String Nat :=
+  if generation = 1 then pure generation
+  else throw "effect incident generation must be 1"
+
+private def decodeEffectIncidentId (json : Json) : Except String EffectIncidentId := do
+  requireObjectShape json ["effectId", "generation"]
+  let generation ← admitEffectIncidentGeneration
+    (← decodeSafeNat (← field json "generation"))
+  pure
+    { effectId := ← decodeOccurrenceId (← field json "effectId")
+      generation }
+
 private def decodeStimulus (json : Json) : Except String Stimulus := do
   let kind ← stringField json "kind"
   match kind with
@@ -75,6 +87,21 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
           ⟨← stringField json "commandId"⟩
           (← decodeOccurrenceId (← field json "effectId"))
           (← decodeEffectExecutionResult (← field json "result")))
+  | "reportEffectFailure" =>
+      requireObjectShape json ["commandId", "effectId", "generation", "kind"]
+      let generation ← admitEffectIncidentGeneration
+        (← decodeSafeNat (← field json "generation"))
+      pure
+        (.reportEffectFailure
+          ⟨← stringField json "commandId"⟩
+          (← decodeOccurrenceId (← field json "effectId"))
+          generation)
+  | "retryIncident" =>
+      requireObjectShape json ["commandId", "incidentId", "kind"]
+      pure
+        (.retryIncident
+          ⟨← stringField json "commandId"⟩
+          (← decodeEffectIncidentId (← field json "incidentId")))
   | _ => throw s!"unsupported scenario stimulus {kind}"
 
 private def decodeObservationKind (json : Json) :

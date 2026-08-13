@@ -258,7 +258,7 @@ The owner-approved local feedback target for the complete two-release CIB gate i
 
 ## Canonical CIB observation fidelity
 
-This table classifies the complete current field denominator of `scenario.schema.json#/$defs/stateObservation`: eleven top-level fields plus every nested occurrence, wait, Message subscription, timer, effect, interaction, and variable field. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components.
+This table classifies the complete current field denominator of `scenario.schema.json#/$defs/stateObservation`: twelve top-level fields plus every nested occurrence, wait, Message subscription, timer, effect, incident, interaction, and variable field. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components. Incident paths remain `not-claimed` until the successor profile's CIB evidence lane is implemented and closure-reviewed.
 
 | Canonical field path | Fidelity | Exact basis |
 |---|---|---|
@@ -314,6 +314,27 @@ This table classifies the complete current field denominator of `scenario.schema
 | `openEffects[].arguments[].value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
 | `openEffects[].arguments[].value.kind` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
 | `openEffects[].arguments[].value.value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
+| `openIncidents` | `not-claimed` | No retained CIB scenario currently projects a semantic incident |
+| `openIncidents[].kind` | `not-claimed` | The successor incident profile is not yet registered in the CIB evidence lane |
+| `openIncidents[].id` | `not-claimed` | No retained CIB scenario currently constructs a semantic incident identity |
+| `openIncidents[].id.effectId` | `not-claimed` | No retained CIB scenario currently constructs the nested effect occurrence |
+| `openIncidents[].id.effectId.processInstanceId` | `not-claimed` | No retained CIB scenario currently projects the semantic Process identity |
+| `openIncidents[].id.effectId.elementId` | `not-claimed` | No retained CIB scenario currently projects the failed Activity identity |
+| `openIncidents[].id.effectId.activation` | `not-claimed` | No retained CIB scenario currently projects the effect activation |
+| `openIncidents[].id.generation` | `not-claimed` | No retained CIB scenario currently projects literal semantic generation 1 |
+| `openIncidents[].effect` | `not-claimed` | No retained CIB scenario currently projects the suspended semantic effect |
+| `openIncidents[].effect.id` | `not-claimed` | No retained CIB scenario currently projects the suspended effect occurrence |
+| `openIncidents[].effect.id.processInstanceId` | `not-claimed` | No retained CIB scenario currently projects the semantic Process identity |
+| `openIncidents[].effect.id.elementId` | `not-claimed` | No retained CIB scenario currently projects the failed Activity identity |
+| `openIncidents[].effect.id.activation` | `not-claimed` | No retained CIB scenario currently projects the effect activation |
+| `openIncidents[].effect.descriptor` | `not-claimed` | No retained CIB scenario currently projects the suspended effect descriptor |
+| `openIncidents[].effect.descriptor.protocol` | `not-claimed` | No retained CIB scenario currently projects the effect protocol |
+| `openIncidents[].effect.descriptor.operation` | `not-claimed` | No retained CIB scenario currently projects the effect operation |
+| `openIncidents[].effect.arguments` | `not-claimed` | No retained CIB scenario currently projects suspended effect arguments |
+| `openIncidents[].effect.arguments[].name` | `not-claimed` | No retained CIB scenario currently projects an incident argument name |
+| `openIncidents[].effect.arguments[].value` | `not-claimed` | No retained CIB scenario currently projects an incident argument value |
+| `openIncidents[].effect.arguments[].value.kind` | `not-claimed` | No retained CIB scenario currently projects an incident argument type |
+| `openIncidents[].effect.arguments[].value.value` | `not-claimed` | No retained CIB scenario currently projects an incident argument payload |
 | `variables` | `adapter-derived` | Canonical type projection and Unicode name sort over retained Process-variable runtime/history rows selected only by names from already committed start or completion commands |
 | `variables[].name` | `engine-observed` | Historic Process-variable name within the adapter-selected committed-name boundary |
 | `variables[].value` | `adapter-derived` | Raw host `String`, `Boolean`, or `null` projected into the canonical discriminated value |
@@ -334,6 +355,12 @@ This table classifies the complete current field denominator of `scenario.schema
 | `enabledInteractions[].taskId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
 | `enabledInteractions[].taskId.elementId` | `engine-observed` | Public task definition key |
 | `enabledInteractions[].taskId.activation` | `adapter-decided` | Same unsupported singleton ordinal as the projected User Task |
+| `enabledInteractions[].incidentId` | `not-claimed` | No retained CIB scenario currently exposes a retry interaction |
+| `enabledInteractions[].incidentId.effectId` | `not-claimed` | No retained CIB scenario currently exposes the retry effect identity |
+| `enabledInteractions[].incidentId.effectId.processInstanceId` | `not-claimed` | No retained CIB scenario currently exposes the retry Process identity |
+| `enabledInteractions[].incidentId.effectId.elementId` | `not-claimed` | No retained CIB scenario currently exposes the retry Activity identity |
+| `enabledInteractions[].incidentId.effectId.activation` | `not-claimed` | No retained CIB scenario currently exposes the retry activation |
+| `enabledInteractions[].incidentId.generation` | `not-claimed` | No retained CIB scenario currently exposes literal semantic generation 1 |
 | `logicalTimeMs` | `adapter-derived` | Retained controlled engine-clock reading relative to the fixed logical epoch |
 
 Retained `stateQueries` bind canonical status, logical time, and the bounded Process-variable projection to raw public runtime/history queries and the controlled engine clock. The projector's set of eligible variable names is derived only from start or completion commands after the runner observes their committed semantic outcome; this prevents scenario look-ahead and rejected-command leakage while leaving each retained name and raw nullable value engine-observed. Task, Message-subscription, timer, and effect snapshots bind the five wait/interaction collections. `kind` remains schema-guarded, while every semantic instance component is checked against the answer-free start stimulus rather than a generated host ID. The verifier deliberately shares the Java projector's projection rules, so it establishes raw-to-canonical consistency and is not a third independent semantic producer.

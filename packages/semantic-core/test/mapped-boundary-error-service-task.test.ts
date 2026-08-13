@@ -218,6 +218,7 @@ test("runs the neutral caught-Error scenario", () => {
     openMessageSubscriptions: [],
     openTimers: [],
     openEffects: [],
+    openIncidents: [],
     variables: [{
       name: "resultValue",
       value: { kind: "null" },

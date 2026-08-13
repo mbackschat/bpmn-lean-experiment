@@ -68,6 +68,13 @@ structure EffectWait where
   outputMappings : List VariableMapping
   output : ControlPlaceId
   bpmnErrorRoute : Option BpmnErrorRoute
+  incidentAlreadyRetried : Bool := false
+  deriving Repr, DecidableEq
+
+/-- Private incident state retains the complete suspended effect wait. -/
+structure SemanticEffectIncident where
+  id : EffectIncidentId
+  wait : EffectWait
   deriving Repr, DecidableEq
 
 structure TaskActivation where
@@ -130,7 +137,7 @@ structure SelectedBranchSet where
 
 /-! ## Runtime representation invariant
 
-In an admitted reachable state, every token, wait, selected-branch record, and event-race record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. User Task waits, User Task activation counters, selected-branch records, and event-race records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, event-race, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting a scope removes the selected occurrence subtree together with every owned token, wait, selected-branch record, event-race record, and Activity-local scope paired with its effects, while retaining all activation counters and End history. Normal scope completion may remove an occurrence only after its owned tokens, waits, selected-branch records, event-race records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
+In an admitted reachable state, every token, wait, incident-owned suspended wait, selected-branch record, and event-race record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. An effect occurrence appears in exactly one of `effectWaits` or `effectIncidents`; an incident retains the complete wait and exactly one matching Activity-local scope. User Task waits, User Task activation counters, selected-branch records, and event-race records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, event-race, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting profiles admit no incident-bearing state in this capsule. Normal scope completion may remove an occurrence only after its owned tokens, waits, incidents, selected-branch records, event-race records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
 -/
 
 structure RuntimeState where
@@ -142,6 +149,7 @@ structure RuntimeState where
   messageWaits : List MessageWait
   timerWaits : List TimerWait
   effectWaits : List EffectWait
+  effectIncidents : List SemanticEffectIncident := []
   selectedBranchSets : List SelectedBranchSet
   eventRaces : List EventRace := []
   calledProcessOccurrences : List CalledProcessOccurrence := []
@@ -166,6 +174,7 @@ def initialState : RuntimeState :=
     messageWaits := []
     timerWaits := []
     effectWaits := []
+    effectIncidents := []
     selectedBranchSets := []
     eventRaces := []
     calledProcessOccurrences := []
@@ -443,7 +452,8 @@ def activateEffect (state : RuntimeState) (instanceId : SemanticId)
         arguments
         outputMappings := effect.outputMappings
         output
-        bpmnErrorRoute } :: state.effectWaits
+        bpmnErrorRoute
+        incidentAlreadyRetried := false } :: state.effectWaits
     variables := addActivityVariableScope state.variables effectOwner arguments
     effectActivations :=
       { elementId := effect.elementId, count := activation } ::

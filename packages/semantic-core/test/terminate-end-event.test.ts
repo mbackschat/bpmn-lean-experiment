@@ -324,6 +324,7 @@ test("regional termination removes every child owner while retaining the child r
         outputMappings: [],
         bpmnErrorRoute: null,
         output: "place:SyntheticChildEffectOutput",
+        incidentAlreadyRetried: false,
       },
       {
         id: parentEffect,
@@ -333,6 +334,7 @@ test("regional termination removes every child owner while retaining the child r
         outputMappings: [],
         bpmnErrorRoute: null,
         output: "place:SyntheticParentEffectOutput",
+        incidentAlreadyRetried: false,
       },
     ],
     selectedBranchSets: [{

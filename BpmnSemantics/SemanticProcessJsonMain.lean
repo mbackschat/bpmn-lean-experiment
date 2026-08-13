@@ -33,6 +33,7 @@ private def waitKindJson : WaitKind → Json
   | .message => toJson "message"
   | .timer => toJson "timer"
   | .effect => toJson "effect"
+  | .incident => toJson "incident"
 
 private def occurrenceIdJson (occurrenceId : OccurrenceId) : Json :=
   Json.mkObj
@@ -110,7 +111,19 @@ private def openEffectJson (effect : OpenEffect) : Json :=
     , ("descriptor", effectDescriptorJson effect.descriptor)
     , ("arguments", jsonArray (effect.arguments.map variableBindingJson)) ]
 
-private def enabledInteractionJson : EnabledInteraction → Json
+def effectIncidentIdJson (incidentId : EffectIncidentId) : Json :=
+  Json.mkObj
+    [ ("effectId", occurrenceIdJson incidentId.effectId)
+    , ("generation", toJson incidentId.generation) ]
+
+def openEffectIncidentJson (incident : OpenEffectIncident) : Json :=
+  Json.mkObj
+    [ ("kind", match incident.kind with
+        | .effectExecutionFailed => toJson "effectExecutionFailed")
+    , ("id", effectIncidentIdJson incident.id)
+    , ("effect", openEffectJson incident.effect) ]
+
+def enabledInteractionJson : EnabledInteraction → Json
   | .completeUserTaskInstance taskId =>
       Json.mkObj
         [ ("kind", toJson "completeUserTaskInstance")
@@ -120,8 +133,12 @@ private def enabledInteractionJson : EnabledInteraction → Json
         [ ("kind", toJson "deliverMessage")
         , ("subscriptionId", occurrenceIdJson subscriptionId)
         , ("channel", messageChannelJson channel) ]
+  | .retryIncident incidentId =>
+      Json.mkObj
+        [ ("kind", toJson "retryIncident")
+        , ("incidentId", effectIncidentIdJson incidentId) ]
 
-private def stateObservationJson (state : StateObservation) : Json :=
+def stateObservationJson (state : StateObservation) : Json :=
   Json.mkObj
     [ ("kind", toJson "state")
     , ("instanceId", toJson state.instanceId.value)
@@ -133,6 +150,8 @@ private def stateObservationJson (state : StateObservation) : Json :=
           (state.openMessageSubscriptions.map openMessageSubscriptionJson))
     , ("openTimers", jsonArray (state.openTimers.map openTimerJson))
     , ("openEffects", jsonArray (state.openEffects.map openEffectJson))
+    , ("openIncidents",
+        jsonArray (state.openIncidents.map openEffectIncidentJson))
     , ("variables", jsonArray (state.variables.map variableBindingJson))
     , ("enabledInteractions",
         jsonArray (state.enabledInteractions.map enabledInteractionJson))
@@ -169,7 +188,7 @@ private def scenarioResultJson (result : ScenarioResult) : Json :=
 private def scenarioKindJson : ScenarioKind → Json
   | .scenario => toJson "scenario"
 
-private def stimulusJson : Stimulus → Json
+def stimulusJson : Stimulus → Json
   | .startProcess commandId processId instanceId initialVariables =>
       Json.mkObj
         [ ("kind", toJson "startProcess")
@@ -218,6 +237,17 @@ private def stimulusJson : Stimulus → Json
         , ("commandId", toJson commandId.value)
         , ("effectId", occurrenceIdJson effectId)
         , ("result", effectExecutionResultJson result) ]
+  | .reportEffectFailure commandId effectId generation =>
+      Json.mkObj
+        [ ("kind", toJson "reportEffectFailure")
+        , ("commandId", toJson commandId.value)
+        , ("effectId", occurrenceIdJson effectId)
+        , ("generation", toJson generation) ]
+  | .retryIncident commandId incidentId =>
+      Json.mkObj
+        [ ("kind", toJson "retryIncident")
+        , ("commandId", toJson commandId.value)
+        , ("incidentId", effectIncidentIdJson incidentId) ]
 
 private def observationKindJson : ObservationKind → Json
   | .deployment => toJson "deployment"
@@ -251,6 +281,38 @@ private def scenarioProvenanceJson (provenance : ScenarioProvenance) : Json :=
     [ ("normativeRefs", toJson provenance.normativeRefs)
     , ("cibRevision", toJson provenance.cibRevision)
     , ("cibRefs", toJson provenance.cibRefs) ]
+
+theorem report_effect_failure_stimulus_json_is_exact
+    (commandId : SemanticId) (effectId : EffectOccurrenceId) :
+    stimulusJson (.reportEffectFailure commandId effectId 1) =
+      Json.mkObj
+        [ ("kind", toJson "reportEffectFailure")
+        , ("commandId", toJson commandId.value)
+        , ("effectId", occurrenceIdJson effectId)
+        , ("generation", toJson 1) ] := by
+  rfl
+
+theorem retry_interaction_json_retains_complete_incident_identity
+    (incidentId : EffectIncidentId) :
+    enabledInteractionJson (.retryIncident incidentId) =
+      Json.mkObj
+        [ ("kind", toJson "retryIncident")
+        , ("incidentId", effectIncidentIdJson incidentId) ] := by
+  rfl
+
+theorem open_incident_json_retains_equal_nested_effect_identity
+    (incidentId : EffectIncidentId) (descriptor : EffectDescriptor)
+    (arguments : List VariableBinding) :
+    openEffectIncidentJson
+        { kind := .effectExecutionFailed
+          id := incidentId
+          effect := { id := incidentId.effectId, descriptor, arguments } } =
+      Json.mkObj
+        [ ("kind", toJson "effectExecutionFailed")
+        , ("id", effectIncidentIdJson incidentId)
+        , ("effect", openEffectJson
+            { id := incidentId.effectId, descriptor, arguments }) ] := by
+  rfl
 
 /-- Echo of the exact scenario content this interpreter executed.
 

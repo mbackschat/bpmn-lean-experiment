@@ -407,6 +407,7 @@ test("regional interruption removes every child runtime owner and preserves root
       outputMappings: [],
       bpmnErrorRoute: null,
       output: "place:SyntheticEffectOutput",
+      incidentAlreadyRetried: false,
     }],
     variables: {
       ...waiting.variables,

@@ -49,6 +49,12 @@ abbrev MessageSubscriptionId := OccurrenceId
 abbrev TimerOccurrenceId := OccurrenceId
 abbrev EffectOccurrenceId := OccurrenceId
 
+/-- Identity of the one admitted effect incident generation. Strict profile decoding admits only generation one. -/
+structure EffectIncidentId where
+  effectId : EffectOccurrenceId
+  generation : Nat
+  deriving Repr, DecidableEq
+
 /-- Host-neutral, profile-registered protocol and operation identity for an effect. -/
 structure EffectDescriptor where
   protocol : String
@@ -112,6 +118,7 @@ inductive EnabledInteraction where
   | deliverMessage
       (subscriptionId : MessageSubscriptionId)
       (channel : MessageChannel)
+  | retryIncident (incidentId : EffectIncidentId)
   deriving Repr, DecidableEq
 
 /-- External inputs currently admitted by the User Task scenario boundary. -/
@@ -145,6 +152,13 @@ inductive Stimulus where
       (commandId : SemanticId)
       (effectId : EffectOccurrenceId)
       (result : EffectExecutionResult)
+  | reportEffectFailure
+      (commandId : SemanticId)
+      (effectId : EffectOccurrenceId)
+      (generation : Nat)
+  | retryIncident
+      (commandId : SemanticId)
+      (incidentId : EffectIncidentId)
   deriving Repr, DecidableEq
 
 /-- Process status visible through the canonical observation boundary. -/
@@ -160,6 +174,7 @@ inductive WaitKind where
   | message
   | timer
   | effect
+  | incident
   deriving Repr, DecidableEq
 
 /-- One active semantic wait, retaining multiplicity without host runtime identifiers. -/
@@ -182,6 +197,18 @@ structure OpenEffect where
   arguments : List VariableBinding
   deriving Repr, DecidableEq
 
+/-- Public incident kind admitted by the configured failed-effect overlay. -/
+inductive EffectIncidentKind where
+  | effectExecutionFailed
+  deriving Repr, DecidableEq
+
+/-- Public projection of one configured failed-effect incident. -/
+structure OpenEffectIncident where
+  kind : EffectIncidentKind
+  id : EffectIncidentId
+  effect : OpenEffect
+  deriving Repr, DecidableEq
+
 /-- Canonical state projection at one observation point. -/
 structure StateObservation where
   instanceId : SemanticId
@@ -191,6 +218,7 @@ structure StateObservation where
   openMessageSubscriptions : List OpenMessageSubscription
   openTimers : List OpenTimer
   openEffects : List OpenEffect
+  openIncidents : List OpenEffectIncident := []
   variables : List VariableBinding
   enabledInteractions : List EnabledInteraction
   logicalTimeMs : Nat

@@ -57,6 +57,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.NonInterruptingBoundaryTimer:
     case SemanticProfileId.ParallelForkJoin:
     case SemanticProfileId.ServiceTaskEffect:
+    case SemanticProfileId.ServiceTaskIncident:
     case SemanticProfileId.TimerUserTaskComposition:
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskPreservedNotation:

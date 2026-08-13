@@ -74,7 +74,8 @@ public final class ScenarioProtocol {
     USER_TASK("userTask"),
     MESSAGE("message"),
     TIMER("timer"),
-    EFFECT("effect");
+    EFFECT("effect"),
+    INCIDENT("incident");
 
     private final String wireValue;
 
@@ -207,14 +208,18 @@ public final class ScenarioProtocol {
         value = ScenarioMessageProtocol.DeliverMessageStimulus.class,
         name = "deliverMessage"),
     @JsonSubTypes.Type(value = FireTimerStimulus.class, name = "fireTimer"),
-    @JsonSubTypes.Type(value = CompleteEffectStimulus.class, name = "completeEffect")
+    @JsonSubTypes.Type(value = CompleteEffectStimulus.class, name = "completeEffect"),
+    @JsonSubTypes.Type(value = ReportEffectFailureStimulus.class, name = "reportEffectFailure"),
+    @JsonSubTypes.Type(value = RetryIncidentStimulus.class, name = "retryIncident")
   })
   public sealed interface Stimulus
       permits StartProcessStimulus,
           CompleteUserTaskInstanceStimulus,
           ScenarioMessageProtocol.DeliverMessageStimulus,
           FireTimerStimulus,
-          CompleteEffectStimulus {
+          CompleteEffectStimulus,
+          ReportEffectFailureStimulus,
+          RetryIncidentStimulus {
     String commandId();
   }
 
@@ -364,6 +369,29 @@ public final class ScenarioProtocol {
     }
   }
 
+  public record EffectIncidentId(EffectOccurrenceId effectId, long generation) {
+    public EffectIncidentId {
+      Objects.requireNonNull(effectId, "effectId");
+      if (generation != 1) {
+        throw new IllegalArgumentException("effect incident generation must be literal 1");
+      }
+    }
+  }
+
+  public record OpenEffectIncident(
+      String kind, EffectIncidentId id, OpenEffect effect) {
+    public OpenEffectIncident {
+      if (!"effectExecutionFailed".equals(kind)) {
+        throw new IllegalArgumentException("effect incident kind must be effectExecutionFailed");
+      }
+      Objects.requireNonNull(id, "id");
+      Objects.requireNonNull(effect, "effect");
+      if (!id.effectId().equals(effect.id())) {
+        throw new IllegalArgumentException("effect incident identity must match its effect");
+      }
+    }
+  }
+
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
     @JsonSubTypes.Type(value = SuccessfulEffectResult.class, name = "success"),
@@ -407,6 +435,25 @@ public final class ScenarioProtocol {
     }
   }
 
+  public record ReportEffectFailureStimulus(
+      String commandId, EffectOccurrenceId effectId, long generation) implements Stimulus {
+    public ReportEffectFailureStimulus {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(effectId, "effectId");
+      if (generation != 1) {
+        throw new IllegalArgumentException("effect failure generation must be literal 1");
+      }
+    }
+  }
+
+  public record RetryIncidentStimulus(
+      String commandId, EffectIncidentId incidentId) implements Stimulus {
+    public RetryIncidentStimulus {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(incidentId, "incidentId");
+    }
+  }
+
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
     @JsonSubTypes.Type(value = DeploymentObservation.class, name = "deployment"),
@@ -438,6 +485,7 @@ public final class ScenarioProtocol {
       List<ScenarioMessageProtocol.OpenMessageSubscription> openMessageSubscriptions,
       List<OpenTimer> openTimers,
       List<OpenEffect> openEffects,
+      List<OpenEffectIncident> openIncidents,
       List<VariableBinding> variables,
       List<ScenarioInteractionProtocol.EnabledInteraction> enabledInteractions,
       long logicalTimeMs)
@@ -450,6 +498,7 @@ public final class ScenarioProtocol {
       openMessageSubscriptions = List.copyOf(openMessageSubscriptions);
       openTimers = List.copyOf(openTimers);
       openEffects = List.copyOf(openEffects);
+      openIncidents = List.copyOf(openIncidents);
       variables = List.copyOf(variables);
       enabledInteractions = List.copyOf(enabledInteractions);
       if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {

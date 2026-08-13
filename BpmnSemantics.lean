@@ -8,6 +8,7 @@ import BpmnSemantics.MessageStartConformance
 import BpmnSemantics.TimerStartConformance
 import BpmnSemantics.ReceiveTaskConformance
 import BpmnSemantics.ServiceTaskEffectConformance
+import BpmnSemantics.ServiceTaskIncidentRetryConformance
 import BpmnSemantics.MappedSuccessConformance
 import BpmnSemantics.MappedBoundaryErrorConformance
 import BpmnSemantics.UserTaskInteractionConformance

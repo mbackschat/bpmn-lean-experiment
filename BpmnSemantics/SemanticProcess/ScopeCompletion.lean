@@ -20,6 +20,7 @@ def scopeQuiescent (state : RuntimeState) (owner : ScopeOccurrenceId) : Bool :=
     !(state.messageWaits.any fun wait => wait.owner == owner) &&
     !(state.timerWaits.any fun wait => wait.owner == owner) &&
     !(state.effectWaits.any fun wait => wait.owner == owner) &&
+    !(state.effectIncidents.any fun incident => incident.wait.owner == owner) &&
     !(state.selectedBranchSets.any fun record => record.owner == owner) &&
     !(state.eventRaces.any fun race => race.owner == owner) &&
     !(state.calledProcessOccurrences.any fun record => record.caller == owner) &&

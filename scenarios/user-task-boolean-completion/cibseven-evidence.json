@@ -130,6 +130,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [
           {
             "name": "initialNote",
@@ -171,6 +172,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [
           {
             "name": "approved",

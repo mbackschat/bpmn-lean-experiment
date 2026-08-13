@@ -135,11 +135,51 @@ export async function verifyPayloadFreeServiceTaskPreservation(
     expectedScenarioSha256,
     evidencePath,
   ));
+  const expectedEvidenceValue = JSON.parse(
+    expectedEvidence.toString("utf8"),
+  ) as unknown;
+  addRequiredEmptyIncidentCollections(expectedEvidenceValue);
+  const expectedCurrentEvidence = Buffer.from(
+    `${JSON.stringify(expectedEvidenceValue, null, 2)}\n`,
+  );
   const currentEvidence = await readFile(path.join(projectRoot, evidencePath));
   assert.ok(
-    currentEvidence.equals(expectedEvidence),
-    `${evidencePath} changed outside the approved scenario digest rebinding`,
+    currentEvidence.equals(expectedCurrentEvidence),
+    `${evidencePath} changed outside the approved scenario digest rebinding and required empty incident collections`,
   );
+}
+
+function addRequiredEmptyIncidentCollections(value: unknown): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      addRequiredEmptyIncidentCollections(item);
+    }
+    return;
+  }
+  if (value === null || typeof value !== "object") {
+    return;
+  }
+  const record = value as Record<string, unknown>;
+  for (const nested of Object.values(record)) {
+    addRequiredEmptyIncidentCollections(nested);
+  }
+  if (
+    record.kind === "state" &&
+    Array.isArray(record.openEffects) &&
+    !("openIncidents" in record)
+  ) {
+    const reordered: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(record)) {
+      reordered[key] = nested;
+      if (key === "openEffects") {
+        reordered.openIncidents = [];
+      }
+    }
+    for (const key of Object.keys(record)) {
+      delete record[key];
+    }
+    Object.assign(record, reordered);
+  }
 }
 
 async function verifyLegacyDependencyClosure(

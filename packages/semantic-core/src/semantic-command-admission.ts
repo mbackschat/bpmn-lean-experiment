@@ -35,6 +35,13 @@ import {
   winEventRaceWithMessage,
   winEventRaceWithTimer,
 } from "./semantic-process-event-race-runtime.js";
+import {
+  reportEffectFailure,
+  retryEffectIncident,
+} from "./semantic-process-incident-runtime.js";
+import {
+  incidentStateAllowsDispatch,
+} from "./semantic-process-incident-validation.js";
 import { deliverMessage } from "./semantic-process-message.js";
 import {
   admitMessageStart,
@@ -75,10 +82,13 @@ export function admit(
   state: RuntimeState,
   stimulus: Stimulus,
 ): CommandAdmission {
-  if (!profileAllowsStimulusValueDomain(
-    program.identity.semanticProfile,
-    stimulus,
-  )) {
+  if (
+    !incidentStateAllowsDispatch(program, state) ||
+    !profileAllowsStimulusValueDomain(
+      program.identity.semanticProfile,
+      stimulus,
+    )
+  ) {
     return { outcome: CommandOutcome.Rejected, state };
   }
   switch (stimulus.kind) {
@@ -287,6 +297,18 @@ export function admit(
           variables,
         },
       };
+    }
+    case StimulusKind.ReportEffectFailure: {
+      const next = reportEffectFailure(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
+    }
+    case StimulusKind.RetryIncident: {
+      const next = retryEffectIncident(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
     }
     default:
       return assertNever(stimulus);

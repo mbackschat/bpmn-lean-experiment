@@ -61,6 +61,9 @@ export function profileAllowsStimulusValueDomain(
         VariableWriteSurface.EffectCompletion,
         stimulus.result.localPatch,
       );
+    case StimulusKind.ReportEffectFailure:
+    case StimulusKind.RetryIncident:
+      return semanticProfile === SemanticProfileId.ServiceTaskIncident;
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
     case StimulusKind.DeliverMessage:

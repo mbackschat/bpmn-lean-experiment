@@ -257,6 +257,39 @@ test("content-binds the typed BPMN Error command without coercing null", () => {
   );
 });
 
+test("content-binds the literal incident report and retry identities", () => {
+  const effectId = {
+    processInstanceId: "Instance_1",
+    elementId: "ServiceTask_Record",
+    activation: 1,
+  };
+  const report = {
+    kind: StimulusKind.ReportEffectFailure,
+    commandId: "report-effect-failure",
+    effectId,
+    generation: 1,
+  } as const satisfies Stimulus;
+  const retry = {
+    kind: StimulusKind.RetryIncident,
+    commandId: "retry-effect-incident",
+    incidentId: { effectId, generation: 1 },
+  } as const satisfies Stimulus;
+
+  assert.equal(
+    canonicalStimulusEncoding(report),
+    '["reportEffectFailure","report-effect-failure",["Instance_1","ServiceTask_Record",1],1]',
+  );
+  assert.equal(
+    canonicalStimulusEncoding(retry),
+    '["retryIncident","retry-effect-incident",["Instance_1","ServiceTask_Record",1],1]',
+  );
+  assert.notEqual(contentBoundUpdateId(report), contentBoundUpdateId(retry));
+  assert.notEqual(
+    contentBoundUpdateId(retry),
+    contentBoundUpdateId({ ...retry, commandId: "retry-other-command" }),
+  );
+});
+
 test("derives the scenario-identical timer command inside the Workflow boundary", () => {
   const timer = {
     id: {

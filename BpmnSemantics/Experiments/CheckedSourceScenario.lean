@@ -74,7 +74,9 @@ def commandId : Stimulus → SemanticId
   | .completeUserTaskInstance id _ _
   | .fireTimer id _ _
   | .deliverMessage id _ _
-  | .completeEffect id _ _ => id
+  | .completeEffect id _ _
+  | .reportEffectFailure id _ _
+  | .retryIncident id _ => id
 
 structure ScenarioExecution where
   outcome : ScenarioOutcome

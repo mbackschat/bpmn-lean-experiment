@@ -152,6 +152,10 @@ def terminateEndCheckpointProfileId : ProfileId :=
 def configuredTaskCheckpointProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-bpmn-lean-configured-task-effect-draft"⟩
 
+/-- Runtime-frozen identity of the owner-approved Service Task incident checkpoint. -/
+def serviceTaskIncidentCheckpointProfileId : ProfileId :=
+  ⟨"cibseven-2.2.0-service-task-incident-draft"⟩
+
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   if profile = "bpmn-2.0.2-message-start-event-draft" then
     some (1, { messageStarts := 1, userTasks := 1, ends := 1 })
@@ -168,6 +172,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
     some (1, { starts := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
+      profile = serviceTaskIncidentCheckpointProfileId.value ||
       profile = "cibseven-2.0.0-mapped-success-service-task-draft" then
     some (1, { starts := 1, effects := 1, ends := 1 })
   else if profile =
@@ -252,6 +257,7 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
+      profile = serviceTaskIncidentCheckpointProfileId.value ||
       profile = "cibseven-2.0.0-mapped-success-service-task-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, effects := 1, ends := 1 })
   else if profile =
@@ -418,6 +424,14 @@ private def operationPayloadCapabilitiesValid (profile : String)
       | .mergeExclusive _ _ inputs _ => inputs.length = 3
       | _ => true
   else if profile = configuredTaskCheckpointProfileId.value then
+    operations.all fun
+      | .awaitEffect _ origin _ _ effect route =>
+          origin.elementId = effect.elementId &&
+            configuredTaskDescriptorValid effect.descriptor &&
+            effect.inputMappings.isEmpty && effect.outputMappings.isEmpty &&
+            route.isNone
+      | _ => true
+  else if profile = serviceTaskIncidentCheckpointProfileId.value then
     operations.all fun
       | .awaitEffect _ origin _ _ effect route =>
           origin.elementId = effect.elementId &&

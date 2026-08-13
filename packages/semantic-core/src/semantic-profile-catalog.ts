@@ -33,6 +33,8 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
   ParallelForkJoin: "parallel-fork-join-draft",
   ServiceTaskEffect: "cibseven-2.2.0-service-task-effect-draft",
+  ServiceTaskIncident:
+    "cibseven-2.2.0-service-task-incident-draft",
   TimerUserTaskComposition:
     "bpmn-2.0.2-timer-user-task-composition-draft",
   UserTask: "cibseven-2.2.0-user-task-process-data-draft",

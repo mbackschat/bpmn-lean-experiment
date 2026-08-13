@@ -34,6 +34,9 @@ import {
   armEventRace,
   eventRaceAssociationsAreValid,
 } from "./semantic-process-event-race-runtime.js";
+import {
+  effectIncidentAssociationsAreValid,
+} from "./semantic-process-incident-validation.js";
 import { createMessageWait } from "./semantic-process-message.js";
 import { applyMessageInitiation } from "./semantic-process-message-start.js";
 import { applyTimerInitiation } from "./semantic-process-timer-start.js";
@@ -73,6 +76,7 @@ export type {
   ScopeOccurrenceId,
   ScopedVariables,
   SemanticEffectWait,
+  SemanticEffectIncident,
   SemanticMessageWait,
   SemanticTimerWait,
   SemanticUserTaskWait,
@@ -148,10 +152,12 @@ export function isStableStateResumable(state: RuntimeState): boolean {
     case ControlStateKind.Running:
       return eventRaceAssociationsAreValid(state) &&
         calledProcessAssociationsAreValid(state) &&
+        effectIncidentAssociationsAreValid(state) &&
         (state.userTaskWaits.length > 0 ||
         state.messageWaits.length > 0 ||
         state.timerWaits.length > 0 ||
-        state.effectWaits.length > 0);
+        state.effectWaits.length > 0 ||
+        state.effectIncidents.length > 0);
     case ControlStateKind.Completed:
       return true;
     default:

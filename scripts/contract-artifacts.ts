@@ -383,6 +383,8 @@ function isProcessStartStimulus(
     case "deliverMessage":
     case "fireTimer":
     case "completeEffect":
+    case "reportEffectFailure":
+    case "retryIncident":
       return false;
     default: {
       const unsupported: never = stimulus;

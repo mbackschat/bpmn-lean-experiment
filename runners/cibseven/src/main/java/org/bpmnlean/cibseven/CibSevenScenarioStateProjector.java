@@ -160,6 +160,7 @@ final class CibSevenScenarioStateProjector {
             messages.openSubscriptions(),
             openTimers,
             openEffects,
+            List.of(),
             variables,
             enabledInteractions,
             logicalTimeMs),

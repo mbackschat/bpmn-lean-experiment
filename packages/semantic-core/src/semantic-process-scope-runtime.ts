@@ -165,6 +165,7 @@ export function isScopeOccurrenceQuiescent(
     !state.messageWaits.some(({ owner }) => owned(owner)) &&
     !state.timerWaits.some(({ owner }) => owned(owner)) &&
     !state.effectWaits.some(({ owner }) => owned(owner)) &&
+    !state.effectIncidents.some(({ wait }) => owned(wait.owner)) &&
     !state.selectedBranchSets.some(({ owner }) => owned(owner)) &&
     !state.eventRaces.some(({ owner }) => owned(owner)) &&
     !state.calledProcessOccurrences.some(({ caller }) => owned(caller)) &&

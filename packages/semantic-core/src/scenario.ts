@@ -14,6 +14,7 @@ import type {
   OpenMessageSubscription,
   OpenTimer,
   OpenEffect,
+  OpenEffectIncident,
   OccurrenceId,
   ProcessStartStimulus,
   Scenario,
@@ -79,6 +80,7 @@ const waitKindOrder = {
   [WaitKind.Message]: 1,
   [WaitKind.Timer]: 2,
   [WaitKind.Effect]: 3,
+  [WaitKind.Incident]: 4,
 } as const satisfies Record<WaitKind, number>;
 
 export type ScenarioDeployment = DeepReadonly<{
@@ -130,6 +132,22 @@ export function projectOpenEffects(
     .sort(compareOpenOccurrences);
 }
 
+export function projectOpenIncidents(
+  state: RuntimeState,
+): ReadonlyArray<OpenEffectIncident> {
+  return state.effectIncidents
+    .map(({ id, wait }) => ({
+      kind: "effectExecutionFailed",
+      id,
+      effect: {
+        id: wait.id,
+        descriptor: wait.descriptor,
+        arguments: wait.arguments,
+      },
+    } as const))
+    .sort((left, right) => compareOpenOccurrences(left.effect, right.effect));
+}
+
 function observeStableState(state: RuntimeState): StateObservation | null {
   switch (state.control.kind) {
     case ControlStateKind.Running:
@@ -146,6 +164,7 @@ function observeStableState(state: RuntimeState): StateObservation | null {
         openMessageSubscriptions: projectOpenMessageSubscriptions(state),
         openTimers: projectOpenTimers(state),
         openEffects: projectOpenEffects(state),
+        openIncidents: projectOpenIncidents(state),
         variables: state.variables.process.bindings,
         enabledInteractions: [
           ...projectOpenUserTasks(state).map((task) => ({
@@ -159,6 +178,10 @@ function observeStableState(state: RuntimeState): StateObservation | null {
               channel: subscription.channel,
             } as const),
           ),
+          ...projectOpenIncidents(state).map((incident) => ({
+            kind: StimulusKind.RetryIncident,
+            incidentId: incident.id,
+          } as const)),
         ],
         logicalTimeMs: state.logicalTimeMs,
       };
@@ -198,6 +221,14 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
       (effectMultiplicities.get(wait.id.elementId) ?? 0) + 1,
     );
   }
+  const incidentMultiplicities = new Map<string, number>();
+  for (const incident of state.effectIncidents) {
+    const elementId = incident.id.effectId.elementId;
+    incidentMultiplicities.set(
+      elementId,
+      (incidentMultiplicities.get(elementId) ?? 0) + 1,
+    );
+  }
   return [
     ...[...userTaskMultiplicities.entries()].map(
       ([elementId, multiplicity]) => ({
@@ -224,6 +255,13 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
       ([elementId, multiplicity]) => ({
         elementId,
         kind: WaitKind.Effect,
+        multiplicity,
+      }),
+    ),
+    ...[...incidentMultiplicities.entries()].map(
+      ([elementId, multiplicity]) => ({
+        elementId,
+        kind: WaitKind.Incident,
         multiplicity,
       }),
     ),

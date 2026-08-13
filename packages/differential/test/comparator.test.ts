@@ -50,6 +50,7 @@ const calibratedResult: ScenarioResult = {
       openMessageSubscriptions: [],
       openTimers: [],
       openEffects: [],
+      openIncidents: [],
       variables: [],
       enabledInteractions: [],
       logicalTimeMs: 0,

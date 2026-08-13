@@ -63,6 +63,7 @@ final class CibSevenActiveWaitProjector {
       case MESSAGE -> 1;
       case TIMER -> 2;
       case EFFECT -> 3;
+      case INCIDENT -> 4;
     };
   }
 }

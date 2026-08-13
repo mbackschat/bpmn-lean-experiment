@@ -75,6 +75,10 @@ selectMany.candidates[0] = selectMany.candidates[1];
 selectMany.candidates[0].expectedJoinInput = "place:changed";
 // @ts-expect-error hidden selected-branch records are deeply immutable
 runtime.selectedBranchSets[0].expectedInputs[0] = "place:changed";
+// @ts-expect-error incident identities are deeply immutable
+runtime.effectIncidents[0].id.effectId.activation = 2;
+// @ts-expect-error incident-owned suspended waits are deeply immutable
+runtime.effectIncidents[0].wait.incidentAlreadyRetried = true;
 
 void callbackResult;
 void tuple;

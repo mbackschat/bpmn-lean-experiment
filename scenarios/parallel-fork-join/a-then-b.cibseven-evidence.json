@@ -137,6 +137,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [],
         "enabledInteractions": [
           {
@@ -188,6 +189,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [],
         "enabledInteractions": [
           {
@@ -215,6 +217,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [],
         "enabledInteractions": [],
         "logicalTimeMs": 0

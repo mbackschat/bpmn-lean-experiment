@@ -42,6 +42,8 @@ export enum StimulusKind {
   DeliverMessage = "deliverMessage",
   FireTimer = "fireTimer",
   CompleteEffect = "completeEffect",
+  ReportEffectFailure = "reportEffectFailure",
+  RetryIncident = "retryIncident",
 }
 
 export type StartProcessStimulus = DeepReadonly<{
@@ -164,12 +166,32 @@ export type CompleteEffectStimulus = DeepReadonly<{
   result: EffectExecutionResult;
 }>;
 
+export type EffectIncidentId = DeepReadonly<{
+  effectId: EffectOccurrenceId;
+  generation: 1;
+}>;
+
+export type ReportEffectFailureStimulus = DeepReadonly<{
+  kind: StimulusKind.ReportEffectFailure;
+  commandId: string;
+  effectId: EffectOccurrenceId;
+  generation: 1;
+}>;
+
+export type RetryIncidentStimulus = DeepReadonly<{
+  kind: StimulusKind.RetryIncident;
+  commandId: string;
+  incidentId: EffectIncidentId;
+}>;
+
 export type Stimulus =
   | ProcessStartStimulus
   | CompleteUserTaskInstanceStimulus
   | DeliverMessageStimulus
   | FireTimerStimulus
-  | CompleteEffectStimulus;
+  | CompleteEffectStimulus
+  | ReportEffectFailureStimulus
+  | RetryIncidentStimulus;
 
 export enum ProcessStatus {
   NotStarted = "notStarted",
@@ -182,6 +204,7 @@ export enum WaitKind {
   Message = "message",
   Timer = "timer",
   Effect = "effect",
+  Incident = "incident",
 }
 
 export enum ObservationRequestKind {
@@ -231,9 +254,15 @@ export type DeliverMessageInteraction = DeepReadonly<{
   channel: import("./semantic-value-contract.js").MessageChannel;
 }>;
 
+export type RetryIncidentInteraction = DeepReadonly<{
+  kind: StimulusKind.RetryIncident;
+  incidentId: EffectIncidentId;
+}>;
+
 export type EnabledInteraction =
   | CompleteUserTaskInstanceInteraction
-  | DeliverMessageInteraction;
+  | DeliverMessageInteraction
+  | RetryIncidentInteraction;
 
 export type OpenMessageSubscription = DeepReadonly<{
   id: MessageSubscriptionId;
@@ -251,6 +280,12 @@ export type OpenEffect = DeepReadonly<{
   arguments: VariableBinding[];
 }>;
 
+export type OpenEffectIncident = DeepReadonly<{
+  kind: "effectExecutionFailed";
+  id: EffectIncidentId;
+  effect: OpenEffect;
+}>;
+
 export type StateObservation = DeepReadonly<{
   kind: CanonicalObservationKind.State;
   instanceId: string;
@@ -260,6 +295,7 @@ export type StateObservation = DeepReadonly<{
   openMessageSubscriptions: OpenMessageSubscription[];
   openTimers: OpenTimer[];
   openEffects: OpenEffect[];
+  openIncidents: OpenEffectIncident[];
   variables: VariableBinding[];
   enabledInteractions: EnabledInteraction[];
   logicalTimeMs: number;

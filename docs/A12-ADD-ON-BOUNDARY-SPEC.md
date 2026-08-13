@@ -111,7 +111,7 @@ Their project-authored fixtures use neutral identities, names, values, Error cod
 
 The neutral profiles use fresh CIB relationship entries and evidence. Existing A12-specific relationship entries and evidence remain adoption evidence and are not relabeled as generic proof.
 
-The non-A12 payload-free Service Task profile and BPMN source remain byte-identical to immutable baseline `02330ad0f980a5fc282cc0aa93600a9632b86c3e`. Its scenario adds only `bpmn.sourceOverlay: null`, and its evidence changes only by rebinding the resulting scenario SHA-256.
+The non-A12 payload-free Service Task profile and BPMN source remain byte-identical to immutable baseline `02330ad0f980a5fc282cc0aa93600a9632b86c3e`. Its scenario adds only `bpmn.sourceOverlay: null`; its evidence rebinds the resulting scenario SHA-256 and follows required canonical-result schema replacements with empty values for mechanisms that scenario does not exercise.
 
 ## Preserved A12 evidence
 

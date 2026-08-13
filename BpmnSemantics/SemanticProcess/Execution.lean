@@ -1,10 +1,8 @@
-import BpmnSemantics.SemanticProcess.MessageStartAdmission
-import BpmnSemantics.SemanticProcess.ValueDomain
-import BpmnSemantics.SemanticProcess.WaitCompletion
+import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! # Semantic Process external execution
 
-This module owns external command admission, explicit operation choice, bounded internal closure, the pure `applyStimulus` boundary, and reusable full-occurrence-identity refusal laws. It does not own external wait completion, scenario projection, or capsule fixtures.
+This module owns explicit operation choice, bounded internal closure, the pure `applyStimulus` boundary, and reusable full-occurrence-identity refusal laws. External command admission is owned by `CommandAdmission`; wait completion, scenario projection, and capsule fixtures remain separate.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -18,126 +16,6 @@ def runChoices (program : Program) : RuntimeState → List OperationId →
       match step program state choice with
       | none => none
       | some successor => runChoices program successor choices
-
-private structure ExternalAdmission where
-  outcome : CommandOutcome
-  state : RuntimeState
-
-private def isCallActivityProgram (program : Program) : Bool :=
-  program.identity.semanticProfile.value =
-    "bpmn-2.0.2-called-process-call-activity-draft"
-
-private def admitStimulus (program : Program) (state : RuntimeState) :
-    Stimulus → ExternalAdmission
-  | .startProcess _ processId instanceId initialVariables =>
-      match state.control with
-      | .notStarted =>
-          if ordinaryStartMatchesProgram program &&
-              program.processId.value = processId.value &&
-              processDataBindingsAdmitted program.identity.semanticProfile
-                .processStart initialVariables &&
-              (!isCallActivityProgram program || initialVariables.isEmpty) then
-            match runningProgramStartState? program instanceId initialVariables with
-            | some started => { outcome := .committed, state := started }
-            | none => { outcome := .semanticFailure, state }
-          else
-            { outcome := .rejected, state }
-      | .running _
-      | .completed _ => { outcome := .rejected, state }
-  | .triggerMessageStart _ processId instanceId startEventId channel =>
-      match admitMessageStart? program state processId instanceId startEventId
-          channel with
-      | some started => { outcome := .committed, state := started }
-      | none => { outcome := .rejected, state }
-  | .triggerTimerStart _ processId instanceId startEventId =>
-      match admitTimerStart? program state processId instanceId startEventId with
-      | some started => { outcome := .committed, state := started }
-      | none => { outcome := .rejected, state }
-  | .completeUserTaskInstance _ taskId submittedValues =>
-      match state.control with
-      | .running instanceId =>
-          -- The bounded arm is routed here rather than inside `completeUserTask` because refusing a
-          -- non-empty submission is part of the same admission decision: the timing profile admits no
-          -- completion patch, so ignoring one would silently add a data claim.
-          if isBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
-            match completeBoundedUserTask? program state taskId.processInstanceId
-                ⟨taskId.elementId.value⟩ taskId.activation with
-            | some successor =>
-                if taskId.processInstanceId = instanceId && submittedValues.isEmpty then
-                  { outcome := .committed, state := successor }
-                else
-                  { outcome := .rejected, state }
-            | none => { outcome := .rejected, state }
-          else if isMonitoredTaskDefinition program ⟨taskId.elementId.value⟩ then
-            match completeMonitoredUserTask? program state
-                taskId.processInstanceId ⟨taskId.elementId.value⟩
-                taskId.activation with
-            | some successor =>
-                if taskId.processInstanceId = instanceId && submittedValues.isEmpty then
-                  { outcome := .committed, state := successor }
-                else
-                  { outcome := .rejected, state }
-            | none => { outcome := .rejected, state }
-          else
-          match completeUserTask state taskId.processInstanceId
-              ⟨taskId.elementId.value⟩ taskId.activation with
-          | some successor =>
-              if taskId.processInstanceId = instanceId &&
-                  !isCallActivityProgram program &&
-                  processDataBindingsAdmitted program.identity.semanticProfile
-                    .userTaskCompletion submittedValues then
-                { outcome := .committed
-                  state :=
-                    { successor with
-                      variables :=
-                        { successor.variables with
-                          process :=
-                            { bindings := mergeProcessVariableBindings
-                                successor.variables.process.bindings
-                                submittedValues } } } }
-              else if isCallActivityProgram program && submittedValues.isEmpty then
-                { outcome := .committed, state := successor }
-              else
-                { outcome := .rejected, state }
-          | none => { outcome := .rejected, state }
-      | .notStarted
-      | .completed _ => { outcome := .rejected, state }
-  | .deliverMessage _ subscriptionId channel =>
-      match state.control with
-      | .running instanceId =>
-          match deliverMessage program state subscriptionId channel with
-          | some successor =>
-              if subscriptionId.processInstanceId = instanceId then
-                { outcome := .committed, state := successor }
-              else
-                { outcome := .rejected, state }
-          | none => { outcome := .rejected, state }
-      | .notStarted
-      | .completed _ => { outcome := .rejected, state }
-  | .fireTimer _ timerId logicalTimeMs =>
-      match state.control with
-      | .running instanceId =>
-          match fireTimer program state timerId logicalTimeMs with
-          | some successor =>
-              if timerId.processInstanceId = instanceId then
-                { outcome := .committed, state := successor }
-              else
-                { outcome := .rejected, state }
-          | none => { outcome := .rejected, state }
-      | .notStarted
-      | .completed _ => { outcome := .rejected, state }
-  | .completeEffect _ effectId result =>
-      match state.control with
-      | .running instanceId =>
-          match completeEffect state effectId result with
-          | some successor =>
-              if effectId.processInstanceId = instanceId then
-                { outcome := .committed, state := successor }
-              else
-                { outcome := .rejected, state }
-          | none => { outcome := .rejected, state }
-      | .notStarted
-      | .completed _ => { outcome := .rejected, state }
 
 private def enabledTransitions (program : Program) (state : RuntimeState) :
     List (SemanticOperation × RuntimeState) :=
@@ -158,10 +36,12 @@ def stableStateResumable (state : RuntimeState) : Bool :=
   | .running _ =>
       eventRaceAssociationsValid state &&
         calledProcessAssociationsValid state &&
+        effectIncidentAssociationsValid state &&
         (!state.waits.isEmpty ||
           !state.messageWaits.isEmpty ||
           !state.timerWaits.isEmpty ||
-          !state.effectWaits.isEmpty)
+          !state.effectWaits.isEmpty ||
+          !state.effectIncidents.isEmpty)
   | .completed _ => true
 
 private def independentParallelTaskChoices :
@@ -339,8 +219,8 @@ theorem effect_result_mapping_failure_is_rejected
       admitStimulus program state
           (.completeEffect completionCommandId effectId result) =
         { outcome := .rejected, state } := by
-    unfold admitStimulus
-    dsimp [state, singletonEffectWaitingState] at noCompletion ⊢
+    unfold admitStimulus dispatchStimulus
+    dsimp [state, singletonEffectWaitingState, initialState] at noCompletion ⊢
     rw [noCompletion]
   simp [applyStimulus, rejectedAdmission]
 
@@ -380,8 +260,8 @@ theorem effect_result_route_failure_is_rejected
       admitStimulus program state
           (.completeEffect completionCommandId effectId result) =
         { outcome := .rejected, state } := by
-    unfold admitStimulus
-    dsimp [state, singletonEffectWaitingState] at noCompletion ⊢
+    unfold admitStimulus dispatchStimulus
+    dsimp [state, singletonEffectWaitingState, initialState] at noCompletion ⊢
     rw [noCompletion]
   simp [applyStimulus, rejectedAdmission]
 
@@ -398,6 +278,8 @@ theorem user_task_completion_with_same_successor_is_equal
       isBoundedTaskDefinition program ⟨submittedTaskId.elementId.value⟩ = false ∧
         isMonitoredTaskDefinition program ⟨submittedTaskId.elementId.value⟩ = false)
     (ordinaryProgram : isCallActivityProgram program = false)
+    (leftNoIncidents : leftState.effectIncidents = [])
+    (rightNoIncidents : rightState.effectIncidents = [])
     (valuesAdmitted : processDataBindingsAdmitted program.identity.semanticProfile
       .userTaskCompletion submittedValues = true)
     (leftCompletion : completeUserTask leftState submittedTaskId.processInstanceId
@@ -408,7 +290,8 @@ theorem user_task_completion_with_same_successor_is_equal
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
       applyStimulus closureLimit program rightState
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) := by
-  simp [applyStimulus, admitStimulus, leftRunning, rightRunning,
+  simp [applyStimulus, admitStimulus, dispatchStimulus, leftNoIncidents,
+    rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, ordinaryProgram, valuesAdmitted,
     leftCompletion, rightCompletion]
 
@@ -439,7 +322,7 @@ theorem task_identity_mismatch_is_rejected
         wait.activation = submittedTaskId.activation) := by
       intro exactMatch
       exact processMismatch exactMatch.1.1.symm
-    simp [applyStimulus, admitStimulus, completeUserTask,
+    simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
       completeBoundedUserTask?, completeMonitoredUserTask?,
       singletonWaitingState, noMatch]
   · rcases remainingMismatch with elementMismatch | activationMismatch
@@ -450,7 +333,7 @@ theorem task_identity_mismatch_is_rejected
         intro exactMatch
         exact elementMismatch
           (congrArg TaskDefinitionId.value exactMatch.1.2).symm
-      simp [applyStimulus, admitStimulus, completeUserTask,
+      simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
         completeBoundedUserTask?, completeMonitoredUserTask?,
       singletonWaitingState, noMatch]
     · have noMatch : ¬ (
@@ -459,7 +342,7 @@ theorem task_identity_mismatch_is_rejected
           wait.activation = submittedTaskId.activation) := by
         intro exactMatch
         exact activationMismatch exactMatch.2.symm
-      simp [applyStimulus, admitStimulus, completeUserTask,
+      simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
         completeBoundedUserTask?, completeMonitoredUserTask?,
       singletonWaitingState, noMatch]
 
@@ -488,7 +371,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
         wait.activation = submittedTimerId.activation) := by
       intro exactMatch
       exact processMismatch exactMatch.1.1.symm
-    simp [applyStimulus, admitStimulus, fireTimer,
+    simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
       singletonTimerWaitingState, initialState, noMatch]
   · rcases remainingMismatch with elementMismatch | remainingMismatch
     · have noMatch : ¬ (
@@ -497,7 +380,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
           wait.activation = submittedTimerId.activation) := by
         intro exactMatch
         exact elementMismatch exactMatch.1.2.symm
-      simp [applyStimulus, admitStimulus, fireTimer,
+      simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
         singletonTimerWaitingState, initialState, noMatch]
     · rcases remainingMismatch with activationMismatch | timeMismatch
       · have noMatch : ¬ (
@@ -506,7 +389,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
             wait.activation = submittedTimerId.activation) := by
           intro exactMatch
           exact activationMismatch exactMatch.2.symm
-        simp [applyStimulus, admitStimulus, fireTimer,
+        simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
           singletonTimerWaitingState, initialState, noMatch]
       · by_cases processMatches :
           wait.processInstanceId = submittedTimerId.processInstanceId
@@ -518,7 +401,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
               -- timing: this state holds one root occurrence, so no child region exists to cancel.
               -- Splitting on the definition lookup lets both arms reduce, since each yields `none`.
               cases definitionFound : boundedScopeDefinitionFor? program wait <;>
-                simp [applyStimulus, admitStimulus, fireTimer,
+                simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
                   singletonTimerWaitingState, initialState,
                   processMatches, elementMatches,
                   activationMatches, timeMismatch, definitionFound,
@@ -532,7 +415,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
                   wait.activation = submittedTimerId.activation) := by
                 intro exactMatch
                 exact activationMatches exactMatch.2
-              simp [applyStimulus, admitStimulus, fireTimer,
+              simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
                 singletonTimerWaitingState, initialState, noMatch]
           · have noMatch : ¬ (
                 (wait.processInstanceId =
@@ -542,7 +425,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
                 wait.activation = submittedTimerId.activation) := by
               intro exactMatch
               exact elementMatches exactMatch.1.2
-            simp [applyStimulus, admitStimulus, fireTimer,
+            simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
               singletonTimerWaitingState, initialState, noMatch]
         · have noMatch : ¬ (
               (wait.processInstanceId =
@@ -552,7 +435,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
               wait.activation = submittedTimerId.activation) := by
             intro exactMatch
             exact processMatches exactMatch.1.1
-          simp [applyStimulus, admitStimulus, fireTimer,
+          simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
             singletonTimerWaitingState, initialState, noMatch]
 
 /-- Any mismatch in the full effect-occurrence identity rejects completion with exact state preservation. -/
@@ -582,7 +465,7 @@ theorem effect_identity_mismatch_is_rejected
     have noOccurrence :
         effectOccurrenceMatches submittedEffectId wait = false := by
       simp [effectOccurrenceMatches, noMatch]
-    simp [applyStimulus, admitStimulus, completeEffect,
+    simp [applyStimulus, admitStimulus, dispatchStimulus, completeEffect, initialState,
       singletonEffectWaitingState, noOccurrence]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · have noMatch : ¬ (
@@ -594,7 +477,7 @@ theorem effect_identity_mismatch_is_rejected
       have noOccurrence :
           effectOccurrenceMatches submittedEffectId wait = false := by
         simp [effectOccurrenceMatches, noMatch]
-      simp [applyStimulus, admitStimulus, completeEffect,
+      simp [applyStimulus, admitStimulus, dispatchStimulus, completeEffect, initialState,
         singletonEffectWaitingState, noOccurrence]
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedEffectId.processInstanceId ∧
@@ -605,7 +488,7 @@ theorem effect_identity_mismatch_is_rejected
       have noOccurrence :
           effectOccurrenceMatches submittedEffectId wait = false := by
         simp [effectOccurrenceMatches, noMatch]
-      simp [applyStimulus, admitStimulus, completeEffect,
+      simp [applyStimulus, admitStimulus, dispatchStimulus, completeEffect, initialState,
         singletonEffectWaitingState, noOccurrence]
 
 end BpmnSemantics.SemanticProcess

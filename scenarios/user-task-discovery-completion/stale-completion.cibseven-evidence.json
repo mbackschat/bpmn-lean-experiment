@@ -145,6 +145,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [
           {
             "name": "requestTitle",
@@ -180,6 +181,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [
           {
             "name": "decision",
@@ -219,6 +221,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [
           {
             "name": "decision",

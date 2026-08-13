@@ -25,6 +25,8 @@ export function stimulusCommandId(stimulus: Stimulus): string {
     case StimulusKind.DeliverMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
+    case StimulusKind.ReportEffectFailure:
+    case StimulusKind.RetryIncident:
       return stimulus.commandId;
     default:
       return assertNever(stimulus);
@@ -92,6 +94,19 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.effectId.elementId === right.effectId.elementId &&
         left.effectId.activation === right.effectId.activation &&
         sameEffectResult(left.result, right.result)
+      );
+    case StimulusKind.ReportEffectFailure:
+      return (
+        right.kind === StimulusKind.ReportEffectFailure &&
+        left.commandId === right.commandId &&
+        sameOccurrenceId(left.effectId, right.effectId) &&
+        left.generation === right.generation
+      );
+    case StimulusKind.RetryIncident:
+      return (
+        right.kind === StimulusKind.RetryIncident &&
+        left.commandId === right.commandId &&
+        sameEffectIncidentId(left.incidentId, right.incidentId)
       );
     default:
       return assertNever(left);
@@ -214,6 +229,24 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isOccurrenceId(value.effectId) &&
         isWellFormedEffectExecutionResult(value.result)
       );
+    case StimulusKind.ReportEffectFailure:
+      return (
+        hasOnlyKeys(value, [
+          "kind",
+          "commandId",
+          "effectId",
+          "generation",
+        ]) &&
+        isNonEmptyString(value.commandId) &&
+        isOccurrenceId(value.effectId) &&
+        value.generation === 1
+      );
+    case StimulusKind.RetryIncident:
+      return (
+        hasOnlyKeys(value, ["kind", "commandId", "incidentId"]) &&
+        isNonEmptyString(value.commandId) &&
+        isEffectIncidentId(value.incidentId)
+      );
     default:
       return false;
   }
@@ -226,6 +259,14 @@ function sameOccurrenceId(
   return left.processInstanceId === right.processInstanceId &&
     left.elementId === right.elementId &&
     left.activation === right.activation;
+}
+
+function sameEffectIncidentId(
+  left: import("./contract.js").EffectIncidentId,
+  right: import("./contract.js").EffectIncidentId,
+): boolean {
+  return left.generation === right.generation &&
+    sameOccurrenceId(left.effectId, right.effectId);
 }
 
 function sameEffectResult(
@@ -374,6 +415,13 @@ function isOccurrenceId(value: unknown): boolean {
     Number.isSafeInteger(value.activation) &&
     Number(value.activation) >= 1
   );
+}
+
+function isEffectIncidentId(value: unknown): boolean {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["effectId", "generation"]) &&
+    isOccurrenceId(value.effectId) &&
+    value.generation === 1;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

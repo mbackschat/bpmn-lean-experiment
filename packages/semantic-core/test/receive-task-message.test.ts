@@ -131,6 +131,7 @@ test("projects the direct Receive Task subscription and interaction", () => {
     openMessageSubscriptions: [{ id: subscriptionId, channel }],
     openTimers: [],
     openEffects: [],
+    openIncidents: [],
     variables: [],
     enabledInteractions: [{
       kind: StimulusKind.DeliverMessage,
@@ -151,6 +152,7 @@ test("projects the direct Receive Task subscription and interaction", () => {
     openMessageSubscriptions: [],
     openTimers: [],
     openEffects: [],
+    openIncidents: [],
     variables: [],
     enabledInteractions: [],
     logicalTimeMs: 0,

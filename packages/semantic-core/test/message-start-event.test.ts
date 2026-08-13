@@ -31,7 +31,6 @@ import {
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
 import type {
-  EnabledInteraction,
   OccurrenceId,
   ProcessStartStimulus,
   Scenario,
@@ -48,6 +47,9 @@ import {
   rootScopedProgram,
   rootScopeOccurrence,
 } from "./root-scope-fixture.ts";
+import {
+  normalizeEnabledInteraction,
+} from "./semantic-test-enabled-interaction-normalization.ts";
 
 const channel = Object.freeze({
   kind: MessageChannelKind.OperationMessage,
@@ -535,32 +537,24 @@ function normalizeSemanticInstanceIdentity(
       ...effect,
       id: normalizeOccurrenceId(effect.id),
     })),
+    openIncidents: observation.openIncidents.map((incident) => ({
+      ...incident,
+      id: {
+        ...incident.id,
+        effectId: normalizeOccurrenceId(incident.id.effectId),
+      },
+      effect: {
+        ...incident.effect,
+        id: normalizeOccurrenceId(incident.effect.id),
+      },
+    })),
     enabledInteractions: observation.enabledInteractions.map(
-      normalizeEnabledInteraction,
+      (interaction) =>
+        normalizeEnabledInteraction(interaction, normalizeOccurrenceId),
     ),
   };
 }
 
-function normalizeEnabledInteraction(
-  interaction: EnabledInteraction,
-): EnabledInteraction {
-  switch (interaction.kind) {
-    case StimulusKind.CompleteUserTaskInstance:
-      return { ...interaction, taskId: normalizeOccurrenceId(interaction.taskId) };
-    case StimulusKind.DeliverMessage:
-      return {
-        ...interaction,
-        subscriptionId: normalizeOccurrenceId(interaction.subscriptionId),
-      };
-    default:
-      return assertNever(interaction);
-  }
-}
-
 function normalizeOccurrenceId(id: OccurrenceId): OccurrenceId {
   return { ...id, processInstanceId: "NormalizedInstance" };
-}
-
-function assertNever(value: never): never {
-  throw new TypeError(`Unsupported interaction: ${JSON.stringify(value)}`);
 }

@@ -171,6 +171,7 @@ test("start closes at one structured effect intent without producing output", ()
       outputMappings: [],
       bpmnErrorRoute: null,
       output: "place:Flow_ServiceToEnd",
+      incidentAlreadyRetried: false,
     },
   ]);
   assert.deepEqual(started.state.controlTokens, []);
@@ -239,6 +240,7 @@ test("scenario exposes the effect intent without a caller interaction", () => {
     openMessageSubscriptions: [],
     openTimers: [],
     openEffects: [{ id: effectId, descriptor, arguments: [] }],
+    openIncidents: [],
     variables: [],
     enabledInteractions: [],
     logicalTimeMs: 0,
@@ -252,6 +254,7 @@ test("scenario exposes the effect intent without a caller interaction", () => {
     openMessageSubscriptions: [],
     openTimers: [],
     openEffects: [],
+    openIncidents: [],
     variables: [],
     enabledInteractions: [],
     logicalTimeMs: 0,

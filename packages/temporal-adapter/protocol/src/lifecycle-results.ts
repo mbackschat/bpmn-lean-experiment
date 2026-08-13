@@ -95,6 +95,7 @@ export function isCompletedProcessReceipt(
       "openMessageSubscriptions",
       "openTimers",
       "openEffects",
+      "openIncidents",
       "variables",
       "enabledInteractions",
       "logicalTimeMs",
@@ -112,6 +113,8 @@ export function isCompletedProcessReceipt(
     finalState.openTimers.length === 0 &&
     Array.isArray(finalState.openEffects) &&
     finalState.openEffects.length === 0 &&
+    Array.isArray(finalState.openIncidents) &&
+    finalState.openIncidents.length === 0 &&
     Array.isArray(finalState.variables) &&
     Array.isArray(finalState.enabledInteractions) &&
     finalState.enabledInteractions.length === 0 &&

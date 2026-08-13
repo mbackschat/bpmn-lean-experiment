@@ -93,6 +93,28 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         ],
         effectResultTuple(stimulus.result),
       ]);
+    case StimulusKind.ReportEffectFailure:
+      return canonicalTypedTupleEncoding([
+        stimulus.kind,
+        stimulus.commandId,
+        [
+          stimulus.effectId.processInstanceId,
+          stimulus.effectId.elementId,
+          stimulus.effectId.activation,
+        ],
+        stimulus.generation,
+      ]);
+    case StimulusKind.RetryIncident:
+      return canonicalTypedTupleEncoding([
+        stimulus.kind,
+        stimulus.commandId,
+        [
+          stimulus.incidentId.effectId.processInstanceId,
+          stimulus.incidentId.effectId.elementId,
+          stimulus.incidentId.effectId.activation,
+        ],
+        stimulus.incidentId.generation,
+      ]);
     default:
       return assertNever(stimulus);
   }

@@ -136,6 +136,7 @@ export function createEffectWait(
         outputMappings: operation.effect.outputMappings,
         bpmnErrorRoute: operation.bpmnErrorRoute,
         output: operation.output,
+        incidentAlreadyRetried: false,
       },
     ].sort(compareEffectWaits),
     variables: addActivityVariableScope(state.variables, id, arguments_),

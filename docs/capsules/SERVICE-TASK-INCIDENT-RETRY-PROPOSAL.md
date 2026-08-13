@@ -2,7 +2,7 @@
 
 ## Status
 
-Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The approved correction makes wrong generation a strict decode refusal, keys CIB engine construction by the validated profile environment, and names the runnable profile-policy composition owner. Test-only packaged-CIB research is complete. Profile, runtime, wire, Lean, differential, CIB, and Temporal implementation may now proceed through the required semantic checkpoint and closure reviews; Product 2 incident operations remain a separately governed later stage.
+Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` returned `approve with required edits`; the same reviewer closed all three findings at correction target `43228e3`. The first green semantic checkpoint now implements the strict wire replacement, TypeScript semantic account, and proved Lean account and is pending the required independent checkpoint review. CIB mapping, differential registration, Temporal hosting, and Product 2 incident operations remain paused.
 
 ## Independent cold-review receipt
 
@@ -239,27 +239,27 @@ The following mechanically measured existing owners grow. Each TypeScript owner 
 
 | Owner | Headroom |
 |---|---:|
-| [Public contract](../../packages/semantic-core/src/contract.ts) | 338 |
-| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 252 |
-| [Wait construction](../../packages/semantic-core/src/semantic-process-wait-runtime.ts) | 455 |
-| [Normal scope completion and quiescence](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 416 |
-| [Stimuli](../../packages/semantic-core/src/stimulus.ts) | 216 |
-| [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 302 |
-| [Semantic runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 233 |
+| [Public contract](../../packages/semantic-core/src/contract.ts) | 307 |
+| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 238 |
+| [Wait construction](../../packages/semantic-core/src/semantic-process-wait-runtime.ts) | 454 |
+| [Normal scope completion and quiescence](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 415 |
+| [Stimuli](../../packages/semantic-core/src/stimulus.ts) | 170 |
+| [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 |
+| [Semantic runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 227 |
 | [Triggered-start exhaustive stimulus classifier](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 484 |
-| [Scenario projection](../../packages/semantic-core/src/scenario.ts) | 202 |
-| [Profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 552 |
-| [Checked profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 369 |
-| [Program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 356 |
-| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 534 |
-| [Semantic admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 249 |
-| [Profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 526 |
-| [Semantic exports](../../packages/semantic-core/src/index.ts) | 558 |
+| [Scenario projection](../../packages/semantic-core/src/scenario.ts) | 165 |
+| [Profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 550 |
+| [Checked profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 368 |
+| [Program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 355 |
+| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 533 |
+| [Semantic admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 245 |
+| [Profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 523 |
+| [Semantic exports](../../packages/semantic-core/src/index.ts) | 557 |
 | [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 369 |
-| [Contract artifact owner](../../scripts/contract-artifacts.ts) | 98 |
+| [Contract artifact owner](../../scripts/contract-artifacts.ts) | 96 |
 | [Contract artifact fixtures](../../scripts/contract-artifact-test-fixtures.ts) | 77 |
 | [CIB evidence contract](../../scripts/contract-cib-evidence.ts) | 499 |
-| [CIB evidence projection](../../scripts/contract-cib-evidence-projection.ts) | 46 |
+| [CIB evidence projection](../../scripts/contract-cib-evidence-projection.ts) | 43 |
 | [CIB evidence replacement](../../scripts/replace-cibseven-evidence.ts) | 276 |
 | [A12 evidence reader](../../scripts/a12-adoption-evidence.ts) | 261 |
 | [A12 evidence replacement](../../scripts/replace-a12-adoption-evidence.ts) | 534 |
@@ -270,21 +270,21 @@ Add cohesive `semantic-process-incident-runtime.ts`, `semantic-process-incident-
 
 | Owner | Headroom |
 |---|---:|
-| [Scenario wire](../../BpmnSemantics/Scenario.lean) | 383 |
-| [Runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 157 |
-| [Normal scope completion and quiescence](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 498 |
-| [Execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 17 |
-| [Profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 180 |
-| [Scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 286 |
-| [Strict scenario JSON](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 485 |
-| [JSON entry point](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 287 |
-| [Semantic umbrella](../../BpmnSemantics/SemanticProcess.lean) | 570 |
-| [JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 425 |
-| [Conformance entry point](../../BpmnSemantics/ConformanceMain.lean) | 582 |
-| [Timer Start interaction normalizer](../../BpmnSemantics/TimerStartConformance.lean) | 200 |
+| [Scenario wire](../../BpmnSemantics/Scenario.lean) | 358 |
+| [Runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 148 |
+| [Normal scope completion and quiescence](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 497 |
+| [Execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 131 |
+| [Profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 167 |
+| [Scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 253 |
+| [Strict scenario JSON](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 460 |
+| [JSON entry point](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 230 |
+| [Semantic umbrella](../../BpmnSemantics/SemanticProcess.lean) | 568 |
+| [JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 418 |
+| [Conformance entry point](../../BpmnSemantics/ConformanceMain.lean) | 581 |
+| [Timer Start interaction normalizer](../../BpmnSemantics/TimerStartConformance.lean) | 193 |
 | [Message Start exhaustive admission](../../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) | 547 |
-| [Checked-source scenario experiment](../../BpmnSemantics/Experiments/CheckedSourceScenario.lean) | 445 |
-| [Checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 279 |
+| [Checked-source scenario experiment](../../BpmnSemantics/Experiments/CheckedSourceScenario.lean) | 443 |
+| [Checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 277 |
 
 Before adding incident delegation, move external command admission from `Execution.lean` into a new `SemanticProcess/CommandAdmission.lean`. New `SemanticProcess/Incident.lean` and `ServiceTaskIncidentRetryConformance.lean` owners contain the report/retry account and its proofs. `ScopeCompletion.lean` makes any incident-owned wait nonquiescent, and `Execution.lean` counts a nonempty incident collection as stable-state resumability. The runtime structure may default `openIncidents` to an empty list for legacy Lean fixtures, but strict JSON must require and emit the field. TypeScript and Lean command admission prove and enforce that a nonempty incident collection is paired only with the exact successor profile and Program shape; a synthetic incident paired with a cancellation, Error, Terminate, Call Activity, or old-profile Program is the required state-preserving counterexample. The broad ScopeCancellation comments narrow from every represented state to every state admitted by those families. The Message Start and frozen checked-source readers add fail-closed arms for both new stimuli rather than acquiring incident meaning.
 
@@ -294,8 +294,8 @@ Before adding incident delegation, move external command admission from `Executi
 |---|---:|
 | [Effect protocol contract](../../packages/temporal-adapter/protocol/src/effect-contract.ts) | 582 |
 | [Protocol contracts](../../packages/temporal-adapter/protocol/src/contracts.ts) | 418 |
-| [Command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 434 |
-| [Lifecycle results](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 447 |
+| [Command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 412 |
+| [Lifecycle results](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 444 |
 | [Protocol exports](../../packages/temporal-adapter/protocol/src/index.ts) | 587 |
 | [Workflow entry points](../../packages/temporal-adapter/workflow/src/workflows.ts) | 561 |
 | [Workflow wire validation](../../packages/temporal-adapter/workflow/src/workflow-wire-validation.ts) | 513 |
@@ -308,7 +308,7 @@ Before adding incident delegation, move external command admission from `Executi
 | [Runnable composition](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 257 |
 | [Effect probe](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 365 |
 | [Testkit runner](../../packages/temporal-adapter/testkit/src/runner.ts) | 152 |
-| [Testkit runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 179 |
+| [Testkit runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 171 |
 | [Stimulus sequencing](../../packages/temporal-adapter/testkit/src/scenario-stimulus-sequencing.ts) | 557 |
 | [Test contracts](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 486 |
 | [Harness evidence](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) | 181 |
@@ -322,18 +322,18 @@ Add outer Activity-result and incident-operation protocol owners, process-comman
 
 | Owner | Headroom |
 |---|---:|
-| [Scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 154 |
-| [Interaction protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | 573 |
+| [Scenario protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 109 |
+| [Interaction protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | 565 |
 | [Diagnostics protocol](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java) | 420 |
-| [Active-wait projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenActiveWaitProjector.java) | 538 |
+| [Active-wait projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenActiveWaitProjector.java) | 537 |
 | [Effect probe](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEffectProbe.java) | 558 |
 | [Command executor](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioCommandExecutor.java) | 411 |
-| [State projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 316 |
-| [Scenario value policy](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableValuePolicy.java) | 530 |
+| [State projector](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 315 |
+| [Scenario value policy](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioVariableValuePolicy.java) | 526 |
 | [Effect schedule](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibEffectExecutionSchedule.java) | 579 |
 | [JSON-lines oracle entry point](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | 542 |
 | [Pipeline export bridge](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPipelineExportBridge.java) | 566 |
-| [Scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 13 |
+| [Scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 3 |
 | [Differential cases](../../packages/differential/test/pipeline-cases.ts) | 12 |
 | [Differential types](../../packages/differential/test/pipeline-types.ts) | 405 |
 | [CIB targets](../../packages/differential/test/pipeline-cib-targets.ts) | 471 |

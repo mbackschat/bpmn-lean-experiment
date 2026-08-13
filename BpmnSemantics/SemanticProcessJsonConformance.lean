@@ -101,6 +101,14 @@ theorem scenario_unsafe_activation_is_rejected :
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeUserTaskInstance\",\"commandId\":\"c\",\"taskId\":{\"processInstanceId\":\"i\",\"elementId\":\"t\",\"activation\":9007199254740992}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
   native_decide
 
+theorem incident_generation_domain_is_exactly_literal_one :
+    admitEffectIncidentGeneration 1 = .ok 1 ∧
+      admitEffectIncidentGeneration 0 =
+        .error "effect incident generation must be 1" ∧
+      admitEffectIncidentGeneration 2 =
+        .error "effect incident generation must be 1" := by
+  exact ⟨rfl, rfl, rfl⟩
+
 theorem null_value_with_payload_is_rejected :
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeEffect\",\"commandId\":\"c\",\"effectId\":{\"processInstanceId\":\"i\",\"elementId\":\"e\",\"activation\":1},\"result\":{\"kind\":\"bpmnError\",\"code\":\"E\",\"message\":null,\"localPatch\":[{\"name\":\"v\",\"value\":{\"kind\":\"null\",\"value\":\"forbidden\"}}]}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
   native_decide

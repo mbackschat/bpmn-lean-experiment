@@ -1,6 +1,6 @@
 # CIB Seven oracle runner
 
-This Java 21 module embeds pinned CIB Seven `2.2.0` as the behavioral oracle for the bounded User Task, normative balanced parallel fork/join, exact `PT1S` Intermediate Catch Timer, and success-only Service Task effect draft profiles. It deploys the exact BPMN resource, invokes public engine services, projects canonical observations, removes all scenario-owned state, and keeps one engine warm across compact JSON-lines requests.
+This Java 21 module embeds pinned CIB Seven `2.2.0` as the behavioral oracle for the bounded User Task, normative balanced parallel fork/join, exact `PT1S` Intermediate Catch Timer, and success-only Service Task effect draft profiles. It deploys the exact BPMN resource, invokes public engine services, projects canonical observations, removes all scenario-owned state, and keeps one engine warm across compact JSON-lines requests. The strict Java wire already carries the checkpoint-candidate effect-incident state and commands so current cross-target JSON remains closed, but the ordinary runner rejects those commands until the independently reviewed CIB incident lane adds the configured engine, projector, and executor.
 
 It is calibration infrastructure, not a reusable BPMN semantic kernel. A read-only PVM definition projection explains compilation choices but is never a compatibility key or an input to Lean or the TypeScript semantic core.
 

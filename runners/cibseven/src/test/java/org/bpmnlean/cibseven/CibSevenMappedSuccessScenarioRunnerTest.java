@@ -50,6 +50,7 @@ public final class CibSevenMappedSuccessScenarioRunnerTest {
                   List.of(),
                   List.of(),
                   List.of(),
+                  List.of(),
                   List.of(expectedVariable),
                   List.of(),
                   0)),

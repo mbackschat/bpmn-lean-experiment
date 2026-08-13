@@ -161,6 +161,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [],
         "enabledInteractions": [
           {
@@ -212,6 +213,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [],
         "enabledInteractions": [
           {
@@ -255,6 +257,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [],
         "enabledInteractions": [
           {
@@ -298,6 +301,7 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
+        "openIncidents": [],
         "variables": [],
         "enabledInteractions": [
           {

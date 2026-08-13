@@ -1,4 +1,5 @@
 import type {
+  EffectIncidentId,
   EffectOccurrenceId,
   MessageSubscriptionId,
   OccurrenceId,
@@ -80,6 +81,12 @@ export type SemanticEffectWait = DeepReadonly<{
   outputMappings: VariableMapping[];
   bpmnErrorRoute: BpmnErrorRoute | null;
   output: string;
+  incidentAlreadyRetried: boolean;
+}>;
+
+export type SemanticEffectIncident = DeepReadonly<{
+  id: EffectIncidentId;
+  wait: SemanticEffectWait;
 }>;
 
 /** Hidden occurrence-owned selected join inputs for one structured Inclusive split. */
@@ -137,6 +144,7 @@ export type RuntimeState = DeepReadonly<{
   messageWaits: SemanticMessageWait[];
   timerWaits: SemanticTimerWait[];
   effectWaits: SemanticEffectWait[];
+  effectIncidents: SemanticEffectIncident[];
   selectedBranchSets: SelectedBranchSet[];
   eventRaces: EventRace[];
   calledProcessOccurrences: CalledProcessOccurrence[];
@@ -161,6 +169,7 @@ export const initialState: RuntimeState = {
   messageWaits: [],
   timerWaits: [],
   effectWaits: [],
+  effectIncidents: [],
   selectedBranchSets: [],
   eventRaces: [],
   calledProcessOccurrences: [],
@@ -339,6 +348,13 @@ export function compareEffectWaits(
   right: SemanticEffectWait,
 ): number {
   return compareOccurrences(left.id, right.id);
+}
+
+export function compareEffectIncidents(
+  left: SemanticEffectIncident,
+  right: SemanticEffectIncident,
+): number {
+  return compareOccurrences(left.id.effectId, right.id.effectId);
 }
 
 function compareTokenPlaces(

@@ -233,6 +233,9 @@ private def normalizeEnabledInteraction : EnabledInteraction → EnabledInteract
       .completeUserTaskInstance (normalizeOccurrenceId id)
   | .deliverMessage id channel =>
       .deliverMessage (normalizeOccurrenceId id) channel
+  | .retryIncident incidentId =>
+      .retryIncident
+        { incidentId with effectId := normalizeOccurrenceId incidentId.effectId }
 
 private def normalizeObservation (observation : StateObservation) :
     StateObservation :=
@@ -247,6 +250,10 @@ private def normalizeObservation (observation : StateObservation) :
       { timer with id := normalizeOccurrenceId timer.id }
     openEffects := observation.openEffects.map fun effect =>
       { effect with id := normalizeOccurrenceId effect.id }
+    openIncidents := observation.openIncidents.map fun incident =>
+      { incident with
+        id := { incident.id with effectId := normalizeOccurrenceId incident.id.effectId }
+        effect := { incident.effect with id := normalizeOccurrenceId incident.effect.id } }
     enabledInteractions := observation.enabledInteractions.map
       normalizeEnabledInteraction }
 

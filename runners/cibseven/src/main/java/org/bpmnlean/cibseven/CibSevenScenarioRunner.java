@@ -41,6 +41,8 @@ import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.ObservationKind;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenTimer;
+import org.bpmnlean.cibseven.ScenarioProtocol.ReportEffectFailureStimulus;
+import org.bpmnlean.cibseven.ScenarioProtocol.RetryIncidentStimulus;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.PhaseTimings;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.PvmDefinitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
@@ -444,6 +446,12 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
               break stimulusLoop;
             }
           }
+          case ReportEffectFailureStimulus ignored ->
+              throw new IllegalStateException(
+                  "CIB incident report execution is not implemented before checkpoint approval");
+          case RetryIncidentStimulus ignored ->
+              throw new IllegalStateException(
+                  "CIB incident retry execution is not implemented before checkpoint approval");
         }
       }
     } finally {
@@ -518,10 +526,12 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                         stimulus instanceof CompleteUserTaskInstanceStimulus
                             || stimulus instanceof DeliverMessageStimulus
                             || stimulus instanceof FireTimerStimulus
-                            || stimulus instanceof CompleteEffectStimulus);
+                            || stimulus instanceof CompleteEffectStimulus
+                            || stimulus instanceof ReportEffectFailureStimulus
+                            || stimulus instanceof RetryIncidentStimulus);
     if (!startsOnce || !hasExpectedCompletions) {
       throw new IllegalArgumentException(
-          "Scenario supports startProcess followed by task, Message, timer, or effect completion commands");
+          "Scenario supports startProcess followed by task, Message, timer, effect, or incident commands");
     }
   }
 

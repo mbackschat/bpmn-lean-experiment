@@ -6,6 +6,8 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.ReportEffectFailureStimulus;
+import org.bpmnlean.cibseven.ScenarioProtocol.RetryIncidentStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
 import org.bpmnlean.cibseven.ScenarioProtocol.StartProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
@@ -64,6 +66,8 @@ final class ScenarioVariableValuePolicy {
         }
         case DeliverMessageStimulus ignored -> {}
         case FireTimerStimulus ignored -> {}
+        case ReportEffectFailureStimulus ignored -> {}
+        case RetryIncidentStimulus ignored -> {}
       }
     }
   }
