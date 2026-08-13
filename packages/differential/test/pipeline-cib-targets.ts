@@ -40,6 +40,7 @@ export async function runCibTargets(
     EffectExecutionSchedule.PlainSuccess,
 ): Promise<TargetBatch<CibPipelineResult>> {
   const started = performance.now();
+  const buildDirectory = cibMavenBuildDirectory(outputPath);
   await writeFile(
     inputPath,
     `${scenarios.map((scenario) => JSON.stringify(scenario)).join("\n")}\n`,
@@ -61,6 +62,7 @@ export async function runCibTargets(
       `-Dbpmn.pipeline.input=${inputPath}`,
       `-Dbpmn.pipeline.output=${outputPath}`,
       `-Dbpmn.pipeline.effectSchedule=${effectSchedule}`,
+      `-Dbpmn.build.directory=${buildDirectory}`,
       "test",
     ],
     resolveCibSevenMavenTimeoutMs(process.env),
@@ -82,6 +84,11 @@ export async function runCibTargets(
     ),
     totalMs: elapsedMs(started),
   };
+}
+
+/** Isolates Maven compiler and Surefire output for every concurrently executed CIB batch. */
+export function cibMavenBuildDirectory(outputPath: string): string {
+  return `${outputPath}.maven`;
 }
 
 export async function runCibTargetGroups(

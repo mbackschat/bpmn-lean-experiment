@@ -31,6 +31,7 @@ import type {
 import {
   CibEffectExecutionSchedule,
 } from "./pipeline-types.ts";
+import { settleOwnedLanes } from "./pipeline-parallel.ts";
 import {
   elapsedMs,
   loadAndCompileCases,
@@ -133,7 +134,7 @@ export async function runPipelineCases(
       leanProvenanceMutation,
       temporal,
       cibEffectRetry,
-    ] = await Promise.all([
+    ] = await settleOwnedLanes([
       runCibTargetGroups(
         contexts,
         temporaryDirectory,
@@ -155,14 +156,14 @@ export async function runPipelineCases(
       ),
       runTemporalTargets(runner, contexts),
       effectContexts.length === 0
-        ? null
+        ? Promise.resolve(null)
         : runCibTargetGroups(
             effectContexts,
             temporaryDirectory,
             "cib-effect-retry",
             EffectExecutionSchedule.FailAfterMutationOnce,
           ),
-    ]);
+    ] as const);
     const completedTargets: PipelineTargets = {
       cib,
       lean,

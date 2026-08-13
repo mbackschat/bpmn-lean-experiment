@@ -37,6 +37,10 @@ import {
   verifyPipelineRegistration,
 } from "../../../scripts/capsule-roundtrip.ts";
 import {
+  cibMavenBuildDirectory,
+} from "./pipeline-cib-targets.ts";
+import { settleOwnedLanes } from "./pipeline-parallel.ts";
+import {
   defaultWarmBudgetMs,
   warmBudgetMs,
   warmPipelineTestTimeoutMs,
@@ -100,6 +104,33 @@ test("rejects incomplete or unprotected pipeline registration", () => {
       ]),
     /pipeline CIB evidence route differs from registry/u,
   );
+});
+
+test("isolates every concurrent CIB Maven batch output", () => {
+  const first = cibMavenBuildDirectory("/tmp/cib-2.2-plain-output.jsonl");
+  const second = cibMavenBuildDirectory("/tmp/cib-2.2-incident-output.jsonl");
+  const third = cibMavenBuildDirectory("/tmp/cib-2.0-plain-output.jsonl");
+
+  assert.notEqual(first, second);
+  assert.notEqual(first, third);
+  assert.match(first, /cib-2\.2-plain-output\.jsonl\.maven$/u);
+});
+
+test("joins every owned lane before surfacing one parallel failure", async () => {
+  let siblingFinished = false;
+  const failing = Promise.reject(new Error("first lane failed"));
+  const sibling = new Promise<string>((resolve) => {
+    setTimeout(() => {
+      siblingFinished = true;
+      resolve("finished");
+    }, 10);
+  });
+
+  await assert.rejects(
+    settleOwnedLanes([failing, sibling] as const),
+    /first lane failed/u,
+  );
+  assert.equal(siblingFinished, true);
 });
 
 const cleanCibProjection = {
