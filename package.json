@@ -43,7 +43,7 @@
     "check:harness-types": "tsc -p tsconfig.harness.json",
     "check:platform-harness-types": "tsc -p tsconfig.platform-harness.json",
     "check:cmof-semantic-process": "node scripts/check-bpmn-semantic-process-metamodel.ts",
-    "check:source-hygiene": "node --test scripts/source-hygiene.test.ts scripts/lean-source-contracts.test.ts",
+    "check:source-hygiene": "node --test scripts/source-hygiene.test.ts scripts/harness-source-policy.test.ts scripts/lean-source-contracts.test.ts",
     "mvp:run": "pnpm build:temporal-adapter && node packages/temporal-adapter/runner/cli/run-mvp.ts",
     "platform:serve": "pnpm build:platform-server && node platform/apps/server/dist/main.js",
     "showcase:m1:host": "node showcase/m1-definition-deployment/src/host.ts",

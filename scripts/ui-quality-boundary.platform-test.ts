@@ -31,6 +31,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   );
   assert.match(workflow, /platform\/apps\/web\/\*\*/u);
   assert.match(workflow, /platform\/ui-kit\/\*\*/u);
+  assert.match(workflow, /tsconfig\.platform-harness\.json/u);
   assert.match(workflow, /showcase\/m1-definition-deployment\/\*\*/u);
   assert.match(workflow, /showcase\/m2-definition-scheduling\/\*\*/u);
   assert.match(workflow, /showcase\/m2-message-start-ingress\/\*\*/u);

@@ -11,6 +11,66 @@ import { spawnSync } from "node:child_process";
 const resolvedSpecifierPattern =
   /(?:\bfrom\s*|\bimport\s*\(?\s*)["']([^"']+)["']/gu;
 
+type JsonObject = Record<string, unknown>;
+
+function asJsonObject(value: unknown, label: string): JsonObject {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object`);
+  }
+  return value as JsonObject;
+}
+
+function exportImportPath(value: unknown, specifier: string): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  const conditions = asJsonObject(value, `Export ${specifier}`);
+  if (typeof conditions.import !== "string") {
+    throw new TypeError(`Export ${specifier} must define one import path`);
+  }
+  return conditions.import;
+}
+
+/** Reports public package exports that a source-only TypeScript harness would resolve through build output. */
+export function missingWorkspaceSourceMappings(
+  packageName: string,
+  packageManifest: unknown,
+  typeScriptConfig: unknown,
+  sourceRoot: string,
+): string[] {
+  const manifest = asJsonObject(packageManifest, `Package ${packageName}`);
+  const exports = asJsonObject(manifest.exports, `Package ${packageName} exports`);
+  const config = asJsonObject(typeScriptConfig, "TypeScript config");
+  const compilerOptions = asJsonObject(
+    config.compilerOptions,
+    "TypeScript compilerOptions",
+  );
+  const paths = asJsonObject(compilerOptions.paths, "TypeScript paths");
+
+  return Object.entries(exports).flatMap(([exportKey, exportValue]) => {
+    if (exportKey !== "." && !/^\.\/[a-z0-9-]+$/u.test(exportKey)) {
+      throw new TypeError(`Unsupported package export key: ${exportKey}`);
+    }
+    const specifier = exportKey === "."
+      ? packageName
+      : `${packageName}/${exportKey.slice(2)}`;
+    const importPath = exportImportPath(exportValue, specifier);
+    const relativeSource = /^\.\/dist\/([a-z0-9-]+)\.js$/u.exec(importPath)?.[1];
+    if (relativeSource === undefined) {
+      throw new TypeError(
+        `Export ${specifier} must map one top-level dist JavaScript module`,
+      );
+    }
+    const expected = `${sourceRoot}/${relativeSource}.ts`;
+    const actual = paths[specifier];
+    return Array.isArray(actual) &&
+        actual.length === 1 &&
+        actual[0] === expected
+      ? []
+      : [`${specifier}: expected source mapping ${expected}`];
+  });
+}
+
 function importBearingLines(source: string): string[] {
   return source
     .split(/\r?\n/u)

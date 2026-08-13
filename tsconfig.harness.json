@@ -33,6 +33,12 @@
       "@bpmn-lean/temporal-client/definition-start": [
         "./packages/temporal-adapter/client/src/definition-start-client.ts"
       ],
+      "@bpmn-lean/temporal-client/definition-schedule": [
+        "./packages/temporal-adapter/client/src/definition-schedule-client.ts"
+      ],
+      "@bpmn-lean/temporal-client/message-start": [
+        "./packages/temporal-adapter/client/src/message-start-client.ts"
+      ],
       "@bpmn-lean/temporal-client/process-work": [
         "./packages/temporal-adapter/client/src/process-work-client.ts"
       ],
@@ -50,6 +56,9 @@
       ],
       "@bpmn-lean/temporal-workflow": [
         "./packages/temporal-adapter/workflow/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-workflow/workflows": [
+        "./packages/temporal-adapter/workflow/src/workflows.ts"
       ]
     },
     "skipLibCheck": true,

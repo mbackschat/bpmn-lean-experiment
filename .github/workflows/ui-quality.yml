@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/ui-quality.yml"
+      - "tsconfig.platform-harness.json"
       - "platform/apps/server/**"
       - "platform/apps/web/**"
       - "platform/contracts/**"
@@ -26,6 +27,7 @@ on:
       - main
     paths:
       - ".github/workflows/ui-quality.yml"
+      - "tsconfig.platform-harness.json"
       - "platform/apps/server/**"
       - "platform/apps/web/**"
       - "platform/contracts/**"
