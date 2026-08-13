@@ -9,7 +9,7 @@ Owner-approved on 2026-08-13. Context-cold proposal review of target `56b9398` r
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `56b9398` | `fork-turns-none` | `approve-with-required-edits` | `43228e3` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `818f642` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The superseded first proposal target `8be7e5f` and superseded first redesign target `278e63b` each received an isolated `fork-turns-none` review with verdict `reject`. This redesign changes the Activity transport and incident representation selected at `278e63b`, so it requires a new context-cold review rather than a warm correction audit.
