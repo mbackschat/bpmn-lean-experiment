@@ -1,8 +1,8 @@
-# Service Task incident-scoped Process cancellation proposal
+# Service Task incident-scoped Process cancellation specification
 
 ## Status
 
-**Proposal review, owner approval, the semantic checkpoint, and all implementation/evidence lanes are complete; independent closure review is pending.** Context-cold review of immutable target `d03f5285a9e16852e2d08da6da29864275e75c6b` returned `APPROVE WITH REQUIRED EDITS`; the same reviewer approved bounded correction `4505dbf1f893d24ee282b89a5fdef0a37d1b920e`. On 2026-08-13, the owner explicitly approved this proposal and all eight decisions in [Decisions requested from the owner](#decisions-requested-from-the-owner). Context-cold semantic-checkpoint review of `189c56f146fceab543d734bc5cba5f9a1fb0657c` returned `APPROVE WITH REQUIRED EDITS`; bounded correction `f86a8250332f61ca0d5ff8b17669643df04c575c` closed all findings. Immutable implementation target `9007232` now includes the strict wire and schema, shared cleanup-qualified TypeScript and Lean cancellation eligibility and transitions, configured CIB execution and positive external-termination projection, registered artifacts, exact four-target differential execution, the runnable example, and live Temporal Worker-replacement, retained-Update, terminal-receipt, history, replay, and mutation evidence. Commit-bounded cost is recorded in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md). This proposal selects one successor CIB compatibility profile and one incident-gated external root Process cancellation command. It does not select general BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, or Product 2 operations.
+**Implemented, closure-reviewed, evidence-closed, and graduated.** This specification owns one successor CIB compatibility profile and one incident-gated external root Process cancellation command across the strict wire, TypeScript semantic core, proved Lean lane, configured CIB external-termination projection, exact four-target differential evidence, and live Temporal Worker-replacement, retained-Update, history, replay, and mutation evidence. General BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, and Product 2 operations remain excluded.
 
 ## Independent cold-review receipt
 
@@ -10,19 +10,17 @@
 |---|---|---|---|---|
 | Proposal | `d03f5285a9e16852e2d08da6da29864275e75c6b` | `fork-turns-none` | `approve-with-required-edits` | `4505dbf1f893d24ee282b89a5fdef0a37d1b920e` |
 | Semantic checkpoint | `189c56f146fceab543d734bc5cba5f9a1fb0657c` | `fork-turns-none` | `approve-with-required-edits` | `f86a8250332f61ca0d5ff8b17669643df04c575c` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `312791297ea15debc7d382b6bebafcf1e44e6ddc` | `fork-turns-none` | `approve-with-required-edits` | `83a4c2600b1e86fd235f58631f18a8d0b92eea35` |
 
-## Question and recommendation
+## Selected scope
 
-Should one successor profile let a caller cancel the exact hosting root Process only while addressing its exact published generation-1 Service Task incident, atomically remove the root's live execution region, preserve committed Process data and monotonic history, and close with a typed cancelled receipt?
-
-**Recommendation: yes.** Select a new profile-scoped `cancelIncidentProcess` command and publish its eligibility beside the incident. The command gives M4 an exact recovery operation without widening BPMN meaning or accepting an arbitrary Process kill API. The semantic core derives the unique root and owns the terminal state; CIB supplies a separately classified compatibility observation, Temporal only transports the command durably, and Product 2 remains a later consumer.
+One successor profile lets a caller cancel the exact hosting root Process only while addressing its exact published generation-1 Service Task incident, atomically removes the root's live execution region, preserves committed Process data and monotonic history, and closes with a typed cancelled receipt. The semantic core derives the unique root and owns the terminal state; CIB supplies a separately classified compatibility observation, Temporal transports the command durably, and Product 2 remains a later consumer.
 
 ## Authority and forward-compatible boundary
 
 BPMN 2.0.2 Clause 10.5.1 distinguishes termination, which immediately ends active work without compensation or Event handling, from cancellation, which may compensate successfully completed Sub-Process work and roll back a Transaction. Clause 10.5.7 includes cancellation lifecycle states. Cancel End and Cancel Boundary Events are Transaction-only, while Clause 13.2 separately defines ordinary completion and modeled Terminate End abnormal termination.
 
-This proposal selects none of those modeled entry mechanisms. It defines an extra-model CIB-profile operator command that is available only for one exact published incident on the hosting root. Reusing the project's destructive subtree cleanup is forward-compatible only as a final cleanup primitive. A later standard BPMN cancellation account must perform its compensation, rollback, or Event behavior before cleanup, while modeled Terminate and interrupting Events keep their existing entry rules.
+This specification selects none of those modeled entry mechanisms. It defines an extra-model CIB-profile operator command that is available only for one exact published incident on the hosting root. Reusing the project's destructive subtree cleanup is forward-compatible only as a final cleanup primitive. A later standard BPMN cancellation account must perform its compensation, rollback, or Event behavior before cleanup, while modeled Terminate and interrupting Events keep their existing entry rules.
 
 The successor profile is `cibseven-2.2.0-service-task-incident-cancellation-draft`. Its executable Program shape is identical to `cibseven-2.2.0-service-task-incident-draft` modulo semantic-profile identity and it reuses the exact [`service-task-effect` BPMN source](../../scenarios/service-task-effect/process.bpmn), checked graph, and Semantic Process IL. The profile artifact additionally admits the one canonical string Process-start binding used to discriminate committed-data preservation, so the profile itself is not byte-identical to Stage 1. It adds no BPMN source key, checked node, lowering rule, or IL operation.
 
@@ -206,102 +204,7 @@ Excluded:
 
 This is one additive pre-release profile and strict-wire replacement. Existing profile, scenario, BPMN source, checked graph, IL, canonical result, CIB evidence, semantic result, completed receipt, and retained history bytes remain exact. The new profile adds string Process-start data and cancellation capabilities while reusing the predecessor's executable Program shape. The new enum members force exhaustive consumers to compile against the new domain, but old cases produce their prior bytes.
 
-Core owners include [`contract.ts`](../../packages/semantic-core/src/contract.ts) at 293/600, [`stimulus.ts`](../../packages/semantic-core/src/stimulus.ts) at 430/600, [`scenario.ts`](../../packages/semantic-core/src/scenario.ts) at 449/600, [`semantic-command-admission.ts`](../../packages/semantic-core/src/semantic-command-admission.ts) at 320/600, [`semantic-process-scope-cancellation.ts`](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) at 116/600, and [`semantic-process-call-runtime.ts`](../../packages/semantic-core/src/semantic-process-call-runtime.ts) at 312/600. New cohesive owners are `packages/semantic-core/src/semantic-process-incident-cancellation.ts` and its focused test.
-
-Lean owners include [`RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) at 452/600, [`CommandAdmission.lean`](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) at 170/600, [`ScopeCancellation.lean`](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) at 96/600, [`Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) at 469/600, and [`SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) at 430/600. New cohesive owners are `BpmnSemantics/SemanticProcess/IncidentCancellation.lean` and `BpmnSemantics/ServiceTaskIncidentCancellationConformance.lean`.
-
-The Temporal Workflow implementation is [`workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) at 560/600 and must first extract terminal-state detection and receipt construction to `terminal-process-receipt.ts`; the cancellation Update belongs in `incident-cancellation-update-handler.ts`. [`effect-activity-policy.ts`](../../packages/temporal-adapter/workflow/src/effect-activity-policy.ts) at 28/600 must admit the exact cancellation successor beside the exact Stage 1 incident profile without widening any unrelated profile. The focused oracle remains [`service-task-incident-hosting.test.ts`](../../packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts) at 141/600 and must prove both incident profiles select the same report path while all registered non-incident profiles retain their prior policy. New evidence must not grow [`harness-evidence.ts`](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) beyond its current 500/600 owner.
-
-The CIB engine runner [`CibSevenEngineScenarioRunner.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java) is 584/600 and must first extract scenario/resource validation into `CibSevenScenarioValidator.java`. Cancellation execution and terminal projection belong in `CibSevenIncidentCancellationCommandExecutor.java` and `CibSevenProcessTerminationProjector.java`.
-
-Crowded artifact and differential aggregators receive only delegation: [`contract-artifact-projections.test.ts`](../../scripts/contract-artifact-projections.test.ts) is 590/600, [`contract-cib-evidence-projection.ts`](../../scripts/contract-cib-evidence-projection.ts) is 584/600, [`pipeline-cases.ts`](../../packages/differential/test/pipeline-cases.ts) is 592/600, and [`pipeline-comparison.ts`](../../packages/differential/test/pipeline-comparison.ts) is 564/600. New cancellation artifact, CIB projection, differential case, comparison, and focused test owners hold the new logic.
-
-The scenario schema, profile/scenario/evidence registries, Java protocol and JSON owners, strict Lean decoder, Temporal protocol/client/testkit, exhaustive status readers, package indexes, and documentation owners advance atomically. `node scripts/what-binds.ts` reports 20 guards plus the semantic-core or Temporal registry for TypeScript owners, six guards for Lean semantic owners, and five guards plus both runner registries for Java owners.
-
-### Owners this implementation grows
-
-These headroom values are the exact `node scripts/what-binds.ts` measurements at proposal time. New owners inherit their parent tree's guards and registry obligations and therefore do not appear as nonexistent links in this pre-implementation table.
-
-| Owner | Headroom |
-|---|---:|
-| [`packages/semantic-core/src/contract.ts`](../../packages/semantic-core/src/contract.ts) | 292 |
-| [`packages/semantic-core/src/stimulus.ts`](../../packages/semantic-core/src/stimulus.ts) | 150 |
-| [`packages/semantic-core/src/semantic-process-state.ts`](../../packages/semantic-core/src/semantic-process-state.ts) | 234 |
-| [`packages/semantic-core/src/semantic-process-scope-cancellation.ts`](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 476 |
-| [`packages/semantic-core/src/semantic-process-call-runtime.ts`](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 258 |
-| [`packages/semantic-core/src/semantic-process-incident-validation.ts`](../../packages/semantic-core/src/semantic-process-incident-validation.ts) | 497 |
-| [`packages/semantic-core/src/semantic-command-admission.ts`](../../packages/semantic-core/src/semantic-command-admission.ts) | 271 |
-| [`packages/semantic-core/src/semantic-process-admission.ts`](../../packages/semantic-core/src/semantic-process-admission.ts) | 243 |
-| [`packages/semantic-core/src/semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 219 |
-| [`packages/semantic-core/src/scenario.ts`](../../packages/semantic-core/src/scenario.ts) | 124 |
-| [`packages/semantic-core/src/semantic-profile-catalog.ts`](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 545 |
-| [`packages/semantic-core/src/semantic-profile-value-domain.ts`](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 516 |
-| [`packages/semantic-core/src/semantic-process-profile.ts`](../../packages/semantic-core/src/semantic-process-profile.ts) | 449 |
-| [`packages/semantic-core/src/checked-process-profile-shape.ts`](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 365 |
-| [`packages/semantic-core/src/semantic-program-profile-shape.ts`](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 352 |
-| [`packages/semantic-core/src/semantic-process-graph-policy.ts`](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 530 |
-| [`packages/semantic-core/src/index.ts`](../../packages/semantic-core/src/index.ts) | 556 |
-| [`BpmnSemantics/Scenario.lean`](../../BpmnSemantics/Scenario.lean) | 350 |
-| [`BpmnSemantics/SemanticProcess/RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 147 |
-| [`BpmnSemantics/SemanticProcess/ScopeCancellation.lean`](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 498 |
-| [`BpmnSemantics/SemanticProcess/CommandAdmission.lean`](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 405 |
-| [`BpmnSemantics/SemanticProcess/Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) | 131 |
-| [`BpmnSemantics/SemanticProcess/Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 228 |
-| [`BpmnSemantics/SemanticProcess/Incident.lean`](../../BpmnSemantics/SemanticProcess/Incident.lean) | 450 |
-| [`BpmnSemantics/SemanticProcess/ProfileAdmission.lean`](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 161 |
-| [`BpmnSemantics/SemanticProcessJson/Scenario.lean`](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 452 |
-| [`BpmnSemantics/SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 170 |
-| [`scripts/contract-artifacts.ts`](../../scripts/contract-artifacts.ts) | 83 |
-| [`scripts/contract-artifact-cases.ts`](../../scripts/contract-artifact-cases.ts) | 361 |
-| [`scripts/contract-artifact-projections.test.ts`](../../scripts/contract-artifact-projections.test.ts) | 5 |
-| [`scripts/contract-cib-evidence.ts`](../../scripts/contract-cib-evidence.ts) | 470 |
-| [`scripts/contract-cib-evidence-projection.ts`](../../scripts/contract-cib-evidence-projection.ts) | 0 |
-| [`scripts/contract-cib-incident-projection.ts`](../../scripts/contract-cib-incident-projection.ts) | 465 |
-| [`scripts/contract-cib-incident-projection.test.ts`](../../scripts/contract-cib-incident-projection.test.ts) | 465 |
-| [`scripts/contract-incident-artifact-case.ts`](../../scripts/contract-incident-artifact-case.ts) | 591 |
-| [`scripts/contract-incident-artifact-test-fixtures.ts`](../../scripts/contract-incident-artifact-test-fixtures.ts) | 585 |
-| [`scripts/service-task-incident-contract-schema.test.ts`](../../scripts/service-task-incident-contract-schema.test.ts) | 445 |
-| [`scripts/service-task-incident-profile-consistency.ts`](../../scripts/service-task-incident-profile-consistency.ts) | 416 |
-| [`scripts/service-task-incident-profile-consistency.test.ts`](../../scripts/service-task-incident-profile-consistency.test.ts) | 484 |
-| [`scripts/replace-cibseven-evidence.ts`](../../scripts/replace-cibseven-evidence.ts) | 224 |
-| [`packages/differential/test/pipeline-cases.ts`](../../packages/differential/test/pipeline-cases.ts) | 4 |
-| [`packages/differential/test/pipeline-comparison.ts`](../../packages/differential/test/pipeline-comparison.ts) | 51 |
-| [`packages/differential/test/pipeline-cib-targets.ts`](../../packages/differential/test/pipeline-cib-targets.ts) | 435 |
-| [`packages/differential/test/pipeline-types.ts`](../../packages/differential/test/pipeline-types.ts) | 402 |
-| [`packages/differential/test/pipeline.test.ts`](../../packages/differential/test/pipeline.test.ts) | 96 |
-| [`packages/differential/test/pipeline-catalog.test.ts`](../../packages/differential/test/pipeline-catalog.test.ts) | 32 |
-| [`packages/temporal-adapter/protocol/src/command-identity.ts`](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 400 |
-| [`packages/temporal-adapter/protocol/src/contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 406 |
-| [`packages/temporal-adapter/protocol/src/lifecycle-results.ts`](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 416 |
-| [`packages/temporal-adapter/protocol/src/incident-operation.ts`](../../packages/temporal-adapter/protocol/src/incident-operation.ts) | 553 |
-| [`packages/temporal-adapter/client/src/incident-client.ts`](../../packages/temporal-adapter/client/src/incident-client.ts) | 465 |
-| [`packages/temporal-adapter/client/src/semantic-update-client.ts`](../../packages/temporal-adapter/client/src/semantic-update-client.ts) | 534 |
-| [`packages/temporal-adapter/client/src/process-client.ts`](../../packages/temporal-adapter/client/src/process-client.ts) | 166 |
-| [`packages/temporal-adapter/client/src/process-work-client.ts`](../../packages/temporal-adapter/client/src/process-work-client.ts) | 385 |
-| [`packages/temporal-adapter/workflow/src/effect-activity-policy.ts`](../../packages/temporal-adapter/workflow/src/effect-activity-policy.ts) | 567 |
-| [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 33 |
-| [`packages/temporal-adapter/workflow/src/workflows.ts`](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 |
-| [`packages/temporal-adapter/runner/src/host-interaction-driver.ts`](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 214 |
-| [`packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts`](../../packages/temporal-adapter/testkit/test/service-task-incident-hosting.test.ts) | 459 |
-| [`packages/temporal-adapter/testkit/src/incident-scenario-execution.ts`](../../packages/temporal-adapter/testkit/src/incident-scenario-execution.ts) | 261 |
-| [`packages/temporal-adapter/testkit/src/runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 77 |
-| [`packages/temporal-adapter/testkit/src/harness-evidence.ts`](../../packages/temporal-adapter/testkit/src/harness-evidence.ts) | 100 |
-| [`packages/temporal-adapter/testkit/src/test-contracts.ts`](../../packages/temporal-adapter/testkit/src/test-contracts.ts) | 466 |
-| [`packages/temporal-adapter/testkit/src/runner-support.ts`](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 151 |
-| [`packages/temporal-adapter/testkit/src/history-evidence-decoding.ts`](../../packages/temporal-adapter/testkit/src/history-evidence-decoding.ts) | 304 |
-| [`packages/temporal-adapter/testkit/src/mutation-probes.ts`](../../packages/temporal-adapter/testkit/src/mutation-probes.ts) | 317 |
-| [`packages/temporal-adapter/testkit/src/temporal-worker-host.ts`](../../packages/temporal-adapter/testkit/src/temporal-worker-host.ts) | 337 |
-| [`packages/temporal-adapter/testkit/test/temporal-history-facts.ts`](../../packages/temporal-adapter/testkit/test/temporal-history-facts.ts) | 284 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | 97 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | 553 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | 526 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java) | 64 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioStateProjector.java) | 248 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentProjector.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentProjector.java) | 466 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentCommandExecutor.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenIncidentCommandExecutor.java) | 471 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioDiagnosticsProtocol.java) | 375 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibStateQueryEvidence.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibStateQueryEvidence.java) | 545 |
-| [`runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioJson.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioJson.java) | 558 |
+Implementation extracted terminal receipt construction, incident cancellation handling, CIB scenario validation, CIB external-termination projection, cancellation artifact projection, and the differential adapter-lifecycle relation into cohesive owners before extending their former near-limit aggregators. The [capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the reproducible implementation boundary and comparison.
 
 ## Guards and review boundary
 
@@ -315,7 +218,7 @@ These headroom values are the exact `node scripts/what-binds.ts` measurements at
 | [source hygiene](../../scripts/source-hygiene.test.ts) and [what-binds](../../scripts/what-binds.test.ts) | Enforce the named extractions, cohesive owners, registries, and reviewed line limits. |
 | [review policy](../../scripts/independent-review-policy.test.ts), [document reviewability](../../scripts/document-reviewability.test.ts), and [review packet](../../scripts/semantic-review-packet.test.ts) | Require context-cold proposal review, a conditional semantic checkpoint, and closure review. |
 
-The implementation is material because it changes the strict stimulus and status wire, runtime terminal state, enabled interactions, CIB mapping, Lean proof boundary, Temporal terminal receipt, and refinement claim. It requires a context-cold proposal review before owner approval, a semantic checkpoint after the first green wire/runtime/receipt checkpoint, and cold closure unless the exact approved checkpoint reviewer qualifies for hash-bound warm continuity.
+The implementation is material because it changes the strict stimulus and status wire, runtime terminal state, enabled interactions, CIB mapping, Lean proof boundary, Temporal terminal receipt, and refinement claim. The receipt above records its completed proposal, semantic-checkpoint, and closure reviews.
 
 ## Epistemic closure and cost boundary
 
@@ -327,9 +230,9 @@ The nearest realistic wrong accounts are selecting the first parentless occurren
 
 Closure records the commit-bounded cost in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md) against the Stage 1 incident capsule and the Terminate End capsule, which changed the nearest runtime and cancellation owners.
 
-## Stop conditions
+## Re-open conditions
 
-Stop and return to research, redesign, or owner direction if:
+Re-open this specification and return to research or redesign if:
 
 - a unique root cannot be derived from valid state without caller-supplied scope identity;
 - shared cleanup cannot remove incident and called-tree owners symmetrically in Lean and TypeScript without changing already admitted behavior;
@@ -339,18 +242,3 @@ Stop and return to research, redesign, or owner direction if:
 - implementation requires BPMN source, checked graph, or IL changes, native Temporal cancellation, Product 2 state, arbitrary in-flight cancellation, compensation, Transaction semantics, a second incident, or host retry facts;
 - old-profile artifacts or histories must change rather than remain additive and byte-stable;
 - the proved Lean lane cannot establish exact cleanup, preservation, and refusal identity within its declared bound.
-
-## Decisions requested from the owner
-
-Recommendation: approve the complete selected account after context-cold review. The reasons are that it publishes the exact future Product 2 eligibility fact at the engine boundary, reuses one existing cleanup mechanism without conflating its entry semantics, preserves old profile bytes, and has a direct CIB and Temporal discriminator.
-
-Approval would select:
-
-1. `cibseven-2.2.0-service-task-incident-cancellation-draft` as a successor to the Stage 1 incident profile.
-2. `cancelIncidentProcess { commandId, processInstanceId, incidentId }` with no caller-supplied scope, owner, reason, or force flag.
-3. One published cancellation interaction carrying the exact root Process identity and incident identity.
-4. Typed `cancelled` runtime/public state and an additive cancelled terminal receipt, distinct from completed.
-5. Root cleanup with exact Process-variable, counter, End-history, and logical-time preservation.
-6. `CIB-EXT-0014` and `CIB-OP-0009` under the already selected CIB incident configuration.
-7. A proved Lean lane and the four-target evidence strategy above.
-8. Product 2 incident operations remaining Stage 3.
