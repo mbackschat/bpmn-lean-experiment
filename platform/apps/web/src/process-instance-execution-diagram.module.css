@@ -1,0 +1,43 @@
+.panel {
+  display: grid;
+  gap: var(--ui-space-4);
+}
+
+.eyebrow {
+  margin-bottom: var(--ui-space-2);
+  color: var(--ui-color-accent);
+  font: var(--ui-font-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.positions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-4);
+}
+
+.positions > div,
+.missing {
+  min-width: 0;
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-surface);
+  padding: var(--ui-space-4);
+  background: var(--ui-color-inset);
+  overflow-wrap: anywhere;
+}
+
+.positions ul,
+.missing ul {
+  padding-left: var(--ui-space-5);
+}
+
+.missing {
+  color: var(--ui-color-text);
+}
+
+@container operations (max-width: 52rem) {
+  .positions {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 import type {
@@ -8,15 +8,31 @@ import type {
 import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api.ts";
+import type { DefinitionApiClient } from "./definitions-api.ts";
+import type { ProcessExecutionApi } from "./process-execution-api.ts";
+import {
+  ProcessExecutionDetailLoadKind,
+  ProcessExecutionDetailLoader,
+  ProcessInstanceExecutionDetailBoundary,
+} from "./process-instance-execution-detail.tsx";
+import type {
+  ProcessExecutionDetailSelection,
+} from "./process-instance-execution-detail.tsx";
 import styles from "./process-instance-search-panel.module.css";
 
 export type ProcessInstanceSearchPanelProps = Readonly<{
   api: ProcessInstanceSearchApi;
+  definitionApi: Pick<DefinitionApiClient, "getPresentation">;
+  executionApi: ProcessExecutionApi;
+  isActive: boolean;
 }>;
 
 /** Global search surface for confirmed Product 2 starts and their public identity only. */
 export function ProcessInstanceSearchPanel({
   api,
+  definitionApi,
+  executionApi,
+  isActive,
 }: ProcessInstanceSearchPanelProps) {
   const [processInstanceId, setProcessInstanceId] = useState("");
   const [processId, setProcessId] = useState("");
@@ -32,6 +48,46 @@ export function ProcessInstanceSearchPanel({
   const [searched, setSearched] = useState(false);
   const [busy, setBusy] = useState<"search" | "more" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ProcessExecutionDetailSelection>(null);
+  const detailLoader = useRef(new ProcessExecutionDetailLoader());
+  const returnFocusKey = useRef<string | null>(null);
+  const restoreFocus = useRef(false);
+  const rowRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  useEffect(() => {
+    if (!isActive) detailLoader.current.clear(executionApi, setDetail);
+  }, [executionApi, isActive]);
+
+  useEffect(() => () => {
+    detailLoader.current.invalidate(executionApi);
+  }, [executionApi]);
+
+  useEffect(() => {
+    if (detail !== null || !restoreFocus.current) return;
+    restoreFocus.current = false;
+    const row = returnFocusKey.current === null
+      ? undefined
+      : rowRefs.current.get(returnFocusKey.current);
+    requestAnimationFrame(() => { row?.focus(); });
+  }, [detail]);
+
+  if (detail !== null) {
+    return (
+      <ProcessInstanceExecutionDetailBoundary
+        api={executionApi}
+        definitionApi={definitionApi}
+        onBack={() => {
+          restoreFocus.current = true;
+          detailLoader.current.clear(executionApi, setDetail);
+        }}
+        onUnavailable={(requested, message) => {
+          executionApi.invalidate();
+          setDetail({ kind: ProcessExecutionDetailLoadKind.Failed, requested, message });
+        }}
+        state={detail}
+      />
+    );
+  }
 
   async function search(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -147,7 +203,18 @@ export function ProcessInstanceSearchPanel({
       {searched && instances.length === 0 ? (
         <p className={styles.empty}>No confirmed starts match these exact filters.</p>
       ) : (
-        <ProcessInstanceSearchTable instances={instances} />
+        <ProcessInstanceSearchTable
+          instances={instances}
+          onOpen={(instance, row) => {
+            returnFocusKey.current = instance.processInstanceId;
+            rowRefs.current.set(instance.processInstanceId, row);
+            void detailLoader.current.load(instance, executionApi, setDetail);
+          }}
+          registerRow={(processInstanceId, row) => {
+            if (row === null) rowRefs.current.delete(processInstanceId);
+            else rowRefs.current.set(processInstanceId, row);
+          }}
+        />
       )}
       {nextCursor === null ? null : (
         <Button
@@ -165,8 +232,12 @@ export function ProcessInstanceSearchPanel({
 
 export function ProcessInstanceSearchTable({
   instances,
+  onOpen = () => undefined,
+  registerRow = () => undefined,
 }: Readonly<{
   instances: ReadonlyArray<PublicProcessInstanceIdentity>;
+  onOpen?: (instance: PublicProcessInstanceIdentity, row: HTMLButtonElement) => void;
+  registerRow?: (processInstanceId: string, row: HTMLButtonElement | null) => void;
 }>) {
   if (instances.length === 0) {
     return null;
@@ -182,6 +253,7 @@ export function ProcessInstanceSearchTable({
             <th scope="col">Source ID</th>
             <th scope="col">Source digest</th>
             <th scope="col">Semantic profile</th>
+            <th scope="col">Execution</th>
           </tr>
         </thead>
         <tbody>
@@ -193,6 +265,19 @@ export function ProcessInstanceSearchTable({
               <td><code>{instance.definition.source.id}</code></td>
               <td><code>{instance.definition.source.sha256}</code></td>
               <td><code>{instance.definition.semanticProfile}</code></td>
+              <td>
+                <Button
+                  variant={ButtonVariant.Secondary}
+                  ref={(row) => { registerRow(instance.processInstanceId, row); }}
+                  onPress={(event) => {
+                    const row = event.target;
+                    if (row instanceof HTMLButtonElement) onOpen(instance, row);
+                  }}
+                  aria-label={`View execution ${instance.processInstanceId}`}
+                >
+                  View execution
+                </Button>
+              </td>
             </tr>
           ))}
         </tbody>

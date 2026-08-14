@@ -26,6 +26,16 @@ const transformedPanel = await transformWithEsbuild(
 );
 const runnablePanel = transformedPanel.code
   .replace(
+    /import \{\s*ProcessExecutionDetailLoadKind,[\s\S]*?\} from "\.\/process-instance-execution-detail\.tsx";/u,
+    `const ProcessExecutionDetailLoadKind = { Failed: "failed" };
+     class ProcessExecutionDetailLoader {
+       clear(_api, publish) { publish(null); }
+       invalidate() {}
+       async load() {}
+     }
+     function ProcessInstanceExecutionDetailBoundary() { return null; }`,
+  )
+  .replace(
     /import styles from "\.\/process-instance-search-panel\.module\.css";/u,
     "const styles = new Proxy({}, { get: (_target, key) => String(key) });",
   )
@@ -44,6 +54,8 @@ const panelModule = await import(
   ProcessInstanceSearchPanel: ComponentType<ProcessInstanceSearchPanelProps>;
   ProcessInstanceSearchTable: ComponentType<Readonly<{
     instances: ReadonlyArray<PublicProcessInstanceIdentity>;
+    onOpen?: (instance: PublicProcessInstanceIdentity, row: HTMLButtonElement) => void;
+    registerRow?: (processInstanceId: string, row: HTMLButtonElement | null) => void;
   }>>;
   processInstanceSearchRequest(fields: Readonly<{
     processInstanceId: string;
@@ -91,10 +103,21 @@ const inertApi: ProcessInstanceSearchApi = {
     return { instances: [], nextCursor: null };
   },
 };
+const inertExecutionApi = {
+  async getComplete() { throw new Error("unused"); },
+  async getExport() { throw new Error("unused"); },
+  invalidate() {},
+};
+const inertDefinitionApi = {
+  async getPresentation() { throw new Error("unused"); },
+};
 
 test("renders one global confirmed-start search form with only exact filters", () => {
   const html = renderToStaticMarkup(createElement(ProcessInstanceSearchPanel, {
     api: inertApi,
+    definitionApi: inertDefinitionApi,
+    executionApi: inertExecutionApi,
+    isActive: true,
   }));
 
   assert.match(html, /Confirmed Product 2 starts/u);
@@ -144,7 +167,7 @@ test("renders every public identity field in a native table and no host metadata
   assert.doesNotMatch(html, /private-workflow|running|2026-08-12|ordinal/iu);
 });
 
-test("renders each distinct returned identity once", () => {
+test("renders each distinct returned identity in one row and its exact detail control", () => {
   const second = {
     ...instance,
     processInstanceId: "instance-41",
@@ -153,6 +176,16 @@ test("renders each distinct returned identity once", () => {
     instances: [instance, second],
   }));
 
-  assert.equal((html.match(/instance-42/gu) ?? []).length, 1);
-  assert.equal((html.match(/instance-41/gu) ?? []).length, 1);
+  assert.equal((html.match(/<tr/gu) ?? []).length, 3);
+  assert.equal((html.match(/aria-label="View execution instance-4[12]"/gu) ?? []).length, 2);
+});
+
+test("makes each exact public identity an execution-detail selection", () => {
+  const html = renderToStaticMarkup(createElement(ProcessInstanceSearchTable, {
+    instances: [instance],
+    onOpen: () => undefined,
+  }));
+
+  assert.match(html, /View execution instance-42/u);
+  assert.match(html, /<button/u);
 });

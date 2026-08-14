@@ -17,14 +17,18 @@ import styles from "./definition-diagram.module.css";
 
 export type DefinitionDiagramProps = Readonly<{
   activeElementId?: string;
+  activeElementIds?: readonly string[];
   api: Pick<DefinitionApiClient, "getPresentation">;
   definition: DeployedDefinitionVersion;
+  onMissingElementIds?: (elementIds: readonly string[]) => void;
 }>;
 
 export function DefinitionDiagram({
   activeElementId,
+  activeElementIds,
   api,
   definition,
+  onMissingElementIds,
 }: DefinitionDiagramProps) {
   const container = useRef<HTMLDivElement>(null);
   const viewer = useRef<BpmnDiagramViewer>(null);
@@ -60,6 +64,7 @@ export function DefinitionDiagram({
     setDownloadError(null);
     setRenderError(viewerInitializationError.current);
     setPresentation(null);
+    onMissingElementIds?.([]);
     void (async () => {
       try {
         const resolved = await api.getPresentation(definition);
@@ -81,6 +86,12 @@ export function DefinitionDiagram({
           activeElementId !== undefined
         ) {
           viewer.current.highlight(activeElementId);
+        } else if (
+          generation.current === activeGeneration &&
+          viewer.current === activeViewer &&
+          activeElementIds !== undefined
+        ) {
+          onMissingElementIds?.(viewer.current.highlightMany(activeElementIds));
         }
       } catch (error: unknown) {
         if (generation.current === activeGeneration) {
@@ -97,7 +108,7 @@ export function DefinitionDiagram({
         generation.current += 1;
       }
     };
-  }, [activeElementId, api, definition]);
+  }, [activeElementId, activeElementIds, api, definition, onMissingElementIds]);
 
   return (
     <section
@@ -146,10 +157,29 @@ export function DefinitionDiagram({
       <div
         className={styles.canvas}
         ref={container}
-        aria-label={`BPMN diagram for ${definition.processId}, version ${definition.version}${activeElementId === undefined ? "" : `, highlighting ${activeElementId}`}`}
+        aria-label={diagramLabel(definition, activeElementId, activeElementIds)}
       />
     </section>
   );
+}
+
+function diagramLabel(
+  definition: DeployedDefinitionVersion,
+  activeElementId: string | undefined,
+  activeElementIds: readonly string[] | undefined,
+): string {
+  const base = `BPMN diagram for ${definition.processId}, version ${definition.version}`;
+  if (activeElementId !== undefined) return `${base}, highlighting ${activeElementId}`;
+  if (activeElementIds !== undefined) {
+    return `${base}, highlighting ${commaSeparated([...new Set(activeElementIds)])}`;
+  }
+  return base;
+}
+
+function commaSeparated(values: readonly string[]): string {
+  let result = "";
+  for (const value of values) result = result.length === 0 ? value : `${result}, ${value}`;
+  return result;
 }
 
 function presentationLabel(

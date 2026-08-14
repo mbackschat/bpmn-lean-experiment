@@ -133,6 +133,33 @@ test("refuses a missing rendered element before mutating the active marker", () 
   assert.deepEqual(fixture.canvasCalls, ["add:Task_A:bpmn-platform-active"]);
 });
 
+test("atomically highlights every present unique position and reports missing IDs in input order", () => {
+  const fixture = viewerFixture(["Flow_Left", "Flow_Right"]);
+  const viewer = new BpmnDiagramViewer(poweredContainer(), fixture.factory);
+  viewer.highlight("Flow_Left");
+
+  const missing = viewer.highlightMany([
+    "Flow_Right",
+    "Called_Process_Missing",
+    "Flow_Left",
+    "Called_Process_Missing",
+    "Flow_Right",
+  ]);
+
+  assert.deepEqual(missing, ["Called_Process_Missing"]);
+  assert.deepEqual(fixture.canvasCalls, [
+    "add:Flow_Left:bpmn-platform-active",
+    "remove:Flow_Left:bpmn-platform-active",
+    "add:Flow_Right:bpmn-platform-active",
+    "add:Flow_Left:bpmn-platform-active",
+  ]);
+  viewer.clearHighlight();
+  assert.deepEqual(fixture.canvasCalls.slice(-2), [
+    "remove:Flow_Right:bpmn-platform-active",
+    "remove:Flow_Left:bpmn-platform-active",
+  ]);
+});
+
 test("fails closed if the supplied bpmn.io watermark is absent or retargeted", () => {
   const fixture = viewerFixture();
   assert.throws(

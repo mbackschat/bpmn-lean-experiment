@@ -7,12 +7,14 @@ import type { IncidentOperationsApi } from "./incident-operations-api.ts";
 import { IncidentsPanel } from "./incidents-panel.tsx";
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api.ts";
+import type { ProcessExecutionApi } from "./process-execution-api.ts";
 import { ProcessInstanceSearchPanel } from "./process-instance-search-panel.tsx";
 import styles from "./operations-workspace.module.css";
 
 export type OperationsWorkspaceProps = Readonly<{
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   incidentApi: IncidentOperationsApi;
+  processExecutionApi: ProcessExecutionApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
 }>;
 
@@ -20,6 +22,7 @@ export type OperationsWorkspaceProps = Readonly<{
 export function OperationsWorkspace({
   definitionApi,
   incidentApi,
+  processExecutionApi,
   processInstanceSearchApi,
 }: OperationsWorkspaceProps) {
   const [tab, setTab] = useState("process-instances");
@@ -32,7 +35,14 @@ export function OperationsWorkspace({
         tabs={[{
           id: "process-instances",
           label: "Process instances",
-          content: <ProcessInstanceSearchPanel api={processInstanceSearchApi} />,
+          content: (
+            <ProcessInstanceSearchPanel
+              api={processInstanceSearchApi}
+              definitionApi={definitionApi}
+              executionApi={processExecutionApi}
+              isActive={tab === "process-instances"}
+            />
+          ),
         }, {
           id: "incidents",
           label: "Incidents",

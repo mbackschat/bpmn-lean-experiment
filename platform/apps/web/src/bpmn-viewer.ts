@@ -31,7 +31,7 @@ export class BpmnDiagramViewer {
   readonly #viewer: BpmnViewerPort;
   readonly #canvas: BpmnCanvasPort;
   readonly #elementRegistry: BpmnElementRegistryPort;
-  #highlightedElement: string | null = null;
+  #highlightedElements: string[] = [];
   #renderQueue: Promise<void> = Promise.resolve();
   #destroyed = false;
 
@@ -77,25 +77,46 @@ export class BpmnDiagramViewer {
     }
     this.clearHighlight();
     this.#canvas.addMarker(elementId, activeMarker);
-    this.#highlightedElement = elementId;
+    this.#highlightedElements = [elementId];
+  }
+
+  /** Replaces every marker as one validated set and reports absent unique IDs in input order. */
+  highlightMany(elementIds: readonly string[]): readonly string[] {
+    this.#requireLive();
+    const unique = [...new Set(elementIds)];
+    for (const elementId of unique) {
+      if (elementId.length === 0) {
+        throw new TypeError("highlighted BPMN element ID must not be empty");
+      }
+    }
+    const present: string[] = [];
+    const missing: string[] = [];
+    for (const elementId of unique) {
+      if (this.#elementRegistry.get(elementId) === undefined) missing.push(elementId);
+      else present.push(elementId);
+    }
+    this.clearHighlight();
+    for (const elementId of present) this.#canvas.addMarker(elementId, activeMarker);
+    this.#highlightedElements = present;
+    return missing;
   }
 
   clearHighlight(): void {
     this.#requireLive();
-    if (this.#highlightedElement !== null) {
-      this.#canvas.removeMarker(this.#highlightedElement, activeMarker);
-      this.#highlightedElement = null;
+    for (const elementId of this.#highlightedElements) {
+      this.#canvas.removeMarker(elementId, activeMarker);
     }
+    this.#highlightedElements = [];
   }
 
   destroy(): void {
     if (this.#destroyed) {
       return;
     }
-    if (this.#highlightedElement !== null) {
-      this.#canvas.removeMarker(this.#highlightedElement, activeMarker);
-      this.#highlightedElement = null;
+    for (const elementId of this.#highlightedElements) {
+      this.#canvas.removeMarker(elementId, activeMarker);
     }
+    this.#highlightedElements = [];
     this.#destroyed = true;
     this.#viewer.destroy();
   }

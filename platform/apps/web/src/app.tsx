@@ -14,6 +14,7 @@ import type { MessageStartPublicationApiClient } from "./message-start-publicati
 import type { IncidentOperationsApi } from "./incident-operations-api";
 import { OperationsWorkspace } from "./operations-workspace";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api";
+import type { ProcessExecutionApi } from "./process-execution-api";
 import type { WorkApiClient } from "./work-tasks-api";
 import { WorkInboxPanel } from "./work-inbox-panel";
 import { AppShell, AppWorkspace } from "./app-shell";
@@ -23,6 +24,7 @@ export type AppProps = Readonly<{
   messageStartPublicationApi: MessageStartPublicationApiClient;
   incidentOperationsApi: IncidentOperationsApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
+  processExecutionApi: ProcessExecutionApi;
   scheduleApi: DefinitionScheduleApiClient;
   workApi: WorkApiClient;
 }>;
@@ -32,6 +34,7 @@ export function App({
   incidentOperationsApi,
   messageStartPublicationApi,
   processInstanceSearchApi,
+  processExecutionApi,
   scheduleApi,
   workApi,
 }: AppProps) {
@@ -125,6 +128,7 @@ export function App({
         <OperationsWorkspace
           definitionApi={api}
           incidentApi={incidentOperationsApi}
+          processExecutionApi={processExecutionApi}
           processInstanceSearchApi={processInstanceSearchApi}
         />
       )}

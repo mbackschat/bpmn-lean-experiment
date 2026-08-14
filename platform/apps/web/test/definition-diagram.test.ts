@@ -29,6 +29,7 @@ test("definition diagrams fetch resolved presentation instead of admitted source
   );
   assert.match(diagramSource, /activeElementId\?: string/u);
   assert.match(diagramSource, /viewer\.current\.highlight\(activeElementId\)/u);
+  assert.match(diagramSource, /viewer\.current\.highlightMany\(activeElementIds\)/u);
   assert.match(diagramSource, /highlighting \$\{activeElementId\}/u);
 });
 

@@ -1,0 +1,81 @@
+.panel {
+  display: grid;
+  gap: var(--ui-space-4);
+}
+
+.eyebrow {
+  margin-bottom: var(--ui-space-2);
+  color: var(--ui-color-accent);
+  font: var(--ui-font-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.summary {
+  max-width: 68rem;
+  color: var(--ui-color-muted);
+}
+
+.records {
+  display: grid;
+  gap: var(--ui-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.record {
+  min-width: 0;
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-surface);
+  padding: var(--ui-space-4);
+  background: var(--ui-color-inset);
+}
+
+.recordHeading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  margin-bottom: var(--ui-space-3);
+}
+
+.recordHeading span {
+  color: var(--ui-color-muted);
+  font: var(--ui-font-label);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.25fr) minmax(0, 1fr);
+  gap: var(--ui-space-2) var(--ui-space-3);
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--ui-color-muted);
+  font: var(--ui-font-label);
+}
+
+.facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.record details {
+  margin-top: var(--ui-space-3);
+}
+
+.record pre {
+  max-width: 100%;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@container operations (max-width: 44rem) {
+  .facts {
+    grid-template-columns: 1fr;
+  }
+}

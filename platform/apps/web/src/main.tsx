@@ -11,6 +11,7 @@ import { DefinitionApiClient } from "./definitions-api";
 import { MessageStartPublicationApiClient } from "./message-start-publication-api";
 import { IncidentOperationsApiClient } from "./incident-operations-api";
 import { ProcessInstanceSearchApiClient } from "./process-instance-search-api";
+import { ProcessExecutionApiClient } from "./process-execution-api";
 import { WorkApiClient } from "./work-tasks-api";
 import "@bpmn-lean/platform-ui-kit/style.css";
 
@@ -23,6 +24,7 @@ const api = new DefinitionApiClient(window.location.origin);
 const messageStartPublicationApi = new MessageStartPublicationApiClient(window.location.origin);
 const incidentOperationsApi = new IncidentOperationsApiClient(window.location.origin);
 const processInstanceSearchApi = new ProcessInstanceSearchApiClient(window.location.origin);
+const processExecutionApi = new ProcessExecutionApiClient(window.location.origin);
 const scheduleApi = new DefinitionScheduleApiClient(window.location.origin);
 const workApi = new WorkApiClient(window.location.origin);
 const queryClient = new QueryClient();
@@ -34,6 +36,7 @@ createRoot(container).render(
         incidentOperationsApi={incidentOperationsApi}
         messageStartPublicationApi={messageStartPublicationApi}
         processInstanceSearchApi={processInstanceSearchApi}
+        processExecutionApi={processExecutionApi}
         scheduleApi={scheduleApi}
         workApi={workApi}
       />
