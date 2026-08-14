@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft; independently reviewed and approved for owner decision, with implementation paused pending explicit owner approval.** This proposal selects one additive Product 1 publication for replay-complete committed semantic transitions and current committed control positions, plus the smallest Product 2 projection, semantic History, diagram-overlay, and exact semantic-JSON export adoption for the E1 increment. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. It changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
+**Owner-approved on 2026-08-14; implementation authorized and not yet implemented.** This proposal selects one additive Product 1 publication for replay-complete committed semantic transitions and current committed control positions, plus the smallest Product 2 projection, semantic History, diagram-overlay, and exact semantic-JSON export adoption for the E1 increment. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. It changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
 
 ## Independent cold-review receipt
 

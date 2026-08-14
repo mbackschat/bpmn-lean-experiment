@@ -96,7 +96,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### M5 — it can be operated and explained
 
-**Status: in progress.** The [committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) is drafted for context-cold review. No E1 committed-transition or control-position publication is approved for implementation.
+**Status: in progress.** The independently reviewed [committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) and its nine selected decisions are owner-approved. E1 implementation is authorized; no committed-transition or control-position publication is implemented yet.
 
 **Demo.** An operator replays what a finished instance did, sees where a running one stands on the diagram, and exports the history.
 
@@ -159,11 +159,15 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: obtain owner approval for the M5 E1 committed-history and diagram-position contract.** The independently reviewed [draft proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) keeps history and current positions as separate requirements, selects replay-complete evaluator-root traces, a revisioned atomic Product 1 publication, fail-closed Product 2 projection/rebuild, and bounded semantic History/Diagram/JSON adoption. It does not close M5: frequency and duration views, completed operator history, and audit export remain later PLAN-owned Product 2 increments. Obtain explicit owner approval before implementing a transition record, control-position publication, read model, history UI, overlay, or export.
+1. **In progress: implement the owner-approved M5 E1 committed-history and diagram-position contract.** The independently reviewed [proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) keeps history and current positions as separate requirements, selects replay-complete evaluator-root traces, a revisioned atomic Product 1 publication, fail-closed Product 2 projection/rebuild, and bounded semantic History/Diagram/JSON adoption. It does not close M5: frequency and duration views, completed operator history, and audit export remain later PLAN-owned Product 2 increments.
 
 ## Approved decisions
 
 Only decisions that constrain the next work are kept here. A decision fully owned by a graduated specification lives in that specification; Git retains the rest.
+
+**Approved 2026-08-14.**
+
+- **M5 E1 committed execution publication:** the owner approved all nine selected decisions in the independently reviewed [proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md). Implementation must preserve the two-fact envelope, evaluator-root trace, publication-owned revisions, replay-complete authorized history, transition deltas plus one head snapshot, atomic contiguous batches, authoritative Workflow retention without Event History reconstruction, fail-closed transactional Product 2 projection, and bounded History/Diagram/exact-JSON adoption. E1 does not close M5.
 
 **Approved 2026-08-07.**
 
@@ -264,9 +268,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain explicit owner approval of the nine decisions in the independently reviewed [M5 E1 committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md).** Stop before implementation. The E1 implementation will not itself close M5; the remaining frequency/duration, operator-history, and audit-export increments stay ordered after it.
+**Next action: implement the owner-approved [M5 E1 committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) with evaluator-root Red/Green evidence first, then Lean parity, Product 1 durable publication, and Product 2 projection and surfaces.** The E1 implementation will not itself close M5; the remaining frequency/duration, operator-history, and audit-export increments stay ordered after it.
 
-Item 1 is **proposal-stage and in progress**. M4 is closed through the graduated [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md). M5's draft proposal is not owner-approved and no E1 public contract, semantic representation, transition family, projection store, UI surface, or export is implemented. Event History and state differencing remain forbidden fact sources.
+Item 1 is **implementation-stage and in progress**. M4 is closed through the graduated [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md). M5 E1 is owner-approved, but no public contract, semantic representation, transition family, projection store, UI surface, or export is implemented yet. Event History and state differencing remain forbidden fact sources.
 
 **Last verified commands:** Correction target `914950eb59470b21f44e098145133b41092cdae2` passes `./scripts/verify.sh`, including 276 repository guards, 206 Temporal tests, the complete five-case pipeline, and 52 replayed histories. The Product 2 checkpoint, real M4 showcase, 52-case four-width Operations acceptance, fixed Linux visual evidence, and focused closure-correction guards are green. Context-cold closure review of `f55c427d628b0052936969762c93084679832540` and warm audit of `914950e` approved graduation. Playwright remains in its separate Product 2 workflow.
 
