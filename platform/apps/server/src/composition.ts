@@ -48,8 +48,11 @@ import {
   IncidentAggregationService,
   IncidentHttpRoutes,
   IncidentMutationService,
+  ExecutionPublicationHttpRoutes,
+  ExecutionPublicationReconciliationService,
   ProcessInstanceHttpRoutes,
   ProcessInstanceSearchService,
+  SqliteExecutionPublicationRepository,
   SqliteIncidentActionRepository,
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
@@ -132,6 +135,9 @@ export async function createPlatformServer(
       processInstanceDatabaseFile,
     );
     resources.push(processInstanceRepository);
+    const executionPublicationRepository =
+      new SqliteExecutionPublicationRepository(processInstanceDatabaseFile);
+    resources.push(executionPublicationRepository);
     const processInstances = new ProcessInstanceSearchService(
       processInstanceRepository,
     );
@@ -163,6 +169,12 @@ export async function createPlatformServer(
     const operationsAuthorization = new OperationsAuthorizationPolicy(
       snapshot.operationsGroupId,
     );
+    const executionPublicationReconciliation =
+      new ExecutionPublicationReconciliationService({
+        registrations: processInstanceRepository,
+        publications: executionPublicationRepository,
+        gateway: engineRuntime.processExecution,
+      });
     const auditOutbox = new WorkAuditOutboxService(work, auditRepository);
     auditOutbox.reconcileAll();
     const incidentAuditOutbox = new IncidentActionAuditOutboxService(
@@ -260,6 +272,12 @@ export async function createPlatformServer(
     const processInstanceRoutes = new ProcessInstanceHttpRoutes(
       processInstances,
     );
+    const executionPublicationRoutes = new ExecutionPublicationHttpRoutes({
+      actors,
+      authorization: operationsAuthorization,
+      reconciliation: executionPublicationReconciliation,
+      publications: executionPublicationRepository,
+    });
     const incidentRoutes = new IncidentHttpRoutes({
       actors,
       authorization: operationsAuthorization,
@@ -319,6 +337,7 @@ export async function createPlatformServer(
       routes: [
         (request) => incidentRoutes.handle(request),
         (request) => workRoutes.handle(request),
+        (request) => executionPublicationRoutes.handle(request),
         (request) => processInstanceRoutes.handle(request),
         (request) => publicationRoutes.handle(request),
         (request) => scheduleRoutes.handle(request),

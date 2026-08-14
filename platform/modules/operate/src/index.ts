@@ -2,6 +2,31 @@ export {
   ProcessInstanceIdentityIntegrityError,
   ProcessInstanceStoredValueError,
 } from "./contracts.js";
+export {
+  ExecutionPublicationIntegrityError,
+  ExecutionPublicationProjectionStatus,
+  ExecutionPublicationStoredValueError,
+} from "./execution-publication-contracts.js";
+export type {
+  ExecutionPublicationGateway,
+  ExecutionPublicationProjectionImage,
+  ExecutionPublicationRepository,
+} from "./execution-publication-contracts.js";
+export {
+  applyExecutionPublicationPage,
+  createEmptyExecutionPublicationProjection,
+  projectionIdentityFromRegistration,
+} from "./execution-publication-projection.js";
+export {
+  ExecutionPublicationReconciliationKind,
+  ExecutionPublicationReconciliationService,
+} from "./execution-publication-reconciliation-service.js";
+export type {
+  ExecutionPublicationReconciliationResult,
+  ExecutionPublicationReconciliationServiceOptions,
+} from "./execution-publication-reconciliation-service.js";
+export { SqliteExecutionPublicationRepository } from "./sqlite-execution-publication-repository.js";
+export { ExecutionPublicationHttpRoutes } from "./execution-publication-http-routes.js";
 export type {
   ProcessInstanceRepository,
   ProcessInstanceRepositoryQuery,

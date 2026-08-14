@@ -116,6 +116,9 @@ test("persists private classification across independent connections without a c
           ORDER BY name
         `).all().map(({ name }) => name);
         assert.deepEqual(tables, [
+          "execution_publication_batches",
+          "execution_publication_records",
+          "execution_publications",
           "incident_action_audit_outbox",
           "incident_actions",
           "process_instances",

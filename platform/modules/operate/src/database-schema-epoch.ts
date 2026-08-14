@@ -1,4 +1,4 @@
-export const currentProcessInstanceDatabaseSchemaEpoch = 2;
+export const currentProcessInstanceDatabaseSchemaEpoch = 3;
 
 /** Raised before row access when the complete Operate store needs a pre-release reset. */
 export class OperateSchemaResetRequiredError extends Error {

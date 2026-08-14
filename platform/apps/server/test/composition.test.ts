@@ -63,6 +63,17 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
       instances: [],
       nextCursor: null,
     });
+    const execution = await fetch(
+      `${origin}/api/v1/process-instances/missing/execution?afterRevision=0`,
+      { signal: AbortSignal.timeout(1_000) },
+    );
+    assert.equal(execution.status, 404);
+    assert.deepEqual(await execution.json(), {
+      error: {
+        code: "notFound",
+        message: "The Process instance was not found.",
+      },
+    });
     const incidents = await fetch(
       `${origin}/api/v1/incidents`,
       { signal: AbortSignal.timeout(1_000) },

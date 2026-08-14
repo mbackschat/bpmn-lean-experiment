@@ -5,6 +5,9 @@ export enum OperationsAuthorizationSurface {
   IncidentDetail = "incidentDetail",
   IncidentAction = "incidentAction",
   IncidentAudit = "incidentAudit",
+  ExecutionHistory = "executionHistory",
+  ExecutionDiagram = "executionDiagram",
+  ExecutionExport = "executionExport",
 }
 
 export enum OperationsAuthorizationDecision {
@@ -40,6 +43,9 @@ export class OperationsAuthorizationPolicy {
       case OperationsAuthorizationSurface.IncidentDetail:
       case OperationsAuthorizationSurface.IncidentAction:
       case OperationsAuthorizationSurface.IncidentAudit:
+      case OperationsAuthorizationSurface.ExecutionHistory:
+      case OperationsAuthorizationSurface.ExecutionDiagram:
+      case OperationsAuthorizationSurface.ExecutionExport:
         return actor.groups.includes(this.#operationsGroupId)
           ? OperationsAuthorizationDecision.Permitted
           : OperationsAuthorizationDecision.Forbidden;

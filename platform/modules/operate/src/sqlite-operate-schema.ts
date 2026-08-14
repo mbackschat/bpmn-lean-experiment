@@ -69,9 +69,64 @@ const schemaObjects = new Map<string, string>([
       UNIQUE (action_id, action_outcome)
     ) STRICT
   `],
+  ["execution_publications", `
+    CREATE TABLE execution_publications (
+      process_instance_id TEXT PRIMARY KEY NOT NULL,
+      identity_json TEXT NOT NULL CHECK (length(identity_json) > 0),
+      status TEXT NOT NULL CHECK (status IN ('healthy','gap','unavailable')),
+      head_revision INTEGER NOT NULL CHECK (
+        head_revision >= 0 AND head_revision <= 9007199254740991
+      ),
+      producer_head_revision INTEGER CHECK (
+        producer_head_revision >= head_revision
+        AND producer_head_revision <= 9007199254740991
+      ),
+      last_logical_time_ms INTEGER CHECK (
+        last_logical_time_ms >= 0
+        AND last_logical_time_ms <= 9007199254740991
+      ),
+      control_tokens_json TEXT NOT NULL CHECK (length(control_tokens_json) > 0),
+      scopes_json TEXT NOT NULL CHECK (length(scopes_json) > 0),
+      current_json TEXT,
+      CHECK (
+        (head_revision = 0 AND last_logical_time_ms IS NULL)
+        OR (head_revision > 0 AND last_logical_time_ms IS NOT NULL)
+      )
+    ) STRICT
+  `],
+  ["execution_publication_batches", `
+    CREATE TABLE execution_publication_batches (
+      process_instance_id TEXT NOT NULL,
+      from_revision INTEGER NOT NULL CHECK (
+        from_revision >= 0 AND from_revision <= 9007199254740991
+      ),
+      through_revision INTEGER NOT NULL CHECK (
+        through_revision > from_revision
+        AND through_revision <= 9007199254740991
+      ),
+      command_id TEXT NOT NULL CHECK (length(command_id) > 0),
+      batch_json TEXT NOT NULL CHECK (length(batch_json) > 0),
+      PRIMARY KEY (process_instance_id, from_revision),
+      UNIQUE (process_instance_id, through_revision)
+    ) STRICT
+  `],
+  ["execution_publication_records", `
+    CREATE TABLE execution_publication_records (
+      process_instance_id TEXT NOT NULL,
+      revision INTEGER NOT NULL CHECK (
+        revision > 0 AND revision <= 9007199254740991
+      ),
+      batch_from_revision INTEGER NOT NULL CHECK (
+        batch_from_revision >= 0
+        AND batch_from_revision < revision
+      ),
+      record_json TEXT NOT NULL CHECK (length(record_json) > 0),
+      PRIMARY KEY (process_instance_id, revision)
+    ) STRICT
+  `],
 ]);
 
-/** Creates or verifies the one exact pre-release Operate epoch-2 schema. */
+/** Creates or verifies the one exact pre-release Operate epoch-3 schema. */
 export function initializeOperateSchema(database: DatabaseSync): void {
   database.exec("BEGIN IMMEDIATE");
   try {
@@ -118,7 +173,7 @@ function requireExactSchema(
     ORDER BY name
   `).all();
   if (
-    strictTables.length !== 3 ||
+    strictTables.length !== 6 ||
     strictTables.some((row) => row.strict !== 1)
   ) {
     throw new OperateSchemaResetRequiredError();
