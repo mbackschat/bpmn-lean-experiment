@@ -119,7 +119,7 @@ The next bounded M5 contract must therefore stop at Product 1 and publish two ne
 | CIB duration reports | Completed-only samples with explicit count, minimum, maximum, and average | Bind every aggregate to one exact definition version and visibly label the initial population as all retained evidence; make incomplete population unavailable rather than partial | Adjustable periods in the first increment, an average without sample count, running-instance pseudo-duration, and unseen enterprise report UI assumptions |
 | Camunda Optimize flow-node analysis | Separate Frequency and Duration modes plus an accessible exact-value table | Begin with numeric diagram overlays and restrained sequential emphasis rather than a heatmap that implies more precision than the bounded sample | Report builder, dashboards, targets, outliers, variables, process variants, conformance, prediction, sharing, and auto-refresh |
 
-The smallest honest Product 2 surface belongs to one exact definition version as a Flow-node metrics detail with Frequency and Duration modes, a visible all-retained population summary, numeric diagram overlays, and the same values in a table. Adjustable periods are useful CIB precedent but are deliberately deferred until the basic occurrence contract and retention population are proven. The surface is not another primary navigation destination. Desktop functional evidence at 1280 and 1600 CSS pixels is sufficient; mobile-specific composition and pixel-regression baselines are not acceptance requirements.
+The smallest honest Product 2 surface belongs to one exact definition version as a Flow-node metrics detail with Frequency and Duration modes, a visible all-retained population summary, numeric diagram overlays, and the same values in a table. Adjustable periods are useful CIB precedent but are deliberately deferred until the basic occurrence contract and retention population are proven. The surface is not another primary navigation destination. Desktop functional evidence at 1280 and 1600 CSS pixels is sufficient; layouts below 1280 CSS pixels and pixel-regression baselines are not acceptance requirements.
 
 ## Product evidence matrix
 
@@ -145,7 +145,9 @@ Adopt now:
 5. source DI or digest-bound sidecar for every M3 registered model;
 6. container-responsive task rows with no horizontal scrolling;
 7. retained completion context through transport failure and indeterminate outcomes;
-8. functional browser and geometry review at 1280 and 1600 CSS pixels, with visual inspection used manually when a material design change warrants it.
+8. functional browser and geometry review at 1280 and 1600 CSS pixels, with visual inspection used manually when a material design change warrants it;
+9. explicit claim-before-work interaction, with completion unavailable while unclaimed and definite stale-claim refusals kept distinct from unknown delivery;
+10. production-backed browser journeys that select or deploy a model, start it, cross each required interaction state, and verify terminal status plus public history or audit.
 
 Reserve without implementing:
 
