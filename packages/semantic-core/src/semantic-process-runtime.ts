@@ -5,6 +5,7 @@ import { admit } from "./semantic-command-admission.js";
 import type { SemanticCommandOutcome } from "./semantic-command-admission.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
+import { closeSupportedInternalOperations } from "./semantic-process-closure.js";
 import {
   calledProcessAssociationsAreValid,
   invokeCalledProcess,
@@ -90,12 +91,7 @@ export type CommandResult = DeepReadonly<{
   outcome: SemanticCommandOutcome;
   state: RuntimeState;
   internalStepBoundExceeded: boolean;
-}>;
-
-type ClosureResult = DeepReadonly<{
-  state: RuntimeState;
-  hitBound: boolean;
-  steps: AppliedInternalOperationStep[];
+  ambiguousInternalChoice: boolean;
 }>;
 
 export type AppliedInternalOperationStep = DeepReadonly<{
@@ -169,23 +165,6 @@ export function isStableStateResumable(state: RuntimeState): boolean {
     default:
       return assertNever(state.control);
   }
-}
-
-// Semantic policy, not semantic truth. This selector advances the lowest
-// canonical operation ID, while Lean's `closeSupported` advances the head of the
-// program-ordered enabled list. In the one admitted multiple-enabled state (the
-// disjoint two-User-Task pair) the two choices coincide only because
-// `isWellFormedSemanticProcessProgram` requires `isSortedById(operations)` under
-// this same `compareCanonicalStrings` order, making the sorted head and the
-// program-order head the same operation. This selector also has no ambiguity
-// signal, while Lean rejects every other multiple-enabled state as an unresolved
-// semantic choice; admission currently keeps those states unreachable here.
-function internalStep(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-): AppliedInternalOperationStep | null {
-  const enabled = enabledInternalOperations(program, state);
-  return enabled[0] ?? null;
 }
 
 /**
@@ -526,28 +505,6 @@ function operationOwnerMatchesProgram(
     bindings[0]?.scopeId === owner.definitionScopeId;
 }
 
-function closeInternal(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-  limit: number,
-): ClosureResult {
-  let current = state;
-  const steps: AppliedInternalOperationStep[] = [];
-  for (let stepCount = 0; stepCount < limit; stepCount += 1) {
-    const next = internalStep(program, current);
-    if (next === null) {
-      return { state: current, hitBound: false, steps };
-    }
-    steps.push(next);
-    current = next.successor;
-  }
-  return {
-    state: current,
-    hitBound: internalStep(program, current) !== null,
-    steps,
-  };
-}
-
 export function applyStimulus(
   program: SemanticProcessProgram,
   state: RuntimeState,
@@ -584,21 +541,23 @@ export function evaluateStimulusWithSelectedSteps(
             outcome: CommandOutcome.Committed,
             state: admission.state,
             internalStepBoundExceeded: false,
+            ambiguousInternalChoice: false,
           },
           admittedState: admission.state,
           selectedInternalSteps: [],
         };
       }
-      const closure = closeInternal(
-        program,
+      const closure = closeSupportedInternalOperations(
         admission.state,
         closureLimit,
+        (current) => enabledInternalOperations(program, current),
       );
       return {
         result: {
           outcome: CommandOutcome.Committed,
           state: closure.state,
           internalStepBoundExceeded: closure.hitBound,
+          ambiguousInternalChoice: closure.ambiguousInternalChoice,
         },
         admittedState: admission.state,
         selectedInternalSteps: closure.steps,
@@ -610,6 +569,7 @@ export function evaluateStimulusWithSelectedSteps(
           outcome: CommandOutcome.Rejected,
           state: admission.state,
           internalStepBoundExceeded: false,
+          ambiguousInternalChoice: false,
         },
         admittedState: null,
         selectedInternalSteps: [],

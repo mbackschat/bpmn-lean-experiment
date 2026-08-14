@@ -17,7 +17,8 @@ import {
 } from "./process-locator.js";
 import type { EngineProcessLocator } from "./process-locator.js";
 
-export const EngineExecutionPublicationResultKind =
+export const EngineExecutionPublicationResultKind:
+  typeof TemporalExecutionPublicationResultKind =
   TemporalExecutionPublicationResultKind;
 export type EngineExecutionPublicationResult =
   TemporalExecutionPublicationResult;

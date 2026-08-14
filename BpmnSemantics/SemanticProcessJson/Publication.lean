@@ -158,4 +158,19 @@ def committedExecutionPublicationJson? (closureLimit : Nat) (program : Program)
         [ ("transitions", jsonArray records)
         , ("current", currentPositionJson current) ]
 
+private def projectionRejectionsJson
+    (cases : List (String × Program × SemanticId × RuntimeState)) : Json :=
+  Json.mkObj <| cases.map fun (label, program, instanceId, state) =>
+    (label, toJson (projectControlPosition? program instanceId state).isNone)
+
+/-- Preserve the exact positive publication while reporting cross-target rejection of named malformed positions. -/
+def committedExecutionPublicationParityJson? (closureLimit : Nat) (program : Program)
+    (instanceId : SemanticId) (initial : RuntimeState) (stimulus : Stimulus)
+    (rejectionCases : List (String × Program × SemanticId × RuntimeState)) : Option Json := do
+  let publication ←
+    committedExecutionPublicationJson? closureLimit program instanceId initial stimulus
+  pure <| Json.mkObj
+    [ ("publication", publication)
+    , ("projectionRejections", projectionRejectionsJson rejectionCases) ]
+
 end BpmnSemantics.SemanticProcessJson.Publication

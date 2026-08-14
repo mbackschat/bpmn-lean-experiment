@@ -135,3 +135,101 @@ export function publicationCompletion(
 }
 
 export { processInstanceId as publicationProcessInstanceId };
+
+const timedProcessId = "Process_PublicationTimed";
+const timedInstanceId = "Instance_PublicationTimed";
+const timedScopeId = `scope:${timedProcessId}`;
+const timedControlPlaces = [
+  controlPlace("Flow_TimedStartToTimer"),
+  controlPlace("Flow_TimedTimerToTask"),
+  controlPlace("Flow_TimedTaskToEnd"),
+];
+const timedOperations: SemanticOperation[] = [{
+  ...operationBase("EndEvent_Timed"),
+  kind: SemanticOperationKind.ReachNoneEnd,
+  input: "place:Flow_TimedTaskToEnd",
+}, {
+  ...operationBase("StartEvent_Timed"),
+  kind: SemanticOperationKind.Initiate,
+  output: "place:Flow_TimedStartToTimer",
+}, {
+  ...operationBase("TimerCatch_Timed"),
+  kind: SemanticOperationKind.AwaitTimer,
+  input: "place:Flow_TimedStartToTimer",
+  output: "place:Flow_TimedTimerToTask",
+  timer: { elementId: "TimerCatch_Timed", durationMs: 1000 },
+}, {
+  ...operationBase("UserTask_Timed"),
+  kind: SemanticOperationKind.AwaitUserTask,
+  input: "place:Flow_TimedTimerToTask",
+  output: "place:Flow_TimedTaskToEnd",
+  task: { elementId: "UserTask_Timed", name: "Timed task" },
+}, {
+  id: `operation:complete-scope:${timedScopeId}`,
+  kind: SemanticOperationKind.CompleteScope,
+  origin: {
+    kind: SemanticOriginKind.BpmnElement,
+    elementId: timedProcessId,
+  },
+  scopeId: timedScopeId,
+  parentOutput: null,
+}].sort((left, right) => compareCanonicalStrings(left.id, right.id));
+
+export const timedPublicationProgram: SemanticProcessProgram = {
+  kind: SemanticProcessKind.SemanticProcess,
+  identity: {
+    compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+    semanticProfile: "bpmn-2.0.2-timer-user-task-composition-draft",
+    sourceId: "publication-timed-source",
+    sourceOverlay: null,
+    sourceSha256: "c".repeat(64),
+  },
+  processId: timedProcessId,
+  definitionScopes: [{
+    id: timedScopeId,
+    parentScopeId: null,
+    originElementId: timedProcessId,
+  }],
+  operationScopes: timedOperations.map(({ id: operationId }) => ({
+    operationId,
+    scopeId: timedScopeId,
+  })),
+  controlPlaceScopes: timedControlPlaces.map(({ id: controlPlaceId }) => ({
+    controlPlaceId,
+    scopeId: timedScopeId,
+  })),
+  controlPlaces: timedControlPlaces,
+  operations: timedOperations,
+};
+
+export const timedPublicationStart = {
+  kind: StimulusKind.StartProcess,
+  commandId: "start-publication-timed",
+  processId: timedProcessId,
+  instanceId: timedInstanceId,
+  initialVariables: [],
+} as const;
+
+export const timedPublicationFire = {
+  kind: StimulusKind.FireTimer,
+  commandId: "fire-publication-timed",
+  timerId: {
+    processInstanceId: timedInstanceId,
+    elementId: "TimerCatch_Timed",
+    activation: 1,
+  },
+  logicalTimeMs: 1000,
+} as const;
+
+export const timedPublicationCompletion = {
+  kind: StimulusKind.CompleteUserTaskInstance,
+  commandId: "complete-publication-timed",
+  taskId: {
+    processInstanceId: timedInstanceId,
+    elementId: "UserTask_Timed",
+    activation: 1,
+  },
+  submittedValues: [],
+} as const;
+
+export { timedInstanceId as timedPublicationProcessInstanceId };

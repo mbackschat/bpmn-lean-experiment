@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.CallActivityConformance
 
 /-! # Committed execution publication conformance
 
@@ -182,10 +183,58 @@ def stateWithBadTokenOwner : RuntimeState :=
     tokens := initiatedState.tokens.map fun token =>
       { token with owner := { token.owner with definitionScopeId := ⟨"scope:other"⟩ } } }
 
+def unassociatedParentlessRootState : RuntimeState :=
+  { tracedStart.result.state with
+    scopeOccurrences :=
+      tracedStart.result.state.scopeOccurrences ++
+        [{ id :=
+            { processInstanceId := ⟨"instance:rogue"⟩
+              definitionScopeId := owner.definitionScopeId
+              activation := 1 }
+           parent := none }] }
+
+def completedWithLivePositionsState : RuntimeState :=
+  { initiatedState with control := .completed instanceId }
+
+def cleanCompletedState : RuntimeState :=
+  { initialState with control := .completed instanceId }
+
+def calledRootProcessDriftState : RuntimeState :=
+  { CallActivityConformance.calledWaiting.state with
+    calledProcessOccurrences :=
+      CallActivityConformance.calledWaiting.state.calledProcessOccurrences.map fun record =>
+        { record with calledProcessId := CallActivityConformance.callerProcessId } }
+
+/-- Independent validity admits the real running host, its real called tree, and a clean completed lifecycle. -/
+theorem valid_running_called_and_completed_positions_are_projectable :
+    runtimePositionValid sequentialProgram instanceId tracedStart.result.state = true ∧
+      runtimePositionValid CallActivityConformance.program
+          CallActivityConformance.callerInstanceId
+          CallActivityConformance.calledWaiting.state = true ∧
+      projectControlPosition? sequentialProgram instanceId cleanCompletedState =
+        some emptyPublicControlPosition := by
+  decide +kernel
+
 /-- Actual projection rejects mutated runtime parentage and token-to-definition ownership. -/
 theorem public_position_projection_fails_closed_on_binding_corruption :
     projectControlPosition? sequentialProgram instanceId stateWithBadScopeParent = none ∧
       projectControlPosition? sequentialProgram instanceId stateWithBadTokenOwner = none := by
+  decide +kernel
+
+/-- Projection admits no unassociated parentless runtime root. -/
+theorem public_position_projection_rejects_unassociated_parentless_root :
+    projectControlPosition? sequentialProgram instanceId unassociatedParentlessRootState = none := by
+  decide +kernel
+
+/-- Completed lifecycle state admits no retained live scope or token position. -/
+theorem public_position_projection_rejects_completed_state_with_live_positions :
+    projectControlPosition? sequentialProgram instanceId completedWithLivePositionsState = none := by
+  decide +kernel
+
+/-- A called root is bound to the exact called Process named by its association. -/
+theorem public_position_projection_rejects_called_root_process_drift :
+    projectControlPosition? CallActivityConformance.program
+        CallActivityConformance.callerInstanceId calledRootProcessDriftState = none := by
   decide +kernel
 
 def zeroMultiplicityDelta : PublicControlPositionDelta :=

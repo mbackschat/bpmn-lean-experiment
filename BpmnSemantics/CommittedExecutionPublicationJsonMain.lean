@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.Fixtures
 import BpmnSemantics.SemanticProcessJson.Publication
+import BpmnSemantics.CommittedExecutionPublicationConformance
 
 /-! One-way JSON emitter for the exact parallel committed-execution publication parity witness. -/
 
@@ -14,9 +15,20 @@ def instanceId : SemanticId := ⟨"Instance_1"⟩
 def startStimulus : Stimulus :=
   .startProcess ⟨"start-process"⟩ ⟨parallelProgram.processId.value⟩ instanceId []
 
+def rejectionCases : List (String × Program × SemanticId × RuntimeState) :=
+  [ ("unassociatedParentlessRoot", sequentialProgram,
+      CommittedExecutionPublicationConformance.instanceId,
+      CommittedExecutionPublicationConformance.unassociatedParentlessRootState)
+  , ("completedWithLivePositions", sequentialProgram,
+      CommittedExecutionPublicationConformance.instanceId,
+      CommittedExecutionPublicationConformance.completedWithLivePositionsState)
+  , ("calledRootProcessDrift", CallActivityConformance.program,
+      CallActivityConformance.callerInstanceId,
+      CommittedExecutionPublicationConformance.calledRootProcessDriftState) ]
+
 def emit : IO Unit :=
-  match committedExecutionPublicationJson?
-      scenarioClosureLimit parallelProgram instanceId initialState startStimulus with
+  match committedExecutionPublicationParityJson?
+      scenarioClosureLimit parallelProgram instanceId initialState startStimulus rejectionCases with
   | none => throw (IO.userError "parallel committed publication is unavailable")
   | some publication => IO.println publication.compress
 

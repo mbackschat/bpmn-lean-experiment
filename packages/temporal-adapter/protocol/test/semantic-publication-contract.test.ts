@@ -297,3 +297,34 @@ test("binds every redundant internal-operation field to the exact Program operat
     );
   }
 });
+
+test("positive-cursor transport validates only the visible suffix without inventing an anchor", () => {
+  const complete = twoBatchPublicationPage();
+  const page = {
+    ...complete,
+    requestedAfterRevision: 2,
+    batches: [complete.batches[1]],
+    current: {
+      ...complete.current,
+      controlTokens: complete.current.controlTokens.map((token) => ({
+        ...token,
+        multiplicity: 2,
+      })),
+    },
+  };
+
+  assert.deepEqual(
+    requireExecutionPublicationTransportResult(
+      { kind: "available", page },
+      { ...transportContext, afterRevision: 2 },
+    ),
+    { kind: "available", page },
+  );
+  assert.deepEqual(
+    requireExecutionPublicationPage(
+      page,
+      { ...publicationContext, afterRevision: 2, limit: 1 },
+    ),
+    page,
+  );
+});

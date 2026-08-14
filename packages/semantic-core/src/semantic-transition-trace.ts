@@ -102,6 +102,7 @@ export function applyStimulusWithTrace(
   if (
     result.outcome !== CommandOutcome.Committed ||
     result.internalStepBoundExceeded ||
+    result.ambiguousInternalChoice ||
     evaluation.admittedState === null ||
     !isStableStateResumable(result.state) ||
     currentPositions === null

@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved on 2026-08-14; the Product 1 semantic checkpoint is implemented and awaiting independent checkpoint review.** The checkpoint includes exact TypeScript and Lean evaluator-root traces, replay and control-position projection, strict publication wire and canonical bytes, a Workflow-owned atomic revision accumulator and cursor Query, a representation-free client, an opaque-locator engine API, and exact source-compiled Lean/TypeScript parity. Product 2 projection, live Temporal retention/replay evidence, History, Diagram, and export remain unimplemented. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. The checkpoint changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
+**Owner-approved on 2026-08-14; the Product 1 semantic checkpoint correction is implemented and awaiting same-reviewer audit.** Independent review of immutable checkpoint `478d936e5a33e3fa3b9dbc17880645c7da6d6a9a` returned `approve-with-required-edits` for four reproduced defects: invalid Lean runtime-position forests, unresolved TypeScript internal-operation ambiguity, unanchored positive-cursor producer continuity, and an undeclared dependency in emitted engine API declarations. The bounded correction adds independent Lean runtime-position validity, exact TypeScript closure classification, stored-head position and logical-time validation in the Workflow accumulator, and a class-level declaration-dependency guard. Product 2 projection, live Temporal retention/replay evidence, History, Diagram, and export remain unimplemented. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. The checkpoint changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `64509884d8cb4939d2251da008082c922f307d28` | `fork-turns-none` | `approve-with-required-edits` | `54a15fe4cc4e0efd7c587ddb2493e5e64bc2f950` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `478d936e5a33e3fa3b9dbc17880645c7da6d6a9a` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question and recommendation
@@ -199,7 +199,7 @@ An exact Workflow Task replay reconstructs the same publication without creating
 
 ### EPUB-CURSOR-01: contiguous pages
 
-Every observed available page begins at the caller's exact committed batch-boundary cursor and contains only complete adjacent batches. The decoder validates the enumerated page, batch, record-count, record-revision, first-external, command-identity, definition-identity, Process-identity, logical-time, position-delta, page-through, head, and current equations in the public contract. A skipped revision, batch split, changed duplicate, definition drift, redundant operation-field drift, or head regression is an integrity failure, not an empty page. Before the first batch, `notReady` is the only valid Query result and is retryable rather than a gap.
+Every observed available page begins at the caller's exact committed batch-boundary cursor and contains only complete adjacent batches. The decoder validates the enumerated page, batch, record-count, record-revision, first-external, command-identity, definition-identity, Process-identity, visible logical-time, position-delta, page-through, head, and current equations in the public contract. From revision zero it also validates that folding every visible delta from the empty position equals the returned current head. At a positive cursor the representation-free transport decoder cannot validate the page against an unseen prefix and does not invent an empty anchor; the authoritative Workflow producer validates every append from its stored prior current position and logical time, and Product 2 must later validate the same suffix from its transactionally retained prior head before advancing. A skipped revision, batch split, changed duplicate, definition drift, redundant operation-field drift, or head regression is an integrity failure, not an empty page. Before the first batch, `notReady` is the only valid Query result and is retryable rather than a gap.
 
 ### EPUB-PROJECTION-01: transactional projection and rebuild
 
@@ -348,7 +348,7 @@ The semantic root grows only by thin delegation. The current mechanically measur
 
 | Existing owner | Headroom before 600 nonblank lines | Required consequence |
 |---|---:|---|
-| [`packages/semantic-core/src/semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 1 | Delegate the current apply root to a new traced evaluator and preserve result-only equivalence. |
+| [`packages/semantic-core/src/semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 38 | Delegate the current apply root to cohesive closure and trace owners and preserve result-only equivalence. |
 | [`packages/semantic-core/src/contract.ts`](../../packages/semantic-core/src/contract.ts) | 292 | Re-export the additive trace/position contract without changing existing observation shapes. |
 | [`packages/semantic-core/src/scenario.ts`](../../packages/semantic-core/src/scenario.ts) | 92 | Keep existing scenario bytes; add only focused trace-evidence delegation if required. |
 | [`BpmnSemantics/SemanticProcess/Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) | 225 | Delegate to a new traced closure owner; do not add the proof family here. |

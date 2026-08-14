@@ -132,6 +132,8 @@ export function isExecutionPublicationPage(
       !isCurrent(value.current, value, program, processId, logicalTime))) {
     return false;
   }
+  // A positive cursor has no prior public position or time anchor. This checks
+  // only the visible suffix; the authoritative producer reconciles stored head continuity.
   return !(value.requestedAfterRevision === 0 && value.current !== null &&
     !foldMatchesCurrent(records, value.current));
 }

@@ -93,28 +93,6 @@ private def controlPlaceScope? (program : Program) (placeId : ControlPlaceId) :
   | [ownership] => some ownership.scopeId
   | _ => none
 
-private def liveOccurrence? (state : RuntimeState) (id : ScopeOccurrenceId) :
-    Option RuntimeScopeOccurrence :=
-  match state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = id) with
-  | [occurrence] => some occurrence
-  | _ => none
-
-private def projectToken? (program : Program) (state : RuntimeState)
-    (token : ControlToken) : Option PublicControlTokenPosition := do
-  let place ← uniqueControlPlace? program token.placeId
-  let staticOwner ← controlPlaceScope? program token.placeId
-  if staticOwner ≠ token.owner.definitionScopeId then none
-  else
-    let _ ← liveOccurrence? state token.owner
-    pure { sequenceFlowId := place.origin.elementId, owner := token.owner, multiplicity := 1 }
-
-private def projectTokens? (program : Program) (state : RuntimeState) :
-    List ControlToken → Option (List PublicControlTokenPosition)
-  | [] => some []
-  | token :: rest => do
-      let position ← projectToken? program state token
-      pure (insertTokenPosition position (← projectTokens? program state rest))
-
 private def uniqueDefinitionScope? (program : Program) (scopeId : DefinitionScopeId) :
     Option DefinitionScope :=
   match program.definitionScopes.filter fun scope => decide (scope.id = scopeId) with
@@ -125,66 +103,162 @@ private def uniqueDefinitionScope? (program : Program) (scopeId : DefinitionScop
       | _ => none
   | _ => none
 
-private def runtimeParentMatches? (state : RuntimeState)
+private def programProjectionBindingsValid (program : Program) : Bool :=
+  (program.controlPlaces.all fun place =>
+    (program.controlPlaces.filter fun candidate =>
+      decide (candidate.origin = place.origin)).length = 1) &&
+    program.definitionScopes.all fun scope =>
+      (program.definitionScopes.filter fun candidate =>
+        decide (candidate.originElementId = scope.originElementId)).length = 1
+
+private def exactLiveOccurrence (state : RuntimeState) (id : ScopeOccurrenceId) : Bool :=
+  (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = id)).length = 1
+
+private def hostingRoot (program : Program) (instanceId : SemanticId)
     (scope : DefinitionScope) (occurrence : RuntimeScopeOccurrence) : Bool :=
+  occurrence.parent.isNone &&
+    occurrence.id.processInstanceId = instanceId &&
+    scope.parentScopeId.isNone &&
+    scope.originElementId.value = program.processId.value
+
+private def calledRootBindingValid (state : RuntimeState)
+    (scope : DefinitionScope) (occurrence : RuntimeScopeOccurrence) : Bool :=
+  match state.calledProcessOccurrences.filter fun record =>
+      decide (record.calledRoot = occurrence.id) with
+  | [record] => record.calledProcessId.value = scope.originElementId.value
+  | _ => false
+
+private def rootAssociationValid (program : Program) (instanceId : SemanticId)
+    (state : RuntimeState) (scope : DefinitionScope)
+    (occurrence : RuntimeScopeOccurrence) : Bool :=
+  let hosting := hostingRoot program instanceId scope occurrence
+  let called := calledRootBindingValid state scope occurrence
+  (hosting && !called) || (!hosting && called)
+
+private def runtimeParentValid (program : Program) (instanceId : SemanticId)
+    (state : RuntimeState) (scope : DefinitionScope)
+    (occurrence : RuntimeScopeOccurrence) : Bool :=
   match scope.parentScopeId, occurrence.parent with
-  | none, none => true
+  | none, none => rootAssociationValid program instanceId state scope occurrence
   | some definitionParent, some runtimeParent =>
       runtimeParent.processInstanceId = occurrence.id.processInstanceId &&
         runtimeParent.definitionScopeId = definitionParent &&
-        (liveOccurrence? state runtimeParent).isSome
+        exactLiveOccurrence state runtimeParent
   | _, _ => false
 
-private def projectScope? (program : Program) (state : RuntimeState)
-    (occurrence : RuntimeScopeOccurrence) : Option PublicScopePosition := do
-  let scope ← uniqueDefinitionScope? program occurrence.id.definitionScopeId
-  if !runtimeParentMatches? state scope occurrence then none
-  else
-    let position : PublicScopePosition :=
-      { id := occurrence.id
-        parent := occurrence.parent
-        bpmnElementId := scope.originElementId }
-    some position
+private def scopeOccurrenceValid (program : Program) (instanceId : SemanticId)
+    (state : RuntimeState) (occurrence : RuntimeScopeOccurrence) : Bool :=
+  match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
+  | none => false
+  | some scope =>
+      decide (occurrence.id.processInstanceId.value ≠ "") &&
+        occurrence.id.activation > 0 &&
+        runtimeParentValid program instanceId state scope occurrence
 
-private def projectScopes? (program : Program) (state : RuntimeState) :
-    List RuntimeScopeOccurrence → Option (List PublicScopePosition)
-  | [] => some []
-  | occurrence :: rest => do
-      let position ← projectScope? program state occurrence
-      insertScopePosition? position (← projectScopes? program state rest)
+private def tokenBindingValid (program : Program) (state : RuntimeState)
+    (token : ControlToken) : Bool :=
+  match uniqueControlPlace? program token.placeId,
+      controlPlaceScope? program token.placeId with
+  | some _, some staticOwner =>
+      staticOwner = token.owner.definitionScopeId &&
+        exactLiveOccurrence state token.owner
+  | _, _ => false
 
-private def stateProcessMatches (expectedInstanceId : SemanticId)
+private def hostingRootCount (program : Program) (instanceId : SemanticId)
+    (state : RuntimeState) : Nat :=
+  (state.scopeOccurrences.filter fun occurrence =>
+    match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
+    | none => false
+    | some scope => hostingRoot program instanceId scope occurrence).length
+
+private def runningPositionValid (program : Program) (expectedInstanceId instanceId : SemanticId)
+    (state : RuntimeState) : Bool :=
+  instanceId = expectedInstanceId &&
+    hostingRootCount program instanceId state = 1 &&
+    calledProcessAssociationsValid state &&
+    (state.scopeOccurrences.all fun occurrence =>
+      exactLiveOccurrence state occurrence.id &&
+        scopeOccurrenceValid program instanceId state occurrence) &&
+    state.tokens.all (tokenBindingValid program state)
+
+private def lifecyclePositionValid (program : Program) (expectedInstanceId : SemanticId)
     (state : RuntimeState) : Bool :=
   match state.control with
-  | .notStarted => state = initialState
-  | .running instanceId | .completed instanceId | .cancelled instanceId =>
-      instanceId = expectedInstanceId
+  | .notStarted => state.scopeOccurrences.isEmpty && state.tokens.isEmpty
+  | .running instanceId => runningPositionValid program expectedInstanceId instanceId state
+  | .completed instanceId | .cancelled instanceId =>
+      instanceId = expectedInstanceId &&
+        state.scopeOccurrences.isEmpty && state.tokens.isEmpty
+
+/-- Independent lifecycle, scope-forest, call-association, and token-binding validity for public projection. -/
+def runtimePositionValid (program : Program) (expectedInstanceId : SemanticId)
+    (state : RuntimeState) : Bool :=
+  programWellFormed program && programProjectionBindingsValid program &&
+    lifecyclePositionValid program expectedInstanceId state
+
+private def tokenOrigin (program : Program) (token : ControlToken) : SequenceFlowId :=
+  match uniqueControlPlace? program token.placeId with
+  | some place => place.origin.elementId
+  | none => ⟨""⟩
+
+private def projectTokens (program : Program) :
+    List ControlToken → List PublicControlTokenPosition
+  | [] => []
+  | token :: rest =>
+      insertTokenPosition
+        { sequenceFlowId := tokenOrigin program token
+          owner := token.owner
+          multiplicity := 1 }
+        (projectTokens program rest)
+
+private def scopeOrigin (program : Program)
+    (occurrence : RuntimeScopeOccurrence) : NodeId :=
+  match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
+  | some scope => scope.originElementId
+  | none => ⟨""⟩
+
+private def insertProjectedScopePosition (position : PublicScopePosition) :
+    List PublicScopePosition → List PublicScopePosition
+  | [] => [position]
+  | current :: rest =>
+      if scopePositionBefore position current then position :: current :: rest
+      else current :: insertProjectedScopePosition position rest
+
+private def projectScopes (program : Program) :
+    List RuntimeScopeOccurrence → List PublicScopePosition
+  | [] => []
+  | occurrence :: rest =>
+      insertProjectedScopePosition
+        { id := occurrence.id
+          parent := occurrence.parent
+          bpmnElementId := scopeOrigin program occurrence }
+        (projectScopes program rest)
 
 /-- Project exact public positions, rejecting malformed Program bindings and runtime ownership. -/
 def projectControlPosition? (program : Program) (expectedInstanceId : SemanticId)
-    (state : RuntimeState) : Option PublicControlPosition := do
-  if !programWellFormed program || !stateProcessMatches expectedInstanceId state then none
-  else
-    pure
-      { controlTokens := ← projectTokens? program state state.tokens
-        scopes := ← projectScopes? program state state.scopeOccurrences }
+    (state : RuntimeState) : Option PublicControlPosition :=
+  if runtimePositionValid program expectedInstanceId state then
+    some
+      { controlTokens := projectTokens program state.tokens
+        scopes := projectScopes program state.scopeOccurrences }
+  else none
 
 /-- Explicit validity hypotheses under which the private-to-public projection is total. -/
 def controlPositionProjectable (program : Program) (expectedInstanceId : SemanticId)
     (state : RuntimeState) : Prop :=
-  programWellFormed program = true ∧
-    stateProcessMatches expectedInstanceId state = true ∧
-    (∃ tokens, projectTokens? program state state.tokens = some tokens) ∧
-    ∃ scopes, projectScopes? program state state.scopeOccurrences = some scopes
+  runtimePositionValid program expectedInstanceId state = true
 
 /-- Every admitted, binding-valid runtime position has one exact public projection. -/
 theorem projectControlPosition_total (program : Program) (expectedInstanceId : SemanticId)
     (state : RuntimeState)
     (valid : controlPositionProjectable program expectedInstanceId state) :
     ∃ position, projectControlPosition? program expectedInstanceId state = some position := by
-  rcases valid with ⟨wellFormed, processMatches, ⟨tokens, tokensExact⟩, scopes, scopesExact⟩
-  refine ⟨{ controlTokens := tokens, scopes }, ?_⟩
-  simp [projectControlPosition?, wellFormed, processMatches, tokensExact, scopesExact]
+  let position : PublicControlPosition :=
+    { controlTokens := projectTokens program state.tokens
+      scopes := projectScopes program state.scopeOccurrences }
+  have validity : runtimePositionValid program expectedInstanceId state = true := valid
+  refine ⟨position, ?_⟩
+  simp [projectControlPosition?, validity, position]
 
 private def tokenMultiplicityAt (positions : List PublicControlTokenPosition)
     (target : PublicControlTokenPosition) : Nat :=

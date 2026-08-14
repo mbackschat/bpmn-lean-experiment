@@ -7,6 +7,8 @@ import { test } from "node:test";
 
 import type {
   CurrentControlPositions,
+  RuntimeState,
+  SemanticProcessProgram,
   StartProcessStimulus,
   UnnumberedCommittedTransitionRecord,
 } from "../../semantic-core/src/index.ts";
@@ -43,6 +45,17 @@ type Publication = Readonly<{
   current: CurrentControlPositions;
 }>;
 
+type ProjectionRejections = Readonly<{
+  unassociatedParentlessRoot: boolean;
+  completedWithLivePositions: boolean;
+  calledRootProcessDrift: boolean;
+}>;
+
+type PublicationParityEvidence = Readonly<{
+  publication: Publication;
+  projectionRejections: ProjectionRejections;
+}>;
+
 type InternalTransition = Extract<
   UnnumberedCommittedTransitionRecord["transition"],
   { operationId: string }
@@ -55,12 +68,15 @@ type BpmnSourceApi = Pick<
 
 type SemanticCoreApi = Pick<
   typeof import("../../semantic-core/src/index.ts"),
+  | "ControlStateKind"
   | "SemanticOperationKind"
   | "SemanticOriginKind"
   | "StimulusKind"
   | "applyStimulusWithTrace"
+  | "deriveCalledProcessInstanceId"
   | "initialState"
   | "isWellFormedStimulus"
+  | "projectCurrentControlPositions"
   | "replayCommittedTransitions"
 >;
 
@@ -111,9 +127,21 @@ test("Lean and TypeScript publish the exact parallel start trace and current pos
     transitions: traced.committedTransitions,
     current: traced.currentPositions,
   };
-  const leanPublication = await runLeanPublicationEmitter();
+  const leanEvidence = await runLeanPublicationEmitter();
+  const leanPublication = leanEvidence.publication;
 
   assert.deepEqual(typescriptPublication, leanPublication);
+  const projectionRejections = projectNegativePositionClasses(
+    semanticCore,
+    compilation.semanticProcess,
+    traced.result.state,
+  );
+  assert.deepEqual(projectionRejections, {
+    unassociatedParentlessRoot: true,
+    completedWithLivePositions: true,
+    calledRootProcessDrift: true,
+  });
+  assert.deepEqual(leanEvidence.projectionRejections, projectionRejections);
 
   const swapped = swapRecords(typescriptPublication, 3, 4);
   assert.deepEqual(
@@ -218,7 +246,7 @@ test("Lean and TypeScript publish the exact parallel start trace and current pos
   }
 });
 
-async function runLeanPublicationEmitter(): Promise<unknown> {
+async function runLeanPublicationEmitter(): Promise<PublicationParityEvidence> {
   const result = await execFileAsync(
     "./scripts/lake.sh",
     [
@@ -237,7 +265,135 @@ async function runLeanPublicationEmitter(): Promise<unknown> {
   const output = result.stdout.trim();
   assert.ok(output.length > 0, "Lean publication output must be nonempty");
   const decoded: unknown = JSON.parse(output);
-  return decoded;
+  return decodePublicationParityEvidence(decoded);
+}
+
+function projectNegativePositionClasses(
+  semanticCore: SemanticCoreApi,
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): ProjectionRejections {
+  const hostingRoot = state.scopeOccurrences[0];
+  const startFlowPlace = program.controlPlaces.find(
+    ({ origin }) => origin.elementId === "Flow_StartToFork",
+  );
+  assert.ok(hostingRoot !== undefined);
+  assert.ok(startFlowPlace !== undefined);
+
+  const unassociatedRootState: RuntimeState = {
+    ...state,
+    scopeOccurrences: [
+      ...state.scopeOccurrences,
+      {
+        id: {
+          ...hostingRoot.id,
+          processInstanceId: "Instance_Rogue",
+        },
+        parent: null,
+      },
+    ],
+  };
+  const completedWithLivePositionsState: RuntimeState = {
+    ...state,
+    control: {
+      kind: semanticCore.ControlStateKind.Completed,
+      instanceId: hostingRoot.id.processInstanceId,
+    },
+    controlTokens: [{
+      placeId: startFlowPlace.id,
+      owner: hostingRoot.id,
+      multiplicity: 1,
+    }],
+  };
+
+  const callActivityElementId = "CallActivity_Parity";
+  const calledProcessId = "CalledProcess_Parity";
+  const calledRoot = {
+    id: {
+      processInstanceId: semanticCore.deriveCalledProcessInstanceId(
+        hostingRoot.id.processInstanceId,
+        callActivityElementId,
+        1,
+      ),
+      definitionScopeId: "scope:CalledProcess_Parity",
+      activation: 1,
+    },
+    parent: null,
+  } as const;
+  const calledProgram: SemanticProcessProgram = {
+    ...program,
+    definitionScopes: [
+      ...program.definitionScopes,
+      {
+        id: calledRoot.id.definitionScopeId,
+        parentScopeId: null,
+        originElementId: calledProcessId,
+      },
+    ],
+  };
+  const calledTreeState: RuntimeState = {
+    ...state,
+    scopeOccurrences: [...state.scopeOccurrences, calledRoot],
+    calledProcessOccurrences: [{
+      id: {
+        processInstanceId: hostingRoot.id.processInstanceId,
+        elementId: callActivityElementId,
+        activation: 1,
+      },
+      caller: hostingRoot.id,
+      calledProcessId,
+      calledRoot: calledRoot.id,
+      returnOperationId: "operation:return-process:CallActivity_Parity",
+    }],
+  };
+  assert.notEqual(
+    semanticCore.projectCurrentControlPositions(calledProgram, calledTreeState),
+    null,
+    "an exactly associated called-Process root must remain projectable",
+  );
+  const calledRootProcessDriftState: RuntimeState = {
+    ...calledTreeState,
+    calledProcessOccurrences: calledTreeState.calledProcessOccurrences.map(
+      (record) => ({ ...record, calledProcessId: "CalledProcess_Drift" }),
+    ),
+  };
+
+  return {
+    unassociatedParentlessRoot:
+      semanticCore.projectCurrentControlPositions(program, unassociatedRootState) === null,
+    completedWithLivePositions:
+      semanticCore.projectCurrentControlPositions(
+        program,
+        completedWithLivePositionsState,
+      ) === null,
+    calledRootProcessDrift:
+      semanticCore.projectCurrentControlPositions(
+        calledProgram,
+        calledRootProcessDriftState,
+      ) === null,
+  };
+}
+
+function decodePublicationParityEvidence(
+  value: unknown,
+): PublicationParityEvidence {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.publication) ||
+    !isRecord(value.projectionRejections)
+  ) {
+    throw new Error("Lean publication parity evidence must be an object");
+  }
+  for (const field of [
+    "unassociatedParentlessRoot",
+    "completedWithLivePositions",
+    "calledRootProcessDrift",
+  ]) {
+    if (typeof value.projectionRejections[field] !== "boolean") {
+      throw new Error(`Lean projection rejection ${field} must be Boolean`);
+    }
+  }
+  return value as unknown as PublicationParityEvidence;
 }
 
 function decodeScenarioStart(
@@ -381,8 +537,11 @@ async function loadSemanticCoreApi(): Promise<SemanticCoreApi> {
   if (
     !isRecord(loaded) ||
     typeof loaded.applyStimulusWithTrace !== "function" ||
+    typeof loaded.deriveCalledProcessInstanceId !== "function" ||
     typeof loaded.isWellFormedStimulus !== "function" ||
+    typeof loaded.projectCurrentControlPositions !== "function" ||
     typeof loaded.replayCommittedTransitions !== "function" ||
+    !isRecord(loaded.ControlStateKind) ||
     !isRecord(loaded.initialState) ||
     !isRecord(loaded.SemanticOperationKind) ||
     !isRecord(loaded.SemanticOriginKind) ||
