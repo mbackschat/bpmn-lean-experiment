@@ -232,6 +232,33 @@ theorem independent_open_projection_rejects_every_runtime_validity_counterexampl
         configuredUnownedActivityLocal = none := by
   decide +kernel
 
+def foreignUserTaskState : RuntimeState :=
+  { SequentialUserTask.afterStartState with
+    waits := SequentialUserTask.afterStartState.waits.map fun wait =>
+      { wait with task := { wait.task with id := ⟨"UserTask_Foreign"⟩ } } }
+
+def orphanBoundaryDeadlineState : RuntimeState :=
+  { ActivityBoundaryTimerConformance.armedState with waits := [] }
+
+def foreignCallRecordState : RuntimeState :=
+  { CallActivityConformance.calledWaiting.state with
+    calledProcessOccurrences :=
+      CallActivityConformance.calledWaiting.state.calledProcessOccurrences.map fun record =>
+        { record with returnOperationId := ⟨"operation:foreign-return"⟩ } }
+
+theorem independent_open_projection_rejects_program_foreign_user_task :
+    projectOpenFlowNodeOccurrences? SequentialUserTask.program foreignUserTaskState = none := by
+  decide +kernel
+
+theorem independent_open_projection_rejects_orphan_boundary_deadline :
+    projectOpenFlowNodeOccurrences? ActivityBoundaryTimerConformance.program
+      orphanBoundaryDeadlineState = none := by
+  decide +kernel
+
+theorem independent_open_projection_rejects_program_foreign_call_record :
+    projectOpenFlowNodeOccurrences? CallActivityConformance.program foreignCallRecordState = none := by
+  decide +kernel
+
 def receiveStartTrace : TracedStimulusResult :=
   applyStimulusTraced scenarioClosureLimit ReceiveTaskConformance.program initialState
     ReceiveTaskConformance.startStimulus

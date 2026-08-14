@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   ScenarioStepKind,
+  SemanticFlowNodeOccurrenceAnchorKind,
   advanceScenario,
   initialState,
 } from "@bpmn-lean/semantic-core";
@@ -191,40 +192,62 @@ test("does not sample or append for a rejection or duplicate recovery", () => {
   assert.equal(samples, 0);
 });
 
-test("exposes neither immutable successor when occurrence validation rejects", () => {
+test("samples no time and exposes neither successor for malformed occurrence publication", () => {
   const step = advanceScenario(
     publicationProgram,
     initialState,
     publicationStart,
   );
   assert.ok(step.kind === ScenarioStepKind.Committed);
-  const corrupted = structuredClone(step);
-  assert.ok(corrupted.flowNodeOccurrenceLifecycles !== null);
-  const lifecycle = corrupted.flowNodeOccurrenceLifecycles.find(
-    ({ started }) => started.length > 0,
-  );
-  assert.ok(lifecycle?.started[0] !== undefined);
-  lifecycle.started.push(structuredClone(lifecycle.started[0]));
-
-  const before = createCommandPublicationState(
-    publicationProgram,
-    publicationProcessInstanceId,
-  );
-  const exactBefore = structuredClone(before);
-  let samples = 0;
-  assert.throws(
-    () => integrateCommandPublication(
+  for (const corrupt of [
+    (corrupted: typeof step) => {
+      assert.ok(corrupted.flowNodeOccurrenceLifecycles !== null);
+      const lifecycle = corrupted.flowNodeOccurrenceLifecycles.find(
+        ({ started }) => started.length > 0,
+      );
+      assert.ok(lifecycle?.started[0] !== undefined);
+      lifecycle.started.push(structuredClone(lifecycle.started[0]));
+    },
+    (corrupted: typeof step) => {
+      assert.ok(corrupted.flowNodeOccurrenceLifecycles !== null);
+      const lifecycle = corrupted.flowNodeOccurrenceLifecycles.find(
+        ({ ended }) => ended.length > 0,
+      );
+      assert.ok(lifecycle?.ended[0] !== undefined);
+      Object.assign(lifecycle.ended[0], {
+        anchor: {
+          kind: SemanticFlowNodeOccurrenceAnchorKind.Wait,
+          id: {
+            processInstanceId: publicationProcessInstanceId,
+            elementId: "Unknown_Flow_Node",
+            activation: 1,
+          },
+        },
+      });
+    },
+  ]) {
+    const corrupted = structuredClone(step);
+    corrupt(corrupted);
+    const before = createCommandPublicationState(
       publicationProgram,
-      before,
-      publicationStart,
-      corrupted,
-      () => {
-        samples += 1;
-        return 4_000;
-      },
-    ),
-    /not canonical|reused an open anchor/u,
-  );
-  assert.equal(samples, 1);
-  assert.deepEqual(before, exactBefore);
+      publicationProcessInstanceId,
+    );
+    const exactBefore = structuredClone(before);
+    let samples = 0;
+    assert.throws(
+      () => integrateCommandPublication(
+        publicationProgram,
+        before,
+        publicationStart,
+        corrupted,
+        () => {
+          samples += 1;
+          return 4_000;
+        },
+      ),
+      /not canonical|reused an open anchor|unknown anchor/u,
+    );
+    assert.equal(samples, 0);
+    assert.deepEqual(before, exactBefore);
+  }
 });

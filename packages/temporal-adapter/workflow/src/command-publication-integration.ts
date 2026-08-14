@@ -89,6 +89,13 @@ export function integrateCommandPublication(
       "committed semantic step has no complete command publication",
     );
   }
+  preflightPublicationSuccessors(
+    program,
+    state,
+    stimulus,
+    step,
+    state.flowNodeOccurrences.lastCommittedAtEpochMs ?? 0,
+  );
   const committedAtEpochMs = committedClock();
   const executionCandidate = accumulateExecutionPublication(
     program,
@@ -110,6 +117,30 @@ export function integrateCommandPublication(
     flowNodeOccurrences: occurrenceCandidate,
     commandResults: state.commandResults,
   };
+}
+
+function preflightPublicationSuccessors(
+  program: SemanticProcessProgram,
+  state: CommandPublicationState,
+  stimulus: Stimulus,
+  step: Extract<ScenarioStep, { kind: ScenarioStepKind.Committed }>,
+  committedAtEpochMs: number,
+): void {
+  const execution = accumulateExecutionPublication(
+    program,
+    state.execution,
+    stimulus,
+    step,
+  );
+  accumulateFlowNodeOccurrencePublication(
+    program,
+    state.flowNodeOccurrences,
+    state.execution,
+    execution,
+    stimulus,
+    step,
+    committedAtEpochMs,
+  );
 }
 
 /** Records the semantic command result only after both publication candidates exist. */

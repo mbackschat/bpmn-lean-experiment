@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 
 /-! # Flow-node occurrence lifecycle
 
@@ -162,54 +162,6 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .returnProcess id origin _ _ _ => uniqueReturnOwner? state id origin
   | .completeScope _ _ scopeId _ => uniqueCompletingScopeOwner? state scopeId
 
-private def liveOwnerUnique (state : RuntimeState) (owner : ScopeOccurrenceId) : Bool :=
-  (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = owner)).length = 1
-
-private def runtimeScopeBindingValid (program : Program) (state : RuntimeState)
-    (occurrence : RuntimeScopeOccurrence) : Bool :=
-  match program.definitionScopes.filter fun scope =>
-      decide (scope.id = occurrence.id.definitionScopeId) with
-  | [definition] =>
-      liveOwnerUnique state occurrence.id && occurrence.id.activation > 0 &&
-        match definition.parentScopeId, occurrence.parent, state.control with
-        | some expected, some parent, .running _ =>
-            parent.processInstanceId = occurrence.id.processInstanceId &&
-              parent.definitionScopeId = expected && liveOwnerUnique state parent
-        | none, none, .running hosting =>
-            if occurrence.id.processInstanceId = hosting then
-              definition.originElementId.value = program.processId.value
-            else (state.calledProcessOccurrences.filter fun record => decide
-              (record.calledRoot = occurrence.id &&
-                record.calledProcessId.value = definition.originElementId.value)).length = 1
-        | _, _, _ => false
-  | _ => false
-
-private def runtimeOwnerBindingsValid (program : Program) (state : RuntimeState) : Bool :=
-  state.scopeOccurrences.all (runtimeScopeBindingValid program state) &&
-    state.waits.all (fun wait =>
-      wait.processInstanceId = wait.owner.processInstanceId && liveOwnerUnique state wait.owner) &&
-    state.messageWaits.all (fun wait =>
-      wait.processInstanceId = wait.owner.processInstanceId && liveOwnerUnique state wait.owner) &&
-    state.timerWaits.all (fun wait =>
-      wait.processInstanceId = wait.owner.processInstanceId && liveOwnerUnique state wait.owner) &&
-    state.effectWaits.all (fun wait =>
-      wait.processInstanceId = wait.owner.processInstanceId && liveOwnerUnique state wait.owner) &&
-    state.effectIncidents.all (fun incident =>
-      incident.wait.processInstanceId = incident.wait.owner.processInstanceId &&
-        liveOwnerUnique state incident.wait.owner) &&
-    state.calledProcessOccurrences.all (fun record => liveOwnerUnique state record.caller)
-
-private def effectLocalScopesExact (state : RuntimeState) : Bool :=
-  let waits := state.effectWaits ++ state.effectIncidents.map (·.wait)
-  waits.all (fun wait =>
-      (waits.filter fun candidate => decide
-        (effectWaitOccurrenceId candidate = effectWaitOccurrenceId wait)).length = 1 &&
-      match state.variables.activities.filter (activityScopeMatches (effectWaitOccurrenceId wait)) with
-      | [activity] => activity.bindings = wait.arguments
-      | _ => false) &&
-    state.variables.activities.all fun activity =>
-      (waits.filter fun wait => activityScopeMatches (effectWaitOccurrenceId wait) activity).length = 1
-
 private def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
@@ -218,7 +170,7 @@ private def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
 private def processIdForOwner? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) : Option ProcessId := do
   let hosting ← hostingInstanceId? state
-  if !liveOwnerUnique state owner then none
+  if !flowNodeOccurrenceOwnerLiveUnique state owner then none
   else if owner.processInstanceId = hosting then some program.processId
   else
     match state.calledProcessOccurrences.filter fun record =>
@@ -263,18 +215,14 @@ private def callStart? (program : Program) (state : RuntimeState)
       elementId := ⟨record.id.elementId.value⟩
       owner := record.caller }
 
-private def boundaryTimerDefinition (program : Program) (wait : TimerWait) : Bool :=
-  isBoundaryTimerDefinition program wait.elementId ||
-    isMonitoredBoundaryTimerDefinition program wait.elementId ||
-    isBoundedScopeDeadlineDefinition program wait.elementId
-
 private def projectWaits? (program : Program) (state : RuntimeState) :
     Option (List OpenSemanticFlowNodeOccurrence) := do
   let tasks ← state.waits.mapM fun wait =>
     waitStart? program state wait.owner ⟨wait.task.id.value⟩ wait.activation
   let messages ← state.messageWaits.mapM fun wait =>
     waitStart? program state wait.owner wait.elementId wait.activation
-  let timers ← (state.timerWaits.filter fun wait => !boundaryTimerDefinition program wait).mapM
+  let timers ← (state.timerWaits.filter fun wait =>
+    !flowNodeOccurrenceBoundaryTimerBound program state wait).mapM
     fun wait => waitStart? program state wait.owner wait.elementId wait.activation
   let effects ← state.effectWaits.mapM fun wait =>
     waitStart? program state wait.owner wait.elementId wait.activation
@@ -296,9 +244,9 @@ def projectOpenFlowNodeOccurrences? (program : Program) (state : RuntimeState) :
   | .notStarted => if runtimeExecutionEmpty state then some [] else none
   | .completed _ | .cancelled _ => if runtimeExecutionEmpty state then some [] else none
   | .running _ => do
-      if !programWellFormed program || !runtimeOwnerBindingsValid program state ||
+      if !programWellFormed program || !flowNodeOccurrenceProgramValidity program state ||
           !eventRaceAssociationsValid state || !calledProcessAssociationsValid state ||
-          !effectIncidentAssociationsValid state || !effectLocalScopesExact state then none
+          !effectIncidentAssociationsValid state then none
       let waits ← projectWaits? program state
       let scopes ← (state.scopeOccurrences.filter fun occurrence => occurrence.parent.isSome).mapM
         (scopeStart? program state)
