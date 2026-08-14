@@ -89,10 +89,12 @@ test("searches three exact confirmed starts through the global public panel", as
   expectDistinctPublicIdentities([direct, scheduled, message]);
   await page.goto("/", { timeout: 10_000 });
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: "Process instances", exact: true })
+    .getByRole("button", { name: "Operations", exact: true })
     .click();
-  await expect(page.getByRole("heading", { name: "Process instances", level: 1 }))
-    .toBeVisible();
+  await expect(page.getByRole("heading", { name: "Operations", level: 1 })).toBeVisible();
+  await page.getByRole("tablist", { name: "Operations" })
+    .getByRole("tab", { name: "Process instances", exact: true })
+    .click();
   const panel = page.getByRole("region", { name: "Confirmed Product 2 starts" });
   await expect(panel).toBeVisible();
   await panel.getByRole("button", { name: "Search", exact: true }).click();

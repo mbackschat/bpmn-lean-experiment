@@ -14,6 +14,7 @@ import {
 } from "@bpmn-lean/platform-contracts";
 import {
   createPlatformServer,
+  readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
 import type {
   PlatformServerRuntime,
@@ -432,6 +433,7 @@ async function startPlatform(
   temporalNamespace: string,
 ): Promise<PlatformServerRuntime> {
   const runtime = await createPlatformServer({
+    ...readPlatformServerConfig({}),
     host: "127.0.0.1",
     port,
     publicOrigin: origin,

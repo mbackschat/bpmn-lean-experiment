@@ -56,12 +56,20 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.doesNotMatch(hostedVerify, /test:showcase:m[123]/u);
   assert.doesNotMatch(hostedVerify, /test:platform-m1|test:platform-web/u);
   assert.match(workflow, /test:platform-operations-checkpoint/u);
+  assert.match(
+    workflow,
+    /test:platform-operations-checkpoint[\s\S]{0,200}test:showcase:types[\s\S]{0,200}test:ui-quality/u,
+  );
   assert.match(testingSpec, /Product 2 browser work remains outside `verify\.sh` and the hosted verification workflow/u);
   assert.doesNotMatch(testingSpec, /Linux matrix leg also installs Playwright/u);
 
   const root = JSON.parse(rootManifest) as Readonly<{
     scripts?: Readonly<Record<string, string>>;
   }>;
+  assert.equal(
+    root.scripts?.["test:showcase:types"],
+    "pnpm --filter './showcase/**' --if-present run type-test",
+  );
   assert.equal(
     root.scripts?.["test:ui-quality"],
     "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e",
@@ -242,6 +250,48 @@ test("rejects a planted browser showcase with an out-of-graph web runtime", () =
   );
 });
 
+test("keeps real browser primary-navigation selectors inside the production workspace set", async () => {
+  const appShell = await read("platform/apps/web/src/app-shell.tsx");
+  const showcaseEntries = await readdir(path.join(projectRoot, "showcase"), {
+    withFileTypes: true,
+  });
+  const specs: string[] = [];
+  for (const entry of showcaseEntries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+    const e2eDirectory = `showcase/${entry.name}/e2e`;
+    const e2eEntries = await readdir(path.join(projectRoot, e2eDirectory), {
+      withFileTypes: true,
+    }).catch((error: unknown) => {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return [];
+      }
+      throw error;
+    });
+    for (const e2eEntry of e2eEntries) {
+      if (e2eEntry.isFile() && e2eEntry.name.endsWith(".spec.ts")) {
+        specs.push(await read(`${e2eDirectory}/${e2eEntry.name}`));
+      }
+    }
+  }
+
+  assert.deepEqual(primaryNavigationViolations(appShell, specs), []);
+});
+
+test("rejects a planted stale primary-navigation selector", () => {
+  assert.deepEqual(
+    primaryNavigationViolations(
+      'const workspaceDetails = [{ label: "Work" }, { label: "Operations" }];',
+      [
+        'page.getByRole("navigation", { name: "Primary navigation" })\n'
+          + '.getByRole("button", { name: "Process instances", exact: true })',
+      ],
+    ),
+    ["Process instances"],
+  );
+});
+
 function uiBoundaryViolations(
   module: string,
   component: string,
@@ -308,4 +358,16 @@ function hasUndeclaredWebRuntime(playwrightConfig: string, manifestText: string)
   }>;
   return manifest.dependencies?.["@bpmn-lean/platform-web"] === undefined
     && manifest.devDependencies?.["@bpmn-lean/platform-web"] === undefined;
+}
+
+function primaryNavigationViolations(appShell: string, specs: readonly string[]): readonly string[] {
+  const labels = new Set(
+    Array.from(appShell.matchAll(/label: "([^"]+)"/gu), (match) => match[1]),
+  );
+  return specs.flatMap((spec) => Array.from(
+    spec.matchAll(
+      /getByRole\("navigation", \{ name: "Primary navigation" \}\)\s*\.getByRole\("button", \{ name: "([^"]+)"/gu,
+    ),
+    (match) => match[1] ?? "",
+  )).filter((label) => !labels.has(label));
 }

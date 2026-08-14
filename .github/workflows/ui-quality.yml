@@ -111,6 +111,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || (inputs.regenerate_baselines != true && inputs.release_acceptance != true)
         run: |
           ./scripts/pnpm.sh run test:platform-operations-checkpoint
+          ./scripts/pnpm.sh run test:showcase:types
           ./scripts/pnpm.sh run test:ui-quality
 
       - name: Verify Product 2 M1 through M4 release acceptance

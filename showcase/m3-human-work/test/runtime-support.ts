@@ -12,7 +12,10 @@ import type {
   DeployedDefinitionVersion,
   MessageStartPublication,
 } from "@bpmn-lean/platform-contracts";
-import { createPlatformServer } from "@bpmn-lean/platform-server";
+import {
+  createPlatformServer,
+  readPlatformServerConfig,
+} from "@bpmn-lean/platform-server";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
 import {
   bpmnOpenUserTasksQueryName,
@@ -84,6 +87,7 @@ export async function startPlatform(
   temporalNamespace: string,
 ): Promise<PlatformServerRuntime> {
   const runtime = await createPlatformServer({
+    ...readPlatformServerConfig({}),
     host: "127.0.0.1",
     port,
     publicOrigin: origin,
