@@ -10,6 +10,50 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
+test("requires source-grounded Product 2 UI/UX decisions before implementation", async () => {
+  const [guide, projectDesign, uiDesign, testingSpec, research, sources, processLedger] =
+    await Promise.all([
+      read("CLAUDE.md"),
+      read("docs/PROJECT-DESIGN.md"),
+      read("docs/BPM-PLATFORM-UI-DESIGN-SPEC.md"),
+      read("docs/TESTING-SPEC.md"),
+      read("docs/research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md"),
+      read("docs/SOURCES.md"),
+      read("docs/PROCESS-ASSESSMENT-LEDGER.md"),
+    ]);
+
+  assert.deepEqual(productUiPreflightViolations({
+    guide,
+    processLedger,
+    projectDesign,
+    research,
+    sources,
+    testingSpec,
+    uiDesign,
+  }), []);
+});
+
+test("rejects a UI/UX process that postpones precedent research or leaves deviations unexplained", () => {
+  const complete = {
+    guide: "Product 2 UI/UX source preflight. Inspect CIB Seven first before production code.",
+    processLedger: "UI/UX precedent was postponed until after implementation | 2 | `executable guard` | ui-quality-boundary.platform-test.ts",
+    projectDesign: "## Source-grounded Product 2 interaction design\nBefore production code, inspect the pristine pinned source and current documentation. Record adopt, deliberately deviate, and exclude decisions. Do not copy source code.",
+    research: "Current 2.2 Process Definition View and Process Instance View. The matching implementation was inspected in the pristine pinned checkout recorded by SOURCES.md#cib-seven.",
+    sources: "CIB Seven Tasklist and Cockpit | Process Definition View | Process Instance View",
+    testingSpec: "The source-grounded UI/UX preflight runs ./scripts/doctor.sh research before the first production edit.",
+    uiDesign: "## Source-grounded design preflight\nBefore production code, inspect current documentation and the pinned source checkout. Record adopt, deliberately deviate, and exclude decisions, then name the acceptance oracle. Do not copy source code.",
+  } as const;
+  assert.deepEqual(productUiPreflightViolations(complete), []);
+  assert.deepEqual(productUiPreflightViolations({
+    ...complete,
+    projectDesign: "## Source-grounded Product 2 interaction design\nLook at a screenshot later.",
+    uiDesign: "## Source-grounded design preflight\nVisual review follows implementation.",
+  }), [
+    "project-design-preflight",
+    "ui-design-preflight",
+  ]);
+});
+
 test("keeps Product 2 UI quality outside every Product 1 feedback loop", async () => {
   const [verify, hostedVerify, testingSpec, workflow, rootManifest, showcaseManifest, playwrightConfig] =
     await Promise.all([
@@ -303,8 +347,18 @@ function uiBoundaryViolations(
   const violations: string[] = [];
   const globalsRemoved = options.allowBpmnMarkerGlobal === true
     ? module
-      .replaceAll(":global(.bpmn-platform-active)", ".bpmn-platform-active")
-      .replaceAll(":global(.djs-visual)", ".djs-visual")
+      .replaceAll(
+        ":global(.djs-shape.bpmn-platform-active > .djs-visual > :first-child)",
+        ".bpmn-platform-active-shape",
+      )
+      .replaceAll(
+        ":global(.djs-connection.bpmn-platform-active > .djs-visual > path)",
+        ".bpmn-platform-active-connection",
+      )
+      .replaceAll(
+        ":global(.djs-connection.bpmn-platform-active > .djs-visual > defs > marker > path)",
+        ".bpmn-platform-active-marker",
+      )
     : module;
   if (/:global\(/u.test(globalsRemoved)) {
     violations.push("feature-global-shared-internal");
@@ -370,4 +424,38 @@ function primaryNavigationViolations(appShell: string, specs: readonly string[])
     ),
     (match) => match[1] ?? "",
   )).filter((label) => !labels.has(label));
+}
+
+function productUiPreflightViolations(documents: Readonly<{
+  guide: string;
+  processLedger: string;
+  projectDesign: string;
+  research: string;
+  sources: string;
+  testingSpec: string;
+  uiDesign: string;
+}>): readonly string[] {
+  const violations: string[] = [];
+  if (!/Product 2 UI\/UX source preflight[\s\S]*inspect CIB Seven first[\s\S]*before production code/iu.test(documents.guide)) {
+    violations.push("contributor-preflight");
+  }
+  if (!/## Source-grounded Product 2 interaction design[\s\S]*before production code[\s\S]*pristine pinned source[\s\S]*current documentation[\s\S]*adopt[\s\S]*deliberately deviate[\s\S]*exclude[\s\S]*do not copy source code/iu.test(documents.projectDesign)) {
+    violations.push("project-design-preflight");
+  }
+  if (!/## Source-grounded design preflight[\s\S]*before production code[\s\S]*current documentation[\s\S]*pinned source checkout[\s\S]*adopt[\s\S]*deliberately deviate[\s\S]*exclude[\s\S]*acceptance oracle[\s\S]*do not copy source code/iu.test(documents.uiDesign)) {
+    violations.push("ui-design-preflight");
+  }
+  if (!/source-grounded UI\/UX preflight[\s\S]*\.\/scripts\/doctor\.sh research[\s\S]*before the first production edit/iu.test(documents.testingSpec)) {
+    violations.push("testing-preflight");
+  }
+  if (!/Process Definition View[\s\S]*Process Instance View[\s\S]*pristine pinned checkout[\s\S]*SOURCES\.md#cib-seven/iu.test(documents.research)) {
+    violations.push("research-evidence");
+  }
+  if (!/CIB Seven Tasklist and Cockpit[\s\S]*Process Definition View[\s\S]*Process Instance View/iu.test(documents.sources)) {
+    violations.push("source-registry");
+  }
+  if (!/UI\/UX precedent was postponed until after implementation[\s\S]*\| 2 \| `executable guard` \|[\s\S]*ui-quality-boundary\.platform-test\.ts/iu.test(documents.processLedger)) {
+    violations.push("process-finding");
+  }
+  return violations;
 }

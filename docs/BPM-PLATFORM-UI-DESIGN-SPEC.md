@@ -28,6 +28,12 @@ The UI is a professional operational work surface: calm, dense enough for real w
 
 The visual language is project-owned. The [pattern-first UI/UX and information-architecture research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md) and [information architecture specification](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) inform functional grouping, while React Aria supplies accessible behavior and state attributes. None of these sources dictates this product's appearance.
 
+## Source-grounded design preflight
+
+Before production code for a material Product 2 UI/UX surface, inspect the analogous CIB Seven behavior first when it exists, using current documentation and the pristine pinned source checkout recorded in [SOURCES.md](SOURCES.md). Inspect at least one other established solution when it fills a CIB Seven gap or supplies a useful independent comparison. The owning research and product contract record the observed reference behavior, what this project will adopt, where it will deliberately deviate, and what it will exclude, plus the public engine or platform fact and acceptance oracle that support each decision. If no comparable product surface exists, record that absence instead of inventing a precedent. Do not copy source code, styling, assets, private data models, or product terminology.
+
+The preflight precedes red/green production work. Tests then lock the selected project behavior and at least one realistic reference-shaped alternative that would be wrong for this contract. Four-width geometry and screenshot review remain closure evidence; they do not replace the preflight or retroactively justify an interaction model.
+
 ## Technology and ownership
 
 React Aria Components owns accessible interaction behavior for controls. TanStack Query owns bounded HTTP state, and TanStack Table may own collection row modeling. `platform/ui-kit/` owns shared interaction components, one root-token and document-reset sheet, and co-located CSS Modules for every styled component. `platform/apps/web/` owns workspace composition and feature CSS Modules. A feature may place a shared component through its public `className`, but it may not restyle the component's internal structure or interaction state.

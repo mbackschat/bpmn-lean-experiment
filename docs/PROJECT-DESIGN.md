@@ -103,7 +103,11 @@ Two rules make the assurance claim transferable, and without both of them it is 
 - **Occurrence identity is taken, never constructed.** The platform answers a published interaction by submitting the identity that interaction carried. No product code assembles a task, subscription, activation, or Call identity.
 - **A missing fact is a stop condition, not a workaround.** When the platform needs something the engine does not publish, it files an engine requirement and stops. It does not derive the fact from Temporal Event History, from a state difference, or from its own store. This extends the rule the engine runner already applies to a rejected wait-set shape.
 
-CIB Seven enters product 2 as a *functional* reference only: it answers what capabilities a BPM platform has to have. No CIB screen, interaction pattern, or line of code is derived, so no provenance record is required for it.
+### Source-grounded Product 2 interaction design
+
+Before production code selects or implements a material Product 2 UI/UX surface, inspect the comparable CIB Seven capability first when one exists. Use the pristine pinned source registered in [SOURCES.md](SOURCES.md) and its current documentation, then consult another established product when CIB Seven has no analogue or an independent comparison would expose a tradeoff. Record in the owning research and product contract what the project will adopt, where it will deliberately deviate, and what it will exclude, with the published engine or platform fact that supports each decision. Do not copy source code, styling, assets, private data models, or product terminology from a reference product.
+
+CIB Seven remains a functional and interaction-design reference for Product 2, not a semantic authority, dependency, or visual theme. Source inspection is required because screenshots alone conceal state ownership, failure behavior, navigation, and accessibility mechanics. Acceptance oracles are written from the project-owned decision before its production implementation, so later visual review verifies an informed design rather than becoming the first design comparison.
 
 A representative vertical slice may deliberately cross layers when needed to prove that source admission, semantics, CIB realization, and Temporal hosting compose. The `CreateDocument` and typed boundary-error slices are such feasibility evidence. They do not establish a policy of implementing every downstream model independently across every layer.
 
