@@ -10,6 +10,14 @@ import type {
   TemporalExecutionPublicationClient,
   TemporalExecutionPublicationResult,
 } from "@bpmn-lean/temporal-client/execution-publication";
+import {
+  TemporalFlowNodeOccurrencePublicationResultKind,
+  observeTemporalFlowNodeOccurrences,
+} from "@bpmn-lean/temporal-client/flow-node-occurrence-publication";
+import type {
+  TemporalFlowNodeOccurrencePublicationClient,
+  TemporalFlowNodeOccurrencePublicationResult,
+} from "@bpmn-lean/temporal-client/flow-node-occurrence-publication";
 
 import {
   engineProcessWorkflowIdFromLocator,
@@ -39,6 +47,42 @@ export function observeEngineProcessExecution(
 ): Promise<EngineExecutionPublicationResult> {
   const locator = parseEngineProcessLocator(request.locator);
   return observeTemporalExecutionPublication(
+    request.temporalClient,
+    engineProcessWorkflowIdFromLocator(locator),
+    {
+      definition: request.definition,
+      processId: request.processId,
+      processInstanceId: request.processInstanceId,
+    },
+    {
+      afterRevision: request.afterRevision,
+      ...(request.limit === undefined ? {} : { limit: request.limit }),
+    },
+  );
+}
+
+export const EngineFlowNodeOccurrencePublicationResultKind:
+  typeof TemporalFlowNodeOccurrencePublicationResultKind =
+  TemporalFlowNodeOccurrencePublicationResultKind;
+export type EngineFlowNodeOccurrencePublicationResult =
+  TemporalFlowNodeOccurrencePublicationResult;
+
+export type EngineProcessFlowNodeOccurrenceObservationRequest = Readonly<{
+  temporalClient: TemporalFlowNodeOccurrencePublicationClient;
+  locator: EngineProcessLocator;
+  definition: SemanticProcessIdentity;
+  processId: string;
+  processInstanceId: string;
+  afterRevision: number;
+  limit?: number;
+}>;
+
+/** Reads strict occurrence facts through Product 1's opaque Process locator. */
+export function observeEngineProcessFlowNodeOccurrences(
+  request: EngineProcessFlowNodeOccurrenceObservationRequest,
+): Promise<EngineFlowNodeOccurrencePublicationResult> {
+  const locator = parseEngineProcessLocator(request.locator);
+  return observeTemporalFlowNodeOccurrences(
     request.temporalClient,
     engineProcessWorkflowIdFromLocator(locator),
     {

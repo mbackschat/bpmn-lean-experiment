@@ -29,6 +29,10 @@
     "./execution-publication": {
       "types": "./dist/execution-publication-client.d.ts",
       "import": "./dist/execution-publication-client.js"
+    },
+    "./flow-node-occurrence-publication": {
+      "types": "./dist/flow-node-occurrence-publication-client.d.ts",
+      "import": "./dist/flow-node-occurrence-publication-client.js"
     }
   },
   "types": "./dist/index.d.ts",

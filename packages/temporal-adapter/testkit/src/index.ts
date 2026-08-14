@@ -7,6 +7,7 @@ export * from "./completion-delivery.js";
 export * from "./contracts.js";
 export * from "./effect-scenario-execution.js";
 export * from "./execution-publication-live-evidence.js";
+export * from "./flow-node-occurrence-live-evidence.js";
 export * from "./incident-scenario-execution.js";
 export * from "./incident-operations-query-live-evidence.js";
 export * from "./ephemeral-server.js";

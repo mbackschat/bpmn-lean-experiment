@@ -33,6 +33,9 @@
       "@bpmn-lean/temporal-client/execution-publication": [
         "./packages/temporal-adapter/client/src/execution-publication-client.ts"
       ],
+      "@bpmn-lean/temporal-client/flow-node-occurrence-publication": [
+        "./packages/temporal-adapter/client/src/flow-node-occurrence-publication-client.ts"
+      ],
       "@bpmn-lean/temporal-client/definition-start": [
         "./packages/temporal-adapter/client/src/definition-start-client.ts"
       ],
