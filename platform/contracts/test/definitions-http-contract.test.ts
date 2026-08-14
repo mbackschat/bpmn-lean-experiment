@@ -185,6 +185,7 @@ test("preserves legacy public API error order and appends route-specific codes",
     "workSnapshotUnavailable",
     "incidentSnapshotUnavailable",
     "executionPublicationUnavailable",
+    "flowNodeMetricsUnavailable",
   ]);
 });
 
@@ -203,6 +204,7 @@ test("legacy Definition, Schedule, Message, and Search sets reject every later r
     PublicApiErrorCode.WorkSnapshotUnavailable,
     PublicApiErrorCode.IncidentSnapshotUnavailable,
     PublicApiErrorCode.ExecutionPublicationUnavailable,
+    PublicApiErrorCode.FlowNodeMetricsUnavailable,
   ];
   for (const route of legacyRoutes) {
     for (const code of laterRouteCodes) {

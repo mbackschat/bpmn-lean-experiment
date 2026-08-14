@@ -110,6 +110,7 @@ export const PublicApiErrorCode = {
   WorkSnapshotUnavailable: "workSnapshotUnavailable",
   IncidentSnapshotUnavailable: "incidentSnapshotUnavailable",
   ExecutionPublicationUnavailable: "executionPublicationUnavailable",
+  FlowNodeMetricsUnavailable: "flowNodeMetricsUnavailable",
 } as const;
 
 export type PublicApiErrorCode =
