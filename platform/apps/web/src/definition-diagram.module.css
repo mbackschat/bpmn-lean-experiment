@@ -123,6 +123,21 @@
   stroke: var(--ui-color-accent) !important;
 }
 
+.canvas :global(.bpmn-platform-metric-badge) {
+  display: inline-flex;
+  min-width: 2rem;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ui-color-surface);
+  border-radius: var(--ui-radius-pill);
+  padding: var(--ui-space-1) var(--ui-space-2);
+  background: var(--ui-color-accent);
+  color: var(--ui-color-surface);
+  font: var(--ui-font-label);
+  white-space: nowrap;
+}
+
 @container (max-width: 42rem) {
   .heading,
   .download {

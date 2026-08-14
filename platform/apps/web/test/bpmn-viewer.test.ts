@@ -9,6 +9,7 @@ import {
 import type {
   BpmnCanvasPort,
   BpmnElementRegistryPort,
+  BpmnOverlaysPort,
   BpmnViewerFactory,
   BpmnViewerPort,
 } from "../src/bpmn-viewer.ts";
@@ -53,16 +54,25 @@ function viewerFixture(elementIds: readonly string[] = ["Task_A", "Task_B"]) {
       return 1;
     },
   };
+  const overlays: BpmnOverlaysPort = {
+    add() {
+      return "overlay";
+    },
+    remove() {},
+  };
   function getViewerService(name: "canvas"): BpmnCanvasPort;
   function getViewerService(name: "elementRegistry"): BpmnElementRegistryPort;
+  function getViewerService(name: "overlays"): BpmnOverlaysPort;
   function getViewerService(
-    name: "canvas" | "elementRegistry",
-  ): BpmnCanvasPort | BpmnElementRegistryPort {
+    name: "canvas" | "elementRegistry" | "overlays",
+  ): BpmnCanvasPort | BpmnElementRegistryPort | BpmnOverlaysPort {
     switch (name) {
       case "canvas":
         return canvas;
       case "elementRegistry":
         return registry;
+      case "overlays":
+        return overlays;
     }
   }
   const port: BpmnViewerPort = {
@@ -173,5 +183,28 @@ test("fails closed if the supplied bpmn.io watermark is absent or retargeted", (
   assert.throws(
     () => new BpmnDiagramViewer(poweredContainer("https://attacker.invalid"), fixture.factory),
     /must link to bpmn.io/u,
+  );
+});
+
+test("fails closed when the bpmn-js overlays capability is absent", () => {
+  const fixture = viewerFixture();
+  const factory = fixture.factory;
+  assert.throws(
+    () => new BpmnDiagramViewer(poweredContainer(), ((container) => {
+      const port = factory(container);
+      return {
+        ...port,
+        get(name: "canvas" | "elementRegistry" | "overlays") {
+          if (name === "overlays") return undefined;
+          switch (name) {
+            case "canvas":
+              return port.get("canvas");
+            case "elementRegistry":
+              return port.get("elementRegistry");
+          }
+        },
+      } as BpmnViewerPort;
+    })),
+    /overlays service/u,
   );
 });

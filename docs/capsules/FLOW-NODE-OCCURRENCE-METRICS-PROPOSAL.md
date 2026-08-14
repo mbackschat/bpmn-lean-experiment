@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-14 after independent proposal review; semantic-checkpoint-approved and not evidence-closed.** The owner approved all nine selected decisions together. The checkpoint implements the exhaustive TypeScript and proved Lean lifecycle relation, the separate strict occurrence wire, one replay-stable commit-time sample per complete command batch, an immutable Workflow accumulator, and the unconditional E1-aligned cursor Query. Product 1 client and engine API exposure, live retention and replay evidence, every Product 2 contract, projection, aggregate, route, and UI surface, and closure evidence remain absent.
+**Owner-approved on 2026-08-14 after independent proposal review; semantic-checkpoint-approved, implemented, and awaiting closure review.** The owner approved all nine selected decisions together. The implementation includes the exhaustive TypeScript and proved Lean lifecycle relation, strict occurrence publication, one replay-stable commit-time sample per complete command batch, Product 1 client/API and live replay evidence, exact-version Product 2 projection and aggregation, HTTP, and the Frequency/Duration UI. Closure evidence remains pending.
 
 ## Independent cold-review receipt
 
@@ -59,7 +59,7 @@ Camunda Optimize independently confirms the useful analytical distinction betwee
 6. Define elapsed duration as terminal batch commit time minus start batch commit time. Include completed occurrences only; keep running and cancelled occurrences in frequency and status counts; allow same-batch duration zero; never substitute semantic logical time, Product 2 ingestion time, audit time, or Event History analysis.
 7. Reconcile and store occurrence pages transactionally from revision zero. Linearize one request-start population of every confirmed hosting instance for one exact deployed definition version, with a maximum of 100 in this first increment. Any over-limit, unknown, unavailable, malformed, identity-drifted, gapped, or overflowed member makes the whole metric result unavailable rather than partial.
 8. Add one definition-version **Flow-node metrics** detail with Frequency and Duration modes. Frequency badges show exact occurrence count, Duration badges show exact floored completed average in milliseconds, and the table carries every status and completed-duration value. The surface states its request-start “all retained evidence” population and has explicit zero-sample and unavailable states. Functional acceptance covers 1280 and 1600 CSS pixels.
-9. Exclude adjustable time periods, heatmaps, color-only encoding, charts, report builders, dashboards, saved views, variants, conformance, prediction, metric export, operator audit, mobile-specific layouts, and pixel-regression baselines from this increment.
+9. Exclude adjustable time periods, heatmaps, color-only encoding, charts, report builders, dashboards, saved views, variants, conformance, prediction, metric export, operator audit, layouts below 1280 CSS pixels, and pixel-regression baselines from this increment.
 
 ## Public contract
 
@@ -329,7 +329,7 @@ Excluded:
 - Event History, state differences, Product 2 ingestion time, audit time, CIB history, or database time as a published occurrence or duration source;
 - partial aggregates, current-only counts, adjustable periods, running pseudo-duration, estimates, SLAs, cross-instance order, or post-retention reconstruction;
 - metric export, operator history, audit export, dashboards, saved views, report builders, charts, heatmaps, variants, conformance, discovery, prediction, auto-refresh, or generalized mining;
-- mobile-specific layouts and pixel-regression baselines.
+- layouts below 1280 CSS pixels and pixel-regression baselines.
 
 ## Versioning consequences
 
@@ -351,13 +351,13 @@ The implementation must not grow crowded generic owners. The measured existing o
 | [`packages/engine-api/src/process-observation.ts`](../../packages/engine-api/src/process-observation.ts) | 509 | Add one representation-free occurrence observation capability without exposing Program or Workflow identity. |
 | [`platform/contracts/src/execution-publications.ts`](../../platform/contracts/src/execution-publications.ts) | 231 | Keep E1 mirror exact and introduce separate occurrence and aggregate contracts. |
 | [`platform/contracts/src/execution-publication-decoders.ts`](../../platform/contracts/src/execution-publication-decoders.ts) | 193 | Keep E1 decoder exact and introduce separate occurrence and aggregate decoders. |
-| [`platform/modules/operate/src/contracts.ts`](../../platform/modules/operate/src/contracts.ts) | 549 | Add the exact-version bounded membership-read capability without exposing the private registration representation. |
-| [`platform/modules/operate/src/sqlite-process-instance-repository.ts`](../../platform/modules/operate/src/sqlite-process-instance-repository.ts) | 365 | Add one indexed, ordinal-ordered, at-most-101 request-start membership query with full-version validation. |
+| [`platform/modules/operate/src/contracts.ts`](../../platform/modules/operate/src/contracts.ts) | 542 | Add the exact-version bounded membership-read capability without exposing the private registration representation. |
+| [`platform/modules/operate/src/sqlite-process-instance-repository.ts`](../../platform/modules/operate/src/sqlite-process-instance-repository.ts) | 323 | Add one indexed, ordinal-ordered, at-most-101 request-start membership query with full-version validation. |
 | [`platform/modules/operate/src/sqlite-execution-publication-repository.ts`](../../platform/modules/operate/src/sqlite-execution-publication-repository.ts) | 117 | Do not combine stores; use a new occurrence repository and schema tables. |
 | [`platform/modules/operate/src/execution-publication-reconciliation-service.ts`](../../platform/modules/operate/src/execution-publication-reconciliation-service.ts) | 336 | Preserve E1 behavior and use separate occurrence reconciliation and aggregate owners. |
-| [`platform/apps/web/src/definition-workspace.tsx`](../../platform/apps/web/src/definition-workspace.tsx) | 411 | Add only navigation and request delegation to a cohesive Flow-node metrics detail. |
-| [`platform/apps/web/src/definition-diagram.tsx`](../../platform/apps/web/src/definition-diagram.tsx) | 377 | Reuse bpmn-js navigation and exact-element overlays through a separate metric-overlay owner; keep current-position semantics unchanged. |
-| [`platform/apps/server/src/composition.ts`](../../platform/apps/server/src/composition.ts) | 242 | Compose new owners through thin wiring and close the new repository on shutdown. |
+| [`platform/apps/web/src/definition-workspace.tsx`](../../platform/apps/web/src/definition-workspace.tsx) | 386 | Add only navigation and request delegation to a cohesive Flow-node metrics detail. |
+| [`platform/apps/web/src/definition-diagram.tsx`](../../platform/apps/web/src/definition-diagram.tsx) | 348 | Reuse bpmn-js navigation and exact-element overlays through a separate metric-overlay owner; keep current-position semantics unchanged. |
+| [`platform/apps/server/src/composition.ts`](../../platform/apps/server/src/composition.ts) | 215 | Compose new owners through thin wiring and close the new repository on shutdown. |
 
 `node scripts/what-binds.ts` reports 25 to 26 guards plus the Temporal or engine registry for Product 1 owners, seven guards for Lean, and 103 to 104 guards plus two or three platform registries for Product 2 owners. New owners inherit those package boundaries and registries. The implementation updates [the shared contract registry](../../contracts/README.md), [the Temporal adapter registry](../../packages/temporal-adapter/README.md), [the engine API registry](../../packages/engine-api/README.md), [the platform contract registry](../../platform/contracts/README.md), [the Operate registry](../../platform/modules/operate/README.md), [the web registry](../../platform/apps/web/README.md), [the architecture](../ARCHITECTURE.md), [the implementation map](../IMPLEMENTATION-MAP.md), [the production lifecycle](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [the testing specification](../TESTING-SPEC.md), [the plan](../PLAN.md), and [the capsule cost ledger](../CAPSULE-COST-LEDGER.md) with the evidence they describe.
 

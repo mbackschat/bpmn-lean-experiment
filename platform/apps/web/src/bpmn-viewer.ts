@@ -1,3 +1,8 @@
+import {
+  FlowNodeMetricOverlay,
+} from "./flow-node-metric-overlay.ts";
+import type { FlowNodeMetricBadge } from "./flow-node-metric-overlay.ts";
+
 export const BpmnDiagramMarkerKind = {
   Current: "current",
   Incident: "incident",
@@ -17,10 +22,27 @@ export type BpmnElementRegistryPort = Readonly<{
   get(elementId: string): unknown | undefined;
 }>;
 
+export type BpmnOverlayConfiguration = Readonly<{
+  position: Readonly<{
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+  }>;
+  show: Readonly<{ minZoom: number; maxZoom: number }>;
+  html: HTMLElement;
+}>;
+
+export type BpmnOverlaysPort = Readonly<{
+  add(elementId: string, configuration: BpmnOverlayConfiguration): string;
+  remove(overlayId: string): void;
+}>;
+
 export type BpmnViewerPort = Readonly<{
   importXML(xml: string): Promise<Readonly<{ warnings: ReadonlyArray<unknown> }>>;
   get(name: "canvas"): BpmnCanvasPort;
   get(name: "elementRegistry"): BpmnElementRegistryPort;
+  get(name: "overlays"): BpmnOverlaysPort;
   destroy(): void;
 }>;
 
@@ -38,6 +60,7 @@ export class BpmnDiagramViewer {
   readonly #viewer: BpmnViewerPort;
   readonly #canvas: BpmnCanvasPort;
   readonly #elementRegistry: BpmnElementRegistryPort;
+  readonly #metricOverlay: FlowNodeMetricOverlay;
   #highlightedElements: string[] = [];
   #highlightedMarker: string | null = null;
   #renderQueue: Promise<void> = Promise.resolve();
@@ -47,12 +70,16 @@ export class BpmnDiagramViewer {
     this.#viewer = factory(container);
     try {
       requirePoweredByWatermark(container);
+      this.#canvas = this.#viewer.get("canvas");
+      this.#elementRegistry = this.#viewer.get("elementRegistry");
+      this.#metricOverlay = new FlowNodeMetricOverlay(
+        this.#viewer.get("overlays"),
+        this.#elementRegistry,
+      );
     } catch (error: unknown) {
       this.#viewer.destroy();
       throw error;
     }
-    this.#canvas = this.#viewer.get("canvas");
-    this.#elementRegistry = this.#viewer.get("elementRegistry");
   }
 
   async render(sourceBytes: Uint8Array): Promise<void> {
@@ -66,6 +93,7 @@ export class BpmnDiagramViewer {
     }
     const operation = this.#renderQueue.then(async () => {
       this.#requireLive();
+      this.#metricOverlay.clear();
       await this.#viewer.importXML(xml);
       this.#canvas.zoom("fit-viewport", true);
     });
@@ -127,6 +155,16 @@ export class BpmnDiagramViewer {
     this.#highlightedMarker = null;
   }
 
+  replaceMetricBadges(badges: readonly FlowNodeMetricBadge[]): readonly string[] {
+    this.#requireLive();
+    return this.#metricOverlay.replace(badges);
+  }
+
+  clearMetricBadges(): void {
+    this.#requireLive();
+    this.#metricOverlay.clear();
+  }
+
   destroy(): void {
     if (this.#destroyed) {
       return;
@@ -138,6 +176,7 @@ export class BpmnDiagramViewer {
     }
     this.#highlightedElements = [];
     this.#highlightedMarker = null;
+    this.#metricOverlay.clear();
     this.#destroyed = true;
     this.#viewer.destroy();
   }

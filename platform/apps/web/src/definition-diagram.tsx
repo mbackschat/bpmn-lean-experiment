@@ -16,6 +16,7 @@ import {
 } from "./bpmn-viewer";
 import type { DefinitionApiClient } from "./definitions-api";
 import { downloadDefinitionPresentation } from "./definition-presentation-download";
+import type { FlowNodeMetricBadge } from "./flow-node-metric-overlay.ts";
 import styles from "./definition-diagram.module.css";
 
 export type DefinitionDiagramHighlight =
@@ -34,14 +35,18 @@ export type DefinitionDiagramProps = Readonly<{
   api: Pick<DefinitionApiClient, "getPresentation">;
   definition: DeployedDefinitionVersion;
   highlight?: DefinitionDiagramHighlight;
+  metricBadges?: readonly FlowNodeMetricBadge[];
   onMissingElementIds?: (elementIds: readonly string[]) => void;
+  onMissingMetricElementIds?: (elementIds: readonly string[]) => void;
 }>;
 
 export function DefinitionDiagram({
   api,
   definition,
   highlight,
+  metricBadges,
   onMissingElementIds,
+  onMissingMetricElementIds,
 }: DefinitionDiagramProps) {
   const container = useRef<HTMLDivElement>(null);
   const viewer = useRef<BpmnDiagramViewer>(null);
@@ -52,6 +57,7 @@ export function DefinitionDiagram({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [rendering, setRendering] = useState(true);
+  const [renderedGeneration, setRenderedGeneration] = useState(0);
   const highlightedElementId = highlight !== undefined && "elementId" in highlight
     ? highlight.elementId
     : undefined;
@@ -84,7 +90,9 @@ export function DefinitionDiagram({
     setDownloadError(null);
     setRenderError(viewerInitializationError.current);
     setPresentation(null);
+    setRenderedGeneration(0);
     onMissingElementIds?.([]);
+    viewer.current?.clearMetricBadges();
     void (async () => {
       try {
         const resolved = await api.getPresentation(definition);
@@ -121,9 +129,11 @@ export function DefinitionDiagram({
             case undefined:
               break;
           }
+          setRenderedGeneration(activeGeneration);
         }
       } catch (error: unknown) {
         if (generation.current === activeGeneration) {
+          viewer.current?.clearMetricBadges();
           setRenderError(errorMessage(error));
         }
       } finally {
@@ -145,6 +155,26 @@ export function DefinitionDiagram({
     markerKind,
     onMissingElementIds,
   ]);
+
+  useEffect(() => {
+    const activeViewer = viewer.current;
+    if (activeViewer === null || renderedGeneration === 0) {
+      onMissingMetricElementIds?.([]);
+      return;
+    }
+    try {
+      if (metricBadges === undefined) {
+        activeViewer.clearMetricBadges();
+        onMissingMetricElementIds?.([]);
+      } else {
+        onMissingMetricElementIds?.(activeViewer.replaceMetricBadges(metricBadges));
+      }
+    } catch (error: unknown) {
+      activeViewer.clearMetricBadges();
+      onMissingMetricElementIds?.([]);
+      setRenderError(errorMessage(error));
+    }
+  }, [metricBadges, onMissingMetricElementIds, renderedGeneration]);
 
   return (
     <section

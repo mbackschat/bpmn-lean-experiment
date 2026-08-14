@@ -4,6 +4,7 @@ import type {
   DefinitionDeployResult,
   DeployedDefinitionVersion,
 } from "@bpmn-lean/platform-contracts";
+import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { DefinitionDiagram } from "./definition-diagram";
@@ -11,6 +12,8 @@ import { DefinitionSchedulePanel } from "./definition-schedule-panel";
 import { DefinitionStartPanel } from "./definition-start-panel";
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
+import type { FlowNodeMetricsApi } from "./flow-node-metrics-api.ts";
+import { FlowNodeMetricsPanel } from "./flow-node-metrics-panel.tsx";
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
 import { MessageStartPublicationPanel } from "./message-start-publication-panel";
 import styles from "./definition-workspace.module.css";
@@ -22,6 +25,7 @@ export type DefinitionWorkspaceProps = Readonly<{
   error: string | null;
   loading: boolean;
   messageStartPublicationApi: MessageStartPublicationApiClient;
+  metricsApi: FlowNodeMetricsApi;
   onDeploy: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onOpenDefinition: (definition: DeployedDefinitionVersion) => Promise<void>;
   onSelectVersion: (definition: DeployedDefinitionVersion) => void;
@@ -37,6 +41,7 @@ export function DefinitionWorkspace({
   error,
   loading,
   messageStartPublicationApi,
+  metricsApi,
   onDeploy,
   onOpenDefinition,
   onSelectVersion,
@@ -112,6 +117,7 @@ export function DefinitionWorkspace({
           api={api}
           definition={selected}
           messageStartPublicationApi={messageStartPublicationApi}
+          metricsApi={metricsApi}
           scheduleApi={scheduleApi}
         />
       )}
@@ -123,17 +129,31 @@ function DefinitionDetails({
   api,
   definition,
   messageStartPublicationApi,
+  metricsApi,
   scheduleApi,
 }: Readonly<{
   api: DefinitionApiClient;
   definition: DeployedDefinitionVersion;
   messageStartPublicationApi: MessageStartPublicationApiClient;
+  metricsApi: FlowNodeMetricsApi;
   scheduleApi: DefinitionScheduleApiClient;
 }>) {
+  const [selectedTab, setSelectedTab] = useState("diagram");
   const tabs = [{
     id: "diagram",
     label: "Diagram",
     content: <DefinitionDiagram api={api} definition={definition} />,
+  }, {
+    id: "metrics",
+    label: "Flow-node metrics",
+    content: (
+      <FlowNodeMetricsPanel
+        active={selectedTab === "metrics"}
+        definition={definition}
+        definitionApi={api}
+        metricsApi={metricsApi}
+      />
+    ),
   }, {
     id: "start",
     label: "Start",
@@ -158,7 +178,12 @@ function DefinitionDetails({
   }];
   return (
     <section className={styles.details} aria-label={`${definition.processId}, version ${definition.version}`}>
-      <WorkspaceTabs aria-label="Definition views" tabs={tabs} />
+      <WorkspaceTabs
+        aria-label="Definition views"
+        tabs={tabs}
+        selectedKey={selectedTab}
+        onSelectionChange={setSelectedTab}
+      />
     </section>
   );
 }

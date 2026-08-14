@@ -11,6 +11,7 @@ import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
 import { DefinitionWorkspace } from "./definition-workspace";
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
+import type { FlowNodeMetricsApi } from "./flow-node-metrics-api.ts";
 import type { IncidentOperationsApi } from "./incident-operations-api";
 import { OperationsWorkspace } from "./operations-workspace";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api";
@@ -23,6 +24,7 @@ export type AppProps = Readonly<{
   api: DefinitionApiClient;
   messageStartPublicationApi: MessageStartPublicationApiClient;
   incidentOperationsApi: IncidentOperationsApi;
+  metricsApi: FlowNodeMetricsApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
   processExecutionApi: ProcessExecutionApi;
   scheduleApi: DefinitionScheduleApiClient;
@@ -33,6 +35,7 @@ export function App({
   api,
   incidentOperationsApi,
   messageStartPublicationApi,
+  metricsApi,
   processInstanceSearchApi,
   processExecutionApi,
   scheduleApi,
@@ -140,6 +143,7 @@ export function App({
           error={error}
           loading={loading}
           messageStartPublicationApi={messageStartPublicationApi}
+          metricsApi={metricsApi}
           onDeploy={deploy}
           onOpenDefinition={openDefinition}
           onSelectVersion={setSelected}
