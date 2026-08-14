@@ -1,16 +1,19 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
+const execFileAsync = promisify(execFile);
 
 test("maintained documentation does not retain the retired lowest-operation selector", async () => {
-  const paths = await markdownPaths(path.join(repositoryRoot, "docs"));
+  const paths = await maintainedMarkdownPaths();
   const findings: string[] = [];
   for (const documentPath of paths) {
     const source = await readFile(documentPath, "utf8");
@@ -19,6 +22,38 @@ test("maintained documentation does not retain the retired lowest-operation sele
     }
   }
   assert.deepEqual(findings, []);
+});
+
+test("the documentation guard reaches every maintained repository region", async () => {
+  const relativePaths = (await maintainedMarkdownPaths()).map((documentPath) =>
+    path.relative(repositoryRoot, documentPath)
+  );
+  const representatives = [
+    "README.md",
+    "contracts/README.md",
+    "docs/README.md",
+    "packages/semantic-core/README.md",
+    "platform/README.md",
+    "profiles/README.md",
+    "runners/README.md",
+    "scenarios/README.md",
+    "showcase/README.md",
+  ];
+  assert.deepEqual(
+    representatives.filter((representative) =>
+      !relativePaths.includes(representative)
+    ),
+    [],
+  );
+  assert.equal(
+    relativePaths.some((relativePath) =>
+      relativePath.includes("/archived/") ||
+      relativePath.startsWith("docs/archived/") ||
+      relativePath.includes("/reference/") ||
+      relativePath.startsWith("docs/reference/")
+    ),
+    false,
+  );
 });
 
 test("the semantic-closure documentation guard covers both stale claim classes", () => {
@@ -52,18 +87,20 @@ function staleSemanticClosureClaims(source: string): string[] {
   );
 }
 
-async function markdownPaths(directory: string): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const paths: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name !== "archived" && entry.name !== "reference") {
-        paths.push(...await markdownPaths(entryPath));
-      }
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
-      paths.push(entryPath);
-    }
-  }
-  return paths.sort();
+async function maintainedMarkdownPaths(): Promise<string[]> {
+  const { stdout } = await execFileAsync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.md"],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  );
+  return stdout.split("\n")
+    .filter((relativePath) => relativePath.length > 0)
+    .filter((relativePath) => {
+      const segments = relativePath.split("/");
+      return !segments.includes("archived") &&
+        !segments.includes("reference") &&
+        !relativePath.startsWith("adoption/a12/legacy/source-tree/");
+    })
+    .map((relativePath) => path.join(repositoryRoot, relativePath))
+    .sort();
 }
