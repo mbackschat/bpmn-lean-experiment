@@ -35,6 +35,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Resume implementation | [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the current gate in [TESTING-SPEC.md](TESTING-SPEC.md) |
 | Run or inspect the CIB oracle | [TESTING-SPEC.md](TESTING-SPEC.md) and the [CIB runner guide](../runners/cibseven/README.md) |
 | Run or inspect the Temporal adapter | [TESTING-SPEC.md](TESTING-SPEC.md), [TEMPORAL-EXECUTION-RESEARCH.md](research/TEMPORAL-EXECUTION-RESEARCH.md), and the [adapter guide](../packages/temporal-adapter/README.md) |
+| Inspect the exact Temporal witness, mutation, history, and replay coverage | [Temporal test evidence map](TEMPORAL-TEST-EVIDENCE-MAP.md) and [TESTING-SPEC.md](TESTING-SPEC.md#current-temporal-gate) |
 | Run or inspect BPMN XML ingestion | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md), [TESTING-SPEC.md](TESTING-SPEC.md), and the [source package guide](../packages/bpmn-source/README.md) |
 | Implement or review User Task interaction | [User Task interaction capsule](capsules/USER-TASK-INTERACTION-SPEC.md), [TEMPORAL-EXECUTION-RESEARCH.md](research/TEMPORAL-EXECUTION-RESEARCH.md), and [TESTING-SPEC.md](TESTING-SPEC.md) |
 | Implement or review Intermediate Catch Timer behavior | [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md), [TEMPORAL-EXECUTION-RESEARCH.md](research/TEMPORAL-EXECUTION-RESEARCH.md), and [Semantic Process IL specification](SEMANTIC-PROCESS-IL-SPEC.md) |
@@ -154,6 +155,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
 | [PLAN.md](PLAN.md) | Resuming agents and owners; current checkpoint, approved implementation sequence, next steps, and stop conditions |
 | [TESTING-SPEC.md](TESTING-SPEC.md) | Contributors; red/green workflow and verification gates |
+| [TEMPORAL-TEST-EVIDENCE-MAP.md](TEMPORAL-TEST-EVIDENCE-MAP.md) | Adapter contributors and reviewers; feature-by-feature Temporal witnesses, mutations, durable-history checks, and replay coverage behind the focused gate |
 | [SOURCES.md](SOURCES.md) | Researchers; provenance, machine-readable pins, and controlled external-source navigation |
 | [reference/bpmn-2.0.2/README.md](reference/bpmn-2.0.2/README.md) | Researchers; external BPMN 2.0.2 corpus location, official fetch/verification procedure, conversion-cache boundary, and reproducibility hashes |
 | [../contracts/README.md](../contracts/README.md) | Cross-language contributors; current language-neutral schemas, artifact roles, content identity, and pre-release evolution policy |

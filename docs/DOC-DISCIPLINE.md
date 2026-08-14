@@ -61,7 +61,7 @@ The following names identify repository-wide owners and do not require another s
 - `DOC-DISCIPLINE.md` — this documentation workflow;
 - `CLAUDE.md` and `AGENTS.md` — mandatory contributor triggers and workflow.
 
-Directory `README.md` files are registries or local entry points, not independent policy owners.
+Directory `README.md` files are human-facing local entry points, not independent policy owners or dense implementation ledgers. A component README starts with what the component is for, what a user can do with it, the shortest useful local command, and links to deeper contracts. Contributor or agent-facing file inventories and invariant maps belong in a linked directory `INDEX.md` when they are too detailed for that human path. Repository-wide mandatory instructions stay in canonical `CLAUDE.md`, with `AGENTS.md` preserving its symlink. Short profile, scenario, schema, research, and capsule registries may remain in a README when the registry itself is the human navigation purpose.
 
 ### Suffixless singleton exceptions
 

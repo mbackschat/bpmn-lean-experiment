@@ -1,20 +1,49 @@
-# Platform web application
+# BPM platform web application
 
-This directory owns the static React SPA. It consumes only the public HTTP API and never imports server, module, foundation, or engine implementation code.
+This is the browser application for the BPM platform. It is a static React app that talks only to the platform's public HTTP API.
 
-The definition workspace uploads exact BPMN XML, reports accepted or rejected admission diagnostics, lists definitions and versions, retrieves the exact admitted source, resolves a digest-verified source-owned or generated BPMN DI presentation, renders it through a viewer-only `bpmn-js` adapter, downloads the complete derived presentation BPMN for modeller handoff, and starts the selected exact version. It also publishes one caller-identified Message Start against the selected version's complete operation-addressed capability and shows the public pending, accepted, or indeterminate receipt. Operations groups Process-instance search with current incidents and separate platform-action audit. A Process-instance row opens only after a fresh complete committed-execution publication succeeds, then provides Overview, revision-ordered semantic History, every current token/scope position on the matching Diagram, and byte-exact JSON export. Gapped, unavailable, stale, malformed, or superseded reads mount no History, Diagram, or export controls. Incident selection replaces the collection with full-width Overview, Diagram, and Audit tabs; Retry and confirmed root-Process Cancel retain one exact public action across uncertain transport, and closed or unverifiable results are explicitly no longer current. The global Human Work panel uses TanStack Query for bounded refresh and mutations, the platform React Aria kit for accessible controls, TanStack Table for native inbox structure, and a CSS Module for feature styling. It renders the engine-published string or Boolean form field without coercion and submits the exact task occurrence through the public Work API. Diagram views consume only digest-bound public presentations; committed execution highlights every present published Sequence Flow and active-wait element while retaining scope positions in the position list and reporting off-diagram positions honestly. Strict public-contract decoders, request-to-response identity binding, duplicate refusal, and source identity checks keep the browser from silently accepting a malformed or mismatched response; private Temporal identity and inferred lifecycle state are never part of this client.
+## What you can do
 
-The approved `bpmn-js` dependency's [bpmn.io license](public/third-party/bpmn-js.LICENSE.txt) requires the supplied bpmn.io watermark to remain unchanged, fully visible, linked to bpmn.io, and unobstructed. The exact notice is copied from `public/` into every static distribution. Modeling, editing, and any use of renderer parsing as an engine admission or semantic decision remain excluded. A downloaded diagrammed BPMN is a derived portable copy; saving or editing it in a modeller and uploading it again creates a new admitted definition version.
+- **Definitions:** upload BPMN XML, review admission diagnostics, inspect versions, view or download a diagram, and start an exact version.
+- **Work:** find tasks visible to the current actor, claim one, complete its typed form, and inspect its Process context. An unclaimed task exposes Claim but cannot enter the completion flow.
+- **Operations:** search Process instances, inspect committed execution history and current diagram positions, retry or cancel incidents, review audit events, and view definition-version flow-node metrics.
 
-Run the API and web client in separate terminals:
+The UI never receives Temporal Workflow IDs, Run IDs, Task Queues, Event History, or private engine locators. Diagrams are presentation only and never decide whether a model is executable.
+
+## Run locally
+
+Start the platform API and the web development server in separate terminals:
 
 ```sh
 ./scripts/pnpm.sh run platform:serve
 ./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1
 ```
 
-The development server proxies `/api` to `http://127.0.0.1:3000`; `PLATFORM_API_ORIGIN` may select another local API origin for isolated automation. Build and test the distribution with `./scripts/pnpm.sh run test:platform-web`.
+The development server proxies `/api` to `http://127.0.0.1:3000`. Set `PLATFORM_API_ORIGIN` only when an isolated local harness needs a different API origin.
 
-Required browser acceptance belongs to the independent [M1](../../../showcase/m1-definition-deployment/README.md), [M2 Process-instance search](../../../showcase/m2-process-instance-search/README.md), [M3 Human Work](../../../showcase/m3-human-work/README.md), and [M4 incident operations](../../../showcase/m4-incident-operations/README.md) showcases, not this production web package. They compose the production server and Worker around the same static client while keeping Playwright, Chromium, and Temporal test infrastructure out of this package and its distribution. The separate [UI-quality lane](../../../showcase/platform-ui-quality/README.md) owns deterministic 1280/1600 geometry, focus, state, and reduced-motion evidence without entering Product 1 verification; one wide Diagram screenshot remains a manual review aid.
+## Test locally
 
-See [the architecture](../../../docs/ARCHITECTURE.md#user-interface) and [the platform proposal](../../../docs/BPM-PLATFORM-PROPOSAL.md#api-first-architecture) for the durable boundary.
+Run the web package tests:
+
+```sh
+./scripts/pnpm.sh run test:platform-web
+```
+
+Run the production-built headless-Chromium functional journeys at 1280 and 1600 pixels:
+
+```sh
+./scripts/pnpm.sh run test:ui-quality
+```
+
+Before pushing a UI-facing commit, run the exact local GitHub entry point described by the [three-level verification policy](../../../docs/TESTING-SPEC.md#three-level-verification-policy).
+
+## Learn more
+
+- [Implementation index](INDEX.md) maps features to their source owners and tests.
+- [M3 human-work walkthrough](../../../docs/M3-HUMAN-WORK-WALKTHROUGH.md) is a guided task journey.
+- [UI design specification](../../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md) owns interaction, accessibility, responsive behavior, and browser evidence.
+- [Architecture](../../../docs/ARCHITECTURE.md#user-interface) owns package boundaries.
+
+## bpmn-js license
+
+The bundled viewer keeps the required bpmn.io watermark visible and unmodified. See the included [bpmn-js license](public/third-party/bpmn-js.LICENSE.txt). The application uses bpmn-js for viewing and overlays, not for engine admission or BPMN semantics.
