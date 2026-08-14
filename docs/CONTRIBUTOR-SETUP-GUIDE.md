@@ -14,8 +14,10 @@ nvm use
 ./scripts/setup-external-sources.sh verify
 ./scripts/pnpm.sh install --frozen-lockfile
 ./scripts/doctor.sh verify
-./scripts/verify.sh
+./scripts/pnpm.sh run test:pre-push:verify
 ```
+
+The pre-push entry point requires the checkout to be at a clean committed `HEAD`, matching the tree GitHub will verify. During development, use the focused and affected-package gates from [TESTING-SPEC.md](TESTING-SPEC.md); do not use the complete pre-push entry point as a substitute for the Red/Green loop.
 
 `setup-external-sources.sh` provisions the external sibling root at `../oss` by default. Set `BPMN_EXTERNAL_ROOT` to an absolute directory when repositories on a machine use another shared location. Setup, diagnosis, schema/metamodel checks, the explicit A12 source-adoption check, MIWG calibration, CIB breadth inventory, and the complete default gate honor that override.
 

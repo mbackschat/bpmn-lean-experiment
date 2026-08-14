@@ -167,7 +167,7 @@ nvm use
 ./scripts/setup-external-sources.sh verify
 ./scripts/pnpm.sh install --frozen-lockfile
 ./scripts/doctor.sh verify
-./scripts/verify.sh
+./scripts/pnpm.sh run test:pre-push:verify
 ```
 
 Useful focused gates:

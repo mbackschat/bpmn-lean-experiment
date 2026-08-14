@@ -108,7 +108,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   }>;
   assert.equal(
     root.scripts?.["test:pre-push:ui"],
-    "pnpm test:platform-operations-checkpoint && pnpm test:showcase:types && pnpm test:ui-quality",
+    "pnpm check:clean-head && pnpm test:platform-operations-checkpoint && pnpm test:showcase:types && pnpm test:ui-quality",
   );
   assert.equal(
     root.scripts?.["test:showcase:types"],

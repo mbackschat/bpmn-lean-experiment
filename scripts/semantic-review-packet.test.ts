@@ -88,18 +88,24 @@ function commitAll(repository: string, message: string): void {
   assert.equal(committed.status, 0, committed.stderr);
 }
 
-function runPacketCli(repository: string) {
+function packetCliArguments(gatesPath: string = "gates.json"): ReadonlyArray<string> {
+  return [
+    "--stage", "closure",
+    "--baseline", "HEAD^",
+    "--target", "HEAD",
+    "--capsule", "docs/capsules/EXAMPLE-PROPOSAL.md",
+    "--route", "docs/capsules/EXAMPLE-PROPOSAL.md::Selected rules",
+    "--gates", gatesPath,
+  ];
+}
+
+function runPacketCli(
+  repository: string,
+  arguments_: ReadonlyArray<string> = packetCliArguments(),
+) {
   return spawnSync(
     process.execPath,
-    [
-      "scripts/semantic-review-packet.ts",
-      "--stage", "closure",
-      "--baseline", "HEAD^",
-      "--target", "HEAD",
-      "--capsule", "docs/capsules/EXAMPLE-PROPOSAL.md",
-      "--route", "docs/capsules/EXAMPLE-PROPOSAL.md::Selected rules",
-      "--gates", "gates.json",
-    ],
+    ["scripts/semantic-review-packet.ts", ...arguments_],
     { cwd: repository, encoding: "utf8" },
   );
 }
@@ -350,21 +356,16 @@ test("the packet source uses no locale-sensitive ordering", async () => {
 test("the semantic review packet CLI resolves exact commits, sections, and numstat", async () => {
   const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "semantic-review-packet-"));
   try {
-    const gatesPath = path.join(temporaryRoot, "gates.json");
-    await writeFile(gatesPath, JSON.stringify(packetInput.rootGates), "utf8");
-    const arguments_ = [
-      "--stage", "closure",
-      "--baseline", "HEAD^",
-      "--target", "HEAD",
-      "--capsule", "docs/capsules/CALL-ACTIVITY-SPEC.md",
-      "--route", "docs/capsules/CALL-ACTIVITY-SPEC.md::Selected rules",
-      "--gates", gatesPath,
-    ];
-    const result = spawnSync(
-      process.execPath,
-      ["scripts/semantic-review-packet.ts", ...arguments_],
-      { cwd: projectRoot, encoding: "utf8" },
+    const repository = path.join(temporaryRoot, "repository");
+    await initializeReviewRepository(repository);
+    await writeFile(
+      path.join(repository, "BpmnSemantics/Example.lean"),
+      "def example := false\n",
+      "utf8",
     );
+    commitAll(repository, "change reviewed source");
+    const arguments_ = packetCliArguments();
+    const result = runPacketCli(repository, arguments_);
 
     assert.equal(result.status, 0, result.stderr);
     const packet: unknown = JSON.parse(result.stdout);
@@ -388,53 +389,43 @@ test("the semantic review packet CLI resolves exact commits, sections, and numst
     assert.equal(packet.changedFiles.length > 0, true);
     assert.match(packetSha256, /^[0-9a-f]{64}$/u);
 
-    const reversed = spawnSync(
-      process.execPath,
-      ["scripts/semantic-review-packet.ts", ...arguments_.map((value, index) => {
+    const reversed = runPacketCli(
+      repository,
+      arguments_.map((value, index) => {
         if (arguments_[index - 1] === "--baseline") return "HEAD";
         if (arguments_[index - 1] === "--target") return "HEAD^";
         return value;
-      })],
-      { cwd: projectRoot, encoding: "utf8" },
+      }),
     );
     assert.notEqual(reversed.status, 0);
     assert.match(reversed.stderr, /baseline must be a strict ancestor/u);
 
-    const missingSection = spawnSync(
-      process.execPath,
-      [
-        "scripts/semantic-review-packet.ts",
-        ...arguments_.map((value) => value === "docs/capsules/CALL-ACTIVITY-SPEC.md::Selected rules"
-          ? "docs/capsules/CALL-ACTIVITY-SPEC.md::Missing section"
+    const missingSection = runPacketCli(
+      repository,
+      arguments_.map((value) => value === "docs/capsules/EXAMPLE-PROPOSAL.md::Selected rules"
+          ? "docs/capsules/EXAMPLE-PROPOSAL.md::Missing section"
           : value),
-      ],
-      { cwd: projectRoot, encoding: "utf8" },
     );
     assert.notEqual(missingSection.status, 0);
     assert.match(missingSection.stderr, /heading must occur exactly once/u);
 
-    const duplicateStage = spawnSync(
-      process.execPath,
-      ["scripts/semantic-review-packet.ts", ...arguments_, "--stage", "proposal"],
-      { cwd: projectRoot, encoding: "utf8" },
+    const duplicateStage = runPacketCli(
+      repository,
+      [...arguments_, "--stage", "proposal"],
     );
     assert.notEqual(duplicateStage.status, 0);
     assert.match(duplicateStage.stderr, /repeats singleton argument --stage/u);
 
-    const extraFieldGatesPath = path.join(temporaryRoot, "extra-field-gates.json");
+    const extraFieldGatesPath = path.join(repository, "extra-field-gates.json");
     await writeFile(
       extraFieldGatesPath,
       JSON.stringify([{ ...packetInput.rootGates[0], semanticConclusion: "approve" }]),
       "utf8",
     );
-    const extraFieldGate = spawnSync(
-      process.execPath,
-      [
-        "scripts/semantic-review-packet.ts",
-        ...arguments_.map((value, index) =>
+    const extraFieldGate = runPacketCli(
+      repository,
+      arguments_.map((value, index) =>
           arguments_[index - 1] === "--gates" ? extraFieldGatesPath : value),
-      ],
-      { cwd: projectRoot, encoding: "utf8" },
     );
     assert.notEqual(extraFieldGate.status, 0);
     assert.match(extraFieldGate.stderr, /exactly command, exitStatus, elapsedMs, and outputSha256/u);

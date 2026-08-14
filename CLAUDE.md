@@ -460,7 +460,13 @@ Product 2 fixed-fixture responsive, focus, reduced-motion, and interaction gate 
 ./scripts/pnpm.sh run test:ui-quality
 ```
 
-Before pushing a Product 2 UI-facing change, run the same composed entry point used by the ordinary path-filtered GitHub workflow:
+After committing a Product 1 or shared-repository change, require a clean worktree and run the exact ordinary GitHub verification entry point against that committed `HEAD`:
+
+```sh
+./scripts/pnpm.sh run test:pre-push:verify
+```
+
+After committing a Product 2 UI-facing change, require a clean worktree and run the same composed entry point used by the ordinary path-filtered GitHub workflow:
 
 ```sh
 ./scripts/pnpm.sh run test:pre-push:ui

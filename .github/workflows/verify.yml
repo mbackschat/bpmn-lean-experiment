@@ -149,7 +149,7 @@ jobs:
           # The hosted aggregate ceiling must outlive the longest nested CIB
           # deadline plus reporting cleanup. Per-lane deadlines detect hangs.
           BPMN_PIPELINE_WARM_BUDGET_MS: "130000"
-        run: ./scripts/verify.sh
+        run: ./scripts/pnpm.sh run test:pre-push:verify
 
   # One stable check name for branch protection. Requiring the matrix jobs
   # directly would name each platform, so editing the matrix would silently
