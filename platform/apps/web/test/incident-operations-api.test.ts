@@ -107,6 +107,22 @@ test("rejects private and nested identity drift", async () => {
     IncidentOperationsProtocolError);
 });
 
+test("rejects escaped-equivalent duplicate keys in a nested public response", async () => {
+  const body = JSON.stringify({ incidents: [incident] }).replace(
+    '"elementId":"ServiceTask_Fail"',
+    '"elementId":"Other","\\u0065lementId":"ServiceTask_Fail"',
+  );
+  const client = new IncidentOperationsApiClient(
+    "https://platform.example",
+    async () => new Response(body, {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }),
+  );
+
+  await assert.rejects(client.listIncidents(), IncidentOperationsProtocolError);
+});
+
 test("rejects wrong route-specific error codes and status/result disagreements", async () => {
   await assert.rejects(
     clientReturning(503, {

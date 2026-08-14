@@ -14,6 +14,7 @@ import {
   matchWorkTaskPath,
   matchWorkTaskReleasePath,
   matchWorkTasksPath,
+  parseStrictJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PublicApiErrorResponse,
@@ -227,7 +228,7 @@ async function readJson<Result>(
   const bytes = await readBody(request);
   if (bytes.byteLength === 0) throw invalidTransport();
   try {
-    return decoder(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)));
+    return decoder(parseStrictJson(bytes));
   } catch {
     throw invalidTransport();
   }

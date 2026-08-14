@@ -12,6 +12,9 @@ import {
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const digestPattern = /^[0-9a-f]{64}$/u;
 const commitPattern = /^[0-9a-f]{40}$/u;
+const uiSnapshotPattern =
+  /^showcase\/platform-ui-quality\/e2e\/snapshots\/[^/]+\.spec\.ts\/chromium-(?:768|1024|1280|1600)\/[^/]+\.png$/u;
+const mavenWrapperJar = "runners/cibseven/.mvn/wrapper/maven-wrapper.jar";
 
 const ReviewPacketStage = Object.freeze({
   Proposal: "proposal",
@@ -95,6 +98,16 @@ function assertRepositoryPath(value: string, label: string): void {
   }
 }
 
+/** Keeps Git's binary detection subordinate to the repository's closed artifact ownership. */
+function assertRegisteredBinaryArtifact(filePath: string): void {
+  if (filePath !== mavenWrapperJar && !uiSnapshotPattern.test(filePath)) {
+    throw new Error(
+      `${filePath} is classified as binary but is not a registered binary artifact; ` +
+        "reviewable source and text must retain exact line counts",
+    );
+  }
+}
+
 function assertUnique<T>(
   values: ReadonlyArray<T>,
   keyOf: (value: T) => string,
@@ -167,6 +180,7 @@ export function assembleSemanticReviewPacket(
   for (const changedFile of input.changedFiles) {
     assertRepositoryPath(changedFile.path, "changed file");
     if ("binary" in changedFile) {
+      assertRegisteredBinaryArtifact(changedFile.path);
       if (
         changedFile.binary !== true ||
         (changedFile.baselineSha256 !== null && !digestPattern.test(changedFile.baselineSha256)) ||
@@ -357,6 +371,7 @@ function parseNumstat(baseline: string, target: string): ReadonlyArray<ReviewPac
     const removedText = record.slice(firstTab + 1, secondTab);
     const filePath = record.slice(secondTab + 1);
     if (addedText === "-" && removedText === "-") {
+      assertRegisteredBinaryArtifact(filePath);
       return {
         path: filePath,
         binary: true,

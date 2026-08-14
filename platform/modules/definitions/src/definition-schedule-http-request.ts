@@ -1,5 +1,6 @@
 import {
   decodePutDefinitionScheduleRequest,
+  parseStrictJson,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -28,7 +29,12 @@ export async function readDefinitionScheduleRequest(
     empty: "The definition schedule request body must not be empty.",
     tooLarge: "The definition schedule request exceeds 1024 bytes.",
   });
-  const value = parseJson(bytes);
+  let value: unknown;
+  try {
+    value = parseStrictJson(bytes);
+  } catch {
+    throw invalidJson();
+  }
   if (
     typeof value !== "object" ||
     value === null ||
@@ -55,20 +61,6 @@ export async function readDefinitionScheduleRequest(
       );
     }
     throw error;
-  }
-}
-
-function parseJson(bytes: Uint8Array): unknown {
-  let source: string;
-  try {
-    source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-  } catch {
-    throw invalidJson();
-  }
-  try {
-    return JSON.parse(source) as unknown;
-  } catch {
-    throw invalidJson();
   }
 }
 

@@ -129,6 +129,15 @@ test("rejects malformed, unsupported, and query PUT input before service entry",
     { request: putRequest("{}"), status: 400 },
     { request: putRequest(JSON.stringify({ ...putBody, extra: true })), status: 400 },
     {
+      request: putRequest(
+        JSON.stringify(putBody).replace(
+          '"processId":"Process/Message"',
+          '"processId":"Other","\\u0070rocessId":"Process/Message"',
+        ),
+      ),
+      status: 400,
+    },
+    {
       request: publicationRequest("PUT", {
         headers: { "content-type": "application/json" },
       }),

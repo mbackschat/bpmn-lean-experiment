@@ -7,6 +7,7 @@ import {
   definitionSchedulesPath,
   DefinitionScheduleStatus,
   LegacyPublicApiErrorCodes,
+  parseStrictJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionSchedule,
@@ -201,7 +202,8 @@ async function readJson(response: Response): Promise<unknown> {
     );
   }
   try {
-    return await response.json() as unknown;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return parseStrictJson(bytes);
   } catch (cause: unknown) {
     throw new DefinitionProtocolError(
       "definition schedule API returned malformed JSON",

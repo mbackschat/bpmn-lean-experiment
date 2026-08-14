@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -26,6 +33,75 @@ function stringField(
     throw new Error(`${field} must be a string`);
   }
   return value;
+}
+
+async function initializeReviewRepository(repository: string): Promise<void> {
+  await mkdir(path.join(repository, "scripts"), { recursive: true });
+  await mkdir(path.join(repository, "docs/capsules"), { recursive: true });
+  await mkdir(path.join(repository, "BpmnSemantics"), { recursive: true });
+  await copyFile(
+    path.join(projectRoot, "scripts/semantic-review-packet.ts"),
+    path.join(repository, "scripts/semantic-review-packet.ts"),
+  );
+  await copyFile(
+    path.join(projectRoot, "scripts/semantic-review-text.ts"),
+    path.join(repository, "scripts/semantic-review-text.ts"),
+  );
+  await writeFile(
+    path.join(repository, "docs/capsules/EXAMPLE-PROPOSAL.md"),
+    "# Example proposal\n\n## Selected rules\n\nOne exact rule.\n",
+    "utf8",
+  );
+  await writeFile(
+    path.join(repository, "BpmnSemantics/Example.lean"),
+    "def example := true\n",
+    "utf8",
+  );
+  await writeFile(
+    path.join(repository, "gates.json"),
+    JSON.stringify(packetInput.rootGates),
+    "utf8",
+  );
+  const initialized = spawnSync("git", ["init", "--quiet"], {
+    cwd: repository,
+    encoding: "utf8",
+  });
+  assert.equal(initialized.status, 0, initialized.stderr);
+  commitAll(repository, "baseline");
+}
+
+function commitAll(repository: string, message: string): void {
+  const added = spawnSync("git", ["add", "--all"], {
+    cwd: repository,
+    encoding: "utf8",
+  });
+  assert.equal(added.status, 0, added.stderr);
+  const committed = spawnSync(
+    "git",
+    [
+      "-c", "user.name=Review Packet Test",
+      "-c", "user.email=review-packet@example.invalid",
+      "commit", "--quiet", "-m", message,
+    ],
+    { cwd: repository, encoding: "utf8" },
+  );
+  assert.equal(committed.status, 0, committed.stderr);
+}
+
+function runPacketCli(repository: string) {
+  return spawnSync(
+    process.execPath,
+    [
+      "scripts/semantic-review-packet.ts",
+      "--stage", "closure",
+      "--baseline", "HEAD^",
+      "--target", "HEAD",
+      "--capsule", "docs/capsules/EXAMPLE-PROPOSAL.md",
+      "--route", "docs/capsules/EXAMPLE-PROPOSAL.md::Selected rules",
+      "--gates", "gates.json",
+    ],
+    { cwd: repository, encoding: "utf8" },
+  );
 }
 
 const packetInput = {
@@ -124,7 +200,7 @@ test("the semantic review packet is deterministic and digest-sensitive", () => {
 
 test("the semantic review packet inventories binary evidence by exact byte digests", () => {
   const binaryChangedFile = {
-    path: "evidence/diagram.png",
+    path: "showcase/platform-ui-quality/e2e/snapshots/example.spec.ts/chromium-768/diagram.png",
     binary: true,
     baselineSha256: null,
     targetSha256: "f".repeat(64),
@@ -146,7 +222,7 @@ test("the semantic review packet inventories binary evidence by exact byte diges
     () => assembleSemanticReviewPacket({
       ...packetInput,
       changedFiles: [{
-        path: "evidence/diagram.png",
+        path: binaryChangedFile.path,
         binary: true,
         baselineSha256: null,
         targetSha256: null,
@@ -161,6 +237,57 @@ test("the semantic review packet inventories binary evidence by exact byte diges
     } as unknown as SemanticReviewPacketInput),
     /count/u,
   );
+  assert.throws(
+    () => assembleSemanticReviewPacket({
+      ...packetInput,
+      changedFiles: [{
+        path: "BpmnSemantics/Example.lean",
+        binary: true,
+        baselineSha256: "f".repeat(64),
+        targetSha256: "0".repeat(64),
+      }],
+    }),
+    /registered binary artifact/u,
+  );
+});
+
+test("the semantic review packet CLI accepts registered PNG evidence and refuses binary source", async () => {
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "semantic-review-binary-"));
+  try {
+    const pngRepository = path.join(temporaryRoot, "png");
+    await initializeReviewRepository(pngRepository);
+    const pngPath = "showcase/platform-ui-quality/e2e/snapshots/example.spec.ts/chromium-768/diagram.png";
+    await mkdir(path.join(pngRepository, path.dirname(pngPath)), { recursive: true });
+    await writeFile(path.join(pngRepository, pngPath), new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x00]));
+    commitAll(pngRepository, "add binary evidence");
+
+    const pngResult = runPacketCli(pngRepository);
+    assert.equal(pngResult.status, 0, pngResult.stderr);
+    const pngPacket = JSON.parse(pngResult.stdout) as Readonly<{
+      changedFiles: ReadonlyArray<Readonly<Record<string, unknown>>>;
+    }>;
+    const pngRecord = pngPacket.changedFiles.find((candidate) => candidate.path === pngPath);
+    assert.deepEqual(pngRecord, {
+      path: pngPath,
+      binary: true,
+      baselineSha256: null,
+      targetSha256: "ad91235e882292469812e16da0b8fc77075a7c6d6f8760c24be14a5c792508cf",
+    });
+
+    const sourceRepository = path.join(temporaryRoot, "source");
+    await initializeReviewRepository(sourceRepository);
+    await writeFile(
+      path.join(sourceRepository, "BpmnSemantics/Example.lean"),
+      new Uint8Array([0x64, 0x65, 0x66, 0x20, 0x78, 0x00, 0x0a]),
+    );
+    commitAll(sourceRepository, "corrupt source");
+
+    const sourceResult = runPacketCli(sourceRepository);
+    assert.notEqual(sourceResult.status, 0);
+    assert.match(sourceResult.stderr, /registered binary artifact/u);
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
 });
 
 test("the semantic review packet rejects duplicate routes and malformed gates", () => {

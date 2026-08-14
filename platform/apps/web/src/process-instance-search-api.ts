@@ -4,6 +4,7 @@ import {
   decodePublicApiErrorResponse,
   processInstancesPath,
   LegacyPublicApiErrorCodes,
+  parseStrictJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   ProcessInstanceSearchPage,
@@ -159,7 +160,8 @@ async function readJson(response: Response): Promise<unknown> {
     );
   }
   try {
-    return await response.json() as unknown;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return parseStrictJson(bytes);
   } catch (cause: unknown) {
     throw new DefinitionProtocolError(
       "Process-instance search API returned malformed JSON",

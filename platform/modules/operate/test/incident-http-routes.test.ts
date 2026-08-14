@@ -305,6 +305,26 @@ test("strictly rejects GET bodies and invalid action transports before outbox or
   assert.equal(calls.auditRequests.length, 0);
 });
 
+test("rejects duplicate nested incident-action keys before outbox or mutation", async () => {
+  const calls = counters();
+  const routes = createRoutes({ calls });
+  const body = JSON.stringify(retry).replace(
+    '"elementId":"ServiceTask_Fail"',
+    '"elementId":"Other","\\u0065lementId":"ServiceTask_Fail"',
+  );
+
+  const response = await routes.handle(request("/api/v1/incident-actions/action-1", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body,
+  }));
+
+  assert.equal(response?.status, 400);
+  await assertError(response, "invalidRequest", "The incident request is invalid.");
+  assert.equal(calls.outbox, 0);
+  assert.equal(calls.mutations.length, 0);
+});
+
 type Calls = ReturnType<typeof counters>;
 
 function counters() {

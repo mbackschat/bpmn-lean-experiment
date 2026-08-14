@@ -72,3 +72,12 @@ test("makes focus and stale-response behavior explicit", () => {
   assert.match(audit, /ref=\{errorAlert\} tabIndex=\{-1\}/u);
   assert.match(audit, /They do not prove that an incident is current/u);
 });
+
+test("does not promote a collection row to actionable detail before exact corroboration", () => {
+  assert.doesNotMatch(
+    incidents,
+    /setSelected\(incident\)[\s\S]*await api\.getIncident/u,
+  );
+  assert.match(incidents, /new IncidentDetailLoader\(\)/u);
+  assert.match(incidents, /<IncidentDetailLoadBoundary/u);
+});

@@ -9,6 +9,7 @@ import {
   incidentAuditPath,
   incidentDetailPath,
   incidentsPath,
+  parseStrictJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   IncidentActionApiErrorCode,
@@ -219,7 +220,8 @@ async function decodeJson<Result>(
     throw new IncidentOperationsProtocolError(`${label} has an unexpected media type`);
   }
   try {
-    return decoder(await response.json() as unknown);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return decoder(parseStrictJson(bytes));
   } catch (cause: unknown) {
     if (cause instanceof IncidentOperationsProtocolError) throw cause;
     throw new IncidentOperationsProtocolError(`${label} violates the public contract`, { cause });

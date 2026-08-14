@@ -16,7 +16,7 @@ The context-cold proposal reviewer completed two warm correction rounds and appr
 
 ## Owner motivation and product vision
 
-M3 is the first milestone where the platform must feel like a coherent product rather than a collection of technically successful panels. The owner wants to experience the product in a browser by selecting or deploying Process models, starting instances, finding tasks, completing typed forms, and seeing the Process diagram that explains the current work.
+M3 established the first coherent product shell rather than a collection of technically successful panels, and M4 extends that shell with incident operations. The owner wants to experience the product in a browser by selecting or deploying Process models, starting instances, finding tasks, completing typed forms, inspecting current incidents, and seeing the Process diagram that explains the current work.
 
 The owner review identified four deciding failures in the initial composition: unrelated capabilities were stacked vertically; a narrow right panel made task forms and diagrams secondary; task rows broke at ordinary widths; and a definition without embedded BPMN DI produced no useful diagram. The selected direction therefore makes tasks, forms, definitions, diagrams, and instance inspection primary content surfaces, prohibits horizontally scrolling task rows, and supports both source-owned BPMN DI and digest-bound presentation sidecars.
 
@@ -36,7 +36,7 @@ The persistent primary navigation contains these user-facing workspaces:
 |---|---|---|---|
 | Work | Find, claim, and complete available human work | Current actor-visible tasks | Form, Diagram, and Details tabs for one exact task occurrence |
 | Definitions | Inspect and operate deployed Process definitions | Existing definitions and versions | Diagram, Start, and Triggers tabs for one exact definition version |
-| Process instances | Find confirmed Product 2 starts | Search results over public Process identity | A future instance detail may replace the collection in place; it must not be added as an unrelated dashboard panel |
+| Operations | Find confirmed Process instances, inspect current incidents, and review platform action audit | Process instances, Incidents, and Audit tabs; Process instances is initially selected | Incident selection replaces its collection with full-width Overview, Diagram, and Audit tabs |
 
 The navigation reflects durable product capabilities. It does not expose package names, milestone names, Product 1 versus Product 2 terminology, or test/evidence concepts.
 
@@ -55,7 +55,7 @@ workspace collection ---- select exact item ----> workspace detail
         +---------------- back -----------------------+
 ```
 
-The browser viewport belongs to the active workspace. A task form, definition diagram, or later instance diagram receives the full content width. A permanent right-side inspector is not used for these primary surfaces because it makes forms and diagrams secondary and fails at ordinary laptop widths.
+The browser viewport belongs to the active workspace. A task form, definition diagram, or incident detail receives the full content width. A permanent right-side inspector is not used for these primary surfaces because it makes forms and diagrams secondary and fails at ordinary laptop widths.
 
 ## Work flow
 
@@ -73,6 +73,12 @@ Diagram resolution follows the [BPMN diagram presentation decision](BPMN-DIAGRAM
 
 Definitions use one closed `GET /api/v1/definitions/{processId}/versions/{version}/presentation` result carrying exact public definition identity, source digest, presentation digest, UTF-8 presentation XML, and a closed `source` or `generated` provenance arm. A selected task may request that hosting definition only when its semantic `processInstanceId` equals the public hosting root instance. After import, the exact task `elementId` must exist in the rendered element registry before it is highlighted. A task in a called semantic instance, an absent element, an unsupported generator shape, or a presentation failure produces an honest unavailable Diagram state. The UI never guesses a called definition from element names, host state, or Temporal facts.
 
+## Operations flow
+
+Operations begins with React Aria tabs for Process instances, Incidents, and Audit. Process instances retains the existing confirmed-start search as a tab rather than a separate primary-navigation destination. Incidents is a responsive collection of exact current engine publications. Selecting an incident replaces that collection with full-width Overview, Diagram, and Audit tabs; the diagram highlights the exact published Service Task element, and Back restores focus to the originating row when it still exists or to the collection heading otherwise. The top-level Audit tab is a separate paged collection of platform action facts and never presents an audit row as proof that an incident remains current.
+
+Collection rows are request and focus context, not current-detail authority. Incident controls appear only after the exact detail request succeeds. A pending, unavailable, absent, or stale detail request renders an honest non-actionable state, and switching tabs invalidates the request rather than promoting a late response.
+
 ## Responsive composition
 
 At wide and ordinary desktop widths, primary navigation is a persistent left rail and the selected workspace occupies the remaining content area. At narrow widths, the navigation moves above the content and wraps without horizontal page scrolling. Feature components use container queries when their available width can differ materially from the viewport width because of the product shell. The task collection keeps one native table, row, and cell DOM at every width; responsive card labels are visible in narrow mode rather than synthesized only for assistive technology.
@@ -81,8 +87,8 @@ The required review widths are 1600, 1280, 1024, and 768 CSS pixels. At each wid
 
 - the page has no horizontal overflow;
 - primary actions are fully visible;
-- task rows reflow before text or controls become cramped;
-- forms and diagrams retain the content area rather than moving into a narrow inspector;
+- task and incident rows reflow before text or controls become cramped;
+- forms, diagrams, and incident detail retain the content area rather than moving into a narrow inspector;
 - headings are not duplicated merely to fill nested cards.
 
 ## Improvements over the reference pattern
@@ -96,17 +102,17 @@ The platform deliberately improves on the CIB Seven reference pattern where curr
 5. Source DI plus digest-bound sidecars make the presentation boundary explicit and allow metadata-only executable models to receive generated diagrams without changing admitted source.
 6. React Aria interaction contracts provide consistent focus visibility, keyboard access, pending state, and accessible names across custom visual styling.
 7. Camunda 8's clearer queue context, optional task description, priority and date ordering, and Process-context tab are retained as future-compatible information slots, but they appear only after the engine and public platform contract publish those facts.
-8. Definition selection and exact version selection stay together so later instance inspection can move coherently from Process model to instance collection to exact instance detail, following the useful Operate flow without importing unsupported intervention features.
+8. Definition selection and exact version selection stay together, while Operations groups Process-instance search, current incidents, and platform action audit without importing unsupported intervention features.
 
 ## Required and excluded behavior
 
-Required behavior is stable primary navigation, coherent collection-to-detail flows, Form/Diagram/Details task context, Diagram/Start/Triggers definition context, responsive no-scroll task rows, and exact current operation state.
+Required behavior is stable primary navigation, coherent collection-to-detail flows, Form/Diagram/Details task context, Diagram/Start/Triggers definition context, Process instances/Incidents/Audit operations context, responsive no-scroll collections, and exact current operation state.
 
 Excluded behavior is a dashboard of unrelated panels, a permanent narrow task-form sidebar, route proliferation without a user objective, navigation by engine package, hidden horizontal task-table scrolling, or copying CIB Seven's implementation or visual theme.
 
 ## Acceptance
 
-Static component tests lock navigation and collection-to-detail ownership. Real-host browser evidence exercises the M1 source-owned Collaboration DI lifecycle, generated DI in M2 and M3, accessible Definitions and Work navigation, exact task selection, claim, completion, and version operation. The deterministic Product 2 browser lane separately locks called-instance and missing-element task-diagram unavailability, source and generated provenance, all declared failure states, focus, reduced motion, and four-width geometry. Product 2 visual QA uses the separate path-filtered lane owned by the [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
+Static component tests lock navigation and collection-to-detail ownership. Real-host browser evidence exercises the M1 source-owned Collaboration DI lifecycle, generated DI in M2 and M3, accessible Definitions and Work navigation, exact task selection, claim, completion, and version operation. The real M4 showcase additionally locks Operations navigation, current incident discovery, response-loss Retry, Worker-replacement Cancel, exact diagram highlighting, incident and top-level audit, and Process-instance search through public platform routes. The deterministic Product 2 browser lane separately locks called-instance and missing-element task-diagram unavailability, source and generated provenance, Operations pending/failure/currentness, private-fact exclusion, focus, reduced motion, and four-width geometry. Product 2 visual QA uses the separate path-filtered lane owned by the [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
 
 ## Research and related owners
 

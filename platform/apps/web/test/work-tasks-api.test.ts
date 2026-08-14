@@ -32,6 +32,18 @@ test("refuses a completion response with a different action or task identity", a
   );
 });
 
+test("rejects escaped-equivalent duplicate keys in a Work response", async () => {
+  const client = new WorkApiClient(
+    "https://platform.example",
+    async () => new Response('{"tasks":[],"\\u0074asks":[]}', {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }),
+  );
+
+  await assert.rejects(client.listTasks(), WorkProtocolError);
+});
+
 test("refuses Boolean stringification in strict task detail", async () => {
   const client = clientReturning({
     workTask: {

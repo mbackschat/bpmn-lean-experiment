@@ -86,6 +86,28 @@ test("decodes claim JSON within the byte limit and maps the exact result status"
   });
 });
 
+test("rejects escaped-equivalent duplicate claim keys before service entry", async () => {
+  let calls = 0;
+  const routes = createRoutes({
+    claimTask: async () => {
+      calls += 1;
+      return {
+        kind: "claimed",
+        result: { taskId, claim: { actorId: "demo-user", generation: 1 } },
+      };
+    },
+  });
+
+  const response = await routes.handle(new Request(`${taskUrl()}/claim`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: '{"actionId":"wrong","\\u0061ctionId":"claim-1","expectedGeneration":0}',
+  }));
+
+  assert.equal(response?.status, 400);
+  assert.equal(calls, 0);
+});
+
 test("distinguishes unsupported media type and oversized mutation payload", async () => {
   const routes = createRoutes({});
   const unsupported = await routes.handle(new Request(`${taskUrl()}/claim`, {

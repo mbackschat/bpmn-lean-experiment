@@ -3,10 +3,13 @@ import type { RefObject } from "react";
 
 import type { PublicIncident } from "@bpmn-lean/platform-contracts";
 
-import { incidentSelectionAfterTabChange } from "./incident-workspace-presentation.ts";
+import {
+  IncidentDetailLoader,
+  IncidentDetailLoadBoundary,
+} from "./incident-detail-load.tsx";
+import type { IncidentDetailSelection } from "./incident-detail-load.tsx";
 import { LatestRequest } from "./latest-request.ts";
 import { IncidentCollection, incidentKey } from "./incident-collection.tsx";
-import { IncidentDetailWorkspace } from "./incident-detail-workspace.tsx";
 import type { IncidentOperationsApi } from "./incident-operations-api.ts";
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import styles from "./incidents-panel.module.css";
@@ -23,11 +26,12 @@ export function IncidentsPanel({
   isActive,
 }: IncidentsPanelProps) {
   const [incidents, setIncidents] = useState<readonly PublicIncident[]>([]);
-  const [selected, setSelected] = useState<PublicIncident | null>(null);
+  const [detailSelection, setDetailSelection] = useState<IncidentDetailSelection>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const requests = useRef(new LatestRequest());
+  const detailLoader = useRef(new IncidentDetailLoader());
   const heading = useRef<HTMLHeadingElement>(null);
   const returnFocusKey = useRef<string | null>(null);
   const restoreCollectionFocus = useRef<Readonly<{ rowKey: string | null }> | null>(null);
@@ -43,7 +47,7 @@ export function IncidentsPanel({
       setIncidents(snapshot.incidents);
       if (focusHeading) queueFocus(heading.current);
     } catch (cause: unknown) {
-      if (requests.current.isCurrent(generation)) setError(errorMessage(cause));
+      if (requests.current.isCurrent(generation)) setError(collectionErrorMessage(cause));
     } finally {
       if (requests.current.isCurrent(generation)) setLoading(false);
     }
@@ -52,7 +56,7 @@ export function IncidentsPanel({
   useEffect(() => {
     if (!isActive) {
       requests.current.invalidate();
-      setSelected((current) => incidentSelectionAfterTabChange(false, current));
+      detailLoader.current.clear(setDetailSelection);
       return;
     }
     void loadCollection();
@@ -60,47 +64,44 @@ export function IncidentsPanel({
 
   useEffect(() => {
     const pending = restoreCollectionFocus.current;
-    if (selected !== null || pending === null) return;
+    if (detailSelection !== null || pending === null) return;
     restoreCollectionFocus.current = null;
     const row = pending.rowKey === null
       ? null
       : rowRefs.current.get(pending.rowKey)?.current ?? null;
     queueFocus(row ?? heading.current);
-  }, [selected]);
+  }, [detailSelection]);
 
   async function openIncident(incident: PublicIncident): Promise<void> {
     returnFocusKey.current = incidentKey(incident);
-    setSelected(incident);
     setError(null);
-    const generation = requests.current.begin();
-    try {
-      const detail = await api.getIncident(incident.incident.id);
-      if (requests.current.isCurrent(generation)) setSelected(detail);
-    } catch (cause: unknown) {
-      if (requests.current.isCurrent(generation)) setError(errorMessage(cause));
-    }
+    await detailLoader.current.load(
+      incident,
+      (incidentId) => api.getIncident(incidentId),
+      setDetailSelection,
+    );
   }
 
   function backToCollection(): void {
-    requests.current.invalidate();
     restoreCollectionFocus.current = { rowKey: returnFocusKey.current };
-    setSelected(null);
+    detailLoader.current.clear(setDetailSelection);
   }
 
   async function committed(message: string): Promise<void> {
     setAnnouncement(message);
-    setSelected(null);
+    detailLoader.current.clear(setDetailSelection);
     await loadCollection(true);
   }
 
-  if (selected !== null) {
+  if (detailSelection !== null) {
     return (
-      <IncidentDetailWorkspace
+      <IncidentDetailLoadBoundary
         api={api}
         definitionApi={definitionApi}
-        incident={selected}
+        state={detailSelection}
         onBack={backToCollection}
         onCommitted={(message) => { void committed(message); }}
+        onRetry={(incident) => { void openIncident(incident); }}
       />
     );
   }
@@ -142,6 +143,6 @@ function queueFocus(element: HTMLElement | null): void {
   requestAnimationFrame(() => { element?.focus(); });
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown incident operations failure";
+function collectionErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown incident collection failure";
 }

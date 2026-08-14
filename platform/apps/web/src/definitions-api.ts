@@ -13,6 +13,7 @@ import {
   definitionVersionsPath,
   definitionVersionSourcePath,
   LegacyPublicApiErrorCodes,
+  parseStrictJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionDeployResult,
@@ -252,7 +253,8 @@ async function readJson(response: Response): Promise<unknown> {
     throw new DefinitionProtocolError("definition API JSON response has an unexpected media type");
   }
   try {
-    return await response.json() as unknown;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return parseStrictJson(bytes);
   } catch (cause: unknown) {
     throw new DefinitionProtocolError("definition API returned malformed JSON", { cause });
   }

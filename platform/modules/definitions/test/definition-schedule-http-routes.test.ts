@@ -106,6 +106,12 @@ test("rejects malformed transport and request shapes before service entry", asyn
     { request: putRequest("{}"), status: 400 },
     { request: putRequest(JSON.stringify({ activationAt, extra: true })), status: 400 },
     { request: putRequest(JSON.stringify({ activationAt: 42 })), status: 400 },
+    {
+      request: putRequest(
+        `{"activationAt":"2026-08-11T11:00:00.000Z","\\u0061ctivationAt":"${activationAt}"}`,
+      ),
+      status: 400,
+    },
     { request: putRequest("{"), status: 400 },
     { request: putRequest(JSON.stringify({ activationAt: "2026-08-11T12:00:00.001Z" })), status: 422 },
     {
