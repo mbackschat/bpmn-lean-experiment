@@ -50,7 +50,8 @@ test("the documentation guard reaches every maintained repository region", async
       relativePath.includes("/archived/") ||
       relativePath.startsWith("docs/archived/") ||
       relativePath.includes("/reference/") ||
-      relativePath.startsWith("docs/reference/")
+      relativePath.startsWith("docs/reference/") ||
+      relativePath.startsWith("adoption/a12/legacy/source-tree/")
     ),
     false,
   );
