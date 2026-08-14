@@ -42,7 +42,7 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     temporalTaskQueue: "bpmn-semantic",
     temporalConnectTimeoutMs: 5000,
     fakeActorId: "demo-user",
-    fakeActorGroups: ["reviewers"],
+    fakeActorGroups: ["reviewers", "operators"],
     operationsGroupId: "operators",
     maxWorkProcesses: 100,
     maxWorkTasks: 1000,
@@ -61,6 +61,21 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     assert.equal(processInstances.status, 200);
     assert.deepEqual(await processInstances.json(), {
       instances: [],
+      nextCursor: null,
+    });
+    const incidents = await fetch(
+      `${origin}/api/v1/incidents`,
+      { signal: AbortSignal.timeout(1_000) },
+    );
+    assert.equal(incidents.status, 200);
+    assert.deepEqual(await incidents.json(), { incidents: [] });
+    const incidentAudit = await fetch(
+      `${origin}/api/v1/incident-audit`,
+      { signal: AbortSignal.timeout(1_000) },
+    );
+    assert.equal(incidentAudit.status, 200);
+    assert.deepEqual(await incidentAudit.json(), {
+      events: [],
       nextCursor: null,
     });
     const tasks = await fetch(
@@ -113,6 +128,10 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     assert.ok(workDatabase.byteLength > 0);
     const auditDatabase = await readFile(join(dataDirectory, "audit.sqlite"));
     assert.ok(auditDatabase.byteLength > 0);
+    const incidentAuditDatabase = await readFile(
+      join(dataDirectory, "incident-audit.sqlite"),
+    );
+    assert.ok(incidentAuditDatabase.byteLength > 0);
     await assert.rejects(runtime.listen(), /runtime is closed/u);
   } finally {
     await runtime.close();
@@ -328,7 +347,7 @@ function platformConfig(
     temporalTaskQueue: "bpmn-semantic",
     temporalConnectTimeoutMs: 5_000,
     fakeActorId: "demo-user",
-    fakeActorGroups: ["reviewers"],
+    fakeActorGroups: ["reviewers", "operators"],
     operationsGroupId: "operators",
     maxWorkProcesses: 100,
     maxWorkTasks: 1_000,

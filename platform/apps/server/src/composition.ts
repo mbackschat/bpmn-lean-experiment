@@ -7,13 +7,18 @@ import { BpmnAutoLayoutPresentationAdapter } from "@bpmn-lean/platform-bpmn-pres
 import {
   AuditEventFactory,
   AuditSearchService,
+  IncidentAuditEventFactory,
+  IncidentAuditSearchService,
   SqliteAuditRepository,
+  SqliteIncidentAuditRepository,
 } from "@bpmn-lean/platform-audit";
 import {
   FakeActorResolver,
+  OperationsAuthorizationPolicy,
   TaskAuthorizationPolicy,
 } from "@bpmn-lean/platform-identity-policy";
 import {
+  ConfirmedProcessInstanceOperateBootstrap,
   ConfirmedProcessInstancePublicationService,
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
@@ -38,8 +43,14 @@ import {
   messageStartPublicationWorkflowId,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
+  IncidentActionAuditOutboxService,
+  IncidentActionReconciliationService,
+  IncidentAggregationService,
+  IncidentHttpRoutes,
+  IncidentMutationService,
   ProcessInstanceHttpRoutes,
   ProcessInstanceSearchService,
+  SqliteIncidentActionRepository,
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
 import {
@@ -95,6 +106,10 @@ export async function createPlatformServer(
   );
   const workDatabaseFile = join(snapshot.dataDirectory, "work.sqlite");
   const auditDatabaseFile = join(snapshot.dataDirectory, "audit.sqlite");
+  const incidentAuditDatabaseFile = join(
+    snapshot.dataDirectory,
+    "incident-audit.sqlite",
+  );
   const resources: CloseableResource[] = [engineRuntime];
   try {
     const repository = new SqliteDefinitionRepository(databaseFile);
@@ -120,18 +135,60 @@ export async function createPlatformServer(
     const processInstances = new ProcessInstanceSearchService(
       processInstanceRepository,
     );
+    const incidents = new IncidentAggregationService({
+      repository: processInstanceRepository,
+      gateway: engineRuntime.processOperations,
+    });
+    const incidentActions = new SqliteIncidentActionRepository(
+      processInstanceDatabaseFile,
+    );
+    resources.push(incidentActions);
     const work = new SqliteWorkRepository(workDatabaseFile);
     resources.push(work);
     const auditRepository = new SqliteAuditRepository(auditDatabaseFile);
     resources.push(auditRepository);
     const auditSearch = new AuditSearchService(auditRepository);
+    const incidentAuditRepository = new SqliteIncidentAuditRepository(
+      incidentAuditDatabaseFile,
+    );
+    resources.push(incidentAuditRepository);
+    const incidentAuditSearch = new IncidentAuditSearchService(
+      incidentAuditRepository,
+    );
     const actors = new FakeActorResolver({
       id: snapshot.fakeActorId,
       groups: [...snapshot.fakeActorGroups],
     });
     const authorization = new TaskAuthorizationPolicy();
+    const operationsAuthorization = new OperationsAuthorizationPolicy(
+      snapshot.operationsGroupId,
+    );
     const auditOutbox = new WorkAuditOutboxService(work, auditRepository);
     auditOutbox.reconcileAll();
+    const incidentAuditOutbox = new IncidentActionAuditOutboxService(
+      incidentActions,
+      incidentAuditRepository,
+    );
+    const incidentMutations = new IncidentMutationService({
+      aggregation: incidents,
+      repository: incidentActions,
+      gateway: engineRuntime.processOperations,
+      outbox: incidentAuditOutbox,
+      auditEvents: new IncidentAuditEventFactory({
+        generateId: randomUUID,
+        now: () => new Date(),
+      }),
+    });
+    const incidentReconciliation = new IncidentActionReconciliationService(
+      incidentActions,
+      incidentMutations,
+      incidentAuditOutbox,
+    );
+    await new ConfirmedProcessInstanceOperateBootstrap({
+      repository: confirmedRepository,
+      operate: processInstances,
+    }).bootstrap();
+    await incidentReconciliation.reconcileAll();
     const confirmedInstances = new ConfirmedProcessInstancePublicationService({
       repository: confirmedRepository,
       operate: processInstances,
@@ -203,6 +260,14 @@ export async function createPlatformServer(
     const processInstanceRoutes = new ProcessInstanceHttpRoutes(
       processInstances,
     );
+    const incidentRoutes = new IncidentHttpRoutes({
+      actors,
+      authorization: operationsAuthorization,
+      aggregation: incidents,
+      mutations: incidentMutations,
+      audit: incidentAuditSearch,
+      outbox: incidentAuditOutbox,
+    });
     const workService = new WorkService({
       repository: work,
       gateway: engineRuntime.processWork,
@@ -252,6 +317,7 @@ export async function createPlatformServer(
     const server = createPlatformHttpServerFromValidatedOrigin({
       publicOrigin: snapshot.publicOrigin,
       routes: [
+        (request) => incidentRoutes.handle(request),
         (request) => workRoutes.handle(request),
         (request) => processInstanceRoutes.handle(request),
         (request) => publicationRoutes.handle(request),
