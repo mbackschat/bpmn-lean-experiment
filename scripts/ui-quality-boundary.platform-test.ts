@@ -99,11 +99,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.doesNotMatch(hostedVerify, /playwright install|Install Chromium/iu);
   assert.doesNotMatch(hostedVerify, /test:showcase:m[123]/u);
   assert.doesNotMatch(hostedVerify, /test:platform-m1|test:platform-web/u);
-  assert.match(workflow, /test:platform-operations-checkpoint/u);
-  assert.match(
-    workflow,
-    /test:platform-operations-checkpoint[\s\S]{0,200}test:showcase:types[\s\S]{0,200}test:ui-quality/u,
-  );
+  assert.match(workflow, /test:pre-push:ui/u);
   assert.match(testingSpec, /Product 2 browser work remains outside `verify\.sh` and the hosted verification workflow/u);
   assert.doesNotMatch(testingSpec, /Linux matrix leg also installs Playwright/u);
 
@@ -111,12 +107,20 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
     scripts?: Readonly<Record<string, string>>;
   }>;
   assert.equal(
+    root.scripts?.["test:pre-push:ui"],
+    "pnpm test:platform-operations-checkpoint && pnpm test:showcase:types && pnpm test:ui-quality",
+  );
+  assert.equal(
     root.scripts?.["test:showcase:types"],
     "pnpm --filter '@bpmn-lean/showcase-*...' --if-present run build && pnpm --filter './showcase/**' --if-present run type-test",
   );
   assert.equal(
     root.scripts?.["test:ui-quality"],
-    "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e",
+    "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:functional",
+  );
+  assert.equal(
+    root.scripts?.["test:ui-quality:visual"],
+    "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:visual",
   );
   assert.equal(
     root.scripts?.["test:release:m3"],
@@ -148,16 +152,70 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.deepEqual(showcase.dependencies, undefined);
   assert.deepEqual(showcase.devDependencies, { "@playwright/test": "1.62.1" });
   assert.equal(
+    showcase.scripts?.["test:e2e:visual"],
+    "pnpm run type-test && playwright test --grep \"Process execution Diagram visual @visual\" --project=chromium-1600",
+  );
+  assert.equal(
     showcase.scripts?.["test:e2e:update-snapshots"],
-    "pnpm run type-test && playwright test --grep @visual --update-snapshots",
+    "pnpm run type-test && playwright test --grep \"Process execution Diagram visual @visual\" --project=chromium-1600 --update-snapshots",
   );
   assert.doesNotMatch(playwrightConfig, /Temporal|platform-server|showcase:m3-human-work/iu);
   assert.match(playwrightConfig, /vite preview/u);
+  assert.match(playwrightConfig, /chromiumProject\("chromium-1600", 1600\)/u);
+  assert.match(playwrightConfig, /chromiumProject\("chromium-1280", 1280\)/u);
+  assert.doesNotMatch(playwrightConfig, /chromium-(?:768|1024)|chromiumProject\([^\n]+(?:768|1024)\)/u);
 
-  const browserTest = await read("showcase/platform-ui-quality/e2e/ui-quality.spec.ts");
-  assert.match(browserTest, /process\.platform !== "linux"/u);
-  assert.match(browserTest, /Shared visual baselines are Linux-only/u);
-  assert.match(browserTest, /toHaveScreenshot/u);
+  const browserTests = await Promise.all([
+    read("showcase/platform-ui-quality/e2e/ui-quality.spec.ts"),
+    read("showcase/platform-ui-quality/e2e/operations-ui-quality.spec.ts"),
+    read("showcase/platform-ui-quality/e2e/execution-publication-ui-quality.spec.ts"),
+  ]);
+  assert.equal(
+    browserTests.flatMap((source) => source.match(/toHaveScreenshot\(/gu) ?? []).length,
+    1,
+    "one manually invoked desktop screenshot is the complete visual-regression scope",
+  );
+  assert.doesNotMatch(browserTests[0] ?? "", /toHaveScreenshot|chromium-768|768px/iu);
+  assert.doesNotMatch(browserTests[1] ?? "", /toHaveScreenshot|chromium-768|768px/iu);
+  assert.match(browserTests[2] ?? "", /Process execution Diagram visual @visual/u);
+  assert.match(browserTests[2] ?? "", /process\.platform !== "linux"/u);
+  assert.match(browserTests[2] ?? "", /toHaveScreenshot/u);
+
+  const snapshots = (await readdir(
+    path.join(projectRoot, "showcase/platform-ui-quality/e2e/snapshots"),
+    { recursive: true },
+  )).filter((entry) => entry.endsWith(".png")).sort();
+  assert.deepEqual(snapshots, [
+    "execution-publication-ui-quality.spec.ts/chromium-1600/process-execution-diagram.png",
+  ]);
+});
+
+test("keeps the Product 2 browser contract desktop-only", async () => {
+  const productUiOwners = [
+    "docs/ARCHITECTURE.md",
+    "docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md",
+    "docs/BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md",
+    "docs/BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md",
+    "docs/BPM-PLATFORM-UI-DESIGN-SPEC.md",
+    "docs/IMPLEMENTATION-MAP.md",
+    "docs/PLAN.md",
+    "docs/TESTING-SPEC.md",
+    "docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md",
+    "docs/research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md",
+    "platform/README.md",
+    "platform/apps/web/README.md",
+    "showcase/platform-ui-quality/README.md",
+  ] as const;
+
+  for (const owner of productUiOwners) {
+    const source = await read(owner);
+    assert.doesNotMatch(source, /\bm\u006fbile\b/iu, `${owner} must not claim a small-screen product surface`);
+    assert.doesNotMatch(
+      source,
+      /four[- ]width|four exact widths|all four widths|(?:768|1024)[×x]900|chromium-(?:768|1024)/iu,
+      `${owner} must not retain the retired four-width browser contract`,
+    );
+  }
 });
 
 test("keeps feature styling inside CSS Modules and the exact UI token vocabulary", async () => {

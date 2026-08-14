@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented, independently closure-reviewed, and maintained.** The M3 shell, shared UI kit, feature CSS Modules, responsive collection, complete declared-state fixtures, real-host showcases, and deterministic four-width browser evidence implement this visual and interaction contract. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
+**Implemented, independently closure-reviewed, and maintained.** The M3 shell, shared UI kit, feature CSS Modules, responsive collection, complete declared-state fixtures, real-host showcases, and deterministic desktop browser evidence implement this visual and interaction contract. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Independent cold-review receipt
 
@@ -16,9 +16,9 @@ The context-cold proposal reviewer completed two warm correction rounds and appr
 
 ## Owner motivation and product vision
 
-The owner expects M3 to establish the visual and interaction foundation for the BPM platform, not merely make the current showcase pass. The product should look deliberate and professional at first contact, remain efficient for sustained work, and be reviewable in a real browser at 1600, 1280, 1024, and 768 CSS pixels.
+The owner expects M3 to establish the visual and interaction foundation for the BPM platform, not merely make the current showcase pass. The product should look deliberate and professional at first contact, remain efficient for sustained work, and be reviewable in a real browser at the primary 1280-pixel desktop width and a 1600-pixel wide viewport.
 
-The initial M3 browser review found weak hierarchy, oversized nested cards, redundant headings, cramped forms and actions, and task rows that did not adapt to their content width. The owner selected CSS Modules, asked for common React Aria practices, prohibited horizontal task-row scrolling, and required screenshot-driven correction across browser widths. CIB Seven and Camunda 8 may inform grouping and workflow, but the product must not copy their appearance or technology stack.
+The initial M3 browser review found weak hierarchy, oversized nested cards, redundant headings, cramped forms and actions, and task rows that did not adapt to their content width. The owner selected CSS Modules, asked for common React Aria practices, prohibited horizontal task-row scrolling, and required browser-driven functional correction across representative desktop widths. CIB Seven and Camunda 8 may inform grouping and workflow, but the product must not copy their appearance or technology stack.
 
 The project-specific result should improve on the references where possible: one coherent shell, full-content task work, container-responsive collections, honest retry and indeterminate states, accessible custom styling, and a diagram surface that explains both source-owned and generated presentation provenance.
 
@@ -32,7 +32,7 @@ The visual language is project-owned. The [pattern-first UI/UX and information-a
 
 Before production code for a material Product 2 UI/UX surface, inspect the analogous CIB Seven behavior first when it exists, using current documentation and the pristine pinned source checkout recorded in [SOURCES.md](SOURCES.md). Inspect at least one other established solution when it fills a CIB Seven gap or supplies a useful independent comparison. The owning research and product contract record the observed reference behavior, what this project will adopt, where it will deliberately deviate, and what it will exclude, plus the public engine or platform fact and acceptance oracle that support each decision. If no comparable product surface exists, record that absence instead of inventing a precedent. Do not copy source code, styling, assets, private data models, or product terminology.
 
-The preflight precedes red/green production work. Tests then lock the selected project behavior and at least one realistic reference-shaped alternative that would be wrong for this contract. Four-width geometry and screenshot review remain closure evidence; they do not replace the preflight or retroactively justify an interaction model.
+The preflight precedes red/green production work. Tests then lock the selected project behavior and at least one realistic reference-shaped alternative that would be wrong for this contract. Desktop geometry and interaction evidence remain the blocking closure oracle; an optional manually invoked screenshot may aid human review but does not replace the preflight or become a release gate.
 
 ## Technology and ownership
 
@@ -80,7 +80,7 @@ Primary actions use a filled accent button. Secondary navigation and low-risk co
 
 Tabs organize related views of one selected object. They must use the React Aria Tabs pattern once the shared component is introduced. Until that extraction, native roles, selected state, focus behavior, and keyboard behavior must remain equivalent. Tabs do not switch between unrelated products.
 
-Task collections use one native table, row, header-cell, and data-cell DOM at every width. Each data cell carries one visible responsive label in card mode; desktop headers are visually hidden only after those labels become visible. A collection-container query reflows the same row into a labeled card before controls or content need horizontal overflow. Desktop and card variants never duplicate task content or actions, and the task collection never uses `overflow-x: auto`, an inner horizontal scrollbar, clipped cells, or a second mobile-only DOM.
+Task collections use one native table, row, header-cell, and data-cell DOM at every width. Each data cell carries one visible responsive label in card mode; desktop headers are visually hidden only after those labels become visible. A collection-container query reflows the same row into a labeled card before controls or content need horizontal overflow. Table and card presentations never duplicate task content or actions, and the task collection never uses `overflow-x: auto`, an inner horizontal scrollbar, clipped cells, or a second viewport-specific DOM.
 
 Forms give each field a visible label, an explicit semantic type, compatible current value, validation state, and nearby completion action. Boolean is an explicit true-or-false choice rather than an unchecked checkbox whose absence could be confused with false. An incompatible value displays a blocking explanation and no editable control.
 
@@ -90,7 +90,7 @@ Diagrams receive a stable minimum working height and use the full content width.
 
 Responsive behavior is content-driven. The shell uses viewport breakpoints because it owns the viewport. A table, toolbar, form, or diagram uses a container query when its available width depends on surrounding composition.
 
-At 1600 px the UI should support efficient scanning without stretching text across the entire screen. At 1280 and 1024 px, navigation remains usable while collections reflow before controls wrap awkwardly. At 768 px, navigation moves above content, actions remain at least 44 CSS pixels in effective target size where practical, task rows become single-column groups, and the page has no horizontal overflow.
+At 1600 px the UI should support efficient scanning without stretching text across the entire screen. At 1280 px, navigation remains usable while collections reflow before controls wrap awkwardly. Narrower viewports may benefit from the same content-driven CSS, but they are not an MVP acceptance target and add no dedicated browser-test obligation.
 
 Responsive adaptation prefers this order:
 
@@ -118,15 +118,15 @@ Under `prefers-reduced-motion: reduce`, nonessential transitions, smooth scrolli
 
 The authoritative automated UI-quality lane belongs to Product 2 and is separate from `verify.sh`, Lean, semantic-core, BPMN-source semantic admission, CIB, differential, and Temporal refinement loops. It is path-filtered to `platform/ui-kit/`, `platform/apps/web/`, browser showcases, their public UI-facing contracts, and its own workflow/configuration. It also runs explicitly for M3 release acceptance and by manual dispatch. A semantic-only change does not install Chromium, build the web application, start the M3 host, or execute a screenshot comparison.
 
-The UI-quality lane serves a production-built web bundle with Vite preview and fixed closed API-boundary fixtures independent of Temporal. Four pinned Chromium projects use `1600x900`, `1280x900`, `1024x900`, and `768x900` viewports. At every width they assert `scrollWidth <= clientWidth` for the document, workspace content, task collection wrapper, every row or card, selected form, and diagram surface; every primary action's bounding box remains inside its owning surface. Fixtures include multiple task states and deliberately long task, Process, actor, group, and occurrence identities. Role/name, Tab and arrow-key behavior, focus transfer and fallback, retained completion context, and actual computed reduced-motion behavior are executable assertions.
+The UI-quality lane serves a production-built web bundle with Vite preview and fixed closed API-boundary fixtures independent of Temporal. Two pinned Chromium projects use `1280x900` and `1600x900` viewports. Both assert `scrollWidth <= clientWidth` for the document, workspace content, task collection wrapper, every row or card, selected form, and diagram surface; every primary action's bounding box remains inside its owning surface. Fixtures include multiple task states and deliberately long task, Process, actor, group, and occurrence identities. Role/name, Tab and arrow-key behavior, focus transfer and fallback, retained completion context, and actual computed reduced-motion behavior are executable assertions. The same functional command is required locally before push and in GitHub Actions.
 
-Committed `toHaveScreenshot` baselines cover the collection, selected form, and complete diagram workspace using production CSS. Pixel comparison is authoritative only in the digest-pinned Linux amd64 Playwright 1.62.1 container recorded by the Product 2 UI-quality workflow. The test waits for fonts, intercepted network completion, and diagram import, disables animation and carets, and masks no content. Ordinary CI never updates baselines. Expected, actual, diff, report, and retained trace artifacts are uploaded on failure. Manual baseline regeneration runs only visual tests in the same pinned environment and uploads candidates without changing the repository; every image diff requires human review before commit. macOS may run geometry and interaction checks but does not decide shared pixel baselines.
+One optional `toHaveScreenshot` assertion covers the wide Process-execution Diagram as a manual human-review aid. It runs only when explicitly requested in the digest-pinned Linux Playwright environment, waits for fonts and completed diagram rendering, disables animation and carets, and has no blocking CI or release role. Ordinary local and GitHub functional commands do not compare pixels or update the retained image. Manual regeneration uploads one candidate without changing the repository, and a human reviews it before any baseline commit.
 
-Automated measurements prove geometry and state, not visual quality. Screenshots are therefore inspected against this token, surface, hierarchy, and responsive contract. `@axe-core/playwright` is not selected: it would require its own pinned dependency and licence review and could only add an audit, never replace keyboard, focus, role, name, and state behavior tests.
+Automated measurements prove geometry, interaction, and state rather than subjective polish. Human browser review remains appropriate for material design changes, while the optional screenshot is a convenience rather than a regression contract. `@axe-core/playwright` is not selected: it would require its own pinned dependency and licence review and could only add an audit, never replace keyboard, focus, role, name, and state behavior tests.
 
 ## Exclusions
 
-This specification does not select a themed component framework, utility-CSS framework, CSS-in-JS runtime, router, generalized form library, chart library, or design-token build system. It does not copy CIB Seven styling. It does not require desktop and mobile DOM duplication when responsive CSS can preserve one accessible structure.
+This specification does not select a themed component framework, utility-CSS framework, CSS-in-JS runtime, router, generalized form library, chart library, or design-token build system. It does not copy CIB Seven styling. It does not require parallel viewport-specific DOM trees when responsive CSS can preserve one accessible structure.
 
 ## References
 

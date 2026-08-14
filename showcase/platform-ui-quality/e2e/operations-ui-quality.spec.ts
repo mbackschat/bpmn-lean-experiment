@@ -72,13 +72,6 @@ test("incident collection and full-width detail remain contained and focus-safe"
     await assertNoOverflow(rows.nth(index), `incident row ${index}`);
   }
   await assertOwnedActionsFit(collection);
-  if (test.info().project.name === "chromium-768") {
-    const columnCount = await rows.nth(1).evaluate((element) =>
-      getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length
-    );
-    expect(columnCount, "768px incident cards must use one content column").toBe(1);
-  }
-
   const selection = incidentSelection(page);
   await selection.click();
   const heading = page.getByRole("heading", {
@@ -318,64 +311,6 @@ test("empty and error audit states are explicit", async ({ browser }) => {
     await page.close();
   }
 });
-
-test("Operations incident collection visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openIncidents(page);
-  await waitForStableUi(page);
-  await expect(page.locator('[data-ui="operations-workspace"]')).toHaveScreenshot(
-    "operations-incident-collection.png",
-    screenshotOptions,
-  );
-});
-
-test("Operations incident Overview detail visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openIncident(page);
-  await waitForStableUi(page);
-  await expect(page.locator('[data-ui="incident-detail"]')).toHaveScreenshot(
-    "operations-incident-detail-overview.png",
-    screenshotOptions,
-  );
-});
-
-test("Operations incident Diagram detail visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openIncident(page);
-  await page.getByRole("tab", { name: "Diagram" }).click();
-  await waitForStableUi(page, { diagram: true });
-  await expect(page.locator('[data-ui="incident-detail"]')).toHaveScreenshot(
-    "operations-incident-detail-diagram.png",
-    screenshotOptions,
-  );
-});
-
-test("Operations Cancel confirmation visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openIncident(page);
-  await page.getByRole("button", { name: "Cancel Process", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Cancel root Process?" })).toHaveScreenshot(
-    "operations-cancel-dialog.png",
-    screenshotOptions,
-  );
-});
-
-test("Operations top audit visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openOperations(page);
-  await page.getByRole("tab", { name: "Audit" }).click();
-  await waitForStableUi(page);
-  await expect(page.locator('[data-ui="incident-audit"]')).toHaveScreenshot(
-    "operations-top-audit.png",
-    screenshotOptions,
-  );
-});
-
-const screenshotOptions = {
-  animations: "disabled" as const,
-  caret: "hide" as const,
-  scale: "css" as const,
-};
 
 async function openOperations(
   page: import("@playwright/test").Page,

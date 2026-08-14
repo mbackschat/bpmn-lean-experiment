@@ -454,13 +454,25 @@ Complete Product 2 M4 release acceptance, composing the real-host gate with the 
 ./scripts/pnpm.sh run test:release:m4
 ```
 
-Product 2 fixed-fixture responsive, focus, reduced-motion, and visual-regression gate; authoritative pixels run in the digest-pinned Linux container owned by its workflow:
+Product 2 fixed-fixture responsive, focus, reduced-motion, and interaction gate at the supported 1280-pixel and 1600-pixel desktop widths:
 
 ```sh
 ./scripts/pnpm.sh run test:ui-quality
 ```
 
-This path-filtered browser lane is independent from Temporal and remains outside `verify.sh` and every Product 1 semantic feedback loop.
+Before pushing a Product 2 UI-facing change, run the same composed entry point used by the ordinary path-filtered GitHub workflow:
+
+```sh
+./scripts/pnpm.sh run test:pre-push:ui
+```
+
+The optional manually reviewed wide-Diagram screenshot has no blocking CI or release role:
+
+```sh
+./scripts/pnpm.sh run test:ui-quality:visual
+```
+
+These browser lanes are independent from Temporal and remain outside `verify.sh` and every Product 1 semantic feedback loop.
 
 Keep the M1 gate as an independent unseen-source deployment regression floor when running M2.
 

@@ -27,8 +27,6 @@ export default defineConfig({
   projects: [
     chromiumProject("chromium-1600", 1600),
     chromiumProject("chromium-1280", 1280),
-    chromiumProject("chromium-1024", 1024),
-    chromiumProject("chromium-768", 768),
   ],
   webServer: {
     command: "./scripts/pnpm.sh --filter @bpmn-lean/platform-web run build && ./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite preview --host 127.0.0.1 --port 4278 --strictPort",

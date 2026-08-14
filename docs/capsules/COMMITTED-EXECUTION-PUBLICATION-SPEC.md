@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented, closure-reviewed, and evidence-closed on 2026-08-14.** The independently approved Product 1 checkpoint and final correction audit establish the semantic trace, current-position, strict-wire, Workflow Query, client, engine API, and Lean/TypeScript parity boundary. The completed continuation adds real Temporal retention, Worker-replacement, terminal-query, cyclic-activation, and replay evidence; a representation-free Product 2 gateway; transactional SQLite projection with exact overlap, gap, restart, and rebuild handling; authorized HTTP publication; and four-width History, Diagram, and canonical export evidence. Existing profile, source, RuntimeState, command-result, scenario, CIB, Workflow-result, and terminal-receipt bytes remain exact. This E1 increment does not close M5: the PLAN-owned frequency and duration views, operator-history completion, and audit export remain open.
+**Implemented, closure-reviewed, and evidence-closed on 2026-08-14.** The independently approved Product 1 checkpoint and final correction audit establish the semantic trace, current-position, strict-wire, Workflow Query, client, engine API, and Lean/TypeScript parity boundary. The completed continuation adds real Temporal retention, Worker-replacement, terminal-query, cyclic-activation, and replay evidence; a representation-free Product 2 gateway; transactional SQLite projection with exact overlap, gap, restart, and rebuild handling; authorized HTTP publication; and 1280/1600 functional History, Diagram, and canonical export evidence. Existing profile, source, RuntimeState, command-result, scenario, CIB, Workflow-result, and terminal-receipt bytes remain exact. This E1 increment does not close M5: the PLAN-owned frequency and duration views, operator-history completion, and audit export remain open.
 
 ## Independent cold-review receipt
 
@@ -353,7 +353,7 @@ The implemented owners are routed through the executable [publication contract c
 | [platform product boundary](../../scripts/platform-product-boundary.test.ts) | Keep opaque locators/private host facts out of public contracts and platform stores. |
 | [source hygiene](../../scripts/source-hygiene.test.ts) and [what-binds](../../scripts/what-binds.test.ts) | Enforce the named extractions, cohesive owners, registries, and reviewed headroom. |
 | [document reviewability](../../scripts/document-reviewability.test.ts), [independent-review policy](../../scripts/independent-review-policy.test.ts), and [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Require proposal, semantic-checkpoint, and closure receipts over immutable targets. |
-| [contributor setup and workflow isolation guard](../../scripts/contributor-setup.test.ts) over [the path-scoped UI-quality workflow](../../.github/workflows/ui-quality.yml) | Prove four-width/focus/overflow/visual behavior without adding Playwright or web builds to semantic Verify. |
+| [contributor setup and workflow isolation guard](../../scripts/contributor-setup.test.ts) over [the path-scoped UI-quality workflow](../../.github/workflows/ui-quality.yml) | Prove 1280/1600 focus, overflow, and interaction behavior without adding Playwright or web builds to semantic Verify; keep the one optional wide-Diagram screenshot manual. |
 
 This contract is material because it changes public observation, proof boundaries, and Temporal refinement, even though it changes no BPMN transition. Its proposal, semantic checkpoint, and closure reviews are recorded in the receipt above.
 

@@ -200,7 +200,7 @@ test("the semantic review packet is deterministic and digest-sensitive", () => {
 
 test("the semantic review packet inventories binary evidence by exact byte digests", () => {
   const binaryChangedFile = {
-    path: "showcase/platform-ui-quality/e2e/snapshots/example.spec.ts/chromium-768/diagram.png",
+    path: "showcase/platform-ui-quality/e2e/snapshots/execution-publication-ui-quality.spec.ts/chromium-1600/process-execution-diagram.png",
     binary: true,
     baselineSha256: null,
     targetSha256: "f".repeat(64),
@@ -249,6 +249,18 @@ test("the semantic review packet inventories binary evidence by exact byte diges
     }),
     /registered binary artifact/u,
   );
+  assert.throws(
+    () => assembleSemanticReviewPacket({
+      ...packetInput,
+      changedFiles: [{
+        path: "showcase/platform-ui-quality/e2e/snapshots/example.spec.ts/chromium-768/diagram.png",
+        binary: true,
+        baselineSha256: null,
+        targetSha256: "0".repeat(64),
+      }],
+    }),
+    /registered binary artifact/u,
+  );
 });
 
 test("the semantic review packet CLI accepts registered PNG evidence and refuses binary source", async () => {
@@ -256,7 +268,7 @@ test("the semantic review packet CLI accepts registered PNG evidence and refuses
   try {
     const pngRepository = path.join(temporaryRoot, "png");
     await initializeReviewRepository(pngRepository);
-    const pngPath = "showcase/platform-ui-quality/e2e/snapshots/example.spec.ts/chromium-768/diagram.png";
+    const pngPath = "showcase/platform-ui-quality/e2e/snapshots/execution-publication-ui-quality.spec.ts/chromium-1600/process-execution-diagram.png";
     await mkdir(path.join(pngRepository, path.dirname(pngPath)), { recursive: true });
     await writeFile(path.join(pngRepository, pngPath), new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x00]));
     commitAll(pngRepository, "add binary evidence");

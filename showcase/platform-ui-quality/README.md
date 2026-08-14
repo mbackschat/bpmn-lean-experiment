@@ -4,31 +4,37 @@ This isolated Playwright lane verifies the production-built BPM platform web app
 
 ## Scope
 
-The Chromium matrix is exactly 1600×900, 1280×900, 1024×900, and 768×900. Every project exercises the same semantic DOM and verifies the task collection, each responsive task row/card, selected task form, generated diagram, keyboard and tab behavior, focus transfer and return, and reduced-motion preference.
+The blocking Chromium matrix is exactly 1280×900 and 1600×900. Both projects exercise the same semantic DOM and verify the task collection, each responsive task row/card, selected task form, generated diagram, keyboard and tab behavior, focus transfer and return, and reduced-motion preference.
 
 The M4 Operations fixtures add two exact generation-1 incidents, collection and full-width detail navigation, the exact Diagram highlight, Retry response-loss recovery, Cancel confirmation and terminal rejection, paged action audit, explicit loading/empty/error/unavailable states, and recursive private-host-fact exclusion. The fixed HTTP boundary captures action URLs and JSON bytes so the lane can prove exact retry identity without starting Temporal or inferring a semantic fact from browser state.
 
-The M5 E1 fixture adds one exact committed-execution publication with repeated BPMN element identity under distinct activations. It proves fresh-detail loading, revision-ordered external/internal History, simultaneous token and active-wait Diagram markers, neutral scope containers, honest off-diagram positions, exact canonical download bytes and filename, stale-response invalidation, gap and malformed-export suppression, and recursive private-host-fact absence at all four widths.
+The M5 E1 fixture adds one exact committed-execution publication with repeated BPMN element identity under distinct activations. It proves fresh-detail loading, revision-ordered external/internal History, simultaneous token and active-wait Diagram markers, neutral scope containers, honest off-diagram positions, exact canonical download bytes and filename, stale-response invalidation, gap and malformed-export suppression, and recursive private-host-fact absence at both desktop widths.
 
 The geometry oracle checks each named owner directly, including its `scrollWidth <= clientWidth` invariant, so a clipped inner overflow cannot pass merely because the document itself does not scroll. The fixtures deliberately include multiple tasks and long task, process, actor, candidate-group, and occurrence identities.
 
-The committed screenshot assertions cover the task collection, selected form, generated-definition diagram, Operations incident collection, incident Overview actions, incident Diagram provenance, Cancel dialog, top-level incident audit, committed semantic History, and the multi-position execution Diagram. Animations and carets are disabled for capture, and the harness waits for network idle, fonts, and diagram rendering before comparing images.
+One optional screenshot assertion covers the 1600-pixel multi-position execution Diagram. It is a manually invoked human-review aid, not part of ordinary CI, release acceptance, or the functional regression contract. Animations and carets are disabled for capture, and the harness waits for network idle, fonts, and completed diagram rendering before comparing the image.
 
 ## Commands
 
-Run the deterministic functional lane on macOS while developing:
+Run the deterministic functional lane while developing and before a UI-facing commit:
 
 ```sh
 ./scripts/pnpm.sh --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:functional
 ```
 
-Run the complete gate only in the pinned Linux Chromium environment:
+Run the same blocking gate locally before pushing a UI-facing change:
 
 ```sh
 ./scripts/pnpm.sh run test:ui-quality
 ```
 
-Authoritative screenshot baselines are generated and reviewed only in the digest-pinned `mcr.microsoft.com/playwright:v1.62.1-noble` container declared by [the Product 2 UI-quality workflow](../../.github/workflows/ui-quality.yml). Do not generate or commit Darwin baselines. Start that workflow manually with `regenerate_baselines` enabled to run Playwright's explicit `--update-snapshots` option. The workflow uploads candidate images without modifying the repository. Review the complete image changes before copying them into a normal pull request. Ordinary local and CI commands never update baselines.
+Before pushing a change that also affects Product 2 platform packages or showcase typing, run the exact ordinary GitHub entry point:
+
+```sh
+./scripts/pnpm.sh run test:pre-push:ui
+```
+
+The optional screenshot is reviewed in the digest-pinned `mcr.microsoft.com/playwright:v1.62.1-noble` container declared by [the Product 2 UI-quality workflow](../../.github/workflows/ui-quality.yml). Start that workflow manually with `regenerate_baselines` enabled to run the one explicit screenshot with Playwright's `--update-snapshots` option. The workflow uploads one candidate without modifying the repository. Review it before copying it into a normal pull request. Ordinary local and CI commands neither compare nor update pixels.
 
 M3 and M4 release acceptance each compose their real Temporal-backed showcase with this deterministic UI-quality lane:
 
@@ -37,4 +43,4 @@ M3 and M4 release acceptance each compose their real Temporal-backed showcase wi
 ./scripts/pnpm.sh run test:release:m4
 ```
 
-This lane is intentionally absent from `scripts/verify.sh` and Product 1 feedback loops. A UI-quality failure does not slow or redefine semantic work, and semantic verification does not need a browser.
+This lane is intentionally absent from `scripts/verify.sh` and Product 1 feedback loops. A UI-quality failure does not slow or redefine semantic work, and semantic verification does not need a browser. The [three-level verification policy](../../docs/TESTING-SPEC.md#three-level-verification-policy) defines focused commit checks, exact pre-push workflow checks, and milestone/tag gates.

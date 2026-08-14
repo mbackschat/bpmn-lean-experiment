@@ -363,7 +363,7 @@ Excluded:
 - labels, defaults, requiredness, constraints, validation rules, files, dates, numbers, objects, form schema/runtime, form designer, or rendering templates;
 - claim/release as engine commands, metadata as engine completion admission, or any new BPMN transition or value meaning;
 - Event History, Visibility, Search Attributes, Workflow status, Run identity, Schedule identity, or state differencing as task facts;
-- stable live-task pagination, virtualization, routing, live push transport, offline UI, mobile application, or production release packaging.
+- stable live-task pagination, virtualization, routing, live push transport, offline UI, or production release packaging.
 
 ## Versioning consequences
 

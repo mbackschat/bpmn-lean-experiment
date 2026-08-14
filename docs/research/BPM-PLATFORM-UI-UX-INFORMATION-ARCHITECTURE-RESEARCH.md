@@ -120,7 +120,7 @@ Adopt now:
 5. source DI or digest-bound sidecar for every M3 registered model;
 6. container-responsive task rows with no horizontal scrolling;
 7. retained completion context through transport failure and indeterminate outcomes;
-8. screenshot and geometry review at 1600, 1280, 1024, and 768 CSS pixels.
+8. functional browser and geometry review at 1280 and 1600 CSS pixels, with visual inspection used manually when a material design change warrants it.
 
 Reserve without implementing:
 

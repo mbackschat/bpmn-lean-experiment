@@ -50,7 +50,7 @@ on:
   workflow_dispatch:
     inputs:
       regenerate_baselines:
-        description: Generate candidate Linux screenshot baselines as a downloadable artifact
+        description: Generate the optional wide Process Diagram screenshot candidate
         required: false
         default: false
         type: boolean
@@ -69,7 +69,7 @@ concurrency:
 
 jobs:
   ui-quality:
-    name: ui-quality (pinned Linux Chromium)
+    name: ui-quality (desktop Chromium)
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright@sha256:c091b21d9fae78c76e85cd4356431e9b018402f172a214fc7d7a5e9a7e29d8ac
@@ -109,10 +109,7 @@ jobs:
 
       - name: Verify Product 2 UI quality
         if: github.event_name != 'workflow_dispatch' || (inputs.regenerate_baselines != true && inputs.release_acceptance != true)
-        run: |
-          ./scripts/pnpm.sh run test:platform-operations-checkpoint
-          ./scripts/pnpm.sh run test:showcase:types
-          ./scripts/pnpm.sh run test:ui-quality
+        run: ./scripts/pnpm.sh run test:pre-push:ui
 
       - name: Verify Product 2 M1 through M4 release acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.release_acceptance == true && inputs.regenerate_baselines != true
@@ -122,11 +119,11 @@ jobs:
           ./scripts/pnpm.sh run test:showcase:m3-human-work
           ./scripts/pnpm.sh run test:release:m4
 
-      - name: Generate candidate Linux baselines
+      - name: Generate candidate wide Diagram baseline
         if: github.event_name == 'workflow_dispatch' && inputs.regenerate_baselines == true
         run: ./scripts/pnpm.sh run test:ui-quality:update-snapshots
 
-      - name: Upload candidate Linux baselines
+      - name: Upload candidate wide Diagram baseline
         if: github.event_name == 'workflow_dispatch' && inputs.regenerate_baselines == true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

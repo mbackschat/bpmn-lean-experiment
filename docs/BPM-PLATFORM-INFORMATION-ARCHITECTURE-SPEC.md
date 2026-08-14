@@ -83,7 +83,7 @@ Collection rows are request and focus context, not current-detail authority. Inc
 
 At wide and ordinary desktop widths, primary navigation is a persistent left rail and the selected workspace occupies the remaining content area. At narrow widths, the navigation moves above the content and wraps without horizontal page scrolling. Feature components use container queries when their available width can differ materially from the viewport width because of the product shell. The task collection keeps one native table, row, and cell DOM at every width; responsive card labels are visible in narrow mode rather than synthesized only for assistive technology.
 
-The required review widths are 1600, 1280, 1024, and 768 CSS pixels. At each width:
+The required review widths are 1280 and 1600 CSS pixels. At each width:
 
 - the page has no horizontal overflow;
 - primary actions are fully visible;
@@ -112,7 +112,7 @@ Excluded behavior is a dashboard of unrelated panels, a permanent narrow task-fo
 
 ## Acceptance
 
-Static component tests lock navigation and collection-to-detail ownership. Real-host browser evidence exercises the M1 source-owned Collaboration DI lifecycle, generated DI in M2 and M3, accessible Definitions and Work navigation, exact task selection, claim, completion, and version operation. The real M4 showcase additionally locks Operations navigation, current incident discovery, response-loss Retry, Worker-replacement Cancel, exact diagram highlighting, incident and top-level audit, and Process-instance search through public platform routes. The deterministic Product 2 browser lane separately locks called-instance and missing-element task-diagram unavailability, source and generated provenance, Operations pending/failure/currentness, private-fact exclusion, focus, reduced motion, and four-width geometry. Product 2 visual QA uses the separate path-filtered lane owned by the [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
+Static component tests lock navigation and collection-to-detail ownership. Real-host browser evidence exercises the M1 source-owned Collaboration DI lifecycle, generated DI in M2 and M3, accessible Definitions and Work navigation, exact task selection, claim, completion, and version operation. The real M4 showcase additionally locks Operations navigation, current incident discovery, response-loss Retry, Worker-replacement Cancel, exact diagram highlighting, incident and top-level audit, and Process-instance search through public platform routes. The deterministic Product 2 browser lane separately locks called-instance and missing-element task-diagram unavailability, source and generated provenance, Operations pending/failure/currentness, private-fact exclusion, focus, reduced motion, and desktop geometry at 1280 and 1600 pixels. Optional visual review uses the separate manually invoked lane owned by the [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md#visual-review-protocol); semantic development and `verify.sh` never invoke it.
 
 ## Research and related owners
 

@@ -61,13 +61,6 @@ test("task collection remains usable and contained at the declared viewport", as
   for (let index = 1; index < await rows.count(); index += 1) {
     await assertNoOverflow(rows.nth(index), `task row ${index}`);
   }
-  if (test.info().project.name === "chromium-768") {
-    const firstTaskRow = rows.nth(1);
-    const columnCount = await firstTaskRow.evaluate((element) =>
-      getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length
-    );
-    expect(columnCount, "768px task cards must use one content column").toBe(1);
-  }
   await assertOwnedActionsFit(page.getByRole("region", { name: "Tasks" }));
 
   await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeVisible();
@@ -254,45 +247,6 @@ test("pending completion disables duplicate submission", async ({ page }) => {
   await expect(complete).toBeDisabled();
   await expect(page.getByRole("heading", { name: "Tasks" })).toBeFocused();
 });
-
-test("task collection visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openFixture(page);
-  await waitForStableUi(page);
-  await expect(page.getByRole("region", { name: "Tasks" })).toHaveScreenshot(
-    "task-collection.png",
-    screenshotOptions,
-  );
-});
-
-test("selected form visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openFixture(page);
-  await page.getByRole("button", { name: fixtureLabels.task }).click();
-  await waitForStableUi(page);
-  await expect(page.getByRole("region", { name: "Tasks" })).toHaveScreenshot(
-    "selected-form.png",
-    screenshotOptions,
-  );
-});
-
-test("generated definition diagram visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openFixture(page);
-  await page.getByRole("button", { name: "Definitions" }).click();
-  await waitForStableUi(page, { diagram: true });
-  await expect(page.getByText("Generated layout", { exact: true })).toBeVisible();
-  await expect(page.getByRole("region", {
-    name: `Complete diagram workspace for ${fixtureLabels.process}, version 7`,
-    exact: true,
-  })).toHaveScreenshot("definition-generated-diagram.png", screenshotOptions);
-});
-
-const screenshotOptions = {
-  animations: "disabled" as const,
-  caret: "hide" as const,
-  scale: "css" as const,
-};
 
 async function assertNoOverflow(locator: import("@playwright/test").Locator, label: string) {
   const findings = await horizontalOverflowFindings(locator);

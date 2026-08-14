@@ -13,7 +13,7 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const digestPattern = /^[0-9a-f]{64}$/u;
 const commitPattern = /^[0-9a-f]{40}$/u;
 const uiSnapshotPattern =
-  /^showcase\/platform-ui-quality\/e2e\/snapshots\/[^/]+\.spec\.ts\/chromium-(?:768|1024|1280|1600)\/[^/]+\.png$/u;
+  /^showcase\/platform-ui-quality\/e2e\/snapshots\/execution-publication-ui-quality\.spec\.ts\/chromium-1600\/process-execution-diagram\.png$/u;
 const mavenWrapperJar = "runners/cibseven/.mvn/wrapper/maven-wrapper.jar";
 
 const ReviewPacketStage = Object.freeze({

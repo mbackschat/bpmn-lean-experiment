@@ -151,19 +151,9 @@ test("tab abandonment and Back invalidate delayed execution responses", async ({
   await expect(selection).toBeFocused();
 });
 
-test("Process execution History visual @visual", async ({ page }) => {
-  test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
-  await openExecutionDetail(page);
-  await page.getByRole("tab", { name: "History" }).click();
-  await waitForStableUi(page);
-  await expect(page.locator('[data-ui="process-execution-detail"]')).toHaveScreenshot(
-    "process-execution-history.png",
-    screenshotOptions,
-  );
-});
-
 test("Process execution Diagram visual @visual", async ({ page }) => {
   test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
+  test.skip(test.info().project.name !== "chromium-1600", "Manual visual review uses one wide desktop viewport.");
   await openExecutionDetail(page);
   await page.getByRole("tab", { name: "Diagram" }).click();
   await waitForStableUi(page, { diagram: true });
