@@ -12,6 +12,10 @@
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
+## Lean assurance selection
+
+The Lean lane is **proved**. Under the existing valid-Program and valid-RuntimeState hypotheses, it must prove that applying one accepted lifecycle delta creates each fresh anchor once, consumes each terminal anchor once, and yields exactly the independently projected open-anchor set. Separate quantified laws cover exact owned-subtree cancellation for interruption, error propagation, termination, and incident-root cancellation, plus preservation of occurrences outside the removed subtree. The proof effort is bounded to every operation and stimulus family admitted when this capsule is approved; a future admitted family must extend the exhaustive relation before it can publish occurrences. If exact fold soundness or owned-subtree cancellation cannot be proved without assuming the desired open set, implementation stops and records that precise boundary rather than weakening the lane to checked fixtures.
+
 ## Question and recommendation
 
 How should the engine make exact flow-node frequency and elapsed duration publicly recoverable without Product 2 counting semantic operations, interpreting Semantic Process IL, reading Temporal Event History, differencing states, or treating ingestion time as execution time?
@@ -51,19 +55,46 @@ Camunda Optimize independently confirms the useful analytical distinction betwee
 4. Add a separate strict occurrence publication aligned record-for-record and batch-for-batch with `bpmn-lean.execution-publication.v1`. Preserve the existing E1 Query, schema, canonical bytes, export, and Product 2 projection exactly.
 5. Capture one replay-stable, nondecreasing `committedAtEpochMs` from the deterministic Temporal Workflow clock after stable semantic closure and before atomically appending both publications and resolving the command. Every transition in that command batch shares the instant.
 6. Define elapsed duration as terminal batch commit time minus start batch commit time. Include completed occurrences only; keep running and cancelled occurrences in frequency and status counts; allow same-batch duration zero; never substitute semantic logical time, Product 2 ingestion time, audit time, or Event History analysis.
-7. Reconcile and store occurrence pages transactionally from revision zero. Aggregate every confirmed Process instance for one exact deployed definition version, with a maximum population of 100 in this first increment. Any over-limit, unknown, unavailable, malformed, identity-drifted, or gapped member makes the whole metric result unavailable rather than partial.
-8. Add one definition-version **Flow-node metrics** detail with Frequency and Duration modes, numeric diagram badges, the same exact values in a table, and a visible “all retained evidence” population statement. Functional acceptance covers 1280 and 1600 CSS pixels.
+7. Reconcile and store occurrence pages transactionally from revision zero. Linearize one request-start population of every confirmed hosting instance for one exact deployed definition version, with a maximum of 100 in this first increment. Any over-limit, unknown, unavailable, malformed, identity-drifted, gapped, or overflowed member makes the whole metric result unavailable rather than partial.
+8. Add one definition-version **Flow-node metrics** detail with Frequency and Duration modes. Frequency badges show exact occurrence count, Duration badges show exact floored completed average in milliseconds, and the table carries every status and completed-duration value. The surface states its request-start “all retained evidence” population and has explicit zero-sample and unavailable states. Functional acceptance covers 1280 and 1600 CSS pixels.
 9. Exclude adjustable time periods, heatmaps, color-only encoding, charts, report builders, dashboards, saved views, variants, conformance, prediction, metric export, operator audit, mobile-specific layouts, and pixel-regression baselines from this increment.
 
 ## Public contract
 
-The semantic root emits an unnumbered occurrence delta beside each existing unnumbered committed transition. It uses a private semantic anchor only to pair a later terminal boundary with the exact start. Runtime-backed waits and Call Activities use their existing occurrence identity, embedded Sub-Processes use their existing scope occurrence, and an occurrence that starts and ends in one transition uses a transition-local anchor. The anchor never enters the public wire or Product 2.
+The semantic root emits an unnumbered occurrence delta beside each existing unnumbered committed transition. It uses a private semantic anchor only to pair a later terminal boundary with the exact start. Runtime-backed waits use their existing occurrence identity, Call Activities use their existing called-Process occurrence identity, embedded Sub-Processes use their existing scope occurrence, and an occurrence that starts and ends in one transition uses a transition-local anchor. The anchor never enters the public wire or Product 2.
 
 ```ts
 enum FlowNodeOccurrenceTerminalKind {
   Completed = "completed",
   Cancelled = "cancelled",
 }
+
+enum SemanticFlowNodeOccurrenceAnchorKind {
+  Wait = "wait",
+  Scope = "scope",
+  CallActivity = "callActivity",
+  Transition = "transition",
+}
+
+type SemanticFlowNodeOccurrenceAnchor =
+  | DeepReadonly<{
+      kind: SemanticFlowNodeOccurrenceAnchorKind.Wait;
+      id: OccurrenceId;
+    }>
+  | DeepReadonly<{
+      kind: SemanticFlowNodeOccurrenceAnchorKind.Scope;
+      id: ScopeOccurrenceId;
+    }>
+  | DeepReadonly<{
+      kind: SemanticFlowNodeOccurrenceAnchorKind.CallActivity;
+      id: OccurrenceId;
+    }>
+  | DeepReadonly<{
+      kind: SemanticFlowNodeOccurrenceAnchorKind.Transition;
+      commandId: string;
+      transitionIndex: number;
+      localIndex: number;
+    }>;
 
 type UnnumberedFlowNodeOccurrenceStart = DeepReadonly<{
   anchor: SemanticFlowNodeOccurrenceAnchor;
@@ -82,6 +113,8 @@ type UnnumberedFlowNodeOccurrenceDelta = DeepReadonly<{
   ended: UnnumberedFlowNodeOccurrenceEnd[];
 }>;
 ```
+
+The four tags are disjoint collision namespaces. Their total order is `wait`, `scope`, `callActivity`, then `transition`; within a tag, comparison is lexicographic over every scalar field of the complete nested identity in declaration order. `transitionIndex` is the zero-based position in the command's unnumbered semantic trace. `localIndex` is assigned after instantaneous starts in that transition are ordered by Process ID, element ID, and complete owner identity. A transition anchor is legal only for one start and one terminal in the same delta and is never retained. Duplicate complete anchors, a reused open anchor, two terminals for one anchor, or a transition anchor that crosses a delta make publication fail closed.
 
 The evaluator derives this delta at the same boundary where it already owns the exact selected external stimulus or internal operation and both RuntimeStates. It does not replay the evaluator and does not infer lifecycle from a later state difference. The public projection fails closed unless every ended anchor resolves to exactly one currently open occurrence, every start anchor is new, every element and owner are exact, and the resulting open set agrees with an independent projection of the committed RuntimeState.
 
@@ -144,7 +177,9 @@ type FlowNodeOccurrencePage = DeepReadonly<{
 }>;
 ```
 
-`startRevision` is the exact existing semantic transition revision whose lifecycle delta starts the occurrence. `startIndex` is the occurrence's zero-based position in that transition's canonically ordered `started` collection. `processId` is the exact BPMN Process owning the flow node, including a distinct called Process when applicable. Started entries are ordered by complete semantic anchor, Process ID, element ID, and owner before the public IDs are assigned. Ended and current-open entries are ordered by complete public occurrence identity. The public decoder rejects duplicate IDs, sparse or reordered start indexes, a terminal before its start, a repeated terminal, inconsistent Process, element, or owner identity, a terminal time before its start, or a current-open set unequal to the complete fold.
+`startRevision` is the exact existing semantic transition revision whose lifecycle delta starts the occurrence. `startIndex` is the occurrence's zero-based position in that transition's canonically ordered `started` collection. `FlowNodeOccurrenceId.processInstanceId` is always the hosting Process instance named by the page, including when a flow node belongs to a called Process inside that host. `processId` and `owner` retain the exact called semantic Process and scope identity. Started entries are ordered by complete semantic anchor, Process ID, element ID, and owner before the public IDs are assigned. Ended and current-open entries are ordered by complete public occurrence identity.
+
+The representation-free transport decoder validates strict shape, public identity, visible range and batch equations, canonical order, duplicate IDs in the visible suffix, safe times, and same-transition starts before ends. From revision zero, the producer, Product 1 client, and Product 2 reconciler additionally fold from the empty open map and can reject a terminal before its start, a repeated terminal, identity drift, time reversal, or a head `currentOpen` unequal to the complete fold. At a positive cursor, the transport decoder does not invent or validate the unseen prefix. The Workflow producer starts from its authoritative stored open map, and Product 2 starts from the exact open map retained at `requestedAfterRevision`; each requires the retained revision to equal the request cursor, applies every transition's starts before its ends, and advances only when the folded suffix is valid. When the page reaches `headRevision`, the fold must equal `currentOpen`; before the head, `currentOpen` is null and the reconciler retains its derived intermediate open map for the next exact cursor.
 
 The dedicated `bpmn-flow-node-occurrences` Query uses the existing result arms `available`, `notReady`, `notFound`, `unavailable`, and `gap`, plus the same request `{ afterRevision, limit? }`, default 50, maximum 100, complete-batch paging, and batch-boundary cursor rules as E1. Every occurrence batch must have the same command ID, range, transition revisions, and head as the corresponding E1 batch. A transition with no lifecycle change remains present with two empty collections. `currentOpen` is non-null exactly at the head.
 
@@ -177,9 +212,24 @@ type FlowNodeMetricsSnapshot = DeepReadonly<{
   };
   flowNodes: FlowNodeMetric[];
 }>;
+
+enum FlowNodeMetricsResultKind {
+  Available = "available",
+  Unavailable = "unavailable",
+}
+
+type FlowNodeMetricsResult =
+  | DeepReadonly<{
+      kind: FlowNodeMetricsResultKind.Available;
+      snapshot: FlowNodeMetricsSnapshot;
+    }>
+  | DeepReadonly<{
+      kind: FlowNodeMetricsResultKind.Unavailable;
+      reason: "flowNodeMetricsUnavailable";
+    }>;
 ```
 
-The aggregate includes exactly the published occurrences whose `processId` equals the selected deployed definition's `processId`; called-Process interiors never appear on the caller's diagram or in its table. Only elements with `frequency > 0` appear. For every included flow node, `frequency = running + completed + cancelled`. `completedDuration` is null exactly when `completed = 0`; otherwise `sampleCount = completed`, minimum and maximum are exact safe integers, and `averageMs` is the integer floor of the arbitrary-precision total divided by `sampleCount`. Counts and durations must remain safe integers or the snapshot is unavailable. Flow nodes are ordered by canonical element ID. The route is an Operations-authorized exact-definition-version read. The response exposes no locator, Workflow identity, Program operation, semantic anchor, private control place, or CIB identifier.
+The aggregate includes exactly the published occurrences whose `processId` equals the selected deployed definition's `processId`; called-Process interiors published inside a caller's hosting page never appear on the caller's diagram or in its table. They remain excluded from metrics until Product 2 owns a separately confirmed population for that exact called definition version. Only elements with `frequency > 0` appear. For every included flow node, `frequency = running + completed + cancelled`. `completedDuration` is null exactly when `completed = 0`; otherwise `sampleCount = completed`, minimum and maximum are exact safe integers, and `averageMs` is the integer floor of the arbitrary-precision total divided by `sampleCount`. Counts and durations must remain safe integers or the result is unavailable. Flow nodes are ordered by canonical element ID. The route is an Operations-authorized exact-definition-version read. The unavailable arm contains no partial snapshot, member identity, locator, or diagnostic detail. Neither arm exposes Workflow identity, Program operation, semantic anchor, private control place, or CIB identifier.
 
 ## Stable rules
 
@@ -192,15 +242,19 @@ The lifecycle mapping is exhaustive over the currently admitted operation and co
 | Semantic boundary | Flow-node lifecycle |
 |---|---|
 | Process start operation | Start Event starts and completes. The root Process is not a flow node. |
-| Task, Intermediate Catch Event, or Event-Based Gateway candidate becomes a committed wait | Its exact flow node starts. |
-| User Task, Message, Timer, or effect completion | The exact wait-owning occurrence completes. Incident report and retry leave the Service Task occurrence open. |
-| Event-Based Gateway arms candidates | The Gateway starts and completes; each candidate Catch Event starts. Winner completes and every withdrawn loser cancels. |
+| User Task, standalone Message or Timer Catch Event, or Service Task becomes a committed wait outside Event-Based Gateway arming | Its exact wait-owning flow node starts. Incident report and retry leave the Service Task occurrence open. |
+| User Task completion, standalone Message delivery, standalone Timer firing, or successful effect completion selecting the normal output | The exact wait-owning occurrence completes. These branches do not handle Event-Based candidates, Boundary Timers, or a `bpmnError` result. |
+| Event-Based Gateway arms candidates | The Gateway starts and completes; each candidate Catch Event starts exactly once during arming. A later winning Message delivery or Timer firing completes the winner and cancels every withdrawn loser without starting another Gateway or candidate occurrence. |
+| Interrupting Boundary Timer firing | The Boundary Event starts and completes in the firing transition, and the exact attached host occurrence cancels. Arming the private Timer subscription starts no Boundary Event occurrence. |
+| Non-interrupting Boundary Timer firing | The Boundary Event starts and completes in the firing transition while the exact attached host occurrence remains open. Arming the private Timer subscription starts no Boundary Event occurrence. |
+| Matching interrupting `bpmnError` effect result | The Service Task occurrence cancels, normal Service Task completion is abandoned, and the matching Boundary Error Event starts and completes atomically in the same transition. |
 | Embedded Sub-Process entry and normal quiescent completion | One Sub-Process occurrence starts on entry and completes when that exact child scope completes. |
 | Call Activity invoke and exact return | One Call Activity occurrence starts on invoke and completes on the matching return. The called root Process is not a flow node. |
 | Exclusive, Parallel, or Inclusive Gateway operation | The Gateway starts and completes in that transition. Multiple outgoing tokens do not multiply the Gateway occurrence. |
 | ordinary None End, Error End, or Terminate End | The End Event starts and completes; any live occurrences removed by error propagation or termination cancel. |
-| Boundary Event catch | The Boundary Event starts and completes when it catches. Arming its subscription starts no Boundary Event occurrence. Interrupting catch cancels the host; non-interrupting catch leaves the host open. |
 | root incident cancellation | Every open flow-node occurrence in the removed root region cancels; no synthetic cancellation flow node is created. |
+
+Within one delta, all canonically ordered starts are applied before any terminal. This makes an instantaneous occurrence a valid same-transition start followed by its one terminal. A rejected, rolled-back, semantic-failure, unsupported, closure-bound, or ambiguous command publishes no lifecycle delta or commit time.
 
 ### FNOM-TIME-01: replay-stable commit time
 
@@ -212,11 +266,13 @@ Occurrence pages preserve the E1 definition, Process, instance, command, revisio
 
 ### FNOM-AGGREGATE-01: complete exact-version population
 
-Product 2 aggregates only fully reconciled confirmed hosting instances of one exact deployed definition version, then includes only occurrence rows owned by that definition's Process ID. The first increment supports zero through 100 such registrations, so a definition with no instances has an available empty snapshot. Any missing, unavailable, gapped, malformed, over-limit, overflowed, or identity-drifted member suppresses the whole snapshot. Frequency counts starts. Duration uses completed occurrences only.
+Product 2 linearizes membership at request start with one private repository read ordered by durable registration ordinal. That read accepts the complete selected `DeployedDefinitionVersion`, fetches at most 101 confirmed candidates for its indexed identity, strictly decodes each row, and requires every full retained definition version to equal the request. Zero through 100 exact members form the immutable cut for this request; row 101 makes the result unavailable. A registration confirmed after the cut belongs to the next request and cannot change the in-flight result.
+
+Each cut member is reconciled from its exact retained cursor to the head returned by its final successful Query, then the aggregate includes only occurrence rows owned by the selected definition's Process ID. The result does not claim a globally simultaneous cross-instance head or cross-instance time order. Any missing, unavailable, gapped, malformed, overflowed, or identity-drifted member suppresses the whole snapshot and yields the one privacy-preserving unavailable arm. A definition with no members has an available empty snapshot. Frequency counts starts. Duration uses completed occurrences only.
 
 ### FNOM-SURFACE-01: honest metric presentation
 
-The definition-version workspace renders one Flow-node metrics detail. Frequency and Duration are explicit modes. Diagram badges and the table show the same exact values, and color is never the only carrier. A called-Process occurrence is not overlaid on the caller diagram. The surface states that its population is all retained evidence. It does not imply a selected calendar interval, current-only population, estimate, SLA, or CIB equivalence.
+The definition-version workspace renders one Flow-node metrics detail. Frequency and Duration are explicit modes. Frequency badges show the exact integer `frequency`. Duration badges show the exact floored `averageMs` followed by `ms`. The table always shows frequency, running, completed, and cancelled counts; its duration columns show sample count, minimum, maximum, and floored average in milliseconds. When `completed = 0`, Duration mode shows no badge for that element and the table shows the exact marker `No completed samples`. An unavailable result suppresses every badge and metric table value and renders one non-actionable alert, `Flow-node metrics are unavailable.`, plus Retry. A called-Process occurrence is not overlaid on the caller diagram. An available surface states `All retained evidence` with the exact Process-instance count and means the request-start membership cut at each member's reconciled head, not a globally simultaneous snapshot. It does not imply a selected calendar interval, current-only population, estimate, SLA, or CIB equivalence.
 
 ## Temporal hosting and refinement preflight
 
@@ -232,15 +288,15 @@ The smallest executable refinement witness starts one Process that reaches a Use
 
 The smallest semantic witness is a sequential Start Event to User Task to End Event Process. One start command emits Start Event start/completion and one User Task start. One completion command ends that same User Task and starts/completes the End Event. Counting semantic operations instead would count the Start and End mechanics differently and cannot pair the User Task across commands.
 
-A Call Activity witness is mandatory because `invokeProcess` and `returnProcess` share one BPMN origin but constitute one occurrence. An embedded Sub-Process witness provides the independent second instance of the same defect with `enterScope` and `completeScope`. A Boundary Timer witness separates subscription arming from Boundary Event execution. An Event-Based Gateway witness separates candidate starts, one completed winner, and one cancelled loser.
+A Call Activity witness is mandatory because `invokeProcess` and `returnProcess` share one BPMN origin but constitute one occurrence. An embedded Sub-Process witness provides the independent second instance of the same defect with `enterScope` and `completeScope`. A Boundary Timer witness separates subscription arming from Boundary Event execution. A matching Boundary Error witness separates successful effect completion from Service Task cancellation plus atomic Boundary Event start/completion. An Event-Based Gateway witness separates candidate starts, one completed winner, and one cancelled loser.
 
 | Rule | Lean | TypeScript core | Temporal/Product 1 | Product 2 | Separating mutation |
 |---|---|---|---|---|---|
-| `FNOM-OCCURRENCE-01` | exact lifecycle relation and fold | same-root lifecycle projection | assigns public IDs only after stable closure | strict closed decoder only | count Invoke/Return or Enter/Complete as two occurrences |
+| `FNOM-OCCURRENCE-01` | proved lifecycle relation, exact fold, and owned-subtree cancellation | independent same-root open-set projection | assigns public IDs only after stable closure | strict closed decoder only | count Invoke/Return or Enter/Complete twice; complete a matching-error Service Task; start an armed Boundary Timer |
 | `FNOM-TIME-01` | time deliberately absent | time deliberately absent | deterministic one-sample batch clock and replay | consumes published time only | substitute logical time, ingestion time, or one time per record |
-| `FNOM-PUBLICATION-01` | unnumbered delta parity | exact anchor and current-open projection | E1-aligned atomic Query | transactional contiguous projection | skip a revision, change command ID, terminal unknown ID, duplicate terminal |
-| `FNOM-AGGREGATE-01` | not applicable | not applicable | typed unavailable and gap arms | all-or-error exact-version aggregation | omit one confirmed instance or return partial after one unavailable member |
-| `FNOM-SURFACE-01` | not applicable | no Product 2 knowledge | representation-free gateway | two modes, badges, table, population label | badge/table disagreement, color-only value, stale response, private identity |
+| `FNOM-PUBLICATION-01` | unnumbered delta parity | exact anchor and current-open projection | E1-aligned atomic Query with authoritative positive-cursor open map | transactional contiguous projection from retained open map | skip a revision, change command ID, terminal unknown ID, duplicate terminal, invent an empty positive-cursor anchor |
+| `FNOM-AGGREGATE-01` | not applicable | not applicable | typed unavailable and gap arms | request-start membership cut and all-or-error exact-version aggregation | zero, 100, and 101 members; concurrent registration; malformed member; overflow; called-interior inclusion; partial unavailable result |
+| `FNOM-SURFACE-01` | not applicable | no Product 2 knowledge | representation-free gateway | exact Frequency and average-ms badges, full table, population label, unavailable alert | badge/table disagreement, zero-completion badge, color-only value, stale response, private identity |
 
 ## Required, optional, and excluded functionality
 
@@ -252,7 +308,8 @@ Required:
 - deterministic batch commit time with replay, duplicate-command, rollback, and nondecreasing-time evidence;
 - strict Query, client, engine API, gateway, Product 2 contract, schema, transactional projection, restart, and revision-zero rebuild;
 - all-or-error exact-definition aggregation over at most 100 confirmed instances;
-- Frequency and Duration modes with numeric diagram badges, an accessible exact-value table, visible population semantics, currentness, focus, and no horizontal overflow at 1280 and 1600 CSS pixels.
+- request-start membership linearization with zero, 100, 101, concurrent-registration, malformed-member, overflow, and called-interior exclusion evidence;
+- Frequency and Duration modes with exact frequency and average-millisecond diagram badges, the complete accessible metric table, zero-sample and unavailable states, visible population semantics, currentness, focus, and no horizontal overflow at 1280 and 1600 CSS pixels.
 
 Optional only when it changes no selected claim:
 
@@ -290,6 +347,8 @@ The implementation must not grow crowded generic owners. The measured existing o
 | [`packages/engine-api/src/process-observation.ts`](../../packages/engine-api/src/process-observation.ts) | 550 | Add one representation-free occurrence observation capability without exposing Program or Workflow identity. |
 | [`platform/contracts/src/execution-publications.ts`](../../platform/contracts/src/execution-publications.ts) | 231 | Keep E1 mirror exact and introduce separate occurrence and aggregate contracts. |
 | [`platform/contracts/src/execution-publication-decoders.ts`](../../platform/contracts/src/execution-publication-decoders.ts) | 193 | Keep E1 decoder exact and introduce separate occurrence and aggregate decoders. |
+| [`platform/modules/operate/src/contracts.ts`](../../platform/modules/operate/src/contracts.ts) | 549 | Add the exact-version bounded membership-read capability without exposing the private registration representation. |
+| [`platform/modules/operate/src/sqlite-process-instance-repository.ts`](../../platform/modules/operate/src/sqlite-process-instance-repository.ts) | 365 | Add one indexed, ordinal-ordered, at-most-101 request-start membership query with full-version validation. |
 | [`platform/modules/operate/src/sqlite-execution-publication-repository.ts`](../../platform/modules/operate/src/sqlite-execution-publication-repository.ts) | 117 | Do not combine stores; use a new occurrence repository and schema tables. |
 | [`platform/modules/operate/src/execution-publication-reconciliation-service.ts`](../../platform/modules/operate/src/execution-publication-reconciliation-service.ts) | 336 | Preserve E1 behavior and use separate occurrence reconciliation and aggregate owners. |
 | [`platform/apps/web/src/definition-workspace.tsx`](../../platform/apps/web/src/definition-workspace.tsx) | 411 | Add only navigation and request delegation to a cohesive Flow-node metrics detail. |
@@ -314,7 +373,7 @@ This proposal is material because it changes public observation, proof boundarie
 
 ## Epistemic closure and cost boundary
 
-The exact claim is that every currently admitted BPMN flow-node execution has one publicly recoverable start and one completed or cancelled terminal, that the publication is aligned to the existing semantic transition revisions, and that completed elapsed duration uses one replay-stable engine commit instant at each boundary. Product 2 can reconstruct the same complete exact-version aggregate from revision zero or report unavailability.
+The exact claim is that every currently admitted BPMN flow-node execution has one publicly recoverable start and one completed or cancelled terminal, that the proved Lean relation and independent TypeScript projection agree on the open set, that the publication is aligned to the existing semantic transition revisions, and that completed elapsed duration uses one replay-stable engine commit instant at each boundary. Product 2 can reconstruct the complete request-start exact-version population from revision zero or report unavailability.
 
 The nearest unsupported claims are BPMN performance semantics, physical CPU time, globally ordered wall time, adjustable time windows, statistical significance, percentile or outlier analysis, Process variants, conformance, prediction, post-retention recovery, and complete M5 closure.
 
