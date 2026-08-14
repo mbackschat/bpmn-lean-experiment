@@ -184,6 +184,7 @@ test("preserves legacy public API error order and appends route-specific codes",
     "formValueIncompatible",
     "workSnapshotUnavailable",
     "incidentSnapshotUnavailable",
+    "executionPublicationUnavailable",
   ]);
 });
 
@@ -201,6 +202,7 @@ test("legacy Definition, Schedule, Message, and Search sets reject every later r
     PublicApiErrorCode.FormValueIncompatible,
     PublicApiErrorCode.WorkSnapshotUnavailable,
     PublicApiErrorCode.IncidentSnapshotUnavailable,
+    PublicApiErrorCode.ExecutionPublicationUnavailable,
   ];
   for (const route of legacyRoutes) {
     for (const code of laterRouteCodes) {

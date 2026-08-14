@@ -109,6 +109,7 @@ export const PublicApiErrorCode = {
   FormValueIncompatible: "formValueIncompatible",
   WorkSnapshotUnavailable: "workSnapshotUnavailable",
   IncidentSnapshotUnavailable: "incidentSnapshotUnavailable",
+  ExecutionPublicationUnavailable: "executionPublicationUnavailable",
 } as const;
 
 export type PublicApiErrorCode =
