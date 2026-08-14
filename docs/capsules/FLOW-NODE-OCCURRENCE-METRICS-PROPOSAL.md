@@ -2,13 +2,13 @@
 
 ## Status
 
-**Draft proposal; owner approval has not been requested and implementation is not authorized.** This proposal selects one additive Product 1 publication for exact BPMN flow-node occurrence lifecycles and replay-stable commit times, plus the smallest Product 2 frequency and completed-duration surface for one exact definition version. It changes public observation and Temporal refinement, but no BPMN meaning, profile capability, CIB relationship, admitted source, Semantic Process IL operation, RuntimeState field, or command outcome.
+**Independently proposal-reviewed; owner approval has not been requested and implementation is not authorized.** This proposal selects one additive Product 1 publication for exact BPMN flow-node occurrence lifecycles and replay-stable commit times, plus the smallest Product 2 frequency and completed-duration surface for one exact definition version. It changes public observation and Temporal refinement, but no BPMN meaning, profile capability, CIB relationship, admitted source, Semantic Process IL operation, RuntimeState field, or command outcome.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `25034641c5566bfd9e0dbc5c99b9ded673c7922b` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `25034641c5566bfd9e0dbc5c99b9ded673c7922b` | `fork-turns-none` | `approve-with-required-edits` | `5a75af9e18937f3199ddb02b8ef3c33afd43bba9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
