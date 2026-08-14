@@ -105,13 +105,19 @@ test("requires two-sided mutation evidence inside production-backed user journey
 });
 
 test("keeps Product 2 UI quality outside every Product 1 feedback loop", async () => {
-  const [verify, hostedVerify, testingSpec, workflow, rootManifest, showcaseManifest, playwrightConfig] =
+  const [
+    verify,
+    hostedVerify,
+    testingSpec,
+    workflow,
+    showcaseManifest,
+    playwrightConfig,
+  ] =
     await Promise.all([
       read("scripts/verify.sh"),
       read(".github/workflows/verify.yml"),
       read("docs/TESTING-SPEC.md"),
       read(".github/workflows/ui-quality.yml"),
-      read("package.json"),
       read("showcase/platform-ui-quality/package.json"),
       read("showcase/platform-ui-quality/playwright.config.ts"),
     ]);
@@ -119,21 +125,19 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.doesNotMatch(verify, /ui-quality|playwright|chromium/iu);
   assert.doesNotMatch(verify, /test:release:m\d+/u);
   assert.match(workflow, /test:ui-quality/u);
+  assert.doesNotMatch(workflow, /test:platform-operations-checkpoint/u);
   assert.doesNotMatch(
     workflow,
     /BpmnSemantics|packages\/semantic-core|packages\/bpmn-source|runners\/cibseven|scripts\/verify\.sh|temporal/iu,
   );
   assert.match(workflow, /platform\/apps\/web\/\*\*/u);
   assert.match(workflow, /platform\/ui-kit\/\*\*/u);
-  assert.match(workflow, /tsconfig\.platform-harness\.json/u);
-  assert.match(workflow, /showcase\/m1-definition-deployment\/\*\*/u);
-  assert.match(workflow, /showcase\/m2-definition-scheduling\/\*\*/u);
-  assert.match(workflow, /showcase\/m2-message-start-ingress\/\*\*/u);
-  assert.match(workflow, /showcase\/m2-process-instance-search\/\*\*/u);
-  assert.match(workflow, /showcase\/m3-human-work\/\*\*/u);
-  assert.match(workflow, /showcase\/m4-incident-operations\/\*\*/u);
+  assert.doesNotMatch(workflow, /tsconfig\.platform-harness\.json/u);
+  assert.doesNotMatch(workflow, /showcase\/m[1-4]-/u);
   assert.match(workflow, /showcase\/platform-ui-quality\/\*\*/u);
-  assert.doesNotMatch(workflow, /^\s*- "(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)"$/mu);
+  assert.match(workflow, /^\s*- "package\.json"$/mu);
+  assert.match(workflow, /^\s*- "pnpm-lock\.yaml"$/mu);
+  assert.match(workflow, /^\s*- "pnpm-workspace\.yaml"$/mu);
   assert.match(
     workflow,
     /image:\s*mcr\.microsoft\.com\/playwright@sha256:c091b21d9fae78c76e85cd4356431e9b018402f172a214fc7d7a5e9a7e29d8ac/u,
@@ -141,58 +145,14 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.doesNotMatch(workflow, /playwright install/u);
   assert.match(workflow, /regenerate_baselines/u);
   assert.match(workflow, /release_acceptance/u);
-  assert.match(workflow, /test:showcase:m1/u);
-  assert.match(workflow, /test:showcase:m2/u);
-  assert.match(workflow, /test:showcase:m3-human-work/u);
-  assert.match(workflow, /test:release:m4/u);
+  assert.match(workflow, /test:release:product2/u);
   assert.match(workflow, /product-2-ui-quality-baseline-candidates/u);
   assert.doesNotMatch(hostedVerify, /playwright install|Install Chromium/iu);
   assert.doesNotMatch(hostedVerify, /test:showcase:m[123]/u);
   assert.doesNotMatch(hostedVerify, /test:platform-m1|test:platform-web/u);
   assert.match(workflow, /test:pre-push:ui/u);
-  assert.match(testingSpec, /Product 2 browser work remains outside `verify\.sh` and the hosted verification workflow/u);
+  assert.match(testingSpec, /Product 2 browser work remains outside `verify\.sh`/u);
   assert.doesNotMatch(testingSpec, /Linux matrix leg also installs Playwright/u);
-
-  const root = JSON.parse(rootManifest) as Readonly<{
-    scripts?: Readonly<Record<string, string>>;
-  }>;
-  assert.equal(
-    root.scripts?.["test:pre-push:ui"],
-    "pnpm check:clean-head && pnpm test:platform-operations-checkpoint && pnpm test:showcase:types && pnpm test:ui-quality",
-  );
-  assert.equal(
-    root.scripts?.["test:showcase:types"],
-    "pnpm --filter '@bpmn-lean/showcase-*...' --if-present run build && pnpm --filter './showcase/**' --if-present run type-test",
-  );
-  assert.equal(
-    root.scripts?.["test:ui-quality"],
-    "pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:functional",
-  );
-  assert.equal(
-    root.scripts?.["test:ui-quality:visual"],
-    "pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:visual",
-  );
-  assert.equal(
-    root.scripts?.["test:release:m3"],
-    "pnpm test:showcase:m3-human-work && pnpm test:ui-quality",
-  );
-  assert.equal(
-    root.scripts?.["test:release:m4"],
-    "pnpm test:showcase:m4-incident-operations && pnpm test:ui-quality",
-  );
-  assert.equal(
-    root.scripts?.["test:ui-quality:update-snapshots"],
-    "pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:update-snapshots",
-  );
-  assert.deepEqual(
-    checkpointOrderViolations(
-      root.scripts?.["test:platform-work-checkpoint"] ?? "",
-      "test:platform-process-search-checkpoint",
-      ["@bpmn-lean/contract-types", "@bpmn-lean/temporal-client"],
-    ),
-    [],
-    "the predecessor checkpoint must build the clean workspace before direct package tests consume dist exports",
-  );
 
   const showcase = JSON.parse(showcaseManifest) as Readonly<{
     dependencies?: Readonly<Record<string, string>>;
@@ -557,7 +517,7 @@ function hasUndeclaredWebRuntime(playwrightConfig: string, manifestText: string)
   if (!/--filter @bpmn-lean\/platform-web\b/u.test(playwrightConfig)) {
     return false;
   }
-  if (/--filter @bpmn-lean\/platform-web run build\b/u.test(playwrightConfig)) {
+  if (/run build:platform-web\b|--filter @bpmn-lean\/platform-web run build\b/u.test(playwrightConfig)) {
     return false;
   }
   const manifest = JSON.parse(manifestText) as Readonly<{

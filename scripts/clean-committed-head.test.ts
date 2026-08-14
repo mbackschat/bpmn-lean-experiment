@@ -48,9 +48,11 @@ test("requires the pre-push gate to observe one clean committed HEAD", async () 
 });
 
 test("makes clean committed HEAD the shared local and GitHub pre-push boundary", async () => {
-  const [manifestSource, verifyWorkflow, uiWorkflow] = await Promise.all([
+  const [manifestSource, verifyWorkflow, platformWorkflow, showcaseWorkflow, uiWorkflow] = await Promise.all([
     readFile(path.join(projectRoot, "package.json"), "utf8"),
     readFile(path.join(projectRoot, ".github/workflows/verify.yml"), "utf8"),
+    readFile(path.join(projectRoot, ".github/workflows/platform-quality.yml"), "utf8"),
+    readFile(path.join(projectRoot, ".github/workflows/showcase-quality.yml"), "utf8"),
     readFile(path.join(projectRoot, ".github/workflows/ui-quality.yml"), "utf8"),
   ]);
   const manifest = JSON.parse(manifestSource) as Readonly<{
@@ -66,9 +68,19 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
     "pnpm check:clean-head && ./scripts/verify.sh",
   );
   assert.equal(
+    manifest.scripts?.["test:pre-push:platform"],
+    "pnpm check:clean-head && pnpm test:platform-operations-checkpoint",
+  );
+  assert.equal(
     manifest.scripts?.["test:pre-push:ui"],
-    "pnpm check:clean-head && pnpm test:platform-operations-checkpoint && pnpm test:showcase:types && pnpm test:ui-quality",
+    "pnpm check:clean-head && pnpm test:feedback-policy && pnpm build:platform-web && pnpm test:platform-web:built && pnpm test:ui-quality:built",
+  );
+  assert.equal(
+    manifest.scripts?.["test:pre-push:showcase"],
+    "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types",
   );
   assert.match(verifyWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:verify/u);
+  assert.match(platformWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:platform/u);
+  assert.match(showcaseWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:showcase/u);
   assert.match(uiWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:ui/u);
 });

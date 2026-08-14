@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "pnpm build && node --test --test-concurrency=1 test/*.test.ts"
+    "test:built": "node --test --test-concurrency=1 test/*.test.ts",
+    "test": "pnpm build && pnpm test:built"
   },
   "dependencies": {
     "@bpmn-lean/contract-types": "workspace:*",

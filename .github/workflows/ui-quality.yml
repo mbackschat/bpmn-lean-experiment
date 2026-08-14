@@ -4,49 +4,29 @@ on:
   pull_request:
     paths:
       - ".github/workflows/ui-quality.yml"
-      - "tsconfig.platform-harness.json"
-      - "platform/apps/server/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "platform/apps/web/**"
       - "platform/contracts/**"
-      - "platform/foundation/audit/**"
-      - "platform/foundation/bpmn-presentation/**"
-      - "platform/foundation/engine-gateway/**"
-      - "platform/foundation/identity-policy/**"
-      - "platform/modules/definitions/**"
-      - "platform/modules/operate/**"
-      - "platform/modules/work/**"
       - "platform/ui-kit/**"
-      - "showcase/m1-definition-deployment/**"
-      - "showcase/m2-definition-scheduling/**"
-      - "showcase/m2-message-start-ingress/**"
-      - "showcase/m2-process-instance-search/**"
-      - "showcase/m3-human-work/**"
-      - "showcase/m4-incident-operations/**"
       - "showcase/platform-ui-quality/**"
+      - "scripts/playwright-loopback-ports.test.ts"
+      - "scripts/playwright-loopback-ports.ts"
   push:
     branches:
       - main
     paths:
       - ".github/workflows/ui-quality.yml"
-      - "tsconfig.platform-harness.json"
-      - "platform/apps/server/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "platform/apps/web/**"
       - "platform/contracts/**"
-      - "platform/foundation/audit/**"
-      - "platform/foundation/bpmn-presentation/**"
-      - "platform/foundation/engine-gateway/**"
-      - "platform/foundation/identity-policy/**"
-      - "platform/modules/definitions/**"
-      - "platform/modules/operate/**"
-      - "platform/modules/work/**"
       - "platform/ui-kit/**"
-      - "showcase/m1-definition-deployment/**"
-      - "showcase/m2-definition-scheduling/**"
-      - "showcase/m2-message-start-ingress/**"
-      - "showcase/m2-process-instance-search/**"
-      - "showcase/m3-human-work/**"
-      - "showcase/m4-incident-operations/**"
       - "showcase/platform-ui-quality/**"
+      - "scripts/playwright-loopback-ports.test.ts"
+      - "scripts/playwright-loopback-ports.ts"
   workflow_dispatch:
     inputs:
       regenerate_baselines:
@@ -113,11 +93,7 @@ jobs:
 
       - name: Verify Product 2 M1 through M4 release acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.release_acceptance == true && inputs.regenerate_baselines != true
-        run: |
-          ./scripts/pnpm.sh run test:showcase:m1
-          ./scripts/pnpm.sh run test:showcase:m2
-          ./scripts/pnpm.sh run test:showcase:m3-human-work
-          ./scripts/pnpm.sh run test:release:m4
+        run: ./scripts/pnpm.sh run test:release:product2
 
       - name: Generate candidate wide Diagram baseline
         if: github.event_name == 'workflow_dispatch' && inputs.regenerate_baselines == true

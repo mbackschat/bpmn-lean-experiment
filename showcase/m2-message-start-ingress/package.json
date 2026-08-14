@@ -6,8 +6,10 @@
   "license": "MIT",
   "scripts": {
     "type-test": "tsc -p tsconfig.json",
-    "test": "pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts",
-    "test:e2e": "pnpm run type-test && playwright test"
+    "test:built": "pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts",
+    "test": "pnpm run test:built",
+    "test:e2e:built": "playwright test",
+    "test:e2e": "pnpm run type-test && pnpm run test:e2e:built"
   },
   "devDependencies": {
     "@bpmn-lean/platform-contracts": "workspace:*",

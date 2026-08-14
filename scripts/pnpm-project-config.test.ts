@@ -110,11 +110,18 @@ test("derives workspace build order from package manifests", async () => {
     if (!scriptName.startsWith("build:")) {
       continue;
     }
-    const graphBuild = /^pnpm --filter (?<packageName>\S+)\.\.\. --if-present run build$/u.exec(
+    const graphBuild = /^pnpm (?<filters>(?:--filter \S+\.\.\. )+)--if-present run build$/u.exec(
       command,
     );
-    if (graphBuild?.groups?.packageName !== undefined) {
-      assert.ok(workspaceNames.has(graphBuild.groups.packageName), scriptName);
+    if (graphBuild?.groups?.filters !== undefined) {
+      const selectedPackages = Array.from(
+        graphBuild.groups.filters.matchAll(/--filter (?<packageName>\S+)\.\.\./gu),
+        (match) => match.groups?.packageName,
+      );
+      assert.ok(selectedPackages.length > 0, scriptName);
+      for (const packageName of selectedPackages) {
+        assert.ok(packageName !== undefined && workspaceNames.has(packageName), `${scriptName}: ${packageName}`);
+      }
       continue;
     }
     const alias = /^pnpm (?<scriptName>build:[a-z0-9-]+)$/u.exec(command);

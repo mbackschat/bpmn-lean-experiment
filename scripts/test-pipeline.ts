@@ -24,14 +24,11 @@ function runProjectCommand(
 }
 
 async function buildPipeline() {
-  const coreBuild = runProjectCommand(
-    "tsc",
-    ["-p", "packages/semantic-core/tsconfig.json"],
-    { timeoutMs: 120_000 },
-  );
   await Promise.all([
-    coreBuild,
-    runProjectCommand("lake", ["build", "emitSemanticProcessResults"], {
+    runProjectCommand("./scripts/pnpm.sh", ["run", "build:verification-typescript"], {
+      timeoutMs: 120_000,
+    }),
+    runProjectCommand("./scripts/lake.sh", ["build", "emitSemanticProcessResults"], {
       timeoutMs: 120_000,
     }),
     runProjectCommand(
@@ -52,34 +49,6 @@ async function buildPipeline() {
       },
     ),
   ]);
-  await Promise.all([
-    runProjectCommand("tsc", ["-p", "packages/bpmn-source/tsconfig.json"], {
-      timeoutMs: 120_000,
-    }),
-    runProjectCommand("tsc", ["-p", "packages/temporal-adapter/protocol/tsconfig.json"], {
-      timeoutMs: 120_000,
-    }),
-  ]);
-  await Promise.all([
-    runProjectCommand("tsc", ["-p", "packages/temporal-adapter/client/tsconfig.json"], {
-      timeoutMs: 120_000,
-    }),
-    runProjectCommand("tsc", ["-p", "packages/temporal-adapter/workflow/tsconfig.json"], {
-      timeoutMs: 120_000,
-    }),
-  ]);
-  await runProjectCommand("tsc", ["-p", "packages/temporal-adapter/worker/tsconfig.json"], {
-    timeoutMs: 120_000,
-  });
-  await runProjectCommand("tsc", ["-p", "packages/temporal-adapter/runner/tsconfig.json"], {
-    timeoutMs: 120_000,
-  });
-  await runProjectCommand("tsc", ["-p", "packages/temporal-adapter/testkit/tsconfig.json"], {
-    timeoutMs: 120_000,
-  });
-  await runProjectCommand("tsc", ["-p", "packages/differential/tsconfig.json"], {
-    timeoutMs: 120_000,
-  });
 }
 
 const isPrebuilt = process.env.BPMN_PIPELINE_PREBUILT === "1";

@@ -5,10 +5,10 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "prebuild": "pnpm --filter @bpmn-lean/platform-contracts build && pnpm --filter @bpmn-lean/platform-ui-kit build",
     "build": "tsc -p tsconfig.json && vite build",
     "type-test": "tsc -p tsconfig.test.json",
-    "test": "pnpm run build && pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts"
+    "test:built": "pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts",
+    "test": "pnpm --filter @bpmn-lean/platform-web... --if-present run build && pnpm run test:built"
   },
   "dependencies": {
     "@bpmn-lean/platform-contracts": "workspace:*",

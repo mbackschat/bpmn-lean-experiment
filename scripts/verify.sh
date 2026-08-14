@@ -11,9 +11,7 @@ configured_task_bpmn_path="packages/bpmn-source/test/fixtures/configured-task.bp
 
 ./scripts/doctor.sh verify
 echo "A12_ADOPTION_EVIDENCE status=not-run command=./scripts/test-a12-adoption.sh"
-./scripts/pnpm.sh run test:contracts
-./scripts/pnpm.sh run check:harness-types
-./scripts/pnpm.sh run check:source-hygiene
+./scripts/pnpm.sh run test:infrastructure
 
 ./scripts/validate-bpmn-xml.sh \
   "$representative_bpmn_path" \
@@ -22,14 +20,13 @@ echo "A12_ADOPTION_EVIDENCE status=not-run command=./scripts/test-a12-adoption.s
 
 ./scripts/lake.sh build
 ./scripts/lake.sh test
-./scripts/lake.sh build checkCheckedSourceRelationExperiment
 ./scripts/lake.sh exe checkCheckedSourceRelationExperiment
 ./scripts/lake.sh build emitSemanticProcessResults
-./scripts/pnpm.sh run test:semantic-core
-./scripts/pnpm.sh run test:bpmn-source
+./scripts/pnpm.sh run build:verification-typescript
+./scripts/pnpm.sh run test:semantic-core:built
+./scripts/pnpm.sh run test:bpmn-source:built
 ./scripts/test-cibseven-oracle.sh
-./scripts/pnpm.sh run test:differential
-./scripts/pnpm.sh run test:infrastructure:runtime
-./scripts/pnpm.sh run test:temporal
+./scripts/pnpm.sh run test:differential:built
+./scripts/pnpm.sh run test:temporal:built
 env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
 git diff --check

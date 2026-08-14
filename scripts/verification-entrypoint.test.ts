@@ -147,7 +147,7 @@ async function assertLineOccursOnce(
 test("default verification includes the focused Temporal history gate", async () => {
   await assertLineOccursOnce(
     verifyScriptPath,
-    "./scripts/pnpm.sh run test:temporal",
+    "./scripts/pnpm.sh run test:temporal:built",
   );
 });
 
@@ -275,15 +275,13 @@ test("default verification XSD-validates the Configured Task fixture", async () 
   );
 });
 
-test("default verification builds and executes the checked-source proof experiment", async () => {
-  await assertLineOccursOnce(
-    verifyScriptPath,
-    "./scripts/lake.sh build checkCheckedSourceRelationExperiment",
-  );
+test("default verification executes the self-building checked-source proof experiment once", async () => {
+  const source = await readFile(verifyScriptPath, "utf8");
   await assertLineOccursOnce(
     verifyScriptPath,
     "./scripts/lake.sh exe checkCheckedSourceRelationExperiment",
   );
+  assert.doesNotMatch(source, /lake\.sh build checkCheckedSourceRelationExperiment/u);
 });
 
 test("the checked-source proof target imports both Stage 3a frontier modules", async () => {

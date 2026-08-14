@@ -6,6 +6,9 @@ import { allocatePlaywrightLoopbackPorts } from "../../scripts/playwright-loopba
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const { webOrigin, webPort } = await allocatePlaywrightLoopbackPorts();
+const webBuild = process.env.PLAYWRIGHT_PREBUILT_WEB === "true"
+  ? ""
+  : "./scripts/pnpm.sh run build:platform-web && ";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -32,7 +35,7 @@ export default defineConfig({
     chromiumProject("chromium-1280", 1280, /@responsive/u),
   ],
   webServer: {
-    command: `./scripts/pnpm.sh --filter @bpmn-lean/platform-web run build && ./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite preview --host 127.0.0.1 --port ${webPort} --strictPort`,
+    command: `${webBuild}./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite preview --host 127.0.0.1 --port ${webPort} --strictPort`,
     cwd: projectRoot,
     reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === "true",
     timeout: 120_000,

@@ -28,8 +28,59 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    name: classify verification scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      product1: ${{ steps.classify.outputs.product1 }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve pinned Node version
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          printf 'node=%s\n' "$required_node_version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+
+      - name: Classify changed paths
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -eu
+          case "$EVENT_NAME" in
+            schedule|workflow_dispatch)
+              printf 'product1=true\n' >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+            pull_request)
+              base="$BASE_SHA"
+              ;;
+            *)
+              base="$BEFORE_SHA"
+              ;;
+          esac
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base^{commit}"; then
+            printf 'product1=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only "$base" "$GITHUB_SHA" | node scripts/ci-change-selection.ts >> "$GITHUB_OUTPUT"
+
   verify:
     name: verify (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.product1 == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     env:
@@ -158,12 +209,15 @@ jobs:
   # required-check rule instead of blocking it.
   verify-complete:
     name: verify-complete
-    needs: verify
+    needs:
+      - changes
+      - verify
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Require every platform to have verified
         run: |
+          echo "Product 1 selected: ${{ needs.changes.outputs.product1 }}"
           echo "matrix result: ${{ needs.verify.result }}"
-          test "${{ needs.verify.result }}" = "success"
+          test "${{ needs.changes.outputs.product1 }}" = "false" || test "${{ needs.verify.result }}" = "success"

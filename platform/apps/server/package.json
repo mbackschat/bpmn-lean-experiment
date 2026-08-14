@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "pnpm build && node dist/main.js",
-    "test": "pnpm build && node --test --test-concurrency=1 test/*.test.ts"
+    "test:built": "node --test --test-concurrency=1 test/*.test.ts",
+    "test": "pnpm build && pnpm test:built"
   },
   "dependencies": {
     "@bpmn-lean/platform-audit": "workspace:*",

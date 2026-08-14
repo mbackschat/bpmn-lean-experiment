@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "pnpm run build && node --test --test-concurrency=1 test/*.test.ts"
+    "test:built": "node --test --test-concurrency=1 test/*.test.ts",
+    "test": "pnpm run build && pnpm run test:built"
   },
   "dependencies": {
     "bpmn-auto-layout": "1.3.0",

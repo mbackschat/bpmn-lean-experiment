@@ -16,6 +16,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "type-test": "tsc -p tsconfig.type-test.json",
-    "test": "pnpm run build && pnpm run type-test"
+    "test:built": "pnpm run type-test",
+    "test": "pnpm run build && pnpm run test:built"
   }
 }

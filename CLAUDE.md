@@ -305,7 +305,7 @@ Before adding, renaming, moving, graduating, archiving, or deleting a document, 
 
 Keep every `README.md` human-facing: explain the component's purpose and user-visible capabilities, give the shortest useful quick start, and link to deeper material. Repository-wide contributor and agent instructions belong only in canonical `CLAUDE.md`, with `AGENTS.md` preserving its symlink. Move dense file inventories or contributor/agent implementation maps into a linked directory `INDEX.md` only where that directory genuinely needs one. Keep normative contracts in their owning specifications and link them rather than duplicating them into a README or index.
 
-Keep test selection proportionate and nonduplicative. During development run the smallest separating oracle, before a regular commit run that focused oracle plus the complete affected package, before push run the exact clean-commit workflow selected by changed paths, and before a milestone or tag run complete verification and release acceptance. Repeat a test across operating systems, browsers, viewports, profiles, or targets only when that dimension has a distinct failure mode; do not multiply viewport-independent behavior merely because the harness can parameterize it. [The three-level verification policy](docs/TESTING-SPEC.md#three-level-verification-policy) owns the commands and exceptions.
+Treat feedback efficiency and development speed as non-negotiable engineering constraints. Keep test selection proportionate and nonduplicative: during development run the smallest separating oracle, before a regular commit run that focused oracle plus the complete affected package, before push run the exact clean-commit workflow selected by changed paths, and before a milestone or tag run complete verification and release acceptance. A composed gate builds a dependency graph once and reuses its artifacts; do not serially nest self-contained gates that rebuild the same packages, hide duplicate work behind package hooks, or make an unrelated expensive lane a prerequisite. Run independent selected workflows in parallel on GitHub. Repeat a test across operating systems, browsers, viewports, profiles, or targets only when that dimension has a distinct failure mode; do not multiply viewport-independent behavior merely because the harness can parameterize it. A time-budget breach requires root-cause correction rather than a longer timeout or weaker evidence. [The three-level verification policy](docs/TESTING-SPEC.md#three-level-verification-policy) owns the commands and exceptions.
 
 Never activate the `linear-walkthrough` skill and never invoke `showboat` directly or indirectly. Author maintained Markdown directly and verify it only through the repository-owned documentation, infrastructure, and applicable complete gates.
 
@@ -476,6 +476,13 @@ After committing a Product 2 UI-facing change, require a clean worktree and run 
 ./scripts/pnpm.sh run test:pre-push:ui
 ```
 
+Product 2 backend and showcase-compatibility changes have separate clean-commit entry points so neither becomes a serial prerequisite of the browser lane:
+
+```sh
+./scripts/pnpm.sh run test:pre-push:platform
+./scripts/pnpm.sh run test:pre-push:showcase
+```
+
 The optional manually reviewed wide-Diagram screenshot has no blocking CI or release role:
 
 ```sh
@@ -525,14 +532,12 @@ Focused CIB calibration gate:
 Provisional representation-spike gate:
 
 ```sh
-./scripts/lake.sh build checkSemanticRepresentationSpike
 ./scripts/lake.sh exe checkSemanticRepresentationSpike
 ```
 
 Bounded checked-source relation experiment gate:
 
 ```sh
-./scripts/lake.sh build checkCheckedSourceRelationExperiment
 ./scripts/lake.sh exe checkCheckedSourceRelationExperiment
 ```
 
