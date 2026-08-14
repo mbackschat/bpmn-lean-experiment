@@ -84,7 +84,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### M4 — it survives going wrong
 
-**Status: in progress.** [Stage 1](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md), one bounded Service Task incident and exact retry, and [Stage 2](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md), exact incident-scoped hosting-root Process cancellation, are implemented, closure-reviewed, evidence-closed, and graduated. Stage 3 implementation is complete across confirmed-publication bootstrap, current aggregation, authorized durable actions, separate audit, strict HTTP, the Operations workspace, fixed-fixture browser quality, and real-Temporal browser evidence. The owner-approved [Product 2 incident-operations proposal](BPM-PLATFORM-INCIDENT-OPERATIONS-PROPOSAL.md) has not graduated until independent closure review approves the immutable target.
+**Status: closed.** [Stage 1](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md), one bounded Service Task incident and exact retry, [Stage 2](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md), exact incident-scoped hosting-root Process cancellation, and [Stage 3](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md), current Product 2 incident operations, are implemented, closure-reviewed, evidence-closed, and graduated.
 
 **Demo.** A failing Service Task raises an incident an operator can see, retry, and cancel, and a cancelled scope leaves no orphaned work.
 
@@ -96,7 +96,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### M5 — it can be operated and explained
 
-**Status: not started.**
+**Status: in progress.** Contract discovery is active. No E1 committed-transition or control-position publication is approved for implementation.
 
 **Demo.** An operator replays what a finished instance did, sees where a running one stands on the diagram, and exports the history.
 
@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: close and graduate M4 Product 2 incident operations.** The owner-approved [incident-operations proposal](BPM-PLATFORM-INCIDENT-OPERATIONS-PROPOSAL.md) is implemented through exact private locator retention plus retrospective startup bootstrap, one dedicated current-incident Query, all-or-error Operate aggregation, configured operator authorization, durable content-bound Retry/Cancel actions without platform priority, separate paged incident audit, strict public routes, an Operations collection/detail workspace, fixed four-width UI evidence, and a real-Temporal browser showcase. The exact next step is an independent closure review of the immutable implementation target, followed by proposal-to-specification graduation if approved.
+1. **In progress: define the M5 committed-history and diagram-position contract.** Inventory the exact E1 information requirements, normative and compatibility authority, committed publication boundary, monotonic revision and cursor contract, projection rebuild invariant, gap detection, Temporal hosting/refinement risks, and the smallest separating acceptance witness. Produce and independently review the smallest complete proposal before implementing a transition record, control-position publication, read model, history UI, overlay, or export.
 
 ## Approved decisions
 
@@ -264,11 +264,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: run the independent closure review for the immutable M4 Stage 3 implementation target.** The implementation includes confirmed-publication bootstrap and locator retention, all-or-error Operate aggregation, configured authorization, durable content-bound Retry/Cancel actions, separate incident audit, strict HTTP routes, the Operations workspace, and browser evidence without deriving an engine fact. If the review approves the target, graduate the proposal to a specification, run the documentation guards, commit, and push the integrated green result.
+**Next action: produce the smallest complete M5 committed-history and diagram-position proposal.** Start with a read-only owner and evidence inventory, keep transition sequence and current control positions as two explicit information requirements, classify the normative and compatibility boundary, specify committed publication and rebuild/gap invariants, complete the Temporal preflight, and obtain a context-cold proposal review plus owner approval before implementation.
 
-Item 1 is **implementation-complete after the approved conditional semantic checkpoint and pending closure review**. Stages 1 and 2 are graduated. The checkpoint reads the canonical stable-state observation rather than reconstructing Retry/Cancel, rejects nonempty effect arguments and unsupported incident-state interactions, preserves direct/Message/Schedule locator bytes, corroborates terminal status with the exact retained receipt, and proves that the Query creates no Event History event while both histories replay. Correction `c941516` keeps generic Workflow-address minting and decoding private to Product 1. Product 2 now adds exact confirmed-locator bootstrap, all-or-error aggregation, authorized durable actions, separate incident audit, strict HTTP, an Operations workspace, isolated fixed-fixture browser evidence, and a real-Temporal browser showcase.
+Item 1 is **proposal-stage and in progress**. M4 is closed through the graduated [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md). M5 has no approved E1 public contract, semantic representation, transition family, projection store, UI surface, or export yet. Event History and state differencing remain forbidden fact sources.
 
-**Last verified commands:** The integrated Stage 3 implementation passes the complete platform-operations checkpoint, the 79-test web package gate, the bounded four-width Work/Definitions and Operations Playwright partitions, the real-Temporal M4 browser showcase, the digest-pinned Linux visual generation, and the source, product, CI-isolation, documentation, ownership, and diff guards. Hosted Product 1 CI run `31755256545` remains green on Ubuntu, macOS, and `verify-complete`; the closure target still requires its final local complete repository gate and independent review. Playwright remains in its separate Product 2 workflow.
+**Last verified commands:** Correction target `914950eb59470b21f44e098145133b41092cdae2` passes `./scripts/verify.sh`, including 276 repository guards, 206 Temporal tests, the complete five-case pipeline, and 52 replayed histories. The Product 2 checkpoint, real M4 showcase, 52-case four-width Operations acceptance, fixed Linux visual evidence, and focused closure-correction guards are green. Context-cold closure review of `f55c427d628b0052936969762c93084679832540` and warm audit of `914950e` approved graduation. Playwright remains in its separate Product 2 workflow.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 
