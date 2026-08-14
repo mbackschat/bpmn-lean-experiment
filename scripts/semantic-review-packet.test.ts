@@ -122,14 +122,38 @@ test("the semantic review packet is deterministic and digest-sensitive", () => {
   assert.notEqual(first.packetSha256, changed.packetSha256);
 });
 
-/**
- * A file Git classifies as binary reports `-` instead of line counts, and the packet used to record
- * that as a null count and emit successfully. A single NUL byte in a Lean scheduler source did
- * exactly this: its 246 lines were absent from the change inventory a cold reviewer worked from, so
- * the review that governed a stage boundary covered less than its own immutable target and no one
- * could tell. An inventory that cannot count a file must refuse to be a review packet.
- */
-test("the semantic review packet refuses a changed file it cannot count", () => {
+test("the semantic review packet inventories binary evidence by exact byte digests", () => {
+  const binaryChangedFile = {
+    path: "evidence/diagram.png",
+    binary: true,
+    baselineSha256: null,
+    targetSha256: "f".repeat(64),
+  } as const;
+  const packet = assembleSemanticReviewPacket({
+    ...packetInput,
+    changedFiles: [binaryChangedFile],
+  });
+
+  assert.deepEqual(packet.changedFiles, [binaryChangedFile]);
+  assert.notEqual(
+    packet.packetSha256,
+    assembleSemanticReviewPacket({
+      ...packetInput,
+      changedFiles: [{ ...binaryChangedFile, targetSha256: "0".repeat(64) }],
+    }).packetSha256,
+  );
+  assert.throws(
+    () => assembleSemanticReviewPacket({
+      ...packetInput,
+      changedFiles: [{
+        path: "evidence/diagram.png",
+        binary: true,
+        baselineSha256: null,
+        targetSha256: null,
+      }],
+    } as unknown as SemanticReviewPacketInput),
+    /binary change/u,
+  );
   assert.throws(
     () => assembleSemanticReviewPacket({
       ...packetInput,

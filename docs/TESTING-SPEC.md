@@ -601,7 +601,7 @@ node scripts/semantic-review-packet.ts \
   --gates <temporary-root-gate-records.json>
 ```
 
-The dependency-free packet resolves full commit identities and requires the baseline to be a strict ancestor of the target and the target to be an ancestor of `HEAD`. It hashes the complete target capsule and every exact routed level-two section, records deterministic no-rename Git numstat, sorts and validates gate records, and emits one `packetSha256`. Duplicate or missing routes, duplicate commands, malformed gate records, and non-ancestral targets reject. The root may route more than one section by repeating `--route`; the reviewer verifies routing completeness independently.
+The dependency-free packet resolves full commit identities and requires the baseline to be a strict ancestor of the target and the target to be an ancestor of `HEAD`. It hashes the complete target capsule and every exact routed level-two section, records deterministic no-rename Git line counts for text plus exact before/after SHA-256 digests for binary artifacts, sorts and validates gate records, and emits one `packetSha256`. Duplicate or missing routes, duplicate commands, malformed gate records, and non-ancestral targets reject. The root may route more than one section by repeating `--route`; the reviewer verifies routing completeness independently.
 
 ### When a warm review is valid
 

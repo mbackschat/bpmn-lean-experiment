@@ -35,17 +35,23 @@ function parseReviewPacketStage(value: string): ReviewPacketStage {
   }
 }
 
-/**
- * Counts are non-nullable on purpose. Git reports `-` for a file it classifies as binary, and an
- * inventory that silently carries that as "unknown" understates the diff the reviewer is accountable
- * for. The packet refuses instead, so a binary-classified source file is fixed before a stage
- * boundary rather than discovered after it.
- */
-export type ReviewPacketChangedFile = Readonly<{
+type ReviewPacketChangedTextFile = Readonly<{
   path: string;
   added: number;
   removed: number;
 }>;
+
+type ReviewPacketChangedBinaryFile = Readonly<{
+  path: string;
+  binary: true;
+  baselineSha256: string | null;
+  targetSha256: string | null;
+}>;
+
+/** Text changes carry exact line counts; binary evidence carries exact before/after byte digests. */
+export type ReviewPacketChangedFile =
+  | ReviewPacketChangedTextFile
+  | ReviewPacketChangedBinaryFile;
 
 export type ReviewPacketSection = Readonly<{
   path: string;
@@ -160,6 +166,17 @@ export function assembleSemanticReviewPacket(
 
   for (const changedFile of input.changedFiles) {
     assertRepositoryPath(changedFile.path, "changed file");
+    if ("binary" in changedFile) {
+      if (
+        changedFile.binary !== true ||
+        (changedFile.baselineSha256 !== null && !digestPattern.test(changedFile.baselineSha256)) ||
+        (changedFile.targetSha256 !== null && !digestPattern.test(changedFile.targetSha256)) ||
+        (changedFile.baselineSha256 === null && changedFile.targetSha256 === null)
+      ) {
+        throw new Error(`${changedFile.path} binary change needs an exact baseline or target SHA-256`);
+      }
+      continue;
+    }
     for (const [label, count] of [["added", changedFile.added], ["removed", changedFile.removed]] as const) {
       if (!Number.isSafeInteger(count) || count < 0) {
         throw new Error(
@@ -196,11 +213,18 @@ export function assembleSemanticReviewPacket(
     },
     changedFiles: [...input.changedFiles]
       .sort((left, right) => compareExactStrings(left.path, right.path))
-      .map(({ path: filePath, added, removed }) => ({
-        path: filePath,
-        added,
-        removed,
-      })),
+      .map((changedFile) => "binary" in changedFile
+        ? {
+            path: changedFile.path,
+            binary: true as const,
+            baselineSha256: changedFile.baselineSha256,
+            targetSha256: changedFile.targetSha256,
+          }
+        : {
+            path: changedFile.path,
+            added: changedFile.added,
+            removed: changedFile.removed,
+          }),
     routedSections: [...input.routedSections]
       .sort((left, right) =>
         compareExactStrings(left.path, right.path) ||
@@ -332,17 +356,37 @@ function parseNumstat(baseline: string, target: string): ReadonlyArray<ReviewPac
     const addedText = record.slice(0, firstTab);
     const removedText = record.slice(firstTab + 1, secondTab);
     const filePath = record.slice(secondTab + 1);
-    const count = (value: string): number => {
-      if (value === "-") {
-        throw new Error(
-          `git reports no line counts for ${filePath}, so it is classified as binary and cannot be inventoried. ` +
-            "Make the file text, or exclude it from the reviewed range, before generating a packet.",
-        );
-      }
-      return Number(value);
-    };
-    return { path: filePath, added: count(addedText), removed: count(removedText) };
+    if (addedText === "-" && removedText === "-") {
+      return {
+        path: filePath,
+        binary: true,
+        baselineSha256: gitBlobSha256(baseline, filePath),
+        targetSha256: gitBlobSha256(target, filePath),
+      };
+    }
+    if (addedText === "-" || removedText === "-") {
+      throw new Error(`git returned inconsistent binary line counts for ${filePath}`);
+    }
+    return { path: filePath, added: Number(addedText), removed: Number(removedText) };
   });
+}
+
+function gitBlobSha256(revision: string, filePath: string): string | null {
+  const object = `${revision}:${filePath}`;
+  const exists = spawnSync("git", ["cat-file", "-e", object], {
+    cwd: projectRoot,
+    stdio: "ignore",
+  });
+  if (exists.status !== 0) return null;
+  const result = spawnSync("git", ["show", object], {
+    cwd: projectRoot,
+    encoding: null,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    throw new Error(`git show ${object} failed: ${String(result.stderr)}`);
+  }
+  return sha256(result.stdout);
 }
 
 function parseRoutes(target: string, routes: ReadonlyArray<string>): ReadonlyArray<ReviewPacketSection> {
