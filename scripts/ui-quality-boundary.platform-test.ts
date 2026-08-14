@@ -78,6 +78,15 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
     root.scripts?.["test:ui-quality:update-snapshots"],
     "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:update-snapshots",
   );
+  assert.deepEqual(
+    checkpointOrderViolations(
+      root.scripts?.["test:platform-work-checkpoint"] ?? "",
+      "test:platform-process-search-checkpoint",
+      ["@bpmn-lean/contract-types", "@bpmn-lean/temporal-client"],
+    ),
+    [],
+    "the predecessor checkpoint must build the clean workspace before direct package tests consume dist exports",
+  );
 
   const showcase = JSON.parse(showcaseManifest) as Readonly<{
     dependencies?: Readonly<Record<string, string>>;
@@ -180,6 +189,17 @@ test("rejects planted feature styling and control ownership violations", () => {
   );
 });
 
+test("rejects a checkpoint that consumes workspace dist before its predecessor build", () => {
+  assert.deepEqual(
+    checkpointOrderViolations(
+      "pnpm --filter @bpmn-lean/temporal-client test && pnpm test:platform-process-search-checkpoint",
+      "test:platform-process-search-checkpoint",
+      ["@bpmn-lean/temporal-client"],
+    ),
+    ["@bpmn-lean/temporal-client"],
+  );
+});
+
 function uiBoundaryViolations(
   module: string,
   component: string,
@@ -216,4 +236,19 @@ function uiBoundaryViolations(
 
 async function read(relativePath: string): Promise<string> {
   return await readFile(path.join(projectRoot, relativePath), "utf8");
+}
+
+function checkpointOrderViolations(
+  script: string,
+  predecessor: string,
+  packages: readonly string[],
+): readonly string[] {
+  const commands = script.split("&&").map((command) => command.trim());
+  const predecessorIndex = commands.findIndex((command) => command === `pnpm ${predecessor}`);
+  return packages.filter((packageName) => {
+    const consumerIndex = commands.findIndex(
+      (command) => command === `pnpm --filter ${packageName} test`,
+    );
+    return predecessorIndex < 0 || consumerIndex < 0 || consumerIndex < predecessorIndex;
+  });
 }

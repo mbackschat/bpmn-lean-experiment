@@ -67,7 +67,7 @@
     "test:platform-foundation": "pnpm test:platform-engine-gateway && pnpm --filter @bpmn-lean/platform-artifact-store test && pnpm --filter @bpmn-lean/platform-bpmn-presentation test",
     "test:platform-m1": "pnpm test:platform-policy && pnpm test:platform-foundation && pnpm --filter @bpmn-lean/platform-contracts test && pnpm --filter @bpmn-lean/platform-definitions test && pnpm test:platform-server && pnpm test:platform-web",
     "test:platform-process-search-checkpoint": "pnpm test:platform-m1 && pnpm --filter @bpmn-lean/platform-operate test",
-    "test:platform-work-checkpoint": "pnpm --filter @bpmn-lean/contract-types test && pnpm --filter @bpmn-lean/temporal-client test && pnpm test:platform-process-search-checkpoint && pnpm test:platform-work-foundations && pnpm --filter @bpmn-lean/platform-work test",
+    "test:platform-work-checkpoint": "pnpm test:platform-process-search-checkpoint && pnpm --filter @bpmn-lean/contract-types test && pnpm --filter @bpmn-lean/temporal-client test && pnpm test:platform-work-foundations && pnpm --filter @bpmn-lean/platform-work test",
     "test:platform-operations-checkpoint": "pnpm test:platform-work-checkpoint",
     "test:platform-work-foundations": "pnpm --filter @bpmn-lean/platform-identity-policy test && pnpm --filter @bpmn-lean/platform-audit test",
     "test:platform-policy": "pnpm check:platform-harness-types && node --test --test-concurrency=1 scripts/*.platform-test.ts",
