@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Committed semantic transition traces
 
@@ -103,54 +103,10 @@ inductive CommittedTransition where
   | internalOperation (record : InternalTransitionRecord)
   deriving Repr, DecidableEq
 
-private def uniqueReturnOwner? (state : RuntimeState) (id : OperationId)
-    (origin : BpmnElementOrigin) : Option ScopeOccurrenceId :=
-  match state.calledProcessOccurrences.filter fun record =>
-      decide (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value) with
-  | [record] => some record.calledRoot
-  | _ => none
-
-private def uniqueCompletingScopeOwner? (state : RuntimeState)
-    (scopeId : DefinitionScopeId) : Option ScopeOccurrenceId :=
-  match state.scopeOccurrences.filter fun occurrence =>
-      decide (occurrence.id.definitionScopeId = scopeId) with
-  | [occurrence] => some occurrence.id
-  | _ => none
-
-private def selectedJoinOwner? (state : RuntimeState)
-    (selectionKey : String) : Option ScopeOccurrenceId :=
-  match state.selectedBranchSets.filter (selectedBranchJoinReady state selectionKey) with
-  | [record] => some record.owner
-  | _ => none
-
 /-- Resolve the runtime occurrence selected by the same state and operation that `fire?` consumes. -/
 def selectedOperationOwner? (state : RuntimeState) :
-    SemanticOperation → Option ScopeOccurrenceId
-  | .initiate .. | .initiateMessage .. | .initiateTimer .. => rootScopeOccurrence? state
-  | .enterScope _ _ input _ _
-  | .enterBoundedScope _ _ input _ _ _
-  | .invokeProcess _ _ input _ _ _ _
-  | .awaitUserTask _ _ input _ _
-  | .awaitTimer _ _ input _ _
-  | .awaitMessage _ _ input _ _
-  | .awaitEventRace _ _ input _ _
-  | .awaitBoundedUserTask _ _ input _ _
-  | .awaitMonitoredUserTask _ _ input _ _
-  | .awaitEffect _ _ input _ _ _
-  | .duplicate _ _ input _
-  | .choose _ _ input _ _ _
-  | .selectMany _ _ input _ _ _
-  | .throwError _ _ input _ _
-  | .reachNoneEnd _ _ input
-  | .terminateScope _ _ input _ => onlyTokenOwner? state input
-  | .synchronize _ _ inputs _ => commonTokenOwner? state inputs
-  | .mergeExclusive _ _ inputs _ =>
-      match exclusiveMergeInputTokens state inputs with
-      | [token] => some token.owner
-      | _ => none
-  | .synchronizeSelected _ _ _ _ selectionKey => selectedJoinOwner? state selectionKey
-  | .returnProcess id origin _ _ _ => uniqueReturnOwner? state id origin
-  | .completeScope _ _ scopeId _ => uniqueCompletingScopeOwner? state scopeId
+    SemanticOperation → Option ScopeOccurrenceId :=
+  flowNodeSelectedOperationOwner? state
 
 private def uniqueOperation? (program : Program) (id : OperationId) : Option SemanticOperation :=
   match program.operations.filter fun operation => decide (operation.id = id) with
@@ -288,34 +244,56 @@ private structure ClosureTraceResult where
   hitBound : Bool
   ambiguousChoice : Bool
   records : Option (List InternalTransitionRecord)
+  lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
 
 private def prependRecord (head : Option InternalTransitionRecord)
     (tail : Option (List InternalTransitionRecord)) : Option (List InternalTransitionRecord) := do
   pure ((← head) :: (← tail))
 
+private def prependLifecycle (head : Option UnnumberedFlowNodeOccurrenceDelta)
+    (tail : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
+    Option (List UnnumberedFlowNodeOccurrenceDelta) := do
+  pure ((← head) :: (← tail))
+
 /-- Execute bounded closure while retaining the selected operation and dynamic owner at each step. -/
-private def closeSupportedTraced : Nat → Program → RuntimeState → ClosureTraceResult
-  | 0, program, state =>
+private def closeSupportedTraced :
+    Nat → Program → SemanticId → Nat → RuntimeState → ClosureTraceResult
+  | 0, program, _, _, state =>
       match enabledTransitions program state with
-      | [] => { state, hitBound := false, ambiguousChoice := false, records := some [] }
+      | [] =>
+          { state, hitBound := false, ambiguousChoice := false,
+            records := some [], lifecycles := some [] }
       | [_] | _ :: _ :: _ =>
-          { state, hitBound := true, ambiguousChoice := false, records := none }
-  | fuel + 1, program, state =>
+          { state, hitBound := true, ambiguousChoice := false,
+            records := none, lifecycles := none }
+  | fuel + 1, program, commandId, transitionIndex, state =>
       match enabledTransitions program state with
-      | [] => { state, hitBound := false, ambiguousChoice := false, records := some [] }
+      | [] =>
+          { state, hitBound := false, ambiguousChoice := false,
+            records := some [], lifecycles := some [] }
       | [(operation, successor)] =>
-          let closed := closeSupportedTraced fuel program successor
-          { closed with records :=
-              (prependRecord (internalTransitionRecord? program state operation)
-                closed.records) }
+          let closed := closeSupportedTraced fuel program commandId
+            (transitionIndex + 1) successor
+          { closed with
+            records := prependRecord (internalTransitionRecord? program state operation)
+              closed.records
+            lifecycles := prependLifecycle
+              (flowNodeOccurrenceDeltaForOperation? program state successor operation
+                commandId transitionIndex) closed.lifecycles }
       | first :: second :: remaining =>
           let transitions := first :: second :: remaining
           if independentParallelTaskChoices transitions then
-            let closed := closeSupportedTraced fuel program first.2
-            { closed with records :=
-                (prependRecord (internalTransitionRecord? program state first.1)
-                  closed.records) }
-          else { state, hitBound := false, ambiguousChoice := true, records := none }
+            let closed := closeSupportedTraced fuel program commandId
+              (transitionIndex + 1) first.2
+            { closed with
+              records := prependRecord (internalTransitionRecord? program state first.1)
+                closed.records
+              lifecycles := prependLifecycle
+                (flowNodeOccurrenceDeltaForOperation? program state first.2 first.1
+                  commandId transitionIndex) closed.lifecycles }
+          else
+            { state, hitBound := false, ambiguousChoice := true,
+              records := none, lifecycles := none }
 
 /-- Semantic command outcome and candidate state, with closure failures kept separate. -/
 structure StimulusResult where
@@ -329,36 +307,46 @@ structure StimulusResult where
 structure TracedStimulusResult where
   result : StimulusResult
   committedTransitions : List CommittedTransition
+  flowNodeOccurrenceLifecycles : List UnnumberedFlowNodeOccurrenceDelta
   deriving Repr, DecidableEq
 
 private structure EvaluatedStimulus where
   result : StimulusResult
   candidateTransitions : Option (List CommittedTransition)
+  candidateLifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
 
 private def evaluateStimulus (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : EvaluatedStimulus :=
   let admission := admitStimulus program state stimulus
   match admission.outcome with
   | .committed =>
-      let closure := closeSupportedTraced closureLimit program admission.state
+      let commandId := stimulusCommandId stimulus
+      let externalLifecycle := flowNodeOccurrenceDeltaForStimulus? program state
+        admission.state stimulus 0
+      let closure := closeSupportedTraced closureLimit program commandId 1 admission.state
       let result : StimulusResult :=
         { outcome := .committed
           state := closure.state
           internalStepBoundExceeded := closure.hitBound
           ambiguousInternalChoice := closure.ambiguousChoice }
       if closure.hitBound || closure.ambiguousChoice then
-        { result, candidateTransitions := none }
+        { result, candidateTransitions := none, candidateLifecycles := none }
       else
         { result
-          candidateTransitions := closure.records.map fun records =>
-            .externalStimulus stimulus :: records.map .internalOperation }
+          candidateTransitions := do
+            let records ← closure.records
+            let _ ← externalLifecycle
+            let _ ← closure.lifecycles
+            pure (.externalStimulus stimulus :: records.map .internalOperation)
+          candidateLifecycles := prependLifecycle externalLifecycle closure.lifecycles }
   | outcome =>
       { result :=
           { outcome
             state := admission.state
             internalStepBoundExceeded := false
             ambiguousInternalChoice := false }
-        candidateTransitions := none }
+        candidateTransitions := none
+        candidateLifecycles := none }
 
 private def replayCheckedTransitions (program : Program) (initial result : RuntimeState) :
     Option (List CommittedTransition) → List CommittedTransition
@@ -386,12 +374,21 @@ private def publishEvaluatedTransitions (program : Program) (initial : RuntimeSt
       evaluated.candidateTransitions
   | .rolledBack | .rejected | .semanticFailure | .unsupported => []
 
+private def publishEvaluatedLifecycles (program : Program) (initial : RuntimeState)
+    (evaluated : EvaluatedStimulus) : List UnnumberedFlowNodeOccurrenceDelta :=
+  let transitions := publishEvaluatedTransitions program initial evaluated
+  match evaluated.candidateLifecycles with
+  | some lifecycles =>
+      if transitions.length = lifecycles.length then lifecycles else []
+  | none => []
+
 /-- Pure external-command boundary with exact committed transition capture. -/
 def applyStimulusTraced (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : TracedStimulusResult :=
   let evaluated := evaluateStimulus closureLimit program state stimulus
   { result := evaluated.result
-    committedTransitions := publishEvaluatedTransitions program state evaluated }
+    committedTransitions := publishEvaluatedTransitions program state evaluated
+    flowNodeOccurrenceLifecycles := publishEvaluatedLifecycles program state evaluated }
 
 /-- Existing result-only API, defined as exact erasure of the traced evaluator. -/
 def applyStimulus (closureLimit : Nat) (program : Program)
@@ -399,7 +396,8 @@ def applyStimulus (closureLimit : Nat) (program : Program)
   let admission := admitStimulus program state stimulus
   match admission.outcome with
   | .committed =>
-      let closure := closeSupportedTraced closureLimit program admission.state
+      let closure := closeSupportedTraced closureLimit program (stimulusCommandId stimulus) 1
+        admission.state
       { outcome := .committed
         state := closure.state
         internalStepBoundExceeded := closure.hitBound
@@ -421,9 +419,10 @@ private theorem evaluateStimulus_result_eq_applyStimulus
   cases outcomeEq : admission.outcome
   case committed =>
     simp only [outcomeEq]
-    generalize closureEq : closeSupportedTraced closureLimit program admission.state = closure
+    generalize closureEq : closeSupportedTraced closureLimit program
+      (stimulusCommandId stimulus) 1 admission.state = closure
     cases closure with
-    | mk successor hitBound ambiguous records =>
+    | mk successor hitBound ambiguous records lifecycles =>
         cases hitBound <;> cases ambiguous <;> rfl
   all_goals simp [outcomeEq]
 
@@ -473,5 +472,21 @@ theorem applyStimulusTraced_noncommitted_has_no_trace
   dsimp only at *
   unfold publishEvaluatedTransitions
   split <;> simp_all
+
+/-- Any trace-suppression condition also suppresses its aligned lifecycle publication. -/
+theorem applyStimulusTraced_no_trace_has_no_lifecycle
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (noTrace :
+      (applyStimulusTraced closureLimit program state stimulus).committedTransitions = []) :
+    (applyStimulusTraced closureLimit program state stimulus).flowNodeOccurrenceLifecycles = [] := by
+  unfold applyStimulusTraced at noTrace ⊢
+  dsimp only at noTrace ⊢
+  unfold publishEvaluatedLifecycles
+  simp only [noTrace, List.length_nil]
+  generalize candidateEq :
+    (evaluateStimulus closureLimit program state stimulus).candidateLifecycles = candidate
+  cases candidate with
+  | none => rfl
+  | some lifecycles => cases lifecycles <;> simp
 
 end BpmnSemantics.SemanticProcess
