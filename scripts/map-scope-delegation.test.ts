@@ -71,14 +71,25 @@ const statusHalves: ReadonlyArray<string> = ["Implemented", "Absent"];
  * three delegating capsules say they deliberately do not restate and leave the map as sole owner.
  * A capsule here that later drops its own scope section becomes a delegation and belongs above.
  */
-const nonDelegatingMentions: ReadonlySet<string> = new Set([
-  "BOUNDARY-ERROR-SPEC.md",
-  "CREATE-DOCUMENT-DATA-SPEC.md",
-  "SCOPED-DATA-SPEC.md",
-  "SERVICE-TASK-EFFECT-SPEC.md",
-  "SUBPROCESS-ERROR-PROPAGATION-SPEC.md",
-  "USER-TASK-COMPLETION-DATA-SPEC.md",
+const nonDelegatingMentions: ReadonlyMap<string, ReadonlyArray<string>> = new Map([
+  ["BOUNDARY-ERROR-SPEC.md", ["## Required scope", "## Excluded scope"]],
+  ["COMMITTED-EXECUTION-PUBLICATION-SPEC.md", ["## Required, optional, and excluded functionality"]],
+  ["CREATE-DOCUMENT-DATA-SPEC.md", ["## Required scope", "## Excluded scope"]],
+  ["SCOPED-DATA-SPEC.md", ["## Required scope", "## Excluded scope"]],
+  ["SERVICE-TASK-EFFECT-SPEC.md", ["## Required scope", "## Excluded scope"]],
+  ["SUBPROCESS-ERROR-PROPAGATION-SPEC.md", ["## Implemented and excluded surface"]],
+  ["USER-TASK-COMPLETION-DATA-SPEC.md", ["## Data contract", "## Explicit exclusions"]],
 ]);
+
+/** A non-delegating mention stays classified only while its own scope headings remain exact. */
+function retainsOwnScope(capsule: string, markdown: string): boolean {
+  const headings = nonDelegatingMentions.get(capsule);
+  if (headings === undefined) {
+    return false;
+  }
+  const lines = new Set(markdown.split("\n"));
+  return headings.every((heading) => lines.has(heading));
+}
 
 /** Capsules that link the map, claim no delegation, and are not recorded as doing so deliberately. */
 function unclassifiedMentions(
@@ -90,7 +101,7 @@ function unclassifiedMentions(
     .filter(([capsule, markdown]) =>
       markdown.includes("IMPLEMENTATION-MAP.md") &&
       !delegating.has(capsule) &&
-      !nonDelegatingMentions.has(capsule)
+      !retainsOwnScope(capsule, markdown)
     )
     .map(([capsule]) => capsule)
     .sort();
@@ -265,5 +276,17 @@ test("rejects an unanswered delegation and a section emptied to a mention", () =
     ),
     ["C-SPEC.md"],
     "a reworded delegation must fail as unclassified rather than pass as a non-delegation",
+  );
+
+  assert.deepEqual(
+    unclassifiedMentions(
+      new Map([[
+        "BOUNDARY-ERROR-SPEC.md",
+        "Current evidence is recorded in [the map](../IMPLEMENTATION-MAP.md).",
+      ]]),
+      [],
+    ),
+    ["BOUNDARY-ERROR-SPEC.md"],
+    "a listed non-delegation must not stay classified after its own scope sections disappear",
   );
 });
