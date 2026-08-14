@@ -121,6 +121,19 @@ export * from "./definition-start.js";
 export * from "./definition-capabilities.js";
 export * from "./definition-message-start.js";
 export * from "./definition-schedule.js";
-export * from "./process-locator.js";
+export {
+  engineProcessLocatorForCanonicalProcess,
+  engineProcessLocatorForScheduleExecution,
+  engineProcessWorkLocatorForCanonicalProcess,
+  engineProcessWorkLocatorForScheduleExecution,
+  parseEngineProcessLocator,
+  parseEngineProcessWorkLocator,
+  serializeEngineProcessLocator,
+  serializeEngineProcessWorkLocator,
+} from "./process-locator.js";
+export type {
+  EngineProcessLocator,
+  EngineProcessWorkLocator,
+} from "./process-locator.js";
 export * from "./process-operations.js";
 export * from "./process-work.js";
