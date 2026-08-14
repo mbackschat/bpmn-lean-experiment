@@ -2,17 +2,17 @@
 
 ## Status
 
-**Owner-approved on 2026-08-14 after independent proposal review; at its first green Product 1 checkpoint and not evidence-closed.** The owner approved all nine selected decisions together. The checkpoint implements the exhaustive TypeScript and proved Lean lifecycle relation, the separate strict occurrence wire, one replay-stable commit-time sample per complete command batch, an immutable Workflow accumulator, and the unconditional E1-aligned cursor Query. Product 1 client and engine API exposure, live retention and replay evidence, every Product 2 contract, projection, aggregate, route, and UI surface, and closure evidence remain absent. Product 2 work is paused until the required context-cold semantic-checkpoint review closes.
+**Owner-approved on 2026-08-14 after independent proposal review; semantic-checkpoint-approved and not evidence-closed.** The owner approved all nine selected decisions together. The checkpoint implements the exhaustive TypeScript and proved Lean lifecycle relation, the separate strict occurrence wire, one replay-stable commit-time sample per complete command batch, an immutable Workflow accumulator, and the unconditional E1-aligned cursor Query. Product 1 client and engine API exposure, live retention and replay evidence, every Product 2 contract, projection, aggregate, route, and UI surface, and closure evidence remain absent.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `25034641c5566bfd9e0dbc5c99b9ded673c7922b` | `fork-turns-none` | `approve-with-required-edits` | `5a75af9e18937f3199ddb02b8ef3c33afd43bba9` |
-| Semantic checkpoint | `8c27eca` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `33ffa624144d66aa561da59ca42663f3d5af3de9` | `fork-turns-none` | `approve-with-required-edits` | `4aa081bcd76b1d54cabc8778928ffae8287e21fa` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The first green implementation checkpoint ends at `8c27eca`, after the TypeScript lifecycle commit `9601e17` and the strict protocol and Temporal publication commit `2cbdfbd`. A commit cannot contain its own Git identity, so the immutable review target is the documentation-only follow-up that carries this current Status section and the routed owner updates. The reviewer receives that exact descendant commit and the checkpoint baseline `6520448`. The row remains `pending` until the context-cold reviewer returns a verdict and any same-reviewer correction audit closes.
+The first green implementation checkpoint ended at `8c27eca`, after the TypeScript lifecycle commit `9601e17` and the strict protocol and Temporal publication commit `2cbdfbd`. The context-cold review used the documentation follow-up `33ffa62` as its immutable target and baseline `6520448`. One same-reviewer correction audit approved `4aa081b`, closing Program-authoritative Lean projection and zero clock sampling on malformed publication without changing the selected account or public contract.
 
 ## Lean assurance selection
 
