@@ -170,7 +170,7 @@ test("rejects empty process identifiers and unsafe definition versions", () => {
   );
 });
 
-test("preserves legacy public API error order and appends Work-only codes", () => {
+test("preserves legacy public API error order and appends route-specific codes", () => {
   assert.equal(PublicApiErrorCode.MethodNotAllowed, "methodNotAllowed");
   assert.deepEqual(Object.values(PublicApiErrorCode), [
     "invalidRequest",
@@ -183,6 +183,7 @@ test("preserves legacy public API error order and appends Work-only codes", () =
     "forbidden",
     "formValueIncompatible",
     "workSnapshotUnavailable",
+    "incidentSnapshotUnavailable",
   ]);
 });
 
@@ -193,15 +194,16 @@ test("decodes every code in one exact route-owned public API error set", () => {
   }
 });
 
-test("legacy Definition, Schedule, Message, and Search sets reject every Work-only code", () => {
+test("legacy Definition, Schedule, Message, and Search sets reject every later route code", () => {
   const legacyRoutes = ["Definition", "Schedule", "Message", "Search"];
-  const workOnlyCodes = [
+  const laterRouteCodes = [
     PublicApiErrorCode.Forbidden,
     PublicApiErrorCode.FormValueIncompatible,
     PublicApiErrorCode.WorkSnapshotUnavailable,
+    PublicApiErrorCode.IncidentSnapshotUnavailable,
   ];
   for (const route of legacyRoutes) {
-    for (const code of workOnlyCodes) {
+    for (const code of laterRouteCodes) {
       assert.throws(
         () => decodePublicApiErrorResponse(
           { error: { code, message: `${route} must reject this code` } },

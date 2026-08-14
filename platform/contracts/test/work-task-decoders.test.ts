@@ -330,7 +330,18 @@ test("decodes exact audit events, actions, cursors, and canonical timestamps", (
 });
 
 test("Work errors accept the exact extended code set and reject private fields", () => {
-  assert.deepEqual(WorkApiErrorCodes, Object.values(PublicApiErrorCode));
+  assert.deepEqual(WorkApiErrorCodes, [
+    "invalidRequest",
+    "methodNotAllowed",
+    "unsupportedMediaType",
+    "payloadTooLarge",
+    "notFound",
+    "internalFailure",
+    "conflict",
+    "forbidden",
+    "formValueIncompatible",
+    "workSnapshotUnavailable",
+  ]);
   for (const code of WorkApiErrorCodes) {
     const input = { error: { code, message: `${code} response` } };
     assert.deepEqual(

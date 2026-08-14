@@ -18,7 +18,8 @@ test("provides bounded local-MVP defaults", () => {
     temporalTaskQueue: "bpmn-semantic",
     temporalConnectTimeoutMs: 5000,
     fakeActorId: "demo-user",
-    fakeActorGroups: ["reviewers"],
+    fakeActorGroups: ["reviewers", "operators"],
+    operationsGroupId: "operators",
     maxWorkProcesses: 100,
     maxWorkTasks: 1000,
   });
@@ -38,6 +39,7 @@ test("snapshots explicit environment configuration", () => {
     PLATFORM_TEMPORAL_CONNECT_TIMEOUT_MS: "4000",
     PLATFORM_FAKE_ACTOR_ID: "reviewer-1",
     PLATFORM_FAKE_ACTOR_GROUPS_JSON: '["reviewers","managers"]',
+    PLATFORM_OPERATIONS_GROUP_ID: "process-operators",
     PLATFORM_MAX_WORK_PROCESSES: "40",
     PLATFORM_MAX_WORK_TASKS: "250",
   };
@@ -56,6 +58,7 @@ test("snapshots explicit environment configuration", () => {
     temporalConnectTimeoutMs: 4000,
     fakeActorId: "reviewer-1",
     fakeActorGroups: ["reviewers", "managers"],
+    operationsGroupId: "process-operators",
     maxWorkProcesses: 40,
     maxWorkTasks: 250,
   });
@@ -70,12 +73,18 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
     "PLATFORM_TEMPORAL_NAMESPACE",
     "PLATFORM_TEMPORAL_TASK_QUEUE",
     "PLATFORM_FAKE_ACTOR_ID",
+    "PLATFORM_OPERATIONS_GROUP_ID",
   ]) {
     assert.throws(
       () => readPlatformServerConfig({ [name]: "" }),
       new RegExp(name, "u"),
     );
   }
+
+  assert.throws(
+    () => readPlatformServerConfig({ PLATFORM_OPERATIONS_GROUP_ID: "\uD800" }),
+    /PLATFORM_OPERATIONS_GROUP_ID/u,
+  );
 
   for (const name of [
     "PLATFORM_PORT",

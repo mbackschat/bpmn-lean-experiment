@@ -13,7 +13,8 @@ const defaultTemporalNamespace = "default";
 const defaultTemporalTaskQueue = "bpmn-semantic";
 const defaultTemporalConnectTimeoutMs = 5_000;
 const defaultFakeActorId = "demo-user";
-const defaultFakeActorGroups = ["reviewers"] as const;
+const defaultFakeActorGroups = ["reviewers", "operators"] as const;
+const defaultOperationsGroupId = "operators";
 const defaultMaxWorkProcesses = 100;
 const defaultMaxWorkTasks = 1_000;
 
@@ -30,6 +31,7 @@ export type PlatformServerConfig = Readonly<{
   temporalConnectTimeoutMs: number;
   fakeActorId: string;
   fakeActorGroups: readonly string[];
+  operationsGroupId: string;
   maxWorkProcesses: number;
   maxWorkTasks: number;
 }>;
@@ -95,6 +97,11 @@ export function readPlatformServerConfig(
       defaultFakeActorId,
     ),
     fakeActorGroups: readFakeActorGroups(environment),
+    operationsGroupId: readIdentifier(
+      environment,
+      "PLATFORM_OPERATIONS_GROUP_ID",
+      defaultOperationsGroupId,
+    ),
     maxWorkProcesses: readPositiveSafeInteger(
       environment,
       "PLATFORM_MAX_WORK_PROCESSES",
@@ -126,6 +133,7 @@ export function snapshotPlatformServerConfig(
   );
   requireNonempty(config.fakeActorId, "fakeActorId");
   const fakeActorGroups = snapshotFakeActorGroups(config.fakeActorGroups);
+  requireIdentifier(config.operationsGroupId, "operationsGroupId");
   requirePositiveSafeInteger(config.maxWorkProcesses, "maxWorkProcesses");
   requirePositiveSafeInteger(config.maxWorkTasks, "maxWorkTasks");
   return { ...config, publicOrigin, fakeActorGroups };
@@ -176,6 +184,16 @@ function readNonemptyString(
   return value;
 }
 
+function readIdentifier(
+  environment: NodeJS.ProcessEnv,
+  name: string,
+  defaultValue: string,
+): string {
+  const value = environment[name] ?? defaultValue;
+  requireIdentifier(value, name);
+  return value;
+}
+
 function readPort(
   environment: NodeJS.ProcessEnv,
   name: string,
@@ -213,6 +231,16 @@ function readPositiveSafeInteger(
 function requireNonempty(value: string, name: string): void {
   if (typeof value !== "string" || value.length === 0) {
     throw new TypeError(`${name} must be a nonempty string`);
+  }
+}
+
+function requireIdentifier(value: string, name: string): void {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    !value.isWellFormed()
+  ) {
+    throw new TypeError(`${name} must be nonempty well-formed Unicode`);
   }
 }
 

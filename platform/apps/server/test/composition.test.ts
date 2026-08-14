@@ -43,6 +43,7 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     temporalConnectTimeoutMs: 5000,
     fakeActorId: "demo-user",
     fakeActorGroups: ["reviewers"],
+    operationsGroupId: "operators",
     maxWorkProcesses: 100,
     maxWorkTasks: 1000,
   });
@@ -186,6 +187,7 @@ test("validates all configuration before creating its data directory", async () 
       temporalConnectTimeoutMs: 5000,
       fakeActorId: "demo-user",
       fakeActorGroups: ["reviewers"],
+      operationsGroupId: "operators",
       maxWorkProcesses: 100,
       maxWorkTasks: 1000,
     }), /publicOrigin/u);
@@ -327,6 +329,7 @@ function platformConfig(
     temporalConnectTimeoutMs: 5_000,
     fakeActorId: "demo-user",
     fakeActorGroups: ["reviewers"],
+    operationsGroupId: "operators",
     maxWorkProcesses: 100,
     maxWorkTasks: 1_000,
   } as const;

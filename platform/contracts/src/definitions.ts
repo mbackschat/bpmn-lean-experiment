@@ -108,6 +108,7 @@ export const PublicApiErrorCode = {
   Forbidden: "forbidden",
   FormValueIncompatible: "formValueIncompatible",
   WorkSnapshotUnavailable: "workSnapshotUnavailable",
+  IncidentSnapshotUnavailable: "incidentSnapshotUnavailable",
 } as const;
 
 export type PublicApiErrorCode =
