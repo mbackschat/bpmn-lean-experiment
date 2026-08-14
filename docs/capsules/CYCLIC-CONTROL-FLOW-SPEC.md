@@ -26,7 +26,7 @@ The recommendation is **yes, under the exact profile, graph criterion, operation
 
 ## Selection basis
 
-[PLAN.md](../PLAN.md#engine-backlog-behind-the-ladder) puts compositional admission with cycles first in M2 because acyclicity is currently a structural premise of reachability, closure, and stable-state laws. Replacing it is more fundamental than adding another source element to an acyclic graph.
+[PLAN.md](../PLAN.md#showcase-milestone-ladder) puts compositional admission with cycles first in M2 because acyclicity is currently a structural premise of reachability, closure, and stable-state laws. Replacing it is more fundamental than adding another source element to an acyclic graph.
 
 The predecessor [compositional admission experiment](../archived/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md) proved reusable finite graph validation but deliberately excluded cycles and was superseded before production widening. The [profile-parameterized admission specification](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns the production mechanism: generic structural validation plus an exact profile capability. This specification records the implementation of its reopen trigger, a profile that needs graph structure the universal acyclicity predicate rejects.
 
