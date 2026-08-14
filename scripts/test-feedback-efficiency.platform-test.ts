@@ -70,7 +70,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   const web = scripts(webSource);
   const uiKit = scripts(uiKitSource);
   assert.equal(root["test:infrastructure:runtime"], "node --test --test-concurrency=2 scripts/*.test.ts");
-  assert.equal(root["test:temporal:built"], "node --test --test-concurrency=3 packages/temporal-adapter/testkit/test/*.test.ts");
+  assert.equal(root["test:temporal:built"], "node --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts");
   assert.equal(root["test:pre-push:platform"], "pnpm check:clean-head && pnpm test:platform-operations-checkpoint");
   assert.equal(root["test:pre-push:showcase"], "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types");
   assert.equal(root["test:pre-push:ui"], "pnpm check:clean-head && pnpm test:feedback-policy && pnpm build:platform-web && pnpm test:platform-web:built && pnpm test:ui-quality:built");
