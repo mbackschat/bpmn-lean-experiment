@@ -2,7 +2,7 @@
 
 ## Status
 
-**Independently proposal-reviewed; owner approval has not been requested and implementation is not authorized.** This proposal selects one additive Product 1 publication for exact BPMN flow-node occurrence lifecycles and replay-stable commit times, plus the smallest Product 2 frequency and completed-duration surface for one exact definition version. It changes public observation and Temporal refinement, but no BPMN meaning, profile capability, CIB relationship, admitted source, Semantic Process IL operation, RuntimeState field, or command outcome.
+**Owner-approved on 2026-08-14 after independent proposal review; implementation is in progress.** The owner approved all nine selected decisions together. This proposal selects one additive Product 1 publication for exact BPMN flow-node occurrence lifecycles and replay-stable commit times, plus the smallest Product 2 frequency and completed-duration surface for one exact definition version. It changes public observation and Temporal refinement, but no BPMN meaning, profile capability, CIB relationship, admitted source, Semantic Process IL operation, RuntimeState field, or command outcome.
 
 ## Independent cold-review receipt
 
