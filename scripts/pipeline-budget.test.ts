@@ -21,11 +21,11 @@ test("keeps the portable budget and both process deadlines ordered", () => {
 });
 
 test("derives both process deadlines from a hosted budget", () => {
-  const environment = { BPMN_PIPELINE_WARM_BUDGET_MS: "60000" };
+  const environment = { BPMN_PIPELINE_WARM_BUDGET_MS: "130000" };
 
-  assert.equal(warmBudgetMs(environment), 60_000);
-  assert.equal(warmPipelineTestTimeoutMs(environment), 65_000);
-  assert.equal(warmPipelineCommandTimeoutMs(environment), 70_000);
+  assert.equal(warmBudgetMs(environment), 130_000);
+  assert.equal(warmPipelineTestTimeoutMs(environment), 135_000);
+  assert.equal(warmPipelineCommandTimeoutMs(environment), 140_000);
 });
 
 test("rejects malformed warm-pipeline budgets", () => {

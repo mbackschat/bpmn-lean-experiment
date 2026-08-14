@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { defaultCibSevenMavenTimeoutMs } from "./cibseven-maven-budget.ts";
 import { defaultWarmBudgetMs } from "./pipeline-budget.ts";
 
 const verifyScriptPath = fileURLToPath(
@@ -168,6 +169,10 @@ test("hosted warm-pipeline budget has real headroom and the runner derives its d
   assert.ok(
     hostedBudget >= defaultWarmBudgetMs * 1.5,
     `hosted warm-pipeline budget ${hostedBudget}ms must retain at least 50% headroom above the portable default ${defaultWarmBudgetMs}ms`,
+  );
+  assert.ok(
+    hostedBudget >= defaultCibSevenMavenTimeoutMs + 10_000,
+    `hosted warm-pipeline budget ${hostedBudget}ms must exceed the longest nested CIB deadline ${defaultCibSevenMavenTimeoutMs}ms plus reporting headroom`,
   );
   assert.match(
     pipelineRunner,
