@@ -220,6 +220,20 @@ test("keeps feature styling inside CSS Modules and the exact UI token vocabulary
   }
 });
 
+test("diagram visual evidence waits for the completed render and marker mutation", async () => {
+  const [component, fixtures] = await Promise.all([
+    read("platform/apps/web/src/definition-diagram.tsx"),
+    read("showcase/platform-ui-quality/e2e/fixtures.ts"),
+  ]);
+
+  assert.match(
+    component,
+    /data-diagram-status=\{rendering \? "rendering" : renderError === null \? "ready" : "failed"\}/u,
+  );
+  assert.match(fixtures, /\[data-ui="definition-diagram-surface"\]\[data-diagram-status="ready"\]/u);
+  assert.doesNotMatch(fixtures, /Rendering diagram[\s\S]{0,160}\.catch\(\(\) => undefined\)/u);
+});
+
 test("rejects planted feature styling and control ownership violations", () => {
   const plantedModule = `
     .owner :global([data-ui="data-table"] td) { padding: 10px; }

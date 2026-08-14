@@ -150,6 +150,7 @@ export function DefinitionDiagram({
     <section
       className={styles.panel}
       aria-label={`Complete diagram workspace for ${definition.processId}, version ${definition.version}`}
+      data-diagram-status={rendering ? "rendering" : renderError === null ? "ready" : "failed"}
       data-ui="definition-diagram-surface"
     >
       <div className={styles.heading}>

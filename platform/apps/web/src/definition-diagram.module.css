@@ -94,14 +94,13 @@
 }
 
 .canvas :global(.djs-shape.bpmn-platform-incident > .djs-visual > :first-child) {
-  fill: var(--ui-color-error-surface) !important;
   stroke: var(--ui-color-error) !important;
-  stroke-width: 3px !important;
+  stroke-width: 4px !important;
 }
 
 .canvas :global(.djs-connection.bpmn-platform-incident > .djs-visual > path) {
   stroke: var(--ui-color-error) !important;
-  stroke-width: 3px !important;
+  stroke-width: 4px !important;
 }
 
 .canvas :global(.djs-connection.bpmn-platform-incident > .djs-visual > defs > marker > path) {

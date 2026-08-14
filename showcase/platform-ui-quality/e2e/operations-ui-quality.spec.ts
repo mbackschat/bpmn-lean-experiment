@@ -111,7 +111,7 @@ test("incident collection and full-width detail remain contained and focus-safe"
 test("incident Diagram shows the exact highlighted element and reduced motion", async ({ page }) => {
   await openIncident(page);
   await page.getByRole("tab", { name: "Diagram" }).click();
-  await waitForStableUi(page);
+  await waitForStableUi(page, { diagram: true });
   const detail = page.locator('[data-ui="incident-detail"]');
   const diagramSurface = page.locator('[data-ui="definition-diagram-surface"]');
   await expect(diagramSurface).toBeVisible();
@@ -343,7 +343,7 @@ test("Operations incident Diagram detail visual @visual", async ({ page }) => {
   test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
   await openIncident(page);
   await page.getByRole("tab", { name: "Diagram" }).click();
-  await waitForStableUi(page);
+  await waitForStableUi(page, { diagram: true });
   await expect(page.locator('[data-ui="incident-detail"]')).toHaveScreenshot(
     "operations-incident-detail-diagram.png",
     screenshotOptions,

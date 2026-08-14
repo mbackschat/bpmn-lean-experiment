@@ -61,7 +61,7 @@ test("History preserves exact revision order, labels, and repeated occurrence id
 test("Diagram highlights every present position and reports off-diagram positions honestly", async ({ page }) => {
   await openExecutionDetail(page);
   await page.getByRole("tab", { name: "Diagram" }).click();
-  await waitForStableUi(page);
+  await waitForStableUi(page, { diagram: true });
   const diagram = page.locator('[data-ui="execution-diagram"]');
   await expectExactDiagramMarkers(diagram);
   const missing = diagram.getByRole("status");
@@ -166,7 +166,7 @@ test("Process execution Diagram visual @visual", async ({ page }) => {
   test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
   await openExecutionDetail(page);
   await page.getByRole("tab", { name: "Diagram" }).click();
-  await waitForStableUi(page);
+  await waitForStableUi(page, { diagram: true });
   const detail = page.locator('[data-ui="process-execution-detail"]');
   await expectExactDiagramMarkers(detail.locator('[data-ui="execution-diagram"]'));
   await expect(detail).toHaveScreenshot(

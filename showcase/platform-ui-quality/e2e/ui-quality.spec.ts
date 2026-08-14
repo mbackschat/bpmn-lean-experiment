@@ -116,7 +116,7 @@ test("reduced motion is active and task-detail diagram stays contained", async (
   await openFixture(page);
   await page.getByRole("button", { name: fixtureLabels.task }).click();
   await page.getByRole("tab", { name: "Diagram" }).click();
-  await waitForStableUi(page);
+  await waitForStableUi(page, { diagram: true });
   const completeDiagram = page.getByRole("region", {
     name: `Complete diagram workspace for ${fixtureLabels.process}, version 7`,
     exact: true,
@@ -280,7 +280,7 @@ test("generated definition diagram visual @visual", async ({ page }) => {
   test.skip(process.platform !== "linux", "Shared visual baselines are Linux-only.");
   await openFixture(page);
   await page.getByRole("button", { name: "Definitions" }).click();
-  await waitForStableUi(page);
+  await waitForStableUi(page, { diagram: true });
   await expect(page.getByText("Generated layout", { exact: true })).toBeVisible();
   await expect(page.getByRole("region", {
     name: `Complete diagram workspace for ${fixtureLabels.process}, version 7`,

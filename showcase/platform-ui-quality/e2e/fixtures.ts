@@ -120,11 +120,17 @@ export async function installPublicApiFixtures(
   });
 }
 
-export async function waitForStableUi(page: Page): Promise<void> {
+export async function waitForStableUi(
+  page: Page,
+  options: Readonly<{ diagram?: boolean }> = {},
+): Promise<void> {
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
-  await page.locator('[role="status"]').filter({ hasText: "Rendering diagram" })
-    .waitFor({ state: "detached" }).catch(() => undefined);
+  if (options.diagram === true) {
+    await page.locator(
+      '[data-ui="definition-diagram-surface"][data-diagram-status="ready"]',
+    ).waitFor({ state: "visible" });
+  }
   await page.evaluate(() => new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
   ));

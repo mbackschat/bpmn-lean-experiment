@@ -164,6 +164,8 @@ test("styles only the exact marked BPMN element visual, never descendant element
     markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-selected"),
   );
   assert.match(incidentRules, /var\(--ui-color-error\)/u);
+  assert.doesNotMatch(incidentRules, /fill:\s*var\(--ui-color-error-surface\)/u);
+  assert.match(incidentRules, /stroke-width:\s*4px/u);
   const selectedRules = markerCss.slice(
     markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-selected"),
     markerCss.indexOf("@container"),
