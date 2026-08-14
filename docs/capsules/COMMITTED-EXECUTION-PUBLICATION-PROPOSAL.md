@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved on 2026-08-14; the Product 1 semantic checkpoint correction is implemented and awaiting final same-reviewer audit.** Independent review of immutable checkpoint `478d936e5a33e3fa3b9dbc17880645c7da6d6a9a` returned `approve-with-required-edits` for four reproduced defects: invalid Lean runtime-position forests, unresolved TypeScript internal-operation ambiguity, unanchored positive-cursor producer continuity, and an undeclared dependency in emitted engine API declarations. The first correction at `f17782d6d490fc0153267734305a91890790c0d8` closed those mechanisms, while its warm audit found two bounded continuity defects: ambiguity metadata had widened the existing public command-result object, and TypeScript position projection still accepted called-Process associations that Lean rejected. The final correction restores the exact old command-result shape, retains ambiguity only inside traced evaluation, and makes TypeScript projection use the same complete called-Process association invariant as Lean. Product 2 projection, live Temporal retention/replay evidence, History, Diagram, and export remain unimplemented. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. The checkpoint changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
+**Owner-approved on 2026-08-14; the Product 1 semantic checkpoint is independently approved through correction audit `6f6ab9dd424de304842b03164e954b279d359492`.** Independent review of immutable checkpoint `478d936e5a33e3fa3b9dbc17880645c7da6d6a9a` returned `approve-with-required-edits` for invalid Lean runtime-position forests, unresolved TypeScript internal-operation ambiguity, unanchored positive-cursor producer continuity, and an undeclared dependency in emitted engine API declarations. Same-reviewer correction audits closed those mechanisms, restored the exact old command-result shape, aligned TypeScript and Lean called-Process projection, corrected every maintained selector account, and added repository-wide regression guards. Product 2 projection, live Temporal retention/replay evidence, History, Diagram, and export remain unimplemented. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. The checkpoint changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `64509884d8cb4939d2251da008082c922f307d28` | `fork-turns-none` | `approve-with-required-edits` | `54a15fe4cc4e0efd7c587ddb2493e5e64bc2f950` |
-| Semantic checkpoint | `478d936e5a33e3fa3b9dbc17880645c7da6d6a9a` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `478d936e5a33e3fa3b9dbc17880645c7da6d6a9a` | `fork-turns-none` | `approve-with-required-edits` | `6f6ab9dd424de304842b03164e954b279d359492` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question and recommendation
