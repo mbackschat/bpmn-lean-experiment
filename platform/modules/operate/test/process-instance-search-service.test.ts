@@ -17,7 +17,7 @@ test("records through the structural async publisher contract", async () => {
   const repository = new MemoryRepository();
   const service = new ProcessInstanceSearchService(repository);
 
-  await service.recordProcessInstance(instance("instance-1", 1));
+  await service.recordConfirmedProcessInstance(publication(instance("instance-1", 1)));
 
   assert.equal(repository.rows.length, 1);
   assert.equal(repository.rows[0]?.instance.processInstanceId, "instance-1");
@@ -26,9 +26,9 @@ test("records through the structural async publisher contract", async () => {
 test("pages newest-first with an opaque stable insertion boundary", () => {
   const repository = new MemoryRepository();
   const service = new ProcessInstanceSearchService(repository);
-  repository.record(instance("oldest", 1));
-  repository.record(instance("middle", 2));
-  repository.record(instance("newest", 3));
+  repository.recordConfirmed(publication(instance("oldest", 1)));
+  repository.recordConfirmed(publication(instance("middle", 2)));
+  repository.recordConfirmed(publication(instance("newest", 3)));
 
   const first = service.searchProcessInstances({ limit: 2 });
   assert.deepEqual(
@@ -41,7 +41,7 @@ test("pages newest-first with an opaque stable insertion boundary", () => {
     assert.fail("the first page must expose its older-row cursor");
   }
 
-  repository.record(instance("inserted-between-pages", 4));
+  repository.recordConfirmed(publication(instance("inserted-between-pages", 4)));
   const second = service.searchProcessInstances({
     cursor: first.nextCursor,
     limit: 2,
@@ -56,9 +56,9 @@ test("pages newest-first with an opaque stable insertion boundary", () => {
 test("applies exact filters and validates direct service input", () => {
   const repository = new MemoryRepository();
   const service = new ProcessInstanceSearchService(repository);
-  repository.record(instance("first", 1, "Alpha", "a".repeat(64)));
-  repository.record(instance("second", 2, "Beta", "b".repeat(64)));
-  repository.record(instance("third", 2, "Alpha", "b".repeat(64)));
+  repository.recordConfirmed(publication(instance("first", 1, "Alpha", "a".repeat(64))));
+  repository.recordConfirmed(publication(instance("second", 2, "Beta", "b".repeat(64))));
+  repository.recordConfirmed(publication(instance("third", 2, "Alpha", "b".repeat(64))));
 
   assert.deepEqual(
     service.searchProcessInstances({ processId: "Alpha" }).instances.map(
@@ -90,12 +90,46 @@ test("applies exact filters and validates direct service input", () => {
 });
 
 class MemoryRepository implements ProcessInstanceRepository {
-  readonly rows: StoredProcessInstance[] = [];
+  readonly rows: Array<StoredProcessInstance & {
+    locator: string;
+    observation: "active" | "closed" | "indeterminate";
+  }> = [];
 
-  record(candidate: PublicProcessInstanceIdentity): number {
+  recordConfirmed(candidate: Readonly<{
+    instance: PublicProcessInstanceIdentity;
+    locator: string;
+  }>): number {
     const ordinal = this.rows.length + 1;
-    this.rows.push({ ordinal, instance: structuredClone(candidate) });
+    this.rows.push({
+      ordinal,
+      instance: structuredClone(candidate.instance),
+      locator: candidate.locator,
+      observation: "active",
+    });
     return ordinal;
+  }
+
+  getRegistration(processInstanceId: string) {
+    return structuredClone(this.rows.find(({ instance: value }) =>
+      value.processInstanceId === processInstanceId
+    ) ?? null);
+  }
+
+  listNonclosed(limit: number) {
+    return structuredClone(this.rows.filter(({ observation }) =>
+      observation !== "closed"
+    ).slice(0, limit));
+  }
+
+  recordObservation(
+    processInstanceId: string,
+    observation: "active" | "closed" | "indeterminate",
+  ): void {
+    const row = this.rows.find(({ instance: value }) =>
+      value.processInstanceId === processInstanceId
+    );
+    if (row === undefined) throw new Error("unknown registration");
+    row.observation = observation;
   }
 
   search(query: ProcessInstanceRepositoryQuery): ReadonlyArray<StoredProcessInstance> {
@@ -110,6 +144,13 @@ class MemoryRepository implements ProcessInstanceRepository {
         candidate.definition.source.sha256 === query.sourceSha256)
     ).slice(0, query.limit).map((row) => structuredClone(row));
   }
+}
+
+function publication(instanceValue: PublicProcessInstanceIdentity) {
+  return {
+    instance: instanceValue,
+    locator: `bpmn-process-work-v1:${instanceValue.processInstanceId}`,
+  };
 }
 
 function instance(

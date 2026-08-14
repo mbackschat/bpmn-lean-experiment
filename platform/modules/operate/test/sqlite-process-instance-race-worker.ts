@@ -20,7 +20,10 @@ Atomics.wait(gate, 0, 0);
 
 const repository = new SqliteProcessInstanceRepository(data.databaseFile);
 try {
-  const ordinal = repository.record(data.instance);
+  const ordinal = repository.recordConfirmed({
+    instance: data.instance,
+    locator: `bpmn-process-work-v1:${data.instance.processInstanceId}`,
+  });
   parentPort?.postMessage({ outcome: "recorded", ordinal });
 } catch (error: unknown) {
   if (error instanceof ProcessInstanceIdentityIntegrityError) {

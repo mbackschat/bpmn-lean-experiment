@@ -290,6 +290,9 @@ importers:
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../contracts
+      '@bpmn-lean/platform-identity-policy':
+        specifier: workspace:*
+        version: link:../../foundation/identity-policy
 
   platform/modules/work:
     dependencies:

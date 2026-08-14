@@ -1,5 +1,11 @@
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 
+import type {
+  ConfirmedProcessOperationsPublication,
+  OperateProcessObservation,
+  OperateProcessRegistration,
+} from "./incident-contracts.js";
+
 /** Private keyset row kept inside the Operate module. */
 export type StoredProcessInstance = Readonly<{
   ordinal: number;
@@ -18,12 +24,18 @@ export type ProcessInstanceRepositoryQuery = Readonly<{
 
 /** Append-only persistence port for confirmed public Process-instance facts. */
 export interface ProcessInstanceRepository {
-  /** Returns the original positive ordinal when the exact identity already exists. */
-  record(instance: PublicProcessInstanceIdentity): number;
+  /** Returns the original positive ordinal when the exact publication already exists. */
+  recordConfirmed(publication: ConfirmedProcessOperationsPublication): number;
   /** Returns at most `limit` decoded rows newest-first below the optional ordinal. */
   search(
     query: ProcessInstanceRepositoryQuery,
   ): ReadonlyArray<StoredProcessInstance>;
+  getRegistration(processInstanceId: string): OperateProcessRegistration | null;
+  listNonclosed(limit: number): ReadonlyArray<OperateProcessRegistration>;
+  recordObservation(
+    processInstanceId: string,
+    observation: OperateProcessObservation,
+  ): void;
 }
 
 /** Same semantic Process-instance identity was presented with different public bytes. */

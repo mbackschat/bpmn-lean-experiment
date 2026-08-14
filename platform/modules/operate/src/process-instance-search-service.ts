@@ -11,6 +11,9 @@ import type {
   ProcessInstanceRepository,
   ProcessInstanceRepositoryQuery,
 } from "./contracts.js";
+import type {
+  ConfirmedProcessOperationsPublication,
+} from "./incident-contracts.js";
 import { snapshotProcessInstanceIdentity } from "./process-instance-values.js";
 
 const defaultLimit = 50;
@@ -22,10 +25,13 @@ export class ProcessInstanceSearchService {
   constructor(private readonly repository: ProcessInstanceRepository) {}
 
   /** Structural publisher port consumed by definitions without a module import. */
-  async recordProcessInstance(
-    instance: PublicProcessInstanceIdentity,
+  async recordConfirmedProcessInstance(
+    publication: ConfirmedProcessOperationsPublication,
   ): Promise<void> {
-    this.repository.record(snapshotProcessInstanceIdentity(instance));
+    this.repository.recordConfirmed({
+      instance: snapshotProcessInstanceIdentity(publication.instance),
+      locator: publication.locator,
+    });
   }
 
   /** Returns at most 50 by default or the requested maximum of 100 exact identities. */

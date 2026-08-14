@@ -6,7 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
 import {
-  ProcessInstanceSchemaResetRequiredError,
+  OperateSchemaResetRequiredError,
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
 
@@ -17,14 +17,18 @@ test("sets an independent epoch on a fresh Process-instance database", async () 
 
     const database = new DatabaseSync(databaseFile, { readOnly: true });
     try {
-      assert.equal(database.prepare("PRAGMA user_version").get()?.user_version, 1);
+      assert.equal(database.prepare("PRAGMA user_version").get()?.user_version, 2);
       assert.deepEqual(
         database.prepare(`
           SELECT name FROM sqlite_schema
           WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
           ORDER BY name
         `).all().map((row) => ({ name: row.name })),
-        [{ name: "process_instances" }],
+        [
+          { name: "incident_action_audit_outbox" },
+          { name: "incident_actions" },
+          { name: "process_instances" },
+        ],
       );
     } finally {
       database.close();
@@ -35,7 +39,7 @@ test("sets an independent epoch on a fresh Process-instance database", async () 
 test("rejects prior, unknown, and corrupt schemas before reading rows", async () => {
   for (const initialize of [
     (database: DatabaseSync) => database.exec(`
-      PRAGMA user_version = 2;
+      PRAGMA user_version = 1;
       CREATE TABLE process_instances (legacy TEXT) STRICT;
     `),
     (database: DatabaseSync) => database.exec(`
@@ -77,7 +81,7 @@ test("rejects prior, unknown, and corrupt schemas before reading rows", async ()
       assert.throws(
         () => new SqliteProcessInstanceRepository(databaseFile),
         (error: unknown) =>
-          error instanceof ProcessInstanceSchemaResetRequiredError,
+          error instanceof OperateSchemaResetRequiredError,
       );
     });
   }
