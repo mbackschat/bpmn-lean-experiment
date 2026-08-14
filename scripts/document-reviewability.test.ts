@@ -5,7 +5,11 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { markdownTableRows, withoutBackticks } from "./markdown-tables.ts";
-import { headroom, nonblankLines } from "./source-measure.ts";
+import {
+  headroom,
+  isHandWrittenSourcePath,
+  nonblankLines,
+} from "./source-measure.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const surfaceSectionStart = "## Implemented and absent surfaces";
@@ -72,9 +76,6 @@ function registeredSemanticProfileIds(source: string): ReadonlyArray<string> {
 const bindingInventoryHeading = "## Versioning consequences";
 /** Subsection whose rows pair one source owner with its measured remaining headroom. */
 const ownerInventoryHeading = "### Owners this implementation grows";
-/** Extensions the module-size boundaries apply to, so a named owner is a real change site. */
-const sourceOwnerExtensions = new Set([".cjs", ".java", ".js", ".lean", ".mjs", ".ts"]);
-
 /** Closed disposition set of the process-assessment ledger, with the dispositions prose may use once. */
 const processDispositions = [
   "executable guard",
@@ -488,7 +489,7 @@ test("every capsule proposal names the guards and owners that already bind it", 
     if (
       !resolved.some((target) =>
         !target.endsWith(".test.ts") &&
-        sourceOwnerExtensions.has(path.extname(target))
+        isHandWrittenSourcePath(target)
       )
     ) {
       findings.push(`${proposal}: names no source owner it will grow`);
@@ -500,7 +501,7 @@ test("every capsule proposal names the guards and owners that already bind it", 
     }
     findings.push(
       ...(await staleOwnerHeadroom(owners, "docs/capsules", async (target) => {
-        if (!sourceOwnerExtensions.has(path.extname(target)) || !await exists(target)) {
+        if (!isHandWrittenSourcePath(target) || !await exists(target)) {
           return null;
         }
         return headroom(
