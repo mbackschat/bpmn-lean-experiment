@@ -2,15 +2,17 @@
 
 ## Status
 
-**Owner-approved on 2026-08-14 after independent proposal review; implementation is in progress.** The owner approved all nine selected decisions together. This proposal selects one additive Product 1 publication for exact BPMN flow-node occurrence lifecycles and replay-stable commit times, plus the smallest Product 2 frequency and completed-duration surface for one exact definition version. It changes public observation and Temporal refinement, but no BPMN meaning, profile capability, CIB relationship, admitted source, Semantic Process IL operation, RuntimeState field, or command outcome.
+**Owner-approved on 2026-08-14 after independent proposal review; at its first green Product 1 checkpoint and not evidence-closed.** The owner approved all nine selected decisions together. The checkpoint implements the exhaustive TypeScript and proved Lean lifecycle relation, the separate strict occurrence wire, one replay-stable commit-time sample per complete command batch, an immutable Workflow accumulator, and the unconditional E1-aligned cursor Query. Product 1 client and engine API exposure, live retention and replay evidence, every Product 2 contract, projection, aggregate, route, and UI surface, and closure evidence remain absent. Product 2 work is paused until the required context-cold semantic-checkpoint review closes.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `25034641c5566bfd9e0dbc5c99b9ded673c7922b` | `fork-turns-none` | `approve-with-required-edits` | `5a75af9e18937f3199ddb02b8ef3c33afd43bba9` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `8c27eca` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The first green implementation checkpoint ends at `8c27eca`, after the TypeScript lifecycle commit `9601e17` and the strict protocol and Temporal publication commit `2cbdfbd`. A commit cannot contain its own Git identity, so the immutable review target is the documentation-only follow-up that carries this current Status section and the routed owner updates. The reviewer receives that exact descendant commit and the checkpoint baseline `6520448`. The row remains `pending` until the context-cold reviewer returns a verdict and any same-reviewer correction audit closes.
 
 ## Lean assurance selection
 
@@ -340,10 +342,10 @@ The implementation must not grow crowded generic owners. The measured existing o
 | Existing owner | Current headroom before 600 nonblank lines | Required consequence |
 |---|---:|---|
 | [`packages/semantic-core/src/semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 38 | Add no lifecycle logic here; use a new cohesive lifecycle projector and retain only existing delegation. |
-| [`packages/semantic-core/src/semantic-transition-trace.ts`](../../packages/semantic-core/src/semantic-transition-trace.ts) | 370 | Attach the new unnumbered lifecycle result at the existing record boundary without changing E1 records. |
-| [`BpmnSemantics/SemanticProcess/TransitionTrace.lean`](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 165 | Delegate lifecycle meaning and proofs to a new independently buildable Lean module. |
+| [`packages/semantic-core/src/semantic-transition-trace.ts`](../../packages/semantic-core/src/semantic-transition-trace.ts) | 333 | Attach the new unnumbered lifecycle result at the existing record boundary without changing E1 records. |
+| [`BpmnSemantics/SemanticProcess/TransitionTrace.lean`](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 150 | Delegate lifecycle meaning and proofs to a new independently buildable Lean module. |
 | [`packages/temporal-adapter/protocol/src/semantic-publication-validation.ts`](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 27 | Do not grow; place occurrence types and validation in new protocol owners. |
-| [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 14 | Extract the command-publication integration before adding the second accumulator; retain only thin orchestration. |
+| [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 39 | Extract the command-publication integration before adding the second accumulator; retain only thin orchestration. |
 | [`packages/temporal-adapter/workflow/src/execution-publication-state.ts`](../../packages/temporal-adapter/workflow/src/execution-publication-state.ts) | 285 | Keep E1 exact; the occurrence accumulator and Query use separate owners. |
 | [`packages/temporal-adapter/client/src/execution-publication-client.ts`](../../packages/temporal-adapter/client/src/execution-publication-client.ts) | 485 | Keep E1 exact; add a separate occurrence client owner and thin export. |
 | [`packages/engine-api/src/process-observation.ts`](../../packages/engine-api/src/process-observation.ts) | 550 | Add one representation-free occurrence observation capability without exposing Program or Workflow identity. |
