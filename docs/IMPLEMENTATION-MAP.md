@@ -375,12 +375,11 @@ The graduated E2 specification additionally carries one exact optional passive U
 - registered E2 metadata admission and independent preservation through checked User Task, ordinary operation, committed wait, and public projection, with passive completion, exact refusal preservation, strict wire values, and old-profile exclusion
 - registered literal-generation incident report and exact retry transitions, private and public association validation, incident-aware quiescence and resumability, and pre-dispatch refusal of malformed or cross-program injected incident states
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
-- executable enabled-count and stable-state-resumability checks, with malformed-topology and stranded-state witnesses
+- executable complete-enabled-set closure classification and stable-state-resumability checks, with ambiguity refusal for every multiple-enabled shape except one exact pair of independent User Task waits, plus malformed-topology and stranded-state witnesses
 - traced committed transitions/replay and fail-closed control-position projection, with unchanged canonical observations and Lean parity
 
 #### Explicitly absent
 
-- an ambiguity refusal matching Lean's `ambiguousInternalChoice`: the closure selector advances the lowest canonical operation ID without signalling an unresolved semantic choice, so agreement with Lean at the admitted independent two-User-Task states rests on canonical operation order, explicit activation-order equality for both the static parallel and data-dependent Inclusive cases, and per-profile rejection or unreachability of every other multiple-enabled shape
 - I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, Boolean execution outside the exact registered User Task completion profile or value kinds beyond string/null/Boolean, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
 
 ### CIB oracle
