@@ -1,8 +1,8 @@
-# Committed execution publication proposal
+# Committed execution publication specification
 
 ## Status
 
-**Owner-approved on 2026-08-14; implementation and E1 evidence are complete, and governed closure review is pending.** The independently approved Product 1 checkpoint and final correction audit establish the semantic trace, current-position, strict-wire, Workflow Query, client, engine API, and Lean/TypeScript parity boundary. The completed continuation adds real Temporal retention, Worker-replacement, terminal-query, cyclic-activation, and replay evidence; a representation-free Product 2 gateway; transactional SQLite projection with exact overlap, gap, restart, and rebuild handling; authorized HTTP publication; and four-width History, Diagram, and canonical export evidence. Existing profile, source, RuntimeState, command-result, scenario, CIB, Workflow-result, and terminal-receipt bytes remain exact. This E1 increment does not close M5: the PLAN-owned frequency and duration views, operator-history completion, and audit export remain open.
+**Implemented, closure-reviewed, and evidence-closed on 2026-08-14.** The independently approved Product 1 checkpoint and final correction audit establish the semantic trace, current-position, strict-wire, Workflow Query, client, engine API, and Lean/TypeScript parity boundary. The completed continuation adds real Temporal retention, Worker-replacement, terminal-query, cyclic-activation, and replay evidence; a representation-free Product 2 gateway; transactional SQLite projection with exact overlap, gap, restart, and rebuild handling; authorized HTTP publication; and four-width History, Diagram, and canonical export evidence. Existing profile, source, RuntimeState, command-result, scenario, CIB, Workflow-result, and terminal-receipt bytes remain exact. This E1 increment does not close M5: the PLAN-owned frequency and duration views, operator-history completion, and audit export remain open.
 
 ## Independent cold-review receipt
 
@@ -10,25 +10,25 @@
 |---|---|---|---|---|
 | Proposal | `64509884d8cb4939d2251da008082c922f307d28` | `fork-turns-none` | `approve-with-required-edits` | `54a15fe4cc4e0efd7c587ddb2493e5e64bc2f950` |
 | Semantic checkpoint | `478d936e5a33e3fa3b9dbc17880645c7da6d6a9a` | `fork-turns-none` | `approve-with-required-edits` | `6f6ab9dd424de304842b03164e954b279d359492` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `41f67e764607898d255a49287a035e0b891e260f` | `fork-turns-none` | `approve-with-required-edits` | `ee67a76f1c94e39337e7300f126d6b377ee0e5ae` |
 
-## Question and recommendation
+## Contract summary
 
 How should the engine make a Process instance's committed semantic history and current diagram position publicly recoverable without inferring either from Temporal Event History, state differences, or Product 2 state?
 
-**Recommendation: publish one cursor-paged execution envelope with two separately specified facts.** The first fact is the exact committed external stimulus followed by every internal Semantic Process operation selected before the next stable state. The second is the current committed state plus exact public control-token and definition/runtime-scope positions at the envelope head. A Product 1 publication accumulator assigns contiguous per-instance revisions only after the complete semantic command and internal closure succeed. Product 2 transactionally projects the publication, rejects gaps, and uses it for one instance history, one current diagram overlay, and one exact JSON export.
+The engine publishes one cursor-paged execution envelope with two separately specified facts. The first fact is the exact committed external stimulus followed by every internal Semantic Process operation selected before the next stable state. The second is the current committed state plus exact public control-token and definition/runtime-scope positions at the envelope head. A Product 1 publication accumulator assigns contiguous per-instance revisions only after the complete semantic command and internal closure succeed. Product 2 transactionally projects the publication, rejects gaps, and uses it for one instance history, one current diagram overlay, and one exact JSON export.
 
 This is the smallest complete E1 publication and adoption design because it makes semantic history replay-checkable, makes current positions explicit rather than inferred, and establishes restart/rebuild behavior without introducing event sourcing as the runtime model or using Temporal host facts as BPMN facts. It deliberately does not claim the complete M5 platform increment or exit gate.
 
 ## Authority and classification
 
-BPMN 2.0.2 defines the modeled execution constructs whose already-selected meaning the records describe. It does not require this engine API, revision scheme, projection store, history UI, or export. The existing approved capsules, Semantic Process IL, Lean relations, and semantic-core transitions remain the authority for each recorded transition. This proposal adds a project-owned public observation over that account and does not reinterpret a BPMN construct.
+BPMN 2.0.2 defines the modeled execution constructs whose already-selected meaning the records describe. It does not require this engine API, revision scheme, projection store, history UI, or export. The existing approved capsules, Semantic Process IL, Lean relations, and semantic-core transitions remain the authority for each recorded transition. This specification adds a project-owned public observation over that account and does not reinterpret a BPMN construct.
 
 No new CIB Seven relationship or compatibility profile is selected. CIB public history and database entities do not expose the project's exact admission transition plus every Semantic Process internal operation, and mapping those host records into the canonical sequence would create a second semantic account. Existing CIB scenarios and evidence remain byte-identical and keep proving only their already selected behavior. The M5 publication evidence therefore compares Lean, the TypeScript core, and the production Temporal host; CIB is deliberately absent from this new observation lane.
 
 The publication is additive for every already admitted profile. It does not add an observation request to existing scenario documents, change canonical scenario traces, or create a successor semantic profile. Product 2 consumes it only through the representation-free engine gateway and never receives a Workflow ID, Run ID, Task Queue, Event History event, Activity attempt, CIB identifier, raw control-place ID, or private RuntimeState.
 
-## Selected decisions
+## Contract decisions
 
 1. Keep transition history and current control positions as distinct requirements, served by one envelope and proved by separate rules.
 2. Instrument the existing `applyStimulus` evaluation root so one trace contains the committed external admission and every actually selected internal operation. Do not replay the evaluator merely to manufacture records.
@@ -217,13 +217,13 @@ The Operations Process-instance collection opens one exact confirmed instance de
 
 `Download execution history` returns the strict JSON publication for that one instance with definition, Process, instance, revision, transition, logical-time, and current-position facts. It contains no opaque locator, Temporal/CIB identity, Event History, Activity attempt, platform audit actor, or private runtime fields. The existing operator Audit remains a separate platform-fact surface and is not merged into semantic history.
 
-This E1 surface adds no command, repair, migration, pause, retry, or cancellation behavior. It leaves M5 open for the PLAN-owned frequency and duration views, complete operator history, and audit export. Wall-clock duration, conformance checking, variant mining, and cross-instance global ordering are outside this proposal.
+This E1 surface adds no command, repair, migration, pause, retry, or cancellation behavior. It leaves M5 open for the PLAN-owned frequency and duration views, complete operator history, and audit export. Wall-clock duration, conformance checking, variant mining, and cross-instance global ordering are outside this specification.
 
 ### Product 2 HTTP and authorization boundary
 
 The strict public routes are `GET /api/v1/process-instances/{processInstanceId}/execution?afterRevision={revision}&limit={limit}` and `GET /api/v1/process-instances/{processInstanceId}/execution/export`. They accept no request body, resolve the retained opaque locator internally, reconcile only from the authoritative Product 1 page, and return no locator. The execution route returns the closed projected page. The export route returns the canonical `ExecutionPublicationExport` bytes as `application/json; charset=utf-8` with a sanitized attachment filename, assembled only after contiguous reconciliation from zero reaches the head.
 
-Both routes use the existing Operations actor resolver and exact configured-group policy before locator access, reconciliation, or repository reads. Owner approval of this proposal explicitly authorizes that group to read and export the retained historical semantic values enumerated above with no redaction. The selected status set is 200, 400 invalid request, 403 forbidden, 404 unknown confirmed instance, 405 method not allowed, 503 publication not yet ready, unavailable, or gapped after bounded reconciliation, and 500 internal failure. One new public error code, `executionPublicationUnavailable`, has the canonical message `The committed execution publication is unavailable.` The 503 response exposes no expected or observed revision, host error, retention fact, historical value, or partial prefix. Strict Product 2 JSON parsing and closed recursive decoders apply to every response.
+The existing Operations actor resolver and exact configured-group policy authorize both routes before locator access, reconciliation, or repository reads. That group may read and export the retained historical semantic values enumerated above with no redaction. The selected status set is 200, 400 invalid request, 403 forbidden, 404 unknown confirmed instance, 405 method not allowed, 503 publication not yet ready, unavailable, or gapped after bounded reconciliation, and 500 internal failure. One new public error code, `executionPublicationUnavailable`, has the canonical message `The committed execution publication is unavailable.` The 503 response exposes no expected or observed revision, host error, retention fact, historical value, or partial prefix. Strict Product 2 JSON parsing and closed recursive decoders apply to every response.
 
 ## Runtime-only and synthetic constructs
 
@@ -340,43 +340,14 @@ Excluded:
 
 This is an additive pre-release public-observation change. Existing profile, BPMN source, checked graph, IL, RuntimeState, command result, scenario observation, canonical result, CIB evidence, Workflow result, and terminal receipt bytes remain exact. Existing Workflow histories must replay unchanged. The new publication wire is strict from its first version; any later removal, renumbering, retention change, or change in record meaning requires a new version and migration account.
 
-The planned owners are already routed through the executable [Lean source contract guard](../../scripts/lean-source-contracts.test.ts), [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts), [platform product boundary](../../scripts/platform-product-boundary.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), and [what-binds](../../scripts/what-binds.test.ts). The existing [contract schema coverage guard](../../scripts/contract-schema-coverage.test.ts) covers only Semantic Process operation and checked-node enum branches; it is not publication-wire coverage. Implementation must add a focused exhaustive publication-contract guard and the trace, position, projection, and rebuild oracles described below rather than crediting an unrelated guard.
-
-### Owners this implementation grows
-
-The semantic root grows only by thin delegation. The current mechanically measured owners are:
-
-| Existing owner | Headroom before 600 nonblank lines | Required consequence |
-|---|---:|---|
-| [`packages/semantic-core/src/semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 38 | Delegate the current apply root to cohesive closure and trace owners and preserve result-only equivalence. |
-| [`packages/semantic-core/src/contract.ts`](../../packages/semantic-core/src/contract.ts) | 292 | Re-export the additive trace/position contract without changing existing observation shapes. |
-| [`packages/semantic-core/src/scenario.ts`](../../packages/semantic-core/src/scenario.ts) | 92 | Keep existing scenario bytes; add only focused trace-evidence delegation if required. |
-| [`BpmnSemantics/SemanticProcess/Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) | 225 | Delegate to a new traced closure owner; do not add the proof family here. |
-| [`BpmnSemantics/SemanticProcess/Transition.lean`](../../BpmnSemantics/SemanticProcess/Transition.lean) | 267 | Reuse `ProgramStep`; no duplicated transition account. |
-| [`BpmnSemantics/SemanticProcess/Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 228 | Keep canonical scenario trace exact and delegate only the new evidence entry. |
-| [`BpmnSemantics/SemanticProcess/RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 147 | Reuse state and identities; add no revision field. |
-| [`BpmnSemantics/SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 170 | Delegate the new evidence request; keep existing scenario JSON exact. |
-| [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 14 | Extract publication accumulation/query integration before feature growth; this owner may retain only thin orchestration. |
-| [`packages/temporal-adapter/workflow/src/workflows.ts`](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 | Add only the public Workflow/Query type surface. |
-| [`packages/temporal-adapter/protocol/src/contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 406 | Delegate the strict publication contract to a cohesive new protocol owner. |
-| [`packages/temporal-adapter/client/src/process-client.ts`](../../packages/temporal-adapter/client/src/process-client.ts) | 166 | Delegate publication observation to a cohesive new client owner. |
-| [`platform/apps/server/src/composition.ts`](../../platform/apps/server/src/composition.ts) | 242 | Compose the execution gateway, projection, routes, and authorization through thin wiring only. |
-| [`platform/foundation/engine-gateway/src/index.ts`](../../platform/foundation/engine-gateway/src/index.ts) | 296 | Export one representation-free execution-publication gateway delegated to a cohesive owner. |
-| [`platform/modules/operate/src/index.ts`](../../platform/modules/operate/src/index.ts) | 502 | Export cohesive projection, reconciliation, repository, and HTTP owners without placing behavior in the index. |
-| [`platform/contracts/src/index.ts`](../../platform/contracts/src/index.ts) | 560 | Re-export dedicated execution-publication contracts, routes, and decoders. |
-
-New cohesive owners are required for TypeScript transition tracing and replay, position projection, Lean publication/refinement proofs and JSON, Temporal protocol/query/accumulator/client/live evidence, Product 1 engine API, the representation-free platform gateway, Product 2 projection repository/service/HTTP, and the History/Diagram/export web surface. `platform/contracts/src/execution-publication-decoders.ts` exclusively owns the recursive publication page/result/export decoder and all range equations; no already crowded generic decoder may grow to absorb it. In particular, [`platform/contracts/src/work-task-decoders.ts`](../../platform/contracts/src/work-task-decoders.ts) remains untouched at 597/600 nonblank with three lines of headroom. New owners inherit their package's existing boundary, registry, source-hygiene, and review-packet guards. Existing crowded generic scenario, Workflow, differential, Operate, and web owners receive only import/delegation; if any would cross 600 nonblank lines, extraction is mandatory before feature growth.
-
-The direct `what-binds` inventory also measures the forced React integration owners that the proposal-table parser does not classify as source owners: [`platform/apps/web/src/app.tsx`](../../platform/apps/web/src/app.tsx) is 150/600 nonblank with 450 lines of headroom and receives only routing/data delegation; [`platform/apps/web/src/operations-workspace.tsx`](../../platform/apps/web/src/operations-workspace.tsx) is 60/600 with 540 lines of headroom and delegates semantic History and Diagram detail to cohesive new surfaces. Both bind the web and platform registries plus the Product 2, source-hygiene, contributor-setup, and path-scoped UI evidence families.
-
-The implementation must update the relevant package registries, [shared wire contract registry](../../contracts/README.md), [Temporal adapter registry](../../packages/temporal-adapter/README.md), engine API registry, platform registries, [architecture](../ARCHITECTURE.md), [implementation map](../IMPLEMENTATION-MAP.md), [production lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [testing specification](../TESTING-SPEC.md), [plan](../PLAN.md), and the [capsule cost ledger](../CAPSULE-COST-LEDGER.md) atomically with the evidence they describe.
+The implemented owners are routed through the executable [publication contract coverage guard](../../scripts/execution-publication-contract-coverage.test.ts), [Lean source contract guard](../../scripts/lean-source-contracts.test.ts), [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts), [platform product boundary](../../scripts/platform-product-boundary.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), and [what-binds](../../scripts/what-binds.test.ts). The [implementation map](../IMPLEMENTATION-MAP.md) and package registries own the exact current source allocation and headroom.
 
 ## Guards and review boundary
 
 | Guard or oracle | Obligation |
 |---|---|
 | [semantic-core tests](../../packages/semantic-core/test) and [Lean source contracts](../../scripts/lean-source-contracts.test.ts) | Lock exact trace capture, replay completeness, position fidelity, result erasure, and no trace for nonpublishable results. |
-| New `scripts/execution-publication-contract-coverage.test.ts` plus publication schema/decoder tests | Require every `StimulusKind`, semantic transition kind, operation kind, command/result arm, Query result, page/export field, and enumerated cross-field equation in both the strict schema and recursive decoder; plant an omitted variant, false redundant operation field, unsafe range, and noncanonical export counterexample. |
+| [Publication contract coverage](../../scripts/execution-publication-contract-coverage.test.ts) plus publication schema/decoder tests | Require every `StimulusKind`, semantic transition kind, operation kind, command/result arm, Query result, page/export field, and enumerated cross-field equation in both the strict schema and recursive decoder; plant an omitted variant, false redundant operation field, unsafe range, and noncanonical export counterexample. |
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) plus a focused publication-origin oracle | Bind every exported operation kind/origin to the exact admitted Program operation and every token/scope origin to the exact source-bound IL artifact; mutate each field independently. |
 | [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts) and [pre-release architecture](../../scripts/pre-release-architecture.test.ts) | Keep publication inside Product 1, retain deterministic Workflow code, and forbid Product 2 Temporal imports. |
 | [platform product boundary](../../scripts/platform-product-boundary.test.ts) | Keep opaque locators/private host facts out of public contracts and platform stores. |
@@ -384,7 +355,7 @@ The implementation must update the relevant package registries, [shared wire con
 | [document reviewability](../../scripts/document-reviewability.test.ts), [independent-review policy](../../scripts/independent-review-policy.test.ts), and [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Require proposal, semantic-checkpoint, and closure receipts over immutable targets. |
 | [contributor setup and workflow isolation guard](../../scripts/contributor-setup.test.ts) over [the path-scoped UI-quality workflow](../../.github/workflows/ui-quality.yml) | Prove four-width/focus/overflow/visual behavior without adding Playwright or web builds to semantic Verify. |
 
-The implementation is material because it changes public observation, proof boundaries, and Temporal refinement, even though it changes no BPMN transition. It requires context-cold proposal review before owner approval, a semantic checkpoint after the first green trace/position/wire/Query boundary, and cold closure unless the exact checkpoint reviewer qualifies for hash-bound warm continuity.
+This contract is material because it changes public observation, proof boundaries, and Temporal refinement, even though it changes no BPMN transition. Its proposal, semantic checkpoint, and closure reviews are recorded in the receipt above.
 
 ## Epistemic closure and cost boundary
 
@@ -394,28 +365,8 @@ The strongest common-mode risk is that Lean, TypeScript, and Temporal all emit a
 
 Meaningful mutations are: state-difference-generated history, Event History-generated history, one dropped gateway operation, swapped closure operations, independently changed operation ID, kind, origin, or owner, a revision-zero available page, `notReady` converted to a gap, a malformed batch/range/count equation, a duplicated revision, a changed exact duplicate, a cursor inside a batch, a head snapshot from another revision or definition, a token mapped to a control-place ID rather than its Sequence Flow origin, an element-only repeated activation key, a production serializer used as its own export oracle, and a platform rebuild that starts from its own rows instead of revision zero.
 
-Closure will record the commit-bounded implementation cost in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), compared with the cyclic-control-flow capsule for repeated transition execution and the M4 incident-operations increment for Product 1 Query plus Product 2 projection/UI adoption.
+The commit-bounded implementation cost is recorded in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), compared with the cyclic-control-flow capsule for repeated transition execution and the M4 incident-operations increment for Product 1 Query plus Product 2 projection/UI adoption.
 
-## Stop and reopen conditions
+## Reopen conditions
 
-Stop and return to research, redesign, or owner direction if:
-
-- the traced evaluator cannot record the exact external step and every actually selected internal operation without duplicating or changing the existing semantic decision;
-- a replay-complete record requires private host identity or an unbounded/non-public value not already admitted as a semantic stimulus;
-- one internal operation cannot be bound to a unique runtime scope occurrence under an admitted state;
-- Lean cannot prove result erasure and replay completeness within the declared lane without restating the transition semantics;
-- deterministic publication changes existing Workflow commands, result bytes, or replay histories;
-- completed/cancelled publication cannot be queried during the selected retention boundary;
-- Product 2 cannot detect and preserve a gap without using Event History, state differencing, or platform-authored repair;
-- publishing full committed semantic stimuli under the existing Operations authorization is not acceptable for the selected data-classification boundary;
-- current diagram positions require a new runtime model rather than a total projection of current RuntimeState plus admitted Program origins;
-- implementation requires a new BPMN rule, profile, CIB relationship, command, repair action, Continue-As-New, archive, global order, wall-clock semantic timestamp, or general mining framework;
-- Product 2 browser evidence becomes reachable from semantic-only verification.
-
-Re-open this account when partial retention, Continue-As-New, archive migration, a future value domain or redaction policy, cross-instance ordering, generalized mining/export, public IL distribution, or another semantic record family is selected. Complete the remaining M5 frequency and duration views, operator-history surface, and audit export in their own bounded Product 2 increment without claiming that this E1 proposal already owns them.
-
-## Decisions requested from the owner
-
-Recommendation: approve the complete selected E1 account after the correction audit. It closes the M5 information gap at Product 1, proves rather than assumes trace completeness, keeps position identity separate and exact, and gives Product 2 a fail-closed semantic History/Diagram/export increment without importing Temporal semantics. It does not close M5.
-
-Approval would select the nine decisions listed above: one two-fact publication envelope; traced evaluator root; revision outside RuntimeState; replay-complete unredacted exact stimuli and complete Program-bound internal choices under Operations-group authorization; one head position snapshot; contiguous atomic batches; retention-bounded Temporal Query with retryable pre-start `notReady`; transactional gap-detecting Product 2 projection; and read-only semantic History, Diagram, and canonical JSON export with browser work isolated from semantic verification. Frequency/duration views, completed operator history, and audit export remain required before M5 exits but are not selected by this approval.
+Reopen this account when partial retention, Continue-As-New, archive migration, a future value domain or redaction policy, cross-instance ordering, generalized mining/export, public IL distribution, or another semantic record family is selected. A change that requires a new BPMN rule, profile, CIB relationship, command, repair action, global order, wall-clock semantic timestamp, or private host identity is outside this specification. Complete the remaining M5 frequency and duration views, operator-history surface, and audit export in their own bounded Product 2 increment without claiming that this E1 specification already owns them.

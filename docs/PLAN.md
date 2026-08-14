@@ -96,7 +96,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### M5 — it can be operated and explained
 
-**Status: in progress.** The independently reviewed [committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) and its nine selected decisions are owner-approved. E1 now implements exact evaluator-root traces, independent current positions, strict wire and canonical bytes, an atomic Workflow publication Query, a representation-free client and gateway, an opaque-locator engine API, live retention and replay evidence, fail-closed transactional Product 2 projection, and four-width History, Diagram, and canonical export evidence. Checkpoint `478d936` and its final same-reviewer correction audit `6f6ab9d` are independently approved. E1 closure review remains pending, and M5 remains open afterward for frequency and duration views, completed operator history, and audit export.
+**Status: in progress.** The independently closure-reviewed [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements exact evaluator-root traces, independent current positions, strict wire and canonical bytes, an atomic Workflow publication Query, a representation-free client and gateway, an opaque-locator engine API, live retention and replay evidence, fail-closed transactional Product 2 projection, and four-width History, Diagram, and canonical export evidence. Checkpoint `478d936` and its final same-reviewer correction audit `6f6ab9d`, plus closure target `41f67e7` and correction audit `ee67a76`, are independently approved. E1 is closed; M5 remains open for frequency and duration views, completed operator history, and audit export.
 
 **Demo.** An operator replays what a finished instance did, sees where a running one stands on the diagram, and exports the history.
 
@@ -159,15 +159,11 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: close and graduate the implemented M5 E1 committed-history and diagram-position contract.** The independently reviewed [proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) keeps history and current positions as separate requirements and now has complete Product 1, Product 2, live-retention, replay, projection/rebuild, History, Diagram, canonical-export, and four-width evidence. The governed closure review and graduation remain. E1 does not close M5: frequency and duration views, completed operator history, and audit export remain later PLAN-owned Product 2 increments.
+1. **In progress: define the next bounded M5 frequency and duration increment.** Begin with the source-grounded Product 2 UI/UX preflight over current CIB Seven Cockpit documentation and the pinned pristine source, record adopted, deliberately changed, and excluded patterns, and identify the exact engine-published facts the views require. Do not infer duration from Temporal Event History, Product 2 ingestion time, or semantic logical time. The closure-reviewed [E1 specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) remains the only committed semantic-history and current-position authority while completed operator history and audit export stay later M5 increments.
 
 ## Approved decisions
 
 Only decisions that constrain the next work are kept here. A decision fully owned by a graduated specification lives in that specification; Git retains the rest.
-
-**Approved 2026-08-14.**
-
-- **M5 E1 committed execution publication:** the owner approved all nine selected decisions in the independently reviewed [proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md). Implementation must preserve the two-fact envelope, evaluator-root trace, publication-owned revisions, replay-complete authorized history, transition deltas plus one head snapshot, atomic contiguous batches, authoritative Workflow retention without Event History reconstruction, fail-closed transactional Product 2 projection, and bounded History/Diagram/exact-JSON adoption. E1 does not close M5.
 
 **Approved 2026-08-07.**
 
@@ -268,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: run the complete repository gate and governed closure review for the implemented [M5 E1 committed execution publication](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md), then graduate it if the review approves.** E1 does not itself close M5; the remaining frequency/duration, operator-history, and audit-export increments stay ordered after it.
+**Next action: perform the source-grounded design and information preflight for the next bounded M5 frequency and duration increment.** Inspect current CIB Seven Cockpit documentation and the pinned pristine source first, record adopted, deliberately changed, and excluded patterns, and stop at the engine boundary if an exact required duration fact is not publicly available. The remaining operator-history and audit-export increments stay ordered after it.
 
-Item 1 is **closure-stage and in progress**. M4 is closed through the graduated [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md). M5 E1 now has the approved Product 1 contract, TypeScript and Lean trace/position roots, deterministic Workflow accumulation and Query, strict client and engine API, live Worker-replacement and replay evidence, exact Product 2 projection/storage and rebuild, authorized HTTP, and current History, Diagram, and export surfaces. Event History and state differencing remain forbidden fact sources.
+Item 1 is **preimplementation research and contract selection in progress**. M4 is closed through the graduated [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md), and M5 E1 is closed through the graduated [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md). Event History, state differencing, Product 2 ingestion time, and semantic logical time remain forbidden substitutes for an exact public wall-clock duration fact.
 
 **Last verified commands:** the complete hosted `./scripts/verify.sh` gate on Ubuntu and macOS and the path-scoped Product 2 UI-quality workflow are green at implementation/evidence target `13b8f37`. The verification run includes Lean, semantic core, source-compiled Lean/TypeScript publication parity, protocol/schema/canonical bytes, Workflow Query, client/API, CIB, differential, live Temporal retention/replay, and the complete four-target pipeline. The UI-quality run includes the four-width execution History and Diagram functional and pixel assertions; Playwright remains outside semantic verification.
 
