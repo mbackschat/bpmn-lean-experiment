@@ -220,11 +220,12 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(packageManifest, /"test:a12-adoption"/u);
   assert.match(corpusFetch, /mktemp -d "\$corpus_parent\/\.bpmn-corpus-fetch\.XXXXXX"/u);
   assert.match(workflow, /setup-external-sources\.sh verify/u);
-  assert.doesNotMatch(workflow, /playwright|chromium|test:showcase:m[123]/iu);
+  assert.doesNotMatch(workflow, /playwright|chromium|test:showcase:m\d+/iu);
   assert.match(uiQualityWorkflow, /mcr\.microsoft\.com\/playwright@sha256:/u);
   assert.match(uiQualityWorkflow, /test:showcase:m1/u);
   assert.match(uiQualityWorkflow, /test:showcase:m2/u);
-  assert.match(uiQualityWorkflow, /test:release:m3/u);
+  assert.match(uiQualityWorkflow, /test:showcase:m3-human-work/u);
+  assert.match(uiQualityWorkflow, /test:release:m4/u);
   assert.match(workflow, /if: runner\.os == 'Linux'/u);
   // The corpus cache path is written as an expression, so the relative-segment guard below can
   // only see the template. `pwd` is what makes the exported root absolute, and absolute is what
@@ -237,10 +238,12 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(readme, /test:showcase:m1/u);
   assert.match(readme, /test:showcase:m2/u);
   assert.match(readme, /test:showcase:m3-human-work/u);
+  assert.match(readme, /test:showcase:m4-incident-operations/u);
   assert.match(guide, /playwright install chromium/u);
   assert.match(guide, /test:showcase:m1/u);
   assert.match(guide, /test:showcase:m2/u);
   assert.match(guide, /test:showcase:m3-human-work/u);
+  assert.match(guide, /test:showcase:m4-incident-operations/u);
   assert.match(packageManifest, /"test:showcase:m1"/u);
   assert.match(packageManifest, /"test:showcase:m2"/u);
   assert.match(packageManifest, /"test:showcase:m3-human-work"/u);

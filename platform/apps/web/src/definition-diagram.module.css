@@ -1,6 +1,7 @@
 .panel {
   position: relative;
   container-type: inline-size;
+  min-width: 0;
   min-height: 34rem;
   border: var(--ui-border);
   border-radius: var(--ui-radius-surface);
@@ -14,6 +15,14 @@
   justify-content: space-between;
   gap: var(--ui-space-4);
   margin-bottom: var(--ui-space-4);
+}
+
+.heading > div {
+  min-width: 0;
+}
+
+.heading h2 {
+  overflow-wrap: anywhere;
 }
 
 .heading code {

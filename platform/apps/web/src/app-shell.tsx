@@ -1,4 +1,5 @@
 import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 
 import styles from "./app-shell.module.css";
@@ -6,7 +7,7 @@ import styles from "./app-shell.module.css";
 export const AppWorkspace = {
   Work: "work",
   Definitions: "definitions",
-  ProcessInstances: "processInstances",
+  Operations: "operations",
 } as const;
 
 export type AppWorkspace = typeof AppWorkspace[keyof typeof AppWorkspace];
@@ -15,7 +16,7 @@ export type AppShellProps = Readonly<{
   activeWorkspace: AppWorkspace;
   definitions: ReactNode;
   onNavigate: (workspace: AppWorkspace) => void;
-  processInstances: ReactNode;
+  operations: ReactNode;
   work: ReactNode;
 }>;
 
@@ -35,21 +36,28 @@ const workspaceDetails: ReadonlyArray<Readonly<{
   heading: "Definitions",
   summary: "Deploy BPMN, inspect retained versions, and operate one exact definition.",
 }, {
-  id: AppWorkspace.ProcessInstances,
-  label: "Process instances",
-  heading: "Process instances",
-  summary: "Search the public identity of confirmed Product 2 starts.",
+  id: AppWorkspace.Operations,
+  label: "Operations",
+  heading: "Operations",
+  summary: "Search Process instances, resolve current incidents, and review platform actions.",
 }];
 
 export function AppShell({
   activeWorkspace,
   definitions,
   onNavigate,
-  processInstances,
+  operations,
   work,
 }: AppShellProps) {
+  const pageHeading = useRef<HTMLHeadingElement>(null);
+  const previousWorkspace = useRef(activeWorkspace);
   const active = workspaceDetails.find(({ id }) => id === activeWorkspace);
   if (active === undefined) throw new Error("Unknown application workspace.");
+  useEffect(() => {
+    if (previousWorkspace.current === activeWorkspace) return;
+    previousWorkspace.current = activeWorkspace;
+    requestAnimationFrame(() => { pageHeading.current?.focus(); });
+  }, [activeWorkspace]);
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
@@ -77,11 +85,11 @@ export function AppShell({
       </aside>
       <main className={styles.content}>
         <header className={styles.header}>
-          <h1>{active.heading}</h1>
+          <h1 ref={pageHeading} tabIndex={-1}>{active.heading}</h1>
           <p>{active.summary}</p>
         </header>
         <div className={styles.workspace}>
-          {workspaceContent(activeWorkspace, { definitions, processInstances, work })}
+          {workspaceContent(activeWorkspace, { definitions, operations, work })}
         </div>
       </main>
     </div>
@@ -92,7 +100,7 @@ function workspaceContent(
   workspace: AppWorkspace,
   content: Readonly<{
     definitions: ReactNode;
-    processInstances: ReactNode;
+    operations: ReactNode;
     work: ReactNode;
   }>,
 ): ReactNode {
@@ -101,7 +109,7 @@ function workspaceContent(
       return content.work;
     case AppWorkspace.Definitions:
       return content.definitions;
-    case AppWorkspace.ProcessInstances:
-      return content.processInstances;
+    case AppWorkspace.Operations:
+      return content.operations;
   }
 }

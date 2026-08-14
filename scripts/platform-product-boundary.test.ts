@@ -318,6 +318,18 @@ test("allows only named showcase evidence owners to fetch history", () => {
         path: "showcase/m3-human-work/test/m3-human-work.test.ts",
         source: "await handle.fetchHistory();",
       },
+      {
+        path: "showcase/m4-incident-operations/test/temporal-evidence.ts",
+        source: "await handle.fetchHistory();",
+      },
+      {
+        path: "showcase/m4-incident-operations/src/showcase-runtime.ts",
+        source: "await handle.fetchHistory();",
+      },
+      {
+        path: "showcase/m4-incident-operations/test/runtime-support.ts",
+        source: "await handle.fetchHistory();",
+      },
     ]),
     [
       "showcase/m2-definition-scheduling/src/host.ts: Temporal Event History API reference fetchHistory",
@@ -325,6 +337,8 @@ test("allows only named showcase evidence owners to fetch history", () => {
       "showcase/m2-definition-scheduling/test/temporal-support.ts: Temporal Event History API reference fetchHistory",
       "showcase/m2-message-start-ingress/test/temporal-support.ts: Temporal Event History API reference fetchHistory",
       "showcase/m2-process-instance-search/test/temporal-support.ts: Temporal Event History API reference fetchHistory",
+      "showcase/m4-incident-operations/src/showcase-runtime.ts: Temporal Event History API reference fetchHistory",
+      "showcase/m4-incident-operations/test/runtime-support.ts: Temporal Event History API reference fetchHistory",
     ],
   );
 });

@@ -146,7 +146,7 @@ export function DefinitionDiagram({
       <div
         className={styles.canvas}
         ref={container}
-        aria-label={`BPMN diagram for ${definition.processId}, version ${definition.version}`}
+        aria-label={`BPMN diagram for ${definition.processId}, version ${definition.version}${activeElementId === undefined ? "" : `, highlighting ${activeElementId}`}`}
       />
     </section>
   );

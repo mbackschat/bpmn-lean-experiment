@@ -1,0 +1,5 @@
+.labels {
+  display: inline-flex;
+  color: var(--ui-color-muted);
+  font: var(--ui-font-label);
+}

@@ -21,13 +21,14 @@ nvm use
 
 The setup script is intentionally narrower than a machine package installer. Install the prerequisites listed in the top-level [README](../README.md) with the operating system's normal package manager, then let the script provision only content whose exact identity this repository owns.
 
-M1, M2, and M3 browser acceptance additionally need the development-only Chromium revision pinned by Playwright. It is not a production or engine prerequisite. Install it once after the frozen workspace install, then run the required browser gates:
+M1, M2, M3, and M4 browser acceptance additionally need the development-only Chromium revision pinned by Playwright. It is not a production or engine prerequisite. Install it once after the frozen workspace install, then run the required browser gates:
 
 ```sh
 ./scripts/pnpm.sh --filter @bpmn-lean/showcase-m1-definition-deployment exec playwright install chromium
 ./scripts/pnpm.sh run test:showcase:m1
 ./scripts/pnpm.sh run test:showcase:m2
 ./scripts/pnpm.sh run test:showcase:m3-human-work
+./scripts/pnpm.sh run test:showcase:m4-incident-operations
 ```
 
 Hosted Linux CI uses `playwright install --with-deps chromium` to provision both that browser revision and its image-specific shared libraries before running the same acceptance commands. The Playwright packages, browser binary, and host libraries do not enter the static web distribution or reachable production package graph.

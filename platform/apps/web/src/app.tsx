@@ -11,8 +11,9 @@ import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
 import { DefinitionWorkspace } from "./definition-workspace";
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
+import type { IncidentOperationsApi } from "./incident-operations-api";
+import { OperationsWorkspace } from "./operations-workspace";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api";
-import { ProcessInstanceSearchPanel } from "./process-instance-search-panel";
 import type { WorkApiClient } from "./work-tasks-api";
 import { WorkInboxPanel } from "./work-inbox-panel";
 import { AppShell, AppWorkspace } from "./app-shell";
@@ -20,6 +21,7 @@ import { AppShell, AppWorkspace } from "./app-shell";
 export type AppProps = Readonly<{
   api: DefinitionApiClient;
   messageStartPublicationApi: MessageStartPublicationApiClient;
+  incidentOperationsApi: IncidentOperationsApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
   scheduleApi: DefinitionScheduleApiClient;
   workApi: WorkApiClient;
@@ -27,6 +29,7 @@ export type AppProps = Readonly<{
 
 export function App({
   api,
+  incidentOperationsApi,
   messageStartPublicationApi,
   processInstanceSearchApi,
   scheduleApi,
@@ -118,7 +121,13 @@ export function App({
       activeWorkspace={workspace}
       onNavigate={setWorkspace}
       work={<WorkInboxPanel api={workApi} definitionApi={api} />}
-      processInstances={<ProcessInstanceSearchPanel api={processInstanceSearchApi} />}
+      operations={(
+        <OperationsWorkspace
+          definitionApi={api}
+          incidentApi={incidentOperationsApi}
+          processInstanceSearchApi={processInstanceSearchApi}
+        />
+      )}
       definitions={(
         <DefinitionWorkspace
           api={api}

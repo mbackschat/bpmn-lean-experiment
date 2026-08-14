@@ -21,6 +21,7 @@ on:
       - "showcase/m2-message-start-ingress/**"
       - "showcase/m2-process-instance-search/**"
       - "showcase/m3-human-work/**"
+      - "showcase/m4-incident-operations/**"
       - "showcase/platform-ui-quality/**"
   push:
     branches:
@@ -44,6 +45,7 @@ on:
       - "showcase/m2-message-start-ingress/**"
       - "showcase/m2-process-instance-search/**"
       - "showcase/m3-human-work/**"
+      - "showcase/m4-incident-operations/**"
       - "showcase/platform-ui-quality/**"
   workflow_dispatch:
     inputs:
@@ -53,7 +55,7 @@ on:
         default: false
         type: boolean
       release_acceptance:
-        description: Run the real M1, M2, and M3 Product 2 browser acceptance lanes
+        description: Run the real M1 through M4 Product 2 browser acceptance lanes
         required: false
         default: false
         type: boolean
@@ -108,15 +110,16 @@ jobs:
       - name: Verify Product 2 UI quality
         if: github.event_name != 'workflow_dispatch' || (inputs.regenerate_baselines != true && inputs.release_acceptance != true)
         run: |
-          ./scripts/pnpm.sh run test:platform-m1
+          ./scripts/pnpm.sh run test:platform-operations-checkpoint
           ./scripts/pnpm.sh run test:ui-quality
 
-      - name: Verify Product 2 M1 through M3 release acceptance
+      - name: Verify Product 2 M1 through M4 release acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.release_acceptance == true && inputs.regenerate_baselines != true
         run: |
           ./scripts/pnpm.sh run test:showcase:m1
           ./scripts/pnpm.sh run test:showcase:m2
-          ./scripts/pnpm.sh run test:release:m3
+          ./scripts/pnpm.sh run test:showcase:m3-human-work
+          ./scripts/pnpm.sh run test:release:m4
 
       - name: Generate candidate Linux baselines
         if: github.event_name == 'workflow_dispatch' && inputs.regenerate_baselines == true

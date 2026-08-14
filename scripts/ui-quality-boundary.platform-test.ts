@@ -23,7 +23,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
     ]);
 
   assert.doesNotMatch(verify, /ui-quality|playwright|chromium/iu);
-  assert.doesNotMatch(verify, /test:release:m3/u);
+  assert.doesNotMatch(verify, /test:release:m\d+/u);
   assert.match(workflow, /test:ui-quality/u);
   assert.doesNotMatch(
     workflow,
@@ -37,6 +37,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.match(workflow, /showcase\/m2-message-start-ingress\/\*\*/u);
   assert.match(workflow, /showcase\/m2-process-instance-search\/\*\*/u);
   assert.match(workflow, /showcase\/m3-human-work\/\*\*/u);
+  assert.match(workflow, /showcase\/m4-incident-operations\/\*\*/u);
   assert.match(workflow, /showcase\/platform-ui-quality\/\*\*/u);
   assert.doesNotMatch(workflow, /^\s*- "(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)"$/mu);
   assert.match(
@@ -46,12 +47,15 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.doesNotMatch(workflow, /playwright install/u);
   assert.match(workflow, /regenerate_baselines/u);
   assert.match(workflow, /release_acceptance/u);
-  assert.match(workflow, /test:release:m3/u);
+  assert.match(workflow, /test:showcase:m1/u);
+  assert.match(workflow, /test:showcase:m2/u);
+  assert.match(workflow, /test:showcase:m3-human-work/u);
+  assert.match(workflow, /test:release:m4/u);
   assert.match(workflow, /product-2-ui-quality-baseline-candidates/u);
   assert.doesNotMatch(hostedVerify, /playwright install|Install Chromium/iu);
   assert.doesNotMatch(hostedVerify, /test:showcase:m[123]/u);
   assert.doesNotMatch(hostedVerify, /test:platform-m1|test:platform-web/u);
-  assert.match(workflow, /test:platform-m1/u);
+  assert.match(workflow, /test:platform-operations-checkpoint/u);
   assert.match(testingSpec, /Product 2 browser work remains outside `verify\.sh` and the hosted verification workflow/u);
   assert.doesNotMatch(testingSpec, /Linux matrix leg also installs Playwright/u);
 
@@ -65,6 +69,10 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.equal(
     root.scripts?.["test:release:m3"],
     "pnpm test:showcase:m3-human-work && pnpm test:ui-quality",
+  );
+  assert.equal(
+    root.scripts?.["test:release:m4"],
+    "pnpm test:showcase:m4-incident-operations && pnpm test:ui-quality",
   );
   assert.equal(
     root.scripts?.["test:ui-quality:update-snapshots"],

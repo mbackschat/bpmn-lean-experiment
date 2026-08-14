@@ -431,6 +431,24 @@ Complete Product 2 M3 release acceptance, composing the real-host gate with the 
 ./scripts/pnpm.sh run test:release:m3
 ```
 
+M4 incident contracts, confirmed-locator bootstrap, current aggregation, authorization, durable actions, audit, HTTP, server composition, and web workspace gate:
+
+```sh
+./scripts/pnpm.sh run test:platform-operations-checkpoint
+```
+
+Required M4 incident-operations real Temporal and headless-browser gate:
+
+```sh
+./scripts/pnpm.sh run test:showcase:m4-incident-operations
+```
+
+Complete Product 2 M4 release acceptance, composing the real-host gate with the isolated deterministic UI-quality lane:
+
+```sh
+./scripts/pnpm.sh run test:release:m4
+```
+
 Product 2 fixed-fixture responsive, focus, reduced-motion, and visual-regression gate; authoritative pixels run in the digest-pinned Linux container owned by its workflow:
 
 ```sh

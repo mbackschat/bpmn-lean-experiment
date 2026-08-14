@@ -1,0 +1,84 @@
+.panel {
+  display: grid;
+  gap: var(--ui-space-4);
+  min-width: 0;
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-surface);
+  padding: var(--ui-space-5);
+  background: var(--ui-color-surface);
+}
+
+.heading h2 {
+  margin-bottom: var(--ui-space-1);
+  font: var(--ui-font-section);
+}
+
+.heading p:last-child {
+  margin-bottom: 0;
+  color: var(--ui-color-muted);
+}
+
+.eyebrow {
+  margin-bottom: var(--ui-space-1);
+  color: var(--ui-color-accent);
+  font: var(--ui-font-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--ui-space-3);
+}
+
+.filters label {
+  display: grid;
+  gap: var(--ui-space-2);
+  min-width: 0;
+  font: var(--ui-font-label);
+}
+
+.filters input,
+.filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  padding: var(--ui-space-3);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text);
+}
+
+.empty,
+.error,
+.status {
+  margin: 0;
+  border-radius: var(--ui-radius-control);
+  padding: var(--ui-space-3) var(--ui-space-4);
+}
+
+.empty,
+.status {
+  background: var(--ui-color-inset);
+  color: var(--ui-color-muted);
+}
+
+.error {
+  background: var(--ui-color-error-surface);
+  color: var(--ui-color-error);
+}
+
+@container operations (max-width: 67.5rem) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container operations (max-width: 38.75rem) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}
