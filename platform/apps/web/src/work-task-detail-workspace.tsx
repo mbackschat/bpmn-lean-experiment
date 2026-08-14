@@ -18,6 +18,7 @@ import type {
 
 import { DefinitionDiagram } from "./definition-diagram";
 import type { DefinitionApiClient } from "./definitions-api";
+import { BpmnDiagramMarkerKind } from "./bpmn-viewer";
 import type { WorkCompletionView } from "./work-completion-operation";
 import { WorkCompletionViewKind } from "./work-completion-operation";
 import styles from "./work-inbox.module.css";
@@ -105,9 +106,12 @@ function WorkTaskDiagram({
   }
   return (
     <DefinitionDiagram
-      activeElementId={task.task.id.elementId}
       api={definitionApi}
       definition={task.hostingInstance.definition}
+      highlight={{
+        elementId: task.task.id.elementId,
+        markerKind: BpmnDiagramMarkerKind.Selected,
+      }}
     />
   );
 }

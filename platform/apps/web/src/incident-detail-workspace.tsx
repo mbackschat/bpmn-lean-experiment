@@ -24,6 +24,7 @@ import { InteractionLabels } from "./incident-collection.tsx";
 import type { IncidentOperationsApi } from "./incident-operations-api.ts";
 import { DefinitionDiagram } from "./definition-diagram.tsx";
 import type { DefinitionApiClient } from "./definitions-api.ts";
+import { BpmnDiagramMarkerKind } from "./bpmn-viewer.ts";
 import styles from "./incident-detail-workspace.module.css";
 
 export type IncidentDetailWorkspaceProps = Readonly<{
@@ -194,9 +195,12 @@ export function IncidentDetailWorkspace({
           label: "Diagram",
           content: (
             <DefinitionDiagram
-              activeElementId={current.incident.effect.id.elementId}
               api={definitionApi}
               definition={current.hostingInstance.definition}
+              highlight={{
+                elementId: current.incident.effect.id.elementId,
+                markerKind: BpmnDiagramMarkerKind.Incident,
+              }}
             />
           ),
         }, {

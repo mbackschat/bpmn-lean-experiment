@@ -52,7 +52,10 @@ test("keeps detail full width with exact overview, diagram highlight, audit, and
   assert.match(detail, /label: "Overview"/u);
   assert.match(detail, /label: "Diagram"/u);
   assert.match(detail, /label: "Audit"/u);
-  assert.match(detail, /activeElementId=\{current\.incident\.effect\.id\.elementId\}/u);
+  assert.match(
+    detail,
+    /elementId: current\.incident\.effect\.id\.elementId,\s*markerKind: BpmnDiagramMarkerKind\.Incident/u,
+  );
   assert.match(detail, /cancelLabel="Keep Process running"/u);
   assert.match(detail, /title="Cancel root Process\?"/u);
   assert.match(detail, /remaining live work/u);

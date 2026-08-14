@@ -24,14 +24,18 @@ const markerCss = await readFile(
 const runnableDiagramSource = diagramSource
   .replace(
     'import { DefinitionDiagram } from "./definition-diagram.tsx";',
-    `let capturedActiveElementIds;
-     function DefinitionDiagram({ activeElementIds }) {
-       capturedActiveElementIds = activeElementIds;
+    `let capturedHighlight;
+     function DefinitionDiagram({ highlight }) {
+       capturedHighlight = highlight;
        return null;
      }
-     export function readCapturedActiveElementIds() {
-       return capturedActiveElementIds;
+     export function readCapturedHighlight() {
+       return capturedHighlight;
      }`,
+  )
+  .replace(
+    'import { BpmnDiagramMarkerKind } from "./bpmn-viewer.ts";',
+    'const BpmnDiagramMarkerKind = { Current: "current" };',
   )
   .replace(
     /import \{\s*displayScopeOccurrence,\s*executionScopeKey,\s*executionTokenKey,\s*\} from "\.\/process-instance-position-identity\.ts";/u,
@@ -59,7 +63,10 @@ const diagramModule = await import(
     current: CurrentCommittedExecution;
     definition: never;
   }>>;
-  readCapturedActiveElementIds(): readonly string[] | undefined;
+  readCapturedHighlight(): Readonly<{
+    elementIds: readonly string[];
+    markerKind: "current";
+  }> | undefined;
 }>;
 
 const diagramApi = { async getPresentation(): Promise<never> { throw new Error("unused"); } };
@@ -100,10 +107,10 @@ test("projects only one token and its active Service Task wait, never the live r
     definition: diagramDefinition,
   }));
 
-  assert.deepEqual(diagramModule.readCapturedActiveElementIds(), [
-    "Flow_ToChargeCard",
-    "ServiceTask_ChargeCard",
-  ]);
+  assert.deepEqual(diagramModule.readCapturedHighlight(), {
+    elementIds: ["Flow_ToChargeCard", "ServiceTask_ChargeCard"],
+    markerKind: "current",
+  });
   assert.match(markup, /aria-label="Diagram position guide"/u);
   assert.match(markup, /Current control token/u);
   assert.match(markup, /Active wait/u);
@@ -122,36 +129,47 @@ test("projects a called-Process active wait without marking either live scope co
     definition: diagramDefinition,
   }));
 
-  assert.deepEqual(diagramModule.readCapturedActiveElementIds(), [
-    "Flow_ToFulfilment",
-    "CalledServiceTask_MissingFromParentDiagram",
-  ]);
+  assert.deepEqual(diagramModule.readCapturedHighlight(), {
+    elementIds: ["Flow_ToFulfilment", "CalledServiceTask_MissingFromParentDiagram"],
+    markerKind: "current",
+  });
 });
 
 test("styles only the exact marked BPMN element visual, never descendant elements", () => {
   const markerRules = markerCss.slice(
-    markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-active"),
-    markerCss.indexOf("@container"),
+    markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-current"),
+    markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-incident"),
   );
   assert.match(
     markerRules,
-    /\.canvas\s+:global\(\.djs-shape\.bpmn-platform-active > \.djs-visual > :first-child\)/u,
+    /\.canvas\s+:global\(\.djs-shape\.bpmn-platform-current > \.djs-visual > :first-child\)/u,
   );
   assert.match(
     markerRules,
-    /\.canvas\s+:global\(\.djs-connection\.bpmn-platform-active > \.djs-visual > path\)/u,
+    /\.canvas\s+:global\(\.djs-connection\.bpmn-platform-current > \.djs-visual > path\)/u,
   );
   assert.match(
     markerRules,
-    /\.canvas\s+:global\(\.djs-connection\.bpmn-platform-active > \.djs-visual > defs > marker > path\)/u,
+    /\.canvas\s+:global\(\.djs-connection\.bpmn-platform-current > \.djs-visual > defs > marker > path\)/u,
   );
   assert.doesNotMatch(
     markerRules,
-    /:global\(\.bpmn-platform-active\)\s+:global\(\.djs-visual\)/u,
+    /:global\(\.bpmn-platform-current\)\s+:global\(\.djs-visual\)/u,
   );
   assert.match(markerRules, /var\(--ui-color-accent\)/u);
   assert.match(markerRules, /var\(--ui-color-accent-soft\)/u);
   assert.doesNotMatch(markerRules, /var\(--ui-color-error\)/u);
+  const incidentRules = markerCss.slice(
+    markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-incident"),
+    markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-selected"),
+  );
+  assert.match(incidentRules, /var\(--ui-color-error\)/u);
+  const selectedRules = markerCss.slice(
+    markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-selected"),
+    markerCss.indexOf("@container"),
+  );
+  assert.match(selectedRules, /var\(--ui-color-accent\)/u);
+  assert.doesNotMatch(selectedRules, /fill: var\(--ui-color-accent-soft\)/u);
 });
 
 function executionCurrent({

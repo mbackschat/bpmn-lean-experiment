@@ -27,10 +27,10 @@ test("definition diagrams fetch resolved presentation instead of admitted source
     diagramSource,
     /downloadDefinitionPresentation\(presentation\)/u,
   );
-  assert.match(diagramSource, /activeElementId\?: string/u);
-  assert.match(diagramSource, /viewer\.current\.highlight\(activeElementId\)/u);
-  assert.match(diagramSource, /viewer\.current\.highlightMany\(activeElementIds\)/u);
-  assert.match(diagramSource, /highlighting \$\{activeElementId\}/u);
+  assert.match(diagramSource, /highlight\?: DefinitionDiagramHighlight/u);
+  assert.match(diagramSource, /viewer\.current\.highlight\(highlightedElementId, markerKind\)/u);
+  assert.match(diagramSource, /viewer\.current\.highlightMany\(\s*highlightedElementIds,\s*markerKind/u);
+  assert.match(diagramSource, /highlighting \$\{highlight\.elementId\}/u);
 });
 
 test("Work keeps a presentation-only definition dependency", () => {
@@ -50,7 +50,7 @@ test("Work keeps a presentation-only definition dependency", () => {
   );
   assert.match(
     workDetailSource,
-    /activeElementId=\{task\.task\.id\.elementId\}/u,
+    /elementId: task\.task\.id\.elementId,\s*markerKind: BpmnDiagramMarkerKind\.Selected/u,
   );
   assert.match(workDetailSource, /called Process whose exact diagram binding is not published/u);
 });

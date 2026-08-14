@@ -217,9 +217,9 @@ function isExecutionPageResponse(response: import("@playwright/test").Response):
 async function expectExactDiagramMarkers(
   diagram: import("@playwright/test").Locator,
 ): Promise<void> {
-  await expect(diagram.locator('.djs-element[data-element-id="Flow_1"].bpmn-platform-active')).toHaveCount(1);
-  await expect(diagram.locator('.djs-element[data-element-id="Flow_2"].bpmn-platform-active')).toHaveCount(1);
-  await expect(diagram.locator('.djs-element[data-element-id="Task_Left"].bpmn-platform-active')).toHaveCount(1);
+  await expect(diagram.locator('.djs-element[data-element-id="Flow_1"].bpmn-platform-current')).toHaveCount(1);
+  await expect(diagram.locator('.djs-element[data-element-id="Flow_2"].bpmn-platform-current')).toHaveCount(1);
+  await expect(diagram.locator('.djs-element[data-element-id="Task_Left"].bpmn-platform-current')).toHaveCount(1);
   await expect(diagram.getByLabel("Diagram position guide")).toContainText("Current control token");
   await expect(diagram.getByLabel("Diagram position guide")).toContainText("Active wait");
   await expect(diagram.locator('.djs-element[data-element-id="Flow_1"] > .djs-visual > path')).toHaveCSS("stroke", "rgb(15, 107, 92)");
@@ -227,9 +227,9 @@ async function expectExactDiagramMarkers(
   await expect(diagram.locator('.djs-element[data-element-id="Flow_1"] > .djs-visual marker path')).toHaveCSS("fill", "rgb(15, 107, 92)");
   await expect(diagram.locator('.djs-element[data-element-id="Task_Left"] > .djs-visual > :first-child')).toHaveCSS("stroke", "rgb(15, 107, 92)");
   await expect(diagram.locator('.djs-element[data-element-id="Task_Left"] > .djs-visual > :first-child')).toHaveCSS("fill", "rgb(230, 242, 239)");
-  await expect(diagram.locator('.djs-element.bpmn-platform-active')).toHaveCount(3);
-  await expect(diagram.locator(`.djs-element[data-element-id="${executionPublicationLabels.processId}"].bpmn-platform-active`)).toHaveCount(0);
-  await expect(diagram.locator('.djs-element[data-element-id="Task_Right"].bpmn-platform-active')).toHaveCount(0);
+  await expect(diagram.locator('.djs-element.bpmn-platform-current')).toHaveCount(3);
+  await expect(diagram.locator(`.djs-element[data-element-id="${executionPublicationLabels.processId}"].bpmn-platform-current`)).toHaveCount(0);
+  await expect(diagram.locator('.djs-element[data-element-id="Task_Right"].bpmn-platform-current')).toHaveCount(0);
 }
 
 async function assertNoOverflow(

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BpmnDiagramMarkerKind,
   BpmnDiagramViewer,
   BpmnViewerProtocolError,
 } from "../src/bpmn-viewer.ts";
@@ -101,20 +102,23 @@ test("renders a synchronous byte snapshot as strict UTF-8 and fits the viewport"
   );
 });
 
-test("uses one fixed marker and clears the prior highlighted element", () => {
+test("keeps selected work, incident failure, and current execution on distinct markers", () => {
   const fixture = viewerFixture();
   const viewer = new BpmnDiagramViewer(poweredContainer(), fixture.factory);
 
-  viewer.highlight("Task_A");
-  viewer.highlight("Task_B");
+  viewer.highlight("Task_A", BpmnDiagramMarkerKind.Selected);
+  viewer.highlight("Task_B", BpmnDiagramMarkerKind.Incident);
+  viewer.highlightMany(["Task_A"], BpmnDiagramMarkerKind.Current);
   viewer.clearHighlight();
   viewer.destroy();
 
   assert.deepEqual(fixture.canvasCalls, [
-    "add:Task_A:bpmn-platform-active",
-    "remove:Task_A:bpmn-platform-active",
-    "add:Task_B:bpmn-platform-active",
-    "remove:Task_B:bpmn-platform-active",
+    "add:Task_A:bpmn-platform-selected",
+    "remove:Task_A:bpmn-platform-selected",
+    "add:Task_B:bpmn-platform-incident",
+    "remove:Task_B:bpmn-platform-incident",
+    "add:Task_A:bpmn-platform-current",
+    "remove:Task_A:bpmn-platform-current",
   ]);
   assert.equal(fixture.isDestroyed(), true);
 });
@@ -122,21 +126,21 @@ test("uses one fixed marker and clears the prior highlighted element", () => {
 test("refuses a missing rendered element before mutating the active marker", () => {
   const fixture = viewerFixture(["Task_A"]);
   const viewer = new BpmnDiagramViewer(poweredContainer(), fixture.factory);
-  viewer.highlight("Task_A");
+  viewer.highlight("Task_A", BpmnDiagramMarkerKind.Selected);
 
   assert.throws(
-    () => { viewer.highlight("Task_Missing"); },
+    () => { viewer.highlight("Task_Missing", BpmnDiagramMarkerKind.Selected); },
     (error: unknown) => error instanceof BpmnViewerProtocolError &&
       /Task_Missing.*not present in the rendered diagram/u.test(error.message),
   );
   assert.deepEqual(fixture.registryCalls, ["Task_A", "Task_Missing"]);
-  assert.deepEqual(fixture.canvasCalls, ["add:Task_A:bpmn-platform-active"]);
+  assert.deepEqual(fixture.canvasCalls, ["add:Task_A:bpmn-platform-selected"]);
 });
 
 test("atomically highlights every present unique position and reports missing IDs in input order", () => {
   const fixture = viewerFixture(["Flow_Left", "Flow_Right"]);
   const viewer = new BpmnDiagramViewer(poweredContainer(), fixture.factory);
-  viewer.highlight("Flow_Left");
+  viewer.highlight("Flow_Left", BpmnDiagramMarkerKind.Current);
 
   const missing = viewer.highlightMany([
     "Flow_Right",
@@ -144,19 +148,19 @@ test("atomically highlights every present unique position and reports missing ID
     "Flow_Left",
     "Called_Process_Missing",
     "Flow_Right",
-  ]);
+  ], BpmnDiagramMarkerKind.Current);
 
   assert.deepEqual(missing, ["Called_Process_Missing"]);
   assert.deepEqual(fixture.canvasCalls, [
-    "add:Flow_Left:bpmn-platform-active",
-    "remove:Flow_Left:bpmn-platform-active",
-    "add:Flow_Right:bpmn-platform-active",
-    "add:Flow_Left:bpmn-platform-active",
+    "add:Flow_Left:bpmn-platform-current",
+    "remove:Flow_Left:bpmn-platform-current",
+    "add:Flow_Right:bpmn-platform-current",
+    "add:Flow_Left:bpmn-platform-current",
   ]);
   viewer.clearHighlight();
   assert.deepEqual(fixture.canvasCalls.slice(-2), [
-    "remove:Flow_Right:bpmn-platform-active",
-    "remove:Flow_Left:bpmn-platform-active",
+    "remove:Flow_Right:bpmn-platform-current",
+    "remove:Flow_Left:bpmn-platform-current",
   ]);
 });
 

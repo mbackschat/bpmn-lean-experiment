@@ -1,4 +1,11 @@
-const activeMarker = "bpmn-platform-active";
+export const BpmnDiagramMarkerKind = {
+  Current: "current",
+  Incident: "incident",
+  Selected: "selected",
+} as const;
+
+export type BpmnDiagramMarkerKind =
+  (typeof BpmnDiagramMarkerKind)[keyof typeof BpmnDiagramMarkerKind];
 
 export type BpmnCanvasPort = Readonly<{
   addMarker(elementId: string, marker: string): void;
@@ -32,6 +39,7 @@ export class BpmnDiagramViewer {
   readonly #canvas: BpmnCanvasPort;
   readonly #elementRegistry: BpmnElementRegistryPort;
   #highlightedElements: string[] = [];
+  #highlightedMarker: string | null = null;
   #renderQueue: Promise<void> = Promise.resolve();
   #destroyed = false;
 
@@ -65,7 +73,7 @@ export class BpmnDiagramViewer {
     await operation;
   }
 
-  highlight(elementId: string): void {
+  highlight(elementId: string, markerKind: BpmnDiagramMarkerKind): void {
     this.#requireLive();
     if (elementId.length === 0) {
       throw new TypeError("highlighted BPMN element ID must not be empty");
@@ -76,12 +84,17 @@ export class BpmnDiagramViewer {
       );
     }
     this.clearHighlight();
-    this.#canvas.addMarker(elementId, activeMarker);
+    const marker = markerClass(markerKind);
+    this.#canvas.addMarker(elementId, marker);
     this.#highlightedElements = [elementId];
+    this.#highlightedMarker = marker;
   }
 
   /** Replaces every marker as one validated set and reports absent unique IDs in input order. */
-  highlightMany(elementIds: readonly string[]): readonly string[] {
+  highlightMany(
+    elementIds: readonly string[],
+    markerKind: BpmnDiagramMarkerKind,
+  ): readonly string[] {
     this.#requireLive();
     const unique = [...new Set(elementIds)];
     for (const elementId of unique) {
@@ -96,27 +109,35 @@ export class BpmnDiagramViewer {
       else present.push(elementId);
     }
     this.clearHighlight();
-    for (const elementId of present) this.#canvas.addMarker(elementId, activeMarker);
+    const marker = markerClass(markerKind);
+    for (const elementId of present) this.#canvas.addMarker(elementId, marker);
     this.#highlightedElements = present;
+    this.#highlightedMarker = present.length === 0 ? null : marker;
     return missing;
   }
 
   clearHighlight(): void {
     this.#requireLive();
-    for (const elementId of this.#highlightedElements) {
-      this.#canvas.removeMarker(elementId, activeMarker);
+    if (this.#highlightedMarker !== null) {
+      for (const elementId of this.#highlightedElements) {
+        this.#canvas.removeMarker(elementId, this.#highlightedMarker);
+      }
     }
     this.#highlightedElements = [];
+    this.#highlightedMarker = null;
   }
 
   destroy(): void {
     if (this.#destroyed) {
       return;
     }
-    for (const elementId of this.#highlightedElements) {
-      this.#canvas.removeMarker(elementId, activeMarker);
+    if (this.#highlightedMarker !== null) {
+      for (const elementId of this.#highlightedElements) {
+        this.#canvas.removeMarker(elementId, this.#highlightedMarker);
+      }
     }
     this.#highlightedElements = [];
+    this.#highlightedMarker = null;
     this.#destroyed = true;
     this.#viewer.destroy();
   }
@@ -125,6 +146,17 @@ export class BpmnDiagramViewer {
     if (this.#destroyed) {
       throw new BpmnViewerProtocolError("diagram viewer is destroyed");
     }
+  }
+}
+
+function markerClass(markerKind: BpmnDiagramMarkerKind): string {
+  switch (markerKind) {
+    case BpmnDiagramMarkerKind.Current:
+      return "bpmn-platform-current";
+    case BpmnDiagramMarkerKind.Incident:
+      return "bpmn-platform-incident";
+    case BpmnDiagramMarkerKind.Selected:
+      return "bpmn-platform-selected";
   }
 }
 

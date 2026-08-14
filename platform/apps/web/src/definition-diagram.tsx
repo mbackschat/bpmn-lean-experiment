@@ -10,24 +10,37 @@ import type {
 import { Button } from "@bpmn-lean/platform-ui-kit";
 
 import { createBpmnJsViewer } from "./bpmn-js-factory";
-import { BpmnDiagramViewer } from "./bpmn-viewer";
+import {
+  BpmnDiagramMarkerKind,
+  BpmnDiagramViewer,
+} from "./bpmn-viewer";
 import type { DefinitionApiClient } from "./definitions-api";
 import { downloadDefinitionPresentation } from "./definition-presentation-download";
 import styles from "./definition-diagram.module.css";
 
+export type DefinitionDiagramHighlight =
+  | Readonly<{
+    elementId: string;
+    markerKind:
+      | typeof BpmnDiagramMarkerKind.Incident
+      | typeof BpmnDiagramMarkerKind.Selected;
+  }>
+  | Readonly<{
+    elementIds: readonly string[];
+    markerKind: typeof BpmnDiagramMarkerKind.Current;
+  }>;
+
 export type DefinitionDiagramProps = Readonly<{
-  activeElementId?: string;
-  activeElementIds?: readonly string[];
   api: Pick<DefinitionApiClient, "getPresentation">;
   definition: DeployedDefinitionVersion;
+  highlight?: DefinitionDiagramHighlight;
   onMissingElementIds?: (elementIds: readonly string[]) => void;
 }>;
 
 export function DefinitionDiagram({
-  activeElementId,
-  activeElementIds,
   api,
   definition,
+  highlight,
   onMissingElementIds,
 }: DefinitionDiagramProps) {
   const container = useRef<HTMLDivElement>(null);
@@ -39,6 +52,13 @@ export function DefinitionDiagram({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [rendering, setRendering] = useState(true);
+  const highlightedElementId = highlight !== undefined && "elementId" in highlight
+    ? highlight.elementId
+    : undefined;
+  const highlightedElementIds = highlight !== undefined && "elementIds" in highlight
+    ? highlight.elementIds
+    : undefined;
+  const markerKind = highlight?.markerKind;
 
   useEffect(() => {
     const element = container.current;
@@ -80,18 +100,27 @@ export function DefinitionDiagram({
         await activeViewer.render(new TextEncoder().encode(
           resolved.presentationBpmnXml,
         ));
-        if (
-          generation.current === activeGeneration &&
-          viewer.current === activeViewer &&
-          activeElementId !== undefined
-        ) {
-          viewer.current.highlight(activeElementId);
-        } else if (
-          generation.current === activeGeneration &&
-          viewer.current === activeViewer &&
-          activeElementIds !== undefined
-        ) {
-          onMissingElementIds?.(viewer.current.highlightMany(activeElementIds));
+        if (generation.current === activeGeneration && viewer.current === activeViewer) {
+          switch (markerKind) {
+            case BpmnDiagramMarkerKind.Incident:
+            case BpmnDiagramMarkerKind.Selected:
+              if (highlightedElementId === undefined) {
+                throw new TypeError("single diagram highlight requires one BPMN element ID");
+              }
+              viewer.current.highlight(highlightedElementId, markerKind);
+              break;
+            case BpmnDiagramMarkerKind.Current:
+              if (highlightedElementIds === undefined) {
+                throw new TypeError("current diagram highlight requires BPMN element IDs");
+              }
+              onMissingElementIds?.(viewer.current.highlightMany(
+                highlightedElementIds,
+                markerKind,
+              ));
+              break;
+            case undefined:
+              break;
+          }
         }
       } catch (error: unknown) {
         if (generation.current === activeGeneration) {
@@ -108,7 +137,14 @@ export function DefinitionDiagram({
         generation.current += 1;
       }
     };
-  }, [activeElementId, activeElementIds, api, definition, onMissingElementIds]);
+  }, [
+    api,
+    definition,
+    highlightedElementId,
+    highlightedElementIds,
+    markerKind,
+    onMissingElementIds,
+  ]);
 
   return (
     <section
@@ -157,7 +193,7 @@ export function DefinitionDiagram({
       <div
         className={styles.canvas}
         ref={container}
-        aria-label={diagramLabel(definition, activeElementId, activeElementIds)}
+        aria-label={diagramLabel(definition, highlight)}
       />
     </section>
   );
@@ -165,13 +201,13 @@ export function DefinitionDiagram({
 
 function diagramLabel(
   definition: DeployedDefinitionVersion,
-  activeElementId: string | undefined,
-  activeElementIds: readonly string[] | undefined,
+  highlight: DefinitionDiagramHighlight | undefined,
 ): string {
   const base = `BPMN diagram for ${definition.processId}, version ${definition.version}`;
-  if (activeElementId !== undefined) return `${base}, highlighting ${activeElementId}`;
-  if (activeElementIds !== undefined) {
-    return `${base}, highlighting ${commaSeparated([...new Set(activeElementIds)])}`;
+  if (highlight === undefined) return base;
+  if ("elementId" in highlight) return `${base}, highlighting ${highlight.elementId}`;
+  if ("elementIds" in highlight) {
+    return `${base}, highlighting ${commaSeparated([...new Set(highlight.elementIds)])}`;
   }
   return base;
 }

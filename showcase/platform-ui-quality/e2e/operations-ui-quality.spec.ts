@@ -120,7 +120,7 @@ test("incident Diagram shows the exact highlighted element and reduced motion", 
     { exact: true },
   )).toBeVisible();
   await expect(diagramSurface.locator(
-    `.djs-element[data-element-id="${operationsFixtureLabels.element}"].bpmn-platform-active`,
+    `.djs-element[data-element-id="${operationsFixtureLabels.element}"].bpmn-platform-incident`,
   )).toHaveCount(1);
   await expect(diagramSurface.getByText("Generated layout", { exact: true })).toBeVisible();
   await expect(diagramSurface.getByText("Derived presentation copy, not admitted source.")).toBeVisible();

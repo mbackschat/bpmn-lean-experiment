@@ -65,6 +65,10 @@ runnable = runnable.replace(
   /import \{ DefinitionDiagram \} from ['"][^'"]+['"];/u,
   "const DefinitionDiagram = () => null;",
 );
+runnable = runnable.replace(
+  /import \{ BpmnDiagramMarkerKind \} from ['"][^'"]+['"];/u,
+  'const BpmnDiagramMarkerKind = { Selected: "selected" };',
+);
 for (const dependency of dependencies) {
   runnable = runnable.replaceAll(`'${dependency}'`, JSON.stringify(import.meta.resolve(dependency)));
   runnable = runnable.replaceAll(`"${dependency}"`, JSON.stringify(import.meta.resolve(dependency)));

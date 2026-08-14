@@ -239,6 +239,24 @@ test("rejects planted feature styling and control ownership violations", () => {
       "raw-action-button",
     ],
   );
+
+  const exactBpmnMarkers = `
+    .canvas :global(.djs-shape.bpmn-platform-current > .djs-visual > :first-child) {}
+    .canvas :global(.djs-connection.bpmn-platform-incident > .djs-visual > path) {}
+    .canvas :global(.djs-connection.bpmn-platform-selected > .djs-visual > defs > marker > path) {}
+  `;
+  assert.deepEqual(
+    uiBoundaryViolations(exactBpmnMarkers, "", { allowBpmnMarkerGlobal: true }),
+    [],
+  );
+  assert.deepEqual(
+    uiBoundaryViolations(
+      `${exactBpmnMarkers}.canvas :global(.djs-shape.bpmn-platform-active) {}`,
+      "",
+      { allowBpmnMarkerGlobal: true },
+    ),
+    ["feature-global-shared-internal"],
+  );
 });
 
 test("rejects a checkpoint that consumes workspace dist before its predecessor build", () => {
@@ -345,21 +363,24 @@ function uiBoundaryViolations(
   }> = {},
 ): string[] {
   const violations: string[] = [];
-  const globalsRemoved = options.allowBpmnMarkerGlobal === true
-    ? module
-      .replaceAll(
-        ":global(.djs-shape.bpmn-platform-active > .djs-visual > :first-child)",
-        ".bpmn-platform-active-shape",
-      )
-      .replaceAll(
-        ":global(.djs-connection.bpmn-platform-active > .djs-visual > path)",
-        ".bpmn-platform-active-connection",
-      )
-      .replaceAll(
-        ":global(.djs-connection.bpmn-platform-active > .djs-visual > defs > marker > path)",
-        ".bpmn-platform-active-marker",
-      )
-    : module;
+  let globalsRemoved = module;
+  if (options.allowBpmnMarkerGlobal === true) {
+    for (const marker of ["current", "incident", "selected"] as const) {
+      globalsRemoved = globalsRemoved
+        .replaceAll(
+          `:global(.djs-shape.bpmn-platform-${marker} > .djs-visual > :first-child)`,
+          `.bpmn-platform-${marker}-shape`,
+        )
+        .replaceAll(
+          `:global(.djs-connection.bpmn-platform-${marker} > .djs-visual > path)`,
+          `.bpmn-platform-${marker}-connection`,
+        )
+        .replaceAll(
+          `:global(.djs-connection.bpmn-platform-${marker} > .djs-visual > defs > marker > path)`,
+          `.bpmn-platform-${marker}-marker`,
+        );
+    }
+  }
   if (/:global\(/u.test(globalsRemoved)) {
     violations.push("feature-global-shared-internal");
   }

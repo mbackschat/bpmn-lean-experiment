@@ -7,6 +7,7 @@ import type {
 
 import { DefinitionDiagram } from "./definition-diagram.tsx";
 import type { DefinitionApiClient } from "./definitions-api.ts";
+import { BpmnDiagramMarkerKind } from "./bpmn-viewer.ts";
 import {
   displayScopeOccurrence,
   executionScopeKey,
@@ -43,9 +44,12 @@ export function ProcessInstanceExecutionDiagram({
         <span><span className={styles.waitKey} aria-hidden="true" />Active wait</span>
       </div>
       <DefinitionDiagram
-        activeElementIds={elementIds}
         api={api}
         definition={definition}
+        highlight={{
+          elementIds,
+          markerKind: BpmnDiagramMarkerKind.Current,
+        }}
         onMissingElementIds={publishMissing}
       />
       <PositionList current={current} />
