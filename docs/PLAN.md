@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: review the M5 committed-history and diagram-position contract.** The [draft proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) keeps history and current positions as separate requirements, selects replay-complete evaluator-root traces, a revisioned atomic Product 1 publication, fail-closed Product 2 projection/rebuild, and bounded History/Diagram/JSON adoption. Obtain context-cold proposal review and owner approval before implementing a transition record, control-position publication, read model, history UI, overlay, or export.
+1. **In progress: review the M5 E1 committed-history and diagram-position contract.** The [draft proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) keeps history and current positions as separate requirements, selects replay-complete evaluator-root traces, a revisioned atomic Product 1 publication, fail-closed Product 2 projection/rebuild, and bounded semantic History/Diagram/JSON adoption. It does not close M5: frequency and duration views, completed operator history, and audit export remain later PLAN-owned Product 2 increments. Complete the proposal correction audit and obtain owner approval before implementing a transition record, control-position publication, read model, history UI, overlay, or export.
 
 ## Approved decisions
 
@@ -264,7 +264,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain context-cold review of the [M5 committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md).** Resolve only bounded proposal findings, record the review receipt, and stop for owner approval before implementation.
+**Next action: complete the same-reviewer correction audit of the [M5 E1 committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md).** Record the correction target and stop for owner approval before implementation. The E1 implementation will not itself close M5; the remaining frequency/duration, operator-history, and audit-export increments stay ordered after it.
 
 Item 1 is **proposal-stage and in progress**. M4 is closed through the graduated [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md). M5's draft proposal is not owner-approved and no E1 public contract, semantic representation, transition family, projection store, UI surface, or export is implemented. Event History and state differencing remain forbidden fact sources.
 

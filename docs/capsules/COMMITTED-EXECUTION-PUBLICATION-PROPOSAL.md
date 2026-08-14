@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft; owner approval and implementation remain paused pending context-cold proposal review.** This proposal selects one additive Product 1 publication for replay-complete committed semantic transitions and current committed control positions, plus the smallest Product 2 projection, history, diagram-overlay, and exact-JSON export adoption needed to close M5. It changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
+**Draft; the context-cold proposal review required bounded corrections, and owner approval and implementation remain paused pending correction audit.** This proposal selects one additive Product 1 publication for replay-complete committed semantic transitions and current committed control positions, plus the smallest Product 2 projection, semantic History, diagram-overlay, and exact semantic-JSON export adoption for the E1 increment. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. It changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
 
 ## Independent cold-review receipt
 
@@ -18,7 +18,7 @@ How should the engine make a Process instance's committed semantic history and c
 
 **Recommendation: publish one cursor-paged execution envelope with two separately specified facts.** The first fact is the exact committed external stimulus followed by every internal Semantic Process operation selected before the next stable state. The second is the current committed state plus exact public control-token and definition/runtime-scope positions at the envelope head. A Product 1 publication accumulator assigns contiguous per-instance revisions only after the complete semantic command and internal closure succeed. Product 2 transactionally projects the publication, rejects gaps, and uses it for one instance history, one current diagram overlay, and one exact JSON export.
 
-This is the smallest complete M5 design because it makes the history replay-checkable, makes current positions explicit rather than inferred, and establishes restart/rebuild behavior without introducing event sourcing as the runtime model or using Temporal host facts as BPMN facts.
+This is the smallest complete E1 publication and adoption design because it makes semantic history replay-checkable, makes current positions explicit rather than inferred, and establishes restart/rebuild behavior without introducing event sourcing as the runtime model or using Temporal host facts as BPMN facts. It deliberately does not claim the complete M5 platform increment or exit gate.
 
 ## Authority and classification
 
@@ -33,12 +33,12 @@ The publication is additive for every already admitted profile. It does not add 
 1. Keep transition history and current control positions as distinct requirements, served by one envelope and proved by separate rules.
 2. Instrument the existing `applyStimulus` evaluation root so one trace contains the committed external admission and every actually selected internal operation. Do not replay the evaluator merely to manufacture records.
 3. Keep the primary RuntimeState unchanged. The evaluator returns an unnumbered trace; Product 1 assigns revisions after successful stable closure.
-4. Make the trace replay-complete: an external record retains the exact closed `Stimulus`, and an internal record retains the selected operation identity plus its public operation metadata and exact owning scope occurrence.
+4. Make the trace replay-complete without redaction: an external record retains the exact closed `Stimulus`, including the historical value fields listed below, and an internal record retains metadata proven equal to the exact selected Program operation plus its dynamically selected owning scope occurrence. Existing Operations-group authorization explicitly governs this retained historical data.
 5. Publish the exact control-position delta of each transition plus one current snapshot at the page head. Do not duplicate full before/after runtime or position snapshots in every record.
 6. Number transitions from one with contiguous positive safe-integer revisions. Preserve command atomicity with complete transition batches and allow cursors only at batch boundaries.
 7. Retain the complete publication in deterministic Workflow state for the existing Temporal retention lifetime. Partial retention and Continue-As-New are excluded; loss of the authoritative publication is typed unavailable, never repaired from Event History.
 8. Project pages transactionally with exact duplicate acceptance, changed-content rejection, explicit gap state, restart continuation, and byte-identical rebuild from revision zero.
-9. Add a read-only Process-instance History surface, current Diagram overlay, and exact JSON export. Keep operator audit separate and make Product 2 browser tests path-scoped outside semantic verification.
+9. Add a read-only Process-instance semantic History surface, current Diagram overlay, and exact semantic JSON export for E1. Keep operator audit separate, leave the remaining M5 frequency, duration, operator-history, and audit-export increments open, and keep Product 2 browser tests path-scoped outside semantic verification.
 
 ## Public contract
 
@@ -71,6 +71,10 @@ type TracedCommandResult = DeepReadonly<{
 ```
 
 `committedTransitions` is nonempty exactly when the result is committed, bounded closure succeeded, and a stable state is publishable. Its first member is the exact admitted external stimulus. Every remaining member is the internal operation actually selected by closure, in execution order. A rejected command, unsupported future outcome, closure-bound failure, or ambiguous-choice failure publishes no transition batch. Existing `applyStimulus` remains the result-only projection of the traced evaluator so old callers and result bytes do not fork.
+
+An internal record is valid only when `operationId` resolves to exactly one operation in the exact admitted Program, `operationKind` and `origin` equal that operation's fields, and `owner` equals the scope occurrence dynamically selected by the actual `ProgramStep`. The evaluator constructs these four facts from that one selected step rather than accepting or recomputing them independently. Lean and TypeScript replay validate the complete record, including kind, origin, and owner, before applying the operation. A type-valid substituted kind, origin, or owner is therefore an integrity failure even when the unchanged operation ID alone would reach the same state.
+
+Replay completeness selects exact historical semantic inputs with no redaction. The retained payload-bearing fields are `StartProcessStimulus.initialVariables`, `CompleteUserTaskInstanceStimulus.submittedValues`, `CompleteEffectStimulus.result.localPatch`, and the `code` and nullable `message` of a BPMN Error result. This retains variable names and Boolean, String, or Null values even after later commands supersede current state. The other current stimuli retain their complete identity, channel, generation, and logical-time fields but introduce no additional value payload. The existing Operations-group authorization is selected as sufficient for reading and exporting this historical data. Any future value kind, message payload, effect-result field, stimulus variant, redaction requirement, or narrower authorization policy reopens this classification; a protected replay/display split would be a material redesign and requires a new cold review.
 
 The public position projection removes IL-private place identities while preserving multiplicity and runtime ownership:
 
@@ -131,11 +135,41 @@ type ExecutionPublicationPage = DeepReadonly<{
   batches: CommittedTransitionBatch[];
   current: CurrentCommittedExecution | null;
 }>;
+
+enum ExecutionPublicationResultKind {
+  Available = "available",
+  NotReady = "notReady",
+  NotFound = "notFound",
+  Unavailable = "unavailable",
+  Gap = "gap",
+}
+
+type ExecutionPublicationResult = DeepReadonly<
+  | { kind: ExecutionPublicationResultKind.Available; page: ExecutionPublicationPage }
+  | { kind: ExecutionPublicationResultKind.NotReady }
+  | { kind: ExecutionPublicationResultKind.NotFound }
+  | { kind: ExecutionPublicationResultKind.Unavailable }
+  | { kind: ExecutionPublicationResultKind.Gap }
+>;
+
+type ExecutionPublicationExport = DeepReadonly<{
+  format: "bpmn-lean.execution-publication.v1";
+  definition: SemanticProcessIdentity;
+  processId: string;
+  processInstanceId: string;
+  headRevision: number;
+  batches: [CommittedTransitionBatch, ...CommittedTransitionBatch[]];
+  current: CurrentCommittedExecution;
+}>;
 ```
 
-The first transition revision is one; revision zero is the only empty-store cursor. Every transition increments by one. `fromRevision` is exclusive and `throughRevision` inclusive. The batch command ID equals the first external stimulus's command ID. Batch ranges are adjacent, records are adjacent, and a page never cuts a batch. `current` is present exactly when `pageThroughRevision = headRevision`; its revision equals `headRevision` and its state and positions are the stable result after the last record. If a caller is already at the head, the page has no batches and includes `current`.
+The first transition revision is one; revision zero is the only empty-store cursor. An available page exists only after the first committed batch, so `headRevision >= 1`. Every transition increments by one. `fromRevision` is exclusive and `throughRevision` inclusive. For a valid page, `0 <= requestedAfterRevision <= pageThroughRevision <= headRevision`. `batches` is empty exactly when `requestedAfterRevision = pageThroughRevision`; otherwise the first batch has `fromRevision = requestedAfterRevision`, every later batch starts at the prior batch's `throughRevision`, and the final batch's `throughRevision = pageThroughRevision`. In every batch, `throughRevision - fromRevision = transitions.length`; record revisions are exactly `fromRevision + 1` through `throughRevision`; the first record is the one external stimulus; its command ID equals the batch command ID; and every remaining record is an internal operation from that command's closure. A page never cuts a batch.
 
-The production Query accepts `{ afterRevision, limit? }`, where `afterRevision` is a nonnegative safe integer and `limit` is a positive safe integer with default 50 and maximum 100 complete batches. An unknown instance is `notFound`. A history outside Temporal retention or otherwise not authoritatively queryable is `unavailable`. A cursor ahead of the head, inside a batch, or behind a publication that cannot return the next contiguous revision is `gap`. None of these arms returns a partial current snapshot.
+For each record, `logicalTimeMs` is the logical time in that record's successor RuntimeState: after external command admission for the first record, and after the selected internal operation for every later record. It is a nonnegative safe integer and cannot regress within a batch or across adjacent batches. `positionDelta` is the exact public position change between the same record's input and successor states. `current` is present exactly when `pageThroughRevision = headRevision`; its revision equals `headRevision`, and its state and positions are the stable result after the last record. If a caller is already at a positive head, the page has no batches and includes `current`.
+
+The production Query accepts `{ afterRevision, limit? }`, where `afterRevision` is a nonnegative safe integer and `limit` is a positive safe integer with default 50 and maximum 100 complete batches. Before the start stimulus commits, the unconditional Query returns retryable `notReady`; this transient arm neither creates nor preserves a Product 2 gap and carries no page or current state. Product 2 retries it with a bounded policy. An unknown instance is `notFound`. A history outside Temporal retention or otherwise not authoritatively queryable is `unavailable`. A cursor ahead of the head, inside a batch, or behind a publication that cannot return the next contiguous revision is `gap`. None of these arms returns a partial current snapshot.
+
+`ExecutionPublicationExport` is the only full semantic-export wire. It is available only after contiguous reconciliation from revision zero reaches the positive head. Its batches start at zero, are mutually adjacent, end at `headRevision`, and satisfy every page/batch/record equation above; `current.revision = headRevision`. Its dedicated strict recursive decoder rejects extras, omissions, null substitutions, unknown stimulus/operation/result variants, unsafe integers, noncanonical collection order, redundant-field drift, and every range-equation violation. Its dedicated canonical serializer emits UTF-8 JSON with lexicographically sorted object keys, no insignificant whitespace, no BOM, and no trailing newline. An independent fixed-fixture byte oracle and SHA-256 check the canonical bytes, rather than comparing two uses of the production serializer.
 
 ## Stable rules
 
@@ -145,7 +179,7 @@ For one stable committed command, emit exactly one external transition for its a
 
 ### EPUB-REPLAY-01: trace completeness
 
-Given the exact admitted Semantic Process Program, the command's input RuntimeState, and its unnumbered transition list, replaying the external record through existing command admission and each internal record through the existing operation evaluator reconstructs the exact result RuntimeState. Erasing the trace from the traced evaluator returns the existing `applyStimulus` result. Dropping, duplicating, swapping, or substituting a record, changing a state-affecting stimulus field, or changing an operation ID must fail replay or produce a state unequal to the committed result.
+Given the exact admitted Semantic Process Program, the command's input RuntimeState, and its unnumbered transition list, replaying the external record through existing command admission and each complete internal record through the existing operation evaluator reconstructs the exact result RuntimeState. Before applying an internal step, replay requires the operation ID to resolve uniquely and requires the record's kind and origin to equal that Program operation and its owner to equal the actual dynamically selected scope occurrence. Erasing the trace from the traced evaluator returns the existing `applyStimulus` result. Dropping, duplicating, swapping, or substituting a record, changing a state-affecting stimulus field, changing an operation ID, or independently substituting operation kind, origin, or owner must fail replay or produce a state unequal to the committed result.
 
 This is reconstruction of semantic RuntimeState under the exact Program, not a new event-sourced runtime architecture. Product 2 does not run the semantic core and does not claim that its read model is runtime state.
 
@@ -165,7 +199,7 @@ An exact Workflow Task replay reconstructs the same publication without creating
 
 ### EPUB-CURSOR-01: contiguous pages
 
-Every observed page begins at the caller's exact committed batch-boundary cursor and contains only complete adjacent batches. The decoder validates all cross-field range equations, command identity, definition identity, Process identity, canonical order, revision continuity, logical-time safety, and current/head equality. A skipped revision, batch split, changed duplicate, definition drift, or head regression is an integrity failure, not an empty page.
+Every observed available page begins at the caller's exact committed batch-boundary cursor and contains only complete adjacent batches. The decoder validates the enumerated page, batch, record-count, record-revision, first-external, command-identity, definition-identity, Process-identity, logical-time, position-delta, page-through, head, and current equations in the public contract. A skipped revision, batch split, changed duplicate, definition drift, redundant operation-field drift, or head regression is an integrity failure, not an empty page. Before the first batch, `notReady` is the only valid Query result and is retryable rather than a gap.
 
 ### EPUB-PROJECTION-01: transactional projection and rebuild
 
@@ -175,21 +209,21 @@ Rebuilding an empty store from revision zero must produce the same canonical tra
 
 ### EPUB-GAP-01: fail-closed incompleteness
 
-When Product 2 expects revision `n` and receives any first record other than `n`, cannot retrieve the authoritative page, or cannot verify a page's identity/content, it records an explicit unavailable/gap projection state and applies none of that page. History export and current diagram overlay are then unavailable. The platform never fills a gap from current-state differencing, Event History, audit, ingestion timestamps, CIB history, or another instance.
+When Product 2 expects revision `n` and receives any first record other than `n`, cannot retrieve the authoritative page after the selected retry boundary, or cannot verify a page's identity/content, it records an explicit unavailable/gap projection state and applies none of that page. `notReady` before the first committed batch is retried and never becomes a gap by itself. History export and current diagram overlay are unavailable for an actual gap. The platform never fills a gap from current-state differencing, Event History, audit, ingestion timestamps, CIB history, or another instance.
 
-### EPUB-SURFACE-01: bounded M5 adoption
+### EPUB-SURFACE-01: bounded E1 adoption
 
-The Operations Process-instance collection opens one exact confirmed instance detail with Overview, History, and Diagram tabs. History lists committed records in revision order and labels external stimuli separately from internal operations. Diagram combines the exact current state with token and scope positions on the definition presentation whose source digest matches the publication. Transition deltas give History and optional frequency views the exact Sequence Flow path through pass-through gateways without requiring Product 2 to interpret IL. Off-diagram called-Process positions and missing rendered elements are reported honestly rather than guessed.
+The Operations Process-instance collection opens one exact confirmed instance detail with Overview, History, and Diagram tabs. History lists committed records in revision order and labels external stimuli separately from internal operations. Diagram combines the exact current state with token and scope positions on the definition presentation whose source digest matches the publication. Transition deltas give History the exact Sequence Flow path through pass-through gateways without requiring Product 2 to interpret IL. Off-diagram called-Process positions and missing rendered elements are reported honestly rather than guessed.
 
 `Download execution history` returns the strict JSON publication for that one instance with definition, Process, instance, revision, transition, logical-time, and current-position facts. It contains no opaque locator, Temporal/CIB identity, Event History, Activity attempt, platform audit actor, or private runtime fields. The existing operator Audit remains a separate platform-fact surface and is not merged into semantic history.
 
-The first M5 surface adds no command, repair, migration, pause, retry, or cancellation behavior. Frequency views may count exact operation origins from records if they do not widen this contract. Wall-clock duration, conformance checking, variant mining, and cross-instance global ordering remain excluded.
+This E1 surface adds no command, repair, migration, pause, retry, or cancellation behavior. It leaves M5 open for the PLAN-owned frequency and duration views, complete operator history, and audit export. Wall-clock duration, conformance checking, variant mining, and cross-instance global ordering are outside this proposal.
 
 ### Product 2 HTTP and authorization boundary
 
-The strict public routes are `GET /api/v1/process-instances/{processInstanceId}/execution?afterRevision={revision}&limit={limit}` and `GET /api/v1/process-instances/{processInstanceId}/execution/export`. They accept no request body, resolve the retained opaque locator internally, reconcile only from the authoritative Product 1 page, and return no locator. The execution route returns the closed projected page. The export route returns `application/json; charset=utf-8` with a sanitized attachment filename and one closed full-instance export assembled only after contiguous reconciliation reaches the head.
+The strict public routes are `GET /api/v1/process-instances/{processInstanceId}/execution?afterRevision={revision}&limit={limit}` and `GET /api/v1/process-instances/{processInstanceId}/execution/export`. They accept no request body, resolve the retained opaque locator internally, reconcile only from the authoritative Product 1 page, and return no locator. The execution route returns the closed projected page. The export route returns the canonical `ExecutionPublicationExport` bytes as `application/json; charset=utf-8` with a sanitized attachment filename, assembled only after contiguous reconciliation from zero reaches the head.
 
-Both routes use the existing Operations actor resolver and exact configured-group policy before locator access, reconciliation, or repository reads. The selected status set is 200, 400 invalid request, 403 forbidden, 404 unknown confirmed instance, 405 method not allowed, 503 publication unavailable/gapped, and 500 internal failure. One new public error code, `executionPublicationUnavailable`, has the canonical message `The committed execution publication is unavailable.` The 503 response exposes no expected or observed revision, host error, retention fact, or partial prefix. Strict Product 2 JSON parsing and closed recursive decoders apply to every response.
+Both routes use the existing Operations actor resolver and exact configured-group policy before locator access, reconciliation, or repository reads. Owner approval of this proposal explicitly authorizes that group to read and export the retained historical semantic values enumerated above with no redaction. The selected status set is 200, 400 invalid request, 403 forbidden, 404 unknown confirmed instance, 405 method not allowed, 503 publication not yet ready, unavailable, or gapped after bounded reconciliation, and 500 internal failure. One new public error code, `executionPublicationUnavailable`, has the canonical message `The committed execution publication is unavailable.` The 503 response exposes no expected or observed revision, host error, retention fact, historical value, or partial prefix. Strict Product 2 JSON parsing and closed recursive decoders apply to every response.
 
 ## Runtime-only and synthetic constructs
 
@@ -228,13 +262,13 @@ The proof does not claim determinism for unadmitted ambiguous schedules, global 
 
 The production Workflow owns an immutable publication accumulator beside its current semantic state. Start, Update, Signal, Timer, and Activity-result stimuli continue to enter through the existing single semantic input loop. That loop invokes the traced evaluator once. A successful stable result appends one complete numbered batch and replaces the head snapshot before resolving the existing command path. No new semantic ingress, wait, effect, cancellation mechanism, or command outcome is introduced.
 
-One unconditional Query, `bpmn-execution-publication`, serves strict cursor requests for running, completed, and cancelled Workflows during their existing Temporal retention lifetime. The Temporal client converts absent/unqueryable executions into typed public results and never exposes the host execution address through Product 2.
+One unconditional Query, `bpmn-execution-publication`, serves strict cursor requests for not-yet-committed, running, completed, and cancelled Workflows during their existing Temporal retention lifetime. Query handlers are installed before the semantic loop can commit the start stimulus, so that interval returns exact retryable `notReady`. The Temporal client preserves this arm distinctly from absent/unqueryable executions and never exposes the host execution address through Product 2.
 
 ### Ordering, deduplication, and replay
 
 The Workflow's existing queue order remains the only external scheduling choice. The traced evaluator records that chosen order and the exact internal operation order. Content-bound Update IDs, Signal deduplication, Activity reconciliation, and retained results keep their existing contracts. Workflow Task retries re-execute deterministic code and do not allocate another durable revision. Query execution emits no Event History event and changes no state.
 
-Worker replacement before and after a multi-transition command must preserve the same page, head, and current snapshot. Replay of existing histories must stay green and reconstruct the new in-memory publication without scheduling a different Temporal command or changing completed/cancelled receipt bytes. A Query may transport the authoritative Workflow-owned publication, but Query execution itself is not durability authority.
+An immediate post-start Query must observe either `notReady` or the complete positive-head start batch. Bounded retry from `notReady` must reach that batch without creating a Product 2 gap. Worker replacement before and after a multi-transition command must preserve the same page, head, and current snapshot. Replay of existing histories must stay green and reconstruct the new in-memory publication without scheduling a different Temporal command or changing completed/cancelled receipt bytes. A Query may transport the authoritative Workflow-owned publication, but Query execution itself is not durability authority.
 
 ### Retention and stop boundary
 
@@ -242,18 +276,19 @@ The first contract retains the complete publication in Workflow state and relies
 
 ### Separating host mutations
 
-The focused refinement witness must reject a Sink-based publisher that duplicates on Workflow Task retry, a Search Attribute or Event History-derived record, a Query that mutates the cursor, a publication append before stable closure, a Workflow replacement that allocates new revisions, a closed execution that returns a state without its history, and a page whose current snapshot is not bound to its head.
+The focused refinement witness must reject a Sink-based publisher that duplicates on Workflow Task retry, a Search Attribute or Event History-derived record, a Query that mutates the cursor, a publication append before stable closure, a Workflow replacement that allocates new revisions, a closed execution that returns a state without its history, a revision-zero `available` page, a `notReady` result treated as a permanent gap, and a page whose current snapshot is not bound to its head.
 
 ## Smallest complete witness
 
 Use the existing parallel fork/join Process as the semantic witness and its existing exact source/program identity.
 
-1. Start the Process. The batch records the exact start stimulus, initiation, fork, and both task-await operations.
-2. Complete one of the two User Tasks. The batch records that exact occurrence completion, its produced Sequence Flow position, and a head with one control token waiting at the join plus the other exact open task.
-3. Replace the Worker and query after the prior revision. The same current snapshot exposes both the join token and remaining task with exact scope occurrence identity.
-4. Complete the second task. The batch records completion, synchronization, end consumption, and scope completion, and the head is terminal.
-5. Rebuild an empty Product 2 projection from revision zero after platform restart. Its history, terminal current snapshot, and export bytes equal the uninterrupted projection.
-6. Seed a provider page that skips one internal transition revision. Projection applies nothing, reports a gap, and suppresses history export and diagram overlay.
+1. Call Temporal start and query immediately. Accept only retryable `notReady` or the complete start batch, then prove bounded retry reaches the complete batch without a Product 2 gap.
+2. Let the Process start commit. The batch records the exact start stimulus, initiation, fork, and both task-await operations.
+3. Complete one of the two User Tasks. The batch records that exact occurrence completion, its produced Sequence Flow position, and a head with one control token waiting at the join plus the other exact open task.
+4. Replace the Worker and query after the prior revision. The same current snapshot exposes both the join token and remaining task with exact scope occurrence identity.
+5. Complete the second task. The batch records completion, synchronization, end consumption, and scope completion, and the head is terminal.
+6. Rebuild an empty Product 2 projection from revision zero after platform restart. Its history, terminal current snapshot, and export bytes equal the uninterrupted projection.
+7. Seed a provider page that skips one internal transition revision. Projection applies nothing, reports a gap, and suppresses history export and diagram overlay.
 
 A second focused cyclic-control-flow fixture repeats one BPMN User Task element under a later activation and proves that element identity cannot substitute for revision plus occurrence identity. It is a negative identity oracle, not another M5 feature.
 
@@ -262,10 +297,10 @@ A second focused cyclic-control-flow fixture repeats one BPMN User Task element 
 | Rule | Lean | TypeScript core | Temporal/Product 1 | Product 2 | Separating evidence |
 |---|---|---|---|---|---|
 | `EPUB-HISTORY-01` | exact trace list and step membership | traced root captures admission and selected operations | numbered only after stable closure | strict record decoder | pass-through gateway operations cannot be recovered by state differencing |
-| `EPUB-REPLAY-01` | replay completeness theorem | fold equals result RuntimeState | history replay recreates publication | no semantic replay authority | dropped/swapped/duplicated/substituted operation |
+| `EPUB-REPLAY-01` | replay completeness theorem | fold and every redundant operation field equal the selected step and result RuntimeState | history replay recreates publication | no semantic replay authority | independently substituted ID, kind, origin, or owner |
 | `EPUB-POSITION-01` | exact deltas, delta-fold equality, and head projection | unique origin and complete multiplicity | deltas and head bound atomically | exact current overlay and gateway path | repeated element activation and token waiting at join |
 | `EPUB-COMMIT-01` | no trace on nonpublishable result | no partial batch | Workflow Task retry/replacement | page transaction | failure after append-before-result mutation |
-| `EPUB-CURSOR-01` | not applicable | strict range helpers | strict Query/client page validation | strict gateway/HTTP validation | skipped, split, ahead, regressed, or changed record |
+| `EPUB-CURSOR-01` | not applicable | strict range helpers | strict Query/client page validation and immediate-post-start `notReady` | strict gateway/HTTP validation | zero-head page; skipped, split, ahead, regressed, changed, or malformed-equation record |
 | `EPUB-PROJECTION-01` | not applicable | canonical values | exact retryable pages | duplicate-safe SQLite projection and rebuild | response loss, restart, changed duplicate |
 | `EPUB-GAP-01` | not applicable | not applicable | unavailable rather than inferred fallback | explicit gap suppresses surfaces | Event History and state-difference planted counterexamples |
 | `EPUB-SURFACE-01` | not applicable | no Product 2 knowledge | representation-free gateway only | History, Diagram, exact JSON download | source-digest mismatch, off-diagram occurrence, private-fact scan |
@@ -277,17 +312,17 @@ The full semantic gate compares the exact unnumbered transition trace and curren
 Required:
 
 - exact external-plus-internal committed transition trace from the evaluator root;
-- proved replay completeness under the exact Program;
+- proved replay completeness under the exact Program, including exact equality of operation ID, kind, origin, and dynamically selected owner;
+- unredacted retention and Operations-authorized export of every payload-bearing field in the exact admitted stimuli;
 - exact per-transition control-position deltas plus current committed state, control-token positions, and runtime/definition-scope positions;
 - per-instance contiguous revisions, atomic complete batches, strict cursor pages, and typed unavailability/gaps;
-- deterministic Temporal Query publication, Worker replacement, existing-history replay, and terminal retrieval during retention;
+- deterministic Temporal Query publication with retryable pre-start `notReady`, Worker replacement, existing-history replay, and terminal retrieval during retention;
 - Product 2 transactional projection, exact duplicate handling, changed-content integrity failure, restart, full rebuild, and gap suppression;
-- per-instance History, current Diagram overlay, and exact JSON history download;
+- per-instance semantic History, current Diagram overlay, and a dedicated strict, canonically serialized JSON history export;
 - path-scoped Product 2 browser/visual evidence that is not reachable from semantic-only verification.
 
 Optional only when it changes no selected claim:
 
-- exact operation-frequency counts over the same projected records;
 - another Worker replacement point or page-size boundary;
 - a second renderer-unavailable position fixture.
 
@@ -295,6 +330,7 @@ Excluded:
 
 - new BPMN semantics, profile capability, CIB relationship, admission rule, runtime transition, command, repair, migration, or lifecycle action;
 - Event History, Workflow Task, Activity attempt, Search Attribute, CIB history, state difference, platform audit, or ingestion time as a semantic fact source;
+- the remaining PLAN-owned M5 frequency and duration views, completed operator-history surface, and audit export;
 - wall-clock duration claims, global cross-instance ordering, conformance checking, variant mining, process discovery, predictive analytics, or combined audit/semantic export;
 - event-sourcing RuntimeState, Product 2 replay of the semantic core, state reconstruction without the exact Program, arbitrary history mutation, or platform-authored records;
 - partial retention, compaction, Continue-As-New, archival storage, post-retention reconstruction, multi-tenant policy, or a general export framework;
@@ -304,7 +340,7 @@ Excluded:
 
 This is an additive pre-release public-observation change. Existing profile, BPMN source, checked graph, IL, RuntimeState, command result, scenario observation, canonical result, CIB evidence, Workflow result, and terminal receipt bytes remain exact. Existing Workflow histories must replay unchanged. The new publication wire is strict from its first version; any later removal, renumbering, retention change, or change in record meaning requires a new version and migration account.
 
-The planned owners are already bound by the executable [Lean source contract guard](../../scripts/lean-source-contracts.test.ts), [contract schema coverage](../../scripts/contract-schema-coverage.test.ts), [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts), [platform product boundary](../../scripts/platform-product-boundary.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), and [what-binds](../../scripts/what-binds.test.ts). The implementation adds focused trace, position, publication, projection, and rebuild oracles beside their owning packages rather than weakening these guards.
+The planned owners are already routed through the executable [Lean source contract guard](../../scripts/lean-source-contracts.test.ts), [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts), [platform product boundary](../../scripts/platform-product-boundary.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), and [what-binds](../../scripts/what-binds.test.ts). The existing [contract schema coverage guard](../../scripts/contract-schema-coverage.test.ts) covers only Semantic Process operation and checked-node enum branches; it is not publication-wire coverage. Implementation must add a focused exhaustive publication-contract guard and the trace, position, projection, and rebuild oracles described below rather than crediting an unrelated guard.
 
 ### Owners this implementation grows
 
@@ -324,8 +360,14 @@ The semantic root grows only by thin delegation. The current mechanically measur
 | [`packages/temporal-adapter/workflow/src/workflows.ts`](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 | Add only the public Workflow/Query type surface. |
 | [`packages/temporal-adapter/protocol/src/contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 406 | Delegate the strict publication contract to a cohesive new protocol owner. |
 | [`packages/temporal-adapter/client/src/process-client.ts`](../../packages/temporal-adapter/client/src/process-client.ts) | 166 | Delegate publication observation to a cohesive new client owner. |
+| [`platform/apps/server/src/composition.ts`](../../platform/apps/server/src/composition.ts) | 261 | Compose the execution gateway, projection, routes, and authorization through thin wiring only. |
+| [`platform/foundation/engine-gateway/src/index.ts`](../../platform/foundation/engine-gateway/src/index.ts) | 304 | Export one representation-free execution-publication gateway delegated to a cohesive owner. |
+| [`platform/modules/operate/src/index.ts`](../../platform/modules/operate/src/index.ts) | 527 | Export cohesive projection, reconciliation, repository, and HTTP owners without placing behavior in the index. |
+| [`platform/contracts/src/index.ts`](../../platform/contracts/src/index.ts) | 564 | Re-export dedicated execution-publication contracts, routes, and decoders. |
 
-New cohesive owners are required for TypeScript transition tracing and replay, position projection, Lean publication/refinement proofs and JSON, Temporal protocol/query/accumulator/client/live evidence, Product 1 engine API, the representation-free platform gateway, Product 2 projection repository/service/HTTP, and the History/Diagram/export web surface. New owners inherit their package's existing boundary, registry, source-hygiene, and review-packet guards. Existing crowded generic scenario, Workflow, differential, Operate, and web owners receive only import/delegation; if any would cross 600 nonblank lines, extraction is mandatory before feature growth.
+New cohesive owners are required for TypeScript transition tracing and replay, position projection, Lean publication/refinement proofs and JSON, Temporal protocol/query/accumulator/client/live evidence, Product 1 engine API, the representation-free platform gateway, Product 2 projection repository/service/HTTP, and the History/Diagram/export web surface. `platform/contracts/src/execution-publication-decoders.ts` exclusively owns the recursive publication page/result/export decoder and all range equations; no already crowded generic decoder may grow to absorb it. In particular, [`platform/contracts/src/work-task-decoders.ts`](../../platform/contracts/src/work-task-decoders.ts) remains untouched at 597/600 nonblank with three lines of headroom. New owners inherit their package's existing boundary, registry, source-hygiene, and review-packet guards. Existing crowded generic scenario, Workflow, differential, Operate, and web owners receive only import/delegation; if any would cross 600 nonblank lines, extraction is mandatory before feature growth.
+
+The direct `what-binds` inventory also measures the forced React integration owners that the proposal-table parser does not classify as source owners: [`platform/apps/web/src/app.tsx`](../../platform/apps/web/src/app.tsx) is 146/600 nonblank with 454 lines of headroom and receives only routing/data delegation; [`platform/apps/web/src/operations-workspace.tsx`](../../platform/apps/web/src/operations-workspace.tsx) is 50/600 with 550 lines of headroom and delegates semantic History and Diagram detail to cohesive new surfaces. Both bind the web and platform registries plus the Product 2, source-hygiene, contributor-setup, and path-scoped UI evidence families.
 
 The implementation must update the relevant package registries, [shared wire contract registry](../../contracts/README.md), [Temporal adapter registry](../../packages/temporal-adapter/README.md), engine API registry, platform registries, [architecture](../ARCHITECTURE.md), [implementation map](../IMPLEMENTATION-MAP.md), [production lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [testing specification](../TESTING-SPEC.md), [plan](../PLAN.md), and the [capsule cost ledger](../CAPSULE-COST-LEDGER.md) atomically with the evidence they describe.
 
@@ -334,11 +376,13 @@ The implementation must update the relevant package registries, [shared wire con
 | Guard or oracle | Obligation |
 |---|---|
 | [semantic-core tests](../../packages/semantic-core/test) and [Lean source contracts](../../scripts/lean-source-contracts.test.ts) | Lock exact trace capture, replay completeness, position fidelity, result erasure, and no trace for nonpublishable results. |
+| New `scripts/execution-publication-contract-coverage.test.ts` plus publication schema/decoder tests | Require every `StimulusKind`, semantic transition kind, operation kind, command/result arm, Query result, page/export field, and enumerated cross-field equation in both the strict schema and recursive decoder; plant an omitted variant, false redundant operation field, unsafe range, and noncanonical export counterexample. |
+| [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) plus a focused publication-origin oracle | Bind every exported operation kind/origin to the exact admitted Program operation and every token/scope origin to the exact source-bound IL artifact; mutate each field independently. |
 | [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts) and [pre-release architecture](../../scripts/pre-release-architecture.test.ts) | Keep publication inside Product 1, retain deterministic Workflow code, and forbid Product 2 Temporal imports. |
 | [platform product boundary](../../scripts/platform-product-boundary.test.ts) | Keep opaque locators/private host facts out of public contracts and platform stores. |
 | [source hygiene](../../scripts/source-hygiene.test.ts) and [what-binds](../../scripts/what-binds.test.ts) | Enforce the named extractions, cohesive owners, registries, and reviewed headroom. |
 | [document reviewability](../../scripts/document-reviewability.test.ts), [independent-review policy](../../scripts/independent-review-policy.test.ts), and [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Require proposal, semantic-checkpoint, and closure receipts over immutable targets. |
-| Product 2 UI-quality isolation guard and path-scoped workflow | Prove four-width/focus/overflow/visual behavior without adding Playwright or web builds to semantic Verify. |
+| [contributor setup and workflow isolation guard](../../scripts/contributor-setup.test.ts) over [the path-scoped UI-quality workflow](../../.github/workflows/ui-quality.yml) | Prove four-width/focus/overflow/visual behavior without adding Playwright or web builds to semantic Verify. |
 
 The implementation is material because it changes public observation, proof boundaries, and Temporal refinement, even though it changes no BPMN transition. It requires context-cold proposal review before owner approval, a semantic checkpoint after the first green trace/position/wire/Query boundary, and cold closure unless the exact checkpoint reviewer qualifies for hash-bound warm continuity.
 
@@ -346,9 +390,9 @@ The implementation is material because it changes public observation, proof boun
 
 The exact claim is that every stable committed command publishes a complete replayable sequence of the external semantic input and selected internal operations, and that the same head publishes the exact current public state, token positions, and runtime/definition-scope positions. Product 2 can rebuild the same history and current overlay from revision zero or report a gap. The claim does not extend to host history, wall-clock time, post-retention availability, cross-instance order, CIB microsteps, or reconstructing RuntimeState without the exact Program.
 
-The strongest common-mode risk is that Lean, TypeScript, and Temporal all emit a plausible narration while silently omitting a pass-through internal operation. Replay completeness plus the fork/join gateway witness makes omission change or invalidate the reconstructed state. The second risk is that a complete operation list still hides which Sequence Flow a gateway selected; the exact position delta exposes that path without Product 2 IL interpretation. The third is that transition completeness is mistaken for current diagram position; the independently checked head snapshot and join-token witness separate those requirements. The fourth is that an eventually consistent Product 2 store silently skips data; the seeded gap and changed-duplicate mutations must suppress the surface.
+The strongest common-mode risk is that Lean, TypeScript, and Temporal all emit a plausible narration while silently omitting a pass-through internal operation. Replay completeness plus the fork/join gateway witness makes omission change or invalidate the reconstructed state. A related risk is that every target replays the right operation ID while publishing the same false kind, origin, or runtime owner; complete-record validation and independent field mutations separate that failure. The next risk is that a complete operation list still hides which Sequence Flow a gateway selected; the exact position delta exposes that path without Product 2 IL interpretation. Another risk is that transition completeness is mistaken for current diagram position; the independently checked head snapshot and join-token witness separate those requirements. Revision-zero `notReady`, the independent canonical-byte oracle, the seeded gap, and changed-duplicate mutations prevent the host, serializer, or Product 2 store from sharing a happy-path-only interpretation.
 
-Meaningful mutations are: state-difference-generated history, Event History-generated history, one dropped gateway operation, swapped closure operations, a duplicated revision, a changed exact duplicate, a cursor inside a batch, a head snapshot from another revision or definition, a token mapped to a control-place ID rather than its Sequence Flow origin, an element-only repeated activation key, and a platform rebuild that starts from its own rows instead of revision zero.
+Meaningful mutations are: state-difference-generated history, Event History-generated history, one dropped gateway operation, swapped closure operations, independently changed operation ID, kind, origin, or owner, a revision-zero available page, `notReady` converted to a gap, a malformed batch/range/count equation, a duplicated revision, a changed exact duplicate, a cursor inside a batch, a head snapshot from another revision or definition, a token mapped to a control-place ID rather than its Sequence Flow origin, an element-only repeated activation key, a production serializer used as its own export oracle, and a platform rebuild that starts from its own rows instead of revision zero.
 
 Closure will record the commit-bounded implementation cost in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), compared with the cyclic-control-flow capsule for repeated transition execution and the M4 incident-operations increment for Product 1 Query plus Product 2 projection/UI adoption.
 
@@ -368,10 +412,10 @@ Stop and return to research, redesign, or owner direction if:
 - implementation requires a new BPMN rule, profile, CIB relationship, command, repair action, Continue-As-New, archive, global order, wall-clock semantic timestamp, or general mining framework;
 - Product 2 browser evidence becomes reachable from semantic-only verification.
 
-Re-open the graduated specification when partial retention, Continue-As-New, archive migration, wall-clock duration, cross-instance ordering, generalized mining/export, public IL distribution, or another semantic record family is selected.
+Re-open this account when partial retention, Continue-As-New, archive migration, a future value domain or redaction policy, cross-instance ordering, generalized mining/export, public IL distribution, or another semantic record family is selected. Complete the remaining M5 frequency and duration views, operator-history surface, and audit export in their own bounded Product 2 increment without claiming that this E1 proposal already owns them.
 
 ## Decisions requested from the owner
 
-Recommendation: approve the complete selected account after context-cold review. It closes the exact M5 information gap at Product 1, proves rather than assumes trace completeness, keeps position identity separate and exact, and gives Product 2 a fail-closed rebuild contract without importing Temporal semantics.
+Recommendation: approve the complete selected E1 account after the correction audit. It closes the M5 information gap at Product 1, proves rather than assumes trace completeness, keeps position identity separate and exact, and gives Product 2 a fail-closed semantic History/Diagram/export increment without importing Temporal semantics. It does not close M5.
 
-Approval would select the nine decisions listed above: one two-fact publication envelope; traced evaluator root; revision outside RuntimeState; replay-complete exact stimuli and internal choices; one head position snapshot; contiguous atomic batches; retention-bounded Temporal Query; transactional gap-detecting Product 2 projection; and read-only History, Diagram, and exact JSON export with browser work isolated from semantic verification.
+Approval would select the nine decisions listed above: one two-fact publication envelope; traced evaluator root; revision outside RuntimeState; replay-complete unredacted exact stimuli and complete Program-bound internal choices under Operations-group authorization; one head position snapshot; contiguous atomic batches; retention-bounded Temporal Query with retryable pre-start `notReady`; transactional gap-detecting Product 2 projection; and read-only semantic History, Diagram, and canonical JSON export with browser work isolated from semantic verification. Frequency/duration views, completed operator history, and audit export remain required before M5 exits but are not selected by this approval.
