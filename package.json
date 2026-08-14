@@ -72,7 +72,7 @@
     "test:platform-work-foundations": "pnpm --filter @bpmn-lean/platform-identity-policy test && pnpm --filter @bpmn-lean/platform-audit test",
     "test:platform-policy": "pnpm check:platform-harness-types && node --test --test-concurrency=1 scripts/*.platform-test.ts",
     "test:platform-server": "pnpm build:platform-server && node --test --test-concurrency=1 platform/apps/server/test/*.test.ts",
-    "test:showcase:types": "pnpm --filter './showcase/**' --if-present run type-test",
+    "test:showcase:types": "pnpm --filter '@bpmn-lean/showcase-*...' --if-present run build && pnpm --filter './showcase/**' --if-present run type-test",
     "test:showcase:m1": "pnpm build:showcase-m1 && pnpm --filter @bpmn-lean/showcase-m1-definition-deployment test:e2e",
     "test:showcase:m2": "pnpm build:showcase-m2 && pnpm --filter @bpmn-lean/showcase-m2-definition-scheduling test && pnpm --filter @bpmn-lean/showcase-m2-definition-scheduling test:e2e && pnpm run test:showcase:m2-message-start-ingress && pnpm run test:showcase:m2-process-instance-search",
     "test:showcase:m2-message-start-ingress": "pnpm build:showcase-m2-message-start-ingress && pnpm --filter @bpmn-lean/showcase-m2-message-start-ingress test && pnpm --filter @bpmn-lean/showcase-m2-message-start-ingress test:e2e",

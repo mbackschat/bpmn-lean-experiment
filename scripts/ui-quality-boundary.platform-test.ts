@@ -68,7 +68,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   }>;
   assert.equal(
     root.scripts?.["test:showcase:types"],
-    "pnpm --filter './showcase/**' --if-present run type-test",
+    "pnpm --filter '@bpmn-lean/showcase-*...' --if-present run build && pnpm --filter './showcase/**' --if-present run type-test",
   );
   assert.equal(
     root.scripts?.["test:ui-quality"],
