@@ -41,6 +41,15 @@ const schemaObjects = new Map<string, string>([
     CREATE INDEX process_instances_version_ordinal
       ON process_instances (definition_version, ordinal DESC)
   `],
+  ["process_instances_definition_population", `
+    CREATE INDEX process_instances_definition_population
+      ON process_instances (
+        process_id,
+        definition_version,
+        source_sha256,
+        ordinal ASC
+      )
+  `],
   ["incident_actions", `
     CREATE TABLE incident_actions (
       action_id TEXT PRIMARY KEY NOT NULL,
@@ -124,9 +133,69 @@ const schemaObjects = new Map<string, string>([
       PRIMARY KEY (process_instance_id, revision)
     ) STRICT
   `],
+  ["flow_node_occurrence_publications", `
+    CREATE TABLE flow_node_occurrence_publications (
+      process_instance_id TEXT PRIMARY KEY NOT NULL,
+      identity_json TEXT NOT NULL CHECK (length(identity_json) > 0),
+      status TEXT NOT NULL CHECK (status IN ('healthy','gap','unavailable')),
+      head_revision INTEGER NOT NULL CHECK (
+        head_revision >= 0 AND head_revision <= 9007199254740991
+      ),
+      producer_head_revision INTEGER CHECK (
+        producer_head_revision >= head_revision
+        AND producer_head_revision <= 9007199254740991
+      ),
+      last_committed_at_epoch_ms INTEGER CHECK (
+        last_committed_at_epoch_ms >= 0
+        AND last_committed_at_epoch_ms <= 9007199254740991
+      ),
+      current_open_json TEXT NOT NULL CHECK (length(current_open_json) > 0),
+      CHECK (
+        (head_revision = 0 AND last_committed_at_epoch_ms IS NULL)
+        OR (head_revision > 0 AND last_committed_at_epoch_ms IS NOT NULL)
+      )
+    ) STRICT
+  `],
+  ["flow_node_occurrence_batches", `
+    CREATE TABLE flow_node_occurrence_batches (
+      process_instance_id TEXT NOT NULL,
+      from_revision INTEGER NOT NULL CHECK (
+        from_revision >= 0 AND from_revision <= 9007199254740991
+      ),
+      through_revision INTEGER NOT NULL CHECK (
+        through_revision > from_revision
+        AND through_revision <= 9007199254740991
+      ),
+      command_id TEXT NOT NULL CHECK (length(command_id) > 0),
+      committed_at_epoch_ms INTEGER NOT NULL CHECK (
+        committed_at_epoch_ms >= 0
+        AND committed_at_epoch_ms <= 9007199254740991
+      ),
+      batch_json TEXT NOT NULL CHECK (length(batch_json) > 0),
+      PRIMARY KEY (process_instance_id, from_revision),
+      UNIQUE (process_instance_id, through_revision)
+    ) STRICT
+  `],
+  ["flow_node_occurrences", `
+    CREATE TABLE flow_node_occurrences (
+      hosting_process_instance_id TEXT NOT NULL,
+      start_revision INTEGER NOT NULL CHECK (
+        start_revision > 0 AND start_revision <= 9007199254740991
+      ),
+      start_index INTEGER NOT NULL CHECK (
+        start_index >= 0 AND start_index <= 9007199254740991
+      ),
+      occurrence_json TEXT NOT NULL CHECK (length(occurrence_json) > 0),
+      PRIMARY KEY (
+        hosting_process_instance_id,
+        start_revision,
+        start_index
+      )
+    ) STRICT
+  `],
 ]);
 
-/** Creates or verifies the one exact pre-release Operate epoch-3 schema. */
+/** Creates or verifies the one exact pre-release Operate epoch-4 schema. */
 export function initializeOperateSchema(database: DatabaseSync): void {
   database.exec("BEGIN IMMEDIATE");
   try {
@@ -173,7 +242,7 @@ function requireExactSchema(
     ORDER BY name
   `).all();
   if (
-    strictTables.length !== 6 ||
+    strictTables.length !== 9 ||
     strictTables.some((row) => row.strict !== 1)
   ) {
     throw new OperateSchemaResetRequiredError();

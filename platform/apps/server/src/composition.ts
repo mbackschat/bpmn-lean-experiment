@@ -50,9 +50,13 @@ import {
   IncidentMutationService,
   ExecutionPublicationHttpRoutes,
   ExecutionPublicationReconciliationService,
+  FlowNodeMetricsAggregationService,
+  FlowNodeMetricsHttpRoutes,
+  FlowNodeOccurrenceReconciliationService,
   ProcessInstanceHttpRoutes,
   ProcessInstanceSearchService,
   SqliteExecutionPublicationRepository,
+  SqliteFlowNodeOccurrenceRepository,
   SqliteIncidentActionRepository,
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
@@ -138,6 +142,12 @@ export async function createPlatformServer(
     const executionPublicationRepository =
       new SqliteExecutionPublicationRepository(processInstanceDatabaseFile);
     resources.push(executionPublicationRepository);
+    const flowNodeOccurrenceRepository =
+      new SqliteFlowNodeOccurrenceRepository(
+        processInstanceDatabaseFile,
+        executionPublicationRepository,
+      );
+    resources.push(flowNodeOccurrenceRepository);
     const processInstances = new ProcessInstanceSearchService(
       processInstanceRepository,
     );
@@ -175,6 +185,17 @@ export async function createPlatformServer(
         publications: executionPublicationRepository,
         gateway: engineRuntime.processExecution,
       });
+    const flowNodeOccurrenceReconciliation =
+      new FlowNodeOccurrenceReconciliationService({
+        publications: flowNodeOccurrenceRepository,
+        gateway: engineRuntime.processFlowNodeOccurrences,
+      });
+    const flowNodeMetrics = new FlowNodeMetricsAggregationService({
+      definitions: repository,
+      population: processInstanceRepository,
+      executions: executionPublicationReconciliation,
+      occurrences: flowNodeOccurrenceReconciliation,
+    });
     const auditOutbox = new WorkAuditOutboxService(work, auditRepository);
     auditOutbox.reconcileAll();
     const incidentAuditOutbox = new IncidentActionAuditOutboxService(
@@ -278,6 +299,11 @@ export async function createPlatformServer(
       reconciliation: executionPublicationReconciliation,
       publications: executionPublicationRepository,
     });
+    const flowNodeMetricsRoutes = new FlowNodeMetricsHttpRoutes({
+      actors,
+      authorization: operationsAuthorization,
+      aggregation: flowNodeMetrics,
+    });
     const incidentRoutes = new IncidentHttpRoutes({
       actors,
       authorization: operationsAuthorization,
@@ -338,6 +364,7 @@ export async function createPlatformServer(
         (request) => incidentRoutes.handle(request),
         (request) => workRoutes.handle(request),
         (request) => executionPublicationRoutes.handle(request),
+        (request) => flowNodeMetricsRoutes.handle(request),
         (request) => processInstanceRoutes.handle(request),
         (request) => publicationRoutes.handle(request),
         (request) => scheduleRoutes.handle(request),

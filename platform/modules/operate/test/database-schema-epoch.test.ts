@@ -17,7 +17,7 @@ test("sets an independent epoch on a fresh Process-instance database", async () 
 
     const database = new DatabaseSync(databaseFile, { readOnly: true });
     try {
-    assert.equal(database.prepare("PRAGMA user_version").get()?.user_version, 3);
+      assert.equal(database.prepare("PRAGMA user_version").get()?.user_version, 4);
       assert.deepEqual(
         database.prepare(`
           SELECT name FROM sqlite_schema
@@ -28,6 +28,9 @@ test("sets an independent epoch on a fresh Process-instance database", async () 
           { name: "execution_publication_batches" },
           { name: "execution_publication_records" },
           { name: "execution_publications" },
+          { name: "flow_node_occurrence_batches" },
+          { name: "flow_node_occurrence_publications" },
+          { name: "flow_node_occurrences" },
           { name: "incident_action_audit_outbox" },
           { name: "incident_actions" },
           { name: "process_instances" },

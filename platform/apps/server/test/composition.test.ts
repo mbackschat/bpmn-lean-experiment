@@ -74,6 +74,17 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
         message: "The Process instance was not found.",
       },
     });
+    const metrics = await fetch(
+      `${origin}/api/v1/definitions/missing/versions/1/flow-node-metrics`,
+      { signal: AbortSignal.timeout(1_000) },
+    );
+    assert.equal(metrics.status, 404);
+    assert.deepEqual(await metrics.json(), {
+      error: {
+        code: "notFound",
+        message: "The definition version was not found.",
+      },
+    });
     const incidents = await fetch(
       `${origin}/api/v1/incidents`,
       { signal: AbortSignal.timeout(1_000) },

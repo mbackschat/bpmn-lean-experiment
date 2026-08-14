@@ -1,4 +1,7 @@
-import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
+import type {
+  DeployedDefinitionVersion,
+  PublicProcessInstanceIdentity,
+} from "@bpmn-lean/platform-contracts";
 
 import type {
   ConfirmedProcessOperationsPublication,
@@ -32,6 +35,10 @@ export interface ProcessInstanceRepository {
   ): ReadonlyArray<StoredProcessInstance>;
   getRegistration(processInstanceId: string): OperateProcessRegistration | null;
   listNonclosed(limit: number): ReadonlyArray<OperateProcessRegistration>;
+  /** Takes one ordinal-ordered, at-most-101 exact-version population cut. */
+  listExactDefinitionVersion(
+    definition: DeployedDefinitionVersion,
+  ): ReadonlyArray<OperateProcessRegistration>;
   recordObservation(
     processInstanceId: string,
     observation: OperateProcessObservation,

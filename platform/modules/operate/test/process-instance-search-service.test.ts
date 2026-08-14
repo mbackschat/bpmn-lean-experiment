@@ -121,6 +121,12 @@ class MemoryRepository implements ProcessInstanceRepository {
     ).slice(0, limit));
   }
 
+  listExactDefinitionVersion(definition: PublicProcessInstanceIdentity["definition"]) {
+    return structuredClone(this.rows.filter(({ instance }) =>
+      JSON.stringify(instance.definition) === JSON.stringify(definition)
+    ).sort((left, right) => left.ordinal - right.ordinal).slice(0, 101));
+  }
+
   recordObservation(
     processInstanceId: string,
     observation: "active" | "closed" | "indeterminate",

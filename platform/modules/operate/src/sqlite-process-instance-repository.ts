@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import type { SQLInputValue, SQLOutputValue } from "node:sqlite";
+import type { DeployedDefinitionVersion } from "@bpmn-lean/platform-contracts";
 
 import {
   ProcessInstanceIdentityIntegrityError,
@@ -115,6 +116,39 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
     `).all(limit).map(decodeRegistrationRow);
   }
 
+  /** Linearizes the complete bounded exact-version membership in one SQLite read. */
+  listExactDefinitionVersion(
+    definition: DeployedDefinitionVersion,
+  ): ReadonlyArray<OperateProcessRegistration> {
+    const exact = snapshotDefinition(definition);
+    const rows = this.#database.prepare(`
+      SELECT
+        ordinal,
+        process_instance_id,
+        process_id,
+        definition_version,
+        source_sha256,
+        public_identity_json,
+        process_locator,
+        observation
+      FROM process_instances
+      WHERE process_id = ?
+        AND definition_version = ?
+        AND source_sha256 = ?
+      ORDER BY ordinal ASC
+      LIMIT 101
+    `).all(exact.processId, exact.version, exact.source.sha256);
+    return rows.map((row) => {
+      const registration = decodeRegistrationRow(row);
+      if (!sameJson(registration.instance.definition, exact)) {
+        throw new ProcessInstanceStoredValueError(
+          new TypeError("stored Process-instance definition version drifted"),
+        );
+      }
+      return registration;
+    });
+  }
+
   recordObservation(
     processInstanceId: string,
     observation: OperateProcessObservation,
@@ -188,6 +222,16 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
       throw error;
     }
   }
+}
+
+function snapshotDefinition(
+  definition: DeployedDefinitionVersion,
+): DeployedDefinitionVersion {
+  const instance = decodeStoredProcessInstanceIdentity(JSON.stringify({
+    processInstanceId: "population-snapshot",
+    definition,
+  }));
+  return instance.definition;
 }
 
 function decodeRegistrationRow(

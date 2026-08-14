@@ -27,6 +27,36 @@ export type {
 } from "./execution-publication-reconciliation-service.js";
 export { SqliteExecutionPublicationRepository } from "./sqlite-execution-publication-repository.js";
 export { ExecutionPublicationHttpRoutes } from "./execution-publication-http-routes.js";
+export {
+  applyFlowNodeOccurrencePage,
+  createEmptyFlowNodeOccurrenceProjection,
+  FlowNodeOccurrenceIntegrityError,
+  FlowNodeOccurrenceProjectionStatus,
+  FlowNodeOccurrenceStoredValueError,
+  occurrenceIdentityFromRegistration,
+} from "./flow-node-occurrence-projection.js";
+export type {
+  FlowNodeOccurrenceGateway,
+  FlowNodeOccurrenceProjectionImage,
+  FlowNodeOccurrenceRepository,
+  ProjectedFlowNodeOccurrence,
+} from "./flow-node-occurrence-projection.js";
+export { SqliteFlowNodeOccurrenceRepository } from "./sqlite-flow-node-occurrence-repository.js";
+export {
+  FlowNodeOccurrenceReconciliationKind,
+  FlowNodeOccurrenceReconciliationService,
+} from "./flow-node-occurrence-reconciliation-service.js";
+export type {
+  FlowNodeOccurrenceReconciliationResult,
+  FlowNodeOccurrenceReconciliationServiceOptions,
+} from "./flow-node-occurrence-reconciliation-service.js";
+export { FlowNodeMetricsAggregationService } from "./flow-node-metrics-aggregation-service.js";
+export type {
+  FlowNodeMetricsAggregationServiceOptions,
+  FlowNodeMetricsDefinitionReference,
+  FlowNodeMetricsDefinitionResolver,
+} from "./flow-node-metrics-aggregation-service.js";
+export { FlowNodeMetricsHttpRoutes } from "./flow-node-metrics-http-routes.js";
 export type {
   ProcessInstanceRepository,
   ProcessInstanceRepositoryQuery,

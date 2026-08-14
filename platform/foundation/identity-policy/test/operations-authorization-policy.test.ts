@@ -23,7 +23,7 @@ test("denies every Operations surface to an actor outside the exact group", () =
   }
 });
 
-test("grants every incident and execution-read surface to the exact operators group", () => {
+test("grants every Operations surface to the exact operators group", () => {
   const actor = { id: "operator-1", groups: ["reviewers", "operators"] };
   assert.deepEqual(surfaces, [
     "incidentList",
@@ -33,6 +33,7 @@ test("grants every incident and execution-read surface to the exact operators gr
     "executionHistory",
     "executionDiagram",
     "executionExport",
+    "flowNodeMetrics",
   ]);
   for (const surface of surfaces) {
     assert.equal(
