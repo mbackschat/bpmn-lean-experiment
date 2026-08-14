@@ -2,13 +2,13 @@
 
 ## Status
 
-**Draft; the context-cold proposal review required bounded corrections, and owner approval and implementation remain paused pending correction audit.** This proposal selects one additive Product 1 publication for replay-complete committed semantic transitions and current committed control positions, plus the smallest Product 2 projection, semantic History, diagram-overlay, and exact semantic-JSON export adoption for the E1 increment. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. It changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
+**Draft; independently reviewed and approved for owner decision, with implementation paused pending explicit owner approval.** This proposal selects one additive Product 1 publication for replay-complete committed semantic transitions and current committed control positions, plus the smallest Product 2 projection, semantic History, diagram-overlay, and exact semantic-JSON export adoption for the E1 increment. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. It changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `64509884d8cb4939d2251da008082c922f307d28` | `fork-turns-none` | `approve-with-required-edits` | `54a15fe4cc4e0efd7c587ddb2493e5e64bc2f950` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
