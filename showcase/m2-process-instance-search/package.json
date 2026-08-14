@@ -12,6 +12,7 @@
   "devDependencies": {
     "@bpmn-lean/platform-contracts": "workspace:*",
     "@bpmn-lean/platform-server": "workspace:*",
+    "@bpmn-lean/platform-web": "workspace:*",
     "@bpmn-lean/temporal-testkit": "workspace:*",
     "@playwright/test": "1.62.1"
   }

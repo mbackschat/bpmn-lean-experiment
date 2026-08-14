@@ -3,7 +3,7 @@
  * screenshots, or Temporal startup to Product 1's semantic feedback loop.
  */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -200,6 +200,48 @@ test("rejects a checkpoint that consumes workspace dist before its predecessor b
   );
 });
 
+test("declares every browser showcase's production web runtime dependency", async () => {
+  const showcaseEntries = await readdir(path.join(projectRoot, "showcase"), {
+    withFileTypes: true,
+  });
+  const violations: string[] = [];
+  for (const entry of showcaseEntries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+    const owner = `showcase/${entry.name}`;
+    const playwrightConfig = await read(`${owner}/playwright.config.ts`).catch((error: unknown) => {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return null;
+      }
+      throw error;
+    });
+    if (playwrightConfig === null) {
+      continue;
+    }
+    const manifest = await read(`${owner}/package.json`);
+    if (hasUndeclaredWebRuntime(playwrightConfig, manifest)) {
+      violations.push(owner);
+    }
+  }
+
+  assert.deepEqual(
+    violations,
+    [],
+    "a clean showcase build must include the web application and its dist-only dependencies",
+  );
+});
+
+test("rejects a planted browser showcase with an out-of-graph web runtime", () => {
+  assert.equal(
+    hasUndeclaredWebRuntime(
+      'command: "pnpm --filter @bpmn-lean/platform-web exec vite"',
+      '{"devDependencies":{"@playwright/test":"1.62.1"}}',
+    ),
+    true,
+  );
+});
+
 function uiBoundaryViolations(
   module: string,
   component: string,
@@ -251,4 +293,19 @@ function checkpointOrderViolations(
     );
     return predecessorIndex < 0 || consumerIndex < 0 || consumerIndex < predecessorIndex;
   });
+}
+
+function hasUndeclaredWebRuntime(playwrightConfig: string, manifestText: string): boolean {
+  if (!/--filter @bpmn-lean\/platform-web\b/u.test(playwrightConfig)) {
+    return false;
+  }
+  if (/--filter @bpmn-lean\/platform-web run build\b/u.test(playwrightConfig)) {
+    return false;
+  }
+  const manifest = JSON.parse(manifestText) as Readonly<{
+    dependencies?: Readonly<Record<string, string>>;
+    devDependencies?: Readonly<Record<string, string>>;
+  }>;
+  return manifest.dependencies?.["@bpmn-lean/platform-web"] === undefined
+    && manifest.devDependencies?.["@bpmn-lean/platform-web"] === undefined;
 }

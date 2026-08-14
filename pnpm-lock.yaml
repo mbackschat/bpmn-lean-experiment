@@ -336,6 +336,9 @@ importers:
       '@bpmn-lean/platform-server':
         specifier: workspace:*
         version: link:../../platform/apps/server
+      '@bpmn-lean/platform-web':
+        specifier: workspace:*
+        version: link:../../platform/apps/web
       '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
         version: link:../../packages/temporal-adapter/testkit
@@ -351,6 +354,9 @@ importers:
       '@bpmn-lean/platform-server':
         specifier: workspace:*
         version: link:../../platform/apps/server
+      '@bpmn-lean/platform-web':
+        specifier: workspace:*
+        version: link:../../platform/apps/web
       '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
         version: link:../../packages/temporal-adapter/testkit
@@ -366,6 +372,9 @@ importers:
       '@bpmn-lean/platform-server':
         specifier: workspace:*
         version: link:../../platform/apps/server
+      '@bpmn-lean/platform-web':
+        specifier: workspace:*
+        version: link:../../platform/apps/web
       '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
         version: link:../../packages/temporal-adapter/testkit
@@ -381,6 +390,9 @@ importers:
       '@bpmn-lean/platform-server':
         specifier: workspace:*
         version: link:../../platform/apps/server
+      '@bpmn-lean/platform-web':
+        specifier: workspace:*
+        version: link:../../platform/apps/web
       '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
         version: link:../../packages/temporal-adapter/testkit
@@ -396,6 +408,9 @@ importers:
       '@bpmn-lean/platform-server':
         specifier: workspace:*
         version: link:../../platform/apps/server
+      '@bpmn-lean/platform-web':
+        specifier: workspace:*
+        version: link:../../platform/apps/web
       '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
         version: link:../../packages/temporal-adapter/testkit
@@ -411,6 +426,9 @@ importers:
       '@bpmn-lean/platform-server':
         specifier: workspace:*
         version: link:../../platform/apps/server
+      '@bpmn-lean/platform-web':
+        specifier: workspace:*
+        version: link:../../platform/apps/web
       '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
         version: link:../../packages/temporal-adapter/testkit
