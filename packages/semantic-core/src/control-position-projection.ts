@@ -3,6 +3,7 @@ import type {
   ControlPlace,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
+import { calledProcessAssociationsAreValid } from "./semantic-process-call-runtime.js";
 import {
   ControlStateKind,
   sameScopeOccurrence,
@@ -208,7 +209,8 @@ function runtimeScopeForestIsValid(
     basis.definitionOrigins.get(id.definitionScopeId) === program.processId
   );
   if (
-    state.control.kind === ControlStateKind.Running && hostingRoots.length !== 1
+    state.control.kind === ControlStateKind.Running &&
+    (!calledProcessAssociationsAreValid(state) || hostingRoots.length !== 1)
   ) {
     return false;
   }

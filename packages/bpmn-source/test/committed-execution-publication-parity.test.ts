@@ -45,15 +45,22 @@ type Publication = Readonly<{
   current: CurrentControlPositions;
 }>;
 
-type ProjectionRejections = Readonly<{
+type LeanProjectionRejections = Readonly<{
   unassociatedParentlessRoot: boolean;
   completedWithLivePositions: boolean;
   calledRootProcessDrift: boolean;
 }>;
 
+type CalledAssociationRejections = Readonly<{
+  duplicateCalledProcessRecords: boolean;
+  nonDerivedCalledRootInstance: boolean;
+}>;
+
+type ProjectionRejections = LeanProjectionRejections & CalledAssociationRejections;
+
 type PublicationParityEvidence = Readonly<{
   publication: Publication;
-  projectionRejections: ProjectionRejections;
+  projectionRejections: LeanProjectionRejections;
 }>;
 
 type InternalTransition = Extract<
@@ -140,8 +147,24 @@ test("Lean and TypeScript publish the exact parallel start trace and current pos
     unassociatedParentlessRoot: true,
     completedWithLivePositions: true,
     calledRootProcessDrift: true,
+    duplicateCalledProcessRecords: true,
+    nonDerivedCalledRootInstance: true,
   });
-  assert.deepEqual(leanEvidence.projectionRejections, projectionRejections);
+  assert.deepEqual(leanEvidence.projectionRejections, {
+    unassociatedParentlessRoot: projectionRejections.unassociatedParentlessRoot,
+    completedWithLivePositions: projectionRejections.completedWithLivePositions,
+    calledRootProcessDrift: projectionRejections.calledRootProcessDrift,
+  });
+  for (const rejected of [
+    projectionRejections.duplicateCalledProcessRecords,
+    projectionRejections.nonDerivedCalledRootInstance,
+  ]) {
+    assert.equal(
+      rejected,
+      leanEvidence.projectionRejections.calledRootProcessDrift,
+      "TypeScript and Lean must reject the complete called-association class",
+    );
+  }
 
   const swapped = swapRecords(typescriptPublication, 3, 4);
   assert.deepEqual(
@@ -331,20 +354,21 @@ function projectNegativePositionClasses(
       },
     ],
   };
+  const calledRecord = {
+    id: {
+      processInstanceId: hostingRoot.id.processInstanceId,
+      elementId: callActivityElementId,
+      activation: 1,
+    },
+    caller: hostingRoot.id,
+    calledProcessId,
+    calledRoot: calledRoot.id,
+    returnOperationId: "operation:return-process:CallActivity_Parity",
+  } as const;
   const calledTreeState: RuntimeState = {
     ...state,
     scopeOccurrences: [...state.scopeOccurrences, calledRoot],
-    calledProcessOccurrences: [{
-      id: {
-        processInstanceId: hostingRoot.id.processInstanceId,
-        elementId: callActivityElementId,
-        activation: 1,
-      },
-      caller: hostingRoot.id,
-      calledProcessId,
-      calledRoot: calledRoot.id,
-      returnOperationId: "operation:return-process:CallActivity_Parity",
-    }],
+    calledProcessOccurrences: [calledRecord],
   };
   assert.notEqual(
     semanticCore.projectCurrentControlPositions(calledProgram, calledTreeState),
@@ -357,6 +381,10 @@ function projectNegativePositionClasses(
       (record) => ({ ...record, calledProcessId: "CalledProcess_Drift" }),
     ),
   };
+  const nonDerivedRoot = {
+    ...calledRoot,
+    id: { ...calledRoot.id, processInstanceId: "call:not-derived" },
+  } as const;
 
   return {
     unassociatedParentlessRoot:
@@ -371,6 +399,17 @@ function projectNegativePositionClasses(
         calledProgram,
         calledRootProcessDriftState,
       ) === null,
+    duplicateCalledProcessRecords:
+      semanticCore.projectCurrentControlPositions(calledProgram, {
+        ...calledTreeState,
+        calledProcessOccurrences: [calledRecord, calledRecord],
+      }) === null,
+    nonDerivedCalledRootInstance:
+      semanticCore.projectCurrentControlPositions(calledProgram, {
+        ...calledTreeState,
+        scopeOccurrences: [...state.scopeOccurrences, nonDerivedRoot],
+        calledProcessOccurrences: [{ ...calledRecord, calledRoot: nonDerivedRoot.id }],
+      }) === null,
   };
 }
 

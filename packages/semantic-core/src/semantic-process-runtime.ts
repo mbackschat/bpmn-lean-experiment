@@ -91,7 +91,6 @@ export type CommandResult = DeepReadonly<{
   outcome: SemanticCommandOutcome;
   state: RuntimeState;
   internalStepBoundExceeded: boolean;
-  ambiguousInternalChoice: boolean;
 }>;
 
 export type AppliedInternalOperationStep = DeepReadonly<{
@@ -102,6 +101,7 @@ export type AppliedInternalOperationStep = DeepReadonly<{
 
 export type StimulusEvaluationResult = DeepReadonly<{
   result: CommandResult;
+  ambiguousInternalChoice: boolean;
   admittedState: RuntimeState | null;
   selectedInternalSteps: AppliedInternalOperationStep[];
 }>;
@@ -541,8 +541,8 @@ export function evaluateStimulusWithSelectedSteps(
             outcome: CommandOutcome.Committed,
             state: admission.state,
             internalStepBoundExceeded: false,
-            ambiguousInternalChoice: false,
           },
+          ambiguousInternalChoice: false,
           admittedState: admission.state,
           selectedInternalSteps: [],
         };
@@ -557,8 +557,8 @@ export function evaluateStimulusWithSelectedSteps(
           outcome: CommandOutcome.Committed,
           state: closure.state,
           internalStepBoundExceeded: closure.hitBound,
-          ambiguousInternalChoice: closure.ambiguousInternalChoice,
         },
+        ambiguousInternalChoice: closure.ambiguousInternalChoice,
         admittedState: admission.state,
         selectedInternalSteps: closure.steps,
       };
@@ -569,8 +569,8 @@ export function evaluateStimulusWithSelectedSteps(
           outcome: CommandOutcome.Rejected,
           state: admission.state,
           internalStepBoundExceeded: false,
-          ambiguousInternalChoice: false,
         },
+        ambiguousInternalChoice: false,
         admittedState: null,
         selectedInternalSteps: [],
       };

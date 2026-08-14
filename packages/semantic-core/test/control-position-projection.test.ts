@@ -13,6 +13,10 @@ import {
   parallelProgram,
   startStimulus,
 } from "./parallel-fork-join-fixture.ts";
+import {
+  callActivityProgram,
+  callActivityStart,
+} from "./call-activity-fixture.ts";
 
 test("current positions expose exact Sequence Flow origins and scope occurrences without private place IDs", () => {
   const started = applyStimulus(
@@ -104,6 +108,66 @@ test("scope projection fails closed for an invalid parent instead of guessing co
 
   assert.equal(
     projectCurrentControlPositions(parallelProgram, invalidParentState),
+    null,
+  );
+});
+
+test("a valid two-level called-Process tree remains projectable", () => {
+  const called = applyStimulus(
+    callActivityProgram,
+    initialState,
+    callActivityStart(),
+  );
+
+  assert.notEqual(
+    projectCurrentControlPositions(callActivityProgram, called.state),
+    null,
+  );
+});
+
+test("running position projection rejects duplicate called-Process records", () => {
+  const called = applyStimulus(
+    callActivityProgram,
+    initialState,
+    callActivityStart(),
+  );
+  const record = called.state.calledProcessOccurrences[0]!;
+  const duplicated = {
+    ...called.state,
+    calledProcessOccurrences: [record, record],
+  };
+
+  assert.equal(
+    projectCurrentControlPositions(callActivityProgram, duplicated),
+    null,
+  );
+});
+
+test("running position projection rejects a non-derived called instance identity", () => {
+  const called = applyStimulus(
+    callActivityProgram,
+    initialState,
+    callActivityStart(),
+  );
+  const record = called.state.calledProcessOccurrences[0]!;
+  const nonDerivedRoot = {
+    ...record.calledRoot,
+    processInstanceId: "call:not-derived",
+  };
+  const nonDerived = {
+    ...called.state,
+    scopeOccurrences: called.state.scopeOccurrences.map((occurrence) =>
+      occurrence.id.processInstanceId === record.calledRoot.processInstanceId &&
+          occurrence.id.definitionScopeId === record.calledRoot.definitionScopeId &&
+          occurrence.id.activation === record.calledRoot.activation
+        ? { ...occurrence, id: nonDerivedRoot }
+        : occurrence
+    ),
+    calledProcessOccurrences: [{ ...record, calledRoot: nonDerivedRoot }],
+  };
+
+  assert.equal(
+    projectCurrentControlPositions(callActivityProgram, nonDerived),
     null,
   );
 });

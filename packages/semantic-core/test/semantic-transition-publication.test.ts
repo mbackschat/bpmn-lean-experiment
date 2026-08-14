@@ -16,8 +16,10 @@ import {
   replayCommittedTransitions,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CommandResult,
   SemanticOperation,
   SemanticProcessProgram,
+  StimulusEvaluationResult,
   UnnumberedCommittedTransitionRecord,
 } from "@bpmn-lean/semantic-core";
 
@@ -39,10 +41,20 @@ test("one admitted start publishes its external stimulus and every selected clos
     initialState,
     startStimulus(),
   );
+  const evaluated = evaluateStimulusWithSelectedSteps(
+    parallelProgram,
+    initialState,
+    startStimulus(),
+  );
 
   assert.deepEqual(traced.result, existing);
-  assert.equal(traced.result.outcome, CommandOutcome.Committed);
-  assert.equal(traced.result.ambiguousInternalChoice, false);
+  assertExactOldCommandResult(
+    traced.result,
+    CommandOutcome.Committed,
+    traced.result.state,
+    false,
+  );
+  assert.equal(internalAmbiguity(evaluated), false);
   assert.deepEqual(
     traced.committedTransitions.map(({ transition }) => transition.kind),
     [
@@ -188,11 +200,20 @@ test("rejected and closure-bound evaluations publish no committed facts", () => 
   );
 
   assert.equal(rejected.result.outcome, CommandOutcome.Rejected);
-  assert.equal(rejected.result.ambiguousInternalChoice, false);
+  assertExactOldCommandResult(
+    rejected.result,
+    CommandOutcome.Rejected,
+    rejected.result.state,
+    false,
+  );
   assert.deepEqual(rejected.committedTransitions, []);
   assert.equal(rejected.currentPositions, null);
-  assert.equal(bounded.result.internalStepBoundExceeded, true);
-  assert.equal(bounded.result.ambiguousInternalChoice, false);
+  assertExactOldCommandResult(
+    bounded.result,
+    CommandOutcome.Committed,
+    bounded.result.state,
+    true,
+  );
   assert.deepEqual(bounded.committedTransitions, []);
   assert.equal(bounded.currentPositions, null);
 });
@@ -231,16 +252,24 @@ test("two enabled End operations stop at the exact pre-choice boundary without p
     completionStimulus("UserTask_B"),
   );
 
-  assert.equal(beforeEndChoice.internalStepBoundExceeded, true);
-  assert.equal(beforeEndChoice.ambiguousInternalChoice, false);
+  assertExactOldCommandResult(
+    beforeEndChoice,
+    CommandOutcome.Committed,
+    beforeEndChoice.state,
+    true,
+  );
   assert.deepEqual(evaluated.result.state, beforeEndChoice.state);
   assert.deepEqual(
     evaluated.selectedInternalSteps.map(({ operation }) => operation.id),
     ["operation:Gateway_Join"],
   );
-  assert.equal(evaluated.result.outcome, CommandOutcome.Committed);
-  assert.equal(evaluated.result.ambiguousInternalChoice, true);
-  assert.equal(evaluated.result.internalStepBoundExceeded, false);
+  assert.equal(internalAmbiguity(evaluated), true);
+  assertExactOldCommandResult(
+    evaluated.result,
+    CommandOutcome.Committed,
+    evaluated.result.state,
+    false,
+  );
   assert.deepEqual(traced.result, resultOnly);
   assert.deepEqual(evaluated.result, resultOnly);
   assert.deepEqual(traced.committedTransitions, []);
@@ -272,8 +301,12 @@ test("two enabled Duplicate operations stop before either selector can fire", ()
   );
   const resultOnly = applyStimulus(program, initialState, startStimulus());
 
-  assert.equal(beforeForkChoice.internalStepBoundExceeded, true);
-  assert.equal(beforeForkChoice.ambiguousInternalChoice, false);
+  assertExactOldCommandResult(
+    beforeForkChoice,
+    CommandOutcome.Committed,
+    beforeForkChoice.state,
+    true,
+  );
   assert.deepEqual(evaluated.result.state, beforeForkChoice.state);
   assert.deepEqual(evaluated.result.state.controlTokens, [{
     placeId: "place:Flow_StartToFork",
@@ -288,9 +321,13 @@ test("two enabled Duplicate operations stop before either selector can fire", ()
     evaluated.selectedInternalSteps.map(({ operation }) => operation.id),
     ["operation:StartEvent_1"],
   );
-  assert.equal(evaluated.result.outcome, CommandOutcome.Committed);
-  assert.equal(evaluated.result.ambiguousInternalChoice, true);
-  assert.equal(evaluated.result.internalStepBoundExceeded, false);
+  assert.equal(internalAmbiguity(evaluated), true);
+  assertExactOldCommandResult(
+    evaluated.result,
+    CommandOutcome.Committed,
+    evaluated.result.state,
+    false,
+  );
   assert.deepEqual(traced.result, resultOnly);
   assert.deepEqual(evaluated.result, resultOnly);
   assert.deepEqual(traced.committedTransitions, []);
@@ -313,6 +350,25 @@ function withAdditionalOperation(
     compareCanonicalStrings(left.operationId, right.operationId)
   );
   return { ...parallelProgram, operations, operationScopes };
+}
+
+function assertExactOldCommandResult(
+  result: CommandResult,
+  outcome: CommandResult["outcome"],
+  state: CommandResult["state"],
+  internalStepBoundExceeded: boolean,
+): void {
+  assert.deepEqual(
+    Object.keys(result).sort(),
+    ["internalStepBoundExceeded", "outcome", "state"],
+  );
+  assert.deepEqual(result, { outcome, state, internalStepBoundExceeded });
+}
+
+function internalAmbiguity(evaluation: StimulusEvaluationResult): unknown {
+  return (evaluation as StimulusEvaluationResult & {
+    ambiguousInternalChoice?: boolean;
+  }).ambiguousInternalChoice;
 }
 
 function requireInternal(
