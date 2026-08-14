@@ -5,6 +5,12 @@ import type {
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import {
+  projectFlowNodeOccurrenceLifecycleDelta,
+} from "./flow-node-occurrence-lifecycle.js";
+import type {
+  UnnumberedFlowNodeOccurrenceDelta,
+} from "./flow-node-occurrence-lifecycle.js";
+import {
   projectControlPositionDelta,
   projectCurrentControlPositions,
 } from "./control-position-projection.js";
@@ -64,6 +70,7 @@ export type UnnumberedCommittedTransitionRecord = DeepReadonly<{
 export type TracedCommandResult = DeepReadonly<{
   result: CommandResult;
   committedTransitions: UnnumberedCommittedTransitionRecord[];
+  flowNodeOccurrenceLifecycles: UnnumberedFlowNodeOccurrenceDelta[];
   currentPositions: CurrentControlPositions | null;
 }>;
 
@@ -111,37 +118,66 @@ export function applyStimulusWithTrace(
   }
 
   const records: UnnumberedCommittedTransitionRecord[] = [];
+  const lifecycles: UnnumberedFlowNodeOccurrenceDelta[] = [];
+  const externalTransition = {
+    kind: SemanticTransitionKind.ExternalStimulus,
+    stimulus,
+  } as const;
   const external = transitionRecord(
     program,
     state,
     evaluation.admittedState,
-    { kind: SemanticTransitionKind.ExternalStimulus, stimulus },
+    externalTransition,
   );
-  if (external === null) {
+  const externalLifecycle = projectFlowNodeOccurrenceLifecycleDelta(
+    program,
+    state,
+    evaluation.admittedState,
+    { kind: "external", stimulus },
+    stimulus.commandId,
+    0,
+  );
+  if (external === null || externalLifecycle === null) {
     return noTrace(result);
   }
   records.push(external);
+  lifecycles.push(externalLifecycle);
 
   let before = evaluation.admittedState;
   for (const step of evaluation.selectedInternalSteps) {
     if (step.owner === null) {
       return noTrace(result);
     }
-    const record = transitionRecord(program, before, step.successor, {
+    const transition = {
       kind: SemanticTransitionKind.InternalOperation,
       operationId: step.operation.id,
       operationKind: step.operation.kind,
       origin: step.operation.origin,
       owner: step.owner,
-    });
-    if (record === null) {
+    } as const;
+    const record = transitionRecord(program, before, step.successor, transition);
+    const lifecycle = projectFlowNodeOccurrenceLifecycleDelta(
+      program,
+      before,
+      step.successor,
+      { kind: "internal", operation: step.operation, owner: step.owner },
+      stimulus.commandId,
+      records.length,
+    );
+    if (record === null || lifecycle === null) {
       return noTrace(result);
     }
     records.push(record);
+    lifecycles.push(lifecycle);
     before = step.successor;
   }
   return sameJson(before, result.state)
-    ? { result, committedTransitions: records, currentPositions }
+    ? {
+        result,
+        committedTransitions: records,
+        flowNodeOccurrenceLifecycles: lifecycles,
+        currentPositions,
+      }
     : noTrace(result);
 }
 
@@ -163,6 +199,7 @@ function noTrace(result: CommandResult): TracedCommandResult {
   return {
     result,
     committedTransitions: [],
+    flowNodeOccurrenceLifecycles: [],
     currentPositions: null,
   };
 }

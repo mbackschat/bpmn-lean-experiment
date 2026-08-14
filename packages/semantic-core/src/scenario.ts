@@ -51,6 +51,9 @@ import type {
   TracedCommandResult,
   UnnumberedCommittedExecutionPublication,
 } from "./semantic-transition-trace.js";
+import type {
+  UnnumberedFlowNodeOccurrenceDelta,
+} from "./flow-node-occurrence-lifecycle.js";
 import {
   stimulusCommandId,
 } from "./stimulus.js";
@@ -69,6 +72,10 @@ type CommittedScenarioStep = DeepReadonly<{
   state: RuntimeState;
   observations: CanonicalObservation[];
   publication: UnnumberedCommittedExecutionPublication | null;
+  flowNodeOccurrenceLifecycles: [
+    UnnumberedFlowNodeOccurrenceDelta,
+    ...UnnumberedFlowNodeOccurrenceDelta[],
+  ] | null;
 }>;
 
 type TerminalScenarioStep = DeepReadonly<{
@@ -388,6 +395,7 @@ export function advanceScenario(
         state: result.state,
         observations,
         publication: committedPublication(traced, snapshot),
+        flowNodeOccurrenceLifecycles: committedFlowNodeOccurrenceLifecycles(traced),
       };
     case CommandOutcome.Rejected:
       return {
@@ -402,6 +410,16 @@ export function advanceScenario(
     default:
       return assertNever(result.outcome);
   }
+}
+
+function committedFlowNodeOccurrenceLifecycles(
+  traced: TracedCommandResult,
+): [UnnumberedFlowNodeOccurrenceDelta, ...UnnumberedFlowNodeOccurrenceDelta[]] | null {
+  const first = traced.flowNodeOccurrenceLifecycles[0];
+  return first === undefined ||
+      traced.flowNodeOccurrenceLifecycles.length !== traced.committedTransitions.length
+    ? null
+    : [first, ...traced.flowNodeOccurrenceLifecycles.slice(1)];
 }
 
 function committedPublication(

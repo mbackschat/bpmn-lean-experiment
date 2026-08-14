@@ -78,6 +78,18 @@ test("one admitted start publishes its external stimulus and every selected clos
       "operation:UserTask_B",
     ],
   );
+  for (const record of traced.committedTransitions) {
+    assert.deepEqual(Object.keys(record).sort(), [
+      "logicalTimeMs",
+      "positionDelta",
+      "transition",
+    ]);
+    assert.equal("lifecycle" in record, false);
+  }
+  assert.equal(
+    traced.flowNodeOccurrenceLifecycles.length,
+    traced.committedTransitions.length,
+  );
   assert.deepEqual(
     replayCommittedTransitions(
       parallelProgram,
@@ -207,6 +219,7 @@ test("rejected and closure-bound evaluations publish no committed facts", () => 
     false,
   );
   assert.deepEqual(rejected.committedTransitions, []);
+  assert.deepEqual(rejected.flowNodeOccurrenceLifecycles, []);
   assert.equal(rejected.currentPositions, null);
   assertExactOldCommandResult(
     bounded.result,
@@ -215,6 +228,7 @@ test("rejected and closure-bound evaluations publish no committed facts", () => 
     true,
   );
   assert.deepEqual(bounded.committedTransitions, []);
+  assert.deepEqual(bounded.flowNodeOccurrenceLifecycles, []);
   assert.equal(bounded.currentPositions, null);
 });
 
@@ -273,6 +287,7 @@ test("two enabled End operations stop at the exact pre-choice boundary without p
   assert.deepEqual(traced.result, resultOnly);
   assert.deepEqual(evaluated.result, resultOnly);
   assert.deepEqual(traced.committedTransitions, []);
+  assert.deepEqual(traced.flowNodeOccurrenceLifecycles, []);
   assert.equal(traced.currentPositions, null);
 });
 
@@ -331,6 +346,7 @@ test("two enabled Duplicate operations stop before either selector can fire", ()
   assert.deepEqual(traced.result, resultOnly);
   assert.deepEqual(evaluated.result, resultOnly);
   assert.deepEqual(traced.committedTransitions, []);
+  assert.deepEqual(traced.flowNodeOccurrenceLifecycles, []);
   assert.equal(traced.currentPositions, null);
 });
 

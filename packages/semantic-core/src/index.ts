@@ -4,6 +4,8 @@ export * from "./control-position-projection.js";
 export { deriveCalledProcessInstanceId } from "./semantic-process-call-runtime.js";
 export * from "./deep-readonly.js";
 export * from "./effect-transport-material.js";
+export * from "./flow-node-occurrence-lifecycle.js";
+export * from "./flow-node-occurrence-open-set.js";
 export { isMessageChannel, sameMessageChannel } from "./message-channel.js";
 export {
   isWellFormedInitiateMessageOperation,
