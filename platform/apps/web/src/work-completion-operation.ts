@@ -10,6 +10,7 @@ export const WorkCompletionViewKind = {
   Submitting: "submitting",
   TransportFailed: "transportFailed",
   Indeterminate: "indeterminate",
+  NotAccepted: "notAccepted",
   Rejected: "rejected",
 } as const;
 
@@ -18,6 +19,10 @@ export type WorkCompletionView =
   | Readonly<{ kind: typeof WorkCompletionViewKind.Submitting }>
   | Readonly<{ kind: typeof WorkCompletionViewKind.TransportFailed }>
   | Readonly<{ kind: typeof WorkCompletionViewKind.Indeterminate }>
+  | Readonly<{
+      kind: typeof WorkCompletionViewKind.NotAccepted;
+      message: string;
+    }>
   | Readonly<{
       kind: typeof WorkCompletionViewKind.Rejected;
       result: Extract<WorkCompletionResult, { state: "rejected" }>;
@@ -47,6 +52,10 @@ export function createRetainedCompletionOperation(
   value: Extract<PublicFormValue, { kind: "string" | "boolean" }>,
   createActionId: () => string,
 ): RetainedCompletionOperation {
+  const claim = detail.workTask.claim;
+  if (claim === null) {
+    throw new Error("The current actor must claim the task before completion.");
+  }
   const field = detail.form?.fields[0];
   if (field === undefined) throw new Error("The task has no completable field.");
   if (field.type !== value.kind) {
@@ -70,8 +79,7 @@ export function createRetainedCompletionOperation(
   })]) as WorkCompletionRequest["submittedValues"];
   const request = Object.freeze({
     taskId,
-    expectedClaimGeneration:
-      detail.workTask.claim?.generation ?? detail.workTask.claimGeneration,
+    expectedClaimGeneration: claim.generation,
     submittedValues,
   });
   return Object.freeze({ actionId, request });

@@ -69,7 +69,7 @@ The start result binds the new instance to `Process_UserTaskMetadata`, version 1
 1. Open **Work**.
 2. If needed, choose **Refresh**.
 3. Find task **Approve** for Process `Process_UserTaskMetadata`. It should show candidate group `reviewers` and state **Unclaimed**.
-4. Choose **Claim**. The row should change to **Claimed by demo-user**.
+4. Confirm that **Approve** is not yet an actionable task-name control and that no completion form is reachable while the row is unclaimed. Choose **Claim**. The row should change to **Claimed by demo-user**, and only then should **Approve** become selectable.
 5. Select the task name to open the full-width task workspace.
 6. Open **Diagram** to see the same generated Process presentation with the exact `UserTask_Approve` occurrence highlighted.
 7. Open **Details** to compare the task Process-instance identity, hosting root Process-instance identity, element ID, activation, and candidate group.

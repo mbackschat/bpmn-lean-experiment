@@ -143,9 +143,11 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   await expect(row.getByRole("cell")).toHaveCount(5);
   await expect(row).toContainText("reviewers");
   await expect(row).toContainText("Unclaimed");
+  await expect(row.getByRole("button", { name: taskName, exact: true })).toHaveCount(0);
 
   await row.getByRole("button", { name: "Claim", exact: true }).click();
   await expect(row).toContainText("Claimed by demo-user");
+  await expect(row.getByRole("button", { name: taskName, exact: true })).toBeVisible();
   await page.reload();
   const reloadedPanel = page.getByRole("region", { name: "Tasks" });
   const reloadedRow = reloadedPanel

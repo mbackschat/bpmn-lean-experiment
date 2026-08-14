@@ -158,6 +158,20 @@ test("empty task snapshots are explicit", async ({ page }) => {
   await expect(page.getByText("No current tasks.", { exact: true })).toBeVisible();
 });
 
+test("unclaimed tasks cannot enter the completion flow", async ({ page }) => {
+  await openFixture(page);
+  const row = page.getByRole("table", { name: "Current tasks" })
+    .getByRole("row")
+    .filter({ hasText: "Validate corporate ownership evidence" });
+
+  await expect(row.getByText("Unclaimed", { exact: true })).toBeVisible();
+  await expect(row.getByRole("button", {
+    name: "Validate corporate ownership evidence",
+    exact: true,
+  })).toHaveCount(0);
+  await expect(row.getByRole("button", { name: "Claim", exact: true })).toBeVisible();
+});
+
 test("task snapshot errors are explicit", async ({ page }) => {
   await openFixture(page, { work: FixtureWorkState.Error });
   await expect(page.getByRole("alert")).toHaveText("The current Work snapshot is unavailable.");
@@ -224,6 +238,18 @@ test("completion retry keeps its exact operation and returns focus to the collec
   await expect(indeterminateRetry).toBeFocused();
   await indeterminateRetry.click();
   await expect(page.getByRole("heading", { name: "Tasks" })).toBeFocused();
+});
+
+test("known completion conflicts are not presented as unknown delivery", async ({ page }) => {
+  await openFixture(page, { completion: FixtureCompletionState.KnownConflict });
+  await openCompletableTask(page);
+  await page.getByRole("button", { name: "Complete task" }).click();
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "Completion was not accepted because the task claim is no longer current.",
+  );
+  await expect(page.getByRole("button", { name: "Retry completion" })).toHaveCount(0);
+  await expect(page.getByText(/delivery is unknown/iu)).toHaveCount(0);
 });
 
 test("rejected completion focuses its alert and missing work returns focus to the collection", async ({ page }) => {

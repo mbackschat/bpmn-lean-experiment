@@ -26,6 +26,7 @@ export enum FixturePresentationState {
 
 export enum FixtureCompletionState {
   Committed = "committed",
+  KnownConflict = "knownConflict",
   Rejected = "rejected",
   TransportIndeterminateCommitted = "transportIndeterminateCommitted",
   PendingCommitted = "pendingCommitted",
@@ -334,6 +335,13 @@ async function fulfillCompletion(
   switch (state) {
     case FixtureCompletionState.Committed:
       return json(route, { state: "committed", actionId, taskId: body.taskId });
+    case FixtureCompletionState.KnownConflict:
+      return json(route, {
+        error: {
+          code: "conflict",
+          message: "The Work action conflicts with current state.",
+        },
+      }, 409);
     case FixtureCompletionState.Rejected:
       return json(route, {
         state: "rejected",

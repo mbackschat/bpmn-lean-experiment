@@ -324,7 +324,7 @@ The contract is accepted only with all of the following:
 8. absent, null, Boolean false, string `"false"`, Boolean-under-string, and string-under-Boolean form values prove exact preservation and fail-closed rendering without coercion;
 9. audit equivalent retries and repeated same-outcome reconciliation deduplicate, distinct logical outcomes remain distinct, Work commit/audit append/audit acknowledgement crash points reconcile, exact filters page with an opaque cursor, and engine results are asserted independently before the Work result and audit projections;
 10. recursive HTTP, browser, and adopter-log scans exclude Workflow, Run, Task Queue, Schedule, history, locator, and transport command fields;
-11. Chromium acceptance uses the production server, Worker, public HTTP client, React Aria controls, TanStack Table/Query, and CSS Modules to find, claim, complete, and remove one exact Boolean task.
+11. Chromium acceptance uses the production server, Worker, public HTTP client, React Aria controls, TanStack Table/Query, and CSS Modules as one user journey: deploy and start the exact metadata-bearing Process, observe the task as unclaimed with no completion entry point, claim it, open and complete its exact Boolean form, observe the task disappear, and verify the resulting public audit and terminal Process state. A fixed-fixture companion holds a claimed task stale and requires its definite 409 refusal to remain distinct from uncertain delivery.
 
 The rule-to-evidence matrix is:
 
@@ -336,6 +336,7 @@ The rule-to-evidence matrix is:
 | Monotonic claim generation | Claim, release, reclaim, then replay the first generation from an independent connection; the later claim must remain unchanged |
 | Claim and completion serialization | Two actors claim or two action IDs complete through independent connections; only one claim or active action may cross its owning CAS |
 | Exact form domain | Collapse absent/null/false/`"false"`, coerce either cross-type value, or submit a value different from the published type |
+| UI mutation prerequisite and delivery certainty | Hold an actor-visible task unclaimed and require Claim to be the only mutation entry point; after claiming, race or stale the generation and require a definite 404/409 refusal with no exact-retry control or unknown-delivery message |
 | Completion reconciliation | Independently capture every Product 1 result, then require the exact Work state, claim effect, actor decision, HTTP result, audit-outbox item, and audit event across retained-action retry after task removal; no shared projector serves as the oracle |
 | Audit identity, delivery, and paging | Retry the same logical outcome, cycle through the same indeterminate outcome, change content under one action ID, stop after Work commit and after audit append before acknowledgement, inspect both stores independently, filter every key, and insert beyond a cursor without duplication or reordering |
 | Private-fact exclusion | Plant locator, Workflow, Run, Task Queue, Schedule, and history-shaped fields in every public decoder, browser model, and configured log sink |

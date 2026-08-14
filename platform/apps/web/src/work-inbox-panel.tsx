@@ -17,6 +17,7 @@ import type {
   PublicWorkTask,
 } from "@bpmn-lean/platform-contracts";
 
+import { WorkApiError } from "./work-tasks-api";
 import type { WorkApiClient } from "./work-tasks-api";
 import type { DefinitionApiClient } from "./definitions-api";
 import {
@@ -122,7 +123,17 @@ export function WorkInboxPanel({
       setCompletionOperation(operation);
       setCompletionView({ kind: WorkCompletionViewKind.Submitting });
     },
-    onError: (_error, operation) => {
+    onError: (error, operation) => {
+      if (isDefiniteCompletionRefusal(error)) {
+        completionOperationRef.current = null;
+        setCompletionOperation(null);
+        setCompletionView({
+          kind: WorkCompletionViewKind.NotAccepted,
+          message: completionRefusalMessage(error),
+        });
+        void refresh();
+        return;
+      }
       completionOperationRef.current = operation;
       setCompletionOperation(operation);
       setCompletionView({ kind: WorkCompletionViewKind.TransportFailed });
@@ -146,7 +157,9 @@ export function WorkInboxPanel({
     id: "task",
     header: "Task",
     responsiveLabel: "Task",
-    cell: (row) => (
+    cell: (row) => row.claim === null ? (
+      <span>{row.task.name ?? row.task.id.elementId}</span>
+    ) : (
       <Button
         ref={(element) => {
           const taskId = workTaskRowId(row);
@@ -286,6 +299,22 @@ export function workTaskRowId(task: PublicWorkTask): string {
 
 function errorMessage(value: unknown): string {
   return value instanceof Error ? value.message : "Human work request failed.";
+}
+
+function isDefiniteCompletionRefusal(error: unknown): error is WorkApiError {
+  return error instanceof WorkApiError && error.status >= 400 && error.status < 500;
+}
+
+function completionRefusalMessage(error: WorkApiError): string {
+  switch (error.status) {
+    case 404:
+    case 409:
+      return "Completion was not accepted because the task claim is no longer current.";
+    case 422:
+      return "Completion was not accepted because the form value is no longer compatible.";
+    default:
+      return "Completion was not accepted by the Work API.";
+  }
 }
 
 export {

@@ -143,6 +143,9 @@ export function WorkTaskForm({
   onComplete,
   onRetry,
 }: WorkTaskFormProps) {
+  if (detail.workTask.claim === null) {
+    return <p role="alert">Claim this task before completing it.</p>;
+  }
   const field = detail.form?.fields[0];
   if (field === undefined) return <p>This task has no generated form.</p>;
   if (field.compatibility === "incompatible") {
@@ -154,6 +157,7 @@ export function WorkTaskForm({
   const retryable =
     completionView.kind === WorkCompletionViewKind.TransportFailed ||
     completionView.kind === WorkCompletionViewKind.Indeterminate;
+  const refused = completionView.kind === WorkCompletionViewKind.NotAccepted;
   function submit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -181,17 +185,17 @@ export function WorkTaskForm({
             label={field.key}
             name={field.key}
             defaultValue={initial.kind === "string" ? initial.value : ""}
-            isDisabled={pending || retryable}
+            isDisabled={pending || retryable || refused}
           />
         ) : (
           <BooleanChoice
             label={field.key}
             name={field.key}
             {...(initial.kind === "boolean" ? { defaultValue: initial.value } : {})}
-            isDisabled={pending || retryable}
+            isDisabled={pending || retryable || refused}
           />
         )}
-        {retryable ? null : (
+        {retryable || refused ? null : (
           <Button type="submit" isPending={pending}>Complete task</Button>
         )}
       </form>
@@ -211,6 +215,7 @@ function CompletionState({
       case WorkCompletionViewKind.Indeterminate:
         retryRef.current?.focus();
         return;
+      case WorkCompletionViewKind.NotAccepted:
       case WorkCompletionViewKind.Rejected:
         statusRef.current?.focus();
         return;
@@ -241,6 +246,12 @@ function CompletionState({
       return (
         <p ref={statusRef} tabIndex={-1} className={styles.completionState} role="alert">
           {rejectedCompletionMessage(view.result)}
+        </p>
+      );
+    case WorkCompletionViewKind.NotAccepted:
+      return (
+        <p ref={statusRef} tabIndex={-1} className={styles.completionState} role="alert">
+          {view.message}
         </p>
       );
   }

@@ -91,6 +91,7 @@ const module = await import(
     Submitting: "submitting";
     TransportFailed: "transportFailed";
     Indeterminate: "indeterminate";
+    NotAccepted: "notAccepted";
     Rejected: "rejected";
   }>;
   createRetainedCompletionOperation: (
@@ -215,6 +216,32 @@ test("renders a selected task as a full content workspace without the inbox tabl
   assert.match(html, /role="tab"[^>]*>Details</u);
   assert.match(html, /Complete task/u);
   assert.doesNotMatch(html, /<table/u);
+});
+
+test("keeps completion unavailable until the current actor owns the claim", () => {
+  const detail: PublicTaskDetail = {
+    ...claimedBooleanDetail(),
+    workTask: task,
+  };
+  const html = renderToStaticMarkup(createElement(WorkTaskDetailWorkspace, {
+    completionView: { kind: WorkCompletionViewKind.Idle },
+    detail,
+    onBack: () => undefined,
+    onComplete: () => undefined,
+    onRetry: () => undefined,
+    task,
+  }));
+
+  assert.match(html, /Claim this task before completing it\./u);
+  assert.doesNotMatch(html, /Complete task/u);
+  assert.throws(
+    () => createRetainedCompletionOperation(
+      detail,
+      { kind: "boolean", value: true },
+      () => "must-not-mint",
+    ),
+    /current actor must claim the task before completion/u,
+  );
 });
 
 test("keeps the selected task inside the named Tasks workspace region", () => {
