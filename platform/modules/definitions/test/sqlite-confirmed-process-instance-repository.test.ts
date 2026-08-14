@@ -52,9 +52,15 @@ test("persists one exact confirmed publication and independent delivery acknowle
 
     const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
     assert.deepEqual(reopened.get(publication.instance.processInstanceId), afterOperate);
+    const fullyAcknowledged = reopened.acknowledge(
+      publication.instance.processInstanceId,
+      "work",
+    );
+    assert.deepEqual(reopened.listForReconciliation(), []);
+    assert.deepEqual(reopened.listConfirmed(), [fullyAcknowledged]);
     const equivalent = reopened.confirm(structuredClone(publication));
     assert.equal(equivalent.inserted, false);
-    assert.deepEqual(equivalent.record, afterOperate);
+    assert.deepEqual(equivalent.record, fullyAcknowledged);
     assert.throws(
       () => reopened.confirm({ ...publication, locator: "bpmn-process-work-v1:other" }),
       (error: unknown) => error instanceof ConfirmedProcessInstanceIntegrityError,
@@ -80,6 +86,7 @@ test("serializes the closed direct-start state graph and refuses stale transitio
     assert.equal(reservation.record.state, ConfirmedProcessInstanceState.Reserved);
     assert.equal(reservation.record.operatePending, false);
     assert.equal(reservation.record.workPending, false);
+    assert.deepEqual(repository.listConfirmed(), []);
     repository.close();
 
     const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
@@ -91,6 +98,7 @@ test("serializes the closed direct-start state graph and refuses stale transitio
       ConfirmedProcessInstanceState.Starting,
     );
     assert.equal(starting?.state, ConfirmedProcessInstanceState.Starting);
+    assert.deepEqual(reopened.listConfirmed(), []);
     assert.equal(
       reopened.compareAndSetState(
         publication.instance.processInstanceId,
@@ -105,6 +113,7 @@ test("serializes the closed direct-start state graph and refuses stale transitio
       ConfirmedProcessInstanceState.Indeterminate,
     );
     assert.equal(indeterminate?.state, ConfirmedProcessInstanceState.Indeterminate);
+    assert.deepEqual(reopened.listConfirmed(), []);
     const confirmed = reopened.compareAndSetState(
       publication.instance.processInstanceId,
       ConfirmedProcessInstanceState.Indeterminate,
@@ -113,6 +122,7 @@ test("serializes the closed direct-start state graph and refuses stale transitio
     assert.equal(confirmed?.operatePending, true);
     assert.equal(confirmed?.workPending, true);
     assert.deepEqual(reopened.listForReconciliation(), [confirmed]);
+    assert.deepEqual(reopened.listConfirmed(), [confirmed]);
     reopened.close();
   } finally {
     await rm(root, { recursive: true, force: true });

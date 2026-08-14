@@ -232,7 +232,10 @@ export class ConfirmedProcessInstancePublicationService {
       );
     }
     if (record.operatePending) {
-      await this.#operate.recordProcessInstance(structuredClone(record.instance));
+      await this.#operate.recordConfirmedProcessInstance({
+        instance: structuredClone(record.instance),
+        locator: record.locator,
+      });
       record = this.#repository.acknowledge(
         record.instance.processInstanceId,
         "operate",

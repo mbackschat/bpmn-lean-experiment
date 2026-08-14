@@ -310,7 +310,7 @@ function createFixture() {
   const scheduleLocatorInputs: string[] = [];
   const confirmedInstances = new ConfirmedProcessInstancePublicationService({
     repository: new InMemoryConfirmedProcessInstanceRepository(),
-    operate: { recordProcessInstance: async () => undefined },
+    operate: { recordConfirmedProcessInstance: async () => undefined },
     work: {
       recordConfirmedProcessInstance: async (publication) => {
         confirmedPublications.push(structuredClone(publication));

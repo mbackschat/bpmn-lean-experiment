@@ -56,6 +56,7 @@ export interface ConfirmedProcessInstanceRepository {
   ): ConfirmedProcessInstanceReservationResult;
   get(processInstanceId: string): ConfirmedProcessInstanceRecord | null;
   listForReconciliation(): ReadonlyArray<ConfirmedProcessInstanceRecord>;
+  listConfirmed(): ReadonlyArray<ConfirmedProcessInstanceRecord>;
   compareAndSetState(
     processInstanceId: string,
     expected: ConfirmedProcessInstanceState,
@@ -67,9 +68,11 @@ export interface ConfirmedProcessInstanceRepository {
   ): ConfirmedProcessInstanceRecord | null;
 }
 
-/** Existing Operate subscriber, kept structural to preserve module direction. */
+/** Operate receives the exact public identity plus Product 1's opaque locator. */
 export interface ConfirmedProcessInstanceOperateSubscriber {
-  recordProcessInstance(instance: PublicProcessInstanceIdentity): Promise<void>;
+  recordConfirmedProcessInstance(
+    publication: ConfirmedProcessInstancePublication,
+  ): Promise<void>;
 }
 
 /** Work subscriber receives the exact public identity plus private opaque locator. */

@@ -37,6 +37,7 @@ import type {
   NewDefinitionScheduleRecord,
   NewMessageStartPublicationRecord,
   ConfirmedProcessInstanceOperateSubscriber,
+  ConfirmedProcessInstancePublication,
 } from "@bpmn-lean/platform-definitions";
 import type {
   PublicProcessInstanceIdentity,
@@ -95,7 +96,9 @@ test("direct start suppresses success when recording the exact identity fails", 
   );
 
   assert.equal(hostStarts, 1);
-  assert.deepEqual(publisher.attempts, [exactIdentity("direct-instance")]);
+  assert.deepEqual(publisher.attempts, [
+    exactPublication("direct-instance", "direct-locator"),
+  ]);
 });
 
 test("started Schedule retry repairs recording without repeating its host action", async () => {
@@ -132,8 +135,8 @@ test("started Schedule retry repairs recording without repeating its host action
   assert.deepEqual(retried.schedule.instance, exactIdentity("schedule-instance"));
   assert.equal(hostCreates, 1);
   assert.deepEqual(publisher.attempts, [
-    exactIdentity("schedule-instance"),
-    exactIdentity("schedule-instance"),
+    exactPublication("schedule-instance", "schedule:execution-workflow"),
+    exactPublication("schedule-instance", "schedule:execution-workflow"),
   ]);
 });
 
@@ -168,8 +171,8 @@ test("accepted Message publication retry repairs recording without repeating sta
   assert.deepEqual(retried.publication.instance, exactIdentity("message-instance"));
   assert.equal(hostStarts, 1);
   assert.deepEqual(publisher.attempts, [
-    exactIdentity("message-instance"),
-    exactIdentity("message-instance"),
+    exactPublication("message-instance", "canonical:message-instance"),
+    exactPublication("message-instance", "canonical:message-instance"),
   ]);
 });
 
@@ -311,18 +314,20 @@ test("non-confirmed producer states never record an instance", async () => {
 });
 
 class RecordingPublisher implements ConfirmedProcessInstanceOperateSubscriber {
-  readonly attempts: PublicProcessInstanceIdentity[] = [];
+  readonly attempts: ConfirmedProcessInstancePublication[] = [];
 
-  async recordProcessInstance(instance: PublicProcessInstanceIdentity): Promise<void> {
-    this.attempts.push(structuredClone(instance));
+  async recordConfirmedProcessInstance(
+    publication: ConfirmedProcessInstancePublication,
+  ): Promise<void> {
+    this.attempts.push(structuredClone(publication));
   }
 }
 
 class FailOncePublisher extends RecordingPublisher {
-  override async recordProcessInstance(
-    instance: PublicProcessInstanceIdentity,
+  override async recordConfirmedProcessInstance(
+    publication: ConfirmedProcessInstancePublication,
   ): Promise<void> {
-    await super.recordProcessInstance(instance);
+    await super.recordConfirmedProcessInstance(publication);
     if (this.attempts.length === 1) {
       throw new Error("recording failed");
     }
@@ -563,6 +568,13 @@ function confirmedInstances(
 
 function exactIdentity(processInstanceId: string): PublicProcessInstanceIdentity {
   return { processInstanceId, definition: structuredClone(definition) };
+}
+
+function exactPublication(
+  processInstanceId: string,
+  locator: string,
+): ConfirmedProcessInstancePublication {
+  return { instance: exactIdentity(processInstanceId), locator };
 }
 
 function exactDefinition(): DefinitionMetadata {

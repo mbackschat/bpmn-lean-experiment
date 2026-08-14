@@ -6,6 +6,9 @@ import {
   ConfirmedProcessInstanceState,
   InMemoryConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
+import type {
+  ConfirmedProcessInstancePublication,
+} from "@bpmn-lean/platform-definitions";
 
 const publication = {
   instance: {
@@ -30,19 +33,19 @@ const publication = {
 
 test("retains subscriber acknowledgements and retries only missing delivery", async () => {
   const repository = new InMemoryConfirmedProcessInstanceRepository();
-  const operate: string[] = [];
-  const work: string[] = [];
+  const operate: ConfirmedProcessInstancePublication[] = [];
+  const work: ConfirmedProcessInstancePublication[] = [];
   let failWork = true;
   const service = new ConfirmedProcessInstancePublicationService({
     repository,
     operate: {
-      recordProcessInstance: async (instance) => {
-        operate.push(instance.processInstanceId);
+      recordConfirmedProcessInstance: async (confirmed) => {
+        operate.push(structuredClone(confirmed));
       },
     },
     work: {
       recordConfirmedProcessInstance: async (confirmed) => {
-        work.push(confirmed.instance.processInstanceId);
+        work.push(structuredClone(confirmed));
         if (failWork) {
           failWork = false;
           throw new Error("work delivery failed");
@@ -55,8 +58,8 @@ test("retains subscriber acknowledgements and retries only missing delivery", as
   const result = await service.publishConfirmed(publication);
 
   assert.deepEqual(result, publication.instance);
-  assert.deepEqual(operate, ["instance-1"]);
-  assert.deepEqual(work, ["instance-1", "instance-1"]);
+  assert.deepEqual(operate, [publication]);
+  assert.deepEqual(work, [publication, publication]);
   assert.deepEqual(repository.get("instance-1"), {
     ...publication,
     intent: null,
@@ -72,7 +75,7 @@ test("never redispatches a direct start after ambiguous transmission", async () 
   let matching = false;
   const service = new ConfirmedProcessInstancePublicationService({
     repository,
-    operate: { recordProcessInstance: async () => undefined },
+    operate: { recordConfirmedProcessInstance: async () => undefined },
     work: { recordConfirmedProcessInstance: async () => undefined },
   });
   const direct = {
@@ -107,7 +110,7 @@ test("keeps divergent direct evidence as a stable integrity tombstone", async ()
   const repository = new InMemoryConfirmedProcessInstanceRepository();
   const service = new ConfirmedProcessInstancePublicationService({
     repository,
-    operate: { recordProcessInstance: async () => undefined },
+    operate: { recordConfirmedProcessInstance: async () => undefined },
     work: { recordConfirmedProcessInstance: async () => undefined },
   });
   const direct = {
@@ -154,7 +157,7 @@ test("startup reconciliation describes direct uncertain state without dispatch",
   let describes = 0;
   const service = new ConfirmedProcessInstancePublicationService({
     repository,
-    operate: { recordProcessInstance: async () => undefined },
+    operate: { recordConfirmedProcessInstance: async () => undefined },
     work: { recordConfirmedProcessInstance: async () => undefined },
   });
 

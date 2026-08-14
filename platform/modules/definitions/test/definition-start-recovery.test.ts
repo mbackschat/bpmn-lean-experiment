@@ -98,7 +98,7 @@ test("restart dispatches one durable reserved direct start and never redispatche
     const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
     const publications = new ConfirmedProcessInstancePublicationService({
       repository: reopened,
-      operate: { recordProcessInstance: async () => undefined },
+      operate: { recordConfirmedProcessInstance: async () => undefined },
       work: { recordConfirmedProcessInstance: async () => undefined },
     });
     const starter: DefinitionVersionStarter = {
@@ -156,7 +156,7 @@ function createFixture(initialDescription: "missing" | "matching") {
   let describes = 0;
   const publications = new ConfirmedProcessInstancePublicationService({
     repository: new InMemoryConfirmedProcessInstanceRepository(),
-    operate: { recordProcessInstance: async () => undefined },
+    operate: { recordConfirmedProcessInstance: async () => undefined },
     work: { recordConfirmedProcessInstance: async () => undefined },
   });
   const starter: DefinitionVersionStarter = {

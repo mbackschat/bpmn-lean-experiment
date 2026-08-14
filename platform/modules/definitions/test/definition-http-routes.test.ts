@@ -567,7 +567,7 @@ function createFixture(
     () => "unused-instance",
     new ConfirmedProcessInstancePublicationService({
       repository: new InMemoryConfirmedProcessInstanceRepository(),
-      operate: { recordProcessInstance: async () => undefined },
+      operate: { recordConfirmedProcessInstance: async () => undefined },
       work: { recordConfirmedProcessInstance: async () => undefined },
     }),
   );

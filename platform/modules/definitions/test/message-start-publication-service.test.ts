@@ -317,7 +317,7 @@ function service(
 ): MessageStartPublicationService {
   const confirmedInstances = new ConfirmedProcessInstancePublicationService({
     repository: new InMemoryConfirmedProcessInstanceRepository(),
-    operate: { recordProcessInstance: async () => undefined },
+    operate: { recordConfirmedProcessInstance: async () => undefined },
     work: {
       recordConfirmedProcessInstance: async (publication) => {
         capture.confirmedPublications.push(structuredClone(publication));

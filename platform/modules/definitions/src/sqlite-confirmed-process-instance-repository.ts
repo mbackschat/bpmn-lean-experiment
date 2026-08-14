@@ -105,6 +105,14 @@ export class SqliteConfirmedProcessInstanceRepository
     `).all().map(decodeRow);
   }
 
+  listConfirmed(): ReadonlyArray<ConfirmedProcessInstanceRecord> {
+    return this.#database.prepare(`
+      SELECT * FROM confirmed_process_instances
+      WHERE state = 'confirmed'
+      ORDER BY process_instance_id COLLATE BINARY ASC
+    `).all().map(decodeRow);
+  }
+
   compareAndSetState(
     processInstanceId: string,
     expected: ConfirmedProcessInstanceState,

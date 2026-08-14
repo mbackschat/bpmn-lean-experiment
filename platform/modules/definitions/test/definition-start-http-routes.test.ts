@@ -333,7 +333,7 @@ function createFixture(
     () => "public-instance-1",
     new ConfirmedProcessInstancePublicationService({
       repository: new InMemoryConfirmedProcessInstanceRepository(),
-      operate: { recordProcessInstance: async () => undefined },
+      operate: { recordConfirmedProcessInstance: async () => undefined },
       work: { recordConfirmedProcessInstance: async () => undefined },
     }),
   );

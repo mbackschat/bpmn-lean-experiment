@@ -55,6 +55,12 @@ export type {
   ConfirmedProcessInstancePublicationDependencies,
 } from "./confirmed-process-instance-publication-service.js";
 export {
+  ConfirmedProcessInstanceOperateBootstrap,
+} from "./confirmed-process-instance-operate-bootstrap.js";
+export type {
+  ConfirmedProcessInstanceOperateBootstrapDependencies,
+} from "./confirmed-process-instance-operate-bootstrap.js";
+export {
   InMemoryConfirmedProcessInstanceRepository,
 } from "./in-memory-confirmed-process-instance-repository.js";
 export {

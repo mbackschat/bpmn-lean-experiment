@@ -62,6 +62,17 @@ export class InMemoryConfirmedProcessInstanceRepository
       .map(snapshotRecord);
   }
 
+  listConfirmed(): ReadonlyArray<ConfirmedProcessInstanceRecord> {
+    return [...this.#records.values()]
+      .filter((record) => record.state === ConfirmedProcessInstanceState.Confirmed)
+      .sort((left, right) => {
+        const leftId = left.instance.processInstanceId;
+        const rightId = right.instance.processInstanceId;
+        return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;
+      })
+      .map(snapshotRecord);
+  }
+
   compareAndSetState(
     processInstanceId: string,
     expected: ConfirmedProcessInstanceState,
