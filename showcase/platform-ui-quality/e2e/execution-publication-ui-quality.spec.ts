@@ -63,11 +63,7 @@ test("Diagram highlights every present position and reports off-diagram position
   await page.getByRole("tab", { name: "Diagram" }).click();
   await waitForStableUi(page);
   const diagram = page.locator('[data-ui="execution-diagram"]');
-  await expect(diagram.locator('.djs-element[data-element-id="Flow_1"].bpmn-platform-active')).toHaveCount(1);
-  await expect(diagram.locator('.djs-element[data-element-id="Flow_2"].bpmn-platform-active')).toHaveCount(1);
-  await expect(diagram.locator('.djs-element.bpmn-platform-active')).toHaveCount(2);
-  await expect(diagram.locator(`.djs-element[data-element-id="${executionPublicationLabels.processId}"].bpmn-platform-active`)).toHaveCount(0);
-  await expect(diagram.locator('.djs-element[data-element-id="Task_Left"].bpmn-platform-active')).toHaveCount(0);
+  await expectExactDiagramMarkers(diagram);
   const missing = diagram.getByRole("status");
   await expect(missing).toContainText("Published positions outside this diagram");
   await expect(missing).toContainText(executionPublicationLabels.missingElementId);
@@ -171,7 +167,9 @@ test("Process execution Diagram visual @visual", async ({ page }) => {
   await openExecutionDetail(page);
   await page.getByRole("tab", { name: "Diagram" }).click();
   await waitForStableUi(page);
-  await expect(page.locator('[data-ui="process-execution-detail"]')).toHaveScreenshot(
+  const detail = page.locator('[data-ui="process-execution-detail"]');
+  await expectExactDiagramMarkers(detail.locator('[data-ui="execution-diagram"]'));
+  await expect(detail).toHaveScreenshot(
     "process-execution-diagram.png",
     screenshotOptions,
   );
@@ -214,6 +212,24 @@ function processSelection(page: import("@playwright/test").Page) {
 function isExecutionPageResponse(response: import("@playwright/test").Response): boolean {
   return response.request().method() === "GET" &&
     new URL(response.url()).pathname.endsWith("/execution");
+}
+
+async function expectExactDiagramMarkers(
+  diagram: import("@playwright/test").Locator,
+): Promise<void> {
+  await expect(diagram.locator('.djs-element[data-element-id="Flow_1"].bpmn-platform-active')).toHaveCount(1);
+  await expect(diagram.locator('.djs-element[data-element-id="Flow_2"].bpmn-platform-active')).toHaveCount(1);
+  await expect(diagram.locator('.djs-element[data-element-id="Task_Left"].bpmn-platform-active')).toHaveCount(1);
+  await expect(diagram.getByLabel("Diagram position guide")).toContainText("Current control token");
+  await expect(diagram.getByLabel("Diagram position guide")).toContainText("Active wait");
+  await expect(diagram.locator('.djs-element[data-element-id="Flow_1"] > .djs-visual > path')).toHaveCSS("stroke", "rgb(15, 107, 92)");
+  await expect(diagram.locator('.djs-element[data-element-id="Flow_2"] > .djs-visual > path')).toHaveCSS("stroke", "rgb(15, 107, 92)");
+  await expect(diagram.locator('.djs-element[data-element-id="Flow_1"] > .djs-visual marker path')).toHaveCSS("fill", "rgb(15, 107, 92)");
+  await expect(diagram.locator('.djs-element[data-element-id="Task_Left"] > .djs-visual > :first-child')).toHaveCSS("stroke", "rgb(15, 107, 92)");
+  await expect(diagram.locator('.djs-element[data-element-id="Task_Left"] > .djs-visual > :first-child')).toHaveCSS("fill", "rgb(230, 242, 239)");
+  await expect(diagram.locator('.djs-element.bpmn-platform-active')).toHaveCount(3);
+  await expect(diagram.locator(`.djs-element[data-element-id="${executionPublicationLabels.processId}"].bpmn-platform-active`)).toHaveCount(0);
+  await expect(diagram.locator('.djs-element[data-element-id="Task_Right"].bpmn-platform-active')).toHaveCount(0);
 }
 
 async function assertNoOverflow(

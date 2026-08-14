@@ -94,7 +94,7 @@ test("projects only one token and its active Service Task wait, never the live r
     tokenElementId: "Flow_ToChargeCard",
   });
 
-  renderToStaticMarkup(createElement(diagramModule.ProcessInstanceExecutionDiagram, {
+  const markup = renderToStaticMarkup(createElement(diagramModule.ProcessInstanceExecutionDiagram, {
     api: diagramApi,
     current,
     definition: diagramDefinition,
@@ -104,6 +104,9 @@ test("projects only one token and its active Service Task wait, never the live r
     "Flow_ToChargeCard",
     "ServiceTask_ChargeCard",
   ]);
+  assert.match(markup, /aria-label="Diagram position guide"/u);
+  assert.match(markup, /Current control token/u);
+  assert.match(markup, /Active wait/u);
 });
 
 test("projects a called-Process active wait without marking either live scope container", () => {
@@ -126,14 +129,29 @@ test("projects a called-Process active wait without marking either live scope co
 });
 
 test("styles only the exact marked BPMN element visual, never descendant elements", () => {
+  const markerRules = markerCss.slice(
+    markerCss.indexOf(".canvas :global(.djs-shape.bpmn-platform-active"),
+    markerCss.indexOf("@container"),
+  );
   assert.match(
-    markerCss,
-    /\.canvas\s+:global\(\.djs-element\.bpmn-platform-active > \.djs-visual > :first-child\)/u,
+    markerRules,
+    /\.canvas\s+:global\(\.djs-shape\.bpmn-platform-active > \.djs-visual > :first-child\)/u,
+  );
+  assert.match(
+    markerRules,
+    /\.canvas\s+:global\(\.djs-connection\.bpmn-platform-active > \.djs-visual > path\)/u,
+  );
+  assert.match(
+    markerRules,
+    /\.canvas\s+:global\(\.djs-connection\.bpmn-platform-active > \.djs-visual > defs > marker > path\)/u,
   );
   assert.doesNotMatch(
-    markerCss,
+    markerRules,
     /:global\(\.bpmn-platform-active\)\s+:global\(\.djs-visual\)/u,
   );
+  assert.match(markerRules, /var\(--ui-color-accent\)/u);
+  assert.match(markerRules, /var\(--ui-color-accent-soft\)/u);
+  assert.doesNotMatch(markerRules, /var\(--ui-color-error\)/u);
 });
 
 function executionCurrent({

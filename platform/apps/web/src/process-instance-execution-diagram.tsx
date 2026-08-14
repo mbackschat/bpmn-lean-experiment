@@ -38,6 +38,10 @@ export function ProcessInstanceExecutionDiagram({
         <h3 id="execution-diagram-heading">Diagram</h3>
         <p>Highlights combine every published token Sequence Flow and active wait element on the presentation whose source digest matches this confirmed definition.</p>
       </div>
+      <div className={styles.guide} aria-label="Diagram position guide">
+        <span><span className={styles.tokenKey} aria-hidden="true" />Current control token</span>
+        <span><span className={styles.waitKey} aria-hidden="true" />Active wait</span>
+      </div>
       <DefinitionDiagram
         activeElementIds={elementIds}
         api={api}

@@ -172,11 +172,14 @@ const current = {
     kind: "state",
     instanceId: publicationIdentity.processInstanceId,
     status: "running",
-    activeWaits: [{
-      elementId: executionPublicationLabels.missingElementId,
-      kind: "effect",
-      multiplicity: 2,
-    }],
+    activeWaits: [
+      { elementId: "Task_Left", kind: "userTask", multiplicity: 1 },
+      {
+        elementId: executionPublicationLabels.missingElementId,
+        kind: "effect",
+        multiplicity: 2,
+      },
+    ],
     openUserTasks: [],
     openMessageSubscriptions: [],
     openTimers: [],

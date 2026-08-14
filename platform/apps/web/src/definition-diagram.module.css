@@ -77,9 +77,20 @@
   background: var(--ui-color-surface);
 }
 
-.canvas :global(.djs-element.bpmn-platform-active > .djs-visual > :first-child) {
-  stroke: var(--ui-color-error) !important;
-  stroke-width: 4px !important;
+.canvas :global(.djs-shape.bpmn-platform-active > .djs-visual > :first-child) {
+  fill: var(--ui-color-accent-soft) !important;
+  stroke: var(--ui-color-accent) !important;
+  stroke-width: 3px !important;
+}
+
+.canvas :global(.djs-connection.bpmn-platform-active > .djs-visual > path) {
+  stroke: var(--ui-color-accent) !important;
+  stroke-width: 3px !important;
+}
+
+.canvas :global(.djs-connection.bpmn-platform-active > .djs-visual > defs > marker > path) {
+  fill: var(--ui-color-accent) !important;
+  stroke: var(--ui-color-accent) !important;
 }
 
 @container (max-width: 42rem) {
