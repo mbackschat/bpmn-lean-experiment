@@ -15,21 +15,17 @@ import {
   completeTemporalProcessWork,
   observeTemporalProcessWork,
   readTemporalProcessWorkDetail,
-  temporalCanonicalProcessWorkAddress,
 } from "@bpmn-lean/temporal-client/process-work";
 import type {
   ProcessCommandResult,
   TemporalProcessWorkClient,
   UserTaskDetail,
 } from "@bpmn-lean/temporal-client/process-work";
-
-const locatorPrefix = "bpmn-process-work-v1:";
-declare const engineProcessWorkLocatorBrand: unique symbol;
-
-/** Opaque, privately persisted address token interpreted only by Product 1 operations. */
-export type EngineProcessWorkLocator = string & Readonly<{
-  [engineProcessWorkLocatorBrand]: "EngineProcessWorkLocator";
-}>;
+import {
+  engineProcessWorkflowIdFromLocator,
+  parseEngineProcessLocator,
+} from "./process-locator.js";
+import type { EngineProcessLocator } from "./process-locator.js";
 
 export enum EngineOpenWorkStatus {
   Open = "open",
@@ -73,7 +69,7 @@ export type EngineWorkDetailResult =
 
 export type EngineOpenWorkRequest = Readonly<{
   temporalClient: TemporalProcessWorkClient;
-  locator: EngineProcessWorkLocator;
+  locator: EngineProcessLocator;
   hostingProcessInstanceId: string;
 }>;
 
@@ -99,41 +95,6 @@ export type EngineCompleteWorkRequest = EngineOpenWorkRequest & Readonly<{
   stimulus: EngineWorkCompletionStimulus;
 }>;
 
-/** Mints the canonical direct or Message Start locator from semantic Process identity. */
-export function engineProcessWorkLocatorForCanonicalProcess(
-  processInstanceId: string,
-): EngineProcessWorkLocator {
-  requireNonemptyWireString(processInstanceId, "processInstanceId");
-  return locatorForWorkflowId(
-    temporalCanonicalProcessWorkAddress(processInstanceId),
-  );
-}
-
-/** Mints a Timer Schedule locator only from the service-returned execution Workflow ID. */
-export function engineProcessWorkLocatorForScheduleExecution(
-  executionWorkflowId: string,
-): EngineProcessWorkLocator {
-  return locatorForWorkflowId(
-    requireNonemptyWireString(executionWorkflowId, "executionWorkflowId"),
-  );
-}
-
-/** Returns the exact stable private token for durable Definitions persistence. */
-export function serializeEngineProcessWorkLocator(
-  locator: EngineProcessWorkLocator,
-): string {
-  requireLocator(locator);
-  return locator;
-}
-
-/** Strictly restores one canonical locator token from private persistence. */
-export function parseEngineProcessWorkLocator(
-  serialized: string,
-): EngineProcessWorkLocator {
-  requireLocator(serialized);
-  return serialized as EngineProcessWorkLocator;
-}
-
 /** Reads the exact committed open User Task set without exposing host addressing. */
 export async function observeOpenWork(
   request: EngineOpenWorkRequest,
@@ -141,7 +102,7 @@ export async function observeOpenWork(
   const snapshot = snapshotBaseRequest(request);
   const observed = await observeTemporalProcessWork(
     snapshot.temporalClient,
-    workflowIdFromLocator(snapshot.locator),
+    engineProcessWorkflowIdFromLocator(snapshot.locator),
     snapshot.hostingProcessInstanceId,
   );
   switch (observed.status) {
@@ -166,7 +127,7 @@ export async function readWorkDetail(
   const snapshot = snapshotBaseRequest(request);
   const described = await readTemporalProcessWorkDetail(
     snapshot.temporalClient,
-    workflowIdFromLocator(snapshot.locator),
+    engineProcessWorkflowIdFromLocator(snapshot.locator),
     snapshot.hostingProcessInstanceId,
     {
       taskId: cloneTaskId(request.taskId),
@@ -194,54 +155,23 @@ export function completeWork(
   const snapshot = snapshotBaseRequest(request);
   return completeTemporalProcessWork(
     snapshot.temporalClient,
-    workflowIdFromLocator(snapshot.locator),
+    engineProcessWorkflowIdFromLocator(snapshot.locator),
     snapshot.hostingProcessInstanceId,
     cloneCompletion(request.stimulus),
   );
 }
 
-function locatorForWorkflowId(workflowId: string): EngineProcessWorkLocator {
-  requireNonemptyWireString(workflowId, "workflowId");
-  return `${locatorPrefix}${encodeURIComponent(workflowId)}` as
-    EngineProcessWorkLocator;
-}
-
-function workflowIdFromLocator(locator: EngineProcessWorkLocator): string {
-  requireLocator(locator);
-  return decodeURIComponent(locator.slice(locatorPrefix.length));
-}
-
-function requireLocator(value: string): void {
-  if (typeof value !== "string" || !value.startsWith(locatorPrefix)) {
-    throw new TypeError("Engine Process Work locator is not a canonical v1 token");
-  }
-  const encoded = value.slice(locatorPrefix.length);
-  let workflowId: string;
-  try {
-    workflowId = decodeURIComponent(encoded);
-  } catch {
-    throw new TypeError("Engine Process Work locator is not a canonical v1 token");
-  }
-  if (
-    workflowId.length === 0 ||
-    !isWellFormedWireString(workflowId) ||
-    encodeURIComponent(workflowId) !== encoded
-  ) {
-    throw new TypeError("Engine Process Work locator is not a canonical v1 token");
-  }
-}
-
 function snapshotBaseRequest(
   request: EngineOpenWorkRequest,
 ): EngineOpenWorkRequest {
-  requireLocator(request.locator);
+  const locator = parseEngineProcessLocator(request.locator);
   requireNonemptyWireString(
     request.hostingProcessInstanceId,
     "hostingProcessInstanceId",
   );
   return {
     temporalClient: request.temporalClient,
-    locator: request.locator,
+    locator,
     hostingProcessInstanceId: request.hostingProcessInstanceId,
   };
 }

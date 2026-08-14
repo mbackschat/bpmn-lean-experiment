@@ -17,6 +17,10 @@ test("round-trips canonical and service-returned locators without exposing a fie
 
   assert.match(serializeEngineProcessWorkLocator(direct), /^bpmn-process-work-v1:/u);
   assert.equal(
+    serializeEngineProcessWorkLocator(schedule),
+    "bpmn-process-work-v1:execution%2Fid%20%E2%9C%93%2042",
+  );
+  assert.equal(
     serializeEngineProcessWorkLocator(parseEngineProcessWorkLocator(
       serializeEngineProcessWorkLocator(schedule),
     )),

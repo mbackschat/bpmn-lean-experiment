@@ -21,6 +21,10 @@
     "./process-work": {
       "types": "./dist/process-work-client.d.ts",
       "import": "./dist/process-work-client.js"
+    },
+    "./process-operations": {
+      "types": "./dist/process-operations-client.d.ts",
+      "import": "./dist/process-operations-client.js"
     }
   },
   "types": "./dist/index.d.ts",

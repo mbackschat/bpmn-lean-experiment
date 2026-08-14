@@ -34,10 +34,10 @@ import type {
 import type { EngineDefinitionIdentity } from "./index.js";
 import {
   engineProcessWorkLocatorForCanonicalProcess,
-} from "./process-work.js";
+} from "./process-locator.js";
 import type {
   EngineProcessWorkLocator,
-} from "./process-work.js";
+} from "./process-locator.js";
 
 export const EngineDefinitionStartStatus = {
   Admitted: "admitted",

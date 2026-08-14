@@ -46,6 +46,7 @@ import type {
   TemporalProcessWorkClient,
 } from "@bpmn-lean/temporal-client/process-work";
 import { BpmnProcessWorkGateway } from "./process-work-gateway.js";
+import { BpmnProcessOperationsGateway } from "./process-operations-gateway.js";
 
 export const DefinitionCompilationStatus = EngineDefinitionCompilationStatus;
 
@@ -247,6 +248,7 @@ export class BpmnEngineGatewayRuntime {
   readonly scheduleHost: BpmnDefinitionScheduleGateway;
   readonly messageStartHost: BpmnDefinitionMessageStartGateway;
   readonly processWork: BpmnProcessWorkGateway;
+  readonly processOperations: BpmnProcessOperationsGateway;
   readonly #temporalRuntime: LazyTemporalClientRuntime;
 
   constructor(options: BpmnEngineGatewayRuntimeOptions) {
@@ -282,6 +284,11 @@ export class BpmnEngineGatewayRuntime {
     this.processWork = new BpmnProcessWorkGateway(
       this.#temporalRuntime.client as unknown as TemporalProcessWorkClient,
     );
+    this.processOperations = new BpmnProcessOperationsGateway(
+      this.#temporalRuntime.client as unknown as ConstructorParameters<
+        typeof BpmnProcessOperationsGateway
+      >[0],
+    );
   }
 
   close(): Promise<void> {
@@ -299,6 +306,7 @@ export * from "./definition-capabilities.js";
 export * from "./definition-message-start-gateway.js";
 export * from "./message-start-publication-address.js";
 export * from "./process-work-gateway.js";
+export * from "./process-operations-gateway.js";
 
 export function createBpmnEngineGatewayRuntime(
   options: BpmnEngineGatewayRuntimeOptions,

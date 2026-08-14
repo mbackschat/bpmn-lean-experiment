@@ -7,6 +7,7 @@ export * from "./effect-activity-policy.js";
 export * from "./effect-execution-host.js";
 export * from "./incident-update-handler.js";
 export * from "./incident-cancellation-update-handler.js";
+export * from "./incident-operations-query-handler.js";
 export * from "./host-invariant.js";
 export * from "./message-delivery-ledger.js";
 export * from "./terminal-process-receipt.js";

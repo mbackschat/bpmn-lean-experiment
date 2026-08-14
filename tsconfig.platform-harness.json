@@ -62,6 +62,9 @@
       "@bpmn-lean/temporal-client/process-work": [
         "./packages/temporal-adapter/client/src/process-work-client.ts"
       ],
+      "@bpmn-lean/temporal-client/process-operations": [
+        "./packages/temporal-adapter/client/src/process-operations-client.ts"
+      ],
       "@bpmn-lean/temporal-protocol": [
         "./packages/temporal-adapter/protocol/src/index.ts"
       ]

@@ -159,7 +159,8 @@ export function projectOpenIncidents(
   return projected;
 }
 
-function observeStableState(
+/** Projects the canonical public observation for one committed stable runtime state. */
+export function observeStableState(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): StateObservation | null {

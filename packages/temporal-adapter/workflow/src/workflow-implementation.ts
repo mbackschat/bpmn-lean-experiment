@@ -40,8 +40,10 @@ import {
   bpmnBoundedActivitySchedulerUnavailableFailureType,
   bpmnCompleteUserTaskUpdateName,
   bpmnDeliverMessageSignalName,
+  effectTransportKey,
   bpmnMessageDeliveryResultQueryName,
   bpmnOpenUserTasksQueryName,
+  timerFiringStimulus,
   bpmnUserTaskDetailQueryName,
   bpmnTraceQueryName,
 } from "@bpmn-lean/temporal-protocol";
@@ -64,7 +66,6 @@ import {
   findMessageDeliveryResolution,
   recordMessageDeliveryOutcome,
 } from "./message-delivery-ledger.js";
-import { effectTransportKey } from "@bpmn-lean/temporal-protocol";
 import {
   acceptedStimulus,
   requireSameCommandStimulus,
@@ -87,9 +88,6 @@ import {
   hostInvariantFailure,
 } from "./host-invariant.js";
 import {
-  timerFiringStimulus,
-} from "@bpmn-lean/temporal-protocol";
-import {
   projectUserTaskDetail,
 } from "@bpmn-lean/temporal-protocol";
 import {
@@ -107,6 +105,7 @@ import {
   bpmnCancelIncidentProcessUpdate,
   validateCancelIncidentProcessUpdate,
 } from "./incident-cancellation-update-handler.js";
+import { registerIncidentOperationsQueryHandler } from "./incident-operations-query-handler.js";
 import {
   isTerminalProcessState,
   terminalProcessReceipt,
@@ -197,6 +196,7 @@ export async function runBpmnProcessWithHostEffects(
   // Update handlers can run as soon as they are registered, including during replay after Worker restart. Start must already lead the semantic input queue.
   enqueueStimulus(acceptedStimuli, pendingStimuli, start);
 
+  registerIncidentOperationsQueryHandler(semanticProcess, () => state);
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(
     bpmnOpenUserTasksQuery,
