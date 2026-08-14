@@ -36,7 +36,7 @@ export function ProcessInstanceExecutionDiagram({
       <div>
         <p className={styles.eyebrow}>Current committed position</p>
         <h3 id="execution-diagram-heading">Diagram</h3>
-        <p>Highlights combine every published token Sequence Flow and live scope BPMN element on the presentation whose source digest matches this confirmed definition.</p>
+        <p>Highlights combine every published token Sequence Flow and active wait element on the presentation whose source digest matches this confirmed definition.</p>
       </div>
       <DefinitionDiagram
         activeElementIds={elementIds}
@@ -70,6 +70,16 @@ function PositionList({ current }: Readonly<{ current: CurrentCommittedExecution
         )}
       </div>
       <div>
+        <h4>Active waits</h4>
+        {current.state.activeWaits.length === 0 ? <p>None.</p> : (
+          <ul>{current.state.activeWaits.map((wait) => (
+            <li key={JSON.stringify(["activeWait", wait.elementId, wait.kind])}>
+              <code>{wait.elementId}</code>, kind {wait.kind}, multiplicity {wait.multiplicity}
+            </li>
+          ))}</ul>
+        )}
+      </div>
+      <div>
         <h4>Live scopes</h4>
         {current.scopes.length === 0 ? <p>None.</p> : (
           <ul>{current.scopes.map((scope) => (
@@ -86,6 +96,6 @@ function PositionList({ current }: Readonly<{ current: CurrentCommittedExecution
 function positionElementIds(current: CurrentCommittedExecution): readonly string[] {
   return [...new Set([
     ...current.controlTokens.map(({ sequenceFlowId }) => sequenceFlowId),
-    ...current.scopes.map(({ bpmnElementId }) => bpmnElementId),
+    ...current.state.activeWaits.map(({ elementId }) => elementId),
   ])];
 }

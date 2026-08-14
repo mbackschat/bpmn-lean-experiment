@@ -65,6 +65,9 @@ test("Diagram highlights every present position and reports off-diagram position
   const diagram = page.locator('[data-ui="execution-diagram"]');
   await expect(diagram.locator('.djs-element[data-element-id="Flow_1"].bpmn-platform-active')).toHaveCount(1);
   await expect(diagram.locator('.djs-element[data-element-id="Flow_2"].bpmn-platform-active')).toHaveCount(1);
+  await expect(diagram.locator('.djs-element.bpmn-platform-active')).toHaveCount(2);
+  await expect(diagram.locator(`.djs-element[data-element-id="${executionPublicationLabels.processId}"].bpmn-platform-active`)).toHaveCount(0);
+  await expect(diagram.locator('.djs-element[data-element-id="Task_Left"].bpmn-platform-active')).toHaveCount(0);
   const missing = diagram.getByRole("status");
   await expect(missing).toContainText("Published positions outside this diagram");
   await expect(missing).toContainText(executionPublicationLabels.missingElementId);

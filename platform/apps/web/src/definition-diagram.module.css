@@ -77,7 +77,7 @@
   background: var(--ui-color-surface);
 }
 
-.canvas :global(.bpmn-platform-active) :global(.djs-visual) > :first-child {
+.canvas :global(.djs-element.bpmn-platform-active > .djs-visual > :first-child) {
   stroke: var(--ui-color-error) !important;
   stroke-width: 4px !important;
 }
