@@ -96,7 +96,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### M5 — it can be operated and explained
 
-**Status: in progress.** Contract discovery is active. No E1 committed-transition or control-position publication is approved for implementation.
+**Status: in progress.** The [committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) is drafted for context-cold review. No E1 committed-transition or control-position publication is approved for implementation.
 
 **Demo.** An operator replays what a finished instance did, sees where a running one stands on the diagram, and exports the history.
 
@@ -159,7 +159,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: define the M5 committed-history and diagram-position contract.** Inventory the exact E1 information requirements, normative and compatibility authority, committed publication boundary, monotonic revision and cursor contract, projection rebuild invariant, gap detection, Temporal hosting/refinement risks, and the smallest separating acceptance witness. Produce and independently review the smallest complete proposal before implementing a transition record, control-position publication, read model, history UI, overlay, or export.
+1. **In progress: review the M5 committed-history and diagram-position contract.** The [draft proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) keeps history and current positions as separate requirements, selects replay-complete evaluator-root traces, a revisioned atomic Product 1 publication, fail-closed Product 2 projection/rebuild, and bounded History/Diagram/JSON adoption. Obtain context-cold proposal review and owner approval before implementing a transition record, control-position publication, read model, history UI, overlay, or export.
 
 ## Approved decisions
 
@@ -264,9 +264,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: produce the smallest complete M5 committed-history and diagram-position proposal.** Start with a read-only owner and evidence inventory, keep transition sequence and current control positions as two explicit information requirements, classify the normative and compatibility boundary, specify committed publication and rebuild/gap invariants, complete the Temporal preflight, and obtain a context-cold proposal review plus owner approval before implementation.
+**Next action: obtain context-cold review of the [M5 committed execution publication proposal](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md).** Resolve only bounded proposal findings, record the review receipt, and stop for owner approval before implementation.
 
-Item 1 is **proposal-stage and in progress**. M4 is closed through the graduated [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md). M5 has no approved E1 public contract, semantic representation, transition family, projection store, UI surface, or export yet. Event History and state differencing remain forbidden fact sources.
+Item 1 is **proposal-stage and in progress**. M4 is closed through the graduated [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md). M5's draft proposal is not owner-approved and no E1 public contract, semantic representation, transition family, projection store, UI surface, or export is implemented. Event History and state differencing remain forbidden fact sources.
 
 **Last verified commands:** Correction target `914950eb59470b21f44e098145133b41092cdae2` passes `./scripts/verify.sh`, including 276 repository guards, 206 Temporal tests, the complete five-case pipeline, and 52 replayed histories. The Product 2 checkpoint, real M4 showcase, 52-case four-width Operations acceptance, fixed Linux visual evidence, and focused closure-correction guards are green. Context-cold closure review of `f55c427d628b0052936969762c93084679832540` and warm audit of `914950e` approved graduation. Playwright remains in its separate Product 2 workflow.
 
