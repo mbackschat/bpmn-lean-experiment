@@ -7,6 +7,7 @@ export * from "./durable-timer-key.js";
 export * from "./effect-contract.js";
 export * from "./effect-activity-result.js";
 export * from "./effect-transport.js";
+export * from "./flow-node-occurrence-publication.js";
 export * from "./host-admission.js";
 export * from "./lifecycle-results.js";
 export * from "./incident-operation.js";

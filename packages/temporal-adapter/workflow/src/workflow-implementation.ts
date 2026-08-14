@@ -1,5 +1,4 @@
 import {
-  CanonicalObservationKind,
   CommandOutcome,
   ScenarioStepKind,
   StimulusKind,
@@ -106,11 +105,14 @@ import {
   validateCancelIncidentProcessUpdate,
 } from "./incident-cancellation-update-handler.js";
 import { registerIncidentOperationsQueryHandler } from "./incident-operations-query-handler.js";
-import {
-  accumulateExecutionPublication,
-  createExecutionPublicationState,
-} from "./execution-publication-state.js";
 import { registerExecutionPublicationQueryHandler } from "./execution-publication-query-handler.js";
+import {
+  commandOutcome,
+  createCommandPublicationState,
+  integrateCommandPublication,
+  recordCommandPublicationOutcome,
+} from "./command-publication-integration.js";
+import { registerFlowNodeOccurrenceQueryHandler } from "./flow-node-occurrence-query-handler.js";
 import {
   isTerminalProcessState,
   terminalProcessReceipt,
@@ -138,11 +140,6 @@ export const bpmnMessageDeliveryResultQuery = defineQuery<
   BpmnMessageDeliveryResultQueryArguments
 >(bpmnMessageDeliveryResultQueryName);
 
-type CommandResultLedgerEntry = Readonly<{
-  commandId: string;
-  outcome: CommandOutcome;
-}>;
-
 export async function runBpmnProcessWithHostEffects(
   start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
@@ -163,10 +160,9 @@ export async function runBpmnProcessWithHostEffects(
   const trace: CanonicalObservation[] = [deployment.observation];
   const pendingStimuli: Stimulus[] = [];
   const acceptedStimuli: Stimulus[] = [];
-  const commandResults: CommandResultLedgerEntry[] = [];
   const messageDeliveryResolutions: MessageDeliveryResolution[] = [];
   let state: RuntimeState = initialState;
-  let publication = createExecutionPublicationState(
+  let commandPublication = createCommandPublicationState(
     semanticProcess,
     start.instanceId,
   );
@@ -207,7 +203,12 @@ export async function runBpmnProcessWithHostEffects(
 
   registerExecutionPublicationQueryHandler(
     semanticProcess,
-    () => publication,
+    () => commandPublication.execution,
+  );
+  registerFlowNodeOccurrenceQueryHandler(
+    semanticProcess,
+    () => commandPublication.execution,
+    () => commandPublication.flowNodeOccurrences,
   );
   registerIncidentOperationsQueryHandler(semanticProcess, () => state);
   setHandler(bpmnTraceQuery, () => [...trace]);
@@ -267,9 +268,9 @@ export async function runBpmnProcessWithHostEffects(
       }
       await condition(
         () =>
-          commandOutcome(commandResults, stimulus.commandId) !== undefined,
+          commandOutcome(commandPublication, stimulus.commandId) !== undefined,
       );
-      const outcome = commandOutcome(commandResults, stimulus.commandId);
+      const outcome = commandOutcome(commandPublication, stimulus.commandId);
       if (outcome === undefined) {
         throw ApplicationFailure.nonRetryable(
           `Semantic loop ended without an outcome for ${stimulus.commandId}`,
@@ -288,9 +289,9 @@ export async function runBpmnProcessWithHostEffects(
     async (stimulus: RetryIncidentStimulus) => {
       enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
       await condition(
-        () => commandOutcome(commandResults, stimulus.commandId) !== undefined,
+        () => commandOutcome(commandPublication, stimulus.commandId) !== undefined,
       );
-      const outcome = commandOutcome(commandResults, stimulus.commandId);
+      const outcome = commandOutcome(commandPublication, stimulus.commandId);
       if (outcome === undefined) {
         throw ApplicationFailure.nonRetryable(
           `Semantic loop ended without an outcome for ${stimulus.commandId}`,
@@ -309,9 +310,9 @@ export async function runBpmnProcessWithHostEffects(
     async (stimulus: CancelIncidentProcessStimulus) => {
       enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
       await condition(
-        () => commandOutcome(commandResults, stimulus.commandId) !== undefined,
+        () => commandOutcome(commandPublication, stimulus.commandId) !== undefined,
       );
-      const outcome = commandOutcome(commandResults, stimulus.commandId);
+      const outcome = commandOutcome(commandPublication, stimulus.commandId);
       if (outcome === undefined) {
         throw ApplicationFailure.nonRetryable(
           `Semantic loop ended without an outcome for ${stimulus.commandId}`,
@@ -479,11 +480,12 @@ export async function runBpmnProcessWithHostEffects(
         );
       }
       const step = advanceScenario(semanticProcess, state, stimulus);
-      publication = accumulateExecutionPublication(
+      const publicationCandidate = integrateCommandPublication(
         semanticProcess,
-        publication,
+        commandPublication,
         stimulus,
         step,
+        () => Date.now(),
       );
       if (
         step.kind === ScenarioStepKind.Terminal &&
@@ -491,10 +493,14 @@ export async function runBpmnProcessWithHostEffects(
       ) {
         failRejectedHostEffectResult(state, stimulus);
       }
-      const outcome = recordCommandOutcome(
-        commandResults,
+      commandPublication = recordCommandPublicationOutcome(
+        publicationCandidate,
         stimulus,
         step.observations,
+      );
+      const outcome = commandOutcome(
+        commandPublication,
+        stimulusCommandId(stimulus),
       );
       if (
         stimulus.kind === StimulusKind.DeliverMessage &&
@@ -559,40 +565,6 @@ function enqueueStimulus(
     return;
   }
   requireSameCommandStimulus(accepted, stimulus);
-}
-
-function recordCommandOutcome(
-  results: CommandResultLedgerEntry[],
-  stimulus: Stimulus,
-  observations: ReadonlyArray<CanonicalObservation>,
-): CommandOutcome | undefined {
-  const commandId = stimulusCommandId(stimulus);
-  const observation = observations.find(
-    (candidate) =>
-      candidate.kind === CanonicalObservationKind.Command &&
-      candidate.commandId === commandId,
-  );
-  if (
-    observation === undefined ||
-    observation.kind !== CanonicalObservationKind.Command
-  ) {
-    return undefined;
-  }
-  const existing = commandOutcome(results, commandId);
-  if (existing !== undefined && existing !== observation.outcome) {
-    throw new TypeError(`Command ${commandId} produced conflicting outcomes`);
-  }
-  if (existing === undefined) {
-    results.push({ commandId, outcome: observation.outcome });
-  }
-  return observation.outcome;
-}
-
-function commandOutcome(
-  results: ReadonlyArray<CommandResultLedgerEntry>,
-  commandId: string,
-): CommandOutcome | undefined {
-  return results.find((entry) => entry.commandId === commandId)?.outcome;
 }
 
 function assertNever(value: never): never {

@@ -149,6 +149,7 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
     "checked-process.schema.json",
     "semantic-process.schema.json",
     "semantic-publication.schema.json",
+    "flow-node-occurrence-publication.schema.json",
   ]) {
     const schema = JSON.parse(
       await readFile(

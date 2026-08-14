@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/flow-node-occurrence-publication.schema.json",
+  "title": "Flow-node occurrence publication",
+  "oneOf": [
+    { "$ref": "#/$defs/flowNodeOccurrencePublicationRequest" },
+    { "$ref": "#/$defs/flowNodeOccurrencePage" },
+    { "$ref": "#/$defs/flowNodeOccurrencePublicationResult" }
+  ],
+  "$defs": {
+    "nonemptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonnegativeSafeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "positiveSafeInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "flowNodeOccurrencePublicationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["afterRevision"],
+      "properties": {
+        "afterRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "scopeOccurrenceId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processInstanceId",
+        "definitionScopeId",
+        "activation"
+      ],
+      "properties": {
+        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
+        "definitionScopeId": { "$ref": "#/$defs/nonemptyString" },
+        "activation": { "$ref": "#/$defs/positiveSafeInteger" }
+      }
+    },
+    "flowNodeOccurrenceId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processInstanceId",
+        "startRevision",
+        "startIndex"
+      ],
+      "properties": {
+        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
+        "startRevision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "startIndex": { "$ref": "#/$defs/nonnegativeSafeInteger" }
+      }
+    },
+    "flowNodeOccurrenceStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "processId", "elementId", "owner"],
+      "properties": {
+        "id": { "$ref": "#/$defs/flowNodeOccurrenceId" },
+        "processId": { "$ref": "#/$defs/nonemptyString" },
+        "elementId": { "$ref": "#/$defs/nonemptyString" },
+        "owner": { "$ref": "#/$defs/scopeOccurrenceId" }
+      }
+    },
+    "flowNodeOccurrenceEnd": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "terminal"],
+      "properties": {
+        "id": { "$ref": "#/$defs/flowNodeOccurrenceId" },
+        "terminal": {
+          "enum": ["completed", "cancelled"]
+        }
+      }
+    },
+    "flowNodeOccurrenceDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["started", "ended"],
+      "properties": {
+        "started": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/flowNodeOccurrenceStart" }
+        },
+        "ended": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/flowNodeOccurrenceEnd" }
+        }
+      }
+    },
+    "flowNodeOccurrenceTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "lifecycle"],
+      "properties": {
+        "revision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "lifecycle": { "$ref": "#/$defs/flowNodeOccurrenceDelta" }
+      }
+    },
+    "flowNodeOccurrenceBatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandId",
+        "fromRevision",
+        "throughRevision",
+        "committedAtEpochMs",
+        "transitions"
+      ],
+      "properties": {
+        "commandId": { "$ref": "#/$defs/nonemptyString" },
+        "fromRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "throughRevision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "committedAtEpochMs": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "transitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/flowNodeOccurrenceTransition" }
+        }
+      }
+    },
+    "openFlowNodeOccurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "processId",
+        "elementId",
+        "owner",
+        "startedAtEpochMs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/flowNodeOccurrenceId" },
+        "processId": { "$ref": "#/$defs/nonemptyString" },
+        "elementId": { "$ref": "#/$defs/nonemptyString" },
+        "owner": { "$ref": "#/$defs/scopeOccurrenceId" },
+        "startedAtEpochMs": { "$ref": "#/$defs/nonnegativeSafeInteger" }
+      }
+    },
+    "flowNodeOccurrencePage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definition",
+        "processId",
+        "processInstanceId",
+        "requestedAfterRevision",
+        "pageThroughRevision",
+        "headRevision",
+        "batches",
+        "currentOpen"
+      ],
+      "properties": {
+        "definition": {
+          "$ref": "https://bpmn-lean.local/schemas/semantic-process.schema.json#/$defs/programIdentity"
+        },
+        "processId": { "$ref": "#/$defs/nonemptyString" },
+        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
+        "requestedAfterRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "pageThroughRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "headRevision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "batches": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/flowNodeOccurrenceBatch" }
+        },
+        "currentOpen": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": { "$ref": "#/$defs/openFlowNodeOccurrence" }
+            },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "availableResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "page"],
+      "properties": {
+        "kind": { "const": "available" },
+        "page": { "$ref": "#/$defs/flowNodeOccurrencePage" }
+      }
+    },
+    "notReadyResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "notReady" } }
+    },
+    "notFoundResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "notFound" } }
+    },
+    "unavailableResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "unavailable" } }
+    },
+    "gapResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "gap" } }
+    },
+    "flowNodeOccurrencePublicationResult": {
+      "oneOf": [
+        { "$ref": "#/$defs/availableResult" },
+        { "$ref": "#/$defs/notReadyResult" },
+        { "$ref": "#/$defs/notFoundResult" },
+        { "$ref": "#/$defs/unavailableResult" },
+        { "$ref": "#/$defs/gapResult" }
+      ]
+    }
+  }
+}
