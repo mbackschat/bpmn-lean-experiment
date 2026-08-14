@@ -4,11 +4,13 @@ This isolated Playwright lane verifies the production-built BPM platform web app
 
 ## Scope
 
-The blocking Chromium matrix is exactly 1280×900 and 1600×900. Both projects exercise the same semantic DOM and verify the task collection, each responsive task row/card, selected task form, generated diagram, keyboard and tab behavior, focus transfer and return, and reduced-motion preference.
+The blocking Chromium matrix is exactly 1280×900 and 1600×900. Functional behavior runs once at the wide desktop viewport. Tests tagged `@responsive` additionally run at 1280 and cover every main collection, detail, table, form, diagram, and audit layout that owns the desktop-width contract. This avoids duplicating API failure and state-machine checks whose behavior is independent of viewport size while keeping responsive geometry executable at both required widths.
 
 The M4 Operations fixtures add two exact generation-1 incidents, collection and full-width detail navigation, the exact Diagram highlight, Retry response-loss recovery, Cancel confirmation and terminal rejection, paged action audit, explicit loading/empty/error/unavailable states, and recursive private-host-fact exclusion. The fixed HTTP boundary captures action URLs and JSON bytes so the lane can prove exact retry identity without starting Temporal or inferring a semantic fact from browser state.
 
 The M5 E1 fixture adds one exact committed-execution publication with repeated BPMN element identity under distinct activations. It proves fresh-detail loading, revision-ordered external/internal History, simultaneous token and active-wait Diagram markers, neutral scope containers, honest off-diagram positions, exact canonical download bytes and filename, stale-response invalidation, gap and malformed-export suppression, and recursive private-host-fact absence at both desktop widths.
+
+The M5 Flow-node metrics fixture adds two exact definition versions, aggregate metrics with one element absent from DI, and deterministic 404, 503, transport, retry, and delayed-response controls. It proves that only the latest selected version can mount values, tab abandonment clears pending work, Frequency and Duration replace overlay badges without another request, zero-completion duration badges stay absent, the complete table remains readable, focus moves with loading/available/unavailable state, and the document, detail, and table do not overflow at either desktop width.
 
 The geometry oracle checks each named owner directly, including its `scrollWidth <= clientWidth` invariant, so a clipped inner overflow cannot pass merely because the document itself does not scroll. The fixtures deliberately include multiple tasks and long task, process, actor, candidate-group, and occurrence identities.
 
@@ -21,6 +23,14 @@ Run the deterministic functional lane while developing and before a UI-facing co
 ```sh
 ./scripts/pnpm.sh --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:functional
 ```
+
+For the development inner loop, run only the owning specification at the wide project, for example:
+
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/showcase-platform-ui-quality exec playwright test e2e/ui-quality.spec.ts --project=chromium-1600
+```
+
+The complete functional command is the pre-push boundary, not the default response to every source edit. The `chromium-1280` project runs only `@responsive` layout discriminators; viewport-independent contract, state, and error cases run once at `chromium-1600`.
 
 Run the same blocking gate locally before pushing a UI-facing change:
 

@@ -2,7 +2,11 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig, devices } from "@playwright/test";
 
+import { allocatePlaywrightLoopbackPorts } from "../../scripts/playwright-loopback-ports.js";
+
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
+const { apiOrigin, apiPort, webOrigin, webPort } = await allocatePlaywrightLoopbackPorts();
+process.env.PLATFORM_API_ORIGIN = apiOrigin;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -17,7 +21,7 @@ export default defineConfig({
   use: {
     actionTimeout: 5_000,
     navigationTimeout: 10_000,
-    baseURL: "http://127.0.0.1:4275",
+    baseURL: webOrigin,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
@@ -33,22 +37,22 @@ export default defineConfig({
       cwd: projectRoot,
       env: {
         PLATFORM_PARSER_DEADLINE_MS: "5000",
-        PLATFORM_PORT: "3202",
+        PLATFORM_PORT: String(apiPort),
         PLATFORM_TEMPORAL_TASK_QUEUE: "bpmn-m2-process-instance-search",
       },
       reuseExistingServer: false,
       timeout: 60_000,
-      url: "http://127.0.0.1:3202/api/v1/process-instances",
+      url: `${apiOrigin}/api/v1/process-instances`,
     },
     {
-      command: "./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1 --port 4275 --strictPort",
+      command: `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,
       cwd: projectRoot,
       env: {
-        PLATFORM_API_ORIGIN: "http://127.0.0.1:3202",
+        PLATFORM_API_ORIGIN: apiOrigin,
       },
       reuseExistingServer: false,
       timeout: 60_000,
-      url: "http://127.0.0.1:4275",
+      url: webOrigin,
     },
   ],
 });

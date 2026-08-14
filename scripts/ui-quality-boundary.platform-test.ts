@@ -54,6 +54,56 @@ test("rejects a UI/UX process that postpones precedent research or leaves deviat
   ]);
 });
 
+test("requires two-sided mutation evidence inside production-backed user journeys", async () => {
+  const [
+    testingSpec,
+    uiDesign,
+    humanWorkSpec,
+    processLedger,
+    fixedFixtureJourney,
+    productionJourney,
+    workInbox,
+    completionOperation,
+  ] = await Promise.all([
+    read("docs/TESTING-SPEC.md"),
+    read("docs/BPM-PLATFORM-UI-DESIGN-SPEC.md"),
+    read("docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md"),
+    read("docs/PROCESS-ASSESSMENT-LEDGER.md"),
+    read("showcase/platform-ui-quality/e2e/ui-quality.spec.ts"),
+    read("showcase/m3-human-work/e2e/human-work.spec.ts"),
+    read("platform/apps/web/src/work-inbox-panel.tsx"),
+    read("platform/apps/web/src/work-completion-operation.ts"),
+  ]);
+
+  assert.match(testingSpec, /every user-visible mutation precondition[\s\S]*hold the precondition false[\s\S]*definite HTTP refusal[\s\S]*positive script alone is insufficient/u);
+  assert.match(uiDesign, /production-backed headless-Chromium user journeys/u);
+  assert.match(uiDesign, /false side of every user-visible mutation precondition/u);
+  assert.match(humanWorkSpec, /observe the task as unclaimed with no completion entry point[\s\S]*definite 409 refusal/u);
+  assert.match(processLedger, /mutation invariant was translated into a successful browser script[\s\S]*stale-generation instance[\s\S]*`executable guard`/u);
+  assert.match(fixedFixtureJourney, /test\("unclaimed tasks cannot enter the completion flow"/u);
+  assert.match(fixedFixtureJourney, /test\("known completion conflicts are not presented as unknown delivery"/u);
+  assert.match(workInbox, /row\.claim === null \? \([\s\S]*<span>/u);
+  assert.match(workInbox, /error instanceof WorkApiError && error\.status >= 400 && error\.status < 500/u);
+  assert.match(completionOperation, /if \(claim === null\)[\s\S]*must claim the task before completion/u);
+
+  const journeyStart = productionJourney.indexOf("const taskName =");
+  assert.notEqual(journeyStart, -1, "the production journey must identify its exact task");
+  const orderedJourney = productionJourney.slice(journeyStart);
+  let cursor = 0;
+  for (const step of [
+    "toHaveCount(0)",
+    'name: "Claim"',
+    "Claimed by demo-user",
+    'name: "Complete task"',
+    "No current tasks.",
+    "readWorkAudit(apiOrigin)",
+  ]) {
+    const next = orderedJourney.indexOf(step, cursor);
+    assert.notEqual(next, -1, `production user journey is missing ordered step: ${step}`);
+    cursor = next + step.length;
+  }
+});
+
 test("keeps Product 2 UI quality outside every Product 1 feedback loop", async () => {
   const [verify, hostedVerify, testingSpec, workflow, rootManifest, showcaseManifest, playwrightConfig] =
     await Promise.all([
@@ -116,11 +166,11 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   );
   assert.equal(
     root.scripts?.["test:ui-quality"],
-    "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:functional",
+    "pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:functional",
   );
   assert.equal(
     root.scripts?.["test:ui-quality:visual"],
-    "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:visual",
+    "pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:visual",
   );
   assert.equal(
     root.scripts?.["test:release:m3"],
@@ -132,7 +182,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   );
   assert.equal(
     root.scripts?.["test:ui-quality:update-snapshots"],
-    "pnpm build:platform-web && pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:update-snapshots",
+    "pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:update-snapshots",
   );
   assert.deepEqual(
     checkpointOrderViolations(
@@ -162,14 +212,19 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.doesNotMatch(playwrightConfig, /Temporal|platform-server|showcase:m3-human-work/iu);
   assert.match(playwrightConfig, /vite preview/u);
   assert.match(playwrightConfig, /chromiumProject\("chromium-1600", 1600\)/u);
-  assert.match(playwrightConfig, /chromiumProject\("chromium-1280", 1280\)/u);
+  assert.match(playwrightConfig, /chromiumProject\("chromium-1280", 1280, \/@responsive\/u\)/u);
   assert.doesNotMatch(playwrightConfig, /chromium-(?:768|1024)|chromiumProject\([^\n]+(?:768|1024)\)/u);
 
   const browserTests = await Promise.all([
     read("showcase/platform-ui-quality/e2e/ui-quality.spec.ts"),
     read("showcase/platform-ui-quality/e2e/operations-ui-quality.spec.ts"),
     read("showcase/platform-ui-quality/e2e/execution-publication-ui-quality.spec.ts"),
+    read("showcase/platform-ui-quality/e2e/flow-node-metrics-ui-quality.spec.ts"),
   ]);
+  assert.ok(
+    browserTests.every((source) => source.includes("@responsive")),
+    "every Product 2 browser surface must own a two-width responsive discriminator",
+  );
   assert.equal(
     browserTests.flatMap((source) => source.match(/toHaveScreenshot\(/gu) ?? []).length,
     1,
@@ -180,6 +235,7 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.match(browserTests[2] ?? "", /Process execution Diagram visual @visual/u);
   assert.match(browserTests[2] ?? "", /process\.platform !== "linux"/u);
   assert.match(browserTests[2] ?? "", /toHaveScreenshot/u);
+  assert.doesNotMatch(browserTests[3] ?? "", /toHaveScreenshot|process\.platform|chromium-(?:768|1024)/u);
 
   const snapshots = (await readdir(
     path.join(projectRoot, "showcase/platform-ui-quality/e2e/snapshots"),
@@ -260,6 +316,7 @@ test("keeps feature styling inside CSS Modules and the exact UI token vocabulary
     "definition-schedule-panel",
     "definition-start-panel",
     "definition-workspace",
+    "flow-node-metrics-panel",
     "message-start-publication-panel",
     "process-instance-search-panel",
     "work-inbox",
@@ -437,6 +494,10 @@ function uiBoundaryViolations(
   const violations: string[] = [];
   let globalsRemoved = module;
   if (options.allowBpmnMarkerGlobal === true) {
+    globalsRemoved = globalsRemoved.replaceAll(
+      ":global(.bpmn-platform-metric-badge)",
+      ".bpmn-platform-metric-badge",
+    );
     for (const marker of ["current", "incident", "selected"] as const) {
       globalsRemoved = globalsRemoved
         .replaceAll(

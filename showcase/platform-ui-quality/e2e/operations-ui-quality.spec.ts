@@ -45,7 +45,7 @@ test("Operations is a primary keyboard-reachable workspace", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "Operations", level: 1 })).toBeFocused();
 });
 
-test("incident collection and full-width detail remain contained and focus-safe", async ({ page }) => {
+test("incident collection and full-width detail remain contained and focus-safe @responsive", async ({ page }) => {
   await openIncidents(page);
   const workspace = page.locator('[data-ui="operations-workspace"]');
   const collection = page.locator('[data-ui="incident-collection"]');
@@ -101,7 +101,7 @@ test("incident collection and full-width detail remain contained and focus-safe"
   await expect(selection).toBeFocused();
 });
 
-test("incident Diagram shows the exact highlighted element and reduced motion", async ({ page }) => {
+test("incident Diagram shows the exact highlighted element and reduced motion @responsive", async ({ page }) => {
   await openIncident(page);
   await page.getByRole("tab", { name: "Diagram" }).click();
   await waitForStableUi(page, { diagram: true });
@@ -230,7 +230,7 @@ test("response-loss Retry keeps exact public bytes and private facts absent", as
   })).toEqual([]);
 });
 
-test("top audit filtering and paging move focus without claiming currentness", async ({ page }) => {
+test("top audit filtering and paging move focus without claiming currentness @responsive", async ({ page }) => {
   await openOperations(page, { audit: FixtureIncidentAuditState.Loading });
   await page.getByRole("tab", { name: "Audit" }).click();
   const audit = page.locator('[data-ui="incident-audit"]');

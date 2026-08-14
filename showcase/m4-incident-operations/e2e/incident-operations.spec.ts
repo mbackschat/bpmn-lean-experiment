@@ -24,7 +24,7 @@ import {
 } from "../test/host-control.ts";
 import { privateFactPaths } from "../test/private-fact-scan.ts";
 
-const apiOrigin = process.env.PLATFORM_API_ORIGIN ?? "http://127.0.0.1:3204";
+const apiOrigin = requireApiOrigin();
 
 type PublicTransport = Readonly<{
   method: string;
@@ -33,6 +33,14 @@ type PublicTransport = Readonly<{
   response?: Readonly<{ status: number; body: unknown }>;
   failure?: string;
 }>;
+
+function requireApiOrigin(): string {
+  const value = process.env.PLATFORM_API_ORIGIN;
+  if (value === undefined) {
+    throw new Error("Playwright config must provide PLATFORM_API_ORIGIN.");
+  }
+  return value;
+}
 
 test("private-fact scan detects nested key and value regressions", () => {
   expect(privateFactPaths({

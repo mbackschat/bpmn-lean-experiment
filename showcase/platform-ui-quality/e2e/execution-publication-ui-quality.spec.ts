@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
 
-test("exact Process-instance selection opens only fresh execution detail and returns focus", async ({ page }) => {
+test("exact Process-instance selection opens only fresh execution detail and returns focus @responsive", async ({ page }) => {
   await openProcessInstances(page);
   const selection = processSelection(page);
   await selection.focus();
@@ -39,7 +39,7 @@ test("exact Process-instance selection opens only fresh execution detail and ret
   await expect(selection).toBeFocused();
 });
 
-test("History preserves exact revision order, labels, and repeated occurrence identity", async ({ page }) => {
+test("History preserves exact revision order, labels, and repeated occurrence identity @responsive", async ({ page }) => {
   await openExecutionDetail(page);
   await page.getByRole("tab", { name: "History" }).click();
   const history = page.locator('[data-ui="execution-history"]');
@@ -58,7 +58,7 @@ test("History preserves exact revision order, labels, and repeated occurrence id
   await assertNoOverflow(history, "execution History");
 });
 
-test("Diagram highlights every present position and reports off-diagram positions honestly", async ({ page }) => {
+test("Diagram highlights every present position and reports off-diagram positions honestly @responsive", async ({ page }) => {
   await openExecutionDetail(page);
   await page.getByRole("tab", { name: "Diagram" }).click();
   await waitForStableUi(page, { diagram: true });

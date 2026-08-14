@@ -26,7 +26,7 @@ import type {
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
 
-const apiOrigin = "http://127.0.0.1:3202";
+const apiOrigin = requireApiOrigin();
 const directProfile = "bpmn-2.0.2-user-task-preserved-notation-draft";
 const timerProfile = "bpmn-2.0.2-timer-start-event-draft";
 const messageProfile = "bpmn-2.0.2-message-start-event-draft";
@@ -42,6 +42,14 @@ const messageTemplateUrl = new URL(
   "../../../scenarios/message-start-event/process.bpmn",
   import.meta.url,
 );
+
+function requireApiOrigin(): string {
+  const value = process.env.PLATFORM_API_ORIGIN;
+  if (value === undefined) {
+    throw new Error("Playwright config must provide PLATFORM_API_ORIGIN.");
+  }
+  return value;
+}
 
 test("searches three exact confirmed starts through the global public panel", async ({ page, request }) => {
   const token = `${Date.now()}_${process.pid}`;

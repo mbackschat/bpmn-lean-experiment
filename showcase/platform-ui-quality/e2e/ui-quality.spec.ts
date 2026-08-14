@@ -38,7 +38,7 @@ test("geometry oracle finds contained inner overflow when the document still fit
   ]);
 });
 
-test("task collection remains usable and contained at the declared viewport", async ({ page }) => {
+test("task collection remains usable and contained at the declared viewport @responsive", async ({ page }) => {
   await openFixture(page);
   const workspace = page.locator("main");
   const taskCollection = page.getByRole("table", { name: "Current tasks" });
@@ -67,7 +67,7 @@ test("task collection remains usable and contained at the declared viewport", as
   await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
 });
 
-test("selected task form preserves keyboard navigation and focus return", async ({ page }) => {
+test("selected task form preserves keyboard navigation and focus return @responsive", async ({ page }) => {
   await openFixture(page);
   const taskButton = page.getByRole("button", { name: fixtureLabels.task });
   await expect(taskButton).toBeVisible();
@@ -105,7 +105,7 @@ test("selected task form preserves keyboard navigation and focus return", async 
   await expect(taskButton).toBeFocused();
 });
 
-test("reduced motion is active and task-detail diagram stays contained", async ({ page }) => {
+test("reduced motion is active and task-detail diagram stays contained @responsive", async ({ page }) => {
   await openFixture(page);
   await page.getByRole("button", { name: fixtureLabels.task }).click();
   await page.getByRole("tab", { name: "Diagram" }).click();
