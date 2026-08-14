@@ -107,6 +107,11 @@ import {
 } from "./incident-cancellation-update-handler.js";
 import { registerIncidentOperationsQueryHandler } from "./incident-operations-query-handler.js";
 import {
+  accumulateExecutionPublication,
+  createExecutionPublicationState,
+} from "./execution-publication-state.js";
+import { registerExecutionPublicationQueryHandler } from "./execution-publication-query-handler.js";
+import {
   isTerminalProcessState,
   terminalProcessReceipt,
 } from "./terminal-process-receipt.js";
@@ -161,6 +166,10 @@ export async function runBpmnProcessWithHostEffects(
   const commandResults: CommandResultLedgerEntry[] = [];
   const messageDeliveryResolutions: MessageDeliveryResolution[] = [];
   let state: RuntimeState = initialState;
+  let publication = createExecutionPublicationState(
+    semanticProcess,
+    start.instanceId,
+  );
   const effectActivityPolicy = effectActivityPolicyForProfile(
     semanticProcess.identity.semanticProfile,
   );
@@ -196,6 +205,10 @@ export async function runBpmnProcessWithHostEffects(
   // Update handlers can run as soon as they are registered, including during replay after Worker restart. Start must already lead the semantic input queue.
   enqueueStimulus(acceptedStimuli, pendingStimuli, start);
 
+  registerExecutionPublicationQueryHandler(
+    semanticProcess,
+    () => publication,
+  );
   registerIncidentOperationsQueryHandler(semanticProcess, () => state);
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(
@@ -466,6 +479,12 @@ export async function runBpmnProcessWithHostEffects(
         );
       }
       const step = advanceScenario(semanticProcess, state, stimulus);
+      publication = accumulateExecutionPublication(
+        semanticProcess,
+        publication,
+        stimulus,
+        step,
+      );
       if (
         step.kind === ScenarioStepKind.Terminal &&
         stimulus.kind === StimulusKind.CompleteEffect

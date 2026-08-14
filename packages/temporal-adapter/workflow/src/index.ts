@@ -5,6 +5,8 @@ export * from "./durable-timer-owner.js";
 export * from "./event-race-readiness-scheduler.js";
 export * from "./effect-activity-policy.js";
 export * from "./effect-execution-host.js";
+export * from "./execution-publication-state.js";
+export * from "./execution-publication-query-handler.js";
 export * from "./incident-update-handler.js";
 export * from "./incident-cancellation-update-handler.js";
 export * from "./incident-operations-query-handler.js";

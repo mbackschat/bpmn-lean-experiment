@@ -1,5 +1,6 @@
 export * from "./contract.js";
 export * from "./call-activity-admission.js";
+export * from "./control-position-projection.js";
 export { deriveCalledProcessInstanceId } from "./semantic-process-call-runtime.js";
 export * from "./deep-readonly.js";
 export * from "./effect-transport-material.js";
@@ -36,6 +37,7 @@ export * from "./semantic-process-graph-admission.js";
 export * from "./semantic-process-graph-policy.js";
 export * from "./semantic-process-profile.js";
 export * from "./semantic-process-runtime.js";
+export * from "./semantic-transition-trace.js";
 export * from "./simple-boolean-expression.js";
 export * from "./source-overlay-identity.js";
 export * from "./scenario.js";

@@ -148,6 +148,7 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
     "cibseven-evidence.schema.json",
     "checked-process.schema.json",
     "semantic-process.schema.json",
+    "semantic-publication.schema.json",
   ]) {
     const schema = JSON.parse(
       await readFile(
@@ -156,9 +157,9 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
       ),
     );
     for (const integer of collectIntegerSchemas(schema)) {
-      assert.equal(
-        integer.schema.maximum,
-        Number.MAX_SAFE_INTEGER,
+      assert.equal(typeof integer.schema.maximum, "number", `${schemaName} ${integer.path}`);
+      assert.ok(
+        Number(integer.schema.maximum) <= Number.MAX_SAFE_INTEGER,
         `${schemaName} ${integer.path}`,
       );
     }

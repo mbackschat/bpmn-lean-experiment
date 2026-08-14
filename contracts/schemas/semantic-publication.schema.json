@@ -1,0 +1,359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/semantic-publication.schema.json",
+  "title": "Committed semantic execution publication",
+  "oneOf": [
+    { "$ref": "#/$defs/executionPublicationRequest" },
+    { "$ref": "#/$defs/executionPublicationPage" },
+    { "$ref": "#/$defs/executionPublicationResult" },
+    { "$ref": "#/$defs/executionPublicationExport" }
+  ],
+  "$defs": {
+    "nonemptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonnegativeSafeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "positiveSafeInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "executionPublicationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["afterRevision"],
+      "properties": {
+        "afterRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "scopeOccurrenceId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processInstanceId",
+        "definitionScopeId",
+        "activation"
+      ],
+      "properties": {
+        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
+        "definitionScopeId": { "$ref": "#/$defs/nonemptyString" },
+        "activation": { "$ref": "#/$defs/positiveSafeInteger" }
+      }
+    },
+    "publicControlTokenPosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequenceFlowId",
+        "owner",
+        "multiplicity"
+      ],
+      "properties": {
+        "sequenceFlowId": { "$ref": "#/$defs/nonemptyString" },
+        "owner": { "$ref": "#/$defs/scopeOccurrenceId" },
+        "multiplicity": { "$ref": "#/$defs/positiveSafeInteger" }
+      }
+    },
+    "publicScopePosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "parent",
+        "bpmnElementId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/scopeOccurrenceId" },
+        "parent": {
+          "oneOf": [
+            { "$ref": "#/$defs/scopeOccurrenceId" },
+            { "type": "null" }
+          ]
+        },
+        "bpmnElementId": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
+    "publicControlPositionDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consumedTokens",
+        "producedTokens",
+        "enteredScopes",
+        "exitedScopes"
+      ],
+      "properties": {
+        "consumedTokens": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/publicControlTokenPosition" }
+        },
+        "producedTokens": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/publicControlTokenPosition" }
+        },
+        "enteredScopes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/publicScopePosition" }
+        },
+        "exitedScopes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/publicScopePosition" }
+        }
+      }
+    },
+    "externalTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "stimulus"
+      ],
+      "properties": {
+        "kind": { "const": "externalStimulus" },
+        "stimulus": {
+          "oneOf": [
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/startProcess" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/triggerMessageStart" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/triggerTimerStart" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/completeUserTaskInstance" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/deliverMessage" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/fireTimer" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/completeEffect" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/reportEffectFailure" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/retryIncident" },
+            { "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/cancelIncidentProcess" }
+          ]
+        }
+      }
+    },
+    "internalTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "operationId",
+        "operationKind",
+        "origin",
+        "owner"
+      ],
+      "properties": {
+        "kind": { "const": "internalOperation" },
+        "operationId": { "$ref": "#/$defs/nonemptyString" },
+        "operationKind": {
+          "enum": [
+            "initiate",
+            "initiateMessage",
+            "initiateTimer",
+            "enterScope",
+            "enterBoundedScope",
+            "invokeProcess",
+            "returnProcess",
+            "awaitUserTask",
+            "awaitBoundedUserTask",
+            "awaitMonitoredUserTask",
+            "awaitMessage",
+            "awaitTimer",
+            "awaitEffect",
+            "duplicate",
+            "synchronize",
+            "mergeExclusive",
+            "choose",
+            "selectMany",
+            "synchronizeSelected",
+            "awaitEventRace",
+            "throwError",
+            "terminateScope",
+            "reachNoneEnd",
+            "completeScope"
+          ]
+        },
+        "origin": {
+          "$ref": "https://bpmn-lean.local/schemas/semantic-process.schema.json#/$defs/bpmnElementOrigin"
+        },
+        "owner": { "$ref": "#/$defs/scopeOccurrenceId" }
+      }
+    },
+    "committedTransitionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "logicalTimeMs",
+        "transition",
+        "positionDelta"
+      ],
+      "properties": {
+        "revision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "logicalTimeMs": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "transition": {
+          "oneOf": [
+            { "$ref": "#/$defs/externalTransition" },
+            { "$ref": "#/$defs/internalTransition" }
+          ]
+        },
+        "positionDelta": { "$ref": "#/$defs/publicControlPositionDelta" }
+      }
+    },
+    "committedTransitionBatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandId",
+        "fromRevision",
+        "throughRevision",
+        "transitions"
+      ],
+      "properties": {
+        "commandId": { "$ref": "#/$defs/nonemptyString" },
+        "fromRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "throughRevision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "transitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/committedTransitionRecord" }
+        }
+      }
+    },
+    "currentCommittedExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "state",
+        "controlTokens",
+        "scopes"
+      ],
+      "properties": {
+        "revision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "state": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/stateObservation"
+        },
+        "controlTokens": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/publicControlTokenPosition" }
+        },
+        "scopes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/publicScopePosition" }
+        }
+      }
+    },
+    "executionPublicationPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definition",
+        "processId",
+        "processInstanceId",
+        "requestedAfterRevision",
+        "pageThroughRevision",
+        "headRevision",
+        "batches",
+        "current"
+      ],
+      "properties": {
+        "definition": {
+          "$ref": "https://bpmn-lean.local/schemas/semantic-process.schema.json#/$defs/programIdentity"
+        },
+        "processId": { "$ref": "#/$defs/nonemptyString" },
+        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
+        "requestedAfterRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "pageThroughRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "headRevision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "batches": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/committedTransitionBatch" }
+        },
+        "current": {
+          "oneOf": [
+            { "$ref": "#/$defs/currentCommittedExecution" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "availableResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "page"
+      ],
+      "properties": {
+        "kind": { "const": "available" },
+        "page": { "$ref": "#/$defs/executionPublicationPage" }
+      }
+    },
+    "notReadyResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "notReady" } }
+    },
+    "notFoundResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "notFound" } }
+    },
+    "unavailableResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "unavailable" } }
+    },
+    "gapResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "gap" } }
+    },
+    "executionPublicationResult": {
+      "oneOf": [
+        { "$ref": "#/$defs/availableResult" },
+        { "$ref": "#/$defs/notReadyResult" },
+        { "$ref": "#/$defs/notFoundResult" },
+        { "$ref": "#/$defs/unavailableResult" },
+        { "$ref": "#/$defs/gapResult" }
+      ]
+    },
+    "executionPublicationExport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "definition",
+        "processId",
+        "processInstanceId",
+        "headRevision",
+        "batches",
+        "current"
+      ],
+      "properties": {
+        "format": { "const": "bpmn-lean.execution-publication.v1" },
+        "definition": {
+          "$ref": "https://bpmn-lean.local/schemas/semantic-process.schema.json#/$defs/programIdentity"
+        },
+        "processId": { "$ref": "#/$defs/nonemptyString" },
+        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
+        "headRevision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "batches": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/committedTransitionBatch" }
+        },
+        "current": { "$ref": "#/$defs/currentCommittedExecution" }
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # Semantic Process external execution
 
@@ -16,110 +16,6 @@ def runChoices (program : Program) : RuntimeState → List OperationId →
       match step program state choice with
       | none => none
       | some successor => runChoices program successor choices
-
-private def enabledTransitions (program : Program) (state : RuntimeState) :
-    List (SemanticOperation × RuntimeState) :=
-  program.operations.filterMap fun operation =>
-    match fire? program operation state with
-    | none => none
-    | some successor => some (operation, successor)
-
-/-- Number of enabled internal operations, exposed for targeted admission-preservation checks. -/
-def enabledInternalOperationCount (program : Program)
-    (state : RuntimeState) : Nat :=
-  (enabledTransitions program state).length
-
-/-- A state already known to be internally stable is resumable exactly when it is complete or exposes a semantic wait. -/
-def stableStateResumable (state : RuntimeState) : Bool :=
-  match state.control with
-  | .notStarted => false
-  | .running _ =>
-      eventRaceAssociationsValid state &&
-        calledProcessAssociationsValid state &&
-        effectIncidentAssociationsValid state &&
-        (!state.waits.isEmpty ||
-          !state.messageWaits.isEmpty ||
-          !state.timerWaits.isEmpty ||
-          !state.effectWaits.isEmpty ||
-          !state.effectIncidents.isEmpty)
-  | .completed _ | .cancelled _ => true
-
-private def independentParallelTaskChoices :
-    List (SemanticOperation × RuntimeState) → Bool
-  | [ (.awaitUserTask _ _ inputA outputA taskA, _)
-    , (.awaitUserTask _ _ inputB outputB taskB, _) ] =>
-      decide (
-        inputA ≠ inputB ∧
-          outputA ≠ outputB ∧
-          taskA.id ≠ taskB.id)
-  | _ => false
-
-private structure ClosureResult where
-  state : RuntimeState
-  hitBound : Bool
-  ambiguousChoice : Bool
-
-/-- Close one enabled operation, or the admitted two-task activation pair whose distinct inputs, outputs, and task identities make its public stable result order-independent. Every other multiple-enabled state still requires an explicit semantic choice. -/
-private def closeSupported : Nat → Program → RuntimeState → ClosureResult
-  | 0, program, state =>
-      match enabledTransitions program state with
-      | [] => { state, hitBound := false, ambiguousChoice := false }
-      | [_]
-      | _ :: _ :: _ =>
-          { state, hitBound := true, ambiguousChoice := false }
-  | fuel + 1, program, state =>
-      match enabledTransitions program state with
-      | [] => { state, hitBound := false, ambiguousChoice := false }
-      | [(_, successor)] => closeSupported fuel program successor
-      | first :: second :: remaining =>
-          let transitions := first :: second :: remaining
-          if independentParallelTaskChoices transitions then
-            closeSupported fuel program first.2
-          else
-            { state, hitBound := false, ambiguousChoice := true }
-
-/-- Separates the semantic command outcome and candidate committed state from closure-bound or ambiguous-choice harness failures. Either flag means the state is not a stable public observation even when external admission committed. -/
-structure StimulusResult where
-  outcome : CommandOutcome
-  state : RuntimeState
-  internalStepBoundExceeded : Bool
-  ambiguousInternalChoice : Bool
-  deriving Repr, DecidableEq
-
-def scenarioClosureLimit : Nat := 8
-
-/-- Pure external-command boundary over an already admitted program. Committed admission runs bounded internal closure. Every currently reachable refusal preserves the exact input state and exposes no speculative mutation; no current admission path produces `.rolledBack`. Closure exhaustion and unresolved multiple-enabledness set harness flags instead of changing the semantic outcome. This function performs no I/O and constructs no command or state observation: callers publish those only after both flags are false. -/
-def applyStimulus (closureLimit : Nat) (program : Program)
-    (state : RuntimeState) (stimulus : Stimulus) : StimulusResult :=
-  let admission := admitStimulus program state stimulus
-  match admission.outcome with
-  | .committed =>
-      let closure := closeSupported closureLimit program admission.state
-      { outcome := .committed
-        state := closure.state
-        internalStepBoundExceeded := closure.hitBound
-        ambiguousInternalChoice := closure.ambiguousChoice }
-  | .rolledBack =>
-      { outcome := .rolledBack
-        state := admission.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false }
-  | .rejected =>
-      { outcome := .rejected
-        state := admission.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false }
-  | .semanticFailure =>
-      { outcome := .semanticFailure
-        state := admission.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false }
-  | .unsupported =>
-      { outcome := .unsupported
-        state := admission.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false }
-
 
 def singletonWaitingState (wait : UserTaskWait) (logicalTimeMs : Nat := 0)
     (variables : ScopedVariables := emptyScopedVariables) :

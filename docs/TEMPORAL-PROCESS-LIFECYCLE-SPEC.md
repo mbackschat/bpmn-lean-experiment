@@ -161,6 +161,14 @@ Looking up the Update result before classifying closure closes the race where Te
 
 The hosting/root Process-instance ID selects the Workflow and validates its retained receipt. The completion stimulus independently retains the semantic task occurrence ID, which may belong to a distinct called Process hosted inside that Workflow. Client admission validates both shapes but does not require those identities to match; the semantic core accepts only the exact live task occurrence and rejects an unrelated occurrence without routing to another Workflow.
 
+## Committed execution publication
+
+The production Workflow owns one immutable committed-execution accumulator beside semantic RuntimeState. The semantic core returns an unnumbered publication only after a committed command reaches valid stable bounded closure and independently projects its current public token and scope positions. The Workflow then assigns contiguous revisions to the complete command batch, replaces the current head snapshot, and records the existing command outcome with no `await` between those deterministic state changes. Rejection, closure-bound failure, or missing publication changes no accumulator state. Revision is publication sequencing and never enters RuntimeState or BPMN meaning.
+
+The unconditional `bpmn-execution-publication` Query is registered before the semantic input loop. At revision zero it returns retryable `notReady` for any valid cursor. At a positive head it returns only complete batches from an exact batch-boundary cursor, applies the requested or default batch-count limit, includes the current snapshot only when the page reaches head, and returns `gap` for an inside-batch or ahead cursor. Producer results are validated against the exact admitted Program before return. Query execution is pure and creates no history event.
+
+The Temporal client separately validates the closed public transport against expected definition, Process, instance, cursor, limit, ordering, range, batch, current, and position-fold equations. It does not receive a Semantic Process program and does not claim to rederive private Program-operation or control-place correspondence. The engine API accepts that public identity plus the existing opaque Process locator and exposes no Workflow address. The first checkpoint has unit-level durability integration; live Worker-replacement, terminal-retention, history-replay, and unavailable-after-retention evidence remain closure obligations.
+
 ## Service Task incident hosting
 
 The successor incident profile reuses the existing effect Activity type and every existing semantic success and `bpmnError` result byte. It selects `maximumAttempts: 1` and additionally accepts the payload-free host-only `{ kind: "technicalFailure" }` result. Every old profile retains `maximumAttempts: 2` and rejects that host-only arm before it can reach the semantic core.
@@ -244,6 +252,9 @@ The focused Temporal gate must demonstrate:
 - the cancellation successor reaches the exact generation-1 incident after one Activity attempt, publishes the exact root Process and incident identity, stops the Worker, and submits the content-bound cancellation Update before replacement;
 - replacement recovers one committed cancellation and its retained Update result, preserves committed Process data in a typed cancelled receipt, and makes a distinct later command return `processClosed` carrying that same receipt;
 - the cancellation Workflow closes through ordinary Workflow completion, contains no Workflow cancellation-request, cancellation, or termination Event family, and replays; native Workflow termination and a completed-for-cancelled receipt substitution fail the refinement relation.
+- every committed publishable command appends one complete contiguous transition batch before its existing result becomes observable, while rejection and closure-bound failure retain the exact accumulator;
+- the publication Query is registered before start evaluation, returns retryable `notReady` at revision zero, pages only at complete-batch cursors under the effective limit, returns current only at head, rejects gaps and malformed producer facts, and remains pure under repeated reads;
+- Product 1 transport validates every public identity/range/current/fold equation without accepting a Program or exposing a Workflow address; live retention, Worker replacement, terminal retrieval, and replay remain required before M5 E1 graduation.
 
 The complete applicable pipeline must remain green. No production legacy lifecycle, finite scenario-stimulus-count lifetime, or compatibility branch is retained during pre-release.
 

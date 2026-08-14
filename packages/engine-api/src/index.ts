@@ -136,4 +136,5 @@ export type {
   EngineProcessWorkLocator,
 } from "./process-locator.js";
 export * from "./process-operations.js";
+export * from "./process-observation.js";
 export * from "./process-work.js";

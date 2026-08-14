@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-14; implementation authorized and not yet implemented.** This proposal selects one additive Product 1 publication for replay-complete committed semantic transitions and current committed control positions, plus the smallest Product 2 projection, semantic History, diagram-overlay, and exact semantic-JSON export adoption for the E1 increment. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. It changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
+**Owner-approved on 2026-08-14; the Product 1 semantic checkpoint is implemented and awaiting independent checkpoint review.** The checkpoint includes exact TypeScript and Lean evaluator-root traces, replay and control-position projection, strict publication wire and canonical bytes, a Workflow-owned atomic revision accumulator and cursor Query, a representation-free client, an opaque-locator engine API, and exact source-compiled Lean/TypeScript parity. Product 2 projection, live Temporal retention/replay evidence, History, Diagram, and export remain unimplemented. M5 remains open afterward for the PLAN-owned frequency and duration views, operator-history completion, and audit export. The checkpoint changes no BPMN meaning, profile capability, CIB relationship, command outcome, runtime transition, or admitted source.
 
 ## Independent cold-review receipt
 
@@ -348,15 +348,15 @@ The semantic root grows only by thin delegation. The current mechanically measur
 
 | Existing owner | Headroom before 600 nonblank lines | Required consequence |
 |---|---:|---|
-| [`packages/semantic-core/src/semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 219 | Delegate the current apply root to a new traced evaluator and preserve result-only equivalence. |
+| [`packages/semantic-core/src/semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 1 | Delegate the current apply root to a new traced evaluator and preserve result-only equivalence. |
 | [`packages/semantic-core/src/contract.ts`](../../packages/semantic-core/src/contract.ts) | 292 | Re-export the additive trace/position contract without changing existing observation shapes. |
-| [`packages/semantic-core/src/scenario.ts`](../../packages/semantic-core/src/scenario.ts) | 123 | Keep existing scenario bytes; add only focused trace-evidence delegation if required. |
-| [`BpmnSemantics/SemanticProcess/Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) | 131 | Delegate to a new traced closure owner; do not add the proof family here. |
+| [`packages/semantic-core/src/scenario.ts`](../../packages/semantic-core/src/scenario.ts) | 92 | Keep existing scenario bytes; add only focused trace-evidence delegation if required. |
+| [`BpmnSemantics/SemanticProcess/Execution.lean`](../../BpmnSemantics/SemanticProcess/Execution.lean) | 225 | Delegate to a new traced closure owner; do not add the proof family here. |
 | [`BpmnSemantics/SemanticProcess/Transition.lean`](../../BpmnSemantics/SemanticProcess/Transition.lean) | 267 | Reuse `ProgramStep`; no duplicated transition account. |
 | [`BpmnSemantics/SemanticProcess/Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 228 | Keep canonical scenario trace exact and delegate only the new evidence entry. |
 | [`BpmnSemantics/SemanticProcess/RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 147 | Reuse state and identities; add no revision field. |
 | [`BpmnSemantics/SemanticProcessJsonMain.lean`](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 170 | Delegate the new evidence request; keep existing scenario JSON exact. |
-| [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 33 | Extract publication accumulation/query integration before feature growth; this owner may retain only thin orchestration. |
+| [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 14 | Extract publication accumulation/query integration before feature growth; this owner may retain only thin orchestration. |
 | [`packages/temporal-adapter/workflow/src/workflows.ts`](../../packages/temporal-adapter/workflow/src/workflows.ts) | 575 | Add only the public Workflow/Query type surface. |
 | [`packages/temporal-adapter/protocol/src/contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 406 | Delegate the strict publication contract to a cohesive new protocol owner. |
 | [`packages/temporal-adapter/client/src/process-client.ts`](../../packages/temporal-adapter/client/src/process-client.ts) | 166 | Delegate publication observation to a cohesive new client owner. |

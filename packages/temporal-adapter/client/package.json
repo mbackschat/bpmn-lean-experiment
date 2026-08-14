@@ -25,6 +25,10 @@
     "./process-operations": {
       "types": "./dist/process-operations-client.d.ts",
       "import": "./dist/process-operations-client.js"
+    },
+    "./execution-publication": {
+      "types": "./dist/execution-publication-client.d.ts",
+      "import": "./dist/execution-publication-client.js"
     }
   },
   "types": "./dist/index.d.ts",

@@ -49,6 +49,7 @@ import {
 import {
   addToken,
   ControlStateKind,
+  ownedTokenMultiplicity,
   removeToken,
 } from "./semantic-process-state.js";
 import type {
@@ -94,6 +95,19 @@ export type CommandResult = DeepReadonly<{
 type ClosureResult = DeepReadonly<{
   state: RuntimeState;
   hitBound: boolean;
+  steps: AppliedInternalOperationStep[];
+}>;
+
+export type AppliedInternalOperationStep = DeepReadonly<{
+  operation: SemanticOperation;
+  owner: ScopeOccurrenceId | null;
+  successor: RuntimeState;
+}>;
+
+export type StimulusEvaluationResult = DeepReadonly<{
+  result: CommandResult;
+  admittedState: RuntimeState | null;
+  selectedInternalSteps: AppliedInternalOperationStep[];
 }>;
 
 export const semanticProcessClosureLimit = 8;
@@ -110,22 +124,13 @@ export function validateClosureLimit(closureLimit: number): void {
 function enabledInternalOperations(
   program: SemanticProcessProgram,
   state: RuntimeState,
-): ReadonlyArray<Readonly<{
-  operation: SemanticOperation;
-  successor: RuntimeState;
-}>> {
+): ReadonlyArray<AppliedInternalOperationStep> {
   return program.operations
-    .map((operation) => ({
-      operation,
-      successor: applyInternalOperation(program, operation, state),
-    }))
+    .map((operation) => applyInternalOperationStep(program, operation, state))
     .filter(
       (
         candidate,
-      ): candidate is {
-        operation: SemanticOperation;
-        successor: RuntimeState;
-      } => candidate.successor !== null,
+      ): candidate is AppliedInternalOperationStep => candidate !== null,
     )
     .sort(({ operation: left }, { operation: right }) =>
       compareCanonicalStrings(left.id, right.id)
@@ -178,9 +183,9 @@ export function isStableStateResumable(state: RuntimeState): boolean {
 function internalStep(
   program: SemanticProcessProgram,
   state: RuntimeState,
-): RuntimeState | null {
+): AppliedInternalOperationStep | null {
   const enabled = enabledInternalOperations(program, state);
-  return enabled[0]?.successor ?? null;
+  return enabled[0] ?? null;
 }
 
 /**
@@ -195,140 +200,330 @@ export function applyInternalOperation(
   operation: SemanticOperation,
   state: RuntimeState,
 ): RuntimeState | null {
+  return applyInternalOperationStep(program, operation, state)?.successor ?? null;
+}
+
+/** Evaluates one exact Program operation and retains its selected runtime owner. */
+export function applyInternalOperationStep(
+  program: SemanticProcessProgram,
+  operation: SemanticOperation,
+  state: RuntimeState,
+): AppliedInternalOperationStep | null {
+  let selectedOwner: ScopeOccurrenceId | null = null;
+  const successor = applyInternalOperationState(
+    program,
+    operation,
+    state,
+    (owner) => {
+      selectedOwner = owner;
+    },
+  );
+  return successor === null
+    ? null
+    : {
+        operation,
+        owner: operationOwnerMatchesProgram(program, operation, selectedOwner)
+          ? selectedOwner
+          : null,
+        successor,
+      };
+}
+
+function applyInternalOperationState(
+  program: SemanticProcessProgram,
+  operation: SemanticOperation,
+  state: RuntimeState,
+  captureOwner: (owner: ScopeOccurrenceId) => void,
+): RuntimeState | null {
   switch (operation.kind) {
     case SemanticOperationKind.Initiate: {
       const rootOwner = state.scopeOccurrences.find(
         ({ parent }) => parent === null,
       )?.id;
-      return state.initiationPending && rootOwner !== undefined
-        ? {
-            ...state,
-            initiationPending: false,
-            controlTokens: addToken(
-              state.controlTokens,
-              operation.output,
-              rootOwner,
-            ),
-          }
-        : null;
+      return applyOwnedOperation(
+        rootOwner,
+        (owner) => state.initiationPending
+          ? {
+              ...state,
+              initiationPending: false,
+              controlTokens: addToken(
+                state.controlTokens,
+                operation.output,
+                owner,
+              ),
+            }
+          : null,
+        captureOwner,
+      );
     }
-    case SemanticOperationKind.InitiateMessage:
-      return applyMessageInitiation(operation, state);
-    case SemanticOperationKind.InitiateTimer:
-      return applyTimerInitiation(operation, state);
+    case SemanticOperationKind.InitiateMessage: {
+      const owner = state.scopeOccurrences.find(({ parent }) => parent === null)?.id;
+      return applyOwnedOperation(
+        owner,
+        () => applyMessageInitiation(operation, state),
+        captureOwner,
+      );
+    }
+    case SemanticOperationKind.InitiateTimer: {
+      const owner = state.scopeOccurrences.find(({ parent }) => parent === null)?.id;
+      return applyOwnedOperation(
+        owner,
+        () => applyTimerInitiation(operation, state),
+        captureOwner,
+      );
+    }
     case SemanticOperationKind.EnterScope: {
       const owner = onlyTokenOwner(state, operation.input);
-      return owner === undefined
-        ? null
-        : enterScope(operation, state, owner);
+      return applyOwnedOperation(
+        owner,
+        (selected) => enterScope(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.EnterBoundedScope: {
       const boundedParent = onlyTokenOwner(state, operation.input);
-      return boundedParent === undefined
-        ? null
-        : armBoundedScope(operation, state, boundedParent);
+      return applyOwnedOperation(
+        boundedParent,
+        (selected) => armBoundedScope(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.InvokeProcess: {
       const caller = onlyTokenOwner(state, operation.input);
-      return caller === undefined
-        ? null
-        : invokeCalledProcess(operation, state, caller);
+      return applyOwnedOperation(
+        caller,
+        (selected) => invokeCalledProcess(operation, state, selected),
+        captureOwner,
+      );
     }
-    case SemanticOperationKind.ReturnProcess:
-      return returnCalledProcess(operation, state);
+    case SemanticOperationKind.ReturnProcess: {
+      const owner = returnProcessOwner(operation, state);
+      return applyOwnedOperation(
+        owner,
+        () => returnCalledProcess(operation, state),
+        captureOwner,
+      );
+    }
     case SemanticOperationKind.AwaitUserTask: {
       const taskOwner = onlyTokenOwner(state, operation.input);
-      return taskOwner !== undefined
-        ? createUserTaskWait(operation, state, taskOwner)
-        : null;
+      return applyOwnedOperation(
+        taskOwner,
+        (selected) => createUserTaskWait(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.AwaitMessage: {
       const messageOwner = onlyTokenOwner(state, operation.input);
-      return messageOwner !== undefined
-        ? createMessageWait(operation, state, messageOwner)
-        : null;
+      return applyOwnedOperation(
+        messageOwner,
+        (selected) => createMessageWait(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.AwaitTimer: {
       const timerOwner = onlyTokenOwner(state, operation.input);
-      return timerOwner !== undefined
-        ? createTimerWait(operation, state, timerOwner)
-        : null;
+      return applyOwnedOperation(
+        timerOwner,
+        (selected) => createTimerWait(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.AwaitEventRace: {
       const raceOwner = onlyTokenOwner(state, operation.input);
-      return raceOwner !== undefined
-        ? armEventRace(operation, state, raceOwner)
-        : null;
+      return applyOwnedOperation(
+        raceOwner,
+        (selected) => armEventRace(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.AwaitBoundedUserTask: {
       const boundedOwner = onlyTokenOwner(state, operation.input);
-      return boundedOwner !== undefined
-        ? armBoundedUserTask(operation, state, boundedOwner)
-        : null;
+      return applyOwnedOperation(
+        boundedOwner,
+        (selected) => armBoundedUserTask(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.AwaitMonitoredUserTask: {
       const monitoredOwner = onlyTokenOwner(state, operation.input);
-      return monitoredOwner !== undefined
-        ? armMonitoredUserTask(operation, state, monitoredOwner)
-        : null;
+      return applyOwnedOperation(
+        monitoredOwner,
+        (selected) => armMonitoredUserTask(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.AwaitEffect: {
       const effectOwner = onlyTokenOwner(state, operation.input);
-      return effectOwner !== undefined
-        ? createEffectWait(operation, state, effectOwner)
-        : null;
+      return applyOwnedOperation(
+        effectOwner,
+        (selected) => createEffectWait(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.Duplicate: {
       const duplicateOwner = onlyTokenOwner(state, operation.input);
-      return duplicateOwner !== undefined
-        ? duplicate(operation, state, duplicateOwner)
-        : null;
+      return applyOwnedOperation(
+        duplicateOwner,
+        (selected) => duplicate(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.Synchronize: {
       const synchronizedOwner = commonTokenOwner(state, operation.inputs);
-      return synchronizedOwner !== undefined
-        ? synchronize(operation, state, synchronizedOwner)
-        : null;
+      return applyOwnedOperation(
+        synchronizedOwner,
+        (selected) => synchronize(operation, state, selected),
+        captureOwner,
+      );
     }
-    case SemanticOperationKind.MergeExclusive:
-      return mergeExclusive(operation, state);
+    case SemanticOperationKind.MergeExclusive: {
+      const owner = mergeExclusiveOwner(operation.inputs, state);
+      return applyOwnedOperation(
+        owner,
+        () => mergeExclusive(operation, state),
+        captureOwner,
+      );
+    }
     case SemanticOperationKind.Choose: {
       const choiceOwner = onlyTokenOwner(state, operation.input);
-      return choiceOwner !== undefined
-        ? choose(operation, state, choiceOwner)
-        : null;
+      return applyOwnedOperation(
+        choiceOwner,
+        (selected) => choose(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.SelectMany: {
       const selectionOwner = onlyTokenOwner(state, operation.input);
-      return selectionOwner !== undefined
-        ? selectMany(operation, state, selectionOwner)
-        : null;
+      return applyOwnedOperation(
+        selectionOwner,
+        (selected) => selectMany(operation, state, selected),
+        captureOwner,
+      );
     }
-    case SemanticOperationKind.SynchronizeSelected:
-      return synchronizeSelected(operation, state);
+    case SemanticOperationKind.SynchronizeSelected: {
+      const owner = synchronizeSelectedOwner(
+        operation.selectionKey,
+        state,
+      );
+      return applyOwnedOperation(
+        owner,
+        () => synchronizeSelected(operation, state),
+        captureOwner,
+      );
+    }
     case SemanticOperationKind.ThrowError: {
       const throwingOwner = onlyTokenOwner(state, operation.input);
-      return throwingOwner !== undefined
-        ? throwError(operation, state, throwingOwner)
-        : null;
+      return applyOwnedOperation(
+        throwingOwner,
+        (selected) => throwError(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.TerminateScope: {
       const terminatedOwner = onlyTokenOwner(state, operation.input);
-      return terminatedOwner !== undefined
-        ? terminateScope(operation, state, terminatedOwner)
-        : null;
+      return applyOwnedOperation(
+        terminatedOwner,
+        (selected) => terminateScope(operation, state, selected),
+        captureOwner,
+      );
     }
     case SemanticOperationKind.ReachNoneEnd: {
       const endOwner = onlyTokenOwner(state, operation.input);
-      return endOwner !== undefined
-        ? reachNoneEnd(operation, state, endOwner)
-        : null;
+      return applyOwnedOperation(
+        endOwner,
+        (selected) => reachNoneEnd(operation, state, selected),
+        captureOwner,
+      );
     }
-    case SemanticOperationKind.CompleteScope:
-      return completeScopeWithdrawingDeadline(program, operation, state);
+    case SemanticOperationKind.CompleteScope: {
+      const owner = completeScopeOwner(operation.scopeId, state);
+      return applyOwnedOperation(
+        owner,
+        () => completeScopeWithdrawingDeadline(program, operation, state),
+        captureOwner,
+      );
+    }
     default:
       return assertNever(operation);
   }
+}
+
+function applyOwnedOperation(
+  owner: ScopeOccurrenceId | null | undefined,
+  apply: (owner: ScopeOccurrenceId) => RuntimeState | null,
+  captureOwner: (owner: ScopeOccurrenceId) => void,
+): RuntimeState | null {
+  if (owner === null || owner === undefined) {
+    return null;
+  }
+  const successor = apply(owner);
+  if (successor === null) {
+    return null;
+  }
+  captureOwner(owner);
+  return successor;
+}
+
+function returnProcessOwner(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.ReturnProcess }
+  >,
+  state: RuntimeState,
+): ScopeOccurrenceId | undefined {
+  const records = state.calledProcessOccurrences.filter((record) =>
+    record.returnOperationId === operation.id &&
+    record.id.elementId === operation.origin.elementId
+  );
+  return records.length === 1 ? records[0]?.calledRoot : undefined;
+}
+
+function mergeExclusiveOwner(
+  inputs: ReadonlyArray<string>,
+  state: RuntimeState,
+): ScopeOccurrenceId | undefined {
+  const offered = state.controlTokens.filter((token) =>
+    inputs.includes(token.placeId) && token.multiplicity > 0
+  );
+  return offered.reduce((total, token) => total + token.multiplicity, 0) === 1
+    ? offered[0]?.owner
+    : undefined;
+}
+
+function synchronizeSelectedOwner(
+  selectionKey: string,
+  state: RuntimeState,
+): ScopeOccurrenceId | undefined {
+  const ready = state.selectedBranchSets.filter((record) =>
+    record.selectionKey === selectionKey &&
+    record.expectedInputs.every((input) =>
+      ownedTokenMultiplicity(state.controlTokens, input, record.owner) > 0
+    )
+  );
+  return ready.length === 1 ? ready[0]?.owner : undefined;
+}
+
+function completeScopeOwner(
+  scopeId: string,
+  state: RuntimeState,
+): ScopeOccurrenceId | undefined {
+  const occurrences = state.scopeOccurrences.filter(
+    ({ id }) => id.definitionScopeId === scopeId,
+  );
+  return occurrences.length === 1 ? occurrences[0]?.id : undefined;
+}
+
+function operationOwnerMatchesProgram(
+  program: SemanticProcessProgram,
+  operation: SemanticOperation,
+  owner: ScopeOccurrenceId | null,
+): owner is ScopeOccurrenceId {
+  const bindings = program.operationScopes.filter(
+    ({ operationId }) => operationId === operation.id,
+  );
+  return owner !== null &&
+    bindings.length === 1 &&
+    bindings[0]?.scopeId === owner.definitionScopeId;
 }
 
 function closeInternal(
@@ -337,16 +532,19 @@ function closeInternal(
   limit: number,
 ): ClosureResult {
   let current = state;
+  const steps: AppliedInternalOperationStep[] = [];
   for (let stepCount = 0; stepCount < limit; stepCount += 1) {
     const next = internalStep(program, current);
     if (next === null) {
-      return { state: current, hitBound: false };
+      return { state: current, hitBound: false, steps };
     }
-    current = next;
+    steps.push(next);
+    current = next.successor;
   }
   return {
     state: current,
     hitBound: internalStep(program, current) !== null,
+    steps,
   };
 }
 
@@ -356,6 +554,25 @@ export function applyStimulus(
   stimulus: Stimulus,
   closureLimit: number = semanticProcessClosureLimit,
 ): CommandResult {
+  return evaluateStimulusWithSelectedSteps(
+    program,
+    state,
+    stimulus,
+    closureLimit,
+  ).result;
+}
+
+/**
+ * Evaluates the command and closure once while retaining the exact selected
+ * internal steps for additive observation. The states remain evaluator-private
+ * input to the public trace projector.
+ */
+export function evaluateStimulusWithSelectedSteps(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: Stimulus,
+  closureLimit: number = semanticProcessClosureLimit,
+): StimulusEvaluationResult {
   validateClosureLimit(closureLimit);
 
   const admission = admit(program, state, stimulus);
@@ -363,9 +580,13 @@ export function applyStimulus(
     case CommandOutcome.Committed: {
       if (admission.state.control.kind === ControlStateKind.Cancelled) {
         return {
-          outcome: CommandOutcome.Committed,
-          state: admission.state,
-          internalStepBoundExceeded: false,
+          result: {
+            outcome: CommandOutcome.Committed,
+            state: admission.state,
+            internalStepBoundExceeded: false,
+          },
+          admittedState: admission.state,
+          selectedInternalSteps: [],
         };
       }
       const closure = closeInternal(
@@ -374,16 +595,24 @@ export function applyStimulus(
         closureLimit,
       );
       return {
-        outcome: CommandOutcome.Committed,
-        state: closure.state,
-        internalStepBoundExceeded: closure.hitBound,
+        result: {
+          outcome: CommandOutcome.Committed,
+          state: closure.state,
+          internalStepBoundExceeded: closure.hitBound,
+        },
+        admittedState: admission.state,
+        selectedInternalSteps: closure.steps,
       };
     }
     case CommandOutcome.Rejected:
       return {
-        outcome: CommandOutcome.Rejected,
-        state: admission.state,
-        internalStepBoundExceeded: false,
+        result: {
+          outcome: CommandOutcome.Rejected,
+          state: admission.state,
+          internalStepBoundExceeded: false,
+        },
+        admittedState: null,
+        selectedInternalSteps: [],
       };
     default:
       return assertNever(admission.outcome);

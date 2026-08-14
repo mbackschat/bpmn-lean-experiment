@@ -1,4 +1,5 @@
 export * from "./process-client.js";
+export * from "./execution-publication-client.js";
 export * from "./incident-client.js";
 export * from "./process-operations-client.js";
 export * from "./semantic-update-client.js";

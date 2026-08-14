@@ -24,7 +24,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 
 **Current E2 User Task metadata boundary.** The graduated registered profile admits either no metadata or one exact alternate-prefix-safe CIB extension block containing one literal group candidate and one string-or-boolean generated-form field. The neutral optional value is carried through the checked User Task, ordinary `awaitUserTask.task`, committed wait, and public `OpenUserTask`; old profiles and metadata-free artifacts physically omit it. Independent TypeScript and Lean execution prove exact preservation, refusal-state preservation, Boolean-completion composition, completion irrelevance, strict JSON identity, and old-profile exclusion. Retained public Task Service and Form Service facts, exact CIB/Lean/core/Temporal differential evidence, a runnable configuration, live Worker replacement, Query mutation, history, and replay are green. Product 2 consumes the published task and form facts only through the approved M3 Work contract.
 
-**Incident cancellation and Product 2 operations.** The closure-reviewed [Stage 2 specification](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md) includes strict wire, cleanup-qualified root/incident eligibility shared by projection and execution, transitive local/called cleanup, typed TypeScript/Lean cancellation, configured CIB external-termination projection, registered artifacts, exact four-target differential evidence, a runnable example, and live Temporal Update/receipt, Worker-replacement, history, replay, and mutation evidence. The graduated [Product 2 operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) adds the current-incident Query, strict Product 1 API, neutral locator, gateway, confirmed-registration bootstrap, all-or-error aggregation, exact operator authorization, durable Retry/Cancel actions, separate audit, strict HTTP, Operations UI, terminal corroboration, restart/replacement, four-width browser acceptance, and replay evidence. General or native cancellation, compensation, a second incident, and M5 committed transition history remain absent.
+**Current M4 and M5 boundary.** Incident cancellation and Product 2 operations are graduated through exact semantic, CIB, Temporal, platform, browser, and replay evidence. Product 1 now also publishes replay-complete committed transitions and an independent current control-position head through strict producer/public decoders, canonical bytes, a Workflow cursor Query, a representation-free client, an opaque-locator engine API, and Lean/TypeScript parity. Product 2 publication projection, live retention/replay proof, History, Diagram overlay, and export remain absent, so E1 and M5 are not graduated.
 
 **What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Stage 2 adds only the exact incident-gated hosting-root cancellation successor; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
 
@@ -116,12 +116,12 @@ The graduated E2 specification additionally carries one exact optional passive U
 
 #### Explicitly absent
 
-- the transition-record projection and every cross-instance read model beyond the bounded confirmed-start index, current incident aggregation, and platform action audit
+- Product 2 persistence, rebuild, History, Diagram overlay, and export for committed-execution publication, plus other cross-instance read models
 - a production identity provider, directory synchronization, administrator role, cross-actor audit export, claim delegation, or authorization model beyond the exact fake actor and group policy
 - a client router, form library, themed component framework, virtualization, generalized form schema, validation engine, or more than one exact string-or-Boolean field
 - complete discovery of engine Process instances started outside Product 2
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
-- publicly recoverable transitions and token positions, the remaining engine prerequisite recorded by the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary)
+- a Product 2 surface for the [M5 E1](capsules/COMMITTED-EXECUTION-PUBLICATION-PROPOSAL.md) transitions and control positions
 - recovery of legacy engine instances that predate the confirmed-start publication contract
 - BPMN diagram editing, a public raw-sidecar format, automatic layout for multiple root Processes, collaborations, Call Activities without complete source DI, Sub-Processes, groups, annotations, associations, or data artifacts
 - mobile-only navigation, duplicate desktop/mobile task DOMs, a permanent task-detail side panel, horizontal task-row scrolling, a themed component framework, runtime CSS-in-JS, or UI tests in Product 1 semantic feedback loops
@@ -188,6 +188,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - cross-artifact definition identity and source-origin checks
 - reference, arity, identity, candidate-order, evidence, and projection mutations
 - pre-release guard against embedded format counters, retired representation names, and milestone compatibility paths
+- committed-execution schemas, atomic revisions, exact identity/head equations, producer/public validation, and canonical UTF-8 bytes
 
 #### Explicitly absent
 
@@ -340,6 +341,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - bounded internal closure for one enabled operation or the exact admitted two-task pair, rejecting every other multiple-enabled shape
 - one catalog-driven result emitter that consumes and echoes answer-free scenarios, with strict role decoders and independent cross-artifact validation
 - the separately gated checked-source experiment with bounded structural, decomposition, reachability, and enabled-frontier results
+- proved committed-transition trace/replay, control positions/deltas, nonpublication failures, and source-compiled TypeScript parity
 
 #### Explicitly absent
 
@@ -374,6 +376,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - registered literal-generation incident report and exact retry transitions, private and public association validation, incident-aware quiescence and resumability, and pre-dispatch refusal of malformed or cross-program injected incident states
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
 - executable enabled-count and stable-state-resumability checks, with malformed-topology and stranded-state witnesses
+- traced committed transitions/replay and fail-closed control-position projection, with unchanged canonical observations and Lean parity
 
 #### Explicitly absent
 
@@ -437,6 +440,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 - registered User Task assignment/form metadata through the existing Query and Update path, with Worker replacement, exact passive projection, Boolean completion, metadata-free terminal state, history/replay, old-profile control, a Query-omission mutation, and a same-task source field-type variation bound in the Workflow-start program and Query
 - registered Service Task incident hosting with an unchanged bare semantic Activity result union, exact successor-only one-attempt policy, host-only `technicalFailure`, Workflow-derived report command, committed incident Query, content-bound retained retry Update, exact effect restoration, Worker replacement, terminal result recovery, two-command race, typed post-retry host failure, history assertions, and replay
 - registered incident-cancellation hosting with the shared one-attempt Activity/report policy, content-bound exact-root/exact-incident Update, Worker replacement while the incident is open, retained accepted-result recovery, typed cancelled receipt through ordinary Workflow completion, distinct late `processClosed`, preserved committed data, history and replay, and native-termination/completed-receipt mutations
+- a Workflow revision accumulator/cursor Query, strict producer validation, representation-free client, and opaque-locator engine API
 
 #### Explicitly absent
 

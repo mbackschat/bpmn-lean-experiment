@@ -35,6 +35,8 @@ The parser deadline bounds Promise settlement but cannot preempt synchronous par
 
 The bounded [machine-readable metamodel manifest](src/bpmn-2.0.2-semantic-process-metamodel.json) records only the types, inheritance, references, multiplicities, containment, defaults, and extension wrapper facts consumed by this compiler. The local checker compares CMOF-owned facts with exact external `BPMN20.cmof` and the inherited `BaseElement.extensionElements` singleton plus wildcard with exact external `Semantic.xsd`; absence of either source is an infrastructure failure, never a skipped or reduced lane. It does not claim a complete BPMN metamodel or operational semantics.
 
+The package gate also compiles the exact registered Parallel Gateway source and compares its TypeScript committed-transition trace and current public token/scope positions with the independently encoded Lean result. The oracle rejects dropped, swapped, duplicated, or independently changed operation identity, kind, origin, owner, delta, and current-position facts while leaving the established scenario-result wire unchanged.
+
 Run the focused gate:
 
 ```sh

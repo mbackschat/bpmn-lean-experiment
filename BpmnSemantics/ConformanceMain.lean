@@ -1,6 +1,7 @@
 import BpmnSemantics.ActivityBoundaryTimerConformance
 import BpmnSemantics.Conformance
 import BpmnSemantics.ConfiguredTaskConformance
+import BpmnSemantics.CommittedExecutionPublicationConformance
 import BpmnSemantics.MappedBoundaryErrorConformance
 import BpmnSemantics.CallActivityConformance
 import BpmnSemantics.IntermediateCatchTimerConformance

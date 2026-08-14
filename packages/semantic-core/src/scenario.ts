@@ -37,7 +37,6 @@ import {
 } from "./semantic-process-incident-cancellation.js";
 import {
   ControlStateKind,
-  applyStimulus,
   initialState,
   semanticProcessClosureLimit,
   validateClosureLimit,
@@ -45,6 +44,13 @@ import {
 import type {
   RuntimeState,
 } from "./semantic-process-runtime.js";
+import {
+  applyStimulusWithTrace,
+} from "./semantic-transition-trace.js";
+import type {
+  TracedCommandResult,
+  UnnumberedCommittedExecutionPublication,
+} from "./semantic-transition-trace.js";
 import {
   stimulusCommandId,
 } from "./stimulus.js";
@@ -62,6 +68,7 @@ type CommittedScenarioStep = DeepReadonly<{
   kind: ScenarioStepKind.Committed;
   state: RuntimeState;
   observations: CanonicalObservation[];
+  publication: UnnumberedCommittedExecutionPublication | null;
 }>;
 
 type TerminalScenarioStep = DeepReadonly<{
@@ -342,7 +349,13 @@ export function advanceScenario(
   stimulus: Stimulus,
   closureLimit: number = semanticProcessClosureLimit,
 ): ScenarioStep {
-  const result = applyStimulus(program, state, stimulus, closureLimit);
+  const traced = applyStimulusWithTrace(
+    program,
+    state,
+    stimulus,
+    closureLimit,
+  );
+  const result = traced.result;
   if (result.internalStepBoundExceeded) {
     return {
       kind: ScenarioStepKind.HarnessFailure,
@@ -374,6 +387,7 @@ export function advanceScenario(
         kind: ScenarioStepKind.Committed,
         state: result.state,
         observations,
+        publication: committedPublication(traced, snapshot),
       };
     case CommandOutcome.Rejected:
       return {
@@ -388,6 +402,24 @@ export function advanceScenario(
     default:
       return assertNever(result.outcome);
   }
+}
+
+function committedPublication(
+  traced: TracedCommandResult,
+  state: StateObservation,
+): UnnumberedCommittedExecutionPublication | null {
+  const first = traced.committedTransitions[0];
+  if (first === undefined || traced.currentPositions === null) {
+    return null;
+  }
+  return {
+    transitions: [first, ...traced.committedTransitions.slice(1)],
+    current: {
+      state,
+      controlTokens: traced.currentPositions.controlTokens,
+      scopes: traced.currentPositions.scopes,
+    },
+  };
 }
 
 export function deployScenario(

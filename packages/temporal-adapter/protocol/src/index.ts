@@ -11,5 +11,7 @@ export * from "./host-admission.js";
 export * from "./lifecycle-results.js";
 export * from "./incident-operation.js";
 export * from "./process-address.js";
+export * from "./semantic-publication.js";
+export * from "./semantic-publication-canonical-json.js";
 export * from "./timer-command.js";
 export * from "./user-task-detail.js";

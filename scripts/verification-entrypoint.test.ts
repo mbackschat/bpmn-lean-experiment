@@ -97,11 +97,11 @@ const projectBuildOutputPath =
   /(?:packages\/[\w-]+\/dist\/|@bpmn-lean\/[\w-]+\/dist\/|(?:\.\.?\/)+dist\/)/u;
 
 /**
- * Finds dynamic imports that make a script test depend on a prior package build.
+ * Finds generated-output references that make a script test depend on a prior package build.
  *
  * The source-hygiene gate owns static module specifiers. Dynamic imports can hide the same dependency
- * behind `pathToFileURL` or `new URL`, so this scan begins only at a code-bearing import call and keeps
- * enough following lines to include its wrapped argument.
+ * behind a cached `pathToFileURL` or `new URL`, so this scan begins at each code-bearing import or URL
+ * construction and keeps enough following lines to include its wrapped argument.
  */
 function generatedOutputRuntimeImportFindings(
   surfaces: ReadonlyArray<CommandSurface>,
@@ -112,7 +112,7 @@ function generatedOutputRuntimeImportFindings(
       const trimmed = line.trimStart();
       if (
         /^(?:["'`]|\/\/|\*)/u.test(trimmed) ||
-        !/\bimport\s*\(/u.test(line)
+        !/(?:\bimport\s*\(|\bnew\s+URL\s*\(|\bpathToFileURL\s*\()/u.test(line)
       ) {
         return [];
       }
@@ -211,6 +211,20 @@ test("the runtime-import guard reaches helper and URL wrapped build paths", () =
       "scripts/probe.test.ts:1: const first = await import(pathToFileURL(`${root}/packages/bpmn-source/dist/index.js`).href);",
       "scripts/probe.test.ts:2: const second = await import(new URL('../dist/index.js', import.meta.url).href);",
     ],
+  );
+
+  assert.deepEqual(
+    generatedOutputRuntimeImportFindings([{
+      relativePath: "scripts/probe.test.ts",
+      source: [
+        "const builtEntry = new URL(",
+        "  '../packages/semantic-core/dist/index.js',",
+        "  import.meta.url,",
+        ");",
+        "await import(builtEntry.href);",
+      ].join("\n"),
+    }]),
+    ["scripts/probe.test.ts:1: const builtEntry = new URL("],
   );
 });
 

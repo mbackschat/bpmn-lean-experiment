@@ -27,7 +27,9 @@ import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.IncidentCancellation
 import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcess.Fixtures
 
