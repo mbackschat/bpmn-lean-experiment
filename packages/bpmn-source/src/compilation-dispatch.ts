@@ -31,7 +31,7 @@ import {
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 import {
   admitsUserTaskMetadataForeignAttribute,
-  parallelUserTaskMetadataCheckpointProfile,
+  parallelUserTaskMetadataProfile,
   userTaskMetadataProfile,
 } from "./user-task-metadata-source.js";
 
@@ -123,7 +123,7 @@ export function compileDispatchedCheckedProcess(
   const dispatch = compilationDispatches.find(
     (entry) => entry.semanticProfile === semanticProfile ||
       (entry.id === CompilationDispatchId.UserTaskMetadata &&
-        semanticProfile === parallelUserTaskMetadataCheckpointProfile),
+        semanticProfile === parallelUserTaskMetadataProfile),
   ) ?? genericDispatch;
   switch (dispatch.id) {
     case CompilationDispatchId.Generic:
@@ -147,7 +147,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.CallActivity:
       return dispatch.reader(rootElement, source, overlay);
     case CompilationDispatchId.UserTaskMetadata:
-      return semanticProfile === parallelUserTaskMetadataCheckpointProfile
+      return semanticProfile === parallelUserTaskMetadataProfile
         ? compileUserTaskMetadataSource(
             rootElement,
             source,

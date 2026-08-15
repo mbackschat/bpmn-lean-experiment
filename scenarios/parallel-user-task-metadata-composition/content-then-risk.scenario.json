@@ -1,0 +1,87 @@
+{
+  "kind": "scenario",
+  "id": "parallel-user-task-metadata-content-then-risk",
+  "profile": "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
+  "bpmn": {
+    "id": "parallel-user-task-metadata-composition",
+    "relativePath": "scenarios/parallel-user-task-metadata-composition/process.bpmn",
+    "sha256": "91494fe36496b343d50e1851f1d0b6dda8212ac358f3a1f9bc0833af2ea6c605",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ParallelUserTaskMetadata",
+      "instanceId": "ParallelUserTaskMetadataInstance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-content-review",
+      "taskId": {
+        "processInstanceId": "ParallelUserTaskMetadataInstance_1",
+        "elementId": "UserTask_ContentReview",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "contentApproved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-risk-review",
+      "taskId": {
+        "processInstanceId": "ParallelUserTaskMetadataInstance_1",
+        "elementId": "UserTask_RiskReview",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "riskApproved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.1",
+      "BPMN 2.0.2 §10.3.4",
+      "BPMN 2.0.2 §10.6.4",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §13.3.3",
+      "BPMN 2.0.2 §13.4.1",
+      "BPMN 2.0.2 Table 13.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskMetadataCheckpointTest.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/TaskService.java#getIdentityLinksForTask(String)",
+      "engine/src/main/java/org/cibseven/bpm/engine/FormService.java#getTaskFormData(String)"
+    ]
+  }
+}

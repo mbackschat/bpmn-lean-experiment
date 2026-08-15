@@ -22,6 +22,8 @@ The [Boolean User Task completion scenario](user-task-boolean-completion/README.
 
 The [User Task assignment and form metadata scenario](user-task-assignment-form-metadata/README.md) carries one literal group candidate and one Boolean generated-form field through the same existing User Task wait and completion command. Its source is byte-identical to the approved checkpoint fixture, and its target remains answer-free.
 
+The [parallel User Task metadata composition scenarios](parallel-user-task-metadata-composition/README.md) use one independently authored balanced content-and-risk review model and exercise both task-completion orders. Both targets remain answer-free and retain their CIB evidence separately.
+
 Document shape is owned by the current [shared wire contracts](../contracts/README.md); semantic meaning is owned by the selected profile and capsule. Because the project is pre-release, a contract change replaces all scenario producers and consumers atomically instead of preserving parallel prototype formats.
 
 A scenario must have the same meaning for every target its profile declares. It must not expose CIB database entities, Lean constructors, Temporal histories, future commands as current capabilities, or other host internals. A standards-only scenario does not acquire a CIB target merely because its provenance links a separate CIB calibration.

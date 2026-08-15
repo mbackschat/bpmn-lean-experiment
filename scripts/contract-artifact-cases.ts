@@ -8,6 +8,7 @@ import {
 import {
   serviceTaskIncidentCancellationArtifactCases,
 } from "./contract-incident-cancellation-artifact-case.ts";
+import { parallelUserTaskMetadataArtifactCases } from "./contract-parallel-user-task-metadata-artifact-case.ts";
 
 export const artifactCases = Object.freeze([
   Object.freeze({
@@ -132,6 +133,7 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/user-task-assignment-form-metadata/cibseven-evidence.json",
   }),
+  ...parallelUserTaskMetadataArtifactCases,
 ]);
 
 export const normativeArtifactCases = Object.freeze([

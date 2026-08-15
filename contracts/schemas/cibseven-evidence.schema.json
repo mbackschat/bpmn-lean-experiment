@@ -247,7 +247,10 @@
             "type": "object",
             "properties": {
               "id": {
-                "const": "cibseven-2.2.0-user-task-assignment-form-metadata-draft"
+                "enum": [
+                  "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
+                  "cibseven-2.2.0-user-task-assignment-form-metadata-draft"
+                ]
               }
             },
             "required": [

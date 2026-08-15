@@ -6,7 +6,6 @@ import {
   CommandOutcome,
   ControlStateKind,
   GatewayDirection,
-  SemanticCheckpointProfileId,
   SemanticOperationKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
@@ -38,7 +37,7 @@ import {
 import { rootScopedProgram } from "./root-scope-fixture.ts";
 
 const checkpointProfile =
-  SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata;
+  SemanticProfileId.ParallelUserTaskAssignmentFormMetadata;
 const instanceId = "Instance_ParallelReview";
 const contentMetadata = metadata("contentApproved");
 const riskMetadata = metadata("riskApproved");
@@ -136,10 +135,10 @@ const checkedNodes = [
   },
 ] as const satisfies ReadonlyArray<CheckedNode>;
 
-test("keeps the exact composition profile private at the semantic checkpoint", () => {
+test("registers the exact composition profile for ordinary execution", () => {
   assert.equal(
     new Set<string>(Object.values(SemanticProfileId)).has(checkpointProfile),
-    false,
+    true,
   );
   assert.equal(
     profileAllowsCheckedProcessShape(checkpointProfile, checkedNodes, 1),

@@ -1,7 +1,6 @@
 /** Exact source projection for the bounded User Task assignment/form metadata profile. */
 import {
   CheckedNodeKind,
-  SemanticCheckpointProfileId,
   SemanticProfileId,
   SemanticOperationKind,
   isUserTaskMetadata,
@@ -25,14 +24,14 @@ import { removeOpaqueXmlRegions } from "./singleton-containment-admission.js";
 export const userTaskMetadataProfile =
   SemanticProfileId.UserTaskAssignmentFormMetadata;
 
-export const parallelUserTaskMetadataCheckpointProfile =
-  SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata;
+export const parallelUserTaskMetadataProfile =
+  SemanticProfileId.ParallelUserTaskAssignmentFormMetadata;
 
 /** Selects the profiles that consume the exact assignment/form source extension. */
 export function isUserTaskMetadataProfile(semanticProfile: string): boolean {
   switch (semanticProfile) {
     case userTaskMetadataProfile:
-    case parallelUserTaskMetadataCheckpointProfile:
+    case parallelUserTaskMetadataProfile:
       return true;
     default:
       return false;
@@ -377,7 +376,7 @@ export function userTaskMetadataBindingValid(
     > => operation.kind === SemanticOperationKind.AwaitUserTask,
   );
   const requiredTaskCount = checked.identity.semanticProfile ===
-      parallelUserTaskMetadataCheckpointProfile
+      parallelUserTaskMetadataProfile
     ? 2
     : 1;
   if (

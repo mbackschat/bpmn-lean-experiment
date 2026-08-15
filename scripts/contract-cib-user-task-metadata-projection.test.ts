@@ -20,6 +20,29 @@ const selectedTask = {
   formFields: [{ id: "approved", typeName: "boolean" }],
 } as const satisfies TaskQueryTask;
 
+const parallelProfileId =
+  "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
+
+const parallelTasks = [{
+  elementId: "UserTask_ContentReview",
+  name: "Review content",
+  identityLinks: [{
+    type: "candidate",
+    userId: null,
+    groupId: "reviewers",
+  }],
+  formFields: [{ id: "contentApproved", typeName: "boolean" }],
+}, {
+  elementId: "UserTask_RiskReview",
+  name: "Review risk",
+  identityLinks: [{
+    type: "candidate",
+    userId: null,
+    groupId: "reviewers",
+  }],
+  formFields: [{ id: "riskApproved", typeName: "boolean" }],
+}] as const satisfies ReadonlyArray<TaskQueryTask>;
+
 test("projects neutral task metadata only from raw public-service facts", () => {
   assert.deepEqual(
     projectCibUserTaskMetadata(userTaskMetadataProfileId, selectedTask),
@@ -104,4 +127,36 @@ test("keeps metadata properties physically absent for every old profile", () => 
     ),
     /old profile must omit raw User Task metadata/,
   );
+});
+
+test("projects the composed profile by BPMN element identity independently of query order", () => {
+  const projectByElement = (tasks: ReadonlyArray<TaskQueryTask>) =>
+    Object.fromEntries(tasks.map((task) => [
+      task.elementId,
+      projectCibUserTaskMetadata(parallelProfileId, task),
+    ]));
+  const expected = {
+    UserTask_ContentReview: {
+      assignment: { candidates: [{ kind: "group", id: "reviewers" }] },
+      form: { fields: [{ key: "contentApproved", type: "boolean" }] },
+    },
+    UserTask_RiskReview: {
+      assignment: { candidates: [{ kind: "group", id: "reviewers" }] },
+      form: { fields: [{ key: "riskApproved", type: "boolean" }] },
+    },
+  };
+
+  assert.deepEqual(projectByElement(parallelTasks), expected);
+  assert.deepEqual(projectByElement([...parallelTasks].reverse()), {
+    UserTask_RiskReview: expected.UserTask_RiskReview,
+    UserTask_ContentReview: expected.UserTask_ContentReview,
+  });
+
+  const swapped = parallelTasks.map((task, index) => ({
+    ...task,
+    identityLinks: parallelTasks[1 - index]?.identityLinks,
+    formFields: parallelTasks[1 - index]?.formFields,
+  })) as ReadonlyArray<TaskQueryTask>;
+  assert.notDeepEqual(projectByElement(swapped), expected);
+  assert.notDeepEqual(projectByElement(parallelTasks.slice(0, 1)), expected);
 });

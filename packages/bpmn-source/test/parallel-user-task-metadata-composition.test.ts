@@ -14,16 +14,13 @@ import type {
   SemanticProcessProgram,
   SourceOverlaySelection,
 } from "@bpmn-lean/bpmn-source";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "@bpmn-lean/semantic-core";
+import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 import type { DeepMutable } from "../../../scripts/contract-artifact-test-fixtures.ts";
 
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
 const checkpointProfile =
-  SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata;
+  SemanticProfileId.ParallelUserTaskAssignmentFormMetadata;
 const fixtureUrl = new URL(
   "./fixtures/parallel-user-task-metadata-composition.bpmn",
   import.meta.url,

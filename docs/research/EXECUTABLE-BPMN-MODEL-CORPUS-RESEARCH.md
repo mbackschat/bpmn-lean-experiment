@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented living MVP suite, independent external-source expansion, first catalog journey, and reviewer-facing capability disclosure. The corpus method, exact source records, local admission results, 22-model execution gate, 25-variant coverage contract, six-family external blocker ranking, and one production-backed browser-eligible model are maintained.
+Implemented living MVP suite, independent external-source expansion, two catalog journeys, and reviewer-facing capability disclosure. The corpus method, exact source records, local admission results, 23-model execution gate, 25-variant coverage contract, six-family external blocker ranking, and two production-backed browser-eligible models are maintained.
 
 ## Question
 
@@ -16,7 +16,7 @@ The source revisions and licenses are owned by [SOURCES.md](../SOURCES.md). The 
 
 | Source | Use in this tranche | Retention |
 |---|---|---|
-| Project-owned scenarios | Twenty-two representative models with business purposes, deterministic schedules, and retained differential evidence | Exact BPMN and scenario bytes remain under `scenarios/` under MIT |
+| Project-owned scenarios | Twenty-three representative models with business purposes, deterministic schedules, and retained differential evidence | Exact BPMN and scenario bytes remain under `scenarios/` under MIT |
 | CIB Seven `2.2.0` | Five product-shaped model files across order, invoice, and vacation families | Exact bytes remain only in the pristine Apache-2.0 checkout; the repository retains path, revision, license, digest, classification, and result |
 | OMG BPMN 2.0.2 examples | Exact executable Incident Management candidate plus broader whole-model pattern discovery | Copyrighted archive remains external; the manifest retains the archive digest, exact entry path and digest, licence classification, and rejected admission result |
 | BPMN MIWG | Interchange and diagram-preservation precedent | CC BY 3.0 checkout remains external; no execution meaning is inferred |
@@ -26,11 +26,12 @@ No external model is copied into the distributable repository. A later retained 
 
 ## Retained MVP suite
 
-The first five retained sources established the corpus method using exact schedules that already crossed the complete differential/refinement pipeline. The suite now retains 22 project-owned sources and covers all 25 executable BPMN element or semantic variants registered by that pipeline. It does not rename isolated element fixtures as real-world models: every manifest row states a concrete business purpose, while its human title and narrative describe a credible workflow role and its source binding preserves the exact technical identity.
+The first five retained sources established the corpus method using exact schedules that already crossed the complete differential/refinement pipeline. The suite now retains 23 project-owned sources and covers all 25 executable BPMN element or semantic variants registered by that pipeline. It does not rename isolated element fixtures as real-world models: every manifest row states a concrete business purpose, while its human title and narrative describe a credible workflow role and its source binding preserves the exact technical identity.
 
 | Model | Reusable pressure | Existing evidence |
 |---|---|---|
 | Review a request with assignment and form metadata | Human assignment, generated form, claim, and completion | Lean, semantic core, CIB Seven, Temporal, replay, and seeded metadata mutation |
+| Review content and risk in parallel | Concurrent metadata-bearing work, independent completion, sibling preservation, and join | Lean, semantic core, CIB Seven, Temporal, replay, metadata/sibling mutations, and Product 2 journey |
 | Prepare two work items in parallel | Concurrent work creation, independent completion, and join | Lean, semantic core, CIB Seven, Temporal, replay, and omitted-sibling mutation |
 | Route a Boolean decision | Submitted data and conditional routing | Lean, semantic core, Temporal, replay, and wrong-branch mutation |
 | Fulfil work through a called Process | Called-instance identity and root continuation | Lean, semantic core, Temporal, replay, and wrong-owner mutation |
@@ -46,7 +47,7 @@ Seventeen additional whole models make the MVP surface explicit rather than leav
 | Deadlines and reminders | Interrupting User Task boundary Timer and non-interrupting User Task reminder |
 | Integration and mapped outcomes | Configured project Task effect, mapped Service Task success, and mapped Service Task boundary Error |
 
-The [generated corpus map](../../model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md) is the current result. The fast guard verifies source identity, license class, business purpose, profile and scenario binding, construct inventory, admission result, pipeline route, clone-family consistency, and generated ranking. It separately derives the exact supported variant set from every registered pipeline BPMN source, requires the [canonical capability catalog](../../model-corpus/mvp-capabilities.ts) to match it, and requires the retained-model coverage union to contain every variant. The focused corpus pipeline executes all 22 retained cases through every target each row claims.
+The [generated corpus map](../../model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md) is the current result. The fast guard verifies source identity, license class, business purpose, profile and scenario binding, construct inventory, admission result, pipeline route, clone-family consistency, and generated ranking. It separately derives the exact supported variant set from every registered pipeline BPMN source, requires the [canonical capability catalog](../../model-corpus/mvp-capabilities.ts) to match it, and requires the retained-model coverage union to contain every variant. The focused corpus pipeline executes all 23 retained cases through every target each row claims.
 
 That equality is the co-evolution contract. Adding an executable element or a semantic variant such as a different Event definition, boundary attachment locus, or interruption mode requires an atomic retained model or credible expansion, business purpose, pipeline binding, catalog restriction and CIB-evidence row, generated corpus map, and Product 2 About update. A tag-level count is insufficient because several supported variants share the same BPMN XML element name.
 
@@ -82,26 +83,24 @@ Two CIB invoice versions count as one family. The index retains both files becau
 
 Admission and engine execution are insufficient for a browser catalog. A catalog claim requires a named production-backed Playwright journey over the exact model. The journey must select or deploy it through the public platform, start it, claim before completing every User Task, exercise the advertised route or effect, verify the finished Process instance and published history, and cover the relevant Operations or Audit surface without fixture-only answers.
 
-One retained model is catalog-ready: **Review a request with assignment and form metadata**. Its [production-backed Chromium journey](../../showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts) deploys the exact retained BPMN, selects and starts exact version 1, proves the unclaimed task has no task-detail or completion action, claims it, exercises Form, Diagram, and Details, completes it, verifies the completed Operations Overview and contiguous semantic History, and verifies exact claim/reserved/committed Work-audit events. The other 21 retained models remain explicitly ineligible until equivalent model-specific journeys exist.
+Two retained models are catalog-ready. **Review a request with assignment and form metadata** uses the [single-review Chromium journey](../../showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts). **Review content and risk in parallel** uses the [parallel-review Chromium journey](../../showcase/m3-human-work/e2e/parallel-user-task-metadata-journey.spec.ts), which deploys the exact retained BPMN, starts exact version 1, claims and inspects both tasks, preserves the live sibling after the first completion, completes the Process, verifies contiguous semantic History, and verifies exact claim/reserved/committed Work-audit events for both occurrences. The other 21 retained models remain explicitly ineligible until equivalent model-specific journeys exist.
 
 This boundary prevents the previous failure class where a model appeared selectable but start media types, task ownership, or incident/audit contracts failed only during manual use. Engine admission and pipeline success do not satisfy it.
 
-## Current second-model blocker
+## Second-model outcome
 
-There is no second honest general catalog model in the admitted set today. This is a profile-composition boundary, not a shortage of XML files:
+The second honest catalog model required a profile composition rather than another renamed XML file:
 
 - Product 2 deliberately hides every open User Task whose publication lacks a candidate group. The parallel, Boolean-routing, called-Process, Message Start, Timer Start, and other metadata-free profiles therefore cannot support a Work claim-and-complete journey.
 - The ordinary M1 and M3 production hosts configure no effect handler. An effect-bearing model without a declared exact protocol/operation handler fails closed rather than receiving fabricated success.
 - The M4 incident showcase supplies a specialized test effect implementation for retry and cancellation evidence. Treating that harness configuration as a general catalog integration would confuse one bounded incident demonstration with a reusable product integration.
 - Authoring several renamed `Start -> User Task -> End` files under the one metadata profile would create cosmetic clone families and inflate the appearance of breadth without adding a reusable mechanism.
 
-The second catalog model must therefore either compose already approved parallel execution with already approved passive task metadata, or add a separately configured product effect integration with its own exact public contract. The parallel composition is the smaller and more useful next step because it exercises two simultaneous claims, completion order, join progress, terminal History, and per-occurrence audit without introducing external I/O.
+The implemented [parallel User Task metadata composition](../capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-PROPOSAL.md) takes the first route without widening the metadata-free parallel profile. It exercises two simultaneous claims, both completion orders, sibling preservation, join progress, terminal History, and per-occurrence audit without introducing external I/O.
 
 ## Recommendation
 
-Use the current 22 retained models as the minimum MVP engine regression suite and retain the metadata review model as the first catalog model because it directly covers the previously missed claim-before-completion defect. Require the suite to co-evolve through the derived 25-variant equality guard rather than relying on prose or manual inventories. The exact parallel model cannot currently be the second catalog journey: its profile deliberately publishes metadata-free User Tasks, and Product 2 correctly hides and refuses every mutation of those tasks. Retain it as an engine regression model.
-
-The next Product 2 candidate should be an independently authored, source-reviewed parallel review process that combines already approved parallel execution with approved assignment/form publication. Do not reinterpret or silently widen the existing metadata-free fixture. Before implementation, specify the combined profile and admission contract and prove one complete two-claim/two-completion browser journey.
+Use the current 23 retained models as the minimum MVP engine regression suite and retain the sequential and parallel metadata review models as the two catalog models. Require the suite to co-evolve through the derived 25-variant equality guard rather than relying on prose or manual inventories. Keep the existing metadata-free parallel model as an engine regression control, and do not reinterpret or silently widen it.
 
 For the next semantic-family decision, classify Script Task execution because it is now the only unsupported execution mechanism shared by two independent external families, then compare it with the standing high-risk semantic families in [PLAN.md](../PLAN.md#executable-model-corpus-decision-gate). Its prevalence and its language selection, deterministic sandbox, data boundary, security, and Temporal-hosting risk are evidence, not automatic approval to execute arbitrary scripts. A less frequent family may go first when it is more likely to invalidate the current representation or expose an unclosed concurrency, cancellation, scope, liveness, identity, or refinement obligation. Preserve-only DI and product metadata remain separate work classes and must not inflate the semantic priority.
 

@@ -1,5 +1,5 @@
 /**
- * Locks the Temporal host boundary for the private parallel User Task metadata checkpoint.
+ * Locks the Temporal host boundary for the registered parallel User Task metadata profile.
  * Semantic admission owns the exact composed profile; the host admits its passive waits while still
  * rejecting a token split that can make a host-driven wait concurrent with another branch.
  */
@@ -12,8 +12,8 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
-  SemanticCheckpointProfileId,
   SemanticOperationKind,
+  SemanticProfileId,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -28,8 +28,8 @@ import {
   assessTemporalHostCapability,
 } from "@bpmn-lean/temporal-testkit";
 
-const checkpointProfile =
-  SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata;
+const parallelMetadataProfile =
+  SemanticProfileId.ParallelUserTaskAssignmentFormMetadata;
 
 async function compileCheckpointProgram(): Promise<SemanticProcessProgram> {
   const compilation = await compileBpmnToSemanticProcess({
@@ -40,7 +40,7 @@ async function compileCheckpointProgram(): Promise<SemanticProcessProgram> {
     sourceId: "parallel-user-task-metadata-composition-checkpoint",
     expectedSha256: undefined,
     sourceOverlay: null,
-    semanticProfile: checkpointProfile,
+    semanticProfile: parallelMetadataProfile,
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
   });
   assert.equal(compilation.status, BpmnCompilationStatus.Accepted);

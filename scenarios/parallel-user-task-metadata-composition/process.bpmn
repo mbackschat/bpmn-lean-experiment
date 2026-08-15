@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:c7="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ParallelUserTaskMetadata"
+  targetNamespace="https://bpmn-lean.local/scenarios/parallel-user-task-metadata">
+  <bpmn:process id="Process_ParallelUserTaskMetadata" name="Parallel content and risk review" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToFork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging">
+      <bpmn:incoming>Flow_StartToFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ForkToContent</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ForkToRisk</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="UserTask_ContentReview" name="Review content" c7:candidateGroups="reviewers">
+      <bpmn:extensionElements>
+        <c7:formData>
+          <c7:formField id="contentApproved" type="boolean" />
+        </c7:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ForkToContent</bpmn:incoming>
+      <bpmn:outgoing>Flow_ContentToJoin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="UserTask_RiskReview" name="Review risk" c7:candidateGroups="reviewers">
+      <bpmn:extensionElements>
+        <c7:formData>
+          <c7:formField id="riskApproved" type="boolean" />
+        </c7:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ForkToRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_RiskToJoin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="Gateway_Join" gatewayDirection="Converging">
+      <bpmn:incoming>Flow_ContentToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_RiskToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_JoinToEnd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_JoinToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToFork" sourceRef="StartEvent_1" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_ForkToContent" sourceRef="Gateway_Fork" targetRef="UserTask_ContentReview" />
+    <bpmn:sequenceFlow id="Flow_ForkToRisk" sourceRef="Gateway_Fork" targetRef="UserTask_RiskReview" />
+    <bpmn:sequenceFlow id="Flow_ContentToJoin" sourceRef="UserTask_ContentReview" targetRef="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_RiskToJoin" sourceRef="UserTask_RiskReview" targetRef="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_JoinToEnd" sourceRef="Gateway_Join" targetRef="EndEvent_1" />
+  </bpmn:process>
+</bpmn:definitions>

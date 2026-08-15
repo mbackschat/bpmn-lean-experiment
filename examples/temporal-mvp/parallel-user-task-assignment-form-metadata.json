@@ -1,0 +1,55 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/parallel-user-task-metadata-composition/process.bpmn",
+    "sourceId": "parallel-user-task-metadata-composition",
+    "semanticProfile": "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_parallel_user_task_metadata_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ContentReview",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "contentApproved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_RiskReview",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "riskApproved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

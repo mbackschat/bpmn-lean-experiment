@@ -2,7 +2,6 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
-  SemanticCheckpointProfileId,
   SemanticProfileId,
   SimpleBooleanExpressionLanguage,
   hasExactBalancedTwoBranchControlTopology,
@@ -72,7 +71,7 @@ function hasSelectedParallelTopology(
   if (
     semanticProfile !== SemanticProfileId.ParallelForkJoin &&
     semanticProfile !==
-      SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata
+      SemanticProfileId.ParallelUserTaskAssignmentFormMetadata
   ) {
     return true;
   }

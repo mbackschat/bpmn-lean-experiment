@@ -123,6 +123,7 @@ test("registers the Boolean profile with the exact sequential User Task shape", 
     "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
     booleanProfile,
     "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+    "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
   ]);
   assert.deepEqual(semanticGraphPolicyForProfile(booleanProfile), {
     kind: SemanticGraphPolicyKind.Acyclic,

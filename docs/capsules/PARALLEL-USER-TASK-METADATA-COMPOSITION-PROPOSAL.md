@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved after independent review on 2026-08-15; the first private semantic checkpoint and its required correction audit are approved.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract. CIB evidence, profile and scenario registration, live Temporal execution, and Product 2 integration remain the unimplemented closure scope.
+**Implemented and evidence-closed on 2026-08-15; governed closure review is pending.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. The registered profile, two answer-free completion orders, combined retained CIB observations, four-target differential cases, live Temporal replacement/replay witness, executable corpus entry, and production-preview Product 2 journey are complete. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract.
 
 ## Independent cold-review receipt
 
@@ -189,20 +189,20 @@ This is a pre-release additive profile registration. Existing checked-process, S
 
 | Owner | Lines before 600 |
 |---|---:|
-| [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 540 |
-| [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 363 |
-| [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 350 |
-| [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 528 |
-| [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) | 436 |
-| [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 506 |
+| [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 543 |
+| [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 366 |
+| [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 353 |
+| [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 531 |
+| [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) | 440 |
+| [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 509 |
 | [compilation-dispatch.ts](../../packages/bpmn-source/src/compilation-dispatch.ts) | 382 |
 | [checked-process-compiler.ts](../../packages/bpmn-source/src/checked-process-compiler.ts) | 194 |
 | [checked-element-projection.ts](../../packages/bpmn-source/src/checked-element-projection.ts) | 169 |
 | [compile.ts](../../packages/bpmn-source/src/compile.ts) | 209 |
-| [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) | 174 |
+| [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) | 175 |
 | [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 62 |
 | [ValueDomain.lean](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 562 |
-| [pipeline-cases.ts](../../packages/differential/test/pipeline-cases.ts) | 4 |
+| [pipeline-cases.ts](../../packages/differential/test/pipeline-cases.ts) | 2 |
 
 The implementation must update the exact profile denominator in [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) at 60/600 nonblank, [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) at 237/600, [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) at 250/600, [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) at 72/600, [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) at 164/600, and [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) at 94/600. Each measured semantic-core owner retains at least 350 lines before the 600-line review target.
 

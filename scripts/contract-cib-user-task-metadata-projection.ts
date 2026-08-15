@@ -9,6 +9,13 @@ import { requireUnicodeScalarString } from "./strict-json.ts";
 
 export const userTaskMetadataProfileId =
   "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
+export const parallelUserTaskMetadataProfileId =
+  "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
+
+function isUserTaskMetadataProfileId(profileId: string): boolean {
+  return profileId === userTaskMetadataProfileId ||
+    profileId === parallelUserTaskMetadataProfileId;
+}
 
 export function projectCibUserTaskMetadata(
   profileId: string,
@@ -16,7 +23,7 @@ export function projectCibUserTaskMetadata(
 ): UserTaskMetadata | undefined {
   const hasIdentityLinks = Object.hasOwn(task, "identityLinks");
   const hasFormFields = Object.hasOwn(task, "formFields");
-  if (profileId !== userTaskMetadataProfileId) {
+  if (!isUserTaskMetadataProfileId(profileId)) {
     if (hasIdentityLinks || hasFormFields) {
       throw new Error("old profile must omit raw User Task metadata");
     }

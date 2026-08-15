@@ -19,5 +19,6 @@ Run the pure comparator gate:
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the complete pipeline, target isolation, and evidence rules.
 - [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact current target matrix and evidence boundary.
 - [Shared wire contracts](../../contracts/README.md) owns the canonical result shape.
+- [Parallel User Task metadata composition proposal](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-PROPOSAL.md) owns the two closure-pending composed schedules and their selected mutations.
 
 Run `./scripts/pnpm.sh run test:pipeline` when a change affects the complete registered cross-target pipeline.

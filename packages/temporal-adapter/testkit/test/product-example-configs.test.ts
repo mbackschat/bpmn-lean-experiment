@@ -46,6 +46,8 @@ const booleanCompletionProfileId =
   "cibseven-2.2.0-user-task-boolean-completion-data-draft";
 const userTaskMetadataProfileId =
   "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
+const parallelUserTaskMetadataProfileId =
+  "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -252,7 +254,7 @@ test("registers Boolean completion with the existing User Task interaction", asy
 });
 
 test("registers User Task metadata with the existing User Task interaction", async () => {
-  assert.equal(registeredProfiles.at(-1), userTaskMetadataProfileId);
+  assert.equal(registeredProfiles.includes(userTaskMetadataProfileId), true);
   const [config] = await Promise.all(
     (await exampleConfigPaths())
       .filter((file) => path.basename(file) === "user-task-assignment-form-metadata.json")
@@ -282,6 +284,65 @@ test("registers User Task metadata with the existing User Task interaction", asy
           value: { kind: "boolean", value: true },
         }],
       }],
+      effectHandlers: [],
+    },
+  );
+});
+
+test("registers parallel User Task metadata with two existing User Task interactions", async () => {
+  assert.equal(
+    registeredProfiles.includes(parallelUserTaskMetadataProfileId),
+    true,
+  );
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) =>
+        path.basename(file) ===
+          "parallel-user-task-assignment-form-metadata.json"
+      )
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  assert.deepEqual(
+    {
+      source: config.bpmn.file,
+      semanticProfile: config.bpmn.semanticProfile,
+      process: config.process,
+      interactions: config.interactions,
+      effectHandlers: config.effectHandlers,
+    },
+    {
+      source: path.join(
+        projectRoot,
+        "scenarios/parallel-user-task-metadata-composition/process.bpmn",
+      ),
+      semanticProfile: parallelUserTaskMetadataProfileId,
+      process: {
+        instanceId: "MvpExample_parallel_user_task_metadata_1",
+        initialVariables: [],
+      },
+      interactions: [
+        {
+          kind: "completeUserTaskInstance",
+          elementId: "UserTask_ContentReview",
+          delayMs: 250,
+          inputVariableNames: [],
+          submittedValues: [{
+            name: "contentApproved",
+            value: { kind: "boolean", value: true },
+          }],
+        },
+        {
+          kind: "completeUserTaskInstance",
+          elementId: "UserTask_RiskReview",
+          delayMs: 250,
+          inputVariableNames: [],
+          submittedValues: [{
+            name: "riskApproved",
+            value: { kind: "boolean", value: true },
+          }],
+        },
+      ],
       effectHandlers: [],
     },
   );

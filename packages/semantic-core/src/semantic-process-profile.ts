@@ -10,10 +10,7 @@ import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   requiredProgramShape,
 } from "./semantic-program-profile-shape.js";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
@@ -24,7 +21,6 @@ import {
 
 export {
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
-  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 
@@ -57,7 +53,7 @@ function profileAllowsProgramOperationDetails(
   }
   switch (semanticProfile) {
     case SemanticProfileId.UserTaskAssignmentFormMetadata:
-    case SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata:
+    case SemanticProfileId.ParallelUserTaskAssignmentFormMetadata:
       return true;
     case SemanticProfileId.TimerStart:
       return operations.every(
@@ -141,7 +137,7 @@ function userTaskMetadataMatchesProfileSelection(
   task: Readonly<Record<string, unknown>>,
 ): boolean {
   switch (semanticProfile) {
-    case SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata:
+    case SemanticProfileId.ParallelUserTaskAssignmentFormMetadata:
       return Object.hasOwn(task, "metadata") &&
         hasExactOptionalUserTaskMetadata(task);
     case SemanticProfileId.UserTaskAssignmentFormMetadata:

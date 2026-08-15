@@ -22,15 +22,15 @@ The graduated E2 specification additionally carries one exact optional passive U
 
 **Current Boolean Process-data boundary.** The closure-reviewed [specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) admits primitive Boolean only for exact completion in one registered sequential User Task profile. Its schema, Lean/core, CIB, differential, live Temporal, history, and replay evidence are green. Start and older profiles remain string/null-only; Product 2 consumes no new fact.
 
-**Current E2 User Task metadata boundary.** One graduated profile carries an optional literal group candidate and string-or-Boolean generated-form field from its exact CIB extension through checked source, `awaitUserTask`, committed wait, and public `OpenUserTask`; older profiles omit it. Lean/core, retained CIB, differential, live Temporal, mutation, history, and replay evidence are green. Product 2 consumes only the published task/form facts through M3 Work. An unregistered checkpoint composes required metadata on both balanced-parallel tasks across source, checked graph, IL, Lean, core, and host admission. Start must be empty. CIB, differential, Temporal, corpus, and Product 2 evidence await independent review.
+**Current E2 User Task metadata boundary.** One graduated profile carries an optional literal group candidate and string-or-Boolean generated-form field through checked source, `awaitUserTask`, committed wait, and public `OpenUserTask`. A closure-pending successor requires that metadata on both tasks of one exact balanced graph, empty Process Start data, and the existing completion and parallel runtime. Lean/core, combined CIB, differential, live Temporal/replay, mutation, corpus, and production-journey evidence are green. Product 2 consumes only published task/form facts through M3 Work.
 
 **Current M5 boundary.** The closure-reviewed [E1 specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements replay-complete transitions, exact current positions, a strict Workflow cursor Query, real retention/replay evidence, and fail-closed Product 2 History, Diagram, and canonical export.
 
 The closure-reviewed [flow-node occurrence metrics specification](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) is implemented through Lean/core lifecycle parity, core-owned exhaustive publication completeness, E1-aligned publication and replay-stable batch time, live Product 1 replay evidence, exact-version all-or-unavailable Product 2 projection, frequency/completed-duration aggregation, HTTP, and a two-width bpmn-js/table UI.
 
-**Current executable-corpus boundary.** The maintained [executable model corpus](../model-corpus/README.md) binds 22 project models with business purposes and seven external CIB Seven, OMG, and Betsy files to exact provenance, inventory, admission, pipeline, and Product 2 readiness. Its guard derives 25 executable element or semantic variants from registered pipeline XML and requires the canonical catalog and retained coverage to match.
+**Current executable-corpus boundary.** The maintained [executable model corpus](../model-corpus/README.md) binds 23 project models with business purposes and seven external CIB Seven, OMG, and Betsy files to exact provenance, inventory, admission, pipeline, and Product 2 readiness. Its guard derives 25 executable element or semantic variants from registered pipeline XML and requires the canonical catalog and retained coverage to match.
 
-External revision, archive, and entry digests fail closed without retaining external bytes. The suite reuses the Lean, semantic-core, selected CIB, Temporal, replay, and mutation pipeline. One assignment/form model has a production Chromium journey through start, claim, completion, History, and Work audit; the other 21 remain browser-ineligible.
+External revision, archive, and entry digests fail closed without retaining external bytes. The suite reuses the Lean, semantic-core, selected CIB, Temporal, replay, and mutation pipeline. The sequential assignment/form model and the closure-pending parallel content-and-risk review each have a production Chromium journey through start, claim, completion, History, and Work audit; the other 21 remain browser-ineligible.
 
 **What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Stage 2 adds only the exact incident-gated hosting-root cancellation successor; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
 
@@ -221,7 +221,7 @@ External revision, archive, and entry digests fail closed without retaining exte
 
 #### Explicitly absent
 
-- Separate CIB parallel-compatibility profile
+- general CIB parallel compatibility beyond the exact metadata composition
 - first production compatibility baseline
 - full requirement classification
 - approved gap interpretations beyond the reviewed slices

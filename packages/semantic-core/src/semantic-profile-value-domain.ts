@@ -6,10 +6,7 @@ import type {
   Stimulus,
   VariableBinding,
 } from "./contract.js";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 
 export enum VariableWriteSurface {
   ProcessStart = "processStart",
@@ -25,7 +22,7 @@ export function profileAllowsVariableBindings(
 ): boolean {
   if (
     semanticProfile ===
-      SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata &&
+      SemanticProfileId.ParallelUserTaskAssignmentFormMetadata &&
     surface === VariableWriteSurface.ProcessStart
   ) {
     return bindings.length === 0;
@@ -38,7 +35,7 @@ export function profileAllowsVariableBindings(
           semanticProfile ===
             SemanticProfileId.UserTaskAssignmentFormMetadata ||
           semanticProfile ===
-            SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata) &&
+            SemanticProfileId.ParallelUserTaskAssignmentFormMetadata) &&
           surface === VariableWriteSurface.UserTaskCompletion;
       case VariableValueKind.String:
       case VariableValueKind.Null:

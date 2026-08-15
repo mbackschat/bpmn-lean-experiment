@@ -19,6 +19,8 @@ final class CibSevenUserTaskMetadataProjector {
 
   static final String PROFILE =
       "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
+  static final String PARALLEL_PROFILE =
+      "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
 
   private final ProcessEngine processEngine;
 
@@ -30,7 +32,7 @@ final class CibSevenUserTaskMetadataProjector {
       String profile,
       List<Task> tasks,
       List<OpenUserTask> openUserTasks) {
-    if (!PROFILE.equals(profile)) {
+    if (!isMetadataProfile(profile)) {
       return new ProjectedTasks(
           tasks.stream()
               .map(task -> new TaskQueryTask(task.getTaskDefinitionKey(), task.getName()))
@@ -73,6 +75,10 @@ final class CibSevenUserTaskMetadataProjector {
                         requireElementMetadata(metadataByElement, task.id().elementId())))
             .toList();
     return new ProjectedTasks(rawTasks, projectedTasks);
+  }
+
+  static boolean isMetadataProfile(String profile) {
+    return PROFILE.equals(profile) || PARALLEL_PROFILE.equals(profile);
   }
 
   private static UserTaskMetadata requireMetadata(

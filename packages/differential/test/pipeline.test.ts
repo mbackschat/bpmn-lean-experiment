@@ -217,6 +217,8 @@ test(
         "configured-task",
         "user-task-boolean-completion",
         "user-task-assignment-form-metadata",
+        "parallel-user-task-metadata-content-then-risk",
+        "parallel-user-task-metadata-risk-then-content",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);

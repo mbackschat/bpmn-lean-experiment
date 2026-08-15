@@ -49,10 +49,6 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.2.0-user-task-boolean-completion-data-draft",
   UserTaskAssignmentFormMetadata:
     "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
-} as const);
-
-/** Profiles admitted only at an immutable semantic implementation checkpoint. */
-export const SemanticCheckpointProfileId = Object.freeze({
   ParallelUserTaskAssignmentFormMetadata:
     "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
 } as const);

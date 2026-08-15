@@ -275,12 +275,15 @@ test("appends Boolean completion as one four-target exact-semantic case", () => 
 test("appends User Task metadata as one four-target exact-semantic case", () => {
   const [metadataCase] = userTaskMetadataPipelineCases;
   assert.ok(metadataCase !== undefined);
-  assert.deepEqual(artifactCases.at(-1), {
+  assert.deepEqual(artifactCases.find(
+    ({ scenarioRelativePath }) =>
+      scenarioRelativePath === metadataScenarioRelativePath,
+  ), {
     scenarioRelativePath: metadataScenarioRelativePath,
     evidenceRelativePath:
       "scenarios/user-task-assignment-form-metadata/cibseven-evidence.json",
   });
-  assert.equal(pipelineCases.at(-1), metadataCase);
+  assert.equal(pipelineCases.includes(metadataCase), true);
   assert.deepEqual(
     {
       id: metadataCase.id,

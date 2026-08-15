@@ -62,6 +62,44 @@
       }
     },
     {
+      "id": "parallel-content-and-risk-review",
+      "title": "Review content and risk in parallel",
+      "businessPurpose": "Collect independent content and risk approvals before completing the shared review.",
+      "cloneFamily": "parallel-two-human-tasks",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelSplitJoin",
+        "userTaskWait",
+        "userTaskCompletion",
+        "literalUserTaskAssignmentAndGeneratedForm"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/parallel-user-task-metadata-composition/process.bpmn",
+        "sha256": "91494fe36496b343d50e1851f1d0b6dda8212ac358f3a1f9bc0833af2ea6c605",
+        "scenarioRelativePath": "scenarios/parallel-user-task-metadata-composition/content-then-risk.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "parallel-user-task-metadata-content-then-risk",
+      "product2": {
+        "kind": "journeyBacked",
+        "journeyTestRelativePath": "showcase/m3-human-work/e2e/parallel-user-task-metadata-journey.spec.ts"
+      }
+    },
+    {
       "id": "parallel-work-preparation",
       "title": "Prepare two work items in parallel",
       "businessPurpose": "Prepare two independent work products before continuing the shared case.",

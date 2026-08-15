@@ -33,5 +33,6 @@ Run the focused package gate:
 - [Source map](SOURCE-MAP.md) maps implementation responsibilities to files.
 - [Semantic Process IL specification](../../docs/SEMANTIC-PROCESS-IL-SPEC.md) owns the checked graph and immutable program contracts.
 - [Profile-parameterized admission specification](../../docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns profile-sensitive admission.
+- [Parallel User Task metadata composition proposal](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-PROPOSAL.md) owns the exact closure-pending composed profile and evidence boundary.
 - [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact implemented and absent surface.
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the verification and evidence boundaries.

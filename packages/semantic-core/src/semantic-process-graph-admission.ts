@@ -13,10 +13,7 @@ import {
   SemanticGraphPolicyKind,
   semanticGraphPolicyForProfile,
 } from "./semantic-process-graph-policy.js";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import {
   hasExactBalancedTwoBranchControlTopology,
 } from "./exact-balanced-two-branch-topology.js";
@@ -199,7 +196,7 @@ function hasSelectedParallelTopology(
   if (
     graph.semanticProfile !== SemanticProfileId.ParallelForkJoin &&
     graph.semanticProfile !==
-      SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata
+      SemanticProfileId.ParallelUserTaskAssignmentFormMetadata
   ) {
     return true;
   }
