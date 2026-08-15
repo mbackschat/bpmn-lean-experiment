@@ -49,7 +49,7 @@ This is useful product precedent, but adopting CIB form deployment, version bind
 
 The pinned Tasklist source renders due and follow-up dates, candidate groups, Claim and Unclaim, assignee changes, a form tab, task description, comments, diagram context, and history. These facts confirm that a useful Human Task is broader than its form, but they do not all belong in M6.
 
-Task description and static Product 2 worklist priority are small, durable catalog facts with immediate list and detail value. The latter must not be presented as BPMN `taskPriority`, whose FormalExpression evaluation remains deferred. Due and follow-up dates are not equally small because their useful form includes activation-relative expressions, time-zone handling, overdue state, mutation, filtering, and clock semantics. Drafts, comments, attachments, delegation, and mutable assignment introduce new Product 2 persistence, authorization, audit, or content-storage boundaries.
+Task description and static Product 2 worklist priority are small, durable catalog facts with immediate list and detail value. The latter must not be presented as BPMN `taskPriority`, which remains a deferred User Task instance-management concept rather than a model `FormalExpression`. Due and follow-up dates are not equally small because their useful form includes activation-relative expressions, time-zone handling, overdue state, mutation, filtering, and clock semantics. Drafts, comments, attachments, delegation, and mutable assignment introduce new Product 2 persistence, authorization, audit, or content-storage boundaries.
 
 ## Current product comparison
 
@@ -73,12 +73,12 @@ M6 should support one ordered form containing one or more fields. Each field has
 |---|---|---|
 | Text | String or null | Single-line or multiline presentation; required and minimum or maximum Unicode-scalar length |
 | Boolean | Boolean or null | Explicit true or false control; optional absence remains distinct from false |
-| Integer | Safe signed integer or null | Canonical integer wire value with optional inclusive minimum and maximum; no floating-point or decimal semantics |
+| Integer | Safe non-negative integer or null | Canonical integer wire value with optional inclusive minimum and maximum; no negative, floating-point, or decimal semantics |
 | Date | String or null | Exact ISO 8601 calendar date `YYYY-MM-DD`; validation only, with no time-zone or clock semantics |
 | Single choice | String or null | One value from a statically declared, ordered value and label set |
 | Multiple choice | Ordered unique String array or null | Zero or more values from a statically declared set, with declared maximum items and encoded-byte limits |
 
-This is the middle ground for “regular data types, even arrays.” M6 adds one generic safe-integer process value and one flat homogeneous string-list process value, not form-aware semantic types. The generic list preserves order and multiplicity; only the Product 2 multiple-choice validator rejects duplicates and canonicalizes selected options. Nested arrays, objects, binary values, decimals, date-times, and heterogeneous lists remain excluded from the M6 profile. Later Zod contracts may become substantially richer, including JSON Schema-scale structures, while the semantic layer continues to see only the canonical process-variable values the platform computes.
+This is the middle ground for “regular data types, even arrays.” M6 adds one generic non-negative safe-integer process value and one flat homogeneous string-list process value, not form-aware semantic types. The generic list preserves order and multiplicity; only the Product 2 multiple-choice validator rejects duplicates and canonicalizes selected options. Nested arrays, objects, binary values, decimals, date-times, and heterogeneous lists remain excluded from the M6 profile. Later Zod contracts may become substantially richer, including JSON Schema-scale structures, while the semantic layer continues to see only the canonical process-variable values the platform computes.
 
 Defaults and current values should be projected by exact key. A current compatible process value wins over a static default; a default applies only when the value is absent. Incompatible current values make the task detail unavailable for completion rather than silently coercing data.
 
@@ -131,7 +131,7 @@ This model covers the high-risk classes the current corpus does not: generic val
 
 ## Required, optional, and excluded M6 functionality
 
-Required M6 functionality is the selected boundary above: multiple ordered fields, String, Boolean, safe integer, ISO-date String, static single choice, bounded String array, defaults and current values, bounded validation, named completion actions, action-dependent visibility and requiredness, description, static Product 2 worklist priority, exact atomic completion, the BPMN Rendering non-interference boundary, one real-world corpus model, and full Product 1 plus Product 2 user-journey evidence.
+Required M6 functionality is the selected boundary above: multiple ordered fields, String, Boolean, non-negative safe integer, ISO-date String, static single choice, bounded String array, defaults and current values, bounded validation, named completion actions, action-dependent visibility and requiredness, description, static Product 2 worklist priority, exact atomic completion, the BPMN Rendering non-interference boundary, one real-world corpus model, and full Product 1 plus Product 2 user-journey evidence.
 
 Optional M6 functionality is limited to presentation that does not widen the contract, such as field grouping, a neutral destructive-action intent used only for styling, and responsive two-column layout when the same accessible source order works at narrow widths. Optional work must not delay the semantic and validation evidence.
 

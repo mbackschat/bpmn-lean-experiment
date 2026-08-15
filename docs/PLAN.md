@@ -104,7 +104,7 @@ The Lean lane must stay a research lane rather than becoming a proof tax on prod
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: review the M6 structured Human Work proposal.** Complete the context-cold proposal review of the draft [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) before implementation. M6 keeps BPMN User Task lifecycle and the optional opaque Rendering hook separate from a Product 2-owned, Zod-backed form catalog, adds generic safe-integer and string-list process values, and reuses only the existing `CIB-EXT-0011` candidate-group relation in a new assignment-only passive metadata shape for Product 2 claim authorization. CIB Seven forms remain research inspiration and the old bounded M3 profiles only; they do not define the new semantic contract.
+1. **In progress: review the M6 structured Human Work proposal.** Complete the context-cold proposal review of the draft [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) before implementation. M6 keeps BPMN User Task lifecycle and the optional opaque Rendering hook separate from a Product 2-owned, Zod-backed form catalog, adds generic non-negative safe-integer and string-list process values, and reuses only the existing `CIB-EXT-0011` candidate-group relation in a new assignment-only passive metadata shape for Product 2 claim authorization. CIB Seven forms remain research inspiration and the old bounded M3 profiles only; they do not define the new semantic contract.
 
 ## Approved decisions
 
@@ -230,7 +230,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: complete ordered-work item 1 by committing and context-cold reviewing the M6 [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md).** The proposal fixes the Product 2 Zod ownership of form schemas, action rules, validation, and pure patch computation; the standard BPMN Rendering non-interference boundary; the absence of a new CIB form relationship; generic safe-integer and string-list values; Temporal refinement; a retained expense-exception model; and the Product 2 journey. It preserves the existing content-bound completion command, rejects invalid forms before engine dispatch, and keeps standard BPMN Activity data mechanisms explicitly deferred rather than approximating them.
+**Next action: complete ordered-work item 1 by committing and context-cold reviewing the M6 [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md).** The proposal fixes the Product 2 Zod ownership of form schemas, action rules, validation, and pure patch computation; the standard BPMN Rendering non-interference boundary; the absence of a new CIB form relationship; generic non-negative safe-integer and string-list values; Temporal refinement; a retained expense-exception model; and the Product 2 journey. It preserves the existing content-bound completion command, rejects invalid forms before engine dispatch, and keeps standard BPMN Activity data mechanisms explicitly deferred rather than approximating them.
 
 Item 1 is **blocked on nothing**. M5 is closed, the owner selected a middle-ground M6 rather than a general form platform, fixed the Product 2 Zod boundary, required BPMN-first Human Task semantics, and prohibited importing CIB forms into the semantic core. The existing plural completion patch plus String-equality routing provide the reusable execution seam.
 
