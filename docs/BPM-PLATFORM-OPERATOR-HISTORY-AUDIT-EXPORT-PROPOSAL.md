@@ -116,7 +116,9 @@ The single public route is:
 GET /api/v1/process-instances/{processInstanceId}/operator-audit/export
 ```
 
-The path has one percent-encoded nonempty identifier segment, no query, and no fragment. GET is bodyless and must not declare a content type. Success is HTTP 200 with `application/json; charset=utf-8` and `Content-Disposition: attachment; filename="operator-audit-{sanitized-process-instance-id}.json"`. Sanitization retains only ASCII letters, digits, `.`, `_`, and `-`, truncates the identity component to 80 characters, and falls back to `process-instance` when nothing remains.
+The path has one canonically encoded nonempty identifier segment, no query, and no fragment. The builder applies JavaScript `encodeURIComponent` exactly once to a well-formed Process-instance ID. The matcher percent-decodes exactly once, requires a nonempty well-formed result, and accepts the segment only when reapplying `encodeURIComponent` produces the byte-identical segment; alternate percent-escape case, escaped unreserved characters, and malformed or repeated encoding fail. GET is bodyless and must not declare a content type.
+
+Success is HTTP 200 with `application/json; charset=utf-8` and `Content-Disposition: attachment; filename="operator-audit-{sanitized-process-instance-id}.json"`. Filename sanitization replaces every maximal run outside ASCII letters, digits, `.`, `_`, and `-` with one `_`, retains leading and trailing underscores, truncates the resulting ASCII identity component to 80 characters, and uses `process-instance` only when the result is empty. This reuses the execution-export algorithm with only the `operator-audit-` prefix changed.
 
 The route-owned error set is:
 
@@ -130,7 +132,7 @@ type OperatorAuditApiErrorCode =
   | "internalFailure";
 ```
 
-Malformed path or body is 400. Authorization denial is 403. Unknown confirmed identity is 404. Wrong method is 405 with `Allow: GET`. Reconciliation, snapshot, stored-value, integrity, ceiling, decoding, or canonicalization failure is 503 `operatorAuditUnavailable` with canonical message `The complete operator audit is unavailable.` An unexpected route defect is 500. The public error catalog gains only `operatorAuditUnavailable`; existing codes and messages remain byte-identical.
+Malformed path or body is 400. Authorization denial is 403. Unknown confirmed identity is 404. Wrong method is 405 with `Allow: GET`. An actor-resolution exception, authorization-policy evaluation exception, or confirmed-registration read, decode, or integrity exception is 500 `internalFailure`. Either outbox-reconciliation exception, either audit snapshot or stored-audit-value exception, cross-stream integrity failure, ceiling breach, export decoding failure, or canonicalization failure is 503 `operatorAuditUnavailable` with canonical message `The complete operator audit is unavailable.` Any other unexpected route defect is 500. The public error catalog gains only `operatorAuditUnavailable`; existing codes and messages remain byte-identical.
 
 ## Operator history interface
 
@@ -153,10 +155,13 @@ The top-level Operations `Audit` tab remains the incident-action collection defi
 
 ## Failure and integrity behavior
 
-The complete result is unavailable when any one of these conditions holds:
+The route returns 500 `internalFailure` when any one of these conditions holds:
 
 - actor resolution or authorization evaluation fails;
-- the confirmed registration cannot be decoded consistently;
+- confirmed-instance lookup, stored registration decoding, or registration integrity evaluation fails;
+
+The route returns 503 `operatorAuditUnavailable` and no export when any one of these conditions holds:
+
 - either outbox reconciliation fails;
 - either repository cannot establish one bounded atomic source-local snapshot;
 - a stored row conflicts with its indexed identity or fails its existing strict event decoder;
@@ -166,7 +171,7 @@ The complete result is unavailable when any one of these conditions holds:
 - a head is inconsistent with its array;
 - canonical serialization or byte verification fails.
 
-Authorization denial is not unavailability and occurs first. Unknown confirmed identity is not unavailability and occurs second. The service retains no cache and emits no last-known-good response after a failure. Repository rows and outbox acknowledgements already committed before a later failure remain durable; the failed read creates no compensating event or mutation.
+Authorization denial is not unavailability and occurs first. Unknown confirmed identity is not unavailability and occurs after successful policy evaluation and registration decoding. Separate route tests lock actor-resolution failure, authorization-evaluation failure, registration read/decode/integrity failure, denial, unknown identity, each typed audit-completeness failure, and their zero-work boundaries. The service retains no cache and emits no last-known-good response after a failure. Repository rows and outbox acknowledgements already committed before a later failure remain durable; the failed read creates no compensating event or mutation.
 
 ## Evidence contract
 
@@ -229,9 +234,11 @@ No package or external dependency is added, removed, upgraded, or replaced. Oper
 
 The new cohesive owners are `platform/contracts/src/operator-audit-export.ts`, `operator-audit-export-decoders.ts`, `operator-audit-export-canonical-json.ts`, and `operator-audit-export-routes.ts`; `platform/modules/operate/src/operator-audit-export-service.ts` and `operator-audit-export-http-routes.ts`; and `platform/apps/web/src/operator-audit-api.ts`, `process-operator-history.tsx`, and its CSS Module. The existing execution canonical owner extracts its private generic canonical-JSON mechanism into a non-exported shared contracts owner without changing bytes.
 
+Existing owners that necessarily change are `platform/contracts/src/definitions.ts` and `index.ts`; both audit contract, SQLite repository, and index owners under `platform/foundation/audit/src/`; `platform/foundation/identity-policy/src/operations-authorization-policy.ts`; `platform/modules/operate/src/index.ts`; `platform/apps/server/src/composition.ts`; and `platform/apps/web/src/app.tsx`, `main.tsx`, `operations-workspace.tsx`, `process-instance-search-panel.tsx`, and `process-instance-execution-detail.tsx`. Their focused existing tests change only where the new surface adds a case or the execution-detail availability boundary is deliberately separated. The existing `process-execution-api.ts`, Work audit route/service, incident audit route/service, and top-level incident Audit panel are inspected and retained byte-identical unless a red guard proves otherwise.
+
 Measured existing nonblank headroom before the proposal target is: contracts index 45/600; Work audit contracts 42/600 and SQLite repository 208/600; incident-audit contracts 44/600 and SQLite repository 386/600; audit index 34/600; Operations authorization policy 50/600; Operate contracts 58/600 and index 128/600; server composition 385/600; Process-instance search panel 293/600; execution detail 286/600; execution API 237/600; Operations workspace 60/600. New focused files begin at zero. The 386-line incident-audit repository has 214 lines of review headroom and may receive only its cohesive bounded snapshot method and schema-index change; any third responsibility must be extracted rather than compressed.
 
-`node scripts/what-binds.ts` reports 115 guards and the platform contract, audit, module, app, and showcase registries for each new implementation owner; aggregate indexes add the source-hygiene backstop for 122 guards. The governed owners are registered in [the contracts guide](../platform/contracts/README.md), [audit foundation guide](../platform/foundation/audit/README.md), [Operate guide](../platform/modules/operate/README.md), [web source map](../platform/apps/web/SOURCE-MAP.md), [UI-quality showcase](../showcase/platform-ui-quality/README.md), [documentation registry](README.md), [implementation map](IMPLEMENTATION-MAP.md), and [plan](PLAN.md).
+`node scripts/what-binds.ts` reports 115 guards and the platform contract, audit, identity-policy, module, server, web, app, and showcase registries for each new implementation owner; aggregate indexes add the source-hygiene backstop for 122 guards. The review/update set is the [contracts guide](../platform/contracts/README.md), [audit foundation guide](../platform/foundation/audit/README.md), [identity-policy guide](../platform/foundation/identity-policy/README.md), [foundation guide](../platform/foundation/README.md), [Operate guide](../platform/modules/operate/README.md), [module guide](../platform/modules/README.md), [server guide](../platform/apps/server/README.md), [web guide](../platform/apps/web/README.md), [web source map](../platform/apps/web/SOURCE-MAP.md), [app guide](../platform/apps/README.md), [platform guide](../platform/README.md), [UI-quality showcase](../showcase/platform-ui-quality/README.md), [showcase guide](../showcase/README.md), [documentation registry](README.md), [implementation map](IMPLEMENTATION-MAP.md), and [plan](PLAN.md). A guide may remain byte-identical only after inspection confirms its existing role statement already covers the new owner.
 
 ## Review boundary
 
