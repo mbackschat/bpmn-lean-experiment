@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved after independent review on 2026-08-15; the first private semantic checkpoint is implemented and awaits its required independent checkpoint verdict.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract. CIB evidence, profile and scenario registration, live Temporal execution, and Product 2 integration remain unauthorized until the checkpoint review passes.
+**Owner-approved after independent review on 2026-08-15; the first private semantic checkpoint and its required correction audit are approved.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract. CIB evidence, profile and scenario registration, live Temporal execution, and Product 2 integration remain the unimplemented closure scope.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `b5c8ff5` | `fork-turns-none` | `approve-with-required-edits` | `92f72ac` |
-| Semantic checkpoint | `4f84ce3` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `4f84ce3` | `fork-turns-none` | `approve-with-required-edits` | `35fc881` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question and recommendation
