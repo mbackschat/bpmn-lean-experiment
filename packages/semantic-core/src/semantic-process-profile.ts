@@ -11,6 +11,7 @@ import {
   requiredProgramShape,
 } from "./semantic-program-profile-shape.js";
 import {
+  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import {
@@ -23,6 +24,7 @@ import {
 
 export {
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 
@@ -48,15 +50,14 @@ function profileAllowsProgramOperationDetails(
 ): boolean {
   const userTaskMetadataMatchesProfile = operations.every((operation) =>
     operation.kind !== SemanticOperationKind.AwaitUserTask ||
-    (semanticProfile === SemanticProfileId.UserTaskAssignmentFormMetadata
-      ? hasExactOptionalUserTaskMetadata(operation.task)
-      : !Object.hasOwn(operation.task, "metadata"))
+    userTaskMetadataMatchesProfileSelection(semanticProfile, operation.task)
   );
   if (!userTaskMetadataMatchesProfile) {
     return false;
   }
   switch (semanticProfile) {
     case SemanticProfileId.UserTaskAssignmentFormMetadata:
+    case SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata:
       return true;
     case SemanticProfileId.TimerStart:
       return operations.every(
@@ -108,9 +109,7 @@ export function profileAllowsCheckedProcessShape(
     ) &&
     nodes.every((node) =>
       node.kind !== CheckedNodeKind.UserTask ||
-      (semanticProfile === SemanticProfileId.UserTaskAssignmentFormMetadata
-        ? hasExactOptionalUserTaskMetadata(node)
-        : !Object.hasOwn(node, "metadata"))
+      userTaskMetadataMatchesProfileSelection(semanticProfile, node)
     ) &&
     (semanticProfile !== SemanticProfileId.TimerStart ||
       nodes.every(
@@ -135,6 +134,21 @@ export function profileAllowsCheckedProcessShape(
             node.outputMappings.length === 0 &&
             node.bpmnErrorRoute === null),
       ));
+}
+
+function userTaskMetadataMatchesProfileSelection(
+  semanticProfile: string,
+  task: Readonly<Record<string, unknown>>,
+): boolean {
+  switch (semanticProfile) {
+    case SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata:
+      return Object.hasOwn(task, "metadata") &&
+        hasExactOptionalUserTaskMetadata(task);
+    case SemanticProfileId.UserTaskAssignmentFormMetadata:
+      return hasExactOptionalUserTaskMetadata(task);
+    default:
+      return !Object.hasOwn(task, "metadata");
+  }
 }
 
 function hasProbeEffectDescriptor(

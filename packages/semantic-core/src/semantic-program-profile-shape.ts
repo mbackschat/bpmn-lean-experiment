@@ -1,6 +1,7 @@
 /** Exact Semantic Process operation multisets admitted by reviewed semantic profiles. */
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
+  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 
@@ -88,6 +89,7 @@ export function requiredProgramShape(
         SemanticOperationKind.CompleteScope,
       ]);
     case SemanticProfileId.ParallelForkJoin:
+    case SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.Duplicate,

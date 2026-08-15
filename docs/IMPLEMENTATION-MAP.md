@@ -22,7 +22,7 @@ The graduated E2 specification additionally carries one exact optional passive U
 
 **Current Boolean Process-data boundary.** The closure-reviewed [specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md) admits primitive Boolean only for exact completion in one registered sequential User Task profile. Its schema, Lean/core, CIB, differential, live Temporal, history, and replay evidence are green. Start and older profiles remain string/null-only; Product 2 consumes no new fact.
 
-**Current E2 User Task metadata boundary.** One graduated profile carries an optional literal group candidate and string-or-Boolean generated-form field from its exact CIB extension through checked source, `awaitUserTask`, committed wait, and public `OpenUserTask`; older profiles omit it. Lean/core, retained CIB, differential, live Temporal, mutation, history, and replay evidence are green. Product 2 consumes only the published task/form facts through M3 Work.
+**Current E2 User Task metadata boundary.** One graduated profile carries an optional literal group candidate and string-or-Boolean generated-form field from its exact CIB extension through checked source, `awaitUserTask`, committed wait, and public `OpenUserTask`; older profiles omit it. Lean/core, retained CIB, differential, live Temporal, mutation, history, and replay evidence are green. Product 2 consumes only the published task/form facts through M3 Work. An unregistered checkpoint composes required metadata on both balanced-parallel tasks across source, checked graph, IL, Lean, core, and host admission. Start must be empty. CIB, differential, Temporal, corpus, and Product 2 evidence await independent review.
 
 **Current M5 boundary.** The closure-reviewed [E1 specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements replay-complete transitions, exact current positions, a strict Workflow cursor Query, real retention/replay evidence, and fail-closed Product 2 History, Diagram, and canonical export.
 
@@ -282,7 +282,6 @@ External revision, archive, and entry digests fail closed without retaining exte
 - `selectMany` carries two canonically ordered typed Simple Boolean candidates plus one default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`
 - `awaitEventRace` carries one named operation-addressed Message arm and one named exact-`PT1S` Timer arm with their configuration-flow origins, catch identities, and distinct winner outputs; its configuration Flows are not control places
 - `mergeExclusive` carries a canonical nonempty input collection and one output, with reusable per-offered-token declarative pass-through and a unique-offer executable subset; only the registered cycle profile fixes its input count at three
-- `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across payload-free, mapped-success, and mapped-boundary-Error contracts
 - ordinary `awaitUserTask.task` carries exact optional passive E2 metadata under the registered assignment/form profile; bounded and monitored User Task operations remain unchanged
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted scope ownership, condition, mapping, route, and exact source data
 - exact Message Start lowering preserves Process, Start Event, Interface, Interface Operation, input Message, and every validated outgoing-flow identity; reusable `initiateMessage` admits canonical nonempty outputs while the registered capability fixes one
@@ -452,7 +451,6 @@ External revision, archive, and entry digests fail closed without retaining exte
 
 #### Explicitly absent
 
-- JUEL evaluation Activity, Java evaluator Worker, evaluation request/result contract, or cross-SDK evaluator evidence
 - retained result beyond Temporal retention
 - production canonical-observation API
 - protocol that imposes caller order on concurrent distinct commands

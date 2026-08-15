@@ -31,6 +31,7 @@ import {
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 import {
   admitsUserTaskMetadataForeignAttribute,
+  parallelUserTaskMetadataCheckpointProfile,
   userTaskMetadataProfile,
 } from "./user-task-metadata-source.js";
 
@@ -104,7 +105,12 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
     {
       id: CompilationDispatchId.UserTaskMetadata,
       semanticProfile: userTaskMetadataProfile,
-      reader: compileUserTaskMetadataSource,
+      reader: (rootElement, source, overlay) => compileUserTaskMetadataSource(
+        rootElement,
+        source,
+        overlay,
+        userTaskMetadataProfile,
+      ),
     },
   ]);
 
@@ -115,7 +121,9 @@ export function compileDispatchedCheckedProcess(
   overlay: AdmittedSourceOverlay | null,
 ): CheckedCompilationProjection {
   const dispatch = compilationDispatches.find(
-    (entry) => entry.semanticProfile === semanticProfile,
+    (entry) => entry.semanticProfile === semanticProfile ||
+      (entry.id === CompilationDispatchId.UserTaskMetadata &&
+        semanticProfile === parallelUserTaskMetadataCheckpointProfile),
   ) ?? genericDispatch;
   switch (dispatch.id) {
     case CompilationDispatchId.Generic:
@@ -137,8 +145,16 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.MappedSuccessServiceTask:
     case CompilationDispatchId.MappedBoundaryErrorServiceTask:
     case CompilationDispatchId.CallActivity:
-    case CompilationDispatchId.UserTaskMetadata:
       return dispatch.reader(rootElement, source, overlay);
+    case CompilationDispatchId.UserTaskMetadata:
+      return semanticProfile === parallelUserTaskMetadataCheckpointProfile
+        ? compileUserTaskMetadataSource(
+            rootElement,
+            source,
+            overlay,
+            semanticProfile,
+          )
+        : dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);
   }
@@ -148,12 +164,13 @@ function compileUserTaskMetadataSource(
   rootElement: unknown,
   source: BpmnSourceIdentity,
   overlay: AdmittedSourceOverlay | null,
+  semanticProfile: string,
 ): CheckedCompilationProjection {
   return overlay === null
     ? compileCheckedProcess(
         rootElement,
         source,
-        userTaskMetadataProfile,
+        semanticProfile,
         (definitions, located) =>
           exactForeignAttributeRejections(
             definitions,

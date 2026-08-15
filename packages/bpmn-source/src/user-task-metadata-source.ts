@@ -1,6 +1,7 @@
 /** Exact source projection for the bounded User Task assignment/form metadata profile. */
 import {
   CheckedNodeKind,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
   SemanticOperationKind,
   isUserTaskMetadata,
@@ -23,6 +24,20 @@ import { removeOpaqueXmlRegions } from "./singleton-containment-admission.js";
 
 export const userTaskMetadataProfile =
   SemanticProfileId.UserTaskAssignmentFormMetadata;
+
+export const parallelUserTaskMetadataCheckpointProfile =
+  SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata;
+
+/** Selects the profiles that consume the exact assignment/form source extension. */
+export function isUserTaskMetadataProfile(semanticProfile: string): boolean {
+  switch (semanticProfile) {
+    case userTaskMetadataProfile:
+    case parallelUserTaskMetadataCheckpointProfile:
+      return true;
+    default:
+      return false;
+  }
+}
 
 export const camundaBpmnNamespace =
   "http://camunda.org/schema/1.0/bpmn";
@@ -346,7 +361,7 @@ export function userTaskMetadataBindingValid(
   ) {
     return false;
   }
-  if (checked.identity.semanticProfile !== userTaskMetadataProfile) {
+  if (!isUserTaskMetadataProfile(checked.identity.semanticProfile)) {
     return true;
   }
   const tasks = checked.nodes.filter(
@@ -361,24 +376,45 @@ export function userTaskMetadataBindingValid(
       { kind: SemanticOperationKind.AwaitUserTask }
     > => operation.kind === SemanticOperationKind.AwaitUserTask,
   );
-  const task = tasks[0];
-  const wait = waits[0];
+  const requiredTaskCount = checked.identity.semanticProfile ===
+      parallelUserTaskMetadataCheckpointProfile
+    ? 2
+    : 1;
   if (
-    tasks.length !== 1 ||
-    waits.length !== 1 ||
-    task === undefined ||
-    wait === undefined ||
-    wait.origin.elementId !== task.id ||
-    Object.hasOwn(task, "metadata") !== Object.hasOwn(wait.task, "metadata")
+    tasks.length !== requiredTaskCount ||
+    waits.length !== requiredTaskCount
   ) {
     return false;
   }
-  if (task.metadata === undefined || wait.task.metadata === undefined) {
-    return task.metadata === undefined && wait.task.metadata === undefined;
+  const tasksByElementId = new Map(tasks.map((task) => [task.id, task]));
+  const waitsByElementId = new Map(waits.map((wait) => [
+    wait.origin.elementId,
+    wait,
+  ]));
+  if (
+    tasksByElementId.size !== tasks.length ||
+    waitsByElementId.size !== waits.length
+  ) {
+    return false;
   }
-  return isUserTaskMetadata(task.metadata) &&
-    isUserTaskMetadata(wait.task.metadata) &&
-    sameMetadata(task.metadata, wait.task.metadata);
+  return tasks.every((task) => {
+    const wait = waitsByElementId.get(task.id);
+    if (
+      wait === undefined ||
+      wait.task.elementId !== task.id ||
+      wait.task.name !== task.name ||
+      Object.hasOwn(task, "metadata") !== Object.hasOwn(wait.task, "metadata")
+    ) {
+      return false;
+    }
+    if (task.metadata === undefined || wait.task.metadata === undefined) {
+      return checked.identity.semanticProfile === userTaskMetadataProfile &&
+        task.metadata === undefined && wait.task.metadata === undefined;
+    }
+    return isUserTaskMetadata(task.metadata) &&
+      isUserTaskMetadata(wait.task.metadata) &&
+      sameMetadata(task.metadata, wait.task.metadata);
+  });
 }
 
 function hasExpandedName(

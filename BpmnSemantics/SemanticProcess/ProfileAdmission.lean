@@ -184,7 +184,8 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
       "cibseven-2.0.0-mapped-boundary-error-service-task-draft" then
     some (1,
       { starts := 1, userTasks := 1, effects := 1, ends := 2 })
-  else if profile = "parallel-fork-join-draft" then
+  else if profile = "parallel-fork-join-draft" ||
+      profile = parallelUserTaskMetadataCheckpointProfileId.value then
     some (1,
       { starts := 1, userTasks := 2, duplicates := 1,
         synchronizes := 1, ends := 1 })
@@ -270,7 +271,8 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
       "cibseven-2.0.0-mapped-boundary-error-service-task-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, effects := 1, ends := 2 })
-  else if profile = "parallel-fork-join-draft" then
+  else if profile = "parallel-fork-join-draft" ||
+      profile = parallelUserTaskMetadataCheckpointProfileId.value then
     some (1,
       withScopeCompletions 1
         { initiates := 1, userTasks := 2, duplicates := 1,
@@ -344,7 +346,9 @@ private def checkedUserTaskMetadataValid (profile : ProfileId)
     (nodes : List CheckedNode) : Bool :=
   nodes.all fun
     | .userTask _ _ metadata =>
-        if profile = userTaskAssignmentFormMetadataProfileId then
+        if profile = parallelUserTaskMetadataCheckpointProfileId then
+          metadata.isSome && UserTaskMetadata.optionWellFormed metadata
+        else if profile = userTaskAssignmentFormMetadataProfileId then
           UserTaskMetadata.optionWellFormed metadata
         else
           metadata.isNone
@@ -354,7 +358,9 @@ private def programUserTaskMetadataValid (profile : ProfileId)
     (operations : List SemanticOperation) : Bool :=
   operations.all fun
     | .awaitUserTask _ _ _ _ task =>
-        if profile = userTaskAssignmentFormMetadataProfileId then
+        if profile = parallelUserTaskMetadataCheckpointProfileId then
+          task.metadata.isSome && UserTaskMetadata.optionWellFormed task.metadata
+        else if profile = userTaskAssignmentFormMetadataProfileId then
           UserTaskMetadata.optionWellFormed task.metadata
         else
           task.metadata.isNone

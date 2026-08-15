@@ -17,6 +17,10 @@ def booleanProcessDataCheckpointProfileId : ProfileId :=
 def userTaskAssignmentFormMetadataProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-user-task-assignment-form-metadata-draft"⟩
 
+/-- Runtime-frozen identity for the owner-approved parallel User Task metadata checkpoint. -/
+def parallelUserTaskMetadataCheckpointProfileId : ProfileId :=
+  ⟨"cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft"⟩
+
 /-- External Process-data surfaces whose admitted value domains differ in the selected checkpoint. -/
 inductive ProcessDataIngress where
   | processStart
@@ -27,11 +31,15 @@ inductive ProcessDataIngress where
 def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress) :
     VariableValue → Bool
   | .string _
-  | .null => true
+  | .null =>
+      if profile = parallelUserTaskMetadataCheckpointProfileId &&
+          surface = .processStart then false
+      else true
   | .boolean _ =>
       surface = .userTaskCompletion &&
         (profile = booleanProcessDataCheckpointProfileId ||
-          profile = userTaskAssignmentFormMetadataProfileId)
+          profile = userTaskAssignmentFormMetadataProfileId ||
+          profile = parallelUserTaskMetadataCheckpointProfileId)
 
 /-- A submitted patch is admitted only when every value belongs to the exact surface/profile domain. -/
 def processDataBindingsAdmitted (profile : ProfileId)

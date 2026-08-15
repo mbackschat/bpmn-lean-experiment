@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved after independent review on 2026-08-15; implementation is authorized.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract.
+**Owner-approved after independent review on 2026-08-15; the first private semantic checkpoint is implemented and awaits its required independent checkpoint verdict.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract. CIB evidence, profile and scenario registration, live Temporal execution, and Product 2 integration remain unauthorized until the checkpoint review passes.
 
 ## Independent cold-review receipt
 
@@ -189,26 +189,26 @@ This is a pre-release additive profile registration. Existing checked-process, S
 
 | Owner | Lines before 600 |
 |---|---:|
-| [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 545 |
-| [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 365 |
-| [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 352 |
-| [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 530 |
-| [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) | 449 |
-| [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 516 |
-| [compilation-dispatch.ts](../../packages/bpmn-source/src/compilation-dispatch.ts) | 399 |
+| [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 540 |
+| [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 363 |
+| [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 350 |
+| [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 528 |
+| [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) | 436 |
+| [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 506 |
+| [compilation-dispatch.ts](../../packages/bpmn-source/src/compilation-dispatch.ts) | 382 |
 | [checked-process-compiler.ts](../../packages/bpmn-source/src/checked-process-compiler.ts) | 194 |
 | [checked-element-projection.ts](../../packages/bpmn-source/src/checked-element-projection.ts) | 169 |
 | [compile.ts](../../packages/bpmn-source/src/compile.ts) | 209 |
-| [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) | 208 |
-| [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 161 |
-| [ValueDomain.lean](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 569 |
+| [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) | 174 |
+| [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 155 |
+| [ValueDomain.lean](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 562 |
 | [pipeline-cases.ts](../../packages/differential/test/pipeline-cases.ts) | 4 |
 
-The implementation must update the exact profile denominator in [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) at 55/600 nonblank, [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) at 235/600, [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) at 248/600, [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) at 70/600, [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) at 151/600, and [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) at 84/600. Each measured owner has at least 352 lines before the 600-line review target except the checked and program shape owners, which still have 365 and 352 respectively.
+The implementation must update the exact profile denominator in [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) at 60/600 nonblank, [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) at 237/600, [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) at 250/600, [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) at 72/600, [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) at 164/600, and [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) at 94/600. Each measured semantic-core owner retains at least 350 lines before the 600-line review target.
 
-Source admission must update [compilation-dispatch.ts](../../packages/bpmn-source/src/compilation-dispatch.ts) at 201/600, [checked-process-compiler.ts](../../packages/bpmn-source/src/checked-process-compiler.ts) at 406/600, [checked-element-projection.ts](../../packages/bpmn-source/src/checked-element-projection.ts) at 431/600, [compile.ts](../../packages/bpmn-source/src/compile.ts) at 391/600, and [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) at 392/600. The narrowest owner has 169 lines before the review target. Extract a cohesive metadata-profile selector or binding owner first if the exact change would leave any of these owners above 600 or give it a second independent responsibility.
+Source admission must update [compilation-dispatch.ts](../../packages/bpmn-source/src/compilation-dispatch.ts) at 218/600, [checked-process-compiler.ts](../../packages/bpmn-source/src/checked-process-compiler.ts) at 406/600, [checked-element-projection.ts](../../packages/bpmn-source/src/checked-element-projection.ts) at 431/600, [compile.ts](../../packages/bpmn-source/src/compile.ts) at 391/600, and [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) at 426/600. The narrowest owner has 169 lines before the review target. Extract a cohesive metadata-profile selector or binding owner first if the exact change would leave any of these owners above 600 or give it a second independent responsibility.
 
-Lean admission must update [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) at 439/600 and [ValueDomain.lean](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) at 31/600. New composition fixtures and theorems belong in a new independently buildable conformance owner; do not grow [UserTaskMetadataConformance.lean](../../BpmnSemantics/UserTaskMetadataConformance.lean) at 351/600 or repurpose [ParallelForkJoinConformance.lean](../../BpmnSemantics/ParallelForkJoinConformance.lean) as the combined owner.
+Lean admission must update [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) at 445/600 and [ValueDomain.lean](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) at 38/600. New composition fixtures and theorems belong in a new independently buildable conformance owner; do not grow [UserTaskMetadataConformance.lean](../../BpmnSemantics/UserTaskMetadataConformance.lean) at 351/600 or repurpose [ParallelForkJoinConformance.lean](../../BpmnSemantics/ParallelForkJoinConformance.lean) as the combined owner.
 
 Differential registration must not grow [pipeline-cases.ts](../../packages/differential/test/pipeline-cases.ts) beyond its measured 596/600. Put the combined case and mutations in a new focused owner and extract the catalog assembly before registration if the thin import/spread cannot remain within 600. Likewise, do not add combined assertions to [user-task-metadata.test.ts](../../packages/semantic-core/test/user-task-metadata.test.ts) at 588/600 or [pipeline-catalog.test.ts](../../packages/differential/test/pipeline-catalog.test.ts) at 568/600; use new focused test owners. A new Temporal fixture/test owner keeps [user-task-metadata-temporal.test.ts](../../packages/temporal-adapter/testkit/test/user-task-metadata-temporal.test.ts) at its current 516/600.
 

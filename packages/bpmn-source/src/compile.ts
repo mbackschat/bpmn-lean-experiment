@@ -46,8 +46,8 @@ import {
 } from "./terminate-end-event-source.js";
 import {
   carriesDuplicateCandidateGroupsAttribute,
+  isUserTaskMetadataProfile,
   userTaskMetadataBindingValid,
-  userTaskMetadataProfile,
 } from "./user-task-metadata-source.js";
 
 export async function compileBpmnToSemanticProcess(
@@ -158,7 +158,7 @@ export async function compileBpmnToSemanticProcess(
     ]);
   }
   if (
-    request.semanticProfile === userTaskMetadataProfile &&
+    isUserTaskMetadataProfile(request.semanticProfile) &&
     carriesDuplicateCandidateGroupsAttribute(xml)
   ) {
     return reject([
@@ -218,7 +218,7 @@ export async function compileBpmnToSemanticProcess(
   }
   const semanticProcess = lowerCheckedProcess(projection.checkedProcess);
   if (
-    request.semanticProfile === userTaskMetadataProfile &&
+    isUserTaskMetadataProfile(request.semanticProfile) &&
     !userTaskMetadataBindingValid(projection.checkedProcess, semanticProcess)
   ) {
     return reject([

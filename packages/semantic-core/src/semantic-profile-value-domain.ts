@@ -7,6 +7,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
+  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 
@@ -22,13 +23,22 @@ export function profileAllowsVariableBindings(
   surface: VariableWriteSurface,
   bindings: ReadonlyArray<VariableBinding>,
 ): boolean {
+  if (
+    semanticProfile ===
+      SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata &&
+    surface === VariableWriteSurface.ProcessStart
+  ) {
+    return bindings.length === 0;
+  }
   return bindings.every(({ value }) => {
     switch (value.kind) {
       case VariableValueKind.Boolean:
         return (semanticProfile ===
             SemanticProfileId.UserTaskBooleanCompletionData ||
           semanticProfile ===
-            SemanticProfileId.UserTaskAssignmentFormMetadata) &&
+            SemanticProfileId.UserTaskAssignmentFormMetadata ||
+          semanticProfile ===
+            SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata) &&
           surface === VariableWriteSurface.UserTaskCompletion;
       case VariableValueKind.String:
       case VariableValueKind.Null:

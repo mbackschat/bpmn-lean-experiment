@@ -81,8 +81,8 @@ import type {
   ConfiguredTaskProjectionPolicy,
 } from "./configured-task-source.js";
 import {
+  isUserTaskMetadataProfile,
   readUserTaskMetadataSource,
-  userTaskMetadataProfile,
 } from "./user-task-metadata-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
@@ -143,7 +143,7 @@ export function projectCheckedNodes(
         if (name === undefined) {
           return undefined;
         }
-        return semanticProfile === userTaskMetadataProfile
+        return isUserTaskMetadataProfile(semanticProfile)
           ? projectUserTaskMetadata(element, definitions, id, name)
           : isPlainFlowNode(element)
             ? { kind: CheckedNodeKind.UserTask, id, name }

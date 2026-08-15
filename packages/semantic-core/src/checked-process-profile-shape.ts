@@ -4,6 +4,7 @@ import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
 import {
+  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 
@@ -79,6 +80,7 @@ export function requiredCheckedProcessShape(
         end,
       ]);
     case SemanticProfileId.ParallelForkJoin:
+    case SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata:
       return rootChecked([
         start,
         CheckedNodeKind.ParallelGateway,
