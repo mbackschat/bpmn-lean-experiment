@@ -34,15 +34,15 @@ PLATFORM_TEMPORAL_TASK_QUEUE=bpmn-m3-human-work \
 
 Wait for `M3 Human Work showcase ready at http://127.0.0.1:3203`. A first run may take longer while the pinned Temporal test server is prepared.
 
-In terminal 2, start the web development server and point its API proxy at that host:
+In terminal 2, serve the already-built production web bundle and point its API proxy at that host:
 
 ```sh
 PLATFORM_API_ORIGIN=http://127.0.0.1:3203 \
-./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite \
+./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite preview \
   --host 127.0.0.1 --port 4276 --strictPort
 ```
 
-Open [http://127.0.0.1:4276](http://127.0.0.1:4276). The shell should show Work, Definitions, and Process instances in the primary navigation and `Signed in as demo-user`.
+Open [http://127.0.0.1:4276](http://127.0.0.1:4276). The shell should show Work, Definitions, and Operations in the primary navigation and `Signed in as demo-user`.
 
 ## Deploy and inspect the M3 model
 
@@ -79,11 +79,13 @@ After the engine commits the exact occurrence completion, the task detail closes
 
 ## Find the confirmed Process instance
 
-1. Open **Process instances**.
+1. Open **Operations**, then keep **Process instances** selected.
 2. Enter the retained Process-instance ID, or enter Process ID `Process_UserTaskMetadata`.
 3. Choose **Search**.
 
-The result shows the public Process-instance ID, exact definition version, source identity and digest, and semantic profile. M3 does not yet provide a Process-instance detail or Event History view, so this surface deliberately does not invent lifecycle, task, or Temporal facts.
+The result shows the public Process-instance ID, exact definition version, source identity and digest, and semantic profile. Choose **View execution**. Overview must report current status **completed**. History must show the contiguous engine-published semantic transitions, including `startProcess`, `completeUserTaskInstance`, and `UserTask_Approve`; it is not reconstructed from Temporal Event History or a state difference.
+
+The claim and completion audit is a separate Product 2 Work fact. The automated journey verifies it through the public Work-audit API as `claim/claimed`, `completion/reserved`, and `completion/committed` for the exact task occurrence. The Operations **Audit** tab is incident-action audit and is not relabeled as Work audit; no Work-audit browser surface is claimed in M3.
 
 ## Compare source-authored BPMN DI
 
@@ -104,7 +106,7 @@ Open that file in a standards-oriented BPMN modeller, adjust the layout, and sav
 - **No task appears:** deploy and start the metadata model with the exact metadata profile above, confirm the shell says `demo-user`, and choose **Refresh**. Metadata-free User Tasks are intentionally hidden by the M3 fake policy.
 - **The diagram says unavailable:** the M3 metadata model is inside the generated-layout scope. Other models with multiple root Processes, unsupported presentation constructs, incomplete embedded DI, or failed integrity checks must provide usable source DI or remain honestly unavailable.
 - **The Process instance disappears after restart:** this showcase deliberately uses a temporary data directory. Use the production server's configured persistent directory for retained platform data.
-- **You want an automated run:** use `./scripts/pnpm.sh run test:showcase:m3-human-work`. Playwright remains a Product 2 acceptance harness and is not part of Product 1 semantic verification.
+- **You want an automated run:** use `./scripts/pnpm.sh run test:showcase:m3-human-work`. The wrapper builds the Product 2 release graph once, serves it through `vite preview`, and reuses those artifacts for the Chromium journeys. Playwright remains a Product 2 acceptance harness and is not part of Product 1 semantic verification.
 
 ## Contract owners
 

@@ -13,6 +13,7 @@ Read the smallest relevant document before changing a boundary:
 | A12 Workflows product corpus, delegate/API surface, downstream blueprint, and migration priorities | [A12 Workflows compatibility ledger](A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) |
 | CIB Seven `2.0.0` versus `2.2.0` on the exact A12 `CreateDocument` path and broader product boundary | [CIB Seven 2.0 A12 target baseline](CIB-SEVEN-A12-BASELINE-RESEARCH.md) |
 | CIB Seven `2.2.0` core BPMN fixture breadth and mechanism-ordering signals | [CIB Seven 2.2.0 executable BPMN breadth](CIB-SEVEN-BPMN-BREADTH-RESEARCH.md) |
+| Executable project models, external whole-model candidates, clone-family deduplication, and blocker ranking | [Executable BPMN model corpus](EXECUTABLE-BPMN-MODEL-CORPUS-RESEARCH.md) |
 | Executable BPMN element profile a shippable engine needs, and the execute/preserve/reject admission split | [Minimal but useful BPMN 2.0 execution profile](MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) |
 | Call Activity, multi-instance, Event Sub-Process, and non-interrupting Boundary Events as a follow-up profile | [High-priority BPMN 2.0 execution extensions](HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md) |
 | What Temporal, Camunda 8, and CIB Seven built their operator surfaces from, and the MIT-compatible component-library and data-grid candidate set | [BPM platform technology stack](BPM-PLATFORM-STACK-RESEARCH.md) |

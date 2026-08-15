@@ -52,18 +52,33 @@ async function buildPipeline() {
 }
 
 const isPrebuilt = process.env.BPMN_PIPELINE_PREBUILT === "1";
+const modelCorpusOnly = process.argv.slice(2).includes("--model-corpus");
+const unknownArguments = process.argv.slice(2).filter(
+  (argument) => argument !== "--model-corpus",
+);
+if (unknownArguments.length > 0) {
+  throw new TypeError(
+    `unsupported pipeline arguments: ${unknownArguments.join(", ")}`,
+  );
+}
 const buildStarted = performance.now();
 if (!isPrebuilt) {
   await buildPipeline();
 }
 const buildMs = isPrebuilt ? 0 : performance.now() - buildStarted;
+const testFiles = modelCorpusOnly
+  ? [
+      "model-corpus/test/executable-model-corpus.test.ts",
+      "packages/differential/test/executable-model-corpus.test.ts",
+    ]
+  : ["packages/differential/test/pipeline.test.ts"];
 
 const testRun = await runProjectCommand(
   process.execPath,
   [
     "--test",
     "--test-concurrency=1",
-    "packages/differential/test/pipeline.test.ts",
+    ...testFiles,
   ],
   {
     env: {

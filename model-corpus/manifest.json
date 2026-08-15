@@ -1,0 +1,520 @@
+{
+  "kind": "executableBpmnModelCorpus",
+  "version": 1,
+  "externalSources": [
+    {
+      "kind": "git",
+      "id": "cibseven-2.2.0",
+      "checkoutRelativePath": "cibseven/cibseven",
+      "revision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+      "license": "Apache-2.0"
+    },
+    {
+      "kind": "git",
+      "id": "betsy",
+      "checkoutRelativePath": "uniba-dsg/betsy",
+      "revision": "fd402415665e914ba7e4d9948de66c4156f08bab",
+      "license": "LGPL-3.0-only"
+    },
+    {
+      "kind": "archive",
+      "id": "omg-bpmn-2.0.2-machine-readable-examples",
+      "archiveRelativePath": "omg-bpmn-2.0.2/examples/BPMN-2.0-machine-readable-examples.zip",
+      "sha256": "3c05fc5747d9f2f68d567e5439281cb6fc6a081eb92b51aff718507b4c4c0c76",
+      "license": "LicenseRef-OMG-Document"
+    }
+  ],
+  "models": [
+    {
+      "id": "request-review-with-form",
+      "title": "Review a request with assignment and form metadata",
+      "cloneFamily": "human-review-with-form",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "userTaskWait",
+        "userTaskCompletion",
+        "literalUserTaskAssignmentAndGeneratedForm"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/user-task-assignment-form-metadata/process.bpmn",
+        "sha256": "ee52c64a7365c47ba95a520b19a2d91ae37fe224e526473c4ebec46bb8af1aaf",
+        "scenarioRelativePath": "scenarios/user-task-assignment-form-metadata/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "user-task-assignment-form-metadata",
+      "product2": {
+        "kind": "journeyBacked",
+        "journeyTestRelativePath": "showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts"
+      }
+    },
+    {
+      "id": "parallel-work-preparation",
+      "title": "Prepare two work items in parallel",
+      "cloneFamily": "parallel-two-human-tasks",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelSplitJoin",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/parallel-fork-join/process.bpmn",
+        "sha256": "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6",
+        "scenarioRelativePath": "scenarios/parallel-fork-join/a-then-b.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "parallel-fork-join-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "parallel-fork-join-a-then-b",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact profile publishes metadata-free User Tasks, which Product 2 intentionally hides and refuses to mutate; no honest claim-and-complete journey exists without a different retained model or an approved assignment/form extension."
+      }
+    },
+    {
+      "id": "boolean-decision-routing",
+      "title": "Route a Boolean decision",
+      "cloneFamily": "exclusive-boolean-decision",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "conditionalRouting",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/exclusive-gateway-simple-boolean/process.bpmn",
+        "sha256": "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
+        "scenarioRelativePath": "scenarios/exclusive-gateway-simple-boolean/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "exclusive-gateway-simple-boolean-first-true",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The browser does not yet have a production journey binding submitted decision data to the selected route and history."
+      }
+    },
+    {
+      "id": "called-process-fulfilment",
+      "title": "Fulfil work through a called Process",
+      "cloneFamily": "called-process-human-work",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/called-process-call-activity/process.bpmn",
+        "sha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73",
+        "scenarioRelativePath": "scenarios/called-process-call-activity/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-called-process-call-activity-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "called-process-call-activity",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Called-instance task ownership and root-instance history are not yet covered by one production browser journey."
+      }
+    },
+    {
+      "id": "external-service-recording",
+      "title": "Record an external service effect",
+      "cloneFamily": "single-service-effect",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/service-task-effect/process.bpmn",
+        "sha256": "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d",
+        "scenarioRelativePath": "scenarios/service-task-effect/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-service-task-effect-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "service-task-effect-success",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The successful service-effect path and its finished history are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "cib-order-goods",
+      "title": "CIB Seven order goods",
+      "cloneFamily": "cib-order-goods",
+      "constructs": [
+        "collaboration",
+        "endEvent",
+        "participant",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "userTaskWait",
+        "userTaskCompletion",
+        "collaborationPresentation",
+        "diagramInterchange",
+        "vendorRuntimeMetadata"
+      ],
+      "source": {
+        "kind": "externalGit",
+        "externalSourceId": "cibseven-2.2.0",
+        "relativePath": "webapps/assembly/src/main/runtime/develop/resources/pa1/order-process.bpmn",
+        "sha256": "5868192ac735538edc6b087e72459d63e20261f2854057c4c0216f30414377d6"
+      },
+      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "admission": {
+        "kind": "rejected",
+        "diagnosticDigest": "1d5b4dde0fc5a96784e2cc2ef83b04fcf2aed225aecf792191f08cfe000ecc3c"
+      },
+      "pipelineCaseId": null,
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact external model is rejected at admission and remains outside the distributable repository."
+      }
+    },
+    {
+      "id": "cib-review-invoice",
+      "title": "CIB Seven review invoice",
+      "cloneFamily": "cib-review-invoice",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "userTaskWait",
+        "userTaskCompletion",
+        "taskMetadata",
+        "diagramInterchange",
+        "vendorRuntimeMetadata"
+      ],
+      "source": {
+        "kind": "externalGit",
+        "externalSourceId": "cibseven-2.2.0",
+        "relativePath": "examples/invoice/src/main/resources/reviewInvoice.bpmn",
+        "sha256": "da8ca354b4c56afff9962041fdeb3127529a8c2fe02b2f8714b60a6c2c74c929"
+      },
+      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "admission": {
+        "kind": "rejected",
+        "diagnosticDigest": "8d178cbfbbfce3f22fa39d1259759853338828cad971dfbde647601607504c68"
+      },
+      "pipelineCaseId": null,
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact external model is rejected at admission and remains outside the distributable repository."
+      }
+    },
+    {
+      "id": "cib-invoice-receipt-v1",
+      "title": "CIB Seven invoice receipt version 1",
+      "cloneFamily": "cib-invoice-receipt",
+      "constructs": [
+        "businessRuleTask",
+        "callActivity",
+        "collaboration",
+        "dataStore",
+        "dataStoreReference",
+        "endEvent",
+        "exclusiveGateway",
+        "lane",
+        "laneSet",
+        "participant",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "conditionalRouting",
+        "calledProcess",
+        "externalEffect",
+        "businessDecision",
+        "dataAssociation",
+        "taskMetadata",
+        "lanePresentation",
+        "collaborationPresentation",
+        "diagramInterchange",
+        "vendorRuntimeMetadata"
+      ],
+      "source": {
+        "kind": "externalGit",
+        "externalSourceId": "cibseven-2.2.0",
+        "relativePath": "examples/invoice/src/main/resources/invoice.v1.bpmn",
+        "sha256": "65882530f1be2d0e094b34ab4bb4bb01b22603f35c1d2bf36425421274cb29f8"
+      },
+      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "admission": {
+        "kind": "rejected",
+        "diagnosticDigest": "fdfe2dc474f97d2cf28de79b2a9951dd999c00d63e7dd5dd67a70b48871ab93f"
+      },
+      "pipelineCaseId": null,
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact external model is rejected at admission and remains outside the distributable repository."
+      }
+    },
+    {
+      "id": "cib-invoice-receipt-v2",
+      "title": "CIB Seven invoice receipt version 2",
+      "cloneFamily": "cib-invoice-receipt",
+      "constructs": [
+        "businessRuleTask",
+        "callActivity",
+        "collaboration",
+        "dataStore",
+        "dataStoreReference",
+        "endEvent",
+        "exclusiveGateway",
+        "lane",
+        "laneSet",
+        "participant",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "conditionalRouting",
+        "calledProcess",
+        "externalEffect",
+        "businessDecision",
+        "dataAssociation",
+        "taskMetadata",
+        "lanePresentation",
+        "collaborationPresentation",
+        "diagramInterchange",
+        "vendorRuntimeMetadata"
+      ],
+      "source": {
+        "kind": "externalGit",
+        "externalSourceId": "cibseven-2.2.0",
+        "relativePath": "examples/invoice/src/main/resources/invoice.v2.bpmn",
+        "sha256": "229b3db18f9fc99db7078e4142938a1c8a533a8a3ebca68d1cc46ed6eb5546cb"
+      },
+      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "admission": {
+        "kind": "rejected",
+        "diagnosticDigest": "f00285ed8441208342dff0a27bf0dc78aeb0c15dbadbdeda8fc5920a17a25058"
+      },
+      "pipelineCaseId": null,
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact external model is rejected at admission and remains outside the distributable repository."
+      }
+    },
+    {
+      "id": "cib-vacation-request",
+      "title": "CIB Seven vacation request",
+      "cloneFamily": "cib-vacation-request",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "conditionalRouting",
+        "userTaskWait",
+        "userTaskCompletion",
+        "genericTask",
+        "taskMetadata",
+        "vendorRuntimeMetadata"
+      ],
+      "source": {
+        "kind": "externalGit",
+        "externalSourceId": "cibseven-2.2.0",
+        "relativePath": "engine/src/test/resources/org/cibseven/bpm/engine/test/api/form/util/VacationRequest.bpmn20.xml",
+        "sha256": "5e6d9f3367c314f6375c908a996a70da60bd6550177cda45c345badf0c3bf121"
+      },
+      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "admission": {
+        "kind": "rejected",
+        "diagnosticDigest": "e42c57d2263d380c98c7abc39d72ae2d9107c9aa5d25b1d7888c05ccbdc6755b"
+      },
+      "pipelineCaseId": null,
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact external model is rejected at admission and remains outside the distributable repository."
+      }
+    },
+    {
+      "id": "omg-incident-management-executable",
+      "title": "OMG incident management executable example",
+      "cloneFamily": "omg-incident-management",
+      "constructs": [
+        "collaboration",
+        "dataObject",
+        "endEvent",
+        "exclusiveGateway",
+        "lane",
+        "laneSet",
+        "participant",
+        "process",
+        "resource",
+        "scriptTask",
+        "sendTask",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "messageStart",
+        "scriptTaskExecution",
+        "userTaskWait",
+        "userTaskCompletion",
+        "conditionalRouting",
+        "externalEffect",
+        "sendTaskDelivery",
+        "dataAssociation",
+        "resourceAssignment",
+        "lanePresentation",
+        "collaborationPresentation",
+        "diagramInterchange"
+      ],
+      "source": {
+        "kind": "externalArchiveEntry",
+        "externalSourceId": "omg-bpmn-2.0.2-machine-readable-examples",
+        "relativePath": "2010-06-03/Incident Management/Incident Management(Process Engine Executable).bpmn",
+        "sha256": "d3fe409262aa380289cc93bb8871ea7a48e1251bca5b77f78fa007f7c6ea734b"
+      },
+      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "admission": {
+        "kind": "rejected",
+        "diagnosticDigest": "a460c305433b67a9148a88d0e5d1304877900c7d5385c0f721947348690d8bc1"
+      },
+      "pipelineCaseId": null,
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact OMG example is rejected at encoding admission and remains in its registered external archive."
+      }
+    },
+    {
+      "id": "betsy-deferred-choice",
+      "title": "Betsy workflow pattern 16 deferred choice",
+      "cloneFamily": "betsy-wcp16-deferred-choice",
+      "constructs": [
+        "endEvent",
+        "eventBasedGateway",
+        "exclusiveGateway",
+        "intermediateCatchEvent",
+        "intermediateThrowEvent",
+        "parallelGateway",
+        "process",
+        "scriptTask",
+        "sequenceFlow",
+        "signal",
+        "startEvent"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "scriptTaskExecution",
+        "parallelSplit",
+        "timerWait",
+        "conditionalRouting",
+        "signalEvent",
+        "eventRace"
+      ],
+      "source": {
+        "kind": "externalGit",
+        "externalSourceId": "betsy",
+        "relativePath": "pebl-builder/src/main/resources/files/bpmn/cfpatterns/WCP16_DeferredChoice.bpmn",
+        "sha256": "eef0551b234e71da1c55daca2a0c9ebbe4fa174e8c7605b512abad4430ed44f8"
+      },
+      "profile": "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+      "admission": {
+        "kind": "rejected",
+        "diagnosticDigest": "b08c3e99b5140893eb325505dc8af98152f2ddd846fdc9d97d0413239187ac3d"
+      },
+      "pipelineCaseId": null,
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact Betsy model is rejected at admission and remains in its registered external checkout."
+      }
+    }
+  ]
+}

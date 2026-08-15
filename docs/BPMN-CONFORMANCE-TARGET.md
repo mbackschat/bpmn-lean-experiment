@@ -30,7 +30,7 @@ The working presumption is that CIB Seven implements BPMN faithfully, operationa
 
 ## Layering and coverage accounting
 
-BPMN Process Execution coverage is the primary implementation roadmap. The reusable engine is specified and implemented in standard BPMN terms first; a CIB Seven profile may then refine an underspecified choice, select an engine extension, or record a bounded compatibility relation. A12 Workflows is a downstream adoption target that may prioritize which BPMN requirements and CIB overlays are addressed first, but it is not a BPMN authority or a substitute conformance denominator.
+BPMN Process Execution coverage is the primary implementation roadmap. Within that roadmap, practical breadth and semantic risk are co-equal scheduling inputs after normative dependencies. Practical breadth measures reusable mechanisms demanded by independent model families and the CIB Seven execution baseline. Semantic risk identifies families whose concurrency, ordering, interruption, scope, liveness, runtime identity, data, or durable-hosting obligations could invalidate the current semantic representation or require non-local redesign. A rare high-risk family may therefore precede a common low-risk mechanism. The reusable engine is specified and implemented in standard BPMN terms first; a CIB Seven profile may then refine an underspecified choice, select an engine extension, or record a bounded compatibility relation. A12 Workflows is a downstream adoption target that may prioritize which BPMN requirements and CIB overlays are addressed first, but it is not a BPMN authority or a substitute conformance denominator.
 
 The project therefore maintains three separate views:
 

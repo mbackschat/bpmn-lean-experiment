@@ -153,7 +153,7 @@ Supporting lemmas count `private theorem` and every explicit `lemma` command, ma
 
 Prerequisites:
 
-- Git, `jq`, and `xmllint`;
+- Git, `jq`, `xmllint`, and `unzip`;
 - `curl` and either `shasum` or `sha256sum`;
 - Lean through `elan`, honoring [lean-toolchain](lean-toolchain);
 - Node `24.18.0`, selected through [.nvmrc](.nvmrc), [.node-version](.node-version), or the Homebrew fallback;

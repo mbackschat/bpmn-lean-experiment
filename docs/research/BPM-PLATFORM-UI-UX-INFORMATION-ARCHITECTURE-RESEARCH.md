@@ -36,7 +36,7 @@ The products span different scopes. CIB Seven and Camunda 8 are direct BPM refer
 
 The durable primary choices recur as work/tasks, processes or definitions, and operational inspection. Camunda 8 Tasklist exposes Tasks and Processes as separate top-level pages. Flowable exposes Tasks, Work, and other application areas in persistent navigation. Bonita separates Process list, Case list, and Task list. ServiceNow workspaces expose list categories and record pages.
 
-The transferable rule is to name navigation after a person's objective, not the engine's package structure. For this project the smallest stable set is Work, Definitions, and Process instances. Dashboard is not a primary objective in M3 and should not be a default landing page merely because many enterprise suites offer one.
+The transferable rule is to name navigation after a person's objective, not the engine's package structure. For this project the smallest stable set is Work, Definitions, and Operations. Process instances, Incidents, and Audit are secondary destinations inside Operations rather than competing primary destinations. Dashboard is not a primary objective and should not be a default landing page merely because many enterprise suites offer one.
 
 ## Pattern 2: collection first, then substantial detail
 
@@ -54,7 +54,20 @@ The recurring rule is that doing the work is primary, while Process context is o
 
 CIB Seven, Camunda 8, IBM BAW, Appian, Flowable, and Bonita all distinguish a pooled or candidate task from one accepted or claimed by a worker. They differ in terminology and authorization, but the interaction shape recurs: visibility, claim or accept, work, complete, and optionally release or unassign.
 
-The project consequence is to keep Claim or Release near the selected task and to avoid making claim state a separate workspace. The form may be inspectable before claim only if the public authorization contract allows it. Completion must remain unavailable to the wrong actor, and hidden tasks must not leak through navigation or error detail.
+The project consequence is to keep Claim or Release near the selected task and to avoid making claim state a separate workspace. The form may be inspectable before claim only if the public authorization contract allows it. The current M3 contract deliberately exposes neither task detail nor the completion action before claim. Completion must remain unavailable to the wrong actor, and hidden tasks must not leak through navigation or error detail.
+
+### CIB-grounded whole-model journey preflight
+
+The first executable-corpus browser journey was researched against the pristine CIB Seven checkout at `5a45b47ea22688d774de97277c3ff7013f54fdd2`. The relevant Tasklist and Cockpit files are unchanged from the published `v2.2.0` tag at `834a9874760de8a0107f7c1b32806e37f17fb017`. The comparison used the [registered source](../SOURCES.md#cib-seven) and exact source paths, not screenshots or remembered behavior, and no CIB code, styling, assets, data model, or terminology was copied.
+
+| Journey boundary | CIB precedent adopted | Deliberate project change | Excluded behavior | Acceptance oracle |
+|---|---|---|---|---|
+| Select and start | Explicit Process selection followed by an explicit Start action | Definitions owns exact admitted source and version selection before start | Tenant, deployment-ID, delete, and CIB runtime-definition controls | Deploy the exact corpus BPMN through Definitions, select exact version 1, and retain the public instance ID |
+| Claim and work | A candidate task is visible before claim; claim precedes task work and completion | The task name, detail, Form, and Complete action are unavailable until `demo-user` claims it | Arbitrary assignment and CIB authorization internals | First prove the unclaimed false precondition, then claim the same task and open its Form, Diagram, and Details |
+| Generated form | Field metadata and type determine the generated control | Boolean uses explicit True and False choices so absent input remains distinct from false | CIB generic-form breadth and checkbox semantics | Prove neither choice is initially selected, explicitly choose True, and complete the exact occurrence |
+| Completion and inspection | Finished work leaves the current queue; Cockpit provides Process-instance inspection | Operations shows the completed current state and engine-published semantic History; Work audit remains a separate Product 2 public fact | CIB `HistoryService`, user-operation log, Temporal Event History, and state-difference reconstruction as semantic History | Verify no current task, completed Overview, contiguous public History, and exact claim/reserved/committed Work-audit events |
+
+The retained production journey is [`corpus-user-task-journey.spec.ts`](../../showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts). It is also the separating evidence for the previously missed class in which a positive completion script did not first prove that an unclaimed task was non-actionable.
 
 ## Pattern 5: task context must survive uncertain delivery
 
@@ -72,7 +85,7 @@ For this project Definitions owns existing models, exact versions, start actions
 
 Camunda 8 Operate moves from a deployed Process model to its instance table and then to exact instance history and variables. Flowable Control similarly opens a definition, lists its instances, and uses a diagram plus tabs for exact instance details. Bonita moves from cases to case details and a customizable overview.
 
-The transferable operations pattern is model to instances to exact instance, with the diagram retaining orientation. This project should keep Definitions and Process instances as distinct primary workspaces because their current public contracts are separate, but selection and links should preserve the exact definition identity. A later instance detail may use Diagram, Public data, and Platform audit tabs only after those public contracts exist.
+The transferable operations pattern is model to instances to exact instance, with the diagram retaining orientation. This project keeps Definitions as the model workspace and places Process instances inside Operations because operational inspection now also owns Incidents and Audit. Selection and links preserve exact definition identity. The implemented instance detail uses Overview, Diagram, and engine-published History only where those public contracts exist; incident audit and Work audit remain distinct Product 2 facts.
 
 ## Pattern 8: filters and saved views are secondary navigation
 
@@ -138,7 +151,7 @@ The smallest honest Product 2 surface belongs to one exact definition version as
 
 Adopt now:
 
-1. persistent Work, Definitions, and Process instances navigation;
+1. persistent Work, Definitions, and Operations navigation, with Process instances inside Operations;
 2. one primary content area with collection-to-detail transitions;
 3. full-content task detail with Form, Diagram, and Details;
 4. definition and version selection with Add BPMN as a neighboring action;

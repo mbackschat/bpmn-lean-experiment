@@ -85,6 +85,13 @@ test("requires two-sided mutation evidence inside production-backed user journey
   assert.match(workInbox, /row\.claim === null \? \([\s\S]*<span>/u);
   assert.match(workInbox, /error instanceof WorkApiError && error\.status >= 400 && error\.status < 500/u);
   assert.match(completionOperation, /if \(claim === null\)[\s\S]*must claim the task before completion/u);
+  assert.deepEqual(workAuditIsolationViolations(productionJourney), []);
+  assert.deepEqual(workAuditIsolationViolations(
+    productionJourney.replace(
+      /readWorkAudit\(apiOrigin,\s*\{\s*hostingProcessInstanceId:\s*started\.processInstanceId,\s*\}\)/u,
+      "readWorkAudit(apiOrigin)",
+    ),
+  ), ["unfiltered-work-audit"]);
 
   const journeyStart = productionJourney.indexOf("const taskName =");
   assert.notEqual(journeyStart, -1, "the production journey must identify its exact task");
@@ -96,13 +103,21 @@ test("requires two-sided mutation evidence inside production-backed user journey
     "Claimed by demo-user",
     'name: "Complete task"',
     "No current tasks.",
-    "readWorkAudit(apiOrigin)",
+    "readWorkAudit(apiOrigin, {",
+    "hostingProcessInstanceId: started.processInstanceId",
   ]) {
     const next = orderedJourney.indexOf(step, cursor);
     assert.notEqual(next, -1, `production user journey is missing ordered step: ${step}`);
     cursor = next + step.length;
   }
 });
+
+function workAuditIsolationViolations(source: string): ReadonlyArray<string> {
+  return /readWorkAudit\(apiOrigin,\s*\{\s*hostingProcessInstanceId:\s*started\.processInstanceId,\s*\}\)/u
+      .test(source)
+    ? []
+    : ["unfiltered-work-audit"];
+}
 
 test("keeps Product 2 UI quality outside every Product 1 feedback loop", async () => {
   const [

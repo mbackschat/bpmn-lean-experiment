@@ -84,8 +84,30 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.doesNotMatch(root["build:showcase-types"] ?? "", /platform-web/u);
   assert.doesNotMatch(root["build:showcase-runtime"] ?? "", /platform-web/u);
   assert.equal(root["test:showcase:types"], "pnpm build:showcase-types && pnpm --filter './showcase/**' --if-present run type-test");
-  assert.equal(root["test:showcase:m2"], "pnpm build:showcase-m2 && pnpm test:showcase:m2:built");
+  for (const name of [
+    "test:showcase:m1",
+    "test:showcase:m2",
+    "test:showcase:m2-message-start-ingress",
+    "test:showcase:m2-process-instance-search",
+    "test:showcase:m3-human-work",
+    "test:showcase:m4-incident-operations",
+  ]) {
+    assert.match(root[name] ?? "", /^pnpm build:release-product2 && pnpm test:showcase:[^ ]+:built$/u);
+    assert.equal(matches(root[name] ?? "", /\bbuild:/gu), 1, `${name} must prepare the union Product 2 graph once`);
+  }
   assert.equal(root["test:release:product2"], "pnpm build:release-product2 && pnpm test:showcase:m1:built && pnpm test:showcase:m2:built && pnpm test:showcase:m3-human-work:built && pnpm test:showcase:m4-incident-operations:built && pnpm test:ui-quality:built");
+  assert.equal(matches(root["test:release:product2"] ?? "", /\bbuild:/gu), 1);
+  const prebuiltShowcaseCommands = new Map([
+    ["test:showcase:m1:built", 1],
+    ["test:showcase:m2:built", 3],
+    ["test:showcase:m2-message-start-ingress:built", 1],
+    ["test:showcase:m2-process-instance-search:built", 1],
+    ["test:showcase:m3-human-work:built", 1],
+    ["test:showcase:m4-incident-operations:built", 1],
+  ]);
+  for (const [name, expectedPrebuiltUses] of prebuiltShowcaseCommands) {
+    assert.equal(matches(root[name] ?? "", /PLAYWRIGHT_PREBUILT_WEB=true/gu), expectedPrebuiltUses, `${name} must reuse the prepared production web build`);
+  }
   for (const name of [
     "test:platform-foundation:built",
     "test:platform-m1:built",
@@ -116,12 +138,36 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.doesNotMatch(pipelineScript, /runProjectCommand\("tsc"/u);
 });
 
+test("serves every real-host showcase from the production web build", async () => {
+  const configPaths = [
+    "showcase/m1-definition-deployment/playwright.config.ts",
+    "showcase/m2-definition-scheduling/playwright.config.ts",
+    "showcase/m2-message-start-ingress/playwright.config.ts",
+    "showcase/m2-process-instance-search/playwright.config.ts",
+    "showcase/m3-human-work/playwright.config.ts",
+    "showcase/m4-incident-operations/playwright.config.ts",
+  ];
+  const configs = await Promise.all(configPaths.map(async (configPath) => [configPath, await read(configPath)] as const));
+  const nonProductionConfigs = configs.flatMap(([configPath, source]) => {
+    const buildsUnlessPrebuilt = /PLAYWRIGHT_PREBUILT_WEB/u.test(source) && /build:platform-web/u.test(source);
+    const previewsProductionOutput = /exec vite preview/u.test(source);
+    const startsDevelopmentServer = /exec vite --host/u.test(source);
+    return buildsUnlessPrebuilt && previewsProductionOutput && !startsDevelopmentServer ? [] : [configPath];
+  });
+
+  assert.deepEqual(nonProductionConfigs, []);
+});
+
 function scripts(source: string): Readonly<Record<string, string>> {
   return (JSON.parse(source) as Readonly<{ scripts?: Readonly<Record<string, string>> }>).scripts ?? {};
 }
 
 function linesContaining(source: string, value: string): number {
   return source.split("\n").filter((line) => line.includes(value)).length;
+}
+
+function matches(source: string, pattern: RegExp): number {
+  return source.match(pattern)?.length ?? 0;
 }
 
 async function read(relativePath: string): Promise<string> {

@@ -264,7 +264,9 @@ test("runs the complete durable Human Work slice", async () => {
       "metadata-free Timer and Message tasks must remain policy-hidden",
     );
 
-    const audit = capture(publicCaptures, await readWorkAudit(origin));
+    const audit = capture(publicCaptures, await readWorkAudit(origin, {
+      hostingProcessInstanceId: direct.processInstanceId,
+    }));
     assert.deepEqual(
       audit.value.events.map(({ action }) => [action.kind, action.outcome]),
       [

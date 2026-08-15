@@ -17,3 +17,5 @@ The complete pipeline derives every semantic case and target relation from the g
 ```sh
 ./scripts/pnpm.sh run test:pipeline
 ```
+
+The maintained [executable model corpus](../../model-corpus/README.md) selects its retained tranche by exact registered pipeline case identity and calls the same pipeline harness. It adds no target, expected result, or alternate runner. `./scripts/pnpm.sh run test:model-corpus` builds the shared pipeline graph once, checks the exact corpus manifest and generated index, and then executes only the retained corpus selection through the existing target owners.

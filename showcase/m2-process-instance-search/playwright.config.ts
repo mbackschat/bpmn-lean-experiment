@@ -7,6 +7,9 @@ import { allocatePlaywrightLoopbackPorts } from "../../scripts/playwright-loopba
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const { apiOrigin, apiPort, webOrigin, webPort } = await allocatePlaywrightLoopbackPorts();
 process.env.PLATFORM_API_ORIGIN = apiOrigin;
+const webBuild = process.env.PLAYWRIGHT_PREBUILT_WEB === "true"
+  ? ""
+  : "./scripts/pnpm.sh run build:platform-web && ";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -45,7 +48,7 @@ export default defineConfig({
       url: `${apiOrigin}/api/v1/process-instances`,
     },
     {
-      command: `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,
+      command: `${webBuild}./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite preview --host 127.0.0.1 --port ${webPort} --strictPort`,
       cwd: projectRoot,
       env: {
         PLATFORM_API_ORIGIN: apiOrigin,

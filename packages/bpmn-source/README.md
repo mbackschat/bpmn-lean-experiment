@@ -37,6 +37,8 @@ The bounded [machine-readable metamodel manifest](src/bpmn-2.0.2-semantic-proces
 
 The package gate also compiles the exact registered Parallel Gateway source and compares its TypeScript committed-transition trace and current public token/scope positions with the independently encoded Lean result. The oracle rejects dropped, swapped, duplicated, or independently changed operation identity, kind, origin, owner, delta, and current-position facts while leaving the established scenario-result wire unchanged.
 
+The [executable model corpus](../../model-corpus/README.md) calls this same production compiler through a thin test-only adapter. Its static guard recompiles every retained and exact external candidate, so a source moving from rejected to accepted, or changing its complete normalized diagnostic set, requires an explicit corpus result and ranking update.
+
 Run the focused gate:
 
 ```sh

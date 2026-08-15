@@ -78,23 +78,16 @@ jobs:
           git diff --name-only "$base" "$GITHUB_SHA" | node scripts/ci-change-selection.ts >> "$GITHUB_OUTPUT"
 
   verify:
-    name: verify (${{ matrix.os }})
+    name: verify
     needs: changes
     if: needs.changes.outputs.product1 == 'true'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       # One decision for the Lean build cache, announced by the first step so
       # every run records which mode produced its result. The weekly schedule
       # and an explicit dispatch both verify from scratch.
       LEAN_CACHE: ${{ github.event_name != 'schedule' && github.event.inputs.skip_lean_cache != 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-
     steps:
       - name: Report Lean cache mode
         run: |
@@ -107,9 +100,8 @@ jobs:
           fetch-depth: 0
 
       - name: Set up libxml2 tools
-        # Verification validates BPMN XML with xmllint. The macOS runner image
-        # already resolves one; the Ubuntu image has no libxml2-utils package.
-        if: runner.os == 'Linux'
+        # Verification validates BPMN XML with xmllint, which the Ubuntu image
+        # does not provide before libxml2-utils is installed.
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --yes libxml2-utils
@@ -202,11 +194,9 @@ jobs:
           BPMN_PIPELINE_WARM_BUDGET_MS: "130000"
         run: ./scripts/pnpm.sh run test:pre-push:verify
 
-  # One stable check name for branch protection. Requiring the matrix jobs
-  # directly would name each platform, so editing the matrix would silently
-  # leave a stale requirement behind. `always()` is required: without it a
-  # failed matrix leaves this job skipped, and a skipped check can satisfy a
-  # required-check rule instead of blocking it.
+  # One stable check name for branch protection. `always()` is required:
+  # without it a failed verification leaves this job skipped, and a skipped
+  # check can satisfy a required-check rule instead of blocking it.
   verify-complete:
     name: verify-complete
     needs:
@@ -216,8 +206,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require every platform to have verified
+      - name: Require selected verification to have succeeded
         run: |
           echo "Product 1 selected: ${{ needs.changes.outputs.product1 }}"
-          echo "matrix result: ${{ needs.verify.result }}"
+          echo "verification result: ${{ needs.verify.result }}"
           test "${{ needs.changes.outputs.product1 }}" = "false" || test "${{ needs.verify.result }}" = "success"

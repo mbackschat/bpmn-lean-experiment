@@ -208,6 +208,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(doctor, /workspace-cache\.lock/u);
   assert.match(doctor, /DOCTOR_CACHE/u);
   assert.match(doctor, /DOCTOR_CACHE_ARTIFACT/u);
+  assert.match(doctor, /check_command unzip/u);
   assert.match(doctor, /2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a/u);
   assert.match(verification, /doctor\.sh verify/u);
   assert.match(verification, /A12_ADOPTION_EVIDENCE status=not-run/u);
@@ -223,7 +224,8 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.doesNotMatch(workflow, /playwright|chromium|test:showcase:m\d+/iu);
   assert.match(uiQualityWorkflow, /mcr\.microsoft\.com\/playwright@sha256:/u);
   assert.match(uiQualityWorkflow, /test:release:product2/u);
-  assert.match(workflow, /if: runner\.os == 'Linux'/u);
+  assert.match(workflow, /sudo apt-get install --no-install-recommends --yes libxml2-utils/u);
+  assert.doesNotMatch(workflow, /if: runner\.os/u);
   // The corpus cache path is written as an expression, so the relative-segment guard below can
   // only see the template. `pwd` is what makes the exported root absolute, and absolute is what
   // actions/cache requires; without it the expansion reintroduces the segment the guard rejects.
@@ -236,6 +238,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(readme, /test:showcase:m2/u);
   assert.match(readme, /test:showcase:m3-human-work/u);
   assert.match(readme, /test:showcase:m4-incident-operations/u);
+  assert.match(readme, /unzip/u);
   assert.match(guide, /playwright install chromium/u);
   assert.match(guide, /test:showcase:m1/u);
   assert.match(guide, /test:showcase:m2/u);

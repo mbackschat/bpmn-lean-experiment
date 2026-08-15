@@ -2,9 +2,13 @@
 
 Shared guidance for Claude Code, OpenAI Codex, and human contributors working in **bpmn-lean-experiment**. [AGENTS.md](AGENTS.md) is a symlink to this file; keep one canonical guide and preserve the symlink.
 
+## Rule 1: never use GitHub-hosted macOS
+
+All GitHub Actions jobs must run on Ubuntu. Never add a `macos-*` runner, a macOS matrix entry, or another GitHub-hosted macOS build, test, or release job. Hosted macOS is disproportionately expensive, and this repository's development computer is already a Mac that owns proportionate local macOS validation. GitHub Actions provides the independent Linux portability lane. The executable GitHub-runner policy must reject any future macOS runner label.
+
 ## Mission
 
-Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance, and a BPM platform on top of it. Treat standards coverage as the primary engine roadmap, use the executable BPMN breadth of CIB Seven `2.2.0` together with a deduplicated executable whole-model corpus to order the near-term standards schedule, keep selected CIB behavior as a classified compatibility overlay, and let the platform's next showcase milestone break ties between candidates of equal standards value and mechanism leverage, using [the showcase milestone ladder](docs/PLAN.md#showcase-milestone-ladder). A12 Workflows replacement is a third product owned by A12 under EUPL-1.2 and is out of scope in this repository. The durable product division, layer boundaries, ordering rule, coverage measures, and Lean assurance-lane rule are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division).
+Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance, and a BPM platform on top of it. Treat standards coverage as the primary engine roadmap. After normative dependencies, treat practical reach from CIB Seven `2.2.0` and the deduplicated executable whole-model corpus as co-equal with high semantic risk in element and mechanism families; a rare concurrency, cancellation, scope, liveness, identity, data, or Temporal-refinement risk may outrank a frequent low-risk mechanism. Keep selected CIB behavior as a classified compatibility overlay, and let the platform's next showcase milestone break ties only after standards value, reach, and risk are equal, using [the showcase milestone ladder](docs/PLAN.md#showcase-milestone-ladder). A12 Workflows replacement is a third product owned by A12 under EUPL-1.2 and is out of scope in this repository. The durable product division, layer boundaries, ordering rule, coverage measures, and Lean assurance-lane rule are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division).
 
 Establish the semantic and hosting result through four components:
 
@@ -523,6 +527,12 @@ Complete fast differential/refinement gate:
 ./scripts/pnpm.sh run test:pipeline
 ```
 
+Executable model corpus provenance, admission, ranking, and selected production-pipeline gate after `./scripts/doctor.sh research`:
+
+```sh
+./scripts/pnpm.sh run test:model-corpus
+```
+
 Focused CIB calibration gate:
 
 ```sh
@@ -556,7 +566,7 @@ git diff --check
 - Use Conventional Commits: `type(scope): subject`, lowercase type, imperative subject, subject-only by default.
 - Do not push without an explicit current request.
 - Keep [AGENTS.md](AGENTS.md) as a symlink to `CLAUDE.md`; never maintain divergent copies.
-- The default branch requires the `verify-complete` hosted check, which passes only when every platform in the verification matrix succeeded. Repository administrators may bypass it, so a red merge takes a deliberate override rather than an accident; never override to land unverified work.
+- The default branch requires the `verify-complete` hosted check, which passes only when the selected Ubuntu verification succeeded. Repository administrators may bypass it, so a red merge takes a deliberate override rather than an accident; never override to land unverified work.
 
 Before handing off:
 

@@ -42,6 +42,7 @@ check_command git "Homebrew: brew install git" || true
 check_command curl "provided by macOS; Homebrew: brew install curl" || true
 check_command jq "Homebrew: brew install jq" || true
 check_command xmllint "Homebrew: brew install libxml2" || true
+check_command unzip "provided by macOS; Homebrew: brew install unzip" || true
 check_command node "install Node $required_node_version through nvm, asdf, or Homebrew" || true
 check_command lake "install Lean through elan using lean-toolchain" || true
 

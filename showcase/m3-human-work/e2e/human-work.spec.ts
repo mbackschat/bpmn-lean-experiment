@@ -196,7 +196,9 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   await expect(reloadedPanel.getByRole("table", { name: "Current tasks" }))
     .toHaveCount(0);
 
-  const audit = await readWorkAudit(apiOrigin);
+  const audit = await readWorkAudit(apiOrigin, {
+    hostingProcessInstanceId: started.processInstanceId,
+  });
   expect(audit.value.events.map(({ action }) => [action.kind, action.outcome]))
     .toEqual([
       ["claim", "claimed"],

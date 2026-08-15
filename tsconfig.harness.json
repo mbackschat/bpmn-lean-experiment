@@ -79,6 +79,7 @@
     "verbatimModuleSyntax": true
   },
   "include": [
+    "model-corpus/test/*.ts",
     "packages/bpmn-source/calibration/*.ts",
     "packages/bpmn-source/src/bpmn-moddle.d.ts",
     "packages/bpmn-source/test/*.ts",
