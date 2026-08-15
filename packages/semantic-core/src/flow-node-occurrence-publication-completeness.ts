@@ -1,27 +1,30 @@
 /**
- * Independent E1-to-occurrence completeness relation for Workflow publication.
+ * Independent E1-to-occurrence completeness relation for semantic publication.
  *
  * The relation reconstructs the lifecycle owned by each committed Program transition. It uses the
  * private retained anchor relation for pairing, never Temporal Event History or state differences.
  */
+import type { DeepReadonly } from "./deep-readonly.js";
 import {
   FlowNodeOccurrenceTerminalKind,
   SemanticFlowNodeOccurrenceAnchorKind,
-  SemanticOperationKind,
-  SemanticTransitionKind,
-} from "@bpmn-lean/semantic-core";
+} from "./flow-node-occurrence-lifecycle.js";
 import type {
-  ScopeOccurrenceId,
   SemanticFlowNodeOccurrenceAnchor,
-  SemanticOperation,
-  SemanticProcessProgram,
   UnnumberedFlowNodeOccurrenceDelta,
   UnnumberedFlowNodeOccurrenceStart,
-} from "@bpmn-lean/semantic-core";
+} from "./flow-node-occurrence-lifecycle.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
-  CommittedTransitionRecord,
-  OpenFlowNodeOccurrence,
-} from "@bpmn-lean/temporal-protocol";
+  SemanticOperation,
+  SemanticProcessProgram,
+} from "./semantic-process-contract.js";
+import type { ScopeOccurrenceId } from "./semantic-process-state.js";
+import { stimulusCommandId } from "./stimulus.js";
+import { SemanticTransitionKind } from "./semantic-transition-trace.js";
+import type {
+  UnnumberedCommittedTransitionRecord,
+} from "./semantic-transition-trace.js";
 
 import {
   calledInstanceId,
@@ -42,9 +45,11 @@ import type {
   OpenOccurrence,
 } from "./flow-node-occurrence-publication-external-completeness.js";
 
-export type RetainedFlowNodeOccurrence = Readonly<{
+export type RetainedFlowNodeOccurrence = DeepReadonly<{
   anchor: SemanticFlowNodeOccurrenceAnchor;
-  occurrence: OpenFlowNodeOccurrence;
+  processId: string;
+  elementId: string;
+  owner: ScopeOccurrenceId;
 }>;
 
 /** Requires every supplied delta to be the complete lifecycle of its exact E1 transition. */
@@ -52,20 +57,36 @@ export function requireCompleteFlowNodeOccurrenceLifecycles(
   program: SemanticProcessProgram,
   retained: readonly RetainedFlowNodeOccurrence[],
   commandId: string,
-  transitions: readonly CommittedTransitionRecord[],
+  transitions: readonly UnnumberedCommittedTransitionRecord[],
   supplied: readonly UnnumberedFlowNodeOccurrenceDelta[],
 ): void {
-  const open = retained.map(({ anchor, occurrence }) => ({
+  const open = retained.map(({ anchor, processId, elementId, owner }) => ({
     anchor,
-    processId: occurrence.processId,
-    elementId: occurrence.elementId,
-    owner: occurrence.owner,
+    processId,
+    elementId,
+    owner,
   }));
-  if (transitions.length !== supplied.length) failCompleteness();
+  const first = transitions[0];
+  if (!retainedOpenSetIsExact(program, open)) {
+    throw new TypeError("flow-node occurrence accumulator continuity drifted");
+  }
+  if (
+    first === undefined ||
+    first.transition.kind !== SemanticTransitionKind.ExternalStimulus ||
+    stimulusCommandId(first.transition.stimulus) !== commandId ||
+    transitions.slice(1).some(({ transition }) =>
+      transition.kind !== SemanticTransitionKind.InternalOperation) ||
+    transitions.length !== supplied.length
+  ) failCompleteness();
   for (let index = 0; index < transitions.length; index += 1) {
     const record = transitions[index];
     const candidate = supplied[index];
     if (record === undefined || candidate === undefined) failCompleteness();
+    if (candidate.ended.some(({ anchor }) =>
+      !open.some((entry) => sameAnchor(entry.anchor, anchor)) &&
+      !candidate.started.some((start) => sameAnchor(start.anchor, anchor)))) {
+      throw new TypeError("semantic flow-node lifecycle ended an unknown anchor");
+    }
     const expected = expectedDelta(
       program,
       open,
@@ -82,7 +103,7 @@ export function requireCompleteFlowNodeOccurrenceLifecycles(
 function expectedDelta(
   program: SemanticProcessProgram,
   open: readonly OpenOccurrence[],
-  record: CommittedTransitionRecord,
+  record: UnnumberedCommittedTransitionRecord,
   supplied: UnnumberedFlowNodeOccurrenceDelta,
   commandId: string,
   transitionIndex: number,
@@ -235,7 +256,7 @@ function internalDelta(
 function requireOperation(
   program: SemanticProcessProgram,
   transition: Extract<
-    CommittedTransitionRecord["transition"],
+    UnnumberedCommittedTransitionRecord["transition"],
     { kind: SemanticTransitionKind.InternalOperation }
   >,
 ): SemanticOperation {
@@ -342,6 +363,45 @@ function requireAnchor(
   anchor: SemanticFlowNodeOccurrenceAnchor,
 ): OpenOccurrence {
   return requireUnique(open.filter((entry) => sameAnchor(entry.anchor, anchor)));
+}
+
+function retainedOpenSetIsExact(
+  program: SemanticProcessProgram,
+  open: readonly OpenOccurrence[],
+): boolean {
+  return open.every((entry, index) =>
+    open.findIndex((candidate) => sameAnchor(candidate.anchor, entry.anchor)) === index &&
+    retainedAnchorMatchesOccurrence(program, entry)
+  );
+}
+
+function retainedAnchorMatchesOccurrence(
+  program: SemanticProcessProgram,
+  entry: OpenOccurrence,
+): boolean {
+  const { anchor, processId, elementId, owner } = entry;
+  if (
+    requireProcessId(program, owner) !== processId ||
+    !safePositive(owner.activation)
+  ) return false;
+  switch (anchor.kind) {
+    case SemanticFlowNodeOccurrenceAnchorKind.Wait:
+    case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+      return anchor.id.processInstanceId === owner.processInstanceId &&
+        anchor.id.elementId === elementId && safePositive(anchor.id.activation);
+    case SemanticFlowNodeOccurrenceAnchorKind.Scope: {
+      const definition = uniqueDefinition(program, anchor.id.definitionScopeId);
+      return definition !== null &&
+        anchor.id.processInstanceId === owner.processInstanceId &&
+        definition.originElementId === elementId &&
+        definition.parentScopeId === owner.definitionScopeId &&
+        safePositive(anchor.id.activation);
+    }
+    case SemanticFlowNodeOccurrenceAnchorKind.Transition:
+      return false;
+    default:
+      return assertNever(anchor);
+  }
 }
 
 function safePositive(value: number): boolean {

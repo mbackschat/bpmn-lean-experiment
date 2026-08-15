@@ -1,25 +1,29 @@
-/** External-stimulus and cancellation side of the Workflow occurrence completeness relation. */
+/** External-stimulus and cancellation side of the semantic occurrence completeness relation. */
 import {
   EffectExecutionResultKind,
-  FlowNodeOccurrenceTerminalKind,
-  SemanticFlowNodeOccurrenceAnchorKind,
-  SemanticOperationKind,
   StimulusKind,
-  compareCanonicalStrings,
-} from "@bpmn-lean/semantic-core";
+} from "./contract.js";
 import type {
   OccurrenceId,
-  ScopeOccurrenceId,
+} from "./contract.js";
+import {
+  FlowNodeOccurrenceTerminalKind,
+  SemanticFlowNodeOccurrenceAnchorKind,
+} from "./flow-node-occurrence-lifecycle.js";
+import type {
   SemanticFlowNodeOccurrenceAnchor,
-  SemanticOperation,
-  SemanticProcessProgram,
   UnnumberedFlowNodeOccurrenceDelta,
   UnnumberedFlowNodeOccurrenceEnd,
   UnnumberedFlowNodeOccurrenceStart,
-} from "@bpmn-lean/semantic-core";
+} from "./flow-node-occurrence-lifecycle.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
-  CommittedTransitionRecord,
-} from "@bpmn-lean/temporal-protocol";
+  SemanticOperation,
+  SemanticProcessProgram,
+} from "./semantic-process-contract.js";
+import type { ScopeOccurrenceId } from "./semantic-process-state.js";
+import type { UnnumberedCommittedTransitionRecord } from "./semantic-transition-trace.js";
+import { compareCanonicalStrings } from "./wire.js";
 
 export type OpenOccurrence = Readonly<{
   anchor: SemanticFlowNodeOccurrenceAnchor;
@@ -32,7 +36,7 @@ export function expectedExternalLifecycle(
   program: SemanticProcessProgram,
   open: readonly OpenOccurrence[],
   stimulus: Extract<
-    CommittedTransitionRecord["transition"],
+    UnnumberedCommittedTransitionRecord["transition"],
     { kind: "externalStimulus" }
   >["stimulus"],
   commandId: string,

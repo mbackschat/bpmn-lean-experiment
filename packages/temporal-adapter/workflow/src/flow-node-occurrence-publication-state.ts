@@ -4,10 +4,12 @@ import {
   SemanticFlowNodeOccurrenceAnchorKind,
   compareCanonicalStrings,
   isWellFormedWireString,
+  requireCompleteFlowNodeOccurrenceLifecycles,
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
+  RetainedFlowNodeOccurrence,
   ScenarioStep,
   ScopeOccurrenceId,
   SemanticFlowNodeOccurrenceAnchor,
@@ -32,14 +34,11 @@ import type {
 import type {
   ExecutionPublicationState,
 } from "./execution-publication-state.js";
-import {
-  requireCompleteFlowNodeOccurrenceLifecycles,
-} from "./flow-node-occurrence-publication-completeness.js";
-import type {
-  RetainedFlowNodeOccurrence,
-} from "./flow-node-occurrence-publication-completeness.js";
 
-type RetainedOpenFlowNodeOccurrence = DeepReadonly<RetainedFlowNodeOccurrence>;
+type RetainedOpenFlowNodeOccurrence = DeepReadonly<{
+  anchor: SemanticFlowNodeOccurrenceAnchor;
+  occurrence: OpenFlowNodeOccurrence;
+}>;
 
 export type FlowNodeOccurrencePublicationState = DeepReadonly<{
   definition: SemanticProcessIdentity;
@@ -117,7 +116,7 @@ export function accumulateFlowNodeOccurrencePublication(
   }
   requireCompleteFlowNodeOccurrenceLifecycles(
     program,
-    state.retainedOpen,
+    state.retainedOpen.map(toCoreRetained),
     executionBatch.commandId,
     executionBatch.transitions,
     step.flowNodeOccurrenceLifecycles,
@@ -268,37 +267,10 @@ function requireAccumulatorContinuity(
       state.retainedOpen.map(({ occurrence }) => occurrence),
     ) ||
     hasDuplicateRetainedIdentity(state.retainedOpen) ||
-    state.retainedOpen.some((entry) =>
-      !retainedAnchorMatchesOccurrence(entry, program)) ||
     state.retainedOpen.some(({ anchor }) =>
       anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Transition)
   ) {
     throw new TypeError("flow-node occurrence accumulator continuity drifted");
-  }
-}
-
-function retainedAnchorMatchesOccurrence(
-  entry: RetainedOpenFlowNodeOccurrence,
-  program: SemanticProcessProgram,
-): boolean {
-  const { anchor, occurrence } = entry;
-  switch (anchor.kind) {
-    case SemanticFlowNodeOccurrenceAnchorKind.Wait:
-    case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
-      return anchor.id.processInstanceId === occurrence.owner.processInstanceId &&
-        anchor.id.elementId === occurrence.elementId;
-    case SemanticFlowNodeOccurrenceAnchorKind.Scope: {
-      const definition = program.definitionScopes.find(({ id }) =>
-        id === anchor.id.definitionScopeId);
-      return definition !== undefined &&
-        anchor.id.processInstanceId === occurrence.owner.processInstanceId &&
-        definition.originElementId === occurrence.elementId &&
-        definition.parentScopeId === occurrence.owner.definitionScopeId;
-    }
-    case SemanticFlowNodeOccurrenceAnchorKind.Transition:
-      return false;
-    default:
-      return assertNever(anchor);
   }
 }
 
@@ -463,6 +435,17 @@ function cloneRetained(
   return {
     anchor: cloneAnchor(value.anchor),
     occurrence: cloneOpen(value.occurrence),
+  };
+}
+
+function toCoreRetained(
+  value: RetainedOpenFlowNodeOccurrence,
+): RetainedFlowNodeOccurrence {
+  return {
+    anchor: value.anchor,
+    processId: value.occurrence.processId,
+    elementId: value.occurrence.elementId,
+    owner: value.occurrence.owner,
   };
 }
 

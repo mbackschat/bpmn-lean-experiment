@@ -62,6 +62,8 @@ The code is split by responsibility:
 | [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Exact unnumbered committed transition facts and complete-record replay validation |
 | [flow-node-occurrence-lifecycle.ts](src/flow-node-occurrence-lifecycle.ts) | Exhaustive selected-boundary lifecycle mapping, private anchors, and exact start-before-terminal fold validation |
 | [flow-node-occurrence-open-set.ts](src/flow-node-occurrence-open-set.ts) | Independent fail-closed projection of exact long-lived flow-node occurrences from RuntimeState and Program associations |
+| [flow-node-occurrence-publication-completeness.ts](src/flow-node-occurrence-publication-completeness.ts) | Pure exhaustive E1-to-occurrence completeness relation over Program-owned transitions and retained private anchors |
+| [flow-node-occurrence-publication-external-completeness.ts](src/flow-node-occurrence-publication-external-completeness.ts) | External-stimulus, event-race, Boundary Event, and cancellation half of publication completeness |
 | [control-position-projection.ts](src/control-position-projection.ts) | Fail-closed public Sequence Flow token and definition/runtime-scope positions plus transition deltas |
 | [scenario.ts](src/scenario.ts) | Stable observation projection and incremental/full scenario evaluation |
 | [stimulus.ts](src/stimulus.ts) | Structural stimulus validation, command identity, and exact same-stimulus comparison |
