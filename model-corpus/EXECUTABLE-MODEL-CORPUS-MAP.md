@@ -1,6 +1,6 @@
-# Executable BPMN model corpus index
+# Executable BPMN model corpus map
 
-This file is generated from `manifest.json` by the executable corpus guard. Edit the manifest or evidence owners, not this index by hand.
+This file is generated from `manifest.json` by the executable corpus guard. Edit the manifest or evidence owners, not this map by hand.
 
 ## Current result
 

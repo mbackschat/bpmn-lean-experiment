@@ -1,7 +1,19 @@
 # Platform UI kit
 
-This package owns reusable accessible behavior and platform design tokens. Its React Aria Button, TextField, Checkbox, explicit Boolean radio-choice, tabs, and confirmation-dialog primitives preserve native interaction, keyboard, focus-containment, and dismissal semantics, while its TanStack Table wrapper supplies a headless row model rendered as a native table. It contains no deployment, task, operations, or other business workflow.
+`@bpmn-lean/platform-ui-kit` provides reusable accessible React behavior and Product 2 design tokens. Business workflows, feature layout, and application state stay in the consuming web application.
 
-Feature layout and visual rules remain in the consuming application's CSS Modules. The kit exports one small global stylesheet for shared tokens and primitive states because those classes are an intentional cross-feature contract. [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#user-interface) owns the boundary.
+## What you can do
 
-Build and test the package with `./scripts/pnpm.sh --filter @bpmn-lean/platform-ui-kit test`.
+Build forms, Boolean choices, tabs, confirmation dialogs, and native-table views with shared keyboard, focus, dismissal, and visual-state behavior.
+
+## Quick start
+
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/platform-ui-kit test
+```
+
+## Learn more
+
+- [Web application](../apps/web/README.md) shows the kit in the complete Product 2 interface.
+- [UI design specification](../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md) owns interaction, accessibility, responsive, and visual contracts.
+- [Architecture](../../docs/ARCHITECTURE.md#user-interface) owns the package boundary.

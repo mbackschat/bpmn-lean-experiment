@@ -61,7 +61,7 @@ The following names identify repository-wide owners and do not require another s
 - `DOC-DISCIPLINE.md` — this documentation workflow;
 - `CLAUDE.md` and `AGENTS.md` — mandatory contributor triggers and workflow.
 
-Directory `README.md` files are human-facing local entry points, not independent policy owners or dense implementation ledgers. A component README starts with what the component is for, what a user can do with it, the shortest useful local command, and links to deeper contracts. Contributor or agent-facing file inventories and invariant maps belong in a linked directory `INDEX.md` when they are too detailed for that human path. Repository-wide mandatory instructions stay in canonical `CLAUDE.md`, with `AGENTS.md` preserving its symlink. Short profile, scenario, schema, research, and capsule registries may remain in a README when the registry itself is the human navigation purpose.
+Directory `README.md` files are human-facing local entry points, not independent policy owners or dense implementation ledgers. A component README starts with what the component is for, what a user can do with it, the shortest useful local command, and links to deeper contracts. When contributor or agent-facing detail remains necessary, move it into a linked purpose-named document: `SOURCE-MAP.md` owns source-file responsibilities, ownership, and implementation inventories; another existing role suffix such as `-REGISTER.md`, `-MAP.md`, or `-GUIDE.md` is valid only when its defined contract matches the content. Do not create a generic `INDEX.md`, because its name does not identify the document's owner or purpose. Repository-wide mandatory instructions stay in canonical `CLAUDE.md`, with `AGENTS.md` preserving its symlink. Short profile, scenario, schema, research, and capsule registries may remain in a README when the registry itself is the human navigation purpose.
 
 ### Suffixless singleton exceptions
 
@@ -140,7 +140,7 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 - A new experiment records its question, competing accounts, separating witness, result, and disposition; an experiment never becomes semantic authority merely by passing.
 - A changed gate updates [TESTING-SPEC.md](TESTING-SPEC.md); the last verified command and exact next action update [PLAN.md](PLAN.md).
 - A changed implemented or absent surface updates [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
-- A directory index changes in the same change as the contents it indexes.
+- A directory source map, register, or other purpose-named navigation owner changes in the same change as the contents it inventories.
 
 ## Writing and linking
 

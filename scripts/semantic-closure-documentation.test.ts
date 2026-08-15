@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -95,7 +96,10 @@ async function maintainedMarkdownPaths(): Promise<string[]> {
     { cwd: repositoryRoot, encoding: "utf8" },
   );
   return stdout.split("\n")
-    .filter((relativePath) => relativePath.length > 0)
+    .filter((relativePath) =>
+      relativePath.length > 0 &&
+      existsSync(path.join(repositoryRoot, relativePath))
+    )
     .filter((relativePath) => {
       const segments = relativePath.split("/");
       return !segments.includes("archived") &&

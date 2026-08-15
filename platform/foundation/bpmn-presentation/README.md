@@ -1,11 +1,19 @@
 # BPMN presentation foundation
 
-This Product 2-only package owns generated BPMN DI for admitted source that has no usable source-owned diagram. It privately contains the `bpmn-auto-layout` worker and `bpmn-moddle` presentation graph, and returns only closed DI bytes and fixed provenance. It has no BPMN admission or semantic authority.
+`@bpmn-lean/platform-bpmn-presentation` generates Product 2 diagram interchange for admitted BPMN source that lacks usable source-authored layout. Its parser and auto-layout graph remain private, and its result has presentation provenance but no admission or semantic authority.
 
-## Public registry
+## What you can do
 
-- `BpmnPresentationAdapter` distinguishes usable, absent, and unusable source DI, generates bounded presentation DI, and validates exact-source composition.
-- `BpmnAutoLayoutPresentationAdapter` implements that boundary with the pinned `bpmn-auto-layout@1.3.0` graph in a killable worker.
-- `GeneratedDiagramInterchange` is the deeply immutable DI-only result. No raw moddle object or generated non-DI XML is public.
+Classify source layout as usable, absent, or unusable, generate bounded DI in a killable worker, and validate the exact-source composition before Definitions stores a sidecar.
 
-Definitions owns durable sidecars and presentation resolution. The browser owns rendering. See the [diagram presentation decision](../../../docs/BPMN-DIAGRAM-PRESENTATION-DECISION.md) and [Product 2 architecture](../../../docs/ARCHITECTURE.md#user-interface).
+## Quick start
+
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/platform-bpmn-presentation test
+```
+
+## Learn more
+
+- [Diagram presentation decision](../../../docs/BPMN-DIAGRAM-PRESENTATION-DECISION.md) owns provenance, trust, and composition behavior.
+- [UI design specification](../../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md) owns browser rendering and user-visible presentation.
+- [Architecture](../../../docs/ARCHITECTURE.md#user-interface) owns the package boundary.

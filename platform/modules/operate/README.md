@@ -1,13 +1,21 @@
 # Operate module
 
-The Operate module owns Product 2 cross-instance discovery and operator actions. It keeps the exact confirmed public Process identity and private opaque engine locator together, freshly observes every nonclosed registration for current incidents, and returns no partial aggregate.
+`@bpmn-lean/platform-operate` owns Product 2 cross-instance discovery, committed-execution projection, incident operations, and exact-definition flow-node metrics. It keeps private engine locators behind the module boundary and never treats platform persistence or Temporal Event History as semantic authority.
 
-Its Fetch-compatible route contributes only `GET /api/v1/process-instances`. Exact optional filters and opaque cursor paging cross unchanged to the search service, while malformed query or body transport is rejected before search.
+## What you can do
 
-Incident Retry and root-Process Cancel actions bind the authorized actor, complete published interaction, hosting identity, incident identity, and locator before Product 1 is called. Their reserved and outcome transitions share a SQLite transaction with an exact audit outbox snapshot. Outbox delivery is acknowledged before the first engine call, uncertain submissions retain an indeterminate result for exact reconciliation, and distinct action IDs remain independent.
+Register confirmed Process instances, search them by public identity, inspect committed execution, retry or cancel published incidents, and aggregate version-bound flow-node frequency and duration when the authoritative projection is complete.
 
-The module stores private active, closed, and indeterminate registration classifications but never persists an incident as current semantic authority. It does not inspect Temporal, Event History, diagnostic traces, Activity attempts, or derive lifecycle or action eligibility from Product 2 state.
+## Quick start
 
-For M5 E1, Operate also owns the durable committed-execution projection beside, but separate from, the current-incident aggregate. It retains the confirmed instance's opaque locator privately, validates each authoritative cursor page against the stored public head, applies complete contiguous batches atomically, treats exact overlap as idempotent, and marks changed overlap, skipped revisions, or unavailable authority as an explicit gap. History pages, current diagram position, and canonical export are readable only from a complete healthy projection; bounded revision-zero `notReady` is retryable and never repaired from Event History, state differences, incident state, or another Product 2 store.
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/platform-operate test
+```
 
-Flow-node metrics use a second independent projection and schema. One indexed ordinal-ascending repository read freezes at most 101 confirmed registrations whose complete retained definition equals the requested exact version. Up to 100 members are reconciled against both retained E1 and the public occurrence gateway; any overflow, missing member, malformed page, gap, unavailable authority, identity drift, E1 misalignment, or safe-integer overflow suppresses the whole snapshot. Occurrence pages fold starts before terminals from the retained open set, preserve nondecreasing engine commit time, and advance only in one SQLite transaction. Aggregation counts only occurrences whose published Process ID equals the selected definition Process ID, uses completed-only elapsed durations, and exposes no member or locator detail through its one unavailable result.
+## Learn more
+
+- [Process-instance search specification](../../../docs/BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md) owns discovery and paging.
+- [Incident-operations specification](../../../docs/BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) owns authorization, actions, reconciliation, and audit.
+- [Committed-execution publication specification](../../../docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns history and current-position projection.
+- [Flow-node occurrence metrics specification](../../../docs/capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) owns aggregate availability and calculations.
+- [Architecture](../../../docs/ARCHITECTURE.md#modules) and [implementation map](../../../docs/IMPLEMENTATION-MAP.md) own module placement and current coverage.

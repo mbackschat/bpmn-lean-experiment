@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
@@ -24,6 +26,24 @@ const semanticProcessIlSpecPath = path.join(
   projectRoot,
   "docs/SEMANTIC-PROCESS-IL-SPEC.md",
 );
+
+test("rejects generic tracked INDEX.md documentation owners", () => {
+  const trackedPaths = execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+    {
+      cwd: projectRoot,
+      encoding: "utf8",
+    },
+  ).split("\0").filter((trackedPath) =>
+    trackedPath.length > 0 && existsSync(path.join(projectRoot, trackedPath))
+  );
+
+  assert.deepEqual(
+    trackedPaths.filter((trackedPath) => path.basename(trackedPath) === "INDEX.md"),
+    [],
+  );
+});
 /** Artifact trees whose registry README must reach every one of their directories. */
 const artifactRegistries = ["profiles", "scenarios"] as const;
 /** Document trees whose own README must reach every sibling Markdown document. */

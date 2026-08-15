@@ -1,8 +1,19 @@
 # Contract types
 
-`@bpmn-lean/contract-types` is the neutral, type-only owner of shared immutable contract utilities. It contains no BPMN, engine, platform, transport, or runtime behavior.
+`@bpmn-lean/contract-types` provides neutral, type-only utilities shared by engine and platform contracts. It contains no BPMN, transport, persistence, or runtime behavior.
 
-## Owners
+## What you can do
 
-- [`src/index.ts`](src/index.ts) owns the tuple-preserving and union-distributive `DeepReadonly<T>` utility.
-- [`test/deep-readonly.type-test.ts`](test/deep-readonly.type-test.ts) proves recursive immutability while retaining callable, tuple, and union types.
+Use `DeepReadonly<T>` to make nested contract values immutable while preserving callable, tuple, and union types.
+
+## Quick start
+
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/contract-types test
+```
+
+## Learn more
+
+- [`src/index.ts`](src/index.ts) owns the public type utility.
+- [`test/deep-readonly.type-test.ts`](test/deep-readonly.type-test.ts) owns its compile-time contract.
+- [Shared wire contracts](../../contracts/README.md) explains the cross-language artifacts that use these utilities.

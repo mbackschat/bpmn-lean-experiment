@@ -1,7 +1,18 @@
 # Artifact store
 
-This package owns exact local artifact-byte storage and retrieval through content identity. `FileArtifactStore` validates each lowercase SHA-256 identity against a synchronous snapshot of the caller's bytes, then publishes to `<root>/sha256/<digest>` atomically without replacing an existing path.
+`@bpmn-lean/platform-artifact-store` provides exact content-addressed local byte storage for Product 2. It validates lowercase SHA-256 identities, publishes without replacing existing content, and returns fresh byte arrays on retrieval.
 
-An exact duplicate is idempotent. An occupied path with different bytes is an explicit conflict and remains untouched. Retrieval returns a fresh byte array, missing content returns `null`, and digest validation prevents caller-controlled path segments.
+## What you can do
 
-The package deliberately has no compilation, definition-version, metadata-index, deletion, pruning, encryption, directory-fsync, or remote-store responsibility. See [the architecture](../../../docs/ARCHITECTURE.md#foundation-packages) for its place in the platform and the [definition module](../../modules/definitions/README.md) for the owning M1 business workflow.
+Store or retrieve immutable definition and derived-artifact bytes by digest, detect conflicting content at an occupied path, and treat repeated publication of identical bytes as idempotent.
+
+## Quick start
+
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/platform-artifact-store test
+```
+
+## Learn more
+
+- [Architecture](../../../docs/ARCHITECTURE.md#foundation-packages) owns the storage boundary and exclusions.
+- [Definitions module](../../modules/definitions/README.md) owns the business workflows that use this mechanism.

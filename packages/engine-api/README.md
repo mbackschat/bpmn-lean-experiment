@@ -1,11 +1,20 @@
 # Engine API
 
-`@bpmn-lean/engine-api` is product 1's narrow entry point for product 2. It exposes compilation identity, admission diagnostics, and exact Timer and Message Start capability projections without exposing the checked BPMN graph or Semantic Process program.
+`@bpmn-lean/engine-api` is Product 1's narrow entry point for Product 2. It exposes compilation, start preparation and recovery, committed observation, scheduling, Message Start, human-work commands, and incident operations without exposing Semantic Process programs or Temporal SDK identities.
 
-Exact-definition start recompiles caller-snapshotted bytes and verifies the stored source, digest, profile, and Process identity. Its preparation operation performs no SDK call and returns a private versioned intent marker plus opaque Process locator. Prepared start reconstructs the same immutable Workflow request and refuses marker drift before the SDK boundary. Handle-free description compares only the retained marker, Workflow type, address, and Task Queue so Product 2 can recover an accepted direct start without redispatch. The SDK Workflow handle and admitted program remain private. [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#product-2-dependency-direction) owns the cross-product boundary.
+## What you can do
 
-The neutral `process-locator` owner mints opaque locators for canonical direct/Message starts and service-returned Schedule execution addresses. `process-work` delegates to that byte-identical codec and exposes closed open-task observation, exact task detail, and occurrence-bound completion. `process-operations` uses the same locator for strict current-incident observation plus exact Retry and Cancel submission. `process-observation` accepts only the opaque locator, expected public definition/Process/instance identity, and cursor request, then returns either the strict representation-free committed-execution result or the separately published flow-node occurrence result. Product 2 receives existing engine facts and classified results, never a Semantic Process program, semantic anchor, Workflow ID, Run ID, Task Queue, SDK handle, or Event History.
+Use the API from the Product 2 engine gateway to compile exact source, start an exact deployed definition, observe published engine facts, and submit content-bound commands through opaque Process locators. Callers receive closed engine-neutral results rather than Workflow handles, Run IDs, Task Queues, Event History, or private semantic anchors.
 
-Definition scheduling recompiles exact bytes and verifies source, byte length, digest, profile, Process, Start Event, and normalized duration before creating, inspecting, or pausing a one-action Timer Start Schedule. It compares the complete private Schedule occurrence, action, arguments, retry, and policies, then returns only pending, started, missed, rejection, or integrity results. Pause requires a pause-confirmed description before returning, and deletion remains handle-free.
+## Quick start
 
-Definition Message Start preparation recompiles exact bytes, verifies the complete operation-addressed channel, performs semantic and host admission, and returns only a private intent marker. Dispatch revalidates that marker before one direct Workflow start, while retained comparison returns only matching, missing, divergent, or unavailable. No SDK handle, Semantic Process program, raw description, Workflow Run identity, or Memo crosses the Product 2 boundary.
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/engine-api test
+```
+
+## Learn more
+
+- [Architecture](../../docs/ARCHITECTURE.md#product-2-dependency-direction) owns the cross-product dependency boundary.
+- [Production lifecycle specification](../../docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns durable start, command, and recovery behavior.
+- [Committed-execution publication specification](../../docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns the published execution contract.
+- [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact currently available operations and evidence.

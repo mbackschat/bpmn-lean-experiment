@@ -40,7 +40,7 @@ Before pushing a UI-facing commit, run the exact local GitHub entry point descri
 
 ## Learn more
 
-- [Implementation index](INDEX.md) maps features to their source owners and tests.
+- [Source map](SOURCE-MAP.md) maps features to their main source owners.
 - [M3 human-work walkthrough](../../../docs/M3-HUMAN-WORK-WALKTHROUGH.md) is a guided task journey.
 - [UI design specification](../../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md) owns interaction, accessibility, responsive behavior, and browser evidence.
 - [Architecture](../../../docs/ARCHITECTURE.md#user-interface) owns package boundaries.

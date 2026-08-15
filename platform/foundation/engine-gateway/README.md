@@ -1,15 +1,20 @@
 # Engine gateway
 
-This package owns product 2's only semantic-consumption boundary: compile exact bytes, start an admitted program, observe committed state, and submit a command through narrowed public engine entry points.
+`@bpmn-lean/platform-engine-gateway` is Product 2's only concrete semantic-consumption boundary. It narrows Product 1 compilation, start, scheduling, observation, work, and incident operations into platform-facing ports while keeping Temporal and Semantic Process representations private.
 
-Exact source compilation projects only source identity, definition identity, admission diagnostics, and a platform-owned mapping of engine start capabilities. Exact-definition start binds stored source, digest, profile, Process identity, semantic Process-instance identity, and Task Queue before it reaches the concrete Temporal client, then discards the SDK Workflow handle.
+## What you can do
 
-Direct exact-definition start additionally exposes Product 1's SDK-free preparation, exact prepared dispatch, and handle-free retained description through one structural gateway. The returned locator and intent marker remain private Definitions facts.
+Compile exact source, prepare and recover exact-definition starts, manage Timer and Message Start host intent, observe Work and Operations facts through opaque locators, and submit published commands without exposing Workflow handles, Run IDs, Task Queues, Event History, or semantic anchors.
 
-The Message Start host prepares the exact stored definition and complete operation-addressed capability before reservation, returns only the private intent protocol and digest, revalidates that persisted marker before dispatch, and closes retained host comparison to matching, missing, divergent, or unavailable. Product 2 receives no program, raw Memo, Task Queue, Workflow Run identity, description, or SDK handle.
+## Quick start
 
-The cohesive definition Schedule host accepts only exact source and public binding inputs. It creates, inspects, pause-confirms, and deletes through Product 1 without exposing a Schedule description, checked graph, Semantic Process program, action argument, or SDK handle. The gateway exposes deterministic opaque Schedule and configured Workflow-ID addresses from the complete public schedule tuple and reserved semantic instance identity while their canonical hash derivation remains owned by the narrow Temporal client subpath.
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/platform-engine-gateway test
+```
 
-The separate Process Work gateway mints and parses only Product 1's opaque locator, uses the service-returned execution Workflow address for scheduled starts, and exposes closed observe/detail/complete results without revealing host identity. The Process Operations gateway interprets those same private locator bytes for strict current-incident observation and exact Retry or Cancel submission, while returning no locator or host address. The Process Execution gateway likewise parses the private locator locally and delegates one cursor request, but returns only the closed committed-execution publication result bound to public definition, Process, and instance identity. The composition-facing runtime owns one lazy reusable client connection and idempotent closure, so no other Product 2 package imports the Temporal client package and no Product 2 package imports the Temporal protocol package. The gateway never reconstructs a semantic fact from Temporal Event History, state differences, or platform persistence. See [the architecture](../../../docs/ARCHITECTURE.md#product-2-dependency-direction).
+## Learn more
 
-The Process Flow-node Occurrence gateway is a separate observation owner over the same opaque locator. It delegates one public definition, Process, hosting-instance, cursor, and limit request through the engine API and returns only the closed occurrence result. It exposes no Workflow ID, Program, semantic anchor, SDK handle, Event History, or host identity.
+- [Architecture](../../../docs/ARCHITECTURE.md#product-2-dependency-direction) owns the cross-product dependency boundary.
+- [Engine API](../../../packages/engine-api/README.md) is the Product 1 boundary consumed here.
+- [Production lifecycle specification](../../../docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns start, recovery, and command behavior.
+- [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records the exact current gateway surface.

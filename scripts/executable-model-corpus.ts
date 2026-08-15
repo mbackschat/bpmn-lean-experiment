@@ -269,15 +269,16 @@ export async function inspectExecutableModelCorpus(
     throw new Error(`MVP capability catalog differs from registered support: ${catalogDrift.join(", ")}`);
   }
   for (const capability of mvpBpmnCapabilities) {
-    if (capability.cibEvidence.kind !== CibCapabilityEvidenceKind.ExactSelectedProfile) {
+    const cibEvidence = capability.cibEvidence;
+    if (cibEvidence.kind !== CibCapabilityEvidenceKind.ExactSelectedProfile) {
       continue;
     }
     const pipelineCase = options.pipelineCases.find(
-      ({ id }) => id === capability.cibEvidence.pipelineCaseId,
+      ({ id }) => id === cibEvidence.pipelineCaseId,
     );
     if (
       pipelineCase?.cib === null ||
-      pipelineCase?.cib?.version !== capability.cibEvidence.version
+      pipelineCase?.cib?.version !== cibEvidence.version
     ) {
       throw new Error(`MVP capability ${capability.id} has no exact CIB pipeline evidence`);
     }
@@ -508,13 +509,13 @@ function tableCell(value: string): string {
   return value.replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
-export function renderExecutableModelCorpusIndex(
+export function renderExecutableModelCorpusMap(
   report: ExecutableModelCorpusReport,
 ): string {
   const lines = [
-    "# Executable BPMN model corpus index",
+    "# Executable BPMN model corpus map",
     "",
-    "This file is generated from `manifest.json` by the executable corpus guard. Edit the manifest or evidence owners, not this index by hand.",
+    "This file is generated from `manifest.json` by the executable corpus guard. Edit the manifest or evidence owners, not this map by hand.",
     "",
     "## Current result",
     "",

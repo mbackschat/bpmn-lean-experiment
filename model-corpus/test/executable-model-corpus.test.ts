@@ -10,13 +10,16 @@ import {
 } from "../../packages/bpmn-source/test/executable-model-corpus-compiler.ts";
 import {
   inspectExecutableModelCorpus,
-  renderExecutableModelCorpusIndex,
+  renderExecutableModelCorpusMap,
   requireExecutableModelCorpusManifest,
 } from "../../scripts/executable-model-corpus.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const manifestPath = path.join(projectRoot, "model-corpus/manifest.json");
-const indexPath = path.join(projectRoot, "model-corpus/INDEX.md");
+const corpusMapPath = path.join(
+  projectRoot,
+  "model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md",
+);
 
 async function loadManifest(): Promise<unknown> {
   return JSON.parse(await readFile(manifestPath, "utf8"));
@@ -101,7 +104,7 @@ test("rejects a supported element variant without a retained MVP model", async (
   );
 });
 
-test("keeps the generated corpus index exact", async () => {
+test("keeps the generated corpus map exact", async () => {
   const manifest = requireExecutableModelCorpusManifest(await loadManifest());
   const report = await inspectExecutableModelCorpus(manifest, {
     projectRoot,
@@ -112,8 +115,8 @@ test("keeps the generated corpus index exact", async () => {
   });
 
   assert.equal(
-    await readFile(indexPath, "utf8"),
-    renderExecutableModelCorpusIndex(report),
+    await readFile(corpusMapPath, "utf8"),
+    renderExecutableModelCorpusMap(report),
   );
 });
 
