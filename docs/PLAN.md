@@ -78,7 +78,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### M5 — it can be operated and explained
 
-**Status: in progress.** The independently closure-reviewed [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements exact evaluator-root traces, independent current positions, strict wire and canonical bytes, an atomic Workflow publication Query, a representation-free client and gateway, an opaque-locator engine API, live retention and replay evidence, fail-closed transactional Product 2 projection, and two-width desktop History, Diagram, and canonical export evidence. The closure-reviewed [flow-node occurrence metrics specification](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) adds exact occurrence frequency and completed duration over a complete exact-version population. E1 and flow-node metrics are closed; M5 remains open for completed operator history and audit export.
+**Status: in progress.** The independently closure-reviewed [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements exact evaluator-root traces, independent current positions, strict wire and canonical bytes, an atomic Workflow publication Query, a representation-free client and gateway, an opaque-locator engine API, live retention and replay evidence, fail-closed transactional Product 2 projection, and two-width desktop History, Diagram, and canonical export evidence. The closure-reviewed [flow-node occurrence metrics specification](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) adds exact occurrence frequency and completed duration over a complete exact-version population. The owner-approved [operator-history and audit-export proposal](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-PROPOSAL.md) is implemented end to end with focused and complete Product 2 evidence; its required context-cold closure review and graduation remain before M5 closes.
 
 **Demo.** An operator replays what a finished instance did, sees where a running one stands on the diagram, and exports the history.
 
@@ -104,7 +104,7 @@ The Lean lane must stay a research lane rather than becoming a proof tax on prod
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Ready: complete M5 operator history and audit export.** Define and implement one bounded Operations-authorized, per-Process-instance view and canonical download over the existing Work action and incident-action audit streams. Preserve their independent source-local ordering and completeness boundaries instead of inventing a cross-stream chronology or new audit producers. The proposal must complete the Product 2 source-grounded UI/UX preflight, define the strict versioned export and failure behavior, keep private engine and Temporal locators absent, and receive a context-cold review before implementation because it changes a public wire surface and cross-actor authorization. Closure requires focused contract, storage/reconciliation, HTTP, UI, browser, restart, failure, privacy, and canonical-byte evidence plus the complete Product 2 gate.
+1. **In progress: close M5 operator history and audit export.** The bounded Operations-authorized, per-Process-instance view and canonical download over the existing Work action and incident-action audit streams are implemented with separate source-local ordering and completeness boundaries, strict public bytes, private-fact exclusion, restart convergence, independent failure handling, and complete Product 2 evidence. Commit the immutable implementation target, obtain the required context-cold closure review, apply any required corrections through the same reviewer, then graduate the approved proposal and close M5.
 
 ## Approved decisions
 
@@ -227,7 +227,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: complete ordered-work item 1 by writing and independently reviewing the bounded M5 operator-history and audit-export proposal, then implement it end to end.** The next semantic-family decision remains after M5: classify Script Task execution against BPMN, CIB, deterministic sandboxing, data, security, and Temporal requirements before deciding whether its two-family prevalence justifies a proposal.
+**Next action: complete ordered-work item 1 by committing the implemented M5 operator-history and audit-export target and obtaining its required context-cold closure review.** After any required correction audit, graduate the approved proposal and close M5. The next semantic-family decision remains after M5: classify Script Task execution against BPMN, CIB, deterministic sandboxing, data, security, and Temporal requirements before deciding whether its two-family prevalence justifies a proposal.
 
 Item 1 is **blocked on nothing**. The exact manifest, 23 retained models covering all 25 registered executable variants, seven external candidates across six clone families, provenance and catalog guards, Product 2 About disclosure, and two production browser journeys are closure-reviewed and complete. Product 2 readiness is two; 21 retained models remain excluded from its catalog.
 

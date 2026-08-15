@@ -156,6 +156,73 @@ test("pages exclusively in insertion order when new rows arrive between reads", 
   });
 });
 
+test("takes one bounded hosting-instance snapshot in source-local order", () => {
+  withRepository((repository) => {
+    const other = event({
+      eventId: "event-other",
+      actionId: "action-other",
+      hostingProcessInstanceId: "process-other",
+      incidentId: {
+        effectId: {
+          processInstanceId: "process-other",
+          elementId: "ServiceTask_Other",
+          activation: 1,
+        },
+        generation: 1,
+      },
+    });
+    const later = event({
+      eventId: "event-2",
+      actionId: "action-2",
+      recordedAt: "2026-08-14T09:59:59.000Z",
+    });
+    repository.record(event());
+    repository.record(other);
+    repository.record(later);
+    const snapshot = repository.snapshotHostingProcessInstance("process-1", {
+      maxEvents: 10,
+      maxStoredBytes: 10_000,
+    });
+    assert.deepEqual(snapshot, {
+      headEventId: "event-2",
+      events: [event(), later],
+    });
+    repository.record(event({
+      eventId: "event-3",
+      actionId: "action-3",
+      recordedAt: "2026-08-14T10:00:02.000Z",
+    }));
+    const extended = repository.snapshotHostingProcessInstance("process-1", {
+      maxEvents: 10,
+      maxStoredBytes: 10_000,
+    });
+    assert.deepEqual(extended.events.slice(0, snapshot.events.length), snapshot.events);
+    assert.equal(extended.headEventId, "event-3");
+  });
+});
+
+test("fails a snapshot above its event or stored UTF-8 byte ceiling", () => {
+  withRepository((repository) => {
+    const multibyte = event({ actorId: "operator-🚀" });
+    repository.record(multibyte);
+    repository.record(event({ eventId: "event-2", actionId: "action-2" }));
+    assert.throws(
+      () => repository.snapshotHostingProcessInstance("process-1", {
+        maxEvents: 1,
+        maxStoredBytes: 10_000,
+      }),
+      /snapshot limit/u,
+    );
+    assert.throws(
+      () => repository.snapshotHostingProcessInstance("process-1", {
+        maxEvents: 10,
+        maxStoredBytes: Buffer.byteLength(JSON.stringify(multibyte), "utf8") - 1,
+      }),
+      /snapshot limit/u,
+    );
+  });
+});
+
 test("rejects malformed or equivalent noncanonical cursors before search", () => {
   withRepository((repository) => {
     const service = new IncidentAuditSearchService(repository);
@@ -165,7 +232,7 @@ test("rejects malformed or equivalent noncanonical cursors before search", () =>
   });
 });
 
-test("rejects an epoch-1 store with a divergent extra schema object", () => {
+test("rejects a divergent extra schema object", () => {
   const directory = mkdtempSync(join(tmpdir(), "bpmn-incident-audit-"));
   const databaseFile = join(directory, "incident-audit.sqlite");
   try {
@@ -174,6 +241,25 @@ test("rejects an epoch-1 store with a divergent extra schema object", () => {
     const { DatabaseSync } = requireSqlite();
     const database = new DatabaseSync(databaseFile);
     database.exec("CREATE TABLE private_drift (value TEXT) STRICT");
+    database.close();
+    assert.throws(
+      () => new SqliteIncidentAuditRepository(databaseFile),
+      /exact supported epoch/u,
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("rejects the previous incident-audit schema epoch without migration", () => {
+  const directory = mkdtempSync(join(tmpdir(), "bpmn-incident-audit-"));
+  const databaseFile = join(directory, "incident-audit.sqlite");
+  try {
+    const repository = new SqliteIncidentAuditRepository(databaseFile);
+    repository.close();
+    const { DatabaseSync } = requireSqlite();
+    const database = new DatabaseSync(databaseFile);
+    database.exec("PRAGMA user_version = 1");
     database.close();
     assert.throws(
       () => new SqliteIncidentAuditRepository(databaseFile),

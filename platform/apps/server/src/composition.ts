@@ -20,6 +20,7 @@ import {
 import {
   ConfirmedProcessInstanceOperateBootstrap,
   ConfirmedProcessInstancePublicationService,
+  ConfirmedProcessInstanceState,
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
   DefinitionScheduleHttpRoutes,
@@ -48,6 +49,8 @@ import {
   IncidentAggregationService,
   IncidentHttpRoutes,
   IncidentMutationService,
+  OperatorAuditExportHttpRoutes,
+  OperatorAuditExportService,
   ExecutionPublicationHttpRoutes,
   ExecutionPublicationReconciliationService,
   FlowNodeMetricsAggregationService,
@@ -344,6 +347,24 @@ export async function createPlatformServer(
       outbox: auditOutbox,
       audit: auditSearch,
     });
+    const operatorAuditRoutes = new OperatorAuditExportHttpRoutes({
+      actors,
+      authorization: operationsAuthorization,
+      registrations: {
+        getConfirmed: (processInstanceId) => {
+          const record = confirmedRepository.get(processInstanceId);
+          return record?.state === ConfirmedProcessInstanceState.Confirmed
+            ? record.instance
+            : null;
+        },
+      },
+      exports: new OperatorAuditExportService({
+        workOutbox: auditOutbox,
+        incidentOutbox: incidentAuditOutbox,
+        workAudit: auditRepository,
+        incidentAudit: incidentAuditRepository,
+      }),
+    });
     const workRoutes = new WorkHttpRoutes({
       tasks: {
         listTasks: () => workService.listTasks(),
@@ -361,6 +382,7 @@ export async function createPlatformServer(
     const server = createPlatformHttpServerFromValidatedOrigin({
       publicOrigin: snapshot.publicOrigin,
       routes: [
+        (request) => operatorAuditRoutes.handle(request),
         (request) => incidentRoutes.handle(request),
         (request) => workRoutes.handle(request),
         (request) => executionPublicationRoutes.handle(request),

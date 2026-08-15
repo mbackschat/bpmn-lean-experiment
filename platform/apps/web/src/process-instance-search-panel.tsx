@@ -10,6 +10,7 @@ import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api.ts";
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import type { ProcessExecutionApi } from "./process-execution-api.ts";
+import type { OperatorAuditApi } from "./operator-audit-api.ts";
 import {
   ProcessExecutionDetailLoadKind,
   ProcessExecutionDetailLoader,
@@ -24,6 +25,7 @@ export type ProcessInstanceSearchPanelProps = Readonly<{
   api: ProcessInstanceSearchApi;
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   executionApi: ProcessExecutionApi;
+  operatorAuditApi: OperatorAuditApi;
   isActive: boolean;
 }>;
 
@@ -32,6 +34,7 @@ export function ProcessInstanceSearchPanel({
   api,
   definitionApi,
   executionApi,
+  operatorAuditApi,
   isActive,
 }: ProcessInstanceSearchPanelProps) {
   const [processInstanceId, setProcessInstanceId] = useState("");
@@ -76,6 +79,7 @@ export function ProcessInstanceSearchPanel({
       <ProcessInstanceExecutionDetailBoundary
         api={executionApi}
         definitionApi={definitionApi}
+        operatorAuditApi={operatorAuditApi}
         onBack={() => {
           restoreFocus.current = true;
           detailLoader.current.clear(executionApi, setDetail);
@@ -253,7 +257,7 @@ export function ProcessInstanceSearchTable({
             <th scope="col">Source ID</th>
             <th scope="col">Source digest</th>
             <th scope="col">Semantic profile</th>
-            <th scope="col">Execution</th>
+            <th scope="col">Details</th>
           </tr>
         </thead>
         <tbody>
@@ -273,9 +277,9 @@ export function ProcessInstanceSearchTable({
                     const row = event.target;
                     if (row instanceof HTMLButtonElement) onOpen(instance, row);
                   }}
-                  aria-label={`View execution ${instance.processInstanceId}`}
+                  aria-label={`View details ${instance.processInstanceId}`}
                 >
-                  View execution
+                  View details
                 </Button>
               </td>
             </tr>

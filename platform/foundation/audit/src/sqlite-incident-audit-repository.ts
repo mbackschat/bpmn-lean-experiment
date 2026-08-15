@@ -12,15 +12,23 @@ import {
   IncidentAuditSchemaResetRequiredError,
   IncidentAuditStoredValueError,
 } from "./incident-audit-contracts.js";
+import {
+  readBoundedAuditSnapshot,
+} from "./bounded-audit-snapshot.js";
 import type {
   IncidentAuditRepository,
   IncidentAuditRepositoryQuery,
   StoredIncidentAuditEvent,
 } from "./incident-audit-contracts.js";
+import type {
+  AuditSnapshotLimits,
+  AuditStreamSnapshot,
+} from "./bounded-audit-snapshot.js";
 
-const schemaEpoch = 1;
+const schemaEpoch = 2;
 const defaultBusyTimeoutMs = 5_000;
 const expectedSchemaObjects = [
+  ["index", "incident_audit_host_ordinal", "incident_audit_events"],
   ["index", "sqlite_autoindex_incident_audit_events_1", "incident_audit_events"],
   ["index", "sqlite_autoindex_incident_audit_events_2", "incident_audit_events"],
   ["table", "incident_audit_events", "incident_audit_events"],
@@ -77,7 +85,7 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
     this.#database.exec("BEGIN IMMEDIATE");
     try {
       const existing = this.#database.prepare(`
-        SELECT ordinal, actor_id, hosting_process_instance_id,
+        SELECT ordinal, event_id, actor_id, hosting_process_instance_id,
           incident_process_instance_id, incident_element_id,
           incident_activation, incident_generation, action_kind,
           action_id, outcome, event_json
@@ -186,7 +194,7 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
       ? ""
       : `WHERE ${combinedPredicates}`;
     return this.#database.prepare(`
-      SELECT ordinal, actor_id, hosting_process_instance_id,
+      SELECT ordinal, event_id, actor_id, hosting_process_instance_id,
         incident_process_instance_id, incident_element_id,
         incident_activation, incident_generation, action_kind,
         action_id, outcome, event_json
@@ -195,6 +203,36 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
       ORDER BY ordinal ASC
       LIMIT ?
     `).all(...parameters).map(decodeRow);
+  }
+
+  snapshotHostingProcessInstance(
+    hostingProcessInstanceId: string,
+    limits: AuditSnapshotLimits,
+  ): AuditStreamSnapshot<IncidentAuditEvent> {
+    return readBoundedAuditSnapshot(
+      this.#database,
+      hostingProcessInstanceId,
+      limits,
+      {
+        headSql: `
+          SELECT COUNT(*) AS event_count,
+            COALESCE(SUM(length(CAST(event_json AS BLOB))), 0) AS stored_bytes,
+            MAX(ordinal) AS head_ordinal
+          FROM incident_audit_events
+          WHERE hosting_process_instance_id = ?
+        `,
+        rowsSql: `
+          SELECT ordinal, event_id, actor_id, hosting_process_instance_id,
+            incident_process_instance_id, incident_element_id,
+            incident_activation, incident_generation, action_kind,
+            action_id, outcome, event_json
+          FROM incident_audit_events
+          WHERE hosting_process_instance_id = ? AND ordinal <= ?
+          ORDER BY ordinal ASC
+        `,
+        decodeRow,
+      },
+    );
   }
 
   close(): void {
@@ -216,6 +254,7 @@ function initializeSchema(database: DatabaseSync): void {
     `).all().map((row) => row.name);
     if (tables.length === 0 && version === 0) {
       database.exec(tableSql);
+      database.exec(`CREATE INDEX incident_audit_host_ordinal ON incident_audit_events (hosting_process_instance_id, ordinal)`);
       database.exec(`PRAGMA user_version = ${schemaEpoch}`);
       database.exec("COMMIT");
       return;
@@ -285,6 +324,7 @@ function decodeRow(row: Record<string, SQLOutputValue>): StoredIncidentAuditEven
     const encoded = requireString(row.event_json, "event_json");
     const event = decodeIncidentAuditEvent(JSON.parse(encoded));
     if (
+      event.eventId !== requireString(row.event_id, "event_id") ||
       event.actorId !== requireString(row.actor_id, "actor_id") ||
       event.hostingProcessInstanceId !== requireString(
         row.hosting_process_instance_id,

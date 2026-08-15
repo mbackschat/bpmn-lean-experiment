@@ -34,6 +34,7 @@ test("grants every Operations surface to the exact operators group", () => {
     "executionDiagram",
     "executionExport",
     "flowNodeMetrics",
+    "operatorAudit",
   ]);
   for (const surface of surfaces) {
     assert.equal(

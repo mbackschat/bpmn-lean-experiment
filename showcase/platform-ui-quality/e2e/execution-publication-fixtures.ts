@@ -278,6 +278,26 @@ export async function installExecutionPublicationFixtures(
     }
     if (
       request.method() === "GET" &&
+      path === `/api/v1/process-instances/${encodeURIComponent(instance.processInstanceId)}/operator-audit/export`
+    ) {
+      const body = {
+        format: "bpmn-lean.operator-audit.v1",
+        instance,
+        work: { headEventId: null, events: [] },
+        incidentActions: { headEventId: null, events: [] },
+      } as const;
+      publicResponses.push(body);
+      return route.fulfill({
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "content-disposition": `attachment; filename="operator-audit-${instance.processInstanceId.slice(0, 80)}.json"`,
+        },
+        body: Buffer.from(new TextEncoder().encode(canonicalJson(body))),
+      });
+    }
+    if (
+      request.method() === "GET" &&
       path === `/api/v1/definitions/${encodeURIComponent(definition.processId)}/versions/${definition.version}/presentation`
     ) {
       return json(route, diagramPresentation(), publicResponses);

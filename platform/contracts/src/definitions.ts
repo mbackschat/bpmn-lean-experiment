@@ -111,6 +111,7 @@ export const PublicApiErrorCode = {
   IncidentSnapshotUnavailable: "incidentSnapshotUnavailable",
   ExecutionPublicationUnavailable: "executionPublicationUnavailable",
   FlowNodeMetricsUnavailable: "flowNodeMetricsUnavailable",
+  OperatorAuditUnavailable: "operatorAuditUnavailable",
 } as const;
 
 export type PublicApiErrorCode =

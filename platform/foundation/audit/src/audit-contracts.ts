@@ -3,6 +3,11 @@ import type {
   WorkAuditRequest,
 } from "@bpmn-lean/platform-contracts";
 
+import type {
+  AuditSnapshotLimits,
+  AuditStreamSnapshot,
+} from "./bounded-audit-snapshot.js";
+
 export type AuditRepositoryQuery = Readonly<{
   actorId: string;
   taskProcessInstanceId?: string;
@@ -20,6 +25,10 @@ export type StoredAuditEvent = Readonly<{
 export interface AuditRepository {
   record(event: WorkAuditEvent): number;
   search(query: AuditRepositoryQuery): ReadonlyArray<StoredAuditEvent>;
+  snapshotHostingProcessInstance(
+    hostingProcessInstanceId: string,
+    limits: AuditSnapshotLimits,
+  ): AuditStreamSnapshot<WorkAuditEvent>;
 }
 
 export type AuthorizedAuditSearchRequest = WorkAuditRequest & Readonly<{

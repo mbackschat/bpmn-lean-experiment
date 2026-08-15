@@ -12,10 +12,12 @@ import {
 
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import { LatestRequest } from "./latest-request.ts";
+import type { OperatorAuditApi } from "./operator-audit-api.ts";
 import { downloadExecutionPublication } from "./process-execution-api.ts";
 import type { ProcessExecutionApi } from "./process-execution-api.ts";
 import { ProcessInstanceExecutionDiagram } from "./process-instance-execution-diagram.tsx";
 import { ProcessInstanceExecutionHistory } from "./process-instance-execution-history.tsx";
+import { ProcessOperatorHistory } from "./process-operator-history.tsx";
 import styles from "./process-instance-execution-detail.module.css";
 
 export enum ProcessExecutionDetailLoadKind {
@@ -89,6 +91,7 @@ export class ProcessExecutionDetailLoader {
 export type ProcessInstanceExecutionDetailBoundaryProps = Readonly<{
   api: ProcessExecutionApi;
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
+  operatorAuditApi: OperatorAuditApi;
   onBack: () => void;
   onUnavailable: (requested: PublicProcessInstanceIdentity, message: string) => void;
   state: ProcessExecutionDetailSelection;
@@ -98,42 +101,26 @@ export type ProcessInstanceExecutionDetailBoundaryProps = Readonly<{
 export function ProcessInstanceExecutionDetailBoundary({
   api,
   definitionApi,
+  operatorAuditApi,
   onBack,
   onUnavailable,
   state,
 }: ProcessInstanceExecutionDetailBoundaryProps) {
   if (state === null) return null;
-  switch (state.kind) {
-    case ProcessExecutionDetailLoadKind.Current:
-      return (
-        <ProcessInstanceExecutionDetail
-          api={api}
-          definitionApi={definitionApi}
-          instance={state.instance}
-          onBack={onBack}
-          onUnavailable={(message) => { onUnavailable(state.instance, message); }}
-          publication={state.publication}
-        />
-      );
-    case ProcessExecutionDetailLoadKind.Pending:
-      return (
-        <ExecutionDetailStatus
-          instance={state.requested}
-          message="Loading the complete committed execution publication…"
-          onBack={onBack}
-          role="status"
-        />
-      );
-    case ProcessExecutionDetailLoadKind.Failed:
-      return (
-        <ExecutionDetailStatus
-          instance={state.requested}
-          message={`Committed execution publication unavailable. ${state.message} History, Diagram, and export are suppressed.`}
-          onBack={onBack}
-          role="alert"
-        />
-      );
-  }
+  const instance = state.kind === ProcessExecutionDetailLoadKind.Current
+    ? state.instance
+    : state.requested;
+  return (
+    <ProcessInstanceExecutionDetail
+      api={api}
+      definitionApi={definitionApi}
+      instance={instance}
+      onBack={onBack}
+      onUnavailable={(message) => { onUnavailable(instance, message); }}
+      operatorAuditApi={operatorAuditApi}
+      state={state}
+    />
+  );
 }
 
 type ProcessInstanceExecutionDetailProps = Readonly<{
@@ -142,7 +129,8 @@ type ProcessInstanceExecutionDetailProps = Readonly<{
   instance: PublicProcessInstanceIdentity;
   onBack: () => void;
   onUnavailable: (message: string) => void;
-  publication: ExecutionPublicationExport;
+  operatorAuditApi: OperatorAuditApi;
+  state: ProcessExecutionDetailLoadState;
 }>;
 
 function ProcessInstanceExecutionDetail({
@@ -151,22 +139,37 @@ function ProcessInstanceExecutionDetail({
   instance,
   onBack,
   onUnavailable,
-  publication,
+  operatorAuditApi,
+  state,
 }: ProcessInstanceExecutionDetailProps) {
   const [tab, setTab] = useState("overview");
   const [downloadStatus, setDownloadStatus] = useState<"pending" | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const interactiveFocusClaimed = useRef(false);
   const downloadRequests = useMemo(() => new LatestRequest(), []);
 
   useEffect(() => {
-    queueFocus(heading.current);
+    interactiveFocusClaimed.current = false;
+  }, [instance]);
+
+  useEffect(() => {
+    if (
+      state.kind === ProcessExecutionDetailLoadKind.Current &&
+      !interactiveFocusClaimed.current
+    ) {
+      queueFocusWhenUnowned(heading.current);
+    }
+  }, [instance, state.kind]);
+
+  useEffect(() => {
     return () => {
       downloadRequests.invalidate();
       api.invalidate();
     };
-  }, [api, downloadRequests, publication]);
+  }, [api, downloadRequests, instance]);
 
   async function download(): Promise<void> {
+    if (state.kind !== ProcessExecutionDetailLoadKind.Current) return;
     const generation = downloadRequests.begin();
     setDownloadStatus("pending");
     try {
@@ -183,16 +186,74 @@ function ProcessInstanceExecutionDetail({
 
   function selectTab(next: string): void {
     downloadRequests.invalidate();
-    api.invalidate();
     setDownloadStatus(null);
     setTab(next);
   }
 
+  const semanticTabs = state.kind === ProcessExecutionDetailLoadKind.Current
+    ? [{
+        id: "overview",
+        label: "Overview",
+        content: (
+          <ExecutionOverview
+            busy={downloadStatus === "pending"}
+            instance={instance}
+            onDownload={() => { void download(); }}
+            publication={state.publication}
+          />
+        ),
+      }, {
+        id: "history",
+        label: "History",
+        content: <ProcessInstanceExecutionHistory batches={state.publication.batches} />,
+      }, {
+        id: "diagram",
+        label: "Diagram",
+        content: (
+          <ProcessInstanceExecutionDiagram
+            api={definitionApi}
+            current={state.publication.current}
+            definition={instance.definition}
+          />
+        ),
+      }]
+    : [];
+  const selectedTab = state.kind === ProcessExecutionDetailLoadKind.Current
+    ? tab
+    : "operator-history";
+  const tabs = [...semanticTabs, {
+    id: "operator-history",
+    label: "Operator history",
+    content: (
+      <ProcessOperatorHistory
+        api={operatorAuditApi}
+        instance={instance}
+        isActive={selectedTab === "operator-history"}
+      />
+    ),
+  }];
   return (
-    <section className={styles.workspace} data-ui="process-execution-detail" aria-labelledby="process-execution-detail-heading">
+    <section
+      className={styles.workspace}
+      data-ui="process-execution-detail"
+      aria-labelledby="process-execution-detail-heading"
+      onFocusCapture={(event) => {
+        const target = event.target as HTMLElement;
+        const role = target.getAttribute("role");
+        if (target !== heading.current && role !== "status" && role !== "alert") {
+          interactiveFocusClaimed.current = true;
+        }
+        if (
+          state.kind !== ProcessExecutionDetailLoadKind.Current &&
+          target.closest('[data-key="operator-history"]') !== null
+        ) {
+          setTab("operator-history");
+        }
+      }}
+    >
       <div className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Committed execution</p>
+          <p className={styles.eyebrow}>Confirmed Process instance</p>
           <h2 id="process-execution-detail-heading" ref={heading} tabIndex={-1}>
             Process instance {instance.processInstanceId}
           </h2>
@@ -200,36 +261,12 @@ function ProcessInstanceExecutionDetail({
         </div>
         <Button variant={ButtonVariant.Secondary} onPress={onBack}>Back to Process instances</Button>
       </div>
+      <ExecutionAvailability state={state} />
       <WorkspaceTabs
         aria-label="Process instance detail"
-        selectedKey={tab}
+        selectedKey={selectedTab}
         onSelectionChange={selectTab}
-        tabs={[{
-          id: "overview",
-          label: "Overview",
-          content: (
-            <ExecutionOverview
-              busy={downloadStatus === "pending"}
-              instance={instance}
-              onDownload={() => { void download(); }}
-              publication={publication}
-            />
-          ),
-        }, {
-          id: "history",
-          label: "History",
-          content: <ProcessInstanceExecutionHistory batches={publication.batches} />,
-        }, {
-          id: "diagram",
-          label: "Diagram",
-          content: (
-            <ProcessInstanceExecutionDiagram
-              api={definitionApi}
-              current={publication.current}
-              definition={instance.definition}
-            />
-          ),
-        }]}
+        tabs={tabs}
       />
     </section>
   );
@@ -273,35 +310,30 @@ function Fact({ label, value }: Readonly<{ label: string; value: string }>) {
   return <><dt>{label}</dt><dd><code>{value}</code></dd></>;
 }
 
-function ExecutionDetailStatus({
-  instance,
-  message,
-  onBack,
-  role,
-}: Readonly<{
-  instance: PublicProcessInstanceIdentity;
-  message: string;
-  onBack: () => void;
-  role: "alert" | "status";
-}>) {
+function ExecutionAvailability({ state }: Readonly<{ state: ProcessExecutionDetailLoadState }>) {
   const status = useRef<HTMLParagraphElement>(null);
-  useEffect(() => { queueFocus(status.current); }, [message, role]);
-  return (
-    <section className={styles.workspace} data-ui="process-execution-load" aria-labelledby="process-execution-load-heading">
-      <div className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Committed execution verification</p>
-          <h2 id="process-execution-load-heading">Process instance {instance.processInstanceId}</h2>
-        </div>
-        <Button variant={ButtonVariant.Secondary} onPress={onBack}>Back to Process instances</Button>
-      </div>
-      <p className={role === "alert" ? styles.error : styles.status} ref={status} role={role} tabIndex={-1}>{message}</p>
-    </section>
-  );
+  useEffect(() => {
+    if (state.kind !== ProcessExecutionDetailLoadKind.Current) queueFocus(status.current);
+  }, [state]);
+  switch (state.kind) {
+    case ProcessExecutionDetailLoadKind.Current:
+      return null;
+    case ProcessExecutionDetailLoadKind.Pending:
+      return <p className={styles.status} ref={status} role="status" tabIndex={-1}>Loading the complete committed execution publication… Operator history remains independent.</p>;
+    case ProcessExecutionDetailLoadKind.Failed:
+      return <p className={styles.error} ref={status} role="alert" tabIndex={-1}>Committed execution publication unavailable. {state.message} Overview, History, Diagram, and execution export are suppressed. Operator history remains available.</p>;
+  }
 }
 
 function queueFocus(element: HTMLElement | null): void {
   requestAnimationFrame(() => { element?.focus(); });
+}
+
+function queueFocusWhenUnowned(element: HTMLElement | null): void {
+  requestAnimationFrame(() => {
+    const active = document.activeElement;
+    if (active === null || active === document.body || !active.isConnected) element?.focus();
+  });
 }
 
 function errorMessage(error: unknown): string {

@@ -9,6 +9,7 @@ export enum OperationsAuthorizationSurface {
   ExecutionDiagram = "executionDiagram",
   ExecutionExport = "executionExport",
   FlowNodeMetrics = "flowNodeMetrics",
+  OperatorAudit = "operatorAudit",
 }
 
 export enum OperationsAuthorizationDecision {
@@ -48,6 +49,7 @@ export class OperationsAuthorizationPolicy {
       case OperationsAuthorizationSurface.ExecutionDiagram:
       case OperationsAuthorizationSurface.ExecutionExport:
       case OperationsAuthorizationSurface.FlowNodeMetrics:
+      case OperationsAuthorizationSurface.OperatorAudit:
         return actor.groups.includes(this.#operationsGroupId)
           ? OperationsAuthorizationDecision.Permitted
           : OperationsAuthorizationDecision.Forbidden;

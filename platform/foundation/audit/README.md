@@ -4,7 +4,7 @@
 
 ## What you can do
 
-Persist and page Work or incident-action audit events with exact filters, idempotent event identity, and opaque exclusive cursors.
+Persist and page Work or incident-action audit events with exact filters, idempotent event identity, and opaque exclusive cursors. Each repository can also capture one bounded, source-local snapshot for a hosting Process instance without claiming a shared order across the two audit streams.
 
 ## Quick start
 

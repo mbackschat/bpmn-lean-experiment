@@ -5,6 +5,11 @@ import type {
   PublicEffectIncidentId,
 } from "@bpmn-lean/platform-contracts";
 
+import type {
+  AuditSnapshotLimits,
+  AuditStreamSnapshot,
+} from "./bounded-audit-snapshot.js";
+
 export type IncidentAuditRepositoryQuery = Readonly<{
   actorId?: string;
   hostingProcessInstanceId?: string;
@@ -24,6 +29,10 @@ export interface IncidentAuditRepository {
   search(
     query: IncidentAuditRepositoryQuery,
   ): ReadonlyArray<StoredIncidentAuditEvent>;
+  snapshotHostingProcessInstance(
+    hostingProcessInstanceId: string,
+    limits: AuditSnapshotLimits,
+  ): AuditStreamSnapshot<IncidentAuditEvent>;
 }
 
 export type NormalizedIncidentAuditSearchRequest = IncidentAuditRequest &

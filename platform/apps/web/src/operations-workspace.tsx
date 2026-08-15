@@ -8,12 +8,14 @@ import { IncidentsPanel } from "./incidents-panel.tsx";
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api.ts";
 import type { ProcessExecutionApi } from "./process-execution-api.ts";
+import type { OperatorAuditApi } from "./operator-audit-api.ts";
 import { ProcessInstanceSearchPanel } from "./process-instance-search-panel.tsx";
 import styles from "./operations-workspace.module.css";
 
 export type OperationsWorkspaceProps = Readonly<{
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   incidentApi: IncidentOperationsApi;
+  operatorAuditApi: OperatorAuditApi;
   processExecutionApi: ProcessExecutionApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
 }>;
@@ -22,6 +24,7 @@ export type OperationsWorkspaceProps = Readonly<{
 export function OperationsWorkspace({
   definitionApi,
   incidentApi,
+  operatorAuditApi,
   processExecutionApi,
   processInstanceSearchApi,
 }: OperationsWorkspaceProps) {
@@ -40,6 +43,7 @@ export function OperationsWorkspace({
               api={processInstanceSearchApi}
               definitionApi={definitionApi}
               executionApi={processExecutionApi}
+              operatorAuditApi={operatorAuditApi}
               isActive={tab === "process-instances"}
             />
           ),

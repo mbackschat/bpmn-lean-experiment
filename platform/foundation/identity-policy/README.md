@@ -4,7 +4,7 @@
 
 ## What you can do
 
-Resolve a configured actor for local composition, filter human work by exact candidate-group membership, authorize self-claim and self-audit, and apply one exact operations-group policy to incident surfaces.
+Resolve a configured actor for local composition, filter human work by exact candidate-group membership, authorize self-claim and self-audit, and apply one exact operations-group policy to incident, execution, metrics, and operator-audit surfaces.
 
 ## Quick start
 

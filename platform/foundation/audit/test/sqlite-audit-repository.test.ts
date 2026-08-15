@@ -97,6 +97,66 @@ test("pages in stable insertion order across newer inserts", () => {
   });
 });
 
+test("takes one bounded hosting-instance snapshot in source-local order", () => {
+  withRepository((repository) => {
+    const other = event({
+      eventId: "event-other",
+      hostingProcessInstanceId: "host-other",
+    });
+    const later = event({
+      eventId: "event-2",
+      recordedAt: "2026-08-12T09:59:59.000Z",
+    });
+    repository.record(event());
+    repository.record(other);
+    repository.record(later);
+    const snapshot = repository.snapshotHostingProcessInstance("host-1", {
+      maxEvents: 10,
+      maxStoredBytes: 10_000,
+    });
+    assert.deepEqual(snapshot, {
+      headEventId: "event-2",
+      events: [event(), later],
+    });
+    repository.record(event({
+      eventId: "event-3",
+      recordedAt: "2026-08-12T10:00:02.000Z",
+    }));
+    assert.deepEqual(snapshot.events.map(({ eventId }) => eventId), [
+      "event-1",
+      "event-2",
+    ]);
+    const extended = repository.snapshotHostingProcessInstance("host-1", {
+      maxEvents: 10,
+      maxStoredBytes: 10_000,
+    });
+    assert.deepEqual(extended.events.slice(0, snapshot.events.length), snapshot.events);
+    assert.equal(extended.headEventId, "event-3");
+  });
+});
+
+test("fails a snapshot above its event or stored UTF-8 byte ceiling", () => {
+  withRepository((repository) => {
+    const multibyte = event({ actorId: "operator-🚀" });
+    repository.record(multibyte);
+    repository.record(event({ eventId: "event-2" }));
+    assert.throws(
+      () => repository.snapshotHostingProcessInstance("host-1", {
+        maxEvents: 1,
+        maxStoredBytes: 10_000,
+      }),
+      /snapshot limit/u,
+    );
+    assert.throws(
+      () => repository.snapshotHostingProcessInstance("host-1", {
+        maxEvents: 10,
+        maxStoredBytes: Buffer.byteLength(JSON.stringify(multibyte), "utf8") - 1,
+      }),
+      /snapshot limit/u,
+    );
+  });
+});
+
 test("rejects malformed cursors before repository search", () => {
   withRepository((repository) => {
     const service = new AuditSearchService(repository);
@@ -125,7 +185,33 @@ test("fails closed when redundant filter columns disagree with stored JSON", () 
       () => new AuditSearchService(reopened).search({ actorId: "demo-user", limit: 50 }),
       /stored audit event is invalid/,
     );
+    assert.throws(
+      () => reopened.snapshotHostingProcessInstance("host-1", {
+        maxEvents: 10,
+        maxStoredBytes: 10_000,
+      }),
+      /stored audit event is invalid/u,
+    );
     reopened.close();
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("rejects the previous audit schema epoch without migration", () => {
+  const directory = mkdtempSync(join(tmpdir(), "bpmn-audit-"));
+  const databaseFile = join(directory, "audit.sqlite");
+  try {
+    const repository = new SqliteAuditRepository(databaseFile);
+    repository.close();
+    const { DatabaseSync } = requireSqlite();
+    const database = new DatabaseSync(databaseFile);
+    database.exec("PRAGMA user_version = 1");
+    database.close();
+    assert.throws(
+      () => new SqliteAuditRepository(databaseFile),
+      /exact supported epoch/u,
+    );
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

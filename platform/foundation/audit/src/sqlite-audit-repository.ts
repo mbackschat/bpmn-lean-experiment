@@ -11,14 +11,27 @@ import {
   AuditSchemaResetRequiredError,
   AuditStoredValueError,
 } from "./audit-contracts.js";
+import {
+  readBoundedAuditSnapshot,
+} from "./bounded-audit-snapshot.js";
 import type {
   AuditRepository,
   AuditRepositoryQuery,
   StoredAuditEvent,
 } from "./audit-contracts.js";
+import type {
+  AuditSnapshotLimits,
+  AuditStreamSnapshot,
+} from "./bounded-audit-snapshot.js";
 
-const schemaEpoch = 1;
+const schemaEpoch = 2;
 const defaultBusyTimeoutMs = 5_000;
+const expectedSchemaObjects = [
+  ["index", "sqlite_autoindex_work_audit_events_1", "work_audit_events"],
+  ["index", "work_audit_actor_ordinal", "work_audit_events"],
+  ["index", "work_audit_host_ordinal", "work_audit_events"],
+  ["table", "work_audit_events", "work_audit_events"],
+] as const;
 const tableSql = `
   CREATE TABLE work_audit_events (
     ordinal INTEGER PRIMARY KEY AUTOINCREMENT CHECK (
@@ -59,7 +72,7 @@ export class SqliteAuditRepository implements AuditRepository {
     this.#database.exec("BEGIN IMMEDIATE");
     try {
       const existing = this.#database.prepare(`
-        SELECT ordinal, actor_id, task_process_instance_id,
+        SELECT ordinal, event_id, actor_id, task_process_instance_id,
           hosting_process_instance_id, action_kind, event_json
         FROM work_audit_events WHERE event_id = ?
       `).get(exact.eventId);
@@ -110,13 +123,41 @@ export class SqliteAuditRepository implements AuditRepository {
       "",
     );
     return this.#database.prepare(`
-      SELECT ordinal, actor_id, task_process_instance_id,
+      SELECT ordinal, event_id, actor_id, task_process_instance_id,
         hosting_process_instance_id, action_kind, event_json
       FROM work_audit_events
       WHERE ${where}
       ORDER BY ordinal ASC
       LIMIT ?
     `).all(...parameters).map(decodeRow);
+  }
+
+  snapshotHostingProcessInstance(
+    hostingProcessInstanceId: string,
+    limits: AuditSnapshotLimits,
+  ): AuditStreamSnapshot<WorkAuditEvent> {
+    return readBoundedAuditSnapshot(
+      this.#database,
+      hostingProcessInstanceId,
+      limits,
+      {
+        headSql: `
+          SELECT COUNT(*) AS event_count,
+            COALESCE(SUM(length(CAST(event_json AS BLOB))), 0) AS stored_bytes,
+            MAX(ordinal) AS head_ordinal
+          FROM work_audit_events
+          WHERE hosting_process_instance_id = ?
+        `,
+        rowsSql: `
+          SELECT ordinal, event_id, actor_id, task_process_instance_id,
+            hosting_process_instance_id, action_kind, event_json
+          FROM work_audit_events
+          WHERE hosting_process_instance_id = ? AND ordinal <= ?
+          ORDER BY ordinal ASC
+        `,
+        decodeRow,
+      },
+    );
   }
 
   close(): void {
@@ -136,6 +177,7 @@ function initializeSchema(database: DatabaseSync): void {
     if (tables.length === 0 && version === 0) {
       database.exec(tableSql);
       database.exec(`CREATE INDEX work_audit_actor_ordinal ON work_audit_events (actor_id, ordinal)`);
+      database.exec(`CREATE INDEX work_audit_host_ordinal ON work_audit_events (hosting_process_instance_id, ordinal)`);
       database.exec(`PRAGMA user_version = ${schemaEpoch}`);
       database.exec("COMMIT");
       return;
@@ -167,10 +209,17 @@ function requireCurrentSchema(database: DatabaseSync): void {
   const strict = database.prepare(`
     SELECT strict FROM pragma_table_list WHERE schema = 'main' AND name = 'work_audit_events'
   `).get()?.strict;
-  const indexes = database.prepare(`
-    SELECT name FROM pragma_index_list('work_audit_events') ORDER BY name
-  `).all().map((row) => row.name);
-  if (JSON.stringify(actual) !== JSON.stringify(expected) || strict !== 1 || !indexes.includes("work_audit_actor_ordinal")) {
+  const objects = database.prepare(`
+    SELECT type, name, tbl_name FROM sqlite_schema
+    WHERE name NOT LIKE 'sqlite_%'
+      OR name = 'sqlite_autoindex_work_audit_events_1'
+    ORDER BY type, name
+  `).all().map((row) => [row.type, row.name, row.tbl_name]);
+  if (
+    JSON.stringify(actual) !== JSON.stringify(expected) ||
+    strict !== 1 ||
+    JSON.stringify(objects) !== JSON.stringify(expectedSchemaObjects)
+  ) {
     throw new AuditSchemaResetRequiredError();
   }
 }
@@ -181,6 +230,7 @@ function decodeRow(row: Record<string, SQLOutputValue>): StoredAuditEvent {
     const encoded = requireString(row.event_json, "event_json");
     const event = decodeWorkAuditEvent(JSON.parse(encoded));
     if (
+      event.eventId !== requireString(row.event_id, "event_id") ||
       event.actorId !== requireString(row.actor_id, "actor_id") ||
       event.taskId.processInstanceId !== requireString(row.task_process_instance_id, "task_process_instance_id") ||
       event.hostingProcessInstanceId !== requireString(row.hosting_process_instance_id, "hosting_process_instance_id") ||

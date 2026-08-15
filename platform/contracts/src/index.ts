@@ -31,6 +31,10 @@ export * from "./incidents.js";
 export * from "./message-start-publication-decoders.js";
 export * from "./message-start-publication-routes.js";
 export * from "./message-start-publications.js";
+export * from "./operator-audit-export.js";
+export * from "./operator-audit-export-canonical-json.js";
+export * from "./operator-audit-export-decoders.js";
+export * from "./operator-audit-export-routes.js";
 export * from "./process-instance-decoders.js";
 export {
   decodeProcessInstanceSearchPage,

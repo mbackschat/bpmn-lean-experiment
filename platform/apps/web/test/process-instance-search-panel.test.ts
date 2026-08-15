@@ -108,6 +108,10 @@ const inertExecutionApi = {
   async getExport() { throw new Error("unused"); },
   invalidate() {},
 };
+const inertOperatorAuditApi = {
+  async get() { throw new Error("unused"); },
+  invalidate() {},
+};
 const inertDefinitionApi = {
   async getPresentation() { throw new Error("unused"); },
 };
@@ -117,6 +121,7 @@ test("renders one global confirmed-start search form with only exact filters", (
     api: inertApi,
     definitionApi: inertDefinitionApi,
     executionApi: inertExecutionApi,
+    operatorAuditApi: inertOperatorAuditApi,
     isActive: true,
   }));
 
@@ -177,15 +182,15 @@ test("renders each distinct returned identity in one row and its exact detail co
   }));
 
   assert.equal((html.match(/<tr/gu) ?? []).length, 3);
-  assert.equal((html.match(/aria-label="View execution instance-4[12]"/gu) ?? []).length, 2);
+  assert.equal((html.match(/aria-label="View details instance-4[12]"/gu) ?? []).length, 2);
 });
 
-test("makes each exact public identity an execution-detail selection", () => {
+test("makes each exact public identity an instance-detail selection", () => {
   const html = renderToStaticMarkup(createElement(ProcessInstanceSearchTable, {
     instances: [instance],
     onOpen: () => undefined,
   }));
 
-  assert.match(html, /View execution instance-42/u);
+  assert.match(html, /View details instance-42/u);
   assert.match(html, /<button/u);
 });

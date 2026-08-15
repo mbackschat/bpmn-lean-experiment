@@ -28,6 +28,18 @@ export type {
 export { SqliteExecutionPublicationRepository } from "./sqlite-execution-publication-repository.js";
 export { ExecutionPublicationHttpRoutes } from "./execution-publication-http-routes.js";
 export {
+  OperatorAuditExportService,
+} from "./operator-audit-export-service.js";
+export type {
+  OperatorAuditExportServiceOptions,
+} from "./operator-audit-export-service.js";
+export {
+  OperatorAuditExportHttpRoutes,
+} from "./operator-audit-export-http-routes.js";
+export type {
+  OperatorAuditExportHttpRoutesOptions,
+} from "./operator-audit-export-http-routes.js";
+export {
   applyFlowNodeOccurrencePage,
   createEmptyFlowNodeOccurrenceProjection,
   FlowNodeOccurrenceIntegrityError,

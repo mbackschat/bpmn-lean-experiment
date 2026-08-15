@@ -13,6 +13,7 @@ import { DefinitionWorkspace } from "./definition-workspace";
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
 import type { FlowNodeMetricsApi } from "./flow-node-metrics-api.ts";
 import type { IncidentOperationsApi } from "./incident-operations-api";
+import type { OperatorAuditApi } from "./operator-audit-api.ts";
 import { OperationsWorkspace } from "./operations-workspace";
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api";
 import type { ProcessExecutionApi } from "./process-execution-api";
@@ -28,6 +29,7 @@ export type AppProps = Readonly<{
   metricsApi: FlowNodeMetricsApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
   processExecutionApi: ProcessExecutionApi;
+  operatorAuditApi: OperatorAuditApi;
   productVersion: string;
   scheduleApi: DefinitionScheduleApiClient;
   workApi: WorkApiClient;
@@ -40,6 +42,7 @@ export function App({
   metricsApi,
   processInstanceSearchApi,
   processExecutionApi,
+  operatorAuditApi,
   productVersion,
   scheduleApi,
   workApi,
@@ -135,6 +138,7 @@ export function App({
         <OperationsWorkspace
           definitionApi={api}
           incidentApi={incidentOperationsApi}
+          operatorAuditApi={operatorAuditApi}
           processExecutionApi={processExecutionApi}
           processInstanceSearchApi={processInstanceSearchApi}
         />

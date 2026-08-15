@@ -3,6 +3,13 @@ export {
   AuditSchemaResetRequiredError,
   AuditStoredValueError,
 } from "./audit-contracts.js";
+export {
+  AuditSnapshotLimitError,
+} from "./bounded-audit-snapshot.js";
+export type {
+  AuditSnapshotLimits,
+  AuditStreamSnapshot,
+} from "./bounded-audit-snapshot.js";
 export type {
   AuditRepository,
   AuditRepositoryQuery,

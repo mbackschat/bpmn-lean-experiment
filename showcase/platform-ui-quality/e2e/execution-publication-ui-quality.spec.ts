@@ -29,7 +29,7 @@ test("exact Process-instance selection opens only fresh execution detail and ret
   await expect(heading).toBeFocused();
   const detail = page.locator('[data-ui="process-execution-detail"]');
   await expect(detail).toContainText(executionPublicationLabels.processId);
-  await expect(detail.getByRole("tablist", { name: "Process instance detail" }).getByRole("tab")).toHaveCount(3);
+  await expect(detail.getByRole("tablist", { name: "Process instance detail" }).getByRole("tab")).toHaveCount(4);
   await expect(detail).toContainText("Head revision");
   await expect(detail).toContainText("running");
   await assertNoOverflow(page.locator("html"), "document");
@@ -41,7 +41,7 @@ test("exact Process-instance selection opens only fresh execution detail and ret
 
 test("History preserves exact revision order, labels, and repeated occurrence identity @responsive", async ({ page }) => {
   await openExecutionDetail(page);
-  await page.getByRole("tab", { name: "History" }).click();
+  await page.getByRole("tab", { name: "History", exact: true }).click();
   const history = page.locator('[data-ui="execution-history"]');
   await expect(history).toBeVisible();
   await expect(history.getByText("External stimulus", { exact: true })).toHaveCount(1);
@@ -96,32 +96,50 @@ test("execution export downloads the exact canonical bytes and public surfaces r
   expect(privateSurfaceFindings({ browserState, transport: capture.publicResponses })).toEqual([]);
 });
 
-test("a gapped publication suppresses History, Diagram, and export", async ({ page }) => {
+test("a gapped publication suppresses semantic detail while preserving Operator history", async ({ page }) => {
   await openProcessInstances(page, ExecutionPublicationFixtureState.Gap);
   await processSelection(page).click();
   const unavailable = page.getByRole("alert").filter({
     hasText: "Committed execution publication unavailable.",
   });
   await expect(unavailable).toBeFocused();
-  await expect(unavailable).toContainText("History, Diagram, and export are suppressed.");
-  await expect(page.getByRole("tablist", { name: "Process instance detail" })).toHaveCount(0);
+  await expect(unavailable).toContainText("Overview, History, Diagram, and execution export are suppressed. Operator history remains available.");
+  const tabs = page.getByRole("tablist", { name: "Process instance detail" });
+  await expect(tabs.getByRole("tab")).toHaveCount(1);
+  await expect(tabs.getByRole("tab", { name: "Operator history" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("button", { name: "Download execution history" })).toHaveCount(0);
   await expect(page.locator('[data-ui="execution-history"]')).toHaveCount(0);
   await expect(page.locator('[data-ui="execution-diagram"]')).toHaveCount(0);
 });
 
-test("a malformed export suppresses the complete execution detail", async ({ page }) => {
+test("a malformed execution export preserves independent Operator history", async ({ page }) => {
   await openExecutionDetail(page, ExecutionPublicationFixtureState.MalformedExport);
   await page.getByRole("button", { name: "Download execution history" }).click();
   const unavailable = page.getByRole("alert").filter({
     hasText: "Committed execution publication unavailable.",
   });
   await expect(unavailable).toBeFocused();
-  await expect(unavailable).toContainText("History, Diagram, and export are suppressed.");
-  await expect(page.getByRole("tablist", { name: "Process instance detail" })).toHaveCount(0);
+  await expect(unavailable).toContainText("Overview, History, Diagram, and execution export are suppressed. Operator history remains available.");
+  const tabs = page.getByRole("tablist", { name: "Process instance detail" });
+  await expect(tabs.getByRole("tab")).toHaveCount(1);
+  await expect(tabs.getByRole("tab", { name: "Operator history" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("button", { name: "Download execution history" })).toHaveCount(0);
   await expect(page.locator('[data-ui="execution-history"]')).toHaveCount(0);
   await expect(page.locator('[data-ui="execution-diagram"]')).toHaveCount(0);
+});
+
+test("Operator history selected during execution loading survives publication arrival", async ({ page }) => {
+  await openProcessInstances(page, ExecutionPublicationFixtureState.Delayed);
+  const response = page.waitForResponse(isExecutionPageResponse);
+  await processSelection(page).click();
+  const operatorTab = page.getByRole("tab", { name: "Operator history" });
+  await expect(operatorTab).toHaveAttribute("aria-selected", "true");
+  await operatorTab.focus();
+  await page.keyboard.press("Enter");
+  await response;
+  await expect(page.getByRole("tab", { name: "Overview" })).toBeVisible();
+  await expect(operatorTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-ui="operator-history"]')).toBeVisible();
 });
 
 test("tab abandonment and Back invalidate delayed execution responses", async ({ page }) => {
@@ -195,7 +213,7 @@ async function openExecutionDetail(
 
 function processSelection(page: import("@playwright/test").Page) {
   return page.getByRole("button", {
-    name: `View execution ${executionPublicationLabels.processInstanceId}`,
+    name: `View details ${executionPublicationLabels.processInstanceId}`,
   });
 }
 

@@ -4,7 +4,7 @@
 
 ## What you can do
 
-Register confirmed Process instances, search them by public identity, inspect committed execution, retry or cancel published incidents, and aggregate version-bound flow-node frequency and duration when the authoritative projection is complete.
+Register confirmed Process instances, search them by public identity, inspect committed execution, retry or cancel published incidents, export complete bounded per-instance operator audit, and aggregate version-bound flow-node frequency and duration when the authoritative projection is complete.
 
 ## Quick start
 

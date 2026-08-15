@@ -4,7 +4,7 @@
 
 ## What you can do
 
-Run the local API used by the web application for definition deployment and start, source and diagram retrieval, schedules, Message Start, Process search and execution, human work, incidents, audit, and metrics.
+Run the local API used by the web application for definition deployment and start, source and diagram retrieval, schedules, Message Start, Process search and execution, human work, incidents, Work and incident audit, per-instance operator-audit export, and metrics.
 
 ## Quick start
 
