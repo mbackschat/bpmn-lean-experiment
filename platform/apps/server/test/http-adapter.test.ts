@@ -6,6 +6,12 @@ import { test } from "node:test";
 import {
   createPlatformHttpServer,
 } from "@bpmn-lean/platform-server";
+import {
+  OperatorAuditExportHttpRoutes,
+} from "@bpmn-lean/platform-operate";
+import {
+  OperationsAuthorizationDecision,
+} from "@bpmn-lean/platform-identity-policy";
 
 test("uses configured public origin instead of an untrusted Host header", async () => {
   let routedUrl = "";
@@ -57,6 +63,46 @@ test("preserves request method, headers, and streamed body", async () => {
     assert.equal(response.status, 204);
     assert.equal(response.body, "");
   });
+});
+
+test("preserves transfer framing so a bodyless operator-audit GET rejects before protected work", async () => {
+  let registrations = 0;
+  let exports = 0;
+  const operatorAudit = new OperatorAuditExportHttpRoutes({
+    actors: {
+      resolveActor: () => ({ id: "operator-1", groups: ["operators"] }),
+    },
+    authorization: {
+      decide: () => OperationsAuthorizationDecision.Permitted,
+    },
+    registrations: {
+      getConfirmed: () => {
+        registrations += 1;
+        return null;
+      },
+    },
+    exports: {
+      create: () => {
+        exports += 1;
+        return new Uint8Array();
+      },
+    },
+  });
+  const server = createPlatformHttpServer({
+    publicOrigin: "http://public.example",
+    routes: [(request) => operatorAudit.handle(request)],
+  });
+
+  await withListeningServer(server, async (port) => {
+    const response = await nodeRequest(port, {
+      path: "/api/v1/process-instances/Instance_1/operator-audit/export",
+      headers: { "Transfer-Encoding": "chunked" },
+      body: "x",
+    });
+    assert.equal(response.status, 400);
+  });
+  assert.equal(registrations, 0);
+  assert.equal(exports, 0);
 });
 
 test("dispatches in declared order and stops after the first response", async () => {

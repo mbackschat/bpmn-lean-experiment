@@ -90,6 +90,9 @@ test("admits only bodyless GET on the canonical route", async () => {
     method: "GET",
     headers: { "content-type": "application/json" },
   })))?.status, 400);
+  assert.equal((await routes.handle(new Request(route, {
+    headers: { "transfer-encoding": "chunked" },
+  })))?.status, 400);
 });
 
 function permittedRoutes(

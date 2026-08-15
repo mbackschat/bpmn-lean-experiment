@@ -1,4 +1,5 @@
 import {
+  decodeCanonicalOperatorAuditExport,
   decodePublicProcessInstanceIdentity,
   matchOperatorAuditExportPath,
   OperatorAuditUnavailableMessage,
@@ -19,6 +20,8 @@ import type {
   ActorResolver,
   OperationsAuthorizationPolicy,
 } from "@bpmn-lean/platform-identity-policy";
+
+import { requireBodylessGet } from "./bodyless-get.js";
 
 type ConfirmedInstanceLookup = Readonly<{
   getConfirmed(processInstanceId: string): unknown | null;
@@ -64,7 +67,10 @@ export class OperatorAuditExportHttpRoutes {
     }
 
     try {
-      await requireEmptyGet(request);
+      await requireBodylessGet(
+        request,
+        requireOperatorAuditExportRequestBodyLength,
+      );
     } catch {
       return invalidRequest();
     }
@@ -86,6 +92,7 @@ export class OperatorAuditExportHttpRoutes {
 
     try {
       const bytes = this.options.exports.create(instance);
+      decodeCanonicalOperatorAuditExport(bytes, instance);
       return new Response(bytes, {
         status: 200,
         headers: {
@@ -103,20 +110,6 @@ export class OperatorAuditExportHttpRoutes {
 function matchRoute(requestUrl: string): string | null {
   const url = new URL(requestUrl);
   return matchOperatorAuditExportPath(`${url.pathname}${url.search}${url.hash}`);
-}
-
-async function requireEmptyGet(request: Request): Promise<void> {
-  if (request.headers.get("content-type") !== null) {
-    throw new TypeError("operator audit GET must not declare content-type");
-  }
-  const claimed = request.headers.get("content-length");
-  if (claimed !== null && claimed !== "0") {
-    throw new TypeError("operator audit GET content-length must be zero");
-  }
-  const bytes = request.body === null
-    ? new Uint8Array()
-    : new Uint8Array(await request.arrayBuffer());
-  requireOperatorAuditExportRequestBodyLength(request.method, bytes.byteLength);
 }
 
 function jsonResponse(status: number, value: unknown): Response {

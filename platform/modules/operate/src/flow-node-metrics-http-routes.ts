@@ -13,6 +13,8 @@ import {
   OperationsAuthorizationDecision,
   OperationsAuthorizationSurface,
 } from "@bpmn-lean/platform-identity-policy";
+
+import { requireBodylessGet } from "./bodyless-get.js";
 import type {
   ActorResolver,
   OperationsAuthorizationPolicy,
@@ -58,7 +60,10 @@ export class FlowNodeMetricsHttpRoutes {
     }
 
     try {
-      await requireEmptyGet(request);
+      await requireBodylessGet(
+        request,
+        requireFlowNodeMetricsRequestBodyLength,
+      );
     } catch {
       return invalidRequest();
     }
@@ -76,20 +81,6 @@ export class FlowNodeMetricsHttpRoutes {
       return internalFailure();
     }
   }
-}
-
-async function requireEmptyGet(request: Request): Promise<void> {
-  if (request.headers.get("content-type") !== null) {
-    throw new TypeError("flow-node metrics GET must not declare content-type");
-  }
-  const claimed = request.headers.get("content-length");
-  if (claimed !== null && claimed !== "0") {
-    throw new TypeError("flow-node metrics GET content-length must be zero");
-  }
-  const bytes = request.body === null
-    ? new Uint8Array()
-    : new Uint8Array(await request.arrayBuffer());
-  requireFlowNodeMetricsRequestBodyLength(request.method, bytes.byteLength);
 }
 
 function jsonResponse(status: number, value: unknown): Response {

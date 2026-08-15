@@ -8,6 +8,7 @@ import {
 } from "@bpmn-lean/platform-contracts";
 import type {
   IncidentAuditEvent,
+  WorkAuditEvent,
 } from "@bpmn-lean/platform-contracts";
 import {
   OperatorAuditExportService,
@@ -144,3 +145,92 @@ test("keeps the two snapshots independent when incident audit advances after Wor
   ]);
   assert.equal(value.incidentActions.headEventId, "incident-2");
 });
+
+test("assembles Work-only and incident-only selected populations from foreign-host repositories", () => {
+  const foreignWork = {
+    ...operatorAuditWorkEvent,
+    eventId: "foreign-work",
+    hostingProcessInstanceId: "Foreign/1",
+  } as const;
+  const foreignIncident = {
+    ...operatorAuditIncidentEvent,
+    eventId: "foreign-incident",
+    actionId: "foreign-action",
+    hostingProcessInstanceId: "Foreign/1",
+  } as const;
+  const cases = [{
+    label: "Work-only",
+    work: [operatorAuditWorkEvent, foreignWork],
+    incidents: [foreignIncident],
+    expectedWork: [operatorAuditWorkEvent],
+    expectedIncidents: [],
+  }, {
+    label: "incident-only",
+    work: [foreignWork],
+    incidents: [operatorAuditIncidentEvent, foreignIncident],
+    expectedWork: [],
+    expectedIncidents: [operatorAuditIncidentEvent],
+  }] as const;
+
+  for (const fixture of cases) {
+    const service = filteredService(fixture.work, fixture.incidents);
+    const value = decodeCanonicalOperatorAuditExport(
+      service.create(operatorAuditInstance),
+      operatorAuditInstance,
+    );
+    assert.deepEqual(value.work.events, fixture.expectedWork, fixture.label);
+    assert.deepEqual(value.incidentActions.events, fixture.expectedIncidents, fixture.label);
+  }
+});
+
+test("refuses every private host-field class supplied by a snapshot", () => {
+  const privateFields = [
+    "locator",
+    "workflowId",
+    "runId",
+    "taskQueue",
+    "eventHistory",
+    "workflowTask",
+    "activityAttempt",
+    "temporalRetry",
+    "transportPayload",
+    "privateOrdinal",
+    "databasePath",
+    "cursor",
+  ] as const;
+
+  for (const privateField of privateFields) {
+    const polluted = {
+      ...operatorAuditWorkEvent,
+      nestedPrivateHostFact: { [privateField]: `private-${privateField}` },
+    } as unknown as WorkAuditEvent;
+    const service = filteredService([polluted], []);
+    assert.throws(() => service.create(operatorAuditInstance), TypeError, privateField);
+  }
+});
+
+function filteredService(
+  workRows: readonly WorkAuditEvent[],
+  incidentRows: readonly IncidentAuditEvent[],
+): OperatorAuditExportService {
+  return new OperatorAuditExportService({
+    workOutbox: { reconcileAll() {} },
+    incidentOutbox: { reconcileAll() {} },
+    workAudit: {
+      snapshotHostingProcessInstance: (hostingProcessInstanceId) => {
+        const events = workRows.filter((event) =>
+          event.hostingProcessInstanceId === hostingProcessInstanceId
+        );
+        return { headEventId: events.at(-1)?.eventId ?? null, events };
+      },
+    },
+    incidentAudit: {
+      snapshotHostingProcessInstance: (hostingProcessInstanceId) => {
+        const events = incidentRows.filter((event) =>
+          event.hostingProcessInstanceId === hostingProcessInstanceId
+        );
+        return { headEventId: events.at(-1)?.eventId ?? null, events };
+      },
+    },
+  });
+}

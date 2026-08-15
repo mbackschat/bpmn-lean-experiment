@@ -15,6 +15,8 @@ import {
   OperationsAuthorizationDecision,
   OperationsAuthorizationSurface,
 } from "@bpmn-lean/platform-identity-policy";
+
+import { requireBodylessGet } from "./bodyless-get.js";
 import type {
   ActorResolver,
   OperationsAuthorizationPolicy,
@@ -79,7 +81,10 @@ export class ExecutionPublicationHttpRoutes {
     }
 
     try {
-      await requireEmptyGet(request);
+      await requireBodylessGet(
+        request,
+        requireExecutionPublicationRequestBodyLength,
+      );
     } catch {
       return invalidRequest();
     }
@@ -158,20 +163,6 @@ function authorizationSurfaces(
     case RouteKind.Export:
       return [OperationsAuthorizationSurface.ExecutionExport];
   }
-}
-
-async function requireEmptyGet(request: Request): Promise<void> {
-  if (request.headers.get("content-type") !== null) {
-    throw new TypeError("execution publication GET must not declare content-type");
-  }
-  const claimed = request.headers.get("content-length");
-  if (claimed !== null && !/^(?:0)$/u.test(claimed)) {
-    throw new TypeError("execution publication GET content-length must be zero");
-  }
-  const bytes = request.body === null
-    ? new Uint8Array()
-    : new Uint8Array(await request.arrayBuffer());
-  requireExecutionPublicationRequestBodyLength(request.method, bytes.byteLength);
 }
 
 function executionExportFilename(processInstanceId: string): string {

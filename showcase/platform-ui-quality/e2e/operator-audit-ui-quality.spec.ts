@@ -13,13 +13,14 @@ import {
   installOperatorAuditFixtures,
   operatorAuditExportBytes,
   operatorAuditLabels,
+  operatorAuditPrivateHostFields,
 } from "./operator-audit-fixtures.ts";
 
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
 
-test("Operator history preserves two source-local arrays and downloads retained exact bytes", async ({ page }) => {
+test("Operator history preserves two source-local arrays and downloads retained exact bytes @responsive", async ({ page }) => {
   const capture = await openProcessDetail(page);
   await selectOperatorHistoryWithKeyboard(page);
   const history = page.locator('[data-ui="operator-history"]');
@@ -49,10 +50,15 @@ test("Operator history preserves two source-local arrays and downloads retained 
   expect(download.suggestedFilename()).toBe(operatorAuditLabels.filename);
   const path = await download.path();
   if (path === null) throw new Error("operator audit download path is unavailable");
-  expect(await readFile(path)).toEqual(Buffer.from(operatorAuditExportBytes()));
+  const downloadedBytes = await readFile(path);
+  expect(downloadedBytes).toEqual(Buffer.from(operatorAuditExportBytes()));
 
   const browserState = await publicBrowserState(page);
-  expect(privateSurfaceFindings({ browserState, responses: capture.publicResponses })).toEqual([]);
+  expect(privateSurfaceFindings({
+    browserState,
+    downloadedBytes: downloadedBytes.toString("utf8"),
+    responses: capture.publicResponses,
+  })).toEqual([]);
 });
 
 test("execution unavailability leaves the independently usable operator audit", async ({ page }) => {
@@ -73,7 +79,7 @@ test("execution unavailability leaves the independently usable operator audit", 
   await expect(detail.getByRole("button", { name: "Download operator audit" })).toBeVisible();
 });
 
-test("operator-audit unavailability leaves execution usable and focuses its own alert", async ({ page }) => {
+test("operator-audit unavailability leaves execution usable and focuses its own alert @responsive", async ({ page }) => {
   await openProcessDetail(page, {
     audit: OperatorAuditFixtureState.Unavailable,
   });
@@ -90,20 +96,24 @@ test("operator-audit unavailability leaves execution usable and focuses its own 
   await expect(page.getByRole("button", { name: "Download operator audit" })).toHaveCount(0);
 });
 
-test("a private host field is rejected without reaching browser-owned state", async ({ page }) => {
-  await openProcessDetail(page, {
-    audit: OperatorAuditFixtureState.PrivateHostField,
-  });
-  await selectOperatorHistoryWithKeyboard(page);
+for (const privateHostField of operatorAuditPrivateHostFields) {
+  test(`private host field ${privateHostField} is rejected without reaching browser-owned state`, async ({ page }) => {
+    const capture = await openProcessDetail(page, {
+      audit: OperatorAuditFixtureState.PrivateHostField,
+      privateHostField,
+    });
+    await selectOperatorHistoryWithKeyboard(page);
 
-  const history = page.locator('[data-ui="operator-history"]');
-  const failure = history.getByRole("alert");
-  await expect(failure).toBeFocused();
-  await expect(failure).toContainText("operator audit export is not the exact canonical representation");
-  await expect(history.getByRole("table")).toHaveCount(0);
-  await expect(history.getByRole("button", { name: "Download operator audit" })).toHaveCount(0);
-  expect(privateSurfaceFindings(await publicBrowserState(page))).toEqual([]);
-});
+    const history = page.locator('[data-ui="operator-history"]');
+    const failure = history.getByRole("alert");
+    await expect(failure).toBeFocused();
+    await expect(failure).toContainText("operator audit export is not the exact canonical representation");
+    await expect(history.getByRole("table")).toHaveCount(0);
+    await expect(history.getByRole("button", { name: "Download operator audit" })).toHaveCount(0);
+    expect(privateSurfaceFindings(capture.publicResponses)).not.toEqual([]);
+    expect(privateSurfaceFindings(await publicBrowserState(page))).toEqual([]);
+  });
+}
 
 test("empty source streams remain independently disclosed", async ({ page }) => {
   await openProcessDetail(page, {
@@ -187,11 +197,18 @@ async function publicBrowserState(page: Page): Promise<unknown> {
 }
 
 const forbiddenPrivateSurface = [
+  /(?:engine[\s_-]*)?locator/iu,
   /workflow[\s_-]*id/iu,
   /run[\s_-]*id/iu,
   /task[\s_-]*queue/iu,
-  /database[\s_-]*(?:id|ordinal)/iu,
+  /event[\s_-]*history/iu,
+  /workflow[\s_-]*task/iu,
+  /activity[\s_-]*attempt/iu,
+  /temporal[\s_-]*retry/iu,
+  /transport[\s_-]*payload/iu,
+  /database[\s_-]*(?:id|ordinal|path)/iu,
   /private[\s_-]*ordinal/iu,
+  /^(?:cursor|source[\s_-]*(?:internal[\s_-]*)?cursor)$/iu,
 ] as const;
 
 function privateSurfaceFindings(value: unknown): string[] {

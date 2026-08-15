@@ -21,11 +21,30 @@ export enum OperatorAuditExecutionState {
 export type OperatorAuditFixtureOptions = Readonly<{
   audit?: OperatorAuditFixtureState;
   execution?: OperatorAuditExecutionState;
+  privateHostField?: OperatorAuditPrivateHostField;
 }>;
 
 export type OperatorAuditFixtureCapture = Readonly<{
   publicResponses: unknown[];
 }>;
+
+export const operatorAuditPrivateHostFields = [
+  "locator",
+  "workflowId",
+  "runId",
+  "taskQueue",
+  "eventHistory",
+  "workflowTask",
+  "activityAttempt",
+  "temporalRetry",
+  "transportPayload",
+  "privateOrdinal",
+  "databasePath",
+  "cursor",
+] as const;
+
+export type OperatorAuditPrivateHostField =
+  typeof operatorAuditPrivateHostFields[number];
 
 export const operatorAuditLabels = {
   filename: "operator-audit-process-instance-enterprise-parallel-compliance-review-eu-central-2026-08-14-000.json",
@@ -179,13 +198,23 @@ export async function installOperatorAuditFixtures(
           },
         }, operatorResponses, 503);
       case OperatorAuditFixtureState.PrivateHostField:
-        return canonicalAttachment(route, {
-          ...availableExport,
-          workflowId: "private-host-fact-must-not-cross-the-public-contract",
-        }, operatorResponses);
+        return canonicalAttachment(
+          route,
+          privateHostMutation(options.privateHostField ?? "workflowId"),
+          operatorResponses,
+        );
     }
   });
   return { publicResponses: [execution.publicResponses, operatorResponses] };
+}
+
+function privateHostMutation(field: OperatorAuditPrivateHostField): unknown {
+  return {
+    ...availableExport,
+    nestedPrivateHostFact: {
+      deeper: { [field]: `private-${field}-must-not-cross-the-public-contract` },
+    },
+  };
 }
 
 export function operatorAuditExportBytes(

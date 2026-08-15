@@ -137,6 +137,11 @@ test("rejects malformed transport and methods before protected access", async ()
     },
   ));
   assert.equal(body?.status, 400);
+  const transferEncoded = await routes.handle(request(
+    "/api/v1/process-instances/Instance_1/execution?afterRevision=0",
+    { headers: { "transfer-encoding": "chunked" } },
+  ));
+  assert.equal(transferEncoded?.status, 400);
   assert.deepEqual(calls.reconciliations, []);
 });
 

@@ -185,6 +185,32 @@ test("rejects identity, event, head, and closed-shape corruption", () => {
   }, instance), /event ceiling/u);
 });
 
+test("rejects every private host-field class recursively across the export", () => {
+  const value = exportValue();
+  const mutations = [
+    { label: "engine locator", value: { ...value, locator: "private:instance" } },
+    { label: "Workflow ID", value: { ...value, instance: { ...instance, workflowId: "workflow-1" } } },
+    { label: "Run ID", value: { ...value, instance: { ...instance, runId: "run-1" } } },
+    { label: "Task Queue", value: { ...value, instance: { ...instance, taskQueue: "queue-1" } } },
+    { label: "Event History", value: { ...value, work: { ...value.work, eventHistory: [1] } } },
+    { label: "Workflow Task", value: { ...value, work: { ...value.work, events: [{ ...workEvent, workflowTask: 7 }] } } },
+    { label: "Activity attempt", value: { ...value, work: { ...value.work, events: [{ ...workEvent, action: { ...workEvent.action, activityAttempt: 2 } }] } } },
+    { label: "Temporal retry", value: { ...value, incidentActions: { ...value.incidentActions, temporalRetry: 3 } } },
+    { label: "transport payload", value: { ...value, incidentActions: { ...value.incidentActions, events: [{ ...incidentEvent, transportPayload: "opaque" }] } } },
+    { label: "private ordinal", value: { ...value, privateOrdinal: 42 } },
+    { label: "database path", value: { ...value, instance: { ...instance, definition: { ...definition, databasePath: "/private/audit.sqlite" } } } },
+    { label: "source cursor", value: { ...value, incidentActions: { ...value.incidentActions, cursor: "private-cursor" } } },
+  ] as const;
+
+  for (const mutation of mutations) {
+    assert.throws(
+      () => decodeOperatorAuditExport(mutation.value, instance),
+      TypeError,
+      mutation.label,
+    );
+  }
+});
+
 test("publishes the exact v1 resource ceilings", () => {
   assert.equal(OperatorAuditMaximumEventsPerStream, 10_000);
   assert.equal(OperatorAuditMaximumStoredJsonBytesPerStream, 8_000_000);

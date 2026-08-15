@@ -104,9 +104,44 @@ test("rejects noncanonical transport and wrong methods before protected access",
     { headers: { "content-type": "application/json" } },
   ));
   assert.equal(contentType?.status, 400);
+  const transferEncoded = await routes.handle(request(
+    operatorAuditExportPath(operatorAuditInstance.processInstanceId),
+    { headers: { "transfer-encoding": "chunked" } },
+  ));
+  assert.equal(transferEncoded?.status, 400);
   assert.deepEqual(calls.registrations, []);
   assert.deepEqual(calls.exports, []);
   assert.equal(await routes.handle(request("/api/v1/not-operator-audit")), null);
+});
+
+test("refuses private host-field bytes returned across the HTTP service boundary", async () => {
+  const privateFields = [
+    "locator",
+    "workflowId",
+    "runId",
+    "taskQueue",
+    "eventHistory",
+    "workflowTask",
+    "activityAttempt",
+    "temporalRetry",
+    "transportPayload",
+    "privateOrdinal",
+    "databasePath",
+    "cursor",
+  ] as const;
+
+  for (const privateField of privateFields) {
+    const calls = counters();
+    const exportBytes = new TextEncoder().encode(JSON.stringify({
+      ...operatorAuditExport(),
+      nestedPrivateHostFact: { [privateField]: `private-${privateField}` },
+    }));
+    const response = await createRoutes(calls, { exportBytes }).handle(request(
+      operatorAuditExportPath(operatorAuditInstance.processInstanceId),
+    ));
+    assert.equal(response?.status, 503, privateField);
+    await assertError(response, "operatorAuditUnavailable", OperatorAuditUnavailableMessage);
+  }
 });
 
 function createRoutes(
@@ -115,6 +150,7 @@ function createRoutes(
     permitted?: boolean;
     registration?: typeof operatorAuditInstance | null;
     exportFailure?: Error;
+    exportBytes?: Uint8Array;
     internalFailure?: "actor" | "authorization" | "registration";
   }> = {},
 ) {
@@ -151,6 +187,7 @@ function createRoutes(
       create: (instance) => {
         calls.exports.push(instance.processInstanceId);
         if (options.exportFailure !== undefined) throw options.exportFailure;
+        if (options.exportBytes !== undefined) return options.exportBytes;
         return serializeOperatorAuditExport(operatorAuditExport(), instance);
       },
     },
