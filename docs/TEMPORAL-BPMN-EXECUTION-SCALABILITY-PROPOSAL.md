@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft, awaiting correction audit.** The independent proposal review approved the direction with four required edits, now applied for warm audit. The requested direction makes Product 2's horizontal-scaling blocker the first post-MVP scalability increment; owner approval is not recorded until that audit closes. This document changes no current BPMN meaning, semantic profile, public observation, Temporal Workflow behavior, persistence implementation, deployment claim, or performance service level.
+**Owner-approved theoretical roadmap.** The owner directed that Product 2's horizontal-scaling blocker be resolved as the first post-MVP scalability increment. A context-cold proposal review approved the direction after two bounded warm correction audits closed its architecture, refinement, resource-budget, and owner-routing findings. This document changes no current BPMN meaning, semantic profile, public observation, Temporal Workflow behavior, persistence implementation, deployment claim, or performance service level.
 
 [PLAN.md](PLAN.md) owns immediate sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the implemented and absent boundary, [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns the current Workflow lifecycle, and [Temporal execution research](research/TEMPORAL-EXECUTION-RESEARCH.md) owns the general Temporal-to-BPMN mapping.
 
@@ -189,6 +189,6 @@ Reopen this proposal before selecting a different Process-to-Workflow cardinalit
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `ef24a9f8357d2aac84049d7589a80e50c5ecb543` | `not-recorded` | `pending` | `not-applicable` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Proposal | `ef24a9f8357d2aac84049d7589a80e50c5ecb543` | `fork-turns-none` | `approve-with-required-edits` | `f14564c` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
