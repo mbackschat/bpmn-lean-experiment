@@ -12,7 +12,7 @@ This project builds two MIT products in one repository: a Temporal-hosted BPMN 2
 |---|---|
 | BPMN execution engine | Implemented, runnable product floor over a bounded semantic profile catalog |
 | BPM platform | M1, M2, M3, and M4 closed |
-| Active work | Obtain owner approval for the independently reviewed M5 flow-node frequency and duration contract before implementation |
+| Active work | Complete closure review for the implemented M5 flow-node frequency and duration contract, then establish the curated executable model corpus |
 | A12 Workflows | Separate downstream product outside this repository; reusable neutral mechanisms and an optional evidence handoff are preserved without placing A12 decisions in core |
 
 Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. Its adapter is split by execution environment into protocol, client, Workflow, Worker, runner, and testkit packages, with no production umbrella package. Product 2 exposes deployment, admission diagnostics, definition lists, version lists, exact admitted source, exact-version start, one-shot Timer Start scheduling, one-target Message Start publication, identity-only Process-instance search, current human work, and current incident operations over confirmed Product 2 starts. The HTTP-only React workspace now includes the task inbox and typed form plus an Operations workspace with current incidents, exact Retry and root-Process Cancel, diagram highlighting, and separate action audit. Independent SQLite owners retain definition publication, Process identity, Work action state, incident action state, and audit delivery without turning any platform fact into BPMN meaning. M1, M2, and M3 remain independent regression floors; the M4 showcase proves response-loss plus platform-restart Retry, Worker-replacement Cancel, terminal corroboration, replay, private-fact exclusion, and Chromium acceptance. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
@@ -30,7 +30,7 @@ The showcase ladder is a dependency order, not a delivery schedule. [PLAN.md](do
 | M2 | Closed | Cyclic execution, four essential elements, exact-version Timer scheduling, Message Start ingress, and Process-instance search are implemented and evidence-closed |
 | M3 | Closed | Boolean Process-data, User Task metadata, the real inbox, typed form, claims, completion, audit, and live/browser evidence are closure-reviewed and evidence-closed |
 | M4 | Closed | Incident and exact retry, incident-scoped root cancellation, and Product 2 current operations are closure-reviewed with four-target, live Temporal, and browser evidence |
-| M5 | In progress | E1 committed History, Diagram position, and export are closed; flow-node frequency and duration passed proposal review and await owner approval |
+| M5 | In progress | E1 committed History, Diagram position, and export are closed; flow-node frequency and completed duration are implemented and await closure review |
 
 M1 remains the first proper platform demonstration and an independent regression floor. M3 adds the real task inbox and form interaction after the engine publishes the required metadata and wider value domain.
 

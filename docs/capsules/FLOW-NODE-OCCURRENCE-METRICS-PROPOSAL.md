@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-14 after independent proposal review; semantic-checkpoint-approved, implemented, and awaiting closure review.** The owner approved all nine selected decisions together. The implementation includes the exhaustive TypeScript and proved Lean lifecycle relation, strict occurrence publication, one replay-stable commit-time sample per complete command batch, Product 1 client/API and live replay evidence, exact-version Product 2 projection and aggregation, HTTP, and the Frequency/Duration UI. Closure evidence remains pending.
+**Owner-approved on 2026-08-14 after independent proposal review; semantic-checkpoint-approved, implemented, and awaiting closure review.** The owner approved all nine selected decisions together. The implementation includes the exhaustive TypeScript and proved Lean lifecycle relation, strict occurrence publication, one replay-stable commit-time sample per complete command batch, Product 1 client/API and live replay evidence, exact-version Product 2 projection and aggregation, HTTP, and the Frequency/Duration UI. The closure evidence and commit-bounded cost record are complete; graduation remains blocked on the independent closure verdict.
 
 ## Independent cold-review receipt
 
@@ -185,7 +185,7 @@ The representation-free transport decoder validates strict shape, public identit
 
 The dedicated `bpmn-flow-node-occurrences` Query uses the existing result arms `available`, `notReady`, `notFound`, `unavailable`, and `gap`, plus the same request `{ afterRevision, limit? }`, default 50, maximum 100, complete-batch paging, and batch-boundary cursor rules as E1. Every occurrence batch must have the same command ID, range, transition revisions, and head as the corresponding E1 batch. A transition with no lifecycle change remains present with two empty collections. `currentOpen` is non-null exactly at the head.
 
-`committedAtEpochMs` is a nonnegative safe integer and cannot decrease across batches. It is the one deterministic Workflow clock sample taken after `advanceScenario` returns a publishable committed step and before either accumulator or the command-result ledger advances. It is not BPMN logical time, a claim about CPU completion, or a global order across Process instances. Multiple commands handled in one Workflow Task may share it.
+`committedAtEpochMs` is a nonnegative safe integer and cannot decrease across batches. It is the one deterministic Workflow clock sample taken after `advanceScenario` returns a publishable committed step and both successor publications validate from the retained time/open anchors, but before either accumulator or the command-result ledger advances. It is not BPMN logical time, a claim about CPU completion, or a global order across Process instances. Multiple commands handled in one Workflow Task may share it.
 
 Product 2 publishes one exact aggregate:
 
@@ -282,7 +282,7 @@ The definition-version workspace renders one Flow-node metrics detail. Frequency
 
 The existing semantic Workflow remains the lifetime owner. No new Signal, Update, Activity, Timer, cancellation mechanism, Task Queue, or Child Workflow is required. The occurrence Query is unconditional and read-only like the E1 Query. It is served from deterministic Workflow state and remains available for running, completed, and cancelled instances during the existing retention boundary.
 
-Durable ingress remains the existing content-bound command queue. A committed command is evaluated once through `advanceScenario`. The Workflow takes one `Date.now()` sample only after the step is publishable, then appends the E1 batch and the aligned occurrence batch before recording the result or resolving an Update. There is no `await` between these state changes. Any exception rolls back the Workflow Task, so no timestamp, occurrence prefix, head, or result becomes visible alone.
+Durable ingress remains the existing content-bound command queue. A committed command is evaluated once through `advanceScenario`. The Workflow preflights and validates the E1 and occurrence successors using the retained time anchor, takes one `Date.now()` sample only after that complete preflight succeeds, then materializes both immutable successors before recording the result or resolving an Update. There is no `await` between these state changes. Any exception rolls back the Workflow Task, so no timestamp, occurrence prefix, head, or result becomes visible alone.
 
 Ordering is the existing accepted-stimulus queue order. Duplicate command recovery returns the retained command result and creates no new occurrence or timestamp. Worker replacement and replay reconstruct both accumulators. Queries do not mutate state or add history events. Event History may retain the deterministic clock input as part of ordinary Workflow replay, but neither Product 2 nor a diagnostic reader interprets Event History to manufacture the public fact.
 
