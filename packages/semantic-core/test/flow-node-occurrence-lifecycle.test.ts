@@ -1,7 +1,7 @@
 /**
  * Flow-node occurrence lifecycle contract for the pure semantic-core boundary.
  *
- * The oracle is FNOM-OCCURRENCE-01 in the owner-approved Flow-node occurrence metrics proposal.
+ * The oracle is FNOM-OCCURRENCE-01 in the closure-reviewed Flow-node occurrence metrics specification.
  * These tests distinguish BPMN flow-node occurrences from Program operation executions and from
  * private waits created while a Boundary Event is only armed.
  */

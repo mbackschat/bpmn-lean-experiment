@@ -1,8 +1,8 @@
-# Flow-node occurrence metrics proposal
+# Flow-node occurrence metrics specification
 
 ## Status
 
-**Owner-approved on 2026-08-14 after independent proposal review; semantic-checkpoint-approved, implemented, and awaiting closure review.** The owner approved all nine selected decisions together. The implementation includes the exhaustive TypeScript and proved Lean lifecycle relation, strict occurrence publication, one replay-stable commit-time sample per complete command batch, Product 1 client/API and live replay evidence, exact-version Product 2 projection and aggregation, HTTP, and the Frequency/Duration UI. The closure evidence and commit-bounded cost record are complete; graduation remains blocked on the independent closure verdict.
+**Implemented, closure-reviewed, and evidence-closed.** The maintained contract includes the exhaustive TypeScript and proved Lean lifecycle relation, strict occurrence publication, one replay-stable commit-time sample per complete command batch, Product 1 client/API and live replay evidence, exact-version Product 2 projection and aggregation, HTTP, and the Frequency/Duration UI.
 
 ## Independent cold-review receipt
 
@@ -10,37 +10,37 @@
 |---|---|---|---|---|
 | Proposal | `25034641c5566bfd9e0dbc5c99b9ded673c7922b` | `fork-turns-none` | `approve-with-required-edits` | `5a75af9e18937f3199ddb02b8ef3c33afd43bba9` |
 | Semantic checkpoint | `33ffa624144d66aa561da59ca42663f3d5af3de9` | `fork-turns-none` | `approve-with-required-edits` | `4aa081bcd76b1d54cabc8778928ffae8287e21fa` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `985001c65aa8082989de9f9d4950ca2d79920e6e` | `fork-turns-none` | `approve-with-required-edits` | `8323c6f2505dda0e394d56472edc7a37d45a7ce9` |
 
-The first green implementation checkpoint ended at `8c27eca`, after the TypeScript lifecycle commit `9601e17` and the strict protocol and Temporal publication commit `2cbdfbd`. The context-cold review used the documentation follow-up `33ffa62` as its immutable target and baseline `6520448`. One same-reviewer correction audit approved `4aa081b`, closing Program-authoritative Lean projection and zero clock sampling on malformed publication without changing the selected account or public contract.
+The semantic checkpoint required one same-reviewer correction audit. Closure required two same-reviewer correction-audit rounds; the first target was `20e3781` and the final target recorded in the table is `8323c6f`. Neither stage changed the selected account or public contract.
 
 ## Lean assurance selection
 
 The Lean lane is **proved**. Under the existing valid-Program and valid-RuntimeState hypotheses, it must prove that applying one accepted lifecycle delta creates each fresh anchor once, consumes each terminal anchor once, and yields exactly the independently projected open-anchor set. Separate quantified laws cover exact owned-subtree cancellation for interruption, error propagation, termination, and incident-root cancellation, plus preservation of occurrences outside the removed subtree. The proof effort is bounded to every operation and stimulus family admitted when this capsule is approved; a future admitted family must extend the exhaustive relation before it can publish occurrences. If exact fold soundness or owned-subtree cancellation cannot be proved without assuming the desired open set, implementation stops and records that precise boundary rather than weakening the lane to checked fixtures.
 
-## Question and recommendation
+## Purpose
 
-How should the engine make exact flow-node frequency and elapsed duration publicly recoverable without Product 2 counting semantic operations, interpreting Semantic Process IL, reading Temporal Event History, differencing states, or treating ingestion time as execution time?
+This contract makes exact flow-node frequency and elapsed duration publicly recoverable without Product 2 counting semantic operations, interpreting Semantic Process IL, reading Temporal Event History, differencing states, or treating ingestion time as execution time.
 
-**Recommendation: publish a separate cursor-paged flow-node occurrence lifecycle aligned to the existing committed semantic transition revisions.** The semantic evaluator emits exact starts and terminal dispositions for BPMN flow-node occurrences at each existing transition boundary. Product 1 assigns public occurrence identities and one replay-stable wall-clock commit instant per complete command batch. Product 2 transactionally projects every confirmed Process instance for one exact definition version, refuses an incomplete population, and renders frequency and completed-duration modes through numeric diagram badges and the same values in an accessible table.
+The engine publishes a separate cursor-paged flow-node occurrence lifecycle aligned to the existing committed semantic transition revisions. The semantic evaluator emits exact starts and terminal dispositions for BPMN flow-node occurrences at each existing transition boundary. Product 1 assigns public occurrence identities and one replay-stable wall-clock commit instant per complete command batch. Product 2 transactionally projects every confirmed Process instance for one exact definition version, refuses an incomplete population, and renders frequency and completed-duration modes through numeric diagram badges and the same values in an accessible table.
 
-This is the smallest complete M5 frequency and duration increment. The existing committed execution publication remains byte-exact and authoritative for semantic history and current position. The new lifecycle supplies the two facts it deliberately lacks: one execution unit per BPMN flow-node occurrence and one engine-owned elapsed-time boundary.
+This is the bounded M5 frequency and duration contract. The existing committed execution publication remains byte-exact and authoritative for semantic history and current position. The occurrence lifecycle supplies the two facts it deliberately lacks: one execution unit per BPMN flow-node occurrence and one engine-owned elapsed-time boundary.
 
 ## Authority and classification
 
-BPMN 2.0.2 defines the flow nodes whose already selected execution meaning this observation describes. BPMN does not require this occurrence identifier, wall-clock timestamp, paging protocol, aggregate, or UI. Existing capsules, the Semantic Process IL, Lean relations, and the semantic core remain authoritative for execution. This proposal adds a project-owned public observation and does not reinterpret any BPMN construct.
+BPMN 2.0.2 defines the flow nodes whose already selected execution meaning this observation describes. BPMN does not require this occurrence identifier, wall-clock timestamp, paging protocol, aggregate, or UI. Existing capsules, the Semantic Process IL, Lean relations, and the semantic core remain authoritative for execution. This specification adds a project-owned public observation and does not reinterpret any BPMN construct.
 
 The term **flow-node occurrence** includes Events, Gateways, Tasks, Call Activities, and embedded Sub-Processes. It does not mean only the BPMN `Activity` subtype, and it excludes the root `Process`, Sequence Flows, private control places, waits, incidents, commands, and host tasks as metric units.
 
 No CIB Seven relationship or compatibility profile is selected. The source-grounded [UI/UX research](../research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md#pattern-11-flow-node-metrics-require-occurrence-facts-not-transition-counts) uses CIB Seven Cockpit and historic activity-instance contracts as interaction and data-account precedent. It does not make CIB history a semantic oracle, wire source, runtime dependency, or differential target.
 
-## Source-grounded product preflight
+## Source-grounded product basis
 
 CIB Seven keeps runtime activity counts and incident counts as separate optional diagram badges, lets an activity badge narrow the instance collection, and preserves one historic activity-instance row per executed flow node with start, terminal, duration, completion, and cancellation facts. Its completed-duration reports use completed samples and publish count, minimum, maximum, and average. Its community Cockpit checkout exposes the report host and link but not the enterprise duration-report implementation.
 
 The pinned CIB source also separates a merely armed Boundary Event subscription from executing the Boundary Event flow node. The Boundary Event reaches ordinary activity-start handling only when it catches. Event-Based Gateway candidates differ because the waiting Catch Events themselves are active flow nodes and later complete or cancel with the race.
 
-Camunda Optimize independently confirms the useful analytical distinction between the object being viewed, the frequency or duration measure, the selected population, and completion status. This proposal adopts those distinctions while excluding the report builder, heatmap, predictive, and storage architecture.
+Camunda Optimize independently confirms the useful analytical distinction between the object being viewed, the frequency or duration measure, the selected population, and completion status. This specification adopts those distinctions while excluding the report builder, heatmap, predictive, and storage architecture.
 
 | Reference pattern | Adopt | Deliberately change | Exclude |
 |---|---|---|---|
@@ -49,7 +49,7 @@ Camunda Optimize independently confirms the useful analytical distinction betwee
 | CIB completed-duration reports | Completed-only count, minimum, maximum, and average | Bind the first surface to one exact definition version and the complete retained population | Adjustable periods, running pseudo-duration, or an average without sample count |
 | Optimize flow-node analysis | Separate Frequency and Duration modes | Use numeric badges and an accessible table before any color scale | Heatmaps, report builders, dashboards, variants, conformance, prediction, and chart-library scope |
 
-## Selected decisions
+## Contract decisions
 
 1. Define frequency as the number of engine-published BPMN flow-node occurrence starts. Never count E1 transition records, Program operations, tokens, waits, diagram markers, or Product 2 rows as flow-node executions.
 2. Publish one exact lifecycle for every currently admitted flow-node family: start, then either completed or cancelled. A Boundary Event starts only when it catches, while Event-Based Gateway candidate Catch Events start when the race arms them and later complete or cancel.
@@ -278,7 +278,7 @@ Each cut member is reconciled from its exact retained cursor to the head returne
 
 The definition-version workspace renders one Flow-node metrics detail. Frequency and Duration are explicit modes. Frequency badges show the exact integer `frequency`. Duration badges show the exact floored `averageMs` followed by `ms`. The table always shows frequency, running, completed, and cancelled counts; its duration columns show sample count, minimum, maximum, and floored average in milliseconds. When `completed = 0`, Duration mode shows no badge for that element and the table shows the exact marker `No completed samples`. An unavailable result suppresses every badge and metric table value and renders one non-actionable alert, `Flow-node metrics are unavailable.`, plus Retry. A called-Process occurrence is not overlaid on the caller diagram. An available surface states `All retained evidence` with the exact Process-instance count and means the request-start membership cut at each member's reconciled head, not a globally simultaneous snapshot. It does not imply a selected calendar interval, current-only population, estimate, SLA, or CIB equivalence.
 
-## Temporal hosting and refinement preflight
+## Temporal hosting and refinement contract
 
 The existing semantic Workflow remains the lifetime owner. No new Signal, Update, Activity, Timer, cancellation mechanism, Task Queue, or Child Workflow is required. The occurrence Query is unconditional and read-only like the E1 Query. It is served from deterministic Workflow state and remains available for running, completed, and cancelled instances during the existing retention boundary.
 
@@ -335,33 +335,7 @@ Excluded:
 
 This is an additive pre-release public-observation change. Existing profile, checked graph, IL, RuntimeState, command result, scenario observation, E1 publication, CIB evidence, Workflow result, and terminal receipt bytes remain exact. Histories generated by the reviewed target replay under that target. Cross-version history compatibility remains unclaimed until the project retains an immutable deployment and history baseline. The occurrence wire is strict from its first version; changing its lifecycle unit, time meaning, identity, terminal dispositions, or retention requires a new version and migration account.
 
-### Owners this implementation grows
-
-The implementation must not grow crowded generic owners. The measured existing owners are:
-
-| Existing owner | Current headroom before 600 nonblank lines | Required consequence |
-|---|---:|---|
-| [`packages/semantic-core/src/semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 38 | Add no lifecycle logic here; use a new cohesive lifecycle projector and retain only existing delegation. |
-| [`packages/semantic-core/src/semantic-transition-trace.ts`](../../packages/semantic-core/src/semantic-transition-trace.ts) | 333 | Attach the new unnumbered lifecycle result at the existing record boundary without changing E1 records. |
-| [`BpmnSemantics/SemanticProcess/TransitionTrace.lean`](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 150 | Delegate lifecycle meaning and proofs to a new independently buildable Lean module. |
-| [`packages/temporal-adapter/protocol/src/semantic-publication-validation.ts`](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 27 | Do not grow; place occurrence types and validation in new protocol owners. |
-| [`packages/temporal-adapter/workflow/src/workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 39 | Extract the command-publication integration before adding the second accumulator; retain only thin orchestration. |
-| [`packages/temporal-adapter/workflow/src/execution-publication-state.ts`](../../packages/temporal-adapter/workflow/src/execution-publication-state.ts) | 285 | Keep E1 exact; the occurrence accumulator and Query use separate owners. |
-| [`packages/temporal-adapter/client/src/execution-publication-client.ts`](../../packages/temporal-adapter/client/src/execution-publication-client.ts) | 485 | Keep E1 exact; add a separate occurrence client owner and thin export. |
-| [`packages/engine-api/src/process-observation.ts`](../../packages/engine-api/src/process-observation.ts) | 509 | Add one representation-free occurrence observation capability without exposing Program or Workflow identity. |
-| [`platform/contracts/src/execution-publications.ts`](../../platform/contracts/src/execution-publications.ts) | 231 | Keep E1 mirror exact and introduce separate occurrence and aggregate contracts. |
-| [`platform/contracts/src/execution-publication-decoders.ts`](../../platform/contracts/src/execution-publication-decoders.ts) | 193 | Keep E1 decoder exact and introduce separate occurrence and aggregate decoders. |
-| [`platform/modules/operate/src/contracts.ts`](../../platform/modules/operate/src/contracts.ts) | 542 | Add the exact-version bounded membership-read capability without exposing the private registration representation. |
-| [`platform/modules/operate/src/sqlite-process-instance-repository.ts`](../../platform/modules/operate/src/sqlite-process-instance-repository.ts) | 323 | Add one indexed, ordinal-ordered, at-most-101 request-start membership query with full-version validation. |
-| [`platform/modules/operate/src/sqlite-execution-publication-repository.ts`](../../platform/modules/operate/src/sqlite-execution-publication-repository.ts) | 117 | Do not combine stores; use a new occurrence repository and schema tables. |
-| [`platform/modules/operate/src/execution-publication-reconciliation-service.ts`](../../platform/modules/operate/src/execution-publication-reconciliation-service.ts) | 336 | Preserve E1 behavior and use separate occurrence reconciliation and aggregate owners. |
-| [`platform/apps/web/src/definition-workspace.tsx`](../../platform/apps/web/src/definition-workspace.tsx) | 386 | Add only navigation and request delegation to a cohesive Flow-node metrics detail. |
-| [`platform/apps/web/src/definition-diagram.tsx`](../../platform/apps/web/src/definition-diagram.tsx) | 348 | Reuse bpmn-js navigation and exact-element overlays through a separate metric-overlay owner; keep current-position semantics unchanged. |
-| [`platform/apps/server/src/composition.ts`](../../platform/apps/server/src/composition.ts) | 215 | Compose new owners through thin wiring and close the new repository on shutdown. |
-
-`node scripts/what-binds.ts` reports 25 to 26 guards plus the Temporal or engine registry for Product 1 owners, seven guards for Lean, and 103 to 104 guards plus two or three platform registries for Product 2 owners. New owners inherit those package boundaries and registries. The implementation updates [the shared contract registry](../../contracts/README.md), [the Temporal adapter registry](../../packages/temporal-adapter/README.md), [the engine API registry](../../packages/engine-api/README.md), [the platform contract registry](../../platform/contracts/README.md), [the Operate registry](../../platform/modules/operate/README.md), [the web registry](../../platform/apps/web/README.md), [the architecture](../ARCHITECTURE.md), [the implementation map](../IMPLEMENTATION-MAP.md), [the production lifecycle](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [the testing specification](../TESTING-SPEC.md), [the plan](../PLAN.md), and [the capsule cost ledger](../CAPSULE-COST-LEDGER.md) with the evidence they describe.
-
-### Guards and review boundary
+### Verification boundary
 
 | Guard or oracle | Obligation |
 |---|---|
@@ -371,9 +345,7 @@ The implementation must not grow crowded generic owners. The measured existing o
 | [platform product boundary](../../scripts/platform-product-boundary.test.ts) | Keep Workflow, Program, anchor, and host identities out of Product 2 contracts and stores. |
 | [UI-quality boundary](../../scripts/ui-quality-boundary.platform-test.ts) and the local three-level policy in [the testing specification](../TESTING-SPEC.md#three-level-verification-policy) | Require deterministic 1280/1600 functional browser evidence locally before push; no pixel baseline becomes a blocking oracle. |
 | [source hygiene](../../scripts/source-hygiene.test.ts) and [what-binds](../../scripts/what-binds.test.ts) | Enforce the named extractions, cohesive owners, registry updates, and measured headroom. |
-| [document reviewability](../../scripts/document-reviewability.test.ts), [independent-review policy](../../scripts/independent-review-policy.test.ts), and [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Require immutable proposal, conditional semantic-checkpoint, and closure review receipts. |
-
-This proposal is material because it changes public observation, proof boundaries, and Temporal refinement. It requires context-cold proposal review before owner approval, a semantic checkpoint after the first green lifecycle/wire/Query boundary, and cold closure unless the exact checkpoint reviewer qualifies for hash-bound warm continuity.
+| [document reviewability](../../scripts/document-reviewability.test.ts), [independent-review policy](../../scripts/independent-review-policy.test.ts), and [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Bind the specification receipt to the immutable proposal, checkpoint, closure, and correction-audit targets. |
 
 ## Epistemic closure and cost boundary
 
@@ -398,8 +370,4 @@ Stop and return to research, redesign, or owner direction if:
 - the exact-definition population cannot be bounded and fail closed without silently sampling;
 - implementation requires a new BPMN rule, profile, CIB relationship, source/IL shape, semantic command, repair action, generalized mining store, adjustable interval, chart framework, or pixel-regression gate.
 
-Reopen the account for adjustable periods, archival retention, percentiles, service-level targets, cross-definition aggregation, multi-tenant policy, metric export, dashboards, variants, conformance, discovery, prediction, or another duration clock. Complete operator history and audit export as later M5 increments without claiming that this proposal closes them.
-
-## Decisions requested from the owner
-
-Recommendation: approve the nine selected decisions only after the context-cold proposal review closes. They preserve E1 exactly, introduce the minimum Product 1 facts that make frequency and duration honest, reuse CIB Seven's proven activity-instance unit without copying its implementation, and keep the first Product 2 surface bounded to one exact definition version and two desktop acceptance widths.
+Reopen the account for adjustable periods, archival retention, percentiles, service-level targets, cross-definition aggregation, multi-tenant policy, metric export, dashboards, variants, conformance, discovery, prediction, or another duration clock. Complete operator history and audit export as later M5 increments without claiming that this specification closes them.
