@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
 
 /-! # Resumption-bounded cyclic control-flow conformance
