@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { DefinitionDeployStatus } from "@bpmn-lean/platform-contracts";
@@ -7,44 +7,32 @@ import type {
   DeployedDefinitionVersion,
 } from "@bpmn-lean/platform-contracts";
 
-import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
-import { DefinitionWorkspace } from "./definition-workspace";
-import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
-import type { FlowNodeMetricsApi } from "./flow-node-metrics-api.ts";
-import type { IncidentOperationsApi } from "./incident-operations-api";
-import type { OperatorAuditApi } from "./operator-audit-api.ts";
-import { OperationsWorkspace } from "./operations-workspace";
-import type { ProcessInstanceSearchApi } from "./process-instance-search-api";
-import type { ProcessExecutionApi } from "./process-execution-api";
 import type { WorkApiClient } from "./work-tasks-api";
 import { WorkInboxPanel } from "./work-inbox-panel";
 import { AppShell, AppWorkspace } from "./app-shell";
-import { CapabilitiesPanel } from "./capabilities-panel";
+
+const DefinitionWorkspace = lazy(async () => ({
+  default: (await import("./deferred-definition-workspace")).DeferredDefinitionWorkspace,
+}));
+const OperationsWorkspace = lazy(async () => ({
+  default: (await import("./deferred-operations-workspace")).DeferredOperationsWorkspace,
+}));
+const CapabilitiesPanel = lazy(async () => ({
+  default: (await import("./capabilities-panel")).CapabilitiesPanel,
+}));
 
 export type AppProps = Readonly<{
   api: DefinitionApiClient;
-  messageStartPublicationApi: MessageStartPublicationApiClient;
-  incidentOperationsApi: IncidentOperationsApi;
-  metricsApi: FlowNodeMetricsApi;
-  processInstanceSearchApi: ProcessInstanceSearchApi;
-  processExecutionApi: ProcessExecutionApi;
-  operatorAuditApi: OperatorAuditApi;
+  origin: string;
   productVersion: string;
-  scheduleApi: DefinitionScheduleApiClient;
   workApi: WorkApiClient;
 }>;
 
 export function App({
   api,
-  incidentOperationsApi,
-  messageStartPublicationApi,
-  metricsApi,
-  processInstanceSearchApi,
-  processExecutionApi,
-  operatorAuditApi,
+  origin,
   productVersion,
-  scheduleApi,
   workApi,
 }: AppProps) {
   const [definitions, setDefinitions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
@@ -131,37 +119,44 @@ export function App({
   return (
     <AppShell
       activeWorkspace={workspace}
-      about={<CapabilitiesPanel productVersion={productVersion} />}
+      about={(
+        <Suspense fallback={<WorkspaceLoadingStatus />}>
+          <CapabilitiesPanel productVersion={productVersion} />
+        </Suspense>
+      )}
       onNavigate={setWorkspace}
       work={<WorkInboxPanel api={workApi} definitionApi={api} />}
       operations={(
-        <OperationsWorkspace
-          definitionApi={api}
-          incidentApi={incidentOperationsApi}
-          operatorAuditApi={operatorAuditApi}
-          processExecutionApi={processExecutionApi}
-          processInstanceSearchApi={processInstanceSearchApi}
-        />
+        <Suspense fallback={<WorkspaceLoadingStatus />}>
+          <OperationsWorkspace
+            definitionApi={api}
+            origin={origin}
+          />
+        </Suspense>
       )}
       definitions={(
-        <DefinitionWorkspace
-          api={api}
-          definitions={definitions}
-          deployment={deployment}
-          error={error}
-          loading={loading}
-          messageStartPublicationApi={messageStartPublicationApi}
-          metricsApi={metricsApi}
-          onDeploy={deploy}
-          onOpenDefinition={openDefinition}
-          onSelectVersion={setSelected}
-          scheduleApi={scheduleApi}
-          selected={selected}
-          versions={versions}
-        />
+        <Suspense fallback={<WorkspaceLoadingStatus />}>
+          <DefinitionWorkspace
+            api={api}
+            definitions={definitions}
+            deployment={deployment}
+            error={error}
+            loading={loading}
+            onDeploy={deploy}
+            onOpenDefinition={openDefinition}
+            onSelectVersion={setSelected}
+            origin={origin}
+            selected={selected}
+            versions={versions}
+          />
+        </Suspense>
       )}
     />
   );
+}
+
+function WorkspaceLoadingStatus() {
+  return <p role="status">Loading workspace…</p>;
 }
 
 function errorMessage(error: unknown): string {

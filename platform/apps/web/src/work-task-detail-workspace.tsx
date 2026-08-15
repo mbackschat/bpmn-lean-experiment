@@ -18,7 +18,7 @@ import type {
 
 import { DefinitionDiagram } from "./definition-diagram";
 import type { DefinitionApiClient } from "./definitions-api";
-import { BpmnDiagramMarkerKind } from "./bpmn-viewer";
+import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
 import type { WorkCompletionView } from "./work-completion-operation";
 import { WorkCompletionViewKind } from "./work-completion-operation";
 import styles from "./work-inbox.module.css";

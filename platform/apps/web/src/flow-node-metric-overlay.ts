@@ -1,7 +1,7 @@
 import type {
   BpmnElementRegistryPort,
   BpmnOverlaysPort,
-} from "./bpmn-viewer.ts";
+} from "./bpmn-viewer-contract.ts";
 
 export type FlowNodeMetricBadge = Readonly<{
   elementId: string;

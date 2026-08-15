@@ -2,18 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import "bpmn-js/dist/assets/diagram-js.css";
-import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
-
 import { App } from "./app";
-import { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import { DefinitionApiClient } from "./definitions-api";
-import { MessageStartPublicationApiClient } from "./message-start-publication-api";
-import { IncidentOperationsApiClient } from "./incident-operations-api";
-import { ProcessInstanceSearchApiClient } from "./process-instance-search-api";
-import { ProcessExecutionApiClient } from "./process-execution-api";
-import { OperatorAuditApiClient } from "./operator-audit-api.ts";
-import { FlowNodeMetricsApiClient } from "./flow-node-metrics-api.ts";
 import { WorkApiClient } from "./work-tasks-api";
 import "@bpmn-lean/platform-ui-kit/style.css";
 
@@ -23,13 +13,6 @@ if (container === null) {
 }
 
 const api = new DefinitionApiClient(window.location.origin);
-const messageStartPublicationApi = new MessageStartPublicationApiClient(window.location.origin);
-const incidentOperationsApi = new IncidentOperationsApiClient(window.location.origin);
-const processInstanceSearchApi = new ProcessInstanceSearchApiClient(window.location.origin);
-const processExecutionApi = new ProcessExecutionApiClient(window.location.origin);
-const operatorAuditApi = new OperatorAuditApiClient(window.location.origin);
-const metricsApi = new FlowNodeMetricsApiClient(window.location.origin);
-const scheduleApi = new DefinitionScheduleApiClient(window.location.origin);
 const workApi = new WorkApiClient(window.location.origin);
 const queryClient = new QueryClient();
 createRoot(container).render(
@@ -37,14 +20,8 @@ createRoot(container).render(
     <QueryClientProvider client={queryClient}>
       <App
         api={api}
-        incidentOperationsApi={incidentOperationsApi}
-        messageStartPublicationApi={messageStartPublicationApi}
-        metricsApi={metricsApi}
-        processInstanceSearchApi={processInstanceSearchApi}
-        processExecutionApi={processExecutionApi}
-        operatorAuditApi={operatorAuditApi}
+        origin={window.location.origin}
         productVersion={__BPMN_LEAN_PRODUCT_VERSION__}
-        scheduleApi={scheduleApi}
         workApi={workApi}
       />
     </QueryClientProvider>

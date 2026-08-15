@@ -2,17 +2,17 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  BpmnDiagramMarkerKind,
   BpmnDiagramViewer,
   BpmnViewerProtocolError,
 } from "../src/bpmn-viewer.ts";
+import { BpmnDiagramMarkerKind } from "../src/bpmn-viewer-contract.ts";
 import type {
   BpmnCanvasPort,
   BpmnElementRegistryPort,
   BpmnOverlaysPort,
   BpmnViewerFactory,
   BpmnViewerPort,
-} from "../src/bpmn-viewer.ts";
+} from "../src/bpmn-viewer-contract.ts";
 
 const encoder = new TextEncoder();
 

@@ -2,51 +2,14 @@ import {
   FlowNodeMetricOverlay,
 } from "./flow-node-metric-overlay.ts";
 import type { FlowNodeMetricBadge } from "./flow-node-metric-overlay.ts";
-
-export const BpmnDiagramMarkerKind = {
-  Current: "current",
-  Incident: "incident",
-  Selected: "selected",
-} as const;
-
-export type BpmnDiagramMarkerKind =
-  (typeof BpmnDiagramMarkerKind)[keyof typeof BpmnDiagramMarkerKind];
-
-export type BpmnCanvasPort = Readonly<{
-  addMarker(elementId: string, marker: string): void;
-  removeMarker(elementId: string, marker: string): void;
-  zoom(scale: "fit-viewport", center?: boolean): number;
-}>;
-
-export type BpmnElementRegistryPort = Readonly<{
-  get(elementId: string): unknown | undefined;
-}>;
-
-export type BpmnOverlayConfiguration = Readonly<{
-  position: Readonly<{
-    top?: number;
-    right?: number;
-    bottom?: number;
-    left?: number;
-  }>;
-  show: Readonly<{ minZoom: number; maxZoom: number }>;
-  html: HTMLElement;
-}>;
-
-export type BpmnOverlaysPort = Readonly<{
-  add(elementId: string, configuration: BpmnOverlayConfiguration): string;
-  remove(overlayId: string): void;
-}>;
-
-export type BpmnViewerPort = Readonly<{
-  importXML(xml: string): Promise<Readonly<{ warnings: ReadonlyArray<unknown> }>>;
-  get(name: "canvas"): BpmnCanvasPort;
-  get(name: "elementRegistry"): BpmnElementRegistryPort;
-  get(name: "overlays"): BpmnOverlaysPort;
-  destroy(): void;
-}>;
-
-export type BpmnViewerFactory = (container: HTMLElement) => BpmnViewerPort;
+import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
+import type {
+  BpmnCanvasPort,
+  BpmnDiagramMarkerKind as BpmnDiagramMarker,
+  BpmnElementRegistryPort,
+  BpmnViewerFactory,
+  BpmnViewerPort,
+} from "./bpmn-viewer-contract.ts";
 
 export class BpmnViewerProtocolError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -101,7 +64,7 @@ export class BpmnDiagramViewer {
     await operation;
   }
 
-  highlight(elementId: string, markerKind: BpmnDiagramMarkerKind): void {
+  highlight(elementId: string, markerKind: BpmnDiagramMarker): void {
     this.#requireLive();
     if (elementId.length === 0) {
       throw new TypeError("highlighted BPMN element ID must not be empty");
@@ -121,7 +84,7 @@ export class BpmnDiagramViewer {
   /** Replaces every marker as one validated set and reports absent unique IDs in input order. */
   highlightMany(
     elementIds: readonly string[],
-    markerKind: BpmnDiagramMarkerKind,
+    markerKind: BpmnDiagramMarker,
   ): readonly string[] {
     this.#requireLive();
     const unique = [...new Set(elementIds)];
@@ -188,7 +151,7 @@ export class BpmnDiagramViewer {
   }
 }
 
-function markerClass(markerKind: BpmnDiagramMarkerKind): string {
+function markerClass(markerKind: BpmnDiagramMarker): string {
   switch (markerKind) {
     case BpmnDiagramMarkerKind.Current:
       return "bpmn-platform-current";

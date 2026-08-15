@@ -7,7 +7,7 @@ import {
 import type {
   BpmnElementRegistryPort,
   BpmnOverlaysPort,
-} from "../src/bpmn-viewer.ts";
+} from "../src/bpmn-viewer-contract.ts";
 
 test("replaces one badge per present metric and reports missing IDs without parent fallback", () => {
   const calls: string[] = [];

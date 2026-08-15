@@ -7,7 +7,7 @@ import type {
 
 import { DefinitionDiagram } from "./definition-diagram.tsx";
 import type { DefinitionApiClient } from "./definitions-api.ts";
-import { BpmnDiagramMarkerKind } from "./bpmn-viewer.ts";
+import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
 import {
   displayScopeOccurrence,
   executionScopeKey,

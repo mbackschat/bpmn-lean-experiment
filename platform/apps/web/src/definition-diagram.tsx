@@ -9,11 +9,10 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 import { Button } from "@bpmn-lean/platform-ui-kit";
 
-import { createBpmnJsViewer } from "./bpmn-js-factory";
 import {
   BpmnDiagramMarkerKind,
-  BpmnDiagramViewer,
-} from "./bpmn-viewer";
+} from "./bpmn-viewer-contract.ts";
+import type { BpmnDiagramViewer } from "./bpmn-viewer.ts";
 import type { DefinitionApiClient } from "./definitions-api";
 import { downloadDefinitionPresentation } from "./definition-presentation-download";
 import type { FlowNodeMetricBadge } from "./flow-node-metric-overlay.ts";
@@ -50,7 +49,6 @@ export function DefinitionDiagram({
 }: DefinitionDiagramProps) {
   const container = useRef<HTMLDivElement>(null);
   const viewer = useRef<BpmnDiagramViewer>(null);
-  const viewerInitializationError = useRef<string | null>(null);
   const generation = useRef(0);
   const [presentation, setPresentation] =
     useState<ResolvedBpmnDiagramPresentation | null>(null);
@@ -58,6 +56,7 @@ export function DefinitionDiagram({
   const [renderError, setRenderError] = useState<string | null>(null);
   const [rendering, setRendering] = useState(true);
   const [renderedGeneration, setRenderedGeneration] = useState(0);
+  const [viewerReady, setViewerReady] = useState(false);
   const highlightedElementId = highlight !== undefined && "elementId" in highlight
     ? highlight.elementId
     : undefined;
@@ -71,24 +70,33 @@ export function DefinitionDiagram({
     if (element === null) {
       return;
     }
-    try {
+    let active = true;
+    void Promise.all([
+      import("./bpmn-js-factory"),
+      import("./bpmn-viewer"),
+    ]).then(([{ createBpmnJsViewer }, { BpmnDiagramViewer }]) => {
+      if (!active) return;
       viewer.current = new BpmnDiagramViewer(element, createBpmnJsViewer);
-    } catch (error: unknown) {
-      viewerInitializationError.current = errorMessage(error);
-      setRenderError(viewerInitializationError.current);
-    }
+      setViewerReady(true);
+    }).catch((error: unknown) => {
+      if (!active) return;
+      setRenderError(errorMessage(error));
+      setRendering(false);
+    });
     return () => {
+      active = false;
       viewer.current?.destroy();
       viewer.current = null;
     };
   }, []);
 
   useEffect(() => {
+    if (!viewerReady) return;
     const activeGeneration = generation.current + 1;
     generation.current = activeGeneration;
     setRendering(true);
     setDownloadError(null);
-    setRenderError(viewerInitializationError.current);
+    setRenderError(null);
     setPresentation(null);
     setRenderedGeneration(0);
     onMissingElementIds?.([]);
@@ -154,6 +162,7 @@ export function DefinitionDiagram({
     highlightedElementIds,
     markerKind,
     onMissingElementIds,
+    viewerReady,
   ]);
 
   useEffect(() => {

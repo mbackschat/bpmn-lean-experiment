@@ -9,6 +9,9 @@ const packageJson = JSON.parse(
 ) as Readonly<{ version: string }>;
 
 export default defineConfig({
+  build: {
+    manifest: true,
+  },
   define: {
     __BPMN_LEAN_PRODUCT_VERSION__: JSON.stringify(packageJson.version),
   },

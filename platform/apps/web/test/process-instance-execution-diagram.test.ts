@@ -34,7 +34,7 @@ const runnableDiagramSource = diagramSource
      }`,
   )
   .replace(
-    'import { BpmnDiagramMarkerKind } from "./bpmn-viewer.ts";',
+    'import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";',
     'const BpmnDiagramMarkerKind = { Current: "current" };',
   )
   .replace(
