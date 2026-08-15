@@ -10,9 +10,11 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
+import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,9 +56,29 @@ public final class CibSevenParallelUserTaskMetadataCheckpointTest {
   }
 
   @Test
-  public void keepsProcessStartEmptyAndBooleanWritesOnTaskCompletionOnly() {
+  public void keepsProcessStartEmptyAndAdmitsTaskCompletionValueKinds() {
+    var emptyBindings = java.util.List.<ScenarioProtocol.VariableBinding>of();
+    var stringBinding = java.util.List.of(
+        new ScenarioProtocol.VariableBinding("reviewer", new StringValue("alice")));
+    var nullBinding = java.util.List.of(
+        new ScenarioProtocol.VariableBinding("reviewer", new NullValue()));
     var booleanBinding = java.util.List.of(
         new ScenarioProtocol.VariableBinding("approved", new BooleanValue(true)));
+    assertTrue(
+        ScenarioVariableValuePolicy.admits(
+            CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE,
+            ScenarioVariableValuePolicy.Surface.PROCESS_START,
+            emptyBindings));
+    assertFalse(
+        ScenarioVariableValuePolicy.admits(
+            CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE,
+            ScenarioVariableValuePolicy.Surface.PROCESS_START,
+            stringBinding));
+    assertFalse(
+        ScenarioVariableValuePolicy.admits(
+            CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE,
+            ScenarioVariableValuePolicy.Surface.PROCESS_START,
+            nullBinding));
     assertFalse(
         ScenarioVariableValuePolicy.admits(
             CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE,
@@ -67,6 +89,16 @@ public final class CibSevenParallelUserTaskMetadataCheckpointTest {
             CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE,
             ScenarioVariableValuePolicy.Surface.USER_TASK_COMPLETION,
             booleanBinding));
+    assertTrue(
+        ScenarioVariableValuePolicy.admits(
+            CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE,
+            ScenarioVariableValuePolicy.Surface.USER_TASK_COMPLETION,
+            stringBinding));
+    assertTrue(
+        ScenarioVariableValuePolicy.admits(
+            CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE,
+            ScenarioVariableValuePolicy.Surface.USER_TASK_COMPLETION,
+            nullBinding));
     assertFalse(
         ScenarioVariableValuePolicy.admits(
             CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE,

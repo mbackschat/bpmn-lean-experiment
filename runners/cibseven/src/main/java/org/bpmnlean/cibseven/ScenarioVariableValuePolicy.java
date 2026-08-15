@@ -32,7 +32,13 @@ final class ScenarioVariableValuePolicy {
 
   static boolean admits(
       String profile, Surface surface, Iterable<VariableBinding> bindings) {
+    var requiresEmptyBindings =
+        CibSevenUserTaskMetadataProjector.PARALLEL_PROFILE.equals(profile)
+            && surface == Surface.PROCESS_START;
     for (var binding : bindings) {
+      if (requiresEmptyBindings) {
+        return false;
+      }
       var admitted =
           switch (binding.value()) {
             case StringValue ignored -> true;

@@ -1,4 +1,4 @@
-/** Durable combined metadata, sibling, replacement, mutation, duplicate, and replay evidence. */
+/** Durable metadata, sibling, replacement, duplicate, stale-refusal, mutation, and replay evidence. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -69,7 +69,7 @@ import type { WorkerLease } from "./temporal-worker-test-support.ts";
 const operationDeadlineMs = 10_000;
 const identity = "bpmn-lean-parallel-user-task-metadata";
 
-test("parallel User Task metadata survives both orders, Worker replacement, duplicate recovery, mutations, and replay", async () => {
+test("parallel User Task metadata survives both orders, Worker replacement, duplicate recovery, stale refusal, mutations, and replay", async () => {
   const fixture = await loadParallelUserTaskMetadataFixture();
   const executions = fixture.orders.map((order, index) =>
     withParallelMetadataExecutionIdentity(
@@ -238,6 +238,46 @@ async function runOrder(
     intermediateTasks,
     fixture.intermediateTasks,
   );
+  const intermediateTrace = await readBpmnProcessTrace(
+    environment.client.workflow,
+    fixture.start.instanceId,
+  );
+  const intermediateState = intermediateTrace.findLast(
+    ({ kind }) => kind === CanonicalObservationKind.State,
+  );
+  assert.ok(intermediateState !== undefined);
+  const staleCompletion: CompleteUserTaskInstanceStimulus = {
+    ...fixture.completions[0],
+    commandId: `${fixture.completions[0].commandId}-fresh-stale`,
+  };
+  assert.deepEqual(
+    await submitUserTaskCompletion(
+      environment.client.workflow,
+      fixture.start.instanceId,
+      staleCompletion,
+    ),
+    {
+      kind: ProcessCommandResultKind.Semantic,
+      commandId: staleCompletion.commandId,
+      outcome: CommandOutcome.Rejected,
+    },
+  );
+  const tasksAfterStaleRefusal = await waitForOpenUserTaskIds(
+    started.handle,
+    fixture.intermediateTasks.map(({ id }) => id.elementId),
+  );
+  assert.deepEqual(tasksAfterStaleRefusal, intermediateTasks);
+  const traceAfterStaleRefusal = await readBpmnProcessTrace(
+    environment.client.workflow,
+    fixture.start.instanceId,
+  );
+  assert.deepEqual(traceAfterStaleRefusal.slice(0, -2), intermediateTrace);
+  assert.deepEqual(traceAfterStaleRefusal.at(-2), {
+    kind: CanonicalObservationKind.Command,
+    commandId: staleCompletion.commandId,
+    outcome: CommandOutcome.Rejected,
+  });
+  assert.deepEqual(traceAfterStaleRefusal.at(-1), intermediateState);
 
   assert.deepEqual(
     await submitUserTaskCompletion(
@@ -261,22 +301,37 @@ async function runOrder(
     environment.client.workflow,
     fixture.start.instanceId,
   );
-  assert.deepEqual(trace, fixture.expected.trace);
+  assert.deepEqual(trace, [
+    ...fixture.expected.trace.slice(0, -2),
+    {
+      kind: CanonicalObservationKind.Command,
+      commandId: staleCompletion.commandId,
+      outcome: CommandOutcome.Rejected,
+    },
+    intermediateState,
+    ...fixture.expected.trace.slice(-2),
+  ]);
   const history = await started.handle.fetchHistory();
   const temporalHistory = history as TemporalHistory;
-  assertExactAcceptedCompletions(temporalHistory, fixture.completions);
+  const acceptedCompletions = [
+    fixture.completions[0],
+    staleCompletion,
+    fixture.completions[1],
+  ];
+  assertExactAcceptedCompletions(temporalHistory, acceptedCompletions);
   assert.deepEqual(
     durableUpdateOutcomes(temporalHistory),
-    new Map(fixture.completions.map(({ commandId }) => [
-      commandId,
-      CommandOutcome.Committed,
-    ])),
+    new Map([
+      [fixture.completions[0].commandId, CommandOutcome.Committed],
+      [staleCompletion.commandId, CommandOutcome.Rejected],
+      [fixture.completions[1].commandId, CommandOutcome.Committed],
+    ]),
   );
   assert.deepEqual(
     acceptedCompletionOrder(temporalHistory),
-    fixture.completions.map(({ commandId }) => commandId),
+    acceptedCompletions.map(({ commandId }) => commandId),
   );
-  assertUpdatesCompleteBeforeWorkflow(temporalHistory, 2);
+  assertUpdatesCompleteBeforeWorkflow(temporalHistory, 3);
   assertNoNonUpdateBpmnHostEvents(temporalHistory, "parallel User Task metadata");
   reconcileHarnessTraceEvidence(trace, receiptValue, temporalHistory);
   return { history, workflowId: started.handle.workflowId };
