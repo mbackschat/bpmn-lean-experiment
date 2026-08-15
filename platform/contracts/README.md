@@ -19,5 +19,5 @@ Build or decode public definition, start, schedule, Message publication, Process
 - [Human-work specification](../../docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns task discovery, claim, completion, and audit behavior.
 - [Incident-operations specification](../../docs/BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) owns incident resources and actions.
 - [Process-instance search specification](../../docs/BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md), [committed-execution publication specification](../../docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md), and [flow-node occurrence metrics specification](../../docs/capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) own the Operations contracts.
-- [Operator history and audit export proposal](../../docs/BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-PROPOSAL.md) owns the independently ordered Work and incident-action export contract.
+- [Operator history and audit export specification](../../docs/BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md) owns the independently ordered Work and incident-action export contract.
 - [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact current public surface.

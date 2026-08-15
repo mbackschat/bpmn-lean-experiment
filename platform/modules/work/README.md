@@ -15,6 +15,6 @@ Register confirmed Process instances, assemble the current actor-visible task in
 ## Learn more
 
 - [Human-work specification](../../../docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns lifecycle, authorization, retry, and audit behavior.
-- [Human-work walkthrough](../../../docs/M3-HUMAN-WORK-WALKTHROUGH.md) follows the user journey through the public UI.
+- [Human-work walkthrough](../../../docs/HUMAN-WORK-WALKTHROUGH.md) follows the maintained user journey through the public UI.
 - [Architecture](../../../docs/ARCHITECTURE.md#modules) owns the module boundary and persistence direction.
 - [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records current Work capability and evidence.

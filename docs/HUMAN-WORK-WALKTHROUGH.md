@@ -1,8 +1,8 @@
-# M3 human-work browser walkthrough
+# Human-work browser walkthrough
 
 ## Status
 
-Implemented. This walkthrough exercises the maintained M3 Product 2 path through the production platform server, web client, Temporal-hosted engine, generated form, and BPMN diagram presentation boundary. It is a user guide, not semantic or compatibility evidence.
+Implemented and maintained. This walkthrough exercises the Product 2 human-work path established in M3 through the production platform server, web client, Temporal-hosted engine, generated form, and BPMN diagram presentation boundary. It is a user guide, not semantic or compatibility evidence.
 
 ## What you will experience
 
@@ -44,7 +44,7 @@ PLATFORM_API_ORIGIN=http://127.0.0.1:3203 \
 
 Open [http://127.0.0.1:4276](http://127.0.0.1:4276). The shell should show Work, Definitions, and Operations in the primary navigation and `Signed in as demo-user`.
 
-## Deploy and inspect the M3 model
+## Deploy and inspect the human-work model
 
 1. Open **Definitions**.
 2. Expand **Add BPMN definition**.
@@ -83,9 +83,9 @@ After the engine commits the exact occurrence completion, the task detail closes
 2. Enter the retained Process-instance ID, or enter Process ID `Process_UserTaskMetadata`.
 3. Choose **Search**.
 
-The result shows the public Process-instance ID, exact definition version, source identity and digest, and semantic profile. Choose **View execution**. Overview must report current status **completed**. History must show the contiguous engine-published semantic transitions, including `startProcess`, `completeUserTaskInstance`, and `UserTask_Approve`; it is not reconstructed from Temporal Event History or a state difference.
+The result shows the public Process-instance ID, exact definition version, source identity and digest, and semantic profile. Choose **View details**. Overview must report current status **completed**. History must show the contiguous engine-published semantic transitions, including `startProcess`, `completeUserTaskInstance`, and `UserTask_Approve`; it is not reconstructed from Temporal Event History or a state difference.
 
-The claim and completion audit is a separate Product 2 Work fact. The automated journey verifies it through the public Work-audit API as `claim/claimed`, `completion/reserved`, and `completion/committed` for the exact task occurrence. The Operations **Audit** tab is incident-action audit and is not relabeled as Work audit; no Work-audit browser surface is claimed in M3.
+The claim and completion audit is a separate Product 2 Work fact. The automated journey verifies it through the public Work-audit API as `claim/claimed`, `completion/reserved`, and `completion/committed` for the exact task occurrence. **Operator history** shows the retained Work and incident-action streams as separate source-ordered collections and offers their canonical audit download. The Operations workspace's **Audit** collection remains the cross-instance incident-action surface.
 
 ## Compare source-authored BPMN DI
 
@@ -103,7 +103,7 @@ Open that file in a standards-oriented BPMN modeller, adjust the layout, and sav
 
 - **The API host does not start:** check whether port 3203 is already in use. If you choose another API port, use the same origin in `PLATFORM_API_ORIGIN` for the Vite command.
 - **The web server reports a port conflict:** choose another Vite port and open that address in the browser.
-- **No task appears:** deploy and start the metadata model with the exact metadata profile above, confirm the shell says `demo-user`, and choose **Refresh**. Metadata-free User Tasks are intentionally hidden by the M3 fake policy.
+- **No task appears:** deploy and start the metadata model with the exact metadata profile above, confirm the shell says `demo-user`, and choose **Refresh**. Metadata-free User Tasks are intentionally hidden by the development identity policy.
 - **The diagram says unavailable:** the M3 metadata model is inside the generated-layout scope. Other models with multiple root Processes, unsupported presentation constructs, incomplete embedded DI, or failed integrity checks must provide usable source DI or remain honestly unavailable.
 - **The Process instance disappears after restart:** this showcase deliberately uses a temporary data directory. Use the production server's configured persistent directory for retained platform data.
 - **You want an automated run:** use `./scripts/pnpm.sh run test:showcase:m3-human-work`. The wrapper builds the Product 2 release graph once, serves it through `vite preview`, and reuses those artifacts for the Chromium journeys. Playwright remains a Product 2 acceptance harness and is not part of Product 1 semantic verification.

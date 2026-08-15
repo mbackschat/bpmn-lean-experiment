@@ -8,4 +8,4 @@ The [single-review corpus journey](e2e/corpus-user-task-journey.spec.ts) and [pa
 
 Run both gates with `./scripts/pnpm.sh run test:showcase:m3-human-work`. The test owns the sole permitted M3 Event History inspection; production platform code never imports or derives Work from Temporal history.
 
-To experience the product manually, follow the maintained [M3 human-work browser walkthrough](../../docs/M3-HUMAN-WORK-WALKTHROUGH.md).
+To experience the product manually, follow the maintained [human-work browser walkthrough](../../docs/HUMAN-WORK-WALKTHROUGH.md).

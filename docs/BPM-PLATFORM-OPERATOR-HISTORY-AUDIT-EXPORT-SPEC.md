@@ -1,18 +1,10 @@
-# BPM platform operator history and audit export proposal
+# BPM platform operator history and audit export specification
 
 ## Status
 
-**Owner-approved implementation complete; closure review pending.** Context-cold proposal review target `e4bd44520b6099a353e853113847b12716008d6b` required three bounded correction groups. Two warm correction rounds closed the exact error mapping, route/filename encoding, and owner/registry findings at final target `25c4b6d`. The reviewed Product 2 contract is implemented through strict public bytes, bounded source-local snapshots, authorization-first reconciliation, server composition, the independent Process-instance Operator history surface, canonical download, restart evidence, and two-width browser acceptance. A context-cold closure review over the immutable completed target remains required before graduation and M5 closure. The increment changes no BPMN meaning, semantic profile, CIB relationship, checked graph, Semantic Process IL, semantic runtime state, Product 1 observation, Temporal Workflow behavior, or existing Work and incident-audit API.
+**Implemented, closure-reviewed, and evidence-closed on 2026-08-15.** Context-cold proposal review target `e4bd44520b6099a353e853113847b12716008d6b` required three bounded correction groups, closed at `25c4b6d`. Context-cold closure review target `46bde82ac014682d2bec1f13444764fce458f5e5` required four evidence and transport corrections, closed and approved at `cb2a026`. The Product 2 contract is implemented through strict public bytes, bounded source-local snapshots, authorization-first reconciliation, server composition, the independent Process-instance Operator history surface, canonical download, restart evidence, and two-width browser acceptance. The increment changes no BPMN meaning, semantic profile, CIB relationship, checked graph, Semantic Process IL, semantic runtime state, Product 1 observation, Temporal Workflow behavior, or existing Work and incident-audit API.
 
-[PLAN.md](PLAN.md) owns sequencing. The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns Work action audit, the [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) owns incident-action audit, and the [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns semantic History and its separate canonical export. The [source-grounded UI/UX research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md#pattern-12-operator-audit-is-instance-context-not-semantic-history) owns the external product comparison behind this proposal.
-
-## Owner question and recommendation
-
-What is the smallest complete M5 operator-history surface and audit download that can be built from facts the platform already records without inventing an audit population or chronology?
-
-Adopt one Operations-authorized, per-confirmed-Process-instance `Operator history` view and one strict canonical JSON attachment over the existing Work action and incident-action audit streams. Keep the streams separately labelled and source-locally ordered. Reconcile both durable outboxes before taking two independently atomic bounded snapshots, expose each captured head, and fail the whole request when either stream cannot be proven complete through its own head. Do not merge by timestamp, compare private ordinals, add audit producers, or combine semantic History with platform audit.
-
-This is the recommended design because the platform already owns complete durable records for the selected action families, while their repositories share no transaction, ordinal, cursor, or clock authority. A visually unified timeline would be easier to scan but would communicate a global order the system does not possess. Two explicit streams are both useful and honest.
+[PLAN.md](PLAN.md) owns sequencing. The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns Work action audit, the [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) owns incident-action audit, and the [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns semantic History and its separate canonical export. The [source-grounded UI/UX research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md#pattern-12-operator-audit-is-instance-context-not-semantic-history) owns the external product comparison behind this specification.
 
 ## Scope
 
@@ -192,7 +184,7 @@ Authorization denial is not unavailability and occurs first. Unknown confirmed i
 | Responsive accessibility | At 1280 and 1600, prove exact headings, two nonmerged collections, focus restoration, focused failure, keyboard download, and zero horizontal overflow |
 | Restart convergence | Leave both outboxes pending across server restart, then prove one event per existing logical identity, complete snapshots, fixed bytes, and no duplicate acknowledgement effect |
 
-Focused verification includes strict contract/type/canonical/route tests, both SQLite snapshot owners, Work and incident outbox integration, authorization policy, operator-audit service and HTTP routes, server composition and restart, HTTP-only client, component behavior, and two-width browser evidence. The complete Product 2 gate runs once after integration. No Lean, BPMN source, semantic-core, CIB, differential, or live Temporal gate is required because this proposal changes none of those claims.
+Focused verification includes strict contract/type/canonical/route tests, both SQLite snapshot owners, Work and incident outbox integration, authorization policy, operator-audit service and HTTP routes, server composition and restart, HTTP-only client, component behavior, and two-width browser evidence. The complete Product 2 gate runs once after integration. No Lean, BPMN source, semantic-core, CIB, differential, or live Temporal gate is required because this specification changes none of those claims.
 
 ## Required, optional, and excluded functionality
 
@@ -230,25 +222,7 @@ The two audit repositories add source-local snapshot methods and supporting host
 
 No package or external dependency is added, removed, upgraded, or replaced. Operate consumes structural ports over contract event types and does not import the audit foundation or Work module. The server composition root supplies both repositories and both reconcilers.
 
-## Implementation owners, review headroom, and registries
-
-The new cohesive owners are `platform/contracts/src/operator-audit-export.ts`, `operator-audit-export-decoders.ts`, `operator-audit-export-canonical-json.ts`, and `operator-audit-export-routes.ts`; `platform/modules/operate/src/operator-audit-export-service.ts` and `operator-audit-export-http-routes.ts`; and `platform/apps/web/src/operator-audit-api.ts`, `process-operator-history.tsx`, and its CSS Module. The existing execution canonical owner extracts its private generic canonical-JSON mechanism into a non-exported shared contracts owner without changing bytes.
-
-Existing owners that necessarily change are `platform/contracts/src/definitions.ts` and `index.ts`; both audit contract, SQLite repository, and index owners under `platform/foundation/audit/src/`; `platform/foundation/identity-policy/src/operations-authorization-policy.ts`; `platform/modules/operate/src/index.ts`; `platform/apps/server/src/composition.ts`; and `platform/apps/web/src/app.tsx`, `main.tsx`, `operations-workspace.tsx`, `process-instance-search-panel.tsx`, and `process-instance-execution-detail.tsx`. Their focused existing tests change only where the new surface adds a case or the execution-detail availability boundary is deliberately separated. The existing `process-execution-api.ts`, Work audit route/service, incident audit route/service, and top-level incident Audit panel are inspected and retained byte-identical unless a red guard proves otherwise.
-
-Measured existing nonblank headroom before the proposal target is: contracts index 45/600; Work audit contracts 42/600 and SQLite repository 208/600; incident-audit contracts 44/600 and SQLite repository 386/600; audit index 34/600; Operations authorization policy 50/600; Operate contracts 58/600 and index 128/600; server composition 385/600; Process-instance search panel 293/600; execution detail 286/600; execution API 237/600; Operations workspace 60/600. New focused files begin at zero. The 386-line incident-audit repository has 214 lines of review headroom and may receive only its cohesive bounded snapshot method and schema-index change; any third responsibility must be extracted rather than compressed.
-
-`node scripts/what-binds.ts` reports the registry set collectively across the new and necessarily changed owners: each new contract owner has 115 guards and 2 registries; each new Operate or web owner has 115 guards and 3 registries; the existing aggregate indexes add the source-hygiene backstop for 122 guards; and the showcase owner has 7 guards and 2 registries. The review/update set is the [contracts guide](../platform/contracts/README.md), [audit foundation guide](../platform/foundation/audit/README.md), [identity-policy guide](../platform/foundation/identity-policy/README.md), [foundation guide](../platform/foundation/README.md), [Operate guide](../platform/modules/operate/README.md), [module guide](../platform/modules/README.md), [server guide](../platform/apps/server/README.md), [web guide](../platform/apps/web/README.md), [web source map](../platform/apps/web/SOURCE-MAP.md), [app guide](../platform/apps/README.md), [platform guide](../platform/README.md), [UI-quality showcase](../showcase/platform-ui-quality/README.md), [showcase guide](../showcase/README.md), [documentation registry](README.md), [implementation map](IMPLEMENTATION-MAP.md), and [plan](PLAN.md). A guide may remain byte-identical only after inspection confirms its existing role statement already covers the new owner.
-
-## Review boundary
-
-This proposal is material because it selects a new public wire, cross-actor authorization surface, completeness and ordering contract, canonical download, and Process-instance UI surface. It requires a context-cold proposal review before implementation and a context-cold closure review over the immutable completed target. It requires no semantic checkpoint because it changes no BPMN meaning, profile/CIB relationship, checked-source or IL representation, semantic runtime/public observation, transition family, proof boundary, or Temporal refinement claim.
-
-The proposal review must inspect the two existing event definitions and producer/outbox/sink boundaries, both repository schemas, the confirmed-instance registry, the authorization policy, the execution-export canonical mechanism, and the Process-instance detail failure behavior. The decisive counterexample is a mixed export whose Work and incident timestamps imply the reverse of their independent source-local insertion orders; any design or UI that merges them by time fails.
-
-## Stop and reopen conditions
-
-Stop and return to the owner if implementation requires a new audit producer or event field, a cross-stream total or causal order, a common transaction spanning the two stores, a dependency addition, a Product 1 or Temporal change, a semantic History reinterpretation, a production authentication or tenant decision, retention migration, or a partial result to avoid one of the fixed ceilings.
+## Reopen conditions
 
 Reopen this account for another durable audit producer, global cross-capability audit, cross-actor Work search outside the exact export, a shared audit store, common snapshot, archive retention, migration, tenant policy, redaction, CSV/PDF, combined semantic/audit packaging, or a changed event-size or completeness policy.
 
@@ -258,4 +232,4 @@ Reopen this account for another durable audit producer, global cross-capability 
 |---|---|---|---|---|
 | Proposal | `e4bd44520b6099a353e853113847b12716008d6b` | `fork-turns-none` | `approve-with-required-edits` | `25c4b6d` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `46bde82ac014682d2bec1f13444764fce458f5e5` | `fork-turns-none` | `approve-with-required-edits` | `cb2a026` |
