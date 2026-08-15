@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft, unapproved proposal.** This document selects the bounded Product 2 contract that completes M5 operator history and audit export. It changes no BPMN meaning, semantic profile, CIB relationship, checked graph, Semantic Process IL, semantic runtime state, Product 1 observation, Temporal Workflow behavior, or existing Work and incident-audit API.
+**Owner-approved implementation proposal.** Context-cold proposal review target `e4bd44520b6099a353e853113847b12716008d6b` required three bounded correction groups. Two warm correction rounds closed the exact error mapping, route/filename encoding, and owner/registry findings at final target `25c4b6d`. The owner's direction to finish M5 end to end authorizes implementation of this reviewed account. This document selects the bounded Product 2 contract that completes M5 operator history and audit export. It changes no BPMN meaning, semantic profile, CIB relationship, checked graph, Semantic Process IL, semantic runtime state, Product 1 observation, Temporal Workflow behavior, or existing Work and incident-audit API.
 
 [PLAN.md](PLAN.md) owns sequencing. The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns Work action audit, the [incident-operations specification](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) owns incident-action audit, and the [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns semantic History and its separate canonical export. The [source-grounded UI/UX research](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md#pattern-12-operator-audit-is-instance-context-not-semantic-history) owns the external product comparison behind this proposal.
 
@@ -256,6 +256,6 @@ Reopen this account for another durable audit producer, global cross-capability 
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `e4bd44520b6099a353e853113847b12716008d6b` | `fork-turns-none` | `approve-with-required-edits` | `25c4b6d` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
