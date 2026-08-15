@@ -366,6 +366,104 @@ private def programUserTaskMetadataValid (profile : ProfileId)
           task.metadata.isNone
     | _ => true
 
+private def exactPortSet [DecidableEq α] (actual expected : List α) : Bool :=
+  actual.length = expected.length &&
+    expected.all (fun port => decide (port ∈ actual)) &&
+    decide expected.Nodup
+
+private def exactBalancedTwoBranchTopology [DecidableEq α]
+    [DecidableEq β] (connectors : List β)
+    (start split leftTask rightTask join finish : α)
+    (startOutputs splitInputs splitOutputs leftInputs leftOutputs
+      rightInputs rightOutputs joinInputs joinOutputs finishInputs : List β) : Bool :=
+  match startOutputs, splitInputs, leftInputs, leftOutputs, rightInputs,
+      rightOutputs, joinOutputs, finishInputs with
+  | [startOutput], [splitInput], [leftInput], [leftOutput], [rightInput],
+      [rightOutput], [joinOutput], [finishInput] =>
+      decide (List.Nodup [start, split, leftTask, rightTask, join, finish]) &&
+        decide (startOutput = splitInput) &&
+        exactPortSet splitOutputs [leftInput, rightInput] &&
+        exactPortSet joinInputs [leftOutput, rightOutput] &&
+        decide (joinOutput = finishInput) &&
+        exactPortSet connectors
+          [startOutput, leftInput, rightInput, leftOutput, rightOutput, joinOutput]
+  | _, _, _, _, _, _, _, _ => false
+
+private def checkedIncomingPorts (source : CheckedProcess) (nodeId : NodeId) :
+    List SequenceFlowId :=
+  source.sequenceFlows.filterMap fun flow =>
+    if flow.targetId = nodeId then some flow.id else none
+
+private def checkedOutgoingPorts (source : CheckedProcess) (nodeId : NodeId) :
+    List SequenceFlowId :=
+  source.sequenceFlows.filterMap fun flow =>
+    if flow.sourceId = nodeId then some flow.id else none
+
+private def parallelTopologyProfile (profile : ProfileId) : Bool :=
+  profile.value = "parallel-fork-join-draft" ||
+    profile = parallelUserTaskMetadataCheckpointProfileId
+
+private def checkedParallelTopologyValid (source : CheckedProcess) : Bool :=
+  if parallelTopologyProfile source.identity.semanticProfile then
+    match source.nodes.filterMap fun
+        | .noneStartEvent id => some id
+        | _ => none,
+      source.nodes.filterMap fun
+        | .parallelGateway id .diverging => some id
+        | _ => none,
+      source.nodes.filterMap fun
+        | .userTask id _ _ => some id
+        | _ => none,
+      source.nodes.filterMap fun
+        | .parallelGateway id .converging => some id
+        | _ => none,
+      source.nodes.filterMap fun
+        | .noneEndEvent id => some id
+        | _ => none with
+    | [start], [split], [leftTask, rightTask], [join], [finish] =>
+        source.sequenceFlows.all (fun flow => flow.condition.isNone) &&
+          exactBalancedTwoBranchTopology
+            (source.sequenceFlows.map fun flow => flow.id)
+            start split leftTask rightTask join finish
+            (checkedOutgoingPorts source start) (checkedIncomingPorts source split)
+            (checkedOutgoingPorts source split) (checkedIncomingPorts source leftTask)
+            (checkedOutgoingPorts source leftTask) (checkedIncomingPorts source rightTask)
+            (checkedOutgoingPorts source rightTask) (checkedIncomingPorts source join)
+            (checkedOutgoingPorts source join) (checkedIncomingPorts source finish)
+    | _, _, _, _, _ => false
+  else true
+
+private def programParallelTopologyValid (program : Program) : Bool :=
+  if parallelTopologyProfile program.identity.semanticProfile then
+    match program.operations.filterMap fun
+        | .initiate id origin output => some (id, origin.elementId, output)
+        | _ => none,
+      program.operations.filterMap fun
+        | .duplicate id origin input outputs => some (id, origin.elementId, input, outputs)
+        | _ => none,
+      program.operations.filterMap fun
+        | .awaitUserTask id origin input output _ =>
+            some (id, origin.elementId, input, output)
+        | _ => none,
+      program.operations.filterMap fun
+        | .synchronize id origin inputs output => some (id, origin.elementId, inputs, output)
+        | _ => none,
+      program.operations.filterMap fun
+        | .reachNoneEnd id origin input => some (id, origin.elementId, input)
+        | _ => none with
+    | [(startId, start, startOutput)], [(splitId, split, splitInput, splitOutputs)],
+        [(leftId, leftTask, leftInput, leftOutput),
+          (rightId, rightTask, rightInput, rightOutput)],
+        [(joinId, join, joinInputs, joinOutput)], [(finishId, finish, finishInput)] =>
+        decide (List.Nodup [startId, splitId, leftId, rightId, joinId, finishId]) &&
+          exactBalancedTwoBranchTopology
+            (program.controlPlaces.map fun place => place.id)
+            start split leftTask rightTask join finish
+            [startOutput] [splitInput] splitOutputs [leftInput] [leftOutput]
+            [rightInput] [rightOutput] joinInputs [joinOutput] [finishInput]
+    | _, _, _, _, _ => false
+  else true
+
 private def exactUncheckedEdge (source : CheckedProcess)
     (sourceId targetId : NodeId) : Bool :=
   source.sequenceFlows.any fun flow =>
@@ -415,6 +513,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
       source.definitionScopes.length = scopeCount &&
         nodeCardinalities source.nodes = shape &&
         checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
+        checkedParallelTopologyValid source &&
         configuredTaskCheckedPayloadValid source
   | none => false
 
@@ -462,6 +561,7 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
         operationCardinalities program.operations = shape &&
         programUserTaskMetadataValid program.identity.semanticProfile
           program.operations &&
+        programParallelTopologyValid program &&
         operationPayloadCapabilitiesValid
           program.identity.semanticProfile.value program.operations
   | none => false

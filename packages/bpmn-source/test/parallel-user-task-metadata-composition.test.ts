@@ -153,6 +153,21 @@ test("rejects nearest source-shape mutations without widening generic admission"
   }
 });
 
+test("rejects an unbalanced same-cardinality source in both parallel profiles", async () => {
+  const source = unbalancedParallelSource(await readFile(fixtureUrl, "utf8"));
+  const metadataFreeSource = source
+    .replaceAll(' c7:candidateGroups="reviewers"', "")
+    .replace(/\s*<bpmn:extensionElements>[\s\S]*?<\/bpmn:extensionElements>/gu, "");
+
+  for (const [profile, input] of [
+    [checkpointProfile, source],
+    [SemanticProfileId.ParallelForkJoin, metadataFreeSource],
+  ] as const) {
+    const result = await compile(input, profile);
+    assert.equal(result.status, BpmnCompilationStatus.Rejected, profile);
+  }
+});
+
 test("rejects an otherwise valid source overlay before composed admission", async () => {
   const source = await readFile(fixtureUrl, "utf8");
   const overlay = await sourceOverlay(checkpointProfile);
@@ -222,4 +237,24 @@ async function sourceOverlay(
     byte.toString(16).padStart(2, "0")
   ).join("");
   return { id, sha256, bytes };
+}
+
+function unbalancedParallelSource(source: string): string {
+  return source
+    .replace(
+      /^\s*<bpmn:(?:incoming|outgoing)>.*<\/bpmn:(?:incoming|outgoing)>\s*$/gmu,
+      "",
+    )
+    .replace(
+      'id="Flow_StartToFork" sourceRef="StartEvent_1" targetRef="Gateway_Fork"',
+      'id="Flow_StartToFork" sourceRef="StartEvent_1" targetRef="UserTask_ContentReview"',
+    )
+    .replace(
+      'id="Flow_ForkToContent" sourceRef="Gateway_Fork" targetRef="UserTask_ContentReview"',
+      'id="Flow_ForkToContent" sourceRef="UserTask_ContentReview" targetRef="Gateway_Fork"',
+    )
+    .replace(
+      'id="Flow_ContentToJoin" sourceRef="UserTask_ContentReview" targetRef="Gateway_Join"',
+      'id="Flow_ContentToJoin" sourceRef="Gateway_Fork" targetRef="Gateway_Join"',
+    );
 }

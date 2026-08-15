@@ -13,6 +13,13 @@ import {
   SemanticGraphPolicyKind,
   semanticGraphPolicyForProfile,
 } from "./semantic-process-graph-policy.js";
+import {
+  SemanticCheckpointProfileId,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
+import {
+  hasExactBalancedTwoBranchControlTopology,
+} from "./exact-balanced-two-branch-topology.js";
 
 export type SemanticProcessGraph = Readonly<{
   semanticProfile: string;
@@ -161,6 +168,9 @@ export function isWellFormedSemanticProcessGraph(
   )) {
     return false;
   }
+  if (!hasSelectedParallelTopology(graph, placeEdges)) {
+    return false;
+  }
   switch (graphPolicy.kind) {
     case SemanticGraphPolicyKind.Acyclic:
       return isAcyclic(operationIds, edges);
@@ -180,6 +190,29 @@ export function isWellFormedSemanticProcessGraph(
       );
     }
   }
+}
+
+function hasSelectedParallelTopology(
+  graph: SemanticProcessGraph,
+  edges: ReadonlyArray<OperationEdge>,
+): boolean {
+  if (
+    graph.semanticProfile !== SemanticProfileId.ParallelForkJoin &&
+    graph.semanticProfile !==
+      SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata
+  ) {
+    return true;
+  }
+  const idsOfKind = <Kind extends SemanticOperationKind>(kind: Kind) =>
+    operationsOfKind(graph, kind).map(({ id }) => id);
+  return hasExactBalancedTwoBranchControlTopology({
+    entryIds: idsOfKind(SemanticOperationKind.Initiate),
+    splitIds: idsOfKind(SemanticOperationKind.Duplicate),
+    branchIds: idsOfKind(SemanticOperationKind.AwaitUserTask),
+    joinIds: idsOfKind(SemanticOperationKind.Synchronize),
+    endIds: idsOfKind(SemanticOperationKind.ReachNoneEnd),
+    edges,
+  });
 }
 
 function operationRespectsScopes(

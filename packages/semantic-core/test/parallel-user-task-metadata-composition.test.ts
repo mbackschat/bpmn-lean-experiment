@@ -204,6 +204,24 @@ test("requires complete metadata on both exact task identities", () => {
   );
 });
 
+test("rejects an unbalanced same-cardinality topology in both parallel profiles", () => {
+  const unbalancedCheckpoint = unbalancedParallelProgram(checkpointProgram);
+  const unbalancedPredecessor = metadataErasedParallelProgram(
+    unbalancedCheckpoint,
+  );
+
+  assert.equal(
+    supportsSemanticProcessExecution(start(), unbalancedCheckpoint),
+    false,
+    "metadata checkpoint",
+  );
+  assert.equal(
+    supportsSemanticProcessExecution(start(), unbalancedPredecessor),
+    false,
+    "metadata-free predecessor",
+  );
+});
+
 test("start publishes two canonically ordered distinct tasks with exact metadata", () => {
   const started = applyStimulus(checkpointProgram, initialState, start());
 
@@ -411,19 +429,49 @@ function runCompletions(
   return state;
 }
 
-function metadataErasedParallelProgram(): SemanticProcessProgram {
+function metadataErasedParallelProgram(
+  program: SemanticProcessProgram = checkpointProgram,
+): SemanticProcessProgram {
   return {
-    ...checkpointProgram,
+    ...program,
     identity: {
-      ...checkpointProgram.identity,
+      ...program.identity,
       semanticProfile: SemanticProfileId.ParallelForkJoin,
     },
-    operations: checkpointProgram.operations.map((operation) => {
+    operations: program.operations.map((operation) => {
       if (operation.kind !== SemanticOperationKind.AwaitUserTask) {
         return operation;
       }
       const { metadata: _metadata, ...task } = operation.task;
       return { ...operation, task };
+    }),
+  };
+}
+
+function unbalancedParallelProgram(
+  program: SemanticProcessProgram,
+): SemanticProcessProgram {
+  return {
+    ...program,
+    operations: program.operations.map((operation) => {
+      switch (operation.kind) {
+        case SemanticOperationKind.Duplicate:
+          return {
+            ...operation,
+            input: "place:Flow_ForkToContent",
+            outputs: ["place:Flow_ContentToJoin", "place:Flow_ForkToRisk"],
+          };
+        case SemanticOperationKind.AwaitUserTask:
+          return operation.task.elementId === "UserTask_ContentReview"
+            ? {
+              ...operation,
+              input: "place:Flow_StartToFork",
+              output: "place:Flow_ForkToContent",
+            }
+            : operation;
+        default:
+          return operation;
+      }
     }),
   };
 }

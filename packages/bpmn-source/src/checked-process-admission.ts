@@ -2,8 +2,10 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
   SimpleBooleanExpressionLanguage,
+  hasExactBalancedTwoBranchControlTopology,
   profileAllowsCheckedProcessShape,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -51,6 +53,7 @@ export function isAdmittedCheckedProcess(
     boundaryTimersAttachToDeadlineOwners(graph, admittedGraph.nodeScopes) &&
     hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
+    hasSelectedParallelTopology(semanticProfile, graph) &&
     hasSelectedCyclicTopology(semanticProfile, graph) &&
     hasSelectedInclusivePairing(semanticProfile, graph) &&
     hasSelectedEventRaceTopology(semanticProfile, graph) &&
@@ -60,6 +63,47 @@ export function isAdmittedCheckedProcess(
       graph,
       admittedGraph.nodeScopes,
     );
+}
+
+function hasSelectedParallelTopology(
+  semanticProfile: string,
+  graph: CheckedProcessGraph,
+): boolean {
+  if (
+    semanticProfile !== SemanticProfileId.ParallelForkJoin &&
+    semanticProfile !==
+      SemanticCheckpointProfileId.ParallelUserTaskAssignmentFormMetadata
+  ) {
+    return true;
+  }
+  const idsOfKind = <Kind extends CheckedNodeKind>(kind: Kind) =>
+    graph.nodes
+      .filter(
+        (node): node is Extract<CheckedNode, { kind: Kind }> =>
+          node.kind === kind,
+      )
+      .map(({ id }) => id);
+  const gatewaysOfDirection = (direction: GatewayDirection) =>
+    graph.nodes
+      .filter(
+        (node): node is Extract<
+          CheckedNode,
+          { kind: CheckedNodeKind.ParallelGateway }
+        > => node.kind === CheckedNodeKind.ParallelGateway &&
+          node.direction === direction,
+      )
+      .map(({ id }) => id);
+  return hasExactBalancedTwoBranchControlTopology({
+    entryIds: idsOfKind(CheckedNodeKind.NoneStartEvent),
+    splitIds: gatewaysOfDirection(GatewayDirection.Diverging),
+    branchIds: idsOfKind(CheckedNodeKind.UserTask),
+    joinIds: gatewaysOfDirection(GatewayDirection.Converging),
+    endIds: idsOfKind(CheckedNodeKind.NoneEndEvent),
+    edges: graph.flows.map(({ sourceId: source, targetId: target }) => ({
+      source,
+      target,
+    })),
+  });
 }
 
 /** Locks the selected nested scope distribution and branch topology without using fixture IDs. */

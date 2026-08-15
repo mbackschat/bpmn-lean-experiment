@@ -200,7 +200,7 @@ This is a pre-release additive profile registration. Existing checked-process, S
 | [checked-element-projection.ts](../../packages/bpmn-source/src/checked-element-projection.ts) | 169 |
 | [compile.ts](../../packages/bpmn-source/src/compile.ts) | 209 |
 | [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) | 174 |
-| [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 155 |
+| [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 62 |
 | [ValueDomain.lean](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 562 |
 | [pipeline-cases.ts](../../packages/differential/test/pipeline-cases.ts) | 4 |
 
