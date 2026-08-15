@@ -2,7 +2,7 @@
 
 ## Status
 
-**Independently reviewed; awaiting owner approval; implementation is not authorized.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract.
+**Owner-approved after independent review on 2026-08-15; implementation is authorized.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract.
 
 ## Independent cold-review receipt
 
