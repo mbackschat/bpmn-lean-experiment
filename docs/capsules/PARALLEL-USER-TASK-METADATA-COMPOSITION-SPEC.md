@@ -1,8 +1,8 @@
-# Parallel User Task metadata composition proposal
+# Parallel User Task metadata composition specification
 
 ## Status
 
-**Implemented and evidence-closed on 2026-08-15; governed closure review is pending.** This proposal selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. The registered profile, two answer-free completion orders, combined retained CIB observations, four-target differential cases, live Temporal replacement/replay witness, executable corpus entry, and production-preview Product 2 journey are complete. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract.
+**Implemented, closure-reviewed, and evidence-closed on 2026-08-15.** This specification selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. The registered profile, two answer-free completion orders, combined retained CIB observations, four-target differential cases, live Temporal replacement/replay witness, executable corpus entry, and production-preview Product 2 journey are complete. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract.
 
 ## Independent cold-review receipt
 
@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | Proposal | `b5c8ff5` | `fork-turns-none` | `approve-with-required-edits` | `92f72ac` |
 | Semantic checkpoint | `4f84ce3` | `fork-turns-none` | `approve-with-required-edits` | `35fc881` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `619f7d9` | `fork-turns-none` | `approve-with-required-edits` | `8888530` |
 
 ## Question and recommendation
 
@@ -20,7 +20,7 @@ May one new profile admit an independently authored balanced Parallel Gateway Pr
 
 ## Authority and classification
 
-The [parallel fork/join specification](PARALLEL-FORK-JOIN-SPEC.md) remains authoritative for the bounded BPMN control-flow account. The [User Task assignment and form metadata specification](USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) remains authoritative for the two selected CIB extensions and their passive neutral projection. This proposal selects their intersection under a new profile; it does not alter either rule family.
+The [parallel fork/join specification](PARALLEL-FORK-JOIN-SPEC.md) remains authoritative for the bounded BPMN control-flow account. The [User Task assignment and form metadata specification](USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) remains authoritative for the two selected CIB extensions and their passive neutral projection. This specification selects their intersection under a new profile; it does not alter either rule family.
 
 The profile ID is `cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft`. Its exact composed CIB relationship set is [`CIB-AGR-0001`](../CIB-BPMN-RELATION-REGISTER.md#cib-agr-0001--sequential-process-and-user-task-lifecycle), [`CIB-AGR-0002`](../CIB-BPMN-RELATION-REGISTER.md#cib-agr-0002--active-user-task-discovery-and-basic-completion), [`CIB-AGR-0003`](../CIB-BPMN-RELATION-REGISTER.md#cib-agr-0003--balanced-two-branch-parallel-gateway-lifecycle), [`CIB-EXT-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables), [`CIB-EXT-0010`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0010--public-user-task-completion-preserves-a-boolean-process-variable), [`CIB-EXT-0011`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0011-one-literal-candidate-group-on-a-user-task), [`CIB-EXT-0012`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0012-one-typed-generated-form-field-on-a-user-task), [`CIB-OP-0001`](../CIB-BPMN-RELATION-REGISTER.md#cib-op-0001--cib-host-task-identity-mapped-to-project-semantic-task-identity), [`CIB-CFG-0001`](../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0001--pinned-milestone-0-oracle-environment), and candidate deviation [`CIB-DEV-0001`](../CIB-BPMN-RELATION-REGISTER.md#cib-dev-0001--parallel-join-activates-from-duplicate-arrivals-through-one-incoming-flow). Initial Process data is not admitted by this exact profile, so `CIB-EXT-0006` is not selected.
 
@@ -91,7 +91,7 @@ Canonical task order remains the existing semantic occurrence order. Product 2 c
 
 After exact completion of `UserTask_ContentReview`, only `UserTask_RiskReview` remains open with byte-equivalent metadata. The reverse order has the symmetric result. After both exact completions, the existing synchronization operation consumes one offer from each incoming Sequence Flow and the Process completes.
 
-The two form submissions in the catalog journey are `{ contentApproved: true }` and `{ riskApproved: true }`. Distinct keys make their Process-data merge commute. A caller that submits overlapping keys still receives the existing accepted-command ordering semantics; this proposal neither rejects nor normalizes that input.
+The two form submissions in the catalog journey are `{ contentApproved: true }` and `{ riskApproved: true }`. Distinct keys make their Process-data merge commute. A caller that submits overlapping keys still receives the existing accepted-command ordering semantics; this specification neither rejects nor normalizes that input.
 
 ## Stable rules
 
@@ -119,7 +119,7 @@ The Lean lane is **proved**. A new focused conformance owner imports the existin
 - both completion orders reach the same final Process data under the explicit hypothesis that the two submitted key sets are disjoint;
 - closure bounds and the legal independent two-User-Task activation pair remain unchanged.
 
-No new declarative transition, evaluator branch, RuntimeState field, or Semantic Process operation is selected. If the composition requires any of those, stop and reopen the proposal.
+No new declarative transition, evaluator branch, RuntimeState field, or Semantic Process operation is selected. If the composition requires any of those, stop and reopen the specification.
 
 ## Temporal hosting and refinement preflight
 
@@ -185,64 +185,15 @@ Excluded:
 
 This is a pre-release additive profile registration. Existing checked-process, Semantic Process, runtime, observation, command, receipt, publication, and Product 2 contract shapes remain unchanged. The new profile, source, scenarios, CIB evidence, runnable configuration, and browser catalog entry are atomic. Existing histories must replay unchanged; no durable profile or Event History compatibility baseline is created.
 
-### Owners this implementation grows
-
-| Owner | Lines before 600 |
-|---|---:|
-| [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 543 |
-| [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 366 |
-| [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 353 |
-| [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 531 |
-| [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) | 440 |
-| [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 509 |
-| [compilation-dispatch.ts](../../packages/bpmn-source/src/compilation-dispatch.ts) | 382 |
-| [checked-process-compiler.ts](../../packages/bpmn-source/src/checked-process-compiler.ts) | 194 |
-| [checked-element-projection.ts](../../packages/bpmn-source/src/checked-element-projection.ts) | 169 |
-| [compile.ts](../../packages/bpmn-source/src/compile.ts) | 209 |
-| [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) | 175 |
-| [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 62 |
-| [ValueDomain.lean](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 562 |
-| [pipeline-cases.ts](../../packages/differential/test/pipeline-cases.ts) | 2 |
-
-The implementation must update the exact profile denominator in [semantic-profile-catalog.ts](../../packages/semantic-core/src/semantic-profile-catalog.ts) at 60/600 nonblank, [checked-process-profile-shape.ts](../../packages/semantic-core/src/checked-process-profile-shape.ts) at 237/600, [semantic-program-profile-shape.ts](../../packages/semantic-core/src/semantic-program-profile-shape.ts) at 250/600, [semantic-process-graph-policy.ts](../../packages/semantic-core/src/semantic-process-graph-policy.ts) at 72/600, [semantic-process-profile.ts](../../packages/semantic-core/src/semantic-process-profile.ts) at 164/600, and [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) at 94/600. Each measured semantic-core owner retains at least 350 lines before the 600-line review target.
-
-Source admission must update [compilation-dispatch.ts](../../packages/bpmn-source/src/compilation-dispatch.ts) at 218/600, [checked-process-compiler.ts](../../packages/bpmn-source/src/checked-process-compiler.ts) at 406/600, [checked-element-projection.ts](../../packages/bpmn-source/src/checked-element-projection.ts) at 431/600, [compile.ts](../../packages/bpmn-source/src/compile.ts) at 391/600, and [user-task-metadata-source.ts](../../packages/bpmn-source/src/user-task-metadata-source.ts) at 426/600. The narrowest owner has 169 lines before the review target. Extract a cohesive metadata-profile selector or binding owner first if the exact change would leave any of these owners above 600 or give it a second independent responsibility.
-
-Lean admission must update [ProfileAdmission.lean](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) at 445/600 and [ValueDomain.lean](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) at 38/600. New composition fixtures and theorems belong in a new independently buildable conformance owner; do not grow [UserTaskMetadataConformance.lean](../../BpmnSemantics/UserTaskMetadataConformance.lean) at 351/600 or repurpose [ParallelForkJoinConformance.lean](../../BpmnSemantics/ParallelForkJoinConformance.lean) as the combined owner.
-
-Differential registration must not grow [pipeline-cases.ts](../../packages/differential/test/pipeline-cases.ts) beyond its measured 596/600. Put the combined case and mutations in a new focused owner and extract the catalog assembly before registration if the thin import/spread cannot remain within 600. Likewise, do not add combined assertions to [user-task-metadata.test.ts](../../packages/semantic-core/test/user-task-metadata.test.ts) at 588/600 or [pipeline-catalog.test.ts](../../packages/differential/test/pipeline-catalog.test.ts) at 568/600; use new focused test owners. A new Temporal fixture/test owner keeps [user-task-metadata-temporal.test.ts](../../packages/temporal-adapter/testkit/test/user-task-metadata-temporal.test.ts) at its current 516/600.
-
-The profile and evidence artifacts must satisfy the strict [semantic profile schema](../../contracts/schemas/semantic-profile.schema.json), [CIB evidence schema](../../contracts/schemas/cibseven-evidence.schema.json), [contract artifact registry](../../scripts/contract-artifact-cases.ts), and the generated catalog and corpus guards. The current `node scripts/what-binds.ts` report for the 14 owners above contains 35 unique executable guards and three package registries. Re-run that command at implementation start because this inventory and the headroom measurements are valid only for the current worktree.
-
-### Guards and registries
-
-Must change:
-
-- the generated package registries: [semantic core](../../packages/semantic-core/README.md), [source compiler](../../packages/bpmn-source/README.md), and [differential harness](../../packages/differential/README.md);
-- the human registries: [profiles](../../profiles/README.md), [scenarios](../../scenarios/README.md), [Temporal adapter](../../packages/temporal-adapter/README.md), and [shared contracts](../../contracts/README.md).
-
-Must satisfy unchanged unless their own red result requires a focused oracle correction:
-
-- [A12 foreign-attribute admission](../../adoption/a12/legacy/source-tree/packages/bpmn-source/test/foreign-attribute-admission.test.ts), [A12 projected-flow keys](../../adoption/a12/legacy/source-tree/packages/bpmn-source/test/projected-flow-element-keys.test.ts), and [corpus policy](../../model-corpus/test/executable-model-corpus.test.ts);
-- [committed-publication parity](../../packages/bpmn-source/test/committed-execution-publication-parity.test.ts), [foreign-attribute admission](../../packages/bpmn-source/test/foreign-attribute-admission.test.ts), [metamodel-default admission](../../packages/bpmn-source/test/metamodel-default-admission.test.ts), and [projected-flow keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts);
-- [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts), [Service Task incident-cancellation pipeline](../../packages/differential/test/service-task-incident-cancellation-pipeline.test.ts), and [Service Task incident pipeline](../../packages/differential/test/service-task-incident-pipeline.test.ts);
-- [semantic-publication surface](../../packages/temporal-adapter/protocol/test/semantic-publication-public-surface.test.ts) and [runnable MVP](../../packages/temporal-adapter/testkit/test/runnable-mvp.test.ts);
-- [A12 boundary](../../scripts/a12-boundary.test.ts), [capsule cost](../../scripts/capsule-cost.test.ts), [CIB incident-cancellation projection](../../scripts/contract-cib-incident-cancellation-projection.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [schema coverage](../../scripts/contract-schema-coverage.test.ts), and [contributor setup](../../scripts/contributor-setup.test.ts);
-- [document reviewability](../../scripts/document-reviewability.test.ts), [effect-operation consistency](../../scripts/effect-operation-artifact-consistency.test.ts), [execution-publication coverage](../../scripts/execution-publication-contract-coverage.test.ts), [harness source policy](../../scripts/harness-source-policy.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), and [Markdown links](../../scripts/markdown-links.test.ts);
-- [platform boundary](../../scripts/platform-product-boundary.test.ts), [pnpm project configuration](../../scripts/pnpm-project-config.test.ts), [pre-release architecture](../../scripts/pre-release-architecture.test.ts), [semantic-closure documentation](../../scripts/semantic-closure-documentation.test.ts), [semantic review packet](../../scripts/semantic-review-packet.test.ts), and [source hygiene](../../scripts/source-hygiene.test.ts);
-- [start-operation consistency](../../scripts/start-operation-artifact-consistency.test.ts), [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts), [verification entry point](../../scripts/verification-entrypoint.test.ts), [binding inventory](../../scripts/what-binds.test.ts), and [Workflow occurrence authority](../../scripts/workflow-occurrence-semantic-authority.test.ts).
-
-The profile-wide [admission composition oracle](../../packages/semantic-core/test/admission-composition.test.ts) and [runnable profile configuration oracle](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) also constrain the new profile even though the path-derived report above does not reach them. The implementation must satisfy both.
-
 ## Epistemic closure and nearest counterexamples
 
 The exact intended claim is limited to one content-bound balanced two-branch model whose two distinct User Tasks each publish one exact metadata block and complete through the existing semantic and Product 2 mechanisms.
 
-The nearest semantic counterexample remains duplicate arrivals through one join input and none through the other. This proposal does not resolve `CIB-DEV-0001`. The nearest data counterexample is two valid task completions writing the same Process-variable key with different values; accepted command order decides the result, so arbitrary final-data commutativity is explicitly unsupported. The nearest source counterexample is one task with metadata and one without; the new profile rejects it because Product 2 would otherwise advertise a task the configured actor cannot work.
+The nearest semantic counterexample remains duplicate arrivals through one join input and none through the other. This specification does not resolve `CIB-DEV-0001`. The nearest data counterexample is two valid task completions writing the same Process-variable key with different values; accepted command order decides the result, so arbitrary final-data commutativity is explicitly unsupported. The nearest source counterexample is one task with metadata and one without; the new profile rejects it because Product 2 would otherwise advertise a task the configured actor cannot work.
 
 The principal common-mode risks are array-position pairing of source tasks to operations, using the open-task projector as the metadata constructor and oracle, deriving CIB metadata from the BPMN source or expected scenario, treating Product 2 claim as BPMN state, and letting a browser fixture bypass the production server. Required mutations independently swap task metadata, drop the sibling, use one metadata-free task, submit overlapping keys, alter raw CIB identity-link/form rows, remove metadata only from Query, and try completion before claim.
 
-Proposal closure requires a read-only context-cold review against an immutable target. Because this proposal changes profile admission, checked/source capability, and the Lean proof boundary, implementation also requires the conditional semantic checkpoint review and a governed closure review. A commit-bounded entry in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md) compares the completed composition increment with the prior metadata and parallel increments rather than claiming the new model is a new semantic family.
+The proposal, semantic checkpoint, and closure each received the governed independent review recorded in the receipt above. The closure review found and required the empty-only CIB Process Start rule and the durable fresh-command stale-occurrence refusal witness; correction `8888530` closed both without changing the selected account. The commit-bounded entry in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md) compares the completed composition increment with the prior metadata and parallel increments rather than claiming the new model is a new semantic family.
 
 ## Stop conditions
 

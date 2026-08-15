@@ -32,7 +32,7 @@ Run the focused compiler gate:
 - [BPMN XML ingestion decision](../../docs/BPMN-XML-INGESTION-DECISION.md) owns the trust, parser, and source-preservation boundary.
 - [Semantic Process IL specification](../../docs/SEMANTIC-PROCESS-IL-SPEC.md) owns the checked graph and lowering contracts.
 - [Profile-parameterized admission specification](../../docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns profile capability and admission behavior.
-- [Parallel User Task metadata composition proposal](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-PROPOSAL.md) owns the exact closure-pending two-task source restriction.
+- [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the exact closure-reviewed two-task source restriction.
 - [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact accepted and rejected surface.
 - [Executable model corpus](../../model-corpus/README.md) exercises this production compiler against retained and external whole models.
 

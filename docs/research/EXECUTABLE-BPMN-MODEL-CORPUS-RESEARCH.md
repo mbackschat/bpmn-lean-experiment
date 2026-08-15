@@ -96,7 +96,7 @@ The second honest catalog model required a profile composition rather than anoth
 - The M4 incident showcase supplies a specialized test effect implementation for retry and cancellation evidence. Treating that harness configuration as a general catalog integration would confuse one bounded incident demonstration with a reusable product integration.
 - Authoring several renamed `Start -> User Task -> End` files under the one metadata profile would create cosmetic clone families and inflate the appearance of breadth without adding a reusable mechanism.
 
-The implemented [parallel User Task metadata composition](../capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-PROPOSAL.md) takes the first route without widening the metadata-free parallel profile. It exercises two simultaneous claims, both completion orders, sibling preservation, join progress, terminal History, and per-occurrence audit without introducing external I/O.
+The implemented [parallel User Task metadata composition](../capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) takes the first route without widening the metadata-free parallel profile. It exercises two simultaneous claims, both completion orders, sibling preservation, join progress, terminal History, and per-occurrence audit without introducing external I/O.
 
 ## Recommendation
 
