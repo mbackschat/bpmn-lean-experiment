@@ -12,6 +12,8 @@ The M5 E1 fixture adds one exact committed-execution publication with repeated B
 
 The M5 Flow-node metrics fixture adds two exact definition versions, aggregate metrics with one element absent from DI, and deterministic 404, 503, transport, retry, and delayed-response controls. It proves that only the latest selected version can mount values, tab abandonment clears pending work, Frequency and Duration replace overlay badges without another request, zero-completion duration badges stay absent, the complete table remains readable, focus moves with loading/available/unavailable state, and the document, detail, and table do not overflow at either desktop width.
 
+The About fixture proves that the package-bound product version, BPMN 2.0.2 target, 25-row executable capability table, row-level restrictions, separate CIB Seven evidence, and explicit non-conformance warning remain visible, keyboard-reachable, and free of horizontal overflow at both desktop widths.
+
 The geometry oracle checks each named owner directly, including its `scrollWidth <= clientWidth` invariant, so a clipped inner overflow cannot pass merely because the document itself does not scroll. The fixtures deliberately include multiple tasks and long task, process, actor, candidate-group, and occurrence identities.
 
 One optional screenshot assertion covers the 1600-pixel multi-position execution Diagram. It is a manually invoked human-review aid, not part of ordinary CI, release acceptance, or the functional regression contract. Animations and carets are disabled for capture, and the harness waits for network idle, fonts, and completed diagram rendering before comparing the image.

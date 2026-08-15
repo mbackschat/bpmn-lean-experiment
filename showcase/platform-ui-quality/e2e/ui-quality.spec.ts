@@ -105,6 +105,28 @@ test("selected task form preserves keyboard navigation and focus return @respons
   await expect(taskButton).toBeFocused();
 });
 
+test("About exposes the versioned capability boundary without overflow @responsive", async ({ page }) => {
+  await openFixture(page);
+  await page.getByRole("button", { name: "About", exact: true }).click();
+
+  await expect(page.getByRole("heading", { name: "About", level: 1 })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "BPMN Lean 0.1.0" })).toBeVisible();
+  await expect(page.getByText("Not a conformance claim.", { exact: true })).toBeVisible();
+  await expect(page.getByText("CIB Seven 2.2.0", { exact: true })).toBeVisible();
+  const table = page.getByRole("table", {
+    name: "Executable BPMN element and semantic-variant overview",
+  });
+  await expect(table.locator("tbody tr")).toHaveCount(25);
+  const timerStart = table.locator('[data-capability-id="timerStartEvent"]');
+  await expect(timerStart).toContainText("Timer Start Event");
+  await expect(timerStart).toContainText("no recurrence or calendar form");
+  await expect(timerStart).toContainText("No CIB target selected");
+
+  await assertNoOverflow(page.locator("html"), "About document");
+  await assertNoOverflow(page.locator("main"), "About workspace");
+  await assertNoOverflow(table, "capability table");
+});
+
 test("reduced motion is active and task-detail diagram stays contained @responsive", async ({ page }) => {
   await openFixture(page);
   await page.getByRole("button", { name: fixtureLabels.task }).click();

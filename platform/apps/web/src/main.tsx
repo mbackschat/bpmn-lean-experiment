@@ -40,6 +40,7 @@ createRoot(container).render(
         metricsApi={metricsApi}
         processInstanceSearchApi={processInstanceSearchApi}
         processExecutionApi={processExecutionApi}
+        productVersion={__BPMN_LEAN_PRODUCT_VERSION__}
         scheduleApi={scheduleApi}
         workApi={workApi}
       />

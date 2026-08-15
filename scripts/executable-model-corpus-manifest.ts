@@ -45,6 +45,7 @@ export type ExternalArchiveEntrySource = {
 export type CorpusModel = {
   id: string;
   title: string;
+  businessPurpose: string | null;
   cloneFamily: string;
   constructs: Array<string>;
   mechanisms: Array<string>;
@@ -61,7 +62,7 @@ export type CorpusModel = {
 
 export type ExecutableModelCorpusManifest = {
   kind: "executableBpmnModelCorpus";
-  version: 1;
+  version: 2;
   externalSources: Array<ExternalCorpusSource>;
   models: Array<CorpusModel>;
 };
@@ -69,27 +70,40 @@ export type ExecutableModelCorpusManifest = {
 const sha256Pattern = /^[a-f0-9]{64}$/u;
 const gitRevisionPattern = /^[a-f0-9]{40}$/u;
 const corpusMechanisms = new Set([
+  "boundaryError",
   "businessDecision",
   "calledProcess",
   "collaborationPresentation",
   "conditionalRouting",
+  "configuredTaskEffect",
+  "cyclicControlFlow",
   "dataAssociation",
   "diagramInterchange",
+  "embeddedSubProcess",
+  "errorPropagation",
   "eventRace",
   "externalEffect",
   "genericTask",
+  "inclusiveSplitJoin",
+  "interruptingBoundaryTimer",
   "lanePresentation",
   "literalUserTaskAssignmentAndGeneratedForm",
+  "mappedData",
   "messageStart",
+  "messageWait",
+  "nonInterruptingBoundaryTimer",
   "parallelSplit",
   "parallelSplitJoin",
   "processLifecycle",
+  "receiveTaskMessage",
   "resourceAssignment",
   "scriptTaskExecution",
   "sendTaskDelivery",
   "sequenceFlow",
   "signalEvent",
   "taskMetadata",
+  "terminateEnd",
+  "timerStart",
   "timerWait",
   "userTaskCompletion",
   "userTaskWait",
@@ -327,6 +341,7 @@ function requireModel(value: unknown, index: number): CorpusModel {
     [
       "id",
       "title",
+      "businessPurpose",
       "cloneFamily",
       "constructs",
       "mechanisms",
@@ -341,9 +356,13 @@ function requireModel(value: unknown, index: number): CorpusModel {
   const pipelineCaseId = model.pipelineCaseId === null
     ? null
     : string(model.pipelineCaseId, `${label}.pipelineCaseId`);
+  const businessPurpose = model.businessPurpose === null
+    ? null
+    : string(model.businessPurpose, `${label}.businessPurpose`);
   return {
     id: string(model.id, `${label}.id`),
     title: string(model.title, `${label}.title`),
+    businessPurpose,
     cloneFamily: string(model.cloneFamily, `${label}.cloneFamily`),
     constructs: stringArray(model.constructs, `${label}.constructs`),
     mechanisms: mechanismArray(model.mechanisms, `${label}.mechanisms`),
@@ -376,7 +395,7 @@ export function requireExecutableModelCorpusManifest(
   );
   if (
     manifest.kind !== "executableBpmnModelCorpus" ||
-    manifest.version !== 1 ||
+    manifest.version !== 2 ||
     !Array.isArray(manifest.externalSources) ||
     !Array.isArray(manifest.models)
   ) {
@@ -421,6 +440,14 @@ export function requireExecutableModelCorpusManifest(
       );
     }
     if (
+      model.source.kind === "retainedScenario" &&
+      (model.businessPurpose === null || model.businessPurpose.length < 20)
+    ) {
+      throw new TypeError(
+        `retained model ${model.id} requires a concrete business purpose`,
+      );
+    }
+    if (
       model.source.kind !== "retainedScenario" &&
       (model.admission.kind !== "rejected" || model.pipelineCaseId !== null)
     ) {
@@ -428,6 +455,11 @@ export function requireExecutableModelCorpusManifest(
         `external model ${model.id} must remain a rejected non-pipeline candidate`,
       );
     }
+    if (model.source.kind !== "retainedScenario" && model.businessPurpose !== null) {
+      throw new TypeError(
+        `external model ${model.id} cannot claim a project-owned business purpose`,
+      );
+    }
   }
-  return { kind: "executableBpmnModelCorpus", version: 1, externalSources, models };
+  return { kind: "executableBpmnModelCorpus", version: 2, externalSources, models };
 }

@@ -2,9 +2,9 @@
 
 Shared guidance for Claude Code, OpenAI Codex, and human contributors working in **bpmn-lean-experiment**. [AGENTS.md](AGENTS.md) is a symlink to this file; keep one canonical guide and preserve the symlink.
 
-## Rule 1: never use GitHub-hosted macOS
+## Rule 1: no routine GitHub-hosted macOS
 
-All GitHub Actions jobs must run on Ubuntu. Never add a `macos-*` runner, a macOS matrix entry, or another GitHub-hosted macOS build, test, or release job. Hosted macOS is disproportionately expensive, and this repository's development computer is already a Mac that owns proportionate local macOS validation. GitHub Actions provides the independent Linux portability lane. The executable GitHub-runner policy must reject any future macOS runner label.
+Standard GitHub-hosted macOS runners are [free and unlimited for public repositories](https://docs.github.com/en/billing/concepts/product-billing/github-actions), so billing is not the reason for this rule. Their distinct evidence is a clean macOS machine and, on `macos-latest`, Apple Silicon compatibility. Do not add macOS to a push, pull-request, scheduled, matrix, ordinary release, or other routine workflow: this repository ships no macOS-native artifact, the development computer already owns proportionate local macOS validation, and Ubuntu supplies the independent routine portability lane with less duplicate feedback work. A focused macOS smoke job is allowed only when it has an explicit clean-machine or ARM compatibility purpose and the job itself is guarded by `github.event_name == 'workflow_dispatch'`; do not run the complete verification suite merely to duplicate Linux evidence. [Larger macOS runners remain billable](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) even for public repositories and require a separate owner decision. The executable GitHub-runner policy must reject every macOS label outside that manual-only boundary.
 
 ## Mission
 
@@ -134,6 +134,8 @@ Use red/green TDD:
 8. update the owning research, experiment, implementation, and plan documents.
 
 For coverage work, begin from the BPMN requirement and reusable mechanism. Add CIB source admission, probes, profile rules, and retained evidence only when the standard is ambiguous, the selected compatibility profile differs or adds behavior, a real downstream model requires an extension, or the Temporal mapping needs an engine observation. Do not require a CIB extension merely to complete a vendor-neutral BPMN capsule.
+
+The project-owned executable corpus co-evolves with the implemented engine. Every registered executable BPMN element or semantic variant must be covered by at least one retained project-owned whole model with a concrete business purpose. Add the model, exact pipeline binding, canonical capability/restriction row, generated corpus index, and Product 2 About-page disclosure atomically with the support change. The guard derives the supported set from registered scenario XML and must fail when the catalog or retained-model union drifts. Do not label an isolated element fixture “real-world” merely to satisfy coverage; use a credible business narrative, and keep browser-catalog eligibility separate until the complete user journey is green.
 
 Use the BPM platform as a prioritization and later acceptance lane: first ask which standard mechanism its next milestone forces, then which CIB overlay is actually required, and only then which platform binding remains. A target-shaped feasibility fixture may test the full composition once; subsequent models using the same lower-layer contract belong in platform regression evidence rather than new semantic implementations.
 

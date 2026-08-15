@@ -38,7 +38,9 @@ The persistent primary navigation contains these user-facing workspaces:
 | Definitions | Inspect and operate deployed Process definitions | Existing definitions and versions | Diagram, Start, and Triggers tabs for one exact definition version |
 | Operations | Find confirmed Process instances, inspect current incidents, and review platform action audit | Process instances, Incidents, and Audit tabs; Process instances is initially selected | Incident selection replaces its collection with full-width Overview, Diagram, and Audit tabs |
 
-The navigation reflects durable product capabilities. It does not expose package names, milestone names, Product 1 versus Product 2 terminology, or test/evidence concepts.
+The shell additionally exposes one utility destination, About, after the three operational workspaces. About identifies the running pre-release product version and presents the exact bounded BPMN element variants, current restrictions, retained-model coverage, and selected CIB Seven `2.2.0` evidence relation. It is not a dashboard or operational workspace and contains no mutation.
+
+The navigation reflects durable product capabilities. It does not expose package names, milestone names, Product 1 versus Product 2 terminology, or test infrastructure. About may name standards, retained evidence, and compatibility profiles because explaining those distinctions is its user objective.
 
 ## Workspace structure
 
@@ -79,6 +81,12 @@ Operations begins with React Aria tabs for Process instances, Incidents, and Aud
 
 Collection rows are request and focus context, not current-detail authority. Incident controls appear only after the exact detail request succeeds. A pending, unavailable, absent, or stale detail request renders an honest non-actionable state, and switching tabs invalidates the request rather than promoting a late response.
 
+## About flow
+
+About opens directly to a compact version summary followed by a complete native table. Each row names one executable BPMN element variant, its family, exact current restriction, retained project-model coverage, and its selected CIB Seven relation. Standards support, CIB compatibility, and Product 2 availability remain separate facts. A prominent pre-release note states that the rows are bounded evidence rather than a BPMN conformance percentage, and links the reader to the maintained implementation map and requirement ledger for the complete account.
+
+The table is compiled from the same project-owned capability catalog checked by the executable model corpus. The browser does not infer support from deployed definitions, runtime histories, CIB results, or UI features. Adding an admitted element variant without retained corpus coverage fails the corpus gate before the About projection can claim it.
+
 ## Responsive composition
 
 At wide and ordinary desktop widths, primary navigation is a persistent left rail and the selected workspace occupies the remaining content area. At narrow widths, the navigation moves above the content and wraps without horizontal page scrolling. Feature components use container queries when their available width can differ materially from the viewport width because of the product shell. The task collection keeps one native table, row, and cell DOM at every width; responsive card labels are visible in narrow mode rather than synthesized only for assistive technology.
@@ -106,7 +114,7 @@ The platform deliberately improves on the CIB Seven reference pattern where curr
 
 ## Required and excluded behavior
 
-Required behavior is stable primary navigation, coherent collection-to-detail flows, Form/Diagram/Details task context, Diagram/Start/Triggers definition context, Process instances/Incidents/Audit operations context, responsive no-scroll collections, and exact current operation state.
+Required behavior is stable primary navigation, the About utility destination, coherent collection-to-detail flows, Form/Diagram/Details task context, Diagram/Start/Triggers definition context, Process instances/Incidents/Audit operations context, responsive no-scroll collections, and exact current operation state.
 
 Excluded behavior is a dashboard of unrelated panels, a permanent narrow task-form sidebar, route proliferation without a user objective, navigation by engine package, hidden horizontal task-table scrolling, or copying CIB Seven's implementation or visual theme.
 

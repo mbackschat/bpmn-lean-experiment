@@ -32,12 +32,14 @@ test("binds every retained and external model to exact local evidence", async ()
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 12);
-  assert.equal(report.retainedModels, 5);
+  assert.equal(report.models.length, 29);
+  assert.equal(report.retainedModels, 22);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 5);
+  assert.equal(report.acceptedModels, 22);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 1);
+  assert.equal(report.mvpCapabilities.length, 25);
+  assert.deepEqual(report.uncoveredMvpCapabilities, []);
   assert.equal(report.models[0]?.product2, "journeyBacked");
   assert.deepEqual(
     report.models.filter(({ sourceKind }) => sourceKind === "retainedScenario")
@@ -48,7 +50,54 @@ test("binds every retained and external model to exact local evidence", async ()
       "exclusive-gateway-simple-boolean-first-true",
       "called-process-call-activity",
       "service-task-effect-success",
+      "embedded-subprocess-completion-a-then-b",
+      "subprocess-error-propagation-trigger-first",
+      "timer-user-task-composition",
+      "intermediate-catch-message",
+      "message-addressed-receive-task",
+      "inclusive-gateway-both-true-a-then-b",
+      "event-based-gateway-message-wins",
+      "activity-boundary-timer-deadline-wins",
+      "subprocess-boundary-timer-deadline-wins",
+      "non-interrupting-boundary-timer-deadline-then-both-branches",
+      "user-task-cycle-repeat-rework-exit",
+      "message-start-event",
+      "timer-start-event",
+      "terminate-end-event-trigger-first",
+      "configured-task",
+      "mapped-success-service-task",
+      "mapped-boundary-error-service-task-caught",
     ],
+  );
+});
+
+test("requires every retained model to state a business purpose", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  for (const model of manifest.models.filter(
+    ({ source }) => source.kind === "retainedScenario",
+  )) {
+    assert.ok(model.businessPurpose !== null);
+    assert.ok(model.businessPurpose.length >= 20);
+  }
+});
+
+test("rejects a supported element variant without a retained MVP model", async () => {
+  const manifest = structuredClone(
+    requireExecutableModelCorpusManifest(await loadManifest()),
+  );
+  const index = manifest.models.findIndex(({ id }) => id === "scheduled-review-start");
+  assert.notEqual(index, -1);
+  manifest.models.splice(index, 1);
+
+  await assert.rejects(
+    inspectExecutableModelCorpus(manifest, {
+      projectRoot,
+      externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
+        path.resolve(projectRoot, "../oss"),
+      pipelineCases,
+      compileModel: compileCorpusModel,
+    }),
+    /retained MVP models do not cover timerStartEvent/u,
   );
 });
 
@@ -92,11 +141,12 @@ test("rejects a browser catalog claim without a production journey", () => {
   assert.throws(
     () => requireExecutableModelCorpusManifest({
       kind: "executableBpmnModelCorpus",
-      version: 1,
+      version: 2,
       externalSources: [],
       models: [{
         id: "planted-catalog-entry",
         title: "Planted catalog entry",
+        businessPurpose: "Review one planted business request.",
         cloneFamily: "planted-family",
         constructs: ["userTask"],
         mechanisms: ["userTaskCompletion"],
@@ -121,7 +171,7 @@ test("rejects external paths that escape the registered checkout", () => {
   assert.throws(
     () => requireExecutableModelCorpusManifest({
       kind: "executableBpmnModelCorpus",
-      version: 1,
+      version: 2,
       externalSources: [{
         kind: "git",
         id: "external",
@@ -132,6 +182,7 @@ test("rejects external paths that escape the registered checkout", () => {
       models: [{
         id: "escape",
         title: "Escape",
+        businessPurpose: null,
         cloneFamily: "escape",
         constructs: ["userTask"],
         mechanisms: ["userTaskCompletion"],
@@ -160,7 +211,7 @@ test("rejects external paths that escape the registered checkout", () => {
 test("accepts exact external archive entries and rejects entry escapes", () => {
   const candidate = {
     kind: "executableBpmnModelCorpus",
-    version: 1,
+    version: 2,
     externalSources: [{
       kind: "archive",
       id: "official-examples",
@@ -171,6 +222,7 @@ test("accepts exact external archive entries and rejects entry escapes", () => {
     models: [{
       id: "official-example",
       title: "Official example",
+      businessPurpose: null,
       cloneFamily: "official-example",
       constructs: ["userTask"],
       mechanisms: ["userTaskCompletion"],

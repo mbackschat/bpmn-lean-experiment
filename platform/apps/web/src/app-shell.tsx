@@ -8,12 +8,14 @@ export const AppWorkspace = {
   Work: "work",
   Definitions: "definitions",
   Operations: "operations",
+  About: "about",
 } as const;
 
 export type AppWorkspace = typeof AppWorkspace[keyof typeof AppWorkspace];
 
 export type AppShellProps = Readonly<{
   activeWorkspace: AppWorkspace;
+  about: ReactNode;
   definitions: ReactNode;
   onNavigate: (workspace: AppWorkspace) => void;
   operations: ReactNode;
@@ -40,10 +42,16 @@ const workspaceDetails: ReadonlyArray<Readonly<{
   label: "Operations",
   heading: "Operations",
   summary: "Search Process instances, resolve current incidents, and review platform actions.",
+}, {
+  id: AppWorkspace.About,
+  label: "About",
+  heading: "About",
+  summary: "Check this build's version, executable BPMN surface, and exact evidence boundaries.",
 }];
 
 export function AppShell({
   activeWorkspace,
+  about,
   definitions,
   onNavigate,
   operations,
@@ -89,7 +97,7 @@ export function AppShell({
           <p>{active.summary}</p>
         </header>
         <div className={styles.workspace}>
-          {workspaceContent(activeWorkspace, { definitions, operations, work })}
+          {workspaceContent(activeWorkspace, { about, definitions, operations, work })}
         </div>
       </main>
     </div>
@@ -99,6 +107,7 @@ export function AppShell({
 function workspaceContent(
   workspace: AppWorkspace,
   content: Readonly<{
+    about: ReactNode;
     definitions: ReactNode;
     operations: ReactNode;
     work: ReactNode;
@@ -111,5 +120,7 @@ function workspaceContent(
       return content.definitions;
     case AppWorkspace.Operations:
       return content.operations;
+    case AppWorkspace.About:
+      return content.about;
   }
 }

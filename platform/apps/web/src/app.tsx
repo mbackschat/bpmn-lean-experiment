@@ -19,6 +19,7 @@ import type { ProcessExecutionApi } from "./process-execution-api";
 import type { WorkApiClient } from "./work-tasks-api";
 import { WorkInboxPanel } from "./work-inbox-panel";
 import { AppShell, AppWorkspace } from "./app-shell";
+import { CapabilitiesPanel } from "./capabilities-panel";
 
 export type AppProps = Readonly<{
   api: DefinitionApiClient;
@@ -27,6 +28,7 @@ export type AppProps = Readonly<{
   metricsApi: FlowNodeMetricsApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
   processExecutionApi: ProcessExecutionApi;
+  productVersion: string;
   scheduleApi: DefinitionScheduleApiClient;
   workApi: WorkApiClient;
 }>;
@@ -38,6 +40,7 @@ export function App({
   metricsApi,
   processInstanceSearchApi,
   processExecutionApi,
+  productVersion,
   scheduleApi,
   workApi,
 }: AppProps) {
@@ -125,6 +128,7 @@ export function App({
   return (
     <AppShell
       activeWorkspace={workspace}
+      about={<CapabilitiesPanel productVersion={productVersion} />}
       onNavigate={setWorkspace}
       work={<WorkInboxPanel api={workApi} definitionApi={api} />}
       operations={(

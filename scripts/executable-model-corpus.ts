@@ -3,9 +3,18 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  CibCapabilityEvidenceKind,
+  mvpBpmnCapabilities,
+} from "../model-corpus/mvp-capabilities.ts";
+import type {
+  MvpBpmnCapability,
+  MvpBpmnCapabilityId,
+} from "../model-corpus/mvp-capabilities.ts";
+import {
   flattenElements,
   parseXmlElements,
 } from "./minimal-xml-tree.ts";
+import { detectExecutableBpmnCapabilities } from "./executable-model-capabilities.ts";
 import type {
   CorpusModel,
   ExecutableModelCorpusManifest,
@@ -29,7 +38,7 @@ type PipelineCase = Readonly<{
   id: string;
   scenarioRelativePath: string;
   bpmnRelativePath: string;
-  cib: unknown | null;
+  cib: Readonly<{ version: "2.0.0" | "2.2.0" }> | null;
   temporalRelation: string;
   injectMutation: unknown;
 }>;
@@ -72,6 +81,7 @@ export type CorpusMechanismGap = Readonly<{
 export type CorpusModelReport = Readonly<{
   id: string;
   title: string;
+  businessPurpose: string | null;
   cloneFamily: string;
   sourceKind: CorpusModel["source"]["kind"];
   sourcePath: string;
@@ -83,7 +93,12 @@ export type CorpusModelReport = Readonly<{
   product2: CorpusModel["product2"]["kind"];
   constructs: ReadonlyArray<string>;
   mechanisms: ReadonlyArray<string>;
+  capabilities: ReadonlyArray<MvpBpmnCapabilityId>;
   blockers: ReadonlyArray<string>;
+}>;
+
+export type MvpCapabilityReport = MvpBpmnCapability & Readonly<{
+  retainedModelIds: ReadonlyArray<string>;
 }>;
 
 export type ExecutableModelCorpusReport = Readonly<{
@@ -91,6 +106,8 @@ export type ExecutableModelCorpusReport = Readonly<{
   models: ReadonlyArray<CorpusModelReport>;
   unsupportedMechanisms: ReadonlyArray<CorpusMechanismGap>;
   blockers: ReadonlyArray<CorpusBlocker>;
+  mvpCapabilities: ReadonlyArray<MvpCapabilityReport>;
+  uncoveredMvpCapabilities: ReadonlyArray<MvpBpmnCapabilityId>;
   retainedModels: number;
   externalModels: number;
   acceptedModels: number;
@@ -234,6 +251,38 @@ export async function inspectExecutableModelCorpus(
     await verifyExternalCorpusSource(source, options.externalRoot);
   }
 
+  const supportedCapabilities = new Set<MvpBpmnCapabilityId>();
+  for (const relativePath of new Set(
+    options.pipelineCases.map(({ bpmnRelativePath }) => bpmnRelativePath),
+  )) {
+    const xml = await readFile(path.join(options.projectRoot, relativePath), "utf8");
+    for (const capability of detectExecutableBpmnCapabilities(xml)) {
+      supportedCapabilities.add(capability);
+    }
+  }
+  const catalogCapabilities = new Set(
+    mvpBpmnCapabilities.map(({ id }) => id),
+  );
+  const catalogDrift = [...new Set([...supportedCapabilities, ...catalogCapabilities])]
+    .filter((id) => supportedCapabilities.has(id) !== catalogCapabilities.has(id));
+  if (catalogDrift.length > 0) {
+    throw new Error(`MVP capability catalog differs from registered support: ${catalogDrift.join(", ")}`);
+  }
+  for (const capability of mvpBpmnCapabilities) {
+    if (capability.cibEvidence.kind !== CibCapabilityEvidenceKind.ExactSelectedProfile) {
+      continue;
+    }
+    const pipelineCase = options.pipelineCases.find(
+      ({ id }) => id === capability.cibEvidence.pipelineCaseId,
+    );
+    if (
+      pipelineCase?.cib === null ||
+      pipelineCase?.cib?.version !== capability.cibEvidence.version
+    ) {
+      throw new Error(`MVP capability ${capability.id} has no exact CIB pipeline evidence`);
+    }
+  }
+
   const reports: Array<CorpusModelReport> = [];
   const blockerOccurrences = new Map<
     string,
@@ -267,6 +316,9 @@ export async function inspectExecutableModelCorpus(
         `model ${model.id} construct inventory differs: expected ${model.constructs.join(", ")} but found ${actualConstructs.join(", ")}`,
       );
     }
+    const capabilities = model.source.kind === "retainedScenario"
+      ? detectExecutableBpmnCapabilities(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
+      : [];
 
     let pipelineCase: PipelineCase | undefined;
     let license: string;
@@ -349,6 +401,7 @@ export async function inspectExecutableModelCorpus(
     reports.push(Object.freeze({
       id: model.id,
       title: model.title,
+      businessPurpose: model.businessPurpose,
       cloneFamily: model.cloneFamily,
       sourceKind: model.source.kind,
       sourcePath: model.source.kind === "retainedScenario"
@@ -364,8 +417,24 @@ export async function inspectExecutableModelCorpus(
       product2: model.product2.kind,
       constructs: Object.freeze([...model.constructs]),
       mechanisms: Object.freeze([...model.mechanisms]),
+      capabilities,
       blockers: Object.freeze(blockers),
     }));
+  }
+
+  const mvpCapabilities = mvpBpmnCapabilities.map((capability) => Object.freeze({
+    ...capability,
+    retainedModelIds: Object.freeze(reports
+      .filter(({ capabilities }) => capabilities.includes(capability.id))
+      .map(({ id }) => id)),
+  }));
+  const uncoveredMvpCapabilities = mvpCapabilities
+    .filter(({ retainedModelIds }) => retainedModelIds.length === 0)
+    .map(({ id }) => id);
+  if (uncoveredMvpCapabilities.length > 0) {
+    throw new Error(
+      `retained MVP models do not cover ${uncoveredMvpCapabilities.join(", ")}`,
+    );
   }
 
   const blockers = [...blockerOccurrences.entries()]
@@ -419,6 +488,8 @@ export async function inspectExecutableModelCorpus(
     models: Object.freeze(reports),
     unsupportedMechanisms: Object.freeze(unsupportedMechanisms),
     blockers: Object.freeze(blockers),
+    mvpCapabilities: Object.freeze(mvpCapabilities),
+    uncoveredMvpCapabilities: Object.freeze(uncoveredMvpCapabilities),
     retainedModels: reports.filter(({ sourceKind }) =>
       sourceKind === "retainedScenario"
     ).length,
@@ -448,6 +519,7 @@ export function renderExecutableModelCorpusIndex(
     "## Current result",
     "",
     `The first tranche contains ${report.retainedModels} retained executable models and ${report.externalModels} exact external candidates. ${report.acceptedModels} are admitted, ${report.rejectedModels} are rejected, and ${report.catalogReadyModels} ${report.catalogReadyModels === 1 ? "is" : "are"} eligible for the browser catalog.`,
+    `The retained MVP suite covers all ${report.mvpCapabilities.length} registered executable BPMN element variants.`,
     "",
     "## Models",
     "",
@@ -455,6 +527,14 @@ export function renderExecutableModelCorpusIndex(
     "|---|---|---|---|---|---|---|",
     ...report.models.map((model) =>
       `| ${tableCell(model.title)} | ${tableCell(model.sourceKind)} | ${tableCell(model.cloneFamily)} | ${model.admission} | ${model.pipelineCaseId ?? "none"} | ${model.cibRelation} | ${model.product2} |`
+    ),
+    "",
+    "## MVP capability coverage",
+    "",
+    "| Family | Element or variant | Retained models |",
+    "|---|---|---|",
+    ...report.mvpCapabilities.map((capability) =>
+      `| ${tableCell(capability.family)} | ${tableCell(capability.element)} | ${capability.retainedModelIds.map((id) => `\`${id}\``).join(", ")} |`
     ),
     "",
     "## Deduplicated unsupported reusable mechanisms",

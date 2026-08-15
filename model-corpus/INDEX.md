@@ -4,7 +4,8 @@ This file is generated from `manifest.json` by the executable corpus guard. Edit
 
 ## Current result
 
-The first tranche contains 5 retained executable models and 7 exact external candidates. 5 are admitted, 7 are rejected, and 1 is eligible for the browser catalog.
+The first tranche contains 22 retained executable models and 7 exact external candidates. 22 are admitted, 7 are rejected, and 1 is eligible for the browser catalog.
+The retained MVP suite covers all 25 registered executable BPMN element variants.
 
 ## Models
 
@@ -15,6 +16,23 @@ The first tranche contains 5 retained executable models and 7 exact external can
 | Route a Boolean decision | retainedScenario | exclusive-boolean-decision | accepted | exclusive-gateway-simple-boolean-first-true | notSelected | notCatalogReady |
 | Fulfil work through a called Process | retainedScenario | called-process-human-work | accepted | called-process-call-activity | notSelected | notCatalogReady |
 | Record an external service effect | retainedScenario | single-service-effect | accepted | service-task-effect-success | pipeline | notCatalogReady |
+| Coordinate parallel work inside a bounded scope | retainedScenario | embedded-parallel-human-work | accepted | embedded-subprocess-completion-a-then-b | pipeline | notCatalogReady |
+| Recover scoped work after a business error | retainedScenario | subprocess-error-recovery | accepted | subprocess-error-propagation-trigger-first | pipeline | notCatalogReady |
+| Wait for a review window | retainedScenario | timer-then-human-review | accepted | timer-user-task-composition | notSelected | notCatalogReady |
+| Continue a review after a message | retainedScenario | message-then-human-review | accepted | intermediate-catch-message | notSelected | notCatalogReady |
+| Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | pipeline | notCatalogReady |
+| Prepare every applicable review track | retainedScenario | inclusive-human-review-tracks | accepted | inclusive-gateway-both-true-a-then-b | notSelected | notCatalogReady |
+| Continue on a message or deadline | retainedScenario | message-timer-event-race | accepted | event-based-gateway-message-wins | notSelected | notCatalogReady |
+| Escalate work that misses a deadline | retainedScenario | interrupting-task-deadline | accepted | activity-boundary-timer-deadline-wins | notSelected | notCatalogReady |
+| Escalate a bounded work package | retainedScenario | interrupting-subprocess-deadline | accepted | subprocess-boundary-timer-deadline-wins | notSelected | notCatalogReady |
+| Remind and finish monitored work | retainedScenario | non-interrupting-task-reminder | accepted | non-interrupting-boundary-timer-deadline-then-both-branches | notSelected | notCatalogReady |
+| Review and rework a request until accepted | retainedScenario | cyclic-human-rework | accepted | user-task-cycle-repeat-rework-exit | notSelected | notCatalogReady |
+| Start approval from an addressed message | retainedScenario | message-start-human-approval | accepted | message-start-event | notSelected | notCatalogReady |
+| Start a scheduled review | retainedScenario | timer-start-human-review | accepted | timer-start-event | notSelected | notCatalogReady |
+| Stop remaining scoped work after termination | retainedScenario | subprocess-termination | accepted | terminate-end-event-trigger-first | notSelected | notCatalogReady |
+| Run a configured integration before review | retainedScenario | configured-effect-human-review | accepted | configured-task | notSelected | notCatalogReady |
+| Retain a mapped service result | retainedScenario | mapped-service-success | accepted | mapped-success-service-task | pipeline | notCatalogReady |
+| Route a mapped business error to review | retainedScenario | mapped-service-boundary-error | accepted | mapped-boundary-error-service-task-caught | pipeline | notCatalogReady |
 | CIB Seven order goods | externalGit | cib-order-goods | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven invoice receipt version 1 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |
@@ -22,6 +40,36 @@ The first tranche contains 5 retained executable models and 7 exact external can
 | CIB Seven vacation request | externalGit | cib-vacation-request | rejected | none | notApplicable | notCatalogReady |
 | OMG incident management executable example | externalArchiveEntry | omg-incident-management | rejected | none | notApplicable | notCatalogReady |
 | Betsy workflow pattern 16 deferred choice | externalGit | betsy-wcp16-deferred-choice | rejected | none | notApplicable | notCatalogReady |
+
+## MVP capability coverage
+
+| Family | Element or variant | Retained models |
+|---|---|---|
+| Process structure | Process | `request-review-with-form`, `parallel-work-preparation`, `boolean-decision-routing`, `called-process-fulfilment`, `external-service-recording`, `scoped-parallel-work`, `scoped-business-error-recovery`, `timed-review-window`, `message-triggered-review`, `invoice-receipt-wait`, `applicable-review-tracks`, `message-or-deadline-routing`, `task-deadline-escalation`, `work-package-deadline-escalation`, `non-interrupting-work-reminder`, `request-review-rework`, `message-started-approval`, `scheduled-review-start`, `scoped-termination`, `configured-integration-review`, `mapped-service-result`, `mapped-business-error-review` |
+| Process structure | Sequence Flow | `request-review-with-form`, `parallel-work-preparation`, `boolean-decision-routing`, `called-process-fulfilment`, `external-service-recording`, `scoped-parallel-work`, `scoped-business-error-recovery`, `timed-review-window`, `message-triggered-review`, `invoice-receipt-wait`, `applicable-review-tracks`, `message-or-deadline-routing`, `task-deadline-escalation`, `work-package-deadline-escalation`, `non-interrupting-work-reminder`, `request-review-rework`, `message-started-approval`, `scheduled-review-start`, `scoped-termination`, `configured-integration-review`, `mapped-service-result`, `mapped-business-error-review` |
+| Start Events | None Start Event | `request-review-with-form`, `parallel-work-preparation`, `boolean-decision-routing`, `called-process-fulfilment`, `external-service-recording`, `scoped-parallel-work`, `scoped-business-error-recovery`, `timed-review-window`, `message-triggered-review`, `invoice-receipt-wait`, `applicable-review-tracks`, `message-or-deadline-routing`, `task-deadline-escalation`, `work-package-deadline-escalation`, `non-interrupting-work-reminder`, `request-review-rework`, `scoped-termination`, `configured-integration-review`, `mapped-service-result`, `mapped-business-error-review` |
+| Start Events | Message Start Event | `message-started-approval` |
+| Start Events | Timer Start Event | `scheduled-review-start` |
+| End Events | None End Event | `request-review-with-form`, `parallel-work-preparation`, `boolean-decision-routing`, `called-process-fulfilment`, `external-service-recording`, `scoped-parallel-work`, `scoped-business-error-recovery`, `timed-review-window`, `message-triggered-review`, `invoice-receipt-wait`, `applicable-review-tracks`, `message-or-deadline-routing`, `task-deadline-escalation`, `work-package-deadline-escalation`, `non-interrupting-work-reminder`, `request-review-rework`, `message-started-approval`, `scheduled-review-start`, `scoped-termination`, `configured-integration-review`, `mapped-service-result`, `mapped-business-error-review` |
+| End Events | Error End Event | `scoped-business-error-recovery` |
+| End Events | Terminate End Event | `scoped-termination` |
+| Activities | User Task | `request-review-with-form`, `parallel-work-preparation`, `boolean-decision-routing`, `called-process-fulfilment`, `scoped-parallel-work`, `scoped-business-error-recovery`, `timed-review-window`, `message-triggered-review`, `applicable-review-tracks`, `message-or-deadline-routing`, `task-deadline-escalation`, `work-package-deadline-escalation`, `non-interrupting-work-reminder`, `request-review-rework`, `message-started-approval`, `scheduled-review-start`, `scoped-termination`, `configured-integration-review`, `mapped-business-error-review` |
+| Activities | Service Task | `external-service-recording`, `mapped-service-result`, `mapped-business-error-review` |
+| Activities | Receive Task | `invoice-receipt-wait` |
+| Activities | Task with BPMN Lean task definition | `configured-integration-review` |
+| Activities | Call Activity | `called-process-fulfilment` |
+| Activities | Embedded Sub-Process | `scoped-parallel-work`, `scoped-business-error-recovery`, `work-package-deadline-escalation`, `scoped-termination` |
+| Gateways | Exclusive Gateway | `boolean-decision-routing`, `request-review-rework` |
+| Gateways | Parallel Gateway | `parallel-work-preparation`, `scoped-parallel-work`, `scoped-business-error-recovery`, `scoped-termination` |
+| Gateways | Inclusive Gateway | `applicable-review-tracks` |
+| Gateways | Event-Based Gateway | `message-or-deadline-routing` |
+| Intermediate Catch Events | Message Intermediate Catch Event | `message-triggered-review`, `message-or-deadline-routing` |
+| Intermediate Catch Events | Timer Intermediate Catch Event | `timed-review-window`, `message-or-deadline-routing` |
+| Boundary Events | Interrupting Timer Boundary Event on User Task | `task-deadline-escalation` |
+| Boundary Events | Non-interrupting Timer Boundary Event on User Task | `non-interrupting-work-reminder` |
+| Boundary Events | Interrupting Timer Boundary Event on Sub-Process | `work-package-deadline-escalation` |
+| Boundary Events | Error Boundary Event on Service Task | `mapped-business-error-review` |
+| Boundary Events | Error Boundary Event on Sub-Process | `scoped-business-error-recovery` |
 
 ## Deduplicated unsupported reusable mechanisms
 
@@ -37,14 +85,10 @@ This ranking compares external candidates with the reusable mechanisms exercised
 | 6 | `lanePresentation` | 2 | 3 |
 | 7 | `scriptTaskExecution` | 2 | 2 |
 | 8 | `businessDecision` | 1 | 2 |
-| 9 | `eventRace` | 1 | 1 |
-| 10 | `genericTask` | 1 | 1 |
-| 11 | `messageStart` | 1 | 1 |
-| 12 | `parallelSplit` | 1 | 1 |
-| 13 | `resourceAssignment` | 1 | 1 |
-| 14 | `sendTaskDelivery` | 1 | 1 |
-| 15 | `signalEvent` | 1 | 1 |
-| 16 | `timerWait` | 1 | 1 |
+| 9 | `genericTask` | 1 | 1 |
+| 10 | `resourceAssignment` | 1 | 1 |
+| 11 | `sendTaskDelivery` | 1 | 1 |
+| 12 | `signalEvent` | 1 | 1 |
 
 ## Deduplicated admission blockers
 

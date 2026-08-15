@@ -1,6 +1,6 @@
 {
   "kind": "executableBpmnModelCorpus",
-  "version": 1,
+  "version": 2,
   "externalSources": [
     {
       "kind": "git",
@@ -28,6 +28,7 @@
     {
       "id": "request-review-with-form",
       "title": "Review a request with assignment and form metadata",
+      "businessPurpose": "Assign a request to a reviewer and capture the review decision through its declared form.",
       "cloneFamily": "human-review-with-form",
       "constructs": [
         "endEvent",
@@ -63,6 +64,7 @@
     {
       "id": "parallel-work-preparation",
       "title": "Prepare two work items in parallel",
+      "businessPurpose": "Prepare two independent work products before continuing the shared case.",
       "cloneFamily": "parallel-two-human-tasks",
       "constructs": [
         "endEvent",
@@ -99,6 +101,7 @@
     {
       "id": "boolean-decision-routing",
       "title": "Route a Boolean decision",
+      "businessPurpose": "Route a business request to the first applicable review outcome.",
       "cloneFamily": "exclusive-boolean-decision",
       "constructs": [
         "endEvent",
@@ -135,6 +138,7 @@
     {
       "id": "called-process-fulfilment",
       "title": "Fulfil work through a called Process",
+      "businessPurpose": "Delegate a bounded fulfilment step to a reusable called process and resume the parent case.",
       "cloneFamily": "called-process-human-work",
       "constructs": [
         "callActivity",
@@ -171,6 +175,7 @@
     {
       "id": "external-service-recording",
       "title": "Record an external service effect",
+      "businessPurpose": "Invoke an external service and finish the case only after its effect is recorded.",
       "cloneFamily": "single-service-effect",
       "constructs": [
         "endEvent",
@@ -202,8 +207,622 @@
       }
     },
     {
+      "id": "scoped-parallel-work",
+      "title": "Coordinate parallel work inside a bounded scope",
+      "businessPurpose": "Complete two scoped work items before the parent case proceeds to its follow-up review.",
+      "cloneFamily": "embedded-parallel-human-work",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplitJoin",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/embedded-subprocess-completion/process.bpmn",
+        "sha256": "6ca0aa3bccb005de1ac4b6ef6283f2a29c4f4ef7c3e8aff6bf29d79247f09a36",
+        "scenarioRelativePath": "scenarios/embedded-subprocess-completion/a-then-b.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "embedded-subprocess-completion-a-then-b",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The scoped parallel path is protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
+      "id": "scoped-business-error-recovery",
+      "title": "Recover scoped work after a business error",
+      "businessPurpose": "Route a failed scoped operation to its declared recovery work while cancelling its live sibling.",
+      "cloneFamily": "subprocess-error-recovery",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "errorPropagation",
+        "boundaryError",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/subprocess-error-propagation/process.bpmn",
+        "sha256": "f920ed0454a56b6649d0ecaa915a0ab5b3ed4f3bb974fba9c6255039ecb801a2",
+        "scenarioRelativePath": "scenarios/subprocess-error-propagation/trigger-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-subprocess-error-propagation-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "subprocess-error-propagation-trigger-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The business-error recovery path is not yet exposed through one production browser journey."
+      }
+    },
+    {
+      "id": "timed-review-window",
+      "title": "Wait for a review window",
+      "businessPurpose": "Delay a review until its defined waiting period has elapsed and then collect the decision.",
+      "cloneFamily": "timer-then-human-review",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "timerWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/timer-user-task-composition/process.bpmn",
+        "sha256": "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2",
+        "scenarioRelativePath": "scenarios/timer-user-task-composition/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-timer-user-task-composition-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "timer-user-task-composition",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The timed review has no production browser journey that advances logical time and completes the task."
+      }
+    },
+    {
+      "id": "message-triggered-review",
+      "title": "Continue a review after a message",
+      "businessPurpose": "Wait for an addressed approval request before opening the corresponding human review.",
+      "cloneFamily": "message-then-human-review",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "messageWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/intermediate-catch-message/process.bpmn",
+        "sha256": "41ba50066e54fa1a01340b185afb04c70d1acc761f902a8f321f31eb095f2515",
+        "scenarioRelativePath": "scenarios/intermediate-catch-message/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-intermediate-catch-message-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "intermediate-catch-message",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The message subscription and follow-up task are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "invoice-receipt-wait",
+      "title": "Wait for an invoice receipt",
+      "businessPurpose": "Keep an invoice case waiting until the expected addressed receipt message arrives.",
+      "cloneFamily": "addressed-receive-task",
+      "constructs": [
+        "endEvent",
+        "process",
+        "receiveTask",
+        "sequenceFlow",
+        "startEvent"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "receiveTaskMessage"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/message-addressed-receive-task/process.bpmn",
+        "sha256": "2793f384239ccc0cc4fd9a6d558b53f97c8a3ec724083cf1702d684861397b2a",
+        "scenarioRelativePath": "scenarios/message-addressed-receive-task/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-message-addressed-receive-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "message-addressed-receive-task",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The Receive Task message operation is not yet available as a production browser journey."
+      }
+    },
+    {
+      "id": "applicable-review-tracks",
+      "title": "Prepare every applicable review track",
+      "businessPurpose": "Open every review track selected by current case data and continue after all selected tracks finish.",
+      "cloneFamily": "inclusive-human-review-tracks",
+      "constructs": [
+        "endEvent",
+        "inclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "conditionalRouting",
+        "inclusiveSplitJoin",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/inclusive-gateway-selected-branches/process.bpmn",
+        "sha256": "9a662129585d4bf89973c8f1eb2851023345a43bba31a9d51683d918ca4de9f1",
+        "scenarioRelativePath": "scenarios/inclusive-gateway-selected-branches/both-true-a-then-b.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "inclusive-gateway-both-true-a-then-b",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Selected Inclusive branches and their join are not yet covered by one production browser journey."
+      }
+    },
+    {
+      "id": "message-or-deadline-routing",
+      "title": "Continue on a message or deadline",
+      "businessPurpose": "Advance a waiting case on the first of its expected response message or deadline.",
+      "cloneFamily": "message-timer-event-race",
+      "constructs": [
+        "endEvent",
+        "eventBasedGateway",
+        "intermediateCatchEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "eventRace",
+        "messageWait",
+        "timerWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/event-based-gateway-message-timer/process.bpmn",
+        "sha256": "3e7ca1e205c8b2adcb8a60e13edc9326bab1d45ede9fbc1c0809e96a701b0039",
+        "scenarioRelativePath": "scenarios/event-based-gateway-message-timer/message-wins.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "event-based-gateway-message-wins",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The competing Message and Timer subscriptions are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "task-deadline-escalation",
+      "title": "Escalate work that misses a deadline",
+      "businessPurpose": "Withdraw overdue human work and route the case to its deadline escalation task.",
+      "cloneFamily": "interrupting-task-deadline",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "interruptingBoundaryTimer",
+        "timerWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/activity-boundary-timer/process.bpmn",
+        "sha256": "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e",
+        "scenarioRelativePath": "scenarios/activity-boundary-timer/deadline-wins.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-activity-boundary-timer-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "activity-boundary-timer-deadline-wins",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The deadline withdrawal and escalation route are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "work-package-deadline-escalation",
+      "title": "Escalate a bounded work package",
+      "businessPurpose": "Cancel overdue work inside a bounded package and continue through its escalation route.",
+      "cloneFamily": "interrupting-subprocess-deadline",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "interruptingBoundaryTimer",
+        "timerWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/subprocess-boundary-timer/process.bpmn",
+        "sha256": "dc2875fb0c24deeab9d8f180fa4adf44652a504778f3dda187ac19839e60016e",
+        "scenarioRelativePath": "scenarios/subprocess-boundary-timer/deadline-wins.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-subprocess-boundary-timer-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "subprocess-boundary-timer-deadline-wins",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The scoped deadline and cancellation path are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "non-interrupting-work-reminder",
+      "title": "Remind and finish monitored work",
+      "businessPurpose": "Issue a reminder when work reaches its deadline without withdrawing the original task.",
+      "cloneFamily": "non-interrupting-task-reminder",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "nonInterruptingBoundaryTimer",
+        "timerWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/non-interrupting-boundary-timer/process.bpmn",
+        "sha256": "032948b26d8c177d722036267cca71b2399fe947aeebb180900108fea3267b2f",
+        "scenarioRelativePath": "scenarios/non-interrupting-boundary-timer/deadline-then-both-branches.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "non-interrupting-boundary-timer-deadline-then-both-branches",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The reminder branch and preserved host task are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "request-review-rework",
+      "title": "Review and rework a request until accepted",
+      "businessPurpose": "Return a rejected request for rework and repeat review until the request is accepted.",
+      "cloneFamily": "cyclic-human-rework",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "conditionalRouting",
+        "cyclicControlFlow",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/user-task-cycle/process.bpmn",
+        "sha256": "bce35b0b73934026f7da34e8c26eb74d590ad1010a847e34aca6858e2dbdf8b9",
+        "scenarioRelativePath": "scenarios/user-task-cycle/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-user-task-cycle-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "user-task-cycle-repeat-rework-exit",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The repeated task occurrence and final history are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "message-started-approval",
+      "title": "Start approval from an addressed message",
+      "businessPurpose": "Create a new approval case when its declared start message operation is received.",
+      "cloneFamily": "message-start-human-approval",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "messageStart",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/message-start-event/process.bpmn",
+        "sha256": "254823e574c7ba8b69ff3e965a86cc579c3ccfcb42f23f0abb344aacc130099c",
+        "scenarioRelativePath": "scenarios/message-start-event/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-message-start-event-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "message-start-event",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Message-based instance creation is not yet exposed through a production browser journey."
+      }
+    },
+    {
+      "id": "scheduled-review-start",
+      "title": "Start a scheduled review",
+      "businessPurpose": "Create a review case when its exact scheduled start duration becomes due.",
+      "cloneFamily": "timer-start-human-review",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "timerStart",
+        "timerWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/timer-start-event/process.bpmn",
+        "sha256": "16ede7a6d5090be3a481ce7a4af97745bba96375272a59da66384091dd2c02b0",
+        "scenarioRelativePath": "scenarios/timer-start-event/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-timer-start-event-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "timer-start-event",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Timer-based instance creation is not yet exposed through a production browser journey."
+      }
+    },
+    {
+      "id": "scoped-termination",
+      "title": "Stop remaining scoped work after termination",
+      "businessPurpose": "End all remaining work in one bounded package after its terminating outcome is reached.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/terminate-end-event/process.bpmn",
+        "sha256": "dc1626de4e85d318ad99c4e0841e2b25dd1e09dadea09bc1ab84384dcf1f7e8c",
+        "scenarioRelativePath": "scenarios/terminate-end-event/trigger-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-terminate-end-event-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "terminate-end-event-trigger-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Scoped termination and its cancelled sibling are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "configured-integration-review",
+      "title": "Run a configured integration before review",
+      "businessPurpose": "Execute the declared project integration binding before opening its follow-up review task.",
+      "cloneFamily": "configured-effect-human-review",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "configuredTaskEffect",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/configured-task/process.bpmn",
+        "sha256": "0e50a82a24ac4f2a61e1ddafcc2cf4d2e71b7beffcfb6c06bd5120ce100934ba",
+        "scenarioRelativePath": "scenarios/configured-task/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "configured-task",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The project extension binding is not exposed through a production browser journey."
+      }
+    },
+    {
+      "id": "mapped-service-result",
+      "title": "Retain a mapped service result",
+      "businessPurpose": "Send a service request and retain its mapped result as process data for later work.",
+      "cloneFamily": "mapped-service-success",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect",
+        "mappedData"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/mapped-success-service-task/process.bpmn",
+        "sha256": "3b5bcd5167f4d48753f8efede35f47484bddf9c278cc8fe2f4dc87549da26b4a",
+        "scenarioRelativePath": "scenarios/mapped-success-service-task/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.0.0-mapped-success-service-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "mapped-success-service-task",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Mapped service output and its finished history are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "mapped-business-error-review",
+      "title": "Route a mapped business error to review",
+      "businessPurpose": "Convert a declared service failure into its mapped business error and open recovery review.",
+      "cloneFamily": "mapped-service-boundary-error",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect",
+        "mappedData",
+        "boundaryError",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/mapped-boundary-error-service-task/process.bpmn",
+        "sha256": "0102c7af3c934157dc235485e956f49ec166c16ea2d503bb2ab5a14ad1714386",
+        "scenarioRelativePath": "scenarios/mapped-boundary-error-service-task/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "mapped-boundary-error-service-task-caught",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Mapped boundary-error recovery is not yet one production browser journey."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
+      "businessPurpose": null,
       "cloneFamily": "cib-order-goods",
       "constructs": [
         "collaboration",
@@ -243,6 +862,7 @@
     {
       "id": "cib-review-invoice",
       "title": "CIB Seven review invoice",
+      "businessPurpose": null,
       "cloneFamily": "cib-review-invoice",
       "constructs": [
         "endEvent",
@@ -280,6 +900,7 @@
     {
       "id": "cib-invoice-receipt-v1",
       "title": "CIB Seven invoice receipt version 1",
+      "businessPurpose": null,
       "cloneFamily": "cib-invoice-receipt",
       "constructs": [
         "businessRuleTask",
@@ -331,6 +952,7 @@
     {
       "id": "cib-invoice-receipt-v2",
       "title": "CIB Seven invoice receipt version 2",
+      "businessPurpose": null,
       "cloneFamily": "cib-invoice-receipt",
       "constructs": [
         "businessRuleTask",
@@ -382,6 +1004,7 @@
     {
       "id": "cib-vacation-request",
       "title": "CIB Seven vacation request",
+      "businessPurpose": null,
       "cloneFamily": "cib-vacation-request",
       "constructs": [
         "endEvent",
@@ -421,6 +1044,7 @@
     {
       "id": "omg-incident-management-executable",
       "title": "OMG incident management executable example",
+      "businessPurpose": null,
       "cloneFamily": "omg-incident-management",
       "constructs": [
         "collaboration",
@@ -475,6 +1099,7 @@
     {
       "id": "betsy-deferred-choice",
       "title": "Betsy workflow pattern 16 deferred choice",
+      "businessPurpose": null,
       "cloneFamily": "betsy-wcp16-deferred-choice",
       "constructs": [
         "endEvent",
