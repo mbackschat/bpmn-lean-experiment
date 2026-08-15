@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +12,9 @@ import { defaultWarmBudgetMs } from "./pipeline-budget.ts";
 
 const verifyScriptPath = fileURLToPath(
   new URL("./verify.sh", import.meta.url),
+);
+const lakeWrapperPath = fileURLToPath(
+  new URL("./lake.sh", import.meta.url),
 );
 const pipelineRunnerPath = fileURLToPath(
   new URL("./test-pipeline.ts", import.meta.url),
@@ -321,11 +326,11 @@ test("one wrapper owns the Lean thread pin", async () => {
     fileURLToPath(new URL("../scripts/lake.sh", import.meta.url)),
     "utf8",
   );
-  // Derived, never restated: a literal here could drift from the manifest.
+  // Derived, never restated or overridden: a literal or ambient value could drift from the manifest.
   assert.match(
     wrapper,
-    /LEAN_NUM_THREADS="\$\{LEAN_NUM_THREADS:-\$required_lean_build_threads\}"/u,
-    "scripts/lake.sh must derive the Lean thread pin from the manifest, not restate a literal",
+    /LEAN_NUM_THREADS="\$required_lean_build_threads"/u,
+    "scripts/lake.sh must clamp the Lean thread pin to the manifest value",
   );
   assert.match(
     wrapper,
@@ -334,9 +339,53 @@ test("one wrapper owns the Lean thread pin", async () => {
   );
   assert.match(
     wrapper,
-    /^exec lake "\$@"$/mu,
+    /^lake "\$@"$/mu,
     "scripts/lake.sh must forward every argument to lake so it can replace bare invocations",
   );
+});
+
+test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses a second build tree", async () => {
+  const fakeBin = await mkdtemp(path.join(tmpdir(), "bpmn-lean-fake-lake-"));
+  const fakeLake = path.join(fakeBin, "lake");
+  const lockPath = `/tmp/bpmn-lean-experiment-${process.getuid?.() ?? 0}.lake-build.lock`;
+  await writeFile(
+    fakeLake,
+    "#!/bin/sh\nprintf '%s\\n' \"$LEAN_NUM_THREADS\"\n",
+    { mode: 0o755 },
+  );
+  const environment = {
+    ...process.env,
+    LEAN_NUM_THREADS: "8",
+    PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
+  };
+
+  try {
+    const ordinary = spawnSync(lakeWrapperPath, ["--version"], {
+      encoding: "utf8",
+      env: environment,
+    });
+    assert.equal(ordinary.status, 0, ordinary.stderr);
+    assert.equal(ordinary.stdout.trim(), "1");
+
+    const broadFocused = spawnSync(
+      lakeWrapperPath,
+      ["build", "BpmnSemantics.SemanticProcess.ProfileAdmission", "BpmnSemantics"],
+      { encoding: "utf8", env: environment },
+    );
+    assert.notEqual(broadFocused.status, 0);
+    assert.match(broadFocused.stderr, /umbrella/u);
+
+    await mkdir(lockPath);
+    const concurrent = spawnSync(lakeWrapperPath, ["--version"], {
+      encoding: "utf8",
+      env: environment,
+    });
+    assert.notEqual(concurrent.status, 0);
+    assert.match(concurrent.stderr, /another Lean build/u);
+  } finally {
+    await rm(lockPath, { recursive: true, force: true });
+    await rm(fakeBin, { recursive: true, force: true });
+  }
 });
 
 /**

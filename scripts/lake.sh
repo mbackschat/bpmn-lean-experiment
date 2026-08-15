@@ -14,18 +14,38 @@
 # Wrapping every invocation is what makes the pin hold. Exporting it from the gates alone left the
 # documented experiment commands, and any Lean build typed directly, running at the host's core
 # count; `scripts/verification-entrypoint.test.ts` now rejects a bare `lake` in any instruction
-# surface. `package.json`'s `config.leanBuildThreads` owns the value, and an environment
-# LEAN_NUM_THREADS overrides it for one run on a host with spare memory. Raise it by measuring the
-# peak rather than by assuming it scales linearly, and keep the default the most conservative value,
-# because the peak grows with the number of kernel-decided fixtures and that number grows with every
-# capsule.
+# surface. `package.json`'s `config.leanBuildThreads` owns the value. The wrapper always replaces an
+# inherited LEAN_NUM_THREADS value: an ambient or agent-supplied override must never turn an ordinary
+# project command into an unbounded host build. The host-wide lock prevents two repository Lean
+# process trees from multiplying that bounded peak.
 
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 eval "$("$script_dir/pinned-toolchain.sh")"
 
-LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-$required_lean_build_threads}"
+if [ "${1:-}" = "build" ]; then
+  for target in "$@"; do
+    if [ "$target" = "BpmnSemantics" ]; then
+      echo "LEAN_BUILD_REFUSED explicit BpmnSemantics umbrella target; use './scripts/lake.sh build' only for the root-owned full gate" >&2
+      exit 64
+    fi
+  done
+fi
+
+lean_build_lock="/tmp/bpmn-lean-experiment-$(id -u).lake-build.lock"
+if ! mkdir "$lean_build_lock" 2>/dev/null; then
+  echo "LEAN_BUILD_REFUSED another Lean build is active, or the fail-closed lock remains at $lean_build_lock" >&2
+  exit 75
+fi
+
+cleanup_lean_build_lock() {
+  rmdir "$lean_build_lock" 2>/dev/null || true
+}
+trap cleanup_lean_build_lock 0
+trap 'exit 130' 1 2 15
+
+LEAN_NUM_THREADS="$required_lean_build_threads"
 export LEAN_NUM_THREADS
 
-exec lake "$@"
+lake "$@"

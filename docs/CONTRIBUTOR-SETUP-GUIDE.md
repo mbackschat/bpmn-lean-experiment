@@ -50,7 +50,7 @@ The scope split is an architecture boundary. Default verification is complete fo
 
 ## Memory-bounded Lean measurements
 
-Ordinary Lean development runs through [`scripts/lake.sh`](../scripts/lake.sh). Its conservative `LEAN_NUM_THREADS` default bounds build parallelism and does not start Docker. A hard memory ceiling is additionally required for a Lean cost measurement and for the first narrow build after changing a kernel-decided fixture, a dispatcher reduced by those fixtures, admission logic reduced by many fixtures, or proof-lane layout. This is development and CI assurance work only. Lean and the measurement environment are absent from the engine and platform runtime dependency graphs.
+Ordinary Lean development runs through [`scripts/lake.sh`](../scripts/lake.sh). Its conservative fixed `LEAN_NUM_THREADS` value bounds build parallelism, replaces inherited overrides, and does not start Docker. Its fail-closed host lock refuses a second concurrent repository Lean process tree. Only the root integrator runs Lean commands, one narrow target set at a time; `./scripts/lake.sh build` is the root-owned full gate, while an explicit `BpmnSemantics` target is rejected so it cannot contaminate a focused build. A hard memory ceiling is additionally required for a Lean cost measurement and for the first narrow build after changing a kernel-decided fixture, a dispatcher reduced by those fixtures, admission logic reduced by many fixtures, or proof-lane layout. This is development and CI assurance work only. Lean and the measurement environment are absent from the engine and platform runtime dependency graphs.
 
 Prefer the host operating system's native process-tree memory controller when it provides a verifiable hard resident-memory limit:
 

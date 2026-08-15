@@ -190,18 +190,14 @@ Run the local platform definition server with `./scripts/pnpm.sh run platform:se
 
 When a task explicitly needs the optional A12 exact-source evidence, provision and run it separately with `./scripts/setup-external-sources.sh adoption` followed by `./scripts/test-a12-adoption.sh`.
 
-Invoke Lean through [`./scripts/lake.sh`](scripts/lake.sh) rather than `lake`. It forwards every Lake argument unchanged and is the single owner of Lean's build parallelism, pinned by `config.leanBuildThreads` in [package.json](package.json) and exported as `LEAN_NUM_THREADS`:
+Invoke Lean through [`./scripts/lake.sh`](scripts/lake.sh) rather than `lake` or `lean`. It is the single owner of Lean build parallelism, pins `LEAN_NUM_THREADS` from `config.leanBuildThreads` in [package.json](package.json), and refuses a second concurrent repository Lean process tree:
 
 ```sh
 ./scripts/lake.sh build
 ./scripts/lake.sh test
 ```
 
-The default is deliberately conservative: this project decides finite fixtures in the Lean kernel, kernel reduction holds its terms in resident memory, and Lake otherwise sizes its build pool from the host's core count, which measured a 7978 MB peak on an 8-core machine against 2411 MB pinned. Raise it per run on a host with spare RAM, and measure rather than extrapolate, because it did not scale linearly:
-
-```sh
-LEAN_NUM_THREADS=4 ./scripts/verify.sh
-```
+The fixed value is deliberately conservative: this project decides finite fixtures in the Lean kernel, kernel reduction holds its terms in resident memory, and Lake otherwise sizes its build pool from the host's core count, which measured a 7978 MB peak on an 8-core machine against 2411 MB pinned. The wrapper replaces inherited overrides rather than allowing an ordinary command to expand that pool. Use `./scripts/lake.sh build` only for the full gate; focused work names only narrow module targets and never adds the explicit `BpmnSemantics` umbrella target.
 
 Ordinary Lean development uses that wrapper directly and does not require Docker. Changes that can increase kernel-reduction cost need a hard memory-bounded narrow measurement before the complete Lean gate. [The contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md#memory-bounded-lean-measurements) explains the platform-specific choice: native cgroups on Linux, Docker as the macOS fallback, and a verified native equivalent or container elsewhere.
 
