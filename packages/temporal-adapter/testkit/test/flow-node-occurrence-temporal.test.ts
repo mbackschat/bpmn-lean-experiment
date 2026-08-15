@@ -158,20 +158,6 @@ test("retains exact flow-node occurrence publication through Worker replacement 
     commandId: "complete-user-task-instance",
     outcome: CommandOutcome.Committed,
   });
-  assert.notEqual(
-    primaryEvidence.historyMutation.headRevision,
-    primaryEvidence.terminal.headRevision,
-  );
-  assert.notEqual(primaryEvidence.historyMutation.occurrenceCount, facts.length);
-  assert.deepEqual(primaryEvidence.stateDifferenceMutation, {
-    started: [],
-    ended: [{ elementId: "UserTask_Approve", elapsedMs: 0 }],
-  });
-  assert.notEqual(
-    primaryEvidence.stateDifferenceMutation.ended[0]?.elapsedMs,
-    requireFact(facts, "UserTask_Approve").elapsedMs,
-  );
-
   assert.equal(
     requireFact(lifecycleFacts(evidence.eventRace), "MessageCatch").terminal,
     FlowNodeOccurrenceTerminalKind.Completed,

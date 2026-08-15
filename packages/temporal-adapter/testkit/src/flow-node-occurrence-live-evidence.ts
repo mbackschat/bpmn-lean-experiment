@@ -44,7 +44,6 @@ import type {
   ExecutionPublicationPage,
   FlowNodeOccurrencePage,
   FlowNodeOccurrencePublicationResult,
-  OpenFlowNodeOccurrence,
   ProcessCommandResult,
 } from "@bpmn-lean/temporal-protocol";
 import { loadBpmnWorkflowBundle } from "@bpmn-lean/temporal-worker";
@@ -78,8 +77,6 @@ export type FlowNodeOccurrencePrimaryEvidence = Readonly<{
   duplicateResult: ProcessCommandResult;
   queryHistoryEventCounts: readonly [before: number, after: number];
   workerIdentities: readonly [first: string, replacement: string];
-  historyMutation: HistoryDerivedOccurrenceMutation;
-  stateDifferenceMutation: StateDifferenceLifecycleMutation;
 }>;
 
 export type FlowNodeOccurrenceLiveEvidence = Readonly<{
@@ -87,16 +84,6 @@ export type FlowNodeOccurrenceLiveEvidence = Readonly<{
   eventRace: FlowNodeOccurrencePage;
   callActivity: FlowNodeOccurrencePage;
   boundary: FlowNodeOccurrencePage;
-}>;
-
-export type HistoryDerivedOccurrenceMutation = Readonly<{
-  headRevision: number;
-  occurrenceCount: number;
-}>;
-
-export type StateDifferenceLifecycleMutation = Readonly<{
-  started: string[];
-  ended: ReadonlyArray<Readonly<{ elementId: string; elapsedMs: number }>>;
 }>;
 
 /** Runs all four approved witnesses against one production bundle and one real Temporal service. */
@@ -284,11 +271,6 @@ async function runPrimary(
     duplicateResult,
     queryHistoryEventCounts: [historyBeforeQuery, historyAfterQuery],
     workerIdentities: [firstWorker.identity, replacement.identity],
-    historyMutation: historyDerivedOccurrenceMutation(history),
-    stateDifferenceMutation: stateDifferenceLifecycleMutation(
-      start.currentOpen ?? [],
-      terminal.currentOpen ?? [],
-    ),
   };
 }
 
@@ -510,44 +492,6 @@ function startWorkflow(
     workflowId,
     operationDeadlineMs,
   );
-}
-
-/** Deliberately wrong account that treats host events as semantic revisions and occurrences. */
-export function historyDerivedOccurrenceMutation(
-  history: TemporalHistory,
-): HistoryDerivedOccurrenceMutation {
-  return {
-    headRevision: history.events.length,
-    occurrenceCount: history.events.length,
-  };
-}
-
-/** Deliberately incomplete account that loses transients and assigns zero duration to state exits. */
-export function stateDifferenceLifecycleMutation(
-  before: readonly OpenFlowNodeOccurrence[],
-  after: readonly OpenFlowNodeOccurrence[],
-): StateDifferenceLifecycleMutation {
-  return {
-    started: after.flatMap((candidate) =>
-      before.some(({ id }) => sameOccurrenceId(id, candidate.id))
-        ? []
-        : [candidate.elementId]
-    ),
-    ended: before.flatMap((candidate) =>
-      after.some(({ id }) => sameOccurrenceId(id, candidate.id))
-        ? []
-        : [{ elementId: candidate.elementId, elapsedMs: 0 }]
-    ),
-  };
-}
-
-function sameOccurrenceId(
-  left: OpenFlowNodeOccurrence["id"],
-  right: OpenFlowNodeOccurrence["id"],
-): boolean {
-  return left.processInstanceId === right.processInstanceId &&
-    left.startRevision === right.startRevision &&
-    left.startIndex === right.startIndex;
 }
 
 type PublicationWorkerLease = Readonly<{

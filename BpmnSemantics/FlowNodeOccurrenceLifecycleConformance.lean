@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.CallActivityConformance
 import BpmnSemantics.EmbeddedSubProcessCompletionConformance
@@ -71,6 +72,37 @@ def sequentialCompletionTrace : TracedStimulusResult :=
 
 def sequentialTaskAnchor : SemanticFlowNodeOccurrenceAnchor :=
   .wait SequentialUserTask.exactTaskInstanceId
+
+def sequentialAwaitBeforeState : RuntimeState :=
+  { (runningProgramStartState? SequentialUserTask.program ⟨"Instance_1"⟩
+      SequentialUserTask.initialBindings).getD initialState with
+    initiationPending := false
+    tokens :=
+      [rootToken ⟨"Instance_1"⟩ SequentialUserTask.program.processId
+        ⟨"place:Flow_StartToTask"⟩] }
+
+def corruptedSequentialTaskStart : UnnumberedFlowNodeOccurrenceStart :=
+  { anchor := sequentialTaskAnchor
+    processId := ⟨"Process_Corrupted"⟩
+    elementId := ⟨"UserTask_Approve"⟩
+    owner := SequentialUserTask.rootOwner }
+
+def corruptedSequentialTaskDelta : UnnumberedFlowNodeOccurrenceDelta :=
+  { started := [corruptedSequentialTaskStart], ended := [] }
+
+/-- A candidate cannot smuggle a false Process identity through an otherwise exact open-state oracle. -/
+theorem corrupted_candidate_process_id_is_rejected_while_open_oracle_is_exact :
+    projectOpenFlowNodeOccurrences? SequentialUserTask.program sequentialAwaitBeforeState = some [] ∧
+      projectOpenFlowNodeOccurrences? SequentialUserTask.program
+        SequentialUserTask.afterStartState =
+          some
+            [{ anchor := sequentialTaskAnchor
+               processId := SequentialUserTask.program.processId
+               elementId := ⟨"UserTask_Approve"⟩
+               owner := SequentialUserTask.rootOwner }] ∧
+      acceptFlowNodeOccurrenceCandidate? SequentialUserTask.program sequentialAwaitBeforeState
+        SequentialUserTask.afterStartState corruptedSequentialTaskDelta = none := by
+  decide +kernel
 
 /-- The real admitted Start to User Task transition emits the exact instantaneous Start and one retained task occurrence. -/
 theorem sequential_start_emits_exact_flow_node_units :

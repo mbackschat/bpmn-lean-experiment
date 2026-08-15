@@ -32,11 +32,14 @@ import type {
 import type {
   ExecutionPublicationState,
 } from "./execution-publication-state.js";
+import {
+  requireCompleteFlowNodeOccurrenceLifecycles,
+} from "./flow-node-occurrence-publication-completeness.js";
+import type {
+  RetainedFlowNodeOccurrence,
+} from "./flow-node-occurrence-publication-completeness.js";
 
-type RetainedOpenFlowNodeOccurrence = DeepReadonly<{
-  anchor: SemanticFlowNodeOccurrenceAnchor;
-  occurrence: OpenFlowNodeOccurrence;
-}>;
+type RetainedOpenFlowNodeOccurrence = DeepReadonly<RetainedFlowNodeOccurrence>;
 
 export type FlowNodeOccurrencePublicationState = DeepReadonly<{
   definition: SemanticProcessIdentity;
@@ -112,6 +115,13 @@ export function accumulateFlowNodeOccurrencePublication(
       "flow-node occurrence publication is not aligned with execution publication",
     );
   }
+  requireCompleteFlowNodeOccurrenceLifecycles(
+    program,
+    state.retainedOpen,
+    executionBatch.commandId,
+    executionBatch.transitions,
+    step.flowNodeOccurrenceLifecycles,
+  );
 
   const retained = state.retainedOpen.map(cloneRetained);
   const transitions = step.flowNodeOccurrenceLifecycles.map(

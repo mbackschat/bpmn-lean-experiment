@@ -13,6 +13,9 @@ import {
   createExecutionPublicationState,
 } from "../dist/execution-publication-state.js";
 import {
+  queryFlowNodeOccurrences,
+} from "../dist/flow-node-occurrence-query-handler.js";
+import {
   commandOutcome,
   createCommandPublicationState,
   integrateCommandPublication,
@@ -24,6 +27,10 @@ import {
   publicationProgram,
   publicationStart,
 } from "./execution-publication-fixture.ts";
+import {
+  historyDerivedPublicationCandidate,
+  stateDifferencePublicationStep,
+} from "./flow-node-occurrence-mutation-evidence.ts";
 
 function integrateAndRecord(
   state: ReturnType<typeof createCommandPublicationState>,
@@ -245,9 +252,102 @@ test("samples no time and exposes neither successor for malformed occurrence pub
           return 4_000;
         },
       ),
-      /not canonical|reused an open anchor|unknown anchor/u,
+      /complete lifecycle|not canonical|reused an open anchor|unknown anchor/u,
     );
     assert.equal(samples, 0);
     assert.deepEqual(before, exactBefore);
   }
+});
+
+test("rejects Event History-derived occurrence revisions and counts at the E1 Query relation", () => {
+  const step = advanceScenario(
+    publicationProgram,
+    initialState,
+    publicationStart,
+  );
+  assert.ok(step.kind === ScenarioStepKind.Committed);
+  const exact = integrateAndRecord(
+    createCommandPublicationState(
+      publicationProgram,
+      publicationProcessInstanceId,
+    ),
+    publicationStart,
+    step,
+    () => 1_000,
+  );
+  const historyDerived = historyDerivedPublicationCandidate(
+    exact,
+    [{ eventId: 1 }, { eventId: 2 }],
+  );
+  assert.throws(
+    () => queryFlowNodeOccurrences(
+      publicationProgram,
+      historyDerived.execution,
+      historyDerived.flowNodeOccurrences,
+      { afterRevision: 0 },
+    ),
+    /heads drifted/u,
+  );
+});
+
+test("rejects before/after open-state lifecycle substitution before time exposure", () => {
+  const started = advanceScenario(
+    publicationProgram,
+    initialState,
+    publicationStart,
+  );
+  assert.ok(started.kind === ScenarioStepKind.Committed);
+  let before = integrateAndRecord(
+    createCommandPublicationState(
+      publicationProgram,
+      publicationProcessInstanceId,
+    ),
+    publicationStart,
+    started,
+    () => 1_000,
+  );
+  const completionA = publicationCompletion("UserTask_A");
+  const completedA = advanceScenario(
+    publicationProgram,
+    started.state,
+    completionA,
+  );
+  assert.ok(completedA.kind === ScenarioStepKind.Committed);
+  before = integrateAndRecord(
+    before,
+    completionA,
+    completedA,
+    () => 1_000,
+  );
+  const completionB = publicationCompletion("UserTask_B");
+  const completedB = advanceScenario(
+    publicationProgram,
+    completedA.state,
+    completionB,
+  );
+  assert.ok(completedB.kind === ScenarioStepKind.Committed);
+  const exactAfter = integrateAndRecord(
+    before,
+    completionB,
+    completedB,
+    () => 1_000,
+  );
+  const mutation = stateDifferencePublicationStep(before, exactAfter, completedB);
+  const exactBefore = structuredClone(before);
+  let samples = 0;
+  assert.throws(
+    () => integrateCommandPublication(
+      publicationProgram,
+      before,
+      completionB,
+      mutation,
+      () => {
+        samples += 1;
+        return 1_000;
+      },
+    ),
+    /complete lifecycle/u,
+  );
+  assert.equal(samples, 0);
+  assert.deepEqual(before, exactBefore);
 });

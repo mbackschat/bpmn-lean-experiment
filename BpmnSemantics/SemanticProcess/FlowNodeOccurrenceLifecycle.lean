@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 
 /-! # Flow-node occurrence lifecycle
 
@@ -8,38 +8,6 @@ This module derives revision-free flow-node starts and terminals at the evaluato
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-inductive FlowNodeOccurrenceTerminalKind where
-  | completed
-  | cancelled
-  deriving Repr, DecidableEq
-
-/-- Semantic-only pairing identity. No constructor is part of the public wire contract. -/
-inductive SemanticFlowNodeOccurrenceAnchor where
-  | wait (id : OccurrenceId)
-  | scope (id : ScopeOccurrenceId)
-  | callActivity (id : OccurrenceId)
-  | transition (commandId : SemanticId) (transitionIndex localIndex : Nat)
-  deriving Repr, DecidableEq
-
-structure UnnumberedFlowNodeOccurrenceStart where
-  anchor : SemanticFlowNodeOccurrenceAnchor
-  processId : ProcessId
-  elementId : NodeId
-  owner : ScopeOccurrenceId
-  deriving Repr, DecidableEq
-
-structure UnnumberedFlowNodeOccurrenceEnd where
-  anchor : SemanticFlowNodeOccurrenceAnchor
-  terminal : FlowNodeOccurrenceTerminalKind
-  deriving Repr, DecidableEq
-
-structure UnnumberedFlowNodeOccurrenceDelta where
-  started : List UnnumberedFlowNodeOccurrenceStart
-  ended : List UnnumberedFlowNodeOccurrenceEnd
-  deriving Repr, DecidableEq
-
-abbrev OpenSemanticFlowNodeOccurrence := UnnumberedFlowNodeOccurrenceStart
 
 def stimulusCommandId : Stimulus → SemanticId
   | .startProcess commandId ..
@@ -105,13 +73,39 @@ private def sortBy (before : α → α → Bool) : List α → List α
   | [] => []
   | head :: tail => insertBy before head (sortBy before tail)
 
+private theorem mem_insertBy (before : α → α → Bool) (value inserted : α)
+    (values : List α) :
+    value ∈ insertBy before inserted values ↔ value = inserted ∨ value ∈ values := by
+  induction values with
+  | nil => simp [insertBy]
+  | cons head tail ih =>
+      simp only [insertBy]
+      split <;> simp_all [or_left_comm]
+
+private theorem mem_sortBy (before : α → α → Bool) (value : α)
+    (values : List α) : value ∈ sortBy before values ↔ value ∈ values := by
+  induction values with
+  | nil => simp [sortBy]
+  | cons head tail ih => simp [sortBy, mem_insertBy, ih]
+
 def sortFlowNodeOccurrenceStarts :
     List UnnumberedFlowNodeOccurrenceStart → List UnnumberedFlowNodeOccurrenceStart :=
   sortBy startBefore
 
+theorem mem_sortFlowNodeOccurrenceStarts (value : UnnumberedFlowNodeOccurrenceStart)
+    (values : List UnnumberedFlowNodeOccurrenceStart) :
+    value ∈ sortFlowNodeOccurrenceStarts values ↔ value ∈ values := by
+  exact mem_sortBy startBefore value values
+
 def sortFlowNodeOccurrenceEnds :
     List UnnumberedFlowNodeOccurrenceEnd → List UnnumberedFlowNodeOccurrenceEnd :=
   sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor)
+
+theorem mem_sortFlowNodeOccurrenceEnds (value : UnnumberedFlowNodeOccurrenceEnd)
+    (values : List UnnumberedFlowNodeOccurrenceEnd) :
+    value ∈ sortFlowNodeOccurrenceEnds values ↔ value ∈ values := by
+  exact mem_sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor)
+    value values
 
 private def uniqueReturnOwner? (state : RuntimeState) (id : OperationId)
     (origin : BpmnElementOrigin) : Option ScopeOccurrenceId :=
@@ -262,9 +256,17 @@ def availableAfterStarts (current : List OpenSemanticFlowNodeOccurrence)
     (delta : UnnumberedFlowNodeOccurrenceDelta) : List OpenSemanticFlowNodeOccurrence :=
   sortFlowNodeOccurrenceStarts (current ++ delta.started)
 
-private def removeEnded (available : List OpenSemanticFlowNodeOccurrence)
+/-- Remove exactly the anchors resolved by one accepted delta. -/
+def removeEndedFlowNodeOccurrences (available : List OpenSemanticFlowNodeOccurrence)
     (ended : List UnnumberedFlowNodeOccurrenceEnd) : List OpenSemanticFlowNodeOccurrence :=
   available.filter fun occurrence => !(ended.map (·.anchor)).contains occurrence.anchor
+
+theorem mem_removeEndedFlowNodeOccurrences (occurrence : OpenSemanticFlowNodeOccurrence)
+    (available : List OpenSemanticFlowNodeOccurrence)
+    (ended : List UnnumberedFlowNodeOccurrenceEnd) :
+    occurrence ∈ removeEndedFlowNodeOccurrences available ended ↔
+      occurrence ∈ available ∧ !(ended.map (·.anchor)).contains occurrence.anchor = true := by
+  simp [removeEndedFlowNodeOccurrences]
 
 /-- Starts are folded before terminals; freshness, exactly-once resolution, and transition locality fail closed. -/
 def applyFlowNodeOccurrenceDelta? (current : List OpenSemanticFlowNodeOccurrence)
@@ -281,7 +283,7 @@ def applyFlowNodeOccurrenceDelta? (current : List OpenSemanticFlowNodeOccurrence
   else if !(delta.ended.filter fun ending => transitionAnchor ending.anchor).all fun ending =>
       delta.started.map (·.anchor) |>.contains ending.anchor then none
   else
-    let result := removeEnded available delta.ended
+    let result := removeEndedFlowNodeOccurrences available delta.ended
     if result.any fun occurrence => transitionAnchor occurrence.anchor then none
     else some result
 
@@ -293,12 +295,6 @@ def foldFlowNodeOccurrenceDeltas :
   | current, delta :: rest => do
       let successor ← applyFlowNodeOccurrenceDelta? current delta
       foldFlowNodeOccurrenceDeltas successor rest
-
-private structure FlowNodeIdentity where
-  processId : ProcessId
-  elementId : NodeId
-  owner : ScopeOccurrenceId
-  deriving Repr, DecidableEq
 
 private def identityBefore (left right : FlowNodeIdentity) : Bool :=
   if left.processId ≠ right.processId then scalarBefore left.processId.value right.processId.value
@@ -315,7 +311,8 @@ private def numberInstantaneous (commandId : SemanticId) (transitionIndex : Nat)
         owner := identity.owner } ::
         numberInstantaneous commandId transitionIndex (localIndex + 1) rest
 
-private def instantaneousDelta (commandId : SemanticId) (transitionIndex : Nat)
+/-- Canonical transition-local start/end pairs for instantaneous BPMN flow nodes. -/
+def instantaneousFlowNodeOccurrenceDelta (commandId : SemanticId) (transitionIndex : Nat)
     (identities : List FlowNodeIdentity) : UnnumberedFlowNodeOccurrenceDelta :=
   let started := numberInstantaneous commandId transitionIndex 0
     (sortBy identityBefore identities)
@@ -323,7 +320,8 @@ private def instantaneousDelta (commandId : SemanticId) (transitionIndex : Nat)
     ended := sortFlowNodeOccurrenceEnds (started.map fun start =>
       { anchor := start.anchor, terminal := .completed }) }
 
-private def mkDelta (started : List UnnumberedFlowNodeOccurrenceStart)
+/-- Canonically order one lifecycle delta without deriving either side from runtime projection. -/
+def canonicalFlowNodeOccurrenceDelta (started : List UnnumberedFlowNodeOccurrenceStart)
     (ended : List UnnumberedFlowNodeOccurrenceEnd) : UnnumberedFlowNodeOccurrenceDelta :=
   { started := sortFlowNodeOccurrenceStarts started
     ended := sortFlowNodeOccurrenceEnds ended }
@@ -340,16 +338,12 @@ private def activationForTask (state : RuntimeState) (id : TaskDefinitionId) : N
 private def activationForNode (values : List (NodeId × Nat)) (id : NodeId) : Nat :=
   (values.find? fun value => decide (value.1 = id)).map (·.2) |>.getD 0
 
-private def processIdentity? (program : Program) (state : RuntimeState)
-    (owner : ScopeOccurrenceId) (elementId : NodeId) : Option FlowNodeIdentity := do
-  let processId ← processIdForOwner? program state owner
-  pure { processId, elementId, owner }
-
-private def instantaneousWithEnds (commandId : SemanticId) (transitionIndex : Nat)
+/-- One transition-local completed unit plus independently selected long-lived terminals. -/
+def instantaneousFlowNodeOccurrenceDeltaWithEnds (commandId : SemanticId) (transitionIndex : Nat)
     (identities : List FlowNodeIdentity)
     (extraEnds : List UnnumberedFlowNodeOccurrenceEnd) : UnnumberedFlowNodeOccurrenceDelta :=
-  let instant := instantaneousDelta commandId transitionIndex identities
-  mkDelta instant.started (instant.ended ++ extraEnds)
+  let instant := instantaneousFlowNodeOccurrenceDelta commandId transitionIndex identities
+  canonicalFlowNodeOccurrenceDelta instant.started (instant.ended ++ extraEnds)
 
 def flowNodeOccurrenceOwnedBySubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     (occurrence : OpenSemanticFlowNodeOccurrence) : Bool :=
@@ -361,15 +355,17 @@ def flowNodeOccurrenceOwnedBySubtree (state : RuntimeState) (root : ScopeOccurre
       called.contains occurrence.owner.processInstanceId
   | .transition .. => false
 
-private def ownedSubtreeEnds? (program : Program) (state : RuntimeState)
+/-- Exact cancelled terminals for every independently projected open occurrence in a runtime subtree. -/
+def ownedSubtreeCancellationEnds? (program : Program) (state : RuntimeState)
     (root : ScopeOccurrenceId) : Option (List UnnumberedFlowNodeOccurrenceEnd) := do
   let current ← projectOpenFlowNodeOccurrences? program state
   pure (current.filter (flowNodeOccurrenceOwnedBySubtree state root) |>.map fun occurrence =>
     cancelledEnd occurrence.anchor)
 
-private def terminationSubtreeEnds? (program : Program) (state : RuntimeState)
+/-- Terminate Scope cancellations, excluding the selected scope occurrence that completes afterward. -/
+def terminationSubtreeCancellationEnds? (program : Program) (state : RuntimeState)
     (root : ScopeOccurrenceId) : Option (List UnnumberedFlowNodeOccurrenceEnd) := do
-  let cancelled ← ownedSubtreeEnds? program state root
+  let cancelled ← ownedSubtreeCancellationEnds? program state root
   pure (cancelled.filter fun terminal => terminal.anchor ≠ .scope root)
 
 private def lifecycleEventRaceForMessage? (state : RuntimeState)
@@ -393,151 +389,236 @@ private def taskForBoundaryTimer? (operations : List (ControlPlaceId × BoundedT
 private def waitEnd (id : OccurrenceId) (terminal : FlowNodeOccurrenceTerminalKind) :
     UnnumberedFlowNodeOccurrenceEnd := { anchor := .wait id, terminal }
 
-private def externalLifecycleDelta? (program : Program) (before : RuntimeState)
+/-- The exact interrupting Sub-Process Boundary branch and the root whose open subtree it removes. -/
+def interruptingBoundaryCancellationDelta? (program : Program) (before : RuntimeState)
+    (commandId : SemanticId) (transitionIndex : Nat) (timer : TimerWait)
+    (definition : DefinitionScopeId × BoundaryTimerArm) :
+    Option (ScopeOccurrenceId × UnnumberedFlowNodeOccurrenceDelta) := do
+  let root ← boundedScopeChildFor? before definition.1 timer
+  let identity ← candidateFlowNodeIdentity? program timer.owner timer.elementId
+  let cancelled ← ownedSubtreeCancellationEnds? program before root
+  pure (root, instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex
+    [identity] cancelled)
+
+/-- Exact direct parent required by the selected Error propagation branch. -/
+def flowNodeOccurrenceThrowingScopeParent? (state : RuntimeState)
+    (owner : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
+  match state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = owner) with
+  | [{ parent := some parent, .. }] => some parent
+  | _ => none
+
+/-- The exact Error propagation branch and its throwing-scope cancellation root. -/
+def errorPropagationCancellationDelta? (program : Program) (before : RuntimeState)
+    (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat)
+    (owner : ScopeOccurrenceId)
+    (origin : BpmnElementOrigin) (handler : InterruptingErrorHandler) :
+    Option (ScopeOccurrenceId × UnnumberedFlowNodeOccurrenceDelta) := do
+  let parent ← flowNodeOccurrenceThrowingScopeParent? before owner
+  let errorIdentity ← candidateOperationFlowNodeIdentity? program operation owner owner
+    origin.elementId
+  let boundaryIdentity ← candidateOperationFlowNodeIdentity? program operation owner parent
+    handler.origin.boundaryEventId
+  let cancelled ← ownedSubtreeCancellationEnds? program before owner
+  pure (owner, instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex
+    [errorIdentity, boundaryIdentity] cancelled)
+
+/-- The exact Terminate Scope branch and the scope whose other open occurrences it removes. -/
+def terminateScopeCancellationDelta? (program : Program) (before : RuntimeState)
+    (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat)
+    (owner : ScopeOccurrenceId)
+    (origin : BpmnElementOrigin) :
+    Option (ScopeOccurrenceId × UnnumberedFlowNodeOccurrenceDelta) := do
+  let ending ← candidateOperationFlowNodeIdentity? program operation owner owner origin.elementId
+  let cancelled ← terminationSubtreeCancellationEnds? program before owner
+  pure (owner, instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex
+    [ending] cancelled)
+
+/-- The exact incident-root cancellation branch and its validated hosting root. -/
+def incidentRootCancellationDelta? (program : Program) (before : RuntimeState)
+    (processInstanceId : SemanticId) (incidentId : EffectIncidentId) :
+    Option (ScopeOccurrenceId × UnnumberedFlowNodeOccurrenceDelta) := do
+  let root ← incidentProcessCancellationRoot? program before processInstanceId incidentId
+  let cancelled ← ownedSubtreeCancellationEnds? program before root
+  pure (root, canonicalFlowNodeOccurrenceDelta [] cancelled)
+
+/-- Candidate external delta before comparison with the independently projected successor. -/
+def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : RuntimeState)
     (stimulus : Stimulus) (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta :=
   match stimulus with
-  | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => some (mkDelta [] [])
+  | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => some (canonicalFlowNodeOccurrenceDelta [] [])
   | .completeUserTaskInstance _ taskId _ =>
       if before.waits.any fun wait => decide (wait.processInstanceId = taskId.processInstanceId &&
           wait.task.id.value = taskId.elementId.value && wait.activation = taskId.activation) then
-        some (mkDelta [] [waitEnd taskId .completed])
+        some (canonicalFlowNodeOccurrenceDelta [] [waitEnd taskId .completed])
       else none
   | .deliverMessage _ subscriptionId _ =>
       if !(before.messageWaits.any fun wait => decide (wait.processInstanceId = subscriptionId.processInstanceId &&
           wait.elementId.value = subscriptionId.elementId.value && wait.activation = subscriptionId.activation)) then none
       else match lifecycleEventRaceForMessage? before subscriptionId with
-        | some race => some (mkDelta []
+        | some race => some (canonicalFlowNodeOccurrenceDelta []
             [waitEnd race.messageSubscriptionId .completed, waitEnd race.timerOccurrenceId .cancelled])
-        | none => some (mkDelta [] [waitEnd subscriptionId .completed])
+        | none => some (canonicalFlowNodeOccurrenceDelta [] [waitEnd subscriptionId .completed])
   | .fireTimer _ timerId _ => do
       let timer ← before.timerWaits.find? fun wait => decide
         (wait.processInstanceId = timerId.processInstanceId &&
           wait.elementId.value = timerId.elementId.value && wait.activation = timerId.activation)
       match lifecycleEventRaceForTimer? before timerId with
-      | some race => pure (mkDelta []
+      | some race => pure (canonicalFlowNodeOccurrenceDelta []
           [waitEnd race.timerOccurrenceId .completed, waitEnd race.messageSubscriptionId .cancelled])
       | none =>
-          let identity ← processIdentity? program before timer.owner timer.elementId
+          let identity ← candidateFlowNodeIdentity? program timer.owner timer.elementId
           match taskForBoundaryTimer? (boundedTaskOperations program) before timer with
-          | some task => pure (instantaneousWithEnds commandId transitionIndex [identity]
+          | some task => pure (instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex [identity]
               [waitEnd (occurrenceId task.processInstanceId ⟨task.task.id.value⟩ task.activation) .cancelled])
           | none =>
               if isMonitoredBoundaryTimerDefinition program timer.elementId then
-                pure (instantaneousDelta commandId transitionIndex [identity])
+                pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity])
               else match boundedScopeDefinitionFor? program timer with
                 | some definition => do
-                    let child ← boundedScopeChildFor? before definition.1 timer
-                    let cancelled ← ownedSubtreeEnds? program before child
-                    pure (instantaneousWithEnds commandId transitionIndex [identity] cancelled)
-                | none => pure (mkDelta [] [waitEnd timerId .completed])
+                    let branch ← interruptingBoundaryCancellationDelta? program before
+                      commandId transitionIndex timer definition
+                    pure branch.2
+                | none => pure (canonicalFlowNodeOccurrenceDelta [] [waitEnd timerId .completed])
   | .completeEffect _ effectId result => do
       let wait ← before.effectWaits.find? (effectOccurrenceMatches effectId)
       match result with
-      | .success _ => pure (mkDelta [] [waitEnd effectId .completed])
+      | .success _ => pure (canonicalFlowNodeOccurrenceDelta [] [waitEnd effectId .completed])
       | .bpmnError code _ _ => do
           let route ← wait.bpmnErrorRoute
           if route.code ≠ code then none
-          let identity ← processIdentity? program before wait.owner route.origin.boundaryEventId
-          pure (instantaneousWithEnds commandId transitionIndex [identity]
+          let identity ← candidateFlowNodeIdentity? program wait.owner route.origin.boundaryEventId
+          pure (instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex [identity]
             [waitEnd effectId .cancelled])
-  | .reportEffectFailure .. | .retryIncident .. => some (mkDelta [] [])
+  | .reportEffectFailure .. | .retryIncident .. => some (canonicalFlowNodeOccurrenceDelta [] [])
   | .cancelIncidentProcess _ processInstanceId incidentId => do
-      let root ← incidentProcessCancellationRoot? program before processInstanceId incidentId
-      let cancelled ← ownedSubtreeEnds? program before root
-      pure (mkDelta [] cancelled)
+      let branch ← incidentRootCancellationDelta? program before processInstanceId incidentId
+      pure branch.2
 
-private def internalLifecycleDelta? (program : Program) (before after : RuntimeState)
+/-- Candidate internal delta before comparison with the independently projected successor. -/
+def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta := do
   let owner ← flowNodeSelectedOperationOwner? before operation
-  let identityFor := processIdentity? program before owner
+  let identityFor := candidateOperationFlowNodeIdentity? program operation owner owner
   match operation with
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _ =>
-      pure (instantaneousDelta commandId transitionIndex [← identityFor origin.elementId])
+      pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [← identityFor origin.elementId])
   | .enterScope _ _ _ _ childScopeId | .enterBoundedScope _ _ _ _ childScopeId _ =>
       let child ← match after.scopeOccurrences.filter fun occurrence =>
           decide (occurrence.id.definitionScopeId = childScopeId && occurrence.parent = some owner) with
         | [child] => some child
         | _ => none
-      pure (mkDelta [← scopeStart? program after child] [])
+      pure (canonicalFlowNodeOccurrenceDelta [← candidateScopeStart? program operation owner child] [])
   | .invokeProcess _ origin _ _ _ _ _ =>
       let activation := callActivationCount before origin.elementId + 1
       let id := occurrenceId owner.processInstanceId origin.elementId activation
       let record ← match after.calledProcessOccurrences.filter fun record => decide (record.id = id) with
         | [record] => some record
         | _ => none
-      pure (mkDelta [← callStart? program after record] [])
+      pure (canonicalFlowNodeOccurrenceDelta [← candidateCallStart? program operation owner record] [])
   | .returnProcess id origin _ _ _ =>
       let record ← match before.calledProcessOccurrences.filter fun record =>
           decide (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value) with
         | [record] => some record
         | _ => none
-      pure (mkDelta [] [completedEnd (.callActivity record.id)])
+      pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.callActivity record.id)])
   | .awaitUserTask _ _ _ _ task =>
       let activation := activationForTask before task.id + 1
-      pure (mkDelta [← waitStart? program after owner ⟨task.id.value⟩ activation] [])
+      let wait ← match after.waits.filter fun wait => decide
+          (wait.owner = owner && wait.task.id = task.id && wait.activation = activation) with
+        | [wait] => some wait
+        | _ => none
+      pure (canonicalFlowNodeOccurrenceDelta [← candidateUserTaskStart? program operation owner wait] [])
   | .awaitTimer _ _ _ _ timer =>
       let activation := activationForNode (before.timerActivations.map fun value => (value.elementId, value.count)) timer.elementId + 1
-      pure (mkDelta [← waitStart? program after owner timer.elementId activation] [])
+      let wait ← match after.timerWaits.filter fun wait => decide
+          (wait.owner = owner && wait.elementId = timer.elementId && wait.activation = activation) with
+        | [wait] => some wait
+        | _ => none
+      pure (canonicalFlowNodeOccurrenceDelta [← candidateTimerStart? program operation owner wait] [])
   | .awaitMessage _ _ _ _ message =>
       let activation := activationForNode (before.messageActivations.map fun value => (value.elementId, value.count)) message.elementId + 1
-      pure (mkDelta [← waitStart? program after owner message.elementId activation] [])
-  | .awaitEventRace _ origin _ message timer =>
+      let wait ← match after.messageWaits.filter fun wait => decide
+          (wait.owner = owner && wait.elementId = message.elementId && wait.activation = activation) with
+        | [wait] => some wait
+        | _ => none
+      pure (canonicalFlowNodeOccurrenceDelta [← candidateMessageStart? program operation owner wait] [])
+  | .awaitEventRace _ origin _ _ _ =>
       let activation := activationForNode (before.eventRaceActivations.map fun value => (value.elementId, value.count)) origin.elementId + 1
       let gateway ← identityFor origin.elementId
-      let messageStart ← waitStart? program after owner message.elementId activation
-      let timerStart ← waitStart? program after owner timer.elementId activation
-      let instant := instantaneousDelta commandId transitionIndex [gateway]
-      pure (mkDelta (instant.started ++ [messageStart, timerStart]) instant.ended)
+      let race ← match after.eventRaces.filter fun race => decide
+          (race.owner = owner && race.id.elementId.value = origin.elementId.value &&
+            race.id.activation = activation) with
+        | [race] => some race
+        | _ => none
+      let messageWait ← match after.messageWaits.filter fun wait => decide
+          (wait.processInstanceId = race.messageSubscriptionId.processInstanceId &&
+            wait.elementId.value = race.messageSubscriptionId.elementId.value &&
+            wait.activation = race.messageSubscriptionId.activation) with
+        | [wait] => some wait
+        | _ => none
+      let timerWait ← match after.timerWaits.filter fun wait => decide
+          (wait.processInstanceId = race.timerOccurrenceId.processInstanceId &&
+            wait.elementId.value = race.timerOccurrenceId.elementId.value &&
+            wait.activation = race.timerOccurrenceId.activation) with
+        | [wait] => some wait
+        | _ => none
+      let starts ← candidateEventRaceStarts? program operation owner race messageWait timerWait
+      let instant := instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [gateway]
+      pure (canonicalFlowNodeOccurrenceDelta (instant.started ++ [starts.1, starts.2]) instant.ended)
   | .awaitBoundedUserTask _ _ _ task _ | .awaitMonitoredUserTask _ _ _ task _ =>
       let activation := activationForTask before task.id + 1
-      pure (mkDelta [← waitStart? program after owner ⟨task.id.value⟩ activation] [])
+      let wait ← match after.waits.filter fun wait => decide
+          (wait.owner = owner && wait.task.id = task.id && wait.activation = activation) with
+        | [wait] => some wait
+        | _ => none
+      pure (canonicalFlowNodeOccurrenceDelta [← candidateUserTaskStart? program operation owner wait] [])
   | .awaitEffect _ _ _ _ effect _ =>
       let activation := activationForNode (before.effectActivations.map fun value => (value.elementId, value.count)) effect.elementId + 1
-      pure (mkDelta [← waitStart? program after owner effect.elementId activation] [])
+      let wait ← match after.effectWaits.filter fun wait => decide
+          (wait.owner = owner && wait.elementId = effect.elementId && wait.activation = activation) with
+        | [wait] => some wait
+        | _ => none
+      pure (canonicalFlowNodeOccurrenceDelta [← candidateEffectStart? program operation owner wait] [])
   | .duplicate _ origin _ _ | .synchronize _ origin _ _ | .mergeExclusive _ origin _ _
   | .choose _ origin _ _ _ _ | .selectMany _ origin _ _ _ _
   | .synchronizeSelected _ origin _ _ _ =>
-      pure (instantaneousDelta commandId transitionIndex [← identityFor origin.elementId])
+      pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [← identityFor origin.elementId])
   | .throwError _ origin _ _ handler => do
-      let parent ← match before.scopeOccurrences.filter fun occurrence => decide (occurrence.id = owner) with
-        | [{ parent := some parent, .. }] => some parent
-        | _ => none
-      let errorIdentity ← identityFor origin.elementId
-      let boundaryIdentity ← processIdentity? program before parent handler.origin.boundaryEventId
-      let cancelled ← ownedSubtreeEnds? program before owner
-      pure (instantaneousWithEnds commandId transitionIndex
-        [errorIdentity, boundaryIdentity] cancelled)
+      let branch ← errorPropagationCancellationDelta? program before operation commandId
+        transitionIndex owner origin handler
+      pure branch.2
   | .reachNoneEnd _ origin _ =>
-      pure (instantaneousDelta commandId transitionIndex [← identityFor origin.elementId])
+      pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [← identityFor origin.elementId])
   | .terminateScope _ origin _ _ => do
-      let ending ← identityFor origin.elementId
-      let others ← terminationSubtreeEnds? program before owner
-      pure (instantaneousWithEnds commandId transitionIndex [ending] others)
+      let branch ← terminateScopeCancellationDelta? program before operation commandId
+        transitionIndex owner origin
+      pure branch.2
   | .completeScope _ _ scopeId _ =>
       match before.scopeOccurrences.filter fun occurrence =>
           decide (occurrence.id.definitionScopeId = scopeId) with
-      | [{ id, parent := some _ }] => pure (mkDelta [] [completedEnd (.scope id)])
-      | [{ parent := none, .. }] => pure (mkDelta [] [])
+      | [{ id, parent := some _ }] => pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.scope id)])
+      | [{ parent := none, .. }] => pure (canonicalFlowNodeOccurrenceDelta [] [])
       | _ => none
 
-private def checkedLifecycleDelta? (program : Program) (before after : RuntimeState)
-    (candidate : Option UnnumberedFlowNodeOccurrenceDelta) :
+/-- Accept a candidate only when its fold equals the independent open-state projection exactly. -/
+def acceptFlowNodeOccurrenceCandidate? (program : Program) (before after : RuntimeState)
+    (candidate : UnnumberedFlowNodeOccurrenceDelta) :
     Option UnnumberedFlowNodeOccurrenceDelta := do
-  let delta ← candidate
   let openBefore ← projectOpenFlowNodeOccurrences? program before
   let openAfter ← projectOpenFlowNodeOccurrences? program after
-  let folded ← applyFlowNodeOccurrenceDelta? openBefore delta
-  if folded = openAfter then some delta else none
+  let folded ← applyFlowNodeOccurrenceDelta? openBefore candidate
+  if folded = openAfter then some candidate else none
 
 /-- Exact external lifecycle derived from an already admitted stimulus and its immediate states.
 
 The evaluator supplies the committed successor; lifecycle derivation never dispatches the stimulus again. -/
 def flowNodeOccurrenceDeltaForStimulus? (program : Program) (before after : RuntimeState)
     (stimulus : Stimulus) (transitionIndex : Nat) : Option UnnumberedFlowNodeOccurrenceDelta :=
-  checkedLifecycleDelta? program before after
-    (externalLifecycleDelta? program before stimulus (stimulusCommandId stimulus) transitionIndex)
+  candidateFlowNodeOccurrenceDeltaForStimulus? program before stimulus
+      (stimulusCommandId stimulus) transitionIndex >>= fun candidate =>
+    acceptFlowNodeOccurrenceCandidate? program before after candidate
 
 /-- Exact internal lifecycle derived from an already fired operation and its immediate states.
 
@@ -545,78 +626,8 @@ The evaluator supplies the selected successor; lifecycle derivation never fires 
 def flowNodeOccurrenceDeltaForOperation? (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta :=
-  checkedLifecycleDelta? program before after
-    (internalLifecycleDelta? program before after operation commandId transitionIndex)
-
-/-- Any accepted operation delta folds to the independently projected immediate successor. -/
-theorem accepted_operation_delta_equals_independent_open_projection
-    (program : Program) (before after : RuntimeState) (operation : SemanticOperation)
-    (commandId : SemanticId) (transitionIndex : Nat)
-    (delta : UnnumberedFlowNodeOccurrenceDelta)
-    (accepted : flowNodeOccurrenceDeltaForOperation? program before after operation
-      commandId transitionIndex = some delta) :
-    ∃ openBefore openAfter,
-      projectOpenFlowNodeOccurrences? program before = some openBefore ∧
-      projectOpenFlowNodeOccurrences? program after = some openAfter ∧
-      applyFlowNodeOccurrenceDelta? openBefore delta = some openAfter := by
-  unfold flowNodeOccurrenceDeltaForOperation? at accepted
-  unfold checkedLifecycleDelta? at accepted
-  simp only [Option.bind_eq_bind] at accepted
-  obtain ⟨candidate, candidateEq, projected⟩ := Option.bind_eq_some_iff.mp accepted
-  obtain ⟨openBefore, beforeEq, projected⟩ := Option.bind_eq_some_iff.mp projected
-  obtain ⟨openAfter, afterEq, folded⟩ := Option.bind_eq_some_iff.mp projected
-  obtain ⟨foldResult, foldEq, selected⟩ := Option.bind_eq_some_iff.mp folded
-  split at selected <;> simp_all
-
-def OwnedSubtreeCancellationLaw (state : RuntimeState) (root : ScopeOccurrenceId)
-    (current : List OpenSemanticFlowNodeOccurrence)
-    (ended : List UnnumberedFlowNodeOccurrenceEnd) : Prop :=
-  ended = (current.filter (flowNodeOccurrenceOwnedBySubtree state root) |>.map fun occurrence =>
-    { anchor := occurrence.anchor, terminal := .cancelled })
-
-theorem exact_owned_subtree_cancellation_law (program : Program) (state : RuntimeState)
-    (root : ScopeOccurrenceId) (current : List OpenSemanticFlowNodeOccurrence)
-    (ended : List UnnumberedFlowNodeOccurrenceEnd)
-    (projected : projectOpenFlowNodeOccurrences? program state = some current)
-    (selected : ownedSubtreeEnds? program state root = some ended) :
-    OwnedSubtreeCancellationLaw state root current ended := by
-  simp [ownedSubtreeEnds?, projected] at selected
-  exact selected.symm
-
-/-- Interrupting Boundary Events cancel exactly their owned open subtree. -/
-theorem interruption_cancels_exact_owned_subtree (program) (state) (root) (current) (ended)
-    (projected : projectOpenFlowNodeOccurrences? program state = some current)
-    (selected : ownedSubtreeEnds? program state root = some ended) :
-    OwnedSubtreeCancellationLaw state root current ended :=
-  exact_owned_subtree_cancellation_law program state root current ended projected selected
-
-/-- Error propagation cancels exactly the throwing scope's owned open subtree. -/
-theorem error_propagation_cancels_exact_owned_subtree (program) (state) (root) (current) (ended)
-    (projected : projectOpenFlowNodeOccurrences? program state = some current)
-    (selected : ownedSubtreeEnds? program state root = some ended) :
-    OwnedSubtreeCancellationLaw state root current ended :=
-  exact_owned_subtree_cancellation_law program state root current ended projected selected
-
-def TerminationSubtreeCancellationLaw (state : RuntimeState) (root : ScopeOccurrenceId)
-    (current : List OpenSemanticFlowNodeOccurrence)
-    (ended : List UnnumberedFlowNodeOccurrenceEnd) : Prop :=
-  ended = (current.filter (flowNodeOccurrenceOwnedBySubtree state root) |>.map (fun occurrence =>
-    { anchor := occurrence.anchor, terminal := .cancelled }) |>.filter fun terminal =>
-      terminal.anchor ≠ .scope root)
-
-/-- Termination cancels every other open occurrence while retaining its selected scope for completion. -/
-theorem termination_cancels_exact_owned_subtree (program) (state) (root) (current) (ended)
-    (projected : projectOpenFlowNodeOccurrences? program state = some current)
-    (selected : terminationSubtreeEnds? program state root = some ended) :
-    TerminationSubtreeCancellationLaw state root current ended := by
-  simp [terminationSubtreeEnds?, ownedSubtreeEnds?, cancelledEnd, projected] at selected
-  simpa [TerminationSubtreeCancellationLaw] using selected.symm
-
-theorem incident_root_cancellation_cancels_exact_owned_subtree
-    (program) (state) (root) (current) (ended)
-    (projected : projectOpenFlowNodeOccurrences? program state = some current)
-    (selected : ownedSubtreeEnds? program state root = some ended) :
-    OwnedSubtreeCancellationLaw state root current ended :=
-  exact_owned_subtree_cancellation_law program state root current ended projected selected
+  candidateFlowNodeOccurrenceDeltaForOperation? program before after operation commandId
+      transitionIndex >>= fun candidate =>
+    acceptFlowNodeOccurrenceCandidate? program before after candidate
 
 end BpmnSemantics.SemanticProcess

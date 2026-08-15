@@ -27,7 +27,11 @@ import type {
 } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 import {
-  processIdForFlowNodeOwner,
+  candidateElementOccurrence,
+  candidateLongLivedStarts,
+  candidateOperationOccurrence,
+} from "./flow-node-occurrence-boundary-starts.js";
+import {
   projectOpenFlowNodeOccurrences,
   resolveBoundaryTimerBinding,
 } from "./flow-node-occurrence-open-set.js";
@@ -101,14 +105,9 @@ export function projectFlowNodeOccurrenceLifecycleDelta(
   if (!validTransitionIdentity(commandId, transitionIndex)) {
     return null;
   }
-  const beforeOpen = projectOpenFlowNodeOccurrences(program, before);
-  const afterOpen = projectOpenFlowNodeOccurrences(program, after);
-  if (beforeOpen === null || afterOpen === null) {
-    return null;
-  }
   const pieces = boundary.kind === "external"
-    ? externalLifecycle(program, before, after, beforeOpen, boundary.stimulus)
-    : internalLifecycle(program, before, after, beforeOpen, boundary.operation, boundary.owner);
+    ? externalLifecycle(program, before, boundary.stimulus)
+    : internalLifecycle(program, before, after, boundary.operation, boundary.owner);
   if (pieces === null) {
     return null;
   }
@@ -119,6 +118,11 @@ export function projectFlowNodeOccurrenceLifecycleDelta(
     commandId,
     transitionIndex,
   );
+  const beforeOpen = projectOpenFlowNodeOccurrences(program, before);
+  const afterOpen = projectOpenFlowNodeOccurrences(program, after);
+  if (beforeOpen === null || afterOpen === null) {
+    return null;
+  }
   const folded = foldFlowNodeOccurrenceLifecycleDelta(beforeOpen, delta);
   return folded !== null && sameJson(folded, afterOpen) ? delta : null;
 }
@@ -171,8 +175,6 @@ export function foldFlowNodeOccurrenceLifecycleDelta(
 function externalLifecycle(
   program: SemanticProcessProgram,
   before: RuntimeState,
-  after: RuntimeState,
-  beforeOpen: ReadonlyArray<UnnumberedFlowNodeOccurrenceStart>,
   stimulus: Stimulus,
 ): LifecyclePieces | null {
   const completed = (id: OccurrenceId): LifecyclePieces => pieces([], [{ anchor: waitAnchor(id), terminal: FlowNodeOccurrenceTerminalKind.Completed }]);
@@ -206,7 +208,7 @@ function externalLifecycle(
       if (timer === undefined) return null;
       const boundary = resolveBoundaryTimerBinding(program, before, timer);
       if (boundary === null) return completed(stimulus.timerId);
-      const instant = instantForOwner(program, before, timer.id.elementId, timer.owner);
+      const instant = candidateElementOccurrence(program, before, timer.id.elementId, timer.owner);
       if (instant === null) return null;
       switch (boundary.operation.kind) {
         case SemanticOperationKind.AwaitBoundedUserTask:
@@ -222,7 +224,7 @@ function externalLifecycle(
           return "child" in boundary
             ? pieces(
                 [],
-                cancelledRegion(beforeOpen, before, boundary.child, false),
+                cancelledRegion(program, before, boundary.child, false),
                 [instant],
               )
             : null;
@@ -235,14 +237,17 @@ function externalLifecycle(
       if (wait === undefined) return null;
       if (stimulus.result.kind === EffectExecutionResultKind.Success) return completed(stimulus.effectId);
       const route = wait.bpmnErrorRoute;
-      const instant = route === null ? null : instantForOwner(program, before, route.origin.boundaryEventId, wait.owner);
+      const instant = route === null ? null : candidateElementOccurrence(program, before, route.origin.boundaryEventId, wait.owner);
       return instant === null ? null : pieces([], [{
         anchor: waitAnchor(stimulus.effectId),
         terminal: FlowNodeOccurrenceTerminalKind.Cancelled,
       }], [instant]);
     }
     case StimulusKind.CancelIncidentProcess:
-      return pieces([], beforeOpen.map(({ anchor }) => ({ anchor, terminal: FlowNodeOccurrenceTerminalKind.Cancelled })));
+      return pieces([], openAnchorCandidates(program, before).map(({ anchor }) => ({
+        anchor,
+        terminal: FlowNodeOccurrenceTerminalKind.Cancelled,
+      })));
     default:
       return assertNever(stimulus);
   }
@@ -252,11 +257,10 @@ function internalLifecycle(
   program: SemanticProcessProgram,
   before: RuntimeState,
   after: RuntimeState,
-  beforeOpen: ReadonlyArray<UnnumberedFlowNodeOccurrenceStart>,
   operation: SemanticOperation,
   owner: ScopeOccurrenceId,
 ): LifecyclePieces | null {
-  const instant = (): InstantaneousOccurrence | null => instantForOwner(program, before, operation.origin.elementId, owner);
+  const instant = (): InstantaneousOccurrence | null => candidateOperationOccurrence(program, before, operation, owner);
   const instantOnly = (): LifecyclePieces | null => {
     const occurrence = instant();
     return occurrence === null ? null : pieces([], [], [occurrence]);
@@ -274,42 +278,27 @@ function internalLifecycle(
     case SemanticOperationKind.ReachNoneEnd:
       return instantOnly();
     case SemanticOperationKind.AwaitUserTask:
-      return startedWait(program, after, owner, operation.task.elementId);
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
-      return startedWait(program, after, owner, operation.task.elementId);
     case SemanticOperationKind.AwaitMessage:
-      return startedWait(program, after, owner, operation.message.elementId);
     case SemanticOperationKind.AwaitTimer:
-      return startedWait(program, after, owner, operation.timer.elementId);
-    case SemanticOperationKind.AwaitEffect:
-      return startedWait(program, after, owner, operation.effect.elementId);
+    case SemanticOperationKind.AwaitEffect: {
+      const starts = candidateLongLivedStarts(program, after, operation, owner);
+      return starts === null ? null : pieces(starts);
+    }
     case SemanticOperationKind.AwaitEventRace: {
-      const race = only(after.eventRaces.filter((candidate) =>
-        candidate.id.elementId === operation.origin.elementId && sameScopeOccurrence(candidate.owner, owner)
-      ));
+      const starts = candidateLongLivedStarts(program, after, operation, owner);
       const gateway = instant();
-      if (race === undefined || gateway === null) return null;
-      const starts = [race.messageSubscriptionId, race.timerOccurrenceId]
-        .map((id) => findOpenWait(program, after, id));
-      return starts.every((entry): entry is UnnumberedFlowNodeOccurrenceStart => entry !== null)
-        ? pieces(starts, [], [gateway])
-        : null;
+      return starts === null || gateway === null ? null : pieces(starts, [], [gateway]);
     }
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.EnterBoundedScope: {
-      const child = only(after.scopeOccurrences.filter(({ id, parent }) =>
-        id.definitionScopeId === operation.childScopeId && parent !== null && sameScopeOccurrence(parent, owner)
-      ));
-      const start = child === undefined ? null : findOpen(after, program, { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope, id: child.id });
-      return start === null ? null : pieces([start]);
+      const starts = candidateLongLivedStarts(program, after, operation, owner);
+      return starts === null ? null : pieces(starts);
     }
     case SemanticOperationKind.InvokeProcess: {
-      const record = only(after.calledProcessOccurrences.filter((candidate) =>
-        candidate.id.elementId === operation.origin.elementId && sameScopeOccurrence(candidate.caller, owner)
-      ));
-      const start = record === undefined ? null : findOpen(after, program, { kind: SemanticFlowNodeOccurrenceAnchorKind.CallActivity, id: record.id });
-      return start === null ? null : pieces([start]);
+      const starts = candidateLongLivedStarts(program, after, operation, owner);
+      return starts === null ? null : pieces(starts);
     }
     case SemanticOperationKind.ReturnProcess: {
       const record = only(before.calledProcessOccurrences.filter((candidate) => candidate.returnOperationId === operation.id));
@@ -329,10 +318,10 @@ function internalLifecycle(
       const attached = only(before.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner)));
       if (attached?.parent === null || attached?.parent === undefined) return null;
       const thrown = instant();
-      const caught = instantForOwner(program, before, operation.handler.origin.boundaryEventId, attached.parent);
+      const caught = candidateElementOccurrence(program, before, operation.handler.origin.boundaryEventId, attached.parent);
       return thrown === null || caught === null ? null : pieces(
         [],
-        cancelledRegion(beforeOpen, before, attached, false),
+        cancelledRegion(program, before, attached, false),
         [thrown, caught],
       );
     }
@@ -341,7 +330,7 @@ function internalLifecycle(
       const end = instant();
       return attached === undefined || end === null ? null : pieces(
         [],
-        cancelledRegion(beforeOpen, before, attached, true),
+        cancelledRegion(program, before, attached, true),
         [end],
       );
     }
@@ -389,46 +378,8 @@ function assembleDelta(
   };
 }
 
-function startedWait(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-  owner: ScopeOccurrenceId,
-  elementId: string,
-): LifecyclePieces | null {
-  const activation = activationCount(state, elementId);
-  const start = activation === null ? null : findOpenWait(program, state, {
-    processInstanceId: owner.processInstanceId,
-    elementId,
-    activation,
-  });
-  return start === null ? null : pieces([start]);
-}
-
-function findOpenWait(program: SemanticProcessProgram, state: RuntimeState, id: OccurrenceId): UnnumberedFlowNodeOccurrenceStart | null {
-  return findOpen(state, program, waitAnchor(id));
-}
-
-function findOpen(
-  state: RuntimeState,
-  program: SemanticProcessProgram,
-  anchor: SemanticFlowNodeOccurrenceAnchor,
-): UnnumberedFlowNodeOccurrenceStart | null {
-  const open = projectOpenFlowNodeOccurrences(program, state);
-  return open === null ? null : only(open.filter((candidate) => anchorKey(candidate.anchor) === anchorKey(anchor))) ?? null;
-}
-
-function instantForOwner(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-  elementId: string,
-  owner: ScopeOccurrenceId,
-): InstantaneousOccurrence | null {
-  const processId = processIdForFlowNodeOwner(program, state, owner);
-  return processId === null ? null : { processId, elementId, owner };
-}
-
 function cancelledRegion(
-  open: ReadonlyArray<UnnumberedFlowNodeOccurrenceStart>,
+  program: SemanticProcessProgram,
   state: RuntimeState,
   root: RuntimeScopeOccurrence,
   retainRoot: boolean,
@@ -446,11 +397,41 @@ function cancelledRegion(
     }
   };
   addScope(root.id);
-  return open.filter((entry) => {
+  return openAnchorCandidates(program, state).filter((entry) => {
     if (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && retainRoot && sameScopeOccurrence(entry.anchor.id, root.id)) return false;
     return removed.has(scopeKey(entry.owner)) ||
       (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && removed.has(scopeKey(entry.anchor.id)));
   }).map(({ anchor }) => ({ anchor, terminal: FlowNodeOccurrenceTerminalKind.Cancelled }));
+}
+
+function openAnchorCandidates(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): Array<{ anchor: SemanticFlowNodeOccurrenceAnchor; owner: ScopeOccurrenceId }> {
+  const candidates: Array<{ anchor: SemanticFlowNodeOccurrenceAnchor; owner: ScopeOccurrenceId }> = [];
+  const addWait = ({ id, owner }: { id: OccurrenceId; owner: ScopeOccurrenceId }): void => {
+    candidates.push({ anchor: waitAnchor(id), owner });
+  };
+  state.userTaskWaits.forEach(addWait);
+  state.messageWaits.forEach(addWait);
+  state.timerWaits.filter((wait) => resolveBoundaryTimerBinding(program, state, wait) === null).forEach(addWait);
+  state.effectWaits.forEach(addWait);
+  state.effectIncidents.forEach(({ wait }) => addWait(wait));
+  for (const occurrence of state.scopeOccurrences) {
+    if (occurrence.parent !== null) {
+      candidates.push({
+        anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope, id: occurrence.id },
+        owner: occurrence.parent,
+      });
+    }
+  }
+  for (const record of state.calledProcessOccurrences) {
+    candidates.push({
+      anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.CallActivity, id: record.id },
+      owner: record.caller,
+    });
+  }
+  return candidates;
 }
 
 function canonicalOpenSet(entries: ReadonlyArray<UnnumberedFlowNodeOccurrenceStart>): UnnumberedFlowNodeOccurrenceStart[] | null {
@@ -494,12 +475,6 @@ function validScopeId(id: ScopeOccurrenceId): boolean {
 
 function validTransitionIdentity(commandId: string, transitionIndex: number): boolean {
   return commandId.length > 0 && Number.isSafeInteger(transitionIndex) && transitionIndex >= 0;
-}
-
-function activationCount(state: RuntimeState, elementId: string): number | null {
-  const counters = [state.taskActivations, state.messageActivations, state.timerActivations, state.effectActivations];
-  const matches = counters.flatMap((entries) => entries.filter((entry) => entry.elementId === elementId).map(({ count }) => count));
-  return matches.length === 1 && Number.isSafeInteger(matches[0]) && matches[0]! > 0 ? matches[0]! : null;
 }
 
 function waitAnchor(id: OccurrenceId): SemanticFlowNodeOccurrenceAnchor {

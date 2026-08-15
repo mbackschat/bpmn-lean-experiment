@@ -108,6 +108,54 @@ function anonymousExampleViolations(
     );
 }
 
+const flowNodeLifecyclePath =
+  "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean";
+const flowNodeBoundaryStartsPath =
+  "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean";
+const openProjectionHelpers = [
+  "processIdForOwner?",
+  "waitStart?",
+  "scopeStart?",
+  "callStart?",
+] as const;
+
+function candidateProjectionReuseViolations(
+  sourcePath: string,
+  source: string,
+): SourceViolation[] {
+  const normalized = sourcePath.replaceAll(path.sep, "/");
+  const lines = analyzeLeanSource(source).code.split(/\r?\n/u);
+  const firstCandidateLine =
+    normalized === flowNodeLifecyclePath
+      ? lines.findIndex((line) =>
+          /^def\s+instantaneousFlowNodeOccurrenceDelta\b/u.test(line.trim()),
+        )
+      : normalized === flowNodeBoundaryStartsPath
+        ? 0
+        : -1;
+  if (firstCandidateLine < 0) {
+    return [];
+  }
+  return lines.slice(firstCandidateLine).flatMap((line, lineOffset) =>
+    openProjectionHelpers.flatMap((helper) => {
+      const escaped = helper.replace(/[?]/gu, "\\?");
+      const call = new RegExp(
+        `(?:^|[^A-Za-z0-9_])${escaped}(?![A-Za-z0-9_?'])`,
+        "u",
+      );
+      return call.test(line)
+        ? [
+            {
+              path: sourcePath,
+              line: firstCandidateLine + lineOffset + 1,
+              message: `candidate lifecycle construction reuses open-projection helper \`${helper}\``,
+            },
+          ]
+        : [];
+    }),
+  );
+}
+
 export function leanSourceViolations(
   sourcePath: string,
   source: string,
@@ -116,6 +164,7 @@ export function leanSourceViolations(
   return [
     ...(moduleViolation === null ? [] : [moduleViolation]),
     ...anonymousExampleViolations(sourcePath, source),
+    ...candidateProjectionReuseViolations(sourcePath, source),
   ];
 }
 
@@ -207,6 +256,45 @@ def literal := "-- /- -/ example : False escaped \\\" quote"
       "/-! Frozen. -/\n\nexample : True := by trivial\n",
     ),
     [],
+  );
+});
+
+test("candidate lifecycle construction cannot reuse open-projection helpers", () => {
+  const lifecycleSource = `/-! Lifecycle contract. -/
+
+namespace BpmnSemantics.SemanticProcess
+
+private def processIdForOwner? := none
+private def waitStart? := none
+
+def instantaneousFlowNodeOccurrenceDelta := none
+
+def candidateIdentity? := processIdForOwner?
+`;
+  assert.deepEqual(
+    leanSourceViolations(
+      "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean",
+      lifecycleSource,
+    ).map(formatViolation),
+    [
+      "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean:10: candidate lifecycle construction reuses open-projection helper `processIdForOwner?`",
+    ],
+  );
+
+  const boundarySource = `/-! Boundary candidate contract. -/
+
+namespace BpmnSemantics.SemanticProcess
+
+def candidateWaitStart? := waitStart?
+`;
+  assert.deepEqual(
+    leanSourceViolations(
+      "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean",
+      boundarySource,
+    ).map(formatViolation),
+    [
+      "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean:5: candidate lifecycle construction reuses open-projection helper `waitStart?`",
+    ],
   );
 });
 

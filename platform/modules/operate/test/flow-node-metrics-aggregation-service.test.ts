@@ -12,6 +12,11 @@ import {
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
 import type {
+  ExecutionPublicationReconciliationResult,
+  FlowNodeOccurrenceReconciliationResult,
+  OperateProcessRegistration,
+} from "@bpmn-lean/platform-operate";
+import type {
   DeployedDefinitionVersion,
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
@@ -30,6 +35,102 @@ const definition: DeployedDefinitionVersion = {
   semanticProfile: "metrics-profile",
   startCapabilities: { messageStarts: [], timerStarts: [] },
 };
+
+test("returns an exact available empty aggregate for zero retained members", async () => {
+  await withPopulation(async (population) => {
+    let executionCalls = 0;
+    let occurrenceCalls = 0;
+    const service = aggregateService(population, {
+      executions: async () => {
+        executionCalls += 1;
+        return availableExecution();
+      },
+      occurrenceReconciliation: async (registration) => {
+        occurrenceCalls += 1;
+        return availableOccurrences(registration);
+      },
+    });
+
+    const result = await service.get({ processId: definition.processId, version: 7 });
+    assert.equal(result?.kind, "available");
+    assert.deepEqual(result?.kind === "available" ? result.snapshot : null, {
+      definition,
+      population: {
+        processInstances: 0,
+        label: "allRetainedEvidence",
+      },
+      flowNodes: [],
+    });
+    assert.equal(executionCalls, 0);
+    assert.equal(occurrenceCalls, 0);
+  });
+});
+
+test("aggregates the exact maximum population of 100 retained members", async () => {
+  await withPopulation(async (population) => {
+    for (let index = 1; index <= 100; index += 1) {
+      record(population, `instance-${index}`);
+    }
+    let executionCalls = 0;
+    let occurrenceCalls = 0;
+    const service = aggregateService(population, {
+      executions: async () => {
+        executionCalls += 1;
+        return availableExecution();
+      },
+      occurrenceReconciliation: async (registration) => {
+        occurrenceCalls += 1;
+        return availableOccurrences(registration);
+      },
+    });
+
+    const result = await service.get({ processId: definition.processId, version: 7 });
+    assert.equal(result?.kind, "available");
+    assert.equal(
+      result?.kind === "available" ? result.snapshot.population.processInstances : null,
+      100,
+    );
+    assert.deepEqual(result?.kind === "available" ? result.snapshot.flowNodes : null, []);
+    assert.equal(executionCalls, 100);
+    assert.equal(occurrenceCalls, 100);
+  });
+});
+
+for (const failure of [
+  FlowNodeOccurrenceReconciliationKind.Unavailable,
+  FlowNodeOccurrenceReconciliationKind.Gap,
+] as const) {
+  test(`suppresses a partial aggregate after a late ${failure} member`, async () => {
+    await withPopulation(async (population) => {
+      record(population, "instance-1");
+      record(population, "instance-2");
+      record(population, "instance-3");
+      let occurrenceCalls = 0;
+      const service = aggregateService(population, {
+        occurrenceReconciliation: async (registration) => {
+          occurrenceCalls += 1;
+          return occurrenceCalls === 3
+            ? { kind: failure }
+            : availableOccurrences(registration, [
+                completed(
+                  `Completed_${registration.instance.processInstanceId}`,
+                  definition.processId,
+                  occurrenceCalls,
+                  0,
+                  occurrenceCalls,
+                ),
+              ]);
+        },
+      });
+
+      assert.deepEqual(
+        await service.get({ processId: definition.processId, version: 7 }),
+        { kind: "unavailable", reason: "flowNodeMetricsUnavailable" },
+      );
+      assert.equal(occurrenceCalls, 3);
+    });
+  });
+}
 
 test("freezes membership before gateway work and sees a concurrent insert next time", async () => {
   await withPopulation(async (population) => {
@@ -167,8 +268,11 @@ test("makes the whole result unavailable when the BigInt duration total is unsaf
 function aggregateService(
   population: SqliteProcessInstanceRepository,
   options: Readonly<{
-    executions?: () => Promise<ReturnType<typeof availableExecution>>;
+    executions?: (processInstanceId: string) => Promise<ExecutionPublicationReconciliationResult>;
     occurrences?: readonly ReturnType<typeof completed>[];
+    occurrenceReconciliation?: (
+      registration: OperateProcessRegistration,
+    ) => Promise<FlowNodeOccurrenceReconciliationResult>;
   }>,
 ) {
   return new FlowNodeMetricsAggregationService({
@@ -178,31 +282,39 @@ function aggregateService(
       reconcile: options.executions ?? (async () => availableExecution()),
     },
     occurrences: {
-      reconcile: async (registration) => ({
-        kind: FlowNodeOccurrenceReconciliationKind.Available,
-        projection: {
-          identity: {
-            definition: {
-              compiler: "bpmn-source-semantic-process",
-              semanticProfile: definition.semanticProfile,
-              sourceId: definition.source.id,
-              sourceSha256: definition.source.sha256,
-              sourceOverlay: null,
-            },
-            processId: definition.processId,
-            processInstanceId: registration.instance.processInstanceId,
-          },
-          status: FlowNodeOccurrenceProjectionStatus.Healthy,
-          headRevision: 1,
-          producerHeadRevision: 1,
-          lastCommittedAtEpochMs: 0,
-          batches: [],
-          occurrences: structuredClone(options.occurrences ?? []),
-          currentOpen: [],
-        },
-      }),
+      reconcile: options.occurrenceReconciliation ?? (async (registration) =>
+        availableOccurrences(registration, options.occurrences)),
     },
   });
+}
+
+function availableOccurrences(
+  registration: OperateProcessRegistration,
+  occurrences: readonly ReturnType<typeof completed>[] = [],
+): FlowNodeOccurrenceReconciliationResult {
+  return {
+    kind: FlowNodeOccurrenceReconciliationKind.Available,
+    projection: {
+      identity: {
+        definition: {
+          compiler: "bpmn-source-semantic-process",
+          semanticProfile: definition.semanticProfile,
+          sourceId: definition.source.id,
+          sourceSha256: definition.source.sha256,
+          sourceOverlay: null,
+        },
+        processId: definition.processId,
+        processInstanceId: registration.instance.processInstanceId,
+      },
+      status: FlowNodeOccurrenceProjectionStatus.Healthy,
+      headRevision: 1,
+      producerHeadRevision: 1,
+      lastCommittedAtEpochMs: 0,
+      batches: [],
+      occurrences: structuredClone(occurrences),
+      currentOpen: [],
+    },
+  };
 }
 
 function availableExecution() {

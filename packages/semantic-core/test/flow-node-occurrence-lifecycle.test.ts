@@ -16,8 +16,10 @@ import {
   SemanticTransitionKind,
   StimulusKind,
   applyStimulusWithTrace,
+  evaluateStimulusWithSelectedSteps,
   foldFlowNodeOccurrenceLifecycleDelta,
   initialState,
+  projectFlowNodeOccurrenceLifecycleDelta,
   projectOpenFlowNodeOccurrences,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -89,6 +91,52 @@ test("Call Activity invoke and return publish one paired occurrence, not two ope
     anchor: callStarts[0]?.anchor,
     terminal: FlowNodeOccurrenceTerminalKind.Completed,
   }]);
+});
+
+test("candidate starts fail closed when a valid existing owner is substituted before the exact open-set oracle", () => {
+  const evaluation = evaluateStimulusWithSelectedSteps(
+    terminateProgram,
+    initialState,
+    terminateStartStimulus(),
+  );
+  assert.ok(evaluation.admittedState !== null);
+  let before = evaluation.admittedState;
+  let step: typeof evaluation.selectedInternalSteps[number] | undefined;
+  for (const candidate of evaluation.selectedInternalSteps) {
+    if (candidate.operation.kind === SemanticOperationKind.AwaitUserTask && candidate.owner !== null) {
+      const occurrence = before.scopeOccurrences.find(({ id }) =>
+        JSON.stringify(id) === JSON.stringify(candidate.owner)
+      );
+      if (occurrence?.parent !== null && occurrence?.parent !== undefined) {
+        step = candidate;
+        break;
+      }
+    }
+    before = candidate.successor;
+  }
+  assert.ok(step !== undefined);
+  assert.ok(step.owner !== null);
+  const actualOwner = before.scopeOccurrences.find(({ id }) =>
+    JSON.stringify(id) === JSON.stringify(step.owner)
+  );
+  assert.ok(actualOwner?.parent !== null && actualOwner?.parent !== undefined);
+  assert.ok(before.scopeOccurrences.some(({ id }) =>
+    JSON.stringify(id) === JSON.stringify(actualOwner.parent)
+  ));
+  assert.ok(projectOpenFlowNodeOccurrences(terminateProgram, step.successor) !== null);
+
+  assert.equal(projectFlowNodeOccurrenceLifecycleDelta(
+    terminateProgram,
+    before,
+    step.successor,
+    {
+      kind: "internal",
+      operation: step.operation,
+      owner: actualOwner.parent,
+    },
+    terminateStartStimulus().commandId,
+    3,
+  ), null);
 });
 
 test("Boundary Timer arming publishes only its host while Event-Based Gateway arming publishes both candidates", () => {
@@ -251,6 +299,8 @@ test("Terminate End completes itself, cancels other live children, and lets the 
     initialState,
     terminateStartStimulus(),
   );
+  assert.ok(startedElementIds(started).includes("SubProcess_Work"));
+  assert.ok(startedElementIds(started).includes("UserTask_Sibling"));
   const terminated = applyStimulusWithTrace(
     terminateProgram,
     started.result.state,
