@@ -104,7 +104,7 @@ The Lean lane must stay a research lane rather than becoming a proof tax on prod
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: specify M6 useful Human Tasks and forms.** Turn the selected [Human Tasks, forms, and resolution actions research](research/HUMAN-TASKS-AND-FORMS-RESEARCH.md) boundary into a governed proposal and obtain its context-cold proposal review before implementation. M6 is the bounded multi-field, regular-value, flat-array, multiple-resolution-action, action-dependent-validation, description, and static-priority increment. It is not a general form builder, collaboration suite, mutable task-calendar system, or arbitrary expression runtime.
+1. **In progress: review the M6 structured Human Work proposal.** Complete the context-cold proposal review of the draft [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) before implementation. M6 keeps BPMN User Task lifecycle and the optional opaque Rendering hook separate from a Product 2-owned, Zod-backed form catalog, adds generic safe-integer and string-list process values, and reuses only the existing `CIB-EXT-0011` candidate-group relation in a new assignment-only passive metadata shape for Product 2 claim authorization. CIB Seven forms remain research inspiration and the old bounded M3 profiles only; they do not define the new semantic contract.
 
 ## Approved decisions
 
@@ -230,9 +230,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: complete ordered-work item 1 by drafting and context-cold reviewing the M6 useful Human Tasks and forms proposal.** The proposal must select the exact value wire, flat-array canonicalization, ordered multi-field schema, action-to-resolution binding, action-dependent validation, task description and static priority publication, source extension boundary, CIB relationship split, Lean lane, Temporal refinement, retained expense-exception model, and Product 2 journey from the completed research. It must preserve the existing content-bound completion command and reject invalid submissions without state change.
+**Next action: complete ordered-work item 1 by committing and context-cold reviewing the M6 [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md).** The proposal fixes the Product 2 Zod ownership of form schemas, action rules, validation, and pure patch computation; the standard BPMN Rendering non-interference boundary; the absence of a new CIB form relationship; generic safe-integer and string-list values; Temporal refinement; a retained expense-exception model; and the Product 2 journey. It preserves the existing content-bound completion command, rejects invalid forms before engine dispatch, and keeps standard BPMN Activity data mechanisms explicitly deferred rather than approximating them.
 
-Item 1 is **blocked on nothing**. M5 is closed, the owner selected a middle-ground M6 rather than a general form platform, current CIB Seven and product research is recorded, and the existing plural completion patch plus String-equality routing provide the reusable execution seam.
+Item 1 is **blocked on nothing**. M5 is closed, the owner selected a middle-ground M6 rather than a general form platform, fixed the Product 2 Zod boundary, required BPMN-first Human Task semantics, and prohibited importing CIB forms into the semantic core. The existing plural completion patch plus String-equality routing provide the reusable execution seam.
 
 **Latest evidence:** the scalability proposal target `ef24a9f` received a context-cold review; corrections `74ce60b` and `f14564c` closed the shared artifact, complete recovery inventory, queue-safe rollover, Activity and Update budget, and exact owner-routing findings, and the same reviewer approved the final correction. The source-grounded M6 research inspected the pinned CIB Seven form and Task APIs plus current CIB Seven, Camunda 8, and Flowable documentation. The prior M5, bundle, web, browser, and complete-gate evidence remains unchanged.
 
