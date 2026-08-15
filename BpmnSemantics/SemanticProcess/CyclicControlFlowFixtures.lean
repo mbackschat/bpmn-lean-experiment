@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! # Representative resumption-bounded cycle fixtures
 

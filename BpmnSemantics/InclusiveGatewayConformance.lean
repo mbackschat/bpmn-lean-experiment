@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Structured Inclusive Gateway conformance
 

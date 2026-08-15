@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # BpmnSemantics.SequentialUserTask — sequential capsule witnesses
 

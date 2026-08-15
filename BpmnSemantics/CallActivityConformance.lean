@@ -1,4 +1,5 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Bounded called-Process Call Activity conformance
 

@@ -1,4 +1,9 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # Parallel User Task metadata composition conformance
 

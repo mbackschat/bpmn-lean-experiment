@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.Scenario
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! # Semantic Process retained topology fixtures
 
@@ -8,33 +9,6 @@ This module owns the retained sequential and parallel checked graphs, lowered pr
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-def rootDefinitionScopeId (processId : ProcessId) : DefinitionScopeId :=
-  ⟨"scope:" ++ processId.value⟩
-
-def rootDefinitionScope (processId : ProcessId) : DefinitionScope :=
-  { id := rootDefinitionScopeId processId
-    parentScopeId := none
-    originElementId := ⟨processId.value⟩ }
-
-def rootNodeScopes (processId : ProcessId) (nodeIds : List NodeId) :
-    List NodeScopeOwnership :=
-  nodeIds.map fun nodeId => { nodeId, scopeId := rootDefinitionScopeId processId }
-
-def rootSequenceFlowScopes (processId : ProcessId)
-    (flowIds : List SequenceFlowId) : List SequenceFlowScopeOwnership :=
-  flowIds.map fun sequenceFlowId =>
-    { sequenceFlowId, scopeId := rootDefinitionScopeId processId }
-
-def rootScopeOccurrenceId (instanceId : SemanticId) (processId : ProcessId) :
-    ScopeOccurrenceId :=
-  { processInstanceId := instanceId
-    definitionScopeId := rootDefinitionScopeId processId
-    activation := 1 }
-
-def rootToken (instanceId : SemanticId) (processId : ProcessId)
-    (placeId : ControlPlaceId) : ControlToken :=
-  { placeId, owner := rootScopeOccurrenceId instanceId processId }
 
 def sequentialCheckedProcess : CheckedProcess :=
   { identity :=

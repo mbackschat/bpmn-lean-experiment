@@ -1,5 +1,4 @@
 import BpmnSemantics.Conformance
-import BpmnSemantics.SemanticProcess
 import BpmnSemantics.SequentialUserTask
 
 /-! # BpmnSemantics.UserTaskInteractionConformance — task-occurrence interaction locks

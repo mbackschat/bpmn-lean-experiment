@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # BpmnSemantics.ActivityBoundaryTimerConformance — interrupting boundary Timer locks
 

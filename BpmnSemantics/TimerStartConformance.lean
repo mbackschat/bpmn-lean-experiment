@@ -1,5 +1,6 @@
 import BpmnSemantics.MessageStartConformance
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Timer Start Event conformance
 

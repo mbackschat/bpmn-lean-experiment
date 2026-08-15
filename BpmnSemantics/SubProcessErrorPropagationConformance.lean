@@ -1,4 +1,5 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Embedded Sub-Process Error propagation conformance
 

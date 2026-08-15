@@ -1,4 +1,5 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # BpmnSemantics.SemanticProcessAdmissionConformance: admission and lowering contract checks
 

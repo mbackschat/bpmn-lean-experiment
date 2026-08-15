@@ -1,4 +1,5 @@
-import BpmnSemantics.SemanticProcess
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Ordinary embedded Sub-Process completion conformance
 
