@@ -154,6 +154,12 @@ Required design outcomes are:
 
 Task Queue partitioning and more Workers are tools within this horizon. They are not substitutes for budgets, workload isolation, or Product 2 scale-out.
 
+## Owner impact
+
+[ARCHITECTURE.md](ARCHITECTURE.md) and the focused Product 2 persistence and artifact decision own the shared deployment topology. Changes to Work, incidents, operator history, committed execution, occurrence metrics, Process search or direct start, Schedule, Message Start, or diagram-source retrieval must update their existing owners as applicable: [Human Work](BPM-PLATFORM-HUMAN-WORK-SPEC.md), [incident operations](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md), [operator history and audit export](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md), [committed execution publication](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md), [flow-node occurrence metrics](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md), [Process-instance search and direct start](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md), [definition scheduling](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md), [Message ingress](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md), and [diagram presentation](BPMN-DIAGRAM-PRESENTATION-DECISION.md).
+
+[TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns Continue-As-New, handler and queue drain, carried-state, and transport-budget semantics. [TESTING-SPEC.md](TESTING-SPEC.md) owns the cross-replica recovery and freshness gates, forced-rollover witness, Activity transport-budget gates, and pending-operation-limit gates.
+
 ## Future evidence contract
 
 Correctness separators precede load tests. Each horizon must first prove that the scalable mechanism preserves existing outcomes under adversarial replacement, retry, reordering, partial failure, and restart.
