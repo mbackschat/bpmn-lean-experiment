@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft, awaiting independent proposal review.** The requested direction makes Product 2's horizontal-scaling blocker the first post-MVP scalability increment; owner approval is not recorded until the independent proposal review closes. This document changes no current BPMN meaning, semantic profile, public observation, Temporal Workflow behavior, persistence implementation, deployment claim, or performance service level.
+**Draft, awaiting correction audit.** The independent proposal review approved the direction with four required edits, now applied for warm audit. The requested direction makes Product 2's horizontal-scaling blocker the first post-MVP scalability increment; owner approval is not recorded until that audit closes. This document changes no current BPMN meaning, semantic profile, public observation, Temporal Workflow behavior, persistence implementation, deployment claim, or performance service level.
 
 [PLAN.md](PLAN.md) owns immediate sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the implemented and absent boundary, [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns the current Workflow lifecycle, and [Temporal execution research](research/TEMPORAL-EXECUTION-RESEARCH.md) owns the general Temporal-to-BPMN mapping.
 
@@ -10,7 +10,7 @@
 
 Adopt a three-horizon scalability roadmap:
 
-1. make Product 2 horizontally deployable immediately after the MVP by replacing node-local synchronous persistence and request-time fleet-wide Temporal Query aggregation with a shared transactional store and bounded background projections;
+1. make Product 2 horizontally deployable immediately after the MVP by replacing node-local synchronous persistence, node-local exact-byte artifact storage, and request-time fleet-wide Temporal Query aggregation with shared durable stores and bounded background recovery;
 2. bound each Product 1 Process Workflow chain through explicit state, payload, Event History, and publication budgets plus semantically transparent Continue-As-New;
 3. add workload isolation, backpressure, tenant fairness, capacity observability, and distributed performance evidence before claiming production scale.
 
@@ -34,7 +34,7 @@ The MVP must not add a new unbounded collection, request-time fleet scan, node-l
 
 This is a source-based theoretical assessment. No performance or scalability benchmark was run. Repository structure identifies current serialization points and unbounded growth mechanisms, while official Temporal documentation establishes the platform mechanisms and per-execution limits. It does not establish this project's throughput, latency, capacity, or cost.
 
-Temporal documents no fixed limit on concurrent Workflow Executions, subject to each execution's Event History limits. It documents hard Event History limits of 51,200 events or 50 MB and warnings at 10,240 events or 10 MB. Those service limits are safety ceilings, not acceptable project operating targets. See [Workflow Execution limits](https://docs.temporal.io/workflow-execution/limits).
+Temporal documents no fixed limit on concurrent Workflow Executions, subject to each execution's Event History and operation limits. It documents hard Event History limits of 51,200 events or 50 MB and warnings at 10,240 events or 10 MB, default payload and message limits of 2 MB and 4 MB, and default limits of ten in-flight and 2,000 total Updates per Workflow Execution. Those service limits are safety ceilings, not acceptable project operating targets. See [Workflow Execution limits](https://docs.temporal.io/workflow-execution/limits).
 
 Temporal Task Queues are polled by one or more Workers and load-balance across available Worker processes. Multiple partitions increase queue throughput, while queue task ordering is distinct from the fixed Event order within one Workflow Execution. See [Task Queues](https://docs.temporal.io/task-queue).
 
@@ -64,13 +64,13 @@ Continue-As-New is not a local call-site change. The adapter must preserve publi
 
 ### Product 2 is the larger horizontal-scaling blocker
 
-Product 2 currently composes one Node server over several local synchronous SQLite databases. The concern is not one global database object. It is that every database is node-local, write transactions use SQLite's serialized writer boundary, and no shared production store coordinates multiple server or projection-worker replicas.
+Product 2 currently composes one Node server over several local synchronous SQLite databases and one local-filesystem exact-byte artifact store. The concern is not one global database object. It is that every database and deployed artifact is node-local, write transactions use SQLite's serialized writer boundary, and no shared production store coordinates multiple server or recovery-worker replicas. Sharing only repository metadata would still leave definitions deployed on one replica unavailable to starts, Schedules, Message Starts, presentation, and recovery handled by another replica.
 
 Process search, Work, incident operations, audit, and publication projections are split into sensible modules, but their persistence topology still binds the deployed platform to one filesystem host. Starting a second server against its own files creates divergent state; sharing those files is not a supported horizontal deployment design.
 
-Committed-execution and flow-node-occurrence reconciliation pull full pages through Temporal Queries. Fleet aggregation reconciles Process instances sequentially at request time and rejects populations above the current exact cap. That produces N+1 remote Query behavior on a user request and couples response latency and availability to every selected Workflow.
+The Work snapshot performs one sequential open-task Query per registered Process and fails beyond its configured Process or task ceilings. Incident aggregation performs one sequential incident Query per nonclosed Process and has separate registration and incident ceilings. Flow-node metrics sequentially reconcile both committed-execution and flow-node-occurrence publications for each instance in an exact-version population and fail beyond their own population ceiling. Per-instance history also reconciles retained publication pages through Temporal Queries. These are distinct consumers and limits, not one generic fleet aggregate. Their request-time fan-out couples response latency and availability to every selected Workflow, while merely deleting the caps would replace a bounded failure with unbounded work.
 
-Projection persistence rebuilds a complete retained image by deleting and reinserting history rather than applying a bounded suffix. Startup also performs sequential reconciliation. These mechanisms make recovery and read cost grow with retained population or history and concentrate work in the server process.
+Projection persistence rebuilds a complete retained image by deleting and reinserting history rather than applying a bounded suffix. Startup sequentially performs confirmed-instance replay, incident-action reconciliation, direct-start reconciliation, Schedule reconciliation, Message Start reconciliation, and pending audit delivery. These lifecycle repairs, bootstraps, projections, and outboxes need explicit replacement ownership before startup scans can be removed. The current mechanisms make recovery and read cost grow with retained population or history and concentrate work in the server process.
 
 Temporal can continue scheduling Process Workflows while Product 2 is saturated or unavailable, but users then cannot reliably search, work, or operate those instances through the platform. The complete product cannot claim Temporal-scale horizontal capacity while this common-mode Product 2 boundary remains.
 
@@ -98,8 +98,9 @@ An implementation may choose conservative initial values, but it must own and en
 |---|---|---|
 | Workflow chain | Event count, Event History bytes, Continue-As-New suggestion, chain length | Continue before the project threshold; never wait for a Temporal hard limit |
 | Workflow carried state | encoded bytes by semantic state, command recovery, publication, message resolution, and program | reject before start or continue through an explicitly bounded representation; never rely on heap size alone |
+| Workflow ingress and pending operations | encoded Signal and Update bytes, total and in-flight Updates, queued semantic inputs, and other supported pending-operation counts | reject before transport or roll over before a per-Run limit; never accept input that is then omitted from the continuation state |
 | Workflow tasks | schedule-to-start latency, execution latency, replay latency, cache pressure, slot use | expose backlog and capacity; throttle ingress or add capacity before memory saturation |
-| Activity and effect work | queue backlog age, retry rate, attempt duration, slot use | isolate or throttle work that can starve semantic Workflow Tasks |
+| Activity and effect work | encoded request, result, and applicable failure-payload bytes; queue backlog age, retry rate, attempt duration, and slot use | reject before transport, bound failure detail, and isolate or throttle work that can starve semantic Workflow Tasks |
 | Product 2 ingestion | projection lag, batch size, cursor age, retry count, lease age | process bounded idempotent batches; resume from a durable cursor after failure |
 | Product 2 persistence | transaction duration, lock wait, connection saturation, storage growth | reject overload or apply backpressure; never fall back to node-local divergence |
 | Product 2 reads | selected population, fan-out, response bytes, freshness boundary | use projections with an explicit completeness/freshness contract; never issue an unbounded request-time Workflow fan-out |
@@ -115,15 +116,15 @@ This is the first post-MVP scalability increment and has priority over Product 1
 
 Required design outcomes are:
 
-1. introduce a shared transactional production persistence implementation for every Product 2 repository that participates in multi-replica operation, while retaining SQLite only as a local development and focused-test implementation;
-2. run projection and outbox reconciliation in independently scalable background workers using durable ownership, bounded batches, idempotent application, and safe lease loss or process replacement;
+1. introduce shared transactional production persistence for every Product 2 repository and shared immutable exact-byte artifact storage, while retaining SQLite and the local filesystem only as local-development and focused-test implementations. Artifact publication and retrieval must preserve digest, length, immutable-publication, conflict, and corruption guarantees across replicas;
+2. inventory confirmed-instance replay, direct-start, Schedule, Message Start, incident-action, Work-audit, incident-audit, committed-execution, and flow-node-occurrence repair. Move every retained lifecycle, bootstrap, projection, and outbox family that requires autonomous recovery into independently scalable background workers with durable ownership, bounded batches, idempotent application, and safe lease loss or process replacement;
 3. replace full-history delete-and-reinsert projection with monotonic cursor-based suffix application and explicit rebuild tooling for corruption or version migration;
-4. remove fleet-wide sequential Temporal Queries from HTTP request paths and eliminate the fixed population cap as an architectural ceiling;
+4. remove sequential Temporal Query fan-out from Work, incidents, flow-node metrics, and per-instance history HTTP request paths. Serve paged or otherwise response-byte-bounded projection reads with consumer-specific completeness rules, and eliminate current Process, task, incident, and exact-version population caps as architectural ceilings without replacing them with unbounded reads;
 5. make startup independent of whole-population reconciliation, so an API or Worker replica can become ready without serially visiting every Process instance;
 6. define one explicit Product 2 projection freshness contract. Until a separate public contract approves stale success, a read that cannot establish its required completeness must fail closed rather than present an old snapshot as current;
-7. prove that two or more API replicas and two or more reconciliation workers can operate concurrently against one shared store without duplicate facts, lost suffixes, split-brain ownership, or reliance on local process memory.
+7. prove that two or more API replicas and two or more recovery workers can operate concurrently against shared repositories and artifact storage without duplicate facts, lost suffixes, split-brain ownership, or reliance on local process memory. Cross-replica evidence must cover deploy, source retrieval, direct start, Schedule, Message Start, presentation, and recovery from the same immutable definition bytes.
 
-A PostgreSQL-class shared relational database is the recommended first production implementation because the current repository and transaction model is relational and requires shared transactions, locking, indexing, and mature operational tooling. The precise database product and migration contract require a focused Product 2 architecture decision before code; the scalability contract is the shared transactional capability, not a vendor API in business modules.
+A PostgreSQL-class shared relational database is the recommended first production repository implementation because the current repository and transaction model is relational and requires shared transactions, locking, indexing, and mature operational tooling. The precise database product, artifact-storage implementation, migration contract, and cross-store publication boundary require a focused Product 2 persistence and artifact architecture decision before code. That decision and [ARCHITECTURE.md](ARCHITECTURE.md) own the resulting deployment shape; the scalability contract is the shared durable capability, not a vendor API in business modules.
 
 ### Horizon 2: bound Product 1 Workflow chains
 
@@ -131,12 +132,12 @@ Required design outcomes are:
 
 1. define project thresholds below Temporal's hard Event History limits and act on the SDK's Continue-As-New suggestion at a safe main-loop checkpoint;
 2. carry the complete semantic continuation state needed by the new Run without exposing a Run boundary as Process completion, restart, or transition;
-3. drain accepted handlers before continuing and preserve pending waits, timers, effects, cancellation ownership, logical time, and terminal behavior;
+3. continue only after every accepted handler has finished and the ordered accepted semantic-input queue is empty, or carry that complete queue and its deduplication bindings exactly. Preserve pending waits, timers, effects, cancellation ownership, logical time, and terminal behavior;
 4. preserve content-bound command result recovery and conflicting-payload refusal across Runs through a bounded durable design rather than an ever-growing copied array;
 5. segment committed execution and occurrence publication so public history and cursor validation remain exact across Runs without copying all prior pages into every new Run;
-6. measure and bound encoded Program, initial input, stimulus, carried state, Query result, and receipt bytes before Temporal transport;
+6. measure and bound encoded Program, initial input, Signal, Update, stimulus, carried state, Query result, receipt, Activity request, Activity result, and applicable Activity failure bytes before Temporal transport. Track total and in-flight Updates and every supported pending-operation count below the corresponding Temporal per-Run ceiling;
 7. decide whether large immutable Semantic Process programs remain inline or use a content-addressed definition mechanism whose deterministic retrieval and replay behavior are separately specified;
-8. prove forced low-threshold Continue-As-New across open User Tasks, Messages, Timers, effects, duplicate and conflicting commands, Worker replacement, terminal completion, history export, and replay.
+8. prove forced low-threshold Continue-As-New across open User Tasks, Messages, Timers, effects, duplicate and conflicting commands, Worker replacement, terminal completion, history export, and replay. One separating witness must accept a Message Signal immediately before the rollover decision and prove that it is applied exactly once rather than lost between handler drain and queue processing.
 
 The public engine API should continue to address one Process instance. A Workflow chain and its Run IDs remain private hosting facts. If the current opaque locator cannot preserve this abstraction, its replacement is a separate engine contract change and must not leak a Run ID into Product 2 identity.
 
