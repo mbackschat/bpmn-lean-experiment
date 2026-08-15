@@ -168,7 +168,7 @@ async function openExecution(
     .filter({ hasText: processInstanceId });
   await expect(instanceRow).toHaveCount(1);
   await instanceRow.getByRole("button", {
-    name: `View execution ${processInstanceId}`,
+    name: `View details ${processInstanceId}`,
   }).click();
   await expect(page.getByRole("heading", {
     name: `Process instance ${processInstanceId}`,

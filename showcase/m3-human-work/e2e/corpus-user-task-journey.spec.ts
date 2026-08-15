@@ -72,7 +72,7 @@ test("corpus request-review-with-form completes its production user journey", as
   const instanceRow = instanceTable.getByRole("row").filter({ hasText: processInstanceId! });
   await expect(instanceRow).toHaveCount(1);
   await instanceRow.getByRole("button", {
-    name: `View execution ${processInstanceId}`,
+    name: `View details ${processInstanceId}`,
   }).click();
 
   const detail = page.locator('[data-ui="process-execution-detail"]');
