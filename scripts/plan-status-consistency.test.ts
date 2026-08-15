@@ -80,6 +80,17 @@ function readmeSaysPlatformProductCapabilityIsAbsent(readme: string): boolean {
   );
 }
 
+function readmeActiveWork(markdown: string): string | null {
+  return /^\| Active work \| ([^|]+) \|$/mu.exec(markdown)?.[1]?.trim() ?? null;
+}
+
+function firstOrderedWorkSubject(markdown: string): string | null {
+  const subject = /^1\. \*\*[^:]+: ([^*]+)\*\*/mu.exec(
+    orderedWorkSection(markdown),
+  )?.[1]?.trim();
+  return subject?.replace(/\.$/u, "") ?? null;
+}
+
 function milestoneContradictions(
   plan: string,
   implementationMap: string,
@@ -232,6 +243,22 @@ test("keeps the root README status summary aligned with its owners", async () =>
     platformProductCapabilityIsAbsent(implementationMap),
     "the root README platform summary must match IMPLEMENTATION-MAP.md",
   );
+  assert.equal(
+    readmeActiveWork(readme),
+    firstOrderedWorkSubject(plan),
+    "the root README active-work summary must match PLAN.md item 1",
+  );
+});
+
+test("rejects a stale root README active-work phase", () => {
+  const readme = "| Active work | Complete closure review, then establish the corpus |";
+  const plan = [
+    "## Ordered work",
+    "",
+    "1. **In progress: Establish the curated executable corpus.**",
+  ].join("\n");
+
+  assert.notEqual(readmeActiveWork(readme), firstOrderedWorkSubject(plan));
 });
 
 test("rejects closing M1 while BPM platform product capability is absent", () => {
