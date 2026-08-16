@@ -116,7 +116,7 @@ The Lean lane must stay a research lane rather than becoming a proof tax on prod
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: remove Product 2's single-node scale boundary.** Begin Horizon 1 of the [Temporal BPMN execution scalability proposal](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) with the focused persistence and artifact architecture decision it requires, then implement shared transactional repositories, shared immutable exact-byte artifact storage, bounded background recovery, monotonic suffix projections, and projection-backed reads. Preserve fail-closed completeness and exact retry semantics, and close with concurrent multi-replica correctness evidence before making any performance or capacity claim.
+1. **In progress: remove Product 2's single-node scale boundary.** Review and obtain owner approval for the focused [shared persistence and projection proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md), then implement its PostgreSQL repositories and exact-byte artifacts, bounded background recovery, monotonic suffix projections, and projection-backed reads. Preserve fail-closed completeness and exact retry semantics, and close with concurrent multi-replica correctness evidence before making any performance or capacity claim.
 
 ## Approved decisions
 
@@ -242,7 +242,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: draft and independently review the focused Product 2 shared-persistence and artifact-storage architecture decision required by [Horizon 1](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary).** Bind every current SQLite repository, the file artifact store, lifecycle repair family, request-time Temporal Query fan-out, projection freshness rule, and cross-store publication invariant before implementation.
+**Next action: complete the context-cold proposal review and owner decision for the [Product 2 shared persistence and projection proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md).** Its immutable target must bind every current SQLite repository, the file artifact store, lifecycle repair family, request-time Temporal Query fan-out, projection freshness rule, and cross-store publication invariant before implementation.
 
 Item 1 is **blocked on nothing**. The theoretical roadmap and ordering are owner-approved; no shared-store implementation, distributed benchmark, or production capacity claim exists yet.
 
