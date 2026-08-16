@@ -517,7 +517,7 @@ function createFixture(
   const definitions: DefinitionMetadata[] = [];
   const versionListProcessIds: string[] = [];
   const repository: DefinitionRepository = {
-    allocateNext: (metadata: NewDefinitionMetadata) => {
+    allocateNext: async (metadata: NewDefinitionMetadata) => {
       const version = definitions.filter(
         (candidate) => candidate.processId === metadata.processId,
       ).length + 1;
@@ -529,18 +529,18 @@ function createFixture(
       definitions.push(definition);
       return definition;
     },
-    listLatest: () => {
+    listLatest: async () => {
       const latest = new Map<string, DefinitionMetadata>();
       definitions.forEach((definition) => latest.set(definition.processId, definition));
       return [...latest.values()];
     },
-    listVersions: (requestedProcessId) => {
+    listVersions: async (requestedProcessId) => {
       versionListProcessIds.push(requestedProcessId);
       return definitions.filter(
         (definition) => definition.processId === requestedProcessId,
       );
     },
-    get: (reference) => definitions.find(
+    get: async (reference) => definitions.find(
       (definition) =>
         definition.processId === reference.processId &&
         definition.version === reference.version,

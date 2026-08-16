@@ -36,7 +36,7 @@ test("retries only notReady to its bound without persisting a gap", async () => 
       );
       assert.equal(calls.length, 3);
       assert.deepEqual(retryAttempts, [1, 2]);
-      assert.equal(publications.get("Instance_1"), null);
+      assert.equal(await publications.get("Instance_1"), null);
     },
   );
 });
@@ -100,10 +100,10 @@ test("classifies a forged positive-cursor delta as gap and keeps its page atomic
         await service.reconcile("Instance_1"),
         { kind: ExecutionPublicationReconciliationKind.Gap },
       );
-      const retained = publications.get("Instance_1");
+      const retained = await publications.get("Instance_1");
       assert.equal(retained?.headRevision, 2);
       assert.equal(retained?.status, ExecutionPublicationProjectionStatus.Gap);
-      assert.equal(publications.page("Instance_1", { afterRevision: 0 }), null);
+      assert.equal(await publications.page("Instance_1", { afterRevision: 0 }), null);
     },
   );
 });
@@ -117,7 +117,7 @@ test("maps a missing confirmed producer to unavailable rather than public absenc
         { kind: ExecutionPublicationReconciliationKind.Unavailable },
       );
       assert.equal(
-        publications.get("Instance_1")?.status,
+        (await publications.get("Instance_1"))?.status,
         ExecutionPublicationProjectionStatus.Unavailable,
       );
       assert.deepEqual(
@@ -143,11 +143,11 @@ test("rebuild ignores retained state and replaces it only after the authoritativ
       replaceCalls,
       setBeforeObserve,
     }) => {
-      publications.applyPage(registered, stalePage);
-      const staleBytes = retainedSemanticBytes(publications);
-      setBeforeObserve(() => {
+      await publications.applyPage(registered, stalePage);
+      const staleBytes = await retainedSemanticBytes(publications);
+      setBeforeObserve(async () => {
         assert.equal(replaceCalls.length, 0);
-        assert.deepEqual(retainedSemanticBytes(publications), staleBytes);
+        assert.deepEqual(await retainedSemanticBytes(publications), staleBytes);
       });
 
       const result = await service.rebuild("Instance_1");
@@ -169,8 +169,8 @@ test("rebuild ignores retained state and replaces it only after the authoritativ
         limit: 100,
       }]);
       assert.deepEqual(replaceCalls, [[firstPage(3), secondPage()]]);
-      assert.notDeepEqual(retainedSemanticBytes(publications), staleBytes);
-      assert.deepEqual(publications.get("Instance_1")?.batches, [
+      assert.notDeepEqual(await retainedSemanticBytes(publications), staleBytes);
+      assert.deepEqual((await publications.get("Instance_1"))?.batches, [
         ...firstPage(3).batches,
         ...secondPage().batches,
       ]);
@@ -224,11 +224,11 @@ test("late rebuild failures classify the stale image without retaining partial p
         retryAttempts,
         setBeforeObserve,
       }) => {
-        publications.applyPage(registered, changedFirstPage(scenario.name));
-        const staleBytes = retainedSemanticBytes(publications);
-        setBeforeObserve(() => {
+        await publications.applyPage(registered, changedFirstPage(scenario.name));
+        const staleBytes = await retainedSemanticBytes(publications);
+        setBeforeObserve(async () => {
           assert.equal(replaceCalls.length, 0, scenario.name);
-          assert.deepEqual(retainedSemanticBytes(publications), staleBytes, scenario.name);
+          assert.deepEqual(await retainedSemanticBytes(publications), staleBytes, scenario.name);
         });
 
         assert.deepEqual(
@@ -236,8 +236,8 @@ test("late rebuild failures classify the stale image without retaining partial p
           { kind: scenario.reconciliation },
           scenario.name,
         );
-        assert.equal(publications.get("Instance_1")?.status, scenario.status);
-        assert.deepEqual(retainedSemanticBytes(publications), staleBytes, scenario.name);
+        assert.equal((await publications.get("Instance_1"))?.status, scenario.status);
+        assert.deepEqual(await retainedSemanticBytes(publications), staleBytes, scenario.name);
         assert.deepEqual(replaceCalls, [], scenario.name);
         assert.deepEqual(retryAttempts, [], scenario.name);
       },
@@ -256,8 +256,8 @@ test("rebuild bounds notReady at revision zero without touching retained state",
       replaceCalls,
       retryAttempts,
     }) => {
-      publications.applyPage(registered, changedFirstPage("retained-command"));
-      const staleBytes = retainedSemanticBytes(publications);
+      await publications.applyPage(registered, changedFirstPage("retained-command"));
+      const staleBytes = await retainedSemanticBytes(publications);
 
       assert.deepEqual(
         await service.rebuild("Instance_1"),
@@ -269,10 +269,10 @@ test("rebuild bounds notReady at revision zero without touching retained state",
       assert.deepEqual(retryAttempts, [1, 2]);
       assert.deepEqual(replaceCalls, []);
       assert.equal(
-        publications.get("Instance_1")?.status,
+        (await publications.get("Instance_1"))?.status,
         ExecutionPublicationProjectionStatus.Healthy,
       );
-      assert.deepEqual(retainedSemanticBytes(publications), staleBytes);
+      assert.deepEqual(await retainedSemanticBytes(publications), staleBytes);
     },
   );
 });
@@ -282,11 +282,11 @@ async function withService(
   run: (context: Readonly<{
     service: ExecutionPublicationReconciliationService;
     publications: SqliteExecutionPublicationRepository;
-    registered: NonNullable<ReturnType<SqliteProcessInstanceRepository["getRegistration"]>>;
+    registered: NonNullable<Awaited<ReturnType<SqliteProcessInstanceRepository["getRegistration"]>>>;
     calls: unknown[];
     replaceCalls: ExecutionPublicationPage[][];
     retryAttempts: number[];
-    setBeforeObserve: (callback: () => void) => void;
+    setBeforeObserve: (callback: () => Promise<void>) => void;
   }>) => Promise<void>,
 ): Promise<void> {
   const root = await mkdtemp(join(tmpdir(), "bpmn-lean-execution-reconcile-"));
@@ -296,14 +296,14 @@ async function withService(
   const calls: unknown[] = [];
   const replaceCalls: ExecutionPublicationPage[][] = [];
   const retryAttempts: number[] = [];
-  let beforeObserve: (() => void) | undefined;
+  let beforeObserve: (() => Promise<void>) | undefined;
   let index = 0;
   try {
-    instances.recordConfirmed({
+    await instances.recordConfirmed({
       instance: registration.instance,
       locator: registration.locator,
     });
-    const registered = instances.getRegistration("Instance_1");
+    const registered = await instances.getRegistration("Instance_1");
     assert.ok(registered);
     const service = new ExecutionPublicationReconciliationService({
       registrations: instances,
@@ -321,7 +321,7 @@ async function withService(
       gateway: {
         async observe(request) {
           calls.push(structuredClone(request));
-          beforeObserve?.();
+          await beforeObserve?.();
           const result = results[index];
           index += 1;
           if (result === undefined) throw new Error("unexpected gateway call");
@@ -368,10 +368,10 @@ function changedFirstPage(operationId: string): ExecutionPublicationPage {
   };
 }
 
-function retainedSemanticBytes(
+async function retainedSemanticBytes(
   publications: SqliteExecutionPublicationRepository,
-): Uint8Array {
-  const retained = publications.get("Instance_1");
+): Promise<Uint8Array> {
+  const retained = await publications.get("Instance_1");
   assert.ok(retained);
   return serializeCanonicalExecutionPublicationValue({
     identity: retained.identity,

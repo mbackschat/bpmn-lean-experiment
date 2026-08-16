@@ -52,15 +52,15 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
     return this.#database.isOpen;
   }
 
-  get(actionId: string): StoredIncidentAction | null {
+  async get(actionId: string): Promise<StoredIncidentAction | null> {
     const row = this.#actionRow(requireNonemptyString(actionId, "actionId"));
     return row === undefined ? null : decodeActionRow(row);
   }
 
-  reserve(
+  async reserve(
     bindingValue: IncidentActionBinding,
     auditValue: IncidentAuditEvent,
-  ): IncidentActionReservationResult {
+  ): Promise<IncidentActionReservationResult> {
     const binding = snapshotActionBinding(bindingValue);
     const audit = snapshotAuditEvent(auditValue);
     requireAuditMatches(audit, binding, "reserved");
@@ -106,10 +106,10 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
     });
   }
 
-  beginSubmission(
+  async beginSubmission(
     actionIdValue: string,
     bindingValue: IncidentActionBinding,
-  ): IncidentActionSubmissionResult {
+  ): Promise<IncidentActionSubmissionResult> {
     const actionId = requireNonemptyString(actionIdValue, "actionId");
     const binding = snapshotActionBinding(bindingValue);
     if (binding.actionId !== actionId) return { kind: "conflict" };
@@ -139,11 +139,11 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
     });
   }
 
-  recordOutcome(
+  async recordOutcome(
     bindingValue: IncidentActionBinding,
     resultValue: IncidentActionResult,
     auditValue: IncidentAuditEvent,
-  ): IncidentActionOutcomeResult {
+  ): Promise<IncidentActionOutcomeResult> {
     const binding = snapshotActionBinding(bindingValue);
     const result = snapshotActionResult(resultValue);
     const audit = snapshotAuditEvent(auditValue);
@@ -177,7 +177,7 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
     });
   }
 
-  listReconciliableActions(): ReadonlyArray<StoredIncidentAction> {
+  async listReconciliableActions(): Promise<ReadonlyArray<StoredIncidentAction>> {
     return this.#database.prepare(`
       SELECT binding_json, state, result_json FROM incident_actions
       WHERE state IN ('submitting','indeterminate')
@@ -185,7 +185,7 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
     `).all().map(decodeActionRow);
   }
 
-  listUndeliveredAuditEvents(): ReadonlyArray<IncidentAuditOutboxItem> {
+  async listUndeliveredAuditEvents(): Promise<ReadonlyArray<IncidentAuditOutboxItem>> {
     return this.#database.prepare(`
       SELECT ordinal, event_json FROM incident_action_audit_outbox
       WHERE delivered = 0 ORDER BY ordinal ASC
@@ -195,7 +195,7 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
     }));
   }
 
-  acknowledgeAuditEvent(eventId: string): void {
+  async acknowledgeAuditEvent(eventId: string): Promise<void> {
     const changes = this.#database.prepare(`
       UPDATE incident_action_audit_outbox SET delivered = 1 WHERE event_id = ?
     `).run(requireNonemptyString(eventId, "eventId")).changes;

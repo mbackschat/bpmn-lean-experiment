@@ -20,7 +20,7 @@ import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contract
 test("durably rejects changed nested content under one action ID and forbids another actor", async () => {
   await withStore(async ({ processRepository, actionRepository, databaseFile }) => {
     const published = incidentPublication("instance", true);
-    processRepository.recordConfirmed(publication("instance"));
+    await processRepository.recordConfirmed(publication("instance"));
     const gateway = gatewayFor([published], async ({ stimulus }) => ({
       kind: "semantic",
       commandId: stimulus.commandId,
@@ -64,7 +64,7 @@ test("durably rejects changed nested content under one action ID and forbids ano
 test("keeps distinct Retry and Cancel action IDs independent without a platform winner", async () => {
   await withStore(async ({ processRepository, actionRepository }) => {
     const published = incidentPublication("instance", true);
-    processRepository.recordConfirmed(publication("instance"));
+    await processRepository.recordConfirmed(publication("instance"));
     const gateway = gatewayFor([published], async ({ stimulus }) =>
       stimulus.kind === "retryIncident"
         ? { kind: "semantic", commandId: stimulus.commandId, outcome: "committed" }
@@ -106,14 +106,14 @@ test("keeps distinct Retry and Cancel action IDs independent without a platform 
 test("delivers and acknowledges reserved audit before the first engine action call", async () => {
   await withStore(async ({ processRepository, actionRepository }) => {
     const published = incidentPublication("instance", false);
-    processRepository.recordConfirmed(publication("instance"));
+    await processRepository.recordConfirmed(publication("instance"));
     const gateway = gatewayFor([published], async ({ stimulus }) => ({
       kind: "semantic",
       commandId: stimulus.commandId,
       outcome: "committed",
     }));
     const failing = service(processRepository, actionRepository, gateway, {
-      record: () => { throw new Error("audit unavailable"); },
+      record: async () => { throw new Error("audit unavailable"); },
     });
 
     await assert.rejects(
@@ -121,11 +121,11 @@ test("delivers and acknowledges reserved audit before the first engine action ca
       /audit unavailable/u,
     );
     assert.equal(gateway.actionCalls.length, 0);
-    assert.equal(actionRepository.listUndeliveredAuditEvents().length, 1);
+    assert.equal((await actionRepository.listUndeliveredAuditEvents()).length, 1);
 
     const events: IncidentAuditEvent[] = [];
     const recovered = service(processRepository, actionRepository, gateway, {
-      record: (event) => {
+      record: async (event) => {
         events.push(structuredClone(event));
         return events.length;
       },
@@ -138,14 +138,14 @@ test("delivers and acknowledges reserved audit before the first engine action ca
     assert.equal(result.kind === "result" && result.result.state, "committed");
     assert.equal(gateway.actionCalls.length, 1);
     assert.deepEqual(events.map(({ outcome }) => outcome), ["reserved", "committed"]);
-    assert.equal(actionRepository.listUndeliveredAuditEvents().length, 0);
+    assert.equal((await actionRepository.listUndeliveredAuditEvents()).length, 0);
   });
 });
 
 test("converges response loss and restart and coalesces one in-process same-action call", async () => {
   await withStore(async ({ processRepository, actionRepository, databaseFile }) => {
     const published = incidentPublication("instance", false);
-    processRepository.recordConfirmed(publication("instance"));
+    await processRepository.recordConfirmed(publication("instance"));
     const lost = gatewayFor([published], async () => { throw new Error("response lost"); });
     const first = service(processRepository, actionRepository, lost);
     const uncertain = await first.submitAuthorized(
@@ -189,7 +189,7 @@ test("converges response loss and restart and coalesces one in-process same-acti
 test("maps only exact committed semantic results to committed and every uncertainty to indeterminate", async () => {
   await withStore(async ({ processRepository, actionRepository }) => {
     const published = incidentPublication("instance", false);
-    processRepository.recordConfirmed(publication("instance"));
+    await processRepository.recordConfirmed(publication("instance"));
     const outcomes = new Map<string, unknown>([
       ["committed", { kind: "semantic", commandId: "committed", outcome: "committed" }],
       ["rolled", { kind: "semantic", commandId: "rolled", outcome: "rolledBack" }],
@@ -229,7 +229,7 @@ function service(
   processRepository: SqliteProcessInstanceRepository,
   actionRepository: SqliteIncidentActionRepository,
   gateway: ReturnType<typeof gatewayFor>,
-  sink = { record: (_event: IncidentAuditEvent) => 1 },
+  sink = { record: async (_event: IncidentAuditEvent) => 1 },
 ) {
   const timestampByOutcome = {
     reserved: "2026-08-14T00:00:00.001Z",

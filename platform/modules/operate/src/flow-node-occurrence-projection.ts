@@ -51,21 +51,21 @@ export type FlowNodeOccurrenceProjectionImage = Readonly<{
 }>;
 
 export interface FlowNodeOccurrenceRepository {
-  get(processInstanceId: string): FlowNodeOccurrenceProjectionImage | null;
+  get(processInstanceId: string): Promise<FlowNodeOccurrenceProjectionImage | null>;
   applyPage(
     registration: OperateProcessRegistration,
     page: FlowNodeOccurrencePage,
-  ): FlowNodeOccurrenceProjectionImage;
+  ): Promise<FlowNodeOccurrenceProjectionImage>;
   replaceFromPages(
     registration: OperateProcessRegistration,
     pages: readonly FlowNodeOccurrencePage[],
-  ): FlowNodeOccurrenceProjectionImage;
+  ): Promise<FlowNodeOccurrenceProjectionImage>;
   mark(
     registration: OperateProcessRegistration,
     status:
       | FlowNodeOccurrenceProjectionStatus.Gap
       | FlowNodeOccurrenceProjectionStatus.Unavailable,
-  ): void;
+  ): Promise<void>;
 }
 
 export interface FlowNodeOccurrenceGateway {

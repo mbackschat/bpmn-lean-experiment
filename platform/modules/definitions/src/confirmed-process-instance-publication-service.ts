@@ -35,8 +35,10 @@ export class ConfirmedProcessInstancePublicationService {
   async publishConfirmed(
     publication: ConfirmedProcessInstancePublication,
   ): Promise<PublicProcessInstanceIdentity> {
-    const { record } = this.#repository.confirm(snapshotPublication(publication));
-    return this.#deliver(record);
+    const { record } = await this.#repository.confirm(
+      snapshotPublication(publication),
+    );
+    return await this.#deliver(record);
   }
 
   /** Dispatches only from a freshly won reserved-to-starting transition. */
@@ -45,10 +47,10 @@ export class ConfirmedProcessInstancePublicationService {
     host: DirectProcessInstanceHost,
   ): Promise<ConfirmedProcessInstanceRecord> {
     const snapshot = snapshotDirectReservation(reservation);
-    let record = this.#repository.reserveDirect(snapshot).record;
+    let record = (await this.#repository.reserveDirect(snapshot)).record;
     let ownsDispatch = false;
     if (record.state === ConfirmedProcessInstanceState.Reserved) {
-      const starting = this.#repository.compareAndSetState(
+      const starting = await this.#repository.compareAndSetState(
         record.instance.processInstanceId,
         ConfirmedProcessInstanceState.Reserved,
         ConfirmedProcessInstanceState.Starting,
@@ -57,7 +59,7 @@ export class ConfirmedProcessInstancePublicationService {
         record = starting;
         ownsDispatch = true;
       } else {
-        record = this.#requireRecord(record.instance.processInstanceId);
+        record = await this.#requireRecord(record.instance.processInstanceId);
       }
     }
 
@@ -66,11 +68,11 @@ export class ConfirmedProcessInstancePublicationService {
         const result = await host.start(snapshot);
         switch (result.status) {
           case "started":
-            record = this.#transitionToConfirmed(record);
+            record = await this.#transitionToConfirmed(record);
             break;
           case "rejected":
           case "integrityFailure":
-            this.#transitionToIntegrity(record);
+            await this.#transitionToIntegrity(record);
             throw new ConfirmedProcessInstanceIntegrityError(
               record.instance.processInstanceId,
             );
@@ -93,7 +95,7 @@ export class ConfirmedProcessInstancePublicationService {
     switch (record.state) {
       case ConfirmedProcessInstanceState.Confirmed:
         await this.#deliver(record);
-        return this.#requireRecord(record.instance.processInstanceId);
+        return await this.#requireRecord(record.instance.processInstanceId);
       case ConfirmedProcessInstanceState.IntegrityFailure:
         throw new ConfirmedProcessInstanceIntegrityError(
           record.instance.processInstanceId,
@@ -108,7 +110,7 @@ export class ConfirmedProcessInstancePublicationService {
   }
 
   async reconcileDeliveries(): Promise<void> {
-    for (const record of this.#repository.listForReconciliation()) {
+    for (const record of await this.#repository.listForReconciliation()) {
       if (record.state === ConfirmedProcessInstanceState.Confirmed) {
         await this.#deliver(record);
       }
@@ -117,7 +119,7 @@ export class ConfirmedProcessInstancePublicationService {
 
   /** Dispatches a durable reserved row once; already-dispatched rows are describe-only. */
   async reconcileDirect(host: DirectProcessInstanceHost): Promise<void> {
-    for (const initial of this.#repository.listForReconciliation()) {
+    for (const initial of await this.#repository.listForReconciliation()) {
       if (
         initial.state !== ConfirmedProcessInstanceState.Reserved &&
         initial.state !== ConfirmedProcessInstanceState.Starting &&
@@ -126,7 +128,7 @@ export class ConfirmedProcessInstancePublicationService {
         continue;
       }
       if (initial.intent === null) {
-        this.#transitionToIntegrity(initial);
+        await this.#transitionToIntegrity(initial);
         throw new ConfirmedProcessInstanceIntegrityError(
           initial.instance.processInstanceId,
         );
@@ -164,19 +166,19 @@ export class ConfirmedProcessInstancePublicationService {
     }
     switch (description.status) {
       case "matching":
-        return this.#transitionToConfirmed(record);
+        return await this.#transitionToConfirmed(record);
       case "missing":
       case "unavailable":
         if (record.state === ConfirmedProcessInstanceState.Starting) {
-          return this.#repository.compareAndSetState(
+          return (await this.#repository.compareAndSetState(
             record.instance.processInstanceId,
             ConfirmedProcessInstanceState.Starting,
             ConfirmedProcessInstanceState.Indeterminate,
-          ) ?? this.#requireRecord(record.instance.processInstanceId);
+          )) ?? await this.#requireRecord(record.instance.processInstanceId);
         }
         return record;
       case "divergent":
-        this.#transitionToIntegrity(record);
+        await this.#transitionToIntegrity(record);
         throw new ConfirmedProcessInstanceIntegrityError(
           record.instance.processInstanceId,
         );
@@ -185,9 +187,9 @@ export class ConfirmedProcessInstancePublicationService {
     }
   }
 
-  #transitionToConfirmed(
+  async #transitionToConfirmed(
     record: ConfirmedProcessInstanceRecord,
-  ): ConfirmedProcessInstanceRecord {
+  ): Promise<ConfirmedProcessInstanceRecord> {
     if (record.state === ConfirmedProcessInstanceState.Confirmed) {
       return record;
     }
@@ -199,14 +201,16 @@ export class ConfirmedProcessInstancePublicationService {
         record.instance.processInstanceId,
       );
     }
-    return this.#repository.compareAndSetState(
+    return (await this.#repository.compareAndSetState(
       record.instance.processInstanceId,
       record.state,
       ConfirmedProcessInstanceState.Confirmed,
-    ) ?? this.#requireRecord(record.instance.processInstanceId);
+    )) ?? await this.#requireRecord(record.instance.processInstanceId);
   }
 
-  #transitionToIntegrity(record: ConfirmedProcessInstanceRecord): void {
+  async #transitionToIntegrity(
+    record: ConfirmedProcessInstanceRecord,
+  ): Promise<void> {
     if (record.state === ConfirmedProcessInstanceState.IntegrityFailure) {
       return;
     }
@@ -215,7 +219,7 @@ export class ConfirmedProcessInstancePublicationService {
         record.instance.processInstanceId,
       );
     }
-    this.#repository.compareAndSetState(
+    await this.#repository.compareAndSetState(
       record.instance.processInstanceId,
       record.state,
       ConfirmedProcessInstanceState.IntegrityFailure,
@@ -236,23 +240,28 @@ export class ConfirmedProcessInstancePublicationService {
         instance: structuredClone(record.instance),
         locator: record.locator,
       });
-      record = this.#repository.acknowledge(
+      record = (await this.#repository.acknowledge(
         record.instance.processInstanceId,
         "operate",
-      ) ?? this.#requireRecord(record.instance.processInstanceId);
+      )) ?? await this.#requireRecord(record.instance.processInstanceId);
     }
     if (record.workPending) {
       await this.#work.recordConfirmedProcessInstance({
         instance: structuredClone(record.instance),
         locator: record.locator,
       });
-      this.#repository.acknowledge(record.instance.processInstanceId, "work");
+      await this.#repository.acknowledge(
+        record.instance.processInstanceId,
+        "work",
+      );
     }
     return structuredClone(record.instance);
   }
 
-  #requireRecord(processInstanceId: string): ConfirmedProcessInstanceRecord {
-    const record = this.#repository.get(processInstanceId);
+  async #requireRecord(
+    processInstanceId: string,
+  ): Promise<ConfirmedProcessInstanceRecord> {
+    const record = await this.#repository.get(processInstanceId);
     if (record === null) {
       throw new ConfirmedProcessInstanceIntegrityError(processInstanceId);
     }

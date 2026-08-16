@@ -58,7 +58,7 @@ export class ProcessInstanceHttpRoutes {
 
     try {
       const page = decodeProcessInstanceSearchPage(
-        this.#search.searchProcessInstances(searchRequest),
+        await this.#search.searchProcessInstances(searchRequest),
       );
       return jsonResponse(200, page);
     } catch {

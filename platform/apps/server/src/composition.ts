@@ -203,7 +203,7 @@ export async function createPlatformServer(
       occurrences: flowNodeOccurrenceReconciliation,
     });
     const auditOutbox = new WorkAuditOutboxService(work, auditRepository);
-    auditOutbox.reconcileAll();
+    await auditOutbox.reconcileAll();
     const incidentAuditOutbox = new IncidentActionAuditOutboxService(
       incidentActions,
       incidentAuditRepository,
@@ -359,8 +359,8 @@ export async function createPlatformServer(
       actors,
       authorization: operationsAuthorization,
       registrations: {
-        getConfirmed: (processInstanceId) => {
-          const record = confirmedRepository.get(processInstanceId);
+        getConfirmed: async (processInstanceId) => {
+          const record = await confirmedRepository.get(processInstanceId);
           return record?.state === ConfirmedProcessInstanceState.Confirmed
             ? record.instance
             : null;

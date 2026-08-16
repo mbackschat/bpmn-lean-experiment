@@ -53,10 +53,10 @@ export class SqliteDefinitionRepository implements
   }
 
   /** Atomically allocates and inserts the next positive version within one process ID. */
-  allocateNext(
+  async allocateNext(
     metadata: NewDefinitionMetadata,
     humanTaskCatalog: HumanTaskCatalogV1 | null = null,
-  ): DefinitionMetadata {
+  ): Promise<DefinitionMetadata> {
     const humanTaskCatalogJson = humanTaskCatalog === null
       ? null
       : encodeBoundCatalog(metadata, humanTaskCatalog);
@@ -112,7 +112,7 @@ export class SqliteDefinitionRepository implements
     }
   }
 
-  listLatest(): ReadonlyArray<DefinitionMetadata> {
+  async listLatest(): Promise<ReadonlyArray<DefinitionMetadata>> {
     return this.#database.prepare(`
       SELECT
         definition.process_id,
@@ -137,7 +137,9 @@ export class SqliteDefinitionRepository implements
     `).all().map(decodeMetadata);
   }
 
-  listVersions(processId: string): ReadonlyArray<DefinitionMetadata> {
+  async listVersions(
+    processId: string,
+  ): Promise<ReadonlyArray<DefinitionMetadata>> {
     return this.#database.prepare(`
       SELECT
         process_id,
@@ -156,7 +158,7 @@ export class SqliteDefinitionRepository implements
     `).all(processId).map(decodeMetadata);
   }
 
-  get(reference: DefinitionReference): DefinitionMetadata | null {
+  async get(reference: DefinitionReference): Promise<DefinitionMetadata | null> {
     const row = this.#database.prepare(`
       SELECT
         process_id,
@@ -175,7 +177,9 @@ export class SqliteDefinitionRepository implements
     return row === undefined ? null : decodeMetadata(row);
   }
 
-  getHumanTaskCatalog(reference: DefinitionReference): HumanTaskCatalogV1 | null {
+  async getHumanTaskCatalog(
+    reference: DefinitionReference,
+  ): Promise<HumanTaskCatalogV1 | null> {
     const row = this.#database.prepare(`
       SELECT human_task_catalog_json, semantic_profile, source_sha256
       FROM definition_versions

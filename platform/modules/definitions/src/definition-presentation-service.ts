@@ -49,7 +49,7 @@ export class DefinitionPresentationService {
   async resolve(
     reference: DefinitionReference,
   ): Promise<ResolvedBpmnDiagramPresentation | null> {
-    const definition = this.#dependencies.definitions.get(reference);
+    const definition = await this.#dependencies.definitions.get(reference);
     if (definition === null) return null;
     const bytes = await this.#dependencies.artifacts.get(definition.source.sha256);
     if (bytes === null || bytes.byteLength !== definition.source.byteLength) {
@@ -103,7 +103,7 @@ export class DefinitionPresentationService {
   }
 
   async #resolveGenerated(
-    definition: NonNullable<ReturnType<DefinitionRepository["get"]>>,
+    definition: NonNullable<Awaited<ReturnType<DefinitionRepository["get"]>>>,
     sourceXml: string,
   ): Promise<ResolvedBpmnDiagramPresentation> {
     const key = {
@@ -112,7 +112,7 @@ export class DefinitionPresentationService {
       effectiveGeneratorSha256:
         this.#dependencies.adapter.effectiveGeneratorSha256,
     };
-    const retained = this.#dependencies.presentations.get(key);
+    const retained = await this.#dependencies.presentations.get(key);
     const sidecar = retained ?? await this.#generateSidecar(
       definition.processId,
       definition.source.sha256,
@@ -184,7 +184,7 @@ export class DefinitionPresentationService {
       provenance: { ...generated.provenance },
       diagramInterchangeXml: generated.diagramInterchangeXml,
     };
-    return this.#dependencies.presentations.insertOrCompare(candidate);
+    return await this.#dependencies.presentations.insertOrCompare(candidate);
   }
 }
 

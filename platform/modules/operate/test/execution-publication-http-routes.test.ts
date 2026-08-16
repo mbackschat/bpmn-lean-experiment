@@ -177,11 +177,11 @@ function createRoutes(options: Readonly<{
       },
     },
     publications: {
-      page: () => {
+      page: async () => {
         options.calls.pages += 1;
         return firstPage();
       },
-      export: () => {
+      export: async () => {
         options.calls.exports += 1;
         return publicationExport();
       },

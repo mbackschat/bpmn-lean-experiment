@@ -25,14 +25,14 @@ export type StoredIncidentAuditEvent = Readonly<{
 }>;
 
 export interface IncidentAuditRepository {
-  record(event: IncidentAuditEvent): number;
+  record(event: IncidentAuditEvent): Promise<number>;
   search(
     query: IncidentAuditRepositoryQuery,
-  ): ReadonlyArray<StoredIncidentAuditEvent>;
+  ): Promise<ReadonlyArray<StoredIncidentAuditEvent>>;
   snapshotHostingProcessInstance(
     hostingProcessInstanceId: string,
     limits: AuditSnapshotLimits,
-  ): AuditStreamSnapshot<IncidentAuditEvent>;
+  ): Promise<AuditStreamSnapshot<IncidentAuditEvent>>;
 }
 
 export type NormalizedIncidentAuditSearchRequest = IncidentAuditRequest &

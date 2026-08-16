@@ -3,12 +3,12 @@ import type { WorkAuditEvent } from "@bpmn-lean/platform-contracts";
 import type { WorkAuditOutboxItem } from "./work-contracts.js";
 
 export interface WorkAuditOutboxRepository {
-  listUndeliveredAuditEvents(): ReadonlyArray<WorkAuditOutboxItem>;
-  acknowledgeAuditEvent(eventId: string): void;
+  listUndeliveredAuditEvents(): Promise<ReadonlyArray<WorkAuditOutboxItem>>;
+  acknowledgeAuditEvent(eventId: string): Promise<void>;
 }
 
 export interface WorkAuditSink {
-  record(event: WorkAuditEvent): number;
+  record(event: WorkAuditEvent): Promise<number>;
 }
 
 /** Delivers exact outbox snapshots before acknowledging their Work-owned rows. */
@@ -18,10 +18,10 @@ export class WorkAuditOutboxService {
     private readonly sink: WorkAuditSink,
   ) {}
 
-  reconcileAll(): void {
-    for (const { event } of this.repository.listUndeliveredAuditEvents()) {
-      this.sink.record(event);
-      this.repository.acknowledgeAuditEvent(event.eventId);
+  async reconcileAll(): Promise<void> {
+    for (const { event } of await this.repository.listUndeliveredAuditEvents()) {
+      await this.sink.record(event);
+      await this.repository.acknowledgeAuditEvent(event.eventId);
     }
   }
 }

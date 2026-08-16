@@ -63,7 +63,7 @@ export class DefinitionScheduleService {
     const reference = cloneScheduleReference(request);
     requireScheduleReference(reference);
     const activationAt = requireWholeSecondActivation(request.activationAt);
-    const previous = this.#dependencies.schedules.get(reference);
+    const previous = await this.#dependencies.schedules.get(reference);
     if (previous !== null && previous.activationAt !== activationAt) {
       throw new DefinitionScheduleConflictError(
         "schedule identity is already bound to another activation",
@@ -78,7 +78,7 @@ export class DefinitionScheduleService {
     const loaded = await this.#loadDefinition(reference);
     const timerStart = await this.#validateDefinition(loaded);
     const dueAt = deriveScheduleDueAt(activationAt, timerStart.durationMs);
-    const current = this.#dependencies.schedules.get(reference);
+    const current = await this.#dependencies.schedules.get(reference);
     if (previous !== null && current === null) {
       throw new DefinitionScheduleIntegrityError(
         "reserved schedule disappeared during definition validation",
@@ -92,7 +92,7 @@ export class DefinitionScheduleService {
       );
     }
     const reservation = current === null
-      ? this.#reserve(reference, loaded.definition, timerStart, activationAt, dueAt)
+      ? await this.#reserve(reference, loaded.definition, timerStart, activationAt, dueAt)
       : { inserted: false, record: current };
     requireSameScheduleIntent(
       reservation.record,
@@ -113,7 +113,7 @@ export class DefinitionScheduleService {
   ): Promise<DefinitionSchedule | null> {
     const selected = cloneScheduleReference(reference);
     requireScheduleReference(selected);
-    const record = this.#dependencies.schedules.get(selected);
+    const record = await this.#dependencies.schedules.get(selected);
     return record === null
       ? null
       : projectDefinitionSchedule(await this.#reconcile(record));
@@ -124,7 +124,7 @@ export class DefinitionScheduleService {
   ): Promise<ReadonlyArray<DefinitionSchedule>> {
     const selected = cloneDefinitionReference(reference);
     requireDefinitionReference(selected);
-    const schedules = this.#dependencies.schedules.listForDefinition(selected);
+    const schedules = await this.#dependencies.schedules.listForDefinition(selected);
     const result: DefinitionSchedule[] = [];
     for (const record of schedules) {
       result.push(projectDefinitionSchedule(await this.#reconcile(record)));
@@ -137,7 +137,7 @@ export class DefinitionScheduleService {
   ): Promise<DefinitionSchedule | null> {
     const selected = cloneScheduleReference(reference);
     requireScheduleReference(selected);
-    const requested = this.#dependencies.schedules.requestCancellation(selected);
+    const requested = await this.#dependencies.schedules.requestCancellation(selected);
     if (requested === null) {
       return null;
     }
@@ -158,15 +158,15 @@ export class DefinitionScheduleService {
   }
 
   async reconcileAll(): Promise<void> {
-    for (const candidate of this.#dependencies.schedules.listForReconciliation()) {
-      const current = this.#dependencies.schedules.get(candidate.reference);
+    for (const candidate of await this.#dependencies.schedules.listForReconciliation()) {
+      const current = await this.#dependencies.schedules.get(candidate.reference);
       if (current !== null) {
         await this.#reconcile(current);
       }
     }
   }
 
-  #reserve(
+  async #reserve(
     reference: DefinitionScheduleReference,
     definition: DefinitionMetadata,
     timerStart: DefinitionTimerStartCapability,
@@ -192,11 +192,11 @@ export class DefinitionScheduleService {
         configuredWorkflowIdBase,
       },
     };
-    return this.#dependencies.schedules.reserve(record);
+    return await this.#dependencies.schedules.reserve(record);
   }
 
   async #loadDefinition(reference: DefinitionReference): Promise<LoadedDefinition> {
-    const stored = this.#dependencies.definitions.get(reference);
+    const stored = await this.#dependencies.definitions.get(reference);
     if (stored === null) {
       throw new DefinitionScheduleNotFoundError(reference);
     }
@@ -298,7 +298,7 @@ export class DefinitionScheduleService {
   ): Promise<DefinitionScheduleRecord> {
     switch (record.state) {
       case DefinitionScheduleState.Creating: {
-        const dispatched = this.#dependencies.schedules.compareAndSet(
+        const dispatched = await this.#dependencies.schedules.compareAndSet(
           record.reference,
           DefinitionScheduleState.Creating,
           { state: DefinitionScheduleState.CreatingHost },
@@ -329,7 +329,7 @@ export class DefinitionScheduleService {
   ): Promise<DefinitionScheduleRecord> {
     const input = await this.#hostInput(record, knownBytes);
     const result = await this.#dependencies.host.createOrCompare(input);
-    const current = this.#requireCurrent(record.reference);
+    const current = await this.#requireCurrent(record.reference);
     return await this.#applyHostResult(current, result, input, false);
   }
 
@@ -340,7 +340,7 @@ export class DefinitionScheduleService {
     const input = await this.#hostInput(record, knownBytes);
     const result = await this.#dependencies.host.inspect(input);
     return await this.#applyHostResult(
-      this.#requireCurrent(record.reference),
+      await this.#requireCurrent(record.reference),
       result,
       input,
       false,
@@ -356,7 +356,7 @@ export class DefinitionScheduleService {
       const created = await this.#dependencies.host.createOrCompare(input);
       if (created.phase !== DefinitionScheduleHostPhase.Pending) {
         return await this.#applyHostResult(
-          this.#requireCurrent(record.reference),
+          await this.#requireCurrent(record.reference),
           created,
           input,
           false,
@@ -374,7 +374,7 @@ export class DefinitionScheduleService {
     }
     const inspected = await this.#dependencies.host.pause(input);
     return await this.#applyHostResult(
-      this.#requireCurrent(record.reference),
+      await this.#requireCurrent(record.reference),
       inspected,
       input,
       true,
@@ -409,7 +409,7 @@ export class DefinitionScheduleService {
           return await this.#reconcileCancelling(record, input.bytes);
         }
         if (record.state === DefinitionScheduleState.CreatingHost) {
-          const scheduled = this.#dependencies.schedules.compareAndSet(
+          const scheduled = await this.#dependencies.schedules.compareAndSet(
             record.reference,
             DefinitionScheduleState.CreatingHost,
             { state: DefinitionScheduleState.Scheduled },
@@ -464,7 +464,7 @@ export class DefinitionScheduleService {
         `cannot persist ${state} from ${record.state}`,
       );
     }
-    const terminal = this.#dependencies.schedules.compareAndSet(
+    const terminal = await this.#dependencies.schedules.compareAndSet(
       record.reference,
       record.state,
       { state, executionWorkflowId, firstRunId },
@@ -491,10 +491,10 @@ export class DefinitionScheduleService {
     }
     const input = await this.#hostInput(record, knownBytes);
     await this.#dependencies.host.delete(input);
-    return this.#dependencies.schedules.markCleanupComplete(
+    return (await this.#dependencies.schedules.markCleanupComplete(
       record.reference,
       record.state,
-    ) ?? this.#requireCurrent(record.reference);
+    )) ?? await this.#requireCurrent(record.reference);
   }
 
   async #hostInput(
@@ -543,11 +543,13 @@ export class DefinitionScheduleService {
   async #reconcileCurrent(
     reference: DefinitionScheduleReference,
   ): Promise<DefinitionScheduleRecord> {
-    return await this.#reconcileLifecycle(this.#requireCurrent(reference));
+    return await this.#reconcileLifecycle(await this.#requireCurrent(reference));
   }
 
-  #requireCurrent(reference: DefinitionScheduleReference): DefinitionScheduleRecord {
-    const current = this.#dependencies.schedules.get(reference);
+  async #requireCurrent(
+    reference: DefinitionScheduleReference,
+  ): Promise<DefinitionScheduleRecord> {
+    const current = await this.#dependencies.schedules.get(reference);
     if (current === null) {
       throw new DefinitionScheduleIntegrityError(
         "schedule disappeared during lifecycle reconciliation",

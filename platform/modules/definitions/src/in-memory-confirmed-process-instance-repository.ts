@@ -24,15 +24,15 @@ export class InMemoryConfirmedProcessInstanceRepository
   implements ConfirmedProcessInstanceRepository {
   readonly #records = new Map<string, ConfirmedProcessInstanceRecord>();
 
-  confirm(
+  async confirm(
     publication: ConfirmedProcessInstancePublication,
-  ): ConfirmedProcessInstanceReservationResult {
+  ): Promise<ConfirmedProcessInstanceReservationResult> {
     return this.#insert(publication, null, ConfirmedProcessInstanceState.Confirmed);
   }
 
-  reserveDirect(
+  async reserveDirect(
     reservation: DirectProcessInstanceReservation,
-  ): ConfirmedProcessInstanceReservationResult {
+  ): Promise<ConfirmedProcessInstanceReservationResult> {
     return this.#insert(
       reservation,
       snapshotDirectIntent(reservation.intent),
@@ -40,12 +40,14 @@ export class InMemoryConfirmedProcessInstanceRepository
     );
   }
 
-  get(processInstanceId: string): ConfirmedProcessInstanceRecord | null {
+  async get(
+    processInstanceId: string,
+  ): Promise<ConfirmedProcessInstanceRecord | null> {
     const record = this.#records.get(processInstanceId);
     return record === undefined ? null : snapshotRecord(record);
   }
 
-  listForReconciliation(): ReadonlyArray<ConfirmedProcessInstanceRecord> {
+  async listForReconciliation(): Promise<ReadonlyArray<ConfirmedProcessInstanceRecord>> {
     return [...this.#records.values()]
       .filter((record) =>
         record.state === ConfirmedProcessInstanceState.Reserved ||
@@ -62,7 +64,7 @@ export class InMemoryConfirmedProcessInstanceRepository
       .map(snapshotRecord);
   }
 
-  listConfirmed(): ReadonlyArray<ConfirmedProcessInstanceRecord> {
+  async listConfirmed(): Promise<ReadonlyArray<ConfirmedProcessInstanceRecord>> {
     return [...this.#records.values()]
       .filter((record) => record.state === ConfirmedProcessInstanceState.Confirmed)
       .sort((left, right) => {
@@ -73,11 +75,11 @@ export class InMemoryConfirmedProcessInstanceRepository
       .map(snapshotRecord);
   }
 
-  compareAndSetState(
+  async compareAndSetState(
     processInstanceId: string,
     expected: ConfirmedProcessInstanceState,
     next: ConfirmedProcessInstanceState,
-  ): ConfirmedProcessInstanceRecord | null {
+  ): Promise<ConfirmedProcessInstanceRecord | null> {
     requireAllowedTransition(expected, next);
     const existing = this.#records.get(processInstanceId);
     if (existing === undefined || existing.state !== expected) {
@@ -94,10 +96,10 @@ export class InMemoryConfirmedProcessInstanceRepository
     return snapshotRecord(updated);
   }
 
-  acknowledge(
+  async acknowledge(
     processInstanceId: string,
     subscriber: ConfirmedProcessInstanceSubscriber,
-  ): ConfirmedProcessInstanceRecord | null {
+  ): Promise<ConfirmedProcessInstanceRecord | null> {
     const existing = this.#records.get(processInstanceId);
     if (
       existing === undefined ||

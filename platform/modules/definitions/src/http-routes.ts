@@ -145,13 +145,13 @@ export class DefinitionHttpRoutes {
         return request.method === "POST"
           ? await this.#deploy(request, url)
           : request.method === "GET"
-            ? this.#list(request, url)
+            ? await this.#list(request, url)
             : methodNotAllowed("GET, POST");
       case DefinitionRouteKind.Versions:
         if (request.method !== "GET") {
           return methodNotAllowed("GET");
         }
-        return this.#listVersions(route.rawProcessId, request, url);
+        return await this.#listVersions(route.rawProcessId, request, url);
       case DefinitionRouteKind.Source:
         if (request.method !== "GET") {
           return methodNotAllowed("GET");
@@ -208,23 +208,26 @@ export class DefinitionHttpRoutes {
     }
   }
 
-  #list(request: Request, url: URL): Response {
+  async #list(request: Request, url: URL): Promise<Response> {
     requireNoQuery(request, url);
     const result = {
-      definitions: this.#deploymentService
-        .listLatestDefinitions()
-        .map(toPublicDefinition),
+      definitions: (await this.#deploymentService.listLatestDefinitions()).map(
+        toPublicDefinition,
+      ),
     } as const satisfies DefinitionListResponse;
     return jsonResponse(200, result);
   }
 
-  #listVersions(rawProcessId: string, request: Request, url: URL): Response {
+  async #listVersions(
+    rawProcessId: string,
+    request: Request,
+    url: URL,
+  ): Promise<Response> {
     requireNoQuery(request, url);
     const processId = decodeProcessId(rawProcessId);
     const result = {
       processId,
-      versions: this.#deploymentService
-        .listDefinitionVersions(processId)
+      versions: (await this.#deploymentService.listDefinitionVersions(processId))
         .map(toPublicDefinition),
     } as const satisfies DefinitionVersionListResponse;
     return jsonResponse(200, result);
@@ -241,7 +244,7 @@ export class DefinitionHttpRoutes {
       processId: decodeProcessId(rawProcessId),
       version: parsePositiveVersion(rawVersion),
     };
-    const metadata = this.#deploymentService.getDefinitionMetadata(reference);
+    const metadata = await this.#deploymentService.getDefinitionMetadata(reference);
     if (metadata === null) {
       return errorResponse(
         404,

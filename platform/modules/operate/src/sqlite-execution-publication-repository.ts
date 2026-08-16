@@ -58,7 +58,9 @@ export class SqliteExecutionPublicationRepository
     return this.#database.isOpen;
   }
 
-  get(processInstanceId: string): ExecutionPublicationProjectionImage | null {
+  async get(
+    processInstanceId: string,
+  ): Promise<ExecutionPublicationProjectionImage | null> {
     try {
       return this.#read(requireText(processInstanceId, "processInstanceId"));
     } catch (error: unknown) {
@@ -67,10 +69,10 @@ export class SqliteExecutionPublicationRepository
     }
   }
 
-  applyPage(
+  async applyPage(
     registration: OperateProcessRegistration,
     page: ExecutionPublicationPage,
-  ): ExecutionPublicationProjectionImage {
+  ): Promise<ExecutionPublicationProjectionImage> {
     return this.#transaction(() => {
       this.#requireRegistration(registration);
       const identity = projectionIdentityFromRegistration(registration);
@@ -82,10 +84,10 @@ export class SqliteExecutionPublicationRepository
     });
   }
 
-  replaceFromPages(
+  async replaceFromPages(
     registration: OperateProcessRegistration,
     pages: readonly ExecutionPublicationPage[],
-  ): ExecutionPublicationProjectionImage {
+  ): Promise<ExecutionPublicationProjectionImage> {
     let candidate = createEmptyExecutionPublicationProjection(
       projectionIdentityFromRegistration(registration),
     );
@@ -108,12 +110,12 @@ export class SqliteExecutionPublicationRepository
     });
   }
 
-  mark(
+  async mark(
     registration: OperateProcessRegistration,
     status:
       | ExecutionPublicationProjectionStatus.Gap
       | ExecutionPublicationProjectionStatus.Unavailable,
-  ): void {
+  ): Promise<void> {
     this.#transaction(() => {
       this.#requireRegistration(registration);
       const identity = projectionIdentityFromRegistration(registration);
@@ -123,11 +125,11 @@ export class SqliteExecutionPublicationRepository
     });
   }
 
-  page(
+  async page(
     processInstanceId: string,
     request: ExecutionPublicationRequest,
-  ): ExecutionPublicationPage | null {
-    const image = this.get(processInstanceId);
+  ): Promise<ExecutionPublicationPage | null> {
+    const image = await this.get(processInstanceId);
     if (!isReadable(image)) return null;
     requireCursor(request.afterRevision, image);
     const limit = request.limit ?? 50;
@@ -151,8 +153,10 @@ export class SqliteExecutionPublicationRepository
     });
   }
 
-  export(processInstanceId: string): ExecutionPublicationExport | null {
-    const image = this.get(processInstanceId);
+  async export(
+    processInstanceId: string,
+  ): Promise<ExecutionPublicationExport | null> {
+    const image = await this.get(processInstanceId);
     if (!isReadable(image) || image.batches.length === 0) return null;
     const first = image.batches[0];
     if (first === undefined) return null;

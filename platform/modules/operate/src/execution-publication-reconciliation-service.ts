@@ -72,18 +72,18 @@ export class ExecutionPublicationReconciliationService {
   async reconcile(
     processInstanceId: string,
   ): Promise<ExecutionPublicationReconciliationResult> {
-    const registration = this.#options.registrations.getRegistration(processInstanceId);
+    const registration = await this.#options.registrations.getRegistration(processInstanceId);
     if (registration === null) {
       return { kind: ExecutionPublicationReconciliationKind.NotFound };
     }
     let notReadyAttempts = 0;
     let pageCount = 0;
     while (pageCount < this.#options.maxPagesPerReconciliation) {
-      const prior = this.#options.publications.get(processInstanceId);
+      const prior = await this.#options.publications.get(processInstanceId);
       const afterRevision = prior?.headRevision ?? 0;
       const observed = await this.#observe(registration, afterRevision);
       if (observed.kind === ExecutionPublicationReconciliationKind.Unavailable) {
-        this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
+        await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
         return observed;
       }
       let result;
@@ -95,14 +95,14 @@ export class ExecutionPublicationReconciliationService {
           limit: 100,
         });
       } catch (error: unknown) {
-        this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
+        await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
         return { kind: ExecutionPublicationReconciliationKind.Gap };
       }
       switch (result.kind) {
         case ExecutionPublicationResultKind.Available: {
           let projection: ExecutionPublicationProjectionImage;
           try {
-            projection = this.#options.publications.applyPage(
+            projection = await this.#options.publications.applyPage(
               registration,
               result.page,
             );
@@ -113,7 +113,7 @@ export class ExecutionPublicationReconciliationService {
               error instanceof TypeError ||
               error instanceof RangeError
             ) {
-              this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
+              await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
               return { kind: ExecutionPublicationReconciliationKind.Gap };
             }
             throw error;
@@ -132,7 +132,7 @@ export class ExecutionPublicationReconciliationService {
         }
         case ExecutionPublicationResultKind.NotReady:
           if (afterRevision > 0) {
-            this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
+            await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
             return { kind: ExecutionPublicationReconciliationKind.Gap };
           }
           notReadyAttempts += 1;
@@ -143,21 +143,21 @@ export class ExecutionPublicationReconciliationService {
           break;
         case ExecutionPublicationResultKind.NotFound:
         case ExecutionPublicationResultKind.Unavailable:
-          this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
+          await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
           return { kind: ExecutionPublicationReconciliationKind.Unavailable };
         case ExecutionPublicationResultKind.Gap:
-          this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
+          await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
           return { kind: ExecutionPublicationReconciliationKind.Gap };
       }
     }
-    this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
+    await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
     return { kind: ExecutionPublicationReconciliationKind.Unavailable };
   }
 
   async rebuild(
     processInstanceId: string,
   ): Promise<ExecutionPublicationReconciliationResult> {
-    const registration = this.#options.registrations.getRegistration(processInstanceId);
+    const registration = await this.#options.registrations.getRegistration(processInstanceId);
     if (registration === null) {
       return { kind: ExecutionPublicationReconciliationKind.NotFound };
     }
@@ -167,7 +167,7 @@ export class ExecutionPublicationReconciliationService {
     while (pages.length < this.#options.maxPagesPerReconciliation) {
       const observed = await this.#observe(registration, afterRevision);
       if (observed.kind === ExecutionPublicationReconciliationKind.Unavailable) {
-        this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
+        await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
         return observed;
       }
       let result;
@@ -179,7 +179,7 @@ export class ExecutionPublicationReconciliationService {
           limit: 100,
         });
       } catch {
-        this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
+        await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
         return { kind: ExecutionPublicationReconciliationKind.Gap };
       }
       switch (result.kind) {
@@ -188,7 +188,7 @@ export class ExecutionPublicationReconciliationService {
           afterRevision = result.page.pageThroughRevision;
           if (result.page.current !== null) {
             try {
-              const projection = this.#options.publications.replaceFromPages(
+              const projection = await this.#options.publications.replaceFromPages(
                 registration,
                 pages,
               );
@@ -202,7 +202,7 @@ export class ExecutionPublicationReconciliationService {
                 error instanceof TypeError ||
                 error instanceof RangeError
               ) {
-                this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
+                await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
                 return { kind: ExecutionPublicationReconciliationKind.Gap };
               }
               throw error;
@@ -211,7 +211,7 @@ export class ExecutionPublicationReconciliationService {
           break;
         case ExecutionPublicationResultKind.NotReady:
           if (afterRevision > 0) {
-            this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
+            await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
             return { kind: ExecutionPublicationReconciliationKind.Gap };
           }
           notReadyAttempts += 1;
@@ -222,14 +222,14 @@ export class ExecutionPublicationReconciliationService {
           break;
         case ExecutionPublicationResultKind.NotFound:
         case ExecutionPublicationResultKind.Unavailable:
-          this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
+          await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
           return { kind: ExecutionPublicationReconciliationKind.Unavailable };
         case ExecutionPublicationResultKind.Gap:
-          this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
+          await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
           return { kind: ExecutionPublicationReconciliationKind.Gap };
       }
     }
-    this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
+    await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
     return { kind: ExecutionPublicationReconciliationKind.Unavailable };
   }
 
@@ -258,13 +258,13 @@ export class ExecutionPublicationReconciliationService {
     }
   }
 
-  #mark(
+  async #mark(
     registration: OperateProcessRegistration,
     status:
       | ExecutionPublicationProjectionStatus.Gap
       | ExecutionPublicationProjectionStatus.Unavailable,
-  ): void {
-    this.#options.publications.mark(registration, status);
+  ): Promise<void> {
+    await this.#options.publications.mark(registration, status);
   }
 }
 

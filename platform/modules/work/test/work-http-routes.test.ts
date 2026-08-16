@@ -25,7 +25,7 @@ test("serves the strict task snapshot and refuses a GET body before service entr
       calls += 1;
       return { tasks: [] };
     },
-  }, () => { reconciliations += 1; });
+  }, async () => { reconciliations += 1; });
 
   const success = await routes.handle(new Request("http://platform.test/api/v1/work-tasks"));
   assert.equal(success?.status, 200);
@@ -247,14 +247,14 @@ test("keeps the M3 completion ceiling while allowing the structured 32768-byte c
 
 function createRoutes(
   overrides: Record<string, unknown>,
-  reconcileAll: () => void = () => undefined,
+  reconcileAll: () => Promise<void> = async () => undefined,
 ): WorkHttpRoutes {
   return new WorkHttpRoutes({
     tasks: {
       listTasks: async () => ({ tasks: [] }),
       ...overrides,
     } as never,
-    audit: { search: () => ({ events: [], nextCursor: null }) },
+    audit: { search: async () => ({ events: [], nextCursor: null }) },
     outbox: { reconcileAll },
   });
 }

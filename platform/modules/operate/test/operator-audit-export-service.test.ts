@@ -20,13 +20,13 @@ import {
   operatorAuditWorkEvent,
 } from "./operator-audit-export-fixture.ts";
 
-test("reconciles and snapshots both audit streams in the fixed source-local sequence", () => {
+test("reconciles and snapshots both audit streams in the fixed source-local sequence", async () => {
   const calls: string[] = [];
   const service = new OperatorAuditExportService({
-    workOutbox: { reconcileAll: () => { calls.push("work-reconcile"); } },
-    incidentOutbox: { reconcileAll: () => { calls.push("incident-reconcile"); } },
+    workOutbox: { reconcileAll: async () => { calls.push("work-reconcile"); } },
+    incidentOutbox: { reconcileAll: async () => { calls.push("incident-reconcile"); } },
     workAudit: {
-      snapshotHostingProcessInstance: (processInstanceId, limits) => {
+      snapshotHostingProcessInstance: async (processInstanceId, limits) => {
         calls.push(`work-snapshot:${processInstanceId}`);
         assert.deepEqual(limits, {
           maxEvents: OperatorAuditMaximumEventsPerStream,
@@ -36,7 +36,7 @@ test("reconciles and snapshots both audit streams in the fixed source-local sequ
       },
     },
     incidentAudit: {
-      snapshotHostingProcessInstance: (processInstanceId, limits) => {
+      snapshotHostingProcessInstance: async (processInstanceId, limits) => {
         calls.push(`incident-snapshot:${processInstanceId}`);
         assert.deepEqual(limits, {
           maxEvents: OperatorAuditMaximumEventsPerStream,
@@ -47,7 +47,7 @@ test("reconciles and snapshots both audit streams in the fixed source-local sequ
     },
   });
 
-  const bytes = service.create(operatorAuditInstance);
+  const bytes = await service.create(operatorAuditInstance);
   assert.deepEqual(
     decodeCanonicalOperatorAuditExport(bytes, operatorAuditInstance),
     {
@@ -68,7 +68,7 @@ test("reconciles and snapshots both audit streams in the fixed source-local sequ
   ]);
 });
 
-test("stops before later audit work when an earlier completeness step fails", () => {
+test("stops before later audit work when an earlier completeness step fails", async () => {
   const stages = [
     ["work-reconcile"],
     ["work-reconcile", "incident-reconcile"],
@@ -88,27 +88,27 @@ test("stops before later audit work when an earlier completeness step fails", ()
       if (stage === failingStage) throw new Error(`${stage} unavailable`);
     };
     const service = new OperatorAuditExportService({
-      workOutbox: { reconcileAll: () => { step("work-reconcile"); } },
-      incidentOutbox: { reconcileAll: () => { step("incident-reconcile"); } },
+      workOutbox: { reconcileAll: async () => { step("work-reconcile"); } },
+      incidentOutbox: { reconcileAll: async () => { step("incident-reconcile"); } },
       workAudit: {
-        snapshotHostingProcessInstance: () => {
+        snapshotHostingProcessInstance: async () => {
           step("work-snapshot");
           return { headEventId: null, events: [] };
         },
       },
       incidentAudit: {
-        snapshotHostingProcessInstance: () => {
+        snapshotHostingProcessInstance: async () => {
           step("incident-snapshot");
           return { headEventId: null, events: [] };
         },
       },
     });
-    assert.throws(() => service.create(operatorAuditInstance), /unavailable/u);
+    await assert.rejects(() => service.create(operatorAuditInstance), /unavailable/u);
     assert.deepEqual(calls, expectedCalls);
   }
 });
 
-test("keeps the two snapshots independent when incident audit advances after Work capture", () => {
+test("keeps the two snapshots independent when incident audit advances after Work capture", async () => {
   const laterIncident = {
     ...operatorAuditIncidentEvent,
     eventId: "incident-2",
@@ -117,16 +117,16 @@ test("keeps the two snapshots independent when incident audit advances after Wor
   } as const;
   let incidentEvents: readonly IncidentAuditEvent[] = [operatorAuditIncidentEvent];
   const service = new OperatorAuditExportService({
-    workOutbox: { reconcileAll() {} },
-    incidentOutbox: { reconcileAll() {} },
+    workOutbox: { async reconcileAll() {} },
+    incidentOutbox: { async reconcileAll() {} },
     workAudit: {
-      snapshotHostingProcessInstance: () => {
+      snapshotHostingProcessInstance: async () => {
         incidentEvents = [operatorAuditIncidentEvent, laterIncident];
         return { headEventId: "work-1", events: [operatorAuditWorkEvent] };
       },
     },
     incidentAudit: {
-      snapshotHostingProcessInstance: () => ({
+      snapshotHostingProcessInstance: async () => ({
         headEventId: incidentEvents.at(-1)!.eventId,
         events: incidentEvents,
       }),
@@ -134,7 +134,7 @@ test("keeps the two snapshots independent when incident audit advances after Wor
   });
 
   const value = decodeCanonicalOperatorAuditExport(
-    service.create(operatorAuditInstance),
+    await service.create(operatorAuditInstance),
     operatorAuditInstance,
   );
   assert.deepEqual(value.work.events, [operatorAuditWorkEvent]);
@@ -146,7 +146,7 @@ test("keeps the two snapshots independent when incident audit advances after Wor
   assert.equal(value.incidentActions.headEventId, "incident-2");
 });
 
-test("assembles Work-only and incident-only selected populations from foreign-host repositories", () => {
+test("assembles Work-only and incident-only selected populations from foreign-host repositories", async () => {
   const foreignWork = {
     ...operatorAuditWorkEvent,
     eventId: "foreign-work",
@@ -175,7 +175,7 @@ test("assembles Work-only and incident-only selected populations from foreign-ho
   for (const fixture of cases) {
     const service = filteredService(fixture.work, fixture.incidents);
     const value = decodeCanonicalOperatorAuditExport(
-      service.create(operatorAuditInstance),
+      await service.create(operatorAuditInstance),
       operatorAuditInstance,
     );
     assert.deepEqual(value.work.events, fixture.expectedWork, fixture.label);
@@ -183,7 +183,7 @@ test("assembles Work-only and incident-only selected populations from foreign-ho
   }
 });
 
-test("refuses every private host-field class supplied by a snapshot", () => {
+test("refuses every private host-field class supplied by a snapshot", async () => {
   const privateFields = [
     "locator",
     "workflowId",
@@ -205,7 +205,7 @@ test("refuses every private host-field class supplied by a snapshot", () => {
       nestedPrivateHostFact: { [privateField]: `private-${privateField}` },
     } as unknown as WorkAuditEvent;
     const service = filteredService([polluted], []);
-    assert.throws(() => service.create(operatorAuditInstance), TypeError, privateField);
+    await assert.rejects(() => service.create(operatorAuditInstance), TypeError, privateField);
   }
 });
 
@@ -214,10 +214,10 @@ function filteredService(
   incidentRows: readonly IncidentAuditEvent[],
 ): OperatorAuditExportService {
   return new OperatorAuditExportService({
-    workOutbox: { reconcileAll() {} },
-    incidentOutbox: { reconcileAll() {} },
+    workOutbox: { async reconcileAll() {} },
+    incidentOutbox: { async reconcileAll() {} },
     workAudit: {
-      snapshotHostingProcessInstance: (hostingProcessInstanceId) => {
+      snapshotHostingProcessInstance: async (hostingProcessInstanceId) => {
         const events = workRows.filter((event) =>
           event.hostingProcessInstanceId === hostingProcessInstanceId
         );
@@ -225,7 +225,7 @@ function filteredService(
       },
     },
     incidentAudit: {
-      snapshotHostingProcessInstance: (hostingProcessInstanceId) => {
+      snapshotHostingProcessInstance: async (hostingProcessInstanceId) => {
         const events = incidentRows.filter((event) =>
           event.hostingProcessInstanceId === hostingProcessInstanceId
         );

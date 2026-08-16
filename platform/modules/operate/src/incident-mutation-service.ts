@@ -45,8 +45,8 @@ export class IncidentMutationService {
     const actorId = requireNonemptyString(actor.actorId, "actorId");
     const actionId = requireNonemptyString(actionIdValue, "actionId");
     const interaction = snapshotIncidentActionRequest(interactionValue);
-    this.#options.outbox.reconcileAll();
-    const retained = this.#options.repository.get(actionId);
+    await this.#options.outbox.reconcileAll();
+    const retained = await this.#options.repository.get(actionId);
     if (retained !== null) {
       if (retained.binding.actorId !== actorId) return { kind: "forbidden" };
       if (!sameJson(retained.binding.interaction, interaction)) {
@@ -66,7 +66,7 @@ export class IncidentMutationService {
       throw new OperateIncidentIntegrityError("published incident interaction is not unique");
     }
     const current = matches[0]!;
-    const registration = this.#options.aggregation.registration(
+    const registration = await this.#options.aggregation.registration(
       current.hostingInstance.processInstanceId,
     );
     if (registration === null || !sameJson(registration.instance, current.hostingInstance)) {
@@ -80,7 +80,7 @@ export class IncidentMutationService {
       incident: structuredClone(current.incident),
       interaction,
     };
-    const reservation = this.#options.repository.reserve(
+    const reservation = await this.#options.repository.reserve(
       binding,
       this.#audit(binding, "reserved"),
     );
@@ -90,15 +90,17 @@ export class IncidentMutationService {
         return { kind: reservation.kind };
       case "reserved":
       case "retained":
-        this.#options.outbox.reconcileAll();
+        await this.#options.outbox.reconcileAll();
         return this.#advance(reservation.action);
     }
   }
 
   /** Replays only already-bound submitting or indeterminate work after restart. */
-  reconcileRetained(action: StoredIncidentAction): Promise<IncidentMutationResult> {
-    this.#options.outbox.reconcileAll();
-    const retained = this.#options.repository.get(action.binding.actionId);
+  async reconcileRetained(
+    action: StoredIncidentAction,
+  ): Promise<IncidentMutationResult> {
+    await this.#options.outbox.reconcileAll();
+    const retained = await this.#options.repository.get(action.binding.actionId);
     if (retained === null || !sameJson(retained, action)) {
       throw new OperateIncidentIntegrityError("incident action changed before reconciliation");
     }
@@ -116,7 +118,7 @@ export class IncidentMutationService {
       case "indeterminate":
         break;
     }
-    const submission = this.#options.repository.beginSubmission(
+    const submission = await this.#options.repository.beginSubmission(
       action.binding.actionId,
       action.binding,
     );
@@ -166,12 +168,12 @@ export class IncidentMutationService {
     } catch {
       result = indeterminateResult(binding);
     }
-    const recorded = this.#options.repository.recordOutcome(
+    const recorded = await this.#options.repository.recordOutcome(
       binding,
       result,
       this.#audit(binding, result.state),
     );
-    this.#options.outbox.reconcileAll();
+    await this.#options.outbox.reconcileAll();
     switch (recorded.kind) {
       case "conflict":
         throw new OperateIncidentIntegrityError("incident action outcome conflicted");

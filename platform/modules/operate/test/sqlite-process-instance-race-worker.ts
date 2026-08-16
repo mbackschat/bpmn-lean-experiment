@@ -20,7 +20,7 @@ Atomics.wait(gate, 0, 0);
 
 const repository = new SqliteProcessInstanceRepository(data.databaseFile);
 try {
-  const ordinal = repository.recordConfirmed({
+  const ordinal = await repository.recordConfirmed({
     instance: data.instance,
     locator: `bpmn-process-work-v1:${data.instance.processInstanceId}`,
   });

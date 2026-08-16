@@ -66,13 +66,13 @@ type WorkTaskOperations = Readonly<{
 }>;
 
 type WorkAuditOperations = Readonly<{
-  search(request: ReturnType<typeof matchWorkAuditPath> & object): WorkAuditPage;
+  search(request: ReturnType<typeof matchWorkAuditPath> & object): Promise<WorkAuditPage>;
 }>;
 
 type WorkHttpRoutesOptions = Readonly<{
   tasks: WorkTaskOperations;
   audit: WorkAuditOperations;
-  outbox: Readonly<{ reconcileAll(): void }>;
+  outbox: Readonly<{ reconcileAll(): Promise<void> }>;
 }>;
 
 const RouteKind = {
@@ -112,7 +112,7 @@ export class WorkHttpRoutes {
     }
     if (route === null) return null;
     try {
-      this.options.outbox.reconcileAll();
+      await this.options.outbox.reconcileAll();
       return await this.#dispatch(route, request);
     } catch (error: unknown) {
       if (error instanceof WorkHttpRequestError) {
@@ -153,7 +153,7 @@ export class WorkHttpRoutes {
       case RouteKind.Audit:
         if (request.method !== "GET") return methodNotAllowed("GET");
         await requireEmptyBody(request);
-        return jsonResponse(200, this.options.audit.search(route.request));
+        return jsonResponse(200, await this.options.audit.search(route.request));
     }
   }
 

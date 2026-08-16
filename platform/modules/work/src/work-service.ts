@@ -46,9 +46,12 @@ export type ActorVisibleSystemWorkTask = SystemWorkTask & Readonly<{
 }>;
 
 type WorkRepositoryPort = Readonly<{
-  listProcessRegistrations(): ReadonlyArray<WorkProcessRegistration>;
-  recordObservation(processInstanceId: string, observation: "active" | "closed" | "indeterminate"): void;
-  getClaim(task: WorkTaskReference): WorkClaimSnapshot;
+  listProcessRegistrations(): Promise<ReadonlyArray<WorkProcessRegistration>>;
+  recordObservation(
+    processInstanceId: string,
+    observation: "active" | "closed" | "indeterminate",
+  ): Promise<void>;
+  getClaim(task: WorkTaskReference): Promise<WorkClaimSnapshot>;
 }>;
 
 type WorkObservationGatewayPort = Readonly<{
@@ -81,7 +84,7 @@ export class WorkService {
   }
 
   async observeSystemTasks(): Promise<ReadonlyArray<SystemWorkTask>> {
-    const registrations = this.#options.repository.listProcessRegistrations();
+    const registrations = await this.#options.repository.listProcessRegistrations();
     if (registrations.length > this.#options.limits.maxProcesses) {
       throw new WorkSnapshotUnavailableError();
     }
@@ -94,20 +97,20 @@ export class WorkService {
       });
       switch (observation.status) {
         case "closed":
-          this.#options.repository.recordObservation(
+          await this.#options.repository.recordObservation(
             registration.instance.processInstanceId,
             "closed",
           );
           break;
         case "unknown":
         case "unavailable":
-          this.#options.repository.recordObservation(
+          await this.#options.repository.recordObservation(
             registration.instance.processInstanceId,
             "indeterminate",
           );
           throw new WorkSnapshotUnavailableError();
         case "open":
-          this.#options.repository.recordObservation(
+          await this.#options.repository.recordObservation(
             registration.instance.processInstanceId,
             "active",
           );
@@ -123,8 +126,8 @@ export class WorkService {
             tasks.push({
               registration: structuredClone(registration),
               task: exactTask,
-              claim: this.#options.repository.getClaim(reference),
-              structuredTask: readBoundHumanTaskDefinition(
+              claim: await this.#options.repository.getClaim(reference),
+              structuredTask: await readBoundHumanTaskDefinition(
                 this.#options.catalogs,
                 registration.instance,
                 exactTask.id.elementId,
@@ -157,10 +160,10 @@ export class WorkService {
     return matches.length === 0 ? null : this.#projectVisible(matches[0]!);
   }
 
-  readStructuredTask(
+  async readStructuredTask(
     identity: HumanTaskCatalogBindingIdentityV1,
     elementId: string,
-  ): BoundHumanTaskDefinitionV1 | null {
+  ): Promise<BoundHumanTaskDefinitionV1 | null> {
     return readBoundHumanTaskDefinitionByIdentity(
       this.#options.catalogs,
       identity,

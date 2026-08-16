@@ -218,7 +218,7 @@ test("round-trips exact Timer Start capability through SQLite reopen", async () 
     const reopened = new SqliteDefinitionRepository(databaseFile);
     try {
       assert.deepEqual(
-        reopened.get({ processId: "Process_Timer", version: 1 })
+        (await reopened.get({ processId: "Process_Timer", version: 1 }))
           ?.startCapabilities,
         {
           messageStarts: [],
@@ -248,7 +248,7 @@ test("round-trips an exact empty start capability collection", async () => {
     const reopened = new SqliteDefinitionRepository(databaseFile);
     try {
       assert.deepEqual(
-        reopened.get({ processId: "Process_Empty", version: 1 })
+        (await reopened.get({ processId: "Process_Empty", version: 1 }))
           ?.startCapabilities,
         { messageStarts: [], timerStarts: [] },
       );
@@ -277,8 +277,8 @@ test("refuses old-shape capability corruption instead of repairing it", async ()
 
     const reopened = new SqliteDefinitionRepository(databaseFile);
     try {
-      assert.throws(
-        () => reopened.get({ processId: "Process_Corrupt", version: 1 }),
+      await assert.rejects(
+        reopened.get({ processId: "Process_Corrupt", version: 1 }),
         /only messageStarts and timerStarts/u,
       );
     } finally {
@@ -357,7 +357,7 @@ test("returns exact engine rejection diagnostics and performs zero writes", asyn
     assert.deepEqual(result.diagnostics, rejectedCompilation.diagnostics);
     assert.ok(result.diagnostics.length > 0);
     assert.deepEqual(artifacts.puts, []);
-    assert.deepEqual(service.listLatestDefinitions(), []);
+    assert.deepEqual(await service.listLatestDefinitions(), []);
   });
 });
 
@@ -383,11 +383,11 @@ test("allocates independent positive ordinals within each process", async () => 
 
     assert.deepEqual(versions, [1, 1, 2]);
     assert.deepEqual(
-      serviceKeys(processA.listLatestDefinitions()),
+      serviceKeys(await processA.listLatestDefinitions()),
       ["Process_A/2", "Process_B/1"],
     );
     assert.deepEqual(
-      serviceKeys(processA.listDefinitionVersions("Process_A")),
+      serviceKeys(await processA.listDefinitionVersions("Process_A")),
       ["Process_A/1", "Process_A/2"],
     );
   });
@@ -467,7 +467,7 @@ test("aborts metadata insertion when artifact publication conflicts", async () =
       }),
       (error: unknown) => error instanceof ArtifactConflictError,
     );
-    assert.deepEqual(service.listLatestDefinitions(), []);
+    assert.deepEqual(await service.listLatestDefinitions(), []);
   });
 });
 
@@ -513,11 +513,11 @@ test("returns fresh metadata and source values from the read boundary", async ()
     const deployed = await deployText(service, "defensive-source");
     assert.ok(deployed.definition !== undefined);
 
-    const firstList = service.listLatestDefinitions();
+    const firstList = await service.listLatestDefinitions();
     assert.ok(firstList[0] !== undefined);
     Object.assign(firstList[0].source, { id: "mutated-return" });
     assert.equal(
-      service.listLatestDefinitions()[0]?.source.id,
+      (await service.listLatestDefinitions())[0]?.source.id,
       "defensive-source",
     );
 
@@ -550,7 +550,9 @@ async function deployText(
 }
 
 function serviceKeys(
-  definitions: ReturnType<DefinitionDeploymentService["listLatestDefinitions"]>,
+  definitions: Awaited<
+    ReturnType<DefinitionDeploymentService["listLatestDefinitions"]>
+  >,
 ): string[] {
   return definitions
     .map(({ processId, version }) => `${processId}/${version}`);

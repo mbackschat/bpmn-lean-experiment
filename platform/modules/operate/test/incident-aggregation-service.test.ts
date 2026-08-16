@@ -13,8 +13,8 @@ import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contract
 
 test("fails the complete aggregate, retains indeterminate classification, and later recovers", async () => {
   await withRepository(async (repository) => {
-    repository.recordConfirmed(publication("first"));
-    repository.recordConfirmed(publication("second"));
+    await repository.recordConfirmed(publication("first"));
+    await repository.recordConfirmed(publication("second"));
     const outcomes = new Map<string, unknown>([
       ["first", { status: "observed", incidents: [operationsIncident("first", "Task_A")] }],
       ["second", { status: "unavailable" }],
@@ -33,8 +33,8 @@ test("fails the complete aggregate, retains indeterminate classification, and la
       service.currentSnapshot(),
       (error: unknown) => error instanceof IncidentSnapshotUnavailableError,
     );
-    assert.equal(repository.getRegistration("first")?.observation, "active");
-    assert.equal(repository.getRegistration("second")?.observation, "indeterminate");
+    assert.equal((await repository.getRegistration("first"))?.observation, "active");
+    assert.equal((await repository.getRegistration("second"))?.observation, "indeterminate");
 
     outcomes.set("second", { status: "observed", incidents: [] });
     const recovered = await service.currentSnapshot();
@@ -42,14 +42,14 @@ test("fails the complete aggregate, retains indeterminate classification, and la
       recovered.incidents.map(({ incident }) => incident.id.effectId.elementId),
       ["Task_A"],
     );
-    assert.equal(repository.getRegistration("second")?.observation, "active");
+    assert.equal((await repository.getRegistration("second"))?.observation, "active");
   });
 });
 
 test("sorts by exact scalar identity and enforces both positive ceilings", async () => {
   await withRepository(async (repository) => {
-    repository.recordConfirmed(publication("\u{1f300}"));
-    repository.recordConfirmed(publication("\ue000"));
+    await repository.recordConfirmed(publication("\u{1f300}"));
+    await repository.recordConfirmed(publication("\ue000"));
     const service = new IncidentAggregationService({
       repository,
       gateway: {
@@ -104,15 +104,15 @@ test("sorts by exact scalar identity and enforces both positive ceilings", async
 
 test("classifies exact closed results and rejects malformed Product 1 incident bytes", async () => {
   await withRepository(async (repository) => {
-    repository.recordConfirmed(publication("closed"));
+    await repository.recordConfirmed(publication("closed"));
     const closed = new IncidentAggregationService({
       repository,
       gateway: { observeIncidents: async () => ({ status: "closed" }) },
     });
     assert.deepEqual(await closed.currentSnapshot(), { incidents: [] });
-    assert.equal(repository.getRegistration("closed")?.observation, "closed");
+    assert.equal((await repository.getRegistration("closed"))?.observation, "closed");
 
-    repository.recordConfirmed(publication("malformed"));
+    await repository.recordConfirmed(publication("malformed"));
     const malformed = new IncidentAggregationService({
       repository,
       gateway: {
@@ -129,7 +129,7 @@ test("classifies exact closed results and rejects malformed Product 1 incident b
       },
     });
     await assert.rejects(malformed.currentSnapshot(), IncidentSnapshotUnavailableError);
-    assert.equal(repository.getRegistration("malformed")?.observation, "indeterminate");
+    assert.equal((await repository.getRegistration("malformed"))?.observation, "indeterminate");
   });
 });
 

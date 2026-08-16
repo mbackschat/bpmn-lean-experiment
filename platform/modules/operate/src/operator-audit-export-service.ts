@@ -11,13 +11,13 @@ import type {
   WorkAuditEvent,
 } from "@bpmn-lean/platform-contracts";
 
-type AuditOutbox = Readonly<{ reconcileAll(): void }>;
+type AuditOutbox = Readonly<{ reconcileAll(): Promise<void> }>;
 
 type AuditSnapshotRepository<Event> = Readonly<{
   snapshotHostingProcessInstance(
     hostingProcessInstanceId: string,
     limits: Readonly<{ maxEvents: number; maxStoredBytes: number }>,
-  ): OperatorAuditStream<Event>;
+  ): Promise<OperatorAuditStream<Event>>;
 }>;
 
 export type OperatorAuditExportServiceOptions = Readonly<{
@@ -36,15 +36,15 @@ const snapshotLimits = {
 export class OperatorAuditExportService {
   constructor(private readonly options: OperatorAuditExportServiceOptions) {}
 
-  create(instance: PublicProcessInstanceIdentity): Uint8Array {
-    this.options.workOutbox.reconcileAll();
-    this.options.incidentOutbox.reconcileAll();
-    const work = this.options.workAudit.snapshotHostingProcessInstance(
+  async create(instance: PublicProcessInstanceIdentity): Promise<Uint8Array> {
+    await this.options.workOutbox.reconcileAll();
+    await this.options.incidentOutbox.reconcileAll();
+    const work = await this.options.workAudit.snapshotHostingProcessInstance(
       instance.processInstanceId,
       snapshotLimits,
     );
     const incidentActions =
-      this.options.incidentAudit.snapshotHostingProcessInstance(
+      await this.options.incidentAudit.snapshotHostingProcessInstance(
         instance.processInstanceId,
         snapshotLimits,
       );

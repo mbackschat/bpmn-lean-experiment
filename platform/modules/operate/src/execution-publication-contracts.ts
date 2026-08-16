@@ -31,26 +31,26 @@ export type ExecutionPublicationProjectionImage = Readonly<{
 }>;
 
 export interface ExecutionPublicationRepository {
-  get(processInstanceId: string): ExecutionPublicationProjectionImage | null;
+  get(processInstanceId: string): Promise<ExecutionPublicationProjectionImage | null>;
   applyPage(
     registration: OperateProcessRegistration,
     page: ExecutionPublicationPage,
-  ): ExecutionPublicationProjectionImage;
+  ): Promise<ExecutionPublicationProjectionImage>;
   replaceFromPages(
     registration: OperateProcessRegistration,
     pages: readonly ExecutionPublicationPage[],
-  ): ExecutionPublicationProjectionImage;
+  ): Promise<ExecutionPublicationProjectionImage>;
   mark(
     registration: OperateProcessRegistration,
     status:
       | ExecutionPublicationProjectionStatus.Gap
       | ExecutionPublicationProjectionStatus.Unavailable,
-  ): void;
+  ): Promise<void>;
   page(
     processInstanceId: string,
     request: ExecutionPublicationRequest,
-  ): ExecutionPublicationPage | null;
-  export(processInstanceId: string): ExecutionPublicationExport | null;
+  ): Promise<ExecutionPublicationPage | null>;
+  export(processInstanceId: string): Promise<ExecutionPublicationExport | null>;
 }
 
 export interface ExecutionPublicationGateway {

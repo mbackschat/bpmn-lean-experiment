@@ -18,8 +18,8 @@ type AuthorizedAuditRequest = WorkAuditRequest & Readonly<{
 type WorkAuditServiceOptions = Readonly<{
   actors: ActorResolver;
   authorization: Pick<TaskAuthorizationPolicy, "decideAuditActorSelection">;
-  outbox: Readonly<{ reconcileAll(): void }>;
-  audit: Readonly<{ search(request: AuthorizedAuditRequest): WorkAuditPage }>;
+  outbox: Readonly<{ reconcileAll(): Promise<void> }>;
+  audit: Readonly<{ search(request: AuthorizedAuditRequest): Promise<WorkAuditPage> }>;
 }>;
 
 export class WorkAuditForbiddenError extends Error {
@@ -33,8 +33,10 @@ export class WorkAuditForbiddenError extends Error {
 export class WorkAuditService {
   constructor(private readonly options: WorkAuditServiceOptions) {}
 
-  search(request: WorkAuditRequest & Readonly<{ limit: number }>): WorkAuditPage {
-    this.options.outbox.reconcileAll();
+  async search(
+    request: WorkAuditRequest & Readonly<{ limit: number }>,
+  ): Promise<WorkAuditPage> {
+    await this.options.outbox.reconcileAll();
     const actor = this.options.actors.resolveActor();
     switch (
       this.options.authorization.decideAuditActorSelection(actor, request.actorId)

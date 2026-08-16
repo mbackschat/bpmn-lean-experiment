@@ -45,9 +45,9 @@ implements MessageStartPublicationRepository {
     return this.#database.isOpen;
   }
 
-  reserve(
+  async reserve(
     record: NewMessageStartPublicationRecord,
-  ): MessageStartPublicationReservation {
+  ): Promise<MessageStartPublicationReservation> {
     this.#database.exec("BEGIN IMMEDIATE");
     try {
       const existing = this.#get(record.publicationId);
@@ -72,11 +72,13 @@ implements MessageStartPublicationRepository {
     }
   }
 
-  get(publicationId: string): MessageStartPublicationRecord | null {
+  async get(
+    publicationId: string,
+  ): Promise<MessageStartPublicationRecord | null> {
     return this.#get(publicationId);
   }
 
-  listForReconciliation(): ReadonlyArray<MessageStartPublicationRecord> {
+  async listForReconciliation(): Promise<ReadonlyArray<MessageStartPublicationRecord>> {
     return this.#database.prepare(`
       ${selectColumns}
       WHERE state IN ('reserved', 'starting', 'indeterminate')
@@ -84,11 +86,11 @@ implements MessageStartPublicationRepository {
     `).all().map(decodeRecord);
   }
 
-  compareAndSet(
+  async compareAndSet(
     publicationId: string,
     expected: MessageStartPublicationState,
     next: MessageStartPublicationState,
-  ): MessageStartPublicationRecord | null {
+  ): Promise<MessageStartPublicationRecord | null> {
     requireLegalTransition(expected, next);
     const result = this.#database.prepare(`
       UPDATE message_start_publications

@@ -64,7 +64,7 @@ export class DefinitionStartService {
     reference: DefinitionReference,
   ): Promise<DefinitionVersionStartResult> {
     const selectedReference = cloneReference(reference);
-    const stored = this.#repository.get(selectedReference);
+    const stored = await this.#repository.get(selectedReference);
     if (stored === null) {
       return {
         status: DefinitionVersionStartStatus.NotFound,

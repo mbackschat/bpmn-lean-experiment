@@ -88,7 +88,7 @@ export class SqliteWorkRepository {
     });
   }
 
-  listProcessRegistrations(): ReadonlyArray<WorkProcessRegistration> {
+  async listProcessRegistrations(): Promise<ReadonlyArray<WorkProcessRegistration>> {
     return this.#database.prepare(`
       SELECT process_instance_id, public_instance_json, work_locator, observation
       FROM work_processes ORDER BY process_instance_id COLLATE BINARY ASC
@@ -98,7 +98,14 @@ export class SqliteWorkRepository {
     ));
   }
 
-  recordObservation(processInstanceId: string, observation: WorkProcessObservation): void {
+  async recordObservation(
+    processInstanceId: string,
+    observation: WorkProcessObservation,
+  ): Promise<void> {
+    this.#recordObservation(processInstanceId, observation);
+  }
+
+  #recordObservation(processInstanceId: string, observation: WorkProcessObservation): void {
     const exactId = requireString(processInstanceId, "processInstanceId");
     const exactObservation = requireObservation(observation);
     const changed = this.#database.prepare(`
@@ -107,23 +114,31 @@ export class SqliteWorkRepository {
     if (changed !== 1) throw new WorkRepositoryIntegrityError(`unknown Work registration ${exactId}`);
   }
 
-  getClaim(task: WorkTaskReference): WorkClaimSnapshot {
+  async getClaim(task: WorkTaskReference): Promise<WorkClaimSnapshot> {
+    return this.#getClaim(task);
+  }
+
+  #getClaim(task: WorkTaskReference): WorkClaimSnapshot {
     const exact = snapshotTaskReference(task);
     const row = this.#claimRow(exact);
     if (row === undefined) return { claimGeneration: 0, claim: null };
     return decodeClaimRow(row);
   }
 
-  getClaimReleaseAction(actionId: string): StoredWorkClaimReleaseAction | null {
+  async getClaimReleaseAction(actionId: string): Promise<StoredWorkClaimReleaseAction | null> {
+    return this.#getClaimReleaseAction(actionId);
+  }
+
+  #getClaimReleaseAction(actionId: string): StoredWorkClaimReleaseAction | null {
     const row = this.#readAction(requireString(actionId, "actionId"));
     return row === undefined ? null : decodeActionRow(row);
   }
 
-  claimTask(input: WorkClaimTransitionInput): WorkClaimTransitionResult {
+  async claimTask(input: WorkClaimTransitionInput): Promise<WorkClaimTransitionResult> {
     const task = snapshotTaskReference(input.task);
     validateClaimInput(input, task);
     return this.#transaction(() => {
-      const retained = this.getClaimReleaseAction(input.actionId);
+      const retained = this.#getClaimReleaseAction(input.actionId);
       if (retained !== null) {
         const expectedBinding = {
           actionId: input.actionId,
@@ -136,7 +151,7 @@ export class SqliteWorkRepository {
           this.#outbox(input.audit.conflict);
           return { kind: "conflict" };
         }
-        const current = this.getClaim(task);
+        const current = this.#getClaim(task);
         const retainedGeneration = retained.result.claim.generation;
         if (
           current.claim === null ||
@@ -149,7 +164,7 @@ export class SqliteWorkRepository {
         this.#outbox(input.audit.idempotent);
         return { kind: "idempotent", result: retained.result };
       }
-      const current = this.getClaim(task);
+      const current = this.#getClaim(task);
       if (current.claim !== null || current.claimGeneration !== input.expectedGeneration) {
         this.#outbox(input.audit.conflict);
         return { kind: "conflict" };
@@ -173,11 +188,11 @@ export class SqliteWorkRepository {
     });
   }
 
-  releaseTask(input: WorkReleaseTransitionInput): WorkReleaseTransitionResult {
+  async releaseTask(input: WorkReleaseTransitionInput): Promise<WorkReleaseTransitionResult> {
     const task = snapshotTaskReference(input.task);
     validateReleaseInput(input, task);
     return this.#transaction(() => {
-      const retained = this.getClaimReleaseAction(input.actionId);
+      const retained = this.#getClaimReleaseAction(input.actionId);
       if (retained !== null) {
         const expectedBinding = {
           actionId: input.actionId,
@@ -193,7 +208,7 @@ export class SqliteWorkRepository {
         this.#outbox(input.audit.idempotent);
         return { kind: "idempotent", result: retained.result };
       }
-      const current = this.getClaim(task);
+      const current = this.#getClaim(task);
       if (current.claim === null) return { kind: "notFound" };
       if (current.claim.actorId !== input.actorId || current.claim.generation !== input.generation) {
         this.#outbox(input.audit.conflict);
@@ -208,12 +223,18 @@ export class SqliteWorkRepository {
     });
   }
 
-  getCompletionAction(actionId: string): StoredWorkCompletionAction | null {
+  async getCompletionAction(actionId: string): Promise<StoredWorkCompletionAction | null> {
+    return this.#getCompletionAction(actionId);
+  }
+
+  #getCompletionAction(actionId: string): StoredWorkCompletionAction | null {
     const row = this.#readCompletionAction(requireString(actionId, "actionId"));
     return row === undefined ? null : decodeCompletionRow(row);
   }
 
-  reserveCompletion(input: WorkCompletionReservationInput): WorkCompletionReservationResult {
+  async reserveCompletion(
+    input: WorkCompletionReservationInput,
+  ): Promise<WorkCompletionReservationResult> {
     const binding = snapshotCompletionBinding(input.binding);
     requireCompletionAudit(input.audit, binding, "reserved");
     return this.#transaction(() => {
@@ -224,7 +245,7 @@ export class SqliteWorkRepository {
           ? { kind: "retained", action }
           : { kind: "conflict" };
       }
-      const claim = this.getClaim(binding.task);
+      const claim = this.#getClaim(binding.task);
       if (
         claim.claim?.actorId !== binding.actorId ||
         claim.claim.generation !== binding.claimGeneration
@@ -257,10 +278,10 @@ export class SqliteWorkRepository {
     });
   }
 
-  beginCompletionSubmission(
+  async beginCompletionSubmission(
     actionId: string,
     expectedBinding: WorkCompletionBinding,
-  ): WorkCompletionSubmissionResult {
+  ): Promise<WorkCompletionSubmissionResult> {
     const binding = snapshotCompletionBinding(expectedBinding);
     if (binding.actionId !== actionId) return { kind: "conflict" };
     return this.#transaction(() => {
@@ -284,9 +305,9 @@ export class SqliteWorkRepository {
     });
   }
 
-  recordCompletionOutcome(
+  async recordCompletionOutcome(
     input: WorkCompletionOutcomeInput,
-  ): WorkCompletionOutcomeResult {
+  ): Promise<WorkCompletionOutcomeResult> {
     const binding = snapshotCompletionBinding(input.binding);
     const result = completionResult(binding, input.outcome);
     requireCompletionAudit(input.audit, binding, result.state);
@@ -311,13 +332,13 @@ export class SqliteWorkRepository {
       `).run(state, JSON.stringify(result), binding.actionId);
       if (state === "committed" ||
           (state === "rejected" && result.engineResult.kind === "processClosed")) {
-        const claim = this.getClaim(binding.task);
+        const claim = this.#getClaim(binding.task);
         if (claim.claim !== null) {
           this.#upsertClaim(binding.task, claim.claimGeneration + 1, null);
         }
       }
       if (state === "rejected" && result.engineResult.kind === "processClosed") {
-        this.recordObservation(binding.task.hostingProcessInstanceId, "closed");
+        this.#recordObservation(binding.task.hostingProcessInstanceId, "closed");
       }
       this.#outbox(input.audit);
       return {
@@ -327,7 +348,7 @@ export class SqliteWorkRepository {
     });
   }
 
-  listUndeliveredAuditEvents(): ReadonlyArray<WorkAuditOutboxItem> {
+  async listUndeliveredAuditEvents(): Promise<ReadonlyArray<WorkAuditOutboxItem>> {
     return this.#database.prepare(`
       SELECT ordinal, event_json FROM work_audit_outbox
       WHERE delivered = 0 ORDER BY ordinal ASC
@@ -337,14 +358,14 @@ export class SqliteWorkRepository {
     }));
   }
 
-  acknowledgeAuditEvent(eventId: string): void {
+  async acknowledgeAuditEvent(eventId: string): Promise<void> {
     const changed = this.#database.prepare(`
       UPDATE work_audit_outbox SET delivered = 1 WHERE event_id = ?
     `).run(requireString(eventId, "eventId")).changes;
     if (changed > 1) throw new WorkRepositoryIntegrityError("audit acknowledgement changed multiple rows");
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.#database.isOpen) this.#database.close();
   }
 

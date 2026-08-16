@@ -14,15 +14,15 @@ const event = {
   action: { kind: "claim" as const, actionId: "action-1", outcome: "claimed" as const },
 };
 
-test("retries an audit insert after a crash before Work acknowledgement", () => {
+test("retries an audit insert after a crash before Work acknowledgement", async () => {
   let acknowledged = false;
   let inserts = 0;
   const repository = {
-    listUndeliveredAuditEvents: () => acknowledged ? [] : [{ ordinal: 1, event }],
-    acknowledgeAuditEvent: () => { acknowledged = true; },
+    listUndeliveredAuditEvents: async () => acknowledged ? [] : [{ ordinal: 1, event }],
+    acknowledgeAuditEvent: async () => { acknowledged = true; },
   };
   const sink = {
-    record: () => {
+    record: async () => {
       inserts += 1;
       if (inserts === 1) throw new Error("crash after Work commit");
       return 1;
@@ -30,9 +30,9 @@ test("retries an audit insert after a crash before Work acknowledgement", () => 
   };
   const service = new WorkAuditOutboxService(repository, sink);
 
-  assert.throws(() => service.reconcileAll(), /crash/u);
+  await assert.rejects(service.reconcileAll(), /crash/u);
   assert.equal(acknowledged, false);
-  service.reconcileAll();
+  await service.reconcileAll();
   assert.equal(inserts, 2);
   assert.equal(acknowledged, true);
 });

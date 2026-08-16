@@ -60,7 +60,7 @@ test("retains subscriber acknowledgements and retries only missing delivery", as
   assert.deepEqual(result, publication.instance);
   assert.deepEqual(operate, [publication]);
   assert.deepEqual(work, [publication, publication]);
-  assert.deepEqual(repository.get("instance-1"), {
+  assert.deepEqual(await repository.get("instance-1"), {
     ...publication,
     intent: null,
     state: ConfirmedProcessInstanceState.Confirmed,
@@ -133,7 +133,7 @@ test("keeps divergent direct evidence as a stable integrity tombstone", async ()
   await assert.rejects(service.startDirect(direct, host), /integrity/u);
   assert.equal(starts, 1);
   assert.equal(
-    repository.get("instance-1")?.state,
+    (await repository.get("instance-1"))?.state,
     ConfirmedProcessInstanceState.IntegrityFailure,
   );
 });
@@ -147,8 +147,8 @@ test("startup reconciliation describes direct uncertain state without dispatch",
       intentSha256: "6".repeat(64),
     },
   };
-  repository.reserveDirect(direct);
-  repository.compareAndSetState(
+  await repository.reserveDirect(direct);
+  await repository.compareAndSetState(
     publication.instance.processInstanceId,
     ConfirmedProcessInstanceState.Reserved,
     ConfirmedProcessInstanceState.Starting,
@@ -174,7 +174,7 @@ test("startup reconciliation describes direct uncertain state without dispatch",
 
   assert.equal(starts, 0);
   assert.equal(describes, 1);
-  assert.deepEqual(repository.get(publication.instance.processInstanceId), {
+  assert.deepEqual(await repository.get(publication.instance.processInstanceId), {
     ...direct,
     state: ConfirmedProcessInstanceState.Confirmed,
     operatePending: false,

@@ -34,7 +34,9 @@ export class SqliteDefinitionPresentationRepository
     }
   }
 
-  get(key: DefinitionPresentationKey): BpmnDiagramPresentationSidecar | null {
+  async get(
+    key: DefinitionPresentationKey,
+  ): Promise<BpmnDiagramPresentationSidecar | null> {
     validateKey(key);
     const row = this.#database.prepare(`
       SELECT * FROM definition_diagram_presentations
@@ -44,9 +46,9 @@ export class SqliteDefinitionPresentationRepository
     return row === undefined ? null : decodeSidecar(row);
   }
 
-  insertOrCompare(
+  async insertOrCompare(
     sidecar: BpmnDiagramPresentationSidecar,
-  ): BpmnDiagramPresentationSidecar {
+  ): Promise<BpmnDiagramPresentationSidecar> {
     const candidate = snapshotSidecar(sidecar);
     this.#database.exec("BEGIN IMMEDIATE");
     try {

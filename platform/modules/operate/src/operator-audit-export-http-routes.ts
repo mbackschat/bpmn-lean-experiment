@@ -24,11 +24,11 @@ import type {
 import { requireBodylessGet } from "./bodyless-get.js";
 
 type ConfirmedInstanceLookup = Readonly<{
-  getConfirmed(processInstanceId: string): unknown | null;
+  getConfirmed(processInstanceId: string): Promise<unknown | null>;
 }>;
 
 type OperatorAuditExporter = Readonly<{
-  create(instance: PublicProcessInstanceIdentity): Uint8Array;
+  create(instance: PublicProcessInstanceIdentity): Promise<Uint8Array>;
 }>;
 
 export type OperatorAuditExportHttpRoutesOptions = Readonly<{
@@ -77,7 +77,7 @@ export class OperatorAuditExportHttpRoutes {
 
     let instance: PublicProcessInstanceIdentity;
     try {
-      const registered = this.options.registrations.getConfirmed(processInstanceId);
+      const registered = await this.options.registrations.getConfirmed(processInstanceId);
       if (registered === null) return notFound();
       instance = decodePublicProcessInstanceIdentity(
         registered,
@@ -91,7 +91,7 @@ export class OperatorAuditExportHttpRoutes {
     }
 
     try {
-      const bytes = this.options.exports.create(instance);
+      const bytes = await this.options.exports.create(instance);
       decodeCanonicalOperatorAuditExport(bytes, instance);
       return new Response(bytes, {
         status: 200,

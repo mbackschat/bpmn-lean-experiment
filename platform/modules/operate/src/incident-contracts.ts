@@ -125,23 +125,23 @@ export type IncidentActionOutcomeResult =
   | Readonly<{ kind: "conflict" }>;
 
 export interface IncidentActionRepository {
-  get(actionId: string): StoredIncidentAction | null;
+  get(actionId: string): Promise<StoredIncidentAction | null>;
   reserve(
     binding: IncidentActionBinding,
     audit: IncidentAuditEvent,
-  ): IncidentActionReservationResult;
+  ): Promise<IncidentActionReservationResult>;
   beginSubmission(
     actionId: string,
     binding: IncidentActionBinding,
-  ): IncidentActionSubmissionResult;
+  ): Promise<IncidentActionSubmissionResult>;
   recordOutcome(
     binding: IncidentActionBinding,
     result: IncidentActionResult,
     audit: IncidentAuditEvent,
-  ): IncidentActionOutcomeResult;
-  listReconciliableActions(): ReadonlyArray<StoredIncidentAction>;
-  listUndeliveredAuditEvents(): ReadonlyArray<IncidentAuditOutboxItem>;
-  acknowledgeAuditEvent(eventId: string): void;
+  ): Promise<IncidentActionOutcomeResult>;
+  listReconciliableActions(): Promise<ReadonlyArray<StoredIncidentAction>>;
+  listUndeliveredAuditEvents(): Promise<ReadonlyArray<IncidentAuditOutboxItem>>;
+  acknowledgeAuditEvent(eventId: string): Promise<void>;
 }
 
 export type AuthorizedIncidentActor = Readonly<{ actorId: string }>;

@@ -17,11 +17,11 @@ import type {
 test("round-trips an immutable exact-definition publication snapshot", async () => {
   await withRepository(async (repository) => {
     const candidate = record("publication-1", 1);
-    assert.equal(repository.reserve(candidate).inserted, true);
+    assert.equal((await repository.reserve(candidate)).inserted, true);
     Object.assign(candidate.definition.source, { id: "mutated-after-reserve" });
     Object.assign(candidate.messageStart.channel, { messageId: "mutated" });
 
-    const stored = repository.get("publication-1");
+    const stored = await repository.get("publication-1");
     assert.equal(stored?.definition.source.id, "message-source");
     assert.deepEqual(stored?.definition.startCapabilities, {
       messageStarts: [messageStart()],
@@ -43,7 +43,7 @@ test("round-trips an immutable exact-definition publication snapshot", async () 
 
 test("enforces independent uniqueness for every generated private identity", async () => {
   await withRepository(async (repository) => {
-    repository.reserve(record("first", 1));
+    await repository.reserve(record("first", 1));
     const collisions = [
       { processInstanceId: "instance-1", commandId: "command-2", workflowId: "workflow-2" },
       { processInstanceId: "instance-2", commandId: "command-1", workflowId: "workflow-2" },
@@ -52,20 +52,20 @@ test("enforces independent uniqueness for every generated private identity", asy
     for (const identity of collisions) {
       const duplicate = record("second", 2);
       Object.assign(duplicate.identity, identity);
-      assert.throws(
-        () => repository.reserve(duplicate),
+      await assert.rejects(
+        repository.reserve(duplicate),
         (error: unknown) => error instanceof MessageStartPublicationIntegrityError,
       );
     }
-    assert.equal(repository.get("second"), null);
+    assert.equal(await repository.get("second"), null);
   });
 });
 
 test("persists the closed lifecycle and refuses stale or dispatch-restoring CAS", async () => {
   await withRepository(async (repository) => {
-    repository.reserve(record("lifecycle", 1));
+    await repository.reserve(record("lifecycle", 1));
     assert.equal(
-      repository.compareAndSet(
+      await repository.compareAndSet(
         "lifecycle",
         MessageStartPublicationState.Starting,
         MessageStartPublicationState.Accepted,
@@ -73,23 +73,23 @@ test("persists the closed lifecycle and refuses stale or dispatch-restoring CAS"
       null,
     );
     assert.equal(
-      repository.compareAndSet(
+      (await repository.compareAndSet(
         "lifecycle",
         MessageStartPublicationState.Reserved,
         MessageStartPublicationState.Starting,
-      )?.state,
+      ))?.state,
       MessageStartPublicationState.Starting,
     );
     assert.equal(
-      repository.compareAndSet(
+      (await repository.compareAndSet(
         "lifecycle",
         MessageStartPublicationState.Starting,
         MessageStartPublicationState.Indeterminate,
-      )?.state,
+      ))?.state,
       MessageStartPublicationState.Indeterminate,
     );
-    assert.throws(
-      () => repository.compareAndSet(
+    await assert.rejects(
+      repository.compareAndSet(
         "lifecycle",
         MessageStartPublicationState.Indeterminate,
         MessageStartPublicationState.Reserved,
@@ -97,22 +97,22 @@ test("persists the closed lifecycle and refuses stale or dispatch-restoring CAS"
       /illegal Message Start publication transition/u,
     );
     assert.equal(
-      repository.compareAndSet(
+      (await repository.compareAndSet(
         "lifecycle",
         MessageStartPublicationState.Indeterminate,
         MessageStartPublicationState.Accepted,
-      )?.state,
+      ))?.state,
       MessageStartPublicationState.Accepted,
     );
     assert.equal(
-      repository.compareAndSet(
+      (await repository.compareAndSet(
         "lifecycle",
         MessageStartPublicationState.Accepted,
         MessageStartPublicationState.IntegrityFailure,
-      )?.state,
+      ))?.state,
       MessageStartPublicationState.IntegrityFailure,
     );
-    assert.deepEqual(repository.listForReconciliation(), []);
+    assert.deepEqual(await repository.listForReconciliation(), []);
   });
 });
 
@@ -121,19 +121,19 @@ test("reopen preserves starting and indeterminate rows without making them dispa
   const databaseFile = join(root, "definitions.sqlite");
   try {
     const first = new SqliteMessageStartPublicationRepository(databaseFile);
-    first.reserve(record("starting", 1));
-    first.compareAndSet(
+    await first.reserve(record("starting", 1));
+    await first.compareAndSet(
       "starting",
       MessageStartPublicationState.Reserved,
       MessageStartPublicationState.Starting,
     );
-    first.reserve(record("indeterminate", 2));
-    first.compareAndSet(
+    await first.reserve(record("indeterminate", 2));
+    await first.compareAndSet(
       "indeterminate",
       MessageStartPublicationState.Reserved,
       MessageStartPublicationState.Starting,
     );
-    first.compareAndSet(
+    await first.compareAndSet(
       "indeterminate",
       MessageStartPublicationState.Starting,
       MessageStartPublicationState.Indeterminate,
@@ -143,7 +143,7 @@ test("reopen preserves starting and indeterminate rows without making them dispa
     const reopened = new SqliteMessageStartPublicationRepository(databaseFile);
     try {
       assert.deepEqual(
-        reopened.listForReconciliation().map(({ publicationId, state }) => ({
+        (await reopened.listForReconciliation()).map(({ publicationId, state }) => ({
           publicationId,
           state,
         })),
@@ -153,7 +153,7 @@ test("reopen preserves starting and indeterminate rows without making them dispa
         ],
       );
       assert.equal(
-        reopened.compareAndSet(
+        await reopened.compareAndSet(
           "starting",
           MessageStartPublicationState.Reserved,
           MessageStartPublicationState.Starting,

@@ -167,7 +167,7 @@ test("invalid structured input reserves nothing and calls the gateway zero times
       }],
     });
     assert.equal(harness.completionCalls, 0);
-    assert.equal(harness.repository.getCompletionAction("invalid-1"), null);
+    assert.equal(await harness.repository.getCompletionAction("invalid-1"), null);
     assert.deepEqual(harness.audit, beforeAudit);
   } finally {
     await harness.close();
@@ -196,7 +196,7 @@ test("hidden incompatible current data rejects before reservation, dispatch, or 
       }],
     });
     assert.equal(harness.completionCalls, 0);
-    assert.equal(harness.repository.getCompletionAction("hidden-incompatible-1"), null);
+    assert.equal(await harness.repository.getCompletionAction("hidden-incompatible-1"), null);
     assert.deepEqual(harness.audit, beforeAudit);
   } finally {
     await harness.close();
@@ -220,7 +220,7 @@ test("unknown __proto__ input remains visible to validation and mutates nothing"
       }],
     });
     assert.equal(harness.completionCalls, 0);
-    assert.equal(harness.repository.getCompletionAction("unknown-proto-1"), null);
+    assert.equal(await harness.repository.getCompletionAction("unknown-proto-1"), null);
     assert.deepEqual(harness.audit, beforeAudit);
   } finally {
     await harness.close();
@@ -286,7 +286,7 @@ async function createHarness(options: Readonly<{
   let eventOrdinal = 0;
   const actors = new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] });
   const outbox = new WorkAuditOutboxService(repository, {
-    record: (event) => {
+    record: async (event) => {
       audit.push(structuredClone(event));
       return audit.length;
     },
@@ -322,7 +322,7 @@ async function createHarness(options: Readonly<{
     authorization: new TaskAuthorizationPolicy(),
     limits: { maxProcesses: 10, maxTasks: 10 },
     catalogs: {
-      readHumanTaskCatalog: () => structuredClone(options.catalog ?? catalog),
+      readHumanTaskCatalog: async () => structuredClone(options.catalog ?? catalog),
     },
   });
   const details = new WorkTaskDetailService({ work, gateway });
@@ -348,7 +348,7 @@ async function createHarness(options: Readonly<{
     get completionCalls() { return completionCalls; },
     get lastSubmittedValues() { return lastSubmittedValues; },
     close: async () => {
-      repository.close();
+      await repository.close();
       await rm(root, { recursive: true, force: true });
     },
   };

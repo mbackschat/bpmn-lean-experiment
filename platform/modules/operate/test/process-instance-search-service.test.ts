@@ -23,14 +23,14 @@ test("records through the structural async publisher contract", async () => {
   assert.equal(repository.rows[0]?.instance.processInstanceId, "instance-1");
 });
 
-test("pages newest-first with an opaque stable insertion boundary", () => {
+test("pages newest-first with an opaque stable insertion boundary", async () => {
   const repository = new MemoryRepository();
   const service = new ProcessInstanceSearchService(repository);
-  repository.recordConfirmed(publication(instance("oldest", 1)));
-  repository.recordConfirmed(publication(instance("middle", 2)));
-  repository.recordConfirmed(publication(instance("newest", 3)));
+  await repository.recordConfirmed(publication(instance("oldest", 1)));
+  await repository.recordConfirmed(publication(instance("middle", 2)));
+  await repository.recordConfirmed(publication(instance("newest", 3)));
 
-  const first = service.searchProcessInstances({ limit: 2 });
+  const first = await service.searchProcessInstances({ limit: 2 });
   assert.deepEqual(
     first.instances.map(({ processInstanceId }) => processInstanceId),
     ["newest", "middle"],
@@ -41,8 +41,8 @@ test("pages newest-first with an opaque stable insertion boundary", () => {
     assert.fail("the first page must expose its older-row cursor");
   }
 
-  repository.recordConfirmed(publication(instance("inserted-between-pages", 4)));
-  const second = service.searchProcessInstances({
+  await repository.recordConfirmed(publication(instance("inserted-between-pages", 4)));
+  const second = await service.searchProcessInstances({
     cursor: first.nextCursor,
     limit: 2,
   });
@@ -53,37 +53,37 @@ test("pages newest-first with an opaque stable insertion boundary", () => {
   assert.equal(second.nextCursor, null);
 });
 
-test("applies exact filters and validates direct service input", () => {
+test("applies exact filters and validates direct service input", async () => {
   const repository = new MemoryRepository();
   const service = new ProcessInstanceSearchService(repository);
-  repository.recordConfirmed(publication(instance("first", 1, "Alpha", "a".repeat(64))));
-  repository.recordConfirmed(publication(instance("second", 2, "Beta", "b".repeat(64))));
-  repository.recordConfirmed(publication(instance("third", 2, "Alpha", "b".repeat(64))));
+  await repository.recordConfirmed(publication(instance("first", 1, "Alpha", "a".repeat(64))));
+  await repository.recordConfirmed(publication(instance("second", 2, "Beta", "b".repeat(64))));
+  await repository.recordConfirmed(publication(instance("third", 2, "Alpha", "b".repeat(64))));
 
   assert.deepEqual(
-    service.searchProcessInstances({ processId: "Alpha" }).instances.map(
+    (await service.searchProcessInstances({ processId: "Alpha" })).instances.map(
       ({ processInstanceId }) => processInstanceId,
     ),
     ["third", "first"],
   );
   assert.deepEqual(
-    service.searchProcessInstances({
+    (await service.searchProcessInstances({
       processInstanceId: "second",
       processId: "Beta",
       version: 2,
       sourceSha256: "b".repeat(64),
-    }).instances.map(({ processInstanceId }) => processInstanceId),
+    })).instances.map(({ processInstanceId }) => processInstanceId),
     ["second"],
   );
-  assert.throws(
+  await assert.rejects(
     () => service.searchProcessInstances({ limit: 101 }),
     /limit must be an integer from 1 through 100/u,
   );
-  assert.throws(
+  await assert.rejects(
     () => service.searchProcessInstances({ sourceSha256: "B".repeat(64) }),
     /lowercase SHA-256/u,
   );
-  assert.throws(
+  await assert.rejects(
     () => service.searchProcessInstances({ cursor: "v1.not-an-ordinal" }),
     /cursor/u,
   );
@@ -95,10 +95,10 @@ class MemoryRepository implements ProcessInstanceRepository {
     observation: "active" | "closed" | "indeterminate";
   }> = [];
 
-  recordConfirmed(candidate: Readonly<{
+  async recordConfirmed(candidate: Readonly<{
     instance: PublicProcessInstanceIdentity;
     locator: string;
-  }>): number {
+  }>): Promise<number> {
     const ordinal = this.rows.length + 1;
     this.rows.push({
       ordinal,
@@ -109,28 +109,28 @@ class MemoryRepository implements ProcessInstanceRepository {
     return ordinal;
   }
 
-  getRegistration(processInstanceId: string) {
+  async getRegistration(processInstanceId: string) {
     return structuredClone(this.rows.find(({ instance: value }) =>
       value.processInstanceId === processInstanceId
     ) ?? null);
   }
 
-  listNonclosed(limit: number) {
+  async listNonclosed(limit: number) {
     return structuredClone(this.rows.filter(({ observation }) =>
       observation !== "closed"
     ).slice(0, limit));
   }
 
-  listExactDefinitionVersion(definition: PublicProcessInstanceIdentity["definition"]) {
+  async listExactDefinitionVersion(definition: PublicProcessInstanceIdentity["definition"]) {
     return structuredClone(this.rows.filter(({ instance }) =>
       JSON.stringify(instance.definition) === JSON.stringify(definition)
     ).sort((left, right) => left.ordinal - right.ordinal).slice(0, 101));
   }
 
-  recordObservation(
+  async recordObservation(
     processInstanceId: string,
     observation: "active" | "closed" | "indeterminate",
-  ): void {
+  ): Promise<void> {
     const row = this.rows.find(({ instance: value }) =>
       value.processInstanceId === processInstanceId
     );
@@ -138,7 +138,9 @@ class MemoryRepository implements ProcessInstanceRepository {
     row.observation = observation;
   }
 
-  search(query: ProcessInstanceRepositoryQuery): ReadonlyArray<StoredProcessInstance> {
+  async search(
+    query: ProcessInstanceRepositoryQuery,
+  ): Promise<ReadonlyArray<StoredProcessInstance>> {
     return this.rows.toReversed().filter(({ ordinal, instance: candidate }) =>
       (query.beforeOrdinal === undefined || ordinal < query.beforeOrdinal) &&
       (query.processInstanceId === undefined ||

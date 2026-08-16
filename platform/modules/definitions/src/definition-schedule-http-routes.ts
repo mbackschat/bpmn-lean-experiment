@@ -137,7 +137,7 @@ export class DefinitionScheduleHttpRoutes {
     requireNoQuery(request, url);
     const input = await readDefinitionScheduleRequest(request);
     const reference = scheduleReference(route);
-    if (this.#definitions.getDefinitionMetadata(reference) === null) {
+    if (await this.#definitions.getDefinitionMetadata(reference) === null) {
       return notFound("The definition version was not found.");
     }
     const result = await this.#schedules.put({
@@ -172,7 +172,7 @@ export class DefinitionScheduleHttpRoutes {
     requireNoQuery(request, url);
     await requireEmptyRequestBody(request, "Definition schedule list");
     const reference = definitionReference(route);
-    const definition = this.#definitions.getDefinitionMetadata(reference);
+    const definition = await this.#definitions.getDefinitionMetadata(reference);
     if (definition === null) {
       return notFound("The definition version was not found.");
     }

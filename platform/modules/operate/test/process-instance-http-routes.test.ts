@@ -148,9 +148,9 @@ class StubSearch {
     this.result = result;
   }
 
-  searchProcessInstances(
+  async searchProcessInstances(
     request: ProcessInstanceSearchRequest,
-  ): ProcessInstanceSearchPage {
+  ): Promise<ProcessInstanceSearchPage> {
     this.requests.push(structuredClone(request));
     if (this.failure !== null) {
       throw this.failure;

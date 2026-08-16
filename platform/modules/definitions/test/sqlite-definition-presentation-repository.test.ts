@@ -39,33 +39,33 @@ function sidecar(
 }
 
 async function withDatabase(
-  run: (databaseFile: string) => void,
+  run: (databaseFile: string) => Promise<void>,
 ): Promise<void> {
   const root = await mkdtemp(join(tmpdir(), "bpmn-diagram-sidecars-"));
   try {
-    run(join(root, "definitions.sqlite"));
+    await run(join(root, "definitions.sqlite"));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 }
 
 test("two independent connections insert-or-compare one exact sidecar", async () => {
-  await withDatabase((databaseFile) => {
+  await withDatabase(async (databaseFile) => {
     const first = new SqliteDefinitionPresentationRepository(databaseFile);
     const second = new SqliteDefinitionPresentationRepository(databaseFile);
     try {
-      assert.deepEqual(first.insertOrCompare(sidecar()), sidecar());
-      assert.deepEqual(second.insertOrCompare(sidecar()), sidecar());
-      assert.deepEqual(second.get({
+      assert.deepEqual(await first.insertOrCompare(sidecar()), sidecar());
+      assert.deepEqual(await second.insertOrCompare(sidecar()), sidecar());
+      assert.deepEqual(await second.get({
         schemaEpoch: 1,
         sourceSha256,
         effectiveGeneratorSha256,
       }), sidecar());
-      assert.throws(
-        () => second.insertOrCompare(sidecar("<bpmndi:BPMNDiagram id=\"drift\"/>")),
+      await assert.rejects(
+        second.insertOrCompare(sidecar("<bpmndi:BPMNDiagram id=\"drift\"/>")),
         DefinitionPresentationIntegrityError,
       );
-      assert.deepEqual(first.get({
+      assert.deepEqual(await first.get({
         schemaEpoch: 1,
         sourceSha256,
         effectiveGeneratorSha256,
@@ -78,11 +78,11 @@ test("two independent connections insert-or-compare one exact sidecar", async ()
 });
 
 test("sidecar equivalence is field-based and independent of object insertion order", async () => {
-  await withDatabase((databaseFile) => {
+  await withDatabase(async (databaseFile) => {
     const repository = new SqliteDefinitionPresentationRepository(databaseFile);
     try {
       const exact = sidecar();
-      repository.insertOrCompare(exact);
+      await repository.insertOrCompare(exact);
       const reordered = {
         diagramInterchangeXml: exact.diagramInterchangeXml,
         provenance: {
@@ -97,7 +97,7 @@ test("sidecar equivalence is field-based and independent of object insertion ord
         schemaEpoch: exact.schemaEpoch,
       } satisfies BpmnDiagramPresentationSidecar;
 
-      assert.deepEqual(repository.insertOrCompare(reordered), exact);
+      assert.deepEqual(await repository.insertOrCompare(reordered), exact);
     } finally {
       repository.close();
     }
@@ -105,9 +105,9 @@ test("sidecar equivalence is field-based and independent of object insertion ord
 });
 
 test("a corrupt retained row fails closed without replacement", async () => {
-  await withDatabase((databaseFile) => {
+  await withDatabase(async (databaseFile) => {
     const repository = new SqliteDefinitionPresentationRepository(databaseFile);
-    repository.insertOrCompare(sidecar());
+    await repository.insertOrCompare(sidecar());
     repository.close();
     const database = new DatabaseSync(databaseFile);
     database.prepare(`
@@ -119,16 +119,16 @@ test("a corrupt retained row fails closed without replacement", async () => {
 
     const reopened = new SqliteDefinitionPresentationRepository(databaseFile);
     try {
-      assert.throws(
-        () => reopened.get({
+      await assert.rejects(
+        reopened.get({
           schemaEpoch: 1,
           sourceSha256,
           effectiveGeneratorSha256,
         }),
         DefinitionPresentationIntegrityError,
       );
-      assert.throws(
-        () => reopened.insertOrCompare(sidecar()),
+      await assert.rejects(
+        reopened.insertOrCompare(sidecar()),
         DefinitionPresentationIntegrityError,
       );
     } finally {

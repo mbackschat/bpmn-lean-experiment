@@ -98,7 +98,7 @@ test("persists the exact accepted catalog atomically with its definition version
     assert.equal(result.status, DefinitionDeploymentStatus.Deployed);
     assert.equal(artifacts.puts.length, 1);
     assert.deepEqual(
-      repository.getHumanTaskCatalog({
+      await repository.getHumanTaskCatalog({
         processId: catalog.processId,
         version: 1,
       }),
@@ -109,7 +109,7 @@ test("persists the exact accepted catalog atomically with its definition version
     const reopened = new SqliteDefinitionRepository(databaseFile);
     try {
       assert.deepEqual(
-        reopened.getHumanTaskCatalog({
+        await reopened.getHumanTaskCatalog({
           processId: catalog.processId,
           version: 1,
         }),
@@ -145,9 +145,9 @@ test("refuses an absent or invalid required catalog before artifact or metadata 
       assert.equal(result.status, DefinitionDeploymentStatus.Rejected);
       assert.match(result.diagnostics[0]?.evidence ?? "", /Human Task catalog/u);
       assert.deepEqual(artifacts.puts, []);
-      assert.deepEqual(service.listLatestDefinitions(), []);
+      assert.deepEqual(await service.listLatestDefinitions(), []);
       assert.equal(
-        repository.getHumanTaskCatalog({
+        await repository.getHumanTaskCatalog({
           processId: catalog.processId,
           version: 1,
         }),

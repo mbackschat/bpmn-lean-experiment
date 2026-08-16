@@ -103,8 +103,8 @@ export class ExecutionPublicationHttpRoutes {
           return publicationUnavailable();
         case ExecutionPublicationReconciliationKind.Available:
           return route.kind === RouteKind.Page
-            ? this.#page(route.request)
-            : this.#export(route.processInstanceId);
+            ? await this.#page(route.request)
+            : await this.#export(route.processInstanceId);
       }
     } catch (error: unknown) {
       return error instanceof RangeError && route.kind === RouteKind.Page
@@ -113,16 +113,16 @@ export class ExecutionPublicationHttpRoutes {
     }
   }
 
-  #page(request: ExecutionPublicationRouteRequest): Response {
-    const page = this.options.publications.page(request.processInstanceId, {
+  async #page(request: ExecutionPublicationRouteRequest): Promise<Response> {
+    const page = await this.options.publications.page(request.processInstanceId, {
       afterRevision: request.afterRevision,
       ...(request.limit === undefined ? {} : { limit: request.limit }),
     });
     return page === null ? publicationUnavailable() : jsonResponse(200, page);
   }
 
-  #export(processInstanceId: string): Response {
-    const publication = this.options.publications.export(processInstanceId);
+  async #export(processInstanceId: string): Promise<Response> {
+    const publication = await this.options.publications.export(processInstanceId);
     if (publication === null) return publicationUnavailable();
     const bytes = serializeExecutionPublicationExport(publication, {
       definition: publication.definition,

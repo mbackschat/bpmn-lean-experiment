@@ -92,7 +92,7 @@ test("restart dispatches one durable reserved direct start and never redispatche
   let describes = 0;
   try {
     const initial = new SqliteConfirmedProcessInstanceRepository(databaseFile);
-    initial.reserveDirect(reservation);
+    await initial.reserveDirect(reservation);
     initial.close();
 
     const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
@@ -141,7 +141,7 @@ test("restart dispatches one durable reserved direct start and never redispatche
     assert.equal(starts, 1);
     assert.equal(describes, 0);
     assert.equal(
-      reopened.get(reservation.instance.processInstanceId)?.state,
+      (await reopened.get(reservation.instance.processInstanceId))?.state,
       ConfirmedProcessInstanceState.Confirmed,
     );
     reopened.close();
@@ -219,12 +219,12 @@ function artifactStore(): ExactArtifactStore {
 
 function definitionRepository(): DefinitionRepository {
   return {
-    allocateNext: (_metadata: NewDefinitionMetadata) => {
+    allocateNext: async (_metadata: NewDefinitionMetadata) => {
       throw new Error("deployment is outside this fixture");
     },
-    listLatest: () => [structuredClone(definition)],
-    listVersions: () => [structuredClone(definition)],
-    get: (selected) =>
+    listLatest: async () => [structuredClone(definition)],
+    listVersions: async () => [structuredClone(definition)],
+    get: async (selected) =>
       selected.processId === definition.processId &&
         selected.version === definition.version
         ? structuredClone(definition)

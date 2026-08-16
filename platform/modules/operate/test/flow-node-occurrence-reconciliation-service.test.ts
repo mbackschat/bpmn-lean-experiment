@@ -27,13 +27,14 @@ test("revision-zero rebuild retains prior semantic bytes after a late public fai
   const executions = new SqliteExecutionPublicationRepository(databaseFile);
   const occurrences = new SqliteFlowNodeOccurrenceRepository(databaseFile, executions);
   try {
-    instances.recordConfirmed({
+    await instances.recordConfirmed({
       instance: occurrenceRegistration.instance,
       locator: occurrenceRegistration.locator,
     });
-    const registration = instances.getRegistration("Instance_1")!;
-    executions.applyPage(registration, firstPage(3));
-    executions.applyPage(registration, secondPage());
+    const registration = await instances.getRegistration("Instance_1");
+    assert.ok(registration);
+    await executions.applyPage(registration, firstPage(3));
+    await executions.applyPage(registration, secondPage());
 
     const gateway = new QueueGateway([
       { kind: "available", page: occurrenceFirstPage(3) },
@@ -81,11 +82,11 @@ test("revision-zero rebuild retains prior semantic bytes after a late public fai
 
 test("classifies positive-cursor notReady as a gap without retrying or repairing", async () => {
   const publications = {
-    get: () => ({ headRevision: 2 }),
-    applyPage: () => { throw new Error("must not apply"); },
-    replaceFromPages: () => { throw new Error("must not replace"); },
+    get: async () => ({ headRevision: 2 }),
+    applyPage: async () => { throw new Error("must not apply"); },
+    replaceFromPages: async () => { throw new Error("must not replace"); },
     markCalls: [] as string[],
-    mark(_registration: unknown, status: string) { this.markCalls.push(status); },
+    async mark(_registration: unknown, status: string) { this.markCalls.push(status); },
   };
   const gateway = new QueueGateway([{ kind: "notReady" }]);
   const service = new FlowNodeOccurrenceReconciliationService({
@@ -105,14 +106,15 @@ test("reads its retained occurrence cursor after E1 has advanced and applies the
   const executions = new SqliteExecutionPublicationRepository(databaseFile);
   const occurrences = new SqliteFlowNodeOccurrenceRepository(databaseFile, executions);
   try {
-    instances.recordConfirmed({
+    await instances.recordConfirmed({
       instance: occurrenceRegistration.instance,
       locator: occurrenceRegistration.locator,
     });
-    const registration = instances.getRegistration("Instance_1")!;
-    executions.applyPage(registration, firstPage());
-    occurrences.applyPage(registration, occurrenceFirstPage());
-    executions.applyPage(registration, secondPage());
+    const registration = await instances.getRegistration("Instance_1");
+    assert.ok(registration);
+    await executions.applyPage(registration, firstPage());
+    await occurrences.applyPage(registration, occurrenceFirstPage());
+    await executions.applyPage(registration, secondPage());
     const gateway = new QueueGateway([
       { kind: "available", page: occurrenceSecondPage() },
     ]);

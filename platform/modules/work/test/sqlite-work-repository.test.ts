@@ -115,22 +115,22 @@ test("an old release retry cannot clear a later reclaim through another connecti
   const second = new SqliteWorkRepository(databaseFile);
   try {
     await first.recordConfirmedProcessInstance(publication);
-    assert.equal(first.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-1")).kind, "claimed");
-    assert.equal(first.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1")).kind, "released");
-    assert.equal(second.claimTask(claimInput("claim-2", "actor-a", 2, "event-claim-2")).kind, "claimed");
+    assert.equal((await first.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-1"))).kind, "claimed");
+    assert.equal((await first.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1"))).kind, "released");
+    assert.equal((await second.claimTask(claimInput("claim-2", "actor-a", 2, "event-claim-2"))).kind, "claimed");
 
     const firstRetry = releaseInput("release-1", "actor-a", 1, "event-release-retry-a");
     const secondRetry = releaseInput("release-1", "actor-a", 1, "event-release-retry-b");
-    assert.equal(second.releaseTask(firstRetry).kind, "idempotent");
-    assert.equal(second.releaseTask(secondRetry).kind, "idempotent");
-    assert.deepEqual(first.getClaim(task), {
+    assert.equal((await second.releaseTask(firstRetry)).kind, "idempotent");
+    assert.equal((await second.releaseTask(secondRetry)).kind, "idempotent");
+    assert.deepEqual(await first.getClaim(task), {
       claimGeneration: 3,
       claim: { actorId: "actor-a", generation: 3 },
     });
     const actionReader = second as unknown as {
-      getClaimReleaseAction(actionId: string): unknown;
+      getClaimReleaseAction(actionId: string): Promise<unknown>;
     };
-    assert.deepEqual(actionReader.getClaimReleaseAction("release-1"), {
+    assert.deepEqual(await actionReader.getClaimReleaseAction("release-1"), {
       binding: {
         actionId: "release-1",
         actorId: "actor-a",
@@ -145,7 +145,7 @@ test("an old release retry cannot clear a later reclaim through another connecti
       },
     });
     assert.equal(
-      second.listUndeliveredAuditEvents().filter(({ event }) =>
+      (await second.listUndeliveredAuditEvents()).filter(({ event }) =>
         event.action.actionId === "release-1" && event.action.outcome === "idempotent"
       ).length,
       1,
@@ -161,13 +161,13 @@ test("an old release retry cannot clear a later reclaim through another connecti
         },
       },
     };
-    assert.throws(
-      () => second.releaseTask(changedEvent),
+    await assert.rejects(
+      second.releaseTask(changedEvent),
       WorkRepositoryIntegrityError,
     );
   } finally {
-    first.close();
-    second.close();
+    await first.close();
+    await second.close();
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -179,23 +179,23 @@ test("an old claim retry conflicts after its claim was released", async () => {
   try {
     await repository.recordConfirmedProcessInstance(publication);
     assert.equal(
-      repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-1")).kind,
+      (await repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-1"))).kind,
       "claimed",
     );
     assert.equal(
-      repository.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1")).kind,
+      (await repository.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1"))).kind,
       "released",
     );
-    const auditCount = repository.listUndeliveredAuditEvents().length;
+    const auditCount = (await repository.listUndeliveredAuditEvents()).length;
 
     assert.deepEqual(
-      repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-retry")),
+      await repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-retry")),
       { kind: "conflict" },
     );
-    assert.deepEqual(repository.getClaim(task), { claimGeneration: 2, claim: null });
-    assert.equal(repository.listUndeliveredAuditEvents().length, auditCount);
+    assert.deepEqual(await repository.getClaim(task), { claimGeneration: 2, claim: null });
+    assert.equal((await repository.listUndeliveredAuditEvents()).length, auditCount);
   } finally {
-    repository.close();
+    await repository.close();
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -207,30 +207,30 @@ test("an old claim retry conflicts after another actor reclaims the task", async
   try {
     await repository.recordConfirmedProcessInstance(publication);
     assert.equal(
-      repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-1")).kind,
+      (await repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-1"))).kind,
       "claimed",
     );
     assert.equal(
-      repository.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1")).kind,
+      (await repository.releaseTask(releaseInput("release-1", "actor-a", 1, "event-release-1"))).kind,
       "released",
     );
     assert.equal(
-      repository.claimTask(claimInput("claim-2", "actor-b", 2, "event-claim-2")).kind,
+      (await repository.claimTask(claimInput("claim-2", "actor-b", 2, "event-claim-2"))).kind,
       "claimed",
     );
-    const auditCount = repository.listUndeliveredAuditEvents().length;
+    const auditCount = (await repository.listUndeliveredAuditEvents()).length;
 
     assert.deepEqual(
-      repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-retry")),
+      await repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim-retry")),
       { kind: "conflict" },
     );
-    assert.deepEqual(repository.getClaim(task), {
+    assert.deepEqual(await repository.getClaim(task), {
       claimGeneration: 3,
       claim: { actorId: "actor-b", generation: 3 },
     });
-    assert.equal(repository.listUndeliveredAuditEvents().length, auditCount);
+    assert.equal((await repository.listUndeliveredAuditEvents()).length, auditCount);
   } finally {
-    repository.close();
+    await repository.close();
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -241,7 +241,7 @@ test("rejects an epoch-3 database whose schema has drifted", async () => {
   let unexpectedlyOpened: SqliteWorkRepository | undefined;
   try {
     const repository = new SqliteWorkRepository(databaseFile);
-    repository.close();
+    await repository.close();
     const database = new DatabaseSync(databaseFile);
     database.exec("ALTER TABLE work_claims ADD COLUMN unexpected TEXT");
     database.close();
@@ -253,7 +253,7 @@ test("rejects an epoch-3 database whose schema has drifted", async () => {
       WorkSchemaResetRequiredError,
     );
   } finally {
-    unexpectedlyOpened?.close();
+    if (unexpectedlyOpened !== undefined) await unexpectedlyOpened.close();
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -265,15 +265,15 @@ test("two independent claim connections produce one winner", async () => {
   const second = new SqliteWorkRepository(databaseFile);
   try {
     await first.recordConfirmedProcessInstance(publication);
-    assert.equal(first.claimTask(claimInput("claim-a", "actor-a", 0, "event-a")).kind, "claimed");
-    assert.equal(second.claimTask(claimInput("claim-b", "actor-b", 0, "event-b")).kind, "conflict");
-    assert.deepEqual(second.getClaim(task), {
+    assert.equal((await first.claimTask(claimInput("claim-a", "actor-a", 0, "event-a"))).kind, "claimed");
+    assert.equal((await second.claimTask(claimInput("claim-b", "actor-b", 0, "event-b"))).kind, "conflict");
+    assert.deepEqual(await second.getClaim(task), {
       claimGeneration: 1,
       claim: { actorId: "actor-a", generation: 1 },
     });
   } finally {
-    first.close();
-    second.close();
+    await first.close();
+    await second.close();
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -285,40 +285,40 @@ test("serializes completion actions and retains distinct logical outcomes", asyn
   const binding = completionBinding("completion-1", true);
   try {
     await repository.recordConfirmedProcessInstance(publication);
-    repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim"));
-    assert.equal(repository.reserveCompletion({
+    await repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim"));
+    assert.equal((await repository.reserveCompletion({
       binding,
       audit: completionAudit("reserved", binding.actionId),
-    }).kind, "reserved");
-    assert.equal(repository.reserveCompletion({
+    })).kind, "reserved");
+    assert.equal((await repository.reserveCompletion({
       binding: { ...binding, actionId: "completion-2" },
       audit: completionAudit("reserved", "completion-2"),
-    }).kind, "conflict");
-    assert.equal(repository.reserveCompletion({
+    })).kind, "conflict");
+    assert.equal((await repository.reserveCompletion({
       binding: completionBinding("completion-1", false),
       audit: completionAudit("reserved", "completion-1"),
-    }).kind, "conflict");
-    assert.equal(repository.beginCompletionSubmission(binding.actionId, binding).kind, "acquired");
-    assert.equal(repository.recordCompletionOutcome({
+    })).kind, "conflict");
+    assert.equal((await repository.beginCompletionSubmission(binding.actionId, binding)).kind, "acquired");
+    assert.equal((await repository.recordCompletionOutcome({
       binding,
       outcome: { kind: "indeterminate" },
       audit: completionAudit("indeterminate", binding.actionId),
-    }).kind, "recorded");
-    assert.equal(repository.beginCompletionSubmission(binding.actionId, binding).kind, "acquired");
+    })).kind, "recorded");
+    assert.equal((await repository.beginCompletionSubmission(binding.actionId, binding)).kind, "acquired");
     const committed: WorkCompletionOutcomeInput = {
       binding,
       outcome: { kind: "committed" },
       audit: completionAudit("committed", binding.actionId),
     };
-    assert.equal(repository.recordCompletionOutcome(committed).kind, "recorded");
-    assert.equal(repository.recordCompletionOutcome(committed).kind, "retained");
-    assert.deepEqual(repository.getClaim(task), { claimGeneration: 2, claim: null });
+    assert.equal((await repository.recordCompletionOutcome(committed)).kind, "recorded");
+    assert.equal((await repository.recordCompletionOutcome(committed)).kind, "retained");
+    assert.deepEqual(await repository.getClaim(task), { claimGeneration: 2, claim: null });
     assert.deepEqual(
-      repository.listUndeliveredAuditEvents().map(({ event }) => event.action.outcome),
+      (await repository.listUndeliveredAuditEvents()).map(({ event }) => event.action.outcome),
       ["claimed", "reserved", "indeterminate", "committed"],
     );
   } finally {
-    repository.close();
+    await repository.close();
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -330,17 +330,17 @@ test("persists the structured completion root binding and conflicts on changed c
   const binding = structuredCompletionBinding("structured-1");
   try {
     await repository.recordConfirmedProcessInstance(publication);
-    repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim"));
-    assert.equal(repository.reserveCompletion({
+    await repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim"));
+    assert.equal((await repository.reserveCompletion({
       binding,
       audit: completionAudit("reserved", binding.actionId),
-    }).kind, "reserved");
-    assert.deepEqual(repository.getCompletionAction(binding.actionId), {
+    })).kind, "reserved");
+    assert.deepEqual(await repository.getCompletionAction(binding.actionId), {
       binding,
       state: "reserved",
       result: null,
     });
-    assert.equal(repository.reserveCompletion({
+    assert.equal((await repository.reserveCompletion({
       binding: {
         ...binding,
         structuredCompletion: {
@@ -349,9 +349,9 @@ test("persists the structured completion root binding and conflicts on changed c
         },
       },
       audit: completionAudit("reserved", binding.actionId),
-    }).kind, "conflict");
+    })).kind, "conflict");
   } finally {
-    repository.close();
+    await repository.close();
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -362,15 +362,15 @@ test("persists and acknowledges the audit outbox across reopen", async () => {
   try {
     const first = new SqliteWorkRepository(databaseFile);
     await first.recordConfirmedProcessInstance(publication);
-    first.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim"));
-    first.close();
+    await first.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim"));
+    await first.close();
     const reopened = new SqliteWorkRepository(databaseFile);
-    const pending = reopened.listUndeliveredAuditEvents();
+    const pending = await reopened.listUndeliveredAuditEvents();
     assert.equal(pending.length, 1);
-    reopened.acknowledgeAuditEvent(pending[0]!.event.eventId);
-    reopened.acknowledgeAuditEvent(pending[0]!.event.eventId);
-    assert.deepEqual(reopened.listUndeliveredAuditEvents(), []);
-    reopened.close();
+    await reopened.acknowledgeAuditEvent(pending[0]!.event.eventId);
+    await reopened.acknowledgeAuditEvent(pending[0]!.event.eventId);
+    assert.deepEqual(await reopened.listUndeliveredAuditEvents(), []);
+    await reopened.close();
   } finally {
     await rm(root, { recursive: true, force: true });
   }

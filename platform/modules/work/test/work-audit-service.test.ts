@@ -11,23 +11,23 @@ import {
   WorkAuditService,
 } from "@bpmn-lean/platform-work";
 
-test("reconciles pending audit before a self-only read", () => {
+test("reconciles pending audit before a self-only read", async () => {
   const calls: string[] = [];
   const service = createService(calls);
 
-  assert.deepEqual(service.search({ actionKind: "claim", limit: 50 }), {
+  assert.deepEqual(await service.search({ actionKind: "claim", limit: 50 }), {
     events: [],
     nextCursor: null,
   });
   assert.deepEqual(calls, ["reconcile", "search:demo-user:claim"]);
 });
 
-test("forbids another actor before repository search", () => {
+test("forbids another actor before repository search", async () => {
   const calls: string[] = [];
   const service = createService(calls);
 
-  assert.throws(
-    () => service.search({ actorId: "other-user", limit: 50 }),
+  await assert.rejects(
+    service.search({ actorId: "other-user", limit: 50 }),
     WorkAuditForbiddenError,
   );
   assert.deepEqual(calls, ["reconcile"]);
@@ -37,9 +37,9 @@ function createService(calls: string[]): WorkAuditService {
   return new WorkAuditService({
     actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
     authorization: new TaskAuthorizationPolicy(),
-    outbox: { reconcileAll: () => { calls.push("reconcile"); } },
+    outbox: { reconcileAll: async () => { calls.push("reconcile"); } },
     audit: {
-      search: (request) => {
+      search: async (request) => {
         calls.push(`search:${request.actorId}:${request.actionKind ?? "all"}`);
         return { events: [], nextCursor: null };
       },

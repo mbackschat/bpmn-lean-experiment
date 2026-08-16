@@ -274,7 +274,7 @@ function createFixture(options: FixtureOptions = {}): Readonly<{
       ),
   };
   const definitions = {
-    getDefinitionMetadata: (reference: DefinitionReference) =>
+    getDefinitionMetadata: async (reference: DefinitionReference) =>
       reference.processId === definition.processId &&
         reference.version === definition.version
         ? structuredClone(options.definition === undefined

@@ -127,10 +127,10 @@ test("hidden release and completion actions leave both audit stores unchanged", 
     const harness = await createHarness();
     try {
       await example.prepare(harness);
-      const before = auditStores(harness);
+      const before = await auditStores(harness);
       const completionCalls = harness.completionCalls;
       assert.deepEqual(await example.act(harness), example.expected, example.name);
-      assert.deepEqual(auditStores(harness), before, example.name);
+      assert.deepEqual(await auditStores(harness), before, example.name);
       assert.equal(harness.completionCalls, completionCalls, example.name);
     } finally {
       await harness.close();
@@ -158,7 +158,7 @@ test("release retry survives task disappearance without another generation chang
       }),
       { kind: "idempotent", result: released.kind === "released" ? released.result : null },
     );
-    assert.deepEqual(harness.repository.getClaim(reference()), {
+    assert.deepEqual(await harness.repository.getClaim(reference()), {
       claimGeneration: 2,
       claim: null,
     });
@@ -185,7 +185,7 @@ test("committed completion is dispatched once and retained after task and claim 
     });
     assert.deepEqual(retry, first);
     assert.equal(harness.completionCalls, 1);
-    assert.deepEqual(harness.repository.getClaim(reference()), {
+    assert.deepEqual(await harness.repository.getClaim(reference()), {
       claimGeneration: 2,
       claim: null,
     });
@@ -310,12 +310,12 @@ test("a retained submitting action reconciles through the same host command", as
         value: { kind: "boolean" as const, value: true },
       },
     };
-    assert.equal(harness.repository.reserveCompletion({
+    assert.equal((await harness.repository.reserveCompletion({
       binding,
       audit: completionAudit("reserved"),
-    }).kind, "reserved");
+    })).kind, "reserved");
     assert.equal(
-      harness.repository.beginCompletionSubmission("complete-1", binding).kind,
+      (await harness.repository.beginCompletionSubmission("complete-1", binding)).kind,
       "acquired",
     );
 
@@ -425,7 +425,7 @@ async function createHarness(options: HarnessOptions = {}) {
   let completionCalls = 0;
   let eventOrdinal = 0;
   const outbox = new WorkAuditOutboxService(repository, {
-    record: (event) => {
+    record: async (event) => {
       audit.push(structuredClone(event));
       return audit.length;
     },
@@ -465,7 +465,7 @@ async function createHarness(options: HarnessOptions = {}) {
       gateway,
       actors,
       authorization: new TaskAuthorizationPolicy(),
-      catalogs: { readHumanTaskCatalog: () => null },
+      catalogs: { readHumanTaskCatalog: async () => null },
       limits: { maxProcesses: 10, maxTasks: 10 },
     });
     const details = new WorkTaskDetailService({ work, gateway });
@@ -495,15 +495,15 @@ async function createHarness(options: HarnessOptions = {}) {
     },
     get completionCalls() { return completionCalls; },
     close: async () => {
-      repository.close();
+      await repository.close();
       await rm(root, { recursive: true, force: true });
     },
   };
 }
 
-function auditStores(harness: Awaited<ReturnType<typeof createHarness>>) {
+async function auditStores(harness: Awaited<ReturnType<typeof createHarness>>) {
   return {
-    outbox: harness.repository.listUndeliveredAuditEvents(),
+    outbox: await harness.repository.listUndeliveredAuditEvents(),
     sink: structuredClone(harness.audit),
   };
 }

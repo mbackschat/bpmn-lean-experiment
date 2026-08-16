@@ -61,14 +61,14 @@ export type MessageStartPublicationReservation = Readonly<{
 export interface MessageStartPublicationRepository {
   reserve(
     record: NewMessageStartPublicationRecord,
-  ): MessageStartPublicationReservation;
-  get(publicationId: string): MessageStartPublicationRecord | null;
-  listForReconciliation(): ReadonlyArray<MessageStartPublicationRecord>;
+  ): Promise<MessageStartPublicationReservation>;
+  get(publicationId: string): Promise<MessageStartPublicationRecord | null>;
+  listForReconciliation(): Promise<ReadonlyArray<MessageStartPublicationRecord>>;
   compareAndSet(
     publicationId: string,
     expected: MessageStartPublicationState,
     next: MessageStartPublicationState,
-  ): MessageStartPublicationRecord | null;
+  ): Promise<MessageStartPublicationRecord | null>;
 }
 
 export type MessageStartPublicationIdentityPolicy = Readonly<{

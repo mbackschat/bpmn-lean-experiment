@@ -21,14 +21,16 @@ const maximumLimit = 100;
 export class IncidentAuditSearchService {
   constructor(private readonly repository: IncidentAuditRepository) {}
 
-  search(request: NormalizedIncidentAuditSearchRequest): IncidentAuditPage {
+  async search(
+    request: NormalizedIncidentAuditSearchRequest,
+  ): Promise<IncidentAuditPage> {
     const decoded = decodeIncidentAuditRequest(request);
     const limit = requireLimit(decoded.limit);
     const afterOrdinal = decoded.cursor === undefined
       ? undefined
       : decodeIncidentAuditCursor(decoded.cursor);
     const incidentId = completeIncidentId(decoded);
-    const rows = this.repository.search({
+    const rows = await this.repository.search({
       ...(decoded.actorId === undefined ? {} : { actorId: decoded.actorId }),
       ...(decoded.hostingProcessInstanceId === undefined
         ? {}

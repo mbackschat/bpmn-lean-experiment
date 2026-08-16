@@ -23,10 +23,12 @@ export type DefinitionPresentationKey = DeepReadonly<{
 }>;
 
 export interface DefinitionPresentationRepository {
-  get(key: DefinitionPresentationKey): BpmnDiagramPresentationSidecar | null;
+  get(
+    key: DefinitionPresentationKey,
+  ): Promise<BpmnDiagramPresentationSidecar | null>;
   insertOrCompare(
     sidecar: BpmnDiagramPresentationSidecar,
-  ): BpmnDiagramPresentationSidecar;
+  ): Promise<BpmnDiagramPresentationSidecar>;
 }
 
 /** Stored sidecar bytes or identity disagree with the exact selected durable record. */

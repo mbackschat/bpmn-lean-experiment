@@ -28,21 +28,21 @@ export type ProcessInstanceRepositoryQuery = Readonly<{
 /** Append-only persistence port for confirmed public Process-instance facts. */
 export interface ProcessInstanceRepository {
   /** Returns the original positive ordinal when the exact publication already exists. */
-  recordConfirmed(publication: ConfirmedProcessOperationsPublication): number;
+  recordConfirmed(publication: ConfirmedProcessOperationsPublication): Promise<number>;
   /** Returns at most `limit` decoded rows newest-first below the optional ordinal. */
   search(
     query: ProcessInstanceRepositoryQuery,
-  ): ReadonlyArray<StoredProcessInstance>;
-  getRegistration(processInstanceId: string): OperateProcessRegistration | null;
-  listNonclosed(limit: number): ReadonlyArray<OperateProcessRegistration>;
+  ): Promise<ReadonlyArray<StoredProcessInstance>>;
+  getRegistration(processInstanceId: string): Promise<OperateProcessRegistration | null>;
+  listNonclosed(limit: number): Promise<ReadonlyArray<OperateProcessRegistration>>;
   /** Takes one ordinal-ordered, at-most-101 exact-version population cut. */
   listExactDefinitionVersion(
     definition: DeployedDefinitionVersion,
-  ): ReadonlyArray<OperateProcessRegistration>;
+  ): Promise<ReadonlyArray<OperateProcessRegistration>>;
   recordObservation(
     processInstanceId: string,
     observation: OperateProcessObservation,
-  ): void;
+  ): Promise<void>;
 }
 
 /** Same semantic Process-instance identity was presented with different public bytes. */

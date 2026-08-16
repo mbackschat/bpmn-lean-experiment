@@ -11,10 +11,10 @@ export class IncidentActionReconciliationService {
   ) {}
 
   async reconcileAll(): Promise<void> {
-    this.outbox.reconcileAll();
-    for (const action of this.repository.listReconciliableActions()) {
+    await this.outbox.reconcileAll();
+    for (const action of await this.repository.listReconciliableActions()) {
       await this.mutations.reconcileRetained(action);
     }
-    this.outbox.reconcileAll();
+    await this.outbox.reconcileAll();
   }
 }

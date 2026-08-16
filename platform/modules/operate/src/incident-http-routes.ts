@@ -51,7 +51,7 @@ type IncidentMutationOperations = Pick<
 >;
 
 type IncidentAuditOperations = Readonly<{
-  search(request: NormalizedIncidentAuditRequest): IncidentAuditPage;
+  search(request: NormalizedIncidentAuditRequest): Promise<IncidentAuditPage>;
 }>;
 
 type IncidentHttpRoutesOptions = Readonly<{
@@ -60,7 +60,7 @@ type IncidentHttpRoutesOptions = Readonly<{
   aggregation: IncidentAggregationOperations;
   mutations: IncidentMutationOperations;
   audit: IncidentAuditOperations;
-  outbox: Readonly<{ reconcileAll(): void }>;
+  outbox: Readonly<{ reconcileAll(): Promise<void> }>;
 }>;
 
 const RouteKind = {
@@ -116,7 +116,7 @@ export class IncidentHttpRoutes {
       const actionRequest = route.kind === RouteKind.Action
         ? await readActionRequest(request)
         : await requireEmptyGet(request);
-      this.options.outbox.reconcileAll();
+      await this.options.outbox.reconcileAll();
       return await this.#dispatch(route, actorId, actionRequest);
     } catch (error: unknown) {
       if (error instanceof IncidentHttpRequestError) {
@@ -136,16 +136,16 @@ export class IncidentHttpRoutes {
   ): Promise<Response> {
     switch (route.kind) {
       case RouteKind.List:
-        return this.#list();
+        return await this.#list();
       case RouteKind.Detail:
-        return this.#detail(route.incidentId);
+        return await this.#detail(route.incidentId);
       case RouteKind.Action:
         if (actionRequest === null) throw new TypeError("action request is missing");
-        return this.#action(route.actionId, actorId, actionRequest);
+        return await this.#action(route.actionId, actorId, actionRequest);
       case RouteKind.Audit:
         return jsonResponse(
           200,
-          decodeIncidentAuditPage(this.options.audit.search(route.request)),
+          decodeIncidentAuditPage(await this.options.audit.search(route.request)),
         );
     }
   }

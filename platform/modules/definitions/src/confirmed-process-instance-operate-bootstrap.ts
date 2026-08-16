@@ -25,7 +25,7 @@ export class ConfirmedProcessInstanceOperateBootstrap {
   }
 
   async bootstrap(): Promise<void> {
-    for (const record of this.#repository.listConfirmed()) {
+    for (const record of await this.#repository.listConfirmed()) {
       await this.#operate.recordConfirmedProcessInstance({
         instance: structuredClone(record.instance),
         locator: record.locator,

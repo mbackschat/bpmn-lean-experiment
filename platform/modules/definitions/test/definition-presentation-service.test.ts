@@ -34,11 +34,13 @@ class MemoryPresentations implements DefinitionPresentationRepository {
   readonly content = new Map<string, BpmnDiagramPresentationSidecar>();
   inserts = 0;
 
-  get(key: DefinitionPresentationKey): BpmnDiagramPresentationSidecar | null {
+  async get(
+    key: DefinitionPresentationKey,
+  ): Promise<BpmnDiagramPresentationSidecar | null> {
     return structuredClone(this.content.get(JSON.stringify(key)) ?? null);
   }
 
-  insertOrCompare(sidecar: BpmnDiagramPresentationSidecar) {
+  async insertOrCompare(sidecar: BpmnDiagramPresentationSidecar) {
     this.inserts += 1;
     const key = JSON.stringify({
       schemaEpoch: sidecar.schemaEpoch,
@@ -299,10 +301,10 @@ function fixtureFor(
     startCapabilities: { messageStarts: [], timerStarts: [] },
   };
   const definitions: DefinitionRepository = {
-    allocateNext: () => metadata,
-    listLatest: () => [metadata],
-    listVersions: () => [metadata],
-    get: (reference) => reference.processId === metadata.processId &&
+    allocateNext: async () => metadata,
+    listLatest: async () => [metadata],
+    listVersions: async () => [metadata],
+    get: async (reference) => reference.processId === metadata.processId &&
       reference.version === metadata.version ? structuredClone(metadata) : null,
   };
   const artifacts: ExactArtifactStore = {

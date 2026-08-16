@@ -63,24 +63,32 @@ export class SqliteFlowNodeOccurrenceRepository
     return this.#database.isOpen;
   }
 
-  get(processInstanceId: string): FlowNodeOccurrenceProjectionImage | null {
+  async get(
+    processInstanceId: string,
+  ): Promise<FlowNodeOccurrenceProjectionImage | null> {
     try {
-      return this.#read(requireText(processInstanceId, "processInstanceId"));
+      const exactId = requireText(processInstanceId, "processInstanceId");
+      const execution = this.#hasPositiveHead(exactId)
+        ? await this.#requireExecution(exactId)
+        : null;
+      return this.#read(exactId, execution);
     } catch (error: unknown) {
       if (error instanceof FlowNodeOccurrenceStoredValueError) throw error;
       throw new FlowNodeOccurrenceStoredValueError(error);
     }
   }
 
-  applyPage(
+  async applyPage(
     registration: OperateProcessRegistration,
     page: FlowNodeOccurrencePage,
-  ): FlowNodeOccurrenceProjectionImage {
+  ): Promise<FlowNodeOccurrenceProjectionImage> {
+    const execution = await this.#requireExecution(
+      registration.instance.processInstanceId,
+    );
     return this.#transaction(() => {
       this.#requireRegistration(registration);
-      const execution = this.#requireExecution(registration.instance.processInstanceId);
       const identity = occurrenceIdentityFromRegistration(registration);
-      const prior = this.#read(registration.instance.processInstanceId) ??
+      const prior = this.#read(registration.instance.processInstanceId, execution) ??
         createEmptyFlowNodeOccurrenceProjection(identity);
       const next = applyFlowNodeOccurrencePage(prior, page, execution);
       if (JSON.stringify(prior) !== JSON.stringify(next)) this.#persist(next);
@@ -88,11 +96,13 @@ export class SqliteFlowNodeOccurrenceRepository
     });
   }
 
-  replaceFromPages(
+  async replaceFromPages(
     registration: OperateProcessRegistration,
     pages: readonly FlowNodeOccurrencePage[],
-  ): FlowNodeOccurrenceProjectionImage {
-    const execution = this.#requireExecution(registration.instance.processInstanceId);
+  ): Promise<FlowNodeOccurrenceProjectionImage> {
+    const execution = await this.#requireExecution(
+      registration.instance.processInstanceId,
+    );
     let candidate = createEmptyFlowNodeOccurrenceProjection(
       occurrenceIdentityFromRegistration(registration),
     );
@@ -107,11 +117,11 @@ export class SqliteFlowNodeOccurrenceRepository
         "rebuilt occurrence publication did not reach one complete positive head",
       );
     }
+    const retainedExecution = await this.#requireExecution(
+      registration.instance.processInstanceId,
+    );
     return this.#transaction(() => {
       this.#requireRegistration(registration);
-      const retainedExecution = this.#requireExecution(
-        registration.instance.processInstanceId,
-      );
       let verified = createEmptyFlowNodeOccurrenceProjection(
         occurrenceIdentityFromRegistration(registration),
       );
@@ -135,16 +145,20 @@ export class SqliteFlowNodeOccurrenceRepository
     });
   }
 
-  mark(
+  async mark(
     registration: OperateProcessRegistration,
     status:
       | FlowNodeOccurrenceProjectionStatus.Gap
       | FlowNodeOccurrenceProjectionStatus.Unavailable,
-  ): void {
+  ): Promise<void> {
+    const processInstanceId = registration.instance.processInstanceId;
+    const execution = this.#hasPositiveHead(processInstanceId)
+      ? await this.#requireExecution(processInstanceId)
+      : null;
     this.#transaction(() => {
       this.#requireRegistration(registration);
       const identity = occurrenceIdentityFromRegistration(registration);
-      const prior = this.#read(registration.instance.processInstanceId);
+      const prior = this.#read(processInstanceId, execution);
       if (prior === null) {
         this.#persist({
           ...createEmptyFlowNodeOccurrenceProjection(identity),
@@ -169,7 +183,10 @@ export class SqliteFlowNodeOccurrenceRepository
     if (this.#database.isOpen) this.#database.close();
   }
 
-  #read(processInstanceId: string): FlowNodeOccurrenceProjectionImage | null {
+  #read(
+    processInstanceId: string,
+    execution: ExecutionPublicationProjectionImage | null,
+  ): FlowNodeOccurrenceProjectionImage | null {
     const row = this.#database.prepare(`
       SELECT
         o.identity_json,
@@ -207,9 +224,6 @@ export class SqliteFlowNodeOccurrenceRepository
       "current_open_json",
     );
     const batches = this.#readBatches(processInstanceId);
-    const execution = headRevision === 0
-      ? null
-      : this.#requireExecution(processInstanceId);
     let image = createEmptyFlowNodeOccurrenceProjection(identity);
     if (headRevision > 0) {
       if (producerHeadRevision === null || execution === null) {
@@ -329,8 +343,19 @@ export class SqliteFlowNodeOccurrenceRepository
     }
   }
 
-  #requireExecution(processInstanceId: string): ExecutionPublicationProjectionImage {
-    const execution = this.#executions.get(processInstanceId);
+  #hasPositiveHead(processInstanceId: string): boolean {
+    const row = this.#database.prepare(`
+      SELECT head_revision FROM flow_node_occurrence_publications
+      WHERE process_instance_id = ?
+    `).get(processInstanceId);
+    return row !== undefined &&
+      requireNonnegative(row.head_revision, "head_revision") > 0;
+  }
+
+  async #requireExecution(
+    processInstanceId: string,
+  ): Promise<ExecutionPublicationProjectionImage> {
+    const execution = await this.#executions.get(processInstanceId);
     if (execution === null) {
       throw new FlowNodeOccurrenceIntegrityError(
         "occurrence publication has no retained E1 projection",

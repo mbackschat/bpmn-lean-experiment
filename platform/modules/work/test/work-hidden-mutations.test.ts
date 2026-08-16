@@ -69,7 +69,7 @@ test("unseen policy-hidden tasks reject every mutation without audit or host mut
     const harness = await createHarness(example.task);
     try {
       const auditBefore = harness.auditBytes();
-      const outboxBefore = harness.outboxBytes();
+      const outboxBefore = await harness.outboxBytes();
 
       const outcomes = await Promise.all([
         harness.service.claimTask(taskId, {
@@ -98,7 +98,7 @@ test("unseen policy-hidden tasks reject every mutation without audit or host mut
       assert.equal(harness.hostMutationCalls, 0, example.name);
       assert.equal(harness.detailCalls, 0, example.name);
       assert.equal(harness.auditBytes(), auditBefore, example.name);
-      assert.equal(harness.outboxBytes(), outboxBefore, example.name);
+      assert.equal(await harness.outboxBytes(), outboxBefore, example.name);
     } finally {
       await harness.close();
     }
@@ -138,11 +138,11 @@ async function createHarness(task: PublicWorkTask["task"]) {
     gateway,
     actors,
     authorization: new TaskAuthorizationPolicy(),
-    catalogs: { readHumanTaskCatalog: () => null },
+    catalogs: { readHumanTaskCatalog: async () => null },
     limits: { maxProcesses: 1, maxTasks: 1 },
   });
   const outbox = new WorkAuditOutboxService(repository, {
-    record: (event) => {
+    record: async (event) => {
       audit.push(structuredClone(event));
       return audit.length;
     },
@@ -166,11 +166,11 @@ async function createHarness(task: PublicWorkTask["task"]) {
     repository,
     service,
     auditBytes: () => JSON.stringify(audit),
-    outboxBytes: () => JSON.stringify(repository.listUndeliveredAuditEvents()),
+    outboxBytes: async () => JSON.stringify(await repository.listUndeliveredAuditEvents()),
     get detailCalls() { return detailCalls; },
     get hostMutationCalls() { return hostMutationCalls; },
     close: async () => {
-      repository.close();
+      await repository.close();
       await rm(root, { recursive: true, force: true });
     },
   };

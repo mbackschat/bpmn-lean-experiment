@@ -375,13 +375,13 @@ function createRoutes(options: Readonly<{
       },
     },
     audit: {
-      search: (auditRequest): IncidentAuditPage => {
+      search: async (auditRequest): Promise<IncidentAuditPage> => {
         options.calls.auditRequests.push(structuredClone(auditRequest));
         return { events: [], nextCursor: null };
       },
     },
     outbox: {
-      reconcileAll: () => {
+      reconcileAll: async () => {
         options.calls.outbox += 1;
         if (options.outboxFailure !== undefined) throw options.outboxFailure;
       },

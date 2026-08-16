@@ -69,7 +69,7 @@ test("returns an exact available empty aggregate for zero retained members", asy
 test("aggregates the exact maximum population of 100 retained members", async () => {
   await withPopulation(async (population) => {
     for (let index = 1; index <= 100; index += 1) {
-      record(population, `instance-${index}`);
+      await record(population, `instance-${index}`);
     }
     let executionCalls = 0;
     let occurrenceCalls = 0;
@@ -102,9 +102,9 @@ for (const failure of [
 ] as const) {
   test(`suppresses a partial aggregate after a late ${failure} member`, async () => {
     await withPopulation(async (population) => {
-      record(population, "instance-1");
-      record(population, "instance-2");
-      record(population, "instance-3");
+      await record(population, "instance-1");
+      await record(population, "instance-2");
+      await record(population, "instance-3");
       let occurrenceCalls = 0;
       const service = aggregateService(population, {
         occurrenceReconciliation: async (registration) => {
@@ -134,8 +134,8 @@ for (const failure of [
 
 test("freezes membership before gateway work and sees a concurrent insert next time", async () => {
   await withPopulation(async (population) => {
-    record(population, "instance-1");
-    record(population, "instance-2");
+    await record(population, "instance-1");
+    await record(population, "instance-2");
     let executionCalls = 0;
     let inserted = false;
     const service = aggregateService(population, {
@@ -143,7 +143,7 @@ test("freezes membership before gateway work and sees a concurrent insert next t
         executionCalls += 1;
         if (!inserted) {
           inserted = true;
-          record(population, "instance-3");
+          await record(population, "instance-3");
         }
         return availableExecution();
       },
@@ -165,7 +165,7 @@ test("freezes membership before gateway work and sees a concurrent insert next t
 test("makes 101 members unavailable before any gateway call", async () => {
   await withPopulation(async (population) => {
     for (let index = 1; index <= 101; index += 1) {
-      record(population, `instance-${index}`);
+      await record(population, `instance-${index}`);
     }
     let gatewayCalls = 0;
     const service = aggregateService(population, {
@@ -184,7 +184,7 @@ test("makes 101 members unavailable before any gateway call", async () => {
 
 test("fails closed when indexed definition columns match but another field drifts", async () => {
   await withPopulation(async (population) => {
-    record(population, "drifted", {
+    await record(population, "drifted", {
       ...definition,
       source: { ...definition.source, id: "different-source-id.bpmn" },
     });
@@ -203,7 +203,7 @@ test("fails closed when indexed definition columns match but another field drift
 
 test("excludes called-Process interiors and computes exact completed durations", async () => {
   await withPopulation(async (population) => {
-    record(population, "instance-1");
+    await record(population, "instance-1");
     const occurrences = [
       completed("A", definition.processId, 1, 100, 100),
       completed("A", definition.processId, 2, 100, 105),
@@ -251,7 +251,7 @@ test("excludes called-Process interiors and computes exact completed durations",
 
 test("makes the whole result unavailable when the BigInt duration total is unsafe", async () => {
   await withPopulation(async (population) => {
-    record(population, "instance-1");
+    await record(population, "instance-1");
     const service = aggregateService(population, {
       occurrences: [
         completed("A", definition.processId, 1, 0, Number.MAX_SAFE_INTEGER),
@@ -276,7 +276,7 @@ function aggregateService(
   }>,
 ) {
   return new FlowNodeMetricsAggregationService({
-    definitions: { get: () => structuredClone(definition) },
+    definitions: { get: async () => structuredClone(definition) },
     population,
     executions: {
       reconcile: options.executions ?? (async () => availableExecution()),
@@ -390,16 +390,16 @@ function occurrence(
   } as const;
 }
 
-function record(
+async function record(
   population: SqliteProcessInstanceRepository,
   processInstanceId: string,
   selected: DeployedDefinitionVersion = definition,
-): void {
+): Promise<void> {
   const instance: PublicProcessInstanceIdentity = {
     processInstanceId,
     definition: structuredClone(selected),
   };
-  population.recordConfirmed({ instance, locator: `private:${processInstanceId}` });
+  await population.recordConfirmed({ instance, locator: `private:${processInstanceId}` });
 }
 
 async function withPopulation(

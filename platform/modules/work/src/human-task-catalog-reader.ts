@@ -12,7 +12,7 @@ import type {
 export interface HumanTaskCatalogReader {
   readHumanTaskCatalog(
     identity: HumanTaskCatalogBindingIdentityV1,
-  ): HumanTaskCatalogV1 | null;
+  ): Promise<HumanTaskCatalogV1 | null>;
 }
 
 export type BoundHumanTaskDefinitionV1 = Readonly<{
@@ -32,23 +32,23 @@ export function catalogIdentityFor(
 }
 
 /** Missing, corrupt, mismatched, or element-incomplete catalogs fail closed. */
-export function readBoundHumanTaskDefinition(
+export async function readBoundHumanTaskDefinition(
   reader: HumanTaskCatalogReader,
   instance: PublicProcessInstanceIdentity,
   elementId: string,
-): BoundHumanTaskDefinitionV1 | null {
+): Promise<BoundHumanTaskDefinitionV1 | null> {
   const catalogIdentity = catalogIdentityFor(instance);
   return readBoundHumanTaskDefinitionByIdentity(reader, catalogIdentity, elementId);
 }
 
-export function readBoundHumanTaskDefinitionByIdentity(
+export async function readBoundHumanTaskDefinitionByIdentity(
   reader: HumanTaskCatalogReader,
   catalogIdentity: HumanTaskCatalogBindingIdentityV1,
   elementId: string,
-): BoundHumanTaskDefinitionV1 | null {
+): Promise<BoundHumanTaskDefinitionV1 | null> {
   let catalog: HumanTaskCatalogV1;
   try {
-    const candidate = reader.readHumanTaskCatalog(catalogIdentity);
+    const candidate = await reader.readHumanTaskCatalog(catalogIdentity);
     if (candidate === null) return null;
     catalog = decodeHumanTaskCatalogV1(structuredClone(candidate));
   } catch {

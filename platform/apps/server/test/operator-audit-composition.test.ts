@@ -54,11 +54,11 @@ test("exports both pending audit streams exactly once and converges across resta
       join(dataDirectory, "process-instances.sqlite"),
     );
     try {
-      assert.deepEqual(work.listUndeliveredAuditEvents(), []);
-      assert.deepEqual(incidents.listUndeliveredAuditEvents(), []);
+      assert.deepEqual(await work.listUndeliveredAuditEvents(), []);
+      assert.deepEqual(await incidents.listUndeliveredAuditEvents(), []);
     } finally {
       incidents.close();
-      work.close();
+      await work.close();
     }
   } finally {
     await runtime.close();
@@ -118,7 +118,7 @@ async function seedConfirmedInstance(dataDirectory: string): Promise<void> {
   const definitions = new SqliteDefinitionRepository(databaseFile);
   const confirmed = new SqliteConfirmedProcessInstanceRepository(databaseFile);
   try {
-    confirmed.confirm({ instance, locator });
+    await confirmed.confirm({ instance, locator });
   } finally {
     confirmed.close();
     definitions.close();
@@ -131,7 +131,7 @@ async function seedPendingAuditEvents(dataDirectory: string): Promise<void> {
     join(dataDirectory, "process-instances.sqlite"),
   );
   try {
-    assert.equal(work.claimTask({
+    assert.equal((await work.claimTask({
       actionId: "claim-1",
       actorId: "worker-1",
       task: workTask,
@@ -141,8 +141,8 @@ async function seedPendingAuditEvents(dataDirectory: string): Promise<void> {
         idempotent: workAuditEvent("idempotent"),
         conflict: workAuditEvent("conflict"),
       },
-    }).kind, "claimed");
-    assert.equal(incidents.reserve({
+    })).kind, "claimed");
+    assert.equal((await incidents.reserve({
       actionId: incidentEvent.actionId,
       actorId: incidentEvent.actorId,
       hostingInstance: instance,
@@ -157,12 +157,12 @@ async function seedPendingAuditEvents(dataDirectory: string): Promise<void> {
         },
       },
       interaction: retryIncident,
-    }, incidentEvent).kind, "reserved");
-    assert.equal(work.listUndeliveredAuditEvents().length, 1);
-    assert.equal(incidents.listUndeliveredAuditEvents().length, 1);
+    }, incidentEvent)).kind, "reserved");
+    assert.equal((await work.listUndeliveredAuditEvents()).length, 1);
+    assert.equal((await incidents.listUndeliveredAuditEvents()).length, 1);
   } finally {
     incidents.close();
-    work.close();
+    await work.close();
   }
 }
 

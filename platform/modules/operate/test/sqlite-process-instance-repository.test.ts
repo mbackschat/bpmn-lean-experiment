@@ -16,13 +16,13 @@ import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contract
 test("round-trips a defensive exact public snapshot without private facts", async () => {
   await withRepository(async (repository, databaseFile) => {
     const candidate = instance("instance-1", 1);
-    const ordinal = repository.recordConfirmed(publication(candidate));
+    const ordinal = await repository.recordConfirmed(publication(candidate));
     Object.assign(candidate.definition.source, { id: "mutated-source" });
     Object.assign(candidate.definition.startCapabilities, {
       timerStarts: [{ startEventId: "mutated", durationMs: 99_000 }],
     });
 
-    const row = repository.search({ limit: 1 })[0];
+    const row = (await repository.search({ limit: 1 }))[0];
     assert.equal(ordinal, 1);
     assert.equal(row?.ordinal, 1);
     assert.equal(row?.instance.definition.source.id, "source-1");
@@ -40,7 +40,7 @@ test("round-trips a defensive exact public snapshot without private facts", asyn
     });
     Object.assign(row?.instance.definition.source ?? {}, { id: "mutated-read" });
     assert.equal(
-      repository.search({ limit: 1 })[0]?.instance.definition.source.id,
+      (await repository.search({ limit: 1 }))[0]?.instance.definition.source.id,
       "source-1",
     );
 
@@ -62,18 +62,18 @@ test("reopen preserves one ordinal and refuses a changed same-ID identity", asyn
   const databaseFile = join(root, "process-instances.sqlite");
   try {
     const first = new SqliteProcessInstanceRepository(databaseFile);
-    assert.equal(first.recordConfirmed(publication(instance("durable", 1))), 1);
+    assert.equal(await first.recordConfirmed(publication(instance("durable", 1))), 1);
     first.close();
 
     const reopened = new SqliteProcessInstanceRepository(databaseFile);
     try {
-      assert.equal(reopened.recordConfirmed(publication(instance("durable", 1))), 1);
-      assert.throws(
+      assert.equal(await reopened.recordConfirmed(publication(instance("durable", 1))), 1);
+      await assert.rejects(
         () => reopened.recordConfirmed(publication(instance("durable", 2))),
         (error: unknown) =>
           error instanceof ProcessInstanceIdentityIntegrityError,
       );
-      assert.throws(
+      await assert.rejects(
         () => reopened.recordConfirmed({
           ...publication(instance("durable", 1)),
           locator: "bpmn-process-work-v1:changed-locator",
@@ -82,7 +82,7 @@ test("reopen preserves one ordinal and refuses a changed same-ID identity", asyn
           error instanceof ProcessInstanceIdentityIntegrityError,
       );
       assert.deepEqual(
-        reopened.search({ limit: 10 }).map(({ ordinal, instance: value }) => ({
+        (await reopened.search({ limit: 10 })).map(({ ordinal, instance: value }) => ({
           ordinal,
           id: value.processInstanceId,
           version: value.definition.version,
@@ -100,14 +100,14 @@ test("reopen preserves one ordinal and refuses a changed same-ID identity", asyn
 test("persists private classification across independent connections without a current-incident table", async () => {
   await withDatabaseFile(async (databaseFile) => {
     const first = new SqliteProcessInstanceRepository(databaseFile);
-    first.recordConfirmed(publication(instance("classified", 1)));
-    first.recordObservation("classified", "indeterminate");
+    await first.recordConfirmed(publication(instance("classified", 1)));
+    await first.recordObservation("classified", "indeterminate");
 
     const second = new SqliteProcessInstanceRepository(databaseFile);
     try {
-      assert.equal(second.getRegistration("classified")?.observation, "indeterminate");
-      second.recordObservation("classified", "active");
-      assert.equal(first.getRegistration("classified")?.observation, "active");
+      assert.equal((await second.getRegistration("classified"))?.observation, "indeterminate");
+      await second.recordObservation("classified", "active");
+      assert.equal((await first.getRegistration("classified"))?.observation, "active");
       const database = new DatabaseSync(databaseFile, { readOnly: true });
       try {
         const tables = database.prepare(`
@@ -149,7 +149,7 @@ test("independent concurrent equivalent records converge to one row and ordinal"
     ]);
     const repository = new SqliteProcessInstanceRepository(databaseFile);
     try {
-      assert.equal(repository.search({ limit: 10 }).length, 1);
+      assert.equal((await repository.search({ limit: 10 })).length, 1);
     } finally {
       repository.close();
     }
@@ -166,7 +166,7 @@ test("independent concurrent conflicting records classify one loser and preserve
     const winnerIndex = results.findIndex(({ outcome }) => outcome === "recorded");
     const repository = new SqliteProcessInstanceRepository(databaseFile);
     try {
-      const rows = repository.search({ limit: 10 });
+      const rows = await repository.search({ limit: 10 });
       assert.equal(rows.length, 1);
       assert.deepEqual(rows[0]?.instance, candidates[winnerIndex]);
       assert.equal(rows[0]?.ordinal, 1);
@@ -178,29 +178,29 @@ test("independent concurrent conflicting records classify one loser and preserve
 
 test("uses exact filters and stable keyset boundaries", async () => {
   await withRepository(async (repository) => {
-    repository.recordConfirmed(publication(instance("first", 1, "Alpha", "a".repeat(64))));
-    repository.recordConfirmed(publication(instance("second", 2, "Beta", "b".repeat(64))));
-    repository.recordConfirmed(publication(instance("third", 2, "Alpha", "b".repeat(64))));
+    await repository.recordConfirmed(publication(instance("first", 1, "Alpha", "a".repeat(64))));
+    await repository.recordConfirmed(publication(instance("second", 2, "Beta", "b".repeat(64))));
+    await repository.recordConfirmed(publication(instance("third", 2, "Alpha", "b".repeat(64))));
 
-    const firstPage = repository.search({ processId: "Alpha", limit: 1 });
+    const firstPage = await repository.search({ processId: "Alpha", limit: 1 });
     assert.equal(firstPage[0]?.instance.processInstanceId, "third");
-    repository.recordConfirmed(publication(instance("newer", 3, "Alpha", "c".repeat(64))));
+    await repository.recordConfirmed(publication(instance("newer", 3, "Alpha", "c".repeat(64))));
     assert.deepEqual(
-      repository.search({
+      (await repository.search({
         processId: "Alpha",
         beforeOrdinal: firstPage[0]?.ordinal,
         limit: 10,
-      }).map(({ instance: value }) => value.processInstanceId),
+      })).map(({ instance: value }) => value.processInstanceId),
       ["first"],
     );
     assert.equal(
-      repository.search({
+      (await repository.search({
         processInstanceId: "second",
         processId: "Beta",
         version: 2,
         sourceSha256: "b".repeat(64),
         limit: 10,
-      })[0]?.instance.processInstanceId,
+      }))[0]?.instance.processInstanceId,
       "second",
     );
   });
@@ -212,28 +212,28 @@ test("rejects private input and fails closed on corrupt stored identity or index
       ...instance("private", 1),
       workflowId: "forbidden-host-id",
     };
-    assert.throws(() => repository.recordConfirmed(publication(privateCandidate)));
-    repository.recordConfirmed(publication(instance("corrupt", 1)));
+    await assert.rejects(() => repository.recordConfirmed(publication(privateCandidate)));
+    await repository.recordConfirmed(publication(instance("corrupt", 1)));
 
     const database = new DatabaseSync(databaseFile);
     database.prepare(`
       UPDATE process_instances SET process_id = 'not-the-decoded-process'
     `).run();
     database.close();
-    assert.throws(
+    await assert.rejects(
       () => repository.search({ limit: 10 }),
       (error: unknown) => error instanceof ProcessInstanceStoredValueError,
     );
   });
 
   await withRepository(async (repository, databaseFile) => {
-    repository.recordConfirmed(publication(instance("invalid-json", 1)));
+    await repository.recordConfirmed(publication(instance("invalid-json", 1)));
     const database = new DatabaseSync(databaseFile);
     database.prepare(`
       UPDATE process_instances SET public_identity_json = '{"broken":true}'
     `).run();
     database.close();
-    assert.throws(
+    await assert.rejects(
       () => repository.search({ limit: 10 }),
       (error: unknown) => error instanceof ProcessInstanceStoredValueError,
     );

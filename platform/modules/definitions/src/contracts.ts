@@ -150,15 +150,17 @@ export interface DefinitionRepository {
   allocateNext(
     metadata: NewDefinitionMetadata,
     humanTaskCatalog?: HumanTaskCatalogV1 | null,
-  ): DefinitionMetadata;
-  listLatest(): ReadonlyArray<DefinitionMetadata>;
-  listVersions(processId: string): ReadonlyArray<DefinitionMetadata>;
-  get(reference: DefinitionReference): DefinitionMetadata | null;
+  ): Promise<DefinitionMetadata>;
+  listLatest(): Promise<ReadonlyArray<DefinitionMetadata>>;
+  listVersions(processId: string): Promise<ReadonlyArray<DefinitionMetadata>>;
+  get(reference: DefinitionReference): Promise<DefinitionMetadata | null>;
 }
 
 /** Exact source-bound catalog lookup consumed by Product 2 Work. */
 export interface HumanTaskCatalogRepository {
-  getHumanTaskCatalog(reference: DefinitionReference): HumanTaskCatalogV1 | null;
+  getHumanTaskCatalog(
+    reference: DefinitionReference,
+  ): Promise<HumanTaskCatalogV1 | null>;
 }
 
 /** Raised when durable metadata points at source bytes that are no longer present. */

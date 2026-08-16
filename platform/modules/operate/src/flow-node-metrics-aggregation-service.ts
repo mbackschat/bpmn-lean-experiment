@@ -30,7 +30,9 @@ export type FlowNodeMetricsDefinitionReference = Readonly<{
 }>;
 
 export interface FlowNodeMetricsDefinitionResolver {
-  get(reference: FlowNodeMetricsDefinitionReference): DeployedDefinitionVersion | null;
+  get(
+    reference: FlowNodeMetricsDefinitionReference,
+  ): Promise<DeployedDefinitionVersion | null>;
 }
 
 export type FlowNodeMetricsAggregationServiceOptions = Readonly<{
@@ -47,12 +49,12 @@ export class FlowNodeMetricsAggregationService {
   async get(
     reference: FlowNodeMetricsDefinitionReference,
   ): Promise<FlowNodeMetricsResult | null> {
-    const resolved = this.options.definitions.get(reference);
+    const resolved = await this.options.definitions.get(reference);
     if (resolved === null) return null;
     const definition = structuredClone(resolved);
     let population;
     try {
-      population = this.options.population.listExactDefinitionVersion(definition);
+      population = await this.options.population.listExactDefinitionVersion(definition);
     } catch {
       return unavailable();
     }

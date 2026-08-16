@@ -224,12 +224,12 @@ function createFixture(
 }> {
   let repositoryGets = 0;
   const repository: DefinitionRepository = {
-    allocateNext: (_metadata: NewDefinitionMetadata) => {
+    allocateNext: async (_metadata: NewDefinitionMetadata) => {
       throw new Error("deployment is outside this fixture");
     },
-    listLatest: () => [],
-    listVersions: () => [],
-    get: (reference) => {
+    listLatest: async () => [],
+    listVersions: async () => [],
+    get: async (reference) => {
       repositoryGets += 1;
       return definitions.find(
         (candidate) =>

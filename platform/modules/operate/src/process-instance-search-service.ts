@@ -28,19 +28,19 @@ export class ProcessInstanceSearchService {
   async recordConfirmedProcessInstance(
     publication: ConfirmedProcessOperationsPublication,
   ): Promise<void> {
-    this.repository.recordConfirmed({
+    await this.repository.recordConfirmed({
       instance: snapshotProcessInstanceIdentity(publication.instance),
       locator: publication.locator,
     });
   }
 
   /** Returns at most 50 by default or the requested maximum of 100 exact identities. */
-  searchProcessInstances(
+  async searchProcessInstances(
     request: ProcessInstanceSearchRequest,
-  ): ProcessInstanceSearchPage {
+  ): Promise<ProcessInstanceSearchPage> {
     const decoded = decodeProcessInstanceSearchRequest(request);
     const limit = decoded.limit ?? defaultLimit;
-    const rows = this.repository.search(repositoryQuery(
+    const rows = await this.repository.search(repositoryQuery(
       decoded,
       limit + 1,
     ));

@@ -19,18 +19,18 @@ test("round-trips immutable snapshots and orders schedule IDs by Unicode scalar"
     const ids = ["😀", "a", "\ue000", "A"];
     for (const [index, scheduleId] of ids.entries()) {
       const candidate = record(scheduleId, index + 1);
-      const reserved = repository.reserve(candidate);
+      const reserved = await repository.reserve(candidate);
       assert.equal(reserved.inserted, true);
       Object.assign(candidate.definition.source, { id: "mutated-after-reserve" });
       Object.assign(candidate.timerStart, { durationMs: 99_000 });
     }
 
     assert.deepEqual(
-      repository.listForDefinition({ processId: "Process_Timer", version: 1 })
+      (await repository.listForDefinition({ processId: "Process_Timer", version: 1 }))
         .map(({ reference }) => reference.scheduleId),
       ["A", "a", "\ue000", "😀"],
     );
-    const stored = repository.get(reference("A"));
+    const stored = await repository.get(reference("A"));
     assert.equal(stored?.definition.source.id, "timer-source");
     assert.deepEqual(stored?.definition.startCapabilities, {
       messageStarts: [],
@@ -45,7 +45,7 @@ test("round-trips immutable snapshots and orders schedule IDs by Unicode scalar"
 
 test("enforces private host and semantic instance uniqueness", async () => {
   await withRepository(async (repository) => {
-    repository.reserve(record("first", 1));
+    await repository.reserve(record("first", 1));
 
     for (const collision of [
       {
@@ -66,13 +66,13 @@ test("enforces private host and semantic instance uniqueness", async () => {
     ]) {
       const duplicate = record("second", 2);
       Object.assign(duplicate.identity, collision);
-      assert.throws(
-        () => repository.reserve(duplicate),
+      await assert.rejects(
+        repository.reserve(duplicate),
         (error: unknown) => error instanceof DefinitionScheduleIntegrityError,
       );
     }
     assert.equal(
-      repository.listForDefinition({ processId: "Process_Timer", version: 1 }).length,
+      (await repository.listForDefinition({ processId: "Process_Timer", version: 1 })).length,
       1,
     );
   });
@@ -83,8 +83,8 @@ test("reopen preserves private identities, lifecycle state, and stale CAS refusa
   const databaseFile = join(root, "definitions.sqlite");
   try {
     const first = new SqliteDefinitionScheduleRepository(databaseFile);
-    first.reserve(record("durable", 7));
-    first.compareAndSet(
+    await first.reserve(record("durable", 7));
+    await first.compareAndSet(
       reference("durable"),
       DefinitionScheduleState.Creating,
       { state: DefinitionScheduleState.CreatingHost },
@@ -93,7 +93,7 @@ test("reopen preserves private identities, lifecycle state, and stale CAS refusa
 
     const reopened = new SqliteDefinitionScheduleRepository(databaseFile);
     try {
-      const durable = reopened.get(reference("durable"));
+      const durable = await reopened.get(reference("durable"));
       assert.equal(durable?.state, DefinitionScheduleState.CreatingHost);
       assert.deepEqual(durable?.identity, {
         processInstanceId: "instance-7",
@@ -101,7 +101,7 @@ test("reopen preserves private identities, lifecycle state, and stale CAS refusa
         configuredWorkflowIdBase: "configured-7",
       });
       assert.equal(
-        reopened.compareAndSet(
+        await reopened.compareAndSet(
           reference("durable"),
           DefinitionScheduleState.Creating,
           { state: DefinitionScheduleState.Cancelled },
@@ -109,7 +109,7 @@ test("reopen preserves private identities, lifecycle state, and stale CAS refusa
         null,
       );
       assert.equal(
-        reopened.get(reference("durable"))?.state,
+        (await reopened.get(reference("durable")))?.state,
         DefinitionScheduleState.CreatingHost,
       );
     } finally {
@@ -122,34 +122,34 @@ test("reopen preserves private identities, lifecycle state, and stale CAS refusa
 
 test("compare-and-set admits only the closed lifecycle and cleanup progression", async () => {
   await withRepository(async (repository) => {
-    repository.reserve(record("lifecycle", 1));
+    await repository.reserve(record("lifecycle", 1));
     assert.equal(
-      repository.compareAndSet(
+      await repository.compareAndSet(
         reference("lifecycle"),
         DefinitionScheduleState.Scheduled,
         { state: DefinitionScheduleState.Started },
       ),
       null,
     );
-    const creatingHost = repository.compareAndSet(
+    const creatingHost = await repository.compareAndSet(
       reference("lifecycle"),
       DefinitionScheduleState.Creating,
       { state: DefinitionScheduleState.CreatingHost },
     );
     assert.equal(creatingHost?.state, DefinitionScheduleState.CreatingHost);
-    const scheduled = repository.compareAndSet(
+    const scheduled = await repository.compareAndSet(
       reference("lifecycle"),
       DefinitionScheduleState.CreatingHost,
       { state: DefinitionScheduleState.Scheduled },
     );
     assert.equal(scheduled?.state, DefinitionScheduleState.Scheduled);
-    const cancelling = repository.requestCancellation(reference("lifecycle"));
+    const cancelling = await repository.requestCancellation(reference("lifecycle"));
     assert.equal(cancelling?.state, DefinitionScheduleState.Cancelling);
     assert.equal(
       cancelling?.cancellationOrigin,
       DefinitionScheduleState.Scheduled,
     );
-    const started = repository.compareAndSet(
+    const started = await repository.compareAndSet(
       reference("lifecycle"),
       DefinitionScheduleState.Cancelling,
       {
@@ -161,14 +161,14 @@ test("compare-and-set admits only the closed lifecycle and cleanup progression",
     assert.equal(started?.state, DefinitionScheduleState.Started);
     assert.equal(started?.cleanupComplete, false);
     assert.equal(
-      repository.markCleanupComplete(
+      (await repository.markCleanupComplete(
         reference("lifecycle"),
         DefinitionScheduleState.Started,
-      )?.cleanupComplete,
+      ))?.cleanupComplete,
       true,
     );
-    assert.throws(
-      () => repository.compareAndSet(
+    await assert.rejects(
+      repository.compareAndSet(
         reference("lifecycle"),
         DefinitionScheduleState.Started,
         { state: DefinitionScheduleState.Cancelled },
@@ -180,11 +180,11 @@ test("compare-and-set admits only the closed lifecycle and cleanup progression",
 
 test("creating cancellation is terminal locally and needs no cleanup", async () => {
   await withRepository(async (repository) => {
-    repository.reserve(record("local-cancel", 1));
-    const cancelled = repository.requestCancellation(reference("local-cancel"));
+    await repository.reserve(record("local-cancel", 1));
+    const cancelled = await repository.requestCancellation(reference("local-cancel"));
     assert.equal(cancelled?.state, DefinitionScheduleState.Cancelled);
     assert.equal(cancelled?.cleanupComplete, true);
-    assert.deepEqual(repository.listForReconciliation(), []);
+    assert.deepEqual(await repository.listForReconciliation(), []);
   });
 });
 

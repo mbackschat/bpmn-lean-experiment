@@ -85,7 +85,7 @@ test("joins only an exact source-bound catalog and orders its Product 2 prioriti
     },
   }, {
     registrations: [registration("host-a")],
-    readHumanTaskCatalog: () => catalog,
+    readHumanTaskCatalog: async () => catalog,
   });
 
   const snapshot = await service.listTasks();
@@ -98,7 +98,7 @@ test("joins only an exact source-bound catalog and orders its Product 2 prioriti
     "host-a": { status: "open", openUserTasks: [structuredOpenTask("high", 1)] },
   }, {
     registrations: [registration("host-a")],
-    readHumanTaskCatalog: () => ({ ...catalog, sourceSha256: "b".repeat(64) }),
+    readHumanTaskCatalog: async () => ({ ...catalog, sourceSha256: "b".repeat(64) }),
   });
   const unjoined = await mismatched.listTasks();
   assert.equal(unjoined.tasks[0]?.catalogPresentation, undefined);
@@ -138,7 +138,7 @@ test("classifies every registration state without producing a partial snapshot",
     const recorded: [string, string][] = [];
     const service = createService(example.observations, {
       registrations: example.registrations,
-      recordObservation: (processInstanceId, observation) => {
+      recordObservation: async (processInstanceId, observation) => {
         recorded.push([processInstanceId, observation]);
       },
     });
@@ -149,7 +149,7 @@ test("classifies every registration state without producing a partial snapshot",
   const recorded: [string, string][] = [];
   const unknown = createService({ "host-a": { status: "unknown" } }, {
     registrations: [registration("host-a", "active")],
-    recordObservation: (processInstanceId, observation) => {
+    recordObservation: async (processInstanceId, observation) => {
       recorded.push([processInstanceId, observation]);
     },
   });
@@ -195,9 +195,9 @@ type ServiceOptions = Readonly<{
   recordObservation?: (
     processInstanceId: string,
     observation: "active" | "closed" | "indeterminate",
-  ) => void;
+  ) => Promise<void>;
   limits?: Readonly<{ maxProcesses: number; maxTasks: number }>;
-  readHumanTaskCatalog?: () => ReturnType<typeof humanTaskCatalog> | null;
+  readHumanTaskCatalog?: () => Promise<ReturnType<typeof humanTaskCatalog> | null>;
 }>;
 
 function createService(
@@ -207,9 +207,9 @@ function createService(
   const registrations = options.registrations ?? [registration("host-b"), registration("host-a")];
   return new WorkService({
     repository: {
-      listProcessRegistrations: () => structuredClone(registrations),
-      recordObservation: options.recordObservation ?? (() => undefined),
-      getClaim: () => ({ claimGeneration: 0, claim: null }),
+      listProcessRegistrations: async () => structuredClone(registrations),
+      recordObservation: options.recordObservation ?? (async () => undefined),
+      getClaim: async () => ({ claimGeneration: 0, claim: null }),
     },
     gateway: {
       observeOpenWork: async ({ hostingProcessInstanceId }: { hostingProcessInstanceId: string }) =>
@@ -218,7 +218,7 @@ function createService(
     actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
     authorization: new TaskAuthorizationPolicy(),
     catalogs: {
-      readHumanTaskCatalog: options.readHumanTaskCatalog ?? (() => null),
+      readHumanTaskCatalog: options.readHumanTaskCatalog ?? (async () => null),
     },
     limits: options.limits ?? { maxProcesses: 10, maxTasks: 20 },
   });

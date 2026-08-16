@@ -98,7 +98,7 @@ export class DefinitionDeploymentService {
           sha256: source.sha256,
           bytes: sourceBytes,
         });
-        const definition = this.#repository.allocateNext(
+        const definition = await this.#repository.allocateNext(
           {
             processId,
             source,
@@ -126,25 +126,29 @@ export class DefinitionDeploymentService {
     }
   }
 
-  listLatestDefinitions(): ReadonlyArray<DefinitionMetadata> {
-    return this.#repository.listLatest().map(cloneDefinitionMetadata);
+  async listLatestDefinitions(): Promise<ReadonlyArray<DefinitionMetadata>> {
+    return (await this.#repository.listLatest()).map(cloneDefinitionMetadata);
   }
 
-  listDefinitionVersions(processId: string): ReadonlyArray<DefinitionMetadata> {
-    return this.#repository
-      .listVersions(processId)
-      .map(cloneDefinitionMetadata);
+  async listDefinitionVersions(
+    processId: string,
+  ): Promise<ReadonlyArray<DefinitionMetadata>> {
+    return (await this.#repository.listVersions(processId)).map(
+      cloneDefinitionMetadata,
+    );
   }
 
-  getDefinitionMetadata(reference: DefinitionReference): DefinitionMetadata | null {
-    const definition = this.#repository.get(reference);
+  async getDefinitionMetadata(
+    reference: DefinitionReference,
+  ): Promise<DefinitionMetadata | null> {
+    const definition = await this.#repository.get(reference);
     return definition === null ? null : cloneDefinitionMetadata(definition);
   }
 
   async getDefinitionSource(
     reference: DefinitionReference,
   ): Promise<Uint8Array | null> {
-    const definition = this.#repository.get(reference);
+    const definition = await this.#repository.get(reference);
     if (definition === null) {
       return null;
     }

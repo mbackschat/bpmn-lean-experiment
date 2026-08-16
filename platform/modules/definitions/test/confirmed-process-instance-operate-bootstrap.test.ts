@@ -16,10 +16,10 @@ const publication = confirmedPublication("instance-1", "direct-locator");
 
 test("bootstraps every acknowledged confirmed publication without changing delivery markers", async () => {
   const repository = new InMemoryConfirmedProcessInstanceRepository();
-  repository.confirm(publication);
-  repository.acknowledge(publication.instance.processInstanceId, "operate");
-  repository.acknowledge(publication.instance.processInstanceId, "work");
-  const retained = repository.get(publication.instance.processInstanceId);
+  await repository.confirm(publication);
+  await repository.acknowledge(publication.instance.processInstanceId, "operate");
+  await repository.acknowledge(publication.instance.processInstanceId, "work");
+  const retained = await repository.get(publication.instance.processInstanceId);
   const attempts: ConfirmedProcessInstancePublication[] = [];
   const bootstrap = new ConfirmedProcessInstanceOperateBootstrap({
     repository,
@@ -30,44 +30,47 @@ test("bootstraps every acknowledged confirmed publication without changing deliv
     },
   });
 
-  assert.deepEqual(repository.listForReconciliation(), []);
+  assert.deepEqual(await repository.listForReconciliation(), []);
   await bootstrap.bootstrap();
   await bootstrap.bootstrap();
 
   assert.deepEqual(attempts, [publication, publication]);
-  assert.deepEqual(repository.get(publication.instance.processInstanceId), retained);
+  assert.deepEqual(
+    await repository.get(publication.instance.processInstanceId),
+    retained,
+  );
 });
 
-test("enumerates only confirmed rows for retrospective Operate delivery", () => {
+test("enumerates only confirmed rows for retrospective Operate delivery", async () => {
   const repository = new InMemoryConfirmedProcessInstanceRepository();
   const confirmed = confirmedPublication("confirmed", "confirmed-locator");
-  repository.confirm(confirmed);
-  reserve(repository, "reserved");
-  reserve(repository, "starting");
-  repository.compareAndSetState(
+  await repository.confirm(confirmed);
+  await reserve(repository, "reserved");
+  await reserve(repository, "starting");
+  await repository.compareAndSetState(
     "starting",
     ConfirmedProcessInstanceState.Reserved,
     ConfirmedProcessInstanceState.Starting,
   );
-  reserve(repository, "indeterminate");
-  repository.compareAndSetState(
+  await reserve(repository, "indeterminate");
+  await repository.compareAndSetState(
     "indeterminate",
     ConfirmedProcessInstanceState.Reserved,
     ConfirmedProcessInstanceState.Starting,
   );
-  repository.compareAndSetState(
+  await repository.compareAndSetState(
     "indeterminate",
     ConfirmedProcessInstanceState.Starting,
     ConfirmedProcessInstanceState.Indeterminate,
   );
-  reserve(repository, "integrity-failure");
-  repository.compareAndSetState(
+  await reserve(repository, "integrity-failure");
+  await repository.compareAndSetState(
     "integrity-failure",
     ConfirmedProcessInstanceState.Reserved,
     ConfirmedProcessInstanceState.IntegrityFailure,
   );
 
-  assert.deepEqual(repository.listConfirmed(), [
+  assert.deepEqual(await repository.listConfirmed(), [
     {
       ...confirmed,
       intent: null,
@@ -82,8 +85,8 @@ test("aborts on partial failure and converges from the full enumeration after re
   const repository = new InMemoryConfirmedProcessInstanceRepository();
   const first = confirmedPublication("instance-a", "locator-a");
   const second = confirmedPublication("instance-b", "locator-b");
-  repository.confirm(second);
-  repository.confirm(first);
+  await repository.confirm(second);
+  await repository.confirm(first);
   const operate = new ExactOperateSubscriber("instance-b");
   const bootstrap = new ConfirmedProcessInstanceOperateBootstrap({
     repository,
@@ -102,7 +105,7 @@ test("aborts on partial failure and converges from the full enumeration after re
 
 test("propagates locator and identity drift without overwriting retained data", async () => {
   const repository = new InMemoryConfirmedProcessInstanceRepository();
-  repository.confirm(publication);
+  await repository.confirm(publication);
   const divergentPublications = [
     { ...publication, locator: "divergent-locator" },
     {
@@ -176,11 +179,11 @@ class ExactOperateSubscriber implements ConfirmedProcessInstanceOperateSubscribe
   }
 }
 
-function reserve(
+async function reserve(
   repository: InMemoryConfirmedProcessInstanceRepository,
   processInstanceId: string,
-): void {
-  repository.reserveDirect({
+): Promise<void> {
+  await repository.reserveDirect({
     ...confirmedPublication(processInstanceId, `${processInstanceId}-locator`),
     intent: {
       protocol: "bpmn-direct-start-v1",

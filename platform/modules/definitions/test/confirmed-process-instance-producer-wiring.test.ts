@@ -335,16 +335,20 @@ class FailOncePublisher extends RecordingPublisher {
 }
 
 class OneDefinitionRepository implements DefinitionRepository {
-  allocateNext(_metadata: NewDefinitionMetadata): DefinitionMetadata {
+  async allocateNext(
+    _metadata: NewDefinitionMetadata,
+  ): Promise<DefinitionMetadata> {
     throw new Error("not used");
   }
-  listLatest(): ReadonlyArray<DefinitionMetadata> {
+  async listLatest(): Promise<ReadonlyArray<DefinitionMetadata>> {
     return [structuredClone(definition)];
   }
-  listVersions(_processId: string): ReadonlyArray<DefinitionMetadata> {
+  async listVersions(
+    _processId: string,
+  ): Promise<ReadonlyArray<DefinitionMetadata>> {
     return [structuredClone(definition)];
   }
-  get(reference: DefinitionReference): DefinitionMetadata | null {
+  async get(reference: DefinitionReference): Promise<DefinitionMetadata | null> {
     return reference.processId === definition.processId &&
       reference.version === definition.version
       ? structuredClone(definition)
@@ -355,7 +359,9 @@ class OneDefinitionRepository implements DefinitionRepository {
 class MemoryScheduleRepository implements DefinitionScheduleRepository {
   record: DefinitionScheduleRecord | null = null;
 
-  reserve(value: NewDefinitionScheduleRecord): DefinitionScheduleReservation {
+  async reserve(
+    value: NewDefinitionScheduleRecord,
+  ): Promise<DefinitionScheduleReservation> {
     if (this.record !== null) {
       return { inserted: false, record: structuredClone(this.record) };
     }
@@ -369,27 +375,29 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
     };
     return { inserted: true, record: structuredClone(this.record) };
   }
-  get(_reference: DefinitionScheduleReference): DefinitionScheduleRecord | null {
+  async get(
+    _reference: DefinitionScheduleReference,
+  ): Promise<DefinitionScheduleRecord | null> {
     return structuredClone(this.record);
   }
-  listForDefinition(_reference: DefinitionReference) {
+  async listForDefinition(_reference: DefinitionReference) {
     return this.record === null ? [] : [structuredClone(this.record)];
   }
-  listForReconciliation() {
+  async listForReconciliation() {
     return this.record === null ? [] : [structuredClone(this.record)];
   }
-  compareAndSet(
+  async compareAndSet(
     _reference: DefinitionScheduleReference,
     expected: DefinitionScheduleState,
     transition: DefinitionScheduleTransition,
-  ): DefinitionScheduleRecord | null {
+  ): Promise<DefinitionScheduleRecord | null> {
     if (this.record === null || this.record.state !== expected) {
       return null;
     }
     this.record = { ...this.record, ...transition };
     return structuredClone(this.record);
   }
-  requestCancellation(_reference: DefinitionScheduleReference) {
+  async requestCancellation(_reference: DefinitionScheduleReference) {
     if (this.record === null) {
       return null;
     }
@@ -412,11 +420,11 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
     }
     return structuredClone(this.record);
   }
-  markCleanupComplete(
+  async markCleanupComplete(
     reference: DefinitionScheduleReference,
     expected: DefinitionScheduleState,
   ) {
-    return this.compareAndSet(reference, expected, {
+    return await this.compareAndSet(reference, expected, {
       state: expected,
       cleanupComplete: true,
     });
@@ -426,7 +434,9 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
 class MemoryPublicationRepository implements MessageStartPublicationRepository {
   record: MessageStartPublicationRecord | null = null;
 
-  reserve(value: NewMessageStartPublicationRecord): MessageStartPublicationReservation {
+  async reserve(
+    value: NewMessageStartPublicationRecord,
+  ): Promise<MessageStartPublicationReservation> {
     if (this.record !== null) {
       return { inserted: false, record: structuredClone(this.record) };
     }
@@ -436,17 +446,19 @@ class MemoryPublicationRepository implements MessageStartPublicationRepository {
     };
     return { inserted: true, record: structuredClone(this.record) };
   }
-  get(_publicationId: string): MessageStartPublicationRecord | null {
+  async get(
+    _publicationId: string,
+  ): Promise<MessageStartPublicationRecord | null> {
     return structuredClone(this.record);
   }
-  listForReconciliation() {
+  async listForReconciliation() {
     return this.record === null ? [] : [structuredClone(this.record)];
   }
-  compareAndSet(
+  async compareAndSet(
     _publicationId: string,
     expected: MessageStartPublicationState,
     next: MessageStartPublicationState,
-  ): MessageStartPublicationRecord | null {
+  ): Promise<MessageStartPublicationRecord | null> {
     if (this.record === null || this.record.state !== expected) {
       return null;
     }

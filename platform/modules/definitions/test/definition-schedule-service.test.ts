@@ -37,8 +37,8 @@ const dueAt = "2026-08-11T12:00:01.000Z";
 
 test("DELETE winning before creatingHost causes zero Schedule host calls", async () => {
   const fixture = createFixture();
-  fixture.schedules.beforeFirstCreatingHost = () => {
-    void fixture.service.delete(reference());
+  fixture.schedules.beforeFirstCreatingHost = async () => {
+    await fixture.service.delete(reference());
   };
 
   const result = await fixture.service.put({ ...reference(), activationAt });
@@ -55,7 +55,7 @@ test("restart resumes durable cancelling after a crash following pause", async (
 
   await assert.rejects(fixture.service.delete(reference()), /pause crash/u);
   assert.equal(
-    fixture.schedules.get(reference())?.state,
+    (await fixture.schedules.get(reference()))?.state,
     DefinitionScheduleState.Cancelling,
   );
 
@@ -113,11 +113,11 @@ test("restart completes terminal cleanup after a successful delete response is l
     fixture.service.put({ ...reference(), activationAt }),
     /delete response lost/u,
   );
-  assert.equal(fixture.schedules.get(reference())?.cleanupComplete, false);
+  assert.equal((await fixture.schedules.get(reference()))?.cleanupComplete, false);
 
   await fixture.restartedService().reconcileAll();
 
-  assert.equal(fixture.schedules.get(reference())?.cleanupComplete, true);
+  assert.equal((await fixture.schedules.get(reference()))?.cleanupComplete, true);
   assert.equal(fixture.host.deleteCalls.length, 2);
 });
 
@@ -179,7 +179,7 @@ test("rejects a derived due instant outside the public four-digit year domain", 
 
   assert.equal(fixture.host.validationCalls.length, 1);
   assert.deepEqual(fixture.host.scheduleCalls, []);
-  assert.equal(fixture.schedules.get(reference()), null);
+  assert.equal(await fixture.schedules.get(reference()), null);
 });
 
 test("rechecks future activation after asynchronous definition validation", async () => {
@@ -193,7 +193,7 @@ test("rechecks future activation after asynchronous definition validation", asyn
 
   assert.equal(fixture.host.validationCalls.length, 1);
   assert.deepEqual(fixture.host.scheduleCalls, []);
-  assert.equal(fixture.schedules.get(reference()), null);
+  assert.equal(await fixture.schedules.get(reference()), null);
 });
 
 test("started host action wins a cancellation race and remains privately addressed", async () => {
@@ -209,7 +209,7 @@ test("started host action wins a cancellation race and remains privately address
     fixture.service.delete(reference()),
     (error: unknown) => error instanceof DefinitionScheduleConflictError,
   );
-  const stored = fixture.schedules.get(reference());
+  const stored = await fixture.schedules.get(reference());
   assert.equal(stored?.state, DefinitionScheduleState.Started);
   assert.equal(stored?.executionWorkflowId, "opaque-race-workflow");
   const visible = await fixture.service.get(reference());
@@ -230,7 +230,7 @@ test("requires pause-confirmed pending before cancellation can become cancelled"
     (error: unknown) => error instanceof DefinitionScheduleIntegrityError,
   );
   assert.equal(
-    fixture.schedules.get(reference())?.state,
+    (await fixture.schedules.get(reference()))?.state,
     DefinitionScheduleState.Cancelling,
   );
 });
@@ -250,7 +250,7 @@ test("divergent scheduled host is integrity failure and is never recreated", asy
   );
   assert.deepEqual(fixture.host.createCalls, []);
   assert.equal(
-    fixture.schedules.get(reference())?.state,
+    (await fixture.schedules.get(reference()))?.state,
     DefinitionScheduleState.Scheduled,
   );
 });
@@ -267,7 +267,7 @@ test("rejection while recompiling stored admitted bytes is integrity failure", a
     (error: unknown) => error instanceof DefinitionScheduleIntegrityError,
   );
   assert.deepEqual(fixture.host.scheduleCalls, []);
-  assert.equal(fixture.schedules.get(reference()), null);
+  assert.equal(await fixture.schedules.get(reference()), null);
 });
 
 test("reconciliation uses the snapshotted definition and never resolves latest", async () => {
@@ -386,16 +386,18 @@ class MemoryDefinitionRepository implements DefinitionRepository {
   constructor(value: DefinitionMetadata) {
     this.value = value;
   }
-  allocateNext(_metadata: NewDefinitionMetadata): DefinitionMetadata {
+  async allocateNext(_metadata: NewDefinitionMetadata): Promise<DefinitionMetadata> {
     throw new Error("not used");
   }
-  listLatest(): ReadonlyArray<DefinitionMetadata> {
+  async listLatest(): Promise<ReadonlyArray<DefinitionMetadata>> {
     return [this.value];
   }
-  listVersions(_processId: string): ReadonlyArray<DefinitionMetadata> {
+  async listVersions(
+    _processId: string,
+  ): Promise<ReadonlyArray<DefinitionMetadata>> {
     return [this.value];
   }
-  get(selected: DefinitionReference): DefinitionMetadata | null {
+  async get(selected: DefinitionReference): Promise<DefinitionMetadata | null> {
     this.gets += 1;
     if (this.missing) {
       return null;
@@ -409,9 +411,11 @@ class MemoryDefinitionRepository implements DefinitionRepository {
 
 class MemoryScheduleRepository implements DefinitionScheduleRepository {
   readonly records = new Map<string, DefinitionScheduleRecord>();
-  beforeFirstCreatingHost: (() => void) | null = null;
+  beforeFirstCreatingHost: (() => Promise<void>) | null = null;
 
-  reserve(value: NewDefinitionScheduleRecord): DefinitionScheduleReservation {
+  async reserve(
+    value: NewDefinitionScheduleRecord,
+  ): Promise<DefinitionScheduleReservation> {
     const key = scheduleKey(value.reference);
     const found = this.records.get(key);
     if (found !== undefined) {
@@ -429,11 +433,15 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
     return { inserted: true, record: structuredClone(record) };
   }
 
-  get(selected: DefinitionScheduleReference): DefinitionScheduleRecord | null {
+  async get(
+    selected: DefinitionScheduleReference,
+  ): Promise<DefinitionScheduleRecord | null> {
     return structuredClone(this.records.get(scheduleKey(selected)) ?? null);
   }
 
-  listForDefinition(selected: DefinitionReference): ReadonlyArray<DefinitionScheduleRecord> {
+  async listForDefinition(
+    selected: DefinitionReference,
+  ): Promise<ReadonlyArray<DefinitionScheduleRecord>> {
     return [...this.records.values()]
       .filter(({ reference: item }) =>
         item.processId === selected.processId && item.version === selected.version)
@@ -444,15 +452,15 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
       .map((record) => structuredClone(record));
   }
 
-  listForReconciliation(): ReadonlyArray<DefinitionScheduleRecord> {
+  async listForReconciliation(): Promise<ReadonlyArray<DefinitionScheduleRecord>> {
     return [...this.records.values()].map((record) => structuredClone(record));
   }
 
-  compareAndSet(
+  async compareAndSet(
     selected: DefinitionScheduleReference,
     expected: DefinitionScheduleRecord["state"],
     transition: DefinitionScheduleTransition,
-  ): DefinitionScheduleRecord | null {
+  ): Promise<DefinitionScheduleRecord | null> {
     if (
       expected === DefinitionScheduleState.Creating &&
       transition.state === DefinitionScheduleState.CreatingHost &&
@@ -460,7 +468,7 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
     ) {
       const hook = this.beforeFirstCreatingHost;
       this.beforeFirstCreatingHost = null;
-      hook();
+      await hook();
     }
     const key = scheduleKey(selected);
     const current = this.records.get(key);
@@ -472,7 +480,9 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
     return structuredClone(next);
   }
 
-  requestCancellation(selected: DefinitionScheduleReference): DefinitionScheduleRecord | null {
+  async requestCancellation(
+    selected: DefinitionScheduleReference,
+  ): Promise<DefinitionScheduleRecord | null> {
     const current = this.records.get(scheduleKey(selected));
     if (current === undefined) {
       return null;
@@ -494,11 +504,11 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
     }
   }
 
-  markCleanupComplete(
+  async markCleanupComplete(
     selected: DefinitionScheduleReference,
     expected: DefinitionScheduleRecord["state"],
-  ): DefinitionScheduleRecord | null {
-    return this.compareAndSet(selected, expected, {
+  ): Promise<DefinitionScheduleRecord | null> {
+    return await this.compareAndSet(selected, expected, {
       state: expected,
       cleanupComplete: true,
     });

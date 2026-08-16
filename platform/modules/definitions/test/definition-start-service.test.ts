@@ -336,16 +336,16 @@ function createFixture(
 }> {
   const repositoryReferences: DefinitionReference[] = [];
   const repository: DefinitionRepository = {
-    allocateNext: (_metadata: NewDefinitionMetadata) => {
+    allocateNext: async (_metadata: NewDefinitionMetadata) => {
       throw new Error("deployment is outside this fixture");
     },
-    listLatest: () => definitions.length === 0
+    listLatest: async () => definitions.length === 0
       ? []
       : [definitions[definitions.length - 1]!],
-    listVersions: (processId) => definitions.filter(
+    listVersions: async (processId) => definitions.filter(
       (candidate) => candidate.processId === processId,
     ),
-    get: (reference) => {
+    get: async (reference) => {
       repositoryReferences.push({ ...reference });
       if (options.redirectExactGetToLatest === true) {
         return definitions[definitions.length - 1] ?? null;

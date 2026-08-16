@@ -50,22 +50,22 @@ export type ConfirmedProcessInstanceSubscriber = "operate" | "work";
 export interface ConfirmedProcessInstanceRepository {
   confirm(
     publication: ConfirmedProcessInstancePublication,
-  ): ConfirmedProcessInstanceReservationResult;
+  ): Promise<ConfirmedProcessInstanceReservationResult>;
   reserveDirect(
     reservation: DirectProcessInstanceReservation,
-  ): ConfirmedProcessInstanceReservationResult;
-  get(processInstanceId: string): ConfirmedProcessInstanceRecord | null;
-  listForReconciliation(): ReadonlyArray<ConfirmedProcessInstanceRecord>;
-  listConfirmed(): ReadonlyArray<ConfirmedProcessInstanceRecord>;
+  ): Promise<ConfirmedProcessInstanceReservationResult>;
+  get(processInstanceId: string): Promise<ConfirmedProcessInstanceRecord | null>;
+  listForReconciliation(): Promise<ReadonlyArray<ConfirmedProcessInstanceRecord>>;
+  listConfirmed(): Promise<ReadonlyArray<ConfirmedProcessInstanceRecord>>;
   compareAndSetState(
     processInstanceId: string,
     expected: ConfirmedProcessInstanceState,
     next: ConfirmedProcessInstanceState,
-  ): ConfirmedProcessInstanceRecord | null;
+  ): Promise<ConfirmedProcessInstanceRecord | null>;
   acknowledge(
     processInstanceId: string,
     subscriber: ConfirmedProcessInstanceSubscriber,
-  ): ConfirmedProcessInstanceRecord | null;
+  ): Promise<ConfirmedProcessInstanceRecord | null>;
 }
 
 /** Operate receives the exact public identity plus Product 1's opaque locator. */

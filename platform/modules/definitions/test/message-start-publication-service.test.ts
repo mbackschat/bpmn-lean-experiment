@@ -73,8 +73,8 @@ test("accepted is the only state exposing the reserved semantic instance", async
     const repository = new SqliteMessageStartPublicationRepository(databaseFile);
     const host = new RecordingHost();
     let observedStarting = false;
-    host.onStart = () => {
-      observedStarting = repository.get("accepted")?.state ===
+    host.onStart = async () => {
+      observedStarting = (await repository.get("accepted"))?.state ===
         MessageStartPublicationState.Starting;
     };
     const capture = publicationCapture();
@@ -149,7 +149,10 @@ test("changed target reuse conflicts without changing or redispatching the accep
       () => sut.put("conflict", changed),
       (error: unknown) => error instanceof MessageStartPublicationConflictError,
     );
-    assert.equal(repository.get("conflict")?.state, MessageStartPublicationState.Accepted);
+    assert.equal(
+      (await repository.get("conflict"))?.state,
+      MessageStartPublicationState.Accepted,
+    );
     assert.equal(host.starts, 1);
     repository.close();
   });
@@ -177,7 +180,7 @@ test("revalidation turns private drift in an accepted row into a stable integrit
       (error: unknown) => error instanceof MessageStartPublicationIntegrityError,
     );
     assert.equal(
-      repository.get("drift")?.state,
+      (await repository.get("drift"))?.state,
       MessageStartPublicationState.IntegrityFailure,
     );
     await assert.rejects(
@@ -201,7 +204,7 @@ test("pre-SDK constructor failure persists integrityFailure with zero Workflow c
     );
     assert.equal(host.sdkStarts, 0);
     assert.equal(
-      repository.get("constructor-failure")?.state,
+      (await repository.get("constructor-failure"))?.state,
       MessageStartPublicationState.IntegrityFailure,
     );
     repository.close();
@@ -225,7 +228,7 @@ test("accepted exact-definition disappearance becomes integrityFailure rather th
       (error: unknown) => error instanceof MessageStartPublicationIntegrityError,
     );
     assert.equal(
-      repository.get("definition-drift")?.state,
+      (await repository.get("definition-drift"))?.state,
       MessageStartPublicationState.IntegrityFailure,
     );
     repository.close();
@@ -246,7 +249,7 @@ test("describe infrastructure failure preserves starting and returns an unavaila
         error instanceof MessageStartPublicationDeliveryUnavailableError,
     );
     assert.equal(
-      repository.get("unavailable")?.state,
+      (await repository.get("unavailable"))?.state,
       MessageStartPublicationState.Starting,
     );
     assert.equal(host.starts, 1);
@@ -261,7 +264,7 @@ class RecordingHost implements MessageStartPublicationHost {
   startBehavior: "started" | "throw" | "integrityFailure" = "started";
   descriptionStatus: "matching" | "missing" | "divergent" | "unavailable" =
     "matching";
-  onStart: (() => void) | null = null;
+  onStart: (() => Promise<void>) | null = null;
   mutatePreparationRequest = false;
   startedRequest: MessageStartPublicationHostRequest | null = null;
 
@@ -287,7 +290,7 @@ class RecordingHost implements MessageStartPublicationHost {
   async start(request: MessageStartPublicationHostRequest) {
     this.starts += 1;
     this.startedRequest = request;
-    this.onStart?.();
+    await this.onStart?.();
     switch (this.startBehavior) {
       case "started":
         this.sdkStarts += 1;
@@ -384,10 +387,10 @@ async function withDatabase(
   };
   let definitionAvailable = true;
   const definitions: DefinitionRepository = {
-    allocateNext: () => stored,
-    listLatest: () => [stored],
-    listVersions: () => [stored],
-    get: (reference) =>
+    allocateNext: async () => stored,
+    listLatest: async () => [stored],
+    listVersions: async () => [stored],
+    get: async (reference) =>
       definitionAvailable &&
         reference.processId === stored.processId &&
         reference.version === stored.version

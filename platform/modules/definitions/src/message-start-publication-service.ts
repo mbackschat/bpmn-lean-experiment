@@ -60,7 +60,7 @@ export class MessageStartPublicationService {
   ): Promise<PutMessageStartPublicationResult> {
     requirePublicationId(publicationId);
     const request = clonePutMessageStartPublicationRequest(input);
-    const previous = this.#dependencies.publications.get(publicationId);
+    const previous = await this.#dependencies.publications.get(publicationId);
     if (previous?.state === MessageStartPublicationState.IntegrityFailure) {
       throw this.#integrityError();
     }
@@ -69,7 +69,7 @@ export class MessageStartPublicationService {
     }
     const prepared = await this.#prepare(publicationId, request, previous);
     const reservation = previous === null
-      ? this.#dependencies.publications.reserve({
+      ? await this.#dependencies.publications.reserve({
           publicationId,
           definition: cloneDefinitionMetadata(prepared.definition),
           messageStart: cloneMessageStart(prepared.messageStart),
@@ -78,7 +78,7 @@ export class MessageStartPublicationService {
         })
       : { inserted: false, record: previous };
     this.#requireSamePublicRequest(reservation.record, request);
-    this.#requirePreparedRecord(reservation.record, prepared);
+    await this.#requirePreparedRecord(reservation.record, prepared);
     const record = await this.#reconcile(
       reservation.record,
       prepared.request,
@@ -91,7 +91,7 @@ export class MessageStartPublicationService {
 
   async get(publicationId: string) {
     requirePublicationId(publicationId);
-    const record = this.#dependencies.publications.get(publicationId);
+    const record = await this.#dependencies.publications.get(publicationId);
     if (record === null) {
       return null;
     }
@@ -106,8 +106,10 @@ export class MessageStartPublicationService {
   }
 
   async reconcileAll(): Promise<void> {
-    for (const candidate of this.#dependencies.publications.listForReconciliation()) {
-      const current = this.#dependencies.publications.get(candidate.publicationId);
+    for (const candidate of await this.#dependencies.publications.listForReconciliation()) {
+      const current = await this.#dependencies.publications.get(
+        candidate.publicationId,
+      );
       if (current === null) {
         continue;
       }
@@ -125,11 +127,11 @@ export class MessageStartPublicationService {
     let definition: DefinitionMetadata;
     let messageStart: DefinitionMessageStartCapability;
     try {
-      definition = this.#loadDefinition(request);
+      definition = await this.#loadDefinition(request);
       messageStart = this.#requireSelectedMessageStart(definition, request);
     } catch (error: unknown) {
       if (existing !== null) {
-        this.#failIntegrity(
+        await this.#failIntegrity(
           existing,
           error instanceof Error
             ? error.message
@@ -140,18 +142,18 @@ export class MessageStartPublicationService {
     }
     const identity = this.#deriveIdentity(publicationId);
     if (existing !== null) {
-      this.#requireStoredPrivateIdentity(existing, identity);
+      await this.#requireStoredPrivateIdentity(existing, identity);
       if (
         !equalDefinitionMetadata(existing.definition, definition) ||
         !equalMessageStart(existing.messageStart, messageStart)
       ) {
-        this.#failIntegrity(existing, "stored publication snapshot drifted");
+        await this.#failIntegrity(existing, "stored publication snapshot drifted");
       }
     }
     const artifact = await this.#dependencies.artifacts.get(definition.source.sha256);
     if (artifact === null) {
       if (existing !== null) {
-        this.#failIntegrity(existing, "stored publication artifact is missing");
+        await this.#failIntegrity(existing, "stored publication artifact is missing");
       }
       throw new DefinitionArtifactIntegrityError(
         request.definition,
@@ -161,7 +163,10 @@ export class MessageStartPublicationService {
     const bytes = Uint8Array.from(artifact);
     if (bytes.byteLength !== definition.source.byteLength) {
       if (existing !== null) {
-        this.#failIntegrity(existing, "stored publication artifact length drifted");
+        await this.#failIntegrity(
+          existing,
+          "stored publication artifact length drifted",
+        );
       }
       throw new DefinitionArtifactIntegrityError(
         request.definition,
@@ -183,7 +188,10 @@ export class MessageStartPublicationService {
             existing.intent.intentSha256 !== preparation.intent.intentSha256
           )
         ) {
-          this.#failIntegrity(existing, "stored publication intent marker drifted");
+          await this.#failIntegrity(
+            existing,
+            "stored publication intent marker drifted",
+          );
         }
         return {
           definition,
@@ -194,12 +202,12 @@ export class MessageStartPublicationService {
         };
       case "rejected":
         if (existing !== null) {
-          this.#failIntegrity(existing, preparation.evidence);
+          await this.#failIntegrity(existing, preparation.evidence);
         }
         throw new MessageStartPublicationValidationError(preparation.evidence);
       case "integrityFailure":
         if (existing !== null) {
-          this.#failIntegrity(existing, preparation.evidence);
+          await this.#failIntegrity(existing, preparation.evidence);
         }
         throw new MessageStartPublicationIntegrityError(preparation.evidence);
       default:
@@ -207,10 +215,10 @@ export class MessageStartPublicationService {
     }
   }
 
-  #loadDefinition(
+  async #loadDefinition(
     request: PutMessageStartPublicationRequest,
-  ): DefinitionMetadata {
-    const stored = this.#dependencies.definitions.get(request.definition);
+  ): Promise<DefinitionMetadata> {
+    const stored = await this.#dependencies.definitions.get(request.definition);
     if (stored === null) {
       throw new MessageStartPublicationNotFoundError(request.definition);
     }
@@ -309,7 +317,7 @@ export class MessageStartPublicationService {
   ): Promise<MessageStartPublicationRecord> {
     switch (record.state) {
       case MessageStartPublicationState.Reserved: {
-        const starting = this.#dependencies.publications.compareAndSet(
+        const starting = await this.#dependencies.publications.compareAndSet(
           record.publicationId,
           MessageStartPublicationState.Reserved,
           MessageStartPublicationState.Starting,
@@ -345,10 +353,10 @@ export class MessageStartPublicationService {
     }
     switch (result.status) {
       case "started":
-        return this.#persistAccepted(starting.publicationId);
+        return await this.#persistAccepted(starting.publicationId);
       case "rejected":
       case "integrityFailure":
-        this.#failIntegrity(starting, result.evidence);
+        return await this.#failIntegrity(starting, result.evidence);
       default:
         return assertNever(result);
     }
@@ -364,17 +372,20 @@ export class MessageStartPublicationService {
     });
     switch (result.status) {
       case "matching":
-        return this.#persistAccepted(record.publicationId);
+        return await this.#persistAccepted(record.publicationId);
       case "missing":
         if (record.state === MessageStartPublicationState.Indeterminate) {
           return record;
         }
-        return this.#transitionOrCurrent(
+        return await this.#transitionOrCurrent(
           record,
           MessageStartPublicationState.Indeterminate,
         );
       case "divergent":
-        this.#failIntegrity(record, "retained host identity diverged");
+        return await this.#failIntegrity(
+          record,
+          "retained host identity diverged",
+        );
       case "unavailable":
         throw new MessageStartPublicationDeliveryUnavailableError();
       default:
@@ -382,15 +393,17 @@ export class MessageStartPublicationService {
     }
   }
 
-  #persistAccepted(publicationId: string): MessageStartPublicationRecord {
+  async #persistAccepted(
+    publicationId: string,
+  ): Promise<MessageStartPublicationRecord> {
     for (;;) {
-      const current = this.#requireCurrent(publicationId);
+      const current = await this.#requireCurrent(publicationId);
       switch (current.state) {
         case MessageStartPublicationState.Accepted:
           return current;
         case MessageStartPublicationState.Starting:
         case MessageStartPublicationState.Indeterminate: {
-          const accepted = this.#dependencies.publications.compareAndSet(
+          const accepted = await this.#dependencies.publications.compareAndSet(
             publicationId,
             current.state,
             MessageStartPublicationState.Accepted,
@@ -412,15 +425,15 @@ export class MessageStartPublicationService {
     }
   }
 
-  #transitionOrCurrent(
+  async #transitionOrCurrent(
     record: MessageStartPublicationRecord,
     state: MessageStartPublicationState,
-  ): MessageStartPublicationRecord {
-    return this.#dependencies.publications.compareAndSet(
+  ): Promise<MessageStartPublicationRecord> {
+    return (await this.#dependencies.publications.compareAndSet(
       record.publicationId,
       record.state,
       state,
-    ) ?? this.#requireCurrent(record.publicationId);
+    )) ?? await this.#requireCurrent(record.publicationId);
   }
 
   async #reconcileCurrent(
@@ -428,13 +441,15 @@ export class MessageStartPublicationService {
     request: MessageStartPublicationHostRequest,
   ): Promise<MessageStartPublicationRecord> {
     return await this.#reconcileLifecycle(
-      this.#requireCurrent(publicationId),
+      await this.#requireCurrent(publicationId),
       request,
     );
   }
 
-  #requireCurrent(publicationId: string): MessageStartPublicationRecord {
-    const current = this.#dependencies.publications.get(publicationId);
+  async #requireCurrent(
+    publicationId: string,
+  ): Promise<MessageStartPublicationRecord> {
+    const current = await this.#dependencies.publications.get(publicationId);
     if (current === null) {
       throw new MessageStartPublicationIntegrityError(
         "publication disappeared during reconciliation",
@@ -458,10 +473,10 @@ export class MessageStartPublicationService {
     }
   }
 
-  #requirePreparedRecord(
+  async #requirePreparedRecord(
     record: MessageStartPublicationRecord,
     prepared: PreparedTarget,
-  ): void {
+  ): Promise<void> {
     if (
       !equalDefinitionMetadata(record.definition, prepared.definition) ||
       !equalMessageStart(record.messageStart, prepared.messageStart) ||
@@ -469,16 +484,22 @@ export class MessageStartPublicationService {
       record.intent.protocol !== prepared.intent.protocol ||
       record.intent.intentSha256 !== prepared.intent.intentSha256
     ) {
-      this.#failIntegrity(record, "reserved publication did not preserve its intent");
+      await this.#failIntegrity(
+        record,
+        "reserved publication did not preserve its intent",
+      );
     }
   }
 
-  #requireStoredPrivateIdentity(
+  async #requireStoredPrivateIdentity(
     record: MessageStartPublicationRecord,
     expected: MessageStartPublicationPrivateIdentity,
-  ): void {
+  ): Promise<void> {
     if (!equalIdentity(record.identity, expected)) {
-      this.#failIntegrity(record, "stored publication private identity drifted");
+      await this.#failIntegrity(
+        record,
+        "stored publication private identity drifted",
+      );
     }
   }
 
@@ -494,10 +515,13 @@ export class MessageStartPublicationService {
     };
   }
 
-  #failIntegrity(record: MessageStartPublicationRecord, evidence: string): never {
+  async #failIntegrity(
+    record: MessageStartPublicationRecord,
+    evidence: string,
+  ): Promise<never> {
     let current = record;
     while (current.state !== MessageStartPublicationState.IntegrityFailure) {
-      const failed = this.#dependencies.publications.compareAndSet(
+      const failed = await this.#dependencies.publications.compareAndSet(
         current.publicationId,
         current.state,
         MessageStartPublicationState.IntegrityFailure,
@@ -505,7 +529,7 @@ export class MessageStartPublicationService {
       if (failed !== null) {
         throw new MessageStartPublicationIntegrityError(evidence);
       }
-      current = this.#requireCurrent(current.publicationId);
+      current = await this.#requireCurrent(current.publicationId);
     }
     throw new MessageStartPublicationIntegrityError(evidence);
   }

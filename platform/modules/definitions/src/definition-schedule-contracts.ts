@@ -84,22 +84,28 @@ export type DefinitionScheduleTransition = Readonly<{
 
 /** Atomic persistence operations; every method completes before any host await. */
 export interface DefinitionScheduleRepository {
-  reserve(record: NewDefinitionScheduleRecord): DefinitionScheduleReservation;
-  get(reference: DefinitionScheduleReference): DefinitionScheduleRecord | null;
-  listForDefinition(reference: DefinitionReference): ReadonlyArray<DefinitionScheduleRecord>;
-  listForReconciliation(): ReadonlyArray<DefinitionScheduleRecord>;
+  reserve(
+    record: NewDefinitionScheduleRecord,
+  ): Promise<DefinitionScheduleReservation>;
+  get(
+    reference: DefinitionScheduleReference,
+  ): Promise<DefinitionScheduleRecord | null>;
+  listForDefinition(
+    reference: DefinitionReference,
+  ): Promise<ReadonlyArray<DefinitionScheduleRecord>>;
+  listForReconciliation(): Promise<ReadonlyArray<DefinitionScheduleRecord>>;
   compareAndSet(
     reference: DefinitionScheduleReference,
     expected: DefinitionScheduleState,
     transition: DefinitionScheduleTransition,
-  ): DefinitionScheduleRecord | null;
+  ): Promise<DefinitionScheduleRecord | null>;
   requestCancellation(
     reference: DefinitionScheduleReference,
-  ): DefinitionScheduleRecord | null;
+  ): Promise<DefinitionScheduleRecord | null>;
   markCleanupComplete(
     reference: DefinitionScheduleReference,
     expected: DefinitionScheduleState,
-  ): DefinitionScheduleRecord | null;
+  ): Promise<DefinitionScheduleRecord | null>;
 }
 
 export type DefinitionScheduleValidationRequest = Readonly<{

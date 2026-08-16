@@ -159,16 +159,16 @@ test("projects exact catalog-ordered structured current values without applying 
   };
   const work = new WorkService({
     repository: {
-      listProcessRegistrations: () => [registration],
-      recordObservation: () => undefined,
-      getClaim: () => ({ claimGeneration: 0, claim: null }),
+      listProcessRegistrations: async () => [registration],
+      recordObservation: async () => undefined,
+      getClaim: async () => ({ claimGeneration: 0, claim: null }),
     },
     gateway: {
       observeOpenWork: async () => ({ status: "open" as const, openUserTasks: [structuredTask] }),
     },
     actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
     authorization: new TaskAuthorizationPolicy(),
-    catalogs: { readHumanTaskCatalog: () => catalog },
+    catalogs: { readHumanTaskCatalog: async () => catalog },
     limits: { maxProcesses: 10, maxTasks: 10 },
   });
   const service = new WorkTaskDetailService({
@@ -224,16 +224,16 @@ function createDetailService(
   };
   const work = new WorkService({
     repository: {
-      listProcessRegistrations: () => [structuredClone(registration)],
-      recordObservation: () => undefined,
-      getClaim: () => ({ claimGeneration: 0, claim: null }),
+      listProcessRegistrations: async () => [structuredClone(registration)],
+      recordObservation: async () => undefined,
+      getClaim: async () => ({ claimGeneration: 0, claim: null }),
     },
     gateway: {
       observeOpenWork: async () => ({ status: "open", openUserTasks: [structuredClone(observedTask)] }),
     },
     actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
     authorization: new TaskAuthorizationPolicy(),
-    catalogs: { readHumanTaskCatalog: () => null },
+    catalogs: { readHumanTaskCatalog: async () => null },
     limits: { maxProcesses: 10, maxTasks: 10 },
   });
   return {

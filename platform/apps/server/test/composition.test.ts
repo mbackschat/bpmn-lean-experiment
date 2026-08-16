@@ -248,7 +248,7 @@ test("reconciles exactly one audit row after insertion succeeds and Work acknowl
     work = new SqliteWorkRepository(workFile);
     audit = new SqliteAuditRepository(auditFile);
     await work.recordConfirmedProcessInstance(workPublication);
-    assert.equal(work.claimTask(workClaimInput).kind, "claimed");
+    assert.equal((await work.claimTask(workClaimInput)).kind, "claimed");
     const crashAfterAuditInsert = new WorkAuditOutboxService({
       listUndeliveredAuditEvents: () => work!.listUndeliveredAuditEvents(),
       acknowledgeAuditEvent: () => {
@@ -256,25 +256,25 @@ test("reconciles exactly one audit row after insertion succeeds and Work acknowl
       },
     }, audit);
 
-    assert.throws(() => crashAfterAuditInsert.reconcileAll(), /Work acknowledgement/u);
-    assert.deepEqual(new AuditSearchService(audit).search({
+    await assert.rejects(crashAfterAuditInsert.reconcileAll(), /Work acknowledgement/u);
+    assert.deepEqual((await new AuditSearchService(audit).search({
       actorId: "demo-user",
       limit: 50,
-    }).events, [workClaimInput.audit.claimed]);
-    assert.equal(work.listUndeliveredAuditEvents().length, 1);
-    work.close();
+    })).events, [workClaimInput.audit.claimed]);
+    assert.equal((await work.listUndeliveredAuditEvents()).length, 1);
+    await work.close();
     audit.close();
 
     work = new SqliteWorkRepository(workFile);
     audit = new SqliteAuditRepository(auditFile);
-    new WorkAuditOutboxService(work, audit).reconcileAll();
-    assert.deepEqual(new AuditSearchService(audit).search({
+    await new WorkAuditOutboxService(work, audit).reconcileAll();
+    assert.deepEqual((await new AuditSearchService(audit).search({
       actorId: "demo-user",
       limit: 50,
-    }).events, [workClaimInput.audit.claimed]);
-    assert.deepEqual(work.listUndeliveredAuditEvents(), []);
+    })).events, [workClaimInput.audit.claimed]);
+    assert.deepEqual(await work.listUndeliveredAuditEvents(), []);
   } finally {
-    work?.close();
+    await work?.close();
     audit?.close();
     await rm(dataDirectory, { recursive: true, force: true });
   }

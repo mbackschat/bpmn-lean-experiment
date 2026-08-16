@@ -52,7 +52,9 @@ implements DefinitionScheduleRepository {
     return this.#database.isOpen;
   }
 
-  reserve(record: NewDefinitionScheduleRecord): DefinitionScheduleReservation {
+  async reserve(
+    record: NewDefinitionScheduleRecord,
+  ): Promise<DefinitionScheduleReservation> {
     this.#database.exec("BEGIN IMMEDIATE");
     try {
       const existing = this.#get(record.reference);
@@ -77,11 +79,15 @@ implements DefinitionScheduleRepository {
     }
   }
 
-  get(reference: DefinitionScheduleReference): DefinitionScheduleRecord | null {
+  async get(
+    reference: DefinitionScheduleReference,
+  ): Promise<DefinitionScheduleRecord | null> {
     return this.#get(reference);
   }
 
-  listForDefinition(reference: DefinitionReference): ReadonlyArray<DefinitionScheduleRecord> {
+  async listForDefinition(
+    reference: DefinitionReference,
+  ): Promise<ReadonlyArray<DefinitionScheduleRecord>> {
     return this.#database.prepare(`
       ${selectColumns}
       WHERE process_id = ? AND version = ?
@@ -89,7 +95,7 @@ implements DefinitionScheduleRepository {
     `).all(reference.processId, reference.version).map(decodeRecord);
   }
 
-  listForReconciliation(): ReadonlyArray<DefinitionScheduleRecord> {
+  async listForReconciliation(): Promise<ReadonlyArray<DefinitionScheduleRecord>> {
     return this.#database.prepare(`
       ${selectColumns}
       WHERE state IN ('creating', 'creatingHost', 'scheduled', 'cancelling')
@@ -99,11 +105,11 @@ implements DefinitionScheduleRepository {
     `).all().map(decodeRecord);
   }
 
-  compareAndSet(
+  async compareAndSet(
     reference: DefinitionScheduleReference,
     expected: DefinitionScheduleRecord["state"],
     transition: DefinitionScheduleTransition,
-  ): DefinitionScheduleRecord | null {
+  ): Promise<DefinitionScheduleRecord | null> {
     const current = this.#get(reference);
     if (current === null || current.state !== expected) {
       return null;
@@ -129,9 +135,9 @@ implements DefinitionScheduleRepository {
     return result.changes === 1 ? this.#require(reference) : null;
   }
 
-  requestCancellation(
+  async requestCancellation(
     reference: DefinitionScheduleReference,
-  ): DefinitionScheduleRecord | null {
+  ): Promise<DefinitionScheduleRecord | null> {
     this.#database.exec("BEGIN IMMEDIATE");
     try {
       const current = this.#get(reference);
@@ -191,10 +197,10 @@ implements DefinitionScheduleRepository {
     }
   }
 
-  markCleanupComplete(
+  async markCleanupComplete(
     reference: DefinitionScheduleReference,
     expected: DefinitionScheduleRecord["state"],
-  ): DefinitionScheduleRecord | null {
+  ): Promise<DefinitionScheduleRecord | null> {
     const current = this.#get(reference);
     if (current === null || current.state !== expected) {
       return null;
@@ -202,7 +208,7 @@ implements DefinitionScheduleRepository {
     if (current.cleanupComplete) {
       return current;
     }
-    return this.compareAndSet(reference, expected, {
+    return await this.compareAndSet(reference, expected, {
       state: expected,
       cleanupComplete: true,
     });

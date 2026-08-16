@@ -44,7 +44,7 @@ export class IncidentAggregationService {
   }
 
   async currentSnapshot(): Promise<IncidentSnapshot> {
-    const registrations = this.#repository.listNonclosed(
+    const registrations = await this.#repository.listNonclosed(
       this.#maxRegistrations + 1,
     );
     if (registrations.length > this.#maxRegistrations) {
@@ -64,7 +64,7 @@ export class IncidentAggregationService {
         );
         switch (result.status) {
           case "observed":
-            this.#repository.recordObservation(
+            await this.#repository.recordObservation(
               registration.instance.processInstanceId,
               "active",
             );
@@ -77,14 +77,14 @@ export class IncidentAggregationService {
             }
             break;
           case "closed":
-            this.#repository.recordObservation(
+            await this.#repository.recordObservation(
               registration.instance.processInstanceId,
               "closed",
             );
             break;
           case "unknown":
           case "unavailable":
-            this.#repository.recordObservation(
+            await this.#repository.recordObservation(
               registration.instance.processInstanceId,
               "indeterminate",
             );
@@ -92,7 +92,7 @@ export class IncidentAggregationService {
             break;
         }
       } catch (error: unknown) {
-        this.#repository.recordObservation(
+        await this.#repository.recordObservation(
           registration.instance.processInstanceId,
           "indeterminate",
         );
@@ -107,8 +107,10 @@ export class IncidentAggregationService {
     return { incidents };
   }
 
-  registration(processInstanceId: string): OperateProcessRegistration | null {
-    const registration = this.#repository.getRegistration(processInstanceId);
+  async registration(
+    processInstanceId: string,
+  ): Promise<OperateProcessRegistration | null> {
+    const registration = await this.#repository.getRegistration(processInstanceId);
     return registration === null ? null : structuredClone(registration);
   }
 }

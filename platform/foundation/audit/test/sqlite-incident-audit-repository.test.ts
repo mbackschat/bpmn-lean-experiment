@@ -36,21 +36,21 @@ const event = (
   ...overrides,
 });
 
-test("rejects changed incident audit content under one event ID", () => {
-  withRepository((repository) => {
-    repository.record(event());
-    assert.throws(
-      () => repository.record(event({ outcome: "committed" })),
+test("rejects changed incident audit content under one event ID", async () => {
+  await withRepository(async (repository) => {
+    await repository.record(event());
+    await assert.rejects(
+      repository.record(event({ outcome: "committed" })),
       IncidentAuditEventIntegrityError,
     );
   });
 });
 
-test("rejects another event identity for the same action outcome", () => {
-  withRepository((repository) => {
-    repository.record(event());
-    assert.throws(
-      () => repository.record(event({ eventId: "event-2" })),
+test("rejects another event identity for the same action outcome", async () => {
+  await withRepository(async (repository) => {
+    await repository.record(event());
+    await assert.rejects(
+      repository.record(event({ eventId: "event-2" })),
       IncidentAuditEventIntegrityError,
     );
   });
@@ -71,16 +71,16 @@ test("mints incident audit identity and canonical time independently of Work aud
   }), event({ eventId: "event-minted" }));
 });
 
-test("stores equivalent retries once and survives reopen", () => {
+test("stores equivalent retries once and survives reopen", async () => {
   const directory = mkdtempSync(join(tmpdir(), "bpmn-incident-audit-"));
   const databaseFile = join(directory, "incident-audit.sqlite");
   try {
     const first = new SqliteIncidentAuditRepository(databaseFile);
-    first.record(event());
-    first.record(event());
+    await first.record(event());
+    await first.record(event());
     first.close();
     const reopened = new SqliteIncidentAuditRepository(databaseFile);
-    assert.deepEqual(new IncidentAuditSearchService(reopened).search({ limit: 50 }), {
+    assert.deepEqual(await new IncidentAuditSearchService(reopened).search({ limit: 50 }), {
       events: [event()],
       nextCursor: null,
     });
@@ -90,10 +90,10 @@ test("stores equivalent retries once and survives reopen", () => {
   }
 });
 
-test("rejects partial incident filters at the repository boundary", () => {
-  withRepository((repository) => {
-    assert.throws(
-      () => repository.search({
+test("rejects partial incident filters at the repository boundary", async () => {
+  await withRepository(async (repository) => {
+    await assert.rejects(
+      repository.search({
         incidentId: { effectId: { processInstanceId: "process-1" } },
         limit: 50,
       } as never),
@@ -102,18 +102,18 @@ test("rejects partial incident filters at the repository boundary", () => {
   });
 });
 
-test("filters actor, hosting Process, exact incident, and action kind", () => {
-  withRepository((repository) => {
+test("filters actor, hosting Process, exact incident, and action kind", async () => {
+  await withRepository(async (repository) => {
     const second = event({
       eventId: "event-2",
       actorId: "operator-2",
       actionId: "action-2",
       actionKind: "cancelIncidentProcess",
     });
-    repository.record(event());
-    repository.record(second);
+    await repository.record(event());
+    await repository.record(second);
     const service = new IncidentAuditSearchService(repository);
-    assert.deepEqual(service.search({
+    assert.deepEqual((await service.search({
       actorId: "operator-2",
       hostingProcessInstanceId: "process-1",
       incidentProcessInstanceId: "process-1",
@@ -122,29 +122,29 @@ test("filters actor, hosting Process, exact incident, and action kind", () => {
       incidentGeneration: 1,
       actionKind: "cancelIncidentProcess",
       limit: 50,
-    }).events, [second]);
+    })).events, [second]);
   });
 });
 
-test("pages exclusively in insertion order when new rows arrive between reads", () => {
-  withRepository((repository) => {
-    repository.record(event());
-    repository.record(event({
+test("pages exclusively in insertion order when new rows arrive between reads", async () => {
+  await withRepository(async (repository) => {
+    await repository.record(event());
+    await repository.record(event({
       eventId: "event-2",
       actionId: "action-2",
       recordedAt: "2026-08-14T10:00:01.000Z",
     }));
     const service = new IncidentAuditSearchService(repository);
-    const first = service.search({ limit: 1 });
+    const first = await service.search({ limit: 1 });
     assert.deepEqual(first.events.map(({ eventId }) => eventId), ["event-1"]);
     assert.notEqual(first.nextCursor, null);
 
-    repository.record(event({
+    await repository.record(event({
       eventId: "event-3",
       actionId: "action-3",
       recordedAt: "2026-08-14T10:00:02.000Z",
     }));
-    const second = service.search({
+    const second = await service.search({
       cursor: first.nextCursor as string,
       limit: 2,
     });
@@ -156,8 +156,8 @@ test("pages exclusively in insertion order when new rows arrive between reads", 
   });
 });
 
-test("takes one bounded hosting-instance snapshot in source-local order", () => {
-  withRepository((repository) => {
+test("takes one bounded hosting-instance snapshot in source-local order", async () => {
+  await withRepository(async (repository) => {
     const other = event({
       eventId: "event-other",
       actionId: "action-other",
@@ -176,10 +176,10 @@ test("takes one bounded hosting-instance snapshot in source-local order", () => 
       actionId: "action-2",
       recordedAt: "2026-08-14T09:59:59.000Z",
     });
-    repository.record(event());
-    repository.record(other);
-    repository.record(later);
-    const snapshot = repository.snapshotHostingProcessInstance("process-1", {
+    await repository.record(event());
+    await repository.record(other);
+    await repository.record(later);
+    const snapshot = await repository.snapshotHostingProcessInstance("process-1", {
       maxEvents: 10,
       maxStoredBytes: 10_000,
     });
@@ -187,12 +187,12 @@ test("takes one bounded hosting-instance snapshot in source-local order", () => 
       headEventId: "event-2",
       events: [event(), later],
     });
-    repository.record(event({
+    await repository.record(event({
       eventId: "event-3",
       actionId: "action-3",
       recordedAt: "2026-08-14T10:00:02.000Z",
     }));
-    const extended = repository.snapshotHostingProcessInstance("process-1", {
+    const extended = await repository.snapshotHostingProcessInstance("process-1", {
       maxEvents: 10,
       maxStoredBytes: 10_000,
     });
@@ -201,20 +201,20 @@ test("takes one bounded hosting-instance snapshot in source-local order", () => 
   });
 });
 
-test("fails a snapshot above its event or stored UTF-8 byte ceiling", () => {
-  withRepository((repository) => {
+test("fails a snapshot above its event or stored UTF-8 byte ceiling", async () => {
+  await withRepository(async (repository) => {
     const multibyte = event({ actorId: "operator-🚀" });
-    repository.record(multibyte);
-    repository.record(event({ eventId: "event-2", actionId: "action-2" }));
-    assert.throws(
-      () => repository.snapshotHostingProcessInstance("process-1", {
+    await repository.record(multibyte);
+    await repository.record(event({ eventId: "event-2", actionId: "action-2" }));
+    await assert.rejects(
+      repository.snapshotHostingProcessInstance("process-1", {
         maxEvents: 1,
         maxStoredBytes: 10_000,
       }),
       /snapshot limit/u,
     );
-    assert.throws(
-      () => repository.snapshotHostingProcessInstance("process-1", {
+    await assert.rejects(
+      repository.snapshotHostingProcessInstance("process-1", {
         maxEvents: 10,
         maxStoredBytes: Buffer.byteLength(JSON.stringify(multibyte), "utf8") - 1,
       }),
@@ -223,11 +223,11 @@ test("fails a snapshot above its event or stored UTF-8 byte ceiling", () => {
   });
 });
 
-test("rejects malformed or equivalent noncanonical cursors before search", () => {
-  withRepository((repository) => {
+test("rejects malformed or equivalent noncanonical cursors before search", async () => {
+  await withRepository(async (repository) => {
     const service = new IncidentAuditSearchService(repository);
     for (const cursor of ["v1.padded=", "v1.MA", "v2.MQ", "v1.@@"]) {
-      assert.throws(() => service.search({ cursor, limit: 50 }), TypeError);
+      await assert.rejects(service.search({ cursor, limit: 50 }), TypeError);
     }
   });
 });
@@ -270,14 +270,14 @@ test("rejects the previous incident-audit schema epoch without migration", () =>
   }
 });
 
-function withRepository(
-  run: (repository: SqliteIncidentAuditRepository) => void,
-): void {
+async function withRepository(
+  run: (repository: SqliteIncidentAuditRepository) => Promise<void>,
+): Promise<void> {
   const directory = mkdtempSync(join(tmpdir(), "bpmn-incident-audit-"));
   const databaseFile = join(directory, "incident-audit.sqlite");
   const repository = new SqliteIncidentAuditRepository(databaseFile);
   try {
-    run(repository);
+    await run(repository);
   } finally {
     repository.close();
     rmSync(directory, { recursive: true, force: true });

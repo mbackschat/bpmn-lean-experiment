@@ -79,7 +79,7 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
     return this.#database.isOpen;
   }
 
-  record(event: IncidentAuditEvent): number {
+  async record(event: IncidentAuditEvent): Promise<number> {
     const exact = decodeIncidentAuditEvent(structuredClone(event));
     const encoded = JSON.stringify(exact);
     this.#database.exec("BEGIN IMMEDIATE");
@@ -138,9 +138,9 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
     }
   }
 
-  search(
+  async search(
     query: IncidentAuditRepositoryQuery,
-  ): ReadonlyArray<StoredIncidentAuditEvent> {
+  ): Promise<ReadonlyArray<StoredIncidentAuditEvent>> {
     requireQuery(query);
     const parameters: SQLInputValue[] = [];
     const predicates: string[] = [];
@@ -205,10 +205,10 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
     `).all(...parameters).map(decodeRow);
   }
 
-  snapshotHostingProcessInstance(
+  async snapshotHostingProcessInstance(
     hostingProcessInstanceId: string,
     limits: AuditSnapshotLimits,
-  ): AuditStreamSnapshot<IncidentAuditEvent> {
+  ): Promise<AuditStreamSnapshot<IncidentAuditEvent>> {
     return readBoundedAuditSnapshot(
       this.#database,
       hostingProcessInstanceId,

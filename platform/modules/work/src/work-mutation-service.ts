@@ -47,9 +47,9 @@ export type {
 } from "./work-contracts.js";
 
 type WorkMutationRepository = Readonly<{
-  getClaimReleaseAction(actionId: string): StoredWorkClaimReleaseAction | null;
-  claimTask(input: WorkClaimTransitionInput): WorkClaimTransitionResult;
-  releaseTask(input: WorkReleaseTransitionInput): WorkReleaseTransitionResult;
+  getClaimReleaseAction(actionId: string): Promise<StoredWorkClaimReleaseAction | null>;
+  claimTask(input: WorkClaimTransitionInput): Promise<WorkClaimTransitionResult>;
+  releaseTask(input: WorkReleaseTransitionInput): Promise<WorkReleaseTransitionResult>;
 }> & WorkCompletionServiceOptions["repository"];
 
 type WorkMutationServiceOptions = Omit<
@@ -80,9 +80,9 @@ export class WorkMutationService {
     taskId: PublicWorkTaskId,
     request: WorkClaimRequest,
   ): Promise<WorkClaimServiceResult> {
-    this.options.outbox.reconcileAll();
+    await this.options.outbox.reconcileAll();
     const actorId = this.options.actors.resolveActor().id;
-    const retained = this.options.repository.getClaimReleaseAction(request.actionId);
+    const retained = await this.options.repository.getClaimReleaseAction(request.actionId);
     if (retained !== null) {
       if (retained.binding.actorId !== actorId) return { kind: "notFound" };
       return this.#claim(actorId, taskReferenceForRetained(retained, taskId), request);
@@ -96,9 +96,9 @@ export class WorkMutationService {
     taskId: PublicWorkTaskId,
     request: WorkReleaseRequest,
   ): Promise<WorkReleaseServiceResult> {
-    this.options.outbox.reconcileAll();
+    await this.options.outbox.reconcileAll();
     const actorId = this.options.actors.resolveActor().id;
-    const retained = this.options.repository.getClaimReleaseAction(request.actionId);
+    const retained = await this.options.repository.getClaimReleaseAction(request.actionId);
     if (retained !== null) {
       if (retained.binding.actorId !== actorId) return { kind: "notFound" };
       return this.#release(actorId, taskReferenceForRetained(retained, taskId), request);
@@ -115,12 +115,12 @@ export class WorkMutationService {
     return this.#completion.completeTask(actionId, request);
   }
 
-  #claim(
+  async #claim(
     actorId: string,
     task: WorkTaskReference,
     request: WorkClaimRequest,
-  ): WorkClaimServiceResult {
-    const result = this.options.repository.claimTask({
+  ): Promise<WorkClaimServiceResult> {
+    const result = await this.options.repository.claimTask({
       actionId: request.actionId,
       actorId,
       task,
@@ -143,7 +143,7 @@ export class WorkMutationService {
         }),
       },
     });
-    this.options.outbox.reconcileAll();
+    await this.options.outbox.reconcileAll();
     switch (result.kind) {
       case "claimed":
       case "idempotent":
@@ -153,12 +153,12 @@ export class WorkMutationService {
     }
   }
 
-  #release(
+  async #release(
     actorId: string,
     task: WorkTaskReference,
     request: WorkReleaseRequest,
-  ): WorkReleaseServiceResult {
-    const result = this.options.repository.releaseTask({
+  ): Promise<WorkReleaseServiceResult> {
+    const result = await this.options.repository.releaseTask({
       actionId: request.actionId,
       actorId,
       task,
@@ -181,7 +181,7 @@ export class WorkMutationService {
         }),
       },
     });
-    this.options.outbox.reconcileAll();
+    await this.options.outbox.reconcileAll();
     switch (result.kind) {
       case "released":
       case "idempotent":

@@ -76,13 +76,13 @@ test("preserves transfer framing so a bodyless operator-audit GET rejects before
       decide: () => OperationsAuthorizationDecision.Permitted,
     },
     registrations: {
-      getConfirmed: () => {
+      getConfirmed: async () => {
         registrations += 1;
         return null;
       },
     },
     exports: {
-      create: () => {
+      create: async () => {
         exports += 1;
         return new Uint8Array();
       },

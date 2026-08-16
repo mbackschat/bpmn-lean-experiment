@@ -20,11 +20,11 @@ import {
 } from "./flow-node-occurrence-fixture.ts";
 
 test("rejects positive-cursor unknown terminals and prior-time regression atomically", async () => {
-  await withRepositories(({ instances, executions, occurrences, databaseFile }) => {
-    const registration = recordRegistration(instances);
-    executions.applyPage(registration, firstPage(3));
-    executions.applyPage(registration, secondPage());
-    occurrences.applyPage(registration, occurrenceFirstPage(3));
+  await withRepositories(async ({ instances, executions, occurrences, databaseFile }) => {
+    const registration = await recordRegistration(instances);
+    await executions.applyPage(registration, firstPage(3));
+    await executions.applyPage(registration, secondPage());
+    await occurrences.applyPage(registration, occurrenceFirstPage(3));
     const before = semanticRows(databaseFile);
 
     const unknownTerminal = occurrenceSecondPage();
@@ -37,27 +37,27 @@ test("rejects positive-cursor unknown terminals and prior-time regression atomic
       startRevision: 1,
       startIndex: 0,
     });
-    assert.throws(() => occurrences.applyPage(registration, unknownTerminal));
+    await assert.rejects(() => occurrences.applyPage(registration, unknownTerminal));
     assert.deepEqual(semanticRows(databaseFile), before);
 
-    assert.throws(() => occurrences.applyPage(
+    await assert.rejects(() => occurrences.applyPage(
       registration,
       occurrenceSecondPage(99),
     ));
     assert.deepEqual(semanticRows(databaseFile), before);
-    assert.equal(occurrences.get(registration.instance.processInstanceId)?.headRevision, 2);
+    assert.equal((await occurrences.get(registration.instance.processInstanceId))?.headRevision, 2);
   });
 });
 
 test("rejects transport-valid occurrence pages that drift from retained E1", async () => {
-  await withRepositories(({ instances, executions, occurrences, databaseFile }) => {
-    const registration = recordRegistration(instances);
-    executions.applyPage(registration, firstPage());
+  await withRepositories(async ({ instances, executions, occurrences, databaseFile }) => {
+    const registration = await recordRegistration(instances);
+    await executions.applyPage(registration, firstPage());
     const changedCommand = occurrenceFirstPage();
     const changedBatch = changedCommand.batches[0];
     assert.ok(changedBatch);
     Reflect.set(changedBatch, "commandId", "different-command");
-    assert.throws(() => occurrences.applyPage(registration, changedCommand));
+    await assert.rejects(() => occurrences.applyPage(registration, changedCommand));
     assert.deepEqual(semanticRows(databaseFile), [[], []]);
   });
 });
@@ -72,15 +72,15 @@ test("reopen reconstructs exact rows and revision-zero replacement is atomic", a
     instances = new SqliteProcessInstanceRepository(databaseFile);
     executions = new SqliteExecutionPublicationRepository(databaseFile);
     occurrences = new SqliteFlowNodeOccurrenceRepository(databaseFile, executions);
-    const registration = recordRegistration(instances);
-    executions.applyPage(registration, firstPage(3));
-    executions.applyPage(registration, secondPage());
-    occurrences.applyPage(registration, occurrenceFirstPage(3));
-    occurrences.applyPage(registration, occurrenceSecondPage());
-    const expected = occurrences.get(registration.instance.processInstanceId);
+    const registration = await recordRegistration(instances);
+    await executions.applyPage(registration, firstPage(3));
+    await executions.applyPage(registration, secondPage());
+    await occurrences.applyPage(registration, occurrenceFirstPage(3));
+    await occurrences.applyPage(registration, occurrenceSecondPage());
+    const expected = await occurrences.get(registration.instance.processInstanceId);
     occurrences.close();
     occurrences = new SqliteFlowNodeOccurrenceRepository(databaseFile, executions);
-    assert.deepEqual(occurrences.get(registration.instance.processInstanceId), expected);
+    assert.deepEqual(await occurrences.get(registration.instance.processInstanceId), expected);
 
     const before = semanticRows(databaseFile);
     const malformed = occurrenceSecondPage();
@@ -89,7 +89,7 @@ test("reopen reconstructs exact rows and revision-zero replacement is atomic", a
     Reflect.set(malformedBatch, "commandId", "drift");
     assert.ok(occurrences);
     const reopenedOccurrences = occurrences;
-    assert.throws(() => reopenedOccurrences.replaceFromPages(
+    await assert.rejects(() => reopenedOccurrences.replaceFromPages(
       registration,
       [occurrenceFirstPage(3), malformed],
     ));
@@ -103,12 +103,16 @@ test("reopen reconstructs exact rows and revision-zero replacement is atomic", a
   }
 });
 
-function recordRegistration(instances: SqliteProcessInstanceRepository) {
-  instances.recordConfirmed({
+async function recordRegistration(instances: SqliteProcessInstanceRepository) {
+  await instances.recordConfirmed({
     instance: occurrenceRegistration.instance,
     locator: occurrenceRegistration.locator,
   });
-  return instances.getRegistration(occurrenceRegistration.instance.processInstanceId)!;
+  const registration = await instances.getRegistration(
+    occurrenceRegistration.instance.processInstanceId,
+  );
+  assert.ok(registration);
+  return registration;
 }
 
 async function withRepositories(
@@ -117,7 +121,7 @@ async function withRepositories(
     executions: SqliteExecutionPublicationRepository;
     occurrences: SqliteFlowNodeOccurrenceRepository;
     databaseFile: string;
-  }>) => void,
+  }>) => Promise<void>,
 ): Promise<void> {
   const root = await mkdtemp(join(tmpdir(), "bpmn-lean-occurrence-store-"));
   const databaseFile = join(root, "operate.sqlite");
@@ -125,7 +129,7 @@ async function withRepositories(
   const executions = new SqliteExecutionPublicationRepository(databaseFile);
   const occurrences = new SqliteFlowNodeOccurrenceRepository(databaseFile, executions);
   try {
-    run({ instances, executions, occurrences, databaseFile });
+    await run({ instances, executions, occurrences, databaseFile });
   } finally {
     occurrences.close();
     executions.close();

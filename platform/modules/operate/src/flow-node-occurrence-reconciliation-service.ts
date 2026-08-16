@@ -82,7 +82,7 @@ export class FlowNodeOccurrenceReconciliationService {
     const pages: FlowNodeOccurrencePage[] = [];
     let afterRevision = 0;
     if (!rebuild) {
-      const retained = this.#options.publications.get(
+      const retained = await this.#options.publications.get(
         registration.instance.processInstanceId,
       );
       if (retained?.status === FlowNodeOccurrenceProjectionStatus.Gap) {
@@ -98,7 +98,7 @@ export class FlowNodeOccurrenceReconciliationService {
     while (pageCount < this.#options.maxPagesPerReconciliation) {
       const observed = await this.#observe(registration, afterRevision);
       if (observed.kind === FlowNodeOccurrenceReconciliationKind.Unavailable) {
-        this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Unavailable);
+        await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Unavailable);
         return observed;
       }
       let result;
@@ -109,7 +109,7 @@ export class FlowNodeOccurrenceReconciliationService {
           limit: 100,
         });
       } catch {
-        this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
+        await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
         return { kind: FlowNodeOccurrenceReconciliationKind.Gap };
       }
       switch (result.kind) {
@@ -119,12 +119,12 @@ export class FlowNodeOccurrenceReconciliationService {
           try {
             projection = rebuild
               ? result.page.currentOpen === null
-                ? this.#preview(registration, pages)
-                : this.#options.publications.replaceFromPages(registration, pages)
-              : this.#options.publications.applyPage(registration, result.page);
+                ? await this.#preview(registration, pages)
+                : await this.#options.publications.replaceFromPages(registration, pages)
+              : await this.#options.publications.applyPage(registration, result.page);
           } catch (error: unknown) {
             if (isIntegrityFailure(error)) {
-              this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
+              await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
               return { kind: FlowNodeOccurrenceReconciliationKind.Gap };
             }
             throw error;
@@ -144,7 +144,7 @@ export class FlowNodeOccurrenceReconciliationService {
         }
         case FlowNodeOccurrencePublicationResultKind.NotReady:
           if (afterRevision > 0) {
-            this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
+            await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
             return { kind: FlowNodeOccurrenceReconciliationKind.Gap };
           }
           notReadyAttempts += 1;
@@ -155,22 +155,22 @@ export class FlowNodeOccurrenceReconciliationService {
           break;
         case FlowNodeOccurrencePublicationResultKind.NotFound:
         case FlowNodeOccurrencePublicationResultKind.Unavailable:
-          this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Unavailable);
+          await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Unavailable);
           return { kind: FlowNodeOccurrenceReconciliationKind.Unavailable };
         case FlowNodeOccurrencePublicationResultKind.Gap:
-          this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
+          await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
           return { kind: FlowNodeOccurrenceReconciliationKind.Gap };
       }
     }
-    this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Unavailable);
+    await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Unavailable);
     return { kind: FlowNodeOccurrenceReconciliationKind.Unavailable };
   }
 
-  #preview(
+  async #preview(
     registration: OperateProcessRegistration,
     pages: readonly FlowNodeOccurrencePage[],
-  ): FlowNodeOccurrenceProjectionImage {
-    const retained = this.#options.publications.get(
+  ): Promise<FlowNodeOccurrenceProjectionImage> {
+    const retained = await this.#options.publications.get(
       registration.instance.processInstanceId,
     );
     if (retained !== null) return retained;
@@ -212,13 +212,13 @@ export class FlowNodeOccurrenceReconciliationService {
     }
   }
 
-  #mark(
+  async #mark(
     registration: OperateProcessRegistration,
     status:
       | FlowNodeOccurrenceProjectionStatus.Gap
       | FlowNodeOccurrenceProjectionStatus.Unavailable,
-  ): void {
-    this.#options.publications.mark(registration, status);
+  ): Promise<void> {
+    await this.#options.publications.mark(registration, status);
   }
 }
 

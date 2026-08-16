@@ -173,7 +173,7 @@ function createRoutes(
       },
     },
     registrations: {
-      getConfirmed: (processInstanceId) => {
+      getConfirmed: async (processInstanceId) => {
         calls.registrations.push(processInstanceId);
         if (options.internalFailure === "registration") {
           throw new Error("registration failure");
@@ -184,7 +184,7 @@ function createRoutes(
       },
     },
     exports: {
-      create: (instance) => {
+      create: async (instance) => {
         calls.exports.push(instance.processInstanceId);
         if (options.exportFailure !== undefined) throw options.exportFailure;
         if (options.exportBytes !== undefined) return options.exportBytes;

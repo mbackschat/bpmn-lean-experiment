@@ -52,7 +52,9 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
   }
 
   /** Serializes same-ID writers so exact publication bytes converge and drift fails. */
-  recordConfirmed(publication: ConfirmedProcessOperationsPublication): number {
+  async recordConfirmed(
+    publication: ConfirmedProcessOperationsPublication,
+  ): Promise<number> {
     const exact = snapshotConfirmedPublication(publication);
     const encoded = encodeProcessInstanceIdentity(exact.instance);
     return this.#transaction(() => {
@@ -89,7 +91,9 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
     });
   }
 
-  getRegistration(processInstanceId: string): OperateProcessRegistration | null {
+  async getRegistration(
+    processInstanceId: string,
+  ): Promise<OperateProcessRegistration | null> {
     const row = this.#registrationRow(
       requireNonemptyString(processInstanceId, "processInstanceId"),
     );
@@ -97,7 +101,9 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
   }
 
   /** Returns every nonclosed registration plus one overflow sentinel at most. */
-  listNonclosed(limit: number): ReadonlyArray<OperateProcessRegistration> {
+  async listNonclosed(
+    limit: number,
+  ): Promise<ReadonlyArray<OperateProcessRegistration>> {
     requirePositiveSafeInteger(limit, "limit");
     return this.#database.prepare(`
       SELECT
@@ -117,9 +123,9 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
   }
 
   /** Linearizes the complete bounded exact-version membership in one SQLite read. */
-  listExactDefinitionVersion(
+  async listExactDefinitionVersion(
     definition: DeployedDefinitionVersion,
-  ): ReadonlyArray<OperateProcessRegistration> {
+  ): Promise<ReadonlyArray<OperateProcessRegistration>> {
     const exact = snapshotDefinition(definition);
     const rows = this.#database.prepare(`
       SELECT
@@ -149,10 +155,10 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
     });
   }
 
-  recordObservation(
+  async recordObservation(
     processInstanceId: string,
     observation: OperateProcessObservation,
-  ): void {
+  ): Promise<void> {
     const exactId = requireNonemptyString(processInstanceId, "processInstanceId");
     const exactObservation = requireObservation(observation);
     const changes = this.#database.prepare(`
@@ -164,7 +170,9 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
   }
 
   /** Decodes and cross-checks every selected public snapshot before returning it. */
-  search(query: ProcessInstanceRepositoryQuery): ReadonlyArray<StoredProcessInstance> {
+  async search(
+    query: ProcessInstanceRepositoryQuery,
+  ): Promise<ReadonlyArray<StoredProcessInstance>> {
     requireRepositoryQuery(query);
     const parameters: SQLInputValue[] = [];
     let where = addFilter("", parameters, "process_instance_id", query.processInstanceId);

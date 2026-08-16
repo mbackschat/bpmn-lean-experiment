@@ -73,15 +73,15 @@ export class SqliteConfirmedProcessInstanceRepository
     return this.#database.isOpen;
   }
 
-  confirm(
+  async confirm(
     publication: ConfirmedProcessInstancePublication,
-  ): ConfirmedProcessInstanceReservationResult {
+  ): Promise<ConfirmedProcessInstanceReservationResult> {
     return this.#insert(publication, null, ConfirmedProcessInstanceState.Confirmed);
   }
 
-  reserveDirect(
+  async reserveDirect(
     reservation: DirectProcessInstanceReservation,
-  ): ConfirmedProcessInstanceReservationResult {
+  ): Promise<ConfirmedProcessInstanceReservationResult> {
     return this.#insert(
       reservation,
       encodeDirectIntent(snapshotDirectIntent(reservation.intent)),
@@ -89,14 +89,20 @@ export class SqliteConfirmedProcessInstanceRepository
     );
   }
 
-  get(processInstanceId: string): ConfirmedProcessInstanceRecord | null {
+  async get(
+    processInstanceId: string,
+  ): Promise<ConfirmedProcessInstanceRecord | null> {
+    return this.#get(processInstanceId);
+  }
+
+  #get(processInstanceId: string): ConfirmedProcessInstanceRecord | null {
     const row = this.#database.prepare(`
       SELECT * FROM confirmed_process_instances WHERE process_instance_id = ?
     `).get(processInstanceId);
     return row === undefined ? null : decodeRow(row);
   }
 
-  listForReconciliation(): ReadonlyArray<ConfirmedProcessInstanceRecord> {
+  async listForReconciliation(): Promise<ReadonlyArray<ConfirmedProcessInstanceRecord>> {
     return this.#database.prepare(`
       SELECT * FROM confirmed_process_instances
       WHERE state IN ('reserved', 'starting', 'indeterminate')
@@ -105,7 +111,7 @@ export class SqliteConfirmedProcessInstanceRepository
     `).all().map(decodeRow);
   }
 
-  listConfirmed(): ReadonlyArray<ConfirmedProcessInstanceRecord> {
+  async listConfirmed(): Promise<ReadonlyArray<ConfirmedProcessInstanceRecord>> {
     return this.#database.prepare(`
       SELECT * FROM confirmed_process_instances
       WHERE state = 'confirmed'
@@ -113,11 +119,11 @@ export class SqliteConfirmedProcessInstanceRepository
     `).all().map(decodeRow);
   }
 
-  compareAndSetState(
+  async compareAndSetState(
     processInstanceId: string,
     expected: ConfirmedProcessInstanceState,
     next: ConfirmedProcessInstanceState,
-  ): ConfirmedProcessInstanceRecord | null {
+  ): Promise<ConfirmedProcessInstanceRecord | null> {
     requireAllowedTransition(expected, next);
     const result = this.#database.prepare(`
       UPDATE confirmed_process_instances
@@ -126,20 +132,20 @@ export class SqliteConfirmedProcessInstanceRepository
         work_pending = CASE WHEN ? = 'confirmed' THEN 1 ELSE 0 END
       WHERE process_instance_id = ? AND state = ?
     `).run(next, next, next, processInstanceId, expected);
-    return result.changes === 1 ? this.get(processInstanceId) : null;
+    return result.changes === 1 ? await this.get(processInstanceId) : null;
   }
 
-  acknowledge(
+  async acknowledge(
     processInstanceId: string,
     subscriber: ConfirmedProcessInstanceSubscriber,
-  ): ConfirmedProcessInstanceRecord | null {
+  ): Promise<ConfirmedProcessInstanceRecord | null> {
     const column = subscriber === "operate" ? "operate_pending" : "work_pending";
     this.#database.prepare(`
       UPDATE confirmed_process_instances
       SET ${column} = 0
       WHERE process_instance_id = ? AND state = 'confirmed'
     `).run(processInstanceId);
-    return this.get(processInstanceId);
+    return await this.get(processInstanceId);
   }
 
   close(): void {
@@ -191,7 +197,7 @@ export class SqliteConfirmedProcessInstanceRepository
         state === ConfirmedProcessInstanceState.Confirmed ? 1 : 0,
         state === ConfirmedProcessInstanceState.Confirmed ? 1 : 0,
       );
-      const record = this.get(exact.instance.processInstanceId);
+      const record = this.#get(exact.instance.processInstanceId);
       if (record === null) {
         throw new ConfirmedProcessInstanceIntegrityError(
           exact.instance.processInstanceId,

@@ -36,13 +36,13 @@ test("persists one exact confirmed publication and independent delivery acknowle
   const databaseFile = join(root, "definitions.sqlite");
   try {
     const repository = new SqliteConfirmedProcessInstanceRepository(databaseFile);
-    const reserved = repository.confirm(publication);
+    const reserved = await repository.confirm(publication);
     assert.equal(reserved.inserted, true);
     assert.equal(reserved.record.state, ConfirmedProcessInstanceState.Confirmed);
     assert.equal(reserved.record.operatePending, true);
     assert.equal(reserved.record.workPending, true);
 
-    const afterOperate = repository.acknowledge(
+    const afterOperate = await repository.acknowledge(
       publication.instance.processInstanceId,
       "operate",
     );
@@ -51,18 +51,21 @@ test("persists one exact confirmed publication and independent delivery acknowle
     repository.close();
 
     const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
-    assert.deepEqual(reopened.get(publication.instance.processInstanceId), afterOperate);
-    const fullyAcknowledged = reopened.acknowledge(
+    assert.deepEqual(
+      await reopened.get(publication.instance.processInstanceId),
+      afterOperate,
+    );
+    const fullyAcknowledged = await reopened.acknowledge(
       publication.instance.processInstanceId,
       "work",
     );
-    assert.deepEqual(reopened.listForReconciliation(), []);
-    assert.deepEqual(reopened.listConfirmed(), [fullyAcknowledged]);
-    const equivalent = reopened.confirm(structuredClone(publication));
+    assert.deepEqual(await reopened.listForReconciliation(), []);
+    assert.deepEqual(await reopened.listConfirmed(), [fullyAcknowledged]);
+    const equivalent = await reopened.confirm(structuredClone(publication));
     assert.equal(equivalent.inserted, false);
     assert.deepEqual(equivalent.record, fullyAcknowledged);
-    assert.throws(
-      () => reopened.confirm({ ...publication, locator: "bpmn-process-work-v1:other" }),
+    await assert.rejects(
+      reopened.confirm({ ...publication, locator: "bpmn-process-work-v1:other" }),
       (error: unknown) => error instanceof ConfirmedProcessInstanceIntegrityError,
     );
     reopened.close();
@@ -76,7 +79,7 @@ test("serializes the closed direct-start state graph and refuses stale transitio
   const databaseFile = join(root, "definitions.sqlite");
   try {
     const repository = new SqliteConfirmedProcessInstanceRepository(databaseFile);
-    const reservation = repository.reserveDirect({
+    const reservation = await repository.reserveDirect({
       ...publication,
       intent: {
         protocol: "bpmn-direct-start-v1",
@@ -86,43 +89,43 @@ test("serializes the closed direct-start state graph and refuses stale transitio
     assert.equal(reservation.record.state, ConfirmedProcessInstanceState.Reserved);
     assert.equal(reservation.record.operatePending, false);
     assert.equal(reservation.record.workPending, false);
-    assert.deepEqual(repository.listConfirmed(), []);
+    assert.deepEqual(await repository.listConfirmed(), []);
     repository.close();
 
     const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
-    assert.deepEqual(reopened.listForReconciliation(), [reservation.record]);
+    assert.deepEqual(await reopened.listForReconciliation(), [reservation.record]);
 
-    const starting = reopened.compareAndSetState(
+    const starting = await reopened.compareAndSetState(
       publication.instance.processInstanceId,
       ConfirmedProcessInstanceState.Reserved,
       ConfirmedProcessInstanceState.Starting,
     );
     assert.equal(starting?.state, ConfirmedProcessInstanceState.Starting);
-    assert.deepEqual(reopened.listConfirmed(), []);
+    assert.deepEqual(await reopened.listConfirmed(), []);
     assert.equal(
-      reopened.compareAndSetState(
+      await reopened.compareAndSetState(
         publication.instance.processInstanceId,
         ConfirmedProcessInstanceState.Reserved,
         ConfirmedProcessInstanceState.Starting,
       ),
       null,
     );
-    const indeterminate = reopened.compareAndSetState(
+    const indeterminate = await reopened.compareAndSetState(
       publication.instance.processInstanceId,
       ConfirmedProcessInstanceState.Starting,
       ConfirmedProcessInstanceState.Indeterminate,
     );
     assert.equal(indeterminate?.state, ConfirmedProcessInstanceState.Indeterminate);
-    assert.deepEqual(reopened.listConfirmed(), []);
-    const confirmed = reopened.compareAndSetState(
+    assert.deepEqual(await reopened.listConfirmed(), []);
+    const confirmed = await reopened.compareAndSetState(
       publication.instance.processInstanceId,
       ConfirmedProcessInstanceState.Indeterminate,
       ConfirmedProcessInstanceState.Confirmed,
     );
     assert.equal(confirmed?.operatePending, true);
     assert.equal(confirmed?.workPending, true);
-    assert.deepEqual(reopened.listForReconciliation(), [confirmed]);
-    assert.deepEqual(reopened.listConfirmed(), [confirmed]);
+    assert.deepEqual(await reopened.listForReconciliation(), [confirmed]);
+    assert.deepEqual(await reopened.listConfirmed(), [confirmed]);
     reopened.close();
   } finally {
     await rm(root, { recursive: true, force: true });

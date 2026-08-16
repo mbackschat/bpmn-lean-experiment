@@ -11,12 +11,12 @@ const maximumLimit = 100;
 export class AuditSearchService {
   constructor(private readonly repository: AuditRepository) {}
 
-  search(request: AuthorizedAuditSearchRequest): WorkAuditPage {
+  async search(request: AuthorizedAuditSearchRequest): Promise<WorkAuditPage> {
     requireRequest(request);
     const afterOrdinal = request.cursor === undefined
       ? undefined
       : decodeCursor(request.cursor);
-    const rows = this.repository.search({
+    const rows = await this.repository.search({
       actorId: request.actorId,
       ...(request.taskProcessInstanceId === undefined
         ? {}

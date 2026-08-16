@@ -23,12 +23,12 @@ export type StoredAuditEvent = Readonly<{
 }>;
 
 export interface AuditRepository {
-  record(event: WorkAuditEvent): number;
-  search(query: AuditRepositoryQuery): ReadonlyArray<StoredAuditEvent>;
+  record(event: WorkAuditEvent): Promise<number>;
+  search(query: AuditRepositoryQuery): Promise<ReadonlyArray<StoredAuditEvent>>;
   snapshotHostingProcessInstance(
     hostingProcessInstanceId: string,
     limits: AuditSnapshotLimits,
-  ): AuditStreamSnapshot<WorkAuditEvent>;
+  ): Promise<AuditStreamSnapshot<WorkAuditEvent>>;
 }
 
 export type AuthorizedAuditSearchRequest = WorkAuditRequest & Readonly<{

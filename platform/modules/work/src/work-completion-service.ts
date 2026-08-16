@@ -43,14 +43,18 @@ export type WorkCompletionServiceResult =
     }>;
 
 export type WorkCompletionRepository = Readonly<{
-  listProcessRegistrations(): ReadonlyArray<WorkProcessRegistration>;
-  getCompletionAction(actionId: string): StoredWorkCompletionAction | null;
-  reserveCompletion(input: WorkCompletionReservationInput): WorkCompletionReservationResult;
+  listProcessRegistrations(): Promise<ReadonlyArray<WorkProcessRegistration>>;
+  getCompletionAction(actionId: string): Promise<StoredWorkCompletionAction | null>;
+  reserveCompletion(
+    input: WorkCompletionReservationInput,
+  ): Promise<WorkCompletionReservationResult>;
   beginCompletionSubmission(
     actionId: string,
     binding: WorkCompletionBinding,
-  ): WorkCompletionSubmissionResult;
-  recordCompletionOutcome(input: WorkCompletionOutcomeInput): WorkCompletionOutcomeResult;
+  ): Promise<WorkCompletionSubmissionResult>;
+  recordCompletionOutcome(
+    input: WorkCompletionOutcomeInput,
+  ): Promise<WorkCompletionOutcomeResult>;
 }>;
 
 export type WorkCompletionGateway = Readonly<{
@@ -119,16 +123,16 @@ export class WorkCompletionService {
     request: WorkCompletionRequest,
   ): Promise<WorkCompletionServiceResult> {
     const actorId = this.options.actors.resolveActor().id;
-    const retained = this.options.repository.getCompletionAction(actionId);
+    const retained = await this.options.repository.getCompletionAction(actionId);
     if (retained !== null) {
-      this.options.outbox.reconcileAll();
+      await this.options.outbox.reconcileAll();
       if (retained.binding.actorId !== actorId) return { kind: "notFound" };
-      if (!this.#requestMatches(retained.binding, actionId, request)) {
+      if (!await this.#requestMatches(retained.binding, actionId, request)) {
         return { kind: "conflict" };
       }
       return this.#advanceCompletion(
         retained,
-        this.#locatorFor(retained.binding.task.hostingProcessInstanceId),
+        await this.#locatorFor(retained.binding.task.hostingProcessInstanceId),
       );
     }
 
@@ -179,8 +183,8 @@ export class WorkCompletionService {
     if (claim.actorId !== actorId || claim.generation !== request.expectedClaimGeneration) {
       return { kind: "conflict" };
     }
-    this.options.outbox.reconcileAll();
-    const reservation = this.options.repository.reserveCompletion({
+    await this.options.outbox.reconcileAll();
+    const reservation = await this.options.repository.reserveCompletion({
       binding,
       audit: this.#audit(binding.actorId, binding.task, {
         kind: "completion",
@@ -194,7 +198,7 @@ export class WorkCompletionService {
         return { kind: "conflict" };
       case "reserved":
       case "retained":
-        this.options.outbox.reconcileAll();
+        await this.options.outbox.reconcileAll();
         return this.#advanceCompletion(reservation.action, visible.registration.locator);
     }
   }
@@ -215,7 +219,7 @@ export class WorkCompletionService {
       case "indeterminate":
         break;
     }
-    const submission = this.options.repository.beginCompletionSubmission(
+    const submission = await this.options.repository.beginCompletionSubmission(
       action.binding.actionId,
       action.binding,
     );
@@ -254,7 +258,7 @@ export class WorkCompletionService {
       } catch {
         outcome = { kind: "indeterminate" };
       }
-      const recorded = this.options.repository.recordCompletionOutcome({
+      const recorded = await this.options.repository.recordCompletionOutcome({
         binding,
         outcome,
         audit: this.#audit(binding.actorId, binding.task, {
@@ -263,7 +267,7 @@ export class WorkCompletionService {
           outcome: auditOutcomeFor(outcome),
         }),
       });
-      this.options.outbox.reconcileAll();
+      await this.options.outbox.reconcileAll();
       switch (recorded.kind) {
         case "conflict":
           throw new WorkCompletionIntegrityError("completion outcome conflicted with retained action");
@@ -276,11 +280,11 @@ export class WorkCompletionService {
     }
   }
 
-  #requestMatches(
+  async #requestMatches(
     binding: WorkCompletionBinding,
     actionId: string,
     request: WorkCompletionRequest,
-  ): boolean {
+  ): Promise<boolean> {
     if (
       binding.actionId !== actionId ||
       !sameTaskId(binding.task.taskId, request.taskId) ||
@@ -296,7 +300,7 @@ export class WorkCompletionService {
         binding.structuredCompletion.resolutionActionId !== request.resolutionActionId) {
       return false;
     }
-    const bound = this.options.work.readStructuredTask(
+    const bound = await this.options.work.readStructuredTask(
       binding.structuredCompletion.catalogIdentity,
       binding.task.taskId.elementId,
     );
@@ -319,8 +323,8 @@ export class WorkCompletionService {
     );
   }
 
-  #locatorFor(hostingProcessInstanceId: string): string {
-    const matches = this.options.repository.listProcessRegistrations().filter(
+  async #locatorFor(hostingProcessInstanceId: string): Promise<string> {
+    const matches = (await this.options.repository.listProcessRegistrations()).filter(
       (registration) => registration.instance.processInstanceId === hostingProcessInstanceId,
     );
     if (matches.length !== 1) {
