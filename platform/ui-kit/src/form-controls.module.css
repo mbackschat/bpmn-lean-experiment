@@ -19,7 +19,19 @@
   font: inherit;
 }
 
+.textField textarea {
+  min-height: 8rem;
+  resize: vertical;
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  padding: var(--ui-space-3);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  font: inherit;
+}
+
 .textField input[data-focus-visible],
+.textField textarea[data-focus-visible],
 .checkbox[data-focus-visible],
 .radio[data-focus-visible] {
   outline: 2px solid var(--ui-color-focus);
@@ -67,8 +79,25 @@
   padding: 0;
 }
 
+.choiceGroup {
+  display: grid;
+  gap: var(--ui-space-2);
+  border: 0;
+  padding: 0;
+}
+
+.choiceGroup > span {
+  color: var(--ui-color-text);
+  font: var(--ui-font-label);
+}
+
 .booleanChoiceOptions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--ui-space-4);
+}
+
+.choiceOptions {
+  display: grid;
+  gap: var(--ui-space-2);
 }

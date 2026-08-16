@@ -1,10 +1,13 @@
 import {
   decodePublicProcessInstanceIdentity,
+  decodePublicFormValue,
   decodePublicWorkTaskId,
   decodeWorkAuditEvent,
   decodeWorkClaimResult,
   decodeWorkCompletionResult,
   decodeWorkReleaseResult,
+  parseStrictJson,
+  workCompletionCanonicalJsonByteLength,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PublicProcessInstanceIdentity,
@@ -16,6 +19,7 @@ import {
 } from "./work-contracts.js";
 import type {
   ConfirmedProcessWorkPublication,
+  LegacyWorkCompletionBinding,
   StoredWorkClaimReleaseAction,
   StoredWorkCompletionAction,
   WorkCompletionBinding,
@@ -65,14 +69,31 @@ export function snapshotTaskReference(task: WorkTaskReference): WorkTaskReferenc
 export function snapshotCompletionBinding(
   binding: WorkCompletionBinding,
 ): WorkCompletionBinding {
+  const common = snapshotCompletionBindingBase(binding);
+  if ("submittedField" in binding) {
+    requireExactKeys(binding, "Work completion binding", [
+      "actionId",
+      "actorId",
+      "claimGeneration",
+      "submittedField",
+      "task",
+    ]);
+    return { ...common, submittedField: snapshotSubmittedField(binding.submittedField) };
+  }
   requireExactKeys(binding, "Work completion binding", [
     "actionId",
     "actorId",
     "claimGeneration",
-    "submittedField",
+    "structuredCompletion",
     "task",
   ]);
-  const submittedField = snapshotSubmittedField(binding.submittedField);
+  return {
+    ...common,
+    structuredCompletion: snapshotStructuredCompletion(binding.structuredCompletion),
+  };
+}
+
+function snapshotCompletionBindingBase(binding: WorkCompletionBinding) {
   return {
     actionId: requireString(binding.actionId, "completion actionId"),
     actorId: requireString(binding.actorId, "completion actorId"),
@@ -81,13 +102,70 @@ export function snapshotCompletionBinding(
       binding.claimGeneration,
       "completion claimGeneration",
     ),
-    submittedField,
+  };
+}
+
+function snapshotStructuredCompletion(
+  completion: Extract<WorkCompletionBinding, { structuredCompletion: unknown }>["structuredCompletion"],
+): Extract<WorkCompletionBinding, { structuredCompletion: unknown }>["structuredCompletion"] {
+  requireExactKeys(completion, "structured completion", [
+    "catalogIdentity",
+    "resolutionActionId",
+    "submittedValues",
+  ]);
+  const identity = completion.catalogIdentity;
+  requireExactKeys(identity, "structured completion catalog identity", [
+    "processId",
+    "semanticProfile",
+    "sourceSha256",
+    "version",
+  ]);
+  const sourceSha256 = requireString(identity.sourceSha256, "catalog sourceSha256");
+  if (!/^[0-9a-f]{64}$/u.test(sourceSha256)) {
+    throw new TypeError("catalog sourceSha256 must be lowercase SHA-256");
+  }
+  if (!Array.isArray(completion.submittedValues) || completion.submittedValues.length === 0) {
+    throw new TypeError("structured completion patch must be nonempty");
+  }
+  const submittedValues = completion.submittedValues.map((binding, index) => {
+    requireExactKeys(binding, `structured completion binding ${index}`, ["key", "value"]);
+    const value = decodePublicFormValue(binding.value, `structured completion binding ${index}.value`);
+    if (value.kind === "absent") {
+      throw new TypeError("structured completion patch cannot contain absent");
+    }
+    const exact = { key: requireString(binding.key, "structured completion key"), value };
+    if (workCompletionCanonicalJsonByteLength(value) > 16_384 ||
+        workCompletionCanonicalJsonByteLength(exact) > 20_480) {
+      throw new TypeError("structured completion binding exceeds its canonical ceiling");
+    }
+    return exact;
+  });
+  for (let index = 1; index < submittedValues.length; index += 1) {
+    if (compareStrings(submittedValues[index - 1]!.key, submittedValues[index]!.key) >= 0) {
+      throw new TypeError("structured completion patch must be canonically ordered and unique");
+    }
+  }
+  if (workCompletionCanonicalJsonByteLength(submittedValues) > 65_536) {
+    throw new TypeError("structured completion patch exceeds its canonical ceiling");
+  }
+  return {
+    catalogIdentity: {
+      processId: requireString(identity.processId, "catalog processId"),
+      version: requirePositiveSafeInteger(identity.version, "catalog version"),
+      sourceSha256,
+      semanticProfile: requireString(identity.semanticProfile, "catalog semanticProfile"),
+    },
+    resolutionActionId: requireString(
+      completion.resolutionActionId,
+      "structured completion resolutionActionId",
+    ),
+    submittedValues,
   };
 }
 
 function snapshotSubmittedField(
-  field: WorkCompletionBinding["submittedField"],
-): WorkCompletionBinding["submittedField"] {
+  field: LegacyWorkCompletionBinding["submittedField"],
+): LegacyWorkCompletionBinding["submittedField"] {
   requireExactKeys(field, "submitted field", ["declaredType", "key", "value"]);
   const key = requireString(field.key, "submitted field key");
   if (field.declaredType === "string") {
@@ -325,7 +403,7 @@ export function sameJson(left: unknown, right: unknown): boolean {
 
 export function parseStoredJson(value: unknown, label: string): unknown {
   try {
-    return JSON.parse(requireString(value, label));
+    return parseStrictJson(new TextEncoder().encode(requireString(value, label)));
   } catch (error: unknown) {
     throw new WorkRepositoryStoredValueError(error);
   }
@@ -351,4 +429,15 @@ function requireExactKeys(
   if (!sameJson(actual, sortedExpected)) {
     throw new TypeError(`${label} has a nonexact field set`);
   }
+}
+
+function compareStrings(left: string, right: string): number {
+  const leftScalars = [...left];
+  const rightScalars = [...right];
+  for (let index = 0; index < Math.min(leftScalars.length, rightScalars.length); index += 1) {
+    const difference = Number(leftScalars[index]?.codePointAt(0)) -
+      Number(rightScalars[index]?.codePointAt(0));
+    if (difference !== 0) return difference;
+  }
+  return leftScalars.length - rightScalars.length;
 }

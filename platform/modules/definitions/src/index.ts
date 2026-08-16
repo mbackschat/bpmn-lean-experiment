@@ -19,6 +19,7 @@ export type {
   DefinitionStartFailure,
   DefinitionVersionStartResult,
   ExactArtifactStore,
+  HumanTaskCatalogRepository,
   MissingDefinitionVersionStart,
   NewDefinitionMetadata,
   RejectedDefinitionVersionStart,

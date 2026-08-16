@@ -10,6 +10,7 @@ import type { WorkAuditEvent } from "@bpmn-lean/platform-contracts";
 import { SqliteWorkRepository } from "@bpmn-lean/platform-work";
 import type {
   WorkCompletionBinding,
+  StructuredWorkCompletionBinding,
   WorkClaimTransitionInput,
   WorkCompletionOutcomeInput,
   WorkReleaseTransitionInput,
@@ -234,7 +235,7 @@ test("an old claim retry conflicts after another actor reclaims the task", async
   }
 });
 
-test("rejects an epoch-2 database whose schema has drifted", async () => {
+test("rejects an epoch-3 database whose schema has drifted", async () => {
   const root = await mkdtemp(join(tmpdir(), "bpmn-lean-work-schema-"));
   const databaseFile = join(root, "work.sqlite");
   let unexpectedlyOpened: SqliteWorkRepository | undefined;
@@ -322,6 +323,39 @@ test("serializes completion actions and retains distinct logical outcomes", asyn
   }
 });
 
+test("persists the structured completion root binding and conflicts on changed canonical content", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-work-structured-binding-"));
+  const databaseFile = join(root, "work.sqlite");
+  const repository = new SqliteWorkRepository(databaseFile);
+  const binding = structuredCompletionBinding("structured-1");
+  try {
+    await repository.recordConfirmedProcessInstance(publication);
+    repository.claimTask(claimInput("claim-1", "actor-a", 0, "event-claim"));
+    assert.equal(repository.reserveCompletion({
+      binding,
+      audit: completionAudit("reserved", binding.actionId),
+    }).kind, "reserved");
+    assert.deepEqual(repository.getCompletionAction(binding.actionId), {
+      binding,
+      state: "reserved",
+      result: null,
+    });
+    assert.equal(repository.reserveCompletion({
+      binding: {
+        ...binding,
+        structuredCompletion: {
+          ...binding.structuredCompletion,
+          resolutionActionId: "abort",
+        },
+      },
+      audit: completionAudit("reserved", binding.actionId),
+    }).kind, "conflict");
+  } finally {
+    repository.close();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("persists and acknowledges the audit outbox across reopen", async () => {
   const root = await mkdtemp(join(tmpdir(), "bpmn-lean-work-outbox-"));
   const databaseFile = join(root, "work.sqlite");
@@ -352,6 +386,31 @@ function completionBinding(actionId: string, value: boolean): WorkCompletionBind
       key: "approved",
       declaredType: "boolean",
       value: { kind: "boolean", value },
+    },
+  };
+}
+
+function structuredCompletionBinding(actionId: string): StructuredWorkCompletionBinding {
+  return {
+    actionId,
+    actorId: "actor-a",
+    task,
+    claimGeneration: 1,
+    structuredCompletion: {
+      catalogIdentity: {
+        processId: publication.instance.definition.processId,
+        version: publication.instance.definition.version,
+        sourceSha256: publication.instance.definition.source.sha256,
+        semanticProfile: publication.instance.definition.semanticProfile,
+      },
+      resolutionActionId: "approve",
+      submittedValues: [{
+        key: "resolution",
+        value: { kind: "string", value: "approved" },
+      }, {
+        key: "riskFlags",
+        value: { kind: "stringList", value: ["high", "low"] },
+      }],
     },
   };
 }

@@ -138,6 +138,7 @@ async function createHarness(task: PublicWorkTask["task"]) {
     gateway,
     actors,
     authorization: new TaskAuthorizationPolicy(),
+    catalogs: { readHumanTaskCatalog: () => null },
     limits: { maxProcesses: 1, maxTasks: 1 },
   });
   const outbox = new WorkAuditOutboxService(repository, {

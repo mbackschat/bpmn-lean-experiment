@@ -1,4 +1,5 @@
 import type {
+  HumanTaskCatalogBindingIdentityV1,
   PublicWorkTask,
   PublicWorkTaskId,
   WorkTaskSnapshot,
@@ -12,6 +13,14 @@ import {
   isTaskVisible,
 } from "@bpmn-lean/platform-identity-policy";
 
+import type {
+  BoundHumanTaskDefinitionV1,
+  HumanTaskCatalogReader,
+} from "./human-task-catalog-reader.js";
+import {
+  readBoundHumanTaskDefinition,
+  readBoundHumanTaskDefinitionByIdentity,
+} from "./human-task-catalog-reader.js";
 import type {
   WorkClaimSnapshot,
   WorkProcessRegistration,
@@ -29,6 +38,7 @@ export type SystemWorkTask = Readonly<{
   registration: WorkProcessRegistration;
   task: PublicWorkTask["task"];
   claim: WorkClaimSnapshot;
+  structuredTask: BoundHumanTaskDefinitionV1 | null;
 }>;
 
 export type ActorVisibleSystemWorkTask = SystemWorkTask & Readonly<{
@@ -57,6 +67,7 @@ type WorkServiceOptions = Readonly<{
   actors: ActorResolver;
   authorization: TaskAuthorizationPolicy;
   limits: Readonly<{ maxProcesses: number; maxTasks: number }>;
+  catalogs: HumanTaskCatalogReader;
 }>;
 
 /** Freshly aggregates engine-owned task facts before applying actor policy. */
@@ -113,6 +124,11 @@ export class WorkService {
               registration: structuredClone(registration),
               task: exactTask,
               claim: this.#options.repository.getClaim(reference),
+              structuredTask: readBoundHumanTaskDefinition(
+                this.#options.catalogs,
+                registration.instance,
+                exactTask.id.elementId,
+              ),
             });
           }
           break;
@@ -141,6 +157,17 @@ export class WorkService {
     return matches.length === 0 ? null : this.#projectVisible(matches[0]!);
   }
 
+  readStructuredTask(
+    identity: HumanTaskCatalogBindingIdentityV1,
+    elementId: string,
+  ): BoundHumanTaskDefinitionV1 | null {
+    return readBoundHumanTaskDefinitionByIdentity(
+      this.#options.catalogs,
+      identity,
+      elementId,
+    );
+  }
+
   #projectVisible(item: SystemWorkTask): ActorVisibleSystemWorkTask | null {
     const actor = this.#options.actors.resolveActor();
     const decision = this.#options.authorization.decideTask(actor, {
@@ -156,6 +183,13 @@ export class WorkService {
         claimGeneration: item.claim.claimGeneration,
         claim: item.claim.claim,
         claimableByCurrentActor: isTaskClaimable(decision),
+        ...(item.structuredTask === null
+          ? {}
+          : {
+              catalogPresentation: {
+                worklistPriority: item.structuredTask.taskDefinition.worklistPriority,
+              },
+            }),
       },
     };
   }
@@ -168,7 +202,9 @@ function sameTaskId(left: PublicWorkTaskId, right: PublicWorkTaskId): boolean {
 }
 
 function compareWorkTasks(left: PublicWorkTask, right: PublicWorkTask): number {
-  return compareStrings(left.hostingInstance.processInstanceId, right.hostingInstance.processInstanceId) ||
+  return (right.catalogPresentation?.worklistPriority ?? 50) -
+      (left.catalogPresentation?.worklistPriority ?? 50) ||
+    compareStrings(left.hostingInstance.processInstanceId, right.hostingInstance.processInstanceId) ||
     compareStrings(left.task.id.processInstanceId, right.task.id.processInstanceId) ||
     compareStrings(left.task.id.elementId, right.task.id.elementId) ||
     left.task.id.activation - right.task.id.activation;

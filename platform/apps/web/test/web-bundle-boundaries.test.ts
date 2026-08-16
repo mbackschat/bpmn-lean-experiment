@@ -38,6 +38,7 @@ test("keeps optional workspaces and the BPMN viewer outside the initial Work bun
 
   const scripts = (await readdir(assetRoot)).filter((name) => name.endsWith(".js"));
   for (const stem of [
+    "deferred-work-workspace",
     "deferred-definition-workspace",
     "deferred-operations-workspace",
     "capabilities-panel",

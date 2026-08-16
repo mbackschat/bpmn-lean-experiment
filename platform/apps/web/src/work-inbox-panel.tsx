@@ -124,6 +124,15 @@ export function WorkInboxPanel({
       setCompletionView({ kind: WorkCompletionViewKind.Submitting });
     },
     onError: (error, operation) => {
+      if (isFormValidationFailure(error)) {
+        completionOperationRef.current = null;
+        setCompletionOperation(null);
+        setCompletionView({
+          kind: WorkCompletionViewKind.ValidationFailed,
+          issues: error.issues,
+        });
+        return;
+      }
       if (isDefiniteCompletionRefusal(error)) {
         completionOperationRef.current = null;
         setCompletionOperation(null);
@@ -185,6 +194,11 @@ export function WorkInboxPanel({
     header: "Process",
     responsiveLabel: "Process",
     cell: (row) => row.hostingInstance.definition.processId,
+  }, {
+    id: "priority",
+    header: "Priority",
+    responsiveLabel: "Priority",
+    cell: (row) => row.catalogPresentation?.worklistPriority ?? 50,
   }, {
     id: "candidate",
     header: "Candidate group",
@@ -303,6 +317,12 @@ function errorMessage(value: unknown): string {
 
 function isDefiniteCompletionRefusal(error: unknown): error is WorkApiError {
   return error instanceof WorkApiError && error.status >= 400 && error.status < 500;
+}
+
+function isFormValidationFailure(error: unknown): error is WorkApiError {
+  return error instanceof WorkApiError &&
+    error.code === "formValidationFailed" &&
+    error.issues.length > 0;
 }
 
 function completionRefusalMessage(error: WorkApiError): string {

@@ -191,7 +191,7 @@ test("reflows the five-column task row without horizontal scrolling", () => {
     }),
   }));
 
-  for (const label of ["Task", "Process", "Candidate group", "Claim", "Action"]) {
+  for (const label of ["Task", "Process", "Priority", "Candidate group", "Claim", "Action"]) {
     assert.match(html, new RegExp(`data-label="${label}"`, "u"));
   }
   assert.doesNotMatch(stylesSource, /:global\(/u);
@@ -252,23 +252,25 @@ test("keeps the selected task inside the named Tasks workspace region", () => {
 });
 
 test("renders Boolean as an explicit true-false choice and string as text without coercion", () => {
+  const booleanField = {
+    key: "approved",
+    type: "boolean",
+    currentValue: { kind: "boolean", value: false },
+    compatibility: "compatible",
+  } as const satisfies PublicFormField;
   const booleanDetail: PublicTaskDetail = {
     workTask: { ...task, claim: { actorId: "demo-user", generation: 1 } },
-    form: { fields: [{
-      key: "approved",
-      type: "boolean",
-      currentValue: { kind: "boolean", value: false },
-      compatibility: "compatible",
-    }] },
+    form: { fields: [booleanField] },
   };
+  const stringField = {
+    key: "decision",
+    type: "string",
+    currentValue: { kind: "string", value: "false" },
+    compatibility: "compatible",
+  } as const satisfies PublicFormField;
   const stringDetail: PublicTaskDetail = {
     ...booleanDetail,
-    form: { fields: [{
-      key: "decision",
-      type: "string",
-      currentValue: { kind: "string", value: "false" },
-      compatibility: "compatible",
-    }] },
+    form: { fields: [stringField] },
   };
 
   const booleanHtml = renderToStaticMarkup(createElement(WorkTaskForm, {
@@ -291,11 +293,11 @@ test("renders Boolean as an explicit true-false choice and string as text withou
   assert.match(booleanHtml, />True</u);
   assert.match(stringHtml, /name="decision"/u);
   assert.match(stringHtml, /value="false"/u);
-  assert.deepEqual(initialFormValue(booleanDetail.form!.fields[0]), {
+  assert.deepEqual(initialFormValue(booleanField), {
     kind: "boolean",
     value: false,
   });
-  assert.deepEqual(initialFormValue(stringDetail.form!.fields[0]), {
+  assert.deepEqual(initialFormValue(stringField), {
     kind: "string",
     value: "false",
   });
@@ -427,7 +429,10 @@ test("retains one immutable action and byte-equivalent request after transport f
   assert.deepEqual(calls, [calls[0], calls[0]]);
   assert.equal(Object.isFrozen(operation), true);
   assert.equal(Object.isFrozen(operation.request), true);
-  assert.equal(Object.isFrozen(operation.request.submittedValues), true);
+  assert.equal("submittedValues" in operation.request, true);
+  if ("submittedValues" in operation.request) {
+    assert.equal(Object.isFrozen(operation.request.submittedValues), true);
+  }
 });
 
 test("keeps indeterminate detail controlled and retries the exact retained operation", async () => {

@@ -1,8 +1,21 @@
 import { BpmnModdle } from "bpmn-moddle";
 
-interface ModdleElement {
+import structuredFormModdle from "./bpmn-lean-structured-form-moddle.json" with {
+  type: "json",
+};
+
+export interface ModdleElement {
   readonly $type: string;
+  readonly $attrs?: Readonly<Record<string, string>>;
+  readonly $parent?: ModdleElement;
+  readonly body?: string;
   readonly id?: string;
+  readonly documentation?: readonly ModdleElement[];
+  readonly text?: string;
+  readonly textFormat?: string;
+  readonly extensionElements?: ModdleElement;
+  readonly values?: readonly ModdleElement[];
+  readonly renderings?: readonly ModdleElement[];
   readonly rootElements?: readonly ModdleElement[];
   readonly participants?: readonly ModdleElement[];
   readonly processRef?: ModdleElement;
@@ -67,7 +80,9 @@ export async function parsePresentationModel(
   let parsed: Awaited<ReturnType<PresentationModdleParser["fromXML"]>>;
   try {
     // Upstream publishes no declarations. This private cast is the parser trust boundary.
-    const parser = new BpmnModdle() as unknown as PresentationModdleParser;
+    const parser = new BpmnModdle({
+      bpmnLean: structuredFormModdle,
+    }) as unknown as PresentationModdleParser;
     parsed = await parser.fromXML(xml, { lax: false });
   } catch (cause: unknown) {
     throw presentationError(`${boundary} is not well-formed BPMN XML`, cause);

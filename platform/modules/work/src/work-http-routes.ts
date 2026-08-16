@@ -1,7 +1,9 @@
 import {
   PublicApiErrorCode,
+  StructuredWorkCompletionRequestBodyByteLimit,
   WorkMutationBodyByteLimit,
   decodePublicTaskDetail,
+  decodeWorkApiErrorResponse,
   decodeWorkClaimRequest,
   decodeWorkClaimResult,
   decodeWorkCompletionRequest,
@@ -18,6 +20,7 @@ import {
 } from "@bpmn-lean/platform-contracts";
 import type {
   PublicApiErrorResponse,
+  FormValidationIssue,
   PublicTaskDetail,
   PublicWorkTaskId,
   WorkAuditPage,
@@ -48,7 +51,11 @@ type ReleaseServiceResult =
 type CompletionServiceResult =
   | WorkCompletionResult
   | Readonly<{ kind: "result"; result: WorkCompletionResult }>
-  | Readonly<{ kind: "conflict" | "notFound" | "formValueIncompatible" }>;
+  | Readonly<{ kind: "conflict" | "notFound" | "formValueIncompatible" }>
+  | Readonly<{
+      kind: "formValidationFailed";
+      issues: readonly [FormValidationIssue, ...FormValidationIssue[]];
+    }>;
 
 type WorkTaskOperations = Readonly<{
   listTasks(): Promise<WorkTaskSnapshot>;
@@ -141,7 +148,7 @@ export class WorkHttpRoutes {
         if (request.method !== "PUT") return methodNotAllowed("PUT");
         return this.#complete(
           route.actionId,
-          await readJson(request, decodeWorkCompletionRequest),
+          await readCompletionJson(request),
         );
       case RouteKind.Audit:
         if (request.method !== "GET") return methodNotAllowed("GET");
@@ -196,6 +203,8 @@ export class WorkHttpRoutes {
         return notFound();
       case "formValueIncompatible":
         return formValueIncompatible();
+      case "formValidationFailed":
+        return formValidationFailed(serviceResult.issues);
     }
   }
 }
@@ -225,7 +234,7 @@ async function readJson<Result>(
 ): Promise<Result> {
   const mediaType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
   if (mediaType !== "application/json") throw unsupportedMediaType();
-  const bytes = await readBody(request);
+  const bytes = await readBody(request, WorkMutationBodyByteLimit);
   if (bytes.byteLength === 0) throw invalidTransport();
   try {
     return decoder(parseStrictJson(bytes));
@@ -234,18 +243,35 @@ async function readJson<Result>(
   }
 }
 
-async function requireEmptyBody(request: Request): Promise<void> {
-  if (request.headers.get("content-type") !== null) throw invalidTransport();
-  if ((await readBody(request)).byteLength !== 0) throw invalidTransport();
+async function readCompletionJson(request: Request): Promise<WorkCompletionRequest> {
+  const mediaType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+  if (mediaType !== "application/json") throw unsupportedMediaType();
+  const bytes = await readBody(request, StructuredWorkCompletionRequestBodyByteLimit);
+  if (bytes.byteLength === 0) throw invalidTransport();
+  let decoded: WorkCompletionRequest;
+  try {
+    decoded = decodeWorkCompletionRequest(parseStrictJson(bytes));
+  } catch {
+    throw invalidTransport();
+  }
+  if (!("schemaVersion" in decoded) && bytes.byteLength > WorkMutationBodyByteLimit) {
+    throw payloadTooLarge(WorkMutationBodyByteLimit);
+  }
+  return decoded;
 }
 
-async function readBody(request: Request): Promise<Uint8Array> {
+async function requireEmptyBody(request: Request): Promise<void> {
+  if (request.headers.get("content-type") !== null) throw invalidTransport();
+  if ((await readBody(request, WorkMutationBodyByteLimit)).byteLength !== 0) throw invalidTransport();
+}
+
+async function readBody(request: Request, limit: number): Promise<Uint8Array> {
   const claimed = request.headers.get("content-length");
   if (claimed !== null) {
     if (!/^[0-9]+$/u.test(claimed)) throw invalidTransport();
     const length = Number(claimed);
     if (!Number.isSafeInteger(length)) throw invalidTransport();
-    if (length > WorkMutationBodyByteLimit) throw payloadTooLarge();
+    if (length > limit) throw payloadTooLarge(limit);
   }
   if (request.body === null) return new Uint8Array();
   const reader = request.body.getReader();
@@ -254,9 +280,9 @@ async function readBody(request: Request): Promise<Uint8Array> {
   while (true) {
     const next = await reader.read();
     if (next.done) break;
-    if (next.value.byteLength > WorkMutationBodyByteLimit - length) {
+    if (next.value.byteLength > limit - length) {
       await reader.cancel().catch(() => undefined);
-      throw payloadTooLarge();
+      throw payloadTooLarge(limit);
     }
     chunks.push(next.value);
     length += next.value.byteLength;
@@ -296,6 +322,18 @@ function conflict(): Response {
 
 function formValueIncompatible(): Response {
   return errorResponse(422, PublicApiErrorCode.FormValueIncompatible, "The current form value is incompatible with its declared type.");
+}
+
+function formValidationFailed(
+  issues: readonly [FormValidationIssue, ...FormValidationIssue[]],
+): Response {
+  return jsonResponse(422, decodeWorkApiErrorResponse({
+    error: {
+      code: PublicApiErrorCode.FormValidationFailed,
+      message: "The structured Work form submission is invalid.",
+      issues,
+    },
+  }));
 }
 
 function forbidden(): Response {
@@ -345,6 +383,10 @@ function unsupportedMediaType(): WorkHttpRequestError {
   return new WorkHttpRequestError(415, PublicApiErrorCode.UnsupportedMediaType, "Work mutations require application/json.");
 }
 
-function payloadTooLarge(): WorkHttpRequestError {
-  return new WorkHttpRequestError(413, PublicApiErrorCode.PayloadTooLarge, "The Work mutation body exceeds 4096 bytes.");
+function payloadTooLarge(limit: number): WorkHttpRequestError {
+  return new WorkHttpRequestError(
+    413,
+    PublicApiErrorCode.PayloadTooLarge,
+    `The Work mutation body exceeds ${limit} bytes.`,
+  );
 }

@@ -97,6 +97,112 @@ test("preserves Boolean false as incompatible with a string declaration", async 
   });
 });
 
+test("projects exact catalog-ordered structured current values without applying defaults", async () => {
+  const structuredTask = {
+    id: task.id,
+    name: task.name,
+    state: task.state,
+    metadata: { assignment: task.metadata.assignment },
+  };
+  const catalog = {
+    schemaVersion: "bpmn-lean-human-task-catalog/v1" as const,
+    processId: definition.processId,
+    semanticProfile: definition.semanticProfile,
+    sourceSha256: definition.source.sha256,
+    tasks: [{
+      elementId: task.id.elementId,
+      description: "Review the request.",
+      worklistPriority: 75,
+      form: {
+        schemaVersion: "bpmn-lean-structured-form/v1" as const,
+        fields: [{
+          key: "amount",
+          label: "Amount",
+          helpText: null,
+          defaultValue: 7,
+          visibleForActions: "all" as const,
+          requiredForActions: [],
+          kind: "integer" as const,
+          minimum: 0,
+          maximum: 100,
+        }, {
+          key: "flags",
+          label: "Flags",
+          helpText: null,
+          defaultValue: ["high"],
+          visibleForActions: "all" as const,
+          requiredForActions: [],
+          kind: "multipleChoice" as const,
+          options: [{ value: "high", label: "High" }, { value: "low", label: "Low" }],
+          maxItems: 2,
+        }],
+        actions: [{
+          id: "approve",
+          label: "Approve",
+          intent: "primary" as const,
+          resolutionValue: "approved",
+        }, {
+          id: "abort",
+          label: "Abort",
+          intent: "destructive" as const,
+          resolutionValue: "aborted",
+        }],
+        resolutionVariable: "resolution",
+      },
+    }],
+  };
+  const requestedNames: string[][] = [];
+  const registration = {
+    instance: { processInstanceId: "host-1", definition },
+    locator: "private:host-1",
+    observation: "active" as const,
+  };
+  const work = new WorkService({
+    repository: {
+      listProcessRegistrations: () => [registration],
+      recordObservation: () => undefined,
+      getClaim: () => ({ claimGeneration: 0, claim: null }),
+    },
+    gateway: {
+      observeOpenWork: async () => ({ status: "open" as const, openUserTasks: [structuredTask] }),
+    },
+    actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
+    authorization: new TaskAuthorizationPolicy(),
+    catalogs: { readHumanTaskCatalog: () => catalog },
+    limits: { maxProcesses: 10, maxTasks: 10 },
+  });
+  const service = new WorkTaskDetailService({
+    work,
+    gateway: {
+      readWorkDetail: async ({ inputVariableNames }) => {
+        requestedNames.push([...inputVariableNames]);
+        return {
+          status: "found" as const,
+          detail: {
+            task: structuredTask,
+            inputVariables: [{ name: "flags", value: { kind: "stringList", value: ["low", "high"] } }],
+          },
+        };
+      },
+    },
+  });
+
+  const detail = await service.getTaskDetail(task.id);
+  assert.deepEqual(requestedNames, [["amount", "flags"]]);
+  assert.ok(detail !== null && detail.form !== null && "schemaVersion" in detail.form);
+  if (detail === null || detail.form === null || !("schemaVersion" in detail.form)) return;
+  assert.deepEqual(detail.form.fields, [{
+    key: "amount",
+    currentValue: { kind: "absent" },
+    compatibility: "compatible",
+  }, {
+    key: "flags",
+    currentValue: { kind: "stringList", value: ["low", "high"] },
+    compatibility: "incompatible",
+  }]);
+  assert.deepEqual(detail.form.taskDefinition, catalog.tasks[0]);
+});
+
 test("fails closed when detail drifts from the freshly observed occurrence", async () => {
   const { service } = createDetailService([], {
     ...task,
@@ -127,6 +233,7 @@ function createDetailService(
     },
     actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
     authorization: new TaskAuthorizationPolicy(),
+    catalogs: { readHumanTaskCatalog: () => null },
     limits: { maxProcesses: 10, maxTasks: 10 },
   });
   return {

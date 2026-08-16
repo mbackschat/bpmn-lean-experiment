@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { DefinitionApiClient } from "./definitions-api.ts";
 import { IncidentOperationsApiClient } from "./incident-operations-api.ts";
 import { OperatorAuditApiClient } from "./operator-audit-api.ts";
 import {
@@ -12,7 +13,7 @@ import { ProcessInstanceSearchApiClient } from "./process-instance-search-api.ts
 export type DeferredOperationsWorkspaceProps = Readonly<
   Omit<
     OperationsWorkspaceProps,
-    "incidentApi" | "operatorAuditApi" | "processExecutionApi" | "processInstanceSearchApi"
+    "definitionApi" | "incidentApi" | "operatorAuditApi" | "processExecutionApi" | "processInstanceSearchApi"
   > & { origin: string }
 >;
 
@@ -20,6 +21,7 @@ export function DeferredOperationsWorkspace({
   origin,
   ...props
 }: DeferredOperationsWorkspaceProps) {
+  const definitionApi = useMemo(() => new DefinitionApiClient(origin), [origin]);
   const incidentApi = useMemo(() => new IncidentOperationsApiClient(origin), [origin]);
   const operatorAuditApi = useMemo(() => new OperatorAuditApiClient(origin), [origin]);
   const processExecutionApi = useMemo(() => new ProcessExecutionApiClient(origin), [origin]);
@@ -30,6 +32,7 @@ export function DeferredOperationsWorkspace({
   return (
     <OperationsWorkspace
       {...props}
+      definitionApi={definitionApi}
       incidentApi={incidentApi}
       operatorAuditApi={operatorAuditApi}
       processExecutionApi={processExecutionApi}

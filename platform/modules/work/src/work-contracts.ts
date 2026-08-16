@@ -1,7 +1,9 @@
 import type { DeepReadonly } from "@bpmn-lean/contract-types";
 import type {
   PublicProcessInstanceIdentity,
+  PublicFormValue,
   PublicWorkTaskId,
+  HumanTaskCatalogBindingIdentityV1,
   WorkAuditEvent,
   WorkClaimResult,
   WorkCompletionResult,
@@ -99,13 +101,39 @@ export type WorkSubmittedField =
       value: { kind: "boolean"; value: boolean };
     }>;
 
-export type WorkCompletionBinding = DeepReadonly<{
+export type LegacyWorkCompletionBinding = DeepReadonly<{
   actionId: string;
   actorId: string;
   task: WorkTaskReference;
   claimGeneration: number;
   submittedField: WorkSubmittedField;
 }>;
+
+export type WorkComputedSubmittedValue = Exclude<
+  PublicFormValue,
+  Readonly<{ kind: "absent" }>
+>;
+
+export type WorkComputedSubmittedBinding = DeepReadonly<{
+  key: string;
+  value: WorkComputedSubmittedValue;
+}>;
+
+export type StructuredWorkCompletionBinding = DeepReadonly<{
+  actionId: string;
+  actorId: string;
+  task: WorkTaskReference;
+  claimGeneration: number;
+  structuredCompletion: {
+    catalogIdentity: HumanTaskCatalogBindingIdentityV1;
+    resolutionActionId: string;
+    submittedValues: WorkComputedSubmittedBinding[];
+  };
+}>;
+
+export type WorkCompletionBinding =
+  | LegacyWorkCompletionBinding
+  | StructuredWorkCompletionBinding;
 
 export type WorkCompletionState =
   | "reserved"
@@ -160,6 +188,12 @@ export type WorkAuditOutboxItem = DeepReadonly<{
   ordinal: number;
   event: WorkAuditEvent;
 }>;
+
+export type WorkAuditEventSeed = Omit<WorkAuditEvent, "eventId" | "recordedAt">;
+
+export interface WorkAuditEventFactory {
+  create(input: WorkAuditEventSeed): WorkAuditEvent;
+}
 
 export class WorkRepositoryIntegrityError extends Error {
   constructor(message: string) {

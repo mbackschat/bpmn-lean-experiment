@@ -20,6 +20,7 @@
     "test": "pnpm run build && pnpm run test:built"
   },
   "dependencies": {
-    "@bpmn-lean/contract-types": "workspace:*"
+    "@bpmn-lean/contract-types": "workspace:*",
+    "zod": "4.4.3"
   }
 }

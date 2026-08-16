@@ -5,6 +5,9 @@ import type {
 import type {
   DefinitionCompilationResult,
 } from "@bpmn-lean/platform-engine-gateway";
+import type {
+  HumanTaskCatalogV1,
+} from "@bpmn-lean/platform-contracts";
 
 export const DefinitionDeploymentStatus = {
   Deployed: "deployed",
@@ -70,7 +73,13 @@ type RejectedCompilation = Extract<
 >;
 
 export type DefinitionSourceIdentity = DefinitionCompilationResult["source"];
-export type DefinitionDiagnostic = RejectedCompilation["diagnostics"][number];
+export type DefinitionDiagnostic =
+  | RejectedCompilation["diagnostics"][number]
+  | Readonly<{
+      code: "unsupportedHumanTaskCatalog";
+      element: null;
+      evidence: string;
+    }>;
 
 export type DeployedDefinitionDeployment = Readonly<{
   status: typeof DefinitionDeploymentStatus.Deployed;
@@ -138,10 +147,18 @@ export interface ExactArtifactStore {
 
 /** Metadata capability consumed by the definitions business workflow. */
 export interface DefinitionRepository {
-  allocateNext(metadata: NewDefinitionMetadata): DefinitionMetadata;
+  allocateNext(
+    metadata: NewDefinitionMetadata,
+    humanTaskCatalog?: HumanTaskCatalogV1 | null,
+  ): DefinitionMetadata;
   listLatest(): ReadonlyArray<DefinitionMetadata>;
   listVersions(processId: string): ReadonlyArray<DefinitionMetadata>;
   get(reference: DefinitionReference): DefinitionMetadata | null;
+}
+
+/** Exact source-bound catalog lookup consumed by Product 2 Work. */
+export interface HumanTaskCatalogRepository {
+  getHumanTaskCatalog(reference: DefinitionReference): HumanTaskCatalogV1 | null;
 }
 
 /** Raised when durable metadata points at source bytes that are no longer present. */

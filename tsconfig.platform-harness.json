@@ -20,8 +20,8 @@
       "@bpmn-lean/platform-audit": [
         "./platform/foundation/audit/src/index.ts"
       ],
-      "@bpmn-lean/platform-bpmn-presentation": [
-        "./platform/foundation/bpmn-presentation/src/index.ts"
+      "@bpmn-lean/platform-bpmn-definition-projection": [
+        "./platform/foundation/bpmn-definition-projection/src/index.ts"
       ],
       "@bpmn-lean/platform-identity-policy": [
         "./platform/foundation/identity-policy/src/index.ts"
@@ -77,7 +77,7 @@
     }
   },
   "include": [
-    "platform/foundation/bpmn-presentation/src/bpmn-moddle-types.d.ts",
+    "platform/foundation/bpmn-definition-projection/src/bpmn-moddle-types.d.ts",
     "platform/apps/server/test/*.ts",
     "platform/contracts/test/*.ts",
     "platform/foundation/audit/test/*.ts",

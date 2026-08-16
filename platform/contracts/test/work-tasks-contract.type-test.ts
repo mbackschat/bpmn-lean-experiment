@@ -38,8 +38,13 @@ snapshot.tasks.push(task);
 claimRequest.expectedGeneration = 2;
 // @ts-expect-error release requests are immutable
 releaseRequest.generation = 2;
-// @ts-expect-error completion submissions are immutable tuples
-completionRequest.submittedValues[0].key = "changed";
+if ("submittedValues" in completionRequest) {
+  // @ts-expect-error legacy completion submissions are immutable tuples
+  completionRequest.submittedValues[0].key = "changed";
+} else {
+  // @ts-expect-error structured completion fields are deeply immutable
+  completionRequest.fields.changed = true;
+}
 // @ts-expect-error audit filters are immutable
 auditRequest.limit = 100;
 // @ts-expect-error audit pages and nested actions are immutable
@@ -64,6 +69,16 @@ switch (formValue.kind) {
   case "boolean": {
     const booleanValue: boolean = formValue.value;
     void booleanValue;
+    break;
+  }
+  case "integer": {
+    const integerValue: number = formValue.value;
+    void integerValue;
+    break;
+  }
+  case "stringList": {
+    // @ts-expect-error string-list members are deeply immutable
+    formValue.value.push("changed");
     break;
   }
 }

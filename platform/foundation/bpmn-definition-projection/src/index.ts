@@ -1,5 +1,15 @@
 import { createHash } from "node:crypto";
 
+export {
+  HumanTaskCatalogProjectionInvalidEvidence,
+  projectHumanTaskCatalog,
+} from "./human-task-catalog-projection.js";
+export type {
+  HumanTaskCatalogProjectionBinding,
+  HumanTaskCatalogProjectionProvenance,
+  HumanTaskCatalogProjectionResult,
+} from "./human-task-catalog-projection.js";
+
 import { BPMN_AUTO_LAYOUT_EFFECTIVE_GENERATOR_SHA256 } from "./generator-identity.js";
 import { runLayoutWorker } from "./layout-worker-client.js";
 import {

@@ -21,6 +21,7 @@
   "dependencies": {
     "@bpmn-lean/contract-types": "workspace:*",
     "@bpmn-lean/platform-contracts": "workspace:*",
-    "@bpmn-lean/platform-identity-policy": "workspace:*"
+    "@bpmn-lean/platform-identity-policy": "workspace:*",
+    "zod": "4.4.3"
   }
 }

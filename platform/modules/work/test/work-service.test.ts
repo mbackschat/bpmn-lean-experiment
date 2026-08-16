@@ -73,6 +73,38 @@ test("projects actor-visible tasks only after exact system aggregation", async (
   assert.equal("locator" in snapshot.tasks[0]!, false);
 });
 
+test("joins only an exact source-bound catalog and orders its Product 2 priorities", async () => {
+  const catalog = humanTaskCatalog([
+    humanTaskDefinition("low", 20),
+    humanTaskDefinition("high", 90),
+  ]);
+  const service = createService({
+    "host-a": {
+      status: "open",
+      openUserTasks: [structuredOpenTask("low", 1), structuredOpenTask("high", 2)],
+    },
+  }, {
+    registrations: [registration("host-a")],
+    readHumanTaskCatalog: () => catalog,
+  });
+
+  const snapshot = await service.listTasks();
+  assert.deepEqual(snapshot.tasks.map(({ task, catalogPresentation }) => [
+    task.id.elementId,
+    catalogPresentation?.worklistPriority,
+  ]), [["high", 90], ["low", 20]]);
+
+  const mismatched = createService({
+    "host-a": { status: "open", openUserTasks: [structuredOpenTask("high", 1)] },
+  }, {
+    registrations: [registration("host-a")],
+    readHumanTaskCatalog: () => ({ ...catalog, sourceSha256: "b".repeat(64) }),
+  });
+  const unjoined = await mismatched.listTasks();
+  assert.equal(unjoined.tasks[0]?.catalogPresentation, undefined);
+  assert.deepEqual(unjoined.tasks[0]?.task, structuredOpenTask("high", 1));
+});
+
 test("classifies every registration state without producing a partial snapshot", async () => {
   const cases = [
     {
@@ -165,6 +197,7 @@ type ServiceOptions = Readonly<{
     observation: "active" | "closed" | "indeterminate",
   ) => void;
   limits?: Readonly<{ maxProcesses: number; maxTasks: number }>;
+  readHumanTaskCatalog?: () => ReturnType<typeof humanTaskCatalog> | null;
 }>;
 
 function createService(
@@ -184,6 +217,9 @@ function createService(
     },
     actors: new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] }),
     authorization: new TaskAuthorizationPolicy(),
+    catalogs: {
+      readHumanTaskCatalog: options.readHumanTaskCatalog ?? (() => null),
+    },
     limits: options.limits ?? { maxProcesses: 10, maxTasks: 20 },
   });
 }
@@ -208,5 +244,58 @@ function openTask(elementId: string, group: string, activation: number) {
       assignment: { candidates: [{ kind: "group", id: group }] },
       form: { fields: [{ key: "approved", type: "boolean" }] },
     },
+  };
+}
+
+function structuredOpenTask(elementId: string, activation: number) {
+  return {
+    id: { processInstanceId: "called-a", elementId, activation },
+    name: elementId,
+    state: "active" as const,
+    metadata: {
+      assignment: { candidates: [{ kind: "group" as const, id: "reviewers" }] as const },
+    },
+  };
+}
+
+function humanTaskDefinition(elementId: string, worklistPriority: number) {
+  return {
+    elementId,
+    description: `Review ${elementId}`,
+    worklistPriority,
+    form: {
+      schemaVersion: "bpmn-lean-structured-form/v1" as const,
+      fields: [{
+        key: "approved",
+        label: "Approved",
+        helpText: null,
+        defaultValue: null,
+        visibleForActions: "all" as const,
+        requiredForActions: [],
+        kind: "boolean" as const,
+      }],
+      actions: [{
+        id: "approve",
+        label: "Approve",
+        intent: "primary" as const,
+        resolutionValue: "approved",
+      }, {
+        id: "reject",
+        label: "Reject",
+        intent: "neutral" as const,
+        resolutionValue: "rejected",
+      }],
+      resolutionVariable: "resolution",
+    },
+  };
+}
+
+function humanTaskCatalog(tasks: readonly ReturnType<typeof humanTaskDefinition>[]) {
+  return {
+    schemaVersion: "bpmn-lean-human-task-catalog/v1" as const,
+    processId: definition.processId,
+    semanticProfile: definition.semanticProfile,
+    sourceSha256: definition.source.sha256,
+    tasks: [...tasks],
   };
 }

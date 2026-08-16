@@ -22,7 +22,7 @@
   "dependencies": {
     "@bpmn-lean/platform-audit": "workspace:*",
     "@bpmn-lean/platform-artifact-store": "workspace:*",
-    "@bpmn-lean/platform-bpmn-presentation": "workspace:*",
+    "@bpmn-lean/platform-bpmn-definition-projection": "workspace:*",
     "@bpmn-lean/platform-contracts": "workspace:*",
     "@bpmn-lean/platform-definitions": "workspace:*",
     "@bpmn-lean/platform-engine-gateway": "workspace:*",

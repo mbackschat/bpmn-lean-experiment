@@ -35,6 +35,9 @@ export * from "./operator-audit-export.js";
 export * from "./operator-audit-export-canonical-json.js";
 export * from "./operator-audit-export-decoders.js";
 export * from "./operator-audit-export-routes.js";
+export * from "./human-task-catalog.js";
+export * from "./human-task-catalog-decoders.js";
+export * from "./human-task-catalog-canonical-json.js";
 export * from "./process-instance-decoders.js";
 export {
   decodeProcessInstanceSearchPage,

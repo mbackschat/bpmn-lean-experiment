@@ -1,9 +1,13 @@
 import type {
+  FormValidationIssue,
+  LegacyWorkCompletionRequest,
   PublicFormValue,
   PublicTaskDetail,
+  StructuredWorkCompletionRequestV1,
   WorkCompletionRequest,
   WorkCompletionResult,
 } from "@bpmn-lean/platform-contracts";
+import { structuredWorkCompletionRequestSchemaVersion } from "@bpmn-lean/platform-contracts";
 
 export const WorkCompletionViewKind = {
   Idle: "idle",
@@ -11,6 +15,7 @@ export const WorkCompletionViewKind = {
   TransportFailed: "transportFailed",
   Indeterminate: "indeterminate",
   NotAccepted: "notAccepted",
+  ValidationFailed: "validationFailed",
   Rejected: "rejected",
 } as const;
 
@@ -22,6 +27,10 @@ export type WorkCompletionView =
   | Readonly<{
       kind: typeof WorkCompletionViewKind.NotAccepted;
       message: string;
+    }>
+  | Readonly<{
+      kind: typeof WorkCompletionViewKind.ValidationFailed;
+      issues: readonly FormValidationIssue[];
     }>
   | Readonly<{
       kind: typeof WorkCompletionViewKind.Rejected;
@@ -46,20 +55,24 @@ type CompletionApi = Readonly<{
   ) => Promise<WorkCompletionResult>;
 }>;
 
+export type StructuredCompletionSubmission = Pick<
+  StructuredWorkCompletionRequestV1,
+  "resolutionActionId" | "fields"
+>;
+
+export type WorkCompletionSubmission =
+  | Extract<PublicFormValue, { kind: "string" | "boolean" }>
+  | StructuredCompletionSubmission;
+
 /** Mints and freezes one exact completion operation before its first submission. */
 export function createRetainedCompletionOperation(
   detail: PublicTaskDetail,
-  value: Extract<PublicFormValue, { kind: "string" | "boolean" }>,
+  submission: WorkCompletionSubmission,
   createActionId: () => string,
 ): RetainedCompletionOperation {
   const claim = detail.workTask.claim;
   if (claim === null) {
     throw new Error("The current actor must claim the task before completion.");
-  }
-  const field = detail.form?.fields[0];
-  if (field === undefined) throw new Error("The task has no completable field.");
-  if (field.type !== value.kind) {
-    throw new Error("The completion value does not match the published field type.");
   }
   const actionId = createActionId();
   if (typeof actionId !== "string" || actionId.length === 0) {
@@ -70,19 +83,48 @@ export function createRetainedCompletionOperation(
     elementId: detail.workTask.task.id.elementId,
     activation: detail.workTask.task.id.activation,
   });
-  const submittedValue = value.kind === "string"
-    ? Object.freeze({ kind: value.kind, value: value.value })
-    : Object.freeze({ kind: value.kind, value: value.value });
+  const request = createCompletionRequest(detail, submission, taskId, claim.generation);
+  return Object.freeze({ actionId, request });
+}
+
+function createCompletionRequest(
+  detail: PublicTaskDetail,
+  submission: WorkCompletionSubmission,
+  taskId: StructuredWorkCompletionRequestV1["taskId"],
+  expectedClaimGeneration: number,
+): WorkCompletionRequest {
+  const form = detail.form;
+  if (isStructuredSubmission(submission)) {
+    if (form === null || !("schemaVersion" in form)) {
+      throw new Error("A structured completion requires a structured task form.");
+    }
+    return Object.freeze({
+      schemaVersion: structuredWorkCompletionRequestSchemaVersion,
+      taskId,
+      expectedClaimGeneration,
+      resolutionActionId: submission.resolutionActionId,
+      fields: Object.freeze(structuredClone(submission.fields)),
+    });
+  }
+  if (form === null || "schemaVersion" in form) {
+    throw new Error("A legacy completion requires the legacy task form.");
+  }
+  const field = form.fields[0];
+  if (field.type !== submission.kind) {
+    throw new Error("The completion value does not match the published field type.");
+  }
+  const submittedValue = Object.freeze({ kind: submission.kind, value: submission.value });
   const submittedValues = Object.freeze([Object.freeze({
     key: field.key,
     value: submittedValue,
-  })]) as WorkCompletionRequest["submittedValues"];
-  const request = Object.freeze({
-    taskId,
-    expectedClaimGeneration: claim.generation,
-    submittedValues,
-  });
-  return Object.freeze({ actionId, request });
+  })]) as LegacyWorkCompletionRequest["submittedValues"];
+  return Object.freeze({ taskId, expectedClaimGeneration, submittedValues });
+}
+
+function isStructuredSubmission(
+  submission: WorkCompletionSubmission,
+): submission is StructuredCompletionSubmission {
+  return "resolutionActionId" in submission;
 }
 
 /** Reuses the already-minted identity and immutable request for every retry. */

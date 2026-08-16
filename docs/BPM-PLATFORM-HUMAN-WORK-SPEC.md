@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented, closure-reviewed, evidence-closed, and graduated.** Product 2 provides the bounded M3 human-work contract over confirmed starts, exact current User Tasks, fake-actor authorization, claims, typed completion, platform audit, HTTP, and the React inbox. The complete repository gate, aggregate Work checkpoint, live Temporal witness, and Chromium acceptance are green at the reviewed closure boundary.
+**Implemented, closure-reviewed, evidence-closed, and graduated for M3.** Product 2 provides the bounded M3 human-work contract over confirmed starts, exact current User Tasks, fake-actor authorization, claims, typed completion, platform audit, HTTP, and the React inbox. The complete repository gate, aggregate Work checkpoint, live Temporal witness, and Chromium acceptance are green at the reviewed closure boundary. The implemented M6 [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) extends only the definition-bound catalog, task presentation, form-validation, and completion-request arms while retaining this specification's authorization, reservation, retry, outcome, and audit lifecycles; it remains a proposal until its own closure review and graduation.
 
 ## Independent cold-review receipt
 
@@ -100,6 +100,7 @@ type PublicWorkTask = DeepReadonly<{
   claimGeneration: number;
   claim: null | { actorId: string; generation: number };
   claimableByCurrentActor: boolean;
+  catalogPresentation?: { worklistPriority: number };
 }>;
 
 type WorkTaskSnapshot = DeepReadonly<{
@@ -127,14 +128,16 @@ Claims are authorization state, not semantic User Task state. Product 2 never re
 
 ## Task detail and typed form
 
-Task detail is re-read from the engine through the stored locator and exact task occurrence. It carries the current task plus the one metadata-declared field and that Process variable's exact current state:
+Task detail is re-read from the engine through the stored locator and exact task occurrence. The legacy M3 arm carries the current task plus the one metadata-declared field and that Process variable's exact current state:
 
 ```ts
 type PublicFormValue =
   | DeepReadonly<{ kind: "absent" }>
   | DeepReadonly<{ kind: "null" }>
   | DeepReadonly<{ kind: "string"; value: string }>
-  | DeepReadonly<{ kind: "boolean"; value: boolean }>;
+  | DeepReadonly<{ kind: "boolean"; value: boolean }>
+  | DeepReadonly<{ kind: "integer"; value: number }>
+  | DeepReadonly<{ kind: "stringList"; value: readonly string[] }>;
 
 type PublicFormField =
   | DeepReadonly<{ key: string; type: "string"; currentValue: Extract<PublicFormValue, { kind: "absent" | "null" | "string" }>; compatibility: "compatible" }>
@@ -144,13 +147,19 @@ type PublicFormField =
 
 type PublicTaskDetail = DeepReadonly<{
   workTask: PublicWorkTask;
-  form: null | { fields: readonly [PublicFormField] };
+  form: null | { fields: readonly [PublicFormField] } | PublicStructuredTaskFormV1;
 }>;
 ```
 
 Absence, semantic null, Boolean false, and string `"false"` remain distinct. A string field renders as a text field. A Boolean field renders as an unselected `true` or `false` choice when the current value is absent or null, rather than as an unchecked checkbox that would silently convert absence to false.
 
-E2 metadata is passive, so the observed value may disagree with the declared field type. The detail preserves that raw value as `incompatible`, renders it read-only, and disables completion with `formValueIncompatible`; it never stringifies, parses, defaults, or hides the mismatch. Completion requires a compatible detail, exactly the published field key, and exactly one string or Boolean value matching the published field type. This is Product 2 request validation for its generated form, not an engine form-validation claim. Labels, requiredness, defaults, constraints, mapping, and generalized form semantics are absent.
+E2 metadata is passive, so the observed value may disagree with the declared field type. The legacy detail preserves that raw value as `incompatible`, renders it read-only, and disables completion with `formValueIncompatible`; it never stringifies, parses, defaults, or hides the mismatch. Legacy completion requires a compatible detail, exactly the published field key, and exactly one string or Boolean value matching the published field type. This is Product 2 request validation for its generated form, not an engine form-validation claim.
+
+### Structured Human Work extension
+
+The M6 structured arm joins one immutable Human Task definition by exact `{processId, version, sourceSha256, semanticProfile}` plus the engine-published BPMN element ID. Its public detail includes the complete catalog binding, task description, static Product 2 worklist priority, ordered form definition, and exact current values for Text, Boolean, non-negative safe Integer, Date-as-String, Single choice, and ordered String-list Multiple choice fields. A missing or mismatched catalog, unknown task element, or incompatible current value fails closed without changing the engine task.
+
+Product 2 is the only structured-form authority. Its catalog-selected Zod contract applies literal defaults, action-dependent visibility and requiredness, scalar and collection bounds, calendar-date validity, option membership, and duplicate-selection refusal. It canonicalizes Multiple choice into catalog option order, emits tagged null for a visible optional blank, adds the selected action's fixed resolution String, sorts one atomic patch by the existing binding order, and rejects every configured byte ceiling before reservation or engine dispatch. Product 1 receives only that generic patch and knows no form field, action, validation, priority, or Zod concept. The [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md#public-contracts) owns the complete pre-graduation contract and exact bounds.
 
 ## HTTP resources
 
@@ -163,7 +172,7 @@ The public surface is:
 - `PUT /api/v1/work-task-completions/{actionId}` for one retry-safe completion action;
 - `GET /api/v1/work-audit` for exact-filtered, opaque-cursor platform audit.
 
-Every path component uses ordinary percent encoding and strict well-formed scalar validation. Query keys are unique and closed. `GET` and `DELETE` accept no body. Mutation bodies have a 4,096-byte decoded JSON ceiling. Wrong methods, duplicate keys, malformed encoding, private fields, unsafe activations, and unknown fields fail before a service call.
+Every path component uses ordinary percent encoding and strict well-formed scalar validation. Query keys are unique and closed. `GET` and `DELETE` accept no body. Legacy mutation bodies have a 4,096-byte decoded JSON ceiling; the closed structured-completion arm has its separately guarded 32,768-byte ceiling. Wrong methods, duplicate keys, malformed encoding, private fields, unsafe activations, and unknown fields fail before a service call.
 
 The completion action contains the exact task occurrence, observed claim generation, and submitted value. The caller-generated nonempty `actionId` is the engine command identity. Reusing an action ID with byte-equivalent public content is idempotent; changing the task, generation, key, type, or value is a conflict.
 
@@ -193,11 +202,21 @@ type WorkReleaseRequest = DeepReadonly<{
   generation: number;
 }>;
 
-type WorkCompletionRequest = DeepReadonly<{
+type LegacyWorkCompletionRequest = DeepReadonly<{
   taskId: PublicWorkTask["task"]["id"];
   expectedClaimGeneration: number;
   submittedValues: readonly [{ key: string; value: Extract<PublicFormValue, { kind: "string" | "boolean" }> }];
 }>;
+
+type StructuredWorkCompletionRequestV1 = DeepReadonly<{
+  schemaVersion: "bpmn-lean-structured-work-completion/v1";
+  taskId: PublicWorkTask["task"]["id"];
+  expectedClaimGeneration: number;
+  resolutionActionId: string;
+  fields: Readonly<Record<string, unknown>>;
+}>;
+
+type WorkCompletionRequest = LegacyWorkCompletionRequest | StructuredWorkCompletionRequestV1;
 
 type WorkCompletionResult =
   | DeepReadonly<{ state: "committed"; actionId: string; taskId: PublicWorkTask["task"]["id"] }>
@@ -232,7 +251,7 @@ type WorkAuditRequest = DeepReadonly<{
   limit?: number;
 }>;
 
-type WorkApiErrorCode = PublicApiErrorCode | "forbidden" | "formValueIncompatible" | "workSnapshotUnavailable";
+type WorkApiErrorCode = PublicApiErrorCode | "forbidden" | "formValueIncompatible" | "formValidationFailed" | "workSnapshotUnavailable";
 
 type PublicApiErrorResponse<Code extends string> = DeepReadonly<{
   error: { code: Code; message: string };
@@ -247,7 +266,7 @@ The default fake policy permits an actor to read only audit events whose `actorI
 
 The three new error codes extend the single project-owned code catalog and generic `PublicApiErrorResponse<Code>` envelope rather than introducing a parallel error shape. The single public error-decoder owner accepts an explicit route-owned readonly code set and returns the corresponding parameterized envelope. Existing clients pass their exact legacy subsets and keep byte-identical error bodies and accepted codes; the Work client alone passes the Work subset. The no-argument global decoder is replaced rather than broadened.
 
-`GET` success is HTTP 200. A new claim is 201 and an idempotent claim or release is 200. A completion is 200 for `committed` or `rejected` and 202 for `indeterminate`; an engine nonsuccess is a typed domain result, not an invented HTTP failure. Hidden, unknown, no-longer-current, or policy-filtered tasks are uniformly 404. A disallowed cross-actor audit filter is 403, a claim race loss, stale generation, or changed action content is 409, incompatible current form value is 422, and a nonpartial snapshot failure is 503. Transport errors are 400, 405, 415, or 413 as applicable; an unclassified repository or gateway failure is 500. `forbidden`, `formValueIncompatible`, and `workSnapshotUnavailable` have route-owned canonical messages, while the existing codes retain their current canonical messages. Every error uses `WorkApiErrorResponse` and exposes no private evidence.
+`GET` success is HTTP 200. A new claim is 201 and an idempotent claim or release is 200. A completion is 200 for `committed` or `rejected` and 202 for `indeterminate`; an engine nonsuccess is a typed domain result, not an invented HTTP failure. Hidden, unknown, no-longer-current, or policy-filtered tasks are uniformly 404. A disallowed cross-actor audit filter is 403, a claim race loss, stale generation, or changed action content is 409, incompatible current form value or structured form validation failure is 422, and a nonpartial snapshot failure is 503. Transport errors are 400, 405, 415, or 413 as applicable; an unclassified repository or gateway failure is 500. `formValidationFailed` adds an ordered nonempty issue list with only stable code and field/action/form target, while every other error uses `WorkApiErrorResponse`; neither exposes private evidence, Zod internals, source XML, stack data, or submitted values.
 
 ## Completion lifecycle
 
@@ -299,7 +318,7 @@ The pre-release database schema is exact and fail-closed. Corrupt identities, lo
 
 ## User interface and selected stack
 
-The M3 web surface is a global inbox plus one task-detail form. It remains an HTTP-only static React client. The selected stack is:
+The web surface is a global inbox plus one task-detail form. It remains an HTTP-only static React client. The selected stack is:
 
 - `react-aria-components` for accessible buttons, text fields, radio groups, dialogs, focus, and keyboard behavior;
 - TanStack Table for deterministic inbox table mechanics;
@@ -308,7 +327,7 @@ The M3 web surface is a global inbox plus one task-detail form. It remains an HT
 
 No router is required for this slice. TanStack Virtual is not added until a measured list requires it. No form library, component theme framework, WebSocket, server-sent event, or still-unapproved long-polling contract is added.
 
-The inbox renders Process identity, definition version, task name and occurrence, assignment group, and claim state. The detail surface preserves absent/null/current value distinctions, requires an explicit Boolean choice, exposes pending or indeterminate completion honestly, and never renders a private host field.
+The inbox renders Process identity, definition version, task name and occurrence, assignment group, claim state, and the optional Product 2 worklist priority used for priority-first deterministic ordering. The detail surface preserves absent/null/current value distinctions, requires an explicit Boolean choice, exposes pending or indeterminate completion honestly, and never renders a private host field. The M6 structured arm additionally renders all six selected field kinds and ordered resolution actions, reveals conditional inputs only for their selected actions, and focuses the first exact client or server validation target.
 
 ## Required evidence
 
@@ -344,7 +363,7 @@ The rule-to-evidence matrix is:
 
 ## Required, optional, and excluded functionality
 
-Required:
+Required by the closure-reviewed M3 floor:
 
 - private exact observation locators for every confirmed Product 2 start producer;
 - current engine observation, exact task detail, and exact completion through the engine gateway;
@@ -356,12 +375,14 @@ Optional only if it changes no public or semantic claim:
 
 - an explicit manual refresh control in addition to bounded interval refetch.
 
-Excluded:
+Superseded for the implemented M6 structured extension are the M3-only exclusions on multiple fields, labels, defaults, requiredness, bounded constraints, dates, non-negative safe integers, static choices, flat String-list multiple choice, one strict form schema, and multiple resolution actions. The [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md#scope) owns that exact bounded replacement until graduation.
+
+Still excluded from this specification and M6:
 
 - Process instances started outside Product 2, engine-wide discovery, or completeness beyond the confirmed producer set;
 - authentication provider, single sign-on, external directory, tenancy, organization hierarchy, or production security claim;
-- assignee, candidate users, delegation, escalation, due dates, priority, notifications, task-local variables, multiple candidates, or multiple form fields;
-- labels, defaults, requiredness, constraints, validation rules, files, dates, numbers, objects, form schema/runtime, form designer, or rendering templates;
+- assignee, candidate users, delegation, escalation, due dates, mutable BPMN task priority, notifications, task-local variables, or multiple candidates;
+- files, date-times, decimals, nested objects or arrays, remote or separately deployed forms, arbitrary expressions, custom scripts, dynamic options, form designer, drafts, comments, attachments, or mutable rendering templates;
 - claim/release as engine commands, metadata as engine completion admission, or any new BPMN transition or value meaning;
 - Event History, Visibility, Search Attributes, Workflow status, Run identity, Schedule identity, or state differencing as task facts;
 - stable live-task pagination, virtualization, routing, live push transport, offline UI, or production release packaging.

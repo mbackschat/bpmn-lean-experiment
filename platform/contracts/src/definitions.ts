@@ -106,6 +106,7 @@ export const PublicApiErrorCode = {
   InternalFailure: "internalFailure",
   Conflict: "conflict",
   Forbidden: "forbidden",
+  FormValidationFailed: "formValidationFailed",
   FormValueIncompatible: "formValueIncompatible",
   WorkSnapshotUnavailable: "workSnapshotUnavailable",
   IncidentSnapshotUnavailable: "incidentSnapshotUnavailable",

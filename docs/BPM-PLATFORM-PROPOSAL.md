@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-07; M1 is implemented and later phase-one capabilities remain incomplete.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. The public definition deployment and exact-version start API, modular-monolith server, HTTP-only React definition workspace, UI start action, and executable M1 showcase exist. The task, operations, history, identity, and later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
+**Owner-approved on 2026-08-07; M1 through M5 are closed and M6 is implemented pending closure review, while the broader phase-one contract remains incomplete.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. Definitions, starts, current Work, Operations, semantic History and Diagram, metrics, operator audit, and bounded structured Human Work now exist as separately maintained specifications or reviewed proposals. Identity-provider integration, broader mining, production packaging, and later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
 
 Sequencing belongs to [PLAN.md](PLAN.md), durable product and semantic boundaries to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture to [ARCHITECTURE.md](ARCHITECTURE.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md). The [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records a broader growth horizon and does not expand this proposal's first-product contract.
 
@@ -33,14 +33,14 @@ It is a product, not a demonstration. Its acceptance gates are showcase mileston
 
 [PROJECT-DESIGN.md](PROJECT-DESIGN.md#what-the-platform-may-consume) owns the permitted consumption surface, the two rules that make the assurance claim transferable, the hosting responsibilities that are not consumption, and the guards that must hold them. This proposal does not restate them and **adds no consumption operation**.
 
-What follows for this proposal: every surface below is built from those four operations alone. Where a surface needs something the engine does not publish, that is recorded here as an engine requirement rather than designed around. **Two such requirements exist**, and both are engine work outside this proposal's scope:
+What follows for this proposal: every surface below is built from those four operations alone. Two engine prerequisites were originally recorded here rather than designed around; both have since closed under their own governed specifications:
 
-| # | Requirement | Needed by |
+| # | Requirement | Current owner |
 |---|---|---|
-| E1 | A committed per-transition record in the public contract | [History, mining, and diagnosis](#history-mining-and-diagnosis), and the read model generally |
-| E2 | A profile admission capability for User Task assignment and form metadata, and a public projection carrying it | [Task list](#task-list) and [Task interaction](#task-interaction) |
+| E1 | A committed per-transition record in the public contract | Implemented by the [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) |
+| E2 | A profile admission capability for User Task assignment and form metadata, and a public projection carrying it | Implemented by the [User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) |
 
-E2 is new information from the proposal review rather than an assumption: `CheckedNodeKind.UserTask` carries `{id, name}`, the published `OpenUserTask` carries `{id, name, state}`, and no engine package source contains `assignee`, `candidateGroups`, or `formKey`. Those surfaces therefore ship without assignment and form metadata until E2 is separately proposed and approved.
+The original E2 finding prevented Product 2 from inventing assignment or form facts. Its implemented successor publishes only profile-admitted passive metadata, and the platform still treats assignment as authorization policy rather than an engine completion precondition.
 
 The consumption surface is already exercised: [the engine runner](RUNNABLE-TEMPORAL-MVP-SPEC.md#interaction-driver) uses only those four kinds today, which is why this proposal treats them as sufficient for interaction and insufficient for history.
 
@@ -74,11 +74,11 @@ Every started instance pins the exact source digest, so definition version pinni
 
 Task rows across all instances, filtered and sorted, from the engine's published open User Tasks. Claim and release. Completion submits the engine's exact content-bound completion command.
 
-**Assignment metadata is not available and this surface ships without it until E2 lands.** When it does, it is **projected profile data, never a precondition on the engine command**: the engine continues to accept any correct completion for an active occurrence, and who may submit it is a platform authorization decision. That keeps the User Task rules untouched, and it is already true today, since the completion command takes only the content-bound stimulus.
+Assignment metadata is implemented as **projected profile data, never a precondition on the engine command**: the engine continues to accept any correct profile-admitted completion for an active occurrence, and who may submit it is a platform authorization decision. The current Work contract supports one literal candidate group and keeps broader Potential Owner, assignee, and delegation semantics deferred.
 
 ### Task interaction
 
-Render a form from the Process variables the engine publishes, currently a closed string/null domain, collect values, and submit them through the same completion command. No form engine of our own. Form metadata is unavailable until E2 lands, so the first form is a projection of the bindings that currently exist over that one value type, and no interpretation of form metadata beyond field identity and type is proposed even afterwards.
+The closure-reviewed M3 floor renders one engine-published String-or-Boolean field and submits it through the existing content-bound completion command. The implemented M6 [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) adds a Product 2-owned exact-source-bound catalog, six regular field kinds, bounded Zod-backed server validation, multiple resolution actions, and action-dependent input. Product 1 still receives only the resulting generic atomic variable patch; no form schema, action, validation, or computation enters BPMN semantics, Lean, the Semantic Process IL, or Temporal Workflow state.
 
 ### Operations and monitoring
 
@@ -102,13 +102,11 @@ A pluggable identity boundary with a fake implementation by default. No authenti
 
 The platform subscribes to the engine's committed transition records and projects them into its own store. Task rows, instance rows, history events, and incident state are all projections; none is a second source of truth.
 
-The projection is the reason for E1. The engine's public contract currently publishes committed *state* at command boundaries, and pure transitions may close to quiescence inside one Workflow Task, so many semantic steps leave no trace. State differencing recovers waiting Activities, because a User Task entering and leaving the open set is a start and an end, but recovers nothing for pass-through nodes: gateways taken, None Events, Sub-Process entry and exit. Definition-scope and runtime-scope identity are not publicly projected at all.
+E1 closed because committed state at command boundaries was insufficient: pure transitions can close to quiescence inside one Workflow Task, so many semantic steps would otherwise leave no trace. The implemented publication now carries committed transition records and independent current positions without deriving either from state differences or Temporal Event History.
 
-A process map without gateway paths is not process mining. **An engine change is therefore required**, and this proposal does not decide its shape.
+A process map without gateway paths is not process mining. The E1 specification selected and implemented the required engine publication shape; broader mining remains outside this proposal's implemented surface.
 
-At least two shapes could serve. A **committed per-transition record** emitted by the same commit that applies each operation is the more direct answer for history and mining. Alternatively, **publishing committed control-token and scope positions in each observed state** would serve the same need less completely while also serving the Operations surface's token overlay, which needs positions that are equally unpublished today. Whichever is chosen must not be reconstructed from Temporal Event History, which the non-negotiable boundaries forbid as a source of BPMN facts.
-
-Requirement E1 is therefore "an engine change that makes transitions and token positions publicly recoverable", and its shape is decided in its own material proposal rather than here.
+The selected account publishes a committed per-transition record and independent current control positions through the same atomic revisioned Query. History and Product 2 projections consume that representation-free public contract and never reconstruct BPMN facts from Temporal Event History.
 
 Cross-instance discovery is the platform's own problem and requires no engine change: the projection builds the index.
 

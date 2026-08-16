@@ -17,6 +17,8 @@ export const metadataProfile =
   "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
 export const parallelMetadataProfile =
   "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
+export const structuredHumanWorkProfile =
+  "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
 export const timerProfile = "bpmn-2.0.2-timer-start-event-draft";
 export const messageProfile = "bpmn-2.0.2-message-start-event-draft";
 

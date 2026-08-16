@@ -1,0 +1,23 @@
+{
+  "name": "BpmnLean",
+  "uri": "urn:bpmn-lean:bpmn:extensions:v1",
+  "prefix": "bpmnLean",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "types": [
+    {
+      "name": "StructuredForm",
+      "superClass": [
+        "Element"
+      ],
+      "properties": [
+        {
+          "name": "body",
+          "type": "String",
+          "isBody": true
+        }
+      ]
+    }
+  ]
+}

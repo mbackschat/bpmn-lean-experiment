@@ -5,7 +5,7 @@ import {
   TextField,
   WorkspaceTabs,
 } from "@bpmn-lean/platform-ui-kit";
-import { useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 import type { FormEvent } from "react";
 
 import type {
@@ -20,8 +20,14 @@ import { DefinitionDiagram } from "./definition-diagram";
 import type { DefinitionApiClient } from "./definitions-api";
 import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
 import type { WorkCompletionView } from "./work-completion-operation";
+import type { WorkCompletionSubmission } from "./work-completion-operation";
 import { WorkCompletionViewKind } from "./work-completion-operation";
 import styles from "./work-inbox.module.css";
+
+const StructuredWorkForm = lazy(async () => {
+  const module = await import("./structured-work-form");
+  return { default: module.StructuredWorkForm };
+});
 
 export type WorkTaskDetailWorkspaceProps = Readonly<{
   completionView: WorkCompletionView;
@@ -122,6 +128,7 @@ export function WorkTaskFacts({ task }: Readonly<{ task: PublicWorkTask }>) {
       <div><dt>Task element</dt><dd>{task.task.id.elementId}</dd></div>
       <div><dt>Activation</dt><dd>{task.task.id.activation}</dd></div>
       <div><dt>Candidate group</dt><dd>{task.task.metadata?.assignment.candidates[0].id ?? "Unavailable"}</dd></div>
+      <div><dt>Worklist priority</dt><dd>{task.catalogPresentation?.worklistPriority ?? "Default"}</dd></div>
       <div><dt>Task Process instance</dt><dd>{task.task.id.processInstanceId}</dd></div>
       <div><dt>Hosting root Process instance</dt><dd>{task.hostingInstance.processInstanceId}</dd></div>
     </dl>
@@ -131,9 +138,7 @@ export function WorkTaskFacts({ task }: Readonly<{ task: PublicWorkTask }>) {
 export type WorkTaskFormProps = Readonly<{
   detail: PublicTaskDetail;
   completionView: WorkCompletionView;
-  onComplete: (
-    value: Extract<PublicFormValue, { kind: "string" | "boolean" }>,
-  ) => void;
+  onComplete: (submission: WorkCompletionSubmission) => void;
   onRetry: () => void;
 }>;
 
@@ -145,6 +150,29 @@ export function WorkTaskForm({
 }: WorkTaskFormProps) {
   if (detail.workTask.claim === null) {
     return <p role="alert">Claim this task before completing it.</p>;
+  }
+  if (detail.form !== null && "schemaVersion" in detail.form) {
+    const pending = completionView.kind === WorkCompletionViewKind.Submitting;
+    const blocked = pending ||
+      completionView.kind === WorkCompletionViewKind.TransportFailed ||
+      completionView.kind === WorkCompletionViewKind.Indeterminate ||
+      completionView.kind === WorkCompletionViewKind.NotAccepted;
+    return (
+      <>
+        <CompletionState view={completionView} onRetry={onRetry} />
+        <Suspense fallback={<p role="status">Loading structured form…</p>}>
+          <StructuredWorkForm
+            key={structuredFormStateKey(detail.form)}
+            form={detail.form}
+            isDisabled={blocked}
+            issues={completionView.kind === WorkCompletionViewKind.ValidationFailed
+              ? completionView.issues
+              : []}
+            onSubmit={onComplete}
+          />
+        </Suspense>
+      </>
+    );
   }
   const field = detail.form?.fields[0];
   if (field === undefined) return <p>This task has no generated form.</p>;
@@ -219,6 +247,7 @@ function CompletionState({
       case WorkCompletionViewKind.Rejected:
         statusRef.current?.focus();
         return;
+      case WorkCompletionViewKind.ValidationFailed:
       case WorkCompletionViewKind.Idle:
       case WorkCompletionViewKind.Submitting:
         return;
@@ -254,6 +283,8 @@ function CompletionState({
           {view.message}
         </p>
       );
+    case WorkCompletionViewKind.ValidationFailed:
+      return null;
   }
 }
 
@@ -281,4 +312,16 @@ function rejectedCompletionMessage(
     case "semantic":
       return `Completion was rejected with semantic outcome ${result.engineResult.outcome}.`;
   }
+}
+
+function structuredFormStateKey(
+  form: Extract<NonNullable<PublicTaskDetail["form"]>, { schemaVersion: unknown }>,
+): string {
+  return JSON.stringify([
+    form.catalogIdentity.processId,
+    form.catalogIdentity.version,
+    form.catalogIdentity.sourceSha256,
+    form.catalogIdentity.semanticProfile,
+    form.taskDefinition.elementId,
+  ]);
 }

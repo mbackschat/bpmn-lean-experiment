@@ -2,7 +2,7 @@ import type { DatabaseSync, SQLOutputValue } from "node:sqlite";
 
 import { WorkSchemaResetRequiredError } from "./work-contracts.js";
 
-const schemaEpoch = 2;
+const schemaEpoch = 3;
 
 const schemaObjects = new Map<string, string>([
   ["work_processes", `

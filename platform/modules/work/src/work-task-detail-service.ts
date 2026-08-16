@@ -1,11 +1,16 @@
-import type {
-  PublicFormField,
-  PublicFormValue,
-  PublicTaskDetail,
-  PublicWorkTask,
-  PublicWorkTaskId,
+import {
+  decodePublicFormValue,
+  structuredTaskFormSchemaVersion,
+  type PublicFormField,
+  type PublicFormValue,
+  type PublicTaskDetail,
+  type PublicWorkTask,
+  type PublicWorkTaskId,
 } from "@bpmn-lean/platform-contracts";
 
+import {
+  projectStructuredCurrentFieldValues,
+} from "./structured-form-computation.js";
 import {
   type ActorVisibleSystemWorkTask,
   WorkService,
@@ -64,6 +69,37 @@ export class WorkTaskDetailService {
         detail: { workTask: current.publicTask, form: null },
       };
     }
+    const structuredTask = current.structuredTask;
+    if (structuredTask !== null) {
+      const inputVariableNames = structuredTask.taskDefinition.form.fields
+        .map(({ key }) => key)
+        .toSorted(compareStrings);
+      const result = await this.#readDetail(current, inputVariableNames);
+      if (result === null) return null;
+      const fields = projectStructuredCurrentFieldValues(
+        structuredTask.taskDefinition,
+        result.inputVariables,
+      );
+      if (fields === null) throw new WorkSnapshotUnavailableError();
+      return {
+        ...current,
+        detail: {
+          workTask: current.publicTask,
+          form: {
+            schemaVersion: structuredTaskFormSchemaVersion,
+            catalogIdentity: structuredTask.catalogIdentity,
+            taskDefinition: structuredTask.taskDefinition,
+            fields,
+          },
+        },
+      };
+    }
+    if (!("form" in metadata)) {
+      return {
+        ...current,
+        detail: { workTask: current.publicTask, form: null },
+      };
+    }
     const field = metadata.form.fields[0];
     const result = await this.#options.gateway.readWorkDetail({
       locator: current.registration.locator,
@@ -93,6 +129,31 @@ export class WorkTaskDetailService {
         };
     }
   }
+
+  async #readDetail(
+    current: ActorVisibleSystemWorkTask,
+    inputVariableNames: readonly string[],
+  ): Promise<Readonly<{ inputVariables: readonly unknown[] }> | null> {
+    const result = await this.#options.gateway.readWorkDetail({
+      locator: current.registration.locator,
+      hostingProcessInstanceId: current.registration.instance.processInstanceId,
+      taskId: current.task.id,
+      inputVariableNames,
+    });
+    switch (result.status) {
+      case "notFound":
+      case "closed":
+        return null;
+      case "unknown":
+      case "unavailable":
+        throw new WorkSnapshotUnavailableError();
+      case "found":
+        if (!sameTask(result.detail.task, current.task)) {
+          throw new WorkSnapshotUnavailableError();
+        }
+        return { inputVariables: result.detail.inputVariables };
+    }
+  }
 }
 
 function projectField(
@@ -106,15 +167,29 @@ function projectField(
   switch (declared.type) {
     case "string": {
       const exact = { key: declared.key, type: declared.type } as const;
-      return value.kind === "boolean"
-        ? { ...exact, currentValue: value, compatibility: "incompatible" }
-        : { ...exact, currentValue: value, compatibility: "compatible" };
+      switch (value.kind) {
+        case "absent":
+        case "null":
+        case "string":
+          return { ...exact, currentValue: value, compatibility: "compatible" };
+        case "boolean":
+        case "integer":
+        case "stringList":
+          return { ...exact, currentValue: value, compatibility: "incompatible" };
+      }
     }
     case "boolean": {
       const exact = { key: declared.key, type: declared.type } as const;
-      return value.kind === "string"
-        ? { ...exact, currentValue: value, compatibility: "incompatible" }
-        : { ...exact, currentValue: value, compatibility: "compatible" };
+      switch (value.kind) {
+        case "absent":
+        case "null":
+        case "boolean":
+          return { ...exact, currentValue: value, compatibility: "compatible" };
+        case "string":
+        case "integer":
+        case "stringList":
+          return { ...exact, currentValue: value, compatibility: "incompatible" };
+      }
     }
   }
 }
@@ -127,22 +202,12 @@ function decodeVariable(value: unknown, expectedName: string): PublicFormValue {
   if (!isRecord(rawValue) || typeof rawValue.kind !== "string") {
     throw new WorkSnapshotUnavailableError();
   }
-  switch (rawValue.kind) {
-    case "null":
-      if (!hasExactKeys(rawValue, ["kind"])) throw new WorkSnapshotUnavailableError();
-      return { kind: "null" };
-    case "string":
-      if (!hasExactKeys(rawValue, ["kind", "value"]) || typeof rawValue.value !== "string") {
-        throw new WorkSnapshotUnavailableError();
-      }
-      return { kind: "string", value: rawValue.value };
-    case "boolean":
-      if (!hasExactKeys(rawValue, ["kind", "value"]) || typeof rawValue.value !== "boolean") {
-        throw new WorkSnapshotUnavailableError();
-      }
-      return { kind: "boolean", value: rawValue.value };
-    default:
-      throw new WorkSnapshotUnavailableError();
+  try {
+    const decoded = decodePublicFormValue(rawValue, "Work task detail input variable value");
+    if (decoded.kind === "absent") throw new TypeError("engine variable cannot be absent");
+    return decoded;
+  } catch {
+    throw new WorkSnapshotUnavailableError();
   }
 }
 
@@ -171,4 +236,15 @@ function sameTask(
   right: PublicWorkTask["task"],
 ): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function compareStrings(left: string, right: string): number {
+  const leftScalars = [...left];
+  const rightScalars = [...right];
+  for (let index = 0; index < Math.min(leftScalars.length, rightScalars.length); index += 1) {
+    const difference = Number(leftScalars[index]?.codePointAt(0)) -
+      Number(rightScalars[index]?.codePointAt(0));
+    if (difference !== 0) return difference;
+  }
+  return leftScalars.length - rightScalars.length;
 }

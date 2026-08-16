@@ -6,6 +6,10 @@ export {
 } from "./work-service.js";
 export type { SystemWorkTask } from "./work-service.js";
 export type { ActorVisibleSystemWorkTask } from "./work-service.js";
+export type {
+  BoundHumanTaskDefinitionV1,
+  HumanTaskCatalogReader,
+} from "./human-task-catalog-reader.js";
 export { WorkTaskDetailService } from "./work-task-detail-service.js";
 export type { ActorVisibleWorkTaskDetail } from "./work-task-detail-service.js";
 export {
@@ -19,6 +23,17 @@ export type {
   WorkCompletionServiceResult,
   WorkReleaseServiceResult,
 } from "./work-mutation-service.js";
+export {
+  WorkCompletionIntegrityError,
+  WorkCompletionService,
+} from "./work-completion-service.js";
+export type {
+  WorkCompletionServiceOptions,
+} from "./work-completion-service.js";
+export {
+  computeStructuredFormCompletion,
+  projectStructuredCurrentFieldValues,
+} from "./structured-form-computation.js";
 export {
   WorkAuditOutboxService,
 } from "./work-audit-outbox-service.js";

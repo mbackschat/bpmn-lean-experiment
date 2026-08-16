@@ -3,7 +3,10 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { FileArtifactStore } from "@bpmn-lean/platform-artifact-store";
-import { BpmnAutoLayoutPresentationAdapter } from "@bpmn-lean/platform-bpmn-presentation";
+import {
+  BpmnAutoLayoutPresentationAdapter,
+  projectHumanTaskCatalog,
+} from "@bpmn-lean/platform-bpmn-definition-projection";
 import {
   AuditEventFactory,
   AuditSearchService,
@@ -234,6 +237,7 @@ export async function createPlatformServer(
       engineRuntime.gateway,
       artifacts,
       repository,
+      { project: projectHumanTaskCatalog },
     );
     const startService = new DefinitionStartService(
       engineRuntime.gateway,
@@ -323,6 +327,10 @@ export async function createPlatformServer(
       limits: {
         maxProcesses: snapshot.maxWorkProcesses,
         maxTasks: snapshot.maxWorkTasks,
+      },
+      catalogs: {
+        readHumanTaskCatalog: ({ processId, version }) =>
+          repository.getHumanTaskCatalog({ processId, version }),
       },
     });
     const workDetails = new WorkTaskDetailService({

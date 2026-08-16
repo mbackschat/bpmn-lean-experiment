@@ -196,7 +196,7 @@ test("refuses every non-String-equality condition only for the M6 profile", () =
     assert.ok(choice?.kind === SemanticOperationKind.Choose);
     const first = choice.candidates[0];
     assert.ok(first !== undefined);
-    choice.candidates[0] = { ...first, condition };
+    assert.equal(Reflect.set(choice.candidates, 0, { ...first, condition }), true);
     assert.equal(supportsSemanticProcessExecution(start, mutation), false);
   }
 });

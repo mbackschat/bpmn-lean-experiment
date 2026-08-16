@@ -73,6 +73,46 @@
   justify-self: start;
 }
 
+.structuredForm,
+.structuredFields {
+  display: grid;
+  gap: var(--ui-space-5);
+  max-width: 60rem;
+}
+
+.taskDescription,
+.helpText {
+  color: var(--ui-color-muted);
+  margin: 0;
+}
+
+.structuredField {
+  display: grid;
+  gap: var(--ui-space-2);
+  min-width: 0;
+}
+
+.formIssues {
+  background: var(--ui-color-error-surface);
+  border-radius: var(--ui-radius-surface);
+  color: var(--ui-color-error);
+  padding: var(--ui-space-3) var(--ui-space-4);
+}
+
+.formIssues p {
+  margin-top: 0;
+}
+
+.formIssues ul {
+  margin-bottom: 0;
+}
+
+.resolutionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3);
+}
+
 .facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(14rem, 1fr));
@@ -138,5 +178,9 @@
 
   .facts {
     grid-template-columns: 1fr;
+  }
+
+  .resolutionActions > button {
+    flex: 1 1 100%;
   }
 }

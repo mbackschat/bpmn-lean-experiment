@@ -20,6 +20,11 @@ declare module "saxen" {
       name: "openTag",
       listener: (name: string) => void,
     ): this;
+    on(name: "closeTag", listener: (name: string) => void): this;
+    on(
+      name: "comment" | "question" | "attention",
+      listener: (value: string) => void,
+    ): this;
     on(name: "warn" | "error", listener: (error: Error) => void): this;
     parse(xml: string): Error | null;
   }

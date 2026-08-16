@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  WorkApiError,
   WorkApiClient,
   WorkProtocolError,
 } from "../src/work-tasks-api.ts";
@@ -88,6 +89,44 @@ test("refuses Boolean stringification in strict task detail", async () => {
   });
 
   await assert.rejects(client.getTask(taskId), WorkProtocolError);
+});
+
+test("preserves ordered structured-form validation issues from the Work API", async () => {
+  const client = new WorkApiClient(
+    "https://platform.example",
+    async () => new Response(JSON.stringify({
+      error: {
+        code: "formValidationFailed",
+        message: "Structured form validation failed.",
+        issues: [{
+          code: "requiredFieldNull",
+          target: { kind: "field", key: "resolutionReason" },
+        }],
+      },
+    }), {
+      status: 422,
+      headers: { "content-type": "application/json" },
+    }),
+  );
+
+  await assert.rejects(
+    client.complete("complete-structured", {
+      schemaVersion: "bpmn-lean-structured-work-completion/v1",
+      taskId,
+      expectedClaimGeneration: 1,
+      resolutionActionId: "abort",
+      fields: { resolutionReason: null },
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof WorkApiError);
+      assert.equal(error.code, "formValidationFailed");
+      assert.deepEqual(error.issues, [{
+        code: "requiredFieldNull",
+        target: { kind: "field", key: "resolutionReason" },
+      }]);
+      return true;
+    },
+  );
 });
 
 function clientReturning(body: unknown): WorkApiClient {

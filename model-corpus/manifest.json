@@ -137,6 +137,46 @@
       }
     },
     {
+      "id": "expense-exception-review",
+      "title": "Resolve an expense exception with structured human work",
+      "businessPurpose": "Review a real expense exception, capture typed decision data, and route the case through an explicit resolution.",
+      "cloneFamily": "structured-expense-exception-review",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "conditionalRouting",
+        "userTaskWait",
+        "userTaskCompletion",
+        "literalUserTaskAssignment",
+        "structuredHumanWorkCatalog",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/expense-exception-review/process.bpmn",
+        "sha256": "a904b67218ae2a72e4e48ae93a6a14350ac55b1ca5f63e5ddcb55e3c1c8c734e",
+        "scenarioRelativePath": "scenarios/expense-exception-review/approve.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "expense-exception-review-approve",
+      "product2": {
+        "kind": "journeyBacked",
+        "journeyTestRelativePath": "showcase/m3-human-work/e2e/structured-human-work-journey.spec.ts"
+      }
+    },
+    {
       "id": "boolean-decision-routing",
       "title": "Route a Boolean decision",
       "businessPurpose": "Route a business request to the first applicable review outcome.",

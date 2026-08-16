@@ -4,7 +4,7 @@
 
 ## What you can do
 
-Build or decode public definition, start, schedule, Message publication, Process search, human-work, incident, committed-execution, flow-node-metrics, and operator-audit requests and results. The decoders fail closed on malformed JSON, duplicate keys, unknown fields, noncanonical identities or ordering, and private host facts.
+Build or decode public definition, start, schedule, Message publication, Process search, human-work, incident, committed-execution, flow-node-metrics, and operator-audit requests and results. Human Work includes the exact-source-bound catalog, six-kind structured form detail, closed legacy/structured completion union, and typed validation issues. The decoders fail closed on malformed JSON, duplicate keys, unknown fields, noncanonical identities or ordering, and private host facts.
 
 ## Quick start
 

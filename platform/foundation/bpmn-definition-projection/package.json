@@ -1,5 +1,5 @@
 {
-  "name": "@bpmn-lean/platform-bpmn-presentation",
+  "name": "@bpmn-lean/platform-bpmn-definition-projection",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -19,6 +19,7 @@
     "test": "pnpm run build && pnpm run test:built"
   },
   "dependencies": {
+    "@bpmn-lean/platform-contracts": "workspace:*",
     "bpmn-auto-layout": "1.3.0",
     "bpmn-moddle": "10.0.0",
     "min-dash": "5.1.0",

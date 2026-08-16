@@ -3,13 +3,13 @@ import test from "node:test";
 
 import {
   decodeCanonicalWorkAuditTimestamp,
-  decodePublicApiErrorResponse,
   decodePublicTaskDetail,
   decodeWorkAuditPage,
   decodeWorkClaimRequest,
   decodeWorkClaimResult,
   decodeWorkCompletionRequest,
   decodeWorkCompletionResult,
+  decodeWorkApiErrorResponse,
   decodeWorkReleaseResult,
   decodeWorkTaskSnapshot,
   PublicApiErrorCode,
@@ -339,18 +339,20 @@ test("Work errors accept the exact extended code set and reject private fields",
     "internalFailure",
     "conflict",
     "forbidden",
+    "formValidationFailed",
     "formValueIncompatible",
     "workSnapshotUnavailable",
   ]);
   for (const code of WorkApiErrorCodes) {
+    if (code === "formValidationFailed") continue;
     const input = { error: { code, message: `${code} response` } };
     assert.deepEqual(
-      decodePublicApiErrorResponse(input, WorkApiErrorCodes),
+      decodeWorkApiErrorResponse(input),
       input,
     );
   }
   assert.throws(
-    () => decodePublicApiErrorResponse(
+    () => decodeWorkApiErrorResponse(
       {
         error: {
           code: PublicApiErrorCode.WorkSnapshotUnavailable,
@@ -358,7 +360,6 @@ test("Work errors accept the exact extended code set and reject private fields",
           locator: "private",
         },
       },
-      WorkApiErrorCodes,
     ),
     /public fields/u,
   );

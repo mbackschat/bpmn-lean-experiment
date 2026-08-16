@@ -75,7 +75,7 @@ test("sets one shared epoch on an empty database before either repository create
     const database = new DatabaseSync(databaseFile, { readOnly: true });
     try {
       const row = database.prepare("PRAGMA user_version").get();
-      assert.equal(row?.user_version, 2);
+      assert.equal(row?.user_version, 3);
     } finally {
       database.close();
     }

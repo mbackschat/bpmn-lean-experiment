@@ -2,10 +2,21 @@ import "./ui-kit.css";
 
 export { Button, ButtonVariant } from "./button.js";
 export type { ButtonProps } from "./button.js";
-export { BooleanChoice, Checkbox, TextField } from "./form-controls.js";
+export {
+  BooleanChoice,
+  Checkbox,
+  MultipleChoice,
+  SingleChoice,
+  TextAreaField,
+  TextField,
+} from "./form-controls.js";
 export type {
   BooleanChoiceProps,
   CheckboxProps,
+  ChoiceOption,
+  MultipleChoiceProps,
+  SingleChoiceProps,
+  TextAreaFieldProps,
   TextFieldProps,
 } from "./form-controls.js";
 export {

@@ -6,6 +6,37 @@ import type {
   PublicApiErrorResponse,
 } from "./definitions.js";
 import type { PublicProcessInstanceIdentity } from "./process-instances.js";
+import type {
+  PublicTaskForm,
+  WorkFormValidationErrorResponse,
+} from "./work-form-contracts.js";
+import type {
+  LegacyWorkCompletionRequest,
+  StructuredWorkCompletionRequestV1,
+} from "./work-completion-contracts.js";
+
+export type {
+  FormValidationIssue,
+  FormValidationIssueTarget,
+  HumanTaskCatalogBindingIdentityV1,
+  PublicStructuredFormFieldValueV1,
+  PublicStructuredTaskFormV1,
+  PublicTaskForm,
+  WorkFormValidationErrorResponse,
+} from "./work-form-contracts.js";
+export type {
+  LegacyWorkCompletionRequest,
+  StructuredWorkCompletionRequestV1,
+} from "./work-completion-contracts.js";
+export {
+  StructuredWorkCompletionRequestBodyByteLimit,
+  structuredWorkCompletionRequestSchemaVersion,
+} from "./work-completion-contracts.js";
+export { workCompletionCanonicalJsonByteLength } from "./work-completion-canonical-json.js";
+export {
+  FormValidationIssueCode,
+  structuredTaskFormSchemaVersion,
+} from "./work-form-contracts.js";
 
 /** Exact semantic identity of one engine-published User Task occurrence. */
 export type PublicWorkTaskId = DeepReadonly<{
@@ -14,13 +45,23 @@ export type PublicWorkTaskId = DeepReadonly<{
   activation: number;
 }>;
 
-export type PublicWorkTaskMetadata = DeepReadonly<{
+export type PublicWorkTaskAssignment = DeepReadonly<{
   assignment: {
     candidates: [{ kind: "group"; id: string }];
   };
-  form: {
-    fields: [{ key: string; type: "string" | "boolean" }];
-  };
+}>;
+
+export type PublicWorkTaskMetadata =
+  | PublicWorkTaskAssignment
+  | DeepReadonly<{
+      assignment: PublicWorkTaskAssignment["assignment"];
+      form: {
+        fields: [{ key: string; type: "string" | "boolean" }];
+      };
+    }>;
+
+export type PublicWorkTaskCatalogPresentation = DeepReadonly<{
+  worklistPriority: number;
 }>;
 
 /** One current actor-visible task with its distinct semantic and hosting identities. */
@@ -35,6 +76,7 @@ export type PublicWorkTask = DeepReadonly<{
   claimGeneration: number;
   claim: null | { actorId: string; generation: number };
   claimableByCurrentActor: boolean;
+  catalogPresentation?: PublicWorkTaskCatalogPresentation;
 }>;
 
 export type WorkTaskSnapshot = DeepReadonly<{
@@ -45,7 +87,9 @@ export type PublicFormValue =
   | DeepReadonly<{ kind: "absent" }>
   | DeepReadonly<{ kind: "null" }>
   | DeepReadonly<{ kind: "string"; value: string }>
-  | DeepReadonly<{ kind: "boolean"; value: boolean }>;
+  | DeepReadonly<{ kind: "boolean"; value: boolean }>
+  | DeepReadonly<{ kind: "integer"; value: number }>
+  | DeepReadonly<{ kind: "stringList"; value: string[] }>;
 
 export type PublicFormField =
   | DeepReadonly<{
@@ -63,19 +107,19 @@ export type PublicFormField =
   | DeepReadonly<{
       key: string;
       type: "string";
-      currentValue: Extract<PublicFormValue, { kind: "boolean" }>;
+      currentValue: Extract<PublicFormValue, { kind: "boolean" | "integer" | "stringList" }>;
       compatibility: "incompatible";
     }>
   | DeepReadonly<{
       key: string;
       type: "boolean";
-      currentValue: Extract<PublicFormValue, { kind: "string" }>;
+      currentValue: Extract<PublicFormValue, { kind: "string" | "integer" | "stringList" }>;
       compatibility: "incompatible";
     }>;
 
 export type PublicTaskDetail = DeepReadonly<{
   workTask: PublicWorkTask;
-  form: null | { fields: [PublicFormField] };
+  form: PublicTaskForm;
 }>;
 
 export type WorkClaimRequest = DeepReadonly<{
@@ -99,14 +143,9 @@ export type WorkReleaseResult = DeepReadonly<{
   released: true;
 }>;
 
-export type WorkCompletionRequest = DeepReadonly<{
-  taskId: PublicWorkTaskId;
-  expectedClaimGeneration: number;
-  submittedValues: [{
-    key: string;
-    value: Extract<PublicFormValue, { kind: "string" | "boolean" }>;
-  }];
-}>;
+export type WorkCompletionRequest =
+  | LegacyWorkCompletionRequest
+  | StructuredWorkCompletionRequestV1;
 
 export type WorkCompletionResult =
   | DeepReadonly<{
@@ -175,6 +214,7 @@ export type WorkAuditRequest = DeepReadonly<{
 export type WorkApiErrorCode =
   | LegacyPublicApiErrorCode
   | typeof PublicApiErrorCode.Forbidden
+  | typeof PublicApiErrorCode.FormValidationFailed
   | typeof PublicApiErrorCode.FormValueIncompatible
   | typeof PublicApiErrorCode.WorkSnapshotUnavailable;
 
@@ -188,8 +228,11 @@ export const WorkApiErrorCodes = [
   PublicApiErrorCode.InternalFailure,
   PublicApiErrorCode.Conflict,
   PublicApiErrorCode.Forbidden,
+  PublicApiErrorCode.FormValidationFailed,
   PublicApiErrorCode.FormValueIncompatible,
   PublicApiErrorCode.WorkSnapshotUnavailable,
 ] as const satisfies readonly WorkApiErrorCode[];
 
-export type WorkApiErrorResponse = PublicApiErrorResponse<WorkApiErrorCode>;
+export type WorkApiErrorResponse =
+  | PublicApiErrorResponse<Exclude<WorkApiErrorCode, typeof PublicApiErrorCode.FormValidationFailed>>
+  | WorkFormValidationErrorResponse;

@@ -170,9 +170,9 @@ importers:
       '@bpmn-lean/platform-audit':
         specifier: workspace:*
         version: link:../../foundation/audit
-      '@bpmn-lean/platform-bpmn-presentation':
+      '@bpmn-lean/platform-bpmn-definition-projection':
         specifier: workspace:*
-        version: link:../../foundation/bpmn-presentation
+        version: link:../../foundation/bpmn-definition-projection
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../contracts
@@ -228,6 +228,9 @@ importers:
       '@bpmn-lean/contract-types':
         specifier: workspace:*
         version: link:../../packages/contract-types
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   platform/foundation/artifact-store: {}
 
@@ -237,8 +240,11 @@ importers:
         specifier: workspace:*
         version: link:../../contracts
 
-  platform/foundation/bpmn-presentation:
+  platform/foundation/bpmn-definition-projection:
     dependencies:
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../contracts
       bpmn-auto-layout:
         specifier: 1.3.0
         version: 1.3.0
@@ -275,9 +281,9 @@ importers:
       '@bpmn-lean/platform-artifact-store':
         specifier: workspace:*
         version: link:../../foundation/artifact-store
-      '@bpmn-lean/platform-bpmn-presentation':
+      '@bpmn-lean/platform-bpmn-definition-projection':
         specifier: workspace:*
-        version: link:../../foundation/bpmn-presentation
+        version: link:../../foundation/bpmn-definition-projection
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../contracts
@@ -305,6 +311,9 @@ importers:
       '@bpmn-lean/platform-identity-policy':
         specifier: workspace:*
         version: link:../../foundation/identity-policy
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   platform/ui-kit:
     dependencies:
@@ -1898,6 +1907,9 @@ packages:
     resolution: {integrity: sha512-GZtjxm/J/4TSxuL3FNYjCmLktBTnIw/rVmKSIyKeYAZpmJB2ig9VauCC5xsa82GNKVKDAqpOn3KVzNt0zmrU0g==}
     engines: {node: '>=12'}
 
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
 
   '@bpmn-io/diagram-js-ui@0.2.4':
@@ -3236,3 +3248,5 @@ snapshots:
       string-width: 4.2.3
       y18n: 5.0.8
       yargs-parser: 21.1.1
+
+  zod@4.4.3: {}

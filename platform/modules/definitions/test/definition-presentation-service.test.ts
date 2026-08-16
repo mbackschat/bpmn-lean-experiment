@@ -7,7 +7,7 @@ import type {
   BpmnPresentationAdapter,
   GeneratedDiagramInterchange,
   SourceDiagramResolution,
-} from "@bpmn-lean/platform-bpmn-presentation";
+} from "@bpmn-lean/platform-bpmn-definition-projection";
 import {
   DefinitionPresentationIntegrityError,
   DefinitionPresentationService,

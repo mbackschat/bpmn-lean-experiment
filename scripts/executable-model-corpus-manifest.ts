@@ -70,6 +70,7 @@ export type ExecutableModelCorpusManifest = {
 const sha256Pattern = /^[a-f0-9]{64}$/u;
 const gitRevisionPattern = /^[a-f0-9]{40}$/u;
 const corpusMechanisms = new Set([
+  "atomicProcessDataPatch",
   "boundaryError",
   "businessDecision",
   "calledProcess",
@@ -88,6 +89,7 @@ const corpusMechanisms = new Set([
   "interruptingBoundaryTimer",
   "lanePresentation",
   "literalUserTaskAssignmentAndGeneratedForm",
+  "literalUserTaskAssignment",
   "mappedData",
   "messageStart",
   "messageWait",
@@ -101,6 +103,7 @@ const corpusMechanisms = new Set([
   "sendTaskDelivery",
   "sequenceFlow",
   "signalEvent",
+  "structuredHumanWorkCatalog",
   "taskMetadata",
   "terminateEnd",
   "timerStart",

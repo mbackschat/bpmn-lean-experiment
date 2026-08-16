@@ -166,6 +166,85 @@ test("maps release, completion, and self-audit closed results", async () => {
   assert.deepEqual(await audit?.json(), { events: [], nextCursor: null });
 });
 
+test("maps structured validation issues to the closed 422 Work error", async () => {
+  const routes = createRoutes({
+    completeTask: async () => ({
+      kind: "formValidationFailed",
+      issues: [{
+        code: "requiredFieldMissing",
+        target: { kind: "field", key: "resolutionReason" },
+      }],
+    }),
+  });
+  const response = await routes.handle(structuredCompletionRequest(
+    '{"riskFlags":[]}',
+  ));
+  assert.equal(response?.status, 422);
+  assert.deepEqual(await response?.json(), {
+    error: {
+      code: "formValidationFailed",
+      message: "The structured Work form submission is invalid.",
+      issues: [{
+        code: "requiredFieldMissing",
+        target: { kind: "field", key: "resolutionReason" },
+      }],
+    },
+  });
+});
+
+test("rejects duplicate structured field keys before completion service entry", async () => {
+  let calls = 0;
+  const routes = createRoutes({
+    completeTask: async () => {
+      calls += 1;
+      return { kind: "notFound" };
+    },
+  });
+  const response = await routes.handle(structuredCompletionRequest(
+    '{"riskFlags":["low"],"riskFlags":["high"]}',
+  ));
+  assert.equal(response?.status, 400);
+  assert.equal(calls, 0);
+});
+
+test("keeps the M3 completion ceiling while allowing the structured 32768-byte ceiling", async () => {
+  let structuredCalls = 0;
+  const routes = createRoutes({
+    completeTask: async () => {
+      structuredCalls += 1;
+      return { kind: "notFound" };
+    },
+  });
+  const legacy = await routes.handle(new Request(
+    "http://platform.test/api/v1/work-task-completions/legacy-large",
+    {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        taskId,
+        expectedClaimGeneration: 1,
+        submittedValues: [{
+          key: "approved",
+          value: { kind: "string", value: "x".repeat(4_096) },
+        }],
+      }),
+    },
+  ));
+  assert.equal(legacy?.status, 413);
+
+  const structured = await routes.handle(structuredCompletionRequest(
+    JSON.stringify({ note: "x".repeat(5_000) }),
+  ));
+  assert.equal(structured?.status, 404);
+  assert.equal(structuredCalls, 1);
+
+  const oversized = await routes.handle(structuredCompletionRequest(
+    JSON.stringify({ note: "x".repeat(33_000) }),
+  ));
+  assert.equal(oversized?.status, 413);
+  assert.equal(structuredCalls, 1);
+});
+
 function createRoutes(
   overrides: Record<string, unknown>,
   reconcileAll: () => void = () => undefined,
@@ -182,4 +261,12 @@ function createRoutes(
 
 function taskUrl(): string {
   return "http://platform.test/api/v1/work-tasks/process-1/Review/1";
+}
+
+function structuredCompletionRequest(fieldsJson: string): Request {
+  return new Request("http://platform.test/api/v1/work-task-completions/structured-1", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: `{"schemaVersion":"bpmn-lean-structured-work-completion/v1","taskId":{"processInstanceId":"process-1","elementId":"Review","activation":1},"expectedClaimGeneration":1,"resolutionActionId":"approve","fields":${fieldsJson}}`,
+  });
 }

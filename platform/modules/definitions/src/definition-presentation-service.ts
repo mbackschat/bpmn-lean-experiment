@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import type {
   BpmnPresentationAdapter,
-} from "@bpmn-lean/platform-bpmn-presentation";
+} from "@bpmn-lean/platform-bpmn-definition-projection";
 import type {
   ResolvedBpmnDiagramPresentation,
 } from "@bpmn-lean/platform-contracts";

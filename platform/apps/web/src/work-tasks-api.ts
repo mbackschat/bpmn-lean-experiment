@@ -1,11 +1,6 @@
 import {
-  WorkApiErrorCodes,
-  decodePublicApiErrorResponse,
-  decodePublicTaskDetail,
   decodeWorkAuditPage,
   decodeWorkClaimResult,
-  decodeWorkCompletionRequest,
-  decodeWorkCompletionResult,
   decodeWorkReleaseResult,
   decodeWorkTaskSnapshot,
   workAuditPath,
@@ -19,6 +14,7 @@ import {
 import type {
   PublicTaskDetail,
   PublicWorkTaskId,
+  FormValidationIssue,
   WorkApiErrorCode,
   WorkAuditPage,
   WorkAuditRequest,
@@ -34,16 +30,19 @@ import type {
 export class WorkApiError extends Error {
   readonly status: number;
   readonly code: WorkApiErrorCode;
+  readonly issues: readonly FormValidationIssue[];
 
   constructor(
     status: number,
     code: WorkApiErrorCode,
     message: string,
+    issues: readonly FormValidationIssue[] = [],
   ) {
     super(message);
     this.name = "WorkApiError";
     this.status = status;
     this.code = code;
+    this.issues = Object.freeze(structuredClone([...issues]));
   }
 }
 
@@ -72,13 +71,16 @@ export class WorkApiClient {
     return this.#get(workTasksPath(), decodeWorkTaskSnapshot, "Work task snapshot");
   }
 
-  getTask(taskId: PublicWorkTaskId): Promise<PublicTaskDetail> {
+  async getTask(taskId: PublicWorkTaskId): Promise<PublicTaskDetail> {
     const expected = structuredClone(taskId);
-    return this.#get(workTaskPath(expected), decodePublicTaskDetail, "Work task detail")
-      .then((detail) => {
-        requireTaskIdentity(detail.workTask.task.id, expected);
-        return detail;
-      });
+    const response = await this.#fetch(this.#url(workTaskPath(expected)), {
+      headers: { accept: "application/json" },
+    });
+    if (response.status !== 200) return this.#throwApiError(response);
+    const { decodePublicTaskDetail } = await import("@bpmn-lean/platform-contracts");
+    const detail = await decodeJson(response, decodePublicTaskDetail, "Work task detail");
+    requireTaskIdentity(detail.workTask.task.id, expected);
+    return detail;
   }
 
   async claim(taskId: PublicWorkTaskId, request: WorkClaimRequest): Promise<WorkClaimResult> {
@@ -103,6 +105,10 @@ export class WorkApiClient {
   }
 
   async complete(actionId: string, request: WorkCompletionRequest): Promise<WorkCompletionResult> {
+    const {
+      decodeWorkCompletionRequest,
+      decodeWorkCompletionResult,
+    } = await import("@bpmn-lean/platform-contracts");
     const exact = decodeWorkCompletionRequest(structuredClone(request));
     const response = await this.#json(workTaskCompletionPath(actionId), "PUT", exact);
     if (response.status !== 200 && response.status !== 202) return this.#throwApiError(response);
@@ -146,12 +152,18 @@ export class WorkApiClient {
   }
 
   async #throwApiError(response: Response): Promise<never> {
+    const { decodeWorkApiErrorResponse } = await import("@bpmn-lean/platform-contracts");
     const decoded = await decodeJson(
       response,
-      (value) => decodePublicApiErrorResponse(value, WorkApiErrorCodes),
+      decodeWorkApiErrorResponse,
       "Work API error",
     );
-    throw new WorkApiError(response.status, decoded.error.code, decoded.error.message);
+    throw new WorkApiError(
+      response.status,
+      decoded.error.code,
+      decoded.error.message,
+      decoded.error.code === "formValidationFailed" ? decoded.error.issues : [],
+    );
   }
 }
 

@@ -1,10 +1,17 @@
 import { DatabaseSync } from "node:sqlite";
 import type { SQLOutputValue } from "node:sqlite";
 
+import {
+  decodeCanonicalHumanTaskCatalogV1,
+  serializeHumanTaskCatalogV1,
+} from "@bpmn-lean/platform-contracts";
+import type { HumanTaskCatalogV1 } from "@bpmn-lean/platform-contracts";
+
 import type {
   DefinitionMetadata,
   DefinitionReference,
   DefinitionRepository,
+  HumanTaskCatalogRepository,
   NewDefinitionMetadata,
 } from "./contracts.js";
 import {
@@ -19,7 +26,10 @@ import {
 const defaultBusyTimeoutMs = 5_000;
 
 /** Durable process-local definition-version allocation backed by one SQLite database. */
-export class SqliteDefinitionRepository implements DefinitionRepository {
+export class SqliteDefinitionRepository implements
+  DefinitionRepository,
+  HumanTaskCatalogRepository
+{
   readonly #database: DatabaseSync;
 
   constructor(
@@ -43,7 +53,13 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
   }
 
   /** Atomically allocates and inserts the next positive version within one process ID. */
-  allocateNext(metadata: NewDefinitionMetadata): DefinitionMetadata {
+  allocateNext(
+    metadata: NewDefinitionMetadata,
+    humanTaskCatalog: HumanTaskCatalogV1 | null = null,
+  ): DefinitionMetadata {
+    const humanTaskCatalogJson = humanTaskCatalog === null
+      ? null
+      : encodeBoundCatalog(metadata, humanTaskCatalog);
     this.#database.exec("BEGIN IMMEDIATE");
     try {
       const row = this.#database.prepare(`
@@ -63,8 +79,9 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
           source_declared_encoding,
           source_decoded_as,
           semantic_profile,
-          start_capabilities_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          start_capabilities_json,
+          human_task_catalog_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         metadata.processId,
         version,
@@ -76,6 +93,7 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
         metadata.source.decodedAs,
         metadata.semanticProfile,
         encodeDefinitionStartCapabilities(metadata.startCapabilities),
+        humanTaskCatalogJson,
       );
       this.#database.exec("COMMIT");
       return {
@@ -157,6 +175,31 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
     return row === undefined ? null : decodeMetadata(row);
   }
 
+  getHumanTaskCatalog(reference: DefinitionReference): HumanTaskCatalogV1 | null {
+    const row = this.#database.prepare(`
+      SELECT human_task_catalog_json, semantic_profile, source_sha256
+      FROM definition_versions
+      WHERE process_id = ? AND version = ?
+    `).get(reference.processId, reference.version);
+    if (row === undefined) return null;
+    const value = row.human_task_catalog_json;
+    if (value === null) return null;
+    if (typeof value !== "string") {
+      throw new TypeError("SQLite definition row has invalid human_task_catalog_json");
+    }
+    const catalog = decodeCanonicalHumanTaskCatalogV1(
+      new TextEncoder().encode(value),
+    );
+    if (
+      catalog.processId !== reference.processId ||
+      catalog.semanticProfile !== row.semantic_profile ||
+      catalog.sourceSha256 !== row.source_sha256
+    ) {
+      throw new TypeError("SQLite Human Task catalog definition identity drifted");
+    }
+    return catalog;
+  }
+
   close(): void {
     if (this.#database.isOpen) {
       this.#database.close();
@@ -195,6 +238,7 @@ function initializeSchema(database: DatabaseSync): void {
         start_capabilities_json TEXT NOT NULL CHECK (
           length(start_capabilities_json) > 0
         ),
+        human_task_catalog_json TEXT,
         PRIMARY KEY (process_id, version)
       ) STRICT
     `);
@@ -224,6 +268,7 @@ function requireCurrentSchema(database: DatabaseSync): void {
     ["source_decoded_as", "TEXT", 0, 0],
     ["semantic_profile", "TEXT", 1, 0],
     ["start_capabilities_json", "TEXT", 1, 0],
+    ["human_task_catalog_json", "TEXT", 0, 0],
   ] as const;
   if (
     columns.length !== expected.length ||
@@ -238,6 +283,22 @@ function requireCurrentSchema(database: DatabaseSync): void {
   ) {
     throw new DefinitionSchemaResetRequiredError();
   }
+}
+
+function encodeBoundCatalog(
+  metadata: NewDefinitionMetadata,
+  catalog: HumanTaskCatalogV1,
+): string {
+  if (
+    catalog.processId !== metadata.processId ||
+    catalog.semanticProfile !== metadata.semanticProfile ||
+    catalog.sourceSha256 !== metadata.source.sha256
+  ) {
+    throw new TypeError("Human Task catalog identity does not match its definition");
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(
+    serializeHumanTaskCatalogV1(catalog),
+  );
 }
 
 function decodeMetadata(

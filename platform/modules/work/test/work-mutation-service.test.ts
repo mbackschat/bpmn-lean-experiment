@@ -465,6 +465,7 @@ async function createHarness(options: HarnessOptions = {}) {
       gateway,
       actors,
       authorization: new TaskAuthorizationPolicy(),
+      catalogs: { readHumanTaskCatalog: () => null },
       limits: { maxProcesses: 10, maxTasks: 10 },
     });
     const details = new WorkTaskDetailService({ work, gateway });
