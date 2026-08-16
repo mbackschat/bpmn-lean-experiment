@@ -7,6 +7,7 @@ import type {
 import {
   StimulusKind,
   cloneVariableBinding,
+  isWellFormedStimulus,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -184,6 +185,9 @@ function requireNonemptyWireString(value: string, name: string): string {
 function cloneCompletion(
   stimulus: EngineWorkCompletionStimulus,
 ): CompleteUserTaskInstanceStimulus {
+  if (!isWellFormedStimulus(stimulus)) {
+    throw new TypeError("Expected one well-formed completion stimulus");
+  }
   return {
     kind: StimulusKind.CompleteUserTaskInstance,
     commandId: stimulus.commandId,

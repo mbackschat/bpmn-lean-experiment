@@ -14,6 +14,7 @@ import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
+  SimpleBooleanExpressionKind,
 } from "./semantic-value-contract.js";
 import {
   isAssignmentFormUserTaskMetadata,
@@ -183,6 +184,10 @@ function hasExactStructuredHumanWorkProgram(
   return initiate.output === task.input &&
     task.output === choose.input &&
     choose.candidates.length === 2 &&
+    choose.candidates.every(
+      ({ condition }) =>
+        condition.kind === SimpleBooleanExpressionKind.StringEquals,
+    ) &&
     endInputs.size === 3 &&
     choose.candidates.every(({ output }) => endInputs.has(output)) &&
     endInputs.has(choose.defaultOutput);

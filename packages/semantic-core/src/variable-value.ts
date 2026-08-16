@@ -45,10 +45,44 @@ export function isVariableBinding(value: unknown): value is VariableBinding {
     isVariableValue(value.value);
 }
 
+/** Rejects holes and every non-index own property before array iteration. */
+export function isDenseArray(
+  value: unknown,
+): value is ReadonlyArray<unknown> {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+  const ownKeys = Reflect.ownKeys(value);
+  if (
+    ownKeys.length !== value.length + 1 ||
+    !ownKeys.includes("length")
+  ) {
+    return false;
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Checks one exact generic variable patch, including dense canonical array storage. */
+export function isVariablePatch(
+  value: unknown,
+): value is ReadonlyArray<VariableBinding> {
+  return isDenseArray(value) &&
+    value.every(isVariableBinding) &&
+    isCanonicallyOrderedVariablePatch(value);
+}
+
 /** Checks unique binding names in canonical Unicode-scalar order. */
 export function isCanonicallyOrderedVariablePatch(
   value: ReadonlyArray<unknown>,
 ): boolean {
+  if (!isDenseArray(value)) {
+    return false;
+  }
   const patch = value as ReadonlyArray<VariableBinding>;
   return patch.every((binding, index) =>
     index === 0 ||
@@ -76,6 +110,8 @@ export function sameVariableValue(
         left.value === right.value;
     case VariableValueKind.StringList:
       return right.kind === VariableValueKind.StringList &&
+        isDenseArray(left.value) &&
+        isDenseArray(right.value) &&
         left.value.length === right.value.length &&
         left.value.every((member, index) => member === right.value[index]);
     case VariableValueKind.Null:
@@ -89,7 +125,9 @@ export function sameVariablePatch(
   left: ReadonlyArray<VariableBinding>,
   right: ReadonlyArray<VariableBinding>,
 ): boolean {
-  return left.length === right.length &&
+  return isDenseArray(left) &&
+    isDenseArray(right) &&
+    left.length === right.length &&
     left.every((binding, index) => {
       const candidate = right[index];
       return candidate !== undefined &&
@@ -123,7 +161,7 @@ export function cloneVariableBinding(binding: VariableBinding): VariableBinding 
 function isStringListValue(value: Record<string, unknown>): boolean {
   if (
     !hasOnlyKeys(value, ["kind", "value"]) ||
-    !Array.isArray(value.value) ||
+    !isDenseArray(value.value) ||
     value.value.length > maximumStringListLength ||
     !value.value.every(
       (member) =>

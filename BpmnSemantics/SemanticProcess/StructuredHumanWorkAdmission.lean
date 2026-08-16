@@ -19,6 +19,17 @@ private def checkedFlow? (source : CheckedProcess) (id : SequenceFlowId) :
     Option CheckedSequenceFlow :=
   source.sequenceFlows.find? fun flow => decide (flow.id = id)
 
+private def checkedStringEqualsCondition : Option CheckedCondition → Bool
+  | some condition =>
+      match parseSimpleBooleanExpression condition.body with
+      | some (.stringEquals _ _) => true
+      | _ => false
+  | none => false
+
+private def isStringEqualsExpression : SimpleBooleanExpression → Bool
+  | .stringEquals _ _ => true
+  | _ => false
+
 private def checkedStructuredHumanWorkTopology (source : CheckedProcess) : Bool :=
   match source.nodes.filterMap fun
       | .noneStartEvent id => some id
@@ -45,7 +56,8 @@ private def checkedStructuredHumanWorkTopology (source : CheckedProcess) : Bool 
                 startToTask.condition.isNone && taskToChoice.condition.isNone &&
                 approved.sourceId = choice && changes.sourceId = choice &&
                 aborted.sourceId = choice && aborted.condition.isNone &&
-                approved.condition.isSome && changes.condition.isSome &&
+                checkedStringEqualsCondition approved.condition &&
+                checkedStringEqualsCondition changes.condition &&
                 exactSet ends [approved.targetId, changes.targetId, aborted.targetId] &&
                 exactSet (source.sequenceFlows.map (·.id))
                   [startToTask.id, taskToChoice.id, approvedId, changesId, abortedId]
@@ -72,6 +84,8 @@ private def programStructuredHumanWorkTopology (program : Program) : Bool :=
       | [approved, changes] =>
           decide (startOutput = taskInput) &&
             decide (taskOutput = choiceInput) &&
+            (candidates.all fun candidate =>
+              isStringEqualsExpression candidate.condition) &&
             exactSet ends [approved.output, changes.output, aborted]
       | _ => false
   | _, _, _, _ => false

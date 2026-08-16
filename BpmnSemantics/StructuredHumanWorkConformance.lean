@@ -129,6 +129,26 @@ def executionProgram : Program :=
       { id := ⟨"place:" ++ flowId.value⟩, origin := { elementId := flowId } }
     operations := executionOperations }
 
+def checkedProcessWithFirstCondition (body : String) : CheckedProcess :=
+  { checkedProcess with
+    sequenceFlows := checkedProcess.sequenceFlows.map fun flow =>
+      if flow.id = ⟨"Flow_Approved"⟩ then
+        { flow with
+          condition := some
+            { language := simpleBooleanExpressionLanguage, body } }
+      else
+        flow }
+
+def executionProgramWithFirstCondition
+    (condition : SimpleBooleanExpression) : Program :=
+  { executionProgram with
+    operations := executionProgram.operations.map fun operation =>
+      match operation with
+      | .choose id origin input (first :: rest) fallback fallbackOrigin =>
+          .choose id origin input ({ first with condition } :: rest)
+            fallback fallbackOrigin
+      | other => other }
+
 def instanceId : SemanticId := ⟨"ExpenseExceptionApprove_1"⟩
 
 def startStimulus : Stimulus :=
@@ -276,6 +296,20 @@ theorem exact_structured_human_work_topology_is_preserved :
     structuredHumanWorkCheckedTopologyValid checkedProcess = true ∧
       structuredHumanWorkProgramTopologyValid executionProgram = true ∧
       executionProgram.identity.semanticProfile = checkedProcess.identity.semanticProfile := by
+  decide +kernel
+
+/-- Literal, presence, and null checks stay outside the M6 String-equality subprofile. -/
+theorem non_string_equality_conditions_are_rejected :
+    ["true", "isPresent(resolution)", "isNull(resolution)"].all
+        (fun body =>
+          structuredHumanWorkCheckedTopologyValid
+            (checkedProcessWithFirstCondition body) = false) = true ∧
+      [ SimpleBooleanExpression.literal true
+      , .isPresent "resolution"
+      , .isNull "resolution" ].all
+        (fun condition =>
+          structuredHumanWorkProgramTopologyValid
+            (executionProgramWithFirstCondition condition) = false) = true := by
   decide +kernel
 
 /-- Activation publishes the exact assignment-only candidate metadata without a form arm. -/

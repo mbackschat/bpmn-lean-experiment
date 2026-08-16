@@ -128,6 +128,25 @@ test("refuses the M6 topology under an old profile and Rendering on a non-M6 sou
   );
 });
 
+test("refuses every non-String-equality condition only for the M6 profile", async () => {
+  const source = await readFile(fixtureUrl, "utf8");
+  for (const expression of [
+    "true",
+    "isPresent(resolution)",
+    "isNull(resolution)",
+  ]) {
+    const mutation = source.replace(
+      'stringEquals(resolution,"approved")',
+      expression,
+    );
+    assert.equal(
+      (await compile(mutation)).status,
+      BpmnCompilationStatus.Rejected,
+      expression,
+    );
+  }
+});
+
 async function accepted(source: string) {
   const result = await compile(source);
   assert.equal(

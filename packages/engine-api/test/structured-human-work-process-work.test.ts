@@ -70,3 +70,43 @@ test("forwards detached integer and ordered-list completion values", async () =>
     }]);
   assert.match(options.updateId, /^bpmn-command-sha256:[0-9a-f]{64}$/u);
 });
+
+test("refuses malformed completion arrays before cloning or transport", () => {
+  let transportCalls = 0;
+  const client = {
+    getHandle: () => {
+      transportCalls += 1;
+      throw new Error("transport must not be reached");
+    },
+  } as never;
+  const taskId = {
+    processInstanceId: "instance-1",
+    elementId: "ReviewException",
+    activation: 1,
+  };
+  const augmentedList = ["policy"];
+  Object.assign(augmentedList, { privateCursor: 1 });
+  const sparsePatch = new Array(1);
+  const mutations = [
+    sparsePatch,
+    [{
+      name: "riskFlags",
+      value: { kind: VariableValueKind.StringList, value: augmentedList },
+    }],
+  ];
+
+  for (const [index, submittedValues] of mutations.entries()) {
+    assert.throws(() => completeWork({
+      temporalClient: client,
+      locator: engineProcessWorkLocatorForCanonicalProcess("instance-1"),
+      hostingProcessInstanceId: "instance-1",
+      stimulus: {
+        kind: "completeUserTaskInstance",
+        commandId: `malformed-${index}`,
+        taskId,
+        submittedValues,
+      } as never,
+    }), /well-formed completion stimulus/u);
+  }
+  assert.equal(transportCalls, 0);
+});

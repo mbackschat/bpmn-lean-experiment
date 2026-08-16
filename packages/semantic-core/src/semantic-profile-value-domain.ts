@@ -7,7 +7,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
-import { isVariableBinding } from "./variable-value.js";
+import { isVariablePatch } from "./variable-value.js";
 
 export enum VariableWriteSurface {
   ProcessStart = "processStart",
@@ -21,7 +21,7 @@ export function profileAllowsVariableBindings(
   surface: VariableWriteSurface,
   bindings: ReadonlyArray<VariableBinding>,
 ): boolean {
-  if (!bindings.every(isVariableBinding)) {
+  if (!isVariablePatch(bindings)) {
     return false;
   }
   if (

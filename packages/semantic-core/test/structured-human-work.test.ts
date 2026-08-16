@@ -182,6 +182,25 @@ test("registers the exact M6 profile, program shape, and assignment-only metadat
   assert.equal(supportsSemanticProcessExecution(start, withLegacyForm), false);
 });
 
+test("refuses every non-String-equality condition only for the M6 profile", () => {
+  const conditions = [
+    { kind: SimpleBooleanExpressionKind.Literal, value: true },
+    { kind: SimpleBooleanExpressionKind.IsPresent, variable: "resolution" },
+    { kind: SimpleBooleanExpressionKind.IsNull, variable: "resolution" },
+  ] as const;
+  for (const condition of conditions) {
+    const mutation = structuredClone(program);
+    const choice = mutation.operations.find(
+      (operation) => operation.kind === SemanticOperationKind.Choose,
+    );
+    assert.ok(choice?.kind === SemanticOperationKind.Choose);
+    const first = choice.candidates[0];
+    assert.ok(first !== undefined);
+    choice.candidates[0] = { ...first, condition };
+    assert.equal(supportsSemanticProcessExecution(start, mutation), false);
+  }
+});
+
 test("commits one mixed completion patch atomically and detaches caller list storage", () => {
   const waiting = applyStimulus(program, initialState, start);
   assert.equal(waiting.outcome, CommandOutcome.Committed);

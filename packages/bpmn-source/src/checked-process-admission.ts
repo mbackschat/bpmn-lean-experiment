@@ -3,6 +3,7 @@ import {
   CheckedNodeKind,
   GatewayDirection,
   SemanticProfileId,
+  SimpleBooleanExpressionKind,
   SimpleBooleanExpressionLanguage,
   hasExactBalancedTwoBranchControlTopology,
   profileAllowsCheckedProcessShape,
@@ -23,6 +24,7 @@ import type {
 import {
   hasSelectedConfiguredTaskTopology,
 } from "./configured-task-checked-admission.js";
+import { parseSimpleBooleanExpression } from "./simple-boolean-expression.js";
 
 const bpmnDefaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 
@@ -419,8 +421,17 @@ function hasSelectedConditions(
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
     case SemanticProfileId.UserTaskCycle:
-    case SemanticProfileId.StructuredHumanWork:
       return flows.filter(({ condition }) => condition !== null).length === 2;
+    case SemanticProfileId.StructuredHumanWork: {
+      const conditions = flows.flatMap(({ condition }) =>
+        condition === null ? [] : [condition]
+      );
+      return conditions.length === 2 && conditions.every(
+        ({ body }) =>
+          parseSimpleBooleanExpression(body)?.kind ===
+            SimpleBooleanExpressionKind.StringEquals,
+      );
+    }
     default:
       return flows.every(({ condition }) => condition === null);
   }

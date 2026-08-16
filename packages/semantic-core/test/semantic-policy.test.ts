@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  EffectExecutionResultKind,
   StimulusKind,
   UserTaskLifecycleState,
   VariableValueKind,
@@ -10,6 +11,7 @@ import {
   initialState,
   isWellFormedWireString,
   isWellFormedStimulus,
+  isVariableValue,
   projectOpenUserTasks,
   sameStimulus,
 } from "@bpmn-lean/semantic-core";
@@ -149,6 +151,58 @@ test("owns exact structural well-formedness for every current stimulus", () => {
   ]) {
     assert.equal(isWellFormedStimulus(malformed), false);
   }
+});
+
+test("rejects sparse and augmented semantic arrays before iteration", () => {
+  const sparseList = new Array<string>(1);
+  Object.assign(sparseList, { compensatingExtra: "must-not-hide-hole" });
+  const augmentedList = ["policy"];
+  Object.defineProperty(augmentedList, "privateOrdinal", {
+    value: 1,
+    enumerable: false,
+  });
+  assert.equal(isVariableValue({
+    kind: VariableValueKind.StringList,
+    value: sparseList,
+  }), false);
+  assert.equal(isVariableValue({
+    kind: VariableValueKind.StringList,
+    value: augmentedList,
+  }), false);
+
+  const sparsePatch = new Array(1);
+  const augmentedPatch = [{
+    name: "answer",
+    value: { kind: VariableValueKind.String, value: "yes" },
+  }];
+  Object.assign(augmentedPatch, { transportCursor: "private" });
+  const taskId = {
+    processInstanceId: "Instance",
+    elementId: "Task",
+    activation: 1,
+  };
+  assert.equal(isWellFormedStimulus({
+    kind: StimulusKind.StartProcess,
+    commandId: "sparse-start",
+    processId: "Process",
+    instanceId: "Instance",
+    initialVariables: sparsePatch,
+  }), false);
+  assert.equal(isWellFormedStimulus({
+    kind: StimulusKind.CompleteUserTaskInstance,
+    commandId: "augmented-completion",
+    taskId,
+    submittedValues: augmentedPatch,
+  }), false);
+  assert.equal(isWellFormedStimulus({
+    kind: StimulusKind.CompleteEffect,
+    commandId: "sparse-effect",
+    effectId: { ...taskId, elementId: "Effect" },
+    result: {
+      kind: EffectExecutionResultKind.Success,
+      localPatch: sparsePatch,
+    },
+  }), false);
 });
 
 test("compares complete semantic stimulus identity independently of transport IDs", () => {

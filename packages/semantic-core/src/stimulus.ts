@@ -12,8 +12,7 @@ import {
 } from "./message-channel.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import {
-  isCanonicallyOrderedVariablePatch,
-  isVariableBinding,
+  isVariablePatch,
   sameVariablePatch,
 } from "./variable-value.js";
 
@@ -139,9 +138,7 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isNonEmptyString(value.commandId) &&
         isNonEmptyString(value.processId) &&
         isNonEmptyString(value.instanceId) &&
-        Array.isArray(value.initialVariables) &&
-        value.initialVariables.every(isVariableBinding) &&
-        isCanonicallyOrderedVariablePatch(value.initialVariables)
+        isVariablePatch(value.initialVariables)
       );
     case StimulusKind.TriggerMessageStart:
       return (
@@ -193,9 +190,7 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isNonEmptyString(value.taskId.elementId) &&
         Number.isSafeInteger(value.taskId.activation) &&
         Number(value.taskId.activation) >= 1 &&
-        Array.isArray(value.submittedValues) &&
-        value.submittedValues.every(isVariableBinding) &&
-        isCanonicallyOrderedVariablePatch(value.submittedValues)
+        isVariablePatch(value.submittedValues)
       );
     case StimulusKind.DeliverMessage:
       return (
@@ -319,9 +314,7 @@ export function isWellFormedEffectExecutionResult(
 ): value is import("./contract.js").EffectExecutionResult {
   if (
     !isRecord(value) ||
-    !Array.isArray(value.localPatch) ||
-    !value.localPatch.every(isVariableBinding) ||
-    !isCanonicallyOrderedVariablePatch(value.localPatch)
+    !isVariablePatch(value.localPatch)
   ) {
     return false;
   }
