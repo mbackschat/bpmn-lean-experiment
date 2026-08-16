@@ -49,18 +49,6 @@ function milestoneStatuses(markdown: string): ReadonlyMap<string, MilestoneStatu
   return statuses;
 }
 
-function readmeMilestoneStatuses(markdown: string): ReadonlyMap<string, MilestoneStatus> {
-  const statuses = new Map<string, MilestoneStatus>();
-  for (const [, milestoneId, status] of markdown.matchAll(
-    /^\| (M[0-5]) \| (Closed|In progress|Not started) \|/gmu,
-  )) {
-    if (milestoneId !== undefined && status !== undefined) {
-      statuses.set(milestoneId, status.toLowerCase() as MilestoneStatus);
-    }
-  }
-  return statuses;
-}
-
 function platformProductCapabilityIsAbsent(implementationMap: string): boolean {
   const platformStart = implementationMap.indexOf("### BPM platform");
   if (platformStart < 0) {
@@ -78,6 +66,14 @@ function readmeSaysPlatformProductCapabilityIsAbsent(readme: string): boolean {
   return readme.includes(
     "| BPM platform | Architecture and guarded scaffold only; no product capability |",
   );
+}
+
+function planSaysFunctionalMvpIsComplete(plan: string): boolean {
+  return /functional MVP is complete/u.test(plan);
+}
+
+function readmeSaysFunctionalMvpIsComplete(readme: string): boolean {
+  return /^\| BPM platform \| Functional MVP complete(?:;| \|)/mu.test(readme);
 }
 
 function readmeActiveWork(markdown: string): string | null {
@@ -219,24 +215,22 @@ test("keeps showcase milestone status consistent with the implementation boundar
   assert.deepEqual(milestoneContradictions(plan, implementationMap), []);
 });
 
-test("keeps the root README status summary aligned with its owners", async () => {
+test("keeps the root README current-state summary aligned with its owners", async () => {
   const [readme, plan, implementationMap] = await Promise.all([
     readFile(readmePath, "utf8"),
     readFile(planPath, "utf8"),
     readFile(implementationMapPath, "utf8"),
   ]);
-  const planStatuses = milestoneStatuses(plan);
-  const readmeStatuses = readmeMilestoneStatuses(readme);
 
-  assert.deepEqual(
-    [...readmeStatuses.keys()],
-    milestoneIds,
-    "the root README must summarize every showcase milestone",
+  assert.doesNotMatch(
+    readme,
+    /^\| M\d+ \|/mu,
+    "the root README must not duplicate milestone planning",
   );
-  assert.deepEqual(
-    [...readmeStatuses],
-    [...planStatuses],
-    "the root README milestone summary must match PLAN.md",
+  assert.equal(
+    readmeSaysFunctionalMvpIsComplete(readme),
+    planSaysFunctionalMvpIsComplete(plan),
+    "the root README functional-MVP summary must match PLAN.md",
   );
   assert.equal(
     readmeSaysPlatformProductCapabilityIsAbsent(readme),

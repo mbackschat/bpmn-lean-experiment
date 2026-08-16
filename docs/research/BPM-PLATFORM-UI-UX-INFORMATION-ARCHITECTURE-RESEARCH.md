@@ -223,7 +223,7 @@ Reject for M3:
 
 The two project-specific UI contracts have graduated to stable specifications after their browser acceptance evidence and independent closure reviews completed. The [BPMN diagram presentation decision](../BPMN-DIAGRAM-PRESENTATION-DECISION.md) separately owns provenance and lifecycle because generated layout is not merely a visual-style choice.
 
-The maintained [human-work browser walkthrough](../HUMAN-WORK-WALKTHROUGH.md) shows how to select or add a definition, inspect and download its diagram presentation, start an instance, claim the resulting task, complete its typed form, inspect the resulting public Process instance, and review operator history. A walkthrough is preferable to another proposal because it explains an implemented path rather than selecting new scope.
+The maintained [BPM platform browser walkthrough](../BPM-PLATFORM-BROWSER-WALKTHROUGH.md) shows how to inspect current capabilities, deploy and trigger an exact definition, complete structured Human Work, operate incidents, inspect metrics and semantic History, and review operator audit. A walkthrough is preferable to another proposal because it explains implemented paths rather than selecting new scope.
 
 The flow-node occurrence and commit-time publication has closed together with the bounded Product 2 Flow-node metrics surface. The Product 2-only operator-history and canonical audit-export contract described by Pattern 12 has also closed in the [operator history and audit export specification](../BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md). No separate proposal is recommended for a router, report builder, dashboard, chart library, generalized mining store, or saved views.
 

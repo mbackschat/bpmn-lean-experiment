@@ -10,4 +10,4 @@ The [structured Human Work journey](e2e/structured-human-work-journey.spec.ts) d
 
 Run both gates with `./scripts/pnpm.sh run test:showcase:m3-human-work`. The test owns the sole permitted M3 Event History inspection; production platform code never imports or derives Work from Temporal history.
 
-To experience the product manually, follow the maintained [human-work browser walkthrough](../../docs/HUMAN-WORK-WALKTHROUGH.md).
+To experience the product manually, follow the maintained [BPM platform browser walkthrough](../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md).
