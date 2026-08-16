@@ -112,6 +112,8 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 
 Default to common, established ecosystem practices and native tool mechanisms. Do not invent a bespoke abstraction, policy, manifest, workflow, or duplicate source of truth when the standard practice satisfies the requirement. When a concrete project constraint requires a deviation, explain the standard approach, the exact gap, and the tradeoff to the owner and obtain approval before implementing the deviation.
 
+For Product 2 PostgreSQL runtime or migration work, keep the ordinary package loop database-free and run the explicit real-database witness with `./scripts/pnpm.sh run test:platform-postgresql:runtime:local`.
+
 ### Product 2 UI/UX source preflight
 
 For every material Product 2 UI/UX surface, inspect CIB Seven first when it has an analogous capability, using its current product documentation and the pristine pinned source rather than memory or screenshots alone. Run the `research` doctor scope and complete the [source-grounded design preflight](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md#source-grounded-design-preflight) before production code. Use other established products to fill a gap or provide an independent comparison. Record what the project adopts, deliberately changes, and excludes, with the published engine or platform fact that justifies each deviation. This is design research, not permission to copy code, styling, assets, private data models, or product terminology.

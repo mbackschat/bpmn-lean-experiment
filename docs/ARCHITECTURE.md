@@ -123,6 +123,7 @@ Foundation packages provide reusable infrastructure mechanisms and must not beco
 |---|---|
 | `engine-gateway` | The four permitted engine-consumption kinds: compile, start, observe committed state, and submit a command |
 | `artifact-store` | Exact artifact byte storage and retrieval through content identity; no compilation or version policy |
+| `postgresql-runtime` | Product 2-only bounded pools, `READ COMMITTED` transaction and dedicated-session mechanics, database-clock access, and checksum-bound forward migration execution; no business schema or repository meaning |
 | `projection-runtime` | Generic cursoring, ordering, deduplication, reconciliation, and rebuild mechanics; no domain projection |
 | `identity-policy` | Pluggable identity and platform authorization mechanisms |
 | `audit` | Platform-owned actor, policy, and wall-clock audit facts, kept distinct from BPMN semantic history |

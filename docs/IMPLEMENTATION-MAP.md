@@ -91,6 +91,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - The concrete modular-monolith architecture, decision register, and complete owner inventory in [ARCHITECTURE.md](ARCHITECTURE.md)
 - Narrow `@bpmn-lean/engine-api` compilation and exact-definition start entry points plus `@bpmn-lean/platform-engine-gateway`, projecting source identity, definition identity, located admission diagnostics, and handle-free start outcomes without exposing the checked graph, Semantic Process program, or Temporal Workflow handle
 - `@bpmn-lean/platform-artifact-store`, which verifies exact SHA-256 identity, publishes caller-snapshotted bytes atomically without replacement, detects occupied-path corruption, and returns defensive copies
+- `@bpmn-lean/platform-postgresql-runtime`, with bounded pools, locked checksum migrations, and separate fast and PostgreSQL 18 tests
 - `@bpmn-lean/platform-contracts` with closed deeply immutable M1 definition and exact-version start transport types, strict unknown decoders, opaque engine diagnostics and start failures, and safe versioned route construction
 - `@bpmn-lean/platform-definitions`, which snapshots deployment and start inputs before their asynchronous boundaries, persists only admitted exact source, allocates durable process-local version ordinals through SQLite `BEGIN IMMEDIATE`, starts only one exact stored version, lists current and historical versions, and fails explicitly when metadata and content lose integrity
 - A Fetch-compatible definitions route contribution with closed raw-XML deployment input, claimed and streamed byte ceilings, producer-mutation-resistant chunk capture, exact-version body-free start, public-only accepted/rejected projections, exact version/source reads, strict path and method validation, and generic internal failures
@@ -124,7 +125,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 
 #### Explicitly absent
 
-- Horizontal Product 2 deployment: persistence, artifacts, repair, and Temporal Query aggregation remain node-local. The approved [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) is first post-MVP; no distributed capacity evidence exists.
+- Horizontal Product 2 deployment: the PostgreSQL seam exists, but business persistence, artifacts, repair, and Temporal Query aggregation remain node-local. The [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) is in progress; no shared-mode evidence exists.
 - Adjustable metric periods, running pseudo-duration, charts, heatmaps, metric export, post-retention archive, and cross-instance semantic ordering
 
 - a production identity provider, directory synchronization, administrator role, claim delegation, or authorization model beyond the exact fake actor and group policy

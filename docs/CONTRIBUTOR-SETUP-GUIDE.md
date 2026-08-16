@@ -37,6 +37,8 @@ Hosted Linux CI uses `playwright install --with-deps chromium` to provision both
 
 Tokei-backed README statistics are a maintainer-only publication aid. Tokei is available only on the maintainer's machine and is not required by contributor setup, hooks, normal builds, tests, or CI.
 
+Product 2 shared-persistence work has a separate opt-in PostgreSQL 18 lane. On macOS install `postgresql@18` with Homebrew, but do not start a persistent service merely for tests. `./scripts/pnpm.sh run test:platform-postgresql:runtime:local` creates an isolated temporary cluster, runs only the PostgreSQL runtime and migration witness, and removes that cluster. Ordinary package, platform, Product 1, and complete engine gates neither require nor start PostgreSQL. Set `POSTGRESQL_BIN_DIR` only when the PostgreSQL 18 binaries are outside `/opt/homebrew/opt/postgresql@18/bin` and outside `PATH`.
+
 ## Provisioning scopes
 
 | Scope | Inputs | Required for |

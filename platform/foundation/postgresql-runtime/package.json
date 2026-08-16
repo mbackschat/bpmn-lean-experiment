@@ -1,0 +1,34 @@
+{
+  "name": "@bpmn-lean/platform-postgresql-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./migrations": {
+      "types": "./dist/postgresql-migrations.d.ts",
+      "import": "./dist/postgresql-migrations.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test:postgresql:built": "node --test --test-concurrency=1 test/postgresql/*.test.ts",
+    "test:postgresql": "pnpm run build && pnpm run test:postgresql:built",
+    "test:built": "node --test --test-concurrency=1 test/*.test.ts",
+    "test": "pnpm run build && pnpm run test:built"
+  },
+  "dependencies": {
+    "node-pg-migrate": "9.0.0",
+    "pg": "8.22.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.20.0"
+  }
+}

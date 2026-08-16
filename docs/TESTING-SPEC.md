@@ -101,6 +101,7 @@ Do not multiply the same invariant merely because a parameterized environment is
 | Source ownership, module boundary, or structural refactor | `./scripts/pnpm.sh run check:source-hygiene` plus the narrow language gate |
 | Product boundary or platform package dependency direction | `node --test scripts/platform-product-boundary.test.ts` plus the owning package gate |
 | M1 engine gateway or platform foundation storage | `./scripts/pnpm.sh run test:platform-foundation` |
+| Product 2 PostgreSQL runtime or checksum-bound migration mechanics | During Red/Green and before commit run `./scripts/pnpm.sh run test:platform-foundation`; run the opt-in real PostgreSQL 18 witness with `./scripts/pnpm.sh run test:platform-postgresql:runtime:local`. The ordinary package and platform-foundation loops remain database-free. |
 | M1 public definition contract, deployment/versioning module, HTTP route, server composition, production licence policy, or platform harness | `./scripts/pnpm.sh run test:platform-m1` |
 | M1 deployment, versioning, exact-source rendering, attribution, exact-version start, real Temporal hosting, or rejection acceptance | `./scripts/pnpm.sh run test:showcase:m1` after installing the pinned Playwright Chromium |
 | M2 exact-version Timer Start scheduling or Message Start publication, including lifecycle/refinement evidence, web composition, and browser acceptance | `./scripts/pnpm.sh run test:showcase:m2` after installing the pinned Playwright Chromium; use `test:showcase:m2-message-start-ingress` for the Message Start lane alone |
