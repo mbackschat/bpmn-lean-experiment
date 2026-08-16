@@ -64,6 +64,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Trust checked-out workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Resolve pinned toolchain versions
         id: pins
         run: |

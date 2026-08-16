@@ -84,3 +84,23 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
   assert.match(showcaseWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:showcase/u);
   assert.match(uiWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:ui/u);
 });
+
+test("containerized pre-push workflow trusts only the exact checkout before Git inspection", async () => {
+  const workflowPath = ".github/workflows/ui-quality.yml";
+  const workflow = await readFile(path.join(projectRoot, workflowPath), "utf8");
+  const checkoutIndex = workflow.indexOf("uses: actions/checkout@");
+  const trustCommand = 'run: git config --global --add safe.directory "$GITHUB_WORKSPACE"';
+  const trustIndex = workflow.indexOf(trustCommand);
+  const prePushIndex = workflow.indexOf("run: ./scripts/pnpm.sh run test:pre-push:ui");
+
+  assert.ok(checkoutIndex >= 0, `${workflowPath} must check out the repository`);
+  assert.ok(
+    trustIndex > checkoutIndex && trustIndex < prePushIndex,
+    `${workflowPath} must trust its exact checked-out workspace before the clean-head gate`,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /safe\.directory\s+["']?\*["']?/u,
+    `${workflowPath} must not trust every Git repository`,
+  );
+});
