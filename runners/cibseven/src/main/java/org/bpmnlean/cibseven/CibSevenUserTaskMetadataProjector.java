@@ -7,6 +7,8 @@ import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.IdentityLinkEvidence;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TaskQueryTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
 import org.bpmnlean.cibseven.UserTaskMetadataProtocol.Assignment;
+import org.bpmnlean.cibseven.UserTaskMetadataProtocol.AssignmentFormMetadata;
+import org.bpmnlean.cibseven.UserTaskMetadataProtocol.AssignmentOnlyMetadata;
 import org.bpmnlean.cibseven.UserTaskMetadataProtocol.Candidate;
 import org.bpmnlean.cibseven.UserTaskMetadataProtocol.Form;
 import org.bpmnlean.cibseven.UserTaskMetadataProtocol.FormField;
@@ -21,6 +23,8 @@ final class CibSevenUserTaskMetadataProjector {
       "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
   static final String PARALLEL_PROFILE =
       "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
+  static final String STRUCTURED_HUMAN_WORK_PROFILE =
+      "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
 
   private final ProcessEngine processEngine;
 
@@ -59,7 +63,7 @@ final class CibSevenUserTaskMetadataProjector {
                           .toList();
                   metadataByElement.put(
                       task.getTaskDefinitionKey(),
-                      requireMetadata(identityLinks, formFields));
+                      requireMetadata(profile, identityLinks, formFields));
                   return new TaskQueryTask(
                       task.getTaskDefinitionKey(), task.getName(), identityLinks, formFields);
                 })
@@ -78,15 +82,21 @@ final class CibSevenUserTaskMetadataProjector {
   }
 
   static boolean isMetadataProfile(String profile) {
-    return PROFILE.equals(profile) || PARALLEL_PROFILE.equals(profile);
+    return PROFILE.equals(profile)
+        || PARALLEL_PROFILE.equals(profile)
+        || STRUCTURED_HUMAN_WORK_PROFILE.equals(profile);
   }
 
   private static UserTaskMetadata requireMetadata(
+      String profile,
       List<IdentityLinkEvidence> identityLinks,
       List<FormFieldEvidence> formFields) {
-    if (identityLinks.size() != 1 || formFields.size() != 1) {
+    var assignmentOnly = STRUCTURED_HUMAN_WORK_PROFILE.equals(profile);
+    if (identityLinks.size() != 1 || formFields.size() != (assignmentOnly ? 0 : 1)) {
       throw new IllegalStateException(
-          "Metadata profile requires exactly one identity link and one form field");
+          assignmentOnly
+              ? "Structured Human Work requires exactly one identity link and no CIB form field"
+              : "Metadata profile requires exactly one identity link and one form field");
     }
     var identityLink = identityLinks.getFirst();
     if (!"candidate".equals(identityLink.type())
@@ -94,14 +104,19 @@ final class CibSevenUserTaskMetadataProjector {
         || !isCandidateId(identityLink.groupId())) {
       throw new IllegalStateException("Metadata profile requires one candidate group link");
     }
+    var assignment =
+        new Assignment(List.of(new Candidate("group", identityLink.groupId())));
+    if (assignmentOnly) {
+      return new AssignmentOnlyMetadata(assignment);
+    }
     var formField = formFields.getFirst();
     if (!isIdentity(formField.id())
         || !("string".equals(formField.typeName())
             || "boolean".equals(formField.typeName()))) {
       throw new IllegalStateException("Metadata profile requires one exact typed form field");
     }
-    return new UserTaskMetadata(
-        new Assignment(List.of(new Candidate("group", identityLink.groupId()))),
+    return new AssignmentFormMetadata(
+        assignment,
         new Form(List.of(new FormField(formField.id(), formField.typeName()))));
   }
 

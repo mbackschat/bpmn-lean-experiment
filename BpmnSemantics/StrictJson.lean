@@ -128,6 +128,8 @@ mutual
       return .null
     else if c = '-' || ('0' ≤ c && c ≤ '9') then
       let value ← Json.Parser.num
+      if c = '-' && value.mantissa = 0 then
+        fail "negative zero is not an admitted JSON number"
       ws
       return .num value
     else

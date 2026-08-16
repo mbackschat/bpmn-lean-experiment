@@ -49,6 +49,10 @@ import {
   isUserTaskMetadataProfile,
   userTaskMetadataBindingValid,
 } from "./user-task-metadata-source.js";
+import { preservationCapability } from "./preserved-element-classification.js";
+import {
+  isWarningWithinOpaqueRendering,
+} from "./opaque-rendering-retention.js";
 
 export async function compileBpmnToSemanticProcess(
   request: CompileBpmnToSemanticProcessRequest,
@@ -159,7 +163,7 @@ export async function compileBpmnToSemanticProcess(
   }
   if (
     isUserTaskMetadataProfile(request.semanticProfile) &&
-    carriesDuplicateCandidateGroupsAttribute(xml)
+    carriesDuplicateCandidateGroupsAttribute(xml, request.semanticProfile)
   ) {
     return reject([
       diagnostic(
@@ -175,8 +179,17 @@ export async function compileBpmnToSemanticProcess(
   } catch (error: unknown) {
     return reject(parserFailureDiagnostics(error));
   }
-  if (imported.warnings.length > 0) {
-    return reject(imported.warnings);
+  const capability = preservationCapability(request.semanticProfile);
+  const blockingWarnings = imported.warnings.filter(
+    (warning) => !isWarningWithinOpaqueRendering(
+      warning,
+      xml,
+      capability,
+      imported.located,
+    ),
+  );
+  if (blockingWarnings.length > 0) {
+    return reject(blockingWarnings);
   }
 
   const cardinalityMismatch = firstContainmentCardinalityMismatch(

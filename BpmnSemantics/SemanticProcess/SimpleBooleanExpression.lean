@@ -123,6 +123,8 @@ def evaluateSimpleBooleanExpression
       | [{ value := .null, .. }] => some true
       | [{ value := .string _, .. }] => some false
       | [{ value := .boolean _, .. }] => some false
+      | [{ value := .integer _, .. }] => some false
+      | [{ value := .stringList _, .. }] => some false
       | _ => none
   | .stringEquals name expected =>
       match bindings.filter fun binding => decide (binding.name = name) with
@@ -130,6 +132,8 @@ def evaluateSimpleBooleanExpression
       | [{ value := .string actual, .. }] => some (actual = expected)
       | [{ value := .null, .. }] => some false
       | [{ value := .boolean _, .. }] => some false
+      | [{ value := .integer _, .. }] => some false
+      | [{ value := .stringList _, .. }] => some false
       | _ => none
 
 /-- Select the first true candidate in declaration order, or the default when every candidate is false. -/

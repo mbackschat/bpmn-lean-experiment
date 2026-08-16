@@ -130,6 +130,8 @@ function stringifyBooleanValues(
             },
           };
         case VariableValueKind.String:
+        case VariableValueKind.Integer:
+        case VariableValueKind.StringList:
         case VariableValueKind.Null:
           return binding;
         default:

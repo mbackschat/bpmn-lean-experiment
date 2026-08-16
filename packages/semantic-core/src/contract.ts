@@ -118,7 +118,9 @@ export type EffectOccurrenceId = OccurrenceId;
 
 export enum VariableValueKind {
   Boolean = "boolean",
+  Integer = "integer",
   String = "string",
+  StringList = "stringList",
   Null = "null",
 }
 
@@ -128,8 +130,16 @@ export type VariableValue =
       value: boolean;
     }>
   | DeepReadonly<{
+      kind: VariableValueKind.Integer;
+      value: number;
+    }>
+  | DeepReadonly<{
       kind: VariableValueKind.String;
       value: string;
+    }>
+  | DeepReadonly<{
+      kind: VariableValueKind.StringList;
+      value: string[];
     }>
   | DeepReadonly<{
       kind: VariableValueKind.Null;

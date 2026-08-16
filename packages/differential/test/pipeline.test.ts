@@ -219,6 +219,9 @@ test(
         "user-task-assignment-form-metadata",
         "parallel-user-task-metadata-content-then-risk",
         "parallel-user-task-metadata-risk-then-content",
+        "expense-exception-review-approve",
+        "expense-exception-review-request-changes",
+        "expense-exception-review-abort",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);

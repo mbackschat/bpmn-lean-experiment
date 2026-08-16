@@ -27,11 +27,12 @@ import {
   exactForeignAttributeRejections,
   foreignAttributeConsumingTypes,
   foreignAttributeRejections,
+  preservationCapability,
 } from "./preserved-element-classification.js";
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 import {
   admitsUserTaskMetadataForeignAttribute,
-  parallelUserTaskMetadataProfile,
+  isUserTaskMetadataProfile,
   userTaskMetadataProfile,
 } from "./user-task-metadata-source.js";
 
@@ -123,7 +124,7 @@ export function compileDispatchedCheckedProcess(
   const dispatch = compilationDispatches.find(
     (entry) => entry.semanticProfile === semanticProfile ||
       (entry.id === CompilationDispatchId.UserTaskMetadata &&
-        semanticProfile === parallelUserTaskMetadataProfile),
+        isUserTaskMetadataProfile(semanticProfile)),
   ) ?? genericDispatch;
   switch (dispatch.id) {
     case CompilationDispatchId.Generic:
@@ -147,14 +148,12 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.CallActivity:
       return dispatch.reader(rootElement, source, overlay);
     case CompilationDispatchId.UserTaskMetadata:
-      return semanticProfile === parallelUserTaskMetadataProfile
-        ? compileUserTaskMetadataSource(
-            rootElement,
-            source,
-            overlay,
-            semanticProfile,
-          )
-        : dispatch.reader(rootElement, source, overlay);
+      return compileUserTaskMetadataSource(
+        rootElement,
+        source,
+        overlay,
+        semanticProfile,
+      );
     default:
       return assertNever(dispatch);
   }
@@ -176,6 +175,7 @@ function compileUserTaskMetadataSource(
             definitions,
             located,
             admitsUserTaskMetadataForeignAttribute,
+            preservationCapability(semanticProfile),
           ),
         null,
       )

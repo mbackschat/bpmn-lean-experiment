@@ -337,7 +337,7 @@ test("selects the exact checked and IL metadata profile shapes", () => {
       omissionControl.operations,
       1,
     ),
-    true,
+    false,
   );
 });
 

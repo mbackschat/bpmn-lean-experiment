@@ -24,7 +24,7 @@ export type TaskQueryTask = Readonly<{
 
 export type ProcessVariableSnapshot = Readonly<{
   name: string;
-  value: string | boolean | null;
+  value: string | boolean | number | ReadonlyArray<string> | null;
 }>;
 
 export type StateQuerySnapshot = Readonly<{

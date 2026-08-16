@@ -64,13 +64,17 @@ export type OccurrenceId = DeepReadonly<{
 
 export const VariableValueKind = {
   Boolean: "boolean",
+  Integer: "integer",
   String: "string",
+  StringList: "stringList",
   Null: "null",
 } as const;
 
 export type VariableValue = DeepReadonly<
   | { kind: typeof VariableValueKind.Boolean; value: boolean }
+  | { kind: typeof VariableValueKind.Integer; value: number }
   | { kind: typeof VariableValueKind.String; value: string }
+  | { kind: typeof VariableValueKind.StringList; value: string[] }
   | { kind: typeof VariableValueKind.Null }
 >;
 

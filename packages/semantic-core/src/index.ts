@@ -48,3 +48,4 @@ export * from "./scenario.js";
 export * from "./stimulus.js";
 export * from "./wire.js";
 export * from "./user-task-metadata.js";
+export * from "./variable-value.js";

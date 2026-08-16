@@ -1,6 +1,10 @@
 /** Exact User Task metadata case and its three public-observation mutations. */
 import {
   CanonicalObservationKind,
+  isAssignmentFormUserTaskMetadata,
+} from "@bpmn-lean/semantic-core";
+import type {
+  UserTaskAssignmentFormMetadata,
 } from "@bpmn-lean/semantic-core";
 import { DisagreementKind } from "@bpmn-lean/differential";
 import {
@@ -15,6 +19,7 @@ import {
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
 import type {
+  DeepMutable,
   MutableScenarioResult,
   ObservationValueDisagreement,
   PipelineCase,
@@ -22,15 +27,17 @@ import type {
 
 const scenarioRoot = "scenarios/user-task-assignment-form-metadata";
 
-function metadataAtWait(result: MutableScenarioResult) {
+function metadataAtWait(
+  result: MutableScenarioResult,
+): DeepMutable<UserTaskAssignmentFormMetadata> {
   const observation = result.trace[2];
   const metadata = observation?.kind === CanonicalObservationKind.State
     ? observation.openUserTasks[0]?.metadata
     : undefined;
-  if (metadata === undefined) {
+  if (!isAssignmentFormUserTaskMetadata(metadata)) {
     throw new Error("User Task metadata calibration requires metadata at trace[2]");
   }
-  return metadata;
+  return metadata as DeepMutable<UserTaskAssignmentFormMetadata>;
 }
 
 function mutateCandidateGroup(result: MutableScenarioResult): void {

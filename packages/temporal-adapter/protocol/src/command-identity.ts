@@ -4,6 +4,7 @@ import {
   StimulusKind,
   VariableValueKind,
   isWellFormedStimulus,
+  utf8ByteLength,
 } from "@bpmn-lean/semantic-core";
 import type {
   MessageChannel,
@@ -25,15 +26,15 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
   }
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         stimulus.processId,
         stimulus.instanceId,
-        stimulus.initialVariables.map(variableBindingTuple),
+        variablePatchTuple(stimulus.initialVariables),
       ]);
     case StimulusKind.TriggerMessageStart:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         stimulus.processId,
@@ -42,7 +43,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         messageChannelTuple(stimulus.channel),
       ]);
     case StimulusKind.TriggerTimerStart:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         stimulus.processId,
@@ -50,7 +51,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         stimulus.startEventId,
       ]);
     case StimulusKind.CompleteUserTaskInstance:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         [
@@ -58,10 +59,10 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
           stimulus.taskId.elementId,
           stimulus.taskId.activation,
         ],
-        stimulus.submittedValues.map(variableBindingTuple),
+        variablePatchTuple(stimulus.submittedValues),
       ]);
     case StimulusKind.DeliverMessage:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         [
@@ -72,7 +73,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         messageChannelTuple(stimulus.channel),
       ]);
     case StimulusKind.FireTimer:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         [
@@ -83,7 +84,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         stimulus.logicalTimeMs,
       ]);
     case StimulusKind.CompleteEffect:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         [
@@ -94,7 +95,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         effectResultTuple(stimulus.result),
       ]);
     case StimulusKind.ReportEffectFailure:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         [
@@ -105,7 +106,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         stimulus.generation,
       ]);
     case StimulusKind.RetryIncident:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         [
@@ -116,7 +117,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         stimulus.incidentId.generation,
       ]);
     case StimulusKind.CancelIncidentProcess:
-      return canonicalTypedTupleEncoding([
+      return encodeCommandTuple([
         stimulus.kind,
         stimulus.commandId,
         stimulus.processInstanceId,
@@ -156,7 +157,7 @@ function effectResultTuple(
     { kind: StimulusKind.CompleteEffect }
   >["result"],
 ): ReadonlyArray<import("./canonical-encoding.js").CanonicalTupleValue> {
-  const patch = result.localPatch.map(variableBindingTuple);
+  const patch = variablePatchTuple(result.localPatch);
   switch (result.kind) {
     case EffectExecutionResultKind.Success:
       return [result.kind, patch];
@@ -188,11 +189,45 @@ function variableBindingTuple(
         binding.name,
         [binding.value.kind, binding.value.value],
       ];
+    case VariableValueKind.Integer:
+      return [
+        binding.name,
+        [binding.value.kind, binding.value.value],
+      ];
+    case VariableValueKind.StringList:
+      return [
+        binding.name,
+        [binding.value.kind, [...binding.value.value]],
+      ];
     case VariableValueKind.Null:
       return [binding.name, [binding.value.kind]];
     default:
       return assertNever(binding.value);
   }
+}
+
+function variablePatchTuple(
+  bindings: ReadonlyArray<VariableBinding>,
+): ReadonlyArray<CanonicalTupleValue> {
+  const patch = bindings.map((binding) => {
+    const tuple = variableBindingTuple(binding);
+    if (utf8ByteLength(canonicalTypedTupleEncoding(tuple)) > 20_480) {
+      throw new RangeError("Variable binding exceeds 20480 canonical UTF-8 bytes");
+    }
+    return tuple;
+  });
+  if (utf8ByteLength(canonicalTypedTupleEncoding(patch)) > 65_536) {
+    throw new RangeError("Variable patch exceeds 65536 canonical UTF-8 bytes");
+  }
+  return patch;
+}
+
+function encodeCommandTuple(tuple: ReadonlyArray<CanonicalTupleValue>): string {
+  const encoded = canonicalTypedTupleEncoding(tuple);
+  if (utf8ByteLength(encoded) > 131_072) {
+    throw new RangeError("Content-bound command exceeds 131072 canonical UTF-8 bytes");
+  }
+  return encoded;
 }
 
 export function contentBoundUpdateId(stimulus: Stimulus): string {

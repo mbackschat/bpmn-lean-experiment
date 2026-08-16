@@ -3,7 +3,8 @@ import {
   CheckedNodeKind,
   SemanticProfileId,
   SemanticOperationKind,
-  isUserTaskMetadata,
+  isAssignmentFormUserTaskMetadata,
+  isAssignmentOnlyUserTaskMetadata,
   isUserTaskMetadataIdentity,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -20,6 +21,9 @@ import {
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
 import { removeOpaqueXmlRegions } from "./singleton-containment-admission.js";
+import {
+  isSourceOffsetInsideBpmnUserTaskRendering,
+} from "./opaque-rendering-retention.js";
 
 export const userTaskMetadataProfile =
   SemanticProfileId.UserTaskAssignmentFormMetadata;
@@ -27,11 +31,15 @@ export const userTaskMetadataProfile =
 export const parallelUserTaskMetadataProfile =
   SemanticProfileId.ParallelUserTaskAssignmentFormMetadata;
 
+export const structuredHumanWorkProfile =
+  SemanticProfileId.StructuredHumanWork;
+
 /** Selects the profiles that consume the exact assignment/form source extension. */
 export function isUserTaskMetadataProfile(semanticProfile: string): boolean {
   switch (semanticProfile) {
     case userTaskMetadataProfile:
     case parallelUserTaskMetadataProfile:
+    case structuredHumanWorkProfile:
       return true;
     default:
       return false;
@@ -49,7 +57,10 @@ export const camundaBpmnNamespace =
  * `bpmn-moddle`. Namespace rebinding can only make this guard reject earlier than the exact parsed
  * classifier would, never admit discarded content. The selected profile is the only caller.
  */
-export function carriesDuplicateCandidateGroupsAttribute(xml: string): boolean {
+export function carriesDuplicateCandidateGroupsAttribute(
+  xml: string,
+  semanticProfile?: string,
+): boolean {
   const searchableXml = removeOpaqueXmlRegions(xml);
   const candidatePrefixes = new Set<string>();
   for (const declaration of searchableXml.matchAll(
@@ -68,7 +79,13 @@ export function carriesDuplicateCandidateGroupsAttribute(xml: string): boolean {
       candidatePrefixes.add(prefix);
     }
   }
-  for (const openingTag of userTaskOpeningTags(searchableXml)) {
+  for (const { openingTag, offset } of userTaskOpeningTags(searchableXml)) {
+    if (
+      semanticProfile === structuredHumanWorkProfile &&
+      isSourceOffsetInsideBpmnUserTaskRendering(searchableXml, offset)
+    ) {
+      continue;
+    }
     if (countCandidateGroupsAttributes(openingTag, candidatePrefixes) > 1) {
       return true;
     }
@@ -135,8 +152,10 @@ function isXmlCharacter(codePoint: number): boolean {
     (codePoint >= 0x10000 && codePoint <= 0x10ffff);
 }
 
-function userTaskOpeningTags(xml: string): ReadonlyArray<string> {
-  const openingTags: string[] = [];
+function userTaskOpeningTags(
+  xml: string,
+): ReadonlyArray<Readonly<{ openingTag: string; offset: number }>> {
+  const openingTags: Array<Readonly<{ openingTag: string; offset: number }>> = [];
   let cursor = 0;
   while (cursor < xml.length) {
     const start = xml.indexOf("<", cursor);
@@ -149,7 +168,7 @@ function userTaskOpeningTags(xml: string): ReadonlyArray<string> {
     }
     const openingTag = xml.slice(start, end + 1);
     if (/^<(?:[^\s<>/:]+:)?userTask(?=[\s/>])/u.test(openingTag)) {
-      openingTags.push(openingTag);
+      openingTags.push({ openingTag, offset: start });
     }
     cursor = end + 1;
   }
@@ -250,11 +269,29 @@ export type UserTaskMetadataSourceProjection =
 export function readUserTaskMetadataSource(
   element: ElementRecord,
   definitions: ElementRecord,
+  semanticProfile: string,
 ): UserTaskMetadataSourceProjection | undefined {
   const candidate = readCandidateGroup(element, definitions);
   const extensionElements = asElement(element.extensionElements);
   if (candidate === undefined) {
     return undefined;
+  }
+  if (semanticProfile === structuredHumanWorkProfile) {
+    return candidate !== null &&
+        extensionElements === undefined &&
+        isUserTaskMetadataIdentity(candidate) &&
+        !candidate.includes(",") &&
+        !candidate.includes("${") &&
+        !candidate.includes("#{")
+      ? {
+          kind: "present",
+          metadata: {
+            assignment: {
+              candidates: [{ kind: "group", id: candidate }],
+            },
+          },
+        }
+      : undefined;
   }
   if (candidate === null && extensionElements === undefined) {
     return { kind: "absent" };
@@ -410,10 +447,25 @@ export function userTaskMetadataBindingValid(
       return checked.identity.semanticProfile === userTaskMetadataProfile &&
         task.metadata === undefined && wait.task.metadata === undefined;
     }
-    return isUserTaskMetadata(task.metadata) &&
-      isUserTaskMetadata(wait.task.metadata) &&
+    return metadataMatchesSelectedProfile(
+        checked.identity.semanticProfile,
+        task.metadata,
+      ) &&
+      metadataMatchesSelectedProfile(
+        checked.identity.semanticProfile,
+        wait.task.metadata,
+      ) &&
       sameMetadata(task.metadata, wait.task.metadata);
   });
+}
+
+function metadataMatchesSelectedProfile(
+  semanticProfile: string,
+  metadata: UserTaskMetadata,
+): boolean {
+  return semanticProfile === structuredHumanWorkProfile
+    ? isAssignmentOnlyUserTaskMetadata(metadata)
+    : isAssignmentFormUserTaskMetadata(metadata);
 }
 
 function hasExpandedName(
@@ -439,8 +491,16 @@ function sameMetadata(
   left: UserTaskMetadata,
   right: UserTaskMetadata,
 ): boolean {
-  return left.assignment.candidates[0].id ===
-      right.assignment.candidates[0].id &&
-    left.form.fields[0].key === right.form.fields[0].key &&
-    left.form.fields[0].type === right.form.fields[0].type;
+  if (
+    left.assignment.candidates[0].id !==
+      right.assignment.candidates[0].id ||
+    Object.hasOwn(left, "form") !== Object.hasOwn(right, "form")
+  ) {
+    return false;
+  }
+  return isAssignmentFormUserTaskMetadata(left) &&
+      isAssignmentFormUserTaskMetadata(right)
+    ? left.form.fields[0].key === right.form.fields[0].key &&
+      left.form.fields[0].type === right.form.fields[0].type
+    : true;
 }

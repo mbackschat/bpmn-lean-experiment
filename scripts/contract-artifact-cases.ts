@@ -233,6 +233,18 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/configured-task/scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/expense-exception-review/approve.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/expense-exception-review/request-changes.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/expense-exception-review/abort.scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

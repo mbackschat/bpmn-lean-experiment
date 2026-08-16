@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmnLean="urn:bpmn-lean:bpmn:extensions:v1"
+  xmlns:c7="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_StructuredHumanWork"
+  targetNamespace="https://bpmn-lean.local/tests/structured-human-work"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="Process_ExpenseExceptionReview" name="Expense exception review" isExecutable="true">
+    <bpmn:startEvent id="Start_ExpenseException">
+      <bpmn:outgoing>Flow_StartToReview</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="ReviewException" name="Review exception" c7:candidateGroups="reviewers">
+      <bpmn:incoming>Flow_StartToReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewToResolution</bpmn:outgoing>
+      <bpmn:rendering id="ReviewExceptionRendering">
+        <bpmn:extensionElements>
+          <bpmnLean:structuredForm>{"opaque":"test-content"}</bpmnLean:structuredForm>
+        </bpmn:extensionElements>
+      </bpmn:rendering>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Resolution" gatewayDirection="Diverging" default="Flow_Aborted">
+      <bpmn:incoming>Flow_ReviewToResolution</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ChangesRequested</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Aborted</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Approved" name="Approved">
+      <bpmn:incoming>Flow_Approved</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_ChangesRequested" name="Changes requested">
+      <bpmn:incoming>Flow_ChangesRequested</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Aborted" name="Aborted">
+      <bpmn:incoming>Flow_Aborted</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToReview" sourceRef="Start_ExpenseException" targetRef="ReviewException"/>
+    <bpmn:sequenceFlow id="Flow_ReviewToResolution" sourceRef="ReviewException" targetRef="Resolution"/>
+    <bpmn:sequenceFlow id="Flow_Approved" sourceRef="Resolution" targetRef="End_Approved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(resolution,"approved")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ChangesRequested" sourceRef="Resolution" targetRef="End_ChangesRequested">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(resolution,"changes-requested")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Aborted" sourceRef="Resolution" targetRef="End_Aborted"/>
+  </bpmn:process>
+</bpmn:definitions>

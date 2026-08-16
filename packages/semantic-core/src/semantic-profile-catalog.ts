@@ -51,6 +51,8 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
   ParallelUserTaskAssignmentFormMetadata:
     "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
+  StructuredHumanWork:
+    "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
 } as const);
 
 /** Transition alias retained while closure lanes migrate to the registered catalog member. */

@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ValueDomain
+import BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 
 /-! # Semantic profile shape capabilities
 
@@ -173,6 +174,8 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     -- executed partition, so a source carrying retained notation and its notation-free twin
     -- present the same checked graph here.
     some (1, { starts := 1, userTasks := 1, ends := 1 })
+  else if profile = structuredHumanWorkProfileId.value then
+    some (1, { starts := 1, userTasks := 1, choices := 1, ends := 3 })
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
     some (1, { starts := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
@@ -260,6 +263,9 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
       profile = userTaskAssignmentFormMetadataProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 1 })
+  else if profile = structuredHumanWorkProfileId.value then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 1, choices := 1, ends := 3 })
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
@@ -347,9 +353,17 @@ private def checkedUserTaskMetadataValid (profile : ProfileId)
   nodes.all fun
     | .userTask _ _ metadata =>
         if profile = parallelUserTaskMetadataCheckpointProfileId then
-          metadata.isSome && UserTaskMetadata.optionWellFormed metadata
+          match metadata with
+          | some metadata => UserTaskMetadata.assignmentFormWellFormed metadata
+          | none => false
         else if profile = userTaskAssignmentFormMetadataProfileId then
-          UserTaskMetadata.optionWellFormed metadata
+          match metadata with
+          | some metadata => UserTaskMetadata.assignmentFormWellFormed metadata
+          | none => false
+        else if profile = structuredHumanWorkProfileId then
+          match metadata with
+          | some metadata => UserTaskMetadata.assignmentOnlyWellFormed metadata
+          | none => false
         else
           metadata.isNone
     | _ => true
@@ -359,9 +373,17 @@ private def programUserTaskMetadataValid (profile : ProfileId)
   operations.all fun
     | .awaitUserTask _ _ _ _ task =>
         if profile = parallelUserTaskMetadataCheckpointProfileId then
-          task.metadata.isSome && UserTaskMetadata.optionWellFormed task.metadata
+          match task.metadata with
+          | some metadata => UserTaskMetadata.assignmentFormWellFormed metadata
+          | none => false
         else if profile = userTaskAssignmentFormMetadataProfileId then
-          UserTaskMetadata.optionWellFormed task.metadata
+          match task.metadata with
+          | some metadata => UserTaskMetadata.assignmentFormWellFormed metadata
+          | none => false
+        else if profile = structuredHumanWorkProfileId then
+          match task.metadata with
+          | some metadata => UserTaskMetadata.assignmentOnlyWellFormed metadata
+          | none => false
         else
           task.metadata.isNone
     | _ => true
@@ -514,6 +536,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
         nodeCardinalities source.nodes = shape &&
         checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
         checkedParallelTopologyValid source &&
+        structuredHumanWorkCheckedTopologyValid source &&
         configuredTaskCheckedPayloadValid source
   | none => false
 
@@ -562,6 +585,7 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
         programUserTaskMetadataValid program.identity.semanticProfile
           program.operations &&
         programParallelTopologyValid program &&
+        structuredHumanWorkProgramTopologyValid program &&
         operationPayloadCapabilitiesValid
           program.identity.semanticProfile.value program.operations
   | none => false

@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # Semantic Process value-domain admission
 
@@ -21,6 +21,10 @@ def userTaskAssignmentFormMetadataProfileId : ProfileId :=
 def parallelUserTaskMetadataCheckpointProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft"⟩
 
+/-- Runtime-frozen identity for the owner-approved structured Human Work profile. -/
+def structuredHumanWorkProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-bpmn-lean-structured-human-work-draft"⟩
+
 /-- External Process-data surfaces whose admitted value domains differ in the selected checkpoint. -/
 inductive ProcessDataIngress where
   | processStart
@@ -39,7 +43,13 @@ def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress) :
       surface = .userTaskCompletion &&
         (profile = booleanProcessDataCheckpointProfileId ||
           profile = userTaskAssignmentFormMetadataProfileId ||
-          profile = parallelUserTaskMetadataCheckpointProfileId)
+          profile = parallelUserTaskMetadataCheckpointProfileId ||
+          profile = structuredHumanWorkProfileId)
+  | value@(.integer _)
+  | value@(.stringList _) =>
+      profile = structuredHumanWorkProfileId &&
+        surface = .userTaskCompletion &&
+        BpmnSemantics.SemanticProcessJson.variableValueWellFormed value
 
 /-- A submitted patch is admitted only when every value belongs to the exact surface/profile domain. -/
 def processDataBindingsAdmitted (profile : ProfileId)

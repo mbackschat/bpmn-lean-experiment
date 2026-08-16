@@ -16,7 +16,8 @@ import {
   EffectProtocol,
 } from "./semantic-value-contract.js";
 import {
-  hasExactOptionalUserTaskMetadata,
+  isAssignmentFormUserTaskMetadata,
+  isAssignmentOnlyUserTaskMetadata,
 } from "./user-task-metadata.js";
 
 export {
@@ -55,6 +56,8 @@ function profileAllowsProgramOperationDetails(
     case SemanticProfileId.UserTaskAssignmentFormMetadata:
     case SemanticProfileId.ParallelUserTaskAssignmentFormMetadata:
       return true;
+    case SemanticProfileId.StructuredHumanWork:
+      return hasExactStructuredHumanWorkProgram(operations);
     case SemanticProfileId.TimerStart:
       return operations.every(
         (operation) =>
@@ -139,12 +142,50 @@ function userTaskMetadataMatchesProfileSelection(
   switch (semanticProfile) {
     case SemanticProfileId.ParallelUserTaskAssignmentFormMetadata:
       return Object.hasOwn(task, "metadata") &&
-        hasExactOptionalUserTaskMetadata(task);
+        isAssignmentFormUserTaskMetadata(task.metadata);
     case SemanticProfileId.UserTaskAssignmentFormMetadata:
-      return hasExactOptionalUserTaskMetadata(task);
+      return Object.hasOwn(task, "metadata") &&
+        isAssignmentFormUserTaskMetadata(task.metadata);
+    case SemanticProfileId.StructuredHumanWork:
+      return Object.hasOwn(task, "metadata") &&
+        isAssignmentOnlyUserTaskMetadata(task.metadata);
     default:
       return !Object.hasOwn(task, "metadata");
   }
+}
+
+function hasExactStructuredHumanWorkProgram(
+  operations: ReadonlyArray<SemanticOperation>,
+): boolean {
+  const initiate = operations.find(
+    ({ kind }) => kind === SemanticOperationKind.Initiate,
+  );
+  const task = operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitUserTask,
+  );
+  const choose = operations.find(
+    ({ kind }) => kind === SemanticOperationKind.Choose,
+  );
+  const ends = operations.filter(
+    ({ kind }) => kind === SemanticOperationKind.ReachNoneEnd,
+  );
+  if (
+    initiate?.kind !== SemanticOperationKind.Initiate ||
+    task?.kind !== SemanticOperationKind.AwaitUserTask ||
+    choose?.kind !== SemanticOperationKind.Choose ||
+    ends.length !== 3
+  ) {
+    return false;
+  }
+  const endInputs = new Set(ends.map((end) =>
+    end.kind === SemanticOperationKind.ReachNoneEnd ? end.input : ""
+  ));
+  return initiate.output === task.input &&
+    task.output === choose.input &&
+    choose.candidates.length === 2 &&
+    endInputs.size === 3 &&
+    choose.candidates.every(({ output }) => endInputs.has(output)) &&
+    endInputs.has(choose.defaultOutput);
 }
 
 function hasProbeEffectDescriptor(

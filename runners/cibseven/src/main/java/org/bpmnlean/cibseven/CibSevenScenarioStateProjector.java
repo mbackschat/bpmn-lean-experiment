@@ -11,7 +11,6 @@ import org.bpmnlean.cibseven.CibStateQueryEvidence.MessageSubscriptionSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
 import org.bpmnlean.cibseven.CibSevenIncidentProtocol.IncidentJobSnapshot;
 import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
-import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioInteractionProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectJobSnapshot;
@@ -24,8 +23,6 @@ import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TaskQueryTask;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TimerJob;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TimerJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerOccurrenceId;
-import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
-import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
@@ -271,30 +268,11 @@ final class CibSevenScenarioStateProjector {
   private ProcessVariableSnapshot observeProcessVariable(
       String name,
       Object value) {
-    if (value == null) {
-      return new ProcessVariableSnapshot(name, null);
-    }
-    if (value instanceof String stringValue) {
-      return new ProcessVariableSnapshot(name, stringValue);
-    }
-    if (value instanceof Boolean booleanValue) {
-      return new ProcessVariableSnapshot(name, booleanValue);
-    }
-    throw new IllegalStateException(
-        "Canonical Process variable must be string, Boolean, or null: " + name);
+    return new ProcessVariableSnapshot(name, value);
   }
 
   private VariableBinding projectVariable(ProcessVariableSnapshot variable) {
-    var value =
-        switch (variable.value()) {
-          case null -> new NullValue();
-          case String stringValue -> new StringValue(stringValue);
-          case Boolean booleanValue -> new BooleanValue(booleanValue);
-          default ->
-              throw new IllegalStateException(
-                  "Unsupported retained Process variable " + variable.name());
-        };
-    return new VariableBinding(variable.name(), value);
+    return ScenarioVariableValueProjection.project(variable);
   }
 
   CleanupProjection observeCleanup() {

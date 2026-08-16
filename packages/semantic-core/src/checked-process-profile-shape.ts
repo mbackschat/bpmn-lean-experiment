@@ -25,6 +25,15 @@ export function requiredCheckedProcessShape(
     case SemanticProfileId.UserTaskBooleanCompletionData:
     case SemanticProfileId.UserTaskAssignmentFormMetadata:
       return rootChecked([start, CheckedNodeKind.UserTask, end]);
+    case SemanticProfileId.StructuredHumanWork:
+      return rootChecked([
+        start,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.ExclusiveGateway,
+        end,
+        end,
+        end,
+      ]);
     case SemanticProfileId.MessageStart:
       return rootChecked([
         CheckedNodeKind.MessageStartEvent,

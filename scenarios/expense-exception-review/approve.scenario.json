@@ -1,0 +1,110 @@
+{
+  "kind": "scenario",
+  "id": "expense-exception-review-approve",
+  "profile": "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+  "bpmn": {
+    "id": "expense-exception-review",
+    "relativePath": "scenarios/expense-exception-review/process.bpmn",
+    "sha256": "a904b67218ae2a72e4e48ae93a6a14350ac55b1ca5f63e5ddcb55e3c1c8c734e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-expense-exception-review",
+      "processId": "Process_ExpenseExceptionReview",
+      "instanceId": "ExpenseExceptionApprove_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-expense-exception-approve",
+      "taskId": {
+        "processInstanceId": "ExpenseExceptionApprove_1",
+        "elementId": "ReviewException",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "approvedAmount",
+          "value": {
+            "kind": "integer",
+            "value": 4250
+          }
+        },
+        {
+          "name": "costCenter",
+          "value": {
+            "kind": "string",
+            "value": "engineering"
+          }
+        },
+        {
+          "name": "expenseDate",
+          "value": {
+            "kind": "string",
+            "value": "2026-08-16"
+          }
+        },
+        {
+          "name": "notifySubmitter",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "requestReference",
+          "value": {
+            "kind": "string",
+            "value": "EXP-2026-0042"
+          }
+        },
+        {
+          "name": "resolution",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        },
+        {
+          "name": "riskFlags",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "policy",
+              "receipt",
+              "policy"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.4.1",
+      "BPMN 2.0.2 Table 10.13",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.2",
+      "BPMN 2.0.2 Table 13.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/TaskService.java#getIdentityLinksForTask(String)",
+      "engine/src/main/java/org/cibseven/bpm/engine/FormService.java#getTaskFormData(String)"
+    ]
+  }
+}

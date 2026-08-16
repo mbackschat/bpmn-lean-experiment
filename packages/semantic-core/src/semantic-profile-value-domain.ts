@@ -7,6 +7,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import { isVariableBinding } from "./variable-value.js";
 
 export enum VariableWriteSurface {
   ProcessStart = "processStart",
@@ -20,6 +21,9 @@ export function profileAllowsVariableBindings(
   surface: VariableWriteSurface,
   bindings: ReadonlyArray<VariableBinding>,
 ): boolean {
+  if (!bindings.every(isVariableBinding)) {
+    return false;
+  }
   if (
     semanticProfile ===
       SemanticProfileId.ParallelUserTaskAssignmentFormMetadata &&
@@ -35,11 +39,16 @@ export function profileAllowsVariableBindings(
           semanticProfile ===
             SemanticProfileId.UserTaskAssignmentFormMetadata ||
           semanticProfile ===
-            SemanticProfileId.ParallelUserTaskAssignmentFormMetadata) &&
+            SemanticProfileId.ParallelUserTaskAssignmentFormMetadata ||
+          semanticProfile === SemanticProfileId.StructuredHumanWork) &&
           surface === VariableWriteSurface.UserTaskCompletion;
       case VariableValueKind.String:
       case VariableValueKind.Null:
         return true;
+      case VariableValueKind.Integer:
+      case VariableValueKind.StringList:
+        return semanticProfile === SemanticProfileId.StructuredHumanWork &&
+          surface === VariableWriteSurface.UserTaskCompletion;
       default:
         return false;
     }

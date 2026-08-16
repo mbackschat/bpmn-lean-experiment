@@ -7,10 +7,7 @@ import java.util.List;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.ProcessVariableSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.HistoricProcessStateSnapshot;
-import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
-import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
-import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.history.HistoricProcessInstance;
@@ -180,16 +177,7 @@ final class CibSevenProcessTerminationProjector {
   }
 
   private static VariableBinding projectVariable(ProcessVariableSnapshot variable) {
-    var value =
-        switch (variable.value()) {
-          case null -> new NullValue();
-          case String stringValue -> new StringValue(stringValue);
-          case Boolean booleanValue -> new BooleanValue(booleanValue);
-          default ->
-              throw new IllegalStateException(
-                  "Unsupported retained Process variable " + variable.name());
-        };
-    return new VariableBinding(variable.name(), value);
+    return ScenarioVariableValueProjection.project(variable);
   }
 
   record TerminatedProcessProjection(

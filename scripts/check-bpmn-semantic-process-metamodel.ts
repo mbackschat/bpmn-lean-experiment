@@ -32,6 +32,8 @@ type MetamodelManifest = Readonly<{
   coverage: Readonly<{ status: string }>;
   compilerProjection: Readonly<{
     terminateEventDefinitionType: string;
+    userTaskType: string;
+    renderingType: string;
   }>;
   classes: ReadonlyArray<ClassFact>;
   properties: ReadonlyArray<PropertyFact>;
@@ -177,6 +179,22 @@ function decodeMetamodelManifest(text: string): MetamodelManifest {
         "terminateEventDefinitionType",
         "manifest.compilerProjection",
       ),
+      userTaskType: requiredMember(
+        requireRecord(
+          record["compilerProjection"],
+          "manifest.compilerProjection",
+        ),
+        "userTaskType",
+        "manifest.compilerProjection",
+      ),
+      renderingType: requiredMember(
+        requireRecord(
+          record["compilerProjection"],
+          "manifest.compilerProjection",
+        ),
+        "renderingType",
+        "manifest.compilerProjection",
+      ),
     },
     classes: requireArray(record["classes"], "manifest.classes").map(
       (entry, index) => decodeClassFact(entry, `manifest.classes[${index}]`),
@@ -261,6 +279,26 @@ assert.equal(
   manifest.compilerProjection.terminateEventDefinitionType,
   `bpmn:${terminateEventDefinitionFacts[0]?.name}`,
   "the compiler Terminate Event Definition type must derive from the calibrated CMOF class",
+);
+
+const renderingFacts = manifest.classes.filter(
+  ({ name }) => name === "Rendering",
+);
+assert.equal(renderingFacts.length, 1);
+assert.equal(manifest.compilerProjection.renderingType, "bpmn:Rendering");
+assert.equal(manifest.compilerProjection.userTaskType, "bpmn:UserTask");
+assert.deepEqual(
+  manifest.properties.filter(
+    ({ owner, name }) => owner === "UserTask" && name === "renderings",
+  ),
+  [{
+    owner: "UserTask",
+    name: "renderings",
+    type: "Rendering",
+    lower: 0,
+    upper: "*",
+    containment: true,
+  }],
 );
 
 const extensionElementsFacts = manifest.properties.filter(

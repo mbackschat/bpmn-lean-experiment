@@ -1,0 +1,58 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/expense-exception-review/process.bpmn",
+    "sourceId": "expense-exception-review",
+    "semanticProfile": "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_structured_human_work_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "ReviewException",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "approvedAmount",
+          "value": {
+            "kind": "integer",
+            "value": 4250
+          }
+        },
+        {
+          "name": "resolution",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        },
+        {
+          "name": "riskFlags",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "policy",
+              "receipt",
+              "policy"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

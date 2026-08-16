@@ -6,7 +6,7 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   StimulusKind,
-  VariableValueKind,
+  cloneVariableBinding,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -78,17 +78,11 @@ export type EngineWorkDetailRequest = EngineOpenWorkRequest & Readonly<{
   inputVariableNames: readonly string[];
 }>;
 
-export type EngineWorkCompletionStimulus = Readonly<{
+export type EngineWorkCompletionStimulus = Omit<
+  CompleteUserTaskInstanceStimulus,
+  "kind"
+> & Readonly<{
   kind: "completeUserTaskInstance";
-  commandId: string;
-  taskId: UserTaskInstanceId;
-  submittedValues: readonly Readonly<{
-    name: string;
-    value:
-      | Readonly<{ kind: "null" }>
-      | Readonly<{ kind: "string"; value: string }>
-      | Readonly<{ kind: "boolean"; value: boolean }>;
-  }>[];
 }>;
 
 export type EngineCompleteWorkRequest = EngineOpenWorkRequest & Readonly<{
@@ -204,29 +198,4 @@ function cloneTaskId(taskId: UserTaskInstanceId): UserTaskInstanceId {
     elementId: taskId.elementId,
     activation: taskId.activation,
   };
-}
-
-function cloneVariableBinding(
-  binding: EngineWorkCompletionStimulus["submittedValues"][number],
-): CompleteUserTaskInstanceStimulus["submittedValues"][number] {
-  switch (binding.value.kind) {
-    case "null":
-      return { name: binding.name, value: { kind: VariableValueKind.Null } };
-    case "boolean":
-      return {
-        name: binding.name,
-        value: {
-          kind: VariableValueKind.Boolean,
-          value: binding.value.value,
-        },
-      };
-    case "string":
-      return {
-        name: binding.name,
-        value: {
-          kind: VariableValueKind.String,
-          value: binding.value.value,
-        },
-      };
-  }
 }

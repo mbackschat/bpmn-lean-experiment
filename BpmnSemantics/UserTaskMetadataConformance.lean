@@ -21,7 +21,8 @@ def exactMetadata : UserTaskMetadata :=
   { assignment :=
       { candidates := [{ kind := .group, id := "reviewers" }] }
     form :=
-      { fields := [{ key := "approved", type := .boolean }] } }
+      some ({ fields := [{ key := "approved", type := .boolean }] } :
+        UserTaskFormMetadata) }
 
 def changedCandidateMetadata : UserTaskMetadata :=
   { exactMetadata with
@@ -30,11 +31,13 @@ def changedCandidateMetadata : UserTaskMetadata :=
 
 def changedFieldKeyMetadata : UserTaskMetadata :=
   { exactMetadata with
-    form := { fields := [{ key := "decision", type := .boolean }] } }
+    form := some ({ fields := [{ key := "decision", type := .boolean }] } :
+      UserTaskFormMetadata) }
 
 def changedFieldTypeMetadata : UserTaskMetadata :=
   { exactMetadata with
-    form := { fields := [{ key := "approved", type := .string }] } }
+    form := some ({ fields := [{ key := "approved", type := .string }] } :
+      UserTaskFormMetadata) }
 
 def metadataCheckedTask (metadata : UserTaskMetadata) : CheckedNode :=
   .userTask ⟨"UserTask_Approve"⟩ (some "Approve") (some metadata)
@@ -159,11 +162,14 @@ theorem strict_metadata_shape_rejects_broader_values :
       UserTaskMetadata.candidateIdWellFormed "a,b" = false ∧
       UserTaskMetadata.candidateIdWellFormed "${group}" = false ∧
       UserTaskMetadata.candidateIdWellFormed "#{group}" = false ∧
-      ({ exactMetadata with form := { fields := [] }} : UserTaskMetadata).wellFormed = false ∧
       ({ exactMetadata with form :=
-          { fields :=
+          (some ({ fields := [] } : UserTaskFormMetadata)) } :
+        UserTaskMetadata).wellFormed = false ∧
+      ({ exactMetadata with form :=
+          (some ({ fields :=
               [{ key := "a", type := .string },
-                { key := "b", type := .boolean }] }} :
+                { key := "b", type := .boolean }] } :
+            UserTaskFormMetadata)) } :
         UserTaskMetadata).wellFormed = false := by
   decide +kernel
 

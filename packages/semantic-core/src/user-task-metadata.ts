@@ -1,15 +1,28 @@
 import type { DeepReadonly } from "./deep-readonly.js";
 import { isWellFormedWireString } from "./wire.js";
 
-/** Passive assignment and form facts carried without vendor vocabulary or task authorization. */
-export type UserTaskMetadata = DeepReadonly<{
-  assignment: {
-    candidates: [{ kind: "group"; id: string }];
-  };
+export type UserTaskAssignment = DeepReadonly<{
+  candidates: [{ kind: "group"; id: string }];
+}>;
+
+/** Assignment-only metadata is wire-distinct from the legacy form-bearing arm. */
+export type UserTaskAssignmentOnlyMetadata = DeepReadonly<{
+  assignment: UserTaskAssignment;
+  form?: never;
+}>;
+
+/** Legacy passive assignment and form facts retained byte-for-byte for existing profiles. */
+export type UserTaskAssignmentFormMetadata = DeepReadonly<{
+  assignment: UserTaskAssignment;
   form: {
     fields: [{ key: string; type: "string" | "boolean" }];
   };
 }>;
+
+/** Closed metadata union. Assignment-only is selected only by the M6 profile. */
+export type UserTaskMetadata =
+  | UserTaskAssignmentOnlyMetadata
+  | UserTaskAssignmentFormMetadata;
 
 /** Checks the profile's exact nonempty scalar and boundary-space identity contract. */
 export function isUserTaskMetadataIdentity(value: unknown): value is string {
@@ -31,19 +44,27 @@ export function isUserTaskMetadataCandidateId(
     !value.includes("#{");
 }
 
-/** Checks one complete neutral assignment and form metadata block. */
+/** Checks one complete neutral metadata block from the closed union. */
 export function isUserTaskMetadata(value: unknown): value is UserTaskMetadata {
+  return isAssignmentOnlyUserTaskMetadata(value) ||
+    isAssignmentFormUserTaskMetadata(value);
+}
+
+export function isAssignmentOnlyUserTaskMetadata(
+  value: unknown,
+): value is UserTaskAssignmentOnlyMetadata {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["assignment"]) &&
+    isUserTaskAssignment(value.assignment);
+}
+
+export function isAssignmentFormUserTaskMetadata(
+  value: unknown,
+): value is UserTaskAssignmentFormMetadata {
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, ["assignment", "form"]) ||
-    !isRecord(value.assignment) ||
-    !hasOnlyKeys(value.assignment, ["candidates"]) ||
-    !Array.isArray(value.assignment.candidates) ||
-    value.assignment.candidates.length !== 1 ||
-    !isRecord(value.assignment.candidates[0]) ||
-    !hasOnlyKeys(value.assignment.candidates[0], ["kind", "id"]) ||
-    value.assignment.candidates[0].kind !== "group" ||
-    !isUserTaskMetadataCandidateId(value.assignment.candidates[0].id) ||
+    !isUserTaskAssignment(value.assignment) ||
     !isRecord(value.form) ||
     !hasOnlyKeys(value.form, ["fields"]) ||
     !Array.isArray(value.form.fields) ||
@@ -61,6 +82,17 @@ export function isUserTaskMetadata(value: unknown): value is UserTaskMetadata {
     default:
       return false;
   }
+}
+
+function isUserTaskAssignment(value: unknown): boolean {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["candidates"]) &&
+    Array.isArray(value.candidates) &&
+    value.candidates.length === 1 &&
+    isRecord(value.candidates[0]) &&
+    hasOnlyKeys(value.candidates[0], ["kind", "id"]) &&
+    value.candidates[0].kind === "group" &&
+    isUserTaskMetadataCandidateId(value.candidates[0].id);
 }
 
 /** Distinguishes physical omission from an explicit invalid null or undefined property. */

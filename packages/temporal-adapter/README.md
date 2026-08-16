@@ -38,6 +38,7 @@ Run the focused adapter gate with:
 - [Temporal execution research](../../docs/research/TEMPORAL-EXECUTION-RESEARCH.md) records the source-grounded hosting analysis.
 - [Temporal test evidence map](../../docs/TEMPORAL-TEST-EVIDENCE-MAP.md) maps exact witnesses and mutations to the focused gate.
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the closure-reviewed two-order replacement, stale-refusal, replay, and Query-mutation witness.
+- [Structured Human Work proposal](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the M6 typed-value transport, content identity, replacement, conflict, history, and replay boundary.
 - [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records current hosting and replay evidence without turning Event History into BPMN state.
 
 The rejection demonstration `./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/unsupported.json` performs source admission without connecting to Temporal. The optional time-skipping lane is `./scripts/pnpm.sh run test:timer-time-skipping`.

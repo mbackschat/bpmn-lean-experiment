@@ -144,7 +144,13 @@ export function projectCheckedNodes(
           return undefined;
         }
         return isUserTaskMetadataProfile(semanticProfile)
-          ? projectUserTaskMetadata(element, definitions, id, name)
+          ? projectUserTaskMetadata(
+              element,
+              definitions,
+              id,
+              name,
+              semanticProfile,
+            )
           : isPlainFlowNode(element)
             ? { kind: CheckedNodeKind.UserTask, id, name }
             : undefined;
@@ -212,8 +218,13 @@ function projectUserTaskMetadata(
   definitions: ElementRecord,
   id: string,
   name: string | null,
+  semanticProfile: string,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.UserTask }> | undefined {
-  const projection = readUserTaskMetadataSource(element, definitions);
+  const projection = readUserTaskMetadataSource(
+    element,
+    definitions,
+    semanticProfile,
+  );
   if (
     projection === undefined ||
     !hasOnlyProjectedFlowElementKeys(

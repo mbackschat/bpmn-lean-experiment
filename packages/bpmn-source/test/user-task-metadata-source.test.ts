@@ -15,6 +15,10 @@ import type { AcceptedBpmnCompilation } from "@bpmn-lean/bpmn-source";
 import {
   BoundaryInterruption,
   SemanticProfileId,
+  isAssignmentFormUserTaskMetadata,
+} from "@bpmn-lean/semantic-core";
+import type {
+  UserTaskAssignmentFormMetadata,
 } from "@bpmn-lean/semantic-core";
 
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
@@ -129,10 +133,10 @@ test("rejects every checked-to-IL User Task metadata binding drift", async () =>
       requireWait(value).task.metadata!.assignment.candidates[0].id = "other";
     }],
     ["field key", (value: MutableArtifacts) => {
-      requireWait(value).task.metadata!.form.fields[0].key = "other";
+      requireFormMetadata(value).form.fields[0].key = "other";
     }],
     ["field type", (value: MutableArtifacts) => {
-      requireWait(value).task.metadata!.form.fields[0].type = "string";
+      requireFormMetadata(value).form.fields[0].type = "string";
     }],
     ["omission", (value: MutableArtifacts) => {
       delete requireWait(value).task.metadata;
@@ -497,7 +501,7 @@ test("preserves metadata-free old-profile checked and IL shapes", async () => {
   assert.deepEqual(Object.keys(operation.task), ["elementId", "name"]);
 });
 
-test("admits a metadata-free User Task under the metadata profile with physical omission", async () => {
+test("rejects a metadata-free User Task under the metadata profile", async () => {
   const source = (await readFile(fixtureUrl, "utf8"))
     .replace(' c7:candidateGroups="reviewers"', "")
     .replace(
@@ -505,19 +509,7 @@ test("admits a metadata-free User Task under the metadata profile with physical 
       "",
     );
   const result = await compile(source, profile);
-  assert.equal(result.status, BpmnCompilationStatus.Accepted);
-  if (result.status !== BpmnCompilationStatus.Accepted) {
-    return;
-  }
-  const checked = result.checkedProcess.nodes.find(
-    ({ kind }) => kind === CheckedNodeKind.UserTask,
-  );
-  const operation = result.semanticProcess.operations.find(
-    ({ kind }) => kind === SemanticOperationKind.AwaitUserTask,
-  );
-  assert.equal(Object.hasOwn(checked ?? {}, "metadata"), false);
-  assert.ok(operation?.kind === SemanticOperationKind.AwaitUserTask);
-  assert.equal(Object.hasOwn(operation.task, "metadata"), false);
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
 });
 
 async function acceptedFixture() {
@@ -560,4 +552,14 @@ function requireWait(value: MutableArtifacts) {
     throw new TypeError("Await User Task operation is missing");
   }
   return operation;
+}
+
+function requireFormMetadata(
+  value: MutableArtifacts,
+): DeepMutable<UserTaskAssignmentFormMetadata> {
+  const metadata = requireWait(value).task.metadata;
+  if (!isAssignmentFormUserTaskMetadata(metadata)) {
+    throw new TypeError("Assignment/form metadata is missing");
+  }
+  return metadata as DeepMutable<UserTaskAssignmentFormMetadata>;
 }

@@ -8,6 +8,7 @@ import type { VariableMapping } from "./semantic-value-contract.js";
 import {
   compareCanonicalStrings,
 } from "./wire.js";
+import { cloneVariableBinding } from "./variable-value.js";
 import {
   sameOccurrence,
 } from "./semantic-process-state.js";
@@ -190,7 +191,7 @@ export function mergeProcessVariableBindings(
   const replacedNames = new Set(replacements.map(({ name }) => name));
   return [
     ...existing.filter(({ name }) => !replacedNames.has(name)),
-    ...replacements,
+    ...replacements.map(cloneVariableBinding),
   ].sort(compareBindings);
 }
 

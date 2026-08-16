@@ -4,9 +4,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
-import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
-import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 
 /** Validates and projects the scenario protocol's closed canonical variable-binding lists. */
@@ -26,19 +23,15 @@ final class ScenarioVariableBindings {
             fieldName + " names must be unique and canonically ordered");
       }
     }
+    ScenarioVariableValueProjection.requirePatchSize(immutable, fieldName);
     return immutable;
   }
 
   static Map<String, Object> toEngineMap(Iterable<VariableBinding> bindings) {
     var variables = new LinkedHashMap<String, Object>();
     for (var binding : bindings) {
-      Object value =
-          switch (binding.value()) {
-            case StringValue stringValue -> stringValue.value();
-            case BooleanValue booleanValue -> booleanValue.value();
-            case NullValue ignored -> null;
-          };
-      variables.put(binding.name(), value);
+      variables.put(
+          binding.name(), ScenarioVariableValueProjection.toEngineValue(binding.value()));
     }
     return variables;
   }

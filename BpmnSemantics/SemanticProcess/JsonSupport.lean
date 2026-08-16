@@ -103,21 +103,26 @@ private def decodeUserTaskFormField (json : Json) :
     | value => throw s!"unsupported User Task field type {value}"
   pure { key := ← stringField json "key", type := fieldType }
 
-/-- Strictly decode the exact neutral singleton metadata contract and its literal-domain predicate. -/
+/-- Strictly decode the closed assignment-only or legacy assignment-plus-form metadata union. -/
 def decodeUserTaskMetadata (json : Json) : Except String UserTaskMetadata := do
-  requireObjectShape json ["assignment", "form"]
   let assignment ← field json "assignment"
   requireObjectShape assignment ["candidates"]
-  let form ← field json "form"
-  requireObjectShape form ["fields"]
+  let form ← match ← optionalField json "form" with
+    | none =>
+        requireObjectShape json ["assignment"]
+        pure none
+    | some form =>
+        requireObjectShape json ["assignment", "form"]
+        requireObjectShape form ["fields"]
+        pure (some
+          { fields :=
+              ← decodeArray decodeUserTaskFormField (← field form "fields") })
   let metadata : UserTaskMetadata :=
     { assignment :=
         { candidates :=
             ← decodeArray decodeUserTaskCandidate
               (← field assignment "candidates") }
-      form :=
-        { fields :=
-            ← decodeArray decodeUserTaskFormField (← field form "fields") } }
+      form }
   if metadata.wellFormed then pure metadata
   else throw "User Task metadata is not well formed"
 
@@ -143,17 +148,22 @@ private def userTaskFormFieldJson (field : UserTaskFormField) : Json :=
     [ ("key", toJson field.key)
     , ("type", toJson type) ]
 
-/-- Canonically encode the exact neutral metadata shape without optional-field policy. -/
+/-- Canonically encode either exact neutral metadata arm, physically omitting an absent form block. -/
 def encodeUserTaskMetadata (metadata : UserTaskMetadata) : Json :=
-  Json.mkObj
-    [ ("assignment",
-        Json.mkObj
-          [("candidates",
-            .arr (metadata.assignment.candidates.map userTaskCandidateJson).toArray)])
-    , ("form",
-        Json.mkObj
-          [("fields",
-            .arr (metadata.form.fields.map userTaskFormFieldJson).toArray)]) ]
+  let assignment :=
+    ("assignment",
+      Json.mkObj
+        [("candidates",
+          .arr (metadata.assignment.candidates.map userTaskCandidateJson).toArray)])
+  match metadata.form with
+  | none => Json.mkObj [assignment]
+  | some form =>
+      Json.mkObj
+        [ assignment
+        , ("form",
+            Json.mkObj
+              [("fields",
+                .arr (form.fields.map userTaskFormFieldJson).toArray)]) ]
 
 def decodeSourceOverlayIdentity : Json →
     Except String (Option SourceOverlayIdentity)
@@ -217,21 +227,7 @@ def decodeOperationMessageChannel (json : Json) :
   | .operationMessage .. => pure channel
   | .directMessage .. => throw "operation-addressed Message channel expected"
 
-def decodeVariableValue (json : Json) :
-    Except String VariableValue := do
-  match ← stringField json "kind" with
-  | "string" =>
-      requireObjectShape json ["kind", "value"]
-      pure (.string (← stringField json "value"))
-  | "boolean" =>
-      requireObjectShape json ["kind", "value"]
-      pure (.boolean (← (← field json "value").getBool?))
-  | "null" =>
-      requireObjectShape json ["kind"]
-      pure .null
-  | kind => throw s!"unsupported variable value {kind}"
-
-/-- Encode one typed variable value without collapsing Boolean, String, and null identities. -/
+/-- Encode one typed variable value without collapsing any generic value identity. -/
 def encodeVariableValue : VariableValue → Json
   | .string value =>
       Json.mkObj
@@ -241,8 +237,49 @@ def encodeVariableValue : VariableValue → Json
       Json.mkObj
         [ ("kind", toJson "boolean")
         , ("value", toJson value) ]
+  | .integer value =>
+      Json.mkObj
+        [ ("kind", toJson "integer")
+        , ("value", toJson value) ]
+  | .stringList value =>
+      Json.mkObj
+        [ ("kind", toJson "stringList")
+        , ("value", toJson value) ]
   | .null =>
       Json.mkObj [("kind", toJson "null")]
+
+/-- Exact structural and canonical-byte bounds for the two M6 generic value arms. -/
+def variableValueWellFormed : VariableValue → Bool
+  | .integer value => isSafeWireNat value
+  | .stringList values =>
+      values.length ≤ 32 &&
+        values.all (fun value => value.toUTF8.size ≤ 1024) &&
+        (encodeVariableValue (.stringList values)).compress.toUTF8.size ≤ 16384
+  | .string _
+  | .boolean _
+  | .null => true
+
+def decodeVariableValue (json : Json) :
+    Except String VariableValue := do
+  let value ← match ← stringField json "kind" with
+    | "string" =>
+        requireObjectShape json ["kind", "value"]
+        pure (.string (← stringField json "value"))
+    | "boolean" =>
+        requireObjectShape json ["kind", "value"]
+        pure (.boolean (← (← field json "value").getBool?))
+    | "integer" =>
+        requireObjectShape json ["kind", "value"]
+        pure (.integer (← decodeSafeNat (← field json "value")))
+    | "stringList" =>
+        requireObjectShape json ["kind", "value"]
+        pure (.stringList (← decodeArray Json.getStr? (← field json "value")))
+    | "null" =>
+        requireObjectShape json ["kind"]
+        pure .null
+    | kind => throw s!"unsupported variable value {kind}"
+  if variableValueWellFormed value then pure value
+  else throw "variable value exceeds its structural or canonical-byte limit"
 
 def decodeVariableBinding (json : Json) :
     Except String VariableBinding := do

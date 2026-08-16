@@ -24,6 +24,8 @@ The [User Task assignment and form metadata scenario](user-task-assignment-form-
 
 The [parallel User Task metadata composition scenarios](parallel-user-task-metadata-composition/README.md) use one independently authored balanced content-and-risk review model and exercise both task-completion orders. Both targets remain answer-free and retain their CIB evidence separately.
 
+The [expense exception review scenarios](expense-exception-review/README.md) add bounded non-negative integer and ordered String-list completion data, assignment-only passive metadata, opaque Rendering, and three existing String-equality gateway outcomes. They remain answer-free standards-profile Lean, TypeScript, differential, and Temporal targets with no retained CIB terminal result.
+
 Document shape is owned by the current [shared wire contracts](../contracts/README.md); semantic meaning is owned by the selected profile and capsule. Because the project is pre-release, a contract change replaces all scenario producers and consumers atomically instead of preserving parallel prototype formats.
 
 A scenario must have the same meaning for every target its profile declares. It must not expose CIB database entities, Lean constructors, Temporal histories, future commands as current capabilities, or other host internals. A standards-only scenario does not acquire a CIB target merely because its provenance links a separate CIB calibration.

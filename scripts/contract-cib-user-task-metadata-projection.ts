@@ -1,5 +1,6 @@
 /** Projects raw CIB Task/Form Service observations into neutral task metadata. */
 import type {
+  UserTaskAssignment,
   UserTaskMetadata,
 } from "../packages/semantic-core/src/index.ts";
 import type {
@@ -11,6 +12,8 @@ export const userTaskMetadataProfileId =
   "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
 export const parallelUserTaskMetadataProfileId =
   "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
+export const structuredHumanWorkProfileId =
+  "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
 
 function isUserTaskMetadataProfileId(profileId: string): boolean {
   return profileId === userTaskMetadataProfileId ||
@@ -23,7 +26,8 @@ export function projectCibUserTaskMetadata(
 ): UserTaskMetadata | undefined {
   const hasIdentityLinks = Object.hasOwn(task, "identityLinks");
   const hasFormFields = Object.hasOwn(task, "formFields");
-  if (!isUserTaskMetadataProfileId(profileId)) {
+  const assignmentOnly = profileId === structuredHumanWorkProfileId;
+  if (!isUserTaskMetadataProfileId(profileId) && !assignmentOnly) {
     if (hasIdentityLinks || hasFormFields) {
       throw new Error("old profile must omit raw User Task metadata");
     }
@@ -33,10 +37,12 @@ export function projectCibUserTaskMetadata(
     !hasIdentityLinks ||
     !hasFormFields ||
     task.identityLinks?.length !== 1 ||
-    task.formFields?.length !== 1
+    task.formFields?.length !== (assignmentOnly ? 0 : 1)
   ) {
     throw new Error(
-      "metadata profile requires exactly one identity link and one form field",
+      assignmentOnly
+        ? "structured Human Work profile requires one identity link and zero form fields"
+        : "metadata profile requires exactly one identity link and one form field",
     );
   }
   const identityLink = task.identityLinks[0];
@@ -47,6 +53,12 @@ export function projectCibUserTaskMetadata(
     !isMetadataCandidateId(identityLink.groupId)
   ) {
     throw new Error("raw CIB identity link must be a candidate group");
+  }
+  const assignment: UserTaskAssignment = {
+    candidates: [{ kind: "group" as const, id: identityLink.groupId }],
+  };
+  if (assignmentOnly) {
+    return { assignment };
   }
   const formField = task.formFields[0];
   if (
@@ -59,9 +71,7 @@ export function projectCibUserTaskMetadata(
     case "string":
     case "boolean":
       return {
-        assignment: {
-          candidates: [{ kind: "group", id: identityLink.groupId }],
-        },
+        assignment,
         form: {
           fields: [{ key: formField.id, type: formField.typeName }],
         },

@@ -46,6 +46,14 @@ import {
   readNamespaceUriForPrefix,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
+import {
+  isWithinOpaqueRetention,
+  opaqueRetainedKeys,
+  opaqueRetentionRejections,
+} from "./opaque-rendering-retention.js";
+import type {
+  OpaquePropertyRetention,
+} from "./opaque-rendering-retention.js";
 import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
   type: "json",
 };
@@ -74,6 +82,8 @@ export type PreservationCapability = Readonly<{
    * projection rather than being taught to every projector individually.
    */
   baseElementKeys: ReadonlySet<string>;
+  /** Type-specific properties retained as opaque standard BPMN subtrees. */
+  opaqueProperties: ReadonlyArray<OpaquePropertyRetention>;
 }>;
 
 const diagramInterchangeTypes = [
@@ -125,6 +135,19 @@ const userTaskPreservedNotation: PreservationCapability = Object.freeze({
   ]),
   processKeys: new Set(["artifacts", "documentation", "laneSets"]),
   baseElementKeys: new Set(["documentation"]),
+  opaqueProperties: [],
+});
+
+const structuredHumanWorkRendering: PreservationCapability = Object.freeze({
+  preservedTypes: new Set(["bpmn:Documentation"]),
+  definitionsKeys: new Set<string>(),
+  processKeys: new Set<string>(),
+  baseElementKeys: new Set(["documentation"]),
+  opaqueProperties: [{
+    ownerType: bpmnTypes.userTaskType,
+    property: "renderings",
+    rootType: bpmnTypes.renderingType,
+  }],
 });
 
 /** The capability of one profile, or `undefined` for a profile that executes or rejects everything. */
@@ -134,6 +157,8 @@ export function preservationCapability(
   switch (semanticProfile) {
     case SemanticProfileId.UserTaskPreservedNotation:
       return userTaskPreservedNotation;
+    case SemanticProfileId.StructuredHumanWork:
+      return structuredHumanWorkRendering;
     default:
       return undefined;
   }
@@ -236,6 +261,9 @@ export function unadmittedKeyRejections(
         ),
       ];
     }
+    if (opaqueRetainedKeys(element, capability).includes(key)) {
+      return [];
+    }
     return preservedValueRejections(
       element[key],
       containedLocus(locus, key),
@@ -262,10 +290,12 @@ export function foreignAttributeRejections(
   definitions: ElementRecord,
   located: ReadonlyMap<ElementRecord, ElementLocus>,
   consumingTypes: ReadonlySet<string>,
+  capability?: PreservationCapability,
 ): ReadonlyArray<ElementRejection> {
   const schemaInstance = xmlSchemaInstancePrefixes(definitions);
   return [...located].flatMap(([element, locus]) =>
-    typeof element.$type === "string" && consumingTypes.has(element.$type)
+    isWithinOpaqueRetention(locus, located, capability) ||
+      typeof element.$type === "string" && consumingTypes.has(element.$type)
       ? []
       : unconsumedForeignAttributeNames(element, schemaInstance).map((name) =>
         rejectElement(
@@ -294,9 +324,13 @@ export function exactForeignAttributeRejections(
     namespaceUri: string,
     localName: string,
   ) => boolean,
+  capability?: PreservationCapability,
 ): ReadonlyArray<ElementRejection> {
   const schemaInstance = xmlSchemaInstancePrefixes(definitions);
   return [...located].flatMap(([element, locus]) => {
+    if (isWithinOpaqueRetention(locus, located, capability)) {
+      return [];
+    }
     const attributes = asElement(element.$attrs);
     if (attributes === undefined) {
       return [];
@@ -365,13 +399,16 @@ export function baseElementRetentionRejections(
     return [];
   }
   return [...located].flatMap(([element, locus]) =>
-    retainedBaseElementKeys(element, capability).flatMap((key) =>
-      preservedValueRejections(
-        element[key],
-        containedLocus(locus, key),
-        capability,
-      )
-    )
+    [
+      ...retainedBaseElementKeys(element, capability).flatMap((key) =>
+        preservedValueRejections(
+          element[key],
+          containedLocus(locus, key),
+          capability,
+        )
+      ),
+      ...opaqueRetentionRejections(element, locus, capability),
+    ]
   );
 }
 
@@ -396,7 +433,7 @@ export function executedProjectionView(
   if (capability === undefined) {
     return element;
   }
-  const retained = retainedBaseElementKeys(element, capability);
+  const retained = retainedElementKeys(element, capability);
   if (retained.length === 0) {
     return element;
   }
@@ -408,6 +445,16 @@ export function executedProjectionView(
     delete view[key];
   }
   return view;
+}
+
+export function retainedElementKeys(
+  element: ElementRecord,
+  capability: PreservationCapability,
+): ReadonlyArray<string> {
+  return [
+    ...retainedBaseElementKeys(element, capability),
+    ...opaqueRetainedKeys(element, capability),
+  ];
 }
 
 function retainedBaseElementKeys(

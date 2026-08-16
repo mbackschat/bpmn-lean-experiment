@@ -8,8 +8,6 @@ This document owns current implementation, proof, evidence, and absence status, 
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting.
 
-The graduated E2 specification additionally carries one exact optional passive User Task assignment/form metadata value through source, checked graph, IL, committed wait, and public observation, with registered cross-target evidence. Each capsule owns its own meaning and exclusions; this document owns only their status.
-
 **Current Message Start boundary.** The standards profile and Product 2 [Message Start ingress specification](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md) are closure-reviewed and evidence-closed. Product 2 publishes one exact target with durable no-redispatch recovery; broker routing and version fanout remain absent.
 
 **Current closure boundary.** Process-instance search is closure-reviewed, evidence-closed, and graduated through its identity contract, SQLite index, three producers, HTTP/web, live restart/paging/filter/private-fact evidence, and browser acceptance. M2 is closed.
@@ -24,13 +22,15 @@ The graduated E2 specification additionally carries one exact optional passive U
 
 **Current E2 User Task metadata boundary.** The graduated [sequential metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) carries an optional literal group candidate and string-or-Boolean generated-form field through checked source, `awaitUserTask`, committed wait, and public `OpenUserTask`. The closure-reviewed [parallel composition specification](capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) requires that metadata on both tasks of one exact balanced graph, empty Process Start data, and the existing completion and parallel runtime. Lean/core, combined CIB, differential, live Temporal/replay, mutation, corpus, and production-journey evidence are green. Product 2 consumes only published task/form facts through M3 Work.
 
+**Current M6 engine-checkpoint boundary.** The first green [structured Human Work](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) engine checkpoint has assignment-only metadata, opaque Rendering retention, five-arm Process values, Lean/core/CIB-prefix/differential/live-Temporal evidence, and no new host primitive. It remains provisional pending independent review; Product 2 forms are absent.
+
 **Current M5 boundary.** The closure-reviewed [E1 specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements replay-complete transitions, exact current positions, a strict Workflow Query, retention/replay, and fail-closed Product 2 History, Diagram, and canonical export. The [metrics specification](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) adds Lean/core lifecycle parity, replay-stable time, exact-version all-or-unavailable frequency and completed duration, HTTP, and a two-width UI. The [operator-history specification](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md) completes M5 with independent bounded Work and incident audit snapshots, Operations authorization, canonical download, restart/privacy/focus evidence, and no merged chronology.
 
 **Current executable-corpus boundary.** The maintained [executable model corpus](../model-corpus/README.md) binds 23 project models with business purposes and seven external CIB Seven, OMG, and Betsy files to exact provenance, inventory, admission, pipeline, and Product 2 readiness. Its guard derives 25 executable element or semantic variants from registered pipeline XML and requires the canonical catalog and retained coverage to match.
 
-External revision, archive, and entry digests fail closed without retaining external bytes. The suite reuses the Lean, semantic-core, selected CIB, Temporal, replay, and mutation pipeline. The sequential assignment/form model and the closure-reviewed parallel content-and-risk review each have a production Chromium journey through start, claim, completion, History, and Work audit; the other 21 remain browser-ineligible.
+External drift fails closed. The two metadata models have production Chromium journeys; the other 21 are browser-ineligible.
 
-**What it does not do.** One generic profile retains selected notation without executing it. The data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Boolean completion is limited to one profile; every other value surface remains string/null-only. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Stage 2 adds only the exact incident-gated hosting-root cancellation successor; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
+**What it does not do.** One generic profile retains selected notation without executing it. The BPMN data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Integer and String-list values appear only at M6 User Task completion; Product 1 owns no form semantics. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Stage 2 adds only the exact incident-gated hosting-root cancellation successor; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
 
 **Evidence and product boundary.** Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, and pinned CIB lanes with seeded mutations and content-bound evidence. TypeScript produces the shared checked graph/program; Lean checks lowering independently without parsing XML. Product drivers use published interactions and occurrence identities. Live execution is required once per distinct host mechanism; composed product examples are not an independent semantic lane.
 
@@ -179,7 +179,7 @@ External revision, archive, and entry digests fail closed without retaining exte
 - exact Call Activity checked-node arm and paired `invokeProcess`/`returnProcess` operations with called definition, root, entry, return, and caller-output identities
 - explicit checked boundary Error and Error End variants plus one resolved direct-parent `throwError` handler with exact Error and Sequence Flow provenance
 - one canonical definition-scope forest with exact node/Sequence-Flow and operation/control-place ownership, retaining one rooted tree for existing profiles and one distinct called root for the bounded Call profile, plus one shared occurrence-ID shape reused by User Tasks, Message subscriptions, timers, effects, and Call records
-- one strict shared string/null/Boolean value union; one exact registered profile admits Boolean only on User Task completion while every other registered value surface remains string/null-only
+- one strict five-arm String/null/Boolean/non-negative-safe-integer/ordered-String-list value union with profile-specific surface admission and bounded canonical transport
 - Process-variable observation, immutable effect arguments, and closed string/null successful/business-error patches
 - required canonical `submittedValues` on exact User Task completion, with empty-patch preservation and no legacy reader
 - raw CIB state-query, task-query, timer-job, effect-job, effect-execution, and mapping-execution observations with verifier-reconstructed canonical projections that reuse the adapter's ordering and constant-field rules
@@ -200,7 +200,7 @@ External revision, archive, and entry digests fail closed without retaining exte
 #### Explicitly absent
 
 - Parallel legacy schemas, migration readers, compatibility switches, general assertion language
-- every value kind beyond string/null/Boolean and Boolean use outside the exact registered User Task completion profile
+- negative, fractional, unsafe, nested, heterogeneous, or other values; integer/list use outside M6 completion
 - wider or decimal numeric domain
 - identifier normalization or locale-sensitive ordering
 
@@ -358,7 +358,7 @@ External revision, archive, and entry digests fail closed without retaining exte
 - generalized enabled-transition, supported-closure, admission, observation, and stimulus-list correspondence remain unresolved
 - general multiple-enabled closure without an explicit semantic choice or checked commutation argument
 - replay/host-attempt stability as a Lean proposition
-- general or repeated scopes, variable types, effect faults, catch-all/multi-handler/ancestor Error search, expression languages, or exceptional propagation beyond one direct parent
+- general or repeated scopes, nested/heterogeneous/decimal values, effect faults, catch-all/multi-handler/ancestor Error search, expression languages, or exceptional propagation beyond one direct parent
 - TypeScript or Temporal correspondence proof
 - arbitrary BPMN XML parsing
 
@@ -377,7 +377,7 @@ External revision, archive, and entry digests fail closed without retaining exte
 - registered Timer Start admission and execution with a distinct exact-target stimulus, one fresh root occurrence, generic canonical nonempty outgoing-token production, profile-local exact-one output, exact refusal and 2/1 closure bounds, stable User Task resumption, normalized cross-start observation equality, and no runtime Timer or clock state
 - registered Terminate End admission and execution with no external stimulus, selected-occurrence-retaining subtree cancellation, exact higher-level preservation, aggregate End increment, unchanged scope completion, exact refusal, and 5/3/2 closure bounds
 - registered configured Task admission and execution with exact checked descriptor binding, the existing payload-free Probe effect, effect-only initial exposure, occurrence-only refusal, trailing User Task continuation, and no runtime, stimulus, state, or observation widening
-- exact Process-start installation and User Task completion merge over canonical string/null bindings, plus one registered-profile Boolean completion guarded at deployment and every live command
+- exact Process-start installation and atomic User Task completion merge over the shared five-arm representation, with profile admission at deployment and live commands
 - registered E2 metadata admission and independent preservation through checked User Task, ordinary operation, committed wait, and public projection, with passive completion, exact refusal preservation, strict wire values, and old-profile exclusion
 - registered literal-generation incident report and exact retry transitions, private and public association validation, incident-aware quiescence and resumability, and pre-dispatch refusal of malformed or cross-program injected incident states
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
@@ -386,7 +386,7 @@ External revision, archive, and entry digests fail closed without retaining exte
 
 #### Explicitly absent
 
-- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, Boolean execution outside the exact registered User Task completion profile or value kinds beyond string/null/Boolean, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
+- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, integer/list execution outside exact M6 User Task completion, nested or heterogeneous values, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
 
 ### CIB oracle
 
@@ -463,7 +463,7 @@ External revision, archive, and entry digests fail closed without retaining exte
 - production history baseline
 - general Worker versioning
 - expression evaluation beyond pure Simple Boolean v1
-- Boolean values outside the exact registered User Task completion profile, values beyond string/null/Boolean, or general effect faults/Error propagation beyond the direct-parent internal slice
+- integer or String-list values outside exact M6 User Task completion, nested or heterogeneous values, or general effect faults/Error propagation beyond the direct-parent internal slice
 - Activity heartbeats
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule

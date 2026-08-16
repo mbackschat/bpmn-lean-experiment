@@ -36,6 +36,16 @@ export function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
+    case SemanticProfileId.StructuredHumanWork:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.Choose,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.IntermediateCatchTimer:
       return rootProgram([
         SemanticOperationKind.Initiate,

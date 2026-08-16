@@ -53,6 +53,7 @@ export function isAdmittedCheckedProcess(
     hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
+    hasSelectedStructuredHumanWorkTopology(semanticProfile, graph) &&
     hasSelectedCyclicTopology(semanticProfile, graph) &&
     hasSelectedInclusivePairing(semanticProfile, graph) &&
     hasSelectedEventRaceTopology(semanticProfile, graph) &&
@@ -62,6 +63,57 @@ export function isAdmittedCheckedProcess(
       graph,
       admittedGraph.nodeScopes,
     );
+}
+
+function hasSelectedStructuredHumanWorkTopology(
+  semanticProfile: string,
+  graph: CheckedProcessGraph,
+): boolean {
+  if (semanticProfile !== SemanticProfileId.StructuredHumanWork) {
+    return true;
+  }
+  const one = <Kind extends CheckedNodeKind>(kind: Kind) => {
+    const matches = graph.nodes.filter(
+      (node): node is Extract<CheckedNode, { kind: Kind }> => node.kind === kind,
+    );
+    return matches.length === 1 ? matches[0] : undefined;
+  };
+  const start = one(CheckedNodeKind.NoneStartEvent);
+  const task = one(CheckedNodeKind.UserTask);
+  const gateway = one(CheckedNodeKind.ExclusiveGateway);
+  const ends = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.NoneEndEvent }> =>
+      node.kind === CheckedNodeKind.NoneEndEvent,
+  );
+  if (
+    start === undefined || task === undefined || gateway === undefined ||
+    gateway.direction !== GatewayDirection.Diverging || ends.length !== 3 ||
+    graph.nodes.length !== 6 || graph.flows.length !== 5
+  ) {
+    return false;
+  }
+  const exactFlow = (sourceId: string, targetId: string) =>
+    graph.flows.filter((flow) =>
+      flow.sourceId === sourceId && flow.targetId === targetId
+    );
+  const outgoing = graph.flows.filter(
+    ({ sourceId }) => sourceId === gateway.id,
+  );
+  const candidates = outgoing.filter(({ condition }) => condition !== null);
+  const fallback = outgoing.filter(({ condition }) => condition === null);
+  const endIds = new Set(ends.map(({ id }) => id));
+  return exactFlow(start.id, task.id).length === 1 &&
+    exactFlow(start.id, task.id)[0]?.condition === null &&
+    exactFlow(task.id, gateway.id).length === 1 &&
+    exactFlow(task.id, gateway.id)[0]?.condition === null &&
+    outgoing.length === 3 && candidates.length === 2 && fallback.length === 1 &&
+    new Set(outgoing.map(({ targetId }) => targetId)).size === 3 &&
+    outgoing.every(({ targetId }) => endIds.has(targetId)) &&
+    candidates.every(({ id }) => gateway.candidateFlowIds.includes(id)) &&
+    gateway.candidateFlowIds.every((id) =>
+      candidates.some((flow) => flow.id === id)
+    ) &&
+    fallback[0]?.id === gateway.defaultFlowId;
 }
 
 function hasSelectedParallelTopology(
@@ -352,6 +404,7 @@ function hasSelectedExpressionLanguage(
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
     case SemanticProfileId.UserTaskCycle:
+    case SemanticProfileId.StructuredHumanWork:
       return expressionLanguage === SimpleBooleanExpressionLanguage;
     default:
       return expressionLanguage === bpmnDefaultExpressionLanguage;
@@ -366,6 +419,7 @@ function hasSelectedConditions(
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
     case SemanticProfileId.UserTaskCycle:
+    case SemanticProfileId.StructuredHumanWork:
       return flows.filter(({ condition }) => condition !== null).length === 2;
     default:
       return flows.every(({ condition }) => condition === null);

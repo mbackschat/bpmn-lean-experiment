@@ -13,7 +13,6 @@ import {
   SemanticOperationKind,
   SemanticTransitionKind,
   StimulusKind,
-  VariableValueKind,
   WaitKind,
 } from "./execution-publications.js";
 import type {
@@ -27,6 +26,7 @@ import type {
   ScopeOccurrenceId,
   StateObservation,
 } from "./execution-publications.js";
+import { requirePublicationVariableValue } from "./execution-publication-variable-value-decoder.js";
 
 const lowercaseSha256 = /^[0-9a-f]{64}$/u;
 
@@ -397,29 +397,10 @@ function requirePatch(value: unknown, label: string): void {
     requireObject(item, itemLabel);
     exact(item, itemLabel, ["name", "value"]);
     const name = requireNonemptyString(readOwn(item, "name"), `${itemLabel}.name`);
-    requireVariableValue(readOwn(item, "value"), `${itemLabel}.value`);
+    requirePublicationVariableValue(readOwn(item, "value"), `${itemLabel}.value`);
     return { name };
   }, label);
   requireCanonical(patch, (a, b) => compareScalarStrings(a.name, b.name), label);
-}
-
-function requireVariableValue(value: unknown, label: string): void {
-  requireObject(value, label);
-  switch (readOwn(value, "kind")) {
-    case VariableValueKind.Boolean:
-      exact(value, label, ["kind", "value"]);
-      if (typeof readOwn(value, "value") !== "boolean") throw new TypeError(`${label}.value must be Boolean`);
-      return;
-    case VariableValueKind.String:
-      exact(value, label, ["kind", "value"]);
-      requireWireString(readOwn(value, "value"), `${label}.value`);
-      return;
-    case VariableValueKind.Null:
-      exact(value, label, ["kind"]);
-      return;
-    default:
-      throw new TypeError(`${label}.kind is unknown`);
-  }
 }
 
 function requireChannel(value: unknown, label: string): MessageChannel {

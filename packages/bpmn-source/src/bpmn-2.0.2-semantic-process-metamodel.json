@@ -16,7 +16,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, TerminateEventDefinition, Error, Task, UserTask, ReceiveTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, ExtensionElements, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, TerminateEventDefinition, Error, Task, UserTask, Rendering, ReceiveTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, ExtensionElements, and SequenceFlow type identity",
       "MessageEventDefinition, Message, Interface, Operation, and ReceiveTask type identity plus messageRef, operationRef, inMessageRef, payload, implementation, instantiate, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
@@ -28,6 +28,7 @@
       "Gateway.gatewayDirection type and default",
       "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, ExclusiveGateway.default, InclusiveGateway.default, and EventBasedGateway instantiate and type",
       "BaseElement.id and singleton extensionElements plus Definitions.rootElements identity and containment",
+      "UserTask.renderings Rendering containment",
       "CallActivity.calledElementRef target and bounds",
       "BoundaryEvent attachment and interrupting default",
       "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
@@ -59,6 +60,7 @@
     "taskType": "bpmn:Task",
     "extensionElementsType": "bpmn:ExtensionElements",
     "userTaskType": "bpmn:UserTask",
+    "renderingType": "bpmn:Rendering",
     "receiveTaskType": "bpmn:ReceiveTask",
     "serviceTaskType": "bpmn:ServiceTask",
     "subProcessType": "bpmn:SubProcess",
@@ -183,6 +185,12 @@
       "name": "UserTask",
       "directSuperClasses": [
         "Task"
+      ]
+    },
+    {
+      "name": "Rendering",
+      "directSuperClasses": [
+        "BaseElement"
       ]
     },
     {
@@ -336,6 +344,14 @@
       "lower": 1,
       "upper": 1,
       "containment": false
+    },
+    {
+      "owner": "UserTask",
+      "name": "renderings",
+      "type": "Rendering",
+      "lower": 0,
+      "upper": "*",
+      "containment": true
     },
     {
       "owner": "SequenceFlow",

@@ -10,7 +10,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
-import org.bpmnlean.cibseven.CibStateQueryEvidence.ProcessVariableSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.BooleanValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
@@ -90,7 +89,7 @@ public final class CibSevenBooleanProcessDataCheckpointTest {
   }
 
   @Test
-  public void booleanStartAndEffectPatchRemainOutsideTheNewProfile() throws Exception {
+  public void booleanStartAndEffectPatchRemainOutsideBooleanCompletionProfile() throws Exception {
     var scenario = ScenarioJson.read(SCENARIO_PATH);
     var start = (ScenarioProtocol.StartProcessStimulus) scenario.stimuli().getFirst();
     var booleanStart =
@@ -115,9 +114,6 @@ public final class CibSevenBooleanProcessDataCheckpointTest {
             BOOLEAN_PROFILE,
             ScenarioVariableValuePolicy.Surface.EFFECT_PATCH,
             List.of(new VariableBinding("approved", new BooleanValue(true)))));
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> new ProcessVariableSnapshot("unsupported", 1));
   }
 
   private static ScenarioProtocol.ScenarioDefinition withCompletion(

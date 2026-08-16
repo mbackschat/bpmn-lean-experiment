@@ -85,8 +85,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "assignment",
-        "form"
+        "assignment"
       ],
       "properties": {
         "assignment": {

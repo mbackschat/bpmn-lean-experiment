@@ -97,6 +97,8 @@ def applyEffectPatch
           (match value with
             | .string _ => true
             | .boolean _ => false
+            | .integer _ => false
+            | .stringList _ => false
             | .null => allowNull) then
         some
           ({ name := target, value } ::

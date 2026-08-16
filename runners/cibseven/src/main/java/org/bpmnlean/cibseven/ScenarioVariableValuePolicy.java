@@ -6,12 +6,14 @@ import org.bpmnlean.cibseven.ScenarioProtocol.BpmnErrorEffectResult;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
+import org.bpmnlean.cibseven.ScenarioProtocol.IntegerValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.ReportEffectFailureStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.RetryIncidentStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
 import org.bpmnlean.cibseven.ScenarioProtocol.StartProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.StringListValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.SuccessfulEffectResult;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.bpmnlean.cibseven.ScenarioMessageProtocol.DeliverMessageStimulus;
@@ -21,6 +23,8 @@ final class ScenarioVariableValuePolicy {
 
   private static final String BOOLEAN_COMPLETION_PROFILE =
       "cibseven-2.2.0-user-task-boolean-completion-data-draft";
+  private static final String STRUCTURED_HUMAN_WORK_PROFILE =
+      "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
 
   enum Surface {
     PROCESS_START,
@@ -47,12 +51,19 @@ final class ScenarioVariableValuePolicy {
                 surface == Surface.USER_TASK_COMPLETION
                     && (BOOLEAN_COMPLETION_PROFILE.equals(profile)
                         || CibSevenUserTaskMetadataProjector.isMetadataProfile(profile));
+            case IntegerValue ignored -> admitsStructuredValue(profile, surface);
+            case StringListValue ignored -> admitsStructuredValue(profile, surface);
           };
       if (!admitted) {
         return false;
       }
     }
     return true;
+  }
+
+  private static boolean admitsStructuredValue(String profile, Surface surface) {
+    return STRUCTURED_HUMAN_WORK_PROFILE.equals(profile)
+        && surface == Surface.USER_TASK_COMPLETION;
   }
 
   static void requireScenarioSurfaces(ScenarioDefinition scenario) {

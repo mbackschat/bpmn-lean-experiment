@@ -20,5 +20,6 @@ Run the pure comparator gate:
 - [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact current target matrix and evidence boundary.
 - [Shared wire contracts](../../contracts/README.md) owns the canonical result shape.
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the two closure-reviewed composed schedules and their selected mutations.
+- [Structured Human Work proposal](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the three normative M6 schedules and their value-kind, ordered-list, and resolution mutations.
 
 Run `./scripts/pnpm.sh run test:pipeline` when a change affects the complete registered cross-target pipeline.

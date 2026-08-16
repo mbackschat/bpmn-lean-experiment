@@ -323,9 +323,12 @@ public final class ScenarioProtocol {
   @JsonSubTypes({
     @JsonSubTypes.Type(value = StringValue.class, name = "string"),
     @JsonSubTypes.Type(value = BooleanValue.class, name = "boolean"),
+    @JsonSubTypes.Type(value = IntegerValue.class, name = "integer"),
+    @JsonSubTypes.Type(value = StringListValue.class, name = "stringList"),
     @JsonSubTypes.Type(value = NullValue.class, name = "null")
   })
-  public sealed interface VariableValue permits StringValue, BooleanValue, NullValue {}
+  public sealed interface VariableValue
+      permits StringValue, BooleanValue, IntegerValue, StringListValue, NullValue {}
 
   public record StringValue(String value) implements VariableValue {
     public StringValue {
@@ -339,6 +342,18 @@ public final class ScenarioProtocol {
     }
   }
 
+  public record IntegerValue(long value) implements VariableValue {
+    public IntegerValue {
+      ScenarioVariableValueProjection.requireInteger(value);
+    }
+  }
+
+  public record StringListValue(List<String> value) implements VariableValue {
+    public StringListValue {
+      value = ScenarioVariableValueProjection.requireStringListValue(value);
+    }
+  }
+
   public record NullValue() implements VariableValue {}
 
   public record VariableBinding(String name, VariableValue value) {
@@ -347,6 +362,8 @@ public final class ScenarioProtocol {
         throw new IllegalArgumentException("variable binding name must be non-empty");
       }
       Objects.requireNonNull(value, "value");
+      ScenarioVariableValueProjection.requireWireValue(value);
+      ScenarioVariableValueProjection.requireBindingSize(name, value);
     }
   }
 

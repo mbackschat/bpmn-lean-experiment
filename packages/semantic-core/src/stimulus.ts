@@ -1,20 +1,21 @@
 import {
   EffectExecutionResultKind,
   StimulusKind,
-  VariableValueKind,
 } from "./contract.js";
 import type {
   Stimulus,
 } from "./contract.js";
-import {
-  compareCanonicalStrings,
-  isWellFormedWireString,
-} from "./wire.js";
+import { isWellFormedWireString } from "./wire.js";
 import {
   isMessageChannel,
   sameMessageChannel,
 } from "./message-channel.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
+import {
+  isCanonicallyOrderedVariablePatch,
+  isVariableBinding,
+  sameVariablePatch,
+} from "./variable-value.js";
 
 export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
@@ -42,7 +43,7 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.commandId === right.commandId &&
         left.processId === right.processId &&
         left.instanceId === right.instanceId &&
-        samePatch(left.initialVariables, right.initialVariables)
+        sameVariablePatch(left.initialVariables, right.initialVariables)
       );
     case StimulusKind.TriggerMessageStart:
       return (
@@ -68,7 +69,7 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.taskId.processInstanceId === right.taskId.processInstanceId &&
         left.taskId.elementId === right.taskId.elementId &&
         left.taskId.activation === right.taskId.activation &&
-        samePatch(left.submittedValues, right.submittedValues)
+        sameVariablePatch(left.submittedValues, right.submittedValues)
       );
     case StimulusKind.DeliverMessage:
       return (
@@ -140,7 +141,7 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isNonEmptyString(value.instanceId) &&
         Array.isArray(value.initialVariables) &&
         value.initialVariables.every(isVariableBinding) &&
-        isCanonicallyOrderedPatch(value.initialVariables)
+        isCanonicallyOrderedVariablePatch(value.initialVariables)
       );
     case StimulusKind.TriggerMessageStart:
       return (
@@ -194,7 +195,7 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         Number(value.taskId.activation) >= 1 &&
         Array.isArray(value.submittedValues) &&
         value.submittedValues.every(isVariableBinding) &&
-        isCanonicallyOrderedPatch(value.submittedValues)
+        isCanonicallyOrderedVariablePatch(value.submittedValues)
       );
     case StimulusKind.DeliverMessage:
       return (
@@ -293,7 +294,10 @@ function sameEffectResult(
   left: import("./contract.js").EffectExecutionResult,
   right: import("./contract.js").EffectExecutionResult,
 ): boolean {
-  if (left.kind !== right.kind || !samePatch(left.localPatch, right.localPatch)) {
+  if (
+    left.kind !== right.kind ||
+    !sameVariablePatch(left.localPatch, right.localPatch)
+  ) {
     return false;
   }
   switch (left.kind) {
@@ -317,7 +321,7 @@ export function isWellFormedEffectExecutionResult(
     !isRecord(value) ||
     !Array.isArray(value.localPatch) ||
     !value.localPatch.every(isVariableBinding) ||
-    !isCanonicallyOrderedPatch(value.localPatch)
+    !isCanonicallyOrderedVariablePatch(value.localPatch)
   ) {
     return false;
   }
@@ -337,88 +341,6 @@ export function isWellFormedEffectExecutionResult(
       );
     default:
       return false;
-  }
-}
-
-function isVariableBinding(
-  value: unknown,
-): value is import("./contract.js").VariableBinding {
-  return isRecord(value) &&
-    hasOnlyKeys(value, ["name", "value"]) &&
-    isNonEmptyString(value.name) &&
-    isRecord(value.value) &&
-    isVariableValue(value.value);
-}
-
-function isVariableValue(value: Record<string, unknown>): boolean {
-  switch (value.kind) {
-    case VariableValueKind.Boolean:
-      return (
-        hasOnlyKeys(value, ["kind", "value"]) &&
-        typeof value.value === "boolean"
-      );
-    case VariableValueKind.String:
-      return (
-        hasOnlyKeys(value, ["kind", "value"]) &&
-        isWellFormedWireString(value.value)
-      );
-    case VariableValueKind.Null:
-      return hasOnlyKeys(value, ["kind"]);
-    default:
-      return false;
-  }
-}
-
-function isCanonicallyOrderedPatch(
-  value: ReadonlyArray<unknown>,
-): boolean {
-  const patch = value as ReadonlyArray<
-    import("./contract.js").VariableBinding
-  >;
-  return patch.every((binding, index) =>
-    index === 0 ||
-    compareCanonicalStrings(
-        String(patch[index - 1]?.name),
-        binding.name,
-      ) < 0
-  );
-}
-
-function samePatch(
-  left: ReadonlyArray<import("./contract.js").VariableBinding>,
-  right: ReadonlyArray<import("./contract.js").VariableBinding>,
-): boolean {
-  return left.length === right.length &&
-    left.every((binding, index) => {
-      const candidate = right[index];
-      return candidate !== undefined &&
-        binding.name === candidate.name &&
-        sameVariableValue(binding.value, candidate.value);
-    });
-}
-
-function sameVariableValue(
-  left: import("./contract.js").VariableValue,
-  right: import("./contract.js").VariableValue,
-): boolean {
-  if (left.kind !== right.kind) {
-    return false;
-  }
-  switch (left.kind) {
-    case VariableValueKind.Boolean:
-      return (
-        right.kind === VariableValueKind.Boolean &&
-        left.value === right.value
-      );
-    case VariableValueKind.String:
-      return (
-        right.kind === VariableValueKind.String &&
-        left.value === right.value
-      );
-    case VariableValueKind.Null:
-      return true;
-    default:
-      return assertNever(left);
   }
 }
 

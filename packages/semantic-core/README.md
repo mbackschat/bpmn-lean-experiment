@@ -34,5 +34,6 @@ Run the focused package gate:
 - [Semantic Process IL specification](../../docs/SEMANTIC-PROCESS-IL-SPEC.md) owns the checked graph and immutable program contracts.
 - [Profile-parameterized admission specification](../../docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns profile-sensitive admission.
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the exact closure-reviewed composed profile and evidence boundary.
+- [Structured Human Work proposal](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the M6 assignment-only metadata and typed completion-value boundary.
 - [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact implemented and absent surface.
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the verification and evidence boundaries.

@@ -1,0 +1,100 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-structured-human-work-with-project-rendering",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.3.4.1",
+      "Table 10.13",
+      "Clause 13.3.3",
+      "Clause 13.4.2",
+      "Table 13.2"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-rendering-preserved-opaque",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "user-task-literal-group-candidate-metadata",
+      "user-task-integer-completion-data",
+      "user-task-ordered-string-list-completion-data",
+      "exclusive-gateway-divergence",
+      "ordered-conditional-sequence-flow",
+      "conditionless-default-sequence-flow",
+      "formal-expression",
+      "simple-boolean-expression-v1",
+      "none-end-event",
+      "process-completion"
+    ],
+    "extensions": [
+      "task-service-process-variable-completion-patch",
+      "camunda-user-task-literal-candidate-group",
+      "bpmn-lean-structured-human-work-rendering-opaque"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0006",
+      "CIB-INT-0001",
+      "CIB-EXT-0011"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-juel-compatibility-claim",
+    "cib-form-data",
+    "cib-form-rendering",
+    "form-schema-in-semantic-core",
+    "form-validation-in-semantic-core",
+    "form-action-in-semantic-core",
+    "rendering-in-checked-graph-or-semantic-process",
+    "process-start-integer-or-string-list-data",
+    "effect-integer-or-string-list-data",
+    "integer-or-string-list-condition-operands",
+    "negative-integers",
+    "fractional-numbers",
+    "nested-data",
+    "heterogeneous-lists",
+    "standard-potential-owner",
+    "standard-human-performer",
+    "standard-task-priority-instance-management",
+    "input-output-specification",
+    "data-input",
+    "data-output",
+    "data-associations",
+    "claiming",
+    "authorization",
+    "identity-resolution",
+    "timers",
+    "messages",
+    "boundary-events",
+    "event-subprocesses",
+    "multi-instance",
+    "compensation",
+    "listeners",
+    "search-attributes",
+    "external-services"
+  ]
+}

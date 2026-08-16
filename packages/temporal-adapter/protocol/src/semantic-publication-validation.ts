@@ -36,6 +36,7 @@ import type {
   ExecutionPublicationTransportValidationContext,
   ExecutionPublicationValidationContext,
 } from "./semantic-publication.js";
+import { isCanonicalPublicationVariablePatch } from "./semantic-publication-variable-validation.js";
 
 export type ExecutionPublicationValidationAuthority =
   | { kind: "program"; context: ExecutionPublicationValidationContext }
@@ -519,13 +520,7 @@ function isScopeId(value: unknown): value is ScopeOccurrenceId {
 }
 
 function isPatch(value: unknown): boolean {
-  return Array.isArray(value) && isWellFormedStimulus({
-    kind: StimulusKind.StartProcess,
-    commandId: "validate",
-    processId: "validate",
-    instanceId: "validate",
-    initialVariables: value,
-  });
+  return isCanonicalPublicationVariablePatch(value);
 }
 
 function sameDefinition(value: unknown, expected: SemanticProcessIdentity): boolean {

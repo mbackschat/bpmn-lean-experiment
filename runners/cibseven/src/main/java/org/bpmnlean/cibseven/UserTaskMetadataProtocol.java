@@ -1,5 +1,8 @@
 package org.bpmnlean.cibseven;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,10 +37,32 @@ public final class UserTaskMetadataProtocol {
     }
   }
 
-  public record UserTaskMetadata(Assignment assignment, Form form) {
-    public UserTaskMetadata {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
+  @JsonSubTypes({
+    @JsonSubTypes.Type(AssignmentFormMetadata.class),
+    @JsonSubTypes.Type(AssignmentOnlyMetadata.class)
+  })
+  public sealed interface UserTaskMetadata
+      permits AssignmentFormMetadata, AssignmentOnlyMetadata {
+    Assignment assignment();
+
+    default Form form() {
+      return null;
+    }
+  }
+
+  public record AssignmentFormMetadata(Assignment assignment, Form form)
+      implements UserTaskMetadata {
+    public AssignmentFormMetadata {
       Objects.requireNonNull(assignment, "assignment");
       Objects.requireNonNull(form, "form");
+    }
+  }
+
+  public record AssignmentOnlyMetadata(Assignment assignment) implements UserTaskMetadata {
+    public AssignmentOnlyMetadata {
+      Objects.requireNonNull(assignment, "assignment");
     }
   }
 }

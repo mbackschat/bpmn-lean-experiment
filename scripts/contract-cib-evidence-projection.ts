@@ -6,15 +6,12 @@ import { isDeepStrictEqual } from "node:util";
 import type {
   OccurrenceId,
   StateObservation,
-  VariableBinding,
-  VariableValueKind,
   WaitKind,
 } from "../packages/semantic-core/src/index.ts";
 import type {
   CibSevenEvidence,
   MappingExecutionSnapshot,
   MessageSubscriptionEvidence,
-  ProcessVariableSnapshot,
   TaskQueryTask,
   TimerJob,
 } from "./contract-artifacts.ts";
@@ -35,6 +32,10 @@ import {
 import {
   projectCibUserTaskMetadata,
 } from "./contract-cib-user-task-metadata-projection.ts";
+import {
+  projectCibProcessVariable,
+} from "./contract-cib-variable-value-projection.ts";
+export { projectCibProcessVariable } from "./contract-cib-variable-value-projection.ts";
 
 const activeWaitKindRank = {
   userTask: 0,
@@ -270,42 +271,6 @@ function projectStateQuery(
     status,
     variables,
     logicalTimeMs: snapshot.engineClockTimeMs,
-  };
-}
-
-export function projectCibProcessVariable(
-  variable: ProcessVariableSnapshot,
-): VariableBinding {
-  let value: VariableBinding["value"];
-  switch (typeof variable.value) {
-    case "string":
-      value = {
-        kind: "string" as VariableValueKind.String,
-        value: variable.value,
-      };
-      break;
-    case "boolean":
-      value = {
-        kind: "boolean" as VariableValueKind.Boolean,
-        value: variable.value,
-      };
-      break;
-    case "object":
-      if (variable.value !== null) {
-        throw new TypeError("unsupported raw CIB variable object");
-      }
-      value = { kind: "null" as VariableValueKind.Null };
-      break;
-    default: {
-      const unsupported: never = variable.value;
-      throw new TypeError(
-        `unsupported raw CIB variable: ${String(unsupported)}`,
-      );
-    }
-  }
-  return {
-    name: variable.name,
-    value,
   };
 }
 

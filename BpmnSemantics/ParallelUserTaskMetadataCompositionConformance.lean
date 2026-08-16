@@ -27,13 +27,15 @@ def contentMetadata : UserTaskMetadata :=
   { assignment :=
       { candidates := [{ kind := .group, id := "reviewers" }] }
     form :=
-      { fields := [{ key := "contentApproved", type := .boolean }] } }
+      some ({ fields := [{ key := "contentApproved", type := .boolean }] } :
+        UserTaskFormMetadata) }
 
 def riskMetadata : UserTaskMetadata :=
   { assignment :=
       { candidates := [{ kind := .group, id := "reviewers" }] }
     form :=
-      { fields := [{ key := "riskApproved", type := .boolean }] } }
+      some ({ fields := [{ key := "riskApproved", type := .boolean }] } :
+        UserTaskFormMetadata) }
 
 def contentTask : UserTaskDefinition :=
   { id := contentTaskId

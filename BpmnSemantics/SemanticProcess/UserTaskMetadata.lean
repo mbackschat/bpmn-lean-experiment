@@ -41,7 +41,7 @@ structure UserTaskFormMetadata where
 /-- Passive metadata copied through execution without contributing to occurrence identity. -/
 structure UserTaskMetadata where
   assignment : UserTaskAssignmentMetadata
-  form : UserTaskFormMetadata
+  form : Option UserTaskFormMetadata := none
   deriving Repr, DecidableEq
 
 namespace UserTaskMetadata
@@ -80,13 +80,33 @@ def candidateIdWellFormed (value : String) : Bool :=
 def fieldKeyWellFormed (value : String) : Bool :=
   boundaryClean value
 
-/-- Exact singleton metadata shape admitted by the assignment/form metadata profile. -/
+/-- Exact singleton literal-group assignment shared by both passive metadata arms. -/
+def assignmentWellFormed (assignment : UserTaskAssignmentMetadata) : Bool :=
+  match assignment.candidates with
+  | [{ kind := .group, id }] => candidateIdWellFormed id
+  | _ => false
+
+/-- Exact singleton form block retained by the legacy assignment-plus-form arm. -/
+def formWellFormed (form : UserTaskFormMetadata) : Bool :=
+  match form.fields with
+  | [{ key, type := .string }]
+  | [{ key, type := .boolean }] => fieldKeyWellFormed key
+  | _ => false
+
+/-- The M6 arm carries assignment only and physically omits the legacy form block. -/
+def assignmentOnlyWellFormed (metadata : UserTaskMetadata) : Bool :=
+  assignmentWellFormed metadata.assignment && metadata.form.isNone
+
+/-- Legacy M3 profiles retain the exact assignment-plus-form arm. -/
+def assignmentFormWellFormed (metadata : UserTaskMetadata) : Bool :=
+  assignmentWellFormed metadata.assignment &&
+    match metadata.form with
+    | some form => formWellFormed form
+    | none => false
+
+/-- Closed union of the two exact passive metadata arms. -/
 def wellFormed (metadata : UserTaskMetadata) : Bool :=
-  match metadata.assignment.candidates, metadata.form.fields with
-  | [{ kind := .group, id }], [{ key, type := .string }]
-  | [{ kind := .group, id }], [{ key, type := .boolean }] =>
-      candidateIdWellFormed id && fieldKeyWellFormed key
-  | _, _ => false
+  assignmentOnlyWellFormed metadata || assignmentFormWellFormed metadata
 
 def optionWellFormed : Option UserTaskMetadata → Bool
   | none => true

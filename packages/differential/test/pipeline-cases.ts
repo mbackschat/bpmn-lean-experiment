@@ -78,6 +78,7 @@ import {
   userTaskMetadataPipelineCases,
 } from "./user-task-metadata-pipeline-cases.ts";
 import { parallelUserTaskMetadataPipelineCases } from "./parallel-user-task-metadata-pipeline-cases.ts";
+import { structuredHumanWorkPipelineCases } from "./structured-human-work-pipeline-cases.ts";
 import {
   serviceTaskIncidentPipelineCases,
 } from "./service-task-incident-pipeline-cases.ts";
@@ -620,4 +621,5 @@ export const pipelineCases = Object.freeze([
   ...booleanProcessDataPipelineCases,
   ...userTaskMetadataPipelineCases,
   ...parallelUserTaskMetadataPipelineCases,
+  ...structuredHumanWorkPipelineCases,
 ]);

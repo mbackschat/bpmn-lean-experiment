@@ -15,6 +15,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-program-profile-shape.ts](src/semantic-program-profile-shape.ts) | Profile-selected operation shapes |
 | [semantic-profile-catalog.ts](src/semantic-profile-catalog.ts) | Semantic profile identities |
 | [semantic-profile-value-domain.ts](src/semantic-profile-value-domain.ts) | Profile-sensitive value admission by command surface |
+| [variable-value.ts](src/variable-value.ts) | Representation-neutral variable-value validation, cloning, ordering, and equality |
 | [call-activity-admission.ts](src/call-activity-admission.ts) | Cross-definition invocation and return pairing |
 | [semantic-process-call-runtime.ts](src/semantic-process-call-runtime.ts) | Called-instance lifecycle and subtree cleanup |
 | [semantic-process-error-runtime.ts](src/semantic-process-error-runtime.ts) | Error propagation and handler selection |

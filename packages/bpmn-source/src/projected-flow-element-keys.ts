@@ -21,6 +21,7 @@ import type {
   ElementRecord,
 } from "./moddle-graph.js";
 import {
+  retainedElementKeys,
   unadmittedKeyRejections,
 } from "./preserved-element-classification.js";
 import type {
@@ -180,7 +181,9 @@ export function projectedFlowElementKeyRejections(
       element,
       locus,
       keys,
-      capability?.baseElementKeys ?? noPreservedKeys,
+      capability === undefined
+        ? noPreservedKeys
+        : new Set(retainedElementKeys(element, capability)),
       capability,
     ));
   }

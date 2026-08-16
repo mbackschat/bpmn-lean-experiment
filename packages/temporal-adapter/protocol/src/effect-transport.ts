@@ -136,6 +136,11 @@ function variableValueTuple(
       return [binding.value.kind, binding.value.value];
     case VariableValueKind.String:
       return [binding.value.kind, binding.value.value];
+    case VariableValueKind.Integer:
+    case VariableValueKind.StringList:
+      throw new TypeError(
+        `Unsupported effect transport variant: ${JSON.stringify(binding.value)}`,
+      );
     case VariableValueKind.Null:
       return [binding.value.kind];
     default:

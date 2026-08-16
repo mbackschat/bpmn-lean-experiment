@@ -5,11 +5,18 @@ import BpmnSemantics.SemanticProcessJson
 namespace BpmnSemantics.SemanticProcessJsonConformance
 
 open BpmnSemantics.SemanticProcessJson
+open BpmnSemantics.SemanticProcess
 
 private def parseRejected (contents : String) : Bool :=
   match parseWireJson contents with
   | .ok _ => false
   | .error _ => true
+
+private def variableValueDecodedAs (expected : VariableValue)
+    (result : Except String VariableValue) : Bool :=
+  match result with
+  | .ok actual => decide (actual = expected)
+  | .error _ => false
 
 private def scenarioRejected (contents : String) : Bool :=
   match parseWireJson contents >>= decodeScenario with
@@ -35,12 +42,23 @@ private def programAccepted (contents : String) : Bool :=
   | .ok _ => true
   | .error _ => false
 
-theorem duplicate_json_key_is_rejected :
-    parseRejected "{\"id\":1,\"id\":1}" = true := by
+theorem duplicate_and_escape_equivalent_json_keys_are_rejected :
+    parseRejected "{\"id\":1,\"id\":1}" = true ∧
+      parseRejected "{\"id\":1,\"\\u0069d\":1}" = true := by
   native_decide
 
-theorem escape_equivalent_duplicate_json_key_is_rejected :
-    parseRejected "{\"id\":1,\"\\u0069d\":1}" = true := by
+theorem negative_zero_spellings_are_rejected :
+    parseRejected "-0" = true ∧
+      parseRejected "-0.0" = true ∧
+      parseRejected "-0e1" = true := by
+  native_decide
+
+theorem new_variable_value_arms_round_trip_without_normalization :
+    variableValueDecodedAs (.integer 4250)
+        (decodeVariableValue (encodeVariableValue (.integer 4250))) = true ∧
+      variableValueDecodedAs (.stringList ["policy", "policy"])
+          (decodeVariableValue
+            (encodeVariableValue (.stringList ["policy", "policy"]))) = true := by
   native_decide
 
 theorem unpaired_surrogate_is_rejected :
@@ -99,12 +117,9 @@ theorem scenario_source_overlay_and_triggered_start_wire_contract :
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"startProcess\",\"commandId\":\"c\",\"processId\":\"p\",\"instanceId\":\"i\",\"initialVariables\":[{\"name\":\"empty\",\"value\":{\"kind\":\"string\",\"value\":\"\"}}]}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = false := by
   native_decide
 
-theorem scenario_unknown_observation_is_rejected :
-    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[\"unknown\"],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
-  native_decide
-
-theorem scenario_unsafe_activation_is_rejected :
-    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeUserTaskInstance\",\"commandId\":\"c\",\"taskId\":{\"processInstanceId\":\"i\",\"elementId\":\"t\",\"activation\":9007199254740992}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
+theorem unknown_observation_and_unsafe_activation_are_rejected :
+    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[\"unknown\"],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true ∧
+      scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeUserTaskInstance\",\"commandId\":\"c\",\"taskId\":{\"processInstanceId\":\"i\",\"elementId\":\"t\",\"activation\":9007199254740992}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
   native_decide
 
 theorem incident_generation_domain_is_exactly_literal_one :

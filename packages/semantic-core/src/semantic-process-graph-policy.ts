@@ -65,6 +65,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.UserTaskPreservedNotation:
     case SemanticProfileId.UserTaskBooleanCompletionData:
     case SemanticProfileId.UserTaskAssignmentFormMetadata:
+    case SemanticProfileId.StructuredHumanWork:
     case SemanticProfileId.TerminateEnd:
     case SemanticProfileId.ConfiguredTask:
       return acyclicGraphPolicy;

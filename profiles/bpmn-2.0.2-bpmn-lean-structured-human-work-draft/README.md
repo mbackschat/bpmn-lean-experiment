@@ -1,0 +1,9 @@
+# BPMN 2.0.2 BPMN Lean structured Human Work draft profile
+
+This standards profile selects one None Start Event, one User Task, one divergent Exclusive Gateway, and three None End Events. The User Task publishes one literal candidate group and accepts an atomic completion patch containing the existing null, String, and Boolean values plus bounded non-negative safe integers and ordered String lists. The gateway evaluates only the existing project-owned Simple Boolean String-equality language.
+
+The profile admits BPMN Rendering as opaque, execution-neutral source. The retained `bpmnLean:structuredForm` content is a Product 2 catalog input and never enters the checked graph, Semantic Process IL, semantic state, Temporal Workflow state, or semantic publication. Product 1 validates no form field, action, condition, or Zod rule. Existing M3 assignment-plus-form metadata stays unchanged; this profile publishes assignment-only metadata and selects only `CIB-EXT-0011`, not CIB form behavior.
+
+The [profile artifact](profile.json) uses BPMN 2.0.2 as normative authority. Its CIB relationship identifiers disclose separately calibrated User Task lifecycle, gateway order, and candidate-group mechanisms. The three [expense exception review scenarios](../../scenarios/expense-exception-review/README.md) are standards-profile Lean, TypeScript, differential, and Temporal witnesses with no retained CIB terminal results because CIB does not execute the project Simple Boolean expression language.
+
+The exact value, Rendering, assignment, form ownership, refinement, and exclusion boundaries are owned by the [structured Human Work proposal](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md). Status remains `draft`; this profile makes no general form, CIB form, JUEL, Activity-data, assignment, authorization, or BPMN Process Execution Conformance claim.
