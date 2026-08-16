@@ -116,11 +116,15 @@ The Lean lane must stay a research lane rather than becoming a proof tax on prod
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Blocked on owner approval: remove Product 2's single-node scale boundary.** Obtain owner approval for the independently reviewed [shared persistence and projection proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md), then implement its PostgreSQL repositories and exact-byte artifacts, bounded background recovery, monotonic suffix projections, and projection-backed reads. Preserve fail-closed completeness and exact retry semantics, and close with concurrent multi-replica correctness evidence before making any performance or capacity claim.
+1. **In progress: remove Product 2's single-node scale boundary.** Implement the owner-approved [shared persistence and projection proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md): PostgreSQL repositories and exact-byte artifacts, bounded background recovery, monotonic suffix projections, and projection-backed reads. First obtain the repository's ordinary dependency and licence approval for the selected PostgreSQL driver and migration runner. Preserve fail-closed completeness and exact retry semantics, and close with concurrent multi-replica correctness evidence before making any performance or capacity claim.
 
 ## Approved decisions
 
 Only decisions that constrain the next work are kept here. A decision fully owned by a graduated specification lives in that specification; Git retains the rest.
+
+**Approved 2026-08-16.**
+
+- **Product 2 shared persistence and projection architecture:** implement the independently reviewed [shared persistence and projection proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) using PostgreSQL 18, separately scalable API and recovery-worker replicas, exact admitted-source bytes, domain-owned leased work, suffix-only projections, and explicitly bounded projection freshness. This approval does not make a performance or capacity claim and does not bypass the separate dependency and licence approval rule.
 
 **Approved 2026-08-15.**
 
@@ -242,9 +246,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain the owner decision for the independently reviewed [Product 2 shared persistence and projection proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md).** Review target `c9cf16e` and correction audit `e03240c` bind every current SQLite repository, the exact admitted-source artifact store, lifecycle repair family, request-time Temporal Query fan-out, projection freshness rule, audit source-to-sink completeness rule, and same-database publication invariant. Implementation remains stopped until owner approval is recorded.
+**Next action: select and obtain owner approval for a maintained MIT-compatible PostgreSQL driver and migration runner, then implement the owner-approved [Product 2 shared persistence and projection proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md).** Review target `c9cf16e` and correction audit `e03240c` bind every current SQLite repository, the exact admitted-source artifact store, lifecycle repair family, request-time Temporal Query fan-out, projection freshness rule, audit source-to-sink completeness rule, and same-database publication invariant.
 
-Item 1 is **blocked on owner approval** of the independently reviewed shared-persistence architecture. The theoretical roadmap and ordering are owner-approved; no shared-store implementation, distributed benchmark, or production capacity claim exists yet.
+Item 1 is **in progress** at its dependency-selection boundary. The architecture, theoretical roadmap, and ordering are owner-approved; no PostgreSQL dependency, shared-store implementation, distributed benchmark, or production capacity claim exists yet.
 
 **Latest evidence:** M6 closure target `c1ee125` passed context-cold review after correction audit `7c35fd1`. The correction closes complete-form validation ordering, inert dynamic field keys, and the default Work bundle boundary; the complete default Work static-import graph is 462,859 bytes, down from 464,930 before M6. The approved Product 1 checkpoint retains its Lean, semantic-core, BPMN-source, shared-contract, Java CIB-prefix, differential, engine-API, Temporal-protocol, live Workflow, Worker-replacement, history, and replay evidence. Product 2 evidence covers strict catalog projection and canonical bytes, definition persistence, Zod-backed computation, exact retry/conflict and zero-mutation rejection, HTTP 422, server composition, the retained expense-exception corpus row, and the exact 1280/1600 Chromium journey for all three actions and every field kind.
 
