@@ -17,7 +17,7 @@ Build or decode public definition, start, schedule, Message publication, Process
 - [Architecture](../../docs/ARCHITECTURE.md#public-contracts) owns the package boundary and dependency direction.
 - [Platform proposal](../../docs/BPM-PLATFORM-PROPOSAL.md) owns the definition and start contract.
 - [Human-work specification](../../docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns task discovery, claim, completion, and audit behavior.
-- [Structured Human Work proposal](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the M6 public form boundary and the richer semantic values that committed-execution publications must preserve.
+- [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 public form boundary and the richer semantic values that committed-execution publications must preserve.
 - [Incident-operations specification](../../docs/BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) owns incident resources and actions.
 - [Process-instance search specification](../../docs/BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md), [committed-execution publication specification](../../docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md), and [flow-node occurrence metrics specification](../../docs/capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) own the Operations contracts.
 - [Operator history and audit export specification](../../docs/BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md) owns the independently ordered Work and incident-action export contract.

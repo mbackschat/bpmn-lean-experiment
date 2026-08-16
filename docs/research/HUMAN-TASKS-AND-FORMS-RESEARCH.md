@@ -2,7 +2,7 @@
 
 ## Status
 
-**Research complete; the bounded M6 recommendation is implemented and awaiting closure review under the [structured Human Work proposal](../BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md).** The owner requested a useful middle ground with regular field types, flat arrays, multiple ways to complete a task, and action-dependent input such as requiring a reason for Abort. This research records the source-grounded basis and remains non-authoritative; the governed proposal and its successor specification own the exact BPMN, source, wire, validation, compatibility, and evidence contracts.
+**Research complete; the bounded M6 recommendation is implemented and closure-reviewed under the [structured Human Work specification](../BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md).** The owner requested a useful middle ground with regular field types, flat arrays, multiple ways to complete a task, and action-dependent input such as requiring a reason for Abort. This research records the source-grounded basis and remains non-authoritative; the specification owns the exact BPMN, source, wire, validation, compatibility, and evidence contracts.
 
 ## Question and conclusion
 

@@ -19,6 +19,6 @@ The module reaches Product 1 only through the [engine gateway](../../foundation/
 - [Source map](SOURCE-MAP.md) maps services, repositories, routes, and value owners.
 - [Platform proposal](../../../docs/BPM-PLATFORM-PROPOSAL.md) owns definition deployment and exact-version start behavior.
 - [Diagram presentation decision](../../../docs/BPMN-DIAGRAM-PRESENTATION-DECISION.md) owns source and generated presentation provenance.
-- [Structured Human Work proposal](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the catalog identity and Product 2 deployment boundary until closure graduation.
+- [Structured Human Work specification](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the catalog identity and Product 2 deployment boundary.
 - [Architecture](../../../docs/ARCHITECTURE.md#modules) owns module boundaries, persistence, and composition.
 - [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records the exact current Definitions surface.

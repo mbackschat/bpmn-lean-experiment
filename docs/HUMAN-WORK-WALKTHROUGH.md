@@ -113,7 +113,7 @@ Open that file in a standards-oriented BPMN modeller, adjust the layout, and sav
 ## Contract owners
 
 - [BPM platform human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns task discovery, claim, form, completion, and audit behavior.
-- [Structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the M6 catalog, form, action, validation, and generic-value boundary until closure graduation.
+- [Structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 catalog, form, action, validation, and generic-value boundary.
 - [BPM platform information architecture specification](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) owns navigation and collection-to-detail flow.
 - [BPM platform UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md) owns responsive and interaction behavior.
 - [BPMN diagram presentation decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md) owns source DI, generated sidecars, provenance, and modeller handoff.

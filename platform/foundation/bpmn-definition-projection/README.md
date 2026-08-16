@@ -15,6 +15,6 @@ Classify source layout as usable, absent, or unusable, generate bounded DI in a 
 ## Learn more
 
 - [Diagram presentation decision](../../../docs/BPMN-DIAGRAM-PRESENTATION-DECISION.md) owns provenance, trust, and composition behavior.
-- [Structured Human Work proposal](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the Human Task catalog, source placement, and Product 2-only validation boundary.
+- [Structured Human Work specification](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the Human Task catalog, source placement, and Product 2-only validation boundary.
 - [UI design specification](../../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md) owns browser rendering and user-visible presentation.
 - [Architecture](../../../docs/ARCHITECTURE.md#user-interface) owns the package boundary.

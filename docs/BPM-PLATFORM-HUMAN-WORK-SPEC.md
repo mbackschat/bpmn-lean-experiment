@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented, closure-reviewed, evidence-closed, and graduated for M3.** Product 2 provides the bounded M3 human-work contract over confirmed starts, exact current User Tasks, fake-actor authorization, claims, typed completion, platform audit, HTTP, and the React inbox. The complete repository gate, aggregate Work checkpoint, live Temporal witness, and Chromium acceptance are green at the reviewed closure boundary. The implemented M6 [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) extends only the definition-bound catalog, task presentation, form-validation, and completion-request arms while retaining this specification's authorization, reservation, retry, outcome, and audit lifecycles; it remains a proposal until its own closure review and graduation.
+**Implemented, closure-reviewed, evidence-closed, and graduated for M3.** Product 2 provides the bounded M3 human-work contract over confirmed starts, exact current User Tasks, fake-actor authorization, claims, typed completion, platform audit, HTTP, and the React inbox. The complete repository gate, aggregate Work checkpoint, live Temporal witness, and Chromium acceptance are green at the reviewed closure boundary. The graduated M6 [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) extends only the definition-bound catalog, task presentation, form-validation, and completion-request arms while retaining this specification's authorization, reservation, retry, outcome, and audit lifecycles.
 
 ## Independent cold-review receipt
 
@@ -159,7 +159,7 @@ E2 metadata is passive, so the observed value may disagree with the declared fie
 
 The M6 structured arm joins one immutable Human Task definition by exact `{processId, version, sourceSha256, semanticProfile}` plus the engine-published BPMN element ID. Its public detail includes the complete catalog binding, task description, static Product 2 worklist priority, ordered form definition, and exact current values for Text, Boolean, non-negative safe Integer, Date-as-String, Single choice, and ordered String-list Multiple choice fields. A missing or mismatched catalog, unknown task element, or incompatible current value fails closed without changing the engine task.
 
-Product 2 is the only structured-form authority. Its catalog-selected Zod contract applies literal defaults, action-dependent visibility and requiredness, scalar and collection bounds, calendar-date validity, option membership, and duplicate-selection refusal. It canonicalizes Multiple choice into catalog option order, emits tagged null for a visible optional blank, adds the selected action's fixed resolution String, sorts one atomic patch by the existing binding order, and rejects every configured byte ceiling before reservation or engine dispatch. Product 1 receives only that generic patch and knows no form field, action, validation, priority, or Zod concept. The [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md#public-contracts) owns the complete pre-graduation contract and exact bounds.
+Product 2 is the only structured-form authority. Its catalog-selected Zod contract applies literal defaults, action-dependent visibility and requiredness, scalar and collection bounds, calendar-date validity, option membership, and duplicate-selection refusal. It canonicalizes Multiple choice into catalog option order, emits tagged null for a visible optional blank, adds the selected action's fixed resolution String, sorts one atomic patch by the existing binding order, and rejects every configured byte ceiling before reservation or engine dispatch. Product 1 receives only that generic patch and knows no form field, action, validation, priority, or Zod concept. The [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md#public-contracts) owns the complete contract and exact bounds.
 
 ## HTTP resources
 
@@ -375,7 +375,7 @@ Optional only if it changes no public or semantic claim:
 
 - an explicit manual refresh control in addition to bounded interval refetch.
 
-Superseded for the implemented M6 structured extension are the M3-only exclusions on multiple fields, labels, defaults, requiredness, bounded constraints, dates, non-negative safe integers, static choices, flat String-list multiple choice, one strict form schema, and multiple resolution actions. The [structured Human Work proposal](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md#scope) owns that exact bounded replacement until graduation.
+Superseded for the implemented M6 structured extension are the M3-only exclusions on multiple fields, labels, defaults, requiredness, bounded constraints, dates, non-negative safe integers, static choices, flat String-list multiple choice, one strict form schema, and multiple resolution actions. The [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md#scope) owns that exact bounded replacement.
 
 Still excluded from this specification and M6:
 

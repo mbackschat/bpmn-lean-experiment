@@ -15,7 +15,7 @@ Register confirmed Process instances, assemble the current actor-visible task in
 ## Learn more
 
 - [Human-work specification](../../../docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns lifecycle, authorization, retry, and audit behavior.
-- [Structured Human Work proposal](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns catalog joining, Zod-backed validation, canonical patch computation, and bounded structured form behavior until closure graduation.
+- [Structured Human Work specification](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns catalog joining, Zod-backed validation, canonical patch computation, and bounded structured form behavior.
 - [Human-work walkthrough](../../../docs/HUMAN-WORK-WALKTHROUGH.md) follows the maintained user journey through the public UI.
 - [Architecture](../../../docs/ARCHITECTURE.md#modules) owns the module boundary and persistence direction.
 - [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records current Work capability and evidence.

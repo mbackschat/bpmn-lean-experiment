@@ -44,7 +44,7 @@ Before pushing a UI-facing commit, run the exact local GitHub entry point descri
 
 - [Source map](SOURCE-MAP.md) maps features to their main source owners.
 - [Human-work walkthrough](../../../docs/HUMAN-WORK-WALKTHROUGH.md) is the maintained guided task journey.
-- [Structured Human Work proposal](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the implemented M6 form and action boundary until closure graduation.
+- [Structured Human Work specification](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the implemented M6 form and action boundary.
 - [UI design specification](../../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md) owns interaction, accessibility, responsive behavior, and browser evidence.
 - [Architecture](../../../docs/ARCHITECTURE.md#user-interface) owns package boundaries.
 

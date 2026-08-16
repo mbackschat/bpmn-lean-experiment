@@ -4,7 +4,7 @@ This document owns current implementation, proof, evidence, and absence status, 
 
 ## Current claim
 
-**Two products, M1 through M5 closed, and M6 implemented pending closure review.** The engine executes twenty-two closed capsules plus the approved M6 checkpoint. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has green M6 Product 2 implementation and evidence without closure approval.
+**M1 through M6 are closed, completing the functional MVP on its documented single-node Product 2 deployment.** No production scalability or capacity claim is made.
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting.
 
@@ -22,7 +22,7 @@ This document owns current implementation, proof, evidence, and absence status, 
 
 **Current E2 User Task metadata boundary.** The graduated [sequential metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) carries an optional literal group candidate and string-or-Boolean generated-form field through checked source, `awaitUserTask`, committed wait, and public `OpenUserTask`. The closure-reviewed [parallel composition specification](capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) requires that metadata on both tasks of one exact balanced graph, empty Process Start data, and the existing completion and parallel runtime. Lean/core, combined CIB, differential, live Temporal/replay, mutation, corpus, and production-journey evidence are green. Product 2 consumes only published task/form facts through M3 Work.
 
-**Current M6 boundary.** The independently approved [structured Human Work](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) engine checkpoint adds assignment-only metadata, opaque Rendering, five-arm completion values, exact String routing, and cross-target evidence without a new host primitive. Product 2 adds an exact-source catalog, Zod validation, canonical completion, six field kinds, three actions, and a two-width expense-exception journey. Closure review remains outstanding.
+**Current M6 boundary.** The [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) is closure-reviewed and evidence-closed across Product 1 semantics and Product 2 forms.
 
 **Current M5 boundary.** The closure-reviewed [E1 specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements replay-complete transitions, exact current positions, a strict Workflow Query, retention/replay, and fail-closed Product 2 History, Diagram, and canonical export. The [metrics specification](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) adds Lean/core lifecycle parity, replay-stable time, exact-version all-or-unavailable frequency and completed duration, HTTP, and a two-width UI. The [operator-history specification](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md) completes M5 with independent bounded Work and incident audit snapshots, Operations authorization, canonical download, restart/privacy/focus evidence, and no merged chronology.
 
@@ -124,6 +124,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 
 #### Explicitly absent
 
+- Horizontal Product 2 deployment: persistence, artifacts, repair, and Temporal Query aggregation remain node-local. The approved [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) is first post-MVP; no distributed capacity evidence exists.
 - Adjustable metric periods, running pseudo-duration, charts, heatmaps, metric export, post-retention archive, and cross-instance semantic ordering
 
 - a production identity provider, directory synchronization, administrator role, claim delegation, or authorization model beyond the exact fake actor and group policy

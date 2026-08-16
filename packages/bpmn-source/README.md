@@ -33,7 +33,7 @@ Run the focused compiler gate:
 - [Semantic Process IL specification](../../docs/SEMANTIC-PROCESS-IL-SPEC.md) owns the checked graph and lowering contracts.
 - [Profile-parameterized admission specification](../../docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns profile capability and admission behavior.
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the exact closure-reviewed two-task source restriction.
-- [Structured Human Work proposal](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-PROPOSAL.md) owns the M6 candidate-group projection and execution-neutral Rendering preservation boundary.
+- [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 candidate-group projection and execution-neutral Rendering preservation boundary.
 - [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact accepted and rejected surface.
 - [Executable model corpus](../../model-corpus/README.md) exercises this production compiler against retained and external whole models.
 
