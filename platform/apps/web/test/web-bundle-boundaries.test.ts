@@ -15,7 +15,7 @@ type ViteManifestEntry = Readonly<{
   isEntry?: boolean;
 }>;
 
-test("keeps optional workspaces and the BPMN viewer outside the initial Work bundle", async () => {
+test("keeps Work eager and optional workspaces plus detail-only code deferred", async () => {
   const manifest = JSON.parse(await readFile(
     path.join(distRoot, ".vite/manifest.json"),
     "utf8",
@@ -32,16 +32,18 @@ test("keeps optional workspaces and the BPMN viewer outside the initial Work bun
 
   assert.ok(
     initialBytes < entryJavaScriptCeilingBytes,
-    `initial JavaScript graph must stay below ${entryJavaScriptCeilingBytes} bytes`,
+    `default Work JavaScript graph must stay below ${entryJavaScriptCeilingBytes} bytes`,
   );
+  assert.match(initialSource, /Candidate group/u);
   assert.doesNotMatch(initialSource, /bjs-powered-by|http:\/\/bpmn\.io/u);
 
   const scripts = (await readdir(assetRoot)).filter((name) => name.endsWith(".js"));
   for (const stem of [
-    "deferred-work-workspace",
     "deferred-definition-workspace",
     "deferred-operations-workspace",
     "capabilities-panel",
+    "definition-diagram",
+    "structured-work-form",
     "bpmn-js-factory",
     "bpmn-viewer",
   ]) {
@@ -50,6 +52,10 @@ test("keeps optional workspaces and the BPMN viewer outside the initial Work bun
       `${stem} must own a deferred production chunk`,
     );
   }
+  assert.equal(
+    scripts.some((name) => name.startsWith("deferred-work-workspace-")),
+    false,
+  );
 
   const deferredSource = (await Promise.all(
     scripts

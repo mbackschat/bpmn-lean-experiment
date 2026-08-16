@@ -181,6 +181,7 @@ test("preserves legacy public API error order and appends route-specific codes",
     "internalFailure",
     "conflict",
     "forbidden",
+    "formValidationFailed",
     "formValueIncompatible",
     "workSnapshotUnavailable",
     "incidentSnapshotUnavailable",
@@ -201,6 +202,7 @@ test("legacy Definition, Schedule, Message, and Search sets reject every later r
   const legacyRoutes = ["Definition", "Schedule", "Message", "Search"];
   const laterRouteCodes = [
     PublicApiErrorCode.Forbidden,
+    PublicApiErrorCode.FormValidationFailed,
     PublicApiErrorCode.FormValueIncompatible,
     PublicApiErrorCode.WorkSnapshotUnavailable,
     PublicApiErrorCode.IncidentSnapshotUnavailable,

@@ -200,7 +200,12 @@ function decodeStructuredWorkCompletionRequest(
       throw new TypeError("Structured Work completion request.fields keys must be strings");
     }
     requireWireString(key, "Structured Work completion request field key", false);
-    detachedFields[key] = Reflect.get(fields, key);
+    Object.defineProperty(detachedFields, key, {
+      configurable: false,
+      enumerable: true,
+      value: Reflect.get(fields, key),
+      writable: false,
+    });
   }
   return {
     schemaVersion: structuredWorkCompletionRequestSchemaVersion,

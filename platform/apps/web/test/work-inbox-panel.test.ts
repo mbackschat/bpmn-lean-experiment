@@ -22,8 +22,8 @@ import type {
   RetainedCompletionOperation,
   WorkCompletionView,
   WorkInboxPanelProps,
-  WorkTaskFormProps,
 } from "../src/work-inbox-panel.tsx";
+import type { WorkTaskFormProps } from "../src/work-task-detail-workspace.tsx";
 
 const stylesSource = await readFile(
   new URL("../src/work-inbox.module.css", import.meta.url),
@@ -40,52 +40,8 @@ const dependencies = [
   "@bpmn-lean/platform-ui-kit",
   "bpmn-js/lib/NavigatedViewer.js",
 ] as const;
-const built = await build({
-  configFile: false,
-  logLevel: "silent",
-  build: {
-    minify: false,
-    ssr: fileURLToPath(new URL("../src/work-inbox-panel.tsx", import.meta.url)),
-    target: "esnext",
-    write: false,
-    rollupOptions: {
-      external: (id) => dependencies.includes(id as typeof dependencies[number]) ||
-        id.includes("definition-diagram") || id.includes("bpmn-viewer") ||
-        id.includes("bpmn-js-factory"),
-    },
-  },
-});
-if (Array.isArray(built) || !("output" in built)) {
-  throw new Error("Unexpected Work inbox build result.");
-}
-const chunk = built.output.find((entry) => entry.type === "chunk");
-if (chunk === undefined) throw new Error("Work inbox test bundle is missing.");
-let runnable = chunk.code;
-runnable = runnable.replace(
-  /import \{ DefinitionDiagram \} from ['"][^'"]+['"];/u,
-  "const DefinitionDiagram = () => null;",
-);
-runnable = runnable.replace(
-  /import \{ BpmnDiagramMarkerKind \} from ['"][^'"]+['"];/u,
-  'const BpmnDiagramMarkerKind = { Selected: "selected" };',
-);
-for (const dependency of dependencies) {
-  runnable = runnable.replaceAll(`'${dependency}'`, JSON.stringify(import.meta.resolve(dependency)));
-  runnable = runnable.replaceAll(`"${dependency}"`, JSON.stringify(import.meta.resolve(dependency)));
-}
-const module = await import(
-  `data:text/javascript;base64,${Buffer.from(runnable).toString("base64")}`
-) as Readonly<{
+const inboxModule = await loadBuiltModule("work-inbox-panel.tsx") as Readonly<{
   WorkInboxPanel: ComponentType<WorkInboxPanelProps>;
-  WorkTaskDetailWorkspace: ComponentType<Readonly<{
-    completionView: WorkCompletionView;
-    detail: PublicTaskDetail;
-    onBack: () => void;
-    onComplete: WorkTaskFormProps["onComplete"];
-    onRetry: () => void;
-    task: PublicWorkTask;
-  }>>;
-  WorkTaskForm: ComponentType<WorkTaskFormProps>;
   WorkCompletionViewKind: Readonly<{
     Idle: "idle";
     Submitting: "submitting";
@@ -111,22 +67,75 @@ const module = await import(
     closeDetail: boolean;
     view: WorkCompletionView;
   }>;
+  workTaskRowId: (task: PublicWorkTask) => string;
+}>;
+const detailModule = await loadBuiltModule("work-task-detail-workspace.tsx") as Readonly<{
+  WorkTaskDetailWorkspace: ComponentType<Readonly<{
+    completionView: WorkCompletionView;
+    detail: PublicTaskDetail;
+    onBack: () => void;
+    onComplete: WorkTaskFormProps["onComplete"];
+    onRetry: () => void;
+    task: PublicWorkTask;
+  }>>;
+  WorkTaskForm: ComponentType<WorkTaskFormProps>;
   initialFormValue: (field: PublicFormField) => PublicFormValue;
   selectedBooleanFormValue: (value: FormDataEntryValue | null) => boolean;
-  workTaskRowId: (task: PublicWorkTask) => string;
 }>;
 const {
   WorkInboxPanel,
-  WorkTaskDetailWorkspace,
-  WorkTaskForm,
   WorkCompletionViewKind,
   createRetainedCompletionOperation,
   submitRetainedCompletionOperation,
   resolveCompletionResult,
+  workTaskRowId,
+} = inboxModule;
+const {
+  WorkTaskDetailWorkspace,
+  WorkTaskForm,
   initialFormValue,
   selectedBooleanFormValue,
-  workTaskRowId,
-} = module;
+} = detailModule;
+
+async function loadBuiltModule(sourceName: string): Promise<unknown> {
+  const built = await build({
+    configFile: false,
+    logLevel: "silent",
+    build: {
+      minify: false,
+      ssr: fileURLToPath(new URL(`../src/${sourceName}`, import.meta.url)),
+      target: "esnext",
+      write: false,
+      rollupOptions: {
+        external: (id) => dependencies.includes(id as typeof dependencies[number]) ||
+          id.includes("definition-diagram") || id.includes("bpmn-viewer") ||
+          id.includes("bpmn-js-factory"),
+      },
+    },
+  });
+  if (Array.isArray(built) || !("output" in built)) {
+    throw new Error(`Unexpected ${sourceName} build result.`);
+  }
+  const chunk = built.output.find((entry) => entry.type === "chunk" && entry.isEntry);
+  if (chunk === undefined || chunk.type !== "chunk") {
+    throw new Error(`${sourceName} test bundle is missing.`);
+  }
+  let runnable = chunk.code.replace(
+    /import \{ BpmnDiagramMarkerKind \} from ['"][^'"]+['"];/u,
+    'const BpmnDiagramMarkerKind = { Selected: "selected" };',
+  );
+  for (const dependency of dependencies) {
+    runnable = runnable.replaceAll(
+      `'${dependency}'`,
+      JSON.stringify(import.meta.resolve(dependency)),
+    );
+    runnable = runnable.replaceAll(
+      `"${dependency}"`,
+      JSON.stringify(import.meta.resolve(dependency)),
+    );
+  }
+  return import(`data:text/javascript;base64,${Buffer.from(runnable).toString("base64")}`);
+}
 
 const task: PublicWorkTask = {
   task: {

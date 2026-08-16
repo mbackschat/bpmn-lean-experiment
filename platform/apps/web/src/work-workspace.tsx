@@ -5,9 +5,9 @@ import { DefinitionApiClient } from "./definitions-api.ts";
 import { WorkInboxPanel } from "./work-inbox-panel.tsx";
 import { WorkApiClient } from "./work-tasks-api.ts";
 
-export type DeferredWorkWorkspaceProps = Readonly<{ origin: string }>;
+export type WorkWorkspaceProps = Readonly<{ origin: string }>;
 
-export function DeferredWorkWorkspace({ origin }: DeferredWorkWorkspaceProps) {
+export function WorkWorkspace({ origin }: WorkWorkspaceProps) {
   const [queryClient] = useState(() => new QueryClient());
   const definitionApi = useMemo(() => new DefinitionApiClient(origin), [origin]);
   const workApi = useMemo(() => new WorkApiClient(origin), [origin]);

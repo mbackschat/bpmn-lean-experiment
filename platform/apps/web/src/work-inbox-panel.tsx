@@ -11,7 +11,7 @@ import {
   DataTableResponsiveMode,
 } from "@bpmn-lean/platform-ui-kit";
 import type { DataTableColumn } from "@bpmn-lean/platform-ui-kit";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   PublicWorkTask,
@@ -30,10 +30,13 @@ import type {
   RetainedCompletionOperation,
   WorkCompletionView,
 } from "./work-completion-operation";
-import { WorkTaskDetailWorkspace } from "./work-task-detail-workspace";
 import styles from "./work-inbox.module.css";
 
 const tasksQueryKey = ["work", "tasks"] as const;
+const WorkTaskDetailWorkspace = lazy(async () => {
+  const module = await import("./work-task-detail-workspace");
+  return { default: module.WorkTaskDetailWorkspace };
+});
 
 export type WorkInboxPanelProps = Readonly<{
   api: Pick<
@@ -237,37 +240,39 @@ export function WorkInboxPanel({
         {error === null ? null : <p role="alert" className={styles.error}>{errorMessage(error)}</p>}
         {detail.isPending ? <p role="status">Loading task detail…</p> : null}
         {detail.data === undefined ? null : (
-          <WorkTaskDetailWorkspace
-            task={detail.data.workTask}
-            detail={detail.data}
-            completionView={completionView}
-            {...(definitionApi === undefined ? {} : { definitionApi })}
-            onBack={() => {
-              if (completionOperation !== null) return;
-              returnFocusRef.current = "task";
-              setSelected(null);
-              completionOperationRef.current = null;
-              setCompletionView({ kind: WorkCompletionViewKind.Idle });
-              complete.reset();
-            }}
-            onComplete={(value) => {
-              const operation = completionOperationRef.current ??
-                createRetainedCompletionOperation(
-                  detail.data,
-                  value,
-                  createActionId,
-                );
-              completionOperationRef.current = operation;
-              complete.mutate(operation);
-            }}
-            onRetry={() => {
-              const operation = completionOperationRef.current;
-              if (operation === null) {
-                throw new Error("No retained completion operation is available.");
-              }
-              complete.mutate(operation);
-            }}
-          />
+          <Suspense fallback={<p role="status">Loading task detail…</p>}>
+            <WorkTaskDetailWorkspace
+              task={detail.data.workTask}
+              detail={detail.data}
+              completionView={completionView}
+              {...(definitionApi === undefined ? {} : { definitionApi })}
+              onBack={() => {
+                if (completionOperation !== null) return;
+                returnFocusRef.current = "task";
+                setSelected(null);
+                completionOperationRef.current = null;
+                setCompletionView({ kind: WorkCompletionViewKind.Idle });
+                complete.reset();
+              }}
+              onComplete={(value) => {
+                const operation = completionOperationRef.current ??
+                  createRetainedCompletionOperation(
+                    detail.data,
+                    value,
+                    createActionId,
+                  );
+                completionOperationRef.current = operation;
+                complete.mutate(operation);
+              }}
+              onRetry={() => {
+                const operation = completionOperationRef.current;
+                if (operation === null) {
+                  throw new Error("No retained completion operation is available.");
+                }
+                complete.mutate(operation);
+              }}
+            />
+          </Suspense>
         )}
       </section>
     );
@@ -349,10 +354,3 @@ export {
   resolveCompletionResult,
   submitRetainedCompletionOperation,
 } from "./work-completion-operation";
-export {
-  initialFormValue,
-  selectedBooleanFormValue,
-  WorkTaskDetailWorkspace,
-  WorkTaskForm,
-} from "./work-task-detail-workspace";
-export type { WorkTaskFormProps } from "./work-task-detail-workspace";

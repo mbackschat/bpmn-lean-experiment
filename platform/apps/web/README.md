@@ -11,7 +11,7 @@ This is the browser application for the BPM platform. It is a static React app t
 
 The About table is built from the same canonical capability catalog that the retained-model guard checks against registered pipeline XML. It is a bounded evidence disclosure, not a BPMN conformance percentage or a claim that every CIB Seven behavior is compatible. The UI never receives Temporal Workflow IDs, Run IDs, Task Queues, Event History, or private engine locators. Diagrams are presentation only and never decide whether a model is executable.
 
-The production bundle loads the Work shell first. The complete Work workspace, Definitions, Operations, About, their workspace-only HTTP clients, the structured-form surface, and the bpmn-js viewer runtime and styles load only when their workspace or detail boundary is opened. The production-bundle guard keeps the initial JavaScript graph below 500 kB and rejects an eager bpmn-js runtime.
+The production bundle loads the complete Work inbox first. Definitions, Operations, About, their workspace-only HTTP clients, and Work task detail load at navigation or task-selection boundaries. The structured form loads with a structured task detail, while the bpmn-js viewer runtime and styles load only when a Diagram surface mounts. The production-bundle guard measures the complete default Work static-import graph, keeps it below 500 kB, and rejects an eager bpmn-js runtime.
 
 ## Run locally
 

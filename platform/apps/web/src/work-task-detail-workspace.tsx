@@ -16,7 +16,6 @@ import type {
   WorkCompletionResult,
 } from "@bpmn-lean/platform-contracts";
 
-import { DefinitionDiagram } from "./definition-diagram";
 import type { DefinitionApiClient } from "./definitions-api";
 import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
 import type { WorkCompletionView } from "./work-completion-operation";
@@ -27,6 +26,10 @@ import styles from "./work-inbox.module.css";
 const StructuredWorkForm = lazy(async () => {
   const module = await import("./structured-work-form");
   return { default: module.StructuredWorkForm };
+});
+const DefinitionDiagram = lazy(async () => {
+  const module = await import("./definition-diagram");
+  return { default: module.DefinitionDiagram };
 });
 
 export type WorkTaskDetailWorkspaceProps = Readonly<{
@@ -111,14 +114,16 @@ function WorkTaskDiagram({
     );
   }
   return (
-    <DefinitionDiagram
-      api={definitionApi}
-      definition={task.hostingInstance.definition}
-      highlight={{
-        elementId: task.task.id.elementId,
-        markerKind: BpmnDiagramMarkerKind.Selected,
-      }}
-    />
+    <Suspense fallback={<p role="status">Loading task diagram…</p>}>
+      <DefinitionDiagram
+        api={definitionApi}
+        definition={task.hostingInstance.definition}
+        highlight={{
+          elementId: task.task.id.elementId,
+          markerKind: BpmnDiagramMarkerKind.Selected,
+        }}
+      />
+    </Suspense>
   );
 }
 

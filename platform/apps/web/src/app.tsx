@@ -1,10 +1,8 @@
 import { lazy, Suspense, useState } from "react";
 
 import { AppShell, AppWorkspace } from "./app-shell";
+import { WorkWorkspace } from "./work-workspace";
 
-const WorkWorkspace = lazy(async () => ({
-  default: (await import("./deferred-work-workspace")).DeferredWorkWorkspace,
-}));
 const DefinitionWorkspace = lazy(async () => ({
   default: (await import("./deferred-definition-workspace")).DeferredDefinitionWorkspace,
 }));
@@ -35,11 +33,7 @@ export function App({
         </Suspense>
       )}
       onNavigate={setWorkspace}
-      work={(
-        <Suspense fallback={<WorkspaceLoadingStatus />}>
-          <WorkWorkspace origin={origin} />
-        </Suspense>
-      )}
+      work={<WorkWorkspace origin={origin} />}
       operations={(
         <Suspense fallback={<WorkspaceLoadingStatus />}>
           <OperationsWorkspace

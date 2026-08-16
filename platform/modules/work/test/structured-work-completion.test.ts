@@ -5,8 +5,13 @@ import { join } from "node:path";
 import test from "node:test";
 
 import type {
+  HumanTaskCatalogV1,
   StructuredWorkCompletionRequestV1,
   WorkAuditEvent,
+} from "@bpmn-lean/platform-contracts";
+import {
+  decodeWorkCompletionRequest,
+  parseStrictJson,
 } from "@bpmn-lean/platform-contracts";
 import {
   FakeActorResolver,
@@ -169,7 +174,106 @@ test("invalid structured input reserves nothing and calls the gateway zero times
   }
 });
 
-async function createHarness() {
+test("hidden incompatible current data rejects before reservation, dispatch, or audit", async () => {
+  const harness = await createHarness({
+    inputVariables: [{
+      name: "resolutionReason",
+      value: { kind: "integer", value: 7 },
+    }],
+  });
+  try {
+    await claim(harness);
+    const beforeAudit = structuredClone(harness.audit);
+    const result = await harness.service.completeTask(
+      "hidden-incompatible-1",
+      structuredRequest("approve", { riskFlags: [] }),
+    );
+    assert.deepEqual(result, {
+      kind: "formValidationFailed",
+      issues: [{
+        code: "currentValueIncompatible",
+        target: { kind: "field", key: "resolutionReason" },
+      }],
+    });
+    assert.equal(harness.completionCalls, 0);
+    assert.equal(harness.repository.getCompletionAction("hidden-incompatible-1"), null);
+    assert.deepEqual(harness.audit, beforeAudit);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("unknown __proto__ input remains visible to validation and mutates nothing", async () => {
+  const harness = await createHarness();
+  try {
+    await claim(harness);
+    const beforeAudit = structuredClone(harness.audit);
+    const result = await harness.service.completeTask(
+      "unknown-proto-1",
+      decodedStructuredRequest("approve", `{"__proto__":"secret"}`),
+    );
+    assert.deepEqual(result, {
+      kind: "formValidationFailed",
+      issues: [{
+        code: "unknownField",
+        target: { kind: "field", key: "__proto__" },
+      }],
+    });
+    assert.equal(harness.completionCalls, 0);
+    assert.equal(harness.repository.getCompletionAction("unknown-proto-1"), null);
+    assert.deepEqual(harness.audit, beforeAudit);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("catalog-bound __proto__ input reaches the canonical engine patch as data", async () => {
+  const protoCatalog: HumanTaskCatalogV1 = {
+    ...catalog,
+    tasks: [{
+      ...catalog.tasks[0],
+      form: {
+        ...catalog.tasks[0].form,
+        fields: [{
+          key: "__proto__",
+          label: "Prototype review",
+          helpText: null,
+          defaultValue: null,
+          visibleForActions: "all",
+          requiredForActions: ["approve"],
+          kind: "text",
+          multiline: false,
+          minLength: 1,
+          maxLength: 100,
+        }],
+      },
+    }],
+  };
+  const harness = await createHarness({ catalog: protoCatalog });
+  try {
+    await claim(harness);
+    const result = await harness.service.completeTask(
+      "valid-proto-1",
+      decodedStructuredRequest("approve", `{"__proto__":"reviewed"}`),
+    );
+    assert.equal(result.kind, "result");
+    assert.equal(harness.completionCalls, 1);
+    assert.deepEqual(harness.lastSubmittedValues, [{
+      name: "__proto__",
+      value: { kind: "string", value: "reviewed" },
+    }, {
+      name: "resolution",
+      value: { kind: "string", value: "approved" },
+    }]);
+  } finally {
+    await harness.close();
+  }
+});
+
+async function createHarness(options: Readonly<{
+  catalog?: HumanTaskCatalogV1;
+  inputVariables?: readonly unknown[];
+}> = {}) {
   const root = await mkdtemp(join(tmpdir(), "bpmn-lean-structured-work-red-"));
   const repository = new SqliteWorkRepository(join(root, "work.sqlite"));
   await repository.recordConfirmedProcessInstance({
@@ -194,7 +298,10 @@ async function createHarness() {
     }),
     readWorkDetail: async () => ({
       status: "found" as const,
-      detail: { task: structuredClone(task), inputVariables: [] },
+      detail: {
+        task: structuredClone(task),
+        inputVariables: structuredClone(options.inputVariables ?? []),
+      },
     }),
     completeWork: async (request: Readonly<{
       stimulus: Readonly<{ commandId: string; submittedValues: readonly unknown[] }>;
@@ -214,7 +321,9 @@ async function createHarness() {
     actors,
     authorization: new TaskAuthorizationPolicy(),
     limits: { maxProcesses: 10, maxTasks: 10 },
-    catalogs: { readHumanTaskCatalog: () => structuredClone(catalog) },
+    catalogs: {
+      readHumanTaskCatalog: () => structuredClone(options.catalog ?? catalog),
+    },
   });
   const details = new WorkTaskDetailService({ work, gateway });
   const service = new WorkMutationService({
@@ -263,4 +372,16 @@ function structuredRequest(
     resolutionActionId,
     fields: structuredClone(fields),
   };
+}
+
+function decodedStructuredRequest(
+  resolutionActionId: string,
+  fieldsJson: string,
+): StructuredWorkCompletionRequestV1 {
+  const bytes = new TextEncoder().encode(
+    `{"schemaVersion":"bpmn-lean-structured-work-completion/v1","taskId":{"processInstanceId":"${task.id.processInstanceId}","elementId":"${task.id.elementId}","activation":${task.id.activation}},"expectedClaimGeneration":1,"resolutionActionId":"${resolutionActionId}","fields":${fieldsJson}}`,
+  );
+  const decoded = decodeWorkCompletionRequest(parseStrictJson(bytes));
+  if (!("fields" in decoded)) throw new TypeError("structured request expected");
+  return decoded;
 }

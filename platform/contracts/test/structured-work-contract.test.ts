@@ -105,6 +105,18 @@ test("strict JSON rejects duplicate structured field keys before request decodin
   assert.throws(() => decodeWorkCompletionRequest(parseStrictJson(bytes)), SyntaxError);
 });
 
+test("structured request decoding preserves __proto__ as an inert own field", () => {
+  const bytes = new TextEncoder().encode(
+    `{"schemaVersion":"bpmn-lean-structured-work-completion/v1","taskId":{"processInstanceId":"expense-1","elementId":"ReviewExpense","activation":1},"expectedClaimGeneration":1,"resolutionActionId":"approve","fields":{"__proto__":"declared value"}}`,
+  );
+  const decoded = decodeWorkCompletionRequest(parseStrictJson(bytes));
+  assert.ok("fields" in decoded);
+  assert.equal(Object.getPrototypeOf(decoded.fields), Object.prototype);
+  assert.equal(Object.hasOwn(decoded.fields, "__proto__"), true);
+  assert.deepEqual(Object.keys(decoded.fields), ["__proto__"]);
+  assert.equal(decoded.fields.__proto__, "declared value");
+});
+
 test("decodes detached integer and string-list values with generic wire bounds", () => {
   const source = { kind: "stringList", value: ["high", "high"] };
   const decoded = decodePublicFormValue(source);

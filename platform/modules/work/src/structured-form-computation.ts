@@ -77,7 +77,6 @@ export function computeStructuredFormCompletion(
 
   const submittedValues: ComputedWorkSubmittedBinding[] = [];
   for (const field of taskDefinition.form.fields) {
-    if (!isVisible(field, action.id)) continue;
     const current = currentByKey.get(field.key);
     if (
       current === undefined ||
@@ -90,6 +89,7 @@ export function computeStructuredFormCompletion(
       ));
       continue;
     }
+    if (!isVisible(field, action.id)) continue;
     const supplied = Object.hasOwn(request.fields, field.key);
     if (!supplied && field.requiredForActions.includes(action.id)) {
       issues.push(issue(
