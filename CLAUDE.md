@@ -574,6 +574,24 @@ git diff --check
 - Keep [AGENTS.md](AGENTS.md) as a symlink to `CLAUDE.md`; never maintain divergent copies.
 - The default branch requires the `verify-complete` hosted check, which passes only when the selected Ubuntu verification succeeded. Repository administrators may bypass it, so a red merge takes a deliberate override rather than an accident; never override to land unverified work.
 
+### Project tags
+
+The published `M1` through `M6` and `MVP` names are the closed functional-MVP history. For later non-release completion points, use annotated `phase/<kebab-case>` tags with descriptive names. For releases, use annotated `vMAJOR.MINOR.PATCH[-prerelease]` tags following Semantic Versioning; the version must equal the committed root `package.json` version, and build metadata is excluded from tag names. Create tags only at a clean, completely verified committed `HEAD`. Never force or move a published tag, never reuse the historical milestone namespace, and push only the exact intended tag rather than every local tag.
+
+Create a local tag, optionally pushing it in the same invocation:
+
+```sh
+./scripts/pnpm.sh run tag:create -- phase shared-persistence --message "Shared persistence phase complete"
+./scripts/pnpm.sh run tag:create -- release 0.2.0-rc.1 --message "Release 0.2.0-rc.1" --push
+```
+
+If creation succeeded but the push did not, retry only that exact tag:
+
+```sh
+./scripts/pnpm.sh run tag:push -- phase shared-persistence
+./scripts/pnpm.sh run tag:push -- release 0.2.0-rc.1
+```
+
 Before handing off:
 
 1. update [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) with exact implemented and absent scope;
