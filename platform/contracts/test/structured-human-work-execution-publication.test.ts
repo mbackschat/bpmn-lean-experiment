@@ -52,7 +52,6 @@ test("rejects invalid integer and string-list publication values", () => {
         withVariables([{ name: `invalid${index}`, value }]),
         { ...publicationIdentity, afterRevision: 0 },
       ),
-      undefined,
       JSON.stringify(value),
     );
   }
