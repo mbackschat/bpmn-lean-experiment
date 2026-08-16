@@ -2,15 +2,15 @@
 
 ## Status
 
-**Draft at immutable target `c9cf16e`, awaiting context-cold proposal review; owner approval is not yet recorded.** This proposal selects the focused Product 2 architecture required by Horizon 1 of the owner-approved [Temporal BPMN execution scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary). It changes no BPMN meaning, semantic profile, Product 1 Workflow behavior, public semantic observation, or current scalability claim.
+**Draft corrections to the context-cold proposal review are prepared; owner approval is not yet recorded.** This proposal selects the focused Product 2 architecture required by Horizon 1 of the owner-approved [Temporal BPMN execution scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary). It changes no BPMN meaning, semantic profile, Product 1 Workflow behavior, public semantic observation, or current scalability claim.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) owns the implemented deployment shape after this proposal closes. [PLAN.md](PLAN.md) owns sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns current absences, and the existing Product 2 specifications retain their business and public API contracts except for the bounded projection-freshness rule selected here.
 
 ## Decision
 
-Use one shared PostgreSQL 18 database as the first production persistence boundary for every Product 2 repository and every bounded definition artifact. Keep the modular monolith and business-module ownership, but add independently scalable API and Product 2 recovery-worker processes over the same database. Replace request-time fleet-wide Temporal Query aggregation with durable, leased background projection work and bounded projection-backed reads.
+Use one shared PostgreSQL 18 database as the first production persistence boundary for every Product 2 repository and for the exact admitted BPMN source bytes currently owned by `ExactArtifactStore`. Keep the modular monolith and business-module ownership, but add independently scalable API and Product 2 recovery-worker processes over the same database. Replace request-time fleet-wide Temporal Query aggregation with durable, leased background projection work and bounded projection-backed reads.
 
-This is the smallest complete Horizon 1 design because the current definition source is capped at 1 MiB and the other retained definition artifacts are similarly bounded. PostgreSQL `bytea` can keep those exact bytes in the same transactional system as their metadata, so Horizon 1 needs no object store, distributed transaction, dual write, or metadata-to-blob repair protocol. A separate object store becomes justified only when measured artifact volume, artifact size, transfer cost, or lifecycle isolation exceeds this bounded definition-artifact use case.
+This is the smallest complete Horizon 1 design because the current admitted definition source is capped at 1 MiB. PostgreSQL `bytea` can keep those exact source bytes in the same transactional system as their metadata, so Horizon 1 needs no object store, distributed transaction, dual write, or metadata-to-blob repair protocol. Definitions-owned Human Task catalogs and generated-DI sidecars remain closed Definitions records with their existing canonical-byte and digest checks rather than becoming generic artifact-store values. A separate object store becomes justified only when measured artifact volume, artifact size, transfer cost, or lifecycle isolation exceeds this bounded admitted-source use case.
 
 The shared database removes the current node-local application boundary. It does not claim unlimited database write scale, database high availability, or production capacity. Product 1 Workflow-chain bounds and distributed capacity evidence remain Horizons 2 and 3.
 
@@ -21,7 +21,7 @@ Required:
 - PostgreSQL major version 18 with the latest supported patch release in production;
 - one logical database shared by every Product 2 API and recovery-worker replica;
 - asynchronous repository ports, with PostgreSQL and local SQLite implementations of the same closed business capabilities;
-- exact definition artifacts stored as verified immutable `bytea` rows in that database;
+- exact admitted BPMN source artifacts stored as verified immutable `bytea` rows in that database;
 - durable domain-owned pending work, bounded leases, idempotent application, and safe worker replacement;
 - suffix-only committed-execution and occurrence projection during ordinary operation;
 - projection-backed Work, incident, metrics, and per-instance execution reads with one explicit bounded-freshness contract;
@@ -80,7 +80,7 @@ The PostgreSQL implementation replaces all twelve SQLite repository owners witho
 
 | Domain | Shared repository responsibilities |
 |---|---|
-| Definitions | definitions and version allocation, presentation, Schedules, Message Start publications, and confirmed Process registrations |
+| Definitions | definitions and version allocation, canonical Human Task catalogs, generated-DI sidecars, Schedules, Message Start publications, and confirmed Process registrations |
 | Operate | Process-instance search, incident actions, committed-execution projection, and flow-node-occurrence projection |
 | Work | Process registrations, observations, claims, structured completion bindings, actions, and the Work audit outbox |
 | Audit | Work audit events and incident-action audit events as two separately ordered streams |
@@ -98,7 +98,9 @@ Private insertion and projection cursors may use PostgreSQL `bigint`, but adapte
 
 ### Definition artifacts
 
-The shared artifact table has one row per verified digest with at least `sha256`, `byte_length`, and `bytes`. `put` snapshots and hashes caller bytes before SQL. Insertion never replaces an existing row. A conflicting existing row is read and compared exactly, preserving the current `stored`, `already-present`, digest-mismatch, and conflict distinctions. `get` returns a detached byte array and rechecks length and SHA-256 before returning it across the trust boundary.
+The shared artifact table replaces only the current `ExactArtifactStore` and has one admitted BPMN source row per verified digest with at least `sha256`, `byte_length`, and `bytes`. `put` snapshots and hashes caller bytes before SQL. Insertion never replaces an existing row. A conflicting existing row is read and compared exactly, preserving the current `stored`, `already-present`, digest-mismatch, and conflict distinctions. `get` returns a detached byte array and rechecks length and SHA-256 before returning it across the trust boundary.
+
+The immutable Human Task catalog remains a canonical JSON value in the Definitions repository under exact `{processId, version, sourceSha256, semanticProfile}` identity. The generated-DI sidecar remains a Definitions-owned record under exact `{schemaEpoch, sourceSha256, effectiveGeneratorSha256}` identity and preserves its exact DI UTF-8 bytes, sidecar metadata, digests, insert-or-compare behavior, and corruption refusal. Both move from SQLite tables to corresponding PostgreSQL tables without being widened into the source artifact store. Their existing byte and identity contracts remain authoritative.
 
 Deployment publishes artifact bytes before definition metadata. A foreign key prevents metadata from naming a missing artifact. A metadata failure may leave an unreferenced immutable artifact, which is safe and invisible; deletion and garbage collection remain excluded. No successful definition publication can precede its exact source bytes.
 
@@ -106,7 +108,7 @@ This same-database ordering is the cross-store publication decision: Horizon 1 d
 
 ### Transactions and concurrency
 
-PostgreSQL `READ COMMITTED` is the default. Each business invariant is enforced through unique or foreign-key constraints, compare-and-set updates, and the narrowest row lock needed by its repository. Definition version allocation locks only the row owning one Process ID; it does not serialize unrelated Processes. Serialization and deadlock failures are retried only by the owning bounded transaction wrapper and never across a Temporal call.
+PostgreSQL `READ COMMITTED` is the default. Each business invariant is enforced through unique or foreign-key constraints, compare-and-set updates, and the narrowest row lock needed by its repository. Definition version allocation locks only the row owning one Process ID; it does not serialize unrelated Processes. Serialization and deadlock failures are retried only by the owning bounded transaction wrapper and never across a Temporal call. A projection-backed response that depends on multiple tables must obtain its population head, generation coverage, freshness inputs, and selected result rows from one SQL statement and therefore one `READ COMMITTED` statement snapshot. Merely issuing several `SELECT` statements inside one default-isolation transaction is not a coherent read.
 
 One transaction may atomically update domain state and its domain-owned outbox in the same database. Audit delivery remains at-least-once with sink-side unique identities and byte-equality checks, so a lost acknowledgement is harmless. The Work and incident audit streams keep independent source-local order and never acquire a fabricated merged chronology.
 
@@ -142,6 +144,8 @@ The recovery-worker composition must own all current autonomous repair rather th
 
 API readiness checks only configuration, database connectivity, exact schema epoch, and required dependency health. It never scans the Process population. Recovery-worker readiness likewise proves it can claim work and reach required gateways, not that the backlog is empty.
 
+Each audit-producing domain also retains a monotonic private source head. Audit delivery applies a strict contiguous source suffix and advances the corresponding sink head in the same transaction as sink insertion. Work self-audit, incident audit, and operator-audit export perform no delivery work. Their single-statement read succeeds only when every captured source head is covered by its independently ordered sink head; lag, a gap, changed overlap, or corruption retains the existing fail-closed unavailable result. Time-bounded projection freshness never weakens this exact audit completeness rule.
+
 ### Suffix projection
 
 Ordinary committed-execution and flow-node-occurrence application inserts only the validated suffix and advances the retained head in the same transaction. It must not rebuild an in-memory complete history and delete/reinsert all prior rows. Byte-identical overlap remains idempotent; changed overlap, a gap, identity drift, or an occurrence ahead of its execution authority fails closed.
@@ -150,7 +154,9 @@ Full rebuild is an explicit administrative operation for corruption repair or sc
 
 ## Projection-backed read contract
 
-Work, incidents, flow-node metrics, and per-instance History, Diagram, and export leave their current request-time Temporal Query paths. Recovery workers keep their domain projections current in bounded batches. HTTP reads use only PostgreSQL and retain their existing authorization-first, pagination, response-byte, canonical-export, and unavailable distinctions.
+Work collection, incidents, flow-node metrics, and per-instance History, Diagram, and export leave their current request-time fleet-wide Temporal Query paths. Recovery workers keep their domain projections current in bounded batches. HTTP reads use only PostgreSQL and retain their existing authorization-first, pagination, response-byte, canonical-export, and unavailable distinctions. Audit reads additionally require exact source-head-to-sink-head coverage as defined above.
+
+Work task detail and every previously unseen claim, release, or completion retain one exact instance-scoped Product 1 task read. This is not fleet-wide fan-out. It preserves the current actor-visible task, current Process-variable, form-compatibility, and structured-form validation contract before any local mutation or completion dispatch. A bounded-age inbox row that is no longer current therefore fails through the existing hidden, conflict, incompatible, or unavailable distinction before claim state changes. Claim and release remain Product 2 repository compare-and-set operations and never become Product 1 commands. Completion and incident action remain the existing content-bound Product 1 commands. Retained exact-action recovery continues to precede a current read exactly where its owning specification already requires it.
 
 This proposal explicitly permits bounded projection age and makes it visible. Every successful projection-backed HTTP response carries these exact decimal headers:
 
@@ -159,19 +165,19 @@ Bpmn-Projection-Observed-After-Epoch-Ms: <non-negative safe integer>
 Bpmn-Projection-Max-Age-Ms: <positive safe integer>
 ```
 
-`observed-after` is the minimum database-clock completion time among all Product 1 observations needed for that result. For a population result, the database transaction also verifies that the completed projection generation covers the current retained population head and that every included nonclosed registration succeeded. The private population head is not returned. A success is legal only when database time minus `observed-after` is no greater than the configured maximum age at read time.
+`observed-after` is the minimum database-clock completion time among all Product 1 observations needed for that result. When no Product 1 observation contributes to a result, including a nonempty all-terminal population, it is the database time captured by the same result statement. For a population result, that one SQL statement also verifies that the completed projection generation covers the population head visible in its statement snapshot, every included nonclosed registration succeeded, and the returned rows belong to that generation. The private population head is not returned. A success is legal only when the statement's database time minus `observed-after` is no greater than the configured maximum age.
 
-If no complete generation exists, a registration arrived after the completed generation, one required projection is unavailable or corrupt, or the age bound is exceeded, the endpoint retains its current fail-closed unavailable result. It may enqueue or raise the priority of background work, but the HTTP request never waits for or directly performs a population Query sweep. An empty population uses the read transaction's database time as `observed-after`.
+If no complete generation exists, a registration is visible in the read statement snapshot after the completed generation, one required projection is unavailable or corrupt, or the age bound is exceeded, the endpoint retains its current fail-closed unavailable result. It may enqueue or raise the priority of background work, but the HTTP request never waits for or directly performs a population Query sweep.
 
 The age budget is a correctness configuration, not a measured service level. Shared mode refuses to start without an explicit value. A later public contract may select a different freshness model, but an implementation may not silently omit the headers, return an older generation, or convert unavailability into stale success.
 
-Work and incident snapshots are replaceable per-Process current images, while committed execution and occurrences are append-only suffix projections. Metrics aggregate only a complete exact-definition population from those retained projections. Claims and incident actions still use content-bound commands against Product 1, so a Process change after a valid projection snapshot can produce the existing semantic rejection or conflict rather than a false commit.
+Work and incident snapshots are replaceable per-Process current images, while committed execution and occurrences are append-only suffix projections. Metrics aggregate only a complete exact-definition population from those retained projections. Work claim and release remain local Product 2 compare-and-set operations after the exact current-task check. Completion and incident action still use content-bound commands against Product 1, so a Process change after a valid projection snapshot can produce the existing semantic rejection or conflict rather than a false commit.
 
 ## Schema and migration contract
 
 The first shared implementation creates one PostgreSQL schema epoch from empty state. Current SQLite and filesystem data are pre-release local data and have no automatic import, dual-write, or compatibility promise. Local mode remains available for demonstrations and focused tests but is not a replica of shared mode.
 
-After the first shared epoch exists, schema changes are forward-only, named, ordered, and checksum-bound. An explicit migration command acquires one fixed database advisory lock, verifies the complete applied prefix and checksums, runs one pending transactional migration at a time, and records it before releasing the lock. API and recovery-worker processes never apply migrations automatically; they fail readiness when the database epoch differs from the exact application-supported epoch. Migration credentials are separate from runtime DML credentials.
+After the first shared epoch exists, schema changes are forward-only, named, ordered, and checksum-bound. An explicit migration command uses one dedicated database session, acquires one fixed session-level advisory lock before reading the applied prefix, retains that lock across every independently transactional pending migration, and releases it only after the complete command succeeds or the session closes on failure. It verifies the complete applied prefix and checksums, runs one pending transactional migration at a time, and records each migration before beginning the next. API and recovery-worker processes never apply migrations automatically; they fail readiness when the database epoch differs from the exact application-supported epoch. Migration credentials are separate from runtime DML credentials.
 
 The implementation may select a maintained MIT-compatible PostgreSQL driver and migration runner only after the repository's ordinary dependency and licence approval. No ORM or generated domain model is needed for this decision.
 
@@ -184,9 +190,12 @@ No load test is required for this increment. Correctness evidence must neverthel
 - two recovery workers claim disjoint bounded work, survive one worker's death after lease acquisition, and complete through lease loss without duplicate facts or lost outcomes;
 - response loss after an external Temporal call recovers the current exact result and changed content conflicts;
 - Work and incident audit delivery remains idempotent and separately ordered under duplicate delivery;
+- audit reads fail unavailable until each captured source head is covered by its sink head, then return every source-local event through that head without request-time delivery;
 - execution and occurrence suffixes accept exact overlap, reject changed overlap and gaps, and never delete an accepted prefix during ordinary reconciliation;
-- a new confirmed registration inserted between generation completion and an aggregate read prevents stale population success;
+- a new confirmed registration inserted before the aggregate statement snapshot prevents stale population success, while insertion after that snapshot belongs to the next read; probes place insertion between every attempted internal read so a multi-statement implementation cannot pass;
+- a nonempty all-terminal population that needs no Product 1 observation returns the statement's database time as `observed-after`;
 - an expired freshness generation returns the existing unavailable outcome and never triggers request-time Query fan-out;
+- a stale Work inbox row cannot create a claim, release, or completion without the retained exact instance-scoped current-task check;
 - corruption of artifact bytes, length, canonical JSON, projection identity, cursor, or lease state fails closed;
 - API and recovery-worker startup remain bounded with a large retained population because readiness performs no population scan;
 - local mode retains its current focused behavioral contract without being presented as horizontal evidence.
@@ -209,7 +218,20 @@ The design is bound to the current repository owners and the approved scalabilit
 
 ## Owner impact
 
-Implementation changes [ARCHITECTURE.md](ARCHITECTURE.md), the server composition, public projection response contracts, every repository port and adapter named above, and the affected Work, incident, operator-history, execution-publication, metrics, Process-search, start, Schedule, Message Start, presentation, and Definitions owners linked from the [scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#owner-impact). [TESTING-SPEC.md](TESTING-SPEC.md) must own the real-PostgreSQL multi-replica gate, no-startup-scan guard, and no-request-time-fan-out guard. [CONTRIBUTOR-SETUP-GUIDE.md](CONTRIBUTOR-SETUP-GUIDE.md) and [SOURCES.md](SOURCES.md) must own local and CI PostgreSQL provisioning without adding PostgreSQL to Product 1 verification.
+Implementation changes [ARCHITECTURE.md](ARCHITECTURE.md), the server composition, public projection response contracts, every repository port and adapter named above, and these direct owner boundaries:
+
+- [Human Work task detail and typed form](BPM-PLATFORM-HUMAN-WORK-SPEC.md#task-detail-and-typed-form), [current actor and authorization](BPM-PLATFORM-HUMAN-WORK-SPEC.md#current-actor-and-authorization), [platform audit](BPM-PLATFORM-HUMAN-WORK-SPEC.md#platform-audit), and [persistence and concurrency](BPM-PLATFORM-HUMAN-WORK-SPEC.md#persistence-and-concurrency);
+- [structured Human Work ownership](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md#ownership-boundary) and [public contracts](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md#public-contracts);
+- [incident current aggregation](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md#confirmed-registration-and-current-aggregation), [durable actions](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md#durable-action-lifecycle-and-concurrency), and [incident audit](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md#platform-audit);
+- [committed-execution public contract](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md#public-contract) and [stable rules](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md#stable-rules);
+- [flow-node metrics public contract](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md#public-contract) and [stable rules](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md#stable-rules);
+- [operator-audit snapshot and completeness](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md#snapshot-completeness-and-resource-contract) and [versioning consequences](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md#versioning-and-dependency-consequences);
+- [diagram sidecar contract](BPMN-DIAGRAM-PRESENTATION-DECISION.md#sidecar-contract) and [generation lifecycle](BPMN-DIAGRAM-PRESENTATION-DECISION.md#generation-lifecycle);
+- [Schedule persistence](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md#persistent-lifecycle) and [recovery](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md#creation-retry-and-recovery-algorithm);
+- [Message Start persistence](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md#persistent-lifecycle) and [recovery](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md#reservation-retry-and-recovery-algorithm); and
+- [Process search durable index](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md#durable-index-and-integrity) and [producer integration](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md#producer-integration-and-failure-boundary).
+
+[TESTING-SPEC.md](TESTING-SPEC.md) must own the real-PostgreSQL multi-replica gate, no-startup-scan guard, and no-request-time-fan-out guard. [CONTRIBUTOR-SETUP-GUIDE.md](CONTRIBUTOR-SETUP-GUIDE.md) and [SOURCES.md](SOURCES.md) must own local and CI PostgreSQL provisioning without adding PostgreSQL to Product 1 verification.
 
 No Lean, BPMN source, semantic-core, CIB, differential, or Product 1 Temporal implementation owner changes unless later work selects the optional change-driven publication path.
 
