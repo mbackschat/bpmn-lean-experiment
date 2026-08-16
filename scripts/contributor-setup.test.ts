@@ -234,10 +234,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(guide, /doctor\.sh research/u);
   assert.match(guide, /workspace meta-repository/u);
   assert.match(readme, /CONTRIBUTOR-SETUP-GUIDE\.md/u);
-  assert.match(readme, /test:showcase:m1/u);
-  assert.match(readme, /test:showcase:m2/u);
-  assert.match(readme, /test:showcase:m3-human-work/u);
-  assert.match(readme, /test:showcase:m4-incident-operations/u);
+  assert.match(readme, /test:pre-push:verify/u);
   assert.match(readme, /unzip/u);
   assert.match(guide, /playwright install chromium/u);
   assert.match(guide, /test:showcase:m1/u);
