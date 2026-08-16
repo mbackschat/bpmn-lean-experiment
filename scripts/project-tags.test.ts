@@ -183,7 +183,7 @@ test("publishes the maintained commands and convention", async () => {
   assert.equal(manifest.scripts?.["tag:push"], "node scripts/project-tags.ts push");
   assert.match(guidance, /`phase\/<kebab-case>`/u);
   assert.match(guidance, /`vMAJOR\.MINOR\.PATCH\[-prerelease\]`/u);
-  assert.match(guidance, /tag:create/u);
-  assert.match(guidance, /tag:push/u);
+  assert.match(guidance, /project-tags\.ts create/u);
+  assert.match(guidance, /project-tags\.ts push/u);
   assert.match(guidance, /never force or move/iu);
 });

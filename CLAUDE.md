@@ -581,15 +581,15 @@ The published `M1` through `M6` and `MVP` names are the closed functional-MVP hi
 Create a local tag, optionally pushing it in the same invocation:
 
 ```sh
-./scripts/pnpm.sh run tag:create -- phase shared-persistence --message "Shared persistence phase complete"
-./scripts/pnpm.sh run tag:create -- release 0.2.0-rc.1 --message "Release 0.2.0-rc.1" --push
+node scripts/project-tags.ts create phase shared-persistence --message "Shared persistence phase complete"
+node scripts/project-tags.ts create release 0.2.0-rc.1 --message "Release 0.2.0-rc.1" --push
 ```
 
 If creation succeeded but the push did not, retry only that exact tag:
 
 ```sh
-./scripts/pnpm.sh run tag:push -- phase shared-persistence
-./scripts/pnpm.sh run tag:push -- release 0.2.0-rc.1
+node scripts/project-tags.ts push phase shared-persistence
+node scripts/project-tags.ts push release 0.2.0-rc.1
 ```
 
 Before handing off:
