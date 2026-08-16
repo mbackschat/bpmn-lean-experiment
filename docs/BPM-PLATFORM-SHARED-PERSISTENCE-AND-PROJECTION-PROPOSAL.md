@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-16 after independent proposal review and one correction round; implementation not yet started.** This proposal selects the focused Product 2 architecture required by Horizon 1 of the owner-approved [Temporal BPMN execution scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary). It changes no BPMN meaning, semantic profile, Product 1 Workflow behavior, public semantic observation, or current scalability claim. The architecture may now proceed to implementation, subject to the repository's separate dependency and licence approval rule.
+**Owner-approved on 2026-08-16 after independent proposal review and one correction round; the dependency set is separately owner-approved and implementation is intentionally deferred to the next session.** This proposal selects the focused Product 2 architecture required by Horizon 1 of the owner-approved [Temporal BPMN execution scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary). It changes no BPMN meaning, semantic profile, Product 1 Workflow behavior, public semantic observation, or current scalability claim. No dependency or production-code change has started.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) owns the implemented deployment shape after this proposal closes. [PLAN.md](PLAN.md) owns sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns current absences, and the existing Product 2 specifications retain their business and public API contracts except for the bounded projection-freshness rule selected here.
 
