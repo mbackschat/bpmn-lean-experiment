@@ -345,6 +345,6 @@ Reopen this proposal before adding nested objects or heterogeneous arrays to an 
 |---|---|---|---|---|
 | Proposal | `d116ece` | `fork-turns-none` | `approve-with-required-edits` | `da96485` |
 | Semantic checkpoint | `c40943b` | `fork-turns-none` | `approve-with-required-edits` | `9527072` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `c1ee125` | `not-recorded` | `pending` | `not-applicable` |
 
 The proposal stage used two correction rounds. The first corrected value-domain compatibility, jointly satisfiable ceilings, the Product 1 and Product 2 Rendering boundary, catalog canonicalization, BPMN Documentation projection, `taskPriority` classification, and the owner inventory. The second added the published engine Work API and its focused gateway guards to that inventory; the same reviewer approved the final target with no remaining finding.
