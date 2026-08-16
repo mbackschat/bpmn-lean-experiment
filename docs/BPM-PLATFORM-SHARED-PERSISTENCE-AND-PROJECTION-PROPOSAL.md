@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft for context-cold proposal review; owner approval is not yet recorded.** This proposal selects the focused Product 2 architecture required by Horizon 1 of the owner-approved [Temporal BPMN execution scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary). It changes no BPMN meaning, semantic profile, Product 1 Workflow behavior, public semantic observation, or current scalability claim.
+**Draft at immutable target `c9cf16e`, awaiting context-cold proposal review; owner approval is not yet recorded.** This proposal selects the focused Product 2 architecture required by Horizon 1 of the owner-approved [Temporal BPMN execution scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary). It changes no BPMN meaning, semantic profile, Product 1 Workflow behavior, public semantic observation, or current scalability claim.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) owns the implemented deployment shape after this proposal closes. [PLAN.md](PLAN.md) owns sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns current absences, and the existing Product 2 specifications retain their business and public API contracts except for the bounded projection-freshness rule selected here.
 
@@ -217,7 +217,7 @@ No Lean, BPMN source, semantic-core, CIB, differential, or Product 1 Temporal im
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `c9cf16e` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
