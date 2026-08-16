@@ -9,7 +9,7 @@ import type {
 
 import {
   computeStructuredFormCompletion,
-} from "../dist/structured-form-computation.js";
+} from "@bpmn-lean/platform-work";
 
 const taskId = {
   processInstanceId: "expense-1",
