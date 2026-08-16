@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft corrections to the context-cold proposal review are prepared; owner approval is not yet recorded.** This proposal selects the focused Product 2 architecture required by Horizon 1 of the owner-approved [Temporal BPMN execution scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary). It changes no BPMN meaning, semantic profile, Product 1 Workflow behavior, public semantic observation, or current scalability claim.
+**Independently proposal-reviewed after one correction round; awaiting owner approval.** This proposal selects the focused Product 2 architecture required by Horizon 1 of the owner-approved [Temporal BPMN execution scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary). It changes no BPMN meaning, semantic profile, Product 1 Workflow behavior, public semantic observation, or current scalability claim. Implementation must not start until the owner approves this selected architecture.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) owns the implemented deployment shape after this proposal closes. [PLAN.md](PLAN.md) owns sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns current absences, and the existing Product 2 specifications retain their business and public API contracts except for the bounded projection-freshness rule selected here.
 
@@ -239,8 +239,8 @@ No Lean, BPMN source, semantic-core, CIB, differential, or Product 1 Temporal im
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `c9cf16e` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `c9cf16e` | `fork-turns-none` | `approve-with-required-edits` | `e03240c` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The semantic-checkpoint stage is not required because this proposal changes no BPMN meaning, semantic profile, checked graph, Semantic Process program, runtime or public semantic observation, admission capability, transition family, Lean proof boundary, or Product 1 Temporal refinement claim. Its Product 2 public freshness and deployment claims still require the proposal and closure review recorded here.
+The proposal review used one correction round. It closed coherent projection snapshots and zero-observation freshness, preserved exact Work task and unseen-mutation reads, added exact audit source-to-sink head coverage, separated admitted-source artifacts from Definitions-owned catalog and DI records, and completed direct owner routing. The semantic-checkpoint stage is not required because this proposal changes no BPMN meaning, semantic profile, checked graph, Semantic Process program, runtime or public semantic observation, admission capability, transition family, Lean proof boundary, or Product 1 Temporal refinement claim. Its Product 2 public freshness and deployment claims still require the proposal and closure review recorded here.
