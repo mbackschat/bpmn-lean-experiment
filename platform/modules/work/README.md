@@ -6,10 +6,15 @@
 
 Register confirmed Process instances, assemble the current actor-visible task inbox, inspect legacy or exact-catalog-bound structured detail, claim or release work, validate and submit retry-safe completion, and read the actor's audit trail. Structured forms support Text, Boolean, Integer, Date, Single choice, Multiple choice, multiple resolution actions, and action-dependent input without moving form semantics into Product 1.
 
+Local mode uses the exact SQLite schema. Shared mode uses the caller-owned PostgreSQL runtime and the checksum-bound migration in `migrations/`; its Work state changes and audit-source outbox append commit atomically, and explicit PostgreSQL tests remain outside the ordinary database-free package loop.
+
 ## Quick start
 
 ```sh
 ./scripts/pnpm.sh --filter @bpmn-lean/platform-work test
+
+# Explicit shared-mode witness with BPMN_TEST_POSTGRES_URL set
+./scripts/pnpm.sh --filter @bpmn-lean/platform-work test:postgresql
 ```
 
 ## Learn more
@@ -17,5 +22,5 @@ Register confirmed Process instances, assemble the current actor-visible task in
 - [Human-work specification](../../../docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns lifecycle, authorization, retry, and audit behavior.
 - [Structured Human Work specification](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns catalog joining, Zod-backed validation, canonical patch computation, and bounded structured form behavior.
 - [BPM platform browser walkthrough](../../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) follows the maintained Work and Operations journeys through the public UI.
-- [Architecture](../../../docs/ARCHITECTURE.md#modules) owns the module boundary and persistence direction.
+- [Architecture](../../../docs/ARCHITECTURE.md#business-modules) owns the module boundary and persistence direction.
 - [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records current Work capability and evidence.

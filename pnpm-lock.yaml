@@ -334,6 +334,9 @@ importers:
       '@bpmn-lean/platform-identity-policy':
         specifier: workspace:*
         version: link:../../foundation/identity-policy
+      '@bpmn-lean/platform-postgresql-runtime':
+        specifier: workspace:*
+        version: link:../../foundation/postgresql-runtime
       zod:
         specifier: 4.4.3
         version: 4.4.3

@@ -32,7 +32,6 @@ import {
   decodeStoredClaimReleaseAction,
   completionResult,
   decodeStoredCompletionAction,
-  requireAuditMatches,
   requireNonnegativeSafeInteger,
   requireObservation,
   requirePositiveSafeInteger,
@@ -43,6 +42,14 @@ import {
   snapshotPublication,
   snapshotTaskReference,
 } from "./work-repository-values.js";
+import {
+  isStoredClaimAction,
+  isStoredReleaseAction,
+  requireCompletionAudit,
+  sameAuditLogicalEvent,
+  validateClaimInput,
+  validateReleaseInput,
+} from "./work-transition-values.js";
 import { initializeWorkSchema } from "./work-sqlite-schema.js";
 
 const defaultBusyTimeoutMs = 5_000;
@@ -507,57 +514,6 @@ function decodeClaimRow(row: Record<string, SQLOutputValue>): WorkClaimSnapshot 
 
 function taskKey(task: WorkTaskReference): [string, string, string, number] {
   return [task.hostingProcessInstanceId, task.taskId.processInstanceId, task.taskId.elementId, task.taskId.activation];
-}
-
-function sameAuditLogicalEvent(left: WorkAuditEvent, right: WorkAuditEvent): boolean {
-  return left.actorId === right.actorId &&
-    left.hostingProcessInstanceId === right.hostingProcessInstanceId &&
-    sameJson(left.taskId, right.taskId) &&
-    sameJson(left.action, right.action);
-}
-
-function isStoredClaimAction(
-  action: StoredWorkClaimReleaseAction,
-): action is Extract<StoredWorkClaimReleaseAction, { binding: { kind: "claim" } }> {
-  return action.binding.kind === "claim";
-}
-
-function isStoredReleaseAction(
-  action: StoredWorkClaimReleaseAction,
-): action is Extract<StoredWorkClaimReleaseAction, { binding: { kind: "release" } }> {
-  return action.binding.kind === "release";
-}
-
-function validateClaimInput(input: WorkClaimTransitionInput, task: WorkTaskReference): void {
-  requireString(input.actionId, "actionId");
-  requireString(input.actorId, "actorId");
-  requireNonnegativeSafeInteger(input.expectedGeneration, "expectedGeneration");
-  requireAuditMatches(input.audit.claimed, { actorId: input.actorId, task, actionId: input.actionId, kind: "claim", outcome: "claimed" });
-  requireAuditMatches(input.audit.idempotent, { actorId: input.actorId, task, actionId: input.actionId, kind: "claim", outcome: "idempotent" });
-  requireAuditMatches(input.audit.conflict, { actorId: input.actorId, task, actionId: input.actionId, kind: "claim", outcome: "conflict" });
-}
-
-function validateReleaseInput(input: WorkReleaseTransitionInput, task: WorkTaskReference): void {
-  requireString(input.actionId, "actionId");
-  requireString(input.actorId, "actorId");
-  requirePositiveSafeInteger(input.generation, "generation");
-  requireAuditMatches(input.audit.released, { actorId: input.actorId, task, actionId: input.actionId, kind: "release", outcome: "released" });
-  requireAuditMatches(input.audit.idempotent, { actorId: input.actorId, task, actionId: input.actionId, kind: "release", outcome: "idempotent" });
-  requireAuditMatches(input.audit.conflict, { actorId: input.actorId, task, actionId: input.actionId, kind: "release", outcome: "conflict" });
-}
-
-function requireCompletionAudit(
-  event: WorkAuditEvent,
-  binding: WorkCompletionBinding,
-  outcome: "reserved" | "committed" | "rejected" | "indeterminate",
-): void {
-  requireAuditMatches(event, {
-    actorId: binding.actorId,
-    task: binding.task,
-    actionId: binding.actionId,
-    kind: "completion",
-    outcome,
-  });
 }
 
 function isUniqueConstraint(error: unknown): boolean {

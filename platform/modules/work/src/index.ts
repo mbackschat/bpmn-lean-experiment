@@ -1,5 +1,6 @@
 export * from "./work-contracts.js";
 export { SqliteWorkRepository } from "./sqlite-work-repository.js";
+export { PostgresqlWorkRepository } from "./postgresql-work-repository.js";
 export {
   WorkService,
   WorkSnapshotUnavailableError,
