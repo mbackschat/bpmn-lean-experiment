@@ -49,10 +49,17 @@ export class PostgresqlOperateRecoveryCandidateSource {
       case OperatePostgresqlRecoveryFamily.CommittedExecution:
         return await this.#queryPopulation(
           `
-            SELECT process_instance_id AS candidate_key
-            FROM bpmn_platform.operate_process_instances
-            WHERE observation <> 'closed'
-            ORDER BY process_instance_id ASC
+            SELECT process.process_instance_id AS candidate_key
+            FROM bpmn_platform.operate_process_instances AS process
+            LEFT JOIN bpmn_platform.operate_execution_publications AS execution
+              ON execution.process_instance_id = process.process_instance_id
+            WHERE process.observation <> 'closed'
+               OR execution.process_instance_id IS NULL
+               OR execution.status <> 'healthy'
+               OR execution.current_json IS NULL
+               OR execution.head_revision <> execution.producer_head_revision
+               OR execution.current_process_status NOT IN ('completed', 'cancelled')
+            ORDER BY process.process_instance_id ASC
             LIMIT $1
           `,
           limit,
@@ -65,7 +72,21 @@ export class PostgresqlOperateRecoveryCandidateSource {
             INNER JOIN bpmn_platform.operate_execution_publications AS execution
               ON execution.process_instance_id = process.process_instance_id
              AND execution.status = 'healthy'
+            LEFT JOIN bpmn_platform.operate_flow_node_occurrence_publications AS occurrence
+              ON occurrence.process_instance_id = process.process_instance_id
             WHERE process.observation <> 'closed'
+               OR (
+                 execution.current_json IS NOT NULL
+                 AND execution.head_revision = execution.producer_head_revision
+                 AND execution.current_process_status IN ('completed', 'cancelled')
+                 AND (
+                   occurrence.process_instance_id IS NULL
+                   OR occurrence.status <> 'healthy'
+                   OR occurrence.head_revision <> execution.head_revision
+                   OR occurrence.producer_head_revision <> execution.head_revision
+                   OR occurrence.current_open_json <> '[]'
+                 )
+               )
             ORDER BY process.process_instance_id ASC
             LIMIT $1
           `,

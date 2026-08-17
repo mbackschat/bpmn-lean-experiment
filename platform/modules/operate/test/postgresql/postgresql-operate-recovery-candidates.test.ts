@@ -35,15 +35,13 @@ if (baseUrl === undefined) {
     await runtime.close();
   });
 
-  test("discovers bounded recovery populations without crossing closed or unhealthy boundaries", async () => {
+  test("discovers bounded active recovery populations without crossing unhealthy boundaries", async () => {
     await resetOperateDatabase(runtime);
     await insertProcess(runtime, "é😀\u0000z", "active");
     await insertProcess(runtime, "a\u0000z", "indeterminate");
     await insertProcess(runtime, "a", "active");
-    await insertProcess(runtime, "closed", "closed");
     await insertProcess(runtime, "without-execution", "active");
     await insertExecution(runtime, "a", "gap");
-    await insertExecution(runtime, "closed", "healthy");
 
     await insertIncidentAction(runtime, "é😀\u0000-action", "é😀\u0000z", "reserved");
     await insertIncidentAction(runtime, "a\u0000-action", "a\u0000z", "submitting");
@@ -85,6 +83,47 @@ if (baseUrl === undefined) {
         5_000,
       )),
       ["a\u0000z", "é😀\u0000z"],
+    );
+  });
+
+  test("retains a closed Process as a candidate until both final projections are complete", async () => {
+    await resetOperateDatabase(runtime);
+    await insertProcess(runtime, "closed", "closed");
+    const source = new PostgresqlOperateRecoveryCandidateSource(runtime);
+
+    assert.deepEqual(
+      textKeys(await source.listCandidateKeys(
+        OperatePostgresqlRecoveryFamily.CommittedExecution,
+        10,
+      )),
+      ["closed"],
+    );
+    await insertExecution(runtime, "closed", "healthy");
+    assert.deepEqual(
+      textKeys(await source.listCandidateKeys(
+        OperatePostgresqlRecoveryFamily.CommittedExecution,
+        10,
+      )),
+      ["closed"],
+    );
+
+    await markFinalExecution(runtime, "closed");
+    assert.deepEqual(
+      await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.CommittedExecution, 10),
+      [],
+    );
+    assert.deepEqual(
+      textKeys(await source.listCandidateKeys(
+        OperatePostgresqlRecoveryFamily.FlowNodeOccurrence,
+        10,
+      )),
+      ["closed"],
+    );
+
+    await insertFinalOccurrence(runtime, "closed");
+    assert.deepEqual(
+      await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.FlowNodeOccurrence, 10),
+      [],
     );
   });
 
@@ -217,6 +256,46 @@ async function insertExecution(
       ) VALUES ($1, '{}', $2, 0, 0, NULL, '[]', '[]', NULL)
     `,
     values: [Buffer.from(processInstanceId, "utf8"), status],
+  });
+}
+
+async function markFinalExecution(
+  runtime: PostgresqlRuntime,
+  processInstanceId: string,
+): Promise<void> {
+  await runtime.query({
+    text: `
+      UPDATE bpmn_platform.operate_execution_publications
+      SET head_revision = 1,
+          producer_head_revision = 1,
+          last_logical_time_ms = 0,
+          current_json = '{"state":{"status":"completed"}}',
+          current_process_status = 'completed',
+          last_complete_observed_at_epoch_ms = 0
+      WHERE process_instance_id = $1
+    `,
+    values: [Buffer.from(processInstanceId, "utf8")],
+  });
+}
+
+async function insertFinalOccurrence(
+  runtime: PostgresqlRuntime,
+  processInstanceId: string,
+): Promise<void> {
+  await runtime.query({
+    text: `
+      INSERT INTO bpmn_platform.operate_flow_node_occurrence_publications (
+        process_instance_id,
+        identity_json,
+        status,
+        head_revision,
+        producer_head_revision,
+        last_committed_at_epoch_ms,
+        current_open_json,
+        last_complete_observed_at_epoch_ms
+      ) VALUES ($1, '{}', 'healthy', 1, 1, 0, '[]', 0)
+    `,
+    values: [Buffer.from(processInstanceId, "utf8")],
   });
 }
 

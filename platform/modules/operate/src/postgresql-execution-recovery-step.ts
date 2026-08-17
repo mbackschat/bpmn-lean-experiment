@@ -72,7 +72,7 @@ export class PostgresqlExecutionRecoveryStep {
       }
       throw error;
     }
-    if (stored === null || stored.registration.observation === "closed") {
+    if (stored === null) {
       return completeWithoutDatabaseChange();
     }
     if (stored.image?.status === ExecutionPublicationProjectionStatus.Gap) {

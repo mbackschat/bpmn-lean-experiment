@@ -73,7 +73,7 @@ export class PostgresqlFlowNodeOccurrenceRecoveryStep {
       }
       throw error;
     }
-    if (snapshot === null || snapshot.registration.observation === "closed") {
+    if (snapshot === null) {
       return completeWithoutDatabaseChange();
     }
     if (!hasReadyExecutionAuthority(snapshot)) {

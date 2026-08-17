@@ -193,15 +193,17 @@ function decodeRead(
     first.last_complete_observed_at_epoch_ms,
     "execution completion watermark",
   );
+  const terminal = first.observation === "closed" &&
+    (first.current_process_status === "completed" || first.current_process_status === "cancelled");
   if (
     first.status !== ExecutionPublicationProjectionStatus.Healthy ||
     headRevision !== producerHead ||
     observedAfterEpochMs > nowEpochMs ||
-    nowEpochMs - observedAfterEpochMs > maxAgeMs
+    (!terminal && nowEpochMs - observedAfterEpochMs > maxAgeMs)
   ) {
     throw new TypeError("execution projection is not fresh and complete");
   }
-  requireAlignedOccurrence(first, identity, headRevision, nowEpochMs, maxAgeMs);
+  requireAlignedOccurrence(first, identity, headRevision, nowEpochMs, maxAgeMs, terminal);
   const current = decodeExactJson<CurrentCommittedExecution>(first.current_json);
   if (
     current.revision !== headRevision ||
@@ -246,7 +248,10 @@ function decodeRead(
     kind: PostgresqlProjectionReadKind.Available,
     read: {
       value: structuredClone(value),
-      freshness: { observedAfterEpochMs, maxAgeMs },
+      freshness: {
+        observedAfterEpochMs: terminal ? nowEpochMs : observedAfterEpochMs,
+        maxAgeMs,
+      },
     },
   };
 }
@@ -277,6 +282,7 @@ function requireAlignedOccurrence(
   executionHead: number,
   nowEpochMs: number,
   maxAgeMs: number,
+  terminal: boolean,
 ): void {
   const observedAt = nonnegative(
     row.occurrence_observed_at_epoch_ms,
@@ -287,7 +293,7 @@ function requireAlignedOccurrence(
     positive(row.occurrence_head_revision, "occurrence head") !== executionHead ||
     positive(row.occurrence_producer_head_revision, "occurrence producer head") !== executionHead ||
     observedAt > nowEpochMs ||
-    nowEpochMs - observedAt > maxAgeMs ||
+    (!terminal && nowEpochMs - observedAt > maxAgeMs) ||
     exactText(row.occurrence_identity_json, "occurrence identity") !==
       occurrenceIdentityText({ identity })
   ) {

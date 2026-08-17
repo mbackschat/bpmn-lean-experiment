@@ -32,9 +32,11 @@ import {
 import {
   firstPage,
   registration,
+  secondPage,
 } from "../execution-publication-fixture.ts";
 import {
   occurrenceFirstPage,
+  occurrenceSecondPage,
 } from "../flow-node-occurrence-fixture.ts";
 import {
   createOperateTestRuntime,
@@ -213,6 +215,50 @@ if (baseUrl === undefined) {
     assert.ok(Number(watermarks.rows[0]?.occurrence_watermark) > 0);
     assert.equal(watermarks.rows[0]?.current_process_status, "running");
   });
+
+  test("a closed aligned terminal projection remains readable after its observation age", async () => {
+    await resetOperateDatabase(runtime);
+    const exact = await register(runtime, registration.instance.processInstanceId);
+    await observeComplete(runtime, exact);
+    await new PostgresqlProcessInstanceRepository(runtime).recordObservation(
+      exact.instance.processInstanceId,
+      "closed",
+    );
+    await observeExecution(runtime, exact, terminalExecutionPage());
+    await observeOccurrence(runtime, exact, occurrenceSecondPage());
+    await runtime.query({
+      text: `
+        WITH execution AS (
+          UPDATE bpmn_platform.operate_execution_publications AS publication
+          SET last_complete_observed_at_epoch_ms = 0
+          WHERE publication.process_instance_id = $1
+          RETURNING publication.process_instance_id
+        )
+        UPDATE bpmn_platform.operate_flow_node_occurrence_publications AS occurrence
+        SET last_complete_observed_at_epoch_ms = 0
+        FROM execution
+        WHERE occurrence.process_instance_id = execution.process_instance_id
+      `,
+      values: [candidateKey(exact)],
+    });
+
+    const read = await new PostgresqlExecutionProjectionReader({
+      runtime,
+      maxAgeMs: 1,
+    }).page(exact.instance.processInstanceId, { afterRevision: 0, limit: 1 });
+    assert.equal(read.kind, PostgresqlProjectionReadKind.Available);
+    if (read.kind === PostgresqlProjectionReadKind.Available) {
+      assert.ok(read.read.freshness.observedAfterEpochMs > 0);
+    }
+    const metrics = await new PostgresqlFlowNodeMetricsReader({
+      runtime,
+      maxAgeMs: 1,
+    }).read(exact.instance.definition);
+    assert.equal(metrics.kind, PostgresqlProjectionReadKind.Available);
+    if (metrics.kind === PostgresqlProjectionReadKind.Available) {
+      assert.ok(metrics.read.freshness.observedAfterEpochMs > 0);
+    }
+  });
 }
 
 async function register(
@@ -292,6 +338,18 @@ function noSuffixOccurrencePage(): FlowNodeOccurrencePage {
     requestedAfterRevision: initial.headRevision,
     pageThroughRevision: initial.headRevision,
     batches: [],
+  };
+}
+
+function terminalExecutionPage(): ExecutionPublicationPage {
+  const page = secondPage();
+  if (page.current === null) throw new TypeError("terminal fixture requires current execution");
+  return {
+    ...page,
+    current: {
+      ...page.current,
+      state: { ...page.current.state, status: "completed" },
+    },
   };
 }
 

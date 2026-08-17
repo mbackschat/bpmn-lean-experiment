@@ -235,7 +235,14 @@ async function decodeMetricsRead(
     ) {
       throw new TypeError("metrics projection pair is not complete and aligned");
     }
-    observedAt.push(executionObserved, occurrenceObserved);
+    const terminal = snapshot.registration.observation === "closed" &&
+      (snapshot.execution.current.state.status === "completed" ||
+        snapshot.execution.current.state.status === "cancelled") &&
+      snapshot.occurrence.currentOpen.length === 0;
+    if (snapshot.registration.observation === "closed" && !terminal) {
+      throw new TypeError("closed metrics projection pair is not terminal");
+    }
+    if (!terminal) observedAt.push(executionObserved, occurrenceObserved);
     snapshots.push(snapshot);
   }
   if (snapshots.length !== populationCount || ordinals.size !== populationCount) {

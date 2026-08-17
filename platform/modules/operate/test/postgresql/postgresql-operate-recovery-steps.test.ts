@@ -178,7 +178,7 @@ if (baseUrl === undefined) {
     assert.equal(await countExecutionBatches(runtime), 0);
   });
 
-  test("execution stale, terminal, retry, and failure results never write classifications", async () => {
+  test("execution stale, closed, retry, and failure results never write classifications", async () => {
     await resetOperateDatabase(runtime);
     let gatewayCalls = 0;
     const gateway = {
@@ -195,9 +195,9 @@ if (baseUrl === undefined) {
 
     const exactRegistration = await register(runtime);
     await closeRegistration(runtime, exactRegistration);
-    const terminal = await step.prepare(candidateKey(exactRegistration));
-    assertComplete(terminal);
-    assert.equal(gatewayCalls, 0);
+    const closed = await step.prepare(candidateKey(exactRegistration));
+    assertRetry(closed, PostgresqlOperateRecoveryRetryReason.ProducerNotReady);
+    assert.equal(gatewayCalls, 1);
 
     await resetOperateDatabase(runtime);
     const active = await register(runtime);
