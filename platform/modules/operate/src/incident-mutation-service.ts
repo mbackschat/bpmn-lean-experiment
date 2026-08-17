@@ -23,8 +23,13 @@ import {
   snapshotIncidentActionRequest,
 } from "./incident-values.js";
 
+export type IncidentMutationAggregation = Pick<
+  IncidentAggregationService,
+  "currentSnapshot" | "registration"
+>;
+
 export type IncidentMutationServiceOptions = Readonly<{
-  aggregation: IncidentAggregationService;
+  aggregation: IncidentMutationAggregation;
   repository: IncidentActionRepository;
   gateway: Pick<IncidentOperationsGateway, "submitIncidentOperation">;
   outbox: IncidentActionAuditOutboxService;

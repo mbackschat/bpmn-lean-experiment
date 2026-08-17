@@ -134,6 +134,7 @@ export type {
 export { IncidentMutationService } from "./incident-mutation-service.js";
 export type {
   IncidentActionRecoveryResult,
+  IncidentMutationAggregation,
   IncidentMutationServiceOptions,
 } from "./incident-mutation-service.js";
 export {
