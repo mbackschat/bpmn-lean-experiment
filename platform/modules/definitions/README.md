@@ -31,4 +31,4 @@ The ordinary command is database-free. Run the explicit real-PostgreSQL witness 
 - [Diagram presentation decision](../../../docs/BPMN-DIAGRAM-PRESENTATION-DECISION.md) owns source and generated presentation provenance.
 - [Structured Human Work specification](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the catalog identity and Product 2 deployment boundary.
 - [Architecture](../../../docs/ARCHITECTURE.md#business-modules) owns module boundaries, persistence, and composition.
-- [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records the exact current Definitions surface.
+- [BPM platform implementation map](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) records the exact current Definitions surface.

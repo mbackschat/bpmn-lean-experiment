@@ -1,14 +1,14 @@
 /**
- * Enumerates the executable guards and registries that already constrain a path, before it is edited.
+ * Enumerates the implementation maps, executable guards, and registries that constrain a path.
  *
  * A passing gate suite says nothing about which of its oracles will judge the *next* change. Guards in
  * this repository constrain artifact shape by tree as often as by file — an exact-multiset example
  * oracle, a registry-reachability check, a module-size ceiling — so a plan written from memory can
  * name a change site whose bound it never read, and the bound then surfaces mid-edit.
  *
- * This is a planning report, not a gate: it decides no outcome and fails nothing. It is biased toward
- * recall, so a term such as `scenarios` also matches that word in prose. Over-reporting costs a line
- * of reading; under-reporting costs a discarded implementation.
+ * This is a planning report rather than a product gate. Its implementation-map route fails closed,
+ * while guard and registry discovery is biased toward recall: a term such as `scenarios` also matches
+ * that word in prose. Over-reporting costs a line of reading; under-reporting costs discarded work.
  *
  * Usage: `node scripts/what-binds.ts <path>...`
  */
@@ -26,6 +26,7 @@ import {
   nonblankLines,
   type SourceMeasurement,
 } from "./source-measure.ts";
+import { implementationMapRoutes } from "./document-control-plane.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const runCommand = promisify(execFile);
@@ -209,16 +210,28 @@ async function main(targets: ReadonlyArray<string>): Promise<void> {
   }
   const corpus = await loadBindingCorpus();
   for (const target of targets) {
-    const lines = reportLines({
+    const bindingLines = reportLines({
       target,
       owner: ownerMeasurement(target, await readIfPresent(target)),
       bindings: bindingsFor(target, corpus),
     });
+    const [targetLine, ...remainingLines] = bindingLines;
+    const lines = [
+      targetLine,
+      ...implementationMapRoutes(target).map(({ id, file }) => `MAP ${id} ${file}`),
+      ...remainingLines,
+    ];
     process.stdout.write(`${lines.join("\n")}\n`);
   }
 }
 
 const invokedPath = process.argv[1];
 if (invokedPath !== undefined && import.meta.url === pathToFileURL(invokedPath).href) {
-  await main(process.argv.slice(2));
+  try {
+    await main(process.argv.slice(2));
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`WHAT_BINDS_ERROR ${message}\n`);
+    process.exitCode = 1;
+  }
 }

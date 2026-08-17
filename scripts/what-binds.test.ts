@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   BindingKind,
@@ -10,6 +12,8 @@ import {
   reportLines,
   searchTerms,
 } from "./what-binds.ts";
+
+const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 test("binding corpus excludes tracked paths deleted by an unstaged rename", () => {
   assert.deepEqual(
@@ -239,5 +243,32 @@ test("the live corpus routes scripts work through its task-oriented README", asy
     registries.includes("scripts/README.md"),
     true,
     "scripts work must surface its task-oriented entry-point guide",
+  );
+});
+
+test("the command reports implementation maps and fails closed for an unknown root path", () => {
+  const output = execFileSync(
+    process.execPath,
+    ["scripts/what-binds.ts", "packages/engine-api/src/index.ts", "scripts/what-binds.ts"],
+    { cwd: projectRoot, encoding: "utf8" },
+  );
+  assert.match(
+    output,
+    /MAP ENGINE-CONTRACTS-SOURCE docs\/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP\.md/u,
+  );
+  assert.match(
+    output,
+    /MAP TEMPORAL-HOSTING docs\/TEMPORAL-HOSTING-IMPLEMENTATION-MAP\.md/u,
+  );
+  assert.match(
+    output,
+    /MAP ASSURANCE-ADOPTION docs\/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP\.md/u,
+  );
+  assert.throws(
+    () => execFileSync(process.execPath, ["scripts/what-binds.ts", "root-new-engine.ts"], {
+      cwd: projectRoot,
+      encoding: "utf8",
+      stdio: "pipe",
+    }),
   );
 });

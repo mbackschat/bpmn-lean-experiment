@@ -32,4 +32,4 @@ The ordinary command is database-free. Run the explicit real-PostgreSQL 18 witne
 - [Incident-operations specification](../../../docs/BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) owns authorization, actions, reconciliation, and audit.
 - [Committed-execution publication specification](../../../docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns history and current-position projection.
 - [Flow-node occurrence metrics specification](../../../docs/capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) owns aggregate availability and calculations.
-- [Architecture](../../../docs/ARCHITECTURE.md#modules) and [implementation map](../../../docs/IMPLEMENTATION-MAP.md) own module placement and current coverage.
+- [Architecture](../../../docs/ARCHITECTURE.md#modules) owns module placement and the [BPM platform implementation map](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns current coverage.

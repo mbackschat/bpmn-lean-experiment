@@ -25,16 +25,15 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 ## Current evidence
 
-The latest complete repository gate is the 2026-08-16 M6 closure run at exit 0. It covered Lean, the semantic core, BPMN source, shared contracts and canonical bytes, CIB targets, differential comparison, Temporal adapter tests and history replay, Product 2 package evidence, and the registered pipeline. This correctness result does not establish production scalability.
-
-The last uncontended comparable warm-pipeline baselines remain 15,986.670 ms for 30 cases at `13cdec8` and 13,476 ms for 28 cases at `ac2813c`. No uncontended baseline exists for the later catalogs, so a new measurement must be interpreted against the per-case trend and must not replace these merely because it passed.
-
-For the active documentation increment, the immutable proposal target is `be62f0c`; two correction rounds closed at `3b58c68`, and owner adoption is recorded at `4964b83`. Implementation target `c3bd8ad` passes the strict harness typecheck and the 63-test focused control-plane, migration, packet, policy, link, registry, and path-routing gate. Complete verification and context-cold closure review remain.
+- Complete repository gate. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-08-18`. Commit: `05de951`. It covered Lean, the semantic core, BPMN source, shared contracts and canonical bytes, CIB targets, differential comparison, Temporal adapter tests and history replay, Product 2 package evidence, and the registered pipeline; this establishes correctness, not production scalability. The last uncontended comparable warm-pipeline baselines remain 15,986.670 ms for 30 cases at `13cdec8` and 13,476 ms for 28 cases at `ac2813c`. Two independent 34-case runs measured 20,406.710 ms and 20,036 ms, agreeing within 2 percent; treat roughly 20 seconds as unexplained rather than a regression until an uncontended run settles it.
+- Active documentation gate. Command: `node --test scripts/document-control-plane.test.ts scripts/document-migration-matrix.test.ts scripts/semantic-review-packet.test.ts scripts/plan-status-consistency.test.ts scripts/document-reviewability.test.ts scripts/map-scope-delegation.test.ts scripts/markdown-links.test.ts scripts/independent-review-policy.test.ts scripts/pinned-toolchain.test.ts scripts/what-binds.test.ts`. Status: `exit 0`. Date: `2026-08-18`. Commit: `05de951`. The immutable proposal target is `be62f0c`, its two correction rounds close at `3b58c68`, owner adoption is `4964b83`, and the first closure review returned required edits; the same reviewers must approve the correction before deletion.
 
 ## Exact resume point
 
 Active work ID: `DOC-CONTROL-PLANE`.
 
-Next action: validate the claim-granular matrix against baseline `b5a2f1a` and implementation target `c3bd8ad`, run `./scripts/verify.sh`, and submit the matrix-bound packet to a context-cold closure reviewer. After approval, record the receipt, delete the one-off proposal, and restore `H2-WORKFLOW-CHAIN` as active.
+Next action: correct the two closure reviews against baseline `b5a2f1a`, commit one immutable correction target, rerun the focused and complete gates, regenerate the matrix-bound packet, and return it to the same claim-preservation and routing/guard reviewers. After both approve, record the receipt, delete the one-off proposal, and restore `H2-WORKFLOW-CHAIN` as active.
+
+Oracle: all 546 baseline claim units retain one reviewed disposition, both same-thread correction audits approve, the complete gate exits 0, and every changed path resolves its detail maps through `what-binds` without hidden source knowledge.
 
 Stop if a baseline implementation, absence, proof, evidence, product, or semantic claim has no single verified destination; if routing cannot cover a tracked or pending implementation-bearing path without hidden agent knowledge; if a new dependency is required; or if the migration would change Horizon 2 ordering or any governed product or semantic contract.

@@ -90,6 +90,11 @@ export function parseOrderedWork(plan: string): ReadonlyArray<OrderedWorkEntry> 
     if (match === null) return [];
     const [, id, state] = match;
     assert.ok(id !== undefined && state !== undefined);
+    assert.match(
+      line,
+      / · Owners?: [^·]*\[[^\]]+\]\([^)]+\)[^·]* · Maps?: /u,
+      `${id} must name an owner link before its map routes`,
+    );
     const maps = linkedDetailMaps(line);
     assert.ok(maps.length > 0, `${id} must route to at least one detail map`);
     for (const map of maps) assert.ok(detailMapFiles.has(map), `${id} routes to unknown ${map}`);
@@ -109,6 +114,26 @@ export function assertPlanControlPlane(plan: string): OrderedWorkEntry {
     wordCount(section(plan, "Exact resume point")) <= 250,
     "the exact resume point exceeds its 250-word backstop",
   );
+  assert.match(
+    section(plan, "Current checkpoint"),
+    /\[[^\]]+\]\([^)]+\)/u,
+    "the current checkpoint needs an owner link",
+  );
+  const evidence = section(plan, "Current evidence");
+  const evidenceEntries = evidence.split("\n").filter((line) => line.startsWith("- "));
+  assert.ok(evidenceEntries.length > 0, "current evidence needs at least one structured entry");
+  assert.ok(evidenceEntries.length <= 2, "current evidence may contain at most two structured entries");
+  assert.equal(
+    evidence.split("\n").filter((line) => line.trim().length > 0).length,
+    evidenceEntries.length,
+    "current evidence contains unstructured narration",
+  );
+  for (const entry of evidenceEntries) {
+    assert.match(entry, /Command: `[^`]+`/u, "current evidence entry needs a command");
+    assert.match(entry, /Status: `exit \d+`/u, "current evidence entry needs an exit status");
+    assert.match(entry, /Date: `\d{4}-\d{2}-\d{2}`/u, "current evidence entry needs a date");
+    assert.match(entry, /Commit: `[0-9a-f]{7,40}`/u, "current evidence entry needs an immutable commit");
+  }
   const orderedWork = section(plan, "Ordered work");
   const numberedLines = orderedWork.split("\n").filter((line) => /^\d+\. /u.test(line));
   const entries = parseOrderedWork(plan);
@@ -125,6 +150,10 @@ export function assertPlanControlPlane(plan: string): OrderedWorkEntry {
     new RegExp("^Active work ID: `" + activeEntry.id + "`\\.$", "mu"),
     "resume work ID must equal the active ordered-work ID",
   );
+  const resume = section(plan, "Exact resume point");
+  assert.match(resume, /^Next action: \S.+$/mu, "resume needs a concrete next action");
+  assert.match(resume, /^Oracle: \S.+$/mu, "resume needs a required oracle");
+  assert.match(resume, /^Stop if \S.+$/mu, "resume needs a genuine stop condition");
   return activeEntry;
 }
 
@@ -161,6 +190,11 @@ export function assertRootImplementationMap(rootMap: string): void {
     "Cross-area invariants",
   ]);
   assert.ok(wordCount(rootMap) <= 2000, "root implementation map exceeds 2,000 words");
+  assert.ok(wordCount(section(rootMap, "Current claim")) > 0, "current claim must not be empty");
+  assert.ok(
+    wordCount(section(rootMap, "Cross-area invariants")) > 0,
+    "cross-area invariants must not be empty",
+  );
   const rows = parseRoutingRows(rootMap);
   for (const line of section(rootMap, "Routing").split("\n").filter((candidate) => candidate.startsWith("|"))) {
     for (const cell of line.split("|").slice(1, -1)) {
@@ -216,8 +250,20 @@ function rootPathRoutes(file: string): ReadonlyArray<AreaId> {
     case "Dockerfile":
     case "compose.yaml":
       return [AreaId.TemporalHosting, AreaId.BpmPlatform];
-    default:
+    case ".gitignore":
+    case ".node-version":
+    case ".nvmrc":
+    case "LICENSE":
+    case "tsconfig.harness.json":
+    case "tsconfig.platform-harness.json":
+    case "tsconfig.platform-postgresql-harness.json":
       return [AreaId.AssuranceAdoption];
+    case "package.json":
+    case "pnpm-lock.yaml":
+    case "pnpm-workspace.yaml":
+      return allAreaIds;
+    default:
+      throw new Error(`unrouted root implementation-bearing path: ${file}`);
   }
 }
 
@@ -270,6 +316,19 @@ export function routeImplementationPath(file: string): ReadonlyArray<AreaId> {
     default:
       throw new Error(`unrouted implementation-bearing path: ${file}`);
   }
+}
+
+export type ImplementationMapRoute = Readonly<{
+  id: AreaId;
+  file: string;
+}>;
+
+export function implementationMapRoutes(file: string): ReadonlyArray<ImplementationMapRoute> {
+  return routeImplementationPath(file).map((id) => {
+    const contract = detailMapContracts.find((candidate) => candidate.id === id);
+    assert.ok(contract !== undefined, `${file} has unknown route ${id}`);
+    return { id, file: `docs/${contract.file}` };
+  });
 }
 
 export function assertTrackedPathRoutes(paths: ReadonlyArray<string>): void {

@@ -36,11 +36,11 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Review the implemented M2 Timer Start Event account | [Timer Start Event specification](capsules/TIMER-START-EVENT-SPEC.md), [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md), [Temporal lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), and [PLAN.md](PLAN.md) |
 | Review the implemented M2 Terminate End Event account | [Terminate End Event specification](capsules/TERMINATE-END-EVENT-SPEC.md), [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [ordinary embedded Sub-Process completion specification](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md), [Sub-Process Error propagation specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md), and [PLAN.md](PLAN.md) |
 | Review the implemented M2 configured Task extension | [Configured Task extension specification](capsules/CONFIGURED-GENERIC-TASK-SPEC.md), [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [Service Task effect specification](capsules/SERVICE-TASK-EFFECT-SPEC.md), [BPMN XML ingestion decision](BPMN-XML-INGESTION-DECISION.md), and [PLAN.md](PLAN.md) |
-| Inspect and run the complete implemented catalog | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) and the [complete differential/refinement pipeline](TESTING-SPEC.md#complete-differentialrefinement-pipeline) |
-| Review current BPMN/CIB coverage, Temporal mappings, authoritative owners, and executable gates | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), the [CIB–BPMN relationship register](CIB-BPMN-RELATION-REGISTER.md), and [TESTING-SPEC.md](TESTING-SPEC.md) |
+| Inspect and run the complete implemented catalog | Use [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) to route to the applicable detail maps, then run the [complete differential/refinement pipeline](TESTING-SPEC.md#complete-differentialrefinement-pipeline) |
+| Review current BPMN/CIB coverage, Temporal mappings, authoritative owners, and executable gates | Use [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) for detail-map routing, then read the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), the [CIB–BPMN relationship register](CIB-BPMN-RELATION-REGISTER.md), and [TESTING-SPEC.md](TESTING-SPEC.md) |
 | Inspect or run the curated executable model corpus | [Executable model corpus guide](../model-corpus/README.md), [generated corpus map](../model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md), [corpus research](research/EXECUTABLE-BPMN-MODEL-CORPUS-RESEARCH.md), and [PLAN.md](PLAN.md) |
 | Run or review the external-Temporal engine runner | [Temporal engine runner specification](RUNNABLE-TEMPORAL-MVP-SPEC.md), the [adapter quick start](../packages/temporal-adapter/README.md#quick-start), [Process-start data specification](capsules/PROCESS-START-DATA-SPEC.md), [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md), and [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) |
-| Resume implementation | [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the current gate in [TESTING-SPEC.md](TESTING-SPEC.md) |
+| Resume implementation | [PLAN.md](PLAN.md), the detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the current gate in [TESTING-SPEC.md](TESTING-SPEC.md) |
 | Run or inspect the CIB oracle | [TESTING-SPEC.md](TESTING-SPEC.md) and the [CIB runner guide](../runners/cibseven/README.md) |
 | Run or inspect the Temporal adapter | [TESTING-SPEC.md](TESTING-SPEC.md), [TEMPORAL-EXECUTION-RESEARCH.md](research/TEMPORAL-EXECUTION-RESEARCH.md), and the [adapter guide](../packages/temporal-adapter/README.md) |
 | Review the post-MVP Temporal and platform scalability roadmap | [Temporal BPMN execution scalability proposal](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md), [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [architecture](ARCHITECTURE.md), and [PLAN.md](PLAN.md) |
@@ -195,7 +195,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 
 The [profile artifact root](../profiles/README.md) and [scenario artifact root](../scenarios/README.md) explain artifact lifecycle, the draft profile boundary, and the calibrated neutral scenario.
 
-When a fact is useful elsewhere, link to its owner and add only the local consequence. Exact current status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](PLAN.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture in [ARCHITECTURE.md](ARCHITECTURE.md), and provenance in [SOURCES.md](SOURCES.md).
+When a fact is useful elsewhere, link to its owner and add only the local consequence. Exact current status belongs in the applicable detail map routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](PLAN.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture in [ARCHITECTURE.md](ARCHITECTURE.md), and provenance in [SOURCES.md](SOURCES.md).
 
 ## Placement rules
 
@@ -208,7 +208,7 @@ When a fact is useful elsewhere, link to its owner and add only the local conseq
 - Put bounded project-owned semantic meaning, laws, witnesses, and exclusions under [capsules](capsules/README.md).
 - Put external-system and semantic-background analysis under [research](research/README.md).
 - Put bounded executable questions, red/green evidence, and provisional outcomes under [experiments](experiments/README.md).
-- Put exact implemented, proved, tested, and absent surfaces in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+- Put exact implemented, proved, tested, and absent surfaces in the applicable detail map routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 - Put only the current checkpoint, ordered next work, unresolved decisions, and resume point in [PLAN.md](PLAN.md).
 - Put source revisions, licenses, and controlled checkout navigation in [SOURCES.md](SOURCES.md).
 - Link to the owning document instead of copying its live inventory.

@@ -228,6 +228,7 @@ test("keeps the Product 2 browser contract desktop-only", async () => {
     "docs/BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md",
     "docs/BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md",
     "docs/BPM-PLATFORM-UI-DESIGN-SPEC.md",
+    "docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md",
     "docs/IMPLEMENTATION-MAP.md",
     "docs/PLAN.md",
     "docs/TESTING-SPEC.md",

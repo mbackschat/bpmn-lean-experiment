@@ -19,4 +19,4 @@ The composition runtime remains lazy, exposes an explicit `ensureConnected()` re
 - [Architecture](../../../docs/ARCHITECTURE.md#product-2-dependency-direction) owns the cross-product dependency boundary.
 - [Engine API](../../../packages/engine-api/README.md) is the Product 1 boundary consumed here.
 - [Production lifecycle specification](../../../docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns start, recovery, and command behavior.
-- [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records the exact current gateway surface.
+- [BPM platform implementation map](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) records the exact current gateway surface.

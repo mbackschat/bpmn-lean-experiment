@@ -240,7 +240,7 @@ showcase/            Production-bound Product 2 acceptance harnesses
 | Need | Read |
 |---|---|
 | Try the browser product | [Browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) |
-| See exact support and restrictions | [Implementation map](docs/IMPLEMENTATION-MAP.md) |
+| Route to exact support and restrictions | [Implementation map](docs/IMPLEMENTATION-MAP.md) |
 | Understand the semantic and product boundaries | [Project design](docs/PROJECT-DESIGN.md) |
 | Understand packages and deployment | [Architecture](docs/ARCHITECTURE.md) |
 | Inspect the executable model collection | [Model corpus](model-corpus/README.md) |

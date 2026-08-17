@@ -81,10 +81,6 @@ const prohibitedSourceFragments = [
 
 const permittedRetiredDocumentationContexts = new Map([
   [
-    "docs/IMPLEMENTATION-MAP.md",
-    "replace `terminate` with `reachNoneEnd` plus quiescent `completeScope`",
-  ],
-  [
     "docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md",
     "replaced `terminate` with `reachNoneEnd` plus synthetic `completeScope`",
   ],

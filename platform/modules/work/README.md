@@ -23,4 +23,4 @@ Local mode uses the exact SQLite schema. Shared mode uses the caller-owned Postg
 - [Structured Human Work specification](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns catalog joining, Zod-backed validation, canonical patch computation, and bounded structured form behavior.
 - [BPM platform browser walkthrough](../../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) follows the maintained Work and Operations journeys through the public UI.
 - [Architecture](../../../docs/ARCHITECTURE.md#business-modules) owns the module boundary and persistence direction.
-- [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records current Work capability and evidence.
+- [BPM platform implementation map](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) records current Work capability and evidence.

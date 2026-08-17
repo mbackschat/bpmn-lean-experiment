@@ -35,5 +35,5 @@ Run the focused package gate:
 - [Profile-parameterized admission specification](../../docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns profile-sensitive admission.
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the exact closure-reviewed composed profile and evidence boundary.
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 assignment-only metadata and typed completion-value boundary.
-- [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact implemented and absent surface.
+- [Runtime and proof implementation map](../../docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) records the exact implemented and absent surface.
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the verification and evidence boundaries.

@@ -15,7 +15,7 @@ One Temporal Workflow Execution chain durably hosts one semantic Process instanc
 - caller-configured Worker/client lifecycle with content-derived Workflow and command identities
 - one core-owned semantic loop with committed-state Query projection, User Task Update ingress, payload-free Message Signal ingress, durable Timer wakeup, bounded effect Activity, and retained result recovery
 - exact duplicate, changed-content conflict, semantic refusal, closed/unknown separation, and committed-state-only acknowledgement
-- durable hosting for every closed family named in [the current claim](IMPLEMENTATION-MAP.md#current-claim), keeping embedded and called Process work inside one Workflow rather than assigning BPMN meaning to Child Workflows
+- durable hosting for every closed family named in [the runtime and proof current boundary](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary), keeping embedded and called Process work inside one Workflow rather than assigning BPMN meaning to Child Workflows
 - passive `mergeExclusive` host admission; the finite cycle witness reuses User Task Update, survives replacement, recovers one result, refuses a stale occurrence, takes both back-edges and the default exit, observes no rollover suggestion, and replays without a new host mechanism
 - family-parameterized boundary-deadline scheduling with distinct typed shared-activation refusals, plus the managed Event-Based Gateway race and passive Message subscription class
 - Worker replacement, accepted-result recovery, exact Query and history assertions, replay, cleanup, and a separately bundled semantic or host-bypass mutation for each distinct mechanism

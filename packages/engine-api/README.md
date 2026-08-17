@@ -18,4 +18,4 @@ Use the API from the Product 2 engine gateway to compile exact source, start an 
 - [Production lifecycle specification](../../docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns durable start, command, and recovery behavior.
 - [Committed-execution publication specification](../../docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns the published execution contract.
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 completion-value boundary; this package derives that payload from the shared semantic contract and detaches caller storage without defining a second value union.
-- [Implementation map](../../docs/IMPLEMENTATION-MAP.md) records the exact currently available operations and evidence.
+- The [contracts and source map](../../docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) records exact operations; the [Temporal hosting map](../../docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) records their hosting evidence.

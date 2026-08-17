@@ -56,7 +56,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 ### CIB oracle
 
 - Distinct pinned CIB Seven `2.2.0` and `2.0.0` embedded runner profiles
-- exact deploy, start, public query, task or Message delivery, timer control, job execution, and completion probes for every CIB-backed family named in [the current claim](IMPLEMENTATION-MAP.md#current-claim)
+- exact deploy, start, public query, task or Message delivery, timer control, job execution, and completion probes for every CIB-backed family among [the closed semantic families](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary)
 - controlled epoch time, stale-command rejection, multiple-task projection, Process-variable mapping, effect retry, scope completion, and direct-parent Error propagation
 - raw Process, task, subscription, timer, job, history, effect, and mapping observations retained as release-specific content-bound evidence
 - retained actual Java Boolean Process-variable observations and canonical tagged Boolean projection for the exact completion profile

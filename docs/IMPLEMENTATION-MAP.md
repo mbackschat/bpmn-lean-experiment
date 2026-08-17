@@ -20,7 +20,7 @@ This is not a general BPMN engine, an OMG Process Execution Conformance result, 
 | `BPM-PLATFORM` | `implemented` | [BPM platform](BPM-PLATFORM-IMPLEMENTATION-MAP.md) | `platform/`, `showcase/`, `workers/`, deployment roots, routed `docs/` and root documentation |
 | `ASSURANCE-ADOPTION` | `implemented` | [Assurance and adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) | `adoption/`, `model-corpus/`, `packages/differential/`, `runners/`, `scenarios/`, `scripts/`, root tooling, root Lean entry points, routed `docs/` and root documentation |
 
-Documentation paths are intentionally routed by their subject rather than by the common `docs/` prefix. A documentation change that crosses subjects reads every affected map. The executable route inventory independently covers tracked and pending implementation-bearing paths and must agree with this table.
+The executable inventory conservatively routes an overridden or newly named `docs/` path to all five maps; an active work entry or an explicitly named area may narrow that set by subject. It independently covers tracked and pending implementation-bearing paths and must agree with this table.
 
 ## Cross-area invariants
 

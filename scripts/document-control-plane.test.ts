@@ -18,6 +18,15 @@ import {
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
+function replaceSection(document: string, heading: string, body: string): string {
+  const marker = `## ${heading}\n`;
+  const start = document.indexOf(marker);
+  assert.notEqual(start, -1, heading);
+  const bodyStart = start + marker.length;
+  const end = document.indexOf("\n## ", bodyStart);
+  return `${document.slice(0, bodyStart)}\n${body}\n${end === -1 ? "" : document.slice(end)}`;
+}
+
 test("uses the compact routed documentation control plane", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
   const implementationMap = await readFile(
@@ -63,9 +72,10 @@ test("routes overrides and explicit multi-area paths without plan knowledge", ()
     AreaId.BpmPlatform,
   ]);
   assert.throws(() => routeImplementationPath("unknown/product.ts"), /unrouted/u);
+  assert.throws(() => routeImplementationPath("root-new-engine.ts"), /unrouted/u);
 });
 
-test("rejects duplicate work IDs, dangling resume IDs, missing routes, and dense routing cells", async () => {
+test("rejects hollow plan and root-map contracts", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
   const rootMap = await readFile(path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"), "utf8");
   const entries = parseOrderedWork(plan);
@@ -82,11 +92,73 @@ test("rejects duplicate work IDs, dangling resume IDs, missing routes, and dense
     () => assertPlanControlPlane(plan.replaceAll("-IMPLEMENTATION-MAP.md", "-MAP.md")),
     /route to at least one detail map/u,
   );
+  assert.throws(
+    () => assertPlanControlPlane(plan.replace("Owner: [approved proposal]", "Owner: approved proposal")),
+    /owner link/u,
+  );
+  assert.throws(
+    () => assertPlanControlPlane(replaceSection(plan, "Current evidence", "")),
+    /current evidence/u,
+  );
+  assert.throws(
+    () => assertPlanControlPlane(
+      replaceSection(plan, "Exact resume point", "Active work ID: `DOC-CONTROL-PLANE`."),
+    ),
+    /next action/u,
+  );
+  assert.throws(
+    () => assertPlanControlPlane(
+      replaceSection(
+        plan,
+        "Exact resume point",
+        "Active work ID: `DOC-CONTROL-PLANE`.\n\nNext action: Do it.\n\nOracle: A gate.",
+      ),
+    ),
+    /stop condition/u,
+  );
+  assert.throws(
+    () => assertRootImplementationMap(replaceSection(rootMap, "Current claim", "")),
+    /current claim/u,
+  );
+  assert.throws(
+    () => assertRootImplementationMap(replaceSection(rootMap, "Cross-area invariants", "")),
+    /cross-area invariants/u,
+  );
   const dense = `${"word ".repeat(33)}tail`;
   assert.throws(
     () => assertRootImplementationMap(rootMap.replace("root documentation", dense)),
     /dense routing cell/u,
   );
+});
+
+test("keeps exact status references routed to a detail owner", async () => {
+  const tracked = execFileSync("git", ["ls-files", "-z"], {
+    cwd: projectRoot,
+    encoding: "utf8",
+  }).split("\0").filter(Boolean);
+  const navigationOwners = [
+    "CLAUDE.md",
+    "README.md",
+    "docs/CONTRIBUTOR-SETUP-GUIDE.md",
+    "docs/README.md",
+    ...tracked.filter((file) =>
+      file.endsWith("/README.md") && /^(?:packages|platform|runners)\//u.test(file)),
+  ];
+  const statusWords = /\b(?:exact|current|implemented|absent|evidence|coverage|support|status)\b/iu;
+  const rootMap = /IMPLEMENTATION-MAP\.md/u;
+  const detailMap = /(?:ENGINE-CONTRACTS-AND-SOURCE|ENGINE-RUNTIME-AND-PROOF|TEMPORAL-HOSTING|BPM-PLATFORM|ASSURANCE-AND-ADOPTION)-IMPLEMENTATION-MAP\.md/u;
+  const routing = /\b(?:route|routes|routed|router|routing|entry point)\b/iu;
+
+  const invalid: string[] = [];
+  for (const file of new Set(navigationOwners)) {
+    const document = await readFile(path.join(projectRoot, file), "utf8");
+    for (const [index, line] of document.split("\n").entries()) {
+      if (rootMap.test(line) && statusWords.test(line)) {
+        if (!detailMap.test(line) && !routing.test(line)) invalid.push(`${file}:${index + 1}`);
+      }
+    }
+  }
+  assert.deepEqual(invalid, [], "exact-status claims must route beyond the root map");
 });
 
 test("keeps delegated Timer scope in the runtime detail map", async () => {

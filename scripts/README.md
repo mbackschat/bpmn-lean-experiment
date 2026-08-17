@@ -8,7 +8,7 @@ Before changing a file under this directory, run:
 node scripts/what-binds.ts scripts/<target>
 ```
 
-The report names the guards, this registry, and the 600-line owner headroom that constrain the target. Stable gate definitions and command bounds remain in [TESTING-SPEC.md](../docs/TESTING-SPEC.md); this README only routes tasks to their existing entry points.
+The report names the required implementation detail maps, guards, this registry, and the 600-line owner headroom that constrain the target. Stable gate definitions and command bounds remain in [TESTING-SPEC.md](../docs/TESTING-SPEC.md); this README only routes tasks to their existing entry points.
 
 ## Everyday repository work
 
@@ -18,7 +18,7 @@ The report names the guards, this registry, and the 600-line owner headroom that
 | Run pnpm reproducibly | [`pnpm.sh`](pnpm.sh) | Use this wrapper for project pnpm commands so the pinned toolchain and workspace policy apply. |
 | Run complete verification | [`verify.sh`](verify.sh) | Run the repository gate required by [TESTING-SPEC.md](../docs/TESTING-SPEC.md). Do not compose it with a command that masks its exit status. |
 | Run a focused Lean command | [`lake.sh`](lake.sh) | Root-integrator-only Lean wrapper with the repository lock, fixed environment, and target checks. |
-| Discover change constraints | [`what-binds.ts`](what-binds.ts) | Report executable guards, directory registries, and source-owner headroom before planning an edit. |
+| Discover change constraints | [`what-binds.ts`](what-binds.ts) | Report required implementation detail maps, executable guards, directory registries, and source-owner headroom before planning an edit; unknown implementation paths fail closed. |
 | Preserve long-command evidence | [`run-with-receipt.sh`](run-with-receipt.sh) | Capture output and the real exit status atomically when the testing specification requires a retained receipt. |
 | Start PostgreSQL 18 work | [`with-postgresql-18.sh`](with-postgresql-18.sh) | Run an explicit Product 2 PostgreSQL command with the repository-owned local service boundary. |
 
