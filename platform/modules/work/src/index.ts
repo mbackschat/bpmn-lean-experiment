@@ -2,6 +2,10 @@ export * from "./work-contracts.js";
 export { SqliteWorkRepository } from "./sqlite-work-repository.js";
 export { PostgresqlWorkRepository } from "./postgresql-work-repository.js";
 export {
+  PostgresqlWorkRecoveryCandidateSource,
+  WorkPostgresqlRecoveryFamily,
+} from "./postgresql-work-recovery-candidates.js";
+export {
   WorkService,
   WorkSnapshotUnavailableError,
 } from "./work-service.js";
