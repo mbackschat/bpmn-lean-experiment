@@ -4,6 +4,8 @@
 
 **Implemented, closure-reviewed, and evidence-closed.** The maintained contract includes the exhaustive TypeScript and proved Lean lifecycle relation, strict occurrence publication, one replay-stable commit-time sample per complete command batch, Product 1 client/API and live replay evidence, exact-version Product 2 projection and aggregation, HTTP, and the Frequency/Duration UI.
 
+The implemented [Product 2 shared-persistence addendum](../BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) adds a PostgreSQL suffix-only occurrence adapter, one bounded lease-fenced recovery page, and one metrics statement that materializes the visible exact-definition population cut and validates aligned fresh execution and occurrence heads. It adds no metrics generation table or recovery family. Existing occurrence identity, commit time, aggregation, authorization, and semantic claims remain unchanged; SQLite aggregation passages below describe local mode only.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

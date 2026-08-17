@@ -28,6 +28,10 @@ runners/                          product 1 adapters to external executable orac
 
 platform/                         product 2 modular monolith
   apps/                           deployable composition roots
+    server/                       local or horizontally replicated public API
+    postgresql-migrate/           explicit shared-schema migration command
+    recovery-worker/              horizontally replicated Product 2 repair and projection loops
+    web/                          static HTTP-only browser client
   contracts/                      public transport and event contracts
   foundation/                     reusable product-2 infrastructure mechanisms
   modules/                        business-capability modules
@@ -87,13 +91,15 @@ platform/modules/* ------> platform/foundation/*
         v                           v
 platform/contracts       narrowed engine entry points
 
+platform/apps/recovery-worker ---> platform/modules/* + platform/foundation/*
+platform/apps/postgresql-migrate -> domain migration catalogs + postgresql-runtime
 platform/apps/web -- HTTP only --> platform/apps/server
 platform/workers/* ------ versioned contracts --> hosted effects
 ```
 
 The rules are:
 
-1. `apps/server` composes modules and adapters but owns no business rule.
+1. `apps/server`, `apps/recovery-worker`, and `apps/postgresql-migrate` compose modules and adapters but own no business rule.
 2. `apps/web` is a public-API client. It does not import a module, foundation package, or server implementation.
 3. A business module may depend on public platform contracts and narrowly scoped foundation packages.
 4. A foundation package may not depend on a business module or application composition root.
@@ -106,10 +112,12 @@ The rules are:
 
 | Path | Ownership |
 |---|---|
-| `platform/apps/server/` | Node composition root for the public HTTP API, module wiring, configuration, and optional static asset serving |
+| `platform/apps/server/` | Node composition root for the public HTTP API in one explicit local or shared storage mode, module wiring, configuration, readiness, and optional static asset serving |
+| `platform/apps/postgresql-migrate/` | Administrative composition root that applies the exact checksum-bound domain migration catalog with a dedicated credential; API and worker processes never migrate |
+| `platform/apps/recovery-worker/` | Shared-mode composition root for the eleven bounded leased lifecycle, audit, and projection-recovery families; it exposes no HTTP surface |
 | `platform/apps/web/` | React SPA and API client; feature folders may mirror modules but communicate only through HTTP |
 
-The first deployment is deliberately small. The server is one modular-monolith process. The web application is a static bundle that the server may serve or an adopter may host separately. Temporal Workers retain their own deployment lifecycle and are not hidden inside a UI framework or server-side meta-framework.
+Local mode remains deliberately small: one server process uses filesystem artifacts and SQLite, owns local startup recovery, and makes no horizontal claim. Shared mode runs two or more stateless API replicas and independently scalable Product 2 recovery-worker processes over one PostgreSQL 18 database at exact schema epoch 9. The migration command runs separately before either runtime starts. Shared API readiness checks PostgreSQL version, schema epoch, and engine connectivity without scanning domain populations; recovery-worker readiness adds one disposable lease. HTTP requests never perform fleet-wide Product 1 Query fan-out, and successful projection-backed reads expose their database-clock freshness bound. The web application remains a static bundle that an API replica may serve or an adopter may host separately. Temporal Workers retain their own deployment lifecycle and are not hidden inside a UI framework or server-side meta-framework.
 
 ## Public contracts
 
@@ -124,6 +132,7 @@ Foundation packages provide reusable infrastructure mechanisms and must not beco
 | `engine-gateway` | The four permitted engine-consumption kinds: compile, start, observe committed state, and submit a command |
 | `artifact-store` | Exact artifact byte storage and retrieval through content identity; no compilation or version policy |
 | `postgresql-runtime` | Product 2-only bounded pools, `READ COMMITTED` transaction and dedicated-session mechanics, database-clock access, and checksum-bound forward migration execution; no business schema or repository meaning |
+| `recovery-runtime` | Product 2-only database-clock leases, token-fenced intermediate and final database applies, and bounded polling mechanics; no candidate identity, business recovery decision, gateway, or application lifecycle |
 | `projection-runtime` | Generic cursoring, ordering, deduplication, reconciliation, and rebuild mechanics; no domain projection |
 | `identity-policy` | Pluggable identity and platform authorization mechanisms |
 | `audit` | Platform-owned actor, policy, and wall-clock audit facts, kept distinct from BPMN semantic history |
@@ -164,6 +173,8 @@ The implemented `platform/foundation/bpmn-definition-projection/` Product 2 boun
 
 Product 1 verification, Product 2 platform, showcase compatibility, and browser quality are separately selected CI lanes. A Product 2-only diff skips the unrelated two-operating-system Product 1 matrix while a stable aggregate check remains available to branch protection; shared manifest, lockfile, workspace, documentation, and mixed changes still select Product 1 verification. The browser lane never runs from `verify.sh`, a Lean/semantic-core/BPMN-source/CIB/differential gate, an ordinary Product 1 change, or the platform checkpoint. It builds the web dependency graph once, then reuses that bundle for package checks and fixed public-API Chromium evidence at 1280 and 1600 pixels. The exact same functional entry point runs locally before push and in GitHub Actions. A cross-boundary change selects independent jobs that GitHub can run concurrently instead of one wrapper serially rebuilding overlapping dependency graphs. M5 E1 adds path-scoped History and Diagram behavior to this lane. One wide Process Diagram screenshot remains an optional manually invoked human-review aid in the digest-pinned Linux Playwright environment, not a blocking regression gate. The M3 and M4 showcases separately retain real Temporal browser acceptance, and `test:release:m4` builds the shared Product 2 release graph once before the real-host witness and deterministic functional UI-quality lane.
 
+Shared PostgreSQL correctness is a fifth independent Product 2 lane. It builds the union API, recovery-worker, and migration graph once, type-checks a source-mapped harness, then runs only nested real-database tests against isolated PostgreSQL 18 databases. Its separate workflow never adds PostgreSQL to ordinary package tests, the platform checkpoint, `verify.sh`, showcase compatibility, or browser quality.
+
 ## Showcases
 
 `showcase/` contains executable acceptance gates organized by milestone, beginning with `showcase/m1-definition-deployment/` and currently extending through `showcase/m4-incident-operations/`. A showcase may configure and drive exact public production-package entry points, and may use private development-only test infrastructure when the milestone requires real hosting. It may not deep-import production internals, enter a production dependency graph, contain reusable production behavior, or expose a private alternative API.
@@ -187,9 +198,10 @@ Product 1 verification, Product 2 platform, showcase compatibility, and browser 
 | ARC-013 | Confine generated diagram layout to a Product 2 presentation-foundation adapter and persist only exact-source-bound DI | Gives definitions without source DI a diagram without reserializing admitted source or granting presentation code semantic authority | A selected generator cannot preserve the closed DI-only boundary or a product requirement needs a different presentation format |
 | ARC-014 | Keep headless Playwright in a path-filtered Product 2 UI-quality and showcase lane, outside `verify.sh` and all Product 1 semantic loops | Preserves fast, independent semantic work while making responsive and visual evidence mandatory for UI-facing changes and M3 release | Product boundaries or CI ownership change materially |
 | ARC-015 | Split the static web bundle at workspace navigation, Work task selection, structured-detail, and Diagram mount boundaries | Measured composition showed that optional workspace clients, detail-only validation code, and bpmn-js dominated the original 809.89 kB entry; these boundaries reduce initial download and parsing without adding a router or changing a user journey | A measured startup trace, new default workspace, or prefetch requirement shows that another boundary materially improves the complete initial route |
+| ARC-016 | Keep one local single-node mode and one PostgreSQL 18 shared mode, with a separate migration command and eleven-family recovery-worker application | Removes node-local Product 2 persistence and request-time fleet fan-out while retaining the modular monolith, domain repository ownership, and the ordinary database-free inner loop | Reopen before a second database, hybrid storage, changed freshness contract, unbounded artifact class, read-replica authority, or service extraction |
 
 ## Verification
 
 The product-boundary guard discovers current and future source files plus package manifests rather than comparing hand-maintained package lists or prefixes. It resolves exact workspace package names and subpaths to their owning repository paths before applying the same dependency matrix used for relative imports. It rejects platform source outside an approved owner; internal platform imports that violate the dependency graph, including a web-to-service import; product-1 imports into `platform/`; platform deep imports into engine internals; public engine imports outside the engine gateway; showcase deep imports into engine internals; platform Event History imports; production imports of showcase evidence; and production JUEL placement under `runners/`. Exact public engine package roots are permitted from showcase evidence only. Malformed or duplicate package identities fail closed, and each prohibited class carries a planted violation in the guard's own tests.
 
-The engine complete gate remains runnable without building the platform tree. Platform packages receive their own focused and showcase gates. CI maintains the independent M1, M2, M3, and M4 acceptance floors without making the platform a dependency of the engine verifier.
+The engine complete gate remains runnable without building the platform tree. Platform packages receive their own focused, showcase, browser, and PostgreSQL gates. CI maintains the independent M1, M2, M3, and M4 acceptance floors without making the platform a dependency of the engine verifier. The explicit PostgreSQL 18 lane proves schema epoch 9, two API replicas, two disjoint recovery workers with lease-loss reclaim, bounded large-population readiness, exact cross-replica definitions and structured Work, and the domain-owned repository, recovery, audit, suffix, and freshness contracts without claiming throughput or capacity.

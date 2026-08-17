@@ -4,6 +4,8 @@
 
 **Implemented, closure-reviewed, and evidence-closed on 2026-08-14.** The independently approved Product 1 checkpoint and final correction audit establish the semantic trace, current-position, strict-wire, Workflow Query, client, engine API, and Lean/TypeScript parity boundary. The completed continuation adds real Temporal retention, Worker-replacement, terminal-query, cyclic-activation, and replay evidence; a representation-free Product 2 gateway; transactional SQLite projection with exact overlap, gap, restart, and rebuild handling; authorized HTTP publication; and 1280/1600 functional History, Diagram, and canonical export evidence. Existing profile, source, RuntimeState, command-result, scenario, CIB, Workflow-result, and terminal-receipt bytes remain exact. This E1 increment does not close M5: the PLAN-owned frequency and duration views, operator-history completion, and audit export remain open.
 
+The implemented [Product 2 shared-persistence addendum](../BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) adds a PostgreSQL suffix-only adapter, one bounded lease-fenced recovery page, database-clock completion watermarks, and one-statement projection reads with freshness headers. Exact overlap, changed-overlap and gap refusal, explicit rebuild, authorization order, Product 1 publication bytes, and every semantic claim in this capsule remain unchanged. The SQLite startup-reconciliation passages below describe local mode only.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

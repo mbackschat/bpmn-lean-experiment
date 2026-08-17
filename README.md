@@ -21,9 +21,9 @@ A direct BPMN-to-Temporal translation can accidentally turn Workflow handlers, r
 | Surface | Status |
 |---|---|
 | BPMN execution engine | Runnable over a bounded, versioned semantic-profile catalog; no broad conformance claim |
-| BPM platform | Functional MVP complete; current deployment is explicitly single-node |
+| BPM platform | Functional MVP complete; Horizon 1 shared PostgreSQL implementation is at its closure candidate |
 | Executable corpus | 24 retained business-purpose models cover all 25 registered executable element or semantic variants; 7 external candidates remain classified separately |
-| Active work | remove Product 2's single-node scale boundary |
+| Active work | close Product 2 Horizon 1 |
 
 The engine accepts exact BPMN XML only under a declared profile, lowers it to a project-owned Semantic Process program, and runs that program through the same semantic core locally and inside Temporal. The React platform currently covers definition deployment and versioning, exact start and scheduled/message ingress, human task claims and structured forms, incidents and operator actions, Process search, semantic History and Diagram, metrics, About/capability disclosure, and canonical audit downloads. Exact support and restrictions live in the [implementation map](docs/IMPLEMENTATION-MAP.md), not in this summary.
 
@@ -172,7 +172,7 @@ The examples expect `localhost:7233`, Namespace `default`, and a fresh semantic 
 
 ### Use the BPM platform in a browser
 
-Follow the [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) for the exact two-terminal startup, definition deployment, structured task completion, incident recovery, Process inspection, and hands-on exercises. The current manual path uses the repository toolchain; a one-command container distribution is intentionally deferred until the approved shared-persistence deployment shape is implemented.
+Follow the [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) for the exact two-terminal startup, definition deployment, structured task completion, incident recovery, Process inspection, and hands-on exercises. The current manual path uses the repository toolchain. The first release-candidate container distribution is the next boundary after Horizon 1 closure and is not published yet.
 
 ### Prepare a contributor environment
 

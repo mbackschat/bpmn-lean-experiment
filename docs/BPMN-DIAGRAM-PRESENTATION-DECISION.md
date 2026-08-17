@@ -4,6 +4,8 @@
 
 **Implemented.** This decision selects embedded BPMN DI plus an exact-source-digest-bound generated presentation sidecar for BPM platform diagrams. The context-cold information-architecture reviewer approved the final corrected contract at `c3f6671`. The implementation is a non-semantic Product 2 increment covered by the definition-projection foundation, Definitions, public-contract, server, web, package-boundary, source-hygiene, and platform-harness gates. It does not change BPMN source admission, checked Process meaning, Semantic Process IL, runtime state, or Temporal execution.
 
+The implemented [shared-persistence addendum](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) stores the same Definitions-owned sidecar identity, exact DI bytes, provenance, and insert-or-compare result in PostgreSQL. Two API replicas retrieve the same retained presentation for the same exact source. Source-first resolution, corruption refusal, and the Product 2-only parser boundary remain unchanged.
+
 ## Context
 
 The execution pipeline correctly admits BPMN source that has no BPMN DI because diagram coordinates are not execution semantics. The M3 browser review nevertheless showed that a registered human-work model without DI produces an empty presentation and leaves users unable to understand the Process they are starting or the task they are completing.

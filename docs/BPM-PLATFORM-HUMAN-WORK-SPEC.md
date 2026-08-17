@@ -4,6 +4,8 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated for M3.** Product 2 provides the bounded M3 human-work contract over confirmed starts, exact current User Tasks, fake-actor authorization, claims, typed completion, platform audit, HTTP, and the React inbox. The complete repository gate, aggregate Work checkpoint, live Temporal witness, and Chromium acceptance are green at the reviewed closure boundary. The graduated M6 [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) extends only the definition-bound catalog, task presentation, form-validation, and completion-request arms while retaining this specification's authorization, reservation, retry, outcome, and audit lifecycles.
 
+The implemented [shared-persistence addendum](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) preserves those lifecycles in PostgreSQL. Shared inbox reads use one complete database-clock-bounded generation with freshness headers and no request-time fleet Query. Every previously unseen detail or mutation still performs one exact instance-scoped current-task read before Work state changes, while retained exact-action retries retain their existing precedence. Work audit delivery moves to its independently leased background family. The SQLite, startup-reconciliation, and per-request aggregation passages below describe local mode only.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

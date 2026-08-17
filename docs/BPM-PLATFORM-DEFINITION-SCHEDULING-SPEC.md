@@ -4,6 +4,8 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification owns the smallest Product 2 definition-scheduling increment for the registered Timer Start profile: the engine capability, strict platform wire contract, exact persisted lifecycle, handle-free Schedule gateway, public HTTP routes, HTTP-only UI, live Schedule race and recovery evidence, M2 showcase, and headless-browser acceptance. Closure target `2b5cc40` passed the complete repository gate and an approved warm-continuity review. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem.
 
+The implemented [shared-persistence addendum](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) preserves the same lifecycle and compare-and-set rules in PostgreSQL and moves autonomous reconciliation into one bounded lease-fenced Schedule family. API replicas share the exact retained target and never reconcile it during readiness or request-wide startup. The SQLite transaction and startup passages below describe local mode only.
+
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Timer Start Event specification](capsules/TIMER-START-EVENT-SPEC.md) owns semantic and host-refinement meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
 ## Product boundary

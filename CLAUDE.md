@@ -112,7 +112,7 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 
 Default to common, established ecosystem practices and native tool mechanisms. Do not invent a bespoke abstraction, policy, manifest, workflow, or duplicate source of truth when the standard practice satisfies the requirement. When a concrete project constraint requires a deviation, explain the standard approach, the exact gap, and the tradeoff to the owner and obtain approval before implementing the deviation.
 
-For Product 2 PostgreSQL runtime or migration work, keep the ordinary package loop database-free and run the explicit real-database witness with `./scripts/pnpm.sh run test:platform-postgresql:runtime:local`.
+For Product 2 PostgreSQL runtime or migration work, keep the ordinary package loop database-free and run the explicit runtime witness with `./scripts/pnpm.sh run test:platform-postgresql:runtime:local`. Run the complete shared-mode witness with `./scripts/pnpm.sh run test:platform-postgresql:local`; after committing PostgreSQL-backed platform changes, run `./scripts/pnpm.sh run test:pre-push:platform-postgresql` against an explicit database or use the local disposable-cluster command.
 
 ### Product 2 UI/UX source preflight
 
@@ -492,6 +492,7 @@ Product 2 backend and showcase-compatibility changes have separate clean-commit 
 
 ```sh
 ./scripts/pnpm.sh run test:pre-push:platform
+./scripts/pnpm.sh run test:pre-push:platform-postgresql
 ./scripts/pnpm.sh run test:pre-push:showcase
 ```
 

@@ -4,6 +4,8 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** Closure target `8a87cf4` passed the complete repository gate and guarded warm-continuity review; correction `326dde5` closed the sole cost-accounting finding. The strict public route, production server composition, HTTP-only global panel, three-producer live witness, restart and paging evidence, and browser acceptance retain the independently approved first-green contract at `5bd9d13`. This is the final closed M2 Product 2 increment. It adds no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, Workflow behavior, Lean theorem, CIB relationship, or Temporal discovery mechanism.
 
+The implemented [shared-persistence addendum](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) preserves the append-only identity index and stable cursor order in PostgreSQL. Confirmed registration delivery is lease-fenced and bounded, shared API replicas read the same index, and readiness performs no bootstrap sweep. The SQLite repository, close lifecycle, and startup passages below describe local mode only.
+
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary and states that cross-instance discovery is a platform problem. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#what-the-platform-may-consume) forbids reconstructing semantic facts from Temporal Event History, state differences, or platform guesses. [ARCHITECTURE.md](ARCHITECTURE.md#business-modules) assigns instance operations and monitoring to the `operate` module. [PLAN.md](PLAN.md) owns sequencing.
 
 ## Product question
