@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-17; the first-green semantic checkpoint is implemented and awaiting independent review. Production completion remains open.**
+**Owner-approved on 2026-08-17; the independently reviewed first-green semantic checkpoint is implemented. Production completion remains open.**
 
 This proposal selects the smallest complete Horizon 2 contract for Product 1. Owner approval authorizes the bounded contract below, followed by the required first-green semantic checkpoint and closure review.
 
@@ -228,7 +228,9 @@ Reopen before raising any production budget, changing the 128-Run or 512-command
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `aa2a75457d3a003e40d1400a8da70dc4185817a8` | `fork-turns-none` | `approve-with-required-edits` | `4431f13b367d8bc4f14011e382d9c743c3e3af39` |
-| Semantic checkpoint | `0b33dbc8bc35574685572fe913dbdcf58bf9f8d5` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `0b33dbc8bc35574685572fe913dbdcf58bf9f8d5` | `fork-turns-none` | `approve-with-required-edits` | `4479ac60f08abf85404774ddd37def3741583324` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The isolated proposal review required six corrections covering cross-Run result recovery, the raw SDK-handle leak, mixed Worker deployment, combined failure witnesses, owner routing, and the exact non-returning Continue-As-New call. The same reviewer audited correction target `4431f13b367d8bc4f14011e382d9c743c3e3af39`, closed every finding, and approved both additional clarifications for one-activation threshold overshoot and publication-page linearization without a material redesign.
+
+The isolated semantic-checkpoint review required closed recursive validation of carried RuntimeState and publication identity plus a terminal fence that preserves retained retry and conflict precedence while refusing unseen Updates before handler acceptance. The same reviewer audited correction target `4479ac60f08abf85404774ddd37def3741583324`, closed both findings, and approved the checkpoint without expanding its cyclic User Task evidence boundary.
