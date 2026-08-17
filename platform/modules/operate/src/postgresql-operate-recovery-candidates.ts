@@ -15,7 +15,15 @@ export enum OperatePostgresqlRecoveryFamily {
   IncidentSnapshot = "operate.incident-snapshot",
 }
 
-/** Bounded candidate discovery over a caller-owned PostgreSQL runtime. */
+/**
+ * Discovers one bounded, deterministic candidate page over a caller-owned PostgreSQL runtime.
+ *
+ * Limits are validated before SQL and capped at 1,000. Population families sort their bytea identity
+ * keys bytewise, the audit family returns the exact `stream` singleton at cardinality zero or one,
+ * and incident snapshots additionally require an explicit positive freshness threshold. Every key is
+ * returned as a detached byte array. The source does not claim leases, mutate domain state, scan
+ * Product 1, or close the supplied runtime; database and retained-value failures propagate.
+ */
 export class PostgresqlOperateRecoveryCandidateSource {
   constructor(private readonly runtime: PostgresqlRuntime) {}
 
@@ -129,7 +137,11 @@ function decodeCandidateKey(row: CandidateRow): Uint8Array {
   return Uint8Array.from(row.candidate_key);
 }
 
-/** Strictly decodes one byte-preserving candidate key before any database or gateway call. */
+/**
+ * Strictly decodes one nonempty byte-preserving UTF-8 key before any database or gateway call.
+ * U+0000 is valid because PostgreSQL stores these identities as bytea rather than text. Malformed or
+ * non-round-tripping bytes throw `TypeError`; the input is never normalized or mutated.
+ */
 export function decodeOperateRecoveryCandidateKey(value: Uint8Array): string {
   if (!(value instanceof Uint8Array) || value.byteLength === 0) {
     throw new TypeError("Operate PostgreSQL recovery candidate key must be nonempty bytea");

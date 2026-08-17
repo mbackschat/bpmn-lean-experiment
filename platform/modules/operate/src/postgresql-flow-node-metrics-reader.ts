@@ -44,12 +44,23 @@ import {
 } from "./postgresql-projection-read.js";
 import type { PostgresqlProjectionRead } from "./postgresql-projection-read.js";
 
+/** Configuration for one exact-definition PostgreSQL metrics reader. */
 export type PostgresqlFlowNodeMetricsReaderOptions = Readonly<{
+  /** Caller-owned runtime. Constructing or closing the reader never changes its lifecycle. */
   runtime: PostgresqlRuntime;
+  /** Required positive safe-integer age bound for every nonterminal projection watermark. */
   maxAgeMs: number;
 }>;
 
-/** Aggregates one exact-definition population captured and verified by one SQL statement. */
+/**
+ * Aggregates one exact-definition population captured and verified by one SQL statement.
+ *
+ * The statement fixes the population head, registrations, E1 projections, occurrence projections,
+ * and database clock in one PostgreSQL snapshot. An empty exact population is available with empty
+ * metrics. Missing, stale, future-dated, incomplete, corrupt, or over-limit retained facts fail
+ * closed as `Unavailable`; a database query failure still propagates as infrastructure failure.
+ * Returned values are detached, and this reader neither owns nor closes the supplied runtime.
+ */
 export class PostgresqlFlowNodeMetricsReader {
   readonly #runtime: PostgresqlRuntime;
   readonly #maxAgeMs: number;
@@ -79,6 +90,11 @@ export class PostgresqlFlowNodeMetricsReader {
   }
 }
 
+/**
+ * The limit of 101 is an overflow sentinel for the public 100-instance metrics ceiling. Keeping the
+ * population cut and every projection pair in this statement prevents a registration committed
+ * before the read from being omitted by a later per-instance query.
+ */
 const metricsReadSql = `
   WITH statement_clock AS MATERIALIZED (
     SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_epoch_ms

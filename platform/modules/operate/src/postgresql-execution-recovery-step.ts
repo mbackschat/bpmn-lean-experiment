@@ -39,12 +39,24 @@ import {
 } from "./postgresql-operate-recovery-step.js";
 import type { PostgresqlOperateRecoveryStepResult } from "./postgresql-operate-recovery-step.js";
 
+/** Dependencies for preparing one lease-fenced committed-execution recovery step. */
 export type PostgresqlExecutionRecoveryStepOptions = Readonly<{
+  /** Caller-owned runtime used only for the coherent preparation read. */
   runtime: PostgresqlRuntime;
+  /** Product 1 publication gateway invoked outside the PostgreSQL lease transaction. */
   gateway: ExecutionPublicationGateway;
 }>;
 
-/** Prepares at most one committed-execution page without changing durable state. */
+/**
+ * Prepares at most one committed-execution page without changing durable state.
+ *
+ * Preparation reads the exact retained image, observes Product 1 outside any database transaction,
+ * and returns a closed Complete, Retry, or Fail result. A Complete result carries the only mutation;
+ * the recovery loop must invoke that callback inside its current-token lease fence. The callback
+ * revalidates the prepared image before applying the suffix, so a stale lease or competing writer
+ * cannot commit an obsolete page. Stored gaps and changed overlap are permanent failures, while
+ * producer readiness and gateway availability are retryable.
+ */
 export class PostgresqlExecutionRecoveryStep {
   readonly #options: PostgresqlExecutionRecoveryStepOptions;
 

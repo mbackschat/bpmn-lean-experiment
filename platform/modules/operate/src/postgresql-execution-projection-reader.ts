@@ -36,12 +36,23 @@ import {
 } from "./postgresql-projection-read.js";
 import type { PostgresqlProjectionRead } from "./postgresql-projection-read.js";
 
+/** Configuration for current E1 reads from shared PostgreSQL storage. */
 export type PostgresqlExecutionProjectionReaderOptions = Readonly<{
+  /** Caller-owned runtime. The reader does not close it. */
   runtime: PostgresqlRuntime;
+  /** Required positive safe-integer age bound for nonterminal aligned projection watermarks. */
   maxAgeMs: number;
 }>;
 
-/** Reads one complete aligned E1/occurrence projection from one statement snapshot. */
+/**
+ * Reads one complete aligned E1 and occurrence projection from one statement snapshot.
+ *
+ * `page` and `export` return `NotFound` only when the exact registered instance is absent.
+ * Retained corruption, stale or future watermarks, incomplete suffixes, or E1/occurrence drift fail
+ * closed as `Unavailable`. An invalid caller cursor remains a `RangeError`, and PostgreSQL query
+ * failures propagate as infrastructure failures. Successful values are detached. Terminal aligned
+ * projections use the statement clock because no later producer observation is required.
+ */
 export class PostgresqlExecutionProjectionReader {
   readonly #runtime: PostgresqlRuntime;
   readonly #maxAgeMs: number;
@@ -94,6 +105,11 @@ export class PostgresqlExecutionProjectionReader {
   }
 }
 
+/**
+ * Registration membership, both projection authorities, the selected suffix, and the database clock
+ * belong to one MVCC statement. Splitting them into separate reads would allow a committed population
+ * or producer-head advance to be presented as a coherent older result.
+ */
 const executionReadSql = `
   WITH statement_clock AS MATERIALIZED (
     SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_epoch_ms

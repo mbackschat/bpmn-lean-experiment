@@ -41,12 +41,23 @@ import {
 } from "./postgresql-operate-recovery-step.js";
 import type { PostgresqlOperateRecoveryStepResult } from "./postgresql-operate-recovery-step.js";
 
+/** Dependencies for preparing one lease-fenced flow-node occurrence recovery step. */
 export type PostgresqlFlowNodeOccurrenceRecoveryStepOptions = Readonly<{
+  /** Caller-owned runtime used only for the coherent E1/occurrence preparation read. */
   runtime: PostgresqlRuntime;
+  /** Product 1 occurrence gateway invoked outside the PostgreSQL lease transaction. */
   gateway: FlowNodeOccurrenceGateway;
 }>;
 
-/** Prepares one occurrence page only after reading its retained E1 authority coherently. */
+/**
+ * Prepares one occurrence page only after reading its retained E1 authority coherently.
+ *
+ * E1 is the authority for which semantic revisions may exist. If the producer returns an occurrence
+ * page ahead of retained E1, the step retries until E1 recovery catches up instead of accepting an
+ * occurrence the platform cannot yet corroborate. Preparation performs no durable mutation or
+ * gateway call inside a transaction. A Complete result carries the sole apply callback, which the
+ * recovery loop invokes under the current lease token and which revalidates the exact retained image.
+ */
 export class PostgresqlFlowNodeOccurrenceRecoveryStep {
   readonly #options: PostgresqlFlowNodeOccurrenceRecoveryStepOptions;
 
@@ -172,12 +183,16 @@ function prepareAvailable(
   page: FlowNodeOccurrencePage,
 ): PostgresqlOperateRecoveryStepResult {
   if (page.headRevision > execution.headRevision) {
+    // Producer occurrence publication may race ahead of retained E1. This is convergence lag, not a
+    // producer gap: E1 recovery must establish the authority before this page can be applied.
     return retry(PostgresqlOperateRecoveryRetryReason.ExecutionAuthorityNotReady);
   }
   const prior = image ?? createEmptyFlowNodeOccurrenceProjection(
     occurrenceIdentityFromRegistration(registration),
   );
   try {
+    // Retained E1 may legitimately be ahead of this occurrence page. The fold still requires exact
+    // overlap and forbids the occurrence page itself from advancing beyond E1 authority.
     applyFlowNodeOccurrencePage(prior, page, execution, "mayBeAhead");
   } catch {
     return fail(
