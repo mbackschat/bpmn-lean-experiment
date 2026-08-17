@@ -410,6 +410,19 @@ Complete implemented M1 platform-package gate:
 
 This platform-only gate uses `tsconfig.platform-harness.json`; the default engine harness excludes `platform/` and `*.platform-test.ts`, so complete engine verification remains independent of platform package builds.
 
+Database-free structure gate for the containerized evaluation distribution:
+
+```sh
+./scripts/pnpm.sh run test:evaluation-distribution:structure
+```
+
+Explicit evaluation start and maintained walkthrough screenshot refresh commands. Both start service dependencies and remain outside ordinary verification; screenshot refresh owns an isolated Compose project and removes its transient volumes:
+
+```sh
+./scripts/pnpm.sh run evaluation:start
+./scripts/pnpm.sh run walkthrough:screenshots:refresh
+```
+
 M2 Process-instance search public-contract, durable-index, and producer-recording checkpoint gate:
 
 ```sh
