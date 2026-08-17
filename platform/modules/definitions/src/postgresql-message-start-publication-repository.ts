@@ -173,7 +173,9 @@ function snapshotMessageStart(
   return { startEventId: value.startEventId, channel: { ...value.channel } };
 }
 
-function decodeRecord(row: PostgresqlRow): MessageStartPublicationRecord {
+export function decodePostgresqlMessageStartPublicationRecord(
+  row: PostgresqlRow,
+): MessageStartPublicationRecord {
   return {
     publicationId: requireNonemptyByteText(row, "publication_id"),
     definition: decodeNonemptyDefinitionMetadata(row),
@@ -201,6 +203,8 @@ function decodeRecord(row: PostgresqlRow): MessageStartPublicationRecord {
     state: decodeState(requireNonemptyString(row, "state")),
   };
 }
+
+const decodeRecord = decodePostgresqlMessageStartPublicationRecord;
 
 function requireLegalTransition(
   current: MessageStartPublicationState,

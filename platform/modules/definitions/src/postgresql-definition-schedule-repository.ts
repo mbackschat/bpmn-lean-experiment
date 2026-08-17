@@ -276,7 +276,9 @@ function snapshotNewRecord(
   };
 }
 
-function decodeRecord(row: PostgresqlRow): DefinitionScheduleRecord {
+export function decodePostgresqlDefinitionScheduleRecord(
+  row: PostgresqlRow,
+): DefinitionScheduleRecord {
   const definition = decodeNonemptyDefinitionMetadata(row);
   const timerStart = {
     startEventId: requireNonemptyByteText(row, "timer_start_event_id"),
@@ -330,6 +332,8 @@ function decodeRecord(row: PostgresqlRow): DefinitionScheduleRecord {
     firstRunId,
   };
 }
+
+const decodeRecord = decodePostgresqlDefinitionScheduleRecord;
 
 function cancellationTransition(
   current: DefinitionScheduleRecord,

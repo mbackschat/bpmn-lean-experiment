@@ -37,6 +37,9 @@ import {
   requirePublicationId,
 } from "./message-start-publication-values.js";
 import { toPublicDefinition } from "./definition-public-values.js";
+import {
+  messageStartPublicationHostRequest,
+} from "./message-start-publication-host-request.js";
 
 type PreparedTarget = Readonly<{
   definition: DefinitionMetadata;
@@ -187,7 +190,7 @@ export class MessageStartPublicationService {
       );
     }
     const preparation = await this.#dependencies.host.prepare(
-      this.#hostRequest(bytes, definition, messageStart, identity),
+      messageStartPublicationHostRequest(bytes, definition, messageStart, identity),
     );
     switch (preparation.status) {
       case "admitted":
@@ -209,7 +212,12 @@ export class MessageStartPublicationService {
           definition,
           messageStart,
           identity,
-          request: this.#hostRequest(bytes, definition, messageStart, identity),
+          request: messageStartPublicationHostRequest(
+            bytes,
+            definition,
+            messageStart,
+            identity,
+          ),
           intent: { ...preparation.intent },
         };
       case "rejected":
@@ -277,31 +285,6 @@ export class MessageStartPublicationService {
     requirePrivateValue(commandId, "commandId");
     requirePrivateValue(workflowId, "workflowId");
     return { processInstanceId, commandId, workflowId };
-  }
-
-  #hostRequest(
-    bytes: Uint8Array,
-    definition: DefinitionMetadata,
-    messageStart: DefinitionMessageStartCapability,
-    identity: MessageStartPublicationPrivateIdentity,
-  ): MessageStartPublicationHostRequest {
-    return {
-      bytes: Uint8Array.from(bytes),
-      definition: {
-        processId: definition.processId,
-        source: {
-          id: definition.source.id,
-          sha256: definition.source.sha256,
-          byteLength: definition.source.byteLength,
-        },
-        semanticProfile: definition.semanticProfile,
-        startCapabilities: cloneDefinitionMetadata(definition).startCapabilities,
-      },
-      messageStart: cloneMessageStart(messageStart),
-      processInstanceId: identity.processInstanceId,
-      commandId: identity.commandId,
-      workflowId: identity.workflowId,
-    };
   }
 
   async #reconcile(

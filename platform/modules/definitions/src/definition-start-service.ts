@@ -160,7 +160,7 @@ export class DefinitionStartService {
 
   /** Dispatches safe reserved starts and describes only already-dispatched starts. */
   async reconcileAll(): Promise<void> {
-    await this.#confirmedInstances.reconcileDirect(this.#reconciliationHost());
+    await this.#confirmedInstances.reconcileDirect(this.directStartRecoveryHost());
     await this.#confirmedInstances.reconcileDeliveries();
   }
 
@@ -168,11 +168,12 @@ export class DefinitionStartService {
   async reconcileProcessInstance(processInstanceId: string): Promise<void> {
     await this.#confirmedInstances.reconcileDirectProcessInstance(
       processInstanceId,
-      this.#reconciliationHost(),
+      this.directStartRecoveryHost(),
     );
   }
 
-  #reconciliationHost(): DirectProcessInstanceHost {
+  /** Supplies composition with the same artifact-validating, content-bound recovery host. */
+  directStartRecoveryHost(): DirectProcessInstanceHost {
     return {
       start: async (reservation) => {
         if (reservation.intent.protocol !== "bpmn-direct-start-v1") {

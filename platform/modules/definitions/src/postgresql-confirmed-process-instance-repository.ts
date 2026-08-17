@@ -205,7 +205,9 @@ function decodeOptionalRow(
   return row === undefined ? null : decodeRow(row);
 }
 
-function decodeRow(row: PostgresqlRow): ConfirmedProcessInstanceRecord {
+export function decodePostgresqlConfirmedProcessInstanceRecord(
+  row: PostgresqlRow,
+): ConfirmedProcessInstanceRecord {
   try {
     const processInstanceId = requireNonemptyByteText(row, "process_instance_id");
     const instance = decodePublicInstance(requireNonemptyString(row, "public_instance_json"));
@@ -224,3 +226,5 @@ function decodeRow(row: PostgresqlRow): ConfirmedProcessInstanceRecord {
     throw new ConfirmedProcessInstanceStoredValueError(error);
   }
 }
+
+const decodeRow = decodePostgresqlConfirmedProcessInstanceRecord;

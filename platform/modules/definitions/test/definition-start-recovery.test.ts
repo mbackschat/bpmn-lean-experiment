@@ -21,6 +21,9 @@ import {
   InMemoryConfirmedProcessInstanceRepository,
   SqliteConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
+import {
+  PostgresqlDirectStartRecoveryStep,
+} from "../dist/postgresql-direct-start-recovery-step.js";
 import type {
   DefinitionMetadata,
   DefinitionRepository,
@@ -148,6 +151,65 @@ test("restart dispatches one durable reserved direct start and never redispatche
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("composition obtains the artifact-validating direct recovery host", async () => {
+  let starts = 0;
+  let describes = 0;
+  const starter: DefinitionVersionStarter = {
+    prepareDefinitionVersion: async () => {
+      throw new Error("recovery must not prepare the retained intent again");
+    },
+    startPreparedDefinitionVersion: async (request) => {
+      starts += 1;
+      assert.deepEqual(request.bytes, source);
+      return {
+        status: EngineDefinitionStartStatus.Started,
+        source: structuredClone(definition.source),
+        definition: {
+          processId: definition.processId,
+          semanticProfile: definition.semanticProfile,
+        },
+        processInstanceId: request.processInstanceId,
+      };
+    },
+    describeDefinitionVersionStart: async () => {
+      describes += 1;
+      return { status: "matching" };
+    },
+    startDefinitionVersion: async () => {
+      throw new Error("legacy start must not be used");
+    },
+  };
+  const service = new DefinitionStartService(
+    starter,
+    artifactStore(),
+    definitionRepository(),
+    () => "unused",
+    new ConfirmedProcessInstancePublicationService({
+      repository: new InMemoryConfirmedProcessInstanceRepository(),
+      operate: { recordConfirmedProcessInstance: async () => undefined },
+      work: { recordConfirmedProcessInstance: async () => undefined },
+    }),
+  );
+  const host = service.directStartRecoveryHost();
+  const reservation = {
+    instance: {
+      processInstanceId: "composition-instance",
+      definition: structuredClone(definition),
+    },
+    locator: "composition-locator",
+    intent: {
+      protocol: "bpmn-direct-start-v1",
+      intentSha256: "e".repeat(64),
+    },
+  };
+
+  assert.deepEqual(await host.start(reservation), { status: "started" });
+  assert.deepEqual(await host.describe(reservation), { status: "matching" });
+  assert.equal(starts, 1);
+  assert.equal(describes, 1);
+  assert.ok(new PostgresqlDirectStartRecoveryStep({ runtime: {} as never, host }));
 });
 
 function createFixture(initialDescription: "missing" | "matching") {
