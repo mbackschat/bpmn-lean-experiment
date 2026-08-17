@@ -179,19 +179,19 @@ The pre-policy grandfather set and its selection rule are fixed by immutable bas
 
 ### Comments — document semantic surplus
 
-Comments explain information that cannot be recovered reliably from names, types, and control flow. There is no target comment density; comment according to the source's role.
+Comments explain semantic surplus: non-obvious contracts and invariants that cannot be recovered reliably from names, types, and control flow. When a change introduces, relies on, or exposes such a fact, document it in the same change instead of deferring a later comment pass. This includes concurrency interleavings, fail-closed behavior, consistency or snapshot boundaries, ownership and mutability, deterministic ordering, resource limits, portability constraints, and tempting alternatives that would violate the contract. There is no target comment density; comment according to the source's role.
 
 - Public API: Javadoc or TSDoc states the contract, defaults, failure behavior, ownership or mutability, portability constraints, and any non-obvious example. Do not expose implementation history.
 - Semantic and evaluator code: document observable behavior, legal domain, ordering, degradation behavior, and the evidence or oracle behind surprising semantics. Comment a branch when its correct interpretation is not evident from the code or when a tempting alternative would be wrong.
 - Boundary and infrastructure code: document trust boundaries, normalization, resource limits, deterministic ordering, cache lifetime and invalidation, concurrency, and host-specific behavior. Do not narrate ordinary plumbing.
-- Algorithms and data structures: document representation invariants and material complexity or performance constraints. Do not restate the type declaration or loop.
+- Algorithms and data structures: document representation invariants, convergence or concurrency assumptions, and material complexity or performance constraints. Comment a helper when its correctness depends on an invisible state transition or on rejecting a plausible alternative. Do not restate the type declaration or loop.
 - Tests: class-level documentation names the contract and oracle. Test names describe cases. Inline comments are reserved for a discriminating fixture, intentional perturbation, provenance constraint, or otherwise invisible setup fact.
 - Keep comments durable: release-set identifiers, chronology, implementation status, and “currently” claims belong in proposals, gap ledgers, or Git. Stable finding or specification identifiers are welcome when they provide traceable evidence.
 - Delete or shorten a comment when refactoring makes it redundant. A stale or broader-than-evidence comment is a defect.
 - Apply a deletion test to every added or materially changed Lean comment: if deletion loses no contract, invariant, ordering, failure distinction, ownership fact, evidence provenance, resource boundary, or realistic false alternative, improve the name, type, theorem, or module boundary and omit the comment.
 - Never add or retain comments to satisfy a ratio, coverage count, minimum word count, or declaration quota, and never generate comment or docstring stubs. State a shared invariant once at its narrowest owner rather than repeating it across fields, helpers, fixtures, or proofs.
 - In maintained non-experimental files named `Conformance.lean` or ending in `Conformance.lean`, give every durable checked fact a descriptive public `theorem` name. Reserve `private theorem` for supporting lemmas and do not add a docstring when the name and proposition already carry the contract.
-- Keep routine private helpers, decoder plumbing, and tactics uncommented. Necessary comments count normally toward source-size review; split a crowded owner by semantic responsibility instead of compressing code or deleting useful explanation.
+- Keep routine private helpers, decoder plumbing, and tactics uncommented. A private helper with a non-obvious contract or invariant is not routine and must document that fact at its narrowest owner. Necessary comments count normally toward source-size review; split a crowded owner by semantic responsibility instead of compressing code or deleting useful explanation.
 
 ### Code hygiene and module boundaries
 

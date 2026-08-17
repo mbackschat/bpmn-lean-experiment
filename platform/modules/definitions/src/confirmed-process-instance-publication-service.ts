@@ -229,6 +229,12 @@ export class ConfirmedProcessInstancePublicationService {
     );
   }
 
+  /**
+   * Preserves a definitive exact host result when recovery changes `starting` to
+   * `indeterminate` while the original host call is still in flight. The only
+   * permitted retry is across those transient states; an opposite definitive
+   * state remains an integrity conflict and is never overwritten.
+   */
   async #convergeDefinitiveState(
     initial: ConfirmedProcessInstanceRecord,
     target:
