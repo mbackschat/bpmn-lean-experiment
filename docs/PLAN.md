@@ -1,269 +1,40 @@
 # Plan
 
-This document owns the current checkpoint, ordered next work, unresolved decisions, and exact resume point. It is not a feature-history board: durable product and semantic boundaries belong in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete repository and deployment architecture in [ARCHITECTURE.md](ARCHITECTURE.md), exact supported and absent surfaces in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), test procedure in [TESTING-SPEC.md](TESTING-SPEC.md), semantic meaning in the owning [capsule](capsules/README.md), commit-bounded cost in [CAPSULE-COST-LEDGER.md](CAPSULE-COST-LEDGER.md), and process findings in [PROCESS-ASSESSMENT-LEDGER.md](PROCESS-ASSESSMENT-LEDGER.md). A completed item is deleted from here once its content has an owner; Git retains the history. [The plan-shape guard](../scripts/plan-status-consistency.test.ts) enforces that.
+This file owns immediate execution order, blockers, current measured evidence, and the exact resume action. Durable decisions, implementation detail, semantic meaning, and test procedure belong in their linked owners. Completed work leaves this file after its current consequence has an owner; Git retains history.
 
 ## Current checkpoint
 
-The engine and BPM platform remain separate MIT products under [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division) and the package boundaries in [ARCHITECTURE.md](ARCHITECTURE.md). M0 through M6 and Horizon 1 of the owner-approved [Temporal BPMN execution scalability proposal](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) are closed. Product 2 now has one PostgreSQL 18 shared mode with replicated API and recovery-worker composition, while local mode retains its focused single-node contract. [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact implemented and absent surfaces; the graduated [specifications](README.md) and closure-reviewed [shared-persistence proposal](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) own closed contracts and evidence. The evaluation Compose distribution and maintained browser walkthrough are complete. The owner approved the bounded Horizon 2 Workflow-chain proposal on 2026-08-17. Product 1 starts enroll in the versioned chain contract, return no SDK handle, recover content-bound commands through the latest Run, expose only the closed v1 terminal receipt, traverse paired E1/E2 segments privately, and enforce recovery, atomic semantic-candidate, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, and pending-Timer bounds. The remaining Query, terminal, Event History, aggregate, Run, deployment, and closure lanes remain open.
+M0 through M6 and Horizon 1 are closed. Horizon 2 Product 1 Workflow-chain work has implemented production enrollment, handle-free start, content-bound recovery, closed v1 terminal receipts, private paired E1/E2 traversal, and recovery, semantic-candidate, command-ingress, effect, retained-Run, and pending-Timer capacity. Query, terminal, Event History, aggregate, Run, deployment, forced Message/Timer/effect rollover, and closure evidence remain open in the [Workflow-chain proposal](TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) and [Temporal hosting map](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md).
+
+The owner has temporarily overridden that sequence to implement the approved agent documentation control plane. This documentation-only increment changes no Horizon 2 order, capacity policy, BPMN meaning, product contract, proof boundary, runtime behavior, or evidence claim.
 
 ## Ordered work
 
-This section is the sole current portfolio order. The requirement ledger, CIB breadth research, executable corpus, scalability proposal, and capsule research supply evidence but do not independently schedule work. The 80/20 heuristic means selecting a small set of reusable mechanisms that unlocks the greatest reach across independent clone families; it is not a coverage percentage, a raw XML-element ranking, or permission to ignore a rare high-consequence defect. After normative dependencies, semantic risk and practical reach are co-equal and are not averaged: either can justify priority. Every semantic increment starts with the BPMN standard account first, then adds a CIB relationship only as a classified overlay when an ambiguity, extension, configuration, or compatibility claim requires it.
+Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
 
-Every semantic selection records its reviewed BPMN requirements, independent model-family reach, realistic risk counterexample, CIB evidence decision, bounded capsule cost, and Temporal feasibility. Each newly executable semantic variant still adds a credible retained whole model and keeps the generated corpus, capability disclosure, and pipeline evidence equal. Program entries below split into separately reviewed capsules at their named mechanism boundaries rather than becoming one broad implementation change.
+1. `DOC-CONTROL-PLANE` · **active** · Owner: [approved proposal](AGENT-DOCUMENTATION-CONTROL-PLANE-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [platform](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md). Split the two universal documents without changing claims, prove the migration, obtain cold closure review, delete the one-off proposal, then restore Horizon 2 as active.
+2. `H2-WORKFLOW-CHAIN` · **queued** · Owner: [Workflow-chain proposal](TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) · Map: [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md). Complete the remaining Query, terminal, Event History, aggregate, Run, deployment, forced-rollover, and closure matrix.
+3. `INTERCHANGE-ADMISSION` · **queued** · Owners: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [corpus research](research/EXECUTABLE-BPMN-MODEL-CORPUS-RESEARCH.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md). Admit high-leverage standard DI, lanes, Collaboration presentation, documentation, and safe inert metadata as execute, preserve, or reject.
+4. `SEQUENTIAL-MULTI-INSTANCE` · **queued** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md). Specify bounded sequential iteration, identity, data, completion, cancellation, progress, replay, and output aggregation.
+5. `PARALLEL-MULTI-INSTANCE` · **queued** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md). Add bounded concurrent ownership, completion conditions, deterministic aggregation, races, cancellation, replacement, and replay.
+6. `DATA-AND-TASK-MECHANISMS` · **queued** · Owners: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md). Broaden standard data lifetime and mappings before selecting executable Task profiles and host effects.
+7. `EVENT-SUBSCRIPTIONS` · **queued** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md). Generalize subscription lifetime, correlation, payload, cancellation, deterministic races, and scope handlers.
+8. `COMPENSATION-TRANSACTIONS` · **queued** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md). Specify completed-work registration, snapshots, handler ordering, cancellation, failure, and replay.
+9. `H3-WORKLOAD-ISOLATION` · **queued** · Owner: [scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) · Maps: [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [platform](BPM-PLATFORM-IMPLEMENTATION-MAP.md). Prove queue and Worker isolation, backpressure, fairness, failover, observability, capacity, and cost.
+10. `CONFORMANCE-CLOSURE` · **later** · Owners: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [conformance target](BPMN-CONFORMANCE-TARGET.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md). Continue Process Execution closure by normative dependency, semantic risk, practical reach, and the adopted [showcase ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder).
 
-1. **In progress: Implement the approved Horizon 2 Workflow-chain bounds and Continue-As-New contract.** The independently reviewed [Workflow-chain proposal](TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; stop-the-world deployment compatibility; and forced evidence. This remains the highest current durable-hosting risk because every long-lived Process and every later repeating BPMN mechanism inherits it; Temporal Run identity remains private.
+## Current evidence
 
-2. **Queued: Expand high-leverage BPMN interchange admission.** Apply the measured 80/20 tranche to standard Diagram Interchange, lanes, definitional Collaboration presentation, documentation, and safe inert metadata that currently block several independent candidate families. Classify each source fact as execute, preserve, or reject; preservation must prove semantic non-interference, and CIB runtime metadata enters only through an explicitly selected compatibility need. This increment improves real-model admission without pretending that presentation or vendor metadata is executable BPMN meaning.
+The latest complete repository gate is the 2026-08-16 M6 closure run at exit 0. It covered Lean, the semantic core, BPMN source, shared contracts and canonical bytes, CIB targets, differential comparison, Temporal adapter tests and history replay, Product 2 package evidence, and the registered pipeline. This correctness result does not establish production scalability.
 
-3. **Queued: Specify bounded Sequential Multi-Instance.** Close the first unsupported loop-family slice through standard Activity and Multi-Instance lifecycle, bounded collection input, per-iteration occurrence and data identity, declaration order, completion accounting, cancellation, stable progress, replay, and exact output aggregation. Use CIB Seven only for separately classified public-lifecycle evidence. Sequential execution comes before parallel execution because it establishes repetition and identity without hiding them inside concurrency.
+The last uncontended comparable warm-pipeline baselines remain 15,986.670 ms for 30 cases at `13cdec8` and 13,476 ms for 28 cases at `ac2813c`. No uncontended baseline exists for the later catalogs, so a new measurement must be interpreted against the per-case trend and must not replace these merely because it passed.
 
-4. **Queued: Specify bounded Parallel Multi-Instance.** Reuse the sequential iteration model while adding bounded concurrent child ownership, completion conditions, deterministic aggregation, optimistic-retry invariants, whole-body cancellation, and race schedules. The separating evidence must cover completion/cancellation races, duplicate children, lost aggregation, Worker replacement, and replay rather than only a happy-path fan-out.
-
-5. **Queued: Expand BPMN data and executable Task mechanisms.** In separate prerequisite-ordered capsules, broaden standard DataInput, DataOutput, Data Association, scoped mapping, and Activity data lifetime before selecting Script Task, Business Rule Task, or Send Task execution profiles demanded by independent whole-model families. Language runtimes, DMN, outbound transport, and CIB bindings remain explicit overlays or host effects; none may silently enter the pure semantic core.
-
-6. **Queued: Generalize event subscriptions, correlation, and scope handlers.** Establish reusable subscription lifetime, payload and correlation identity, modeled throw/consume behavior, cancellation, and deterministic races before broadening boundary handlers and adding interrupting then non-interrupting Event Subprocesses. Message, Timer, Signal, Error, and Escalation triggers remain distinct propositions even when they reuse one kernel.
-
-7. **Queued: Specify compensation and Transaction semantics.** Define completed-work registration, required state snapshots, handler selection, dependency or reverse ordering, cancellation, failure, and replay before admitting Compensation, Transaction Subprocess, or Cancel Event shapes. This remains after scope, data, repetition, and event foundations because it depends on all four.
-
-8. **Queued: Isolate workloads and prove distributed capacity.** Complete Horizon 3 with queue and Worker isolation, backpressure, tenant fairness, capacity observability, shared-store failover, representative mixed-model tests, and published throughput, latency, saturation, recovery, and cost evidence. More Workers or queue partitions alone do not constitute this result.
-
-9. **Later: Continue Process Execution conformance closure.** Refresh the requirement ledger, CIB `2.2.0` breadth inventory, and deduplicated corpus after every semantic closure, then select the next reusable gap by the same normative-dependency, semantic-risk, and practical-reach rule. The remaining program includes definition/import closure, general Process and Sequence Flow composition, Activity and Task lifecycle breadth, remaining Gateway and Event behavior, arbitrary scope nesting, data and expression coverage, Collaboration and Message Flow, and the line-by-line requirement extraction needed before any Process Execution Conformance percentage or claim exists.
-
-## Showcase milestone ladder
-
-The approved [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) makes showcase milestones its acceptance gates and leaves the list to this plan. This is that list.
-
-Each milestone names one capability demonstrable end to end, the engine work it forces, the platform work it adds, and the executable gate that closes it. The order is a dependency order and not a schedule. It is deliberately shorter than the eight-stage horizon in [the competitive scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md#dependency-ordered-roadmap), which is design input; the exit gates below are the binding ones, and a milestone closes only when its gate is green and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) records the exact surface it reached.
-
-Two boundaries hold across the whole ladder. The engine must still build and verify with no platform package present, and the platform must reach the engine only through narrowed public entry points. A milestone that can be demonstrated only by violating either has not been reached.
-
-### M0 — shipped floor
-
-**Status: closed.**
-
-The [Temporal engine runner](RUNNABLE-TEMPORAL-MVP-SPEC.md) over the registered profile catalog. No demo is owed; it exists so the later exit gates have a baseline to differ from. Its configured actors and effect handlers are host simulations, and User Task interaction stays simulated until M3 replaces it with a real inbox.
-
-### M1 — a third party deploys their own BPMN file
-
-**Status: closed.** The engine admission slice, narrow compilation and exact-version start gateway, exact artifact byte store, strict public definition contract, durable per-process versioning workflow, public definition API, server composition, React definition workspace with viewer-only diagram rendering and selected-version start, and required headless Chromium acceptance are implemented. The registered showcase composes a cached ephemeral Temporal service, production Worker, production platform server, and browser client without putting test infrastructure in a production dependency graph.
-
-**Demo.** Someone who is not us uploads BPMN bytes we have never seen, receives an honest per-element admission verdict, and starts an instance when the file is admitted.
-
-This is the owner's original acceptance condition. The preserve-enabled profile admits the selected modeler notation without executing it and reports each refused element. Product 2 receives exact uploaded bytes through its public API, compiles them without receiving private engine representations, stores exact digest-bound bytes without replacement, assigns durable monotonic versions within each process ID, and returns public diagnostics and exact source. Exact-version start recompiles stored bytes and binds source, digest, profile, Process ID, version, semantic instance ID, and Task Queue before calling the concrete Temporal client. The HTTP-only React client composes upload, diagnostics, catalog, version, source-identity verification, licensed diagram rendering, and selected-version start. The showcase exercises that composition over runtime-created source and real Temporal hosting.
-
-**Engine capsules.** Preserve-only admission, splitting parsed material into executed, preserved, and rejected as [the minimal-engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) recommends; multi-root definitions with explicit executable-root selection; per-element rejection diagnostics carrying element identity and reason.
-
-**Platform increments.** The public HTTP API, upload, content-addressed definition storage keyed by engine-computed digest, version ordinals within a BPMN process identifier, viewer-only diagram rendering, admission diagnostics, and a React client that consumes only the same public API an external adopter has.
-
-**Exit gate.** An externally supplied file that is not a registered fixture is admitted, stored, versioned, rendered, and started; an unsupported one is rejected before Workflow start with its element identity; exact bytes, digest, profile, and version stay bound; and the engine gate passes with the platform tree absent.
-
-### M2 — the file runs its real shape
-
-**Status: closed.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, Terminate End Event, [configured Task extension](capsules/CONFIGURED-GENERIC-TASK-SPEC.md), [exact-version definition scheduling](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md), [published Message Start ingress](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md), and [Process-instance search](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md) increments are implemented, closure-reviewed, evidence-closed, and graduated.
-
-**Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
-
-**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start, Timer Start, Terminate End, and the versioned configured Task extension are closed. The configured Task reuses the existing neutral effect mechanism while preserving plain Abstract Task's standard immediate-completion meaning as conforming but deferred.
-
-This is the milestone that must be preceded by the decided-fixture cost review recorded below.
-
-**Platform increments.** Definition scheduling for Timer Start, a published message ingress for Message Start, and instance search.
-
-**Exit gate.** A cyclic model reaches a terminal state under each declared target; Terminate End cancels its containing scope and not the root when nested; the four new elements carry registered answer-free scenarios with seeded mutations; and the Lean gate stays inside its memory bound.
-
-### M3 — real work with real data
-
-**Status: closed.** The [Boolean Process-data specification](capsules/BOOLEAN-PROCESS-DATA-SPEC.md), [E2 User Task assignment and form metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md), and [Product 2 human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) are implemented, closure-reviewed, evidence-closed, and graduated. Product 2 human work includes independently reviewed public contracts and private engine operations, durable all-producer publication, exact current-task aggregation, fake identity policy, claims, typed detail, retry-safe completion, same-transaction audit outbox, strict HTTP routes, a CSS-Modules React inbox, live Temporal evidence, and Chromium acceptance. Closure target `c72a3bb` and final correction audit `23892a5` close the governed M3 work.
-
-**Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
-
-**Engine capsules.** The value domain, widening variables beyond the current string-and-null contract; and E2, the admission capability and public projection for User Task assignment and form metadata that [the platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as its second engine prerequisite.
-
-**Platform increments.** The pluggable identity boundary with a fake default, the shared task inbox, claim and release as platform-owned authorization, form projection, and the audit record of who acted.
-
-The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic public contract for current cross-instance tasks, private exact observation locators, actor claims, one typed field, retry-safe completion, platform audit, and a CSS-Modules React inbox.
-
-**Exit gate.** The internal system-visible aggregation matches the engine's published open User Tasks exactly before actor-policy projection; no platform component constructs an occurrence identity; every engine state-changing action is authorized against the exact published occurrence; platform claim and audit state remains distinct from BPMN meaning; and a non-string value survives the round trip through all declared targets.
-
-### M4 — it survives going wrong
-
-**Status: closed.** [Stage 1](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md), one bounded Service Task incident and exact retry, [Stage 2](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md), exact incident-scoped hosting-root Process cancellation, and [Stage 3](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md), current Product 2 incident operations, are implemented, closure-reviewed, evidence-closed, and graduated.
-
-**Demo.** A failing Service Task raises an incident an operator can see, retry, and cancel, and a cancelled scope leaves no orphaned work.
-
-**Engine capsules.** Cancellation beyond the current direct-parent regional case, and incidents as a semantic outcome distinct from Temporal transport retries.
-
-**Platform increments.** The operations console, incident handling, retry and cancellation surfaces, and effect diagnostics.
-
-**Exit gate.** An incident is a published semantic fact rather than an inferred one; cancelling an ancestor scope cancels its descendants with counters preserved; and the platform exposes no retry count that is a Temporal attempt.
-
-### M5 — it can be operated and explained
-
-**Status: closed.** The independently closure-reviewed [committed execution publication specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements exact evaluator-root traces, independent current positions, strict wire and canonical bytes, an atomic Workflow publication Query, a representation-free client and gateway, an opaque-locator engine API, live retention and replay evidence, fail-closed transactional Product 2 projection, and two-width desktop History, Diagram, and canonical export evidence. The closure-reviewed [flow-node occurrence metrics specification](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) adds exact occurrence frequency and completed duration over a complete exact-version population. The closure-reviewed [operator-history and audit-export specification](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md) adds the independently ordered Work and incident-action view, canonical audit attachment, strict privacy boundary, restart convergence, and two-width evidence that complete the milestone.
-
-**Demo.** An operator replays what a finished instance did, sees where a running one stands on the diagram, and exports the history.
-
-**Engine capsules.** E1, the publication of committed transition records and of control-token and scope positions. These are two distinct information requirements and must be specified and tested as two even if one publication serves both, because history needs the sequence and the diagram overlay needs the positions.
-
-**Platform increments.** The read-model projection with monotonic revisions, cursoring, ordering, deduplication, gap detection, reconciliation, and rebuild; semantic and operator history; diagram overlays; frequency and duration views; audit export.
-
-**Exit gate.** History is built only from committed publication, never from Event History or state differencing; the projection rebuilds to the same content from scratch; Worker replacement and platform restart do not corrupt it; and a seeded gap is detected rather than silently skipped.
-
-### M6 — useful structured Human Work
-
-**Status: closed.** The independently closure-reviewed [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) is evidence-closed across the generic five-arm value wire, assignment-only User Task metadata, opaque BPMN Rendering preservation, Product 2's exact-source-bound catalog, Zod-backed validation and canonical patch computation, durable Work completion, responsive web form, retained model, and both-width production browser journey.
-
-**Demo.** A reviewer claims an expense exception, completes regular text, Boolean, date, integer, single-choice, and multiple-choice inputs, and selects Approve, Request changes, or Abort. Action-dependent reason input is enforced on both client and server, the chosen action contributes a fixed resolution value to one atomic patch, and the Process follows the matching gateway route.
-
-**Engine capsules.** Generic non-negative safe integers and ordered string lists are admitted only for the selected User Task completion profile. BPMN Rendering is retained as optional opaque source and remains execution-neutral. No form schema, field rule, action, priority, or Zod dependency enters Lean, the Semantic Process IL, semantic-core form semantics, or Temporal Workflow state.
-
-**Platform increments.** One immutable catalog is derived from the exact admitted definition source, persisted under the complete definition identity, joined to current work by engine-published element ID, validated server-side, and rendered through accessible controls. Structured exact retries canonicalize multiple-choice selections, changed content conflicts, validation rejection performs no engine call or Work mutation, and the initial web graph remains below its 500 kB guard through natural workspace and form boundaries.
-
-**Exit gate.** Product 1's independent cross-language and Temporal evidence is green; Product 2 catalog, deployment, validation, retry, persistence, HTTP, and web gates are green; the expense-exception model is retained and journey-backed; 1280 and 1600 Chromium paths cover every action and field kind; and the context-cold closure reviewer approves the immutable target.
-
-### One Lean research question per engine milestone
-
-The Lean lane must stay a research lane rather than becoming a proof tax on product work. Each engine milestone therefore carries one named question, declared at capsule start under [the assurance-lane rule](PROJECT-DESIGN.md#lean-assurance-lane) as proved, checked, or deliberately open. A question that cannot close within its capsule records its unresolved boundary in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md); it does not quietly become a weaker claim.
-
-| Milestone | Question | Why it is the risk |
-|---|---|---|
-| M1 | Non-interference of preserved payload: does admitting material the engine retains but never executes leave the executable subset's semantics unchanged? | Preserve-only admission is the first rule that lets unexecuted content into a checked definition. If preserved material can reach a semantic decision, the whole execute/preserve/reject split is unsound. |
-| M2 | Progress and termination under cycles: what replaces acyclicity as the premise the closure, exhaustion, and stable-state laws rest on? | Acyclicity is currently a structural precondition, not a proof convenience. Removing it invalidates the hypotheses of the existing law set rather than merely widening admission. |
-| M3 | Value-domain survival: does the current law set hold over a widened value domain, or does each law need an explicit value hypothesis? | The laws were written when every value was a string or null. A widened domain either passes through or exposes laws that were quietly domain-specific. |
-| M4 | Ancestor cancellation: does the direct-parent regional cancellation result generalize to an arbitrary ancestor scope with its monotonic counters intact? | The Sub-Process Error capsule proved one level. Generalizing is where a cancellation account usually breaks. |
-| M5 | Trace completeness: is the published transition sequence sufficient to reconstruct the state the engine reached, or only to narrate it? | If it is not, every downstream history and mining claim rests on a projection that cannot be checked against the engine. |
-
-## Approved decisions
-
-Only decisions that constrain the next work are kept here. A decision fully owned by a graduated specification lives in that specification; Git retains the rest.
-
-**Approved 2026-08-15.**
-
-- **Post-MVP scalability order:** the owner-approved [Temporal BPMN execution scalability proposal](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) makes Product 2 shared persistence, shared immutable artifact storage, bounded background recovery, and projection-backed reads the first post-MVP scale-out increment. Product 1 Workflow-chain budgets and Continue-As-New follow, then workload isolation and distributed capacity evidence. The functional MVP remains explicitly single-node and carries no production scalability or capacity claim.
-
-**Approved 2026-08-07.**
-
-- **BPM platform proposal as the phase-one platform contract:** [the proposal](BPM-PLATFORM-PROPOSAL.md) is the accepted contract for product 2. Its surfaces, engine boundary, selected stack, exclusions, and open decisions bind until its own reopen conditions are met. Approval settles the product boundary and not the sequencing, which [the ladder](#showcase-milestone-ladder) owns.
-- **Lean assurance-lane shapes, superseding part of the targeted preservation gate:** each capsule declares its Lean lane at capsule start as proved, checked, or **deliberately open**, under [the assurance-lane rule](PROJECT-DESIGN.md#lean-assurance-lane). The first two shapes are the choice decision 1 of 2026-07-30 already permits. **The third is new and widens a proof boundary**, because that gate requires every capsule in its scope to close the smallest reusable theorem *or* executable guard, and a deliberately open lane closes neither. It is retained because some obligations are genuinely unaffordable within a capsule and a recorded gap is better than an unrecorded one; a deliberately open lane must name its reason and reopen trigger in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). This supersession makes the assurance-lane rule a material change, owned by the platform proposal's review cycle as [that receipt](BPM-PLATFORM-PROPOSAL.md#independent-cold-review-receipt) records. It does not weaken decision 1 in any other respect.
-
-**Approved 2026-08-10.**
-
-- **Temporal adapter subsystem package boundary:** keep Temporal explicit as product-1 infrastructure, but replace the broad `@bpmn-lean/temporal-adapter` package with the separate protocol, client, Workflow, Worker, runner, and testkit packages owned by [ARCHITECTURE.md](ARCHITECTURE.md#temporal-adapter-subsystem). Product 2 reaches the concrete `@bpmn-lean/temporal-client` only through its engine gateway. There is no generic `ProcessStarter` portability interface and no production umbrella package. The owner approved the resulting `@temporalio/client@1.21.0` reachability.
-
-**Approved 2026-07-30, and still binding on admission work.** These four are the ones M1 and M2 run into directly.
-
-1. **Targeted preservation gate:** every capsule that widens admission or replaces lowering, runtime representation, or public observation must state the exact source-to-result claim at risk, retain a separating discriminator, and close the smallest reusable theorem or executable guard protecting that claim. It must additionally establish that every newly reachable internal closure stays within `semanticProcessClosureLimit`; that every newly reachable multiple-enabled state is an approved order-invariant pair, carries an explicit semantic choice, or is rejected consistently by Lean and the core; and that every newly reachable stable `running` state is terminally complete or exposes an explicit resumption surface. Tokens alone do not establish progress. A general preservation theorem becomes mandatory only when a second capsule needs the same proposition.
-2. **Compositional admission successor:** exact whole-program execution-surface predicates are provisional. The successor is profile-parameterized structural admission, where one reusable validator owns topology-independent reference, producer/consumer, reachability, co-reachability, acyclicity, closure, and stable-state obligations while a selected profile supplies typed mechanism and cardinality capabilities. Do not add another whole-topology disjunct.
-3. **Host capability is not semantic admission:** every capsule making a new wait-set combination reachable must define the adapter capability predicate separately from semantic well-formedness and check it before Workflow start. Violation must be a deterministic pre-start admission result, never a Workflow crash.
-4. **Canonical wait-order reopen trigger:** the rule reopens if a later admission makes mixed or repeated same-kind waits reachable or changes the wait-kind domain. It has already fired once, for the Intermediate Catch Message capsule; all four projectors now order by semantic kind rank and then element ID.
-
-**Approved 2026-07-26, retained for their reopen triggers.**
-
-- **C2 freeze:** keep the five-operation checked-source relation experiment compiling without extending its source semantics. **Reopen before admission widens beyond the two fixture-pinned topologies**, after another fixture-coincidental lowering defect surfaces, or when a capsule independently needs source-level semantics. M1 fires the first trigger, so the reopen decision is due with the preserve-only admission proposal. [The experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) owns the not-adopted result and its precise unresolved boundary.
-- **Semantic-core runtime language:** one TypeScript semantic core hosted by the TypeScript Temporal Workflow. A JVM Worker or client facade is not a semantic-core consumer. Reopen only for a named non-Temporal embedded JVM product mode that must own semantic Process state in-process.
-
-**Approved 2026-08-03, governing review and feedback cost.**
-
-- **No governed cycle for non-material work:** an increment changing none of the governed claims opens no proposal, checkpoint, or closure review and is governed by the executable guards plus the applicable complete gate. [TESTING-SPEC.md](TESTING-SPEC.md#independent-cold-review-gate) owns the negative case.
-- **Recurring drift becomes a guard, not a review finding.**
-- **Two-tier warm-pipeline feedback measure:** 15000ms is a reported soft target and 40000ms the hard ceiling. Regression detection lives in the reported `phaseMs.warmTotal` figure compared against the last uncontended measurement; "the gate passed" is not evidence about speed.
-- **Two-tier CIB Maven deadline:** one 120000ms ceiling from a single owner, with a 30000ms workstation soft target reported after success.
-
-## Last verified baseline
-
-**Latest complete gate: 2026-08-16, exit 0 for the M6 closure target.** The complete local macOS `./scripts/verify.sh` run includes Lean, semantic core, BPMN source, protocol/schema/canonical bytes, Workflow Query, client/API, both CIB releases, differential comparison, 219 Temporal adapter tests, retained history replays, and the complete registered pipeline. The path-scoped Product 2 browser evidence separately covers the 1280/1600 structured Human Work journey. This is correctness evidence and does not replace an uncontended performance baseline or establish production scalability.
-
-**Two performance baselines are retained, because a catalog change breaks comparability and one figure cannot span it.**
-
-| Catalog | Commit | Warm total | Conditions |
-|---|---|---:|---|
-| 30 cases | `13cdec8` | 15986.670ms | uncontended, owner-confirmed idle host |
-| 28 cases | `ac2813c` | 13476ms | uncontended, fastest 28-case measurement |
-
-No uncontended measurement exists at 32, 34, or 35 cases. Until one does, judge a new figure against the per-case trend across these two rather than against either alone, and record any contended run as correctness evidence rather than moving a baseline. Two independent 34-case runs on 2026-08-07 measured 20406.710ms and 20036ms, within 2% of each other, which is weak evidence that this catalog genuinely costs about twenty seconds rather than that both runs were contended; treat a figure near twenty seconds as unexplained rather than as a regression until an idle-host run settles it.
-
-**The Lean build's memory bound is a standing constraint, not a run record.** [CLAUDE.md](../CLAUDE.md#verification) owns the fixed one-thread pin, root-integrator-only execution rule, and reason the value is conservative; [the Lean wrapper](../scripts/lake.sh) replaces inherited overrides, holds the fail-closed host lock, and rejects explicit umbrella contamination of a focused target set. [The executable check](../scripts/verification-entrypoint.test.ts) exercises those three runtime separators against a fake Lake executable and dynamically rejects a bare `lake` subcommand in tracked or pending command surfaces.
-
-## BPMN coverage program
-
-BPMN Process Execution coverage is the primary engine roadmap. Group requirements by reusable mechanism rather than by XML element: Process lifecycle and graph flow; Activity lifecycle; branching and merging; scopes and interruption; event subscription and consumption; variables, data, and mapping; looping and multi-instance; compensation; import and reference closure. [The requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns dispositions. The [CIB breadth research](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md) measures mature engine-test breadth, while the scheduled curated executable corpus measures independent whole-model families that this project can or cannot actually run. Neither raw XML-tag counts nor cloned model counts select work by themselves. [The ladder](#showcase-milestone-ladder) breaks the remaining ties.
-
-### Executable model corpus decision gate
-
-The curated corpus is a maintained product and engine acceptance input, not a fourth conformance denominator. Its manifest must distinguish exact source admission, semantic execution, durable Temporal execution, selected CIB comparison, and Product 2 usability. A model may succeed in one lane and fail in another without that distinction being collapsed. In particular, an engine-runnable User Task model without public assignment metadata is not operator-workspace-ready, and a viewer-renderable model is not necessarily startable.
-
-Corpus prevalence is counted by independently reviewed clone family and reusable BPMN mechanism, not by physical file or XML element occurrence alone. The roadmap report must publish the number of independent model families blocked by a mechanism and a separate semantic-risk assessment naming the realistic representation, concurrency, ordering, cancellation, scope, liveness, identity, data, or Temporal-refinement failure it could expose, together with normative dependencies, implementation cost, Temporal feasibility, and standards value. Model-family reach and semantic risk are co-equal inputs after normative dependencies and must not be collapsed into one score. The next semantic capsule is selected from that evidence under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering); a frequent construct does not bypass its prerequisites or approval lifecycle, and a rare high-risk family is not deferred merely because the first corpus contains few examples of it.
-
-The standing high-risk semantic families are Activity lifecycle and implicit merge/split behavior; inclusive and complex synchronization; repeated scopes, interruption, and cancellation; event subscription lifetime, correlation, races, and Event Sub-Processes; loops, multi-instance, fairness, divergence, and stable-state progress; data availability, mapping, mutation, expressions, and external language execution; compensation ordering and snapshot state; repeated runtime occurrences and complete command identity; and Temporal delivery, retry, replay, and cancellation refinements that could erase a public BPMN outcome. This list is a risk lens rather than an implementation queue. Each next-family decision compares it with the current corpus and CIB breadth evidence.
-
-The first corpus increment closes only when all of the following are executable locally:
-
-1. provenance and licence policy prevents external copyrighted or reciprocal material from entering the MIT retained-model tree while still permitting exact hash-bound external research;
-2. duplicate and near-duplicate examples cannot inflate the model-family or mechanism ranking;
-3. every retained model is schema-valid, parser-admitted, profile-bound, and exercised to a declared terminal state or explicit public resumption point through the semantic core and production Temporal path;
-4. every catalog-visible model passes a production-backed headless-Chromium user journey through deploy or selection, start, each required Work or Operations action, terminal or explicit resumption status, and applicable public history or audit, with each mutation's false precondition separately locked and strict public-contract failures treated as corpus failures rather than hidden fixture gaps;
-5. unsupported candidates remain useful as classified blockers with exact first unsupported mechanisms, never as falsely offered examples;
-6. a generated roadmap report ranks unimplemented reusable mechanisms by clone-family reach, while the owning research records the co-equal semantic-risk assessment before selection, without changing the BPMN, CIB, and platform coverage denominators.
-7. every newly registered executable element or semantic variant atomically adds or expands a credible project-owned retained model, records a concrete business purpose, updates the canonical restriction/CIB-evidence row consumed by Product 2 About, and keeps the derived support, catalog, and retained-model coverage sets equal.
-
-### CIB on-demand gate
-
-For every BPMN work unit, answer these questions before adding CIB-specific implementation:
-
-1. Does BPMN leave a material choice that this profile must resolve?
-2. Does admitted source require a `camunda:*` extension?
-3. Does the compatibility claim require a pinned engine observation not already covered?
-4. Can CIB configuration or host behavior change the canonical or adoption-visible result?
-5. Does a concrete downstream blocker remain after the standard mechanism is implemented?
-
-If all answers are no, no new CIB profile surface is added. If any answer is yes, add the smallest relationship-register entry, profile delta, probe, fidelity label, and mutation that establishes that fact. Do not make every standard capsule pay for a new CIB extension lane.
-
-### Vertical-slice limit
-
-One first-round vertical witness is appropriate for a genuinely new host seam such as durable timers, external effects, or typed business faults. Once the seam exists, later models and source variants should reuse it through generic admission, profile configuration, and downstream regression tests. Do not add model-specific IL operations, Lean evaluators, semantic-core branches, or Temporal Workflows for each A12 model.
-
-## Explicitly deferred
-
-- production identity-provider integration, separately deployed or arbitrary rendered forms, nested structured values, BPMN data associations, and assignment expressions beyond the implemented metadata and fake-identity boundary;
-- engine-global task discovery through Search Attributes; Product 2 instead owns its current-task projection from published engine facts;
-- timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload, key-based/global correlation, modeled throw, Message Flow, and other Message Event loci remain unimplemented beyond the direct payload-free catch;
-- multi-instance, migration, and Workflow-chain policies beyond the approved bounded Continue-As-New contract;
-- a universal BPMN IL, general BPMN compiler, or general semantic assertion language;
-- any expansion of the exact Simple Boolean v1 grammar or use outside its Exclusive Gateway capsule; JUEL, capability-bearing expressions, variable mutation, XPath, DMN/FEEL, Groovy, FreeMarker, and JavaScript remain separate profile/runtime decisions;
-- a separate CIB parallel-compatibility profile until it has a concrete consumer;
-- a classified four-quadrant project-admission × CIB-deployment lane over the pinned MIWG corpus; schedule it with or after the admission-successor checkpoint, report all four quadrants without asserting set equality, and do not count it as execution evidence;
-- a runtime uniqueness invariant over the wait collections, which the [interrupting Activity boundary Timer capsule](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) carries as two explicit hypotheses and needs for its quantified stale-identity law. Its shape is settled, not open: `eventRaceAssociationsValid` and `calledProcessAssociationsValid` already assert cardinality-one over the collections they own, guard their operations, and appear as law hypotheses. Both are also conjuncts of `stableStateResumable`, so a third conjunct must land with any replacement of that predicate rather than before it, and the reopen trigger is whichever comes first;
-- immutable profile or production Event History compatibility;
-- public BPMN conformance or broad CIB compatibility claims.
-
-## Stop conditions
-
-Stop for owner direction if:
-
-- a new normative or pinned-CIB observation reopens the approved semantic account;
-- the profile feature or observation boundary would expand beyond the approved capsule;
-- a dependency addition, removal, replacement, or upgrade is required;
-- the Simple Boolean language would expand beyond its exact URI, grammar, total result, Process-scope string/null context, or read-only capability boundary, or any Workflow code, Lean, or TypeScript core path would parse or evaluate JUEL;
-- lowering performs runtime scheduling, activation, completion, propagation, or other semantic work that the IL claims to own;
-- an IL operation merely selects a retained topology-specific evaluator;
-- a new operation mirrors a BPMN surface class without a reusable semantic mechanism and separating witness;
-- required neutral semantic distinctions are erased before Lean can check lowering, or a source/profile translation is claimed as Lean-independent evidence when Lean receives only its normalized result;
-- structural invalidity would become an ordinary semantic outcome;
-- a second production semantic core or Workflow language is introduced without the exact reopen trigger and fresh owner approval recorded in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-compatibility-and-polyglot-effect-execution);
-- the preservation obligation cannot be stated without assuming the desired result;
-- a Temporal preflight cannot map a required public semantic outcome without adding host-defined semantics;
-- source and executable CIB revisions diverge;
-- the feedback budget cannot be met without weakening independence or evidence.
+For the active documentation increment, the immutable proposal target is `be62f0c`; two correction rounds closed at `3b58c68`, and owner adoption is recorded at `4964b83`. The focused pre-implementation governance gate passed 39/39. The complete wrapper attempt was bounded at 60 seconds and reached later package tests before the outer bound expired, so it is not recorded as a complete green result.
 
 ## Exact resume point
 
-**Horizon 2 implements enrollment, chain recovery, closed v1 receipts, private paired E1/E2 traversal, and recovery, semantic-candidate, command-ingress, effect, retained-Run, and pending-Timer capacity.** Implement the remaining Query, terminal, Event History, aggregate, Run, and deployment matrix next. Keep forced Message/Timer/effect rollover evidence and stop-the-world deployment admission as later closure lanes.
+Active work ID: `DOC-CONTROL-PLANE`.
 
-Item 1 is **in progress and unblocked**. Its semantic checkpoint target `0b33dbc8bc35574685572fe913dbdcf58bf9f8d5` received `approve-with-required-edits`; the same reviewer closed continuation-integrity and terminal-fence findings at correction audit `4479ac60f08abf85404774ddd37def3741583324`. Proposal target `aa2a75457d3a003e40d1400a8da70dc4185817a8` likewise closed its findings at correction audit `4431f13b367d8bc4f14011e382d9c743c3e3af39`.
+Next action: finish the five-map claim migration and executable routing/status/matrix guards, then validate the claim-granular matrix against baseline `b5a2f1a` and the committed closure target. The required oracle is the focused documentation suite, matrix validator, `./scripts/verify.sh`, `git diff --check`, and a context-cold closure review.
 
-**Latest evidence:** The production Workflow-chain gate passes the 226-test concurrent Temporal suite and six decisive serial capacity witnesses. Product starts carry the production Initial envelope; raw results are opaque; public receipts contain no Message ledger; and Product 1 preserves retry/conflict precedence. The reviewed checkpoint proves recursive continuation validation, terminal fencing, three Runs, two boundaries, and replay. Paired publication evidence covers Run-local ranges `0..8`, `8..12`, and `12..16`, boundary cursors, cross-Run occurrence identity, private Run identity, and replay. Recovery and semantic-candidate witnesses cover the exact 512-entry, 64 KiB state, and 64 KiB paired-batch boundaries without exposing speculative state. Command-ingress evidence proves an exact 64 KiB client stimulus, pre-acceptance oversized Update refusal, accepted oversized-Signal failure, the 65th queued Signal failure before revision advance, bounded failure details, and replay. Effect evidence proves exact 64 KiB request/result accounting, pre-schedule request refusal, pre-return Worker result replacement, deterministic Workflow revalidation, a fixed 16 KiB-bounded exhaustion projection with no cause graph, typed live failure at the last public revision, and replay. Retained-Run evidence proves exact accounting, a hard 2 MiB ceiling, two-candidate headroom, rollover from rejected-command trace growth, preserved occurrence/recovery/terminal facts, bounded history, and two-Run replay. Timer evidence proves 64/65 pre-scheduler refusal; admitted profiles allow one live Timer. Horizon 1 closure target `36c3c75` passed after correction `07c68d5`; M6 target `c1ee125` passed after correction `7c35fd1`. Product 2 evidence covers strict catalog projection, durable definitions, exact retry/conflict, HTTP, server composition, the retained expense-exception model, and the 1280/1600 Chromium journey.
-
-**Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result. Only the root integrator runs Lean, always through `./scripts/lake.sh`, one command at a time; the full `./scripts/lake.sh build` still does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
-
-**The compositional-admission experiment remains accepted and frozen**; do not begin another stage without a documented reopen trigger and owner approval.
+Stop if a baseline implementation, absence, proof, evidence, product, or semantic claim has no single verified destination; if routing cannot cover a tracked or pending implementation-bearing path without hidden agent knowledge; if a new dependency is required; or if the migration would change Horizon 2 ordering or any governed product or semantic contract.

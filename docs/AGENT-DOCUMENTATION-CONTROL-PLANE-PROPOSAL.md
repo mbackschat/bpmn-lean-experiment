@@ -2,11 +2,16 @@
 
 ## Status
 
-**Owner-approved on 2026-08-17 after the completed context-cold review.** Implementation has not started. This proposal changes no current documentation role, startup instruction, implementation claim, product contract, semantic meaning, proof boundary, or verification gate until implemented separately.
+Lifecycle: implemented-awaiting-closure
+Review: approved-with-required-edits
 
-## Decision requested
+## Current boundary
 
-Approve replacing the two monolithic agent-facing living documents with a compact execution control file, a compact implementation-routing map, and five cohesive detail maps. Preserve exact current claims and executable drift protection while reducing mandatory universal startup reading from 15,983 words to at most 4,000 words and ordinary active-area reading to at most 8,000 words.
+Owner-approved on 2026-08-17 after the completed context-cold review. The selected control plane and migration guards are implemented; claim-preservation validation, the complete gate, and context-cold closure review remain. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
+
+## Decision
+
+Replace the two monolithic agent-facing living documents with a compact execution control file, a compact implementation-routing map, and five cohesive detail maps. Preserve exact current claims and executable drift protection while reducing mandatory universal startup reading from 15,983 words to at most 4,000 words and ordinary active-area reading to at most 8,000 words.
 
 The recommended decision is approval. The current ownership model protects truth effectively, but its physical layout now makes every agent session load unrelated closed work and makes each small implementation increment restate one status across several documents.
 

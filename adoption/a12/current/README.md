@@ -6,7 +6,7 @@ The exact external A12 Workflows checkout remains read-only and is inspected onl
 
 ## Resume point for a future A12 add-on
 
-The boundary is ready for calibration, but a deployable A12 add-on is not implemented here. Production adoption starts in a separate A12-owned repository after the BPM platform publishes its supported compile, start, observe, and command contract. The current [`compileBpmnToSemanticProcess`](../../../packages/bpmn-source/README.md) and [`ExternalTemporalRuntime.connect`](../../../packages/temporal-adapter/README.md) surfaces demonstrate the technical seam; they are not a substitute for the narrowed product-2 package and API boundary that [the implementation map](../../../docs/IMPLEMENTATION-MAP.md#bpm-platform) still records as absent.
+The boundary is ready for calibration, but a deployable A12 add-on is not implemented here. Production adoption starts in a separate A12-owned repository after the BPM platform publishes its supported compile, start, observe, and command contract. The current [`compileBpmnToSemanticProcess`](../../../packages/bpmn-source/README.md) and [`ExternalTemporalRuntime.connect`](../../../packages/temporal-adapter/README.md) surfaces demonstrate the technical seam; they are not a substitute for the narrowed product-2 package and API boundary that [the platform implementation map](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md#explicitly-absent) still records as absent.
 
 Resume in this order:
 

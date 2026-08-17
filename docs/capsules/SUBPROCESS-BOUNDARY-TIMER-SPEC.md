@@ -8,7 +8,7 @@ No sentence in this document is a coverage, conformance, or CIB compatibility cl
 
 This paragraph previously carried a per-lane inventory of what Lean and the evidence lanes did and did not yet contain. It is deleted rather than re-synchronized, which is the correction [the process-assessment ledger](../PROCESS-ASSESSMENT-LEDGER.md#findings) already records for this mechanism: three landed lanes had made that copy false while the owner one line below stayed correct. The owner is the only place that inventory belongs.
 
-Implemented and absent scope is owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
+Implemented and absent scope is owned by [the runtime and proof map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
 
 ## Independent cold-review receipt
 
@@ -216,7 +216,7 @@ Required checked non-laws and negative witnesses:
 - an executable witness that the normal Sub-Process output is unreachable on the deadline arm, which is the analogue of `SUBERR-NORMAL-01`;
 - an executable witness that a firing one millisecond early leaves the armed triple and its deadline exactly intact and still able to win at the exact instant.
 
-Two hypotheses are expected to be stated rather than assumed, for the same reason the sibling states them: `RuntimeState` carries no uniqueness invariant over `timerWaits`, and the stronger claim that no later lookup *by key* can rediscover a withdrawn deadline needs uniqueness of the occurrence key. Both remain explicit hypotheses here. This capsule does **not** establish that invariant, whose scheduling is coupled to `stableStateResumable` and recorded in [PLAN.md](../PLAN.md#explicitly-deferred).
+Two hypotheses are expected to be stated rather than assumed, for the same reason the sibling states them: `RuntimeState` carries no uniqueness invariant over `timerWaits`, and the stronger claim that no later lookup *by key* can rediscover a withdrawn deadline needs uniqueness of the occurrence key. Both remain explicit hypotheses here. This capsule does **not** establish that invariant, whose scheduling is coupled to `stableStateResumable` and recorded in the [runtime/proof map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#nearest-unsupported-claims).
 
 The separating witness is the follow-on User Task identity at the approved public boundary. A hidden microstep, storage order, or evaluator choice is not a discriminator.
 
@@ -262,7 +262,7 @@ Two registered answer-free schedules exist, one per victory route, each with a m
 
 ## CIB relationship
 
-**None selected.** Under [the CIB on-demand gate](../PLAN.md#cib-on-demand-gate) all five questions answer no. BPMN resolves the account once Clause 13.5.3's cancellation instruction is applied to Clause 13.3.2's nested wording, and that resolution is recorded above as a standards reading rather than an engine choice. No admitted source needs a `camunda:*` extension, the Temporal mapping needs no engine observation, and no downstream blocker remains after the standard mechanism exists — A12 supplies no consumer at all here, since no distinct A12 model contains a Timer Event Definition.
+**None selected.** Under [the CIB on-demand gate](../PROJECT-DESIGN.md#cib-evidence-on-demand) all five questions answer no. BPMN resolves the account once Clause 13.5.3's cancellation instruction is applied to Clause 13.3.2's nested wording, and that resolution is recorded above as a standards reading rather than an engine choice. No admitted source needs a `camunda:*` extension, the Temporal mapping needs no engine observation, and no downstream blocker remains after the standard mechanism exists — A12 supplies no consumer at all here, since no distinct A12 model contains a Timer Event Definition.
 
 The pinned corpus supplied the scheduling signal and the public-lifecycle calibration quoted in the selection basis. If implementation discovers a public observation this profile cannot produce without an engine-specific choice, that is a stop condition and a phase-zero probe obligation, not a silent overlay.
 

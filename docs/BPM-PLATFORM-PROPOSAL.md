@@ -2,7 +2,12 @@
 
 ## Status
 
-**Owner-approved on 2026-08-07; M1 through M6 are closed, while the broader phase-one contract remains incomplete.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. Definitions, starts, current Work, Operations, semantic History and Diagram, metrics, operator audit, and bounded structured Human Work now exist as separately maintained specifications. Identity-provider integration, broader mining, production packaging, and later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
+Lifecycle: owner-approved
+Review: approved-with-required-edits
+
+## Current boundary
+
+Owner-approved on 2026-08-07; M1 through M6 are closed, while the broader phase-one contract remains incomplete. It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. Definitions, starts, current Work, Operations, semantic History and Diagram, metrics, operator audit, and bounded structured Human Work now exist as separately maintained specifications. Identity-provider integration, broader mining, production packaging, and later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
 
 Sequencing belongs to [PLAN.md](PLAN.md), durable product and semantic boundaries to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture to [ARCHITECTURE.md](ARCHITECTURE.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md). The [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records a broader growth horizon and does not expand this proposal's first-product contract.
 
@@ -16,7 +21,7 @@ Two failure modes bound the answer. A platform that reconstructs semantic facts 
 
 The platform provides deployment and versioning of BPMN definitions, a task list and task interaction surface, an operations and monitoring console, incident handling, execution history, process mining views, identity, persistence, and one public HTTP API over all of it. It hosts the JUEL evaluator as an Activity Worker when the deferred CIB compatibility lane opens.
 
-It is a product, not a demonstration. Its acceptance gates are showcase milestones rather than a separate artifact, recorded as [the showcase milestone ladder](PLAN.md#showcase-milestone-ladder), which [PLAN.md](PLAN.md) owns.
+It is a product, not a demonstration. Its acceptance gates are showcase milestones rather than a separate artifact, recorded in [the showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder).
 
 ## What the platform owns, and what it must not
 
@@ -177,7 +182,7 @@ The local consequence is that every surface still has a service, a public HTTP A
 
 ## Acceptance conditions
 
-**The product acceptance test the owner set on 2026-08-07 is that a third party can deploy their own BPMN file.** This condition defines M1 in the [showcase milestone ladder](PLAN.md#showcase-milestone-ladder) and required admission to accept the selected safe modeler notation without assigning unsupported execution meaning. No platform surface satisfies it alone.
+**The product acceptance test the owner set on 2026-08-07 is that a third party can deploy their own BPMN file.** This condition defines M1 in the [showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder) and required admission to accept the selected safe modeler notation without assigning unsupported execution meaning. No platform surface satisfies it alone.
 
 A surface is accepted when it has a runnable demonstration under `showcase/`, registered as a gate so a landed milestone cannot silently rot, and when the boundary guards and the cross-product agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) requires are green. Each guard is verified by a planted violation, as this repository verifies every guard.
 
@@ -212,6 +217,6 @@ Reopen this proposal before adding a second Process-state representation, any pl
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal stage used **one correction round**. The cold review of target `4bfe36d` returned thirteen required findings; correction `af66ee3` closed all thirteen and the same reviewer's audit confirmed each. That audit raised six residual defects of its own, three required, of which three were topic sentences and a receipt clause still asserting a claim the correction had removed from the surrounding paragraphs. Those were applied at `0c07ed6` and were not re-audited, on the reviewer's explicit statement that no third round was warranted if applied verbatim. The review's routed sections included the assurance-lane rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#lean-assurance-lane), so this cycle is the one owning that rule's material supersession, as [PLAN.md](PLAN.md#approved-decisions) records.
+The proposal stage used **one correction round**. The cold review of target `4bfe36d` returned thirteen required findings; correction `af66ee3` closed all thirteen and the same reviewer's audit confirmed each. That audit raised six residual defects of its own, three required, of which three were topic sentences and a receipt clause still asserting a claim the correction had removed from the surrounding paragraphs. Those were applied at `0c07ed6` and were not re-audited, on the reviewer's explicit statement that no third round was warranted if applied verbatim. The review's routed sections included the assurance-lane rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#lean-assurance-lane), so this cycle is the one owning that rule's material supersession, as the [semantic increment preservation gate](PROJECT-DESIGN.md#semantic-increment-preservation-gate) records.
 
 The semantic-checkpoint stage is classified as not required because this proposal itself changes no BPMN meaning, no semantic profile or CIB relationship, no checked-source or Semantic Process representation, no runtime or public observation, no admission or profile capability, no transition family or proof boundary, and no Temporal refinement claim. The two engine requirements it records, E1 and E2, are engine work outside its scope and carry their own governed cycles; E2 is an admission and profile capability, which is precisely why it is not proposed here. A docs-only follow-up records the immutable proposal target before the review prompt is handed off, because a commit cannot contain its own Git identity.

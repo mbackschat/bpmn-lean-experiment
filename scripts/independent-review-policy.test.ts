@@ -11,6 +11,7 @@ import {
   gitLines,
   isOwnerApproved,
   isReviewCommitTarget,
+  parseProposalStatus,
   parseReceipt,
   receiptRow,
   ReviewStage,
@@ -129,16 +130,31 @@ test("requires review receipts for active proposals and post-policy specificatio
   }
 });
 
-test("recognizes owner approval independently of status formatting", () => {
-  const variants = [
-    "## Status\n\n**Owner-approved after independent review.**",
-    "## Status\n\n**Status:** Owner-approved on 2026-07-26.",
-    "## Status\n\nOwner-approved on 2026-08-01.",
-    "## Status\n\n**Status: Owner-approved**",
-  ];
+test("recognizes owner approval only through the closed proposal Status contract", () => {
+  for (const lifecycle of [
+    "owner-approved",
+    "implementation-in-progress",
+    "implemented-awaiting-closure",
+  ]) {
+    assert.equal(
+      isOwnerApproved(`## Status\n\nLifecycle: ${lifecycle}\nReview: approved`),
+      true,
+    );
+  }
+  assert.equal(isOwnerApproved("## Status\n\nLifecycle: draft\nReview: pending"), false);
+  assert.throws(
+    () => isOwnerApproved("## Status\n\n**Owner-approved after independent review.**"),
+    /exactly Lifecycle and Review/u,
+  );
+});
 
-  for (const document of variants) {
-    assert.equal(isOwnerApproved(document), true, document);
+test("keeps every active proposal on the closed Status contract", async () => {
+  const proposals = (await readdir(documentationRoot))
+    .filter((file) => file.endsWith("-PROPOSAL.md"));
+  assert.ok(proposals.length > 0);
+  for (const file of proposals) {
+    const document = await readFile(path.join(documentationRoot, file), "utf8");
+    assert.doesNotThrow(() => parseProposalStatus(document), file);
   }
 });
 

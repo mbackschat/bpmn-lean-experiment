@@ -8,7 +8,7 @@ Standard GitHub-hosted macOS runners are [free and unlimited for public reposito
 
 ## Mission
 
-Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance, and a BPM platform on top of it. Treat standards coverage as the primary engine roadmap. After normative dependencies, treat practical reach from CIB Seven `2.2.0` and the deduplicated executable whole-model corpus as co-equal with high semantic risk in element and mechanism families; a rare concurrency, cancellation, scope, liveness, identity, data, or Temporal-refinement risk may outrank a frequent low-risk mechanism. Keep selected CIB behavior as a classified compatibility overlay, and let the platform's next showcase milestone break ties only after standards value, reach, and risk are equal, using [the showcase milestone ladder](docs/PLAN.md#showcase-milestone-ladder). A12 Workflows replacement is a third product owned by A12 under EUPL-1.2 and is out of scope in this repository. The durable product division, layer boundaries, ordering rule, coverage measures, and Lean assurance-lane rule are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division).
+Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance, and a BPM platform on top of it. Treat standards coverage as the primary engine roadmap. After normative dependencies, treat practical reach from CIB Seven `2.2.0` and the deduplicated executable whole-model corpus as co-equal with high semantic risk in element and mechanism families; a rare concurrency, cancellation, scope, liveness, identity, data, or Temporal-refinement risk may outrank a frequent low-risk mechanism. Keep selected CIB behavior as a classified compatibility overlay, and let the platform's next showcase milestone break ties only after standards value, reach, and risk are equal, using [the showcase milestone ladder](docs/SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder). A12 Workflows replacement is a third product owned by A12 under EUPL-1.2 and is out of scope in this repository. The durable product division, layer boundaries, ordering rule, coverage measures, and Lean assurance-lane rule are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division).
 
 Establish the semantic and hosting result through four components:
 
@@ -23,7 +23,7 @@ Preserve the implemented [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPE
 
 The platform consumes only the engine's published contract: compile, start, observe committed state, submit a command. It takes occurrence identity from a publication and never constructs one, and a fact the engine does not publish is a stop condition routed to an engine requirement, never derived from Temporal Event History, a state difference, or the platform's own store.
 
-The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), concrete repository and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), and active sequencing and decisions in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+The exact current implementation and evidence boundary belongs in the detail maps routed by [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), concrete repository and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), and active sequencing in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
@@ -33,12 +33,14 @@ Never claim BPMN conformance or CIB compatibility beyond the exact profile and e
 
 ## Start every session
 
-1. Read the current checkpoint and exact resume point in [PLAN.md](docs/PLAN.md).
-2. Read the implemented/absent boundary in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
-3. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated or pre-existing changes.
-4. Run `./scripts/doctor.sh verify`. It inventories every declared external pin, dependency owner, and cache even when the selected scope does not require all of them. On a fresh machine, follow [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md); provision missing inputs rather than weakening or skipping their lanes. Use the `research` scope before source-grounded work using registered research checkouts. Use the separate `adoption` scope only when the task explicitly requires optional A12 exact-source evidence; never infer that evidence from the complete MIT engine `verify` gate.
-5. Run the current applicable gate from [TESTING-SPEC.md](docs/TESTING-SPEC.md).
-6. Take the first incomplete work item unless the user explicitly changes scope.
+1. Read [PLAN.md](docs/PLAN.md) completely.
+2. Read root [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) completely.
+3. Determine whether the user request retains or overrides the active work item.
+4. For retained work, read every detail map linked by the active item. For overridden work, resolve every named path through the executable route inventory and every named area through the root routing table; read every candidate detail map when scope is ambiguous.
+5. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated or pre-existing changes. Run `./scripts/doctor.sh verify`. It inventories every declared external pin, dependency owner, and cache even when the selected scope does not require all of them. On a fresh machine, follow [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md); provision missing inputs rather than weakening or skipping their lanes. Use the `research` scope before source-grounded work using registered research checkouts. Use the separate `adoption` scope only when the task explicitly requires optional A12 exact-source evidence; never infer that evidence from the complete MIT engine `verify` gate.
+6. After discovering concrete target paths, resolve them through the route inventory and read any newly required detail map before editing.
+7. Read every boundary-specific owner routed by the change table below.
+8. Run the current applicable gate from [TESTING-SPEC.md](docs/TESTING-SPEC.md), then take the selected work.
 
 Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely on chat history for project state.
 

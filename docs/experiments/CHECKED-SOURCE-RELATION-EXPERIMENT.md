@@ -122,4 +122,4 @@ Reopen the general experiment only when:
 2. a fixture-coincidental lowering defect surfaces outside the retained positional-pairing guard;
 3. a targeted capsule cannot isolate its material lowering or representation risk without reconstructing the general source relation.
 
-Every admission or representation capsule still runs the targeted gate recorded in [the plan](../PLAN.md#approved-decisions), including the production closure-limit and multiple-enabledness checks. The effort stop is the approved outcome doing its job, not a failed experiment. A new general proof round requires one of these triggers and a new explicit effort decision.
+Every admission or representation capsule still runs the [targeted preservation gate](../PROJECT-DESIGN.md#semantic-increment-preservation-gate), including the production closure-limit and multiple-enabledness checks. The effort stop is the approved outcome doing its job, not a failed experiment. A new general proof round requires one of these triggers and a new explicit effort decision.

@@ -8,6 +8,10 @@ import {
   exactSecondLevelSection,
   sha256,
 } from "./semantic-review-text.ts";
+import {
+  loadDocumentMigrationMatrix,
+  type ValidatedDocumentMigrationMatrix,
+} from "./document-migration-matrix.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const digestPattern = /^[0-9a-f]{64}$/u;
@@ -77,6 +81,7 @@ export type SemanticReviewPacketInput = Readonly<{
   changedFiles: ReadonlyArray<ReviewPacketChangedFile>;
   routedSections: ReadonlyArray<ReviewPacketSection>;
   rootGates: ReadonlyArray<ReviewPacketGate>;
+  migrationMatrix?: ValidatedDocumentMigrationMatrix;
 }>;
 
 export type SemanticReviewPacket = SemanticReviewPacketInput & Readonly<{
@@ -215,6 +220,17 @@ export function assembleSemanticReviewPacket(
     "routed section",
   );
   assertUnique(input.rootGates, ({ command }) => command, "root gate command");
+  if (input.migrationMatrix !== undefined) {
+    if (!digestPattern.test(input.migrationMatrix.exactBytesSha256)) {
+      throw new Error("migration matrix needs an exact byte SHA-256");
+    }
+    if (
+      input.migrationMatrix.normalized.baseline !== input.baseline ||
+      input.migrationMatrix.normalized.target !== input.target
+    ) {
+      throw new Error("migration matrix commits must equal packet commits");
+    }
+  }
 
   const body: SemanticReviewPacketInput & { readonly kind: "semanticReviewPacket" } = {
     kind: "semanticReviewPacket",
@@ -256,6 +272,9 @@ export function assembleSemanticReviewPacket(
         elapsedMs,
         outputSha256,
       })),
+    ...(input.migrationMatrix === undefined
+      ? {}
+      : { migrationMatrix: input.migrationMatrix }),
   };
   return {
     ...body,
@@ -270,6 +289,7 @@ type CliArguments = Readonly<{
   capsule: string;
   routes: ReadonlyArray<string>;
   gatesPath: string;
+  migrationMatrixPath?: string;
 }>;
 
 function parseCliArguments(arguments_: ReadonlyArray<string>): CliArguments {
@@ -278,6 +298,7 @@ function parseCliArguments(arguments_: ReadonlyArray<string>): CliArguments {
   let target: string | undefined;
   let capsule: string | undefined;
   let gatesPath: string | undefined;
+  let migrationMatrixPath: string | undefined;
   const routes: string[] = [];
   const seenSingletonFlags = new Set<string>();
   const handlers = new Map<string, (value: string) => void>([
@@ -287,6 +308,7 @@ function parseCliArguments(arguments_: ReadonlyArray<string>): CliArguments {
     ["--capsule", (value) => { capsule = value; }],
     ["--route", (value) => { routes.push(value); }],
     ["--gates", (value) => { gatesPath = value; }],
+    ["--migration-matrix", (value) => { migrationMatrixPath = value; }],
   ]);
   for (let index = 0; index < arguments_.length; index += 2) {
     const flag = arguments_[index];
@@ -323,6 +345,7 @@ function parseCliArguments(arguments_: ReadonlyArray<string>): CliArguments {
     capsule,
     routes,
     gatesPath,
+    ...(migrationMatrixPath === undefined ? {} : { migrationMatrixPath }),
   };
 }
 
@@ -440,6 +463,14 @@ function runCli(arguments_: ReadonlyArray<string>): void {
     throw new Error("target must be an ancestor of HEAD");
   }
   const capsuleDocument = gitText(["show", `${target}:${parsed.capsule}`]);
+  const migrationMatrix = parsed.migrationMatrixPath === undefined
+    ? undefined
+    : loadDocumentMigrationMatrix({
+        repositoryRoot: projectRoot,
+        matrixPath: parsed.migrationMatrixPath,
+        baseline,
+        target,
+      });
   const packet = assembleSemanticReviewPacket({
     stage: parsed.stage,
     baseline,
@@ -448,6 +479,7 @@ function runCli(arguments_: ReadonlyArray<string>): void {
     changedFiles: parseNumstat(baseline, target),
     routedSections: parseRoutes(target, parsed.routes),
     rootGates: parseGateRecords(parsed.gatesPath),
+    ...(migrationMatrix === undefined ? {} : { migrationMatrix }),
   });
   process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`);
 }

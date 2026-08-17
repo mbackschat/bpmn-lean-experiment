@@ -6,7 +6,7 @@ This document owns the repository’s documentation roles, filename contracts, l
 
 The convention deliberately aligns with the sibling `a12-rulekit` documentation discipline inspected at the revision recorded in [SOURCES.md](SOURCES.md). The central shared rule is lifecycle-sensitive: `-SPEC` means an implemented current contract, while approved intent that is not implemented remains `-PROPOSAL`.
 
-This project retains two deliberate assurance-specific living surfaces that `a12-rulekit` does not use in the same way: [PLAN.md](PLAN.md) owns immediate execution order and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact current claim boundary across semantics, proof, evidence, and adapters. Neither is a feature-history board.
+This project retains two deliberate assurance-specific control surfaces that `a12-rulekit` does not use in the same way: [PLAN.md](PLAN.md) owns immediate execution order and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) routes exact current claims to five cohesive detail implementation maps. Neither is a feature-history board.
 
 ## Filename grammar
 
@@ -57,7 +57,7 @@ The following names identify repository-wide owners and do not require another s
 - `PLAN.md` — current ordered work, blockers, and exact resume point;
 - `CAPSULE-COST-LEDGER.md` — retained commit-bounded capsule and enabling-increment measurements;
 - `SOURCES.md` — source provenance and controlled reference navigation;
-- `IMPLEMENTATION-MAP.md` — exact live implementation, proof, evidence, and absence boundary;
+- `IMPLEMENTATION-MAP.md` — mandatory routing entry point for exact live implementation, proof, evidence, and absence maps;
 - `DOC-DISCIPLINE.md` — this documentation workflow;
 - `CLAUDE.md` and `AGENTS.md` — mandatory contributor triggers and workflow.
 
@@ -78,14 +78,16 @@ The executable filename guard permits exactly these suffixless names under `docs
 
 Every maintained proposal, spec, research result, experiment, decision, policy, target, and handoff must contain an exact `## Status` section within its first 15 nonblank lines. Archived and locally ingested reference documents are outside this current-status rule.
 
-Use plain status language such as:
+An active proposal uses exactly two machine-readable lines in its Status section:
 
-- Draft;
-- Owner-approved;
-- Implemented;
-- Evidence-closed draft;
-- Superseded;
-- Archived.
+```text
+Lifecycle: <closed-value>
+Review: <closed-value>
+```
+
+Lifecycle is one of `draft`, `owner-approved`, `implementation-in-progress`, `implemented-awaiting-closure`, `superseded`, or `archived`. Review is one of `pending`, `approved`, `approved-with-required-edits`, `rejected`, or `not-required`. Dates, commits, findings, scope narration, and implementation results belong in a current-boundary section, review receipt, plan, or implementation detail map rather than Status. Only `owner-approved`, `implementation-in-progress`, and `implemented-awaiting-closure` authorize implementation.
+
+Other maintained document roles continue to use concise plain status language such as Draft, Owner-approved, Implemented, Evidence-closed draft, Superseded, or Archived.
 
 A status never changes the suffix contract. An owner-approved but unimplemented document is still a proposal. An implemented spec may remain a draft compatibility contract when immutability or release approval is still absent.
 
@@ -106,7 +108,7 @@ Do not leave a `-PROPOSAL.md` describing a shipped current surface. Do not creat
 
 Specs own stable method, contracts, invariants, exclusions, and acceptance criteria. They do not own a chronological run diary.
 
-Current measured verification results and exact resume state belong in [PLAN.md](PLAN.md). Stable gate definitions and evidence requirements belong in [TESTING-SPEC.md](TESTING-SPEC.md). Exact implemented or absent claims belong in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+Current measured verification results and exact resume state belong in [PLAN.md](PLAN.md). Stable gate definitions and evidence requirements belong in [TESTING-SPEC.md](TESTING-SPEC.md). The root [implementation map](IMPLEMENTATION-MAP.md) routes exact implemented or absent claims to the applicable detail map and does not duplicate them.
 
 ## Project document homes
 
@@ -124,7 +126,7 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 | Bounded executable questions | `experiments/*-EXPERIMENT.md` |
 | Adopted one-time architecture or dependency choice | `*-DECISION.md` |
 | Mandatory research-lane procedure | `*-POLICY.md` |
-| Exact implementation and assurance status | `IMPLEMENTATION-MAP.md` |
+| Exact implementation and assurance status | The detail map registered by `IMPLEMENTATION-MAP.md` |
 | Immediate work order | `PLAN.md` |
 | Reproducible completed capsule cost and comparison | `CAPSULE-COST-LEDGER.md` |
 | Retained process findings, their instance counts, and dispositions | `PROCESS-ASSESSMENT-LEDGER.md` |
@@ -139,7 +141,7 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 - A new external finding updates its owning research document and [SOURCES.md](SOURCES.md) when provenance changes.
 - A new experiment records its question, competing accounts, separating witness, result, and disposition; an experiment never becomes semantic authority merely by passing.
 - A changed gate updates [TESTING-SPEC.md](TESTING-SPEC.md); the last verified command and exact next action update [PLAN.md](PLAN.md).
-- A changed implemented or absent surface updates [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+- A changed implemented or absent surface updates each genuinely affected detail map registered by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The root map changes only when an area state, route, or cross-area invariant changes.
 - A directory source map, register, or other purpose-named navigation owner changes in the same change as the contents it inventories.
 
 ## Writing and linking
@@ -165,4 +167,4 @@ After a documentation change, run:
 git diff --check
 ```
 
-The infrastructure gate enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names above, and fails if a project-authored local Markdown file or heading anchor is stale. A rename is incomplete until that guard and every applicable focused gate are green.
+The infrastructure gate enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names above, and fails if a project-authored local Markdown file or heading anchor is stale. The focused control-plane guards additionally require the four-section plan, one active stable work ID, matching resume ID, exact root/detail map registry, independent tracked-path routing, map word and review-unit bounds, proposal Status contract, and delegated capsule scope. A rename is incomplete until those guards and every applicable focused gate are green.

@@ -228,3 +228,16 @@ test("the live corpus binds a new artifact in each historically missed tree", as
     "the product-example oracle must be discoverable from a new example path",
   );
 });
+
+test("the live corpus routes scripts work through its task-oriented README", async () => {
+  const corpus = await loadBindingCorpus();
+  const registries = bindingsFor("scripts/semantic-review-packet.ts", corpus)
+    .filter((binding) => binding.kind === BindingKind.Registry)
+    .map(({ path }) => path);
+
+  assert.equal(
+    registries.includes("scripts/README.md"),
+    true,
+    "scripts work must surface its task-oriented entry-point guide",
+  );
+});

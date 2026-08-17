@@ -26,15 +26,93 @@ const receiptHeading = "## Independent cold-review receipt";
 const commitPattern = /^[0-9a-f]{7,40}$/u;
 const approvedVerdicts = new Set(["approve", "approve-with-required-edits"]);
 
-export function isOwnerApproved(document: string): boolean {
+export const ProposalLifecycle = Object.freeze({
+  Draft: "draft",
+  OwnerApproved: "owner-approved",
+  ImplementationInProgress: "implementation-in-progress",
+  ImplementedAwaitingClosure: "implemented-awaiting-closure",
+  Superseded: "superseded",
+  Archived: "archived",
+} as const);
+
+export type ProposalLifecycle =
+  (typeof ProposalLifecycle)[keyof typeof ProposalLifecycle];
+
+export const ProposalReview = Object.freeze({
+  Pending: "pending",
+  Approved: "approved",
+  ApprovedWithRequiredEdits: "approved-with-required-edits",
+  Rejected: "rejected",
+  NotRequired: "not-required",
+} as const);
+
+export type ProposalReview = (typeof ProposalReview)[keyof typeof ProposalReview];
+
+export type ProposalStatus = Readonly<{
+  lifecycle: ProposalLifecycle;
+  review: ProposalReview;
+}>;
+
+function proposalLifecycle(value: string): ProposalLifecycle {
+  switch (value) {
+    case ProposalLifecycle.Draft:
+    case ProposalLifecycle.OwnerApproved:
+    case ProposalLifecycle.ImplementationInProgress:
+    case ProposalLifecycle.ImplementedAwaitingClosure:
+    case ProposalLifecycle.Superseded:
+    case ProposalLifecycle.Archived:
+      return value;
+    default:
+      return assert.fail(`unknown proposal lifecycle: ${value}`);
+  }
+}
+
+function proposalReview(value: string): ProposalReview {
+  switch (value) {
+    case ProposalReview.Pending:
+    case ProposalReview.Approved:
+    case ProposalReview.ApprovedWithRequiredEdits:
+    case ProposalReview.Rejected:
+    case ProposalReview.NotRequired:
+      return value;
+    default:
+      return assert.fail(`unknown proposal review: ${value}`);
+  }
+}
+
+export function parseProposalStatus(document: string): ProposalStatus {
   const statusHeading = /^## Status\s*$/mu.exec(document);
-  assert.ok(statusHeading, "active capsule proposal needs a Status section");
+  assert.ok(statusHeading, "active proposal needs a Status section");
   const statusStart = statusHeading.index + statusHeading[0].length;
   const followingHeading = /^##\s+/gmu;
   followingHeading.lastIndex = statusStart;
   const next = followingHeading.exec(document);
-  const statusSection = document.slice(statusStart, next?.index ?? document.length);
-  return /\bOwner-approved\b/u.test(statusSection);
+  const lines = document.slice(statusStart, next?.index ?? document.length)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  assert.equal(lines.length, 2, "proposal Status must contain exactly Lifecycle and Review lines");
+  const lifecycle = /^Lifecycle: ([a-z-]+)$/u.exec(lines[0] ?? "");
+  const review = /^Review: ([a-z-]+)$/u.exec(lines[1] ?? "");
+  assert.ok(lifecycle?.[1] !== undefined, "proposal Status needs `Lifecycle: <closed-value>`");
+  assert.ok(review?.[1] !== undefined, "proposal Status needs `Review: <closed-value>`");
+  return {
+    lifecycle: proposalLifecycle(lifecycle[1]),
+    review: proposalReview(review[1]),
+  };
+}
+
+export function isOwnerApproved(document: string): boolean {
+  switch (parseProposalStatus(document).lifecycle) {
+    case ProposalLifecycle.OwnerApproved:
+    case ProposalLifecycle.ImplementationInProgress:
+    case ProposalLifecycle.ImplementedAwaitingClosure:
+      return true;
+    case ProposalLifecycle.Draft:
+    case ProposalLifecycle.Superseded:
+    case ProposalLifecycle.Archived:
+      return false;
+  }
 }
 
 export function isReviewCommitTarget(value: string): boolean {

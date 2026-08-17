@@ -17,6 +17,11 @@ import {
   assembleSemanticReviewPacket,
   type SemanticReviewPacketInput,
 } from "./semantic-review-packet.ts";
+import {
+  DOCUMENT_MIGRATION_MATRIX_FORMAT,
+  DOCUMENT_MIGRATION_SOURCE_PATHS,
+  deriveDocumentUnits,
+} from "./document-migration-matrix.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -47,6 +52,12 @@ async function initializeReviewRepository(repository: string): Promise<void> {
     path.join(projectRoot, "scripts/semantic-review-text.ts"),
     path.join(repository, "scripts/semantic-review-text.ts"),
   );
+  await copyFile(
+    path.join(projectRoot, "scripts/document-migration-matrix.ts"),
+    path.join(repository, "scripts/document-migration-matrix.ts"),
+  );
+  await writeFile(path.join(repository, "docs/PLAN.md"), "# Plan\n\nBaseline plan claim.\n", "utf8");
+  await writeFile(path.join(repository, "docs/IMPLEMENTATION-MAP.md"), "# Map\n\n- Baseline map fact.\n", "utf8");
   await writeFile(
     path.join(repository, "docs/capsules/EXAMPLE-PROPOSAL.md"),
     "# Example proposal\n\n## Selected rules\n\nOne exact rule.\n",
@@ -108,6 +119,29 @@ function runPacketCli(
     ["scripts/semantic-review-packet.ts", ...arguments_],
     { cwd: repository, encoding: "utf8" },
   );
+}
+
+function completeMatrix(repository: string, baseline: string, target: string) {
+  const sourceUnits = deriveDocumentUnits(repository, baseline, DOCUMENT_MIGRATION_SOURCE_PATHS);
+  const targetUnits = deriveDocumentUnits(repository, target, DOCUMENT_MIGRATION_SOURCE_PATHS);
+  return {
+    format: DOCUMENT_MIGRATION_MATRIX_FORMAT,
+    baseline,
+    target,
+    sourcePaths: DOCUMENT_MIGRATION_SOURCE_PATHS,
+    rows: sourceUnits.map((source) => {
+      const destination = targetUnits.find(({ path: filePath, owningHeading, ordinal }) =>
+        filePath === source.path && owningHeading === source.owningHeading && ordinal === source.ordinal);
+      assert.ok(destination);
+      return {
+        source: { path: source.path, owningHeading: source.owningHeading, ordinal: source.ordinal, sha256: source.sha256 },
+        disposition: {
+          kind: "destination",
+          target: { path: destination.path, owningHeading: destination.owningHeading, ordinal: destination.ordinal, sha256: destination.sha256 },
+        },
+      };
+    }),
+  };
 }
 
 const packetInput = {
@@ -429,6 +463,64 @@ test("the semantic review packet CLI resolves exact commits, sections, and numst
     );
     assert.notEqual(extraFieldGate.status, 0);
     assert.match(extraFieldGate.stderr, /exactly command, exitStatus, elapsedMs, and outputSha256/u);
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("the semantic review packet CLI binds a complete migration matrix", async () => {
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "semantic-review-migration-"));
+  try {
+    const repository = path.join(temporaryRoot, "repository");
+    await initializeReviewRepository(repository);
+    await writeFile(path.join(repository, "BpmnSemantics/Example.lean"), "def example := false\n", "utf8");
+    commitAll(repository, "target");
+    const baseline = spawnSync("git", ["rev-parse", "HEAD^"], { cwd: repository, encoding: "utf8" }).stdout.trim();
+    const target = spawnSync("git", ["rev-parse", "HEAD"], { cwd: repository, encoding: "utf8" }).stdout.trim();
+    const matrixPath = path.join(repository, "matrix.json");
+    const matrix = completeMatrix(repository, baseline, target);
+    await writeFile(matrixPath, JSON.stringify(matrix), "utf8");
+
+    const result = runPacketCli(repository, [...packetCliArguments(), "--migration-matrix", matrixPath]);
+    assert.equal(result.status, 0, result.stderr);
+    type MigrationPacketOutput = Readonly<{
+      packetSha256: string;
+      migrationMatrix: Readonly<{
+        exactBytesSha256: string;
+        normalized: Readonly<{ rows: ReadonlyArray<Readonly<{ source: Readonly<{ text: string }> }>> }>;
+      }>;
+    }>;
+    const packet = JSON.parse(result.stdout) as MigrationPacketOutput;
+    const firstNormalizedRow = packet.migrationMatrix.normalized.rows[0];
+    assert.ok(firstNormalizedRow);
+    assert.equal(firstNormalizedRow.source.text, "Baseline plan claim.");
+    assert.match(packet.migrationMatrix.exactBytesSha256, /^[0-9a-f]{64}$/u);
+
+    await writeFile(matrixPath, `${JSON.stringify(matrix)}\n`, "utf8");
+    const byteMutated = runPacketCli(repository, [...packetCliArguments(), "--migration-matrix", matrixPath]);
+    assert.equal(byteMutated.status, 0, byteMutated.stderr);
+    const mutatedPacket = JSON.parse(byteMutated.stdout) as MigrationPacketOutput;
+    assert.deepEqual(mutatedPacket.migrationMatrix.normalized, packet.migrationMatrix.normalized);
+    assert.notEqual(mutatedPacket.migrationMatrix.exactBytesSha256, packet.migrationMatrix.exactBytesSha256);
+    assert.notEqual(mutatedPacket.packetSha256, packet.packetSha256);
+
+    const failures: ReadonlyArray<Readonly<{ arguments: ReadonlyArray<string>; matrix?: unknown; message: RegExp }>> = [
+      { arguments: [...packetCliArguments(), "--unknown", "value"], message: /unknown or valueless/u },
+      { arguments: [...packetCliArguments(), "--migration-matrix", matrixPath, "--migration-matrix", matrixPath], message: /repeats singleton argument --migration-matrix/u },
+      { arguments: [...packetCliArguments(), "--migration-matrix", `${matrixPath}.absent`], message: /ENOENT/u },
+      { arguments: [...packetCliArguments(), "--migration-matrix", matrixPath], matrix: "{", message: /valid UTF-8 JSON/u },
+      { arguments: [...packetCliArguments(), "--migration-matrix", matrixPath], matrix: { ...matrix, baseline: target }, message: /equal the requested commits/u },
+      { arguments: [...packetCliArguments(), "--migration-matrix", matrixPath], matrix: { ...matrix, rows: matrix.rows.slice(1) }, message: /omits 1 baseline source unit/u },
+      { arguments: [...packetCliArguments(), "--migration-matrix", matrixPath], matrix: { ...matrix, rows: [...matrix.rows, matrix.rows[0]] }, message: /repeats a baseline source unit/u },
+    ];
+    for (const failure of failures) {
+      if (failure.matrix !== undefined) {
+        await writeFile(matrixPath, typeof failure.matrix === "string" ? failure.matrix : JSON.stringify(failure.matrix), "utf8");
+      }
+      const failed = runPacketCli(repository, failure.arguments);
+      assert.notEqual(failed.status, 0);
+      assert.match(failed.stderr, failure.message);
+    }
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
   }

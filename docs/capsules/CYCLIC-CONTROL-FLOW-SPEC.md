@@ -26,7 +26,7 @@ The recommendation is **yes, under the exact profile, graph criterion, operation
 
 ## Selection basis
 
-[PLAN.md](../PLAN.md#showcase-milestone-ladder) puts compositional admission with cycles first in M2 because acyclicity is currently a structural premise of reachability, closure, and stable-state laws. Replacing it is more fundamental than adding another source element to an acyclic graph.
+[The showcase milestone ladder](../SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder) puts compositional admission with cycles first in M2 because acyclicity is currently a structural premise of reachability, closure, and stable-state laws. Replacing it is more fundamental than adding another source element to an acyclic graph.
 
 The predecessor [compositional admission experiment](../archived/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md) proved reusable finite graph validation but deliberately excluded cycles and was superseded before production widening. The [profile-parameterized admission specification](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns the production mechanism: generic structural validation plus an exact profile capability. This specification records the implementation of its reopen trigger, a profile that needs graph structure the universal acyclicity predicate rejects.
 
@@ -241,7 +241,7 @@ Synthetic states and programs are test-owned: a two-input merge state and a two-
 
 ## CIB relationship
 
-No new CIB relationship is selected. BPMN 2.0.2 states the selected Exclusive Merge account, admitted source uses no CIB extension, the existing Temporal host needs no CIB observation, and the first M2 platform consumer needs only the standard mechanism. All five questions in the [CIB on-demand gate](../PLAN.md#cib-on-demand-gate) therefore answer no.
+No new CIB relationship is selected. BPMN 2.0.2 states the selected Exclusive Merge account, admitted source uses no CIB extension, the existing Temporal host needs no CIB observation, and the first M2 platform consumer needs only the standard mechanism. All five questions in the [CIB on-demand gate](../PROJECT-DESIGN.md#cib-evidence-on-demand) therefore answer no.
 
 The profile may retain `CIB-AGR-0001` and `CIB-OP-0001` as inherited provenance for the reused one-live-User-Task lifecycle and host-task mapping. Those entries do not establish repeated activation, Exclusive Merge, Sequence Flow cycles, condition truth, or a CIB target for the scenario. No CIB runner case or retained CIB evidence is added.
 

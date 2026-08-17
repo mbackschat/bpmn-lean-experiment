@@ -2,7 +2,12 @@
 
 ## Status
 
-**Owner-approved on 2026-08-17; the independently reviewed first-green checkpoint plus recovery, atomic RuntimeState/paired-publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, and pending-Timer capacity are implemented. Production completion remains open.**
+Lifecycle: implementation-in-progress
+Review: approved-with-required-edits
+
+## Current boundary
+
+Owner-approved on 2026-08-17; the independently reviewed first-green checkpoint plus recovery, atomic RuntimeState/paired-publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, and pending-Timer capacity are implemented. Production completion remains open.
 
 This proposal selects the smallest complete Horizon 2 contract for Product 1. Owner approval authorizes the bounded contract below, followed by the required first-green semantic checkpoint and closure review.
 

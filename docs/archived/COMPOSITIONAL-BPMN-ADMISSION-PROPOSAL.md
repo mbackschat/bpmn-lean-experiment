@@ -6,7 +6,7 @@
 
 ## Current disposition
 
-The owner intentionally replaced this proposal's universal observational-preservation prerequisite with the [targeted preservation gate](../PLAN.md#approved-decisions). This is a revision of the approved decision question, required-evidence item 7, and approved decision 6 below; the prerequisite was real and was not introduced only by the experiment record.
+The owner intentionally replaced this proposal's universal observational-preservation prerequisite with the [targeted preservation gate](../PROJECT-DESIGN.md#semantic-increment-preservation-gate). This is a revision of the approved decision question, required-evidence item 7, and approved decision 6 below; the prerequisite was real and was not introduced only by the experiment record.
 
 The closure-limit and unsupported multiple-enabledness obligations formerly assigned to Stages 3c–3e remain mandatory. They transfer to every affected admission or representation capsule through the targeted gate. The programme's auditable Stages 2c through 3b total 930 new or materially rewritten nonblank Lean lines. Stage 1, Stage 2, and Stage 2b lack committed intermediate baselines, so aggregate consumption against the historical 1,800-line ceiling is not reproducible.
 

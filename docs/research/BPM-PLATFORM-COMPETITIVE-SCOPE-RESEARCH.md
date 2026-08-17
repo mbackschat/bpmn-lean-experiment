@@ -4,7 +4,7 @@
 
 **Project-authored research carrying a bounded full-scope recommendation.** It is design input, not product authority and not an implementation claim. [The owner-approved BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md) owns the first product contract, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) owns durable architecture and product boundaries, [PLAN.md](../PLAN.md) owns accepted sequencing, and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) owns the exact implemented and absent surface.
 
-**This document stays research until the approved proposal's surfaces are implemented.** The owner decided on 2026-08-07 that its competitive positioning and full-scope modules are not adopted into any owning document before then, so that the first product is finished rather than widened while it is being built. The trigger is exact and checkable: M5 of [the showcase milestone ladder](../PLAN.md#showcase-milestone-ladder) closing its exit gate, which is where the proposal's deployment, task, operations, incident, history, and mining surfaces are all reached. At that point this document is reconsidered as a whole, and whatever is adopted moves into its proper owner rather than being cited from here.
+**This document stays research until the approved proposal's surfaces are implemented.** The owner decided on 2026-08-07 that its competitive positioning and full-scope modules are not adopted into any owning document before then, so that the first product is finished rather than widened while it is being built. The trigger is exact and checkable: M5 of [the showcase milestone ladder](../SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder) closing its exit gate, which is where the proposal's deployment, task, operations, incident, history, and mining surfaces are all reached. At that point this document is reconsidered as a whole, and whatever is adopted moves into its proper owner rather than being cited from here.
 
 **Research date:** 7 August 2026
 
@@ -576,7 +576,7 @@ Case capability should begin as platform-native work management: ad hoc tasks, m
 
 The current engine-facing taxonomy of compile, start, observe committed state, and submit a command is the correct authority boundary. It is sufficient to describe the permitted kinds of semantic consumption but does not yet publish all information the platform needs. The proposal names the first two gaps as E1 and E2 without authorizing a fifth semantic path.
 
-The accepted engine obligation set remains exactly E1 and E2, recorded by [the owner-approved platform proposal](../BPM-PLATFORM-PROPOSAL.md) and scheduled by [the showcase milestone ladder](../PLAN.md#showcase-milestone-ladder). Everything in the list below is a candidate rather than an obligation the engine has taken on. The E1a and E1b split is adopted by that ladder as two distinct information requirements, without those identifiers; the remaining items enter only through a milestone that needs one or a follow-on proposal that governs one.
+The accepted engine obligation set remains exactly E1 and E2, recorded by [the owner-approved platform proposal](../BPM-PLATFORM-PROPOSAL.md) and scheduled by [the showcase milestone ladder](../SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder). Everything in the list below is a candidate rather than an obligation the engine has taken on. The E1a and E1b split is adopted by that ladder as two distinct information requirements, without those identifiers; the remaining items enter only through a milestone that needs one or a follow-on proposal that governs one.
 
 The platform additionally needs:
 
@@ -805,7 +805,7 @@ Metering, if a managed product later needs it, should be predictable for long-ru
 
 ## Immediate documentation recommendation
 
-The earlier recommendation to create a governed platform-scope proposal has now been satisfied by [BPM-PLATFORM-PROPOSAL.md](../BPM-PLATFORM-PROPOSAL.md), supported by [BPM-PLATFORM-STACK-RESEARCH.md](BPM-PLATFORM-STACK-RESEARCH.md), the product division in [PROJECT-DESIGN.md](../PROJECT-DESIGN.md#product-division), and the explicit absence boundary in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md#bpm-platform).
+The earlier recommendation to create a governed platform-scope proposal has now been satisfied by [BPM-PLATFORM-PROPOSAL.md](../BPM-PLATFORM-PROPOSAL.md), supported by [BPM-PLATFORM-STACK-RESEARCH.md](BPM-PLATFORM-STACK-RESEARCH.md), the product division in [PROJECT-DESIGN.md](../PROJECT-DESIGN.md#product-division), and the explicit absence boundary in [the platform implementation map](../BPM-PLATFORM-IMPLEMENTATION-MAP.md#explicitly-absent).
 
 The next documentation action should be smaller and operational:
 

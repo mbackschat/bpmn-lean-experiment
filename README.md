@@ -4,7 +4,7 @@ BPMN is a portable process language. Executing it durably without letting parser
 
 This repository builds two MIT-licensed products around that boundary: a BPMN 2.0.2 execution engine hosted on Temporal, and an HTTP-first BPM platform that consumes only the engine's published contract. BPMN meaning is stated in reviewed semantic profiles, made executable in Lean, independently transcribed into a pure TypeScript evaluator, and then hosted by a Temporal adapter that adds durability without adding BPMN semantics.
 
-[PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) owns the product and authority model. [ARCHITECTURE.md](docs/ARCHITECTURE.md) owns the concrete package and deployment shape. [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) is the exact implemented-and-absent inventory, while [PLAN.md](docs/PLAN.md) records only current work.
+[PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) owns the product and authority model. [ARCHITECTURE.md](docs/ARCHITECTURE.md) owns the concrete package and deployment shape. [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) routes exact implemented-and-absent inventories, while [PLAN.md](docs/PLAN.md) records only current work.
 
 ## Why this project exists
 
@@ -16,16 +16,9 @@ BPMN 2.0.2, CIB Seven, and Temporal answer different questions:
 
 A direct BPMN-to-Temporal translation can accidentally turn Workflow handlers, retries, Event History, or SDK scheduling into process semantics. This project instead keeps the evaluator pure and explicit, then proves that the host preserves the public result. The platform is downstream again: it may present, authorize, store, and operate published facts, but it may not reconstruct missing BPMN facts from Temporal or its own database.
 
-## Current state
+## Current implementation
 
-| Surface | Status |
-|---|---|
-| BPMN execution engine | Runnable over a bounded, versioned semantic-profile catalog; no broad conformance claim |
-| BPM platform | Functional MVP, Horizon 1 shared PostgreSQL closure, and containerized evaluation distribution complete; no production-capacity claim |
-| Executable corpus | 24 retained business-purpose models cover all 25 registered executable element or semantic variants; 7 external candidates remain classified separately |
-| Active work | Implement the approved Horizon 2 Workflow-chain bounds and Continue-As-New contract |
-
-The engine accepts exact BPMN XML only under a declared profile, lowers it to a project-owned Semantic Process program, and runs that program through the same semantic core locally and inside Temporal. The React platform currently covers definition deployment and versioning, exact start and scheduled/message ingress, human task claims and structured forms, incidents and operator actions, Process search, semantic History and Diagram, metrics, About/capability disclosure, and canonical audit downloads. Exact support and restrictions live in the [implementation map](docs/IMPLEMENTATION-MAP.md), not in this summary.
+Read [PLAN.md](docs/PLAN.md) for current execution order, root [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for implementation routing, the [BPM platform detail map](docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) for Product 2 status, and the [executable model corpus](model-corpus/README.md) for retained whole-model coverage. These agent-facing owners carry volatile status; this human-facing README does not duplicate it.
 
 ## Architecture at a glance
 

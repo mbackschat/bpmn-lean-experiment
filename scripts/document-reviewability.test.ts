@@ -14,9 +14,15 @@ import {
 } from "./source-measure.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const surfaceSectionStart = "## Implemented and absent surfaces";
-const surfaceSectionEnd = "## Current evidence";
 const maximumReviewUnitWords = 120;
+const rootImplementationMap = "docs/IMPLEMENTATION-MAP.md";
+const detailImplementationMaps = [
+  "docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md",
+  "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md",
+  "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
+  "docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md",
+  "docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md",
+] as const;
 const profileCapabilitySectionStart = "## Current profile capabilities";
 const profileCapabilitySectionEnd = "## Structural validators";
 const semanticProfileMapStart =
@@ -234,53 +240,31 @@ async function exists(repositoryPath: string): Promise<boolean> {
   }
 }
 
-/**
- * Keeps the whole implementation map reviewable, not only its surface inventory.
- *
- * This bound previously covered `## Implemented and absent surfaces` alone, and the map's shape
- * followed the guard's boundary exactly rather than the authors' intent: the guarded section held
- * every line under the ceiling while the unguarded `## Current claim` and `## Nearest unsupported
- * claim` grew fifteen lines past it, the largest an 851-word paragraph. A partial bound on a
- * document that must be read whole moves the excess rather than preventing it.
- *
- * The word backstop is deliberately loose enough to sit above the current size and tight enough to
- * bite. It is not the reduction target: `## Implemented and absent surfaces` is still most of this
- * document and shrinks only by auditing each bullet against the capsule that owns it.
- */
-const maximumMapWords = 10000;
+test("keeps the routed implementation maps reviewable", async () => {
+  for (const [relativePath, maximumWords, permitsRoutingTable] of [
+    [rootImplementationMap, 2000, true],
+    ...detailImplementationMaps.map((relativePath) => [relativePath, 4000, false] as const),
+  ] as const) {
+    const document = await readFile(path.join(projectRoot, relativePath), "utf8");
+    const lines = document.split("\n");
+    const tableRows = lines.filter((line) => line.trimStart().startsWith("|"));
+    const oversizedUnits = lines
+      .filter((line) => {
+        const trimmed = line.trim();
+        return trimmed.length > 0 &&
+          !trimmed.startsWith("#") &&
+          !trimmed.startsWith("|") &&
+          wordCount(trimmed) > maximumReviewUnitWords;
+      })
+      .map((line) => wordCount(line));
 
-test("keeps the whole implementation map reviewable outside dense table cells", async () => {
-  const implementationMap = await readFile(
-    path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"),
-    "utf8",
-  );
-
-  // Anti-vacuity: the sections this document is required to carry must still be present, so a
-  // rename cannot silently empty the scan.
-  assert.notEqual(implementationMap.indexOf(surfaceSectionStart), -1);
-  assert.notEqual(implementationMap.indexOf(surfaceSectionEnd), -1);
-
-  const lines = implementationMap.split("\n");
-  const tableRows = lines.filter((line) => line.trimStart().startsWith("|"));
-  const oversizedUnits = lines
-    .filter((line) => {
-      const trimmed = line.trim();
-      return (
-        trimmed.length > 0 &&
-        !trimmed.startsWith("#") &&
-        wordCount(trimmed) > maximumReviewUnitWords
-      );
-    })
-    .map((line) => wordCount(line));
-
-  assert.deepEqual(tableRows, []);
-  assert.deepEqual(oversizedUnits, []);
-
-  const mapWords = wordCount(implementationMap);
-  assert.ok(
-    mapWords <= maximumMapWords,
-    `IMPLEMENTATION-MAP.md is ${mapWords} words against a ${maximumMapWords}-word backstop`,
-  );
+    if (!permitsRoutingTable) assert.deepEqual(tableRows, [], relativePath);
+    assert.deepEqual(oversizedUnits, [], relativePath);
+    assert.ok(
+      wordCount(document) <= maximumWords,
+      `${relativePath} is ${wordCount(document)} words against a ${maximumWords}-word backstop`,
+    );
+  }
 });
 
 test("covers every registered semantic profile in the admission capability table", async () => {

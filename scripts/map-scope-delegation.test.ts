@@ -33,9 +33,16 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { detailMapContracts } from "./document-control-plane.ts";
+
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const capsuleDirectory = path.join(projectRoot, "docs/capsules");
-const mapPath = path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md");
+const mapPaths = new Map(
+  detailMapContracts.map((contract) => [
+    contract.file,
+    path.join(projectRoot, "docs", contract.file),
+  ]),
+);
 
 /**
  * Words below which a section states a heading rather than a scope.
@@ -108,7 +115,11 @@ function unclassifiedMentions(
 }
 
 /** One capsule's delegation: the file that makes it and the map anchor it names as its owner. */
-type Delegation = Readonly<{ capsule: string; anchor: string | undefined }>;
+type Delegation = Readonly<{
+  capsule: string;
+  mapFile: string | undefined;
+  anchor: string | undefined;
+}>;
 
 /**
  * The map anchor a delegating line names, or `undefined` when it names none.
@@ -116,11 +127,17 @@ type Delegation = Readonly<{ capsule: string; anchor: string | undefined }>;
  * A line delegates when it points at the map and says the scope is not *restated*. That claim is what
  * creates the obligation; the verb carrying it is incidental and has already varied three ways.
  */
-function delegatedAnchor(line: string): string | undefined {
+function delegatedTarget(
+  line: string,
+): Readonly<{ mapFile: string; anchor: string }> | undefined {
   if (!line.includes("IMPLEMENTATION-MAP.md") || !line.includes("restated")) {
     return undefined;
   }
-  return /IMPLEMENTATION-MAP\.md#([a-z0-9-]+)/u.exec(line)?.[1] ?? "";
+  const target = /(?:\.\.\/)?([A-Z][A-Z-]*IMPLEMENTATION-MAP\.md)(?:#([a-z0-9-]+))?/u.exec(line);
+  return {
+    mapFile: target?.[1] ?? "",
+    anchor: target?.[2] ?? "",
+  };
 }
 
 function delegations(
@@ -128,12 +145,16 @@ function delegations(
 ): ReadonlyArray<Delegation> {
   return [...documents]
     .flatMap(([capsule, markdown]) => {
-      const anchors = markdown.split("\n").map(delegatedAnchor).filter((
-        anchor,
-      ): anchor is string => anchor !== undefined);
-      return anchors.length === 0
+      const targets = markdown.split("\n").map(delegatedTarget).filter((
+        target,
+      ): target is { mapFile: string; anchor: string } => target !== undefined);
+      return targets.length === 0
         ? []
-        : [{ capsule, anchor: anchors.find((anchor) => anchor !== "") }];
+        : [{
+          capsule,
+          mapFile: targets.find((target) => target.mapFile !== "")?.mapFile,
+          anchor: targets.find((target) => target.anchor !== "")?.anchor,
+        }];
     })
     .sort((left, right) => left.capsule < right.capsule ? -1 : 1);
 }
@@ -161,16 +182,18 @@ function secondLevelSections(map: string): ReadonlyArray<string> {
 
 /** Capsules whose named map section is missing, silent about them, or emptied to a mention. */
 function unansweredDelegations(
-  map: string,
+  maps: ReadonlyMap<string, string>,
   delegated: ReadonlyArray<Delegation>,
 ): ReadonlyArray<string> {
-  const sections = new Map(
-    secondLevelSections(map).map((
-      section,
-    ) => [headingAnchor(section.split("\n")[0] ?? ""), section]),
-  );
   return delegated
-    .filter(({ capsule, anchor }) => {
+    .filter(({ capsule, mapFile, anchor }) => {
+      const map = mapFile === undefined ? undefined : maps.get(mapFile);
+      const sections = new Map(
+        secondLevelSections(map ?? "").map((candidate) => [
+          headingAnchor(candidate.split("\n")[0] ?? ""),
+          candidate,
+        ]),
+      );
       const section = anchor === undefined ? undefined : sections.get(anchor);
       return section === undefined ||
         !section.includes(`capsules/${capsule}`) ||
@@ -193,16 +216,26 @@ test("answers every delegating capsule with its own implementation-map section",
     ),
   );
   const delegated = delegations(documents);
+  const maps = new Map(
+    await Promise.all(
+      [...mapPaths].map(async ([file, absolutePath]): Promise<[string, string]> => [
+        file,
+        await readFile(absolutePath, "utf8"),
+      ]),
+    ),
+  );
 
   assert.deepEqual(
     {
       // A capsule set that delegates nothing would satisfy the finding list alone.
       delegatingCount: delegated.length > 0,
       // A delegation naming no section cannot be answered, so it is reported by name.
-      anchorless: delegated.filter(({ anchor }) => anchor === undefined).map((
+      anchorless: delegated.filter(({ mapFile, anchor }) =>
+        mapFile === undefined || anchor === undefined
+      ).map((
         { capsule },
       ) => capsule),
-      unanswered: unansweredDelegations(await readFile(mapPath, "utf8"), delegated),
+      unanswered: unansweredDelegations(maps, delegated),
       // A reworded delegation lands here rather than vanishing from the detected set.
       unclassified: unclassifiedMentions(documents, delegated),
     },
@@ -219,7 +252,7 @@ test("answers every delegating capsule with its own implementation-map section",
 test("rejects an unanswered delegation and a section emptied to a mention", () => {
   const filler = "word ".repeat(minimumStatusWords);
   const delegates =
-    "Scope is owned by [the map](../IMPLEMENTATION-MAP.md#a-family) and not restated here.";
+    "Scope is owned by [the map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#a-family) and not restated here.";
 
   assert.deepEqual(
     delegations(
@@ -229,16 +262,25 @@ test("rejects an unanswered delegation and a section emptied to a mention", () =
         ["B-SPEC.md", "Scope lives in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md)."],
       ]),
     ),
-    [{ capsule: "A-SPEC.md", anchor: "a-family" }],
+    [{
+      capsule: "A-SPEC.md",
+      mapFile: "ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md",
+      anchor: "a-family",
+    }],
     "delegation must be detected by the not-restated claim rather than by one verb",
   );
 
   const named: ReadonlyArray<Delegation> = [
-    { capsule: "A-SPEC.md", anchor: "a-family" },
+    {
+      capsule: "A-SPEC.md",
+      mapFile: "ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md",
+      anchor: "a-family",
+    },
   ];
+  const mapName = "ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md";
   assert.deepEqual(
     unansweredDelegations(
-      `## Nearest unsupported claim\nSee [A](capsules/A-SPEC.md) for what stays open. ${filler}\n`,
+      new Map([[mapName, `## Nearest unsupported claim\nSee [A](capsules/A-SPEC.md) for what stays open. ${filler}\n`]]),
       named,
     ),
     ["A-SPEC.md"],
@@ -246,14 +288,14 @@ test("rejects an unanswered delegation and a section emptied to a mention", () =
   );
 
   assert.deepEqual(
-    unansweredDelegations(`## A family\n[A](capsules/A-SPEC.md) is implemented.\n`, named),
+    unansweredDelegations(new Map([[mapName, `## A family\n[A](capsules/A-SPEC.md) is implemented.\n`]]), named),
     ["A-SPEC.md"],
     "the named section emptied to a mention must not satisfy its delegation",
   );
 
   assert.deepEqual(
     unansweredDelegations(
-      `## A family\n[A](capsules/A-SPEC.md) **Implemented.** ${filler}\n`,
+      new Map([[mapName, `## A family\n[A](capsules/A-SPEC.md) **Implemented.** ${filler}\n`]]),
       named,
     ),
     ["A-SPEC.md"],
@@ -262,7 +304,7 @@ test("rejects an unanswered delegation and a section emptied to a mention", () =
 
   assert.deepEqual(
     unansweredDelegations(
-      `## A family\n[A](capsules/A-SPEC.md) **Implemented.** x **Absent.** y ${filler}\n`,
+      new Map([[mapName, `## A family\n[A](capsules/A-SPEC.md) **Implemented.** x **Absent.** y ${filler}\n`]]),
       named,
     ),
     [],
@@ -270,8 +312,17 @@ test("rejects an unanswered delegation and a section emptied to a mention", () =
   );
 
   assert.deepEqual(
+    unansweredDelegations(
+      new Map([[mapName, `## A family\n[A](capsules/A-SPEC.md) **Implemented.** x **Absent.** y ${filler}\n`]]),
+      [{ capsule: "A-SPEC.md", mapFile: "IMPLEMENTATION-MAP.md", anchor: "a-family" }],
+    ),
+    ["A-SPEC.md"],
+    "the root router cannot proxy a delegated detail-map section",
+  );
+
+  assert.deepEqual(
     unclassifiedMentions(
-      new Map([["C-SPEC.md", "Scope is not duplicated here; see [the map](../IMPLEMENTATION-MAP.md#c)."]]),
+      new Map([["C-SPEC.md", "Scope is not duplicated here; see [the map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#c)."]]),
       [],
     ),
     ["C-SPEC.md"],

@@ -170,7 +170,13 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Platform and engine contributors; concrete repository layout, modular-monolith shape, module and foundation ownership, dependency direction, deployment composition, Worker placement, and architecture decision register |
 | [archived/MILESTONE-0-FAST-PIPELINE-PROPOSAL.md](archived/MILESTONE-0-FAST-PIPELINE-PROPOSAL.md) | Archived first walking-skeleton proposal; historical scope, contracts, budgets, work packages, and decisions whose current consequences live elsewhere |
 | [archived/README.md](archived/README.md) | Contributors and researchers; registry and authority boundary for resolved, superseded, or parked documentation |
-| [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
+| [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Resuming agents and maintainers; mandatory area and source-path router for exact implementation status |
+| [ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) | Engine contract and source contributors; exact wire, profile, checked-source, Semantic Process IL, and source-admission status |
+| [ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) | Engine runtime and assurance contributors; exact runtime-state, scope, Lean, semantic-core, conformance, and delegated semantic-family status |
+| [TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) | Product 1 adapter contributors; exact protocol, client, Workflow, Worker, runner, testkit, replay, hosting, and capacity status |
+| [BPM-PLATFORM-IMPLEMENTATION-MAP.md](BPM-PLATFORM-IMPLEMENTATION-MAP.md) | Product 2 contributors; exact modules, persistence, HTTP, UI, deployment, browser-evidence, and platform-exclusion status |
+| [ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) | Assurance and adoption contributors; exact project-foundation, CIB, differential, evidence-infrastructure, and optional A12 status |
+| [SHOWCASE-MILESTONE-LADDER-DECISION.md](SHOWCASE-MILESTONE-LADDER-DECISION.md) | Product and engine contributors; adopted M0 through M6 dependency order, exit gates, and one Lean research question per engine milestone |
 | [PLAN.md](PLAN.md) | Resuming agents and owners; current checkpoint, approved implementation sequence, next steps, and stop conditions |
 | [TESTING-SPEC.md](TESTING-SPEC.md) | Contributors; red/green workflow and verification gates |
 | [TEMPORAL-TEST-EVIDENCE-MAP.md](TEMPORAL-TEST-EVIDENCE-MAP.md) | Adapter contributors and reviewers; feature-by-feature Temporal witnesses, mutations, durable-history checks, and replay coverage behind the focused gate |
@@ -178,6 +184,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [reference/bpmn-2.0.2/README.md](reference/bpmn-2.0.2/README.md) | Researchers; external BPMN 2.0.2 corpus location, official fetch/verification procedure, conversion-cache boundary, and reproducibility hashes |
 | [../contracts/README.md](../contracts/README.md) | Cross-language contributors; current language-neutral schemas, artifact roles, content identity, and pre-release evolution policy |
 | [../model-corpus/README.md](../model-corpus/README.md) | Human entry point for the executable model corpus, local commands, provenance boundary, and browser eligibility rule |
+| [../scripts/README.md](../scripts/README.md) | Contributors and coding agents; task-oriented routing for repository commands, executable policy tooling, evidence utilities, imported libraries, and source-adjacent tests |
 | [../model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md](../model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md) | Generated exact model inventory, capability coverage, and clone-family-deduplicated mechanism/admission rankings |
 | [../packages/semantic-core/SOURCE-MAP.md](../packages/semantic-core/SOURCE-MAP.md) | Semantic-core source ownership and contributor navigation |
 | [../packages/temporal-adapter/SOURCE-MAP.md](../packages/temporal-adapter/SOURCE-MAP.md) | Temporal adapter package ownership and SDK boundary navigation |
