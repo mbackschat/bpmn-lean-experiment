@@ -8,7 +8,10 @@ import {
 import type {
   CompletedProcessReceipt,
 } from "./contracts.js";
-import { requireCompletedProcessReceipt } from "./contracts.js";
+import {
+  decodeWorkflowTerminalResult,
+  requireCompletedProcessReceipt,
+} from "./contracts.js";
 import {
   runBpmnProcessWithHostEffects,
 } from "@bpmn-lean/temporal-workflow";
@@ -31,7 +34,9 @@ export function runBpmnProcessBranchBypassMutation(
         "Branch-bypass mutation does not host Service Task effects",
       );
     },
-  ).then(requireCompletedProcessReceipt);
+  ).then((result) => requireCompletedProcessReceipt(
+    decodeWorkflowTerminalResult(result).receipt,
+  ));
 }
 
 function mutateConditionalSelection(

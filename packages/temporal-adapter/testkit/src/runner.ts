@@ -38,6 +38,7 @@ import type {
 import {
   deliverCompletions,
 } from "./completion-delivery.js";
+import { readTestProcessTerminalResult } from "./private-process-handle.js";
 import {
   EffectProbeActivityRegistry,
   EffectProbeStore,
@@ -357,21 +358,21 @@ export class TemporalScenarioRunner {
         await this.workerHost.restartAfterTimerDue(handle, timerStimulus);
       }
       timerReceipt = requireCompletedProcessReceipt(
-        await withDeadline(
-          handle.result(),
+        (await withDeadline(
+          readTestProcessTerminalResult(handle),
           workflowResultDeadlineMs,
-          "timer Workflow completed receipt",
-        ),
+          "timer Workflow terminal result",
+        )).receipt,
       );
     }
     let effectReceipt: CompletedProcessReceipt | undefined;
     if (options.effectExecutionSchedule !== null) {
       effectReceipt = requireCompletedProcessReceipt(
-        await withDeadline(
-          handle.result(),
+        (await withDeadline(
+          readTestProcessTerminalResult(handle),
           workflowResultDeadlineMs,
-          "effect Workflow completed receipt",
-        ),
+          "effect Workflow terminal result",
+        )).receipt,
       );
     }
 
@@ -386,11 +387,11 @@ export class TemporalScenarioRunner {
     const receipt = completedReceipt ?? timerReceipt ?? effectReceipt ??
       (completedState(trace)
         ? requireCompletedProcessReceipt(
-          await withDeadline(
-            handle.result(),
+          (await withDeadline(
+            readTestProcessTerminalResult(handle),
             workflowResultDeadlineMs,
-            "Workflow completed receipt",
-          ),
+            "Workflow terminal result",
+          )).receipt,
         )
         : null);
     if (receipt === null) {

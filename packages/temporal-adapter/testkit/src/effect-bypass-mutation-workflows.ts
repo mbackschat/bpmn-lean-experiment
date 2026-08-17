@@ -9,6 +9,7 @@ import type {
   CompletedProcessReceipt,
 } from "./contracts.js";
 import {
+  decodeWorkflowTerminalResult,
   EffectExecutionResultKind,
   requireCompletedProcessReceipt,
 } from "./contracts.js";
@@ -57,5 +58,7 @@ export function runBpmnProcessEffectBypassMutation(
                 : [],
           }),
     }),
-  ).then(requireCompletedProcessReceipt);
+  ).then((result) => requireCompletedProcessReceipt(
+    decodeWorkflowTerminalResult(result).receipt,
+  ));
 }

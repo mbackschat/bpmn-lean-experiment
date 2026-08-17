@@ -4,6 +4,8 @@ import {
   SemanticProcessCompilerId,
   StimulusKind,
   isSourceOverlayIdentityOrNull,
+  isVariablePatch,
+  isWellFormedWireString,
   isWellFormedStimulus,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -13,6 +15,7 @@ import type {
 import {
   MessageDeliveryResolutionKind,
   ProcessCommandResultKind,
+  processTerminalReceiptFormatV1,
 } from "./contracts.js";
 import type {
   CancelledProcessReceipt,
@@ -37,6 +40,7 @@ export function isMessageDeliveryRecord(
   value: unknown,
 ): value is MessageDeliveryRecord {
   if (
+    !isPlainDataTree(value) ||
     !isRecord(value) ||
     !isWellFormedStimulus(value.stimulus) ||
     value.stimulus.kind !== StimulusKind.DeliverMessage
@@ -77,13 +81,13 @@ function isProcessReceiptWithStatus(
   value: unknown,
   status: ProcessStatus.Completed | ProcessStatus.Cancelled,
 ): boolean {
-  if (!isRecord(value) || !hasOnlyKeys(value, [
+  if (!isPlainDataTree(value) || !isRecord(value) || !hasOnlyKeys(value, [
+    "format",
     "definition",
     "processId",
     "processInstanceId",
     "finalState",
-    "messageDeliveryRecords",
-  ])) {
+  ]) || value.format !== processTerminalReceiptFormatV1) {
     return false;
   }
   const definition = value.definition;
@@ -136,14 +140,47 @@ function isProcessReceiptWithStatus(
     finalState.openEffects.length === 0 &&
     Array.isArray(finalState.openIncidents) &&
     finalState.openIncidents.length === 0 &&
-    Array.isArray(finalState.variables) &&
+    isVariablePatch(finalState.variables) &&
     Array.isArray(finalState.enabledInteractions) &&
     finalState.enabledInteractions.length === 0 &&
-    Array.isArray(value.messageDeliveryRecords) &&
-    value.messageDeliveryRecords.every(isMessageDeliveryRecord) &&
     Number.isSafeInteger(finalState.logicalTimeMs) &&
     Number(finalState.logicalTimeMs) >= 0
   );
+}
+
+export type LegacyTerminalProcessReceiptNormalization = Readonly<{
+  receipt: TerminalProcessReceipt;
+  messageDeliveryRecords: ReadonlyArray<MessageDeliveryRecord>;
+}>;
+
+/** Decode-only seam for the exact pre-v1 Workflow result shape. */
+export function normalizeLegacyTerminalProcessReceipt(
+  value: unknown,
+): LegacyTerminalProcessReceiptNormalization | null {
+  if (!isPlainDataTree(value) || !isRecord(value) || !hasOnlyKeys(value, [
+    "definition",
+    "processId",
+    "processInstanceId",
+    "finalState",
+    "messageDeliveryRecords",
+  ]) || !Array.isArray(value.messageDeliveryRecords) ||
+    !value.messageDeliveryRecords.every(isMessageDeliveryRecord)) {
+    return null;
+  }
+  const candidate = {
+    format: processTerminalReceiptFormatV1,
+    definition: value.definition,
+    processId: value.processId,
+    processInstanceId: value.processInstanceId,
+    finalState: value.finalState,
+  };
+  if (!isTerminalProcessReceipt(candidate)) {
+    return null;
+  }
+  return {
+    receipt: candidate,
+    messageDeliveryRecords: value.messageDeliveryRecords,
+  };
 }
 
 export function requireCompletedProcessReceipt(
@@ -193,5 +230,68 @@ function hasOnlyKeys(
 }
 
 function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
+  return isWellFormedWireString(value) && value.length > 0;
+}
+
+function isPlainDataTree(
+  value: unknown,
+  ancestors: Set<object> = new Set<object>(),
+): boolean {
+  if (value === null) {
+    return true;
+  }
+  switch (typeof value) {
+    case "boolean":
+    case "number":
+    case "string":
+      return true;
+    case "object": {
+      if (ancestors.has(value)) {
+        return false;
+      }
+      ancestors.add(value);
+      try {
+        if (Array.isArray(value)) {
+          const ownKeys = Reflect.ownKeys(value);
+          if (ownKeys.length !== value.length + 1 ||
+            ownKeys.some((key) => typeof key !== "string") ||
+            !ownKeys.includes("length")) {
+            return false;
+          }
+          for (let index = 0; index < value.length; index += 1) {
+            const descriptor = Object.getOwnPropertyDescriptor(
+              value,
+              String(index),
+            );
+            if (descriptor === undefined || !descriptor.enumerable ||
+              !("value" in descriptor) ||
+              !isPlainDataTree(descriptor.value, ancestors)) {
+              return false;
+            }
+          }
+          return true;
+        }
+        const prototype = Object.getPrototypeOf(value) as object | null;
+        if (prototype !== Object.prototype && prototype !== null) {
+          return false;
+        }
+        for (const key of Reflect.ownKeys(value)) {
+          if (typeof key !== "string") {
+            return false;
+          }
+          const descriptor = Object.getOwnPropertyDescriptor(value, key);
+          if (descriptor === undefined || !descriptor.enumerable ||
+            !("value" in descriptor) ||
+            !isPlainDataTree(descriptor.value, ancestors)) {
+            return false;
+          }
+        }
+        return true;
+      } finally {
+        ancestors.delete(value);
+      }
+    }
+    default:
+      return false;
+  }
 }

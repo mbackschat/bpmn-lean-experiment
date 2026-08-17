@@ -38,6 +38,7 @@ import {
   requireSemanticOutcome,
 } from "./runner-support.js";
 import { withDeadline } from "./contracts.js";
+import { readTestProcessTerminalResult } from "./private-process-handle.js";
 
 const operationDeadlineMs = 5_000;
 const workflowResultDeadlineMs = 10_000;
@@ -184,11 +185,11 @@ async function deliverPostTerminalCompletion(
     assertWorkerHealthy,
   );
   const completedReceipt = requireCompletedProcessReceipt(
-    await withDeadline(
-      handle.result(),
+    (await withDeadline(
+      readTestProcessTerminalResult(handle),
       workflowResultDeadlineMs,
-      "Workflow completed receipt before post-terminal command",
-    ),
+      "Workflow terminal result before post-terminal command",
+    )).receipt,
   );
   const postTerminalResult = await submitUserTaskCompletionAtWorkflowId(
     client,

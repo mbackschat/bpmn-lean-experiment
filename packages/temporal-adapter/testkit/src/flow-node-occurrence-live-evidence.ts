@@ -51,6 +51,7 @@ import { loadBpmnWorkflowBundle } from "@bpmn-lean/temporal-worker";
 import { withDeadline } from "./contracts.js";
 import type { TemporalHistory } from "./contracts.js";
 import { createCachedLocalEnvironment } from "./ephemeral-server.js";
+import { readTestProcessTerminalResult } from "./private-process-handle.js";
 import { requireStartStimulus } from "./runner-support.js";
 import { startScenarioWorkflow } from "./runner-workflow-start.js";
 
@@ -196,11 +197,11 @@ async function runPrimary(
     input,
     completion,
   );
-  if (!isCompletedProcessReceipt(await withDeadline(
-    handle.result(),
+  if (!isCompletedProcessReceipt((await withDeadline(
+    readTestProcessTerminalResult(handle),
     operationDeadlineMs,
-    "flow-node occurrence primary Workflow completion",
-  ))) {
+    "flow-node occurrence primary Workflow terminal result",
+  )).receipt)) {
     throw new TypeError("flow-node occurrence primary Workflow did not complete");
   }
   const terminalBeforeDuplicate = requireAvailable(await observeOccurrences(
@@ -311,11 +312,11 @@ async function runScenario(
         throw new TypeError(`unsupported occurrence evidence stimulus ${stimulus.kind}`);
     }
   }
-  if (!isCompletedProcessReceipt(await withDeadline(
-    handle.result(),
+  if (!isCompletedProcessReceipt((await withDeadline(
+    readTestProcessTerminalResult(handle),
     operationDeadlineMs,
-    `flow-node occurrence Workflow ${workflowId} completion`,
-  ))) {
+    `flow-node occurrence Workflow ${workflowId} terminal result`,
+  )).receipt)) {
     throw new TypeError(`flow-node occurrence Workflow ${workflowId} did not complete`);
   }
   return requireAvailable(await observeOccurrences(

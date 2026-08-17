@@ -30,6 +30,7 @@ import {
 
 import {
   ProcessCommandResultKind,
+  BpmnCommandIdentityConflict,
   BpmnProcessStartResultKind,
   bpmnCompleteUserTaskUpdateName,
   bpmnProcessWorkflowType,
@@ -37,6 +38,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -167,11 +169,11 @@ test("closed Workflow retains accepted command result without accepting a new co
       outcome: CommandOutcome.Committed,
     });
 
-    const result = await withDeadline(
-      handle.result(),
+    const result = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "lifecycle Workflow result",
-    );
+      "lifecycle Workflow terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(result), true);
     const history = await withDeadline(
       handle.fetchHistory(),
@@ -205,6 +207,12 @@ test("closed Workflow retains accepted command result without accepting a new co
     );
     assert.equal(reusedUpdateIdOutcome, CommandOutcome.Committed);
 
+    workerLease = await startBpmnTestWorker(
+      environment,
+      workflowBundle,
+      "bpmn-lean-lifecycle-recovery-query",
+    );
+
     const exactRetry = await withDeadline(
       submitUserTaskCompletion(
         environment.client.workflow,
@@ -217,24 +225,23 @@ test("closed Workflow retains accepted command result without accepting a new co
     assert.equal(exactRetry.kind, ProcessCommandResultKind.Semantic);
     assert.equal(exactRetry.outcome, CommandOutcome.Committed);
 
-    const payloadConflictResult = await withDeadline(
-      submitUserTaskCompletion(
-        environment.client.workflow,
-        "Instance_1",
-        {
-          ...completion,
-          taskId: {
-            ...completion.taskId,
-            activation: 2,
+    await assert.rejects(
+      withDeadline(
+        submitUserTaskCompletion(
+          environment.client.workflow,
+          "Instance_1",
+          {
+            ...completion,
+            taskId: {
+              ...completion.taskId,
+              activation: 2,
+            },
           },
-        },
+        ),
+        operationDeadlineMs,
+        "payload-conflicting completion",
       ),
-      operationDeadlineMs,
-      "payload-conflicting completion",
-    );
-    assert.equal(
-      payloadConflictResult.kind,
-      ProcessCommandResultKind.ProcessClosed,
+      BpmnCommandIdentityConflict,
     );
 
     const lateResult = await withDeadline(

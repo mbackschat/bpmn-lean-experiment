@@ -6,6 +6,9 @@ import {
   ProcessStatus,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
+import {
+  processTerminalReceiptFormatV1,
+} from "@bpmn-lean/temporal-protocol";
 import { WorkflowNotFoundError } from "@temporalio/client";
 
 import {
@@ -151,19 +154,19 @@ test("corroborates terminal Query status with the exact retained receipt", async
   const client = fakeClient({
     completed: terminalHandle(
       ProcessStatus.Completed,
-      terminalReceipt(hostingProcessInstanceId, ProcessStatus.Completed),
+      terminalResult(hostingProcessInstanceId, ProcessStatus.Completed),
     ),
     identityMismatch: terminalHandle(
       ProcessStatus.Completed,
-      terminalReceipt("different-host", ProcessStatus.Completed),
+      terminalResult("different-host", ProcessStatus.Completed),
     ),
     statusMismatch: terminalHandle(
       ProcessStatus.Completed,
-      terminalReceipt(hostingProcessInstanceId, ProcessStatus.Cancelled),
+      terminalResult(hostingProcessInstanceId, ProcessStatus.Cancelled),
     ),
     retainedOnly: {
       query: async () => { throw notFound("retainedOnly"); },
-      result: async () => terminalReceipt(
+      result: async () => terminalResult(
         hostingProcessInstanceId,
         ProcessStatus.Cancelled,
       ),
@@ -195,7 +198,7 @@ test("preserves exact Retry and Cancel submissions at the supplied Workflow addr
         return "committed";
       },
       getUpdateHandle: () => ({ result: async () => "committed" }),
-      result: async () => terminalReceipt(
+      result: async () => terminalResult(
         hostingProcessInstanceId,
         ProcessStatus.Cancelled,
       ),
@@ -239,7 +242,7 @@ test("preserves semantic, closed, and unknown command classifications", async ()
     rejected: {
       executeUpdate: async () => "rolledBack",
     },
-    closed: absentActionHandle(async () => terminalReceipt(
+    closed: absentActionHandle(async () => terminalResult(
       hostingProcessInstanceId,
       ProcessStatus.Cancelled,
     )),
@@ -324,6 +327,7 @@ function terminalReceipt(
   status: ProcessStatus.Completed | ProcessStatus.Cancelled,
 ): unknown {
   return {
+    format: processTerminalReceiptFormatV1,
     definition: {
       compiler: "bpmn-source-semantic-process",
       semanticProfile: "profile",
@@ -347,13 +351,24 @@ function terminalReceipt(
       enabledInteractions: [],
       logicalTimeMs: 0,
     },
-    messageDeliveryRecords: [],
   };
+}
+
+function terminalResult(
+  processInstanceId: string,
+  status: ProcessStatus.Completed | ProcessStatus.Cancelled,
+): unknown {
+  const { format: _format, ...receipt } = terminalReceipt(
+    processInstanceId,
+    status,
+  ) as Record<string, unknown>;
+  return { ...receipt, messageDeliveryRecords: [] };
 }
 
 function absentActionHandle(result: () => Promise<unknown>): FakeHandle {
   return {
     executeUpdate: async () => { throw notFound("absent-action"); },
+    query: async () => { throw notFound("absent-action"); },
     getUpdateHandle: () => ({
       result: async () => { throw notFound("absent-action"); },
     }),

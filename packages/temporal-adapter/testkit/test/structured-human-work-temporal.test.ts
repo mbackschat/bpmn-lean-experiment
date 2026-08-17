@@ -22,6 +22,7 @@ import {
   createCachedLocalEnvironment,
   durableUpdateOutcomes,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -187,11 +188,11 @@ test("mixed structured values survive replacement, retry, conflict, history, and
       },
     );
 
-    const receiptValue = await withDeadline(
-      handle.result(),
+    const receiptValue = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "structured Human Work terminal receipt",
-    );
+      "structured Human Work terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(receiptValue), true);
     if (!isCompletedProcessReceipt(receiptValue)) {
       throw new TypeError("structured Human Work Workflow returned no receipt");

@@ -20,7 +20,6 @@ import type {
 import {
   BpmnCommandIdentityConflict,
   BpmnMessageIngressInvalid,
-  MessageDeliveryResolutionKind,
   ProcessCommandResultKind,
   submitMessageDelivery,
   submitUserTaskCompletion,
@@ -28,7 +27,8 @@ import {
 
 import {
   assertExactMessageSignals,
-  completedMessageReceipt,
+  completedMessageResult,
+  expectedWorkflowChainRecoveryEntry,
   fetchMessageHistory,
   requireMessageDelivery,
   requireMessageStart,
@@ -39,6 +39,7 @@ import {
 import type {
   MessageTemporalCaseContext,
 } from "./message-temporal-test-support.ts";
+import { assertWorkflowChainPatchHistory } from "./temporal-history-facts.ts";
 import { loadJson } from "./temporal-test-support.ts";
 
 const scenarioUrl = new URL(
@@ -193,30 +194,31 @@ export async function exerciseIntermediateCatchMessagePrimary(
     ).kind,
     ProcessCommandResultKind.Semantic,
   );
-  const receipt = await completedMessageReceipt(handle);
-  assert.deepEqual(receipt.messageDeliveryRecords, [
-    {
-      kind: MessageDeliveryResolutionKind.Semantic,
-      stimulus: wrongChannel,
-      outcome: CommandOutcome.Rejected,
-    },
-    {
-      kind: MessageDeliveryResolutionKind.Semantic,
-      stimulus: delivery,
-      outcome: CommandOutcome.Committed,
-    },
-    {
-      kind: MessageDeliveryResolutionKind.Semantic,
-      stimulus: stale,
-      outcome: CommandOutcome.Rejected,
-    },
-    {
-      kind: MessageDeliveryResolutionKind.RequestFailure,
-      stimulus: conflicting,
-      failure: "commandIdentityConflict",
-    },
-  ]);
+  const terminalResult = await completedMessageResult(handle);
   const history = await fetchMessageHistory(handle);
+  assertWorkflowChainPatchHistory(history, 1);
+  assert.deepEqual(terminalResult.recoveryEntries, [
+    expectedWorkflowChainRecoveryEntry(
+      startStimulus.instanceId,
+      wrongChannel,
+      CommandOutcome.Rejected,
+    ),
+    expectedWorkflowChainRecoveryEntry(
+      startStimulus.instanceId,
+      delivery,
+      CommandOutcome.Committed,
+    ),
+    expectedWorkflowChainRecoveryEntry(
+      startStimulus.instanceId,
+      stale,
+      CommandOutcome.Rejected,
+    ),
+    expectedWorkflowChainRecoveryEntry(
+      startStimulus.instanceId,
+      taskCompletion,
+      CommandOutcome.Committed,
+    ),
+  ]);
   context.retainHistory(history, handle.workflowId);
   const expectedSignals = [
     wrongChannel,
@@ -300,13 +302,21 @@ export async function exerciseIntermediateCatchMessageReverseOrder(
       outcome: CommandOutcome.Committed,
     },
   );
-  const receipt = await completedMessageReceipt(handle);
-  assert.deepEqual(receipt.messageDeliveryRecords, [{
-    kind: MessageDeliveryResolutionKind.Semantic,
-    stimulus: delivery,
-    outcome: CommandOutcome.Committed,
-  }]);
+  const terminalResult = await completedMessageResult(handle);
+  assert.deepEqual(terminalResult.recoveryEntries, [
+    expectedWorkflowChainRecoveryEntry(
+      start.instanceId,
+      completion,
+      CommandOutcome.Committed,
+    ),
+    expectedWorkflowChainRecoveryEntry(
+      start.instanceId,
+      delivery,
+      CommandOutcome.Committed,
+    ),
+  ]);
   const history = await fetchMessageHistory(handle);
+  assertWorkflowChainPatchHistory(history, 1);
   context.retainHistory(history, handle.workflowId);
   assertExactMessageSignals(history, [delivery]);
 }

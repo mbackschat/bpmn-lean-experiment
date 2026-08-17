@@ -14,7 +14,6 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   BpmnMessageIngressInvalid,
-  MessageDeliveryResolutionKind,
   ProcessCommandResultKind,
   submitMessageDelivery,
 } from "@bpmn-lean/temporal-testkit";
@@ -22,8 +21,9 @@ import {
 import {
   assertExactMessageSignals,
   assertNoNonSignalMessageHostEvents,
-  completedMessageReceipt,
+  completedMessageResult,
   eraseDirectMessageChannel,
+  expectedWorkflowChainRecoveryEntry,
   fetchMessageHistory,
   requireMessageDelivery,
   requireMessageStart,
@@ -35,6 +35,7 @@ import {
 import type {
   MessageTemporalCaseContext,
 } from "./message-temporal-test-support.ts";
+import { assertWorkflowChainPatchHistory } from "./temporal-history-facts.ts";
 import {
   compileExecutionInput,
   loadJson,
@@ -154,7 +155,8 @@ export async function exerciseReceiveTaskPrimary(
     outcome: CommandOutcome.Committed,
   });
 
-  const receipt = await completedMessageReceipt(handle);
+  const terminalResult = await completedMessageResult(handle);
+  const receipt = terminalResult.receipt;
   assert.deepEqual(receipt.finalState, {
     kind: CanonicalObservationKind.State,
     instanceId: start.instanceId,
@@ -169,19 +171,20 @@ export async function exerciseReceiveTaskPrimary(
     enabledInteractions: [],
     logicalTimeMs: 0,
   });
-  assert.deepEqual(receipt.messageDeliveryRecords, [
-    {
-      kind: MessageDeliveryResolutionKind.Semantic,
-      stimulus: wrongKind,
-      outcome: CommandOutcome.Rejected,
-    },
-    {
-      kind: MessageDeliveryResolutionKind.Semantic,
-      stimulus: delivery,
-      outcome: CommandOutcome.Committed,
-    },
+  assert.deepEqual(terminalResult.recoveryEntries, [
+    expectedWorkflowChainRecoveryEntry(
+      start.instanceId,
+      wrongKind,
+      CommandOutcome.Rejected,
+    ),
+    expectedWorkflowChainRecoveryEntry(
+      start.instanceId,
+      delivery,
+      CommandOutcome.Committed,
+    ),
   ]);
   const history = await fetchMessageHistory(handle);
+  assertWorkflowChainPatchHistory(history, 1);
   context.retainHistory(history, handle.workflowId);
   assertExactMessageSignals(history, [wrongKind, delivery]);
   assertNoNonSignalMessageHostEvents(history);
@@ -260,20 +263,21 @@ export async function exerciseReceiveTaskChannelErasure(
       outcome: CommandOutcome.Committed,
     },
   );
-  const receipt = await completedMessageReceipt(handle);
-  assert.deepEqual(receipt.messageDeliveryRecords, [
-    {
-      kind: MessageDeliveryResolutionKind.Semantic,
-      stimulus: directDelivery,
-      outcome: CommandOutcome.Rejected,
-    },
-    {
-      kind: MessageDeliveryResolutionKind.Semantic,
-      stimulus: operationDelivery,
-      outcome: CommandOutcome.Committed,
-    },
+  const terminalResult = await completedMessageResult(handle);
+  assert.deepEqual(terminalResult.recoveryEntries, [
+    expectedWorkflowChainRecoveryEntry(
+      start.instanceId,
+      directDelivery,
+      CommandOutcome.Rejected,
+    ),
+    expectedWorkflowChainRecoveryEntry(
+      start.instanceId,
+      operationDelivery,
+      CommandOutcome.Committed,
+    ),
   ]);
   const history = await fetchMessageHistory(handle);
+  assertWorkflowChainPatchHistory(history, 1);
   context.retainHistory(history, handle.workflowId);
   assertExactMessageSignals(history, [
     directDelivery,

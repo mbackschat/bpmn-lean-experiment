@@ -83,6 +83,7 @@ test("distinguishes a strict cancelled terminal receipt from completed", () => {
 
 function receipt(status: ProcessStatus) {
   return {
+    format: "bpmn-lean.process-terminal-receipt.v1",
     definition: {
       compiler: "bpmn-source-semantic-process",
       semanticProfile: "profile",
@@ -106,6 +107,5 @@ function receipt(status: ProcessStatus) {
       enabledInteractions: [],
       logicalTimeMs: 0,
     },
-    messageDeliveryRecords: [],
   };
 }

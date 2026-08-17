@@ -26,6 +26,7 @@ import {
   HostInteractionResultKind,
   assessBpmnProcessAdmission,
   createHostEffectActivities,
+  decodeWorkflowTerminalResult,
   driveHostInteractions,
   isCancelledProcessReceipt,
   isCompletedProcessReceipt,
@@ -317,7 +318,9 @@ export async function runRunnableTemporalMvp(
     const processHandle = runtime.workflowClient.getHandle<BpmnProcessWorkflow>(
       processWorkflowId(started.processInstanceId),
     );
-    const receipt: unknown = await processHandle.result();
+    const { receipt } = decodeWorkflowTerminalResult(
+      await processHandle.result(),
+    );
     if (!isTerminalProcessReceipt(receipt)) {
       throw new TypeError(
         "Temporal Workflow returned a malformed terminal Process receipt",

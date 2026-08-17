@@ -424,7 +424,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 #### Implemented
 
 - One semantic-lifetime Workflow receiving the start stimulus and admitted Semantic Process program
-- typed `started | rejected` production start after separate semantic and host-capability admission, before Workflow creation
+- handle-free typed `started | rejected` production start after separate semantic and host-capability admission, before Workflow creation; the started result exposes only the semantic Process-instance ID
 - external Worker and client lifecycle over caller-supplied connection and Task Queue settings, with collision-resistant content-derived Workflow and command identities
 - one core-owned semantic loop with committed-state Query projection, User Task Update ingress, payload-free Message Signal ingress, durable Timer wakeup, bounded effect Activity, and retained result recovery
 - exact duplicate coalescing, changed-content conflict, semantic refusal, process-closed and process-unknown separation, and committed-state-only acknowledgement
@@ -432,7 +432,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - passive pre-start host admission for the registered cycle program's `mergeExclusive`; its finite live witness reuses the existing User Task Update, survives Worker replacement between activations, recovers the accepted result, refuses a stale occurrence without changing Query state, takes both back-edges and the default exit, observes no Continue-As-New suggestion, and replays the exact fetched history without adding a Workflow scheduler, wait, command, Timer, or Activity mechanism
 - family-parameterized boundary-deadline scheduling with distinct typed shared-activation refusals, plus the managed Event-Based Gateway race and passive Message subscription class
 - Worker replacement, accepted-result recovery, exact Query and history assertions, replay, cleanup, and a separately bundled semantic or host-bypass mutation for each distinct mechanism
-- canonical Process start and completion data, effect transport, public enabled-interaction and task-detail projection, validated terminal receipts, and the repository command's strict external-runtime configuration
+- canonical Process start and completion data, effect transport, public enabled-interaction and task-detail projection, closed v1 host-ledger-free terminal receipts, private exact legacy-receipt normalization, and the repository command's strict external-runtime configuration
 - one live product example per distinct host mechanism, with reused mechanisms checked without a Temporal service and optional time-skipping calibration outside default verification
 - direct `client.start` hosting for exact registered Message Start identity through the ordinary Workflow start input, with wrong Interface Operation rejection before Workflow creation, service acceptance while no Worker polls, later User Task completion, no Signal Event, exact history replay, and a test-owned Signal-With-Start discriminator
 - test-owned one-action Temporal Schedule hosting for the registered Timer Start profile, with pre-Schedule zero-create refusal, Worker absence through the due occurrence, an exact stored Workflow-ID base kept distinct from the opaque service-returned Workflow/Run identity, base-as-execution refusal, exact downstream User Task completion, ten-event history inspection, action exhaustion, stored-action and direct-start mutations, and replay
@@ -443,7 +443,9 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - registered Service Task incident hosting with an unchanged bare semantic Activity result union, exact successor-only one-attempt policy, host-only `technicalFailure`, Workflow-derived report command, committed incident Query, content-bound retained retry Update, exact effect restoration, Worker replacement, terminal result recovery, two-command race, typed post-retry host failure, history assertions, and replay
 - registered incident-cancellation hosting with the shared one-attempt Activity/report policy, content-bound exact-root/exact-incident Update, Worker replacement while the incident is open, retained accepted-result recovery, typed cancelled receipt through ordinary Workflow completion, distinct late `processClosed`, preserved committed data, history and replay, and native-termination/completed-receipt mutations
 - a Workflow revision accumulator/cursor Query, strict producer validation, representation-free client, opaque-locator engine API, and real retention evidence covering positive cursors, Worker replacement, terminal retrieval, repeated activation identity, pure Query history stability, and exact replay
-- one explicitly selected v1 first-green Workflow-chain branch, inactive for ordinary two-argument Product 1 starts, that carries committed RuntimeState, bounded command recovery, publication heads/current/open anchors, and completed Message records; a forced cyclic User Task witness crosses exactly three Runs and two Continue-As-New boundaries, preserves the open occurrence identity, recovers an exact prior-Run Update, rejects conflicting content, returns the exact terminal receipt, and replays every Run
+- production Product 1 enrollment in the exact `bpmn-workflow-chain-v1` branch through a fixed Initial host envelope, with explicit production budgets, committed RuntimeState, bounded command recovery, and publication heads/current/open anchors carried across Runs; retained direct two-argument Workflow starts remain outside the patch for exact pre-v1 replay compatibility
+- chain-relative Product 1 recovery for User Task completion, Message delivery, incident Retry, and incident Cancel through a private identity-echoing latest-Run Query, including exact retry/conflict precedence, typed capacity failure, closed-receipt classification, Call Activity host/task identity separation, and no public SDK handle or Run identity
+- one forced cyclic User Task witness that lowers only the Event History threshold, crosses exactly three Runs and two Continue-As-New boundaries, preserves the open occurrence identity, recovers an exact prior-Run Update, rejects conflicting content, returns the closed v1 terminal receipt with its private recovery envelope, and replays every Run
 
 #### Explicitly absent
 
@@ -457,7 +459,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - any new Temporal primitive for User Task metadata
 - a second semantic incident, arbitrary retry count or backoff, exception/cause projection, cancellation beyond the exact incident-gated root command, or Product 2 incident ingress
 - any patch branch other than the exact `bpmn-workflow-chain-v1` checkpoint enrollment
-- legacy representation fallback
+- legacy representation fallback beyond the exact decode-only pre-v1 terminal-receipt normalization seam
 - production history baseline
 - general Worker versioning
 - expression evaluation beyond pure Simple Boolean v1
@@ -466,7 +468,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
 - Search Attributes
-- production-default Continue-As-New activation, Product 1 cross-Run client recovery, publication-segment traversal, complete timer/effect/Message rollover evidence, deployment admission, and the full approved capacity matrix
+- publication-segment traversal, complete timer/effect/Message rollover evidence, deployment admission, and the full approved capacity matrix
 - task inbox
 
 ### Differential pipeline

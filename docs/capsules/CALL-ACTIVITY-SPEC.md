@@ -161,7 +161,7 @@ Lean requires separate declarative invoke and return relations, evaluator soundn
 
 ## Temporal hosting/refinement preflight
 
-The bounded profile uses one Temporal Workflow addressed by the caller/root identity. The complete immutable definition forest, call record, caller and called semantic identities, both tasks, and all transitions remain core state. No Child Workflow, Activity, Signal, Timer, effect, cancellation command, retry policy, or new public handler is needed. User Task completion reuses the existing content-bound Update and result/receipt ledger. The production lifecycle uses the exact aggregate-hosting rule above and does not equate one hosting Workflow with one semantic Process instance.
+The bounded profile uses one Temporal Workflow addressed by the caller/root identity. The complete immutable definition forest, call record, caller and called semantic identities, both tasks, and all transitions remain core state. No Child Workflow, Activity, Signal, Timer, effect, cancellation command, retry policy, or new public handler is needed. User Task completion reuses the existing content-bound Update and private chain-recovery ledger. The production lifecycle uses the exact aggregate-hosting rule above and does not equate one hosting Workflow with one semantic Process instance.
 
 Host admission classifies `invokeProcess` and `returnProcess` exhaustively as internal, non-splitting, non-host-wait operations. A mutation omitting either kind must fail the exhaustive classification guard. No data-dependent multiple-enabled state or host race is introduced.
 

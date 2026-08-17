@@ -53,6 +53,7 @@ import {
   startScenarioWorkflow,
 } from "./runner-workflow-start.js";
 import { withDeadline } from "./contracts.js";
+import { readTestProcessTerminalResult } from "./private-process-handle.js";
 
 const operationDeadlineMs = 5_000;
 const workflowDeadlineMs = 10_000;
@@ -116,11 +117,11 @@ export async function runIncidentRetryRace(
       ),
     );
     const receipt = requireCompletedProcessReceipt(
-      await withDeadline(
-        handle.result(),
+      (await withDeadline(
+        readTestProcessTerminalResult(handle),
         workflowDeadlineMs,
-        "incident retry race completion",
-      ),
+        "incident retry race terminal result",
+      )).receipt,
     );
     const trace = await withDeadline(
       handle.query<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName),
@@ -259,11 +260,11 @@ export async function runIncidentScenario(
       throw new TypeError("Incident retry did not commit semantically");
     }
     const receipt = requireCompletedProcessReceipt(
-      await withDeadline(
-        handle.result(),
+      (await withDeadline(
+        readTestProcessTerminalResult(handle),
         workflowDeadlineMs,
-        "incident retry Workflow completion",
-      ),
+        "incident retry Workflow terminal result",
+      )).receipt,
     );
     const retainedRetryResult = await submitIncidentRetryAtWorkflowId(
       environment.client.workflow,

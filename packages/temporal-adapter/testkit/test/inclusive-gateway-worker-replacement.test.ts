@@ -22,6 +22,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -151,11 +152,11 @@ test("Inclusive Gateway preserves its selected set across Worker replacement", a
         outcome: CommandOutcome.Committed,
       },
     );
-    const receipt = await withDeadline(
-      handle.result(),
+    const receipt = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "Inclusive Gateway completed receipt",
-    );
+      "Inclusive Gateway terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(receipt), true);
     const expectedFinalState = expected.trace.at(-1);
     assert.equal(expectedFinalState?.kind, "state");

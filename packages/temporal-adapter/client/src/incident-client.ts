@@ -5,7 +5,6 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CancelIncidentProcessStimulus,
-  CommandOutcome,
   RetryIncidentStimulus,
 } from "@bpmn-lean/semantic-core";
 import type { WorkflowClient } from "@temporalio/client";
@@ -13,17 +12,12 @@ import type { WorkflowClient } from "@temporalio/client";
 import {
   bpmnRetryEffectIncidentUpdateName,
   bpmnCancelIncidentProcessUpdateName,
-  contentBoundUpdateId,
   processWorkflowId,
-  withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 import type {
-  BpmnProcessWorkflow,
   ProcessCommandResult,
 } from "@bpmn-lean/temporal-protocol";
 import { resolveSemanticUpdate } from "./semantic-update-client.js";
-
-const operationDeadlineMs = 5_000;
 
 export async function submitIncidentRetry(
   client: WorkflowClient,
@@ -68,30 +62,13 @@ export async function submitIncidentProcessCancellationAtWorkflowId(
       "Incident cancellation must be well-formed and bind every Process identity to the named instance",
     );
   }
-  const updateId = contentBoundUpdateId(stimulus);
-  const handle = client.getHandle<BpmnProcessWorkflow>(workflowId);
   return resolveSemanticUpdate({
-    commandId: stimulus.commandId,
+    client,
+    workflowId,
     processInstanceId,
-    updateId,
-    execute: () => withDeadline(
-      handle.executeUpdate<CommandOutcome, [CancelIncidentProcessStimulus]>(
-        bpmnCancelIncidentProcessUpdateName,
-        { args: [stimulus], updateId },
-      ),
-      operationDeadlineMs,
-      `incident cancellation Update ${updateId}`,
-    ),
-    retained: () => withDeadline(
-      handle.getUpdateHandle<CommandOutcome>(updateId).result(),
-      operationDeadlineMs,
-      `retained incident cancellation Update ${updateId}`,
-    ),
-    completedReceipt: () => withDeadline(
-      handle.result(),
-      operationDeadlineMs,
-      "retained terminal Process receipt",
-    ),
+    stimulus,
+    updateName: bpmnCancelIncidentProcessUpdateName,
+    operation: "incident cancellation",
   });
 }
 
@@ -111,31 +88,12 @@ export async function submitIncidentRetryAtWorkflowId(
       "Incident retry must be well-formed and address the named Process instance",
     );
   }
-  const updateId = contentBoundUpdateId(stimulus);
-  const handle = client.getHandle<BpmnProcessWorkflow>(
-    workflowId,
-  );
   return resolveSemanticUpdate({
-    commandId: stimulus.commandId,
+    client,
+    workflowId,
     processInstanceId,
-    updateId,
-    execute: () => withDeadline(
-      handle.executeUpdate<CommandOutcome, [RetryIncidentStimulus]>(
-        bpmnRetryEffectIncidentUpdateName,
-        { args: [stimulus], updateId },
-      ),
-      operationDeadlineMs,
-      `incident retry Update ${updateId}`,
-    ),
-    retained: () => withDeadline(
-      handle.getUpdateHandle<CommandOutcome>(updateId).result(),
-      operationDeadlineMs,
-      `retained incident retry Update ${updateId}`,
-    ),
-    completedReceipt: () => withDeadline(
-      handle.result(),
-      operationDeadlineMs,
-      "retained completed Process receipt",
-    ),
+    stimulus,
+    updateName: bpmnRetryEffectIncidentUpdateName,
+    operation: "incident retry",
   });
 }

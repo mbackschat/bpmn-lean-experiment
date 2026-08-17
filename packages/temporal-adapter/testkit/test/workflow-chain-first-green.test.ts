@@ -25,6 +25,7 @@ import {
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
+  readTestProcessTerminalResult,
   submitUserTaskCompletion,
   WorkflowChainCommandRecoveryResponseKind,
   workflowCommandStimulusSha256,
@@ -157,11 +158,12 @@ test("a cyclic User Task process crosses at least two Workflow Runs", async () =
       }
     }
 
-    const receipt = await withDeadline(
-      firstHandle.result(),
+    const terminalResult = await withDeadline(
+      readTestProcessTerminalResult(firstHandle),
       operationDeadlineMs,
-      "Workflow-chain terminal receipt",
+      "Workflow-chain terminal result",
     );
+    const receipt = terminalResult.receipt;
     assert.equal(isCompletedProcessReceipt(receipt), true);
     assert.deepEqual(receipt.definition, semanticProcess.identity);
     assert.equal(receipt.processId, semanticProcess.processId);
@@ -169,6 +171,12 @@ test("a cyclic User Task process crosses at least two Workflow Runs", async () =
     const expectedFinalState = expected.trace.at(-1);
     assert.equal(expectedFinalState?.kind, CanonicalObservationKind.State);
     assert.deepEqual(receipt.finalState, expectedFinalState as StateObservation);
+    assert.equal(terminalResult.recoveryEntries.length, completions.length);
+    assert.deepEqual(
+      terminalResult.recoveryEntries.map((entry) => entry.commandId),
+      completions.map((stimulus) => stimulus.commandId),
+    );
+    assert.deepEqual(terminalResult.legacyMessageDeliveryRecords, []);
 
     const runIds: string[] = [];
     for await (const execution of environment.client.workflow.list()) {

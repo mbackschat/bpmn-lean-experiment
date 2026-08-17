@@ -21,6 +21,7 @@ import {
   bpmnSemanticTaskQueue,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -151,11 +152,11 @@ test("Message Start survives Worker absence and replays without Signal ingress",
       },
     );
 
-    const receipt = await withDeadline(
-      handle.result(),
+    const receipt = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "Message Start completed receipt",
-    );
+      "Message Start terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(receipt), true);
     if (!isCompletedProcessReceipt(receipt)) {
       throw new TypeError("Message Start Workflow returned a malformed receipt");
@@ -206,7 +207,7 @@ test("Message Start survives Worker absence and replays without Signal ingress",
     );
     assert.equal(description.status.name, "COMPLETED");
     assert.equal(description.historyLength, typedHistory.events.length);
-    assert.equal(typedHistory.events.length, exactHistoryEventCount);
+    assert.equal(typedHistory.events.length, exactHistoryEventCount + 2);
     const historySizeBytes = description.historySize;
     assert.equal(
       typeof historySizeBytes === "number" &&

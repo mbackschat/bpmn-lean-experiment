@@ -36,6 +36,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -63,6 +64,7 @@ import {
 import {
   acceptedCompletionOrder,
   assertNoNonUpdateBpmnHostEvents,
+  assertWorkflowChainPatchHistory,
   assertUpdatesCompleteBeforeWorkflow,
   decodeJsonPayload,
   historyEvents,
@@ -288,11 +290,11 @@ test("the finite cycle survives Worker replacement and replays exact history", a
     await assertOpenOccurrence(handle, exit);
     await assertCompletion(environment.client.workflow, start.instanceId, exit);
 
-    const receipt = await withDeadline(
-      handle.result(),
+    const receipt = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "cyclic control-flow completed receipt",
-    );
+      "cyclic control-flow terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(receipt), true);
     const expectedFinalState = expected.trace.at(-1);
     assert.equal(expectedFinalState?.kind, CanonicalObservationKind.State);
@@ -319,6 +321,7 @@ test("the finite cycle survives Worker replacement and replays exact history", a
     ]);
     assertUpdatesCompleteBeforeWorkflow(typedHistory, commandOrder.length);
     assertNoNonUpdateBpmnHostEvents(typedHistory, "cyclic control-flow");
+    assertWorkflowChainPatchHistory(typedHistory, 1);
     assertContinueAsNewNotSuggested(typedHistory);
 
     const description = await withDeadline(
@@ -328,7 +331,7 @@ test("the finite cycle survives Worker replacement and replays exact history", a
     );
     assert.equal(description.status.name, "COMPLETED");
     assert.equal(description.historyLength, typedHistory.events.length);
-    assert.equal(typedHistory.events.length, exactHistoryEventCount);
+    assert.equal(typedHistory.events.length, exactHistoryEventCount + 2);
     const historySizeBytes = description.historySize;
     assert.equal(
       typeof historySizeBytes === "number" &&

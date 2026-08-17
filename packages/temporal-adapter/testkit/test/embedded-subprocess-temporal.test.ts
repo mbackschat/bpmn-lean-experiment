@@ -22,6 +22,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -162,11 +163,11 @@ test("embedded Sub-Process survives Worker replacement after its first child com
       ).kind,
       ProcessCommandResultKind.Semantic,
     );
-    const receipt = await withDeadline(
-      handle.result(),
+    const receipt = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "embedded Sub-Process completed receipt",
-    );
+      "embedded Sub-Process terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(receipt), true);
     const expectedFinalState = expected.trace.at(-1);
     assert.equal(expectedFinalState?.kind, "state");

@@ -5,10 +5,12 @@ import type {
 } from "@temporalio/client";
 
 import {
+  decodeWorkflowTerminalResult,
   processWorkflowId,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
+  DecodedWorkflowTerminalResult,
 } from "@bpmn-lean/temporal-protocol";
 
 export function getTestProcessHandle(
@@ -18,4 +20,11 @@ export function getTestProcessHandle(
   return client.getHandle<BpmnProcessWorkflow>(
     processWorkflowId(processInstanceId),
   );
+}
+
+/** Decodes the private Workflow result without widening any Product receipt. */
+export async function readTestProcessTerminalResult(
+  handle: WorkflowHandle<BpmnProcessWorkflow>,
+): Promise<DecodedWorkflowTerminalResult> {
+  return decodeWorkflowTerminalResult(await handle.result());
 }

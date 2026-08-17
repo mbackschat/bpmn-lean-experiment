@@ -11,7 +11,12 @@ import { Buffer } from "node:buffer";
 
 import { CommandOutcome } from "@bpmn-lean/semantic-core";
 import {
+  BpmnWorkflowHostInputKind,
+  WorkflowChainBudgetKind,
+  bpmnWorkflowContinuationV1,
+  decodeWorkflowTerminalResult,
   isCompletedProcessReceipt,
+  workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-testkit";
 import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
 
@@ -134,6 +139,24 @@ export function assertNoNonUpdateBpmnHostEvents(
   }
 }
 
+/** Locks the one durable marker pair introduced by Temporal's production chain patch. */
+export function assertWorkflowChainPatchHistory(
+  history: TemporalHistory,
+  expectedCount: 0 | 1,
+): void {
+  assert.equal(
+    historyEvents(history, "markerRecordedEventAttributes").length,
+    expectedCount,
+  );
+  assert.equal(
+    historyEvents(
+      history,
+      "upsertWorkflowSearchAttributesEventAttributes",
+    ).length,
+    expectedCount,
+  );
+}
+
 /** Decodes one payload, which the codec delivers as base64 text or as bytes. */
 export function decodeJsonPayload(payload: unknown): unknown {
   const data = historyRecord(payload, "payload")["data"];
@@ -199,6 +222,12 @@ export function assertExactCompletionUpdateHistory(
     "input",
     "payloads",
   ] as const;
+  const startedPayloads = historyPath(started, ...startedPath);
+  assert.ok(Array.isArray(startedPayloads));
+  assert.equal(
+    startedPayloads.length === 2 || startedPayloads.length === 3,
+    true,
+  );
   assert.deepEqual(
     decodeJsonPayload(historyPath(started, ...startedPath, 0)),
     scenario.stimuli[0],
@@ -207,6 +236,19 @@ export function assertExactCompletionUpdateHistory(
     decodeJsonPayload(historyPath(started, ...startedPath, 1)),
     semanticProcess,
   );
+  if (startedPayloads.length === 3) {
+    assert.deepEqual(
+      decodeJsonPayload(historyPath(started, ...startedPath, 2)),
+      {
+        protocol: bpmnWorkflowContinuationV1,
+        kind: BpmnWorkflowHostInputKind.Initial,
+        eventHistoryEventLimit: workflowChainProductionLimit(
+          WorkflowChainBudgetKind.EventHistoryEvents,
+        ),
+      },
+    );
+  }
+  assertWorkflowChainPatchHistory(history, startedPayloads.length === 3 ? 1 : 0);
 
   assert.equal(
     historyPath(
@@ -253,7 +295,7 @@ export function assertExactCompletionUpdateHistory(
   );
   assert.equal(
     isCompletedProcessReceipt(
-      decodeJsonPayload(
+      decodeWorkflowTerminalResult(decodeJsonPayload(
         historyPath(
           workflowCompleted,
           "workflowExecutionCompletedEventAttributes",
@@ -261,7 +303,7 @@ export function assertExactCompletionUpdateHistory(
           "payloads",
           0,
         ),
-      ),
+      )).receipt,
     ),
     true,
   );

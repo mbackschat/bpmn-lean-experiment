@@ -26,6 +26,7 @@ import {
   decodeJsonPayload,
   durableUpdateOutcomes,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   historyEvents,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
@@ -292,11 +293,11 @@ async function runOrder(
     ),
     semanticCommitted(fixture.completions[1].commandId),
   );
-  const receiptValue = await withDeadline(
-    handle.result(),
+  const receiptValue = (await withDeadline(
+    readTestProcessTerminalResult(handle),
     operationDeadlineMs,
-    "parallel User Task metadata completed receipt",
-  );
+    "parallel User Task metadata terminal result",
+  )).receipt;
   assert.equal(isCompletedProcessReceipt(receiptValue), true);
   if (!isCompletedProcessReceipt(receiptValue)) {
     throw new TypeError("parallel metadata Workflow returned no receipt");

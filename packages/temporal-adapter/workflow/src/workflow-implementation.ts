@@ -55,8 +55,8 @@ import type {
   BpmnWorkflowContinuationStateV1,
   BpmnWorkflowHostInputV1,
   MessageDeliveryResolution,
-  TerminalProcessReceipt,
   UserTaskDetail,
+  WorkflowTerminalResultV1,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   EffectActivityResult,
@@ -113,6 +113,7 @@ import {
   isTerminalProcessState,
   terminalProcessReceipt,
 } from "./terminal-process-receipt.js";
+import { terminalWorkflowResult } from "./workflow-terminal-completion.js";
 import {
   HostReadinessAction,
   enqueueStimulus,
@@ -171,7 +172,7 @@ export async function runBpmnProcessWithHostEffects(
   carriedState?: BpmnWorkflowContinuationStateV1,
   carriedRecovery?: BpmnWorkflowContinuationRecoveryV1,
   carriedPublication?: BpmnWorkflowContinuationPublicationV1,
-): Promise<TerminalProcessReceipt> {
+): Promise<WorkflowExecutionResult> {
   const chainInitialization = hostInput !== undefined &&
       patched(bpmnWorkflowChainPatchId)
     ? initializeWorkflowChain(
@@ -255,7 +256,6 @@ export async function runBpmnProcessWithHostEffects(
             start.instanceId,
             state,
             trace,
-            completedMessageDeliveryRecords(messageDeliveryResolutions),
           )
         : null,
     );
@@ -568,16 +568,17 @@ export async function runBpmnProcessWithHostEffects(
     }
   }
 
-  return terminalProcessReceipt(
+  return terminalWorkflowResult(
     semanticProcess,
     start.instanceId,
     state,
     trace,
-    completedMessageDeliveryRecords(
-      messageDeliveryResolutions,
-    ),
+    completedMessageDeliveryRecords(messageDeliveryResolutions),
+    workflowChain?.recovery ?? null,
   );
 }
+
+type WorkflowExecutionResult = Awaited<ReturnType<typeof terminalWorkflowResult>>;
 
 type WorkflowChainWorkflow = (
   start: ProcessStartStimulus,
@@ -586,7 +587,7 @@ type WorkflowChainWorkflow = (
   carriedState: BpmnWorkflowContinuationStateV1,
   carriedRecovery: BpmnWorkflowContinuationRecoveryV1,
   carriedPublication: BpmnWorkflowContinuationPublicationV1,
-) => Promise<TerminalProcessReceipt>;
+) => Promise<WorkflowTerminalResultV1>;
 
 function assertNever(value: never): never {
   throw new TypeError(`Unsupported Temporal adapter variant: ${String(value)}`);

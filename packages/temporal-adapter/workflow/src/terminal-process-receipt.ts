@@ -14,8 +14,10 @@ import type {
   StateObservation,
 } from "@bpmn-lean/semantic-core";
 import type {
-  MessageDeliveryRecord,
   TerminalProcessReceipt,
+} from "@bpmn-lean/temporal-protocol";
+import {
+  processTerminalReceiptFormatV1,
 } from "@bpmn-lean/temporal-protocol";
 
 export function isTerminalProcessState(state: RuntimeState): boolean {
@@ -28,24 +30,23 @@ export function terminalProcessReceipt(
   processInstanceId: string,
   state: RuntimeState,
   trace: ReadonlyArray<CanonicalObservation>,
-  messageDeliveryRecords: ReadonlyArray<MessageDeliveryRecord>,
 ): TerminalProcessReceipt {
   switch (state.control.kind) {
     case ControlStateKind.Completed:
       return {
+        format: processTerminalReceiptFormatV1,
         definition: semanticProcess.identity,
         processId: semanticProcess.processId,
         processInstanceId,
         finalState: requireCompletedState(trace, processInstanceId),
-        messageDeliveryRecords: [...messageDeliveryRecords],
       };
     case ControlStateKind.Cancelled:
       return {
+        format: processTerminalReceiptFormatV1,
         definition: semanticProcess.identity,
         processId: semanticProcess.processId,
         processInstanceId,
         finalState: requireCancelledState(trace, processInstanceId),
-        messageDeliveryRecords: [...messageDeliveryRecords],
       };
     case ControlStateKind.NotStarted:
     case ControlStateKind.Running:

@@ -7,6 +7,12 @@ import {
   startBpmnProcess,
 } from "@bpmn-lean/temporal-client";
 import {
+  BpmnWorkflowHostInputKind,
+  WorkflowChainBudgetKind,
+  bpmnWorkflowContinuationV1,
+  workflowChainProductionLimit,
+} from "@bpmn-lean/temporal-protocol";
+import {
   processProgramFixture as program,
   processStartFixture as start,
 } from "./process-start-fixture.ts";
@@ -33,7 +39,13 @@ test("starts the exact Workflow request and returns only semantic Process identi
       taskQueue: "process-task-queue",
       workflowId: "bpmn-process-sha256:68da48d2363df04557bc53f025c759d51ca0206dd64525a7b111f3f9b887aca6",
       workflowIdReusePolicy: "REJECT_DUPLICATE",
-      args: [start, program],
+      args: [start, program, {
+        protocol: bpmnWorkflowContinuationV1,
+        kind: BpmnWorkflowHostInputKind.Initial,
+        eventHistoryEventLimit: workflowChainProductionLimit(
+          WorkflowChainBudgetKind.EventHistoryEvents,
+        ),
+      }],
     },
   }]);
 });

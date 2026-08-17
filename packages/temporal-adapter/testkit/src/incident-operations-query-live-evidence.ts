@@ -53,6 +53,7 @@ import type { TemporalHistory } from "./contracts.js";
 import { withDeadline } from "./contracts.js";
 import { createCachedLocalEnvironment } from "./ephemeral-server.js";
 import { cancellationEffectRequest } from "./incident-cancellation-live-evidence.js";
+import { readTestProcessTerminalResult } from "./private-process-handle.js";
 import { requireStartStimulus } from "./runner-support.js";
 import { startScenarioWorkflow } from "./runner-workflow-start.js";
 import { TemporalWorkerHost } from "./temporal-worker-host.js";
@@ -218,11 +219,11 @@ async function runRetryEvidence(
     }
 
     completionRelease.resolve();
-    const terminalReceipt = requireCompletedProcessReceipt(await withDeadline(
-      handle.result(),
+    const terminalReceipt = requireCompletedProcessReceipt((await withDeadline(
+      readTestProcessTerminalResult(handle),
       workflowDeadlineMs,
-      "incident operations retry Workflow completion",
-    ));
+      "incident operations retry Workflow terminal result",
+    )).receipt);
     const terminalSnapshot = await querySnapshot(handle);
     if (
       terminalSnapshot === null ||
@@ -307,11 +308,11 @@ async function runCancellationEvidence(
       cancellation,
     );
     requireCommittedAction(actionResult, cancellation.commandId);
-    const terminalReceipt = requireTerminalProcessReceipt(await withDeadline(
-      handle.result(),
+    const terminalReceipt = requireTerminalProcessReceipt((await withDeadline(
+      readTestProcessTerminalResult(handle),
       workflowDeadlineMs,
-      "incident operations cancellation Workflow completion",
-    ));
+      "incident operations cancellation Workflow terminal result",
+    )).receipt);
     if (!isCancelledProcessReceipt(terminalReceipt)) {
       throw new TypeError("Cancellation Query evidence has no cancelled receipt");
     }

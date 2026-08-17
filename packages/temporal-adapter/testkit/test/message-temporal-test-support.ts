@@ -11,6 +11,8 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CanonicalObservation,
+  CommandOutcome,
+  CompleteUserTaskInstanceStimulus,
   DeliverMessageStimulus,
   Scenario,
   SemanticProcessProgram,
@@ -27,14 +29,19 @@ import {
   bpmnDeliverMessageSignalName,
   bpmnSemanticTaskQueue,
   bpmnTraceQueryName,
+  buildWorkflowChainRecoveryRequest,
   getTestProcessHandle,
   isCompletedProcessReceipt,
+  processTerminalReceiptFormatV1,
+  readTestProcessTerminalResult,
   startBpmnProcess,
 } from "@bpmn-lean/temporal-testkit";
 import type {
   BpmnProcessWorkflow,
   CompletedProcessReceipt,
+  DecodedWorkflowTerminalResult,
   TemporalHistory,
+  WorkflowChainRecoveryEntry,
 } from "@bpmn-lean/temporal-testkit";
 
 import {
@@ -221,15 +228,38 @@ export async function waitForMessageSignalCount(
   throw new Error(`Message Workflow did not record ${minimum} Signals`);
 }
 
-export async function completedMessageReceipt(
+export type CompletedMessageTerminalResult = Omit<
+  DecodedWorkflowTerminalResult,
+  "receipt"
+> & Readonly<{ receipt: CompletedProcessReceipt }>;
+
+export async function completedMessageResult(
   handle: WorkflowHandle<BpmnProcessWorkflow>,
-): Promise<CompletedProcessReceipt> {
-  const result = await handle.result();
-  assert.equal(isCompletedProcessReceipt(result), true);
-  if (!isCompletedProcessReceipt(result)) {
+): Promise<CompletedMessageTerminalResult> {
+  const result = await readTestProcessTerminalResult(handle);
+  assert.equal(isCompletedProcessReceipt(result.receipt), true);
+  if (!isCompletedProcessReceipt(result.receipt)) {
     throw new TypeError("Message Workflow returned a malformed receipt");
   }
-  return result;
+  assert.equal(result.receipt.format, processTerminalReceiptFormatV1);
+  assert.deepEqual(result.legacyMessageDeliveryRecords, []);
+  return { ...result, receipt: result.receipt };
+}
+
+export function expectedWorkflowChainRecoveryEntry(
+  hostingProcessInstanceId: string,
+  stimulus: DeliverMessageStimulus | CompleteUserTaskInstanceStimulus,
+  outcome: CommandOutcome,
+): WorkflowChainRecoveryEntry {
+  const request = buildWorkflowChainRecoveryRequest(
+    hostingProcessInstanceId,
+    stimulus,
+  );
+  return {
+    commandId: stimulus.commandId,
+    stimulusSha256: request.stimulusSha256,
+    outcome,
+  };
 }
 
 export async function fetchMessageHistory(

@@ -26,6 +26,7 @@ import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import {
   bpmnCancelIncidentProcessUpdateName,
   bpmnTraceQueryName,
+  decodeWorkflowTerminalResult,
   isCancelledProcessReceipt,
   requireTerminalProcessReceipt,
 } from "@bpmn-lean/temporal-protocol";
@@ -68,6 +69,7 @@ import {
   requireStartStimulus,
   scenarioResultFromTrace,
 } from "./runner-support.js";
+import { readTestProcessTerminalResult } from "./private-process-handle.js";
 import { startScenarioWorkflow } from "./runner-workflow-start.js";
 import { withDeadline } from "./contracts.js";
 
@@ -201,11 +203,11 @@ export async function runIncidentCancellationScenario(
     const cancellationResult = await submitted;
     requireCommittedCancellation(cancellationResult, cancellation.commandId);
 
-    const receiptValue = requireTerminalProcessReceipt(await withDeadline(
-      handle.result(),
+    const receiptValue = requireTerminalProcessReceipt((await withDeadline(
+      readTestProcessTerminalResult(handle),
       workflowDeadlineMs,
-      "incident cancellation Workflow completion",
-    ));
+      "incident cancellation Workflow terminal result",
+    )).receipt);
     if (!isCancelledProcessReceipt(receiptValue)) {
       throw new TypeError(
         "Incident cancellation completed without a cancelled Process receipt",
@@ -354,7 +356,9 @@ export function requireIncidentCancellationEvidence(
   if (
     payloads.length !== 1 ||
     !isDeepStrictEqual(
-      decodeJsonPayload(payloads[0], "Workflow completed receipt"),
+      decodeWorkflowTerminalResult(
+        decodeJsonPayload(payloads[0], "Workflow completed result"),
+      ).receipt,
       evidence.receipt,
     )
   ) {

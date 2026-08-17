@@ -6,6 +6,7 @@ import {
   StimulusKind,
   UserTaskLifecycleState,
 } from "@bpmn-lean/semantic-core";
+import { processTerminalReceiptFormatV1 } from "@bpmn-lean/temporal-protocol";
 import { WorkflowNotFoundError } from "@temporalio/client";
 
 import {
@@ -79,9 +80,9 @@ test("reads exact task detail and submits every command-result arm against the s
         return "committed";
       },
       getUpdateHandle: () => ({ result: async () => "committed" }),
-      result: async () => completedReceipt(hostingProcessInstanceId),
+      result: async () => completedResult(hostingProcessInstanceId),
     },
-    closedExecution: absentCompletionHandle(async () => completedReceipt(hostingProcessInstanceId)),
+    closedExecution: absentCompletionHandle(async () => completedResult(hostingProcessInstanceId)),
     unknownExecution: absentCompletionHandle(async () => {
       throw notFound("unknownExecution");
     }),
@@ -148,19 +149,19 @@ test("classifies matching retained closure, unresolved absence, and infrastructu
       query: async () => {
         throw notFound("closed");
       },
-      result: async () => completedReceipt(hostingProcessInstanceId),
+      result: async () => completedResult(hostingProcessInstanceId),
     },
     mismatch: {
       query: async () => {
         throw notFound("mismatch");
       },
-      result: async () => completedReceipt("different-host"),
+      result: async () => completedResult("different-host"),
     },
     cancelled: {
       query: async () => {
         throw notFound("cancelled");
       },
-      result: async () => terminalReceipt(hostingProcessInstanceId, "cancelled"),
+      result: async () => terminalResult(hostingProcessInstanceId, "cancelled"),
     },
     unavailable: {
       query: async () => {
@@ -222,6 +223,7 @@ function completedReceipt(processInstanceId: string): unknown {
 
 function terminalReceipt(processInstanceId: string, status: string): unknown {
   return {
+    format: processTerminalReceiptFormatV1,
     definition: {
       compiler: "bpmn-source-semantic-process",
       semanticProfile: "profile",
@@ -245,13 +247,27 @@ function terminalReceipt(processInstanceId: string, status: string): unknown {
       enabledInteractions: [],
       logicalTimeMs: 0,
     },
-    messageDeliveryRecords: [],
   };
+}
+
+function completedResult(processInstanceId: string): unknown {
+  return terminalResult(processInstanceId, "completed");
+}
+
+function terminalResult(processInstanceId: string, status: string): unknown {
+  const { format: _format, ...receipt } = terminalReceipt(
+    processInstanceId,
+    status,
+  ) as Record<string, unknown>;
+  return { ...receipt, messageDeliveryRecords: [] };
 }
 
 function absentCompletionHandle(result: () => Promise<unknown>): FakeHandle {
   return {
     executeUpdate: async () => {
+      throw notFound("absent-completion");
+    },
+    query: async () => {
       throw notFound("absent-completion");
     },
     getUpdateHandle: () => ({

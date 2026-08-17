@@ -8,6 +8,7 @@ import {
 import {
   isCancelledProcessReceipt,
   isCompletedProcessReceipt,
+  processTerminalReceiptFormatV1,
 } from "@bpmn-lean/temporal-protocol";
 import {
   isTerminalProcessState,
@@ -35,9 +36,10 @@ test("constructs distinct exact receipts for both ordinary terminal states", () 
       "Instance_1",
       state as never,
       [terminalState(status)],
-      [],
     );
+    assert.equal(result.format, processTerminalReceiptFormatV1);
     assert.equal(result.finalState.status, status);
+    assert.equal("messageDeliveryRecords" in result, false);
     assert.equal(
       isCompletedProcessReceipt(result),
       status === ProcessStatus.Completed,

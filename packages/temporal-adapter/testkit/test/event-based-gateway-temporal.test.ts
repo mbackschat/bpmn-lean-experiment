@@ -39,6 +39,7 @@ import {
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
+  readTestProcessTerminalResult,
   startBpmnProcess,
   submitMessageDelivery,
   submitUserTaskCompletion,
@@ -159,7 +160,9 @@ describe("Event-Based Gateway Temporal readiness", { concurrency: false }, () =>
     );
     await waitForWinnerState(handle, "MessageTask");
     await completeTask(fixture.start.instanceId, "MessageTask");
-    assert.equal(isCompletedProcessReceipt(await handle.result()), true);
+    assert.equal(isCompletedProcessReceipt(
+      (await readTestProcessTerminalResult(handle)).receipt,
+    ), true);
     const history = await fetchMessageHistory(handle);
     assertEventRaceHistory(history, { started: 1, fired: 0, canceled: 1 });
     assert.equal(signalCount(history), 1);
@@ -190,7 +193,9 @@ describe("Event-Based Gateway Temporal readiness", { concurrency: false }, () =>
       },
     );
     await completeTask(fixture.start.instanceId, "TimerTask");
-    assert.equal(isCompletedProcessReceipt(await handle.result()), true);
+    assert.equal(isCompletedProcessReceipt(
+      (await readTestProcessTerminalResult(handle)).receipt,
+    ), true);
     const history = await fetchMessageHistory(handle);
     assertEventRaceHistory(history, { started: 1, fired: 1, canceled: 0 });
     assert.equal(signalCount(history), 1);
@@ -244,7 +249,7 @@ describe("Event-Based Gateway Temporal readiness", { concurrency: false }, () =>
       },
     );
     await completeTask(fixture.start.instanceId, "TimerTask");
-    await handle.result();
+    await readTestProcessTerminalResult(handle);
     const history = await fetchMessageHistory(handle);
     assertEventRaceHistory(history, { started: 1, fired: 1, canceled: 0 });
     assert.equal(signalCount(history), 3);

@@ -21,6 +21,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -169,11 +170,11 @@ test("committed Error cancellation survives an immediate Worker replacement", as
       ).kind,
       ProcessCommandResultKind.Semantic,
     );
-    const receipt = await withDeadline(
-      handle.result(),
+    const receipt = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "Sub-Process Error completed receipt",
-    );
+      "Sub-Process Error terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(receipt), true);
     const expectedFinalState = expected.trace.at(-1);
     assert.equal(expectedFinalState?.kind, "state");

@@ -37,6 +37,7 @@ import {
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
+  readTestProcessTerminalResult,
   submitUserTaskCompletion,
 } from "@bpmn-lean/temporal-testkit";
 import type {
@@ -219,11 +220,11 @@ test("one PT1S Schedule action durably starts and replays the exact Timer Start 
       },
     );
 
-    const receipt = await withDeadline(
-      handle.result(),
+    const receipt = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "Timer Start completed receipt",
-    );
+      "Timer Start terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(receipt), true);
     if (!isCompletedProcessReceipt(receipt)) {
       throw new TypeError("Timer Start Workflow returned a malformed receipt");
@@ -462,9 +463,9 @@ async function assertDirectWorkflowTimingMutation(
     },
   );
   await withDeadline(
-    direct.result(),
+    readTestProcessTerminalResult(direct),
     operationDeadlineMs,
-    "direct Timer Start timing mutation completion",
+    "direct Timer Start timing mutation terminal result",
   );
   assert.deepEqual(
     await exactServiceResourceCounts(

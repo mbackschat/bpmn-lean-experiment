@@ -23,6 +23,9 @@ import type {
   CompletedProcessReceipt,
 } from "@bpmn-lean/temporal-protocol";
 import {
+  processTerminalReceiptFormatV1,
+} from "@bpmn-lean/temporal-protocol";
+import {
   allHandlersFinished,
   condition,
   setHandler,
@@ -93,11 +96,11 @@ async function runQueryMutation(
       const completed = completedState(step.observations);
       if (completed !== undefined) {
         receipt = {
+          format: processTerminalReceiptFormatV1,
           definition: semanticProcess.identity,
           processId: semanticProcess.processId,
           processInstanceId: start.instanceId,
           finalState: completed,
-          messageDeliveryRecords: [],
         };
       }
       return CommandOutcome.Committed;

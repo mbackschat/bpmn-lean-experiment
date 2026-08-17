@@ -16,8 +16,8 @@ import type {
 
 import {
   bpmnIncidentOperationsQueryName,
+  decodeWorkflowTerminalResult,
   requireTemporalIncidentOperationsSnapshot,
-  requireTerminalProcessReceipt,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -151,13 +151,11 @@ async function corroborateTerminalObservation(
   status: ProcessStatus.Completed | ProcessStatus.Cancelled,
 ): Promise<TemporalProcessOperationsObservationResult> {
   try {
-    const receipt = requireTerminalProcessReceipt(
-      await withDeadline(
-        handle.result(),
-        operationDeadlineMs,
-        "retained terminal Process receipt",
-      ),
-    );
+    const { receipt } = decodeWorkflowTerminalResult(await withDeadline(
+      handle.result(),
+      operationDeadlineMs,
+      "retained terminal Process result",
+    ));
     return receipt.processInstanceId === hostingProcessInstanceId &&
         receipt.finalState.status === status
       ? { status: TemporalProcessOperationsObservationStatus.Closed }
@@ -172,13 +170,11 @@ async function resolveObservationAbsence(
   hostingProcessInstanceId: string,
 ): Promise<TemporalProcessOperationsObservationResult> {
   try {
-    const receipt = requireTerminalProcessReceipt(
-      await withDeadline(
-        handle.result(),
-        operationDeadlineMs,
-        "retained terminal Process receipt",
-      ),
-    );
+    const { receipt } = decodeWorkflowTerminalResult(await withDeadline(
+      handle.result(),
+      operationDeadlineMs,
+      "retained terminal Process result",
+    ));
     return receipt.processInstanceId === hostingProcessInstanceId
       ? { status: TemporalProcessOperationsObservationStatus.Closed }
       : { status: TemporalProcessOperationsObservationStatus.Unavailable };

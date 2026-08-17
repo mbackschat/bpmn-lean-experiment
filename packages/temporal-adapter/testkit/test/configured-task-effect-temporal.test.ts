@@ -26,6 +26,7 @@ import {
   bpmnSemanticTaskQueue,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -185,11 +186,11 @@ test("configured Task source durably reaches the existing effect host", async ()
         outcome: CommandOutcome.Committed,
       },
     );
-    const receipt = await withDeadline(
-      handle.result(),
+    const receipt = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "configured Task completed receipt",
-    );
+      "configured Task terminal result",
+    )).receipt;
     assert.equal(isCompletedProcessReceipt(receipt), true);
     if (!isCompletedProcessReceipt(receipt)) {
       throw new TypeError("configured Task Workflow returned no receipt");

@@ -223,7 +223,7 @@ Concrete fixture theorems and `by decide` checks do not establish general Receiv
 | Message activation counter | Existing per-element semantic counter | Incremented on activation and monotonic; direct delivery does not reset it | Activation component of the subscription ID |
 | Control token and root scope occurrence | Existing Process start and graph lowering | Root-owned; the delivery emits one output token, None End consumes it, and root completion removes live execution state while monotonic counters remain | Status and derived waits, not raw token/scope state |
 | CIB execution/subscription IDs | CIB runtime public service, optional lane only | Engine-created and consumed by the CIB runner; never enter semantic identity | Raw evidence only; occurrence mapping is adapter-decided |
-| Temporal Signal and message result record | Existing adapter transport and content-bound command identity | Signal accepted by Temporal, applied once by the core, first semantic result retained in the ledger/receipt | Command result and history evidence, never BPMN state |
+| Temporal Signal and recovery entry | Existing adapter transport and content-bound command identity | Signal accepted by Temporal, applied once by the core, first semantic result retained in the private chain ledger and terminal envelope | Command result and history evidence, never BPMN state |
 | Wrong-kind and stranded states | Test-authored synthetic inputs | Never emitted by the admitted scenario; used only to distinguish erased channel kind and token-without-resumption accounts | Refusal/result witnesses only |
 
 No new runtime-state collection, counter, queue, global subscription index, broker buffer, or host scheduler is added.
@@ -232,7 +232,7 @@ No new runtime-state collection, counter, queue, global subscription index, brok
 
 The state relation is unchanged: the Workflow contains the admitted immutable Semantic Process program plus the serializable semantic-core runtime state, and every public Query/result is derived from committed core state. The new checked source kind is erased only after exact lowering into the already related `awaitMessage` operation; the `directMessage` discriminant remains in program and runtime state.
 
-Durable ingress is the existing Message Signal carrying `commandId`, complete `subscriptionId`, and the closed channel. The current boundary classifies malformed Signal payloads as adapter request failures and a reused command ID with different content as `BpmnCommandIdentityConflict`; neither becomes a `ProcessCommandResult`. Exact semantic refusal is retained in the message result Query and terminal receipt where the existing lifecycle permits it.
+Durable ingress is the existing Message Signal carrying `commandId`, complete `subscriptionId`, and the closed channel. The current boundary classifies malformed Signal payloads as adapter request failures and a reused command ID with different content as `BpmnCommandIdentityConflict`; neither becomes a `ProcessCommandResult`. Exact semantic refusal is retained in the message result Query and, after closure, in the identity-bound private recovery entry. The closed v1 public terminal receipt contains no host ledger.
 
 The wait is passive. The Workflow schedules no Timer, Activity, Child Workflow, cancellation command, or outbound Message. Host admission classifies `awaitMessage` as passive external ingress, so the one-wait shape is admitted without widening the concurrent host-driven-wait predicate. The Workflow loop waits on its existing condition until a Signal arrives.
 
@@ -245,7 +245,7 @@ The smallest refinement witness is:
 1. start the admitted Receive Task Process and observe exactly one direct Message subscription;
 2. stop the Worker;
 3. deliver the exact Message Signal while no Worker is polling;
-4. start a replacement Worker and recover the committed result through the existing message result/terminal receipt path;
+4. start a replacement Worker and recover the committed result through the existing message-result and private terminal-recovery path;
 5. assert completed canonical state, exactly one accepted direct delivery, no Timer, Activity, Child Workflow, or cancellation events, and exactly the expected Signal history;
 6. replay the fetched history against the replacement Worker bundle.
 
@@ -279,7 +279,7 @@ Pre-activation CIB delivery is excluded. The phase-zero runner starts the Proces
 
 | Rule | BPMN/profile | Lean | TypeScript | CIB option | Temporal | Negative witness and mutation |
 |---|---|---|---|---|---|---|
-| `RECV-ADDRESS-01` | Clause 10 Receive Task plus exact direct-Message source profile | Implemented checked-node lowering equality preserves `directMessage` | Implemented source projection and lowering preserve a changed Message reference | Retained raw subscription observes the event name; `CIB-OP-0005` owns adapter-decided canonical Message ID | Exact direct channel is present in the live Query, Signal, result ledger, terminal receipt, and replayed history | Same `messageId` under `operationMessage` rejects; source replacement and the seeded differential arm substitution change the public channel |
+| `RECV-ADDRESS-01` | Clause 10 Receive Task plus exact direct-Message source profile | Implemented checked-node lowering equality preserves `directMessage` | Implemented source projection and lowering preserve a changed Message reference | Retained raw subscription observes the event name; `CIB-OP-0005` owns adapter-decided canonical Message ID | Exact direct channel is present in the live Query, Signal, private recovery entry, closed public terminal receipt, and replayed history | Same `messageId` under `operationMessage` rejects; source replacement and the seeded differential arm substitution change the public channel |
 | `RECV-WAIT-01` | Clauses 10 and 13.3.3 | Implemented exact two-step start closure and direct subscription | Implemented independent start closure and subscription projection | Retained public subscription exists after Process start | Exact Query exposes one direct subscription before delivery and reconstructs it after Worker replacement | Auto-completion or a dropped subscription disagrees before delivery |
 | `RECV-COMPLETE-01` | Clause 13.3.3 plus existing direct-address profile | Implemented `MessageDeliveryStep` specialization, soundness, and exact two-step completion | Implemented independent exact delivery and Process completion | Retained public delivery removes the subscription and completes the Process | Worker-absence delivery, committed result recovery, terminal receipt, exact Signal history, and replay are implemented | Exact result rejects a retained subscription or incomplete closure; removing a Signal fails the history assertion |
 | `RECV-REFUSE-01` | Existing direct-address and one-consumption restriction | Implemented wrong-kind, wrong-Message, early, and consumed controls | Implemented independent refusal and state preservation | Pre-activation and unmatched delivery remain unclaimed | Malformed direct ingress emits no Signal; a live operation-addressed delivery with the same Message ID rejects and preserves the direct wait | Matcher comparing only `messageId` accepts the checked wrong-kind case; test-only channel erasure exposes an operation-addressed wait and rejects the exact direct delivery |
@@ -289,7 +289,7 @@ Lean and TypeScript consume the same TypeScript-produced checked source and prog
 
 ## Versioning contract
 
-The pre-release repository has one current Message-address representation across every producer and consumer. It has no optional compatibility arm, format counter, fallback reader, or Workflow patch branch. TypeScript, Lean, the checked-process, Semantic Process and scenario schemas, Java, artifacts, retained evidence, differential comparison, and Temporal command identity all use the same closed discriminated union.
+The pre-release repository has one current Message-address representation across every producer and consumer. It has no optional Message-channel compatibility arm, format counter, or fallback reader. TypeScript, Lean, the checked-process, Semantic Process and scenario schemas, Java, artifacts, retained evidence, differential comparison, and Temporal command identity all use the same closed discriminated union. The host lifecycle separately has the exact `bpmn-workflow-chain-v1` patch and decode-only pre-v1 terminal-receipt seam; neither widens or reinterprets the Message channel.
 
 The eleven top-level canonical state fields, `WaitKind`, `StimulusKind`, `CommandOutcome`, `ProcessStatus`, `ProcessCommandResult`, runtime-state collections, and Temporal transport family remain unchanged. Only the nested Message channel and closed checked-node union differ from the earlier operation-only representation.
 

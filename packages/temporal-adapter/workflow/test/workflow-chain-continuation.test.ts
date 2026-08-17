@@ -274,7 +274,6 @@ test("terminal validation prevents enqueue and preserves the terminal receipt", 
     publicationStart.instanceId,
     terminal.state,
     terminal.trace,
-    [],
   );
   let handlerStarted = false;
   const pending: unknown[] = [];
@@ -296,7 +295,6 @@ test("terminal validation prevents enqueue and preserves the terminal receipt", 
       publicationStart.instanceId,
       terminal.state,
       terminal.trace,
-      [],
     ),
     before,
   );

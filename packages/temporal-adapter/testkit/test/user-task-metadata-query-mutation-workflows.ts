@@ -29,6 +29,9 @@ import type {
   CompletedProcessReceipt,
 } from "@bpmn-lean/temporal-protocol";
 import {
+  processTerminalReceiptFormatV1,
+} from "@bpmn-lean/temporal-protocol";
+import {
   bpmnCompleteUserTaskUpdate,
   bpmnOpenUserTasksQuery,
   bpmnTraceQuery,
@@ -70,11 +73,11 @@ export async function runBpmnProcessUserTaskMetadataQueryMutation(
       state = step.state;
       trace.push(...step.observations);
       receipt = {
+        format: processTerminalReceiptFormatV1,
         definition: semanticProcess.identity,
         processId: semanticProcess.processId,
         processInstanceId: start.instanceId,
         finalState: requireFinalState(step.observations),
-        messageDeliveryRecords: [],
       };
       return CommandOutcome.Committed;
     },

@@ -21,8 +21,12 @@ import type { WorkflowClient } from "@temporalio/client";
 
 import {
   BpmnProcessStartResultKind,
+  BpmnWorkflowHostInputKind,
+  WorkflowChainBudgetKind,
+  bpmnWorkflowContinuationV1,
   startBpmnProcess,
-} from "@bpmn-lean/temporal-client";
+  workflowChainProductionLimit,
+} from "@bpmn-lean/temporal-testkit";
 
 const sourceUrl = new URL(
   "../../../bpmn-source/test/fixtures/message-start-event.bpmn",
@@ -81,7 +85,17 @@ test("rejects a wrong Interface Operation before creating a Workflow", async () 
   assert.equal(temporal.starts.length, 2);
   assert.deepEqual(
     temporal.starts[1]?.options.args,
-    [exact, program],
+    [
+      exact,
+      program,
+      {
+        protocol: bpmnWorkflowContinuationV1,
+        kind: BpmnWorkflowHostInputKind.Initial,
+        eventHistoryEventLimit: workflowChainProductionLimit(
+          WorkflowChainBudgetKind.EventHistoryEvents,
+        ),
+      },
+    ],
   );
 });
 

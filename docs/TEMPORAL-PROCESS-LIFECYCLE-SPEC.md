@@ -8,7 +8,7 @@
 
 This specification defines the production lifecycle shared by the admitted semantic capsules. It answers how semantic and host-capability admission is reported before Workflow creation, when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
 
-It does not itself add BPMN semantics, a task inbox, general host cancellation, production-default Continue-As-New, an external database, or an immutable deployment/history baseline. The [Workflow-chain proposal](TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) owns the separately governed explicit-input first-green continuation checkpoint and every remaining production-chain obligation. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) and [Message-addressed Receive Task specification](capsules/RECEIVE-TASK-MESSAGE-SPEC.md) compose their separately checked Message loci with the same passive Signal/result-ledger lifecycle while retaining distinct channel arms, the [ordinary embedded Sub-Process completion specification](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) keeps the child definition-scope lifecycle inside the same semantic state machine without a Temporal Child Workflow, and the [Sub-Process Error-propagation specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) performs regional semantic cancellation without a Temporal cancellation command. The [Terminate End Event specification](capsules/TERMINATE-END-EVENT-SPEC.md) likewise computes containing-scope cancellation entirely inside the semantic core and reuses ordinary scope completion without a host cancellation command. The [bounded Call Activity specification](capsules/CALL-ACTIVITY-SPEC.md) composes one caller plus one linked called semantic Process instance under the caller's Workflow address, separates that host address from the called task identity, survives Worker replacement, and replays without a Temporal Child Workflow. The engine runner adds one exact known-Process User Task detail Query whose caller-selected Process-variable projection remains read-only and non-durable.
+It does not itself add BPMN semantics, a task inbox, general host cancellation, an external database, or an immutable deployment/history baseline. The [Workflow-chain proposal](TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) owns the production continuation contract and its remaining publication, capacity, cross-mechanism, and deployment closure obligations. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) and [Message-addressed Receive Task specification](capsules/RECEIVE-TASK-MESSAGE-SPEC.md) compose their separately checked Message loci with the same passive Signal and private command-recovery lifecycle while retaining distinct channel arms, the [ordinary embedded Sub-Process completion specification](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) keeps the child definition-scope lifecycle inside the same semantic state machine without a Temporal Child Workflow, and the [Sub-Process Error-propagation specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) performs regional semantic cancellation without a Temporal cancellation command. The [Terminate End Event specification](capsules/TERMINATE-END-EVENT-SPEC.md) likewise computes containing-scope cancellation entirely inside the semantic core and reuses ordinary scope completion without a host cancellation command. The [bounded Call Activity specification](capsules/CALL-ACTIVITY-SPEC.md) composes one caller plus one linked called semantic Process instance under the caller's Workflow address, separates that host address from the called task identity, survives Worker replacement, and replays without a Temporal Child Workflow. The engine runner adds one exact known-Process User Task detail Query whose caller-selected Process-variable projection remains read-only and non-durable.
 
 ## Selected lifecycle
 
@@ -40,7 +40,7 @@ The executable comparison and pinned platform facts are recorded in the [Tempora
 type BpmnProcessStartResult =
   | Readonly<{
       kind: "started";
-      handle: WorkflowHandle<BpmnProcessWorkflow>;
+      processInstanceId: string;
     }>
   | Readonly<{
       kind: "rejected";
@@ -53,26 +53,14 @@ enum ProcessCommandResultKind {
   ProcessUnknown = "processUnknown",
 }
 
-type MessageDeliveryRecord =
-  | Readonly<{
-      kind: "semantic";
-      stimulus: DeliverMessageStimulus;
-      outcome: CommandOutcome;
-    }>
-  | Readonly<{
-      kind: "requestFailure";
-      stimulus: DeliverMessageStimulus;
-      failure: "commandIdentityConflict";
-    }>;
-
 interface CompletedProcessReceipt {
+  readonly format: "bpmn-lean.process-terminal-receipt.v1";
   readonly definition: SemanticProcessIdentity;
   readonly processId: string;
   readonly processInstanceId: string;
   readonly finalState: StateObservation & {
     readonly status: ProcessStatus.Completed;
   };
-  readonly messageDeliveryRecords: MessageDeliveryRecord[];
 }
 
 type ProcessCommandResult =
@@ -93,7 +81,7 @@ type ProcessCommandResult =
     }>;
 ```
 
-`started` means semantic execution admission and the separate Temporal host-capability predicate both passed and Temporal created the Workflow. `rejected` means either the Semantic Process/start pair is unsupported or the host cannot schedule its potential wait-set shape. The adapter returns this result before `client.start`; Workflow execution does not classify admission.
+`started` means semantic execution admission and the separate Temporal host-capability predicate both passed and Temporal created the Workflow. It exposes only the validated semantic Process-instance ID. SDK handles, clients, Run IDs, result polling, history, and description capabilities remain adapter-private. `rejected` means either the Semantic Process/start pair is unsupported or the host cannot schedule its potential wait-set shape. The adapter returns this result before `client.start`; Workflow execution does not classify admission.
 
 `semantic` means the command was accepted by the Workflow or its previously completed exact Update was recovered. Live execution and retry recovery return the same public shape.
 
@@ -102,6 +90,8 @@ type ProcessCommandResult =
 `processUnknown` means no retained Workflow or terminal receipt can establish that address. It covers a never-existing address and an execution removed after Temporal retention; the adapter cannot distinguish them without another durable store.
 
 Workflow cancellation, termination, timeout, failure, service unavailability, Worker unavailability, client deadline, malformed terminal receipt, and replay incompatibility are infrastructure failures. They do not become any member of this result union.
+
+The raw Workflow result is deliberately `unknown`. New chain-enrolled executions return a private `bpmn-lean.workflow-terminal-result.v1` envelope containing the public receipt and bounded recovery entries. The one decoder also recognizes the exact pre-v1 five-field receipt and keeps its Message records only in a private normalized legacy view. No public old/new union or Message ledger crosses the Product 1 boundary.
 
 A malformed command and reuse of one semantic command ID for a different well-formed stimulus are adapter request failures rather than semantic outcomes. Update ingress reports conflicting identity as non-retryable `BpmnCommandIdentityConflict` without failing or retrying the Workflow Task. Message Signal ingress validates before sending and reports malformed input as `BpmnMessageIngressInvalid`; a well-formed conflicting Signal cannot return a handler error, so the Workflow records `commandIdentityConflict` durably and the result Query/client translates that record to `BpmnCommandIdentityConflict`.
 
@@ -127,7 +117,7 @@ The registered Service Task incident profile uses Update name `bpmn-retry-effect
 
 The production start boundary first checks the explicit manual, Message, or Timer start stimulus and Semantic Process program through semantic execution admission, then checks the program through the separate Temporal host-capability predicate. Only an `admitted` result reaches Workflow creation. Ordinary production starts call `client.start`. The Timer Start conformance witness may instead place the exact admitted program and resolved trigger in a test-owned one-action Schedule; it performs the same checks before Schedule creation, uses the service-returned execution Workflow/Run identity after the due action, and does not add Schedule state to the Workflow input or semantic state. The current conservative host predicate accepts passive User Task Update and Message Signal ingress, scope-owned passive User Task sets, internal `throwError` closure, and linear Timer/User Task composition, but rejects a token split combined with a Timer or effect wait as `concurrentHostDrivenWaits`.
 
-The production Workflow receives that admitted Semantic Process program and one explicit start stimulus, including its required canonical string/null initial Process-variable list. It does not receive a future scenario command list.
+The production Workflow receives that admitted Semantic Process program, one explicit start stimulus including its required canonical string/null initial Process-variable list, and the fixed v1 Initial host envelope carrying the production Event History threshold. It does not receive a future scenario command list. Retained direct two-argument starts omit that host envelope and remain outside the patch only for exact pre-v1 replay compatibility.
 
 The Workflow persists the semantic core's complete replacement runtime state, including definition-scope occurrences and the scope owner on every token and wait. Temporal does not project a child scope into a Child Workflow, Activity, Timer, Signal, cancellation command, or separate host lifecycle. Entry, child End consumption, quiescence, normal child completion, Error throw/catch, regional child cancellation, and the selected outer continuation remain internal core transitions within the one Process Workflow.
 
@@ -144,28 +134,28 @@ Temporal decides whether a racing Update was accepted before the Workflow comple
 
 Accepted-handler draining does not reserve acceptance for a future request and does not impose caller order on concurrent requests. Two distinct concurrent completions for one occurrence therefore have two valid lifecycle resolutions. If both are durably accepted, exactly one commits and one is rejected. If only the winner is durably accepted before Workflow completion, it commits and the losing request resolves through ingress as `processClosed`. Both resolutions reach the same final semantic state. `processUnknown` is not a valid result for this retained-address witness. A caller that awaits terminal completion before submitting another distinct command chooses an explicit post-terminal schedule and receives `processClosed`.
 
-## Workflow-chain first-green checkpoint
+## Workflow-chain production contract
 
-The optional v1 host input selects one independently governed implementation checkpoint without changing ordinary Product 1 starts. That branch validates exact Process, definition, start, first-execution, RuntimeState, recovery, and publication identity; measures every carried argument under the approved production ceilings; fences rollover in the main Workflow loop; drains accepted handlers and Signals; and calls `return await continueAsNew(...)` only from one stable nonterminal checkpoint. Terminal state is checked first and completes normally.
+Every Product 1 start supplies the fixed v1 Initial host input and enrolls in the exact `bpmn-workflow-chain-v1` patch. The branch validates exact Process, definition, start, first-execution, RuntimeState, recovery, and publication identity; measures every carried argument under the approved production ceilings; fences rollover in the main Workflow loop; drains accepted handlers and Signals; and calls `return await continueAsNew(...)` only from one stable nonterminal checkpoint. Terminal state is checked first and completes normally.
 
-The forced cyclic User Task witness lowers only the Event History event threshold. It crosses exactly three Runs and two Continue-As-New boundaries, carries one open User Task through each boundary, preserves its semantic occurrence identity, recovers an exact prior-Run Update from the private ledger, rejects changed content under the same command ID, returns the existing terminal receipt, and replays every Run. Incoming terminal state, malformed publication state, substituted Message identity, oversized state, and oversized host metadata fail closed through focused compiled-boundary tests.
+The forced cyclic User Task witness lowers only the Event History event threshold. It crosses exactly three Runs and two Continue-As-New boundaries, carries one open User Task through each boundary, preserves its semantic occurrence identity, recovers an exact prior-Run Update from the private ledger, rejects changed content under the same command ID, returns the closed v1 public receipt in its private terminal envelope, and replays every Run. Incoming terminal state, malformed publication state, substituted Message identity, oversized state, and oversized host metadata fail closed through focused compiled-boundary tests.
 
-This is not production activation or closure evidence. Ordinary two-argument client starts do not enroll in the patch and remain single-Run. Product 1 cross-Run recovery, publication segment traversal, full Message/Timer/effect rollover evidence, terminal receipt migration, deployment admission, and the complete capacity matrix remain open under the Workflow-chain proposal.
+Product 1 command clients address the Workflow chain by Workflow ID, validate the recovery Query's complete identity echo, preserve exact retry/conflict precedence, and keep Run identity private. Production Message witnesses independently lock the Initial envelope, patch history, closed public receipt, exact Signal payloads, and ordered private recovery entries. Publication segment traversal, full Message/Timer/effect forced rollover evidence, deployment admission, and the complete capacity matrix remain open under the Workflow-chain proposal.
 
 ## Command-ingress resolution
 
-For one well-formed command and known hosting Process address:
+For one well-formed Update command and known hosting Process address:
 
-1. derive the content-bound Update ID;
-2. execute the completion Update and return `semantic` if it completes;
-3. if Temporal reports the execution closed or not found, look up that exact Update ID first;
-4. if the retained Update exists, return its original semantic result;
-5. otherwise read and validate the retained completed Process receipt;
-6. return `processClosed` only for that valid completed receipt;
-7. return `processUnknown` only when neither execution nor receipt remains retained;
-8. propagate every other host or transport failure as infrastructure failure.
+1. derive the content-bound Update ID and v1 recovery identity from the complete canonical stimulus;
+2. execute the Update and return `semantic` if it completes;
+3. after only an indeterminate Run-boundary result, Query the latest Run by Workflow ID with the exact recovery identity;
+4. return `semantic` for `resolved`, throw `BpmnCommandIdentityConflict` for `identityConflict`, and retry the same content-bound Update for `unknownWhileActive`;
+5. return `processClosed` only for `terminalWithoutEntry` with a validated terminal receipt;
+6. throw typed `BpmnWorkflowChainCapacityExhausted` for `capacityFailedWithoutEntry`;
+7. if the recovery Query is absent on an exact retained pre-v1 Workflow, use the legacy retained-Update and terminal-result decoder path;
+8. return `processUnknown` only when neither the Workflow chain nor a retained terminal result remains, and propagate every other host or transport failure as infrastructure failure.
 
-Looking up the Update result before classifying closure closes the race where Temporal accepted the command but the caller lost its response as the Workflow completed.
+This chain-relative Query closes the response-loss race without depending on one Run's SDK handle. Message ingress sends its Signal once, polls the existing result Query while active, and enters the same identity-bound recovery path only when latest-Run routing becomes indeterminate.
 
 The hosting/root Process-instance ID selects the Workflow and validates its retained receipt. The completion stimulus independently retains the semantic task occurrence ID, which may belong to a distinct called Process hosted inside that Workflow. Client admission validates both shapes but does not require those identities to match; the semantic core accepts only the exact live task occurrence and rejects an unrelated occurrence without routing to another Workflow.
 
@@ -199,7 +189,7 @@ The client validates the stimulus before Signal submission. A malformed or insta
 
 An exact repeated Signal is coalesced to the original record and never causes a second core transition. Reuse of the command ID with a different well-formed Message stimulus records identity conflict without throwing from the Signal handler. Wrong subscription identity, wrong channel, pre-activation delivery, and stale delivery are ordinary semantic rejections because they are well-formed inputs that reach the core.
 
-If the Workflow closes before the client receives its Query result, the completed receipt's ordered `messageDeliveryRecords` recover the exact semantic outcome or request failure. If no matching record exists, the ordinary `processClosed`/`processUnknown` lifecycle classification applies. Signal transport acceptance alone never implies BPMN Message consumption.
+If the Workflow closes before the client receives its Query result, the private terminal envelope's ordered content-bound recovery entries recover the exact semantic outcome or identity conflict. The closed v1 public receipt contains no host ledger. Exact pre-v1 results normalize through the decode-only legacy seam and preserve their private Message records. If no matching entry or legacy record exists, the ordinary `processClosed`/`processUnknown` lifecycle classification applies. Signal transport acceptance alone never implies BPMN Message consumption.
 
 ## Conformance evidence extraction
 
@@ -278,7 +268,7 @@ Excluded from this specification:
 - keeping a Workflow alive solely to reject future commands;
 - starting or reopening a Process through command ingress;
 - Workflow-ID reuse, Update-With-Start, and host-derived semantic identity;
-- production-default Continue-As-New and Product 1 cross-Run command-result lookup beyond the explicit first-green checkpoint;
+- publication-segment traversal, forced Message/Timer/effect rollover evidence, deployment admission, and the complete approved capacity matrix beyond the implemented production chain and cyclic User Task witness;
 - host cancellation, termination, timeout, reset, pause, failure, and operator-repair semantics beyond the exact incident-gated root command; that command completes its Workflow normally and does not use Temporal cancellation or termination;
 - Activities and effects beyond their separate capsules, Message payloads, key-based/global Message routing, modeled Message throw, Search Attributes, forms, variables beyond the current observation, task discovery, and timer forms or races beyond the separately specified exact Intermediate Catch Timer capsule.
 
@@ -288,6 +278,6 @@ Reconsider the selected account only if:
 
 - a required API consumer needs result lookup beyond Temporal retention;
 - a future semantic profile permits commands after Process completion;
-- Continue-As-New becomes necessary and accepted-result lookup cannot remain transparent across Runs;
+- a required publication, Message, Timer, effect, or deployment case cannot preserve the approved transparent cross-Run contract;
 - a platform limitation prevents reliable accepted-handler draining or exact Update-result recovery;
 - an authorization or audit requirement needs an independently retained command ledger.

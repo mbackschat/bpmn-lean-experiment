@@ -71,13 +71,13 @@ The terminal adapter contract is additive:
 
 ```ts
 interface CancelledProcessReceipt {
+  readonly format: "bpmn-lean.process-terminal-receipt.v1";
   readonly definition: SemanticProcessIdentity;
   readonly processId: string;
   readonly processInstanceId: string;
   readonly finalState: StateObservation & {
     readonly status: ProcessStatus.Cancelled;
   };
-  readonly messageDeliveryRecords: MessageDeliveryRecord[];
 }
 
 type TerminalProcessReceipt =
@@ -85,7 +85,7 @@ type TerminalProcessReceipt =
   | CancelledProcessReceipt;
 ```
 
-`CompletedProcessReceipt` retains its exact existing shape and bytes. The Workflow result and `ProcessCommandResultKind.ProcessClosed.receipt` widen only to `TerminalProcessReceipt`. The cancellation Update itself returns the unchanged semantic `CommandOutcome.Committed`; the receipt describes subsequent host closure.
+Completed and cancelled receipts now share the closed v1 format and expose no host command ledger. The raw Workflow result is opaque and the adapter privately decodes the v1 terminal envelope or the exact pre-v1 receipt. `ProcessCommandResultKind.ProcessClosed.receipt` remains the public `TerminalProcessReceipt`. The cancellation Update itself returns the unchanged semantic `CommandOutcome.Committed`; the receipt describes subsequent host closure.
 
 ## Selected semantic algorithm
 
@@ -154,7 +154,7 @@ The exact Stage 1 incident profile and the exact cancellation successor select t
 
 After a committed cancellation, the Workflow drains already accepted handlers and returns `CancelledProcessReceipt` through ordinary Workflow completion. It does not request Temporal Workflow cancellation or termination, create a Cancellation Scope as semantic authority, cancel an Activity, inspect Event History, or derive cancellation from Workflow absence. The incident state has no in-flight Activity.
 
-An exact Update retry recovers the retained semantic result before terminal classification. A distinct later command returns `processClosed` with the cancelled receipt. Worker replacement between incident publication and cancellation must preserve Query state, accepted-result recovery, terminal receipt, and replay. The retained history must contain Update acceptance/completion and Workflow completion, with no Workflow cancellation-request, cancellation, or termination Event family.
+An exact Update retry recovers the retained semantic result through the identity-bound Workflow-chain recovery Query before terminal classification. A distinct later command returns `processClosed` with the cancelled receipt. Worker replacement between incident publication and cancellation must preserve Query state, accepted-result recovery, terminal receipt, and replay. The retained history must contain Update acceptance/completion and Workflow completion, with no Workflow cancellation-request, cancellation, or termination Event family.
 
 The nearest adapter counterexamples are native Workflow cancellation, returning ordinary completed state, closing before the accepted Update result is durable, classifying a cancelled receipt as unknown, and bypassing the semantic core to delete the incident. Each receives a direct history, client, or mutation discriminator.
 
@@ -202,7 +202,7 @@ Excluded:
 
 ## Versioning consequences
 
-This is one additive pre-release profile and strict-wire replacement. Existing profile, scenario, BPMN source, checked graph, IL, canonical result, CIB evidence, semantic result, completed receipt, and retained history bytes remain exact. The new profile adds string Process-start data and cancellation capabilities while reusing the predecessor's executable Program shape. The new enum members force exhaustive consumers to compile against the new domain, but old cases produce their prior bytes.
+This is one additive pre-release profile and strict-wire replacement. Existing profile, scenario, BPMN source, checked graph, IL, canonical result, CIB evidence, semantic result, and retained semantic behavior remain exact. The later shared host-lifecycle migration adds the closed v1 receipt discriminator, removes the Message ledger from every public terminal receipt, and retains the exact old result only through a decode-only adapter seam. The cancellation profile adds string Process-start data and cancellation capabilities while reusing the predecessor's executable Program shape. The semantic enum members still force exhaustive consumers to compile against their domain.
 
 Implementation extracted terminal receipt construction, incident cancellation handling, CIB scenario validation, CIB external-termination projection, cancellation artifact projection, and the differential adapter-lifecycle relation into cohesive owners before extending their former near-limit aggregators. The [capsule cost ledger](../CAPSULE-COST-LEDGER.md) records the reproducible implementation boundary and comparison.
 
@@ -237,7 +237,7 @@ Re-open this specification and return to research or redesign if:
 - a unique root cannot be derived from valid state without caller-supplied scope identity;
 - shared cleanup cannot remove incident and called-tree owners symmetrically in Lean and TypeScript without changing already admitted behavior;
 - the pinned CIB probe fails cleanup, externally terminated history, or committed-variable preservation;
-- ordinary Temporal completion cannot retain a cancelled receipt and accepted Update result without changing old receipt bytes or replay;
+- ordinary Temporal completion cannot retain a cancelled receipt and accepted Update result through the versioned terminal envelope and exact decode-only legacy seam;
 - retry/cancel concurrency requires hidden priority rather than explicit queue order;
 - implementation requires BPMN source, checked graph, or IL changes, native Temporal cancellation, Product 2 state, arbitrary in-flight cancellation, compensation, Transaction semantics, a second incident, or host retry facts;
 - old-profile artifacts or histories must change rather than remain additive and byte-stable;

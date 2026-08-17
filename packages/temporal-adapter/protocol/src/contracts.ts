@@ -54,6 +54,8 @@ export const bpmnBoundedScopeSchedulerUnavailableFailureType =
 export const bpmnMonitoredActivitySchedulerUnavailableFailureType =
   "BpmnMonitoredActivitySchedulerUnavailable";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
+export const processTerminalReceiptFormatV1 =
+  "bpmn-lean.process-terminal-receipt.v1" as const;
 
 export enum TemporalHostCapabilityResultKind {
   Admitted = "admitted",
@@ -103,23 +105,23 @@ export type TemporalHostCapabilityResult =
     }>;
 
 export type CompletedProcessReceipt = DeepReadonly<{
+  format: typeof processTerminalReceiptFormatV1;
   definition: SemanticProcessIdentity;
   processId: string;
   processInstanceId: string;
   finalState: StateObservation & {
     status: ProcessStatus.Completed;
   };
-  messageDeliveryRecords: MessageDeliveryRecord[];
 }>;
 
 export type CancelledProcessReceipt = DeepReadonly<{
+  format: typeof processTerminalReceiptFormatV1;
   definition: SemanticProcessIdentity;
   processId: string;
   processInstanceId: string;
   finalState: StateObservation & {
     status: ProcessStatus.Cancelled;
   };
-  messageDeliveryRecords: MessageDeliveryRecord[];
 }>;
 
 export type TerminalProcessReceipt =
@@ -196,7 +198,11 @@ export type ProcessCommandResult =
 export type BpmnProcessWorkflow = (
   start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
-) => Promise<TerminalProcessReceipt>;
+  hostInput?: import("./workflow-continuation.js").BpmnWorkflowHostInputV1,
+  carriedState?: import("./workflow-continuation.js").BpmnWorkflowContinuationStateV1,
+  carriedRecovery?: import("./workflow-continuation.js").BpmnWorkflowContinuationRecoveryV1,
+  carriedPublication?: import("./workflow-continuation.js").BpmnWorkflowContinuationPublicationV1,
+) => Promise<unknown>;
 
 export type BpmnCompleteUserTaskUpdateArguments = [
   stimulus: CompleteUserTaskInstanceStimulus,

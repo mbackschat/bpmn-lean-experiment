@@ -39,6 +39,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -61,6 +62,7 @@ import {
 import {
   acceptedCompletionOrder,
   assertNoNonUpdateBpmnHostEvents,
+  assertWorkflowChainPatchHistory,
   assertUpdatesCompleteBeforeWorkflow,
 } from "./temporal-history-facts.ts";
 import {
@@ -224,11 +226,11 @@ describe("bounded Terminate End Temporal refinement", { concurrency: false }, ()
           outcome: CommandOutcome.Committed,
         },
       );
-      const receipt = await withDeadline(
-        handle.result(),
+      const receipt = (await withDeadline(
+        readTestProcessTerminalResult(handle),
         operationDeadlineMs,
-        "Terminate End completed receipt",
-      );
+        "Terminate End terminal result",
+      )).receipt;
       assert.equal(isCompletedProcessReceipt(receipt), true);
       assert.deepEqual(receipt.finalState, expected.trace.at(-1));
 
@@ -238,7 +240,8 @@ describe("bounded Terminate End Temporal refinement", { concurrency: false }, ()
         "Terminate End history fetch",
       );
       const typedHistory = history as TemporalHistory;
-      assert.equal(typedHistory.events.length, exactHistoryEventCount);
+      assertWorkflowChainPatchHistory(typedHistory, 1);
+      assert.equal(typedHistory.events.length, exactHistoryEventCount + 2);
       assert.deepEqual(
         acceptedCompletionOrder(typedHistory),
         [trigger.commandId, stale.commandId, outer.commandId],
@@ -320,6 +323,9 @@ describe("bounded Terminate End Temporal refinement", { concurrency: false }, ()
         "Terminate End mutation receipt",
       );
       assert.equal(isCompletedProcessReceipt(receipt), true);
+      if (!isCompletedProcessReceipt(receipt)) {
+        throw new TypeError("Terminate End mutation returned no receipt");
+      }
       assert.equal(receipt.finalState.status, ProcessStatus.Completed);
       const correctAfterTrigger = expected.trace.at(-1);
       assert.equal(correctAfterTrigger?.kind, CanonicalObservationKind.State);

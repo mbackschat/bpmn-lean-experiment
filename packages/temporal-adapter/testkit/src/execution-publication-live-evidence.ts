@@ -50,6 +50,7 @@ import {
 import { withDeadline } from "./contracts.js";
 import type { TemporalHistory } from "./contracts.js";
 import { createCachedLocalEnvironment } from "./ephemeral-server.js";
+import { readTestProcessTerminalResult } from "./private-process-handle.js";
 import { requireStartStimulus } from "./runner-support.js";
 import { startScenarioWorkflow } from "./runner-workflow-start.js";
 
@@ -151,11 +152,11 @@ async function runEvidence(
     worker = undefined;
     worker = await startWorker(environment, bundle, "publication-worker-2");
     await requireCommittedCompletion(environment, workflowId, parallel, 2);
-    const receipt = await withDeadline(
-      handle.result(),
+    const receipt = (await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
-      "parallel publication Workflow completion",
-    );
+      "parallel publication Workflow terminal result",
+    )).receipt;
     if (!isCompletedProcessReceipt(receipt)) {
       throw new TypeError("parallel publication Workflow did not complete");
     }
@@ -281,11 +282,11 @@ async function runCycleEvidence(
   for (let index = 1; index < input.scenario.stimuli.length; index += 1) {
     await requireCommittedCompletion(environment, workflowId, input, index);
   }
-  if (!isCompletedProcessReceipt(await withDeadline(
-    handle.result(),
+  if (!isCompletedProcessReceipt((await withDeadline(
+    readTestProcessTerminalResult(handle),
     operationDeadlineMs,
-    "cyclic publication Workflow completion",
-  ))) {
+    "cyclic publication Workflow terminal result",
+  )).receipt)) {
     throw new TypeError("cyclic publication Workflow did not complete");
   }
   const terminal = requireAvailable(await observe(

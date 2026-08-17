@@ -40,6 +40,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -283,11 +284,11 @@ describe("bounded Call Activity Temporal refinement", { concurrency: false }, ()
           outcome: CommandOutcome.Committed,
         },
       );
-      const receipt = await withDeadline(
-        handle.result(),
+      const receipt = (await withDeadline(
+        readTestProcessTerminalResult(handle),
         operationDeadlineMs,
-        "Call Activity completed receipt",
-      );
+        "Call Activity terminal result",
+      )).receipt;
       assert.equal(isCompletedProcessReceipt(receipt), true);
       assert.equal(receipt.processId, callerProcessId);
       assert.equal(receipt.processInstanceId, ordinaryInstanceId);

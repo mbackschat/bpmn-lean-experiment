@@ -14,8 +14,8 @@ import type {
 import {
   bpmnOpenUserTasksQueryName,
   bpmnUserTaskDetailQueryName,
+  decodeWorkflowTerminalResult,
   processWorkflowId,
-  requireTerminalProcessReceipt,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -195,13 +195,11 @@ async function classifyAbsence(
   | TemporalProcessWorkObservationStatus.Unavailable
 > {
   try {
-    const receipt = requireTerminalProcessReceipt(
-      await withDeadline(
-        handle.result(),
-        operationDeadlineMs,
-        "retained completed Process receipt",
-      ),
-    );
+    const { receipt } = decodeWorkflowTerminalResult(await withDeadline(
+      handle.result(),
+      operationDeadlineMs,
+      "retained completed Process result",
+    ));
     return receipt.processInstanceId === hostingProcessInstanceId
       ? TemporalProcessWorkObservationStatus.Closed
       : TemporalProcessWorkObservationStatus.Unavailable;

@@ -469,7 +469,7 @@ The complete feature-by-feature witness, mutation, durable-history, and replay i
 
 The optional `test:timer-time-skipping` command runs the same exact timer result and durable-history assertion on Temporal's time-skipping test server. It is calibration only and is excluded from `verify.sh`; it cannot replace or weaken the full-server duration, Worker absence, history, replay, or cleanup evidence.
 
-No Event History fixture is committed. No legacy IR reader or format migration path exists during pre-release. The pre-release infrastructure guard permits only the exact `bpmn-workflow-chain-v1` patch enrollment, requires ordinary two-argument starts to stay outside it, and locks its stable protocol identity. The explicit-input first-green witness forces two Continue-As-New boundaries and replays all three Runs; it is not production-default activation or a retained-history baseline.
+No Event History fixture is committed. No legacy IR reader or general format migration path exists during pre-release. The pre-release infrastructure guard permits only the exact `bpmn-workflow-chain-v1` patch enrollment, requires retained direct two-argument starts to stay outside it, requires Product 1 starts to supply the exact production Initial host envelope, and locks its stable protocol identity. The first-green witness lowers only the Event History threshold, forces two Continue-As-New boundaries, and replays all three Runs. Production Message histories independently require the patch marker and exact start envelope, but no disposable history is a retained baseline.
 
 When the owner approves the first immutable deployment/history baseline, retained histories and compatibility paths must be introduced through red replay tests with explicit provenance, version markers, support windows, and removal criteria.
 
@@ -562,7 +562,7 @@ The prepared-pipeline aggregate ceiling remains a hard assertion on hosted Ubunt
 - version-suffixed compiler routing;
 - retired semantic-operation vocabulary in active code and maintained documentation, except exact allowlisted removal-history contexts;
 - committed Temporal history JSON fixtures;
-- Temporal Workflow patch branches.
+- Temporal Workflow patch branches other than the exact `bpmn-workflow-chain-v1` enrollment.
 
 The general representation checks apply to current source and executable tests. The retired-operation check additionally scans maintained Markdown under `docs/`, excludes `docs/archived/`, and permits only the exact current removal-history contexts owned by the implementation map and profile-parameterized admission specification.
 

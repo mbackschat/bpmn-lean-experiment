@@ -1,12 +1,10 @@
 /**
  * Production-facing Process start, User Task Update, and Message Signal ingress.
  *
- * Resolution after a failed Update lookup follows the lifecycle contract: retained Update result,
- * completed receipt, then unknown Process.
+ * Indeterminate command transport is resolved against the latest Workflow-chain recovery Query.
  */
 import type {
   CanonicalObservation,
-  CommandOutcome,
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
   DeliverMessageStimulus,
@@ -16,40 +14,33 @@ import type {
 import {
   StimulusKind,
   isWellFormedStimulus,
-  sameStimulus,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
-import {
-  WorkflowNotFoundError,
-} from "@temporalio/client";
 import type {
   WorkflowClient,
-  WorkflowHandle,
 } from "@temporalio/client";
 
 import {
+  BpmnWorkflowHostInputKind,
   TemporalHostCapabilityResultKind,
+  WorkflowChainBudgetKind,
   bpmnTraceQueryName,
   bpmnCompleteUserTaskUpdateName,
   bpmnDeliverMessageSignalName,
   bpmnMessageDeliveryResultQueryName,
   bpmnOpenUserTasksQueryName,
   bpmnUserTaskDetailQueryName,
-  MessageDeliveryResolutionKind,
   bpmnProcessWorkflowType,
-  ProcessCommandResultKind,
+  bpmnWorkflowContinuationV1,
+  requireWorkflowChainInitialArgumentBudgets,
+  workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
-  MessageDeliveryResolution,
   ProcessCommandResult,
-  TerminalProcessReceipt,
   TemporalHostAdmissionFailure,
   UserTaskDetail,
   UserTaskDetailRequest,
-} from "@bpmn-lean/temporal-protocol";
-import {
-  contentBoundUpdateId,
 } from "@bpmn-lean/temporal-protocol";
 import {
   assessTemporalHostCapability,
@@ -57,15 +48,20 @@ import {
 import {
   processWorkflowId,
 } from "@bpmn-lean/temporal-protocol";
-import {
-  requireTerminalProcessReceipt,
-  semanticCommandResult,
-} from "@bpmn-lean/temporal-protocol";
 import { withDeadline } from "@bpmn-lean/temporal-protocol";
 import { resolveSemanticUpdate } from "./semantic-update-client.js";
+import {
+  BpmnCommandIdentityConflict,
+  BpmnWorkflowChainCapacityExhausted,
+  resolveWorkflowChainMessage,
+} from "./workflow-chain-recovery-client.js";
+
+export {
+  BpmnCommandIdentityConflict,
+  BpmnWorkflowChainCapacityExhausted,
+};
 
 const operationDeadlineMs = 5_000;
-const messageResolutionPollMs = 20;
 
 /** Reads the committed canonical trace of one known semantic Process instance. */
 export async function readBpmnProcessTrace(
@@ -113,10 +109,6 @@ export async function readUserTaskDetail(
 
 export class BpmnMessageIngressInvalid extends TypeError {
   override readonly name = "BpmnMessageIngressInvalid";
-}
-
-export class BpmnCommandIdentityConflict extends Error {
-  override readonly name = "BpmnCommandIdentityConflict";
 }
 
 export enum BpmnProcessAdmissionResultKind {
@@ -209,6 +201,7 @@ export async function startBpmnProcess(
     };
   }
   const processInstanceId = start.instanceId;
+  requireWorkflowChainInitialArgumentBudgets(start, semanticProcess);
   await withDeadline(
     client.start<BpmnProcessWorkflow>(
       bpmnProcessWorkflowType,
@@ -216,7 +209,13 @@ export async function startBpmnProcess(
         taskQueue: options.taskQueue,
         workflowId: processWorkflowId(processInstanceId),
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [start, semanticProcess],
+        args: [start, semanticProcess, {
+          protocol: bpmnWorkflowContinuationV1,
+          kind: BpmnWorkflowHostInputKind.Initial,
+          eventHistoryEventLimit: workflowChainProductionLimit(
+            WorkflowChainBudgetKind.EventHistoryEvents,
+          ),
+        }],
       },
     ),
     operationDeadlineMs,
@@ -260,33 +259,13 @@ export async function submitUserTaskCompletionAtWorkflowId(
       "Completion command must contain one well-formed task occurrence",
     );
   }
-  const updateId = contentBoundUpdateId(stimulus);
-  const handle = client.getHandle<BpmnProcessWorkflow>(workflowId);
   return resolveSemanticUpdate({
-    commandId: stimulus.commandId,
+    client,
+    workflowId,
     processInstanceId: hostingProcessInstanceId,
-    updateId,
-    execute: () => withDeadline(
-      handle.executeUpdate<
-        CommandOutcome,
-        [CompleteUserTaskInstanceStimulus]
-      >(bpmnCompleteUserTaskUpdateName, {
-        args: [stimulus],
-        updateId,
-      }),
-      operationDeadlineMs,
-      `Workflow Update ${updateId}`,
-    ),
-    retained: () => withDeadline(
-      handle.getUpdateHandle<CommandOutcome>(updateId).result(),
-      operationDeadlineMs,
-      `retained Workflow Update ${updateId}`,
-    ),
-    completedReceipt: () => withDeadline(
-      handle.result(),
-      operationDeadlineMs,
-      "retained completed Process receipt",
-    ),
+    stimulus,
+    updateName: bpmnCompleteUserTaskUpdateName,
+    operation: "User Task completion",
   });
 }
 
@@ -310,63 +289,15 @@ export async function submitMessageDeliveryAtWorkflowId(
   stimulus: unknown,
 ): Promise<ProcessCommandResult> {
   const delivery = requireMessageDelivery(processInstanceId, stimulus);
-  const handle = client.getHandle<BpmnProcessWorkflow>(workflowId);
-  try {
-    await withDeadline(
-      handle.signal<
-        [DeliverMessageStimulus]
-      >(bpmnDeliverMessageSignalName, delivery),
-      operationDeadlineMs,
-      `Workflow Signal ${delivery.commandId}`,
-    );
-  } catch (error: unknown) {
-    if (!(error instanceof WorkflowNotFoundError)) {
-      throw error;
-    }
-    return resolveClosedMessageDelivery(
-      handle,
-      processInstanceId,
-      delivery,
-    );
-  }
-
-  const deadline = Date.now() + operationDeadlineMs;
-  while (Date.now() < deadline) {
-    try {
-      const resolution = await withDeadline(
-        handle.query<
-          MessageDeliveryResolution | null,
-          [DeliverMessageStimulus]
-        >(
-          bpmnMessageDeliveryResultQueryName,
-          delivery,
-        ),
-        Math.max(1, deadline - Date.now()),
-        `Message delivery Query ${delivery.commandId}`,
-      );
-      if (
-        resolution !== null &&
-        resolution.kind !== MessageDeliveryResolutionKind.Pending
-      ) {
-        return resolveMessageDeliveryRecord(resolution);
-      }
-    } catch (error: unknown) {
-      if (error instanceof WorkflowNotFoundError) {
-        return resolveClosedMessageDelivery(
-          handle,
-          processInstanceId,
-          delivery,
-        );
-      }
-      throw error;
-    }
-    await new Promise<void>((resolve) =>
-      setTimeout(resolve, messageResolutionPollMs)
-    );
-  }
-  throw new Error(
-    `Message delivery ${delivery.commandId} did not resolve before the client deadline`,
-  );
+  return resolveWorkflowChainMessage({
+    client,
+    workflowId,
+    processInstanceId,
+    stimulus: delivery,
+    signalName: bpmnDeliverMessageSignalName,
+    resultQueryName: bpmnMessageDeliveryResultQueryName,
+    operation: "Message delivery",
+  });
 }
 
 function requireMessageDelivery(
@@ -383,79 +314,4 @@ function requireMessageDelivery(
     );
   }
   return stimulus;
-}
-
-async function resolveClosedMessageDelivery(
-  handle: WorkflowHandle<BpmnProcessWorkflow>,
-  processInstanceId: string,
-  stimulus: DeliverMessageStimulus,
-): Promise<ProcessCommandResult> {
-  try {
-    const receipt = requireTerminalProcessReceipt(
-      await withDeadline(
-        handle.result(),
-        operationDeadlineMs,
-        "retained completed Process receipt",
-      ),
-    );
-    if (receipt.processInstanceId !== processInstanceId) {
-      throw new TypeError(
-        "Temporal Workflow receipt does not match the addressed Process instance",
-      );
-    }
-    const retained = receipt.messageDeliveryRecords.find(
-      ({ stimulus: candidate }) => sameStimulus(candidate, stimulus),
-    );
-    if (retained !== undefined) {
-      return resolveMessageDeliveryRecord(retained);
-    }
-    return closedCommandResult(stimulus, receipt);
-  } catch (error: unknown) {
-    if (error instanceof WorkflowNotFoundError) {
-      return {
-        kind: ProcessCommandResultKind.ProcessUnknown,
-        commandId: stimulus.commandId,
-        processInstanceId,
-      };
-    }
-    throw error;
-  }
-}
-
-function resolveMessageDeliveryRecord(
-  resolution: Exclude<
-    MessageDeliveryResolution,
-    { kind: typeof MessageDeliveryResolutionKind.Pending }
-  >,
-): ProcessCommandResult {
-  switch (resolution.kind) {
-    case MessageDeliveryResolutionKind.Semantic:
-      return semanticCommandResult(
-        resolution.stimulus.commandId,
-        resolution.outcome,
-      );
-    case MessageDeliveryResolutionKind.RequestFailure:
-      throw new BpmnCommandIdentityConflict(
-        `Command ID ${resolution.stimulus.commandId} was reused with a different stimulus`,
-      );
-    default:
-      return assertNever(resolution);
-  }
-}
-
-function closedCommandResult(
-  stimulus: DeliverMessageStimulus,
-  receipt: TerminalProcessReceipt,
-): ProcessCommandResult {
-  return {
-    kind: ProcessCommandResultKind.ProcessClosed,
-    commandId: stimulus.commandId,
-    receipt,
-  };
-}
-
-function assertNever(value: never): never {
-  throw new TypeError(
-    `Unsupported Message delivery resolution: ${String(value)}`,
-  );
 }

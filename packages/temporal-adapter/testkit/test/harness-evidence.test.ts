@@ -24,6 +24,7 @@ import type {
 import {
   isCompletedProcessReceipt,
   durableUpdateOutcomes,
+  processTerminalReceiptFormatV1,
   reconcileHarnessTraceEvidence,
 } from "@bpmn-lean/temporal-testkit";
 import type {
@@ -111,6 +112,7 @@ const trace: ReadonlyArray<CanonicalObservation> = [
   completedState,
 ];
 const receipt: CompletedProcessReceipt = {
+  format: processTerminalReceiptFormatV1,
   definition: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "profile",
@@ -122,7 +124,6 @@ const receipt: CompletedProcessReceipt = {
   processId: "Process_1",
   processInstanceId: "Instance_1",
   finalState: completedState,
-  messageDeliveryRecords: [],
 };
 
 test("requires canonical Process variables in a completed receipt", () => {

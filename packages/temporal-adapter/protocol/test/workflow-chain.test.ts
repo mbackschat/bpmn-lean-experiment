@@ -259,6 +259,7 @@ function capacityFailure() {
 
 function terminalReceipt() {
   return {
+    format: "bpmn-lean.process-terminal-receipt.v1",
     definition: {
       compiler: "bpmn-source-semantic-process",
       semanticProfile: "profile",
@@ -282,6 +283,5 @@ function terminalReceipt() {
       enabledInteractions: [],
       logicalTimeMs: 0,
     },
-    messageDeliveryRecords: [],
   } as const;
 }

@@ -25,6 +25,9 @@ import type {
   CompletedProcessReceipt,
 } from "./contracts.js";
 import {
+  processTerminalReceiptFormatV1,
+} from "@bpmn-lean/temporal-protocol";
+import {
   bpmnCompleteUserTaskUpdate,
   bpmnOpenUserTasksQuery,
   bpmnTraceQuery,
@@ -78,11 +81,11 @@ export async function runBpmnProcessCompletionDataBypassMutation(
       };
       trace.push(fabricatedFinalState);
       receipt = {
+        format: processTerminalReceiptFormatV1,
         definition: semanticProcess.identity,
         processId: semanticProcess.processId,
         processInstanceId: start.instanceId,
         finalState: fabricatedFinalState,
-        messageDeliveryRecords: [],
       };
       return CommandOutcome.Committed;
     },

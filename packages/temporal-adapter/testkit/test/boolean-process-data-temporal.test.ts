@@ -29,6 +29,7 @@ import {
   decodeJsonPayload,
   durableUpdateOutcomes,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   historyEvents as decodedHistoryEvents,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
@@ -53,6 +54,7 @@ import type {
 } from "./boolean-process-data-fixture.ts";
 import {
   acceptedCompletionOrder,
+  assertWorkflowChainPatchHistory,
   assertUpdatesCompleteBeforeWorkflow,
   historyEvents,
 } from "./temporal-history-facts.ts";
@@ -208,11 +210,11 @@ async function finishNewProfileAfterReplacement(
     CommandOutcome.Committed,
   );
 
-  const receipt = await withDeadline(
-    handle.result(),
+  const receipt = (await withDeadline(
+    readTestProcessTerminalResult(handle),
     operationDeadlineMs,
-    "Boolean Process-data completed receipt",
-  );
+    "Boolean Process-data terminal result",
+  )).receipt;
   assert.equal(isCompletedProcessReceipt(receipt), true);
   if (!isCompletedProcessReceipt(receipt)) {
     throw new TypeError("Boolean Process-data Workflow returned no receipt");
@@ -243,7 +245,7 @@ async function finishNewProfileAfterReplacement(
     fixture.completion.commandId,
   ]);
   assertUpdatesCompleteBeforeWorkflow(history, 1);
-  assertNoAddedHostMechanism(history, "Boolean completion");
+  assertNoAddedHostMechanism(history, "Boolean completion", 1);
   return { history, replayHistory: rawHistory };
 }
 
@@ -311,7 +313,7 @@ async function executeOldProfileRefusal(
       outcome: CommandOutcome.Committed,
     },
   );
-  const receipt = await handle.result();
+  const receipt = (await readTestProcessTerminalResult(handle)).receipt;
   assert.equal(isCompletedProcessReceipt(receipt), true);
   if (!isCompletedProcessReceipt(receipt)) {
     throw new TypeError("old-profile refusal Workflow returned no receipt");
@@ -336,7 +338,7 @@ async function executeOldProfileRefusal(
     fixture.validCompletion.commandId,
   ]);
   assertUpdatesCompleteBeforeWorkflow(history, 2);
-  assertNoAddedHostMechanism(history, "old-profile Boolean refusal");
+  assertNoAddedHostMechanism(history, "old-profile Boolean refusal", 1);
   return { history, replayHistory, workflowId: handle.workflowId };
 }
 
@@ -387,6 +389,7 @@ async function assertMutationDiscriminators(
   assertNoAddedHostMechanism(
     stringification.history,
     "Boolean stringification mutation",
+    0,
   );
   assert.equal(stringification.replayed, true);
 
@@ -547,6 +550,7 @@ function lastState(trace: ScenarioResult["trace"]): StateObservation {
 function assertNoAddedHostMechanism(
   history: TemporalHistory,
   label: string,
+  workflowChainPatchCount: 0 | 1,
 ): void {
   for (const attributesName of [
     "workflowExecutionSignaledEventAttributes",
@@ -567,7 +571,6 @@ function assertNoAddedHostMechanism(
     "workflowExecutionCanceledEventAttributes",
     "requestCancelExternalWorkflowExecutionInitiatedEventAttributes",
     "externalWorkflowExecutionCancelRequestedEventAttributes",
-    "upsertWorkflowSearchAttributesEventAttributes",
   ]) {
     assert.equal(
       historyEvents(history, attributesName).length,
@@ -575,4 +578,5 @@ function assertNoAddedHostMechanism(
       `${label} unexpectedly contains ${attributesName}`,
     );
   }
+  assertWorkflowChainPatchHistory(history, workflowChainPatchCount);
 }

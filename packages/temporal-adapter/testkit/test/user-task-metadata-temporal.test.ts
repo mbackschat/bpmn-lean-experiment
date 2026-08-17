@@ -24,16 +24,20 @@ import type { WorkflowHandle } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 
 import {
+  BpmnWorkflowHostInputKind,
   BpmnProcessStartResultKind,
   ProcessCommandResultKind,
+  WorkflowChainBudgetKind,
   asArray,
   asRecord,
   bpmnSemanticTaskQueue,
+  bpmnWorkflowContinuationV1,
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   decodeJsonPayload,
   durableUpdateOutcomes,
   getTestProcessHandle,
+  readTestProcessTerminalResult,
   historyEvents,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
@@ -41,6 +45,7 @@ import {
   reconcileHarnessTraceEvidence,
   startBpmnProcess,
   submitUserTaskCompletion,
+  workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-testkit";
 import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
 
@@ -58,6 +63,7 @@ import type {
 import {
   acceptedCompletionOrder,
   assertNoNonUpdateBpmnHostEvents,
+  assertWorkflowChainPatchHistory,
   assertUpdatesCompleteBeforeWorkflow,
 } from "./temporal-history-facts.ts";
 import {
@@ -220,11 +226,11 @@ async function completeMetadataProcess(
     ).result(),
     CommandOutcome.Committed,
   );
-  const receipt = await withDeadline(
-    handle.result(),
+  const receipt = (await withDeadline(
+    readTestProcessTerminalResult(handle),
     operationDeadlineMs,
-    "User Task metadata completed receipt",
-  );
+    "User Task metadata terminal result",
+  )).receipt;
   assert.equal(isCompletedProcessReceipt(receipt), true);
   if (!isCompletedProcessReceipt(receipt)) {
     throw new TypeError("User Task metadata Workflow returned no receipt");
@@ -301,7 +307,7 @@ async function runMetadataFreeControl(
       outcome: CommandOutcome.Committed,
     },
   );
-  const receipt = await handle.result();
+  const receipt = (await readTestProcessTerminalResult(handle)).receipt;
   assert.equal(isCompletedProcessReceipt(receipt), true);
   if (!isCompletedProcessReceipt(receipt)) {
     throw new TypeError("metadata-free control returned no receipt");
@@ -440,11 +446,11 @@ async function runSourceVariationControl(
       outcome: CommandOutcome.Committed,
     },
   );
-  const receipt = await withDeadline(
-    handle.result(),
+  const receipt = (await withDeadline(
+    readTestProcessTerminalResult(handle),
     operationDeadlineMs,
-    "source-variation completed receipt",
-  );
+    "source-variation terminal result",
+  )).receipt;
   assert.equal(isCompletedProcessReceipt(receipt), true);
   if (!isCompletedProcessReceipt(receipt)) {
     throw new TypeError("source-variation Workflow returned no receipt");
@@ -498,12 +504,25 @@ function assertExactWorkflowStartHistory(
   assert.ok(event !== undefined);
   const input = asRecord(event.attributes.input, "Workflow start input");
   const payloads = asArray(input.payloads, "Workflow start payloads");
-  assert.equal(payloads.length, 2);
+  assert.equal(payloads.length === 2 || payloads.length === 3, true);
   assert.deepEqual(decodeJsonPayload(payloads[0], "Workflow start stimulus"), start);
   assert.deepEqual(
     decodeJsonPayload(payloads[1], "Workflow start Semantic Process"),
     semanticProcess,
   );
+  if (payloads.length === 3) {
+    assert.deepEqual(
+      decodeJsonPayload(payloads[2], "Workflow start host input"),
+      {
+        protocol: bpmnWorkflowContinuationV1,
+        kind: BpmnWorkflowHostInputKind.Initial,
+        eventHistoryEventLimit: workflowChainProductionLimit(
+          WorkflowChainBudgetKind.EventHistoryEvents,
+        ),
+      },
+    );
+  }
+  assertWorkflowChainPatchHistory(history, payloads.length === 3 ? 1 : 0);
 }
 
 function assertExactAcceptedCompletion(
