@@ -10,6 +10,7 @@ import type {
   RecoveryLease,
   RecoveryLeaseStore,
   RecoveryLoopOptions,
+  RecoveryLoopObserver,
   RecoveryLoopRun,
 } from "./recovery-contracts.js";
 import {
@@ -82,10 +83,16 @@ export class RecoveryLoop {
     return { ...run };
   }
 
-  /** Polls after each bounded batch until the caller aborts between iterations. */
-  async runUntilAborted(signal: AbortSignal): Promise<void> {
+  /** Reports each bounded result before polling again, until the caller aborts. */
+  async runUntilAborted(
+    signal: AbortSignal,
+    observeRun: RecoveryLoopObserver,
+  ): Promise<void> {
+    if (typeof observeRun !== "function") {
+      throw new TypeError("recovery observeRun must be a function");
+    }
     while (!signal.aborted) {
-      await this.runOnce();
+      await observeRun(await this.runOnce());
       if (!signal.aborted) {
         try {
           await wait(this.#options.pollingDelayMs, undefined, { signal });

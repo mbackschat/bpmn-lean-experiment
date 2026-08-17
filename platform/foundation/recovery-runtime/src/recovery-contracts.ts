@@ -126,6 +126,10 @@ export type RecoveryLoopRun = Readonly<{
   errors: number;
 }>;
 
+export type RecoveryLoopObserver = (
+  run: RecoveryLoopRun,
+) => void | Promise<void>;
+
 export class InvalidRecoveryInputError extends Error {
   readonly field: string;
 

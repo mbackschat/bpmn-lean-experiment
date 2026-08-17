@@ -14,6 +14,7 @@ import type {
   RecoveryLease,
   RecoveryLeaseStore,
   RecoveryLoopOptions,
+  RecoveryLoopRun,
   RetryLeaseInput,
 } from "../dist/index.js";
 
@@ -219,6 +220,61 @@ test("a timed-out handler retries while unrelated work completes", async () => {
   assert.equal(result.completed, 1);
   assert.equal(result.retried, 1);
   assert.equal(result.errors, 0);
+});
+
+test("reports every polling result before sleeping or starting another batch", async () => {
+  const controller = new AbortController();
+  const safetyAbort = setTimeout(() => controller.abort(), 20);
+  const observed: RecoveryLoopRun[] = [];
+  const loop = new RecoveryLoop(
+    new FakeLeaseStore([lease(1)]),
+    loopOptions({ pollingDelayMs: 1_000 }),
+  );
+
+  try {
+    await loop.runUntilAborted(controller.signal, (run) => {
+      observed.push(run);
+      controller.abort();
+    });
+  } finally {
+    clearTimeout(safetyAbort);
+  }
+
+  assert.deepEqual(observed, [{
+    claimed: 1,
+    completed: 1,
+    retried: 0,
+    permanentlyFailed: 0,
+    leaseLost: 0,
+    errors: 0,
+  }]);
+});
+
+test("propagates an observer failure without starting another batch", async () => {
+  let discoveryCalls = 0;
+  const controller = new AbortController();
+  const safetyAbort = setTimeout(() => controller.abort(), 20);
+  const loop = new RecoveryLoop(
+    new FakeLeaseStore([lease(1)]),
+    loopOptions({
+      listCandidateKeys: async () => {
+        discoveryCalls += 1;
+        return [Uint8Array.of(1)];
+      },
+    }),
+  );
+
+  try {
+    await assert.rejects(
+      loop.runUntilAborted(controller.signal, () => {
+        throw new Error("operator sink unavailable");
+      }),
+      /operator sink unavailable/u,
+    );
+    assert.equal(discoveryCalls, 1);
+  } finally {
+    clearTimeout(safetyAbort);
+  }
 });
 
 function loopOptions(
