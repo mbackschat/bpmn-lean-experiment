@@ -2,9 +2,9 @@
 
 ## Status
 
-**Draft for independent review and owner approval.**
+**Owner-approved on 2026-08-17; production implementation is authorized and open.**
 
-This proposal selects the smallest complete Horizon 2 contract for Product 1. It does not authorize production implementation yet. Approval would authorize the bounded contract below, followed by the required first-green semantic checkpoint and closure review.
+This proposal selects the smallest complete Horizon 2 contract for Product 1. Owner approval authorizes the bounded contract below, followed by the required first-green semantic checkpoint and closure review.
 
 **Recommendation:** approve the bounded in-Temporal design. It preserves exact command and publication behavior without adding a Product 1 database, and it fails explicitly when a declared capacity is exhausted instead of weakening retry, conflict, history, or replay guarantees.
 
