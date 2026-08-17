@@ -1,0 +1,135 @@
+name: bpmn-lean-evaluation
+
+services:
+  postgresql:
+    image: postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382
+    environment:
+      POSTGRES_DB: bpmn_platform
+      POSTGRES_PASSWORD: bpmn-admin-evaluation
+      POSTGRES_USER: bpmn_admin
+    volumes:
+      - postgresql-data:/var/lib/postgresql
+      - ./deploy/evaluation/postgresql/001_roles.sql:/docker-entrypoint-initdb.d/001_roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bpmn_admin -d bpmn_platform"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  temporal:
+    image: temporalio/temporal:1.8.1@sha256:59561b9ef060eaeb1f46cb6a1842d6cbdd8a393eb3b6d315ecef5fe2f0b1d7a6
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        chown temporal:temporal /var/lib/temporal &&
+        exec su temporal -s /bin/sh -c
+        'exec temporal server start-dev --ip 0.0.0.0 --headless
+        --db-filename /var/lib/temporal/temporal.db'
+    volumes:
+      - temporal-data:/var/lib/temporal
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "namespace", "describe", "--address", "127.0.0.1:7233", "--namespace", "default"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  platform-migrate:
+    image: bpmn-lean/evaluation-platform-migrate:local
+    build:
+      context: .
+      target: platform-migrate
+    environment:
+      PLATFORM_POSTGRESQL_MIGRATION_URL: postgresql://bpmn_migration:bpmn-migration-evaluation@postgresql:5432/bpmn_platform
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    restart: "no"
+
+  bpmn-worker:
+    image: bpmn-lean/evaluation-bpmn-worker:local
+    build:
+      context: .
+      target: bpmn-worker
+    environment:
+      BPMN_TEMPORAL_ADDRESS: temporal:7233
+      BPMN_TEMPORAL_NAMESPACE: default
+      BPMN_TEMPORAL_TASK_QUEUE: bpmn-semantic
+      BPMN_WORKER_HEALTH_PORT: "8080"
+      BPMN_WORKER_IDENTITY: evaluation-bpmn-worker
+    depends_on:
+      temporal:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  platform-api:
+    image: bpmn-lean/evaluation-platform-api:local
+    build:
+      context: .
+      target: platform-api
+    environment:
+      PLATFORM_FAKE_ACTOR_GROUPS_JSON: '["reviewers","operators"]'
+      PLATFORM_HOST: 0.0.0.0
+      PLATFORM_PORT: "3000"
+      PLATFORM_POSTGRESQL_RUNTIME_URL: postgresql://bpmn_runtime:bpmn-runtime-evaluation@postgresql:5432/bpmn_platform
+      PLATFORM_PROJECTION_MAX_AGE_MS: "30000"
+      PLATFORM_PUBLIC_ORIGIN: http://localhost:3000
+      PLATFORM_STORAGE_MODE: shared
+      PLATFORM_TEMPORAL_ADDRESS: temporal:7233
+      PLATFORM_TEMPORAL_NAMESPACE: default
+      PLATFORM_TEMPORAL_TASK_QUEUE: bpmn-semantic
+      PLATFORM_WEB_ASSET_DIRECTORY: /app/platform-web
+    depends_on:
+      bpmn-worker:
+        condition: service_healthy
+      platform-migrate:
+        condition: service_completed_successfully
+      postgresql:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/definitions').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  platform-recovery-worker:
+    image: bpmn-lean/evaluation-platform-recovery-worker:local
+    build:
+      context: .
+      target: platform-recovery-worker
+    environment:
+      PLATFORM_POSTGRESQL_RUNTIME_URL: postgresql://bpmn_runtime:bpmn-runtime-evaluation@postgresql:5432/bpmn_platform
+      PLATFORM_PROJECTION_MAX_AGE_MS: "30000"
+      PLATFORM_RECOVERY_WORKER_ID: evaluation-recovery-worker
+      PLATFORM_TEMPORAL_ADDRESS: temporal:7233
+      PLATFORM_TEMPORAL_NAMESPACE: default
+      PLATFORM_TEMPORAL_TASK_QUEUE: bpmn-semantic
+    depends_on:
+      platform-migrate:
+        condition: service_completed_successfully
+      postgresql:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "try{process.kill(1,0)}catch{process.exit(1)}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  postgresql-data:
+  temporal-data:

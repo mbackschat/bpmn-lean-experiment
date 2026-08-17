@@ -98,6 +98,9 @@ import type {
 import {
   createSharedPlatformServer,
 } from "./shared-composition.js";
+import {
+  createStaticAssetsRoute,
+} from "./static-assets.js";
 
 const presentationGenerationDeadlineMs = 1_000;
 
@@ -436,6 +439,9 @@ async function createLocalPlatformServer(
         (request) => publicationRoutes.handle(request),
         (request) => scheduleRoutes.handle(request),
         (request) => definitionRoutes.handle(request),
+        ...(snapshot.webAssetDirectory === null
+          ? []
+          : [createStaticAssetsRoute(snapshot.webAssetDirectory)]),
       ],
     });
     return new NodePlatformServerRuntime(

@@ -106,6 +106,9 @@ import {
 import type {
   SharedPlatformServerReadinessOptions,
 } from "./shared-readiness.js";
+import {
+  createStaticAssetsRoute,
+} from "./static-assets.js";
 
 const presentationGenerationDeadlineMs = 1_000;
 const maximumIncidentProcesses = 100;
@@ -477,6 +480,9 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
     (request: Request) => messageStartRoutes.handle(request),
     (request: Request) => scheduleRoutes.handle(request),
     (request: Request) => definitionRoutes.handle(request),
+    ...(config.webAssetDirectory === null
+      ? []
+      : [createStaticAssetsRoute(config.webAssetDirectory)]),
   ];
 }
 

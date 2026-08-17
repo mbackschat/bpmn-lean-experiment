@@ -30,6 +30,7 @@ export type PlatformServerConfig = Readonly<{
   storageMode?: PlatformStorageMode;
   postgresqlRuntimeUrl?: string | null;
   projectionMaxAgeMs?: number | null;
+  webAssetDirectory?: string | null;
   host: string;
   port: number;
   publicOrigin: string;
@@ -54,11 +55,13 @@ export type ValidatedPlatformServerConfig = Readonly<
     | "storageMode"
     | "postgresqlRuntimeUrl"
     | "projectionMaxAgeMs"
+    | "webAssetDirectory"
   > & {
     publicOrigin: ValidatedPublicOrigin;
     storageMode: PlatformStorageMode;
     postgresqlRuntimeUrl: string | null;
     projectionMaxAgeMs: number | null;
+    webAssetDirectory: string | null;
   }
 >;
 
@@ -71,6 +74,10 @@ export function readPlatformServerConfig(
   const port = readPort(environment, "PLATFORM_PORT", defaultPort);
   return {
     ...storage,
+    webAssetDirectory: readOptionalNonemptyString(
+      environment,
+      "PLATFORM_WEB_ASSET_DIRECTORY",
+    ),
     host,
     port,
     publicOrigin: readNonemptyString(
@@ -145,8 +152,12 @@ export function snapshotPlatformServerConfig(
     storageMode: config.storageMode ?? PlatformStorageMode.Local,
     postgresqlRuntimeUrl: config.postgresqlRuntimeUrl ?? null,
     projectionMaxAgeMs: config.projectionMaxAgeMs ?? null,
+    webAssetDirectory: config.webAssetDirectory ?? null,
   };
   validateStorageConfig(normalized);
+  if (normalized.webAssetDirectory !== null) {
+    requireNonempty(normalized.webAssetDirectory, "webAssetDirectory");
+  }
   requireNonempty(config.host, "host");
   requirePort(config.port, "port");
   const publicOrigin = validatePublicOrigin(config.publicOrigin);
@@ -267,6 +278,16 @@ function readRequiredNonemptyString(
 ): string {
   const value = environment[name];
   if (value === undefined) throw new TypeError(`${name} is required`);
+  requireNonempty(value, name);
+  return value;
+}
+
+function readOptionalNonemptyString(
+  environment: NodeJS.ProcessEnv,
+  name: string,
+): string | null {
+  const value = environment[name];
+  if (value === undefined) return null;
   requireNonempty(value, name);
   return value;
 }

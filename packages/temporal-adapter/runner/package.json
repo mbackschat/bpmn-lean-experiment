@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "license": "MIT",
+  "bin": {
+    "bpmn-evaluation-worker": "./dist/evaluation-worker-main.js"
+  },
   "exports": {
     ".": "./dist/index.js"
   },

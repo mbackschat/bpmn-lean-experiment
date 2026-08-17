@@ -39,6 +39,18 @@ Tokei-backed README statistics are a maintainer-only publication aid. Tokei is a
 
 Product 2 shared-persistence work has a separate opt-in PostgreSQL 18 lane. On macOS install `postgresql@18` with Homebrew, but do not start a persistent service merely for tests. `./scripts/pnpm.sh run test:platform-postgresql:runtime:local` is the smallest runtime and migration witness. `./scripts/pnpm.sh run test:platform-postgresql:local` creates one isolated temporary cluster, builds the complete shared API, recovery-worker, and migration graph once, checks the strict PostgreSQL harness, gives each reuse-only package suite its own temporary database, and removes the cluster. Ordinary package, platform, Product 1, and complete engine gates neither require nor start PostgreSQL. Set `POSTGRESQL_BIN_DIR` only when the PostgreSQL 18 binaries are outside `/opt/homebrew/opt/postgresql@18/bin` and outside `PATH`.
 
+## Evaluation distribution
+
+The explicit evaluation path requires Docker Engine with Compose v2. It does not require a host PostgreSQL or Temporal installation and is not part of ordinary contributor verification. Start the complete shared platform and Product 1 Worker with:
+
+```sh
+./scripts/pnpm.sh run evaluation:start
+```
+
+Open [http://localhost:3000](http://localhost:3000). The first start builds the four project runtime images and may take several minutes; later starts reuse Docker layers and the named `postgresql-data` and `temporal-data` volumes. Stop containers without deleting state through `./scripts/pnpm.sh run evaluation:stop`. Use `./scripts/pnpm.sh run evaluation:reset` only to remove both named evaluation volumes and return to an empty platform. The exact roles and passwords in `compose.yaml` are local evaluation credentials, not production defaults.
+
+The Compose topology runs PostgreSQL 18.4, the Temporal development service, the separate migration application, one persistent Product 1 BPMN Worker, the shared Product 2 API serving the built web bundle, and the Product 2 recovery Worker. It exposes only port 3000. It is neither a production Temporal deployment nor evidence of throughput or capacity.
+
 ## Provisioning scopes
 
 | Scope | Inputs | Required for |

@@ -1,0 +1,65 @@
+name: Evaluation distribution
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_images:
+        description: Publish the four evaluation images to GHCR
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: evaluation-distribution-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evaluation-distribution:
+    name: Build and smoke-test evaluation distribution
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build and start the evaluation distribution
+        run: docker compose up --build --wait
+
+      - name: Verify the public application origin
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:3000/api/v1/definitions >/dev/null
+
+      - name: Show service state after failure
+        if: failure()
+        run: docker compose ps && docker compose logs --no-color
+
+      - name: Stop the evaluation distribution
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
+      - name: Log in to the GitHub Container Registry
+        if: github.event_name == 'push' || inputs.publish_images == true
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish immutable evaluation images
+        if: github.event_name == 'push' || inputs.publish_images == true
+        run: |
+          image_prefix="ghcr.io/${GITHUB_REPOSITORY,,}"
+          image_tag="${GITHUB_REF_NAME}"
+          for target in platform-api platform-recovery-worker platform-migrate bpmn-worker; do
+            docker buildx build \
+              --target "$target" \
+              --tag "$image_prefix/evaluation-$target:$image_tag" \
+              --push \
+              .
+          done

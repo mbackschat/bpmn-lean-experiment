@@ -10,6 +10,10 @@ The runner compiles BPMN before it opens a network connection. Temporal records 
 
 The lazy client runtime exposes an explicit connection handshake for application readiness without coupling construction to network availability.
 
+The containerized evaluation distribution uses the `bpmn-evaluation-worker` entry point. It connects to the caller-selected Temporal address, Namespace, and Task Queue from `BPMN_TEMPORAL_ADDRESS`, `BPMN_TEMPORAL_NAMESPACE`, and `BPMN_TEMPORAL_TASK_QUEUE`; identifies itself with `BPMN_WORKER_IDENTITY`; and exposes an internal `/healthz` endpoint on `BPMN_WORKER_HEALTH_PORT` only after the Worker is polling. All five values are required.
+
+For the evaluation incident journey only, that entry point supplies a process-local host simulation which reports one technical failure for the first Activity invocation of each exact effect idempotency key and succeeds with an empty local patch on later invocations. This exercises the existing retry and incident mechanism. It defines neither BPMN meaning nor a production integration contract, and it does not change the configured host-effect implementation used by the maintained engine example.
+
 ## Quick start
 
 Start a local Temporal service in one terminal:

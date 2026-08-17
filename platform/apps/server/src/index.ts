@@ -32,3 +32,13 @@ export type {
 export type {
   PlatformServerRuntime,
 } from "./runtime.js";
+export {
+  createStaticAssetsRoute,
+} from "./static-assets.js";
+export {
+  runPlatformServer,
+} from "./main.js";
+export type {
+  PlatformServerLifecycle,
+  PlatformServerMainOverrides,
+} from "./main.js";
