@@ -25,6 +25,7 @@ import {
   createCachedLocalEnvironment,
   decodeJsonPayload,
   durableUpdateOutcomes,
+  getTestProcessHandle,
   historyEvents,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
@@ -194,9 +195,13 @@ async function runOrder(
   if (started.kind !== BpmnProcessStartResultKind.Started) {
     throw new TypeError("parallel User Task metadata Workflow was rejected");
   }
+  const handle = getTestProcessHandle(
+    environment.client.workflow,
+    started.processInstanceId,
+  );
   assert.deepEqual(
     await waitForOpenUserTaskIds(
-      started.handle,
+      handle,
       fixture.initialTasks.map(({ id }) => id.elementId),
     ),
     fixture.initialTasks,
@@ -217,7 +222,7 @@ async function runOrder(
   );
   await replaceWorker();
   assert.equal(
-    await started.handle.getUpdateHandle(
+    await handle.getUpdateHandle(
       contentBoundUpdateId(fixture.completions[0]),
     ).result(),
     CommandOutcome.Committed,
@@ -231,7 +236,7 @@ async function runOrder(
     firstResult,
   );
   const intermediateTasks = await waitForOpenUserTaskIds(
-    started.handle,
+    handle,
     fixture.intermediateTasks.map(({ id }) => id.elementId),
   );
   reconcileParallelUserTaskMetadataQuery(
@@ -263,7 +268,7 @@ async function runOrder(
     },
   );
   const tasksAfterStaleRefusal = await waitForOpenUserTaskIds(
-    started.handle,
+    handle,
     fixture.intermediateTasks.map(({ id }) => id.elementId),
   );
   assert.deepEqual(tasksAfterStaleRefusal, intermediateTasks);
@@ -288,7 +293,7 @@ async function runOrder(
     semanticCommitted(fixture.completions[1].commandId),
   );
   const receiptValue = await withDeadline(
-    started.handle.result(),
+    handle.result(),
     operationDeadlineMs,
     "parallel User Task metadata completed receipt",
   );
@@ -311,7 +316,7 @@ async function runOrder(
     intermediateState,
     ...fixture.expected.trace.slice(-2),
   ]);
-  const history = await started.handle.fetchHistory();
+  const history = await handle.fetchHistory();
   const temporalHistory = history as TemporalHistory;
   const acceptedCompletions = [
     fixture.completions[0],
@@ -334,7 +339,7 @@ async function runOrder(
   assertUpdatesCompleteBeforeWorkflow(temporalHistory, 3);
   assertNoNonUpdateBpmnHostEvents(temporalHistory, "parallel User Task metadata");
   reconcileHarnessTraceEvidence(trace, receiptValue, temporalHistory);
-  return { history, workflowId: started.handle.workflowId };
+  return { history, workflowId: handle.workflowId };
 }
 
 function assertTerminalReceipt(

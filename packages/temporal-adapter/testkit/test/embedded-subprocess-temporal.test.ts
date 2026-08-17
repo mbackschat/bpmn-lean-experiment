@@ -21,6 +21,7 @@ import {
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -98,7 +99,10 @@ test("embedded Sub-Process survives Worker replacement after its first child com
     if (started.kind !== BpmnProcessStartResultKind.Started) {
       throw new Error("embedded Sub-Process Workflow was rejected");
     }
-    const handle = started.handle;
+    const handle = getTestProcessHandle(
+      environment.client.workflow,
+      started.processInstanceId,
+    );
     await waitForOpenUserTaskIds(
       handle,
       ["UserTask_ChildA", "UserTask_ChildB"],

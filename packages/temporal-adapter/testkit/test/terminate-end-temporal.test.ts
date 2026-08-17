@@ -38,6 +38,7 @@ import {
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -149,7 +150,10 @@ describe("bounded Terminate End Temporal refinement", { concurrency: false }, ()
       if (started.kind !== BpmnProcessStartResultKind.Started) {
         throw new Error("Terminate End Workflow was rejected");
       }
-      const handle = started.handle;
+      const handle = getTestProcessHandle(
+        runtime.client.workflow,
+        started.processInstanceId,
+      );
       const initialTasks = await waitForOpenUserTaskIds(
         handle,
         ["UserTask_Sibling", "UserTask_Trigger"],

@@ -27,6 +27,7 @@ import {
   bpmnDeliverMessageSignalName,
   bpmnSemanticTaskQueue,
   bpmnTraceQueryName,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   startBpmnProcess,
 } from "@bpmn-lean/temporal-testkit";
@@ -123,7 +124,10 @@ export async function startMessageWorkflow(
   );
   switch (result.kind) {
     case BpmnProcessStartResultKind.Started:
-      return result.handle;
+      return getTestProcessHandle(
+        environment.client.workflow,
+        result.processInstanceId,
+      );
     case BpmnProcessStartResultKind.Rejected:
       throw new Error(
         `Message Process was rejected: ${result.failure.code}`,

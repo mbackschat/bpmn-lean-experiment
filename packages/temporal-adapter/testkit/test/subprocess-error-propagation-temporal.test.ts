@@ -20,6 +20,7 @@ import {
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -96,7 +97,10 @@ test("committed Error cancellation survives an immediate Worker replacement", as
     if (started.kind !== BpmnProcessStartResultKind.Started) {
       throw new Error("Sub-Process Error Workflow was rejected");
     }
-    const handle = started.handle;
+    const handle = getTestProcessHandle(
+      environment.client.workflow,
+      started.processInstanceId,
+    );
     await waitForOpenUserTaskIds(
       handle,
       ["UserTask_SiblingWork", "UserTask_TriggerError"],

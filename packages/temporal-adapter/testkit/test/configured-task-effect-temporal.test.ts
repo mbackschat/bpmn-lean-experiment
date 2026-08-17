@@ -25,6 +25,7 @@ import {
   ProcessCommandResultKind,
   bpmnSemanticTaskQueue,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -121,7 +122,10 @@ test("configured Task source durably reaches the existing effect host", async ()
     if (started.kind !== BpmnProcessStartResultKind.Started) {
       throw new TypeError("configured Task Workflow was not admitted");
     }
-    const handle = started.handle;
+    const handle = getTestProcessHandle(
+      environment.client.workflow,
+      started.processInstanceId,
+    );
     await withDeadline(
       firstInvocationStarted,
       operationDeadlineMs,

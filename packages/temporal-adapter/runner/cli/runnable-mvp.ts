@@ -40,6 +40,7 @@ import {
 } from "@bpmn-lean/temporal-runner";
 import type {
   BpmnProcessAdmissionFailure,
+  BpmnProcessWorkflow,
   CancelledProcessReceipt,
   CompletedProcessReceipt,
   ExternalTemporalRuntimeOptions,
@@ -313,7 +314,10 @@ export async function runRunnableTemporalMvp(
         return assertNever(driven);
     }
 
-    const receipt: unknown = await started.handle.result();
+    const processHandle = runtime.workflowClient.getHandle<BpmnProcessWorkflow>(
+      processWorkflowId(started.processInstanceId),
+    );
+    const receipt: unknown = await processHandle.result();
     if (!isTerminalProcessReceipt(receipt)) {
       throw new TypeError(
         "Temporal Workflow returned a malformed terminal Process receipt",

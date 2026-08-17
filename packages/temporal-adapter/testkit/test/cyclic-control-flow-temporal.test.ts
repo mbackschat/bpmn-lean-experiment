@@ -35,6 +35,7 @@ import {
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -211,7 +212,10 @@ test("the finite cycle survives Worker replacement and replays exact history", a
     if (started.kind !== BpmnProcessStartResultKind.Started) {
       throw new Error("cyclic control-flow Workflow was rejected");
     }
-    const handle = started.handle;
+    const handle = getTestProcessHandle(
+      environment.client.workflow,
+      started.processInstanceId,
+    );
     await assertOpenOccurrence(handle, repeat);
     assert.deepEqual(
       await readBpmnProcessTrace(environment.client.workflow, start.instanceId),

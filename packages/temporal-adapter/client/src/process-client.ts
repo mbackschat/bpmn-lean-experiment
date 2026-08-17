@@ -153,7 +153,7 @@ export enum BpmnProcessStartResultKind {
 export type BpmnProcessStartResult =
   | Readonly<{
       kind: BpmnProcessStartResultKind.Started;
-      handle: WorkflowHandle<BpmnProcessWorkflow>;
+      processInstanceId: string;
     }>
   | Readonly<{
       kind: BpmnProcessStartResultKind.Rejected;
@@ -208,12 +208,13 @@ export async function startBpmnProcess(
       failure: admission.failure,
     };
   }
-  const handle = await withDeadline(
+  const processInstanceId = start.instanceId;
+  await withDeadline(
     client.start<BpmnProcessWorkflow>(
       bpmnProcessWorkflowType,
       {
         taskQueue: options.taskQueue,
-        workflowId: processWorkflowId(start.instanceId),
+        workflowId: processWorkflowId(processInstanceId),
         workflowIdReusePolicy: "REJECT_DUPLICATE",
         args: [start, semanticProcess],
       },
@@ -223,7 +224,7 @@ export async function startBpmnProcess(
   );
   return {
     kind: BpmnProcessStartResultKind.Started,
-    handle,
+    processInstanceId,
   };
 }
 

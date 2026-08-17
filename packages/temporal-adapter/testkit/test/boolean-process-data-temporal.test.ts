@@ -28,6 +28,7 @@ import {
   asRecord,
   decodeJsonPayload,
   durableUpdateOutcomes,
+  getTestProcessHandle,
   historyEvents as decodedHistoryEvents,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
@@ -158,8 +159,12 @@ async function executeNewProfileUntilWait(
   if (started.kind !== BpmnProcessStartResultKind.Started) {
     throw new TypeError("Boolean Process-data Workflow was rejected");
   }
+  const handle = getTestProcessHandle(
+    environment.client.workflow,
+    started.processInstanceId,
+  );
   const openTasks = await waitForOpenUserTaskIds(
-    started.handle,
+    handle,
     [fixture.completion.taskId.elementId],
   );
   assert.deepEqual(openTasks.map(({ id }) => id), [fixture.completion.taskId]);
@@ -170,7 +175,7 @@ async function executeNewProfileUntilWait(
     ),
     fixture.expected.trace.slice(0, 3),
   );
-  return { handle: started.handle };
+  return { handle };
 }
 
 async function finishNewProfileAfterReplacement(
@@ -260,7 +265,10 @@ async function executeOldProfileRefusal(
   if (started.kind !== BpmnProcessStartResultKind.Started) {
     throw new TypeError("old-profile refusal Workflow was rejected at start");
   }
-  const handle = started.handle;
+  const handle = getTestProcessHandle(
+    environment.client.workflow,
+    started.processInstanceId,
+  );
   await waitForOpenUserTaskIds(
     handle,
     [fixture.refusedBooleanCompletion.taskId.elementId],

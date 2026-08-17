@@ -39,6 +39,7 @@ import {
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -172,7 +173,10 @@ describe("bounded Call Activity Temporal refinement", { concurrency: false }, ()
       if (started.kind !== BpmnProcessStartResultKind.Started) {
         throw new Error("Call Activity Workflow was rejected");
       }
-      const handle = started.handle;
+      const handle = getTestProcessHandle(
+        environment.client.workflow,
+        started.processInstanceId,
+      );
       assert.equal(handle.workflowId, processWorkflowId(ordinaryInstanceId));
       assert.deepEqual(
         await waitForOpenUserTaskIds(handle, [calledTaskElementId]),

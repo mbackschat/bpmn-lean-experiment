@@ -33,6 +33,7 @@ import {
   createCachedLocalEnvironment,
   decodeJsonPayload,
   durableUpdateOutcomes,
+  getTestProcessHandle,
   historyEvents,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
@@ -93,7 +94,7 @@ test("User Task metadata survives Worker replacement and replay", async () => {
 
   try {
     worker = await startBpmnTestWorker(environment, bundle, identity);
-    const started = await startMetadataProcess(environment, fixture);
+    const handle = await startMetadataProcess(environment, fixture);
 
     await stopBpmnTestWorker(worker);
     worker = undefined;
@@ -104,7 +105,7 @@ test("User Task metadata survives Worker replacement and replay", async () => {
     );
     assert.deepEqual(
       await waitForOpenUserTaskIds(
-        started.handle,
+        handle,
         [fixture.completion.taskId.elementId],
       ),
       exactOpenTask(fixture.completion),
@@ -113,7 +114,7 @@ test("User Task metadata survives Worker replacement and replay", async () => {
     const metadataEvidence = await completeMetadataProcess(
       environment,
       fixture,
-      started.handle,
+      handle,
     );
     const oldEvidence = await runMetadataFreeControl(
       environment,
@@ -130,7 +131,7 @@ test("User Task metadata survives Worker replacement and replay", async () => {
     await replayBpmnHistory(
       bundle,
       metadataEvidence.replayHistory,
-      started.handle.workflowId,
+      handle.workflowId,
     );
     await replayBpmnHistory(
       bundle,
@@ -175,9 +176,13 @@ async function startMetadataProcess(
   if (started.kind !== BpmnProcessStartResultKind.Started) {
     throw new TypeError("User Task metadata Workflow was rejected");
   }
+  const handle = getTestProcessHandle(
+    environment.client.workflow,
+    started.processInstanceId,
+  );
   assert.deepEqual(
     await waitForOpenUserTaskIds(
-      started.handle,
+      handle,
       [fixture.completion.taskId.elementId],
     ),
     exactOpenTask(fixture.completion),
@@ -189,7 +194,7 @@ async function startMetadataProcess(
     ),
     fixture.expected.trace.slice(0, 3),
   );
-  return { handle: started.handle };
+  return handle;
 }
 
 async function completeMetadataProcess(
@@ -275,8 +280,12 @@ async function runMetadataFreeControl(
   if (started.kind !== BpmnProcessStartResultKind.Started) {
     throw new TypeError("metadata-free control Workflow was rejected");
   }
+  const handle = getTestProcessHandle(
+    environment.client.workflow,
+    started.processInstanceId,
+  );
   const tasks = await waitForOpenUserTaskIds(
-    started.handle,
+    handle,
     [fixture.completion.taskId.elementId],
   );
   assert.equal(Object.hasOwn(tasks[0] ?? {}, "metadata"), false);
@@ -292,7 +301,7 @@ async function runMetadataFreeControl(
       outcome: CommandOutcome.Committed,
     },
   );
-  const receipt = await started.handle.result();
+  const receipt = await handle.result();
   assert.equal(isCompletedProcessReceipt(receipt), true);
   if (!isCompletedProcessReceipt(receipt)) {
     throw new TypeError("metadata-free control returned no receipt");
@@ -302,7 +311,7 @@ async function runMetadataFreeControl(
     fixture.start.instanceId,
   );
   assert.deepEqual(trace, fixture.expected.trace);
-  const replayHistory = await started.handle.fetchHistory();
+  const replayHistory = await handle.fetchHistory();
   const history = replayHistory as TemporalHistory;
   assertExactWorkflowStartHistory(
     history,
@@ -312,7 +321,7 @@ async function runMetadataFreeControl(
   assert.equal(containsOwnKey(fixture.semanticProcess, "metadata"), false);
   reconcileHarnessTraceEvidence(trace, receipt, history);
   assertNoNonUpdateBpmnHostEvents(history, "metadata-free control");
-  return { replayHistory, workflowId: started.handle.workflowId };
+  return { replayHistory, workflowId: handle.workflowId };
 }
 
 async function assertQueryMutationDiscriminator(
@@ -402,15 +411,19 @@ async function runSourceVariationControl(
   if (started.kind !== BpmnProcessStartResultKind.Started) {
     throw new TypeError("source-variation Workflow was rejected");
   }
+  const handle = getTestProcessHandle(
+    environment.client.workflow,
+    started.processInstanceId,
+  );
   assert.deepEqual(
     await waitForOpenUserTaskIds(
-      started.handle,
+      handle,
       [execution.completion.taskId.elementId],
     ),
     exactOpenTask(execution.completion, sourceVariationUserTaskMetadata),
   );
   assertExactWorkflowStartHistory(
-    await started.handle.fetchHistory() as TemporalHistory,
+    await handle.fetchHistory() as TemporalHistory,
     execution.start,
     variation.semanticProcess,
   );
@@ -428,7 +441,7 @@ async function runSourceVariationControl(
     },
   );
   const receipt = await withDeadline(
-    started.handle.result(),
+    handle.result(),
     operationDeadlineMs,
     "source-variation completed receipt",
   );
@@ -446,7 +459,7 @@ async function runSourceVariationControl(
     execution.start.instanceId,
   );
   assert.deepEqual(trace, expected.trace);
-  const replayHistory = await started.handle.fetchHistory();
+  const replayHistory = await handle.fetchHistory();
   const history = replayHistory as TemporalHistory;
   assertExactWorkflowStartHistory(
     history,
@@ -456,7 +469,7 @@ async function runSourceVariationControl(
   assertExactAcceptedCompletion(history, execution.completion);
   reconcileHarnessTraceEvidence(trace, receipt, history);
   assertNoNonUpdateBpmnHostEvents(history, "source-variation control");
-  return { replayHistory, workflowId: started.handle.workflowId };
+  return { replayHistory, workflowId: handle.workflowId };
 }
 
 function exactOpenTask(

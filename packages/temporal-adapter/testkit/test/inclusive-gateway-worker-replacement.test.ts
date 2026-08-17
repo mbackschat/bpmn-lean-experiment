@@ -21,6 +21,7 @@ import {
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -93,7 +94,10 @@ test("Inclusive Gateway preserves its selected set across Worker replacement", a
     if (started.kind !== BpmnProcessStartResultKind.Started) {
       throw new Error("Inclusive Gateway Workflow was rejected");
     }
-    const handle = started.handle;
+    const handle = getTestProcessHandle(
+      environment.client.workflow,
+      started.processInstanceId,
+    );
     await waitForOpenUserTaskIds(handle, ["Task_A", "Task_B"]);
 
     const first = completionAt(scenario, 1);

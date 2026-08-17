@@ -32,7 +32,7 @@ import {
   BpmnProcessAdmissionResultKind,
   BpmnProcessStartResultKind,
   assessBpmnProcessAdmission,
-  startBpmnProcess as startBpmnProcessWithHandle,
+  startBpmnProcess,
 } from "./process-client.js";
 
 const operationDeadlineMs = 5_000;
@@ -278,14 +278,14 @@ export async function describeTemporalDefinitionStart(
   }
 }
 
-/** Calls the existing production start operation and discards its SDK Workflow handle. */
+/** Calls the production start operation and preserves this definition-start result contract. */
 export async function startBpmnProcessWithoutHandle(
   client: TemporalDefinitionStartClient,
   start: StartProcessStimulus,
   semanticProcess: SemanticProcessProgram,
   options: Readonly<{ taskQueue: string }>,
 ): Promise<TemporalDefinitionStartResult> {
-  const started = await startBpmnProcessWithHandle(
+  const started = await startBpmnProcess(
     workflowClientOf(client),
     start,
     semanticProcess,

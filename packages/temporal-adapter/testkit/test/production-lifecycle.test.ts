@@ -36,6 +36,7 @@ import {
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -105,7 +106,10 @@ test("closed Workflow retains accepted command result without accepting a new co
           `lifecycle Workflow was rejected: ${startResult.failure.code}`,
         );
     }
-    const handle = startResult.handle;
+    const handle = getTestProcessHandle(
+      environment.client.workflow,
+      startResult.processInstanceId,
+    );
     assert.equal(handle.workflowId, workflowId);
     const openTasks = await waitForOpenUserTaskIds(
       handle,

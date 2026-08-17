@@ -20,6 +20,7 @@ import {
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -95,7 +96,10 @@ test("Message Start survives Worker absence and replays without Signal ingress",
     if (started.kind !== BpmnProcessStartResultKind.Started) {
       throw new Error("Message Start Workflow was rejected");
     }
-    const handle = started.handle;
+    const handle = getTestProcessHandle(
+      environment.client.workflow,
+      started.processInstanceId,
+    );
     const beforeWorker = await withDeadline(
       handle.fetchHistory(),
       operationDeadlineMs,

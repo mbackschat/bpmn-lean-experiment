@@ -21,6 +21,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   durableUpdateOutcomes,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   readBpmnProcessTrace,
@@ -82,8 +83,12 @@ test("mixed structured values survive replacement, retry, conflict, history, and
     if (started.kind !== BpmnProcessStartResultKind.Started) {
       throw new TypeError("structured Human Work Workflow was rejected");
     }
+    const handle = getTestProcessHandle(
+      environment.client.workflow,
+      started.processInstanceId,
+    );
     assert.deepEqual(
-      await waitForOpenUserTaskIds(started.handle, ["ReviewException"]),
+      await waitForOpenUserTaskIds(handle, ["ReviewException"]),
       [{
         id: fixture.completion.taskId,
         name: "Review exception",
@@ -147,7 +152,7 @@ test("mixed structured values survive replacement, retry, conflict, history, and
       },
     );
     assert.deepEqual(
-      await waitForOpenUserTaskIds(started.handle, ["ReviewException"]),
+      await waitForOpenUserTaskIds(handle, ["ReviewException"]),
       [{
         id: fixture.completion.taskId,
         name: "Review exception",
@@ -183,7 +188,7 @@ test("mixed structured values survive replacement, retry, conflict, history, and
     );
 
     const receiptValue = await withDeadline(
-      started.handle.result(),
+      handle.result(),
       operationDeadlineMs,
       "structured Human Work terminal receipt",
     );
@@ -208,7 +213,7 @@ test("mixed structured values survive replacement, retry, conflict, history, and
     assert.deepEqual(receiptValue.finalState, expectedTerminal(fixture.expected));
     assertExactStructuredValues(receiptValue.finalState);
 
-    const replayHistory = await started.handle.fetchHistory();
+    const replayHistory = await handle.fetchHistory();
     const history = replayHistory as TemporalHistory;
     assert.deepEqual(
       durableUpdateOutcomes(history),
@@ -227,7 +232,7 @@ test("mixed structured values survive replacement, retry, conflict, history, and
 
     await stopBpmnTestWorker(worker);
     worker = undefined;
-    await replayBpmnHistory(bundle, replayHistory, started.handle.workflowId);
+    await replayBpmnHistory(bundle, replayHistory, handle.workflowId);
   } finally {
     try {
       if (worker !== undefined) await stopBpmnTestWorker(worker);

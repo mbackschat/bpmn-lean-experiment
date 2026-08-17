@@ -35,6 +35,7 @@ import {
   bpmnEventRaceOrderingUnavailableFailureType,
   bpmnSemanticTaskQueue,
   createCachedLocalEnvironment,
+  getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
   processWorkflowId,
@@ -338,7 +339,10 @@ describe("Event-Based Gateway Temporal readiness", { concurrency: false }, () =>
     if (started.kind !== BpmnProcessStartResultKind.Started) {
       throw new Error("Event race start was rejected");
     }
-    return started.handle;
+    return getTestProcessHandle(
+      current.environment.client.workflow,
+      started.processInstanceId,
+    );
   }
 
   async function completeTask(
