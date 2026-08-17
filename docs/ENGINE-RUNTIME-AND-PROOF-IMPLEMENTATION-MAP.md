@@ -6,7 +6,7 @@ This detail map owns exact current runtime-state, scope, Lean, TypeScript semant
 
 The Lean reference interpreter and independently written pure TypeScript semantic core execute the same reviewed Semantic Process account over immutable serializable state. Closed families remain bounded by their profiles and capsules; no current evidence establishes general BPMN execution or a TypeScript-to-Lean or Temporal correspondence theorem.
 
-The closed semantic families are Parallel fork/join, Exclusive Gateway over the project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and the three boundary-Timer loci including one non-interrupting route.
+The closed semantic families are Parallel fork/join, Exclusive Gateway over the project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, cyclic control flow, Call Activity, embedded Sub-Process completion and Error propagation, Message Start, Timer Start, Intermediate Catch Timer and Message, Message-addressed Receive Task, Terminate End, Service Task effects, configured Task effects, scoped runtime data, User Task start and completion data, and the three boundary-Timer loci including one non-interrupting route.
 
 ## Implemented
 

@@ -4,7 +4,7 @@
 
 This research inventories the pinned CIB Seven core BPMN test-resource corpus to answer one scheduling question: which uncovered reusable BPMN Process Execution mechanism should follow the runnable Temporal MVP and the implemented scope-completion/Error-propagation pair?
 
-The inventory is a roadmap input, not a BPMN conformance measure, a CIB compatibility percentage, or evidence that every matching fixture executes the tagged construct. BPMN meaning remains owned by the standard and approved capsules; exact implementation and evidence status remain in the [implementation map](../IMPLEMENTATION-MAP.md).
+The inventory is a roadmap input, not a BPMN conformance measure, a CIB compatibility percentage, or evidence that every matching fixture executes the tagged construct. BPMN meaning remains owned by the standard and approved capsules; exact implementation and evidence status remain in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
 
 ## Source boundary
 

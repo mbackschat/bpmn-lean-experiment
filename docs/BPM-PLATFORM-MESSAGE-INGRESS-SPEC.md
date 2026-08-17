@@ -239,7 +239,7 @@ Excluded:
 
 ## Acceptance and reopen conditions
 
-The maintained acceptance boundary is the complete repository gate, the M2 live and browser showcase gates, the stable rule matrix above, and the exact implemented and absent status in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The closure evidence must retain an exact production-derived version-2 fanout mutation and a field-specific browser oracle for the distinct Process-instance identity.
+The maintained acceptance boundary is the complete repository gate, the M2 live and browser showcase gates, the stable rule matrix above, and the exact implemented and absent status in the [BPM platform implementation map](BPM-PLATFORM-IMPLEMENTATION-MAP.md). The closure evidence must retain an exact production-derived version-2 fanout mutation and a field-specific browser oracle for the distinct Process-instance identity.
 
 Reopen this specification if the direct client cannot provide Worker-independent exact retained description, if Product 1 cannot preserve the complete channel without exposing the program, if a no-redispatch tombstone cannot be persisted before recovery, or if the product requires unbounded retry-transparent accepted receipts. That stronger requirement needs an explicitly approved retained Schedule or router/Child-Workflow coordinator and is not a local retry change.
 

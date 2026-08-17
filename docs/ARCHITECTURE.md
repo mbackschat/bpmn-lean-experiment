@@ -6,7 +6,7 @@
 
 ## Responsibility split
 
-[PROJECT-DESIGN.md](PROJECT-DESIGN.md) owns why the products, semantic authorities, and one-way product boundary exist. [The BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns what the first platform product must provide. This document owns how source packages realize those decisions. [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) records which parts exist, and [PLAN.md](PLAN.md) records what comes next.
+[PROJECT-DESIGN.md](PROJECT-DESIGN.md) owns why the products, semantic authorities, and one-way product boundary exist. [The BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns what the first platform product must provide. This document owns how source packages realize those decisions. The detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) record which parts exist, and [PLAN.md](PLAN.md) records what comes next.
 
 Local directory `README.md` files state only the ownership and dependency rules of their subtree. They link here instead of copying the complete layout or decision register.
 

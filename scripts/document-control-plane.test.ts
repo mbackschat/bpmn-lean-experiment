@@ -132,33 +132,52 @@ test("rejects hollow plan and root-map contracts", async () => {
 });
 
 test("keeps exact status references routed to a detail owner", async () => {
-  const tracked = execFileSync("git", ["ls-files", "-z"], {
+  const tracked = execFileSync("git", ["ls-files", "-z", "--", "*.md"], {
     cwd: projectRoot,
     encoding: "utf8",
   }).split("\0").filter(Boolean);
-  const navigationOwners = [
-    "CLAUDE.md",
-    "README.md",
-    "docs/CONTRIBUTOR-SETUP-GUIDE.md",
-    "docs/README.md",
-    ...tracked.filter((file) =>
-      file.endsWith("/README.md") && /^(?:packages|platform|runners)\//u.test(file)),
-  ];
-  const statusWords = /\b(?:exact|current|implemented|absent|evidence|coverage|support|status)\b/iu;
+  const maintainedOwners = tracked.filter(
+    (file) =>
+      !file.startsWith("docs/archived/") &&
+      !file.startsWith("docs/reference/") &&
+      file !== "docs/AGENT-DOCUMENTATION-CONTROL-PLANE-PROPOSAL.md",
+  );
+  const statusWords = /\b(?:exact|current|implemented|absent|absence|evidence|coverage|support|status|surface|boundary)\b/iu;
+  const directOwnership = /\b(?:belongs?|owned?|owns?|recorded|records?|closed|remains?|stays?|retains?|with the exact boundary in)\b/iu;
   const rootMap = /IMPLEMENTATION-MAP\.md/u;
   const detailMap = /(?:ENGINE-CONTRACTS-AND-SOURCE|ENGINE-RUNTIME-AND-PROOF|TEMPORAL-HOSTING|BPM-PLATFORM|ASSURANCE-AND-ADOPTION)-IMPLEMENTATION-MAP\.md/u;
   const routing = /\b(?:route|routes|routed|router|routing|entry point)\b/iu;
 
   const invalid: string[] = [];
-  for (const file of new Set(navigationOwners)) {
+  for (const file of maintainedOwners) {
     const document = await readFile(path.join(projectRoot, file), "utf8");
     for (const [index, line] of document.split("\n").entries()) {
-      if (rootMap.test(line) && statusWords.test(line)) {
-        if (!detailMap.test(line) && !routing.test(line)) invalid.push(`${file}:${index + 1}`);
+      if (rootMap.test(line) && statusWords.test(line) && directOwnership.test(line)) {
+        if (!detailMap.test(line) && !routing.test(line)) {
+          invalid.push(`${file}:${index + 1}: ${line}`);
+        }
       }
     }
   }
   assert.deepEqual(invalid, [], "exact-status claims must route beyond the root map");
+});
+
+test("keeps the exact closed semantic-family owner complete", async () => {
+  const runtimeMap = await readFile(
+    path.join(projectRoot, "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md"),
+    "utf8",
+  );
+  const currentBoundary = runtimeMap.slice(
+    runtimeMap.indexOf("## Current boundary\n"),
+    runtimeMap.indexOf("\n## Implemented\n"),
+  );
+  for (const family of [
+    "cyclic control flow",
+    "Message Start",
+    "Timer Start",
+    "Terminate End",
+    "configured Task",
+  ]) assert.match(currentBoundary, new RegExp(family, "iu"), family);
 });
 
 test("keeps delegated Timer scope in the runtime detail map", async () => {

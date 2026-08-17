@@ -939,6 +939,6 @@ Stop use or extension of this boundary and return to design if:
 
 ## Ownership and change control
 
-This specification owns the Semantic Process IL purpose, boundary, operation meanings, lowering obligations, and growth rules. [Shared wire contracts](../contracts/README.md) own the current schemas and artifact validation. Approved feature meaning remains in the applicable [semantic capsule](capsules/README.md), and exact implementation status remains in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+This specification owns the Semantic Process IL purpose, boundary, operation meanings, lowering obligations, and growth rules. [Shared wire contracts](../contracts/README.md) own the current schemas and artifact validation. Approved feature meaning remains in the applicable [semantic capsule](capsules/README.md), and exact implementation status remains in the [contracts and source implementation map](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) and [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).
 
 During pre-release there is exactly one current checked-graph contract and one current Semantic Process program contract. A breaking change replaces all current producers, consumers, fixtures, schemas, and tests atomically. Compatibility readers, embedded format counters, and migration layers remain excluded until a durable baseline is explicitly approved.

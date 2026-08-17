@@ -8,7 +8,7 @@ Implemented. This is the adopted dependency order and exit-gate owner for Produc
 
 The approved [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) makes showcase milestones its acceptance gates and leaves the list to this plan. This is that list.
 
-Each milestone names one capability demonstrable end to end, the engine work it forces, the platform work it adds, and the executable gate that closes it. The order is a dependency order and not a schedule. It is deliberately shorter than the eight-stage horizon in [the competitive scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md#dependency-ordered-roadmap), which is design input; the exit gates below are the binding ones, and a milestone closes only when its gate is green and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) records the exact surface it reached.
+Each milestone names one capability demonstrable end to end, the engine work it forces, the platform work it adds, and the executable gate that closes it. The order is a dependency order and not a schedule. It is deliberately shorter than the eight-stage horizon in [the competitive scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md#dependency-ordered-roadmap), which is design input; the exit gates below are the binding ones, and a milestone closes only when its gate is green and the applicable detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) record the exact surface it reached.
 
 Two boundaries hold across the whole ladder. The engine must still build and verify with no platform package present, and the platform must reach the engine only through narrowed public entry points. A milestone that can be demonstrated only by violating either has not been reached.
 
@@ -98,7 +98,7 @@ The [human-work specification](BPM-PLATFORM-HUMAN-WORK-SPEC.md) owns one atomic 
 
 ### One Lean research question per engine milestone
 
-The Lean lane must stay a research lane rather than becoming a proof tax on product work. Each engine milestone therefore carries one named question, declared at capsule start under [the assurance-lane rule](PROJECT-DESIGN.md#lean-assurance-lane) as proved, checked, or deliberately open. A question that cannot close within its capsule records its unresolved boundary in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md); it does not quietly become a weaker claim.
+The Lean lane must stay a research lane rather than becoming a proof tax on product work. Each engine milestone therefore carries one named question, declared at capsule start under [the assurance-lane rule](PROJECT-DESIGN.md#lean-assurance-lane) as proved, checked, or deliberately open. A question that cannot close within its capsule records its unresolved boundary in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md); it does not quietly become a weaker claim.
 
 | Milestone | Question | Why it is the risk |
 |---|---|---|

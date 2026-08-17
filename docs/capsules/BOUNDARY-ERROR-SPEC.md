@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented current capsule contract; exact evidence status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
+Implemented current capsule contract; exact evidence status belongs in the [runtime and proof implementation map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).
 
 ## Role
 

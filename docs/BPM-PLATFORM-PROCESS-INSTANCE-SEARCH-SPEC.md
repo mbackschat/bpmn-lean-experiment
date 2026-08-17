@@ -154,7 +154,7 @@ Excluded:
 
 ## Acceptance evidence
 
-The maintained acceptance boundary is the focused package gates, both platform harness type gates, Product 1/Product 2 and Temporal boundary guards, source hygiene, the real three-producer live witness, headless Chromium acceptance, and the complete repository and M2 showcase gates. The live and browser witnesses are registered under `showcase/m2-process-instance-search/`; [TESTING-SPEC.md](TESTING-SPEC.md) owns their execution procedure, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact current evidence boundary, and [PLAN.md](PLAN.md) owns the latest measured result.
+The maintained acceptance boundary is the focused package gates, both platform harness type gates, Product 1/Product 2 and Temporal boundary guards, source hygiene, the real three-producer live witness, headless Chromium acceptance, and the complete repository and M2 showcase gates. The live and browser witnesses are registered under `showcase/m2-process-instance-search/`; [TESTING-SPEC.md](TESTING-SPEC.md) owns their execution procedure, the [BPM platform implementation map](BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns the exact current evidence boundary, and [PLAN.md](PLAN.md) owns the latest measured result.
 
 ## Common-mode risks and nearest unsupported claim
 

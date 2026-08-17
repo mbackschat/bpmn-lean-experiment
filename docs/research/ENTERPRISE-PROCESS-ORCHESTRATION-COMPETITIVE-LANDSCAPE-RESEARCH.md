@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-supplied, ChatGPT-generated research input imported on 2026-08-07; not project authority or an implementation claim.** It is the primary market input to the project-authored [BPM platform competitive scope research](BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md). [The BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md) owns the proposed first product contract, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) owns durable architecture and product boundaries, [PLAN.md](../PLAN.md) owns accepted sequencing, and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) owns the exact implemented and absent surface.
+**Owner-supplied, ChatGPT-generated research input imported on 2026-08-07; not project authority or an implementation claim.** It is the primary market input to the project-authored [BPM platform competitive scope research](BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md). [The BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md) owns the proposed first product contract, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) owns durable architecture and product boundaries, [PLAN.md](../PLAN.md) owns accepted sequencing, and the [BPM platform implementation map](../BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns the exact implemented and absent surface.
 
 ## Provenance
 

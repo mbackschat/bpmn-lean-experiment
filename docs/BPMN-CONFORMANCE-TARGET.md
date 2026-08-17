@@ -2,7 +2,7 @@
 
 ## Status
 
-Adopted durable target; exact implemented and absent coverage remains in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+Adopted durable target; exact implemented and absent coverage remains in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).
 
 This document owns the project’s standard-facing goal and the semantic consequences of the official BPMN 2.0.2 conformance model. It is an original project digest of the locally ingested sources described in the [reference corpus](reference/bpmn-2.0.2/README.md).
 

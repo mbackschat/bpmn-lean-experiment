@@ -2,7 +2,7 @@
 
 ## Status
 
-**Ingested external research input, supplied by the owner on 2026-08-07; not project-authored and not semantic authority.** It evaluates the four capabilities the companion [minimal engine research](MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) defers out of a first profile: Call Activity, multi-instance Activities, Event Sub-Process, and non-interrupting Boundary Events. It is a follow-up scope reference, not a schedule: this repository already implements bounded slices of Call Activity and of the non-interrupting boundary Timer, and their exact boundaries are owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) rather than by this document. Nothing here disposes a BPMN requirement or approves a semantic account.
+**Ingested external research input, supplied by the owner on 2026-08-07; not project-authored and not semantic authority.** It evaluates the four capabilities the companion [minimal engine research](MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) defers out of a first profile: Call Activity, multi-instance Activities, Event Sub-Process, and non-interrupting Boundary Events. It is a follow-up scope reference, not a schedule: this repository already implements bounded slices of Call Activity and of the non-interrupting boundary Timer, and their exact boundaries are owned by the [runtime and proof implementation map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) rather than by this document. Nothing here disposes a BPMN requirement or approves a semantic account.
 
 ## Provenance
 

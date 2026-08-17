@@ -209,7 +209,7 @@ Approval changes no file by itself. The later implementation checkpoint must upd
 
 - [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) for the implemented lifecycle, terminal receipt, command recovery, rollover, failure, and exclusions;
 - [TEMPORAL-TEST-EVIDENCE-MAP.md](TEMPORAL-TEST-EVIDENCE-MAP.md) and [TESTING-SPEC.md](TESTING-SPEC.md) for the exact forced-rollover, mutation, history, replay, and limit gates;
-- [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) and [PLAN.md](PLAN.md) for the implemented and next-work boundary;
+- the [Temporal hosting implementation map](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) and [PLAN.md](PLAN.md) for the implemented and next-work boundary;
 - [INTERMEDIATE-CATCH-MESSAGE-SPEC.md](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) and [SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md) for the host-only terminal-ledger move without changing their semantic accounts;
 - [RECEIVE-TASK-MESSAGE-SPEC.md](capsules/RECEIVE-TASK-MESSAGE-SPEC.md) for the same shared Message recovery lifecycle, and any other exact terminal-ledger assertion discovered during implementation;
 - [TEMPORAL-EXECUTION-RESEARCH.md](research/TEMPORAL-EXECUTION-RESEARCH.md) for the implemented Continue-As-New, recovery, deployment, and Worker-compatibility boundary;
