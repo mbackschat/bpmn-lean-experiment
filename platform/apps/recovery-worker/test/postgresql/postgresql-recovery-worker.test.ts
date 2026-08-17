@@ -7,6 +7,7 @@ import {
   createPostgresqlRuntime,
 } from "@bpmn-lean/platform-postgresql-runtime";
 import type {
+  PostgresqlRow,
   PostgresqlRuntime,
   PostgresqlSession,
 } from "@bpmn-lean/platform-postgresql-runtime";
@@ -59,8 +60,11 @@ if (connectionString === undefined) {
     }
   });
 
-  test("readiness proves PostgreSQL 18, exact epoch 9, disposable DML, and one engine connection", async () => {
+  test("readiness stays bounded with a large retained population", async (context) => {
+    const retainedPopulation = 5_000;
+    await insertRetainedProcessPopulation(first, retainedPopulation);
     let engineConnections = 0;
+    const startedAt = performance.now();
     await checkRecoveryWorkerReadiness({
       runtime: first,
       engineRuntime: {
@@ -88,38 +92,58 @@ if (connectionString === undefined) {
       `,
     });
     assert.deepEqual(readinessLeases.rows, [{ count: 0 }]);
+    context.diagnostic(JSON.stringify({
+      evidence: "horizon-1-recovery-bounded-readiness",
+      postgresqlMajor: 18,
+      schemaEpoch: RECOVERY_WORKER_SCHEMA_EPOCH,
+      retainedPopulation,
+      workerReplicas: 1,
+      batchSize: 1,
+      leaseDurationMs: 30_000,
+      wallTimeMs: Math.ceil(performance.now() - startedAt),
+    }));
   });
 
-  test("two runtimes contend, reclaim a dead lease, and reject stale completion without duplicate facts", async () => {
+  test("two workers claim disjoint bounded work and reclaim one dead lease without lost facts", async (context) => {
+    const startedAt = performance.now();
     await first.query({
       text: `
         TRUNCATE bpmn_platform.recovery_worker_test_facts,
           bpmn_platform.recovery_leases
       `,
     });
-    const key = new TextEncoder().encode("candidate\u0000identity");
+    const firstKey = new TextEncoder().encode("candidate\u0000one");
+    const secondKey = new TextEncoder().encode("candidate\u0000two");
+    const candidateKeys = [firstKey, secondKey];
     const firstStore = new PostgresqlRecoveryLeaseStore(first);
     const secondStore = new PostgresqlRecoveryLeaseStore(second);
     const [firstClaims, secondClaims] = await Promise.all([
-      firstStore.claimCandidates(claim(key, "worker-one", 100)),
-      secondStore.claimCandidates(claim(key, "worker-two", 100)),
+      firstStore.claimCandidates(claim(candidateKeys, "worker-one", 100)),
+      secondStore.claimCandidates(claim(candidateKeys, "worker-two", 100)),
     ]);
-    assert.equal(firstClaims.length + secondClaims.length, 1);
-    const originalStore = firstClaims.length === 1 ? firstStore : secondStore;
-    const reclaimStore = firstClaims.length === 1 ? secondStore : firstStore;
-    const original = firstClaims[0] ?? secondClaims[0]!;
+    assert.equal(firstClaims.length, 1);
+    assert.equal(secondClaims.length, 1);
+    const original = firstClaims[0]!;
+    const survivor = secondClaims[0]!;
+    assert.notDeepEqual(original.itemKey, survivor.itemKey);
+    assert.equal(
+      await secondStore.complete(survivor, async (session) => {
+        await insertFact(session, "survivor");
+      }),
+      LeaseMutationResult.Applied,
+    );
 
     await first.query({ text: "SELECT pg_sleep(0.12)" });
-    const [reclaimed] = await reclaimStore.claimCandidates(
-      claim(key, "reclaimer", 30_000),
+    const [reclaimed] = await secondStore.claimCandidates(
+      claim([original.itemKey], "reclaimer", 30_000),
     );
     assert.ok(reclaimed);
     assert.equal(reclaimed.attempt, 2);
-    assert.deepEqual(reclaimed.itemKey, key);
+    assert.deepEqual(reclaimed.itemKey, original.itemKey);
 
     let staleCallbacks = 0;
     assert.equal(
-      await originalStore.complete(original, async (session) => {
+      await firstStore.complete(original, async (session) => {
         staleCallbacks += 1;
         await insertFact(session, "stale");
       }),
@@ -127,15 +151,29 @@ if (connectionString === undefined) {
     );
     assert.equal(staleCallbacks, 0);
     assert.equal(
-      await reclaimStore.complete(reclaimed, async (session) => {
-        await insertFact(session, "current");
+      await secondStore.complete(reclaimed, async (session) => {
+        await insertFact(session, "reclaimed");
       }),
       LeaseMutationResult.Applied,
     );
     const facts = await first.query({
       text: "SELECT fact_id FROM bpmn_platform.recovery_worker_test_facts ORDER BY fact_id",
     });
-    assert.deepEqual(facts.rows, [{ fact_id: "current" }]);
+    assert.deepEqual(facts.rows, [
+      { fact_id: "reclaimed" },
+      { fact_id: "survivor" },
+    ]);
+    const database = await databaseFacts(first);
+    context.diagnostic(JSON.stringify({
+      evidence: "horizon-1-recovery-workers",
+      ...database,
+      workerReplicas: 2,
+      candidateCount: candidateKeys.length,
+      batchSize: 1,
+      initialLeaseDurationMs: 100,
+      reclaimLeaseDurationMs: 30_000,
+      wallTimeMs: Math.ceil(performance.now() - startedAt),
+    }));
   });
 }
 
@@ -153,15 +191,82 @@ function createRuntime(url: string, applicationName: string): PostgresqlRuntime 
   });
 }
 
-function claim(key: Uint8Array, workerId: string, leaseDurationMs: number) {
+function claim(
+  candidateKeys: readonly Uint8Array[],
+  workerId: string,
+  leaseDurationMs: number,
+) {
   return {
     family: "recovery-worker.real-candidate",
-    candidateKeys: [key],
+    candidateKeys,
     batchSize: 1,
     leaseDurationMs,
     workerId: new TextEncoder().encode(workerId),
     createLeaseToken: randomUUID,
   };
+}
+
+async function databaseFacts(runtime: PostgresqlRuntime): Promise<Readonly<{
+  postgresqlMajor: number;
+  schemaEpoch: number;
+}>> {
+  const result = await runtime.query<PostgresqlRow & Readonly<{
+    postgresql_major: number;
+    schema_epoch: number;
+  }>>({
+    text: `
+      SELECT
+        current_setting('server_version_num')::integer / 10000 AS postgresql_major,
+        epoch::integer AS schema_epoch
+      FROM bpmn_platform_meta.schema_epoch
+      WHERE singleton = true
+    `,
+  });
+  assert.deepEqual(result.rows, [{
+    postgresql_major: 18,
+    schema_epoch: RECOVERY_WORKER_SCHEMA_EPOCH,
+  }]);
+  return {
+    postgresqlMajor: result.rows[0]!.postgresql_major,
+    schemaEpoch: result.rows[0]!.schema_epoch,
+  };
+}
+
+async function insertRetainedProcessPopulation(
+  runtime: PostgresqlRuntime,
+  count: number,
+): Promise<void> {
+  await runtime.query({
+    text: `
+      WITH retained_head AS (
+        SELECT population_head
+        FROM bpmn_platform.operate_incident_snapshot_control
+        WHERE singleton = true
+        FOR UPDATE
+      ), inserted AS (
+        INSERT INTO bpmn_platform.operate_process_instances (
+          process_instance_id, process_id, definition_version, source_sha256,
+          public_identity_json, process_locator, observation, population_ordinal
+        )
+        SELECT
+          convert_to('worker-readiness-' || item::text, 'UTF8'),
+          convert_to('large-retained-definition', 'UTF8'),
+          1,
+          repeat('0', 64),
+          '{}',
+          convert_to('worker-readiness-locator-' || item::text, 'UTF8'),
+          'closed',
+          retained_head.population_head + item
+        FROM generate_series(1, $1::integer) AS item
+        CROSS JOIN retained_head
+        RETURNING population_ordinal
+      )
+      UPDATE bpmn_platform.operate_incident_snapshot_control
+      SET population_head = population_head + (SELECT count(*) FROM inserted)
+      WHERE singleton = true
+    `,
+    values: [count],
+  });
 }
 
 async function insertFact(session: PostgresqlSession, factId: string): Promise<void> {
