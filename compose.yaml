@@ -79,8 +79,8 @@ services:
       PLATFORM_HOST: 0.0.0.0
       PLATFORM_PORT: "3000"
       PLATFORM_POSTGRESQL_RUNTIME_URL: postgresql://bpmn_runtime:bpmn-runtime-evaluation@postgresql:5432/bpmn_platform
-      PLATFORM_PROJECTION_MAX_AGE_MS: "30000"
-      PLATFORM_PUBLIC_ORIGIN: http://localhost:3000
+      PLATFORM_PROJECTION_MAX_AGE_MS: ${BPMN_EVALUATION_PROJECTION_MAX_AGE_MS:-30000}
+      PLATFORM_PUBLIC_ORIGIN: ${BPMN_EVALUATION_ORIGIN:-http://localhost:3000}
       PLATFORM_STORAGE_MODE: shared
       PLATFORM_TEMPORAL_ADDRESS: temporal:7233
       PLATFORM_TEMPORAL_NAMESPACE: default
@@ -96,7 +96,7 @@ services:
       temporal:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "${BPMN_EVALUATION_PORT:-3000}:3000"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/definitions').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 2s
@@ -111,7 +111,8 @@ services:
       target: platform-recovery-worker
     environment:
       PLATFORM_POSTGRESQL_RUNTIME_URL: postgresql://bpmn_runtime:bpmn-runtime-evaluation@postgresql:5432/bpmn_platform
-      PLATFORM_PROJECTION_MAX_AGE_MS: "30000"
+      # Refresh before the API's 30-second acceptance boundary leaves stale or unavailable reads.
+      PLATFORM_PROJECTION_REFRESH_AFTER_MS: ${BPMN_EVALUATION_PROJECTION_REFRESH_AFTER_MS:-5000}
       PLATFORM_RECOVERY_WORKER_ID: evaluation-recovery-worker
       PLATFORM_TEMPORAL_ADDRESS: temporal:7233
       PLATFORM_TEMPORAL_NAMESPACE: default

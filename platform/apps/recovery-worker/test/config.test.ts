@@ -9,17 +9,26 @@ import {
 const required = {
   PLATFORM_POSTGRESQL_RUNTIME_URL: "postgresql://runtime:secret@127.0.0.1/platform",
   PLATFORM_RECOVERY_WORKER_ID: "worker-a",
-  PLATFORM_PROJECTION_MAX_AGE_MS: "3000",
+  PLATFORM_PROJECTION_REFRESH_AFTER_MS: "3000",
 };
 
-test("requires the runtime credential, worker identity, and projection age without migration fallback", () => {
+test("requires the runtime credential, worker identity, and projection refresh age without migration fallback", () => {
   assert.throws(
     () => readRecoveryWorkerConfig({
       PLATFORM_POSTGRESQL_MIGRATION_URL: required.PLATFORM_POSTGRESQL_RUNTIME_URL,
       PLATFORM_RECOVERY_WORKER_ID: required.PLATFORM_RECOVERY_WORKER_ID,
-      PLATFORM_PROJECTION_MAX_AGE_MS: required.PLATFORM_PROJECTION_MAX_AGE_MS,
+      PLATFORM_PROJECTION_REFRESH_AFTER_MS:
+        required.PLATFORM_PROJECTION_REFRESH_AFTER_MS,
     }),
     /PLATFORM_POSTGRESQL_RUNTIME_URL/u,
+  );
+  assert.throws(
+    () => readRecoveryWorkerConfig({
+      PLATFORM_POSTGRESQL_RUNTIME_URL: required.PLATFORM_POSTGRESQL_RUNTIME_URL,
+      PLATFORM_RECOVERY_WORKER_ID: required.PLATFORM_RECOVERY_WORKER_ID,
+      PLATFORM_PROJECTION_MAX_AGE_MS: "3000",
+    }),
+    /PLATFORM_PROJECTION_REFRESH_AFTER_MS/u,
   );
   assert.throws(
     () => readRecoveryWorkerConfig({ ...required, PLATFORM_RECOVERY_WORKER_ID: "" }),
@@ -55,6 +64,7 @@ test("uses bounded local defaults and snapshots the caller environment", () => {
   assert.equal(config.auditBatchSize, 100);
   assert.equal(config.maxWorkTasksPerProcess, 1_000);
   assert.equal(config.maxIncidentsPerProcess, 1_000);
+  assert.equal(config.projectionRefreshAfterMs, 3_000);
 });
 
 test("rejects unsafe bounds and inconsistent batch and lease relationships", () => {

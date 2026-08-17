@@ -23,7 +23,7 @@ A direct BPMN-to-Temporal translation can accidentally turn Workflow handlers, r
 | BPMN execution engine | Runnable over a bounded, versioned semantic-profile catalog; no broad conformance claim |
 | BPM platform | Functional MVP, Horizon 1 shared PostgreSQL closure, and containerized evaluation distribution complete; no production-capacity claim |
 | Executable corpus | 24 retained business-purpose models cover all 25 registered executable element or semantic variants; 7 external candidates remain classified separately |
-| Active work | make the browser walkthrough screenshot-backed |
+| Active work | select the next post-MVP increment |
 
 The engine accepts exact BPMN XML only under a declared profile, lowers it to a project-owned Semantic Process program, and runs that program through the same semantic core locally and inside Temporal. The React platform currently covers definition deployment and versioning, exact start and scheduled/message ingress, human task claims and structured forms, incidents and operator actions, Process search, semantic History and Diagram, metrics, About/capability disclosure, and canonical audit downloads. Exact support and restrictions live in the [implementation map](docs/IMPLEMENTATION-MAP.md), not in this summary.
 
@@ -178,7 +178,7 @@ Start the complete evaluation distribution with one command:
 ./scripts/pnpm.sh run evaluation:start
 ```
 
-Open [http://localhost:3000](http://localhost:3000), then follow the [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) for definition deployment, structured task completion, incident recovery, Process inspection, and hands-on exercises. The Compose path builds the exact PostgreSQL 18 shared platform, Temporal development service, Product 1 BPMN Worker, Product 2 API/web application, and Product 2 recovery Worker. PostgreSQL and Temporal state survive ordinary stops in named Docker volumes.
+Open [http://localhost:3000](http://localhost:3000), then follow the screenshot-backed, text-first [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) for definition deployment, structured task completion, incident recovery, Process inspection, and hands-on exercises. The Compose path builds the exact PostgreSQL 18 shared platform, Temporal development service, Product 1 BPMN Worker, Product 2 API/web application, and Product 2 recovery Worker. PostgreSQL and Temporal state survive ordinary stops in named Docker volumes.
 
 ```sh
 ./scripts/pnpm.sh run evaluation:stop

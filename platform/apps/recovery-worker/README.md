@@ -14,4 +14,6 @@ The explicit PostgreSQL 18 witness is separate:
 ./scripts/with-postgresql-18.sh ./scripts/pnpm.sh --filter @bpmn-lean/platform-recovery-worker test:postgresql
 ```
 
+The worker requires `PLATFORM_PROJECTION_REFRESH_AFTER_MS` as the age at which it proactively replaces completed projection generations. Set it below the API's `PLATFORM_PROJECTION_MAX_AGE_MS` so rebuilding starts before readers reach their fail-closed freshness boundary.
+
 The worker never migrates, performs a startup population scan, or exposes an HTTP reconciliation path. Apply migrations with `postgresql-migrate` before starting it. [The architecture](../../../docs/ARCHITECTURE.md#applications) owns the application boundary, and [the shared persistence proposal](../../../docs/BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) owns its durability and projection contract.

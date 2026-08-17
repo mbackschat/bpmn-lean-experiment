@@ -52,7 +52,26 @@ test("evaluation distribution has the closed healthy topology", async () => {
     serviceBlock(compose, "temporal"),
     /chown temporal:temporal \/var\/lib\/temporal.*exec su temporal/su,
   );
-  assert.match(serviceBlock(compose, "platform-api"), /"3000:3000"/u);
+  assert.match(
+    serviceBlock(compose, "platform-api"),
+    /"\$\{BPMN_EVALUATION_PORT:-3000\}:3000"/u,
+  );
+  assert.match(
+    serviceBlock(compose, "platform-api"),
+    /PLATFORM_PUBLIC_ORIGIN: \$\{BPMN_EVALUATION_ORIGIN:-http:\/\/localhost:3000\}/u,
+  );
+  assert.match(
+    serviceBlock(compose, "platform-api"),
+    /PLATFORM_PROJECTION_MAX_AGE_MS: \$\{BPMN_EVALUATION_PROJECTION_MAX_AGE_MS:-30000\}/u,
+  );
+  assert.match(
+    serviceBlock(compose, "platform-recovery-worker"),
+    /PLATFORM_PROJECTION_REFRESH_AFTER_MS: \$\{BPMN_EVALUATION_PROJECTION_REFRESH_AFTER_MS:-5000\}/u,
+  );
+  assert.doesNotMatch(
+    serviceBlock(compose, "platform-recovery-worker"),
+    /PLATFORM_PROJECTION_MAX_AGE_MS/u,
+  );
   assert.doesNotMatch(serviceBlock(compose, "temporal"), /^\s+ports:/mu);
 });
 
@@ -99,6 +118,15 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
   assert.doesNotMatch(workflow, /^    branches:/mu);
   assert.match(workflow, /runs-on: ubuntu-latest/u);
   assert.doesNotMatch(workflow, /macos-/u);
+  assert.match(workflow, /^      refresh_walkthrough_screenshots:$/mu);
+  assert.match(
+    workflow,
+    /run: \.\/scripts\/pnpm\.sh run walkthrough:screenshots:refresh/u,
+  );
+  assert.match(
+    workflow,
+    /path: docs\/assets\/bpm-platform-browser-walkthrough\//u,
+  );
 });
 
 test("migration and runtime database credentials stay separate", async () => {

@@ -1,0 +1,15 @@
+{
+  "name": "@bpmn-lean/showcase-platform-browser-walkthrough",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "type-test": "tsc -p tsconfig.json",
+    "test": "node --test test/*.test.ts",
+    "refresh": "pnpm run type-test && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

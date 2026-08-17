@@ -397,7 +397,7 @@ function createDomainRecoveryBindings(
       listCandidateKeys: async () => await workCandidates.listCandidateKeys(
         WorkPostgresqlRecoveryFamily.WorkSnapshot,
         config.candidateLimit,
-        config.projectionMaxAgeMs,
+        config.projectionRefreshAfterMs,
       ),
       handle: async (lease) => mapWorkSnapshotRecoveryStep(
         await workSnapshot.prepare(lease.itemKey),
@@ -437,7 +437,7 @@ function operateBinding(
       sourceFamily,
       config.candidateLimit,
       sourceFamily === OperatePostgresqlRecoveryFamily.IncidentSnapshot
-        ? config.projectionMaxAgeMs
+        ? config.projectionRefreshAfterMs
         : undefined,
     ),
     handle: async (lease) => mapOperateRecoveryStep(await prepare(lease.itemKey)),

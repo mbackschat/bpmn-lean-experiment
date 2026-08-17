@@ -2,253 +2,192 @@
 
 ## Status
 
-Implemented and maintained as a text-first tutorial over the current Product 2 browser surface. It uses the production platform server, HTTP-only web client, Temporal-hosted engine, and retained BPMN models through the existing showcase hosts. It is a user guide and hands-on learning path, not semantic, compatibility, or performance evidence. Automated documentation screenshots are deliberately deferred until the containerized evaluation topology is stable.
+Implemented and maintained as a text-first tutorial over the containerized Product 2 evaluation distribution. The screenshots are generated from the same public browser journey and illustrate stable landmarks, but the instructions remain complete when images are unavailable. This is a user guide and evaluation aid, not semantic, compatibility, performance, or production-capacity evidence.
 
 ## What you will do
 
-This walkthrough covers the complete current browser workflow in two independent labs:
+This walkthrough uses one persistent evaluation topology to:
 
-1. inspect exact capabilities, deploy and diagram a BPMN definition, start a Process instance, claim and complete a structured Human Task, and inspect metrics, semantic History, current Diagram, operator history, and canonical downloads;
-2. create real Service Task incidents, recover one with Retry, cancel another Process, and inspect incident audit.
-
-Optional exercises cover exact-version Timer Start scheduling, Message Start publication, validation failure, conditional form input, source-authored BPMN DI, and modeller handoff.
+1. inspect the exact capability boundary;
+2. deploy and diagram a BPMN definition;
+3. start an exact definition version;
+4. claim and complete a structured Human Task;
+5. inspect semantic History, the terminal Diagram, and exact-version metrics;
+6. create two Service Task incidents;
+7. retry one incident and cancel the other Process;
+8. inspect the resulting Product 2 audit records.
 
 ```mermaid
 flowchart LR
-  About[Inspect version and capabilities] --> Deploy[Deploy exact BPMN and profile]
-  Deploy --> Diagram[Inspect source or generated diagram]
-  Diagram --> Start[Start or trigger exact version]
+  About[Inspect capabilities] --> Deploy[Deploy exact BPMN]
+  Deploy --> Start[Start exact version]
   Start --> Work[Claim and complete Human Work]
-  Start --> Incident[Inspect and resolve incident]
-  Work --> Complete[Completed Process]
-  Incident --> Complete
-  Complete --> Operate[Search, History, Diagram, metrics, and audit]
+  Work --> Operate[Inspect History, Diagram, and metrics]
+  Operate --> Incidents[Retry and cancel incidents]
+  Incidents --> Audit[Inspect action audit]
 ```
 
-The browser never talks directly to Temporal. It uses the public Product 2 HTTP API, which reaches the engine only through the narrowed engine gateway.
+The browser talks only to the public Product 2 HTTP API. The API reaches the Temporal-hosted engine through the narrowed engine gateway, while PostgreSQL-backed recovery workers refresh projections outside request handling.
 
-## Current browser surfaces
+## Prerequisites and lifecycle
 
-| Workspace | What it exposes |
-|---|---|
-| About | Exact package version, the 25 supported executable element or semantic variants, current restrictions, and separately classified CIB Seven evidence |
-| Definitions | Deployment, admission diagnostics, versions, exact source identity, Diagram, derived diagrammed-BPMN download, exact-version Start, Timer and Message triggers, and flow-node metrics |
-| Work | Priority-ranked current tasks, explicit Claim and Release, task Details and Diagram, structured forms, action-dependent input, validation, and completion |
-| Operations | Confirmed Process search, current incidents, Retry and root-Process Cancel, semantic Overview, History and Diagram, incident audit, operator history, and canonical downloads |
+Install the frozen workspace dependencies and ensure Docker with Compose v2 is available. Reading and performing the walkthrough does not require Lean, Java, the CIB Seven checkout, Playwright, or a host PostgreSQL or Temporal installation.
 
-Some engine capabilities are intentionally API- or runner-only and therefore do not appear as separate browser controls. The [implementation map](IMPLEMENTATION-MAP.md) owns that exact boundary.
-
-## Prerequisites
-
-Complete the [clean-clone contributor setup](CONTRIBUTOR-SETUP-GUIDE.md#clean-clone-path). The walkthrough itself does not require Lean, the CIB Seven checkout, Playwright, or a browser plugin. Its showcase host uses the pinned local Temporal test service and the configured development identity `demo-user` in candidate group `reviewers`.
-
-Build the two Product 2 applications once:
+Start the complete evaluation distribution:
 
 ```sh
-./scripts/pnpm.sh run build:platform-server
-./scripts/pnpm.sh run build:platform-web
+./scripts/pnpm.sh install --frozen-lockfile
+./scripts/pnpm.sh run evaluation:start
 ```
 
-Each lab stores platform data in a temporary directory and deletes it when its host stops. Complete a lab before stopping its host.
+Open [http://localhost:3000](http://localhost:3000). The shell should show Work, Definitions, Operations, and About, plus `Signed in as demo-user`.
 
-## Lab 1: deploy, work, and explain a Process
-
-### Start the local product
-
-In terminal 1, start the ephemeral Temporal service, production BPMN Worker, and Product 2 API server:
+PostgreSQL and Temporal state survive an ordinary stop. If you previously used this distribution and want the exact version numbers and empty collections described below, deliberately remove that retained evaluation state before starting:
 
 ```sh
-PLATFORM_PARSER_DEADLINE_MS=5000 \
-PLATFORM_PORT=3203 \
-PLATFORM_TEMPORAL_TASK_QUEUE=bpmn-m3-human-work \
-./scripts/pnpm.sh run showcase:m3-human-work:host
+./scripts/pnpm.sh run evaluation:reset
+./scripts/pnpm.sh run evaluation:start
 ```
 
-Wait for `M3 Human Work showcase ready at http://127.0.0.1:3203`. The first run may take longer while the pinned Temporal test service is prepared.
+`evaluation:reset` deletes only the evaluation distribution's named PostgreSQL and Temporal volumes. Do not use it when you want to retain prior evaluation data.
 
-In terminal 2, serve the built web application and proxy its API requests to that host:
+## 1. Inspect the honest capability boundary
 
-```sh
-PLATFORM_API_ORIGIN=http://127.0.0.1:3203 \
-./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite preview \
-  --host 127.0.0.1 --port 4276 --strictPort
-```
+Open **About**. Confirm that **Coverage boundary** says **Not a conformance claim** and that the table contains 25 executable element or semantic-variant rows. Compare a standards-only row with a row carrying classified CIB Seven evidence.
 
-Open [http://127.0.0.1:4276](http://127.0.0.1:4276). The shell should show Work, Definitions, Operations, and About, plus `Signed in as demo-user`.
+The table reports exact variants rather than a percentage. BPMN requirement coverage, selected CIB compatibility, and platform functionality remain separate denominators.
 
-### Exercise 1: inspect the honest capability boundary
+![About workspace showing the versioned BPMN capability boundary and non-conformance notice](assets/bpm-platform-browser-walkthrough/01-about-capability-boundary.png)
 
-1. Open **About**.
-2. Confirm the displayed package version and **25** capability rows.
-3. Compare at least one standards-only row with one row carrying classified CIB Seven evidence.
-4. Read the restriction text for a familiar element such as User Task, Exclusive Gateway, or Boundary Event.
+## 2. Deploy and inspect structured Human Work
 
-The table reports variants rather than a percentage. BPMN requirements, selected CIB compatibility, and platform functionality remain different denominators.
+1. Open **Definitions** and expand **Add BPMN definition**.
+2. Select [`scenarios/expense-exception-review/process.bpmn`](../scenarios/expense-exception-review/process.bpmn).
+3. Enter semantic profile ID `bpmn-2.0.2-bpmn-lean-structured-human-work-draft`.
+4. Choose **Deploy definition**.
 
-### Exercise 2: deploy and inspect structured Human Work
+The result should say **Admitted and deployed** for `Process_ExpenseExceptionReview`, version 1 on a clean distribution. Its **Diagram** view says **Generated layout** because the admitted source intentionally contains no BPMN DI. Product 2 retains a digest-bound presentation sidecar and an exact-source-bound Human Task catalog without changing the admitted source or adding form meaning to Product 1.
 
-1. Open **Definitions**.
-2. Expand **Add BPMN definition**.
-3. Select [`scenarios/expense-exception-review/process.bpmn`](../scenarios/expense-exception-review/process.bpmn).
-4. Enter semantic profile ID `bpmn-2.0.2-bpmn-lean-structured-human-work-draft`.
-5. Choose **Deploy definition**.
+![Definitions workspace showing the deployed expense-exception Process and generated BPMN diagram](assets/bpm-platform-browser-walkthrough/02-expense-definition-diagram.png)
 
-The result should say **Admitted and deployed** for `Process_ExpenseExceptionReview`, version 1. The selected version's **Diagram** tab should show **Generated layout** because the exact admitted source intentionally contains no BPMN DI. Product 2 generated and retained a digest-bound presentation sidecar and a separately closed Human Task catalog without changing the admitted source or adding form meaning to Product 1.
+Choose **Download diagrammed BPMN** if you want a derived document that merges the exact semantic model with validated BPMN DI for use in a BPMN modeller. It is not the admitted source.
 
-Choose **Download diagrammed BPMN**. The downloaded document combines the exact semantic model with validated BPMN DI and is suitable for a BPMN DI-capable modeller. It is a derived presentation copy, not the admitted source.
+## 3. Start the exact definition version
 
-### Exercise 3: start the exact definition version
+Open the definition's **Start** view and choose **Start version 1**, or the displayed selected version if you retained earlier state. Keep the returned Process-instance ID.
 
-1. Open the definition's **Start** tab.
-2. Choose **Start version 1**.
-3. Retain the displayed Process-instance ID.
+The public identity binds the instance to its Process ID, definition version, exact source digest, and semantic profile. Product 2 keeps the Temporal observation locator private.
 
-The public identity binds the instance to `Process_ExpenseExceptionReview`, version 1, its exact source digest, and its semantic profile. Product 2 keeps the Temporal observation locator private.
+## 4. Claim the current task
 
-### Exercise 4: claim and inspect the task
+1. Open **Work** and choose **Refresh** until **Review exception** appears.
+2. Confirm candidate group `reviewers`, priority 80, and state **Unclaimed**.
+3. Choose **Claim** and confirm **Claimed by demo-user**.
+4. Select **Review exception**, then inspect **Details** and **Diagram** if desired.
 
-1. Open **Work** and choose **Refresh** if necessary.
-2. Find **Review exception**. Priority 80 places it ahead of ordinary priority-50 work. The row should show candidate group `reviewers` and state **Unclaimed**.
-3. Confirm that the task name does not open a completion form while unclaimed.
-4. Choose **Claim**. The row should change to **Claimed by demo-user** and the task name should become selectable.
-5. Select **Review exception** to open its full-width workspace.
-6. Open **Details** and inspect the public Process identity, hosting root identity, element ID, activation, candidate group, description, priority, and catalog binding.
-7. Open **Diagram** and confirm that the exact `ReviewException` occurrence is highlighted.
+Claim state, actor policy, priority, and the form catalog are Product 2 concerns. Task occurrence identity and the completion result come only from Product 1's publication.
 
-Claim state, authorization, priority, and the form catalog are Product 2 concerns. Task occurrence identity and completion outcome come only from Product 1's publication.
+![Work inbox showing the unclaimed Review exception task, candidate group, and priority](assets/bpm-platform-browser-walkthrough/03-expense-work-inbox.png)
 
-### Exercise 5: explore validation and conditional input
+## 5. Complete the structured form
 
-1. Open **Form**.
-2. Choose **Abort** before filling any input. The form should identify the first required field and move focus there.
-3. Enter a request reference and expense date.
-4. Optionally enter a whole approved amount.
-5. Choose a cost center, one or more risk flags, and an explicit true-or-false notification value.
-6. Choose **Abort** again. **Resolution reason** should now be visible and required.
-7. Submit once without the reason and confirm that validation focuses that exact field.
-8. Enter `Duplicate expense.` and choose **Abort** again.
+Open the task's **Form** view and enter:
 
-You can instead use **Approve**, where the reason is absent, or **Request changes**, where it is required. Product 2 validates the complete catalog-bound request and computes one canonical typed patch. The engine atomically commits or rejects the exact task occurrence and follows the matching Exclusive Gateway route.
+- Request reference: `EXP-WALKTHROUGH-001`
+- Expense date: `2026-08-17`
+- Approved amount: `4250`
+- Cost center: **Engineering**
+- Risk flags: **Missing receipt** and **Policy exception**
+- Notify requester: **True**
 
-After a committed completion, the task detail closes and the inbox reports **No current tasks**.
+Choose **Approve**. A committed completion closes the detail and, after the background projection refresh, the Work collection reports **No current tasks**. If the response was transport-indeterminate, use the offered **Retry completion** control because it resubmits the retained command identity rather than creating a different completion.
 
-### Exercise 6: inspect the completed Process
+![Claimed Review exception task showing its completed structured approval form](assets/bpm-platform-browser-walkthrough/04-expense-structured-form.png)
 
-1. Open **Operations** and select **Process instances**.
-2. Enter the retained Process-instance ID, or filter by Process ID `Process_ExpenseExceptionReview`.
-3. Choose **Search**, then **View details** for the matching row.
-4. In **Overview**, confirm status **completed** and choose **Download execution history** if you want the canonical execution publication.
-5. In **History**, inspect the contiguous engine-published transitions including `startProcess`, `completeUserTaskInstance`, and the selected route.
-6. In **Diagram**, confirm the terminal semantic positions rendered over the definition presentation.
-7. In **Operator history**, inspect Work and incident-action events as separate source-ordered collections, then choose **Download operator audit**.
+For a validation exercise, select **Abort** before entering a required resolution reason. The form should focus the missing field. Product 2 validates the exact catalog-bound request and computes one canonical typed patch before the engine atomically commits or rejects the task occurrence.
 
-Semantic History is published by the engine and is never reconstructed from Temporal Event History or state differences. Operator history is Product 2 audit and remains separately ordered and independently available.
+## 6. Inspect the completed Process
 
-### Exercise 7: inspect definition metrics
+1. Open **Operations**, then **Process instances**.
+2. Search for the retained Process-instance ID and choose **View details**.
+3. Confirm status **completed**.
+4. Open **History** and inspect the contiguous engine-published `completeUserTaskInstance` record for `ReviewException`.
 
-1. Return to **Definitions** and select `Process_ExpenseExceptionReview`, version 1.
-2. Open **Flow-node metrics**.
-3. Compare **Frequency** and **Duration**.
+Semantic History is published by the engine. Product 2 never reconstructs it from Temporal Event History or state differences.
 
-Metrics are derived from complete engine-published flow-node occurrences for the exact definition population. They are not transition counts or platform request durations.
+![Completed expense-exception Process showing its committed semantic History](assets/bpm-platform-browser-walkthrough/05-completed-process-history.png)
 
-### Optional exercise: compare source-authored BPMN DI
+Open **Diagram** and inspect the terminal committed positions over the retained definition presentation.
 
-Deploy [`scenarios/user-task-preserved-notation/process.bpmn`](../scenarios/user-task-preserved-notation/process.bpmn) with profile `bpmn-2.0.2-user-task-preserved-notation-draft`.
+![Completed expense-exception Process showing its terminal committed Diagram](assets/bpm-platform-browser-walkthrough/06-completed-process-diagram.png)
 
-Its Diagram tab should say **Source layout** and retain the authored Collaboration, pool, lane, annotation, and association. This model is a notation-preservation witness, not claimable Human Work, because it intentionally publishes no assignment metadata.
+## 7. Inspect exact-version metrics
 
-### Optional exercise: use exact-version triggers
+Return to **Definitions**, select `Process_ExpenseExceptionReview` and its deployed version, then open **Flow-node metrics**. Confirm **All retained evidence**, **1 Process instance**, and the frequency and completed-duration table.
 
-The **Triggers** tab exposes only capabilities published by the selected exact version.
+Metrics come from complete engine-published flow-node occurrences for one exact-definition population. They are not transition counts or platform request durations.
 
-- Deploy [`scenarios/timer-start-event/process.bpmn`](../scenarios/timer-start-event/process.bpmn) with profile `bpmn-2.0.2-timer-start-event-draft`. Open **Triggers**, inspect `TimerStart_PT1S`, enter a canonical future UTC whole second ending in `.000Z`, and create a schedule. Refresh it after its due instant to see the exact version's started instance.
-- Deploy [`scenarios/message-start-event/process.bpmn`](../scenarios/message-start-event/process.bpmn) with profile `bpmn-2.0.2-message-start-event-draft`. Open **Triggers**, inspect the published Message, Interface, and Operation identity, then choose **Publish Message Start**. The publication ID and resulting Process-instance ID remain distinct.
+![Expense-exception definition showing exact-version flow-node frequency metrics](assets/bpm-platform-browser-walkthrough/07-definition-flow-node-metrics.png)
 
-These are exact-version product capabilities, not generic cron or message-broker abstractions.
-
-## Lab 2: recover and cancel incidents
-
-Stop both Lab 1 processes, then reuse the same browser and web port with the M4 host.
-
-### Start the incident environment
-
-In terminal 1:
-
-```sh
-PLATFORM_PARSER_DEADLINE_MS=5000 \
-PLATFORM_PORT=3204 \
-PLATFORM_TEMPORAL_TASK_QUEUE=bpmn-m4-incident-operations \
-./scripts/pnpm.sh run showcase:m4-incident-operations:host
-```
-
-In terminal 2:
-
-```sh
-PLATFORM_API_ORIGIN=http://127.0.0.1:3204 \
-./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite preview \
-  --host 127.0.0.1 --port 4276 --strictPort
-```
-
-Open [http://127.0.0.1:4276](http://127.0.0.1:4276).
-
-### Exercise 8: create two independently operable incidents
+## 8. Create two independently operable incidents
 
 Use [`scenarios/service-task-effect/process.bpmn`](../scenarios/service-task-effect/process.bpmn) twice:
 
 1. Deploy it with profile `cibseven-2.2.0-service-task-incident-draft`, then start that exact version.
-2. Deploy the same exact source with profile `cibseven-2.2.0-service-task-incident-cancellation-draft`, then start the new exact version.
-3. Open **Operations**, select **Incidents**, and choose **Refresh** until both current incidents appear.
+2. Deploy the same exact source with profile `cibseven-2.2.0-service-task-incident-cancellation-draft`, then start its new exact version.
+3. Open **Operations**, select **Incidents**, and switch between visible Operations tabs until both current incidents appear.
 
-The retry profile publishes only **Retry**. The cancellation profile additionally publishes **Cancel Process**. These controls reflect exact engine-published interactions rather than generic buttons inferred from an error state.
+The retry profile publishes only **Retry**. The cancellation profile additionally publishes **Cancel Process**. These controls reflect exact engine-published interactions rather than generic actions inferred from an error state.
 
-### Exercise 9: retry one incident
+![Operations workspace showing Retry-only and cancellable current Service Task incidents](assets/bpm-platform-browser-walkthrough/08-current-incidents.png)
 
-1. Open the incident belonging to the retry-profile instance.
-2. Inspect **Overview**, **Diagram**, and **Audit**.
-3. Return to **Overview** and choose **Retry**.
-4. Confirm that the incident leaves the current collection and the Process completes.
+## 9. Retry and cancel
 
-Retry is an exact content-bound semantic command. It is distinct from Temporal Activity retry and from resubmitting an unknown transport result.
+Open the retry-profile incident and choose **Retry**. If the response is transport-indeterminate, use **Submit Retry again** to retain the exact action identity. The incident should leave the current collection when the Process completes.
 
-### Exercise 10: cancel the other Process
+Open the remaining incident and choose **Cancel Process**. The confirmation dialog initially focuses **Keep Process running** and explains that cancellation removes all remaining live work. Choose **Cancel root Process** only after reviewing that scope.
 
-1. Open the remaining incident.
-2. Choose **Cancel Process**.
-3. Read the confirmation dialog and choose **Cancel root Process**.
-4. Confirm that no current incident remains.
-5. Open the top-level **Audit** collection and filter by actor `demo-user`.
+![Incident detail showing the confirmation dialog for cancelling the incident-bearing root Process](assets/bpm-platform-browser-walkthrough/09-cancel-process-confirmation.png)
 
-The cancellation command targets the exact incident-gated hosting root. It does not expose a Temporal Workflow ID or native cancellation as a BPMN fact.
+The command targets the exact incident-gated hosting root. It does not expose a Temporal Workflow ID or treat native Temporal cancellation as a BPMN fact.
 
-## Edit a generated layout in a modeller
+## 10. Inspect incident action audit
 
-The internal generated-DI sidecar is not a standalone modeller file. Use **Download diagrammed BPMN** to obtain the merged document, edit its layout in a standards-oriented BPMN modeller, and save it.
+Return to the top-level Operations collection, open **Audit**, and filter actor ID to `demo-user`. Refresh until the settled status reports the platform action records and the table shows committed Retry and Cancel Process rows.
 
-Deploying the saved document creates a new definition version with new exact source bytes. If it contains complete usable embedded DI and still satisfies the selected semantic profile, the version resolves through **Source layout**. It never overwrites the original admitted source or mutates its generated sidecar.
+The audit stream is Product 2 evidence with its own contiguous source order. It remains distinct from semantic History.
+
+![Incident action audit showing committed Retry and Cancel Process actions for demo-user](assets/bpm-platform-browser-walkthrough/10-incident-action-audit.png)
+
+## Stop or retain the environment
+
+Stop the containers while preserving PostgreSQL and Temporal data:
+
+```sh
+./scripts/pnpm.sh run evaluation:stop
+```
+
+Run `./scripts/pnpm.sh run evaluation:reset` later only when you deliberately want to remove both retained evaluation volumes. This Compose topology is an evaluation convenience, not a production Temporal deployment or capacity claim.
+
+## Refresh the maintained screenshots
+
+Readers do not need the screenshot tooling. Maintainers regenerate the complete ordered catalog explicitly after a material UI change or for a release candidate:
+
+```sh
+./scripts/pnpm.sh run walkthrough:screenshots:refresh
+```
+
+The command allocates a dynamic loopback port, starts an isolated Compose project with fresh temporary volumes, drives only public accessible UI landmarks in one Chromium browser, writes the ten 1440 by 900 images, and removes the isolated containers and volumes after success or failure. It does not reuse or delete the ordinary evaluation distribution's state.
+
+Screenshot refresh is not part of ordinary commit CI and performs no pixel comparison. The manual or tagged [evaluation distribution workflow](../.github/workflows/evaluation-distribution.yml) can regenerate and upload the catalog as a review artifact. Direct execution against an already-running origin is an advanced package-level path documented in the [screenshot project README](../showcase/platform-browser-walkthrough/README.md).
 
 ## Troubleshooting
 
-- **The API host does not start:** check whether the selected API port is already in use. If you change it, use the same origin in `PLATFORM_API_ORIGIN`.
-- **The web preview reports a port conflict:** choose another preview port and open that address.
-- **No task appears:** deploy and start the expense-exception model with the exact structured profile, confirm the shell says `demo-user`, and choose **Refresh**. Metadata-free User Tasks are intentionally absent from the Work inbox.
-- **The form is unavailable:** structured work requires exact catalog identity and engine-published task element identity to match. Missing, corrupt, or mismatched catalogs fail closed without changing the task.
-- **No incident appears:** ensure the M4 host is running, use one of the two exact incident profiles, start the matching version, and refresh Incidents after the failing effect is reported.
-- **The Diagram says unavailable:** models outside the generated-layout scope must contain complete usable source DI or remain honestly unavailable.
-- **The Process disappears after restart:** these walkthrough hosts intentionally use temporary data. The production server supports a configured persistent directory, while the planned evaluation Compose path will use named volumes.
-
-## Automated evidence and future screenshots
-
-The current production-backed browser journeys are executable now:
-
-```sh
-./scripts/pnpm.sh run test:showcase:m3-human-work
-./scripts/pnpm.sh run test:showcase:m4-incident-operations
-```
-
-They verify behavior, public boundaries, keyboard and focus behavior, responsive containment, live Temporal history, and replay. They do not generate documentation images.
-
-After shared persistence establishes the intended evaluation topology, a dedicated Playwright documentation project will drive the containerized product and write stable named screenshots for the major tutorial landmarks. Screenshot regeneration will be explicit at release candidates or after material UI changes rather than part of ordinary CI.
+- **The public origin does not become healthy:** run `docker compose ps` and `docker compose logs`. Check that port 3000 is free.
+- **A task or incident has not appeared yet:** use the visible refresh or tab controls. Shared reads fail closed when their bounded projection is not current; background workers repair it without request-time fleet fan-out.
+- **A displayed version differs from this guide:** the evaluation volumes contain prior data. Continue with the selected exact version or deliberately reset the evaluation volumes.
+- **The form is unavailable:** structured Work requires exact catalog identity and engine-published task identity to match. Missing, corrupt, or mismatched data fails closed without changing the task.
+- **The Diagram says unavailable:** models outside generated-layout scope must contain complete usable source DI or remain honestly unavailable.
 
 ## Contract owners
 

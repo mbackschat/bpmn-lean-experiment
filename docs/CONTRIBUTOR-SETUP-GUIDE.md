@@ -51,6 +51,15 @@ Open [http://localhost:3000](http://localhost:3000). The first start builds the 
 
 The Compose topology runs PostgreSQL 18.4, the Temporal development service, the separate migration application, one persistent Product 1 BPMN Worker, the shared Product 2 API serving the built web bundle, and the Product 2 recovery Worker. It exposes only port 3000. It is neither a production Temporal deployment nor evidence of throughput or capacity.
 
+The maintained [browser walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) is text-first and needs no screenshot tooling. A maintainer who intentionally refreshes its images additionally installs the screenshot project's pinned Chromium revision, then runs one isolated capture command:
+
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/showcase-platform-browser-walkthrough exec playwright install chromium
+./scripts/pnpm.sh run walkthrough:screenshots:refresh
+```
+
+The refresh command allocates a dynamic loopback port, uses a distinct Compose project with fresh volumes, and removes those containers and volumes on success or failure. It does not reuse or delete the ordinary evaluation distribution's state.
+
 ## Provisioning scopes
 
 | Scope | Inputs | Required for |

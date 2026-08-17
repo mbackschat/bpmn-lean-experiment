@@ -39,7 +39,8 @@ const limits = Object.freeze({
 export type RecoveryWorkerConfig = Readonly<{
   postgresqlRuntimeUrl: string;
   workerId: string;
-  projectionMaxAgeMs: number;
+  /** Age at which the worker proactively replaces a completed projection generation. */
+  projectionRefreshAfterMs: number;
   maxSourceBytes: number;
   parserDeadlineMs: number;
   temporalAddress: string;
@@ -65,16 +66,20 @@ export type RecoveryWorkerConfig = Readonly<{
   maxIncidentsPerProcess: number;
 }>;
 
-/** Reads a credential-bearing environment once and returns an immutable value snapshot. */
+/**
+ * Reads a credential-bearing environment once and returns an immutable value snapshot.
+ * Projection refresh age is intentionally distinct from the API's accepted maximum age so
+ * deployments can rebuild before readers reach their fail-closed freshness boundary.
+ */
 export function readRecoveryWorkerConfig(
   environment: NodeJS.ProcessEnv = process.env,
 ): RecoveryWorkerConfig {
   const config: RecoveryWorkerConfig = {
     postgresqlRuntimeUrl: readRequired(environment, "PLATFORM_POSTGRESQL_RUNTIME_URL"),
     workerId: readRequired(environment, "PLATFORM_RECOVERY_WORKER_ID"),
-    projectionMaxAgeMs: readInteger(
+    projectionRefreshAfterMs: readInteger(
       environment,
-      "PLATFORM_PROJECTION_MAX_AGE_MS",
+      "PLATFORM_PROJECTION_REFRESH_AFTER_MS",
       undefined,
       limits.durationMs,
     ),
@@ -227,7 +232,7 @@ export function snapshotRecoveryWorkerConfig(
     throw new RangeError("workerId exceeds 1024 UTF-8 bytes");
   }
   for (const [name, maximum] of [
-    ["projectionMaxAgeMs", limits.durationMs],
+    ["projectionRefreshAfterMs", limits.durationMs],
     ["maxSourceBytes", limits.safe],
     ["parserDeadlineMs", limits.durationMs],
     ["temporalConnectTimeoutMs", limits.durationMs],

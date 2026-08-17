@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: false
+      refresh_walkthrough_screenshots:
+        description: Refresh and upload the maintained browser walkthrough screenshots
+        required: false
+        type: boolean
+        default: false
   push:
     tags:
       - "v*"
@@ -44,6 +49,50 @@ jobs:
       - name: Stop the evaluation distribution
         if: always()
         run: docker compose down --volumes --remove-orphans
+
+      - name: Resolve pinned toolchain versions
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          {
+            printf 'node=%s\n' "$required_node_version"
+            printf 'pnpm=%s\n' "$required_pnpm_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: ${{ steps.pins.outputs.pnpm }}
+
+      - name: Set up Node
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        run: pnpm install --frozen-lockfile
+
+      - name: Install screenshot Chromium
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        run: ./scripts/pnpm.sh --filter @bpmn-lean/showcase-platform-browser-walkthrough exec playwright install --with-deps chromium
+
+      - name: Refresh browser walkthrough screenshots
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        run: ./scripts/pnpm.sh run walkthrough:screenshots:refresh
+
+      - name: Upload browser walkthrough screenshots
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bpm-platform-browser-walkthrough-screenshots
+          if-no-files-found: error
+          retention-days: 14
+          path: docs/assets/bpm-platform-browser-walkthrough/
 
       - name: Log in to the GitHub Container Registry
         if: github.event_name == 'push' || inputs.publish_images == true
