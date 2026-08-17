@@ -33,6 +33,7 @@ import {
   decodePostgresqlRegistration,
   encodePostgresqlWorkText,
   taskSqlValues,
+  numeric,
 } from "./postgresql-work-values.js";
 import {
   applyRetainedClaim,
@@ -51,6 +52,7 @@ import {
 import {
   completionResult,
   requireObservation,
+  requirePositiveSafeInteger,
   requireString,
   sameJson,
   snapshotCompletionBinding,
@@ -70,31 +72,102 @@ export class PostgresqlWorkRepository {
 
   async recordConfirmedProcessInstance(
     publication: ConfirmedProcessWorkPublication,
+  ): Promise<void>;
+  async recordConfirmedProcessInstance(
+    session: PostgresqlSession,
+    publication: ConfirmedProcessWorkPublication,
+  ): Promise<void>;
+  async recordConfirmedProcessInstance(
+    publicationOrSession: ConfirmedProcessWorkPublication | PostgresqlSession,
+    publicationValue?: ConfirmedProcessWorkPublication,
   ): Promise<void> {
-    const exact = snapshotPublication(publication);
-    await this.runtime.transaction(async (session) => {
-      await session.query({
-        text: `
-          INSERT INTO bpmn_platform.work_processes (
-            process_instance_id, public_instance_json, work_locator, observation
-          ) VALUES ($1, $2, $3, 'indeterminate')
-          ON CONFLICT (process_instance_id) DO NOTHING
-        `,
-        values: [
-          text(exact.instance.processInstanceId, "processInstanceId"),
-          JSON.stringify(exact.instance),
-          text(exact.locator, "locator"),
-        ],
-      });
-      const row = await readRegistration(session, exact.instance.processInstanceId, true);
-      if (row === null ||
-          !sameJson(row.instance, exact.instance) ||
-          row.locator !== exact.locator) {
-        throw new WorkRepositoryIntegrityError(
-          `confirmed Work registration ${exact.instance.processInstanceId} conflicts`,
-        );
-      }
+    if (publicationValue !== undefined) {
+      await this.#recordConfirmedProcessInstance(
+        publicationOrSession as PostgresqlSession,
+        snapshotPublication(publicationValue),
+      );
+      return;
+    }
+    const exact = snapshotPublication(
+      publicationOrSession as ConfirmedProcessWorkPublication,
+    );
+    await this.runtime.transaction(async (session) =>
+      await this.#recordConfirmedProcessInstance(session, exact));
+  }
+
+  async #recordConfirmedProcessInstance(
+    session: PostgresqlSession,
+    exact: ConfirmedProcessWorkPublication,
+  ): Promise<void> {
+    const control = await session.query({
+      text: `
+        SELECT population_head
+        FROM bpmn_platform.work_snapshot_control
+        WHERE singleton = true
+        FOR UPDATE
+      `,
     });
+    const populationHead = requirePositiveOrZero(
+      control.rows[0]?.population_head,
+      "Work population head",
+    );
+    const nextOrdinal = populationHead + 1;
+    if (!Number.isSafeInteger(nextOrdinal)) {
+      throw new WorkRepositoryIntegrityError("Work population ordinal space is exhausted");
+    }
+    const inserted = await session.query({
+      text: `
+        INSERT INTO bpmn_platform.work_processes (
+          process_instance_id, public_instance_json, work_locator,
+          observation, population_ordinal
+        ) VALUES ($1, $2, $3, 'indeterminate', $4)
+        ON CONFLICT (process_instance_id) DO NOTHING
+        RETURNING population_ordinal
+      `,
+      values: [
+        text(exact.instance.processInstanceId, "processInstanceId"),
+        JSON.stringify(exact.instance),
+        text(exact.locator, "locator"),
+        nextOrdinal,
+      ],
+    });
+    if (inserted.rowCount === 1) {
+      const changed = await session.query({
+        text: `
+          UPDATE bpmn_platform.work_snapshot_control
+          SET population_head = $1
+          WHERE singleton = true AND population_head = $2
+        `,
+        values: [nextOrdinal, populationHead],
+      });
+      if (changed.rowCount !== 1) {
+        throw new WorkRepositoryIntegrityError("Work population head lost its allocation");
+      }
+    }
+    const retained = await session.query({
+      text: `
+        SELECT * FROM bpmn_platform.work_processes
+        WHERE process_instance_id = $1
+        FOR UPDATE
+      `,
+      values: [text(exact.instance.processInstanceId, "processInstanceId")],
+    });
+    const retainedRow = retained.rows[0];
+    if (retainedRow === undefined) {
+      throw new WorkRepositoryIntegrityError("confirmed Work registration disappeared");
+    }
+    const registration = decodePostgresqlRegistration(retainedRow);
+    const ordinal = requirePositiveSafeInteger(
+      numeric(retainedRow.population_ordinal),
+      "population_ordinal",
+    );
+    if (!sameJson(registration.instance, exact.instance) ||
+        registration.locator !== exact.locator ||
+        ordinal > (inserted.rowCount === 1 ? nextOrdinal : populationHead)) {
+      throw new WorkRepositoryIntegrityError(
+        `confirmed Work registration ${exact.instance.processInstanceId} conflicts`,
+      );
+    }
   }
 
   async listProcessRegistrations(): Promise<ReadonlyArray<WorkProcessRegistration>> {
@@ -411,4 +484,13 @@ export class PostgresqlWorkRepository {
 
 function text(value: string, label: string): Buffer {
   return encodePostgresqlWorkText(value, label);
+}
+
+function requirePositiveOrZero(value: unknown, label: string): number {
+  const numericValue = numeric(value);
+  if (typeof numericValue !== "number" ||
+      !Number.isSafeInteger(numericValue) || numericValue < 0) {
+    throw new WorkRepositoryIntegrityError(`${label} is invalid`);
+  }
+  return numericValue;
 }

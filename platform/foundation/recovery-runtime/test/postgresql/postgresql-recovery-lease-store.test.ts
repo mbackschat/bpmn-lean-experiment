@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { copyFile, mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -34,17 +36,13 @@ if (baseUrl === undefined) {
 } else {
   const firstRuntime = createTestRuntime(baseUrl, "recovery-first");
   const secondRuntime = createTestRuntime(baseUrl, "recovery-second");
+  let migrationPrefixDirectory: string | undefined;
 
   before(async () => {
+    migrationPrefixDirectory = await createMigrationPrefixThrough0005();
     await runPostgresqlMigrations({
       connectionString: baseUrl,
-      migrationDirectories: [
-        fileURLToPath(new URL("../../../artifact-store/migrations", import.meta.url)),
-        fileURLToPath(new URL("../../../../modules/definitions/migrations", import.meta.url)),
-        fileURLToPath(new URL("../../../../modules/operate/migrations", import.meta.url)),
-        fileURLToPath(new URL("../../../../modules/work/migrations", import.meta.url)),
-        fileURLToPath(new URL("../../../audit/migrations", import.meta.url)),
-      ],
+      migrationDirectories: [migrationPrefixDirectory],
     });
   });
 
@@ -104,7 +102,8 @@ if (baseUrl === undefined) {
       `,
     });
 
-    await applyRecoveryMigration(baseUrl);
+    assert.ok(migrationPrefixDirectory !== undefined);
+    await applyRecoveryMigration(baseUrl, migrationPrefixDirectory);
     assert.equal(await schemaEpoch(firstRuntime), 6);
     await firstRuntime.query({
       text: `
@@ -117,6 +116,9 @@ if (baseUrl === undefined) {
 
   after(async () => {
     await Promise.all([firstRuntime.close(), secondRuntime.close()]);
+    if (migrationPrefixDirectory !== undefined) {
+      await rm(migrationPrefixDirectory, { recursive: true, force: true });
+    }
   });
 
   test("two independent runtimes deterministically grant one current lease", async () => {
@@ -405,18 +407,47 @@ async function schemaEpoch(runtime: PostgresqlRuntime): Promise<number | undefin
   return result.rows[0]?.epoch;
 }
 
-async function applyRecoveryMigration(connectionString: string): Promise<void> {
+async function applyRecoveryMigration(
+  connectionString: string,
+  migrationPrefixDirectory: string,
+): Promise<void> {
   await runPostgresqlMigrations({
     connectionString,
     migrationDirectories: [
-      fileURLToPath(new URL("../../../artifact-store/migrations", import.meta.url)),
-      fileURLToPath(new URL("../../../../modules/definitions/migrations", import.meta.url)),
-      fileURLToPath(new URL("../../../../modules/operate/migrations", import.meta.url)),
-      fileURLToPath(new URL("../../../../modules/work/migrations", import.meta.url)),
-      fileURLToPath(new URL("../../../audit/migrations", import.meta.url)),
+      migrationPrefixDirectory,
       fileURLToPath(new URL("../../migrations", import.meta.url)),
     ],
   });
+}
+
+async function createMigrationPrefixThrough0005(): Promise<string> {
+  const directory = await mkdtemp(join(tmpdir(), "bpmn-recovery-prefix-"));
+  const paths = [
+    fileURLToPath(new URL(
+      "../../../artifact-store/migrations/0001_artifact-store__2c11c29d4b0093575693e0c4986d40eca958e3b42a0860484fe2be82abbd0a28.sql",
+      import.meta.url,
+    )),
+    fileURLToPath(new URL(
+      "../../../../modules/definitions/migrations/0002_definitions__42024e51f714ff4b391589bd0457a407ec1549848fe108b08d4d37bf13805302.sql",
+      import.meta.url,
+    )),
+    fileURLToPath(new URL(
+      "../../../../modules/operate/migrations/0003_operate__e171ce2e666fa1727a616f2d8dffe3a61bcddf3a46246e267ecdb57dc4aca153.sql",
+      import.meta.url,
+    )),
+    fileURLToPath(new URL(
+      "../../../../modules/work/migrations/0004_work__72d8506b3ff9553dba17e54679cc4793432863d1052eb8f4fc213b78e8abee61.sql",
+      import.meta.url,
+    )),
+    fileURLToPath(new URL(
+      "../../../audit/migrations/0005_audit__df6b5d0e263678efefd23f2c92215d79d08634ac7fe0188386ff11e43f3878de.sql",
+      import.meta.url,
+    )),
+  ];
+  for (const path of paths) {
+    await copyFile(path, join(directory, basename(path)));
+  }
+  return directory;
 }
 
 async function executeRecoveryMigrationSql(runtime: PostgresqlRuntime): Promise<void> {

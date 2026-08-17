@@ -46,6 +46,8 @@ if (baseUrl === undefined) {
         fileURLToPath(new URL("../../../definitions/migrations", import.meta.url)),
         fileURLToPath(new URL("../../../operate/migrations", import.meta.url)),
         fileURLToPath(new URL("../../migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../foundation/audit/migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../foundation/recovery-runtime/migrations", import.meta.url)),
       ],
     });
   });
@@ -63,11 +65,11 @@ if (baseUrl === undefined) {
 
     const source = new PostgresqlWorkRecoveryCandidateSource(runtime);
     assert.deepEqual(
-      textKeys(await source.listCandidateKeys(WorkPostgresqlRecoveryFamily.WorkSnapshot, 2)),
-      ["a", "a\u0000z"],
+      textKeys(await source.listCandidateKeys(WorkPostgresqlRecoveryFamily.WorkSnapshot, 2, 5_000)),
+      ["a\u0000z", "é😀\u0000z"],
     );
     assert.deepEqual(
-      textKeys(await source.listCandidateKeys(WorkPostgresqlRecoveryFamily.WorkSnapshot, 10)),
+      textKeys(await source.listCandidateKeys(WorkPostgresqlRecoveryFamily.WorkSnapshot, 10, 5_000)),
       ["a", "a\u0000z", "é😀\u0000z"],
     );
   });
@@ -121,6 +123,10 @@ if (baseUrl === undefined) {
       source.listCandidateKeys("future-family" as WorkPostgresqlRecoveryFamily, 1),
       /unknown Work PostgreSQL recovery family/u,
     );
+    await assert.rejects(
+      source.listCandidateKeys(WorkPostgresqlRecoveryFamily.WorkSnapshot, 1),
+      /maximum age is required/u,
+    );
     assert.equal(queryCount, 0);
     await source.listCandidateKeys(WorkPostgresqlRecoveryFamily.WorkAudit, 1);
     assert.equal(queryCount, 1);
@@ -131,17 +137,29 @@ async function resetDatabase(runtime: PostgresqlRuntime): Promise<void> {
   await runtime.query({
     text: `
       TRUNCATE
+        bpmn_platform.work_snapshot_control,
+        bpmn_platform.work_snapshot_tasks,
+        bpmn_platform.work_snapshot_generation_items,
         bpmn_platform.work_audit_outbox,
         bpmn_platform.work_completions,
         bpmn_platform.work_actions,
         bpmn_platform.work_claims,
-        bpmn_platform.work_processes
+        bpmn_platform.work_processes,
+        bpmn_platform.work_snapshot_generations
     `,
   });
   await runtime.query({
     text: `
       UPDATE bpmn_platform.work_audit_source_head
       SET head = 0 WHERE singleton = true
+    `,
+  });
+  await runtime.query({
+    text: `
+      INSERT INTO bpmn_platform.work_snapshot_control (
+        singleton, population_head, next_generation,
+        building_generation, completed_generation
+      ) VALUES (true, 0, 1, NULL, NULL)
     `,
   });
 }
@@ -151,18 +169,51 @@ async function insertProcess(
   processInstanceId: string,
   observation: "active" | "closed" | "indeterminate",
 ): Promise<void> {
-  await runtime.query({
-    text: `
-      INSERT INTO bpmn_platform.work_processes (
-        process_instance_id, public_instance_json, work_locator, observation
-      ) VALUES ($1, '{}', $2, $3)
-    `,
-    values: [
-      Buffer.from(processInstanceId, "utf8"),
-      Buffer.from(`locator-${processInstanceId}`, "utf8"),
-      observation,
-    ],
+  await runtime.transaction(async (session) => {
+    const allocation = await session.query({
+      text: `
+        UPDATE bpmn_platform.work_snapshot_control
+        SET population_head = population_head + 1
+        WHERE singleton = true
+        RETURNING population_head
+      `,
+    });
+    await session.query({
+      text: `
+        INSERT INTO bpmn_platform.work_processes (
+          process_instance_id, public_instance_json, work_locator,
+          observation, population_ordinal
+        ) VALUES ($1, $2, $3, $4, $5)
+      `,
+      values: [
+        Buffer.from(processInstanceId, "utf8"),
+        JSON.stringify(processIdentity(processInstanceId)),
+        Buffer.from(`locator-${processInstanceId}`, "utf8"),
+        observation,
+        allocation.rows[0]?.population_head,
+      ],
+    });
   });
+}
+
+function processIdentity(processInstanceId: string) {
+  return {
+    processInstanceId,
+    definition: {
+      processId: "Process",
+      version: 1,
+      source: {
+        kind: "bpmnSource",
+        id: "source.bpmn",
+        sha256: "a".repeat(64),
+        byteLength: 1,
+        declaredEncoding: null,
+        decodedAs: "UTF-8",
+      },
+      semanticProfile: "profile",
+      startCapabilities: { messageStarts: [], timerStarts: [] },
+    },
+  };
 }
 
 async function insertAudit(

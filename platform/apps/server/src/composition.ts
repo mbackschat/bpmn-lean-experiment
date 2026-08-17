@@ -375,7 +375,10 @@ export async function createPlatformServer(
     });
     const workRoutes = new WorkHttpRoutes({
       tasks: {
-        listTasks: () => workService.listTasks(),
+        listTasks: async () => ({
+          value: await workService.listTasks(),
+          freshness: null,
+        }),
         getTaskDetail: (taskId) => workDetails.getTaskDetail(taskId),
         claimTask: (taskId, request) =>
           workMutations.claimTask(taskId, request),

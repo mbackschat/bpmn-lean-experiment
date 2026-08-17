@@ -8,10 +8,6 @@ import type {
   ActorResolver,
   TaskAuthorizationPolicy,
 } from "@bpmn-lean/platform-identity-policy";
-import {
-  isTaskClaimable,
-  isTaskVisible,
-} from "@bpmn-lean/platform-identity-policy";
 
 import type {
   BoundHumanTaskDefinitionV1,
@@ -26,6 +22,10 @@ import type {
   WorkProcessRegistration,
   WorkTaskReference,
 } from "./work-contracts.js";
+import {
+  projectVisibleSystemWorkTask,
+  sortPublicWorkTasks,
+} from "./work-task-projection.js";
 
 export class WorkSnapshotUnavailableError extends Error {
   constructor() {
@@ -143,10 +143,14 @@ export class WorkService {
   async listTasks(): Promise<WorkTaskSnapshot> {
     const visible: PublicWorkTask[] = [];
     for (const item of await this.observeSystemTasks()) {
-      const projected = this.#projectVisible(item);
+      const projected = projectVisibleSystemWorkTask(
+        item,
+        this.#options.actors,
+        this.#options.authorization,
+      );
       if (projected !== null) visible.push(projected.publicTask);
     }
-    visible.sort(compareWorkTasks);
+    sortPublicWorkTasks(visible);
     return { tasks: visible };
   }
 
@@ -157,7 +161,13 @@ export class WorkService {
       sameTaskId(item.task.id, taskId)
     );
     if (matches.length > 1) throw new WorkSnapshotUnavailableError();
-    return matches.length === 0 ? null : this.#projectVisible(matches[0]!);
+    return matches.length === 0
+      ? null
+      : projectVisibleSystemWorkTask(
+          matches[0]!,
+          this.#options.actors,
+          this.#options.authorization,
+        );
   }
 
   async readStructuredTask(
@@ -170,59 +180,12 @@ export class WorkService {
       elementId,
     );
   }
-
-  #projectVisible(item: SystemWorkTask): ActorVisibleSystemWorkTask | null {
-    const actor = this.#options.actors.resolveActor();
-    const decision = this.#options.authorization.decideTask(actor, {
-      candidateGroupId: item.task.metadata?.assignment.candidates[0].id ?? null,
-      claimActorId: item.claim.claim?.actorId ?? null,
-    });
-    if (!isTaskVisible(decision)) return null;
-    return {
-      ...item,
-      publicTask: {
-        task: item.task,
-        hostingInstance: item.registration.instance,
-        claimGeneration: item.claim.claimGeneration,
-        claim: item.claim.claim,
-        claimableByCurrentActor: isTaskClaimable(decision),
-        ...(item.structuredTask === null
-          ? {}
-          : {
-              catalogPresentation: {
-                worklistPriority: item.structuredTask.taskDefinition.worklistPriority,
-              },
-            }),
-      },
-    };
-  }
 }
 
 function sameTaskId(left: PublicWorkTaskId, right: PublicWorkTaskId): boolean {
   return left.processInstanceId === right.processInstanceId &&
     left.elementId === right.elementId &&
     left.activation === right.activation;
-}
-
-function compareWorkTasks(left: PublicWorkTask, right: PublicWorkTask): number {
-  return (right.catalogPresentation?.worklistPriority ?? 50) -
-      (left.catalogPresentation?.worklistPriority ?? 50) ||
-    compareStrings(left.hostingInstance.processInstanceId, right.hostingInstance.processInstanceId) ||
-    compareStrings(left.task.id.processInstanceId, right.task.id.processInstanceId) ||
-    compareStrings(left.task.id.elementId, right.task.id.elementId) ||
-    left.task.id.activation - right.task.id.activation;
-}
-
-function compareStrings(left: string, right: string): number {
-  const leftScalars = [...left];
-  const rightScalars = [...right];
-  const length = Math.min(leftScalars.length, rightScalars.length);
-  for (let index = 0; index < length; index += 1) {
-    const difference = Number(leftScalars[index]?.codePointAt(0)) -
-      Number(rightScalars[index]?.codePointAt(0));
-    if (difference !== 0) return difference;
-  }
-  return leftScalars.length - rightScalars.length;
 }
 
 function requirePositive(value: number, label: string): void {

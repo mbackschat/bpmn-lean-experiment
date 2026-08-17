@@ -44,6 +44,7 @@ if (baseUrl === undefined) {
         fileURLToPath(new URL("../../../../modules/operate/migrations", import.meta.url)),
         fileURLToPath(new URL("../../../../modules/work/migrations", import.meta.url)),
         fileURLToPath(new URL("../../migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../recovery-runtime/migrations", import.meta.url)),
       ],
     });
   });

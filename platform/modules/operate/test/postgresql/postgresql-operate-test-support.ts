@@ -40,6 +40,11 @@ export async function migrateOperateDatabase(connectionString: string): Promise<
       ),
       fileURLToPath(new URL("../../../definitions/migrations", import.meta.url)),
       fileURLToPath(new URL("../../migrations", import.meta.url)),
+      fileURLToPath(new URL("../../../work/migrations", import.meta.url)),
+      fileURLToPath(new URL("../../../../foundation/audit/migrations", import.meta.url)),
+      fileURLToPath(
+        new URL("../../../../foundation/recovery-runtime/migrations", import.meta.url),
+      ),
     ],
   });
 }

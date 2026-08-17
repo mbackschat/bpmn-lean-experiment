@@ -52,6 +52,8 @@ if (baseUrl === undefined) {
         fileURLToPath(new URL("../../../definitions/migrations", import.meta.url)),
         fileURLToPath(new URL("../../../operate/migrations", import.meta.url)),
         fileURLToPath(new URL("../../migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../foundation/audit/migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../foundation/recovery-runtime/migrations", import.meta.url)),
       ],
     });
   });
@@ -113,6 +115,41 @@ if (baseUrl === undefined) {
       [1],
     );
     assert.equal(await readAuditSourceHead(runtime), 1);
+  });
+
+  test("duplicate and rolled-back registrations consume no population ordinal", async () => {
+    await resetDatabase(runtime);
+    const repository = new PostgresqlWorkRepository(runtime);
+    await repository.recordConfirmedProcessInstance(publication);
+    await repository.recordConfirmedProcessInstance(structuredClone(publication));
+    assert.deepEqual(await populationState(runtime), { head: 1, ordinals: [1] });
+
+    await assert.rejects(
+      runtime.transaction(async (session) => {
+        await repository.recordConfirmedProcessInstance(
+          session,
+          withProcessInstanceId("rolled-back"),
+        );
+        throw new Error("forced outer rollback");
+      }),
+      /forced outer rollback/u,
+    );
+    assert.deepEqual(await populationState(runtime), { head: 1, ordinals: [1] });
+
+    await repository.recordConfirmedProcessInstance(withProcessInstanceId("after-rollback"));
+    assert.deepEqual(await populationState(runtime), { head: 2, ordinals: [1, 2] });
+  });
+
+  test("concurrent distinct registrations allocate one gap-free population", async () => {
+    await resetDatabase(runtime);
+    const publications = Array.from({ length: 12 }, (_, index) =>
+      withProcessInstanceId(`population-${index}`));
+    await Promise.all(publications.map(async (item) =>
+      await new PostgresqlWorkRepository(runtime).recordConfirmedProcessInstance(item)));
+    assert.deepEqual(
+      await populationState(runtime),
+      { head: publications.length, ordinals: publications.map((_, index) => index + 1) },
+    );
   });
 
   test("concurrent committed actions append one exact audit prefix", async () => {
@@ -328,17 +365,29 @@ async function resetDatabase(runtime: PostgresqlRuntime): Promise<void> {
     await session.query({
       text: `
         TRUNCATE
+          bpmn_platform.work_snapshot_control,
+          bpmn_platform.work_snapshot_tasks,
+          bpmn_platform.work_snapshot_generation_items,
           bpmn_platform.work_audit_outbox,
           bpmn_platform.work_completions,
           bpmn_platform.work_actions,
           bpmn_platform.work_claims,
-          bpmn_platform.work_processes
+          bpmn_platform.work_processes,
+          bpmn_platform.work_snapshot_generations
       `,
     });
     await session.query({
       text: `
         UPDATE bpmn_platform.work_audit_source_head
         SET head = 0 WHERE singleton = true
+      `,
+    });
+    await session.query({
+      text: `
+        INSERT INTO bpmn_platform.work_snapshot_control (
+          singleton, population_head, next_generation,
+          building_generation, completed_generation
+        ) VALUES (true, 0, 1, NULL, NULL)
       `,
     });
   });
@@ -355,6 +404,34 @@ async function readAuditSourceHead(runtime: PostgresqlRuntime): Promise<number> 
   const head = result.rows[0]?.head;
   if (typeof head !== "string") throw new TypeError("Work audit source head is missing");
   return Number(head);
+}
+
+async function populationState(runtime: PostgresqlRuntime) {
+  const result = await runtime.query({
+    text: `
+      SELECT
+        (SELECT population_head FROM bpmn_platform.work_snapshot_control
+          WHERE singleton = true)::text AS head,
+        COALESCE(json_agg(process.population_ordinal ORDER BY process.population_ordinal), '[]')::text
+          AS ordinals
+      FROM bpmn_platform.work_processes AS process
+    `,
+  });
+  return {
+    head: Number(result.rows[0]?.head),
+    ordinals: JSON.parse(String(result.rows[0]?.ordinals)) as number[],
+  };
+}
+
+function withProcessInstanceId(processInstanceId: string) {
+  return {
+    ...structuredClone(publication),
+    instance: {
+      ...structuredClone(publication.instance),
+      processInstanceId,
+    },
+    locator: `${publication.locator}-${processInstanceId}`,
+  };
 }
 
 function claimForTask(index: number): WorkClaimTransitionInput {

@@ -52,6 +52,7 @@ if (baseUrl === undefined) {
         fileURLToPath(new URL("../../../operate/migrations", import.meta.url)),
         fileURLToPath(new URL("../../migrations", import.meta.url)),
         fileURLToPath(new URL("../../../../foundation/audit/migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../foundation/recovery-runtime/migrations", import.meta.url)),
       ],
     });
   });
@@ -223,17 +224,25 @@ async function resetDatabase(runtime: PostgresqlRuntime): Promise<void> {
     text: `
       TRUNCATE
         bpmn_platform.audit_work_events,
+        bpmn_platform.work_snapshot_control,
+        bpmn_platform.work_snapshot_tasks,
+        bpmn_platform.work_snapshot_generation_items,
         bpmn_platform.work_audit_outbox,
         bpmn_platform.work_completions,
         bpmn_platform.work_actions,
         bpmn_platform.work_claims,
-        bpmn_platform.work_processes
+        bpmn_platform.work_processes,
+        bpmn_platform.work_snapshot_generations
     `,
   });
   await runtime.query({
     text: `
       UPDATE bpmn_platform.audit_work_sink_head SET head = 0 WHERE singleton = true;
-      UPDATE bpmn_platform.work_audit_source_head SET head = 0 WHERE singleton = true
+      UPDATE bpmn_platform.work_audit_source_head SET head = 0 WHERE singleton = true;
+      INSERT INTO bpmn_platform.work_snapshot_control (
+        singleton, population_head, next_generation,
+        building_generation, completed_generation
+      ) VALUES (true, 0, 1, NULL, NULL)
     `,
   });
 }

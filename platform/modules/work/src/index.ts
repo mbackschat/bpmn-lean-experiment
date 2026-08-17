@@ -6,6 +6,42 @@ export {
   WorkPostgresqlRecoveryFamily,
 } from "./postgresql-work-recovery-candidates.js";
 export {
+  PostgresqlWorkAuditRecoveryStep,
+} from "./postgresql-work-audit-recovery-step.js";
+export type {
+  PostgresqlWorkAuditRecoveryResult,
+  PostgresqlWorkAuditRecoverySink,
+  PostgresqlWorkAuditRecoverySource,
+} from "./postgresql-work-audit-recovery-step.js";
+export {
+  PostgresqlWorkSnapshotGeneration,
+  PostgresqlWorkSnapshotStoredValueError,
+} from "./postgresql-work-snapshot-generation.js";
+export {
+  PostgresqlWorkSnapshotReader,
+} from "./postgresql-work-snapshot-reader.js";
+export type {
+  PostgresqlWorkSnapshotReaderOptions,
+} from "./postgresql-work-snapshot-reader.js";
+export {
+  decodeWorkSnapshotCandidateKey,
+  PostgresqlWorkSnapshotFailureCode,
+  PostgresqlWorkSnapshotFailureEvidence,
+  PostgresqlWorkSnapshotRecoveryStep,
+  PostgresqlWorkSnapshotRetryReason,
+  PostgresqlWorkSnapshotStepKind,
+} from "./postgresql-work-snapshot-recovery-step.js";
+export type {
+  PostgresqlWorkSnapshotRecoveryStepOptions,
+  PostgresqlWorkSnapshotStepResult,
+} from "./postgresql-work-snapshot-recovery-step.js";
+export {
+  PostgresqlWorkSnapshotService,
+} from "./postgresql-work-snapshot-service.js";
+export type {
+  PostgresqlWorkSnapshotServiceOptions,
+} from "./postgresql-work-snapshot-service.js";
+export {
   WorkService,
   WorkSnapshotUnavailableError,
 } from "./work-service.js";

@@ -17,6 +17,7 @@ import {
   matchWorkTaskReleasePath,
   matchWorkTasksPath,
   parseStrictJson,
+  projectionFreshnessResponseHeaders,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PublicApiErrorResponse,
@@ -31,6 +32,7 @@ import type {
   WorkReleaseRequest,
   WorkReleaseResult,
   WorkTaskSnapshot,
+  ProjectionRead,
 } from "@bpmn-lean/platform-contracts";
 
 import {
@@ -58,7 +60,7 @@ type CompletionServiceResult =
     }>;
 
 type WorkTaskOperations = Readonly<{
-  listTasks(): Promise<WorkTaskSnapshot>;
+  listTasks(): Promise<ProjectionRead<WorkTaskSnapshot>>;
   getTaskDetail(taskId: PublicWorkTaskId): Promise<PublicTaskDetail | null>;
   claimTask(taskId: PublicWorkTaskId, request: WorkClaimRequest): Promise<ClaimServiceResult>;
   releaseTask(taskId: PublicWorkTaskId, request: WorkReleaseRequest): Promise<ReleaseServiceResult>;
@@ -132,7 +134,7 @@ export class WorkHttpRoutes {
       case RouteKind.Tasks:
         if (request.method !== "GET") return methodNotAllowed("GET");
         await requireEmptyBody(request);
-        return jsonResponse(200, decodeWorkTaskSnapshot(await this.options.tasks.listTasks()));
+        return taskSnapshotResponse(await this.options.tasks.listTasks());
       case RouteKind.Detail:
         if (request.method !== "GET") return methodNotAllowed("GET");
         await requireEmptyBody(request);
@@ -299,6 +301,18 @@ async function readBody(request: Request, limit: number): Promise<Uint8Array> {
 function completionResponse(result: WorkCompletionResult): Response {
   const exact = decodeWorkCompletionResult(result);
   return jsonResponse(exact.state === "indeterminate" ? 202 : 200, exact);
+}
+
+function taskSnapshotResponse(read: ProjectionRead<WorkTaskSnapshot>): Response {
+  const response = jsonResponse(200, decodeWorkTaskSnapshot(read.value));
+  if (read.freshness !== null) {
+    for (const [name, value] of Object.entries(
+      projectionFreshnessResponseHeaders(read.freshness),
+    )) {
+      response.headers.set(name, value);
+    }
+  }
+  return response;
 }
 
 function jsonResponse(status: number, value: unknown): Response {

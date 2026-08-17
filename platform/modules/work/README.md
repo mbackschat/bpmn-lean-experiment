@@ -1,12 +1,12 @@
 # Work module
 
-`@bpmn-lean/platform-work` owns Product 2 human-work registration, discovery, detail, claim, release, completion, and self-audit behavior. It observes engine-published tasks through private locators and never stores task rows or host history as semantic truth.
+`@bpmn-lean/platform-work` owns Product 2 human-work registration, discovery, detail, claim, release, completion, and self-audit behavior. It observes engine-published tasks through private locators. Local mode retains no task rows, while shared mode stores only immutable-generation current-image projections; neither mode treats task rows or host history as semantic truth.
 
 ## What you can do
 
 Register confirmed Process instances, assemble the current actor-visible task inbox, inspect legacy or exact-catalog-bound structured detail, claim or release work, validate and submit retry-safe completion, and read the actor's audit trail. Structured forms support Text, Boolean, Integer, Date, Single choice, Multiple choice, multiple resolution actions, and action-dependent input without moving form semantics into Product 1.
 
-Local mode uses the exact SQLite schema. Shared mode uses the caller-owned PostgreSQL runtime and the checksum-bound migration in `migrations/`; its Work state changes and audit-source outbox append commit atomically, and explicit PostgreSQL tests remain outside the ordinary database-free package loop.
+Local mode uses the exact SQLite schema. Shared mode uses the caller-owned PostgreSQL runtime and checksum-bound migrations in `migrations/`; its Work state changes and audit-source outbox append commit atomically. Bounded recovery creates immutable population generations behind lease-fenced callbacks, and successful inbox reads prove complete, current, age-bounded coverage in one PostgreSQL statement before joining live claims. Explicit PostgreSQL tests remain outside the ordinary database-free package loop.
 
 ## Quick start
 

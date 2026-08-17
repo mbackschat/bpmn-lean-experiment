@@ -2,6 +2,7 @@ import type {
   PostgresqlRow,
   PostgresqlRuntime,
 } from "@bpmn-lean/platform-postgresql-runtime";
+import { PostgresqlWorkSnapshotGeneration } from "./postgresql-work-snapshot-generation.js";
 
 const maximumCandidateLimit = 1_000;
 
@@ -17,6 +18,7 @@ export class PostgresqlWorkRecoveryCandidateSource {
   async listCandidateKeys(
     family: WorkPostgresqlRecoveryFamily,
     limitValue: number,
+    snapshotMaxAgeMs?: number,
   ): Promise<ReadonlyArray<Uint8Array>> {
     const limit = requirePositiveSafeInteger(limitValue);
     switch (family) {
@@ -30,30 +32,14 @@ export class PostgresqlWorkRecoveryCandidateSource {
           )
         `);
       case WorkPostgresqlRecoveryFamily.WorkSnapshot:
-        return await this.#queryPopulation(
-          `
-            SELECT process_instance_id AS candidate_key
-            FROM bpmn_platform.work_processes
-            WHERE observation <> 'closed'
-            ORDER BY process_instance_id ASC
-            LIMIT $1
-          `,
-          limit,
-        );
+        if (snapshotMaxAgeMs === undefined) {
+          throw new TypeError("Work snapshot maximum age is required");
+        }
+        return await new PostgresqlWorkSnapshotGeneration(this.runtime)
+          .listCandidateKeys(limit, snapshotMaxAgeMs);
       default:
         throw new TypeError(`unknown Work PostgreSQL recovery family: ${String(family)}`);
     }
-  }
-
-  async #queryPopulation(
-    text: string,
-    limit: number,
-  ): Promise<ReadonlyArray<Uint8Array>> {
-    const result = await this.runtime.query<CandidateRow>({
-      text,
-      values: [limit],
-    });
-    return result.rows.map(decodeCandidateKey);
   }
 
   async #querySingleton(text: string): Promise<ReadonlyArray<Uint8Array>> {

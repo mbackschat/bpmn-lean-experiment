@@ -23,7 +23,7 @@ test("serves the strict task snapshot and refuses a GET body before service entr
   const routes = createRoutes({
     listTasks: async () => {
       calls += 1;
-      return { tasks: [] };
+      return { value: { tasks: [] }, freshness: null };
     },
   }, async () => { reconciliations += 1; });
 
@@ -39,6 +39,22 @@ test("serves the strict task snapshot and refuses a GET body before service entr
   assert.equal(reconciliations, 2);
 });
 
+test("adds exact freshness headers only to a shared Work list success", async () => {
+  const routes = createRoutes({
+    listTasks: async () => ({
+      value: { tasks: [] },
+      freshness: { observedAfterEpochMs: 1_234, maxAgeMs: 5_000 },
+    }),
+  });
+
+  const response = await routes.handle(
+    new Request("http://platform.test/api/v1/work-tasks"),
+  );
+  assert.equal(response?.status, 200);
+  assert.equal(response?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), "1234");
+  assert.equal(response?.headers.get("Bpmn-Projection-Max-Age-Ms"), "5000");
+});
+
 test("maps uniform hidden task and snapshot availability without private evidence", async () => {
   const routes = createRoutes({
     getTaskDetail: async () => null,
@@ -49,6 +65,7 @@ test("maps uniform hidden task and snapshot availability without private evidenc
   assert.equal(missing?.status, 404);
   const unavailable = await routes.handle(new Request("http://platform.test/api/v1/work-tasks"));
   assert.equal(unavailable?.status, 503);
+  assert.equal(unavailable?.headers.get("Bpmn-Projection-Max-Age-Ms"), null);
   assert.deepEqual(await unavailable?.json(), {
     error: {
       code: "workSnapshotUnavailable",
@@ -251,7 +268,7 @@ function createRoutes(
 ): WorkHttpRoutes {
   return new WorkHttpRoutes({
     tasks: {
-      listTasks: async () => ({ tasks: [] }),
+      listTasks: async () => ({ value: { tasks: [] }, freshness: null }),
       ...overrides,
     } as never,
     audit: { search: async () => ({ events: [], nextCursor: null }) },
