@@ -47,7 +47,7 @@ export function registerProcessInstanceRepositoryContract(
       const second = processPublication("instance-2", "Process_B");
       const caller = structuredClone(first);
       const recording = fixture.repository.recordConfirmed(caller);
-      caller.instance.processInstanceId = "mutated-after-call";
+      Object.assign(caller.instance, { processInstanceId: "mutated-after-call" });
       const firstOrdinal = await recording;
       assert.equal(
         await fixture.repository.recordConfirmed(first),
