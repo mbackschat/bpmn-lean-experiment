@@ -91,7 +91,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - The concrete modular-monolith architecture, decision register, and complete owner inventory in [ARCHITECTURE.md](ARCHITECTURE.md)
 - Narrow `@bpmn-lean/engine-api` compilation and exact-definition start entry points plus `@bpmn-lean/platform-engine-gateway`, projecting source identity, definition identity, located admission diagnostics, and handle-free start outcomes without exposing the checked graph, Semantic Process program, or Temporal Workflow handle
 - `@bpmn-lean/platform-artifact-store`, whose filesystem and PostgreSQL adapters atomically insert-or-compare exact SHA-256 bytes, reject corruption, return copies, and share one behavioral contract
-- `@bpmn-lean/platform-postgresql-runtime`, with bounded pools and locked checksum migrations; the explicit migration app applies ordinals 0001 through 0007 at epoch 7, and the recovery runtime owns bounded token leases without owning domain work
+- `@bpmn-lean/platform-postgresql-runtime`, with bounded pools and locked checksum migrations; the explicit migration app applies ordinals 0001 through 0008 at epoch 8, and the recovery runtime owns bounded token leases without owning domain work
 - `@bpmn-lean/platform-contracts` with closed deeply immutable M1 definition and exact-version start transport types, strict unknown decoders, opaque engine diagnostics and start failures, and safe versioned route construction
 - `@bpmn-lean/platform-definitions`, with five repository contracts, Unicode/artifact integrity, gap-free versions, lifecycle CAS, exact deployment/start, and four recovery families
 - `@bpmn-lean/platform-operate` and `@bpmn-lean/platform-work`, with Unicode-safe repositories, monotone CAS, suffix projections, recovery candidates, Audit delivery, and exact sinks; Work also owns immutable generations, fenced recovery, and one-statement reads with live claims
@@ -126,7 +126,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 
 #### Explicitly absent
 
-- Product 2 shared deployment: persistence, leases, eleven candidate families, and ten fenced recovery families exist; the incident snapshot handler, append-only freshness reads, composition, and replica evidence remain incomplete, so the [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) has no shared-mode evidence
+- Product 2 shared deployment: persistence, leases, eleven candidate/fenced recovery families, and freshness-bounded Work/incident snapshots exist; append-only freshness reads, composition, and replica evidence remain incomplete, so the [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) has no shared-mode evidence
 - Adjustable metric periods, running pseudo-duration, charts, heatmaps, metric export, post-retention archive, and cross-instance semantic ordering
 
 - a production identity provider, directory synchronization, administrator role, claim delegation, or authorization model beyond the exact fake actor and group policy
