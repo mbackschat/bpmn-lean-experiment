@@ -90,10 +90,10 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 
 - The concrete modular-monolith architecture, decision register, and complete owner inventory in [ARCHITECTURE.md](ARCHITECTURE.md)
 - Narrow `@bpmn-lean/engine-api` compilation and exact-definition start entry points plus `@bpmn-lean/platform-engine-gateway`, projecting source identity, definition identity, located admission diagnostics, and handle-free start outcomes without exposing the checked graph, Semantic Process program, or Temporal Workflow handle
-- `@bpmn-lean/platform-artifact-store`, which verifies exact SHA-256 identity, publishes caller-snapshotted bytes atomically without replacement, detects occupied-path corruption, and returns defensive copies
+- `@bpmn-lean/platform-artifact-store`, whose filesystem and PostgreSQL adapters atomically insert-or-compare exact SHA-256 bytes, reject corruption, return copies, and share one behavioral contract
 - `@bpmn-lean/platform-postgresql-runtime`, with bounded pools, locked checksum migrations, and separate fast and PostgreSQL 18 tests; all twelve business repositories now use Promise-only ports through services, routes, fakes, SQLite adapters, and server composition
 - `@bpmn-lean/platform-contracts` with closed deeply immutable M1 definition and exact-version start transport types, strict unknown decoders, opaque engine diagnostics and start failures, and safe versioned route construction
-- `@bpmn-lean/platform-definitions`, which snapshots deployment and start inputs before their asynchronous boundaries, persists only admitted exact source, allocates durable process-local version ordinals through SQLite `BEGIN IMMEDIATE`, starts only one exact stored version, lists current and historical versions, and fails explicitly when metadata and content lose integrity
+- `@bpmn-lean/platform-definitions`, whose SQLite and PostgreSQL adapters share contracts for five repository families, exact Unicode identities, artifact integrity, canonical values, gap-free process-local versions, lifecycle CAS, and exact deployment/start behavior
 - A Fetch-compatible definitions route contribution with closed raw-XML deployment input, claimed and streamed byte ceilings, producer-mutation-resistant chunk capture, exact-version body-free start, public-only accepted/rejected projections, exact version/source reads, strict path and method validation, and generic internal failures
 - `@bpmn-lean/platform-server`, a Node HTTP adapter with no external transport library and a modular-monolith composition root with configured request authority, streaming transport, ordered route dispatch, closed errors, local and Temporal environment configuration, and idempotent socket/SQLite/lazy-client lifecycle
 - An executable product-boundary guard that discovers tracked and pending source plus package manifests, resolves package aliases and subpaths to owners, permits showcase evidence to drive exact public package roots while rejecting its deep imports, fails closed on malformed or duplicate identities, and carries planted violations for every guarded dependency class
@@ -125,7 +125,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 
 #### Explicitly absent
 
-- Horizontal Product 2 deployment: asynchronous repository ports and the PostgreSQL runtime seam exist, but business persistence, artifacts, repair, and Temporal Query aggregation remain node-local. The [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) is in progress; no shared-mode evidence exists.
+- Horizontal Product 2 deployment: the PostgreSQL runtime, artifact storage, and Definitions persistence exist, but Operate, Work, Audit, repair, composition, and Query aggregation remain node-local; the [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) has no complete shared-mode evidence
 - Adjustable metric periods, running pseudo-duration, charts, heatmaps, metric export, post-retention archive, and cross-instance semantic ordering
 
 - a production identity provider, directory synchronization, administrator role, claim delegation, or authorization model beyond the exact fake actor and group policy
