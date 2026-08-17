@@ -4,7 +4,7 @@ This document owns current implementation, proof, evidence, and absence status, 
 
 ## Current claim
 
-**M1 through M6 are closed, and Horizon 1 shared Product 2 persistence is evidence-complete at its closure candidate.** Local mode remains single-node. Shared mode uses PostgreSQL 18 with replicated API and recovery-worker composition. No production-capacity claim is made.
+**M1 through M6 and Horizon 1 shared Product 2 persistence are closed.** Local mode remains single-node. Shared mode uses PostgreSQL 18 with replicated API and recovery-worker composition. Context-cold closure target `36c3c75` passed after correction audit `07c68d5`; no production-capacity claim is made.
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting.
 
