@@ -412,13 +412,25 @@ async function publishIncident(
 ): Promise<void> {
   await runtime.transaction(async (session) => {
     const event = item.event;
-    await session.query({
+    const control = await session.query({
+      text: `
+        SELECT population_head
+        FROM bpmn_platform.operate_incident_snapshot_control
+        WHERE singleton = true
+        FOR UPDATE
+      `,
+    });
+    const populationHead = Number(control.rows[0]?.population_head);
+    assert.equal(Number.isSafeInteger(populationHead) && populationHead >= 0, true);
+    const nextPopulationOrdinal = populationHead + 1;
+    const inserted = await session.query({
       text: `
         INSERT INTO bpmn_platform.operate_process_instances (
           process_instance_id, process_id, definition_version, source_sha256,
-          public_identity_json, process_locator, observation
-        ) VALUES ($1, $2, 1, $3, $4, $5, 'active')
+          public_identity_json, process_locator, observation, population_ordinal
+        ) VALUES ($1, $2, 1, $3, $4, $5, 'active', $6)
         ON CONFLICT (process_instance_id) DO NOTHING
+        RETURNING population_ordinal
       `,
       values: [
         Buffer.from(event.hostingProcessInstanceId),
@@ -426,8 +438,20 @@ async function publishIncident(
         "a".repeat(64),
         JSON.stringify({ processInstanceId: event.hostingProcessInstanceId }),
         Buffer.from(`locator:${event.hostingProcessInstanceId}`),
+        nextPopulationOrdinal,
       ],
     });
+    if (inserted.rowCount === 1) {
+      const changed = await session.query({
+        text: `
+          UPDATE bpmn_platform.operate_incident_snapshot_control
+          SET population_head = $1
+          WHERE singleton = true AND population_head = $2
+        `,
+        values: [nextPopulationOrdinal, populationHead],
+      });
+      assert.equal(changed.rowCount, 1);
+    }
     await session.query({
       text: `
         INSERT INTO bpmn_platform.operate_incident_actions (

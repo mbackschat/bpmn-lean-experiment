@@ -10,6 +10,8 @@ The same four Promise-only repository contracts have local SQLite and shared Pos
 
 Shared incident-action recovery is one exact action at a time and two-phase. It prepares Product 1 work outside PostgreSQL, but every action-state or outcome/outbox mutation remains inside the supplied lease-completion session; `reserved` and `indeterminate` actions first advance to `submitting`, and a later lease prepares the content-bound Product 1 result while leaving its outcome audit pending for the separate incident-audit family.
 
+The ordinal-0008 migration adds immutable incident snapshot generations. Candidate discovery materializes a bounded population cut, each recovery step observes at most one Process outside PostgreSQL, and the supplied lease session atomically revalidates and replaces that Process image. Shared incident list and detail reads prove complete, age-bounded coverage in one SQL statement and return the standard projection-freshness headers; local reads retain the same bodies without freshness metadata.
+
 ## Quick start
 
 ```sh

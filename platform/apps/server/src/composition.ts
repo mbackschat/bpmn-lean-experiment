@@ -314,7 +314,12 @@ export async function createPlatformServer(
     const incidentRoutes = new IncidentHttpRoutes({
       actors,
       authorization: operationsAuthorization,
-      aggregation: incidents,
+      aggregation: {
+        currentSnapshot: async () => ({
+          value: await incidents.currentSnapshot(),
+          freshness: null,
+        }),
+      },
       mutations: incidentMutations,
       audit: incidentAuditSearch,
       outbox: incidentAuditOutbox,

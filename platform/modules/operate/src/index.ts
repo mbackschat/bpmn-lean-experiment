@@ -150,6 +150,25 @@ export {
   PostgresqlOperateRecoveryCandidateSource,
 } from "./postgresql-operate-recovery-candidates.js";
 export {
+  PostgresqlIncidentSnapshotGeneration,
+  PostgresqlIncidentSnapshotStoredValueError,
+} from "./postgresql-incident-snapshot-generation.js";
+export {
+  PostgresqlIncidentSnapshotReader,
+} from "./postgresql-incident-snapshot-reader.js";
+export type {
+  PostgresqlIncidentSnapshotReaderOptions,
+} from "./postgresql-incident-snapshot-reader.js";
+export {
+  PostgresqlIncidentSnapshotRecoveryStep,
+} from "./postgresql-incident-snapshot-recovery-step.js";
+export type {
+  PostgresqlIncidentSnapshotRecoveryStepOptions,
+} from "./postgresql-incident-snapshot-recovery-step.js";
+export {
+  PostgresqlIncidentSnapshotService,
+} from "./postgresql-incident-snapshot-service.js";
+export {
   PostgresqlOperateRecoveryFailureCode,
   PostgresqlOperateRecoveryFailureEvidence,
   PostgresqlOperateRecoveryFenceError,

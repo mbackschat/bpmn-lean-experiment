@@ -2,6 +2,7 @@ import type { DeployedDefinitionVersion } from "@bpmn-lean/platform-contracts";
 import type {
   PostgresqlRow,
   PostgresqlRuntime,
+  PostgresqlSession,
 } from "@bpmn-lean/platform-postgresql-runtime";
 
 import {
@@ -42,7 +43,8 @@ const selectedRegistrationColumns = `
   source_sha256,
   public_identity_json,
   process_locator,
-  observation
+  observation,
+  population_ordinal
 `;
 
 /** Shared PostgreSQL implementation of the exact confirmed-Process registry. */
@@ -57,60 +59,121 @@ export class PostgresqlProcessInstanceRepository
 
   async recordConfirmed(
     publication: ConfirmedProcessOperationsPublication,
+  ): Promise<number>;
+  async recordConfirmed(
+    session: PostgresqlSession,
+    publication: ConfirmedProcessOperationsPublication,
+  ): Promise<number>;
+  async recordConfirmed(
+    publicationOrSession: ConfirmedProcessOperationsPublication | PostgresqlSession,
+    publicationValue?: ConfirmedProcessOperationsPublication,
   ): Promise<number> {
-    const exact = snapshotConfirmedPublication(publication);
+    if (publicationValue !== undefined) {
+      return await this.#recordConfirmed(
+        publicationOrSession as PostgresqlSession,
+        snapshotConfirmedPublication(publicationValue),
+      );
+    }
+    const exact = snapshotConfirmedPublication(
+      publicationOrSession as ConfirmedProcessOperationsPublication,
+    );
+    return await this.#runtime.transaction(async (session) =>
+      await this.#recordConfirmed(session, exact));
+  }
+
+  async #recordConfirmed(
+    session: PostgresqlSession,
+    exact: ConfirmedProcessOperationsPublication,
+  ): Promise<number> {
     const identityJson = encodeProcessInstanceIdentity(exact.instance);
     const processInstanceId = encodePostgresqlByteText(
       exact.instance.processInstanceId,
     );
-    return await this.#runtime.transaction(async (session) => {
-      const inserted = await session.query({
-        text: `
-          INSERT INTO bpmn_platform.operate_process_instances (
-            process_instance_id,
-            process_id,
-            definition_version,
-            source_sha256,
-            public_identity_json,
-            process_locator,
-            observation
-          ) VALUES ($1, $2, $3, $4, $5, $6, 'active')
-          ON CONFLICT DO NOTHING
-          RETURNING ${selectedRegistrationColumns}
-        `,
-        values: [
-          processInstanceId,
-          encodePostgresqlByteText(exact.instance.definition.processId),
-          exact.instance.definition.version,
-          exact.instance.definition.source.sha256,
-          identityJson,
-          encodePostgresqlByteText(exact.locator),
-        ],
-      });
-      const row = inserted.rows[0] ?? (await session.query({
-        text: `
-          SELECT ${selectedRegistrationColumns}
-          FROM bpmn_platform.operate_process_instances
-          WHERE process_instance_id = $1
-        `,
-        values: [processInstanceId],
-      })).rows[0];
-      if (row === undefined) {
-        throw new ProcessInstanceIdentityIntegrityError(
-          exact.instance.processInstanceId,
-        );
-      }
-      const retained = decodeRegistrationRow(row);
-      if (
-        !sameJson(retained.instance, exact.instance) ||
-        retained.locator !== exact.locator
-      ) {
-        throw new ProcessInstanceIdentityIntegrityError(
-          exact.instance.processInstanceId,
-        );
-      }
-      return retained.ordinal;
+    const control = await session.query({
+      text: `
+        SELECT population_head
+        FROM bpmn_platform.operate_incident_snapshot_control
+        WHERE singleton = true
+        FOR UPDATE
+      `,
     });
+    const populationHead = requireNonnegativeSafeInteger(
+      control.rows[0]?.population_head,
+      "incident snapshot population head",
+    );
+    const nextPopulationOrdinal = populationHead + 1;
+    if (!Number.isSafeInteger(nextPopulationOrdinal)) {
+      throw new ProcessInstanceIdentityIntegrityError(exact.instance.processInstanceId);
+    }
+    const inserted = await session.query({
+      text: `
+        INSERT INTO bpmn_platform.operate_process_instances (
+          process_instance_id,
+          process_id,
+          definition_version,
+          source_sha256,
+          public_identity_json,
+          process_locator,
+          observation,
+          population_ordinal
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
+        ON CONFLICT (process_instance_id) DO NOTHING
+        RETURNING ${selectedRegistrationColumns}
+      `,
+      values: [
+        processInstanceId,
+        encodePostgresqlByteText(exact.instance.definition.processId),
+        exact.instance.definition.version,
+        exact.instance.definition.source.sha256,
+        identityJson,
+        encodePostgresqlByteText(exact.locator),
+        nextPopulationOrdinal,
+      ],
+    });
+    if (inserted.rowCount === 1) {
+      const changed = await session.query({
+        text: `
+          UPDATE bpmn_platform.operate_incident_snapshot_control
+          SET population_head = $1
+          WHERE singleton = true AND population_head = $2
+        `,
+        values: [nextPopulationOrdinal, populationHead],
+      });
+      if (changed.rowCount !== 1) {
+        throw new ProcessInstanceIdentityIntegrityError(exact.instance.processInstanceId);
+      }
+    }
+    const row = inserted.rows[0] ?? (await session.query({
+      text: `
+        SELECT ${selectedRegistrationColumns}
+        FROM bpmn_platform.operate_process_instances
+        WHERE process_instance_id = $1
+      `,
+      values: [processInstanceId],
+    })).rows[0];
+    if (row === undefined) {
+      throw new ProcessInstanceIdentityIntegrityError(
+        exact.instance.processInstanceId,
+      );
+    }
+    const retained = decodeRegistrationRow(row);
+    const retainedPopulationOrdinal = requireNonnegativeSafeInteger(
+      row.population_ordinal,
+      "incident snapshot population ordinal",
+    );
+    if (
+      !sameJson(retained.instance, exact.instance) ||
+      retained.locator !== exact.locator ||
+      retainedPopulationOrdinal < 1 ||
+      retainedPopulationOrdinal > (
+        inserted.rowCount === 1 ? nextPopulationOrdinal : populationHead
+      )
+    ) {
+      throw new ProcessInstanceIdentityIntegrityError(
+        exact.instance.processInstanceId,
+      );
+    }
+    return retained.ordinal;
   }
 
   async getRegistration(
@@ -243,6 +306,18 @@ export class PostgresqlProcessInstanceRepository
     });
     return result.rows.map(decodeIdentityRow);
   }
+}
+
+function requireNonnegativeSafeInteger(value: unknown, label: string): number {
+  const decoded = typeof value === "bigint"
+    ? Number(value)
+    : typeof value === "string" && /^[0-9]+$/u.test(value)
+    ? Number(value)
+    : value;
+  if (typeof decoded !== "number" || !Number.isSafeInteger(decoded) || decoded < 0) {
+    throw new TypeError(`${label} must be a nonnegative safe integer`);
+  }
+  return decoded;
 }
 
 export function decodePostgresqlOperateRegistration(

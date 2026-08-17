@@ -12,6 +12,7 @@ import {
   matchIncidentDetailPath,
   matchIncidentsPath,
   parseStrictJson,
+  projectionFreshnessResponseHeaders,
   requireIncidentRequestBodyLength,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -21,6 +22,8 @@ import type {
   PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
   PublicEffectIncidentId,
+  ProjectionRead,
+  PublicIncidentSnapshot,
 } from "@bpmn-lean/platform-contracts";
 import {
   OperationsAuthorizationDecision,
@@ -31,7 +34,6 @@ import type {
   OperationsAuthorizationPolicy,
 } from "@bpmn-lean/platform-identity-policy";
 
-import type { IncidentAggregationService } from "./incident-aggregation-service.js";
 import {
   IncidentSnapshotUnavailableError,
 } from "./incident-contracts.js";
@@ -40,10 +42,9 @@ import type {
 } from "./incident-contracts.js";
 import type { IncidentMutationService } from "./incident-mutation-service.js";
 
-type IncidentAggregationOperations = Pick<
-  IncidentAggregationService,
-  "currentSnapshot"
->;
+type IncidentAggregationOperations = Readonly<{
+  currentSnapshot(): Promise<ProjectionRead<PublicIncidentSnapshot>>;
+}>;
 
 type IncidentMutationOperations = Pick<
   IncidentMutationService,
@@ -151,22 +152,22 @@ export class IncidentHttpRoutes {
   }
 
   async #list(): Promise<Response> {
+    const read = await this.options.aggregation.currentSnapshot();
     const snapshot = decodePublicIncidentSnapshot(
-      await this.options.aggregation.currentSnapshot(),
+      read.value,
     );
-    return jsonResponse(200, snapshot);
+    return projectionResponse(snapshot, read);
   }
 
   async #detail(incidentId: PublicEffectIncidentId): Promise<Response> {
-    const snapshot = decodePublicIncidentSnapshot(
-      await this.options.aggregation.currentSnapshot(),
-    );
+    const read = await this.options.aggregation.currentSnapshot();
+    const snapshot = decodePublicIncidentSnapshot(read.value);
     const incident = snapshot.incidents.find((candidate) =>
       incidentIdsEqual(candidate.incident.id, incidentId)
     );
     return incident === undefined
       ? notFound()
-      : jsonResponse(200, decodePublicIncident(incident));
+      : projectionResponse(decodePublicIncident(incident), read);
   }
 
   async #action(
@@ -298,6 +299,21 @@ function jsonResponse(status: number, value: unknown): Response {
     status,
     headers: { "content-type": "application/json; charset=utf-8" },
   });
+}
+
+function projectionResponse(
+  value: unknown,
+  read: ProjectionRead<unknown>,
+): Response {
+  const response = jsonResponse(200, value);
+  if (read.freshness !== null) {
+    for (const [name, headerValue] of Object.entries(
+      projectionFreshnessResponseHeaders(read.freshness),
+    )) {
+      response.headers.set(name, headerValue);
+    }
+  }
+  return response;
 }
 
 function invalidRequest(): Response {

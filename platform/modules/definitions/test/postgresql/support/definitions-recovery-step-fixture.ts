@@ -83,13 +83,25 @@ async function insertOperate(
   session: PostgresqlSession,
   publication: ConfirmedProcessInstancePublication,
 ): Promise<void> {
-  await session.query({
+  const control = await session.query({
+    text: `
+      SELECT population_head
+      FROM bpmn_platform.operate_incident_snapshot_control
+      WHERE singleton = true
+      FOR UPDATE
+    `,
+  });
+  const populationHead = Number(control.rows[0]?.population_head);
+  assert.equal(Number.isSafeInteger(populationHead) && populationHead >= 0, true);
+  const nextOrdinal = populationHead + 1;
+  const inserted = await session.query({
     text: `
       INSERT INTO bpmn_platform.operate_process_instances (
         process_instance_id, process_id, definition_version, source_sha256,
-        public_identity_json, process_locator, observation
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'active')
+        public_identity_json, process_locator, observation, population_ordinal
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
       ON CONFLICT DO NOTHING
+      RETURNING population_ordinal
     `,
     values: [
       bytes(publication.instance.processInstanceId),
@@ -98,8 +110,20 @@ async function insertOperate(
       publication.instance.definition.source.sha256,
       JSON.stringify(publication.instance),
       bytes(publication.locator),
+      nextOrdinal,
     ],
   });
+  if (inserted.rowCount === 1) {
+    const changed = await session.query({
+      text: `
+        UPDATE bpmn_platform.operate_incident_snapshot_control
+        SET population_head = $1
+        WHERE singleton = true AND population_head = $2
+      `,
+      values: [nextOrdinal, populationHead],
+    });
+    assert.equal(changed.rowCount, 1);
+  }
   await requireExactSubscriber(session, "operate", publication);
 }
 

@@ -55,6 +55,10 @@ export async function resetOperateDatabase(
   await runtime.query({
     text: `
       TRUNCATE
+        bpmn_platform.operate_incident_snapshot_incidents,
+        bpmn_platform.operate_incident_snapshot_generation_items,
+        bpmn_platform.operate_incident_snapshot_control,
+        bpmn_platform.operate_incident_snapshot_generations,
         bpmn_platform.operate_flow_node_occurrences,
         bpmn_platform.operate_flow_node_occurrence_batches,
         bpmn_platform.operate_flow_node_occurrence_publications,
@@ -69,6 +73,10 @@ export async function resetOperateDatabase(
   });
   await runtime.query({
     text: `
+      INSERT INTO bpmn_platform.operate_incident_snapshot_control (
+        singleton, population_head, next_generation, building_generation, completed_generation
+      ) VALUES (true, 0, 1, NULL, NULL);
+
       UPDATE bpmn_platform.operate_incident_action_audit_source_head
       SET head = 0
       WHERE singleton = true

@@ -3,6 +3,8 @@ import type {
   PostgresqlRuntime,
 } from "@bpmn-lean/platform-postgresql-runtime";
 
+import { PostgresqlIncidentSnapshotGeneration } from "./postgresql-incident-snapshot-generation.js";
+
 const maximumCandidateLimit = 1_000;
 
 export enum OperatePostgresqlRecoveryFamily {
@@ -13,13 +15,14 @@ export enum OperatePostgresqlRecoveryFamily {
   IncidentSnapshot = "operate.incident-snapshot",
 }
 
-/** Read-only, bounded candidate discovery over a caller-owned PostgreSQL runtime. */
+/** Bounded candidate discovery over a caller-owned PostgreSQL runtime. */
 export class PostgresqlOperateRecoveryCandidateSource {
   constructor(private readonly runtime: PostgresqlRuntime) {}
 
   async listCandidateKeys(
     family: OperatePostgresqlRecoveryFamily,
     limitValue: number,
+    incidentSnapshotMaxAgeMs?: number,
   ): Promise<ReadonlyArray<Uint8Array>> {
     const limit = requirePositiveSafeInteger(limitValue);
     switch (family) {
@@ -69,16 +72,11 @@ export class PostgresqlOperateRecoveryCandidateSource {
           limit,
         );
       case OperatePostgresqlRecoveryFamily.IncidentSnapshot:
-        return await this.#queryPopulation(
-          `
-            SELECT process_instance_id AS candidate_key
-            FROM bpmn_platform.operate_process_instances
-            WHERE observation <> 'closed'
-            ORDER BY process_instance_id ASC
-            LIMIT $1
-          `,
-          limit,
-        );
+        if (incidentSnapshotMaxAgeMs === undefined) {
+          throw new TypeError("incident snapshot maximum age is required");
+        }
+        return await new PostgresqlIncidentSnapshotGeneration(this.runtime)
+          .listCandidateKeys(limit, incidentSnapshotMaxAgeMs);
       default:
         throw new TypeError(`unknown Operate PostgreSQL recovery family: ${String(family)}`);
     }

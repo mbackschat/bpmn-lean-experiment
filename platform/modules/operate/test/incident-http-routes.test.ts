@@ -98,6 +98,35 @@ test("serves strict list, exact detail, and normalized audit filters after outbo
   assert.equal(calls.outbox, 4);
 });
 
+test("adds shared freshness only to successful projected list and detail responses", async () => {
+  const routes = createRoutes({
+    calls: counters(),
+    freshness: { observedAfterEpochMs: 8388001, maxAgeMs: 5_000 },
+  });
+  const list = await routes.handle(request("/api/v1/incidents"));
+  const detail = await routes.handle(request(
+    "/api/v1/incidents/process-1/ServiceTask_Fail/1/generations/1",
+  ));
+  for (const response of [list, detail]) {
+    assert.equal(response?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), "8388001");
+    assert.equal(response?.headers.get("Bpmn-Projection-Max-Age-Ms"), "5000");
+  }
+
+  const missing = await routes.handle(request(
+    "/api/v1/incidents/process-1/Missing/1/generations/1",
+  ));
+  assert.equal(missing?.status, 404);
+  assert.equal(missing?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
+
+  const unavailable = await createRoutes({
+    calls: counters(),
+    aggregateFailure: new IncidentSnapshotUnavailableError(),
+    freshness: { observedAfterEpochMs: 8388001, maxAgeMs: 5_000 },
+  }).handle(request("/api/v1/incidents"));
+  assert.equal(unavailable?.status, 503);
+  assert.equal(unavailable?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
+});
+
 test("maps committed, rejected, and indeterminate action results without changing content", async () => {
   const cases = [
     {
@@ -341,6 +370,7 @@ function createRoutes(options: Readonly<{
   permitted?: boolean;
   outboxFailure?: Error;
   aggregateFailure?: Error;
+  freshness?: Readonly<{ observedAfterEpochMs: number; maxAgeMs: number }>;
   mutationResult?: IncidentMutationResult;
   submit?: (
     actor: Readonly<{ actorId: string }>,
@@ -362,7 +392,12 @@ function createRoutes(options: Readonly<{
       currentSnapshot: async () => {
         options.calls.aggregations += 1;
         if (options.aggregateFailure !== undefined) throw options.aggregateFailure;
-        return structuredClone(snapshot);
+        return {
+          value: structuredClone(snapshot),
+          freshness: options.freshness === undefined
+            ? null
+            : { ...options.freshness },
+        };
       },
     },
     mutations: {

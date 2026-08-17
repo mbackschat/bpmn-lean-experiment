@@ -79,8 +79,12 @@ if (baseUrl === undefined) {
       ["a\u0000z", "é😀\u0000z"],
     );
     assert.deepEqual(
-      textKeys(await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.IncidentSnapshot, 2)),
-      ["a", "a\u0000z"],
+      textKeys(await source.listCandidateKeys(
+        OperatePostgresqlRecoveryFamily.IncidentSnapshot,
+        2,
+        5_000,
+      )),
+      ["a\u0000z", "é😀\u0000z"],
     );
   });
 
@@ -136,6 +140,10 @@ if (baseUrl === undefined) {
       /positive safe integer/u,
     );
     await assert.rejects(
+      source.listCandidateKeys(OperatePostgresqlRecoveryFamily.IncidentSnapshot, 1),
+      /maximum age is required/u,
+    );
+    await assert.rejects(
       source.listCandidateKeys(OperatePostgresqlRecoveryFamily.IncidentAction, 1_001),
       /at most 1000/u,
     );
@@ -156,6 +164,18 @@ async function insertProcess(
 ): Promise<void> {
   await runtime.query({
     text: `
+      WITH locked AS MATERIALIZED (
+        SELECT population_head
+        FROM bpmn_platform.operate_incident_snapshot_control
+        WHERE singleton = true
+        FOR UPDATE
+      ), advanced AS (
+        UPDATE bpmn_platform.operate_incident_snapshot_control AS control
+        SET population_head = locked.population_head + 1
+        FROM locked
+        WHERE control.singleton = true
+        RETURNING control.population_head
+      )
       INSERT INTO bpmn_platform.operate_process_instances (
         process_instance_id,
         process_id,
@@ -163,8 +183,9 @@ async function insertProcess(
         source_sha256,
         public_identity_json,
         process_locator,
-        observation
-      ) VALUES ($1, $2, 1, $3, '{}', $4, $5)
+        observation,
+        population_ordinal
+      ) SELECT $1, $2, 1, $3, '{}', $4, $5, population_head FROM advanced
     `,
     values: [
       Buffer.from(processInstanceId, "utf8"),
