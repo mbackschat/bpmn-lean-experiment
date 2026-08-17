@@ -18,6 +18,7 @@ import type {
 import {
   OperateIncidentIntegrityError,
   OperateIncidentStoredValueError,
+  requireIncidentAuditDeliveryLimit,
 } from "./incident-contracts.js";
 import {
   decodeStoredAction,
@@ -233,16 +234,19 @@ export class PostgresqlIncidentActionRepository
     return result.rows.map(decodeActionRow);
   }
 
-  async listUndeliveredAuditEvents(): Promise<
+  async listUndeliveredAuditEvents(limitValue?: number): Promise<
     ReadonlyArray<IncidentAuditOutboxItem>
   > {
+    const limit = requireIncidentAuditDeliveryLimit(limitValue);
     const result = await this.#runtime.query({
       text: `
         SELECT ordinal, event_id, action_id, action_outcome, event_json, delivered
         FROM bpmn_platform.operate_incident_action_audit_outbox
         WHERE delivered = false
         ORDER BY ordinal ASC
+        ${limit === undefined ? "" : "LIMIT $1"}
       `,
+      ...(limit === undefined ? {} : { values: [limit] }),
     });
     return result.rows.map(decodeAuditItem);
   }

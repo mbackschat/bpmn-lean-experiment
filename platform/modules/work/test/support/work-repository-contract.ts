@@ -38,7 +38,7 @@ export type ContractWorkRepository = Readonly<{
     binding: WorkCompletionBinding,
   ): Promise<WorkCompletionSubmissionResult>;
   recordCompletionOutcome(input: WorkCompletionOutcomeInput): Promise<WorkCompletionOutcomeResult>;
-  listUndeliveredAuditEvents(): Promise<ReadonlyArray<WorkAuditOutboxItem>>;
+  listUndeliveredAuditEvents(limit?: number): Promise<ReadonlyArray<WorkAuditOutboxItem>>;
   acknowledgeAuditEvent(eventId: string): Promise<void>;
 }>;
 
@@ -141,6 +141,11 @@ export function registerWorkRepositoryContract(
       assert.equal((await harness.first.getClaimReleaseAction(release.actionId))?.binding.kind, "release");
       const outbox = await harness.first.listUndeliveredAuditEvents();
       assert.deepEqual(outbox.map(({ ordinal }) => ordinal), [1, 2, 3, 4]);
+      assert.deepEqual(
+        (await harness.first.listUndeliveredAuditEvents(2)).map(({ ordinal }) => ordinal),
+        [1, 2],
+      );
+      await assert.rejects(harness.first.listUndeliveredAuditEvents(1_001), RangeError);
       await harness.second.acknowledgeAuditEvent(outbox[0]!.event.eventId);
       await harness.second.acknowledgeAuditEvent(outbox[0]!.event.eventId);
       assert.deepEqual(

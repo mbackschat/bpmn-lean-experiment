@@ -140,8 +140,20 @@ export interface IncidentActionRepository {
     audit: IncidentAuditEvent,
   ): Promise<IncidentActionOutcomeResult>;
   listReconciliableActions(): Promise<ReadonlyArray<StoredIncidentAction>>;
-  listUndeliveredAuditEvents(): Promise<ReadonlyArray<IncidentAuditOutboxItem>>;
+  listUndeliveredAuditEvents(limit?: number): Promise<ReadonlyArray<IncidentAuditOutboxItem>>;
   acknowledgeAuditEvent(eventId: string): Promise<void>;
+}
+
+export const maximumIncidentAuditDeliveryBatchSize = 1_000;
+
+export function requireIncidentAuditDeliveryLimit(limit: number | undefined): number | undefined {
+  if (limit === undefined) return undefined;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > maximumIncidentAuditDeliveryBatchSize) {
+    throw new RangeError(
+      `Incident audit delivery limit must be an integer from 1 through ${maximumIncidentAuditDeliveryBatchSize}`,
+    );
+  }
+  return limit;
 }
 
 export type AuthorizedIncidentActor = Readonly<{ actorId: string }>;

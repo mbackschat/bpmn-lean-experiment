@@ -125,14 +125,30 @@ export function registerIncidentActionRepositoryContract(
         )).kind,
         "retained",
       );
+      const secondBinding = incidentBinding("action-2");
+      assert.equal(
+        (await fixture.incidents.reserve(
+          secondBinding,
+          incidentAudit(secondBinding, "reserved"),
+        )).kind,
+        "reserved",
+      );
       const pending = await fixture.incidents.listUndeliveredAuditEvents();
-      assert.deepEqual(pending.map(({ ordinal }) => ordinal), [1, 2]);
-      assert.deepEqual(pending.map(({ event }) => event.outcome), ["reserved", "committed"]);
+      assert.deepEqual(pending.map(({ ordinal }) => ordinal), [1, 2, 3]);
+      assert.deepEqual(
+        pending.map(({ event }) => event.outcome),
+        ["reserved", "committed", "reserved"],
+      );
+      assert.deepEqual(
+        (await fixture.incidents.listUndeliveredAuditEvents(2)).map(({ ordinal }) => ordinal),
+        [1, 2],
+      );
+      await assert.rejects(fixture.incidents.listUndeliveredAuditEvents(1_001), RangeError);
       await fixture.incidents.acknowledgeAuditEvent(pending[0]!.event.eventId);
       assert.deepEqual(
         (await fixture.incidents.listUndeliveredAuditEvents())
           .map(({ event }) => event.outcome),
-        ["committed"],
+        ["committed", "reserved"],
       );
     } finally {
       await fixture.dispose();

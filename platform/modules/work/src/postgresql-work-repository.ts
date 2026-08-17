@@ -56,6 +56,7 @@ import {
   validateClaimInput,
   validateReleaseInput,
 } from "./work-transition-values.js";
+import { requireWorkAuditDeliveryLimit } from "./work-audit-delivery-values.js";
 
 /** Shared PostgreSQL Work persistence over a runtime owned by its composition root. */
 export class PostgresqlWorkRepository {
@@ -367,12 +368,15 @@ export class PostgresqlWorkRepository {
     });
   }
 
-  async listUndeliveredAuditEvents(): Promise<ReadonlyArray<WorkAuditOutboxItem>> {
+  async listUndeliveredAuditEvents(limitValue?: number): Promise<ReadonlyArray<WorkAuditOutboxItem>> {
+    const limit = requireWorkAuditDeliveryLimit(limitValue);
     const result = await this.runtime.query({
       text: `
         SELECT * FROM bpmn_platform.work_audit_outbox
         WHERE delivered = false ORDER BY ordinal ASC
+        ${limit === undefined ? "" : "LIMIT $1"}
       `,
+      ...(limit === undefined ? {} : { values: [limit] }),
     });
     return result.rows.map(decodePostgresqlOutbox);
   }

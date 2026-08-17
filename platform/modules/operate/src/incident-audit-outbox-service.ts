@@ -1,7 +1,8 @@
 import type { IncidentAuditOutboxItem } from "./incident-contracts.js";
+import { requireIncidentAuditDeliveryLimit } from "./incident-contracts.js";
 
 export interface IncidentAuditOutboxRepository {
-  listUndeliveredAuditEvents(): Promise<ReadonlyArray<IncidentAuditOutboxItem>>;
+  listUndeliveredAuditEvents(limit?: number): Promise<ReadonlyArray<IncidentAuditOutboxItem>>;
   acknowledgeAuditEvent(eventId: string): Promise<void>;
 }
 
@@ -17,9 +18,20 @@ export class IncidentActionAuditOutboxService {
   ) {}
 
   async reconcileAll(): Promise<void> {
-    for (const item of await this.repository.listUndeliveredAuditEvents()) {
+    await this.#reconcile(undefined);
+  }
+
+  async reconcileBatch(limit: number): Promise<number> {
+    return this.#reconcile(requireIncidentAuditDeliveryLimit(limit));
+  }
+
+  async #reconcile(limit: number | undefined): Promise<number> {
+    let delivered = 0;
+    for (const item of await this.repository.listUndeliveredAuditEvents(limit)) {
       await this.sink.record(item);
       await this.repository.acknowledgeAuditEvent(item.event.eventId);
+      delivered += 1;
     }
+    return delivered;
   }
 }

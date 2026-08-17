@@ -15,6 +15,7 @@ import type {
 import {
   OperateIncidentIntegrityError,
   OperateIncidentStoredValueError,
+  requireIncidentAuditDeliveryLimit,
 } from "./incident-contracts.js";
 import {
   decodeStoredAction,
@@ -185,11 +186,15 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
     `).all().map(decodeActionRow);
   }
 
-  async listUndeliveredAuditEvents(): Promise<ReadonlyArray<IncidentAuditOutboxItem>> {
-    return this.#database.prepare(`
+  async listUndeliveredAuditEvents(limitValue?: number): Promise<ReadonlyArray<IncidentAuditOutboxItem>> {
+    const limit = requireIncidentAuditDeliveryLimit(limitValue);
+    const statement = this.#database.prepare(`
       SELECT ordinal, event_json FROM incident_action_audit_outbox
       WHERE delivered = 0 ORDER BY ordinal ASC
-    `).all().map((row) => ({
+      ${limit === undefined ? "" : "LIMIT ?"}
+    `);
+    const rows = limit === undefined ? statement.all() : statement.all(limit);
+    return rows.map((row) => ({
       ordinal: requirePositiveSafeInteger(row.ordinal, "outbox ordinal"),
       event: decodeAuditRow(row.event_json),
     }));

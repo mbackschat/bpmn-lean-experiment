@@ -51,6 +51,7 @@ import {
   validateReleaseInput,
 } from "./work-transition-values.js";
 import { initializeWorkSchema } from "./work-sqlite-schema.js";
+import { requireWorkAuditDeliveryLimit } from "./work-audit-delivery-values.js";
 
 const defaultBusyTimeoutMs = 5_000;
 
@@ -364,11 +365,15 @@ export class SqliteWorkRepository {
     });
   }
 
-  async listUndeliveredAuditEvents(): Promise<ReadonlyArray<WorkAuditOutboxItem>> {
-    return this.#database.prepare(`
+  async listUndeliveredAuditEvents(limitValue?: number): Promise<ReadonlyArray<WorkAuditOutboxItem>> {
+    const limit = requireWorkAuditDeliveryLimit(limitValue);
+    const statement = this.#database.prepare(`
       SELECT ordinal, event_json FROM work_audit_outbox
       WHERE delivered = 0 ORDER BY ordinal ASC
-    `).all().map((row) => ({
+      ${limit === undefined ? "" : "LIMIT ?"}
+    `);
+    const rows = limit === undefined ? statement.all() : statement.all(limit);
+    return rows.map((row) => ({
       ordinal: requirePositiveSafeInteger(row.ordinal, "outbox ordinal"),
       event: decodeStoredAuditEvent(row.event_json),
     }));
