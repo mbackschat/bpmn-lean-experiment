@@ -20,6 +20,7 @@ const expectedMigrationNames = [
   "0003_operate__e171ce2e666fa1727a616f2d8dffe3a61bcddf3a46246e267ecdb57dc4aca153",
   "0004_work__72d8506b3ff9553dba17e54679cc4793432863d1052eb8f4fc213b78e8abee61",
   "0005_audit__df6b5d0e263678efefd23f2c92215d79d08634ac7fe0188386ff11e43f3878de",
+  "0006_recovery-leases__f09ab3db8bea84936c0695601288a26b01ba2268b6db00df82c8f9ca8baeceb9",
 ] as const;
 const requiredRelations = [
   "bpmn_platform.exact_artifacts",
@@ -28,6 +29,7 @@ const requiredRelations = [
   "bpmn_platform.work_processes",
   "bpmn_platform.audit_work_events",
   "bpmn_platform.audit_incident_events",
+  "bpmn_platform.recovery_leases",
 ] as const;
 
 function runtime(connectionString: string, applicationName: string): PostgresqlRuntime {
@@ -85,7 +87,7 @@ test(
     try {
       const first = await runMigrationApplication(databaseUrl.toString());
       assert.deepEqual(first, {
-        stdout: "5 PostgreSQL migrations are applied.\n",
+        stdout: "6 PostgreSQL migrations are applied.\n",
         stderr: "",
       });
 
@@ -105,6 +107,17 @@ test(
           text: 'SELECT name FROM "bpmn_platform_meta"."schema_migrations" ORDER BY run_on, id',
         });
         assert.deepEqual(applied.rows.map(({ name }) => name), expectedMigrationNames);
+
+        const schemaEpoch = await database.query<
+          Readonly<Record<string, unknown>> & Readonly<{ epoch: number }>
+        >({
+          text: `
+            SELECT epoch
+            FROM "bpmn_platform_meta"."schema_epoch"
+            WHERE singleton = true
+          `,
+        });
+        assert.deepEqual(schemaEpoch.rows, [{ epoch: 6 }]);
 
         const relations = await database.query<
           Readonly<Record<string, unknown>> & Readonly<{

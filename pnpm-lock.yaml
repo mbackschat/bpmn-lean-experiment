@@ -179,6 +179,9 @@ importers:
       '@bpmn-lean/platform-postgresql-runtime':
         specifier: workspace:*
         version: link:../../foundation/postgresql-runtime
+      '@bpmn-lean/platform-recovery-runtime':
+        specifier: workspace:*
+        version: link:../../foundation/recovery-runtime
       '@bpmn-lean/platform-work':
         specifier: workspace:*
         version: link:../../modules/work
@@ -313,6 +316,12 @@ importers:
       '@types/pg':
         specifier: 8.20.0
         version: 8.20.0
+
+  platform/foundation/recovery-runtime:
+    dependencies:
+      '@bpmn-lean/platform-postgresql-runtime':
+        specifier: workspace:*
+        version: link:../postgresql-runtime
 
   platform/modules/definitions:
     dependencies:

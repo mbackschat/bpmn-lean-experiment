@@ -51,7 +51,7 @@ test("requires the dedicated migration credential without retaining its environm
   );
 });
 
-test("binds the five migration owners in exact order without consulting cwd", () => {
+test("binds the six migration owners in exact order without consulting cwd", () => {
   const before = platformPostgresqlMigrationDirectories();
   const originalDirectory = process.cwd();
   try {
@@ -66,6 +66,7 @@ test("binds the five migration owners in exact order without consulting cwd", ()
     path.join(projectRoot, "platform/modules/operate/migrations"),
     path.join(projectRoot, "platform/modules/work/migrations"),
     path.join(projectRoot, "platform/foundation/audit/migrations"),
+    path.join(projectRoot, "platform/foundation/recovery-runtime/migrations"),
   ]);
   assert.ok(Object.isFrozen(before));
 });

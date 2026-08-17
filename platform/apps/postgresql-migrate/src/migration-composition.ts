@@ -17,6 +17,7 @@ const migrationDirectories = Object.freeze([
   migrationDirectory("@bpmn-lean/platform-operate"),
   migrationDirectory("@bpmn-lean/platform-work"),
   migrationDirectory("@bpmn-lean/platform-audit"),
+  migrationDirectory("@bpmn-lean/platform-recovery-runtime"),
 ]);
 
 function migrationDirectory(packageName: string): string {

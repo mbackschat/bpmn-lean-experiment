@@ -30,6 +30,7 @@
     "@bpmn-lean/platform-definitions": "workspace:*",
     "@bpmn-lean/platform-operate": "workspace:*",
     "@bpmn-lean/platform-postgresql-runtime": "workspace:*",
+    "@bpmn-lean/platform-recovery-runtime": "workspace:*",
     "@bpmn-lean/platform-work": "workspace:*"
   }
 }
