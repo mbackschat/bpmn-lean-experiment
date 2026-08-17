@@ -26,15 +26,32 @@ No BPMN requirement, CIB relationship, semantic profile, Semantic Process IL rep
 
 ## Required public contract
 
-The public engine address remains the semantic Process-instance identity plus its opaque Process locator. Compile, start, observation, and command operations never accept or return a Run ID, Run ordinal, segment locator, Continue-As-New marker, or Temporal suggestion.
+The public engine address remains the semantic Process-instance identity plus its opaque Process locator. Compile, start, observation, and command operations never accept or return a Temporal SDK handle, Run ID, Run ordinal, segment locator, Continue-As-New marker, or Temporal suggestion.
 
 Continue-As-New produces no BPMN start, completion, cancellation, token, scope, timer, effect, incident, command, transition, or occurrence fact. It does not reset semantic logical time, public execution revision, flow-node occurrence identity, command identity, or definition identity.
 
 An exact retry of any retained external command returns the first semantic outcome across every Run in the chain. Reuse of its semantic command ID with different canonical stimulus content remains `BpmnCommandIdentityConflict`. A distinct command submitted after semantic terminal closure remains `processClosed`. A missing or expired Workflow chain remains `processUnknown` only under the existing retention contract. Capacity failure and transient rollover routing remain infrastructure failures and are not coerced to any of those results.
 
+The implementation replaces the current `BpmnProcessStartResult.handle: WorkflowHandle<BpmnProcessWorkflow>` field. The adapter-level started result contains only its discriminator and validated semantic Process-instance ID; terminal receipt retrieval becomes a project-owned client operation that uses the SDK handle privately. The published Product 1 start boundary continues to return the existing opaque `EngineProcessLocator`. Raw `WorkflowHandle`, `result()`, `describe()`, `fetchHistory()`, `client`, `firstExecutionRunId`, and other SDK navigation remain testkit-private or adapter-internal and are unreachable from the recursively inspected Product 1 public surface.
+
 The terminal Process receipt becomes a versioned semantic-lifecycle receipt containing definition identity, Process ID, Process-instance ID, and final committed state. The current host-only `messageDeliveryRecords` array moves out of that public receipt into the private bounded command-recovery envelope. The Product 1 client uses the private recovery data to preserve the exact existing Message result and conflict behavior, then exposes only the terminal receipt. This deliberately corrects a host-mechanism leak; it changes no Message semantic outcome.
 
 The client must decode retained legacy receipts for already-started Workflows and normalize them to the new public receipt. New Workflows return only the new receipt contract. A public union that makes callers branch on the old host ledger is excluded.
+
+### Chain-relative command recovery
+
+The Workflow registers one bounded private command-recovery Query before semantic evaluation. Its request contains the v1 recovery discriminator, hosting Process-instance ID, semantic command ID, and digest of the complete canonical typed stimulus. The Workflow rejects a Process-instance mismatch before reading an entry. Its response repeats the discriminator, Process-instance ID, command ID, and digest beside exactly one of `resolved`, `identityConflict`, `unknownWhileActive`, `terminalWithoutEntry`, or `capacityFailedWithoutEntry`; the client validates every repeated field against the opaque locator and original command before using the response. This is identity binding inside the authenticated Temporal Namespace, not a new public authorization mechanism.
+
+The Product 1 client resolves an indeterminate Update or Message in this exact order:
+
+1. Query the latest live or retained closed Run addressed by Workflow ID, never by a caller-supplied Run ID.
+2. Return `resolved` as the original semantic command result and map `identityConflict` to `BpmnCommandIdentityConflict`.
+3. On `unknownWhileActive`, retry the same content-bound Update, or continue the existing Message-result poll, until the ordinary client deadline. `BpmnWorkflowRolloverInProgress`, an old Run closing, and the brief interval before its successor answers all follow this branch.
+4. Return `processClosed` only for `terminalWithoutEntry` with a validated terminal receipt.
+5. Propagate `capacityFailedWithoutEntry` as `BPMN_WORKFLOW_CHAIN_CAPACITY_EXHAUSTED`. A resolved entry always wins over the chain failure that followed its commit.
+6. Return `processUnknown` only when neither the latest chain Run nor a retained closed Run or terminal receipt remains. Every malformed response, mismatched identity, service failure, and exhausted client deadline remains infrastructure failure.
+
+This Query, rather than Run-local Update lookup, closes the response-loss race after Continue-As-New and after a ledger-filling command commits immediately before capacity failure. The complete recovery response remains within the Query-response budget and exposes no segment or Run identity.
 
 ## Budget measurement
 
@@ -69,7 +86,7 @@ All constants belong to one versioned Product 1 protocol module and are verified
 | Continue-As-New carried arguments in aggregate | 448 KiB | Split the versioned fields into separately measured Temporal arguments; no individual argument exceeds its row above |
 | Workflow chain | 128 Runs | A required 129th Run fails with the typed capacity failure |
 
-The 8,000-Event and 8 MiB triggers leave at least 2,240 Events and 2 MiB below Temporal's default warnings. The adapter still honors an earlier SDK suggestion. Direct Temporal clients, externally raised deployment limits, and input floods outside the published Product 1 client are unsupported and do not enlarge this contract.
+The 8,000-Event and 8 MiB triggers reserve 2,240 Events and 2 MiB before Temporal's default warnings, but detection occurs at an activation boundary and therefore may overshoot a trigger by one accepted activation. Before closure, an executable event-cost table must prove that the maximum admitted activation, its Workflow Task completion, and the Continue-As-New command fit inside both reserved margins; otherwise the project thresholds must be lowered. The adapter still honors an earlier SDK suggestion. Direct Temporal clients, externally raised deployment limits, and input floods outside the published Product 1 client are unsupported and do not enlarge this contract.
 
 ## Versioned continuation
 
@@ -93,19 +110,27 @@ The complete carried state is:
 
 No accepted semantic-input queue, active handler, pending Activity, armed Timer promise, scheduler callback, or partially materialized publication is carried. The rollover algorithm must first reduce those host facts to the committed state above. Open semantic timers, effects, waits, and incidents are carried inside RuntimeState and are deterministically re-established by the new Run.
 
+### Deployment compatibility
+
+The first implementation deliberately selects a stop-the-world adapter upgrade and does not claim rolling Worker compatibility or adopt Temporal Worker Versioning. Before replacing the pre-Horizon bundle, operations must fence all Product 1 start and command ingress, gracefully stop every old Worker polling an affected Task Queue, verify that no old poller remains, replay the retained compatibility histories under the candidate bundle, start only the candidate Workers, and then reopen ingress. Open Workflows may wait during this interval and resume under the candidate bundle; the patch branch must replay their old commands before any v1 continuation is emitted.
+
+Old and new adapter Workers must never poll the same production Task Queue concurrently. After any candidate Worker records the patch marker or creates a v1 successor Run, rollback to a bundle that cannot decode and replay v1 is prohibited. Recovery requires another replay-compatible bundle. Supporting overlapping or automatically routed Worker deployments is a reopen condition, not an implicit promise of this proposal.
+
+The deployment gate records the exact old and candidate bundle identities, rejects any configuration that enables both, and checks the live poller inventory before ingress reopens. Its adversarial witness deliberately presents a v1 continuation history to the old bundle and proves that the old bundle cannot pass replay or continuation validation, while the gate refuses that bundle as the active candidate. This wrong-version case is a deployment failure and never permission to reinterpret carried state.
+
 ## Command-recovery ledger
 
 Only externally retryable commands need lifetime recovery. Start and adapter-derived Timer or effect stimuli are reconstructed from committed state and cannot cross the safe checkpoint while pending. Each recovery entry contains the exact semantic command ID, the SHA-256 digest of the existing canonical typed stimulus encoding, and its first `CommandOutcome` or durable identity-conflict resolution. The ledger uses the same canonical encoder and digest already used by content-bound Update identity.
 
 An exact command ID and equal stimulus digest recovers the first result without entering the semantic core. An exact command ID and different digest produces the existing identity-conflict request failure. A previously unseen ID may enter the ordered input queue only while both ledger bounds have remaining capacity.
 
-The 512-entry and 96 KiB limits are conjunctive. Long command IDs can exhaust bytes before entries. Once a newly committed result fills either bound, its waiting Update handler must receive that result, then the Workflow reaches the safe checkpoint and fails with `BPMN_WORKFLOW_CHAIN_CAPACITY_EXHAUSTED` unless the Process is already terminal. The adapter never evicts an entry, uses a recent-window approximation, relies on Run-local Update deduplication, or forgets enough information to treat an old conflict as new work.
+The 512-entry and 96 KiB limits are conjunctive. Long command IDs can exhaust bytes before entries. Once a newly committed result fills either bound, its waiting Update handler must receive that result, then the Workflow reaches the safe checkpoint and fails with `BPMN_WORKFLOW_CHAIN_CAPACITY_EXHAUSTED` unless the Process is already terminal. If that response is lost, the retained closed-Run recovery Query returns the committed entry before reporting the capacity failure. The adapter never evicts an entry, uses a recent-window approximation, relies on Run-local Update deduplication, or forgets enough information to treat an old conflict as new work.
 
 ## Publication and trace segmentation
 
 Execution publication, flow-node occurrence publication, and the harness-only canonical trace are segmented per Run. A rollover closes the current segment only after its last command result, execution batch, occurrence batch, current fold, and trace observations are mutually consistent. The next Run starts empty local batch arrays but retains the global heads, current folds, open occurrence anchors, and a descriptor for every closed segment.
 
-The Product 1 client resolves a public cursor against the current Run's bounded private segment directory, queries the selected Run by private Run ID, and returns a page whose public `headRevision` is the current chain head. A page never splits a command batch or crosses a Run boundary. The next request at that segment boundary selects the following Run. Execution and occurrence pages always select the same segment and revision range.
+The Product 1 client linearizes a page when one successful Query against the latest Run returns the immutable directory snapshot, selected descriptor, and chain head. It then queries the selected Run by private Run ID and exact descriptor digest, and returns that snapshot's `headRevision` even if a later Run advances meanwhile. It never rereads and combines a newer head with the selected segment. A page never splits a command batch or crosses a Run boundary. The next request at that segment boundary selects the following Run. Execution and occurrence pages always select the same segment and revision range.
 
 If Temporal no longer retains a selected closed Run, the client returns the existing `unavailable` result. It does not return `gap`, invent a batch from Event History, or derive an occurrence from a state difference. Availability after Temporal retention remains unsupported. Product 2's independently persisted projection remains the durable operator-history owner and never becomes semantic authority.
 
@@ -122,7 +147,7 @@ At every stable main-loop checkpoint, the Workflow applies this order:
 3. Otherwise set a deterministic rollover fence. Validators reject newly arriving Updates with retryable `BpmnWorkflowRolloverInProgress` before Temporal accepts them. Signal handlers continue to validate, deduplicate, and synchronously enqueue accepted Messages.
 4. Drain the accepted queue through the existing single semantic loop. Finish every accepted handler. Recheck the queue after `allHandlersFinished()` because a Signal accepted before the barrier may have appended work.
 5. Repeat step 4 until `allHandlersFinished()` and an empty queue hold in the same Workflow activation. Do not start a new Activity or arm a new durable Timer while the fence is set.
-6. Validate the complete continuation, close the current publication segment, and call Continue-As-New synchronously with no intervening `await`.
+6. Validate the complete continuation, close the current publication segment, and immediately `return await continueAsNew(...)` with no intervening yield. Do not catch or translate the SDK's non-returning continuation control exception.
 
 A public Update that races the fence retries the same content-bound request against the current Workflow ID. A public Signal is always sent without a Run ID. The forced evidence must demonstrate that a Signal accepted immediately before the closing command is applied exactly once, while one sent after the old Run closes reaches the new Run or produces a retryable infrastructure result that the client resubmits exactly once. No correctness claim rests on caller timing.
 
@@ -154,10 +179,15 @@ The first production test must set a test-only Event History threshold low enoug
 
 - open User Task across rollover, exact completion, exact duplicate recovery, conflicting-content failure, terminal receipt, and replay of every Run;
 - Message wait across rollover, a Signal accepted immediately before rollover, a post-boundary retry, exact duplicate coalescing, conflicting-content recovery, and no duplicate semantic transition;
+- an accepted Update whose response is lost after its old-Run commit and Continue-As-New, followed by exact recovery from the successor;
+- a ledger-filling command whose response is lost immediately before capacity failure, followed by exact recovery from the retained failed Run before the typed capacity result is considered;
 - open Timer across rollover without a duplicate or lost firing and with unchanged semantic logical time;
 - open effect before scheduling and a completed effect after Activity return, with no abandoned or duplicated Activity;
+- an effect that completes externally before successor-state budget validation fails, proving exactly one Activity, no result publication, the unchanged last committed semantic state, typed capacity failure, and replay of the failed Run;
 - execution-publication and flow-node-occurrence pages before, at, and after a segment boundary, including open occurrence pairing and a retained-segment `unavailable` classification;
+- a chain that outlives its earliest Run retention, proving an early command remains recoverable from the carried ledger, an early publication segment is `unavailable`, and later plus current segment pages remain valid;
 - Worker replacement before the fence, after the fence, and in the new Run;
+- stop-the-world deployment admission, retained old-history replay, mixed old/new configuration rejection, and the adversarial wrong-version Worker failure;
 - terminal completion winning over a simultaneous rollover suggestion;
 - forced command-entry, command-byte, queue, Program, RuntimeState, publication, Query, terminal-result, Activity, Run-count, and malformed-continuation failures at their exact boundary;
 - history inspection proving each rollover command, no Workflow retry, no duplicate effect, and no public Run identity;
@@ -176,9 +206,11 @@ Approval changes no file by itself. The later implementation checkpoint must upd
 - [TEMPORAL-TEST-EVIDENCE-MAP.md](TEMPORAL-TEST-EVIDENCE-MAP.md) and [TESTING-SPEC.md](TESTING-SPEC.md) for the exact forced-rollover, mutation, history, replay, and limit gates;
 - [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) and [PLAN.md](PLAN.md) for the implemented and next-work boundary;
 - [INTERMEDIATE-CATCH-MESSAGE-SPEC.md](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) and [SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md) for the host-only terminal-ledger move without changing their semantic accounts;
+- [RECEIVE-TASK-MESSAGE-SPEC.md](capsules/RECEIVE-TASK-MESSAGE-SPEC.md) for the same shared Message recovery lifecycle, and any other exact terminal-ledger assertion discovered during implementation;
+- [TEMPORAL-EXECUTION-RESEARCH.md](research/TEMPORAL-EXECUTION-RESEARCH.md) for the implemented Continue-As-New, recovery, deployment, and Worker-compatibility boundary;
 - [temporal protocol](../packages/temporal-adapter/protocol/src/contracts.ts), canonical command identity, lifecycle validators, and package guide for versioned continuation, budgets, failure types, internal terminal envelope, and legacy receipt normalization;
 - [Temporal Workflow](../packages/temporal-adapter/workflow/src/workflow-implementation.ts), command/publication integration, publication accumulators, Message ledger, terminal receipt, and scheduler owners for the safe checkpoint and carried state;
-- [Product 1 Temporal client](../packages/temporal-adapter/client/src/process-client.ts), shared semantic Update resolution, Message ingress, execution publication, and occurrence publication for chain-relative retry and private segment traversal;
+- [Product 1 Temporal client](../packages/temporal-adapter/client/src/process-client.ts), its public export and public-surface guards, shared semantic Update resolution, Message ingress, terminal retrieval, execution publication, and occurrence publication for a handle-free start, chain-relative retry, and private segment traversal;
 - [Temporal testkit](../packages/temporal-adapter/testkit/test/production-lifecycle.test.ts) and retained history fixtures for the real-server and adversarial evidence.
 
 `workflow-implementation.ts` currently has only 39 nonblank lines before the 600-line review target reported by `node scripts/what-binds.ts`. The implementation must first extract the existing handler or scheduler responsibilities in a separate non-semantic refactor rather than grow that owner through the review target. The protocol and client owners retain headroom, but new continuation and budget contracts should still use cohesive dedicated modules instead of accumulating unrelated lifecycle variants in `contracts.ts`.
@@ -187,9 +219,9 @@ No Lean, BPMN source, Semantic Process IL, semantic-core, CIB, shared wire-contr
 
 ## Excluded functionality and reopen conditions
 
-This proposal does not claim an unlimited Process lifetime, history availability after Temporal retention, automatic capacity expansion, external payload storage, payload codecs, archival restoration, multi-cluster replication, cross-Namespace operation, Workflow retry, Workflow Reset, Child Workflow partitioning, BPMN multi-instance behavior, or Horizon 3 throughput and latency capacity.
+This proposal does not claim an unlimited Process lifetime, history availability after Temporal retention, automatic capacity expansion, external payload storage, payload codecs, archival restoration, multi-cluster replication, cross-Namespace operation, rolling or overlapping Worker upgrades, Workflow retry, Workflow Reset, Child Workflow partitioning, BPMN multi-instance behavior, or Horizon 3 throughput and latency capacity.
 
-Reopen before raising any production budget, changing the 128-Run or 512-command lifetime, evicting recovery entries, carrying an accepted queue, exposing Run identity, changing the Process-to-Workflow cardinality, retrieving the Program externally, making Product 2 persistence part of command recovery, or treating capacity exhaustion as a semantic result.
+Reopen before raising any production budget, changing the 128-Run or 512-command lifetime, evicting recovery entries, carrying an accepted queue, exposing Run identity, changing the Process-to-Workflow cardinality, retrieving the Program externally, making Product 2 persistence part of command recovery, adopting a rolling or Worker-Versioning deployment, or treating capacity exhaustion as a semantic result.
 
 ## Independent cold-review receipt
 
