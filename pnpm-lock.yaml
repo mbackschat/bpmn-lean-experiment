@@ -186,6 +186,33 @@ importers:
         specifier: workspace:*
         version: link:../../modules/work
 
+  platform/apps/recovery-worker:
+    dependencies:
+      '@bpmn-lean/platform-artifact-store':
+        specifier: workspace:*
+        version: link:../../foundation/artifact-store
+      '@bpmn-lean/platform-audit':
+        specifier: workspace:*
+        version: link:../../foundation/audit
+      '@bpmn-lean/platform-definitions':
+        specifier: workspace:*
+        version: link:../../modules/definitions
+      '@bpmn-lean/platform-engine-gateway':
+        specifier: workspace:*
+        version: link:../../foundation/engine-gateway
+      '@bpmn-lean/platform-operate':
+        specifier: workspace:*
+        version: link:../../modules/operate
+      '@bpmn-lean/platform-postgresql-runtime':
+        specifier: workspace:*
+        version: link:../../foundation/postgresql-runtime
+      '@bpmn-lean/platform-recovery-runtime':
+        specifier: workspace:*
+        version: link:../../foundation/recovery-runtime
+      '@bpmn-lean/platform-work':
+        specifier: workspace:*
+        version: link:../../modules/work
+
   platform/apps/server:
     dependencies:
       '@bpmn-lean/platform-artifact-store':
