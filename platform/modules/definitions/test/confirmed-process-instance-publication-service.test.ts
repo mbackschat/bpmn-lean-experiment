@@ -8,6 +8,8 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import type {
   ConfirmedProcessInstancePublication,
+  ConfirmedProcessInstanceRecord,
+  ConfirmedProcessInstanceState as ConfirmedProcessInstanceStateValue,
 } from "@bpmn-lean/platform-definitions";
 
 const publication = {
@@ -214,3 +216,92 @@ test("startup reconciliation describes direct uncertain state without dispatch",
     workPending: false,
   });
 });
+
+test("definitive direct-start success converges after recovery marks the dispatch indeterminate", async () => {
+  const repository = new ConcurrentIndeterminateRepository(
+    ConfirmedProcessInstanceState.Confirmed,
+  );
+  const service = directPublicationService(repository);
+
+  const result = await service.startDirect(directReservation(), {
+    start: async () => ({ status: "started" }),
+    describe: async () => ({ status: "missing" }),
+  });
+
+  assert.equal(result.state, ConfirmedProcessInstanceState.Confirmed);
+  assert.equal(
+    (await repository.get(publication.instance.processInstanceId))?.state,
+    ConfirmedProcessInstanceState.Confirmed,
+  );
+});
+
+test("definitive direct-start rejection converges after recovery marks the dispatch indeterminate", async () => {
+  const repository = new ConcurrentIndeterminateRepository(
+    ConfirmedProcessInstanceState.IntegrityFailure,
+  );
+  const service = directPublicationService(repository);
+
+  await assert.rejects(
+    service.startDirect(directReservation(), {
+      start: async () => ({ status: "rejected", evidence: "not admitted" }),
+      describe: async () => ({ status: "missing" }),
+    }),
+    /integrity/u,
+  );
+
+  assert.equal(
+    (await repository.get(publication.instance.processInstanceId))?.state,
+    ConfirmedProcessInstanceState.IntegrityFailure,
+  );
+});
+
+class ConcurrentIndeterminateRepository extends InMemoryConfirmedProcessInstanceRepository {
+  readonly #target: ConfirmedProcessInstanceStateValue;
+  #interposed = false;
+
+  constructor(target: ConfirmedProcessInstanceStateValue) {
+    super();
+    this.#target = target;
+  }
+
+  override async compareAndSetState(
+    processInstanceId: string,
+    expected: ConfirmedProcessInstanceStateValue,
+    next: ConfirmedProcessInstanceStateValue,
+  ): Promise<ConfirmedProcessInstanceRecord | null> {
+    if (
+      !this.#interposed &&
+      expected === ConfirmedProcessInstanceState.Starting &&
+      next === this.#target
+    ) {
+      this.#interposed = true;
+      await super.compareAndSetState(
+        processInstanceId,
+        ConfirmedProcessInstanceState.Starting,
+        ConfirmedProcessInstanceState.Indeterminate,
+      );
+      return null;
+    }
+    return await super.compareAndSetState(processInstanceId, expected, next);
+  }
+}
+
+function directPublicationService(
+  repository: InMemoryConfirmedProcessInstanceRepository,
+): ConfirmedProcessInstancePublicationService {
+  return new ConfirmedProcessInstancePublicationService({
+    repository,
+    operate: { recordConfirmedProcessInstance: async () => undefined },
+    work: { recordConfirmedProcessInstance: async () => undefined },
+  });
+}
+
+function directReservation() {
+  return {
+    ...publication,
+    intent: {
+      protocol: "bpmn-direct-start-v1",
+      intentSha256: "7".repeat(64),
+    },
+  };
+}

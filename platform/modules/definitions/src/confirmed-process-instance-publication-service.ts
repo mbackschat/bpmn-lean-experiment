@@ -214,40 +214,53 @@ export class ConfirmedProcessInstancePublicationService {
   async #transitionToConfirmed(
     record: ConfirmedProcessInstanceRecord,
   ): Promise<ConfirmedProcessInstanceRecord> {
-    if (record.state === ConfirmedProcessInstanceState.Confirmed) {
-      return record;
-    }
-    if (
-      record.state !== ConfirmedProcessInstanceState.Starting &&
-      record.state !== ConfirmedProcessInstanceState.Indeterminate
-    ) {
-      throw new ConfirmedProcessInstanceIntegrityError(
-        record.instance.processInstanceId,
-      );
-    }
-    return (await this.#repository.compareAndSetState(
-      record.instance.processInstanceId,
-      record.state,
+    return await this.#convergeDefinitiveState(
+      record,
       ConfirmedProcessInstanceState.Confirmed,
-    )) ?? await this.#requireRecord(record.instance.processInstanceId);
+    );
   }
 
   async #transitionToIntegrity(
     record: ConfirmedProcessInstanceRecord,
   ): Promise<void> {
-    if (record.state === ConfirmedProcessInstanceState.IntegrityFailure) {
-      return;
-    }
-    if (record.state === ConfirmedProcessInstanceState.Confirmed) {
-      throw new ConfirmedProcessInstanceIntegrityError(
-        record.instance.processInstanceId,
-      );
-    }
-    await this.#repository.compareAndSetState(
-      record.instance.processInstanceId,
-      record.state,
+    await this.#convergeDefinitiveState(
+      record,
       ConfirmedProcessInstanceState.IntegrityFailure,
     );
+  }
+
+  async #convergeDefinitiveState(
+    initial: ConfirmedProcessInstanceRecord,
+    target:
+      | typeof ConfirmedProcessInstanceState.Confirmed
+      | typeof ConfirmedProcessInstanceState.IntegrityFailure,
+  ): Promise<ConfirmedProcessInstanceRecord> {
+    let current = initial;
+    for (;;) {
+      if (current.state === target) return current;
+      switch (current.state) {
+        case ConfirmedProcessInstanceState.Starting:
+        case ConfirmedProcessInstanceState.Indeterminate: {
+          const updated = await this.#repository.compareAndSetState(
+            current.instance.processInstanceId,
+            current.state,
+            target,
+          );
+          current = updated ?? await this.#requireRecord(
+            current.instance.processInstanceId,
+          );
+          break;
+        }
+        case ConfirmedProcessInstanceState.Reserved:
+        case ConfirmedProcessInstanceState.Confirmed:
+        case ConfirmedProcessInstanceState.IntegrityFailure:
+          throw new ConfirmedProcessInstanceIntegrityError(
+            current.instance.processInstanceId,
+          );
+        default:
+          return assertNever(current.state);
+      }
+    }
   }
 
   async #deliver(
