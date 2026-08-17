@@ -33,6 +33,7 @@ import {
   createEmptyFlowNodeOccurrenceProjection,
   FlowNodeOccurrenceIntegrityError,
   FlowNodeOccurrenceProjectionStatus,
+  FlowNodeOccurrenceStoredValueError,
   occurrenceIdentityFromRegistration,
 } from "./flow-node-occurrence-projection.js";
 import type {
@@ -123,15 +124,20 @@ export async function readPostgresqlOccurrenceSnapshot(
     `,
     values: [encodePostgresqlText(processInstanceId)],
   });
-  const row = result.rows[0];
-  if (row === undefined) return null;
-  const registration = decodeRegistration(row);
-  const execution = decodeExecution(row, registration);
-  return {
-    registration,
-    execution,
-    occurrence: decodeOccurrence(row, registration, execution),
-  };
+  try {
+    const row = result.rows[0];
+    if (row === undefined) return null;
+    const registration = decodeRegistration(row);
+    const execution = decodeExecution(row, registration);
+    return {
+      registration,
+      execution,
+      occurrence: decodeOccurrence(row, registration, execution),
+    };
+  } catch (error: unknown) {
+    if (error instanceof FlowNodeOccurrenceStoredValueError) throw error;
+    throw new FlowNodeOccurrenceStoredValueError(error);
+  }
 }
 
 export function snapshotRegistration(

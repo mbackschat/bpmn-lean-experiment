@@ -110,6 +110,27 @@ function decodeCandidateKey(row: CandidateRow): Uint8Array {
   return Uint8Array.from(row.candidate_key);
 }
 
+/** Strictly decodes one byte-preserving candidate key before any database or gateway call. */
+export function decodeOperateRecoveryCandidateKey(value: Uint8Array): string {
+  if (!(value instanceof Uint8Array) || value.byteLength === 0) {
+    throw new TypeError("Operate PostgreSQL recovery candidate key must be nonempty bytea");
+  }
+  let decoded: string;
+  try {
+    decoded = new TextDecoder("utf-8", { fatal: true }).decode(value);
+  } catch {
+    throw new TypeError("Operate PostgreSQL recovery candidate key must be exact UTF-8");
+  }
+  const encoded = new TextEncoder().encode(decoded);
+  if (
+    encoded.byteLength !== value.byteLength ||
+    !encoded.every((byte, index) => byte === value[index])
+  ) {
+    throw new TypeError("Operate PostgreSQL recovery candidate key must be exact UTF-8");
+  }
+  return decoded;
+}
+
 function requirePositiveSafeInteger(value: number): number {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maximumCandidateLimit) {
     throw new TypeError(

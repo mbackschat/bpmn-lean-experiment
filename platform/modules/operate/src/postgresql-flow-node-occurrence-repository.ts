@@ -89,8 +89,8 @@ export class PostgresqlFlowNodeOccurrenceRepository
         "mayBeAhead",
       );
       if (JSON.stringify(prior) !== JSON.stringify(next)) {
-        await writeHeader(session, next);
-        await appendSuffix(session, prior, next);
+        await writePostgresqlOccurrenceHeader(session, next);
+        await appendPostgresqlOccurrenceSuffix(session, prior, next);
       }
       return structuredClone(next);
     });
@@ -148,7 +148,7 @@ export class PostgresqlFlowNodeOccurrenceRepository
       const snapshot = await this.#lockAndRead(session, registration);
       const prior = snapshot.occurrence;
       if (prior === null) {
-        await writeHeader(session, {
+        await writePostgresqlOccurrenceHeader(session, {
           ...createEmptyFlowNodeOccurrenceProjection(
             occurrenceIdentityFromRegistration(registration),
           ),
@@ -235,7 +235,7 @@ function snapshotMarkStatus(
   }
 }
 
-async function writeHeader(
+export async function writePostgresqlOccurrenceHeader(
   session: PostgresqlSession,
   image: FlowNodeOccurrenceProjectionImage,
 ): Promise<void> {
@@ -270,7 +270,7 @@ async function replace(
   image: FlowNodeOccurrenceProjectionImage,
 ): Promise<void> {
   const processInstanceId = image.identity.processInstanceId;
-  await writeHeader(session, image);
+  await writePostgresqlOccurrenceHeader(session, image);
   await session.query({
     text: `
       DELETE FROM bpmn_platform.operate_flow_node_occurrences
@@ -289,7 +289,7 @@ async function replace(
   await insertOccurrences(session, processInstanceId, image.occurrences);
 }
 
-async function appendSuffix(
+export async function appendPostgresqlOccurrenceSuffix(
   session: PostgresqlSession,
   prior: FlowNodeOccurrenceProjectionImage,
   next: FlowNodeOccurrenceProjectionImage,
