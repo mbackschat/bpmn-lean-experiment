@@ -58,6 +58,12 @@ export type WorkflowChainCapacityContext = Readonly<{
   runOrdinal: number;
 }>;
 
+export type WorkflowChainObservedCapacityBound = Readonly<{
+  budget: WorkflowChainBudgetKind;
+  configuredBound: number;
+  observedValue: number;
+}>;
+
 type WorkflowChainCapacityIdentity = Readonly<{
   processInstanceId: string;
   runOrdinal: number;
@@ -178,6 +184,20 @@ export class WorkflowChainCapacityState {
       filled,
       this.#context(publicRevision),
     );
+    return copyFailure(this.#pendingFailure);
+  }
+
+  /** Retains the first pre-commit capacity failure so every waiting handler sees one stable fact. */
+  retainObservedCapacity(
+    bound: WorkflowChainObservedCapacityBound,
+    publicRevision: number,
+  ): WorkflowChainCapacityFailureDetails {
+    if (this.#pendingFailure === null) {
+      this.#pendingFailure = capacityFailure(
+        bound,
+        this.#context(publicRevision),
+      );
+    }
     return copyFailure(this.#pendingFailure);
   }
 
@@ -343,7 +363,7 @@ function preferredCapacityBound(
 }
 
 function capacityFailure(
-  bound: WorkflowCommandRecoveryCapacityBound,
+  bound: WorkflowChainObservedCapacityBound,
   context: WorkflowChainCapacityContext,
 ): WorkflowChainCapacityFailureDetails {
   return requireWorkflowChainCapacityFailureDetails({

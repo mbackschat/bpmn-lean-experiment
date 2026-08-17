@@ -214,6 +214,32 @@ test("reports the exact byte bound when canonical recovery bytes fill first", ()
   });
 });
 
+test("retains the first observed candidate capacity as the stable failure", () => {
+  const capacity = capacityState(4);
+  const first = {
+    budget: WorkflowChainBudgetKind.CommittedRuntimeStateBytes,
+    configuredBound: 64,
+    observedValue: 67,
+  } as const;
+
+  assert.deepEqual(capacity.retainObservedCapacity(first, 9), {
+    ...first,
+    processInstanceId: "Instance_1",
+    publicRevision: 9,
+    runOrdinal: 4,
+  });
+  assert.deepEqual(capacity.retainObservedCapacity({
+    budget: WorkflowChainBudgetKind.PublicationBatchBytes,
+    configuredBound: 32,
+    observedValue: 33,
+  }, 10), {
+    ...first,
+    processInstanceId: "Instance_1",
+    publicRevision: 9,
+    runOrdinal: 4,
+  });
+});
+
 test("refuses an unseen Update before queuing when its recovery entry crosses the byte bound", () => {
   const stimulus = completion("Command_1", "approved");
   const candidateBytes = workflowChainCanonicalUtf8ByteLength([{

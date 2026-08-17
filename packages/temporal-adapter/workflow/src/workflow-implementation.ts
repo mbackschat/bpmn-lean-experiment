@@ -106,6 +106,10 @@ import {
   workflowChainRolloverTriggered,
   WorkflowChainFenceState,
 } from "./workflow-chain-continuation.js";
+import {
+  WorkflowSemanticCandidatePreflightKind,
+  preflightWorkflowSemanticCandidate,
+} from "./workflow-semantic-candidate.js";
 import type {
   WorkflowChainRuntime,
 } from "./workflow-chain-continuation.js";
@@ -273,6 +277,9 @@ export async function runBpmnProcessWithHostEffects(
           "BpmnSemanticQueueFailure",
         );
       }
+      if (workflowChain?.capacity.hasPendingFailure() === true) {
+        continue;
+      }
       let recoveryAdmission: WorkflowCommandRecoveryAdmission | null = null;
       if (
         workflowChain !== null &&
@@ -312,11 +319,34 @@ export async function runBpmnProcessWithHostEffects(
       ) {
         failRejectedHostEffectResult(state, stimulus);
       }
-      commandPublication = recordCommandPublicationOutcome(
+      const completePublicationCandidate = recordCommandPublicationOutcome(
         publicationCandidate,
         stimulus,
         step.observations,
       );
+      if (
+        workflowChain !== null &&
+        step.kind !== ScenarioStepKind.HarnessFailure
+      ) {
+        const preflight = preflightWorkflowSemanticCandidate({
+          state: step.state,
+          publicationBefore: commandPublication,
+          publication: completePublicationCandidate,
+        });
+        switch (preflight.kind) {
+          case WorkflowSemanticCandidatePreflightKind.Ready:
+            break;
+          case WorkflowSemanticCandidatePreflightKind.CapacityExceeded:
+            workflowChain.capacity.retainObservedCapacity(
+              preflight.failure,
+              commandPublication.execution.headRevision,
+            );
+            continue;
+          default:
+            return assertNever(preflight);
+        }
+      }
+      commandPublication = completePublicationCandidate;
       const outcome = commandOutcome(
         commandPublication,
         stimulusCommandId(stimulus),

@@ -22,7 +22,20 @@ test("registers the Query before commit and publishes before command-result reso
   const evaluation = source.indexOf("advanceScenario(", semanticLoop);
   const append = source.indexOf("integrateCommandPublication(", evaluation);
   const record = source.indexOf("recordCommandPublicationOutcome(", append);
-  const result = source.indexOf("commandOutcome(", record);
+  const capacityPreflight = source.indexOf(
+    "preflightWorkflowSemanticCandidate(",
+    record,
+  );
+  const capacityRetention = source.indexOf(
+    "workflowChain.capacity.retainObservedCapacity(",
+    capacityPreflight,
+  );
+  const capacityRefusal = source.indexOf("continue;", capacityRetention);
+  const publicationAssignment = source.indexOf(
+    "commandPublication = completePublicationCandidate",
+    capacityRefusal,
+  );
+  const result = source.indexOf("commandOutcome(", publicationAssignment);
   assert.ok(registration >= 0 && registration < semanticLoop);
   const executionRegistration = registrations.indexOf(
     "registerExecutionPublicationQueryHandler(",
@@ -45,9 +58,18 @@ test("registers the Query before commit and publishes before command-result reso
       privateSelectionRegistration > occurrenceRegistration &&
       privateSegmentRegistration > privateSelectionRegistration,
   );
-  assert.ok(evaluation >= 0 && append > evaluation && record > append && result > record);
+  assert.ok(
+    evaluation >= 0 &&
+      append > evaluation &&
+      record > append &&
+      capacityPreflight > record &&
+      capacityRetention > capacityPreflight &&
+      capacityRefusal > capacityRetention &&
+      publicationAssignment > capacityRefusal &&
+      result > publicationAssignment,
+  );
   assert.doesNotMatch(source.slice(evaluation, append), /\bawait\b/u);
-  assert.doesNotMatch(source.slice(append, result), /\bawait\b/u);
+  assert.doesNotMatch(source.slice(append, publicationAssignment), /\bawait\b/u);
 
   const sample = integration.indexOf("const committedAtEpochMs = committedClock()");
   const e1 = integration.indexOf("accumulateExecutionPublication(", sample);
