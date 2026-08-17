@@ -68,75 +68,82 @@ export class PostgresqlAuditRepository implements AuditRepository {
   }
 
   async record(item: StoredAuditEvent): Promise<number> {
+    return await this.#database.transaction(async (session) =>
+      await this.applyAuditRecord(session, item));
+  }
+
+  /** Applies one exact Work source ordinal without taking ownership of the caller transaction. */
+  async applyAuditRecord(
+    session: PostgresqlSession,
+    item: StoredAuditEvent,
+  ): Promise<number> {
     const exact = exactItem(item);
-    return await this.#database.transaction(async (session) => {
-      const headResult = await session.query<Readonly<Record<string, unknown>> & Readonly<{ head: unknown }>>({
-        text: `
+    const headResult = await session.query<Readonly<Record<string, unknown>> & Readonly<{ head: unknown }>>({
+      text: `
           SELECT head::text AS head
           FROM bpmn_platform.audit_work_sink_head
           WHERE singleton = true
           FOR UPDATE
         `,
-      });
-      if (headResult.rows.length !== 1) {
-        throw new AuditStreamUnavailableError(new TypeError("Work audit sink head is absent"));
-      }
-      const head = decodeAuditInteger(headResult.rows[0]?.head, "Work audit sink head");
-      await requireExactSource(session, exact);
-      if (exact.ordinal <= head) {
-        const retained = await readOrdinal(session, exact.ordinal);
-        if (retained === null || JSON.stringify(retained.event) !== exact.encoded) {
-          throw new AuditEventIntegrityError(exact.event.eventId);
-        }
-        return exact.ordinal;
-      }
-      if (exact.ordinal !== head + 1) {
+    });
+    if (headResult.rows.length !== 1) {
+      throw new AuditStreamUnavailableError(new TypeError("Work audit sink head is absent"));
+    }
+    const head = decodeAuditInteger(headResult.rows[0]?.head, "Work audit sink head");
+    await requireExactSource(session, exact);
+    if (exact.ordinal <= head) {
+      const retained = await readOrdinal(session, exact.ordinal);
+      if (retained === null || JSON.stringify(retained.event) !== exact.encoded) {
         throw new AuditEventIntegrityError(exact.event.eventId);
       }
-      const collision = await session.query({
-        text: `
+      return exact.ordinal;
+    }
+    if (exact.ordinal !== head + 1) {
+      throw new AuditEventIntegrityError(exact.event.eventId);
+    }
+    const collision = await session.query({
+      text: `
           SELECT ordinal FROM bpmn_platform.audit_work_events
           WHERE event_id = $1 OR (action_id = $2 AND action_outcome = $3)
           LIMIT 1
         `,
-        values: [exact.eventId, exact.actionId, exact.event.action.outcome],
-      });
-      if (collision.rows.length !== 0) {
-        throw new AuditEventIntegrityError(exact.event.eventId);
-      }
-      const inserted = await session.query({
-        text: `
+      values: [exact.eventId, exact.actionId, exact.event.action.outcome],
+    });
+    if (collision.rows.length !== 0) {
+      throw new AuditEventIntegrityError(exact.event.eventId);
+    }
+    const inserted = await session.query({
+      text: `
           INSERT INTO bpmn_platform.audit_work_events (
             ordinal, event_id, actor_id, task_process_instance_id,
             hosting_process_instance_id, task_element_id, task_activation,
             action_kind, action_id, action_outcome, event_json
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         `,
-        values: [
-          exact.ordinal,
-          exact.eventId,
-          encodeAuditText(exact.event.actorId, "actorId"),
-          encodeAuditText(exact.event.taskId.processInstanceId, "task processInstanceId"),
-          encodeAuditText(exact.event.hostingProcessInstanceId, "hostingProcessInstanceId"),
-          encodeAuditText(exact.event.taskId.elementId, "task elementId"),
-          exact.event.taskId.activation,
-          exact.event.action.kind,
-          exact.actionId,
-          exact.event.action.outcome,
-          exact.encoded,
-        ],
-      });
-      if (inserted.rowCount !== 1) throw new AuditEventIntegrityError(exact.event.eventId);
-      const advanced = await session.query({
-        text: `
+      values: [
+        exact.ordinal,
+        exact.eventId,
+        encodeAuditText(exact.event.actorId, "actorId"),
+        encodeAuditText(exact.event.taskId.processInstanceId, "task processInstanceId"),
+        encodeAuditText(exact.event.hostingProcessInstanceId, "hostingProcessInstanceId"),
+        encodeAuditText(exact.event.taskId.elementId, "task elementId"),
+        exact.event.taskId.activation,
+        exact.event.action.kind,
+        exact.actionId,
+        exact.event.action.outcome,
+        exact.encoded,
+      ],
+    });
+    if (inserted.rowCount !== 1) throw new AuditEventIntegrityError(exact.event.eventId);
+    const advanced = await session.query({
+      text: `
           UPDATE bpmn_platform.audit_work_sink_head SET head = $1
           WHERE singleton = true AND head = $2
         `,
-        values: [exact.ordinal, head],
-      });
-      if (advanced.rowCount !== 1) throw new AuditEventIntegrityError(exact.event.eventId);
-      return exact.ordinal;
+      values: [exact.ordinal, head],
     });
+    if (advanced.rowCount !== 1) throw new AuditEventIntegrityError(exact.event.eventId);
+    return exact.ordinal;
   }
 
   async search(query: AuditRepositoryQuery): Promise<ReadonlyArray<StoredAuditEvent>> {

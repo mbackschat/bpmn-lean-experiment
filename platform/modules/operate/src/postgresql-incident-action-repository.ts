@@ -17,6 +17,10 @@ import type {
   StoredIncidentAction,
 } from "./incident-contracts.js";
 import {
+  applyPostgresqlIncidentAuditAcknowledgement,
+  decodePostgresqlIncidentAuditItem,
+} from "./postgresql-incident-audit-recovery-storage.js";
+import {
   OperateIncidentIntegrityError,
   OperateIncidentStoredValueError,
   requireIncidentAuditDeliveryLimit,
@@ -280,7 +284,7 @@ export class PostgresqlIncidentActionRepository
       `,
       ...(limit === undefined ? {} : { values: [limit] }),
     });
-    return result.rows.map(decodeAuditItem);
+    return result.rows.map(decodePostgresqlIncidentAuditItem);
   }
 
   async acknowledgeAuditEvent(eventIdValue: string): Promise<void> {
@@ -301,6 +305,14 @@ export class PostgresqlIncidentActionRepository
         "audit acknowledgement changed multiple rows",
       );
     }
+  }
+
+  /** Revalidates and acknowledges an exact prepared item in the caller transaction. */
+  async applyAuditAcknowledgement(
+    session: PostgresqlSession,
+    item: IncidentAuditOutboxItem,
+  ): Promise<void> {
+    await applyPostgresqlIncidentAuditAcknowledgement(session, item);
   }
 }
 
@@ -465,7 +477,7 @@ async function findRetainedAudit(
   });
   let retained = false;
   for (const row of result.rows) {
-    const item = decodeAuditItem(row);
+    const item = decodePostgresqlIncidentAuditItem(row);
     if (item.event.eventId === event.eventId) {
       if (!sameJson(item.event, event)) {
         throw new OperateIncidentIntegrityError(
@@ -489,33 +501,11 @@ async function findRetainedAudit(
   return retained;
 }
 
-function decodeAuditItem(row: PostgresqlRow): IncidentAuditOutboxItem {
-  try {
-    const encoded = requirePostgresqlString(row, "event_json");
-    const event = snapshotAuditEvent(JSON.parse(encoded));
-    if (
-      JSON.stringify(event) !== encoded ||
-      requirePostgresqlByteText(row, "event_id") !== event.eventId ||
-      requirePostgresqlByteText(row, "action_id") !== event.actionId ||
-      requirePostgresqlString(row, "action_outcome") !== event.outcome ||
-      typeof row.delivered !== "boolean"
-    ) {
-      throw new TypeError("stored incident audit columns disagree");
-    }
-    return {
-      ordinal: requirePostgresqlSafeInteger(row, "ordinal", 1),
-      event,
-    };
-  } catch (error: unknown) {
-    throw new OperateIncidentStoredValueError(error);
-  }
-}
-
 function decodeReservedAuditDelivery(
   row: PostgresqlRow, binding: IncidentActionBinding,
 ): Readonly<{ kind: "pending" | "acknowledged" }> {
   try {
-    const item = decodeAuditItem(row);
+    const item = decodePostgresqlIncidentAuditItem(row);
     requireAuditMatches(item.event, binding, "reserved");
     return row.delivered === true ? { kind: "acknowledged" } : { kind: "pending" };
   } catch (error: unknown) {

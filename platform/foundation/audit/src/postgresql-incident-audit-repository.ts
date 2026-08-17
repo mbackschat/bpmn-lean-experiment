@@ -70,46 +70,54 @@ export class PostgresqlIncidentAuditRepository implements IncidentAuditRepositor
   }
 
   async record(item: StoredIncidentAuditEvent): Promise<number> {
+    return await this.#database.transaction(async (session) =>
+      await this.applyAuditRecord(session, item));
+  }
+
+  /** Applies one exact incident source ordinal without taking ownership of the caller transaction. */
+  async applyAuditRecord(
+    session: PostgresqlSession,
+    item: StoredIncidentAuditEvent,
+  ): Promise<number> {
     const exact = exactItem(item);
-    return await this.#database.transaction(async (session) => {
-      const headResult = await session.query<Readonly<Record<string, unknown>> & Readonly<{ head: unknown }>>({
-        text: `
+    const headResult = await session.query<Readonly<Record<string, unknown>> & Readonly<{ head: unknown }>>({
+      text: `
           SELECT head::text AS head
           FROM bpmn_platform.audit_incident_sink_head
           WHERE singleton = true
           FOR UPDATE
         `,
-      });
-      if (headResult.rows.length !== 1) {
-        throw new IncidentAuditStreamUnavailableError(
-          new TypeError("incident audit sink head is absent"),
-        );
-      }
-      const head = decodeAuditInteger(headResult.rows[0]?.head, "incident audit sink head");
-      await requireExactSource(session, exact);
-      if (exact.ordinal <= head) {
-        const retained = await readOrdinal(session, exact.ordinal);
-        if (retained === null || JSON.stringify(retained.event) !== exact.encoded) {
-          throw new IncidentAuditEventIntegrityError(exact.event.eventId);
-        }
-        return exact.ordinal;
-      }
-      if (exact.ordinal !== head + 1) {
+    });
+    if (headResult.rows.length !== 1) {
+      throw new IncidentAuditStreamUnavailableError(
+        new TypeError("incident audit sink head is absent"),
+      );
+    }
+    const head = decodeAuditInteger(headResult.rows[0]?.head, "incident audit sink head");
+    await requireExactSource(session, exact);
+    if (exact.ordinal <= head) {
+      const retained = await readOrdinal(session, exact.ordinal);
+      if (retained === null || JSON.stringify(retained.event) !== exact.encoded) {
         throw new IncidentAuditEventIntegrityError(exact.event.eventId);
       }
-      const collision = await session.query({
-        text: `
+      return exact.ordinal;
+    }
+    if (exact.ordinal !== head + 1) {
+      throw new IncidentAuditEventIntegrityError(exact.event.eventId);
+    }
+    const collision = await session.query({
+      text: `
           SELECT ordinal FROM bpmn_platform.audit_incident_events
           WHERE event_id = $1 OR (action_id = $2 AND outcome = $3)
           LIMIT 1
         `,
-        values: [exact.eventId, exact.actionId, exact.event.outcome],
-      });
-      if (collision.rows.length !== 0) {
-        throw new IncidentAuditEventIntegrityError(exact.event.eventId);
-      }
-      const inserted = await session.query({
-        text: `
+      values: [exact.eventId, exact.actionId, exact.event.outcome],
+    });
+    if (collision.rows.length !== 0) {
+      throw new IncidentAuditEventIntegrityError(exact.event.eventId);
+    }
+    const inserted = await session.query({
+      text: `
           INSERT INTO bpmn_platform.audit_incident_events (
             ordinal, event_id, actor_id, hosting_process_instance_id,
             incident_process_instance_id, incident_element_id,
@@ -117,36 +125,35 @@ export class PostgresqlIncidentAuditRepository implements IncidentAuditRepositor
             action_id, outcome, event_json
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         `,
-        values: [
-          exact.ordinal,
-          exact.eventId,
-          encodeAuditText(exact.event.actorId, "actorId"),
-          encodeAuditText(exact.event.hostingProcessInstanceId, "hostingProcessInstanceId"),
-          encodeAuditText(exact.event.incidentId.effectId.processInstanceId, "incident processInstanceId"),
-          encodeAuditText(exact.event.incidentId.effectId.elementId, "incident elementId"),
-          exact.event.incidentId.effectId.activation,
-          exact.event.incidentId.generation,
-          exact.event.actionKind,
-          exact.actionId,
-          exact.event.outcome,
-          exact.encoded,
-        ],
-      });
-      if (inserted.rowCount !== 1) {
-        throw new IncidentAuditEventIntegrityError(exact.event.eventId);
-      }
-      const advanced = await session.query({
-        text: `
+      values: [
+        exact.ordinal,
+        exact.eventId,
+        encodeAuditText(exact.event.actorId, "actorId"),
+        encodeAuditText(exact.event.hostingProcessInstanceId, "hostingProcessInstanceId"),
+        encodeAuditText(exact.event.incidentId.effectId.processInstanceId, "incident processInstanceId"),
+        encodeAuditText(exact.event.incidentId.effectId.elementId, "incident elementId"),
+        exact.event.incidentId.effectId.activation,
+        exact.event.incidentId.generation,
+        exact.event.actionKind,
+        exact.actionId,
+        exact.event.outcome,
+        exact.encoded,
+      ],
+    });
+    if (inserted.rowCount !== 1) {
+      throw new IncidentAuditEventIntegrityError(exact.event.eventId);
+    }
+    const advanced = await session.query({
+      text: `
           UPDATE bpmn_platform.audit_incident_sink_head SET head = $1
           WHERE singleton = true AND head = $2
         `,
-        values: [exact.ordinal, head],
-      });
-      if (advanced.rowCount !== 1) {
-        throw new IncidentAuditEventIntegrityError(exact.event.eventId);
-      }
-      return exact.ordinal;
+      values: [exact.ordinal, head],
     });
+    if (advanced.rowCount !== 1) {
+      throw new IncidentAuditEventIntegrityError(exact.event.eventId);
+    }
+    return exact.ordinal;
   }
 
   async search(

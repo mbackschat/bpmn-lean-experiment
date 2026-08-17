@@ -1,4 +1,7 @@
-import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
+import type {
+  PostgresqlRuntime,
+  PostgresqlSession,
+} from "@bpmn-lean/platform-postgresql-runtime";
 
 import { WorkRepositoryIntegrityError } from "./work-contracts.js";
 import type {
@@ -21,6 +24,9 @@ import type {
   WorkReleaseTransitionResult,
   WorkTaskReference,
 } from "./work-contracts.js";
+import {
+  applyPostgresqlWorkAuditAcknowledgement,
+} from "./postgresql-work-audit-recovery-storage.js";
 import {
   decodePostgresqlClaim,
   decodePostgresqlOutbox,
@@ -392,6 +398,14 @@ export class PostgresqlWorkRepository {
     if (result.rowCount !== null && result.rowCount > 1) {
       throw new WorkRepositoryIntegrityError("audit acknowledgement changed multiple rows");
     }
+  }
+
+  /** Revalidates and acknowledges an exact prepared item in the caller transaction. */
+  async applyAuditAcknowledgement(
+    session: PostgresqlSession,
+    item: WorkAuditOutboxItem,
+  ): Promise<void> {
+    await applyPostgresqlWorkAuditAcknowledgement(session, item);
   }
 }
 
