@@ -8,6 +8,7 @@ export * from "./workflow-chain-capacity.js";
 export * from "./workflow-command-capacity.js";
 export * from "./workflow-chain-continuation.js";
 export * from "./workflow-semantic-candidate.js";
+export * from "./workflow-run-retention.js";
 export * from "./durable-timer-owner.js";
 export * from "./event-race-readiness-scheduler.js";
 export * from "./effect-activity-policy.js";

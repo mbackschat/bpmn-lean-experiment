@@ -31,11 +31,29 @@ test("registers the Query before commit and publishes before command-result reso
     capacityPreflight,
   );
   const capacityRefusal = source.indexOf("continue;", capacityRetention);
-  const publicationAssignment = source.indexOf(
-    "commandPublication = completePublicationCandidate",
+  const retentionPreflight = source.indexOf(
+    "preflightWorkflowRunRetentionCandidate(",
     capacityRefusal,
   );
+  const retentionRefusal = source.indexOf("continue;", retentionPreflight);
+  const publicationAssignment = source.indexOf(
+    "commandPublication = completePublicationCandidate",
+    retentionRefusal,
+  );
   const result = source.indexOf("commandOutcome(", publicationAssignment);
+  const traceAppend = source.indexOf("trace.push(...step.observations)", result);
+  const retentionCommit = source.indexOf(
+    "runRetention = retentionPreflight.successor",
+    traceAppend,
+  );
+  const stableCheckpoint = source.indexOf(
+    "const processIsTerminal",
+    retentionCommit,
+  );
+  const retentionRollover = source.indexOf(
+    "runRetention?.rolloverRequested",
+    stableCheckpoint,
+  );
   assert.ok(registration >= 0 && registration < semanticLoop);
   const executionRegistration = registrations.indexOf(
     "registerExecutionPublicationQueryHandler(",
@@ -65,8 +83,14 @@ test("registers the Query before commit and publishes before command-result reso
       capacityPreflight > record &&
       capacityRetention > capacityPreflight &&
       capacityRefusal > capacityRetention &&
-      publicationAssignment > capacityRefusal &&
-      result > publicationAssignment,
+      retentionPreflight > capacityRefusal &&
+      retentionRefusal > retentionPreflight &&
+      publicationAssignment > retentionRefusal &&
+      result > publicationAssignment &&
+      traceAppend > result &&
+      retentionCommit > traceAppend &&
+      stableCheckpoint > retentionCommit &&
+      retentionRollover > stableCheckpoint,
   );
   assert.doesNotMatch(source.slice(evaluation, append), /\bawait\b/u);
   assert.doesNotMatch(source.slice(append, publicationAssignment), /\bawait\b/u);

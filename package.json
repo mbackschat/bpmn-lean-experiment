@@ -149,7 +149,7 @@
     "test:temporal": "pnpm build:temporal-adapter && pnpm test:temporal:built",
     "test:temporal:built": "pnpm test:temporal:built:concurrent && pnpm test:temporal:built:capacity",
     "test:temporal:built:concurrent": "node --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts",
-    "test:temporal:built:capacity": "node --test packages/temporal-adapter/testkit/test/workflow-chain-recovery-capacity.temporal-test.ts packages/temporal-adapter/testkit/test/workflow-command-capacity.temporal-test.ts packages/temporal-adapter/testkit/test/workflow-effect-capacity.temporal-test.ts",
+    "test:temporal:built:capacity": "node --test packages/temporal-adapter/testkit/test/workflow-chain-recovery-capacity.temporal-test.ts packages/temporal-adapter/testkit/test/workflow-command-capacity.temporal-test.ts packages/temporal-adapter/testkit/test/workflow-effect-capacity.temporal-test.ts packages/temporal-adapter/testkit/test/workflow-run-retention.temporal-test.ts",
     "test:timer-time-skipping": "pnpm build:temporal-adapter && node packages/temporal-adapter/testkit/calibration/timer-time-skipping.ts"
   },
   "devDependencies": {

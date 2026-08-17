@@ -134,7 +134,7 @@ test("a ledger-filling command resolves before the retained Run reports capacity
       observedValue: recoveryEntryLimit,
       processInstanceId: start.instanceId,
       publicRevision: 4 + 4 * recoveryEntryLimit,
-      runOrdinal: 1,
+      runOrdinal: 2,
     } as const;
     await assert.rejects(
       withDeadline(
@@ -204,21 +204,26 @@ test("a ledger-filling command resolves before the retained Run reports capacity
         executions.push(execution);
       }
     }
-    assert.equal(executions.length, 1);
-    const history = await handle.fetchHistory();
-    const typedHistory = history as TemporalHistory;
-    assert.equal(
-      historyEvents(typedHistory, "workflowExecutionFailedEventAttributes").length,
-      1,
-    );
-    assert.equal(
-      historyEvents(
+    assert.equal(executions.length, 2);
+    let failures = 0;
+    let continuations = 0;
+    for (const execution of executions) {
+      const history = await environment.client.workflow
+        .getHandle(workflowId, execution.runId)
+        .fetchHistory();
+      const typedHistory = history as TemporalHistory;
+      failures += historyEvents(
+        typedHistory,
+        "workflowExecutionFailedEventAttributes",
+      ).length;
+      continuations += historyEvents(
         typedHistory,
         "workflowExecutionContinuedAsNewEventAttributes",
-      ).length,
-      0,
-    );
-    await replayBpmnHistory(bundle, history, workflowId);
+      ).length;
+      await replayBpmnHistory(bundle, history, workflowId);
+    }
+    assert.equal(failures, 1);
+    assert.equal(continuations, 1);
   } finally {
     if (worker !== undefined) {
       await stopBpmnTestWorker(worker);

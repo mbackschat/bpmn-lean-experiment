@@ -110,6 +110,14 @@ import {
   WorkflowSemanticCandidatePreflightKind,
   preflightWorkflowSemanticCandidate,
 } from "./workflow-semantic-candidate.js";
+import {
+  WorkflowRunRetentionPreflightKind,
+  initializeWorkflowRunRetention,
+  preflightWorkflowRunRetentionCandidate,
+} from "./workflow-run-retention.js";
+import type {
+  WorkflowRunRetentionPreflight,
+} from "./workflow-run-retention.js";
 import type {
   WorkflowChainRuntime,
 } from "./workflow-chain-continuation.js";
@@ -177,6 +185,9 @@ export async function runBpmnProcessWithHostEffects(
   let commandPublication = chainInitialization?.restored?.publication ??
     createCommandPublicationState(semanticProcess, start.instanceId);
   const workflowChain = chainInitialization?.runtime ?? null;
+  let runRetention = workflowChain === null
+    ? null
+    : initializeWorkflowRunRetention(trace, commandPublication);
   let workflowChainFence = WorkflowChainFenceState.Active;
   const reserveStimulus = (stimulus: Stimulus): boolean => {
     if (workflowChain === null) {
@@ -356,6 +367,10 @@ export async function runBpmnProcessWithHostEffects(
         stimulus,
         step.observations,
       );
+      let retentionPreflight: Extract<
+        WorkflowRunRetentionPreflight,
+        { kind: WorkflowRunRetentionPreflightKind.Ready }
+      > | null = null;
       if (
         workflowChain !== null &&
         step.kind !== ScenarioStepKind.HarnessFailure
@@ -376,6 +391,31 @@ export async function runBpmnProcessWithHostEffects(
             continue;
           default:
             return assertNever(preflight);
+        }
+        if (runRetention === null) {
+          throw new TypeError("Workflow chain lost its Run-retention state");
+        }
+        const retentionCandidate = preflightWorkflowRunRetentionCandidate(
+          runRetention,
+          {
+            traceEntriesBefore: trace.length,
+            observations: step.observations,
+            publicationBefore: commandPublication,
+            publication: completePublicationCandidate,
+          },
+        );
+        switch (retentionCandidate.kind) {
+          case WorkflowRunRetentionPreflightKind.Ready:
+            retentionPreflight = retentionCandidate;
+            break;
+          case WorkflowRunRetentionPreflightKind.CapacityExceeded:
+            workflowChain.capacity.retainObservedCapacity(
+              retentionCandidate.failure,
+              commandPublication.execution.headRevision,
+            );
+            continue;
+          default:
+            return assertNever(retentionCandidate);
         }
       }
       commandPublication = completePublicationCandidate;
@@ -409,6 +449,9 @@ export async function runBpmnProcessWithHostEffects(
         );
       }
       trace.push(...step.observations);
+      if (retentionPreflight !== null) {
+        runRetention = retentionPreflight.successor;
+      }
       switch (step.kind) {
         case ScenarioStepKind.Committed:
         case ScenarioStepKind.Terminal:
@@ -456,6 +499,7 @@ export async function runBpmnProcessWithHostEffects(
       (
         workflowChainFence === WorkflowChainFenceState.Rollover ||
         workflowChain.commandCapacity.rolloverRequested() ||
+        runRetention?.rolloverRequested === true ||
         workflowChainRolloverTriggered(workflowChain)
       )
     ) {
