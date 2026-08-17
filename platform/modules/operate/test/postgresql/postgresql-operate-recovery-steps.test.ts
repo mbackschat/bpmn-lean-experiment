@@ -40,6 +40,7 @@ import {
 } from "../execution-publication-fixture.ts";
 import {
   occurrenceFirstPage,
+  occurrencePageAheadOfExecution,
   occurrenceSecondPage,
 } from "../flow-node-occurrence-fixture.ts";
 import {
@@ -428,6 +429,29 @@ if (baseUrl === undefined) {
       pickOccurrence(await occurrences.get(registration.instance.processInstanceId)),
       { status: FlowNodeOccurrenceProjectionStatus.Healthy, head: 3, producer: 3 },
     );
+  });
+
+  test("occurrence recovery retries when Product 1 advances beyond retained E1 authority", async () => {
+    await resetOperateDatabase(runtime);
+    const exactRegistration = await register(runtime);
+    const executions = new PostgresqlExecutionPublicationRepository(runtime);
+    await executions.applyPage(exactRegistration, firstPage(3));
+    await executions.applyPage(exactRegistration, secondPage());
+    const occurrences = new PostgresqlFlowNodeOccurrenceRepository(runtime);
+    await occurrences.applyPage(exactRegistration, occurrenceFirstPage(3));
+    await occurrences.applyPage(exactRegistration, occurrenceSecondPage());
+
+    const result = await new PostgresqlFlowNodeOccurrenceRecoveryStep({
+      runtime,
+      gateway: {
+        observe: async () => ({
+          kind: FlowNodeOccurrencePublicationResultKind.Available,
+          page: occurrencePageAheadOfExecution(),
+        }),
+      },
+    }).prepare(candidateKey(exactRegistration));
+
+    assertRetry(result, PostgresqlOperateRecoveryRetryReason.ExecutionAuthorityNotReady);
   });
 
   test("occurrence apply rollback retains neither header nor suffix", async () => {

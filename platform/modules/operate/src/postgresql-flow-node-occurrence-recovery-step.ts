@@ -171,6 +171,9 @@ function prepareAvailable(
   image: FlowNodeOccurrenceProjectionImage | null,
   page: FlowNodeOccurrencePage,
 ): PostgresqlOperateRecoveryStepResult {
+  if (page.headRevision > execution.headRevision) {
+    return retry(PostgresqlOperateRecoveryRetryReason.ExecutionAuthorityNotReady);
+  }
   const prior = image ?? createEmptyFlowNodeOccurrenceProjection(
     occurrenceIdentityFromRegistration(registration),
   );

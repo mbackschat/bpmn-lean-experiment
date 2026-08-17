@@ -119,3 +119,23 @@ export function occurrenceSecondPage(
     currentOpen: [],
   };
 }
+
+export function occurrencePageAheadOfExecution(): FlowNodeOccurrencePage {
+  return {
+    ...occurrenceIdentity,
+    requestedAfterRevision: 3,
+    pageThroughRevision: 4,
+    headRevision: 4,
+    batches: [{
+      commandId: "command-not-yet-in-e1",
+      fromRevision: 3,
+      throughRevision: 4,
+      committedAtEpochMs: 200,
+      transitions: [{
+        revision: 4,
+        lifecycle: { started: [], ended: [] },
+      }],
+    }],
+    currentOpen: [],
+  };
+}
