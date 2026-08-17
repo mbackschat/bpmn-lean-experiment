@@ -28,6 +28,14 @@ export type IncidentMutationAggregation = Pick<
   "currentSnapshot" | "registration"
 >;
 
+export const IncidentMutationDeliveryMode = Object.freeze({
+  Immediate: "immediate",
+  BackgroundRecovery: "backgroundRecovery",
+} as const);
+
+export type IncidentMutationDeliveryMode =
+  typeof IncidentMutationDeliveryMode[keyof typeof IncidentMutationDeliveryMode];
+
 export type IncidentMutationServiceOptions = Readonly<{
   aggregation: IncidentMutationAggregation;
   repository: IncidentActionRepository;
@@ -35,6 +43,7 @@ export type IncidentMutationServiceOptions = Readonly<{
   outbox: IncidentActionAuditOutboxService;
   auditEvents: IncidentAuditEventFactory;
   recovery?: IncidentActionRecoveryRepository;
+  deliveryMode?: IncidentMutationDeliveryMode;
 }>;
 
 export type IncidentActionRecoveryResult =
@@ -63,14 +72,14 @@ export class IncidentMutationService {
     const actorId = requireNonemptyString(actor.actorId, "actorId");
     const actionId = requireNonemptyString(actionIdValue, "actionId");
     const interaction = snapshotIncidentActionRequest(interactionValue);
-    await this.#options.outbox.reconcileAll();
+    await this.#deliverImmediately();
     const retained = await this.#options.repository.get(actionId);
     if (retained !== null) {
       if (retained.binding.actorId !== actorId) return { kind: "forbidden" };
       if (!sameJson(retained.binding.interaction, interaction)) {
         return { kind: "conflict" };
       }
-      return this.#advance(retained);
+      return this.#requestedResult(retained);
     }
 
     const snapshot = await this.#options.aggregation.currentSnapshot();
@@ -108,8 +117,44 @@ export class IncidentMutationService {
         return { kind: reservation.kind };
       case "reserved":
       case "retained":
+        await this.#deliverImmediately();
+        return this.#requestedResult(reservation.action);
+    }
+  }
+
+  async #requestedResult(
+    action: StoredIncidentAction,
+  ): Promise<IncidentMutationSuccess> {
+    switch (this.#options.deliveryMode ?? IncidentMutationDeliveryMode.Immediate) {
+      case IncidentMutationDeliveryMode.Immediate:
+        return this.#advance(action);
+      case IncidentMutationDeliveryMode.BackgroundRecovery:
+        switch (action.state) {
+          case "committed":
+          case "rejected":
+            return { kind: "result", result: requireResult(action) };
+          case "reserved":
+          case "submitting":
+          case "indeterminate":
+            return {
+              kind: "result",
+              result: {
+                state: "indeterminate",
+                actionId: action.binding.actionId,
+                interaction: structuredClone(action.binding.interaction),
+              },
+            };
+        }
+    }
+  }
+
+  async #deliverImmediately(): Promise<void> {
+    switch (this.#options.deliveryMode ?? IncidentMutationDeliveryMode.Immediate) {
+      case IncidentMutationDeliveryMode.Immediate:
         await this.#options.outbox.reconcileAll();
-        return this.#advance(reservation.action);
+        return;
+      case IncidentMutationDeliveryMode.BackgroundRecovery:
+        return;
     }
   }
 

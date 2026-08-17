@@ -149,7 +149,10 @@ export type {
   IncidentAuditOutboxRepository,
   IncidentAuditSink,
 } from "./incident-audit-outbox-service.js";
-export { IncidentMutationService } from "./incident-mutation-service.js";
+export {
+  IncidentMutationDeliveryMode,
+  IncidentMutationService,
+} from "./incident-mutation-service.js";
 export type {
   IncidentActionRecoveryResult,
   IncidentMutationAggregation,
@@ -188,6 +191,12 @@ export type {
 export {
   PostgresqlIncidentSnapshotService,
 } from "./postgresql-incident-snapshot-service.js";
+export {
+  PostgresqlIncidentMutationAggregation,
+} from "./postgresql-incident-mutation-aggregation.js";
+export type {
+  PostgresqlIncidentMutationAggregationOptions,
+} from "./postgresql-incident-mutation-aggregation.js";
 export {
   PostgresqlOperateRecoveryFailureCode,
   PostgresqlOperateRecoveryFailureEvidence,

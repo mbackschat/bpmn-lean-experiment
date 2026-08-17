@@ -7,6 +7,7 @@ import { test } from "node:test";
 import {
   IncidentActionAuditOutboxService,
   IncidentAggregationService,
+  IncidentMutationDeliveryMode,
   IncidentMutationService,
   SqliteIncidentActionRepository,
   SqliteProcessInstanceRepository,
@@ -143,6 +144,49 @@ test("delivers and acknowledges reserved audit before the first engine action ca
   });
 });
 
+test("defers a new and retained shared action to background audit and recovery", async () => {
+  await withStore(async ({ processRepository, actionRepository }) => {
+    const published = incidentPublication("instance", false);
+    await processRepository.recordConfirmed(publication("instance"));
+    const gateway = gatewayFor([published], async () => {
+      throw new Error("Product 1 must not run on the shared request path");
+    });
+    const mutations = service(
+      processRepository,
+      actionRepository,
+      gateway,
+      { record: async () => { throw new Error("audit delivery must be background"); } },
+      IncidentMutationDeliveryMode.BackgroundRecovery,
+    );
+
+    const first = await mutations.submitAuthorized(
+      { actorId: "operator" },
+      "shared-action",
+      published.interactions[0],
+    );
+    assert.deepEqual(first, {
+      kind: "result",
+      result: {
+        state: "indeterminate",
+        actionId: "shared-action",
+        interaction: published.interactions[0],
+      },
+    });
+    assert.equal(gateway.observationCalls, 1);
+    assert.equal(gateway.actionCalls.length, 0);
+    assert.equal((await actionRepository.listUndeliveredAuditEvents()).length, 1);
+
+    assert.deepEqual(await mutations.submitAuthorized(
+      { actorId: "operator" },
+      "shared-action",
+      published.interactions[0],
+    ), first);
+    assert.equal(gateway.observationCalls, 1);
+    assert.equal(gateway.actionCalls.length, 0);
+    assert.equal((await actionRepository.listUndeliveredAuditEvents()).length, 1);
+  });
+});
+
 test("converges response loss and restart and coalesces one in-process same-action call", async () => {
   await withStore(async ({ processRepository, actionRepository, databaseFile }) => {
     const published = incidentPublication("instance", false);
@@ -231,6 +275,7 @@ function service(
   actionRepository: SqliteIncidentActionRepository,
   gateway: ReturnType<typeof gatewayFor>,
   sink = { record: async (_item: IncidentAuditOutboxItem) => 1 },
+  deliveryMode = IncidentMutationDeliveryMode.Immediate,
 ) {
   const timestampByOutcome = {
     reserved: "2026-08-14T00:00:00.001Z",
@@ -250,6 +295,7 @@ function service(
         recordedAt: timestampByOutcome[seed.outcome],
       }),
     },
+    deliveryMode,
   });
 }
 
@@ -258,9 +304,16 @@ function gatewayFor(
   submit: (request: Readonly<{ stimulus: IncidentActionRequest & { commandId: string } }>) => Promise<unknown>,
 ) {
   const actionCalls: Array<Readonly<{ stimulus: IncidentActionRequest & { commandId: string } }>> = [];
+  let observationCalls = 0;
   return {
     actionCalls,
-    observeIncidents: async () => ({ status: "observed", incidents: structuredClone(incidents) }),
+    get observationCalls() {
+      return observationCalls;
+    },
+    observeIncidents: async () => {
+      observationCalls += 1;
+      return { status: "observed", incidents: structuredClone(incidents) };
+    },
     submitIncidentOperation: async (request: Readonly<{ stimulus: IncidentActionRequest & { commandId: string } }>) => {
       actionCalls.push(structuredClone(request));
       return submit(request);

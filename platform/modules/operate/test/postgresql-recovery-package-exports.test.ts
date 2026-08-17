@@ -6,6 +6,7 @@ import {
   PostgresqlExecutionRecoveryStep,
   PostgresqlFlowNodeOccurrenceRecoveryStep,
   PostgresqlIncidentAuditRecoveryStep,
+  PostgresqlIncidentMutationAggregation,
   PostgresqlIncidentSnapshotGeneration,
   PostgresqlIncidentSnapshotReader,
   PostgresqlIncidentSnapshotRecoveryStep,
@@ -17,6 +18,7 @@ test("exports every standalone Operate PostgreSQL recovery step from the package
   assert.equal(typeof PostgresqlExecutionRecoveryStep, "function");
   assert.equal(typeof PostgresqlFlowNodeOccurrenceRecoveryStep, "function");
   assert.equal(typeof PostgresqlIncidentAuditRecoveryStep, "function");
+  assert.equal(typeof PostgresqlIncidentMutationAggregation, "function");
   assert.equal(typeof PostgresqlIncidentSnapshotGeneration, "function");
   assert.equal(typeof PostgresqlIncidentSnapshotReader, "function");
   assert.equal(typeof PostgresqlIncidentSnapshotRecoveryStep, "function");
