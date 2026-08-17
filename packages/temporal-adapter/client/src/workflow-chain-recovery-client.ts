@@ -43,7 +43,8 @@ import type {
   WorkflowChainCommandRecoveryResponse,
 } from "@bpmn-lean/temporal-protocol";
 
-const operationDeadlineMs = 5_000;
+// A closed-Run Query may consume the pinned Worker's full 10-second sticky fallback before replay.
+const operationDeadlineMs = 15_000;
 const recoveryPollMs = 20;
 const identityConflictFailureType = "BpmnCommandIdentityConflict";
 const rolloverFailureType = "BpmnWorkflowRolloverInProgress";
