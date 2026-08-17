@@ -93,6 +93,11 @@ if (baseUrl === undefined) {
       await runtime.query({
         text: "DELETE FROM bpmn_platform.operate_incident_action_audit_outbox WHERE ordinal = 1",
       });
+      await assert.rejects(
+        harness.work.search({ actorId: "actor", limit: 10 }),
+        /unavailable/u,
+      );
+      await assert.rejects(harness.incident.search({ limit: 10 }), /unavailable/u);
       await assert.rejects(harness.work.record(work), /unavailable/u);
       await assert.rejects(harness.incident.record(incident), /unavailable/u);
     } finally {
@@ -125,7 +130,7 @@ if (baseUrl === undefined) {
     }
   });
 
-  test("concurrent distinct Work suffix attempts cannot falsely skip the head", async () => {
+  test("concurrent distinct suffix attempts cannot falsely skip either stream head", async () => {
     const harness = await createHarness(runtime);
     try {
       const first = workItem(1);
@@ -148,12 +153,29 @@ if (baseUrl === undefined) {
         (await harness.work.search({ actorId: "actor", limit: 10 })).map(({ ordinal }) => ordinal),
         [1, 2],
       );
+      const firstIncident = incidentItem(1);
+      const secondIncident = incidentItem(2);
+      await harness.publishIncident(firstIncident);
+      await harness.publishIncident(secondIncident);
+      const incidentResults = await Promise.allSettled([
+        new PostgresqlIncidentAuditRepository(runtime).record(firstIncident),
+        new PostgresqlIncidentAuditRepository(runtime).record(secondIncident),
+      ]);
+      assert.equal(incidentResults[0]?.status, "fulfilled");
+      if (incidentResults[1]?.status === "rejected") {
+        await assert.rejects(harness.incident.search({ limit: 10 }), /unavailable/u);
+        assert.equal(await harness.incident.record(secondIncident), 2);
+      }
+      assert.deepEqual(
+        (await harness.incident.search({ limit: 10 })).map(({ ordinal }) => ordinal),
+        [1, 2],
+      );
     } finally {
       await harness.dispose();
     }
   });
 
-  test("a failed sink insertion rolls back its exact ordinal and head", async () => {
+  test("failed sink insertions roll back both exact ordinals and heads", async () => {
     const harness = await createHarness(runtime);
     try {
       const item = workItem(1);
@@ -191,9 +213,50 @@ if (baseUrl === undefined) {
       });
       assert.deepEqual(status.rows, [{ head: "0", count: "0" }]);
       assert.equal(await harness.work.record(item), 1);
+      const incident = incidentItem(1);
+      await harness.publishIncident(incident);
+      await runtime.query({
+        text: `
+          CREATE OR REPLACE FUNCTION bpmn_platform.reject_audit_incident_insert()
+          RETURNS trigger LANGUAGE plpgsql AS $$
+          BEGIN
+            RAISE EXCEPTION 'injected incident audit sink failure';
+          END
+          $$
+        `,
+      });
+      await runtime.query({
+        text: `
+          CREATE TRIGGER reject_audit_incident_insert
+          BEFORE INSERT ON bpmn_platform.audit_incident_events
+          FOR EACH ROW EXECUTE FUNCTION bpmn_platform.reject_audit_incident_insert()
+        `,
+      });
+      await assert.rejects(
+        harness.incident.record(incident),
+        /injected incident audit sink failure/u,
+      );
+      await runtime.query({
+        text: "DROP TRIGGER reject_audit_incident_insert ON bpmn_platform.audit_incident_events",
+      });
+      const incidentStatus = await runtime.query<Readonly<Record<string, unknown>> & Readonly<{
+        head: string;
+        count: string;
+      }>>({
+        text: `
+          SELECT head::text AS head,
+            (SELECT COUNT(*) FROM bpmn_platform.audit_incident_events)::text AS count
+          FROM bpmn_platform.audit_incident_sink_head
+        `,
+      });
+      assert.deepEqual(incidentStatus.rows, [{ head: "0", count: "0" }]);
+      assert.equal(await harness.incident.record(incident), 1);
     } finally {
       await runtime.query({
         text: "DROP TRIGGER IF EXISTS reject_audit_work_insert ON bpmn_platform.audit_work_events",
+      });
+      await runtime.query({
+        text: "DROP TRIGGER IF EXISTS reject_audit_incident_insert ON bpmn_platform.audit_incident_events",
       });
       await harness.dispose();
     }
@@ -259,12 +322,20 @@ if (baseUrl === undefined) {
         text: "UPDATE bpmn_platform.audit_work_events SET actor_id = decode('636f7272757074', 'hex') WHERE ordinal = 1",
       });
       await runtime.query({
-        text: "UPDATE bpmn_platform.audit_incident_events SET event_json = ' ' || event_json WHERE ordinal = 1",
+        text: "UPDATE bpmn_platform.operate_incident_action_audit_outbox SET event_json = ' ' || event_json WHERE ordinal = 1",
       });
       await assert.rejects(
         harness.work.search({ actorId: "corrupt", limit: 10 }),
         /stored audit|unavailable/u,
       );
+      await assert.rejects(harness.incident.search({ limit: 10 }), /unavailable/u);
+      await runtime.query({
+        text: "UPDATE bpmn_platform.operate_incident_action_audit_outbox SET event_json = $1 WHERE ordinal = 1",
+        values: [JSON.stringify(incident.event)],
+      });
+      await runtime.query({
+        text: "UPDATE bpmn_platform.audit_incident_events SET event_json = ' ' || event_json WHERE ordinal = 1",
+      });
       await assert.rejects(harness.incident.search({ limit: 10 }), /unavailable/u);
       await runtime.query({ text: "DELETE FROM bpmn_platform.audit_work_events WHERE ordinal = 1" });
       await assert.rejects(
