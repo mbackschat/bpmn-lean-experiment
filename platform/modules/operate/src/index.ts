@@ -26,6 +26,7 @@ export type {
   ExecutionPublicationReconciliationServiceOptions,
 } from "./execution-publication-reconciliation-service.js";
 export { SqliteExecutionPublicationRepository } from "./sqlite-execution-publication-repository.js";
+export { PostgresqlExecutionPublicationRepository } from "./postgresql-execution-publication-repository.js";
 export { ExecutionPublicationHttpRoutes } from "./execution-publication-http-routes.js";
 export {
   OperatorAuditExportService,
@@ -54,6 +55,7 @@ export type {
   ProjectedFlowNodeOccurrence,
 } from "./flow-node-occurrence-projection.js";
 export { SqliteFlowNodeOccurrenceRepository } from "./sqlite-flow-node-occurrence-repository.js";
+export { PostgresqlFlowNodeOccurrenceRepository } from "./postgresql-flow-node-occurrence-repository.js";
 export {
   FlowNodeOccurrenceReconciliationKind,
   FlowNodeOccurrenceReconciliationService,
@@ -115,6 +117,7 @@ export { ProcessInstanceHttpRoutes } from "./process-instance-http-routes.js";
 export { IncidentHttpRoutes } from "./incident-http-routes.js";
 export { ProcessInstanceSearchService } from "./process-instance-search-service.js";
 export { SqliteProcessInstanceRepository } from "./sqlite-process-instance-repository.js";
+export { PostgresqlProcessInstanceRepository } from "./postgresql-process-instance-repository.js";
 export {
   IncidentAggregationService,
 } from "./incident-aggregation-service.js";
@@ -138,3 +141,6 @@ export {
 export {
   SqliteIncidentActionRepository,
 } from "./sqlite-incident-action-repository.js";
+export {
+  PostgresqlIncidentActionRepository,
+} from "./postgresql-incident-action-repository.js";

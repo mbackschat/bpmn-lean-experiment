@@ -189,11 +189,21 @@ export function decodeStoredAction(
   resultJson: unknown,
 ): StoredIncidentAction {
   try {
-    const binding = snapshotActionBinding(JSON.parse(requireNonemptyString(bindingJson, "binding_json")));
+    const encodedBinding = requireNonemptyString(bindingJson, "binding_json");
+    const binding = snapshotActionBinding(JSON.parse(encodedBinding));
+    if (JSON.stringify(binding) !== encodedBinding) {
+      throw new TypeError("stored action binding is not canonical JSON");
+    }
     const exactState = requireActionState(state);
-    const result = resultJson === null
+    const encodedResult = resultJson === null
       ? null
-      : snapshotActionResult(JSON.parse(requireNonemptyString(resultJson, "result_json")));
+      : requireNonemptyString(resultJson, "result_json");
+    const result = encodedResult === null
+      ? null
+      : snapshotActionResult(JSON.parse(encodedResult));
+    if (result !== null && JSON.stringify(result) !== encodedResult) {
+      throw new TypeError("stored action result is not canonical JSON");
+    }
     if ((exactState === "committed" || exactState === "rejected" || exactState === "indeterminate") !== (result !== null)) {
       throw new TypeError("stored action state and result disagree");
     }

@@ -6,10 +6,18 @@
 
 Register confirmed Process instances, search them by public identity, inspect committed execution, retry or cancel published incidents, export complete bounded per-instance operator audit, and aggregate version-bound flow-node frequency and duration when the authoritative projection is complete.
 
+The same four Promise-only repository contracts have local SQLite and shared PostgreSQL adapters. PostgreSQL owns an ordinal-0003 checksum-bound migration for the Process registry, incident actions and source-ordered audit outbox, committed-execution prefix, and flow-node-occurrence prefix. Its adapters use a caller-owned `PostgresqlRuntime`; they never own the pool lifecycle. Ordinary projection writes append only a validated suffix, while the explicit rebuild operations alone may replace a complete prefix.
+
 ## Quick start
 
 ```sh
 ./scripts/pnpm.sh --filter @bpmn-lean/platform-operate test
+```
+
+The ordinary command is database-free. Run the explicit real-PostgreSQL 18 witness separately:
+
+```sh
+./scripts/with-postgresql-18.sh ./scripts/pnpm.sh --filter @bpmn-lean/platform-operate test:postgresql
 ```
 
 ## Learn more
