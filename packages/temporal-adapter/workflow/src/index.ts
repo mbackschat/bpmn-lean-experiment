@@ -3,6 +3,7 @@ export * from "./activation-tagged-readiness.js";
 export * from "./bounded-deadline-scheduler.js";
 export * from "./command-publication-integration.js";
 export * from "./workflow-command-recovery.js";
+export * from "./workflow-chain-capacity.js";
 export * from "./workflow-chain-continuation.js";
 export * from "./durable-timer-owner.js";
 export * from "./event-race-readiness-scheduler.js";

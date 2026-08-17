@@ -13,16 +13,12 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   ApplicationFailure,
-  defineQuery,
-  setHandler,
   workflowInfo,
 } from "@temporalio/workflow";
 import {
   BpmnWorkflowHostInputKind,
   WorkflowChainBudgetKind,
-  WorkflowChainCommandRecoveryResponseKind,
   bpmnWorkflowChainCapacityExhaustedFailureType,
-  bpmnWorkflowChainCommandRecoveryQueryName,
   bpmnWorkflowContinuationV1,
   bpmnWorkflowRolloverInProgressFailureType,
   canonicalWorkflowChainJson,
@@ -41,9 +37,6 @@ import type {
   BpmnWorkflowContinuationStateV1,
   BpmnWorkflowHostInputV1,
   MessageDeliveryRecord,
-  TerminalProcessReceipt,
-  WorkflowChainCommandRecoveryRequest,
-  WorkflowChainCommandRecoveryResponse,
   WorkflowPublicationSegmentDirectoryV1,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -55,17 +48,16 @@ import {
   WorkflowCommandRecoveryLookupKind,
 } from "./workflow-command-recovery.js";
 import {
+  WorkflowChainCapacityState,
+  WorkflowChainRecoveryIngressKind,
+} from "./workflow-chain-capacity.js";
+import {
   bpmnWorkflowContinuationInvalidFailureType,
   emptyWorkflowPublicationSegmentDirectory,
   requireWorkflowPublicationSuccessor,
   restoreWorkflowCommandPublication,
   snapshotWorkflowPublicationForSuccessor,
 } from "./workflow-publication-segments.js";
-
-export const bpmnWorkflowChainCommandRecoveryQuery = defineQuery<
-  WorkflowChainCommandRecoveryResponse,
-  [request: WorkflowChainCommandRecoveryRequest]
->(bpmnWorkflowChainCommandRecoveryQueryName);
 
 export type WorkflowChainRuntime = {
   readonly eventHistoryEventLimit: number;
@@ -74,6 +66,7 @@ export type WorkflowChainRuntime = {
   readonly firstExecutionRunId: string;
   readonly segmentDirectory: WorkflowPublicationSegmentDirectoryV1;
   readonly recovery: WorkflowCommandRecoveryLedger;
+  readonly capacity: WorkflowChainCapacityState;
 };
 
 export enum WorkflowChainFenceState {
@@ -120,6 +113,7 @@ export function initializeWorkflowChain(
         throw invalidContinuation("Initial host input carried successor state");
       }
       requireWorkflowChainInitialArgumentBudgets(start, program);
+      const recovery = new WorkflowCommandRecoveryLedger();
       return {
         runtime: {
           eventHistoryEventLimit: input.eventHistoryEventLimit,
@@ -127,7 +121,11 @@ export function initializeWorkflowChain(
           runOrdinal: 1,
           firstExecutionRunId: workflowInfo().firstExecutionRunId,
           segmentDirectory: emptyWorkflowPublicationSegmentDirectory(),
-          recovery: new WorkflowCommandRecoveryLedger(),
+          recovery,
+          capacity: new WorkflowChainCapacityState({
+            processInstanceId: start.instanceId,
+            runOrdinal: 1,
+          }),
         },
         restored: null,
       };
@@ -141,6 +139,7 @@ export function initializeWorkflowChain(
         carriedPublication,
         workflowInfo().firstExecutionRunId,
       );
+      const recovery = new WorkflowCommandRecoveryLedger(validated.recovery);
       return {
         runtime: {
           eventHistoryEventLimit: input.eventHistoryEventLimit,
@@ -148,7 +147,11 @@ export function initializeWorkflowChain(
           runOrdinal: input.runOrdinal,
           firstExecutionRunId: input.firstExecutionRunId,
           segmentDirectory: validated.publication.segmentDirectory,
-          recovery: new WorkflowCommandRecoveryLedger(validated.recovery),
+          recovery,
+          capacity: new WorkflowChainCapacityState({
+            processInstanceId: start.instanceId,
+            runOrdinal: input.runOrdinal,
+          }),
         },
         restored: {
           state: validated.state,
@@ -312,26 +315,6 @@ export function buildWorkflowChainSuccessor(
   return [start, program, host, state, recovery, continuationPublication];
 }
 
-export function registerWorkflowChainRecoveryQuery(
-  processInstanceId: string,
-  recovery: WorkflowCommandRecoveryLedger,
-  terminalReceipt: () => TerminalProcessReceipt | null,
-): void {
-  setHandler(bpmnWorkflowChainCommandRecoveryQuery, (request) => {
-    const terminal = terminalReceipt();
-    return recovery.projectResponse(
-      processInstanceId,
-      request,
-      terminal === null
-        ? { kind: WorkflowChainCommandRecoveryResponseKind.UnknownWhileActive }
-        : {
-            kind: WorkflowChainCommandRecoveryResponseKind.TerminalWithoutEntry,
-            receipt: terminal,
-          },
-    );
-  });
-}
-
 export function isExternallyRecoverableStimulus(stimulus: Stimulus): boolean {
   switch (stimulus.kind) {
     case StimulusKind.CompleteUserTaskInstance:
@@ -355,6 +338,7 @@ export function validateWorkflowChainUpdate(
   workflowChain: WorkflowChainRuntime | null,
   fenceState: WorkflowChainFenceState,
   stimulus: Stimulus,
+  publicRevision: number,
 ): void {
   if (workflowChain === null) {
     return;
@@ -388,11 +372,21 @@ export function validateWorkflowChainUpdate(
     default:
       return assertNever(fenceState);
   }
-  if (
-    workflowChain.recovery.lookup(stimulus).kind ===
-      WorkflowCommandRecoveryLookupKind.IdentityConflict
-  ) {
-    throw workflowCommandIdentityConflict(stimulus);
+  const ingress = workflowChain.capacity.classifyUpdateIngress(
+    workflowChain.recovery,
+    stimulus,
+    publicRevision,
+  );
+  switch (ingress.kind) {
+    case WorkflowChainRecoveryIngressKind.Resolved:
+    case WorkflowChainRecoveryIngressKind.Unseen:
+      return;
+    case WorkflowChainRecoveryIngressKind.IdentityConflict:
+      throw workflowCommandIdentityConflict(stimulus);
+    case WorkflowChainRecoveryIngressKind.CapacityExceeded:
+      throw workflowChain.capacity.applicationFailure();
+    default:
+      return assertNever(ingress);
   }
 }
 
@@ -410,6 +404,9 @@ export function recoveredWorkflowCommandOutcome(
     case WorkflowCommandRecoveryLookupKind.IdentityConflict:
       throw workflowCommandIdentityConflict(stimulus);
     case WorkflowCommandRecoveryLookupKind.Unseen:
+      if (workflowChain.capacity.hasPendingFailure()) {
+        throw workflowChain.capacity.applicationFailure();
+      }
       return undefined;
     default:
       return assertNever(recovered);

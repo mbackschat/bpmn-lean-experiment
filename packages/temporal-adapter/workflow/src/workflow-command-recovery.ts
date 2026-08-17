@@ -93,8 +93,23 @@ export type WorkflowCommandRecoveryPreflight =
 
 export type WorkflowCommandRecoveryRecordResult = Readonly<{
   entry: WorkflowChainRecoveryEntry;
-  filledEntryBound: boolean;
-  filledByteBound: boolean;
+  filledBounds: ReadonlyArray<WorkflowCommandRecoveryCapacityBound>;
+}>;
+
+export type WorkflowCommandRecoveryCapacityBound = Readonly<{
+  budget:
+    | WorkflowChainBudgetKind.CommandRecoveryLedgerEntries
+    | WorkflowChainBudgetKind.CommandRecoveryLedgerBytes;
+  configuredBound: number;
+  observedValue: number;
+}>;
+
+export type WorkflowCommandRecoveryCapacityInspection = Readonly<{
+  commandId: string;
+  stimulusSha256: string;
+  observedEntryCount: number;
+  observedCanonicalUtf8Bytes: number;
+  exhaustedBounds: ReadonlyArray<WorkflowCommandRecoveryCapacityBound>;
 }>;
 
 export type WorkflowCommandRecoveryFallback =
@@ -148,6 +163,22 @@ export class WorkflowCommandRecoveryLedger {
     );
   }
 
+  /** Measures an unseen candidate without reserving a ledger slot or changing recovery state. */
+  inspectUnseenCapacity(
+    stimulus: Stimulus,
+  ): WorkflowCommandRecoveryCapacityInspection {
+    requireExternallyRetryableStimulus(stimulus);
+    const commandId = stimulus.commandId;
+    const stimulusSha256 = workflowCommandStimulusSha256(stimulus);
+    if (
+      this.#lookupIdentity(commandId, stimulusSha256).kind !==
+        WorkflowCommandRecoveryLookupKind.Unseen
+    ) {
+      throw new TypeError("Command-recovery capacity inspection requires an unseen command");
+    }
+    return this.#inspectUnseenCapacity(commandId, stimulusSha256);
+  }
+
   preflight(stimulus: Stimulus): WorkflowCommandRecoveryPreflight {
     requireExternallyRetryableStimulus(stimulus);
     const commandId = stimulus.commandId;
@@ -174,21 +205,13 @@ export class WorkflowCommandRecoveryLedger {
         "Command-recovery preflight requires the prior admission to resolve",
       );
     }
-    const worstCaseEntry = recoveryEntry(
-      commandId,
-      stimulusSha256,
-      CommandOutcome.SemanticFailure,
-    );
-    const observedEntryCount = this.#entries.length + 1;
-    const observedCanonicalUtf8Bytes = ledgerCanonicalUtf8Bytes([
-      ...this.#entries,
-      worstCaseEntry,
-    ]);
-    const exhausted = exhaustedBounds(
-      this.#limits,
+    const inspection = this.#inspectUnseenCapacity(commandId, stimulusSha256);
+    const {
       observedEntryCount,
       observedCanonicalUtf8Bytes,
-    );
+      exhaustedBounds,
+    } = inspection;
+    const exhausted = exhaustedBounds.map((bound) => bound.budget);
     if (exhausted.length > 0) {
       return {
         kind: WorkflowCommandRecoveryPreflightKind.CapacityExceeded,
@@ -250,10 +273,14 @@ export class WorkflowCommandRecoveryLedger {
 
     this.#entries.push(entry);
     this.#pendingAdmission = null;
+    const filledBounds = filledBoundsFor(
+      this.#limits,
+      candidate.length,
+      candidateBytes,
+    );
     return {
       entry: { ...entry },
-      filledEntryBound: candidate.length === this.#limits.entryCount,
-      filledByteBound: candidateBytes === this.#limits.canonicalUtf8Bytes,
+      filledBounds,
     };
   }
 
@@ -311,6 +338,33 @@ export class WorkflowCommandRecoveryLedger {
           outcome: entry.outcome,
         }
       : { kind: WorkflowCommandRecoveryLookupKind.IdentityConflict };
+  }
+
+  #inspectUnseenCapacity(
+    commandId: string,
+    stimulusSha256: string,
+  ): WorkflowCommandRecoveryCapacityInspection {
+    const worstCaseEntry = recoveryEntry(
+      commandId,
+      stimulusSha256,
+      CommandOutcome.SemanticFailure,
+    );
+    const observedEntryCount = this.#entries.length + 1;
+    const observedCanonicalUtf8Bytes = ledgerCanonicalUtf8Bytes([
+      ...this.#entries,
+      worstCaseEntry,
+    ]);
+    return {
+      commandId,
+      stimulusSha256,
+      observedEntryCount,
+      observedCanonicalUtf8Bytes,
+      exhaustedBounds: exceededBoundsFor(
+        this.#limits,
+        observedEntryCount,
+        observedCanonicalUtf8Bytes,
+      ),
+    };
   }
 }
 
@@ -377,25 +431,50 @@ function ledgerCanonicalUtf8Bytes(
   return workflowChainCanonicalUtf8ByteLength(entries);
 }
 
-function exhaustedBounds(
+function exceededBoundsFor(
   limits: WorkflowCommandRecoveryLimits,
   observedEntryCount: number,
   observedCanonicalUtf8Bytes: number,
-): ReadonlyArray<
-  | WorkflowChainBudgetKind.CommandRecoveryLedgerEntries
-  | WorkflowChainBudgetKind.CommandRecoveryLedgerBytes
-> {
-  const exhausted: Array<
-    | WorkflowChainBudgetKind.CommandRecoveryLedgerEntries
-    | WorkflowChainBudgetKind.CommandRecoveryLedgerBytes
-  > = [];
+): ReadonlyArray<WorkflowCommandRecoveryCapacityBound> {
+  const exhausted: WorkflowCommandRecoveryCapacityBound[] = [];
   if (observedEntryCount > limits.entryCount) {
-    exhausted.push(WorkflowChainBudgetKind.CommandRecoveryLedgerEntries);
+    exhausted.push({
+      budget: WorkflowChainBudgetKind.CommandRecoveryLedgerEntries,
+      configuredBound: limits.entryCount,
+      observedValue: observedEntryCount,
+    });
   }
   if (observedCanonicalUtf8Bytes > limits.canonicalUtf8Bytes) {
-    exhausted.push(WorkflowChainBudgetKind.CommandRecoveryLedgerBytes);
+    exhausted.push({
+      budget: WorkflowChainBudgetKind.CommandRecoveryLedgerBytes,
+      configuredBound: limits.canonicalUtf8Bytes,
+      observedValue: observedCanonicalUtf8Bytes,
+    });
   }
   return exhausted;
+}
+
+function filledBoundsFor(
+  limits: WorkflowCommandRecoveryLimits,
+  observedEntryCount: number,
+  observedCanonicalUtf8Bytes: number,
+): ReadonlyArray<WorkflowCommandRecoveryCapacityBound> {
+  const filled: WorkflowCommandRecoveryCapacityBound[] = [];
+  if (observedEntryCount === limits.entryCount) {
+    filled.push({
+      budget: WorkflowChainBudgetKind.CommandRecoveryLedgerEntries,
+      configuredBound: limits.entryCount,
+      observedValue: observedEntryCount,
+    });
+  }
+  if (observedCanonicalUtf8Bytes === limits.canonicalUtf8Bytes) {
+    filled.push({
+      budget: WorkflowChainBudgetKind.CommandRecoveryLedgerBytes,
+      configuredBound: limits.canonicalUtf8Bytes,
+      observedValue: observedCanonicalUtf8Bytes,
+    });
+  }
+  return filled;
 }
 
 function requirePositiveInteger(value: number, label: string): void {

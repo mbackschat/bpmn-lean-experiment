@@ -41,9 +41,6 @@ import {
   bpmnWorkflowChainPatchId,
   bpmnUserTaskDetailQueryName,
   bpmnTraceQueryName,
-  bpmnWorkflowChainCapacityExhaustedFailureType,
-  workflowChainProductionLimit,
-  WorkflowChainBudgetKind,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnCompleteUserTaskUpdateArguments,
@@ -122,11 +119,16 @@ import type {
   WorkflowCommandRecoveryAdmission,
 } from "./workflow-command-recovery.js";
 import {
+  acceptWorkflowChainSignalCapacity,
+  awaitWorkflowCommandOutcome,
+  registerWorkflowChainRecoveryQuery,
+  WorkflowChainStableCheckpointKind,
+} from "./workflow-chain-capacity.js";
+import {
   buildWorkflowChainSuccessor,
   initializeWorkflowChain,
   isExternallyRecoverableStimulus,
   recoveredWorkflowCommandOutcome,
-  registerWorkflowChainRecoveryQuery,
   validateWorkflowChainUpdate,
   workflowCommandIdentityConflict,
   workflowChainRolloverTriggered,
@@ -249,6 +251,7 @@ export async function runBpmnProcessWithHostEffects(
     registerWorkflowChainRecoveryQuery(
       start.instanceId,
       workflowChain.recovery,
+      workflowChain.capacity,
       () => isTerminalProcessState(state)
         ? terminalProcessReceipt(
             semanticProcess,
@@ -286,6 +289,9 @@ export async function runBpmnProcessWithHostEffects(
   );
   setHandler(bpmnDeliverMessageSignal, (stimulus) => {
     validateDeliverMessageSignal(stimulus);
+    if (!acceptWorkflowChainSignalCapacity(workflowChain, stimulus)) {
+      return;
+    }
     const accepted = acceptedStimulus(
       acceptedStimuli,
       stimulus.commandId,
@@ -326,23 +332,21 @@ export async function runBpmnProcessWithHostEffects(
       } else {
         enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
       }
-      await condition(
-        () =>
-          commandOutcome(commandPublication, stimulus.commandId) !== undefined,
+      return await awaitWorkflowCommandOutcome(
+        stimulus.commandId,
+        () => commandOutcome(commandPublication, stimulus.commandId),
+        workflowChain?.capacity ?? null,
       );
-      const outcome = commandOutcome(commandPublication, stimulus.commandId);
-      if (outcome === undefined) {
-        throw ApplicationFailure.nonRetryable(
-          `Semantic loop ended without an outcome for ${stimulus.commandId}`,
-          "BpmnCommandOutcomeMissing",
-        );
-      }
-      return outcome;
     },
     {
       validator: (stimulus) => {
         validateCompleteUserTaskUpdate(acceptedStimuli, stimulus);
-        validateWorkflowChainUpdate(workflowChain, workflowChainFence, stimulus);
+        validateWorkflowChainUpdate(
+          workflowChain,
+          workflowChainFence,
+          stimulus,
+          commandPublication.execution.headRevision,
+        );
       },
     },
   );
@@ -354,22 +358,21 @@ export async function runBpmnProcessWithHostEffects(
         return recovered;
       }
       enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-      await condition(
-        () => commandOutcome(commandPublication, stimulus.commandId) !== undefined,
+      return await awaitWorkflowCommandOutcome(
+        stimulus.commandId,
+        () => commandOutcome(commandPublication, stimulus.commandId),
+        workflowChain?.capacity ?? null,
       );
-      const outcome = commandOutcome(commandPublication, stimulus.commandId);
-      if (outcome === undefined) {
-        throw ApplicationFailure.nonRetryable(
-          `Semantic loop ended without an outcome for ${stimulus.commandId}`,
-          "BpmnCommandOutcomeMissing",
-        );
-      }
-      return outcome;
     },
     {
       validator: (stimulus) => {
         validateRetryEffectIncidentUpdate(acceptedStimuli, stimulus);
-        validateWorkflowChainUpdate(workflowChain, workflowChainFence, stimulus);
+        validateWorkflowChainUpdate(
+          workflowChain,
+          workflowChainFence,
+          stimulus,
+          commandPublication.execution.headRevision,
+        );
       },
     },
   );
@@ -381,17 +384,11 @@ export async function runBpmnProcessWithHostEffects(
         return recovered;
       }
       enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-      await condition(
-        () => commandOutcome(commandPublication, stimulus.commandId) !== undefined,
+      return await awaitWorkflowCommandOutcome(
+        stimulus.commandId,
+        () => commandOutcome(commandPublication, stimulus.commandId),
+        workflowChain?.capacity ?? null,
       );
-      const outcome = commandOutcome(commandPublication, stimulus.commandId);
-      if (outcome === undefined) {
-        throw ApplicationFailure.nonRetryable(
-          `Semantic loop ended without an outcome for ${stimulus.commandId}`,
-          "BpmnCommandOutcomeMissing",
-        );
-      }
-      return outcome;
     },
     {
       validator: (stimulus) => {
@@ -400,7 +397,12 @@ export async function runBpmnProcessWithHostEffects(
           start.instanceId,
           stimulus,
         );
-        validateWorkflowChainUpdate(workflowChain, workflowChainFence, stimulus);
+        validateWorkflowChainUpdate(
+          workflowChain,
+          workflowChainFence,
+          stimulus,
+          commandPublication.execution.headRevision,
+        );
       },
     },
   );
@@ -425,28 +427,13 @@ export async function runBpmnProcessWithHostEffects(
             continue;
           case WorkflowCommandRecoveryPreflightKind.IdentityConflict:
             throw workflowCommandIdentityConflict(stimulus);
-          case WorkflowCommandRecoveryPreflightKind.CapacityExceeded: {
-            const budget = preflight.exhausted[0];
-            if (budget === undefined) {
-              throw new TypeError("Command-recovery capacity lost its exhausted bound");
-            }
-            const observedValue = budget ===
-                WorkflowChainBudgetKind.CommandRecoveryLedgerEntries
-              ? preflight.observedEntryCount
-              : preflight.observedCanonicalUtf8Bytes;
-            throw ApplicationFailure.nonRetryable(
-              "Workflow command-recovery capacity is exhausted",
-              bpmnWorkflowChainCapacityExhaustedFailureType,
-              {
-                budget,
-                configuredBound: workflowChainProductionLimit(budget),
-                observedValue,
-                processInstanceId: start.instanceId,
-                publicRevision: commandPublication.execution.headRevision,
-                runOrdinal: workflowChain.runOrdinal,
-              },
+          case WorkflowCommandRecoveryPreflightKind.CapacityExceeded:
+            workflowChain.capacity.retainUnseenCapacity(
+              workflowChain.recovery,
+              stimulus,
+              commandPublication.execution.headRevision,
             );
-          }
+            continue;
           case WorkflowCommandRecoveryPreflightKind.Admitted:
             recoveryAdmission = preflight.admission;
             break;
@@ -484,7 +471,13 @@ export async function runBpmnProcessWithHostEffects(
             "BpmnCommandOutcomeMissing",
           );
         }
-        workflowChain?.recovery.record(recoveryAdmission, outcome);
+        const record = workflowChain?.recovery.record(recoveryAdmission, outcome);
+        if (record !== undefined && workflowChain !== null) {
+          workflowChain.capacity.observeRecoveryRecord(
+            record,
+            commandPublication.execution.headRevision,
+          );
+        }
       }
       if (
         stimulus.kind === StimulusKind.DeliverMessage &&
@@ -516,13 +509,27 @@ export async function runBpmnProcessWithHostEffects(
       }
     }
 
-    if (isTerminalProcessState(state)) {
+    const processIsTerminal = isTerminalProcessState(state);
+    const stableCheckpoint = workflowChain?.capacity.decideStableCheckpoint(processIsTerminal);
+    if (processIsTerminal) {
       workflowChainFence = WorkflowChainFenceState.Terminal;
       await condition(allHandlersFinished);
       if (pendingStimuli.length === 0 && allHandlersFinished()) {
         break;
       }
       continue;
+    }
+
+    if (
+      workflowChain !== null &&
+      stableCheckpoint?.kind ===
+        WorkflowChainStableCheckpointKind.CapacityExceeded
+    ) {
+      await condition(allHandlersFinished);
+      if (pendingStimuli.length !== 0 || !allHandlersFinished()) {
+        continue;
+      }
+      throw workflowChain.capacity.applicationFailure();
     }
 
     if (

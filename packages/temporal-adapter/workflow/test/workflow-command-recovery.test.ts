@@ -18,6 +18,7 @@ import {
   bpmnWorkflowChainProtocolV1,
   canonicalStimulusEncoding,
   deterministicSha256Hex,
+  processTerminalReceiptFormatV1,
   workflowChainCanonicalUtf8ByteLength,
   workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-protocol";
@@ -155,6 +156,19 @@ test("refuses multibyte recovery identity before semantic admission when bytes e
     },
   });
 
+  const inspection = ledger.inspectUnseenCapacity(longStimulus);
+  assert.deepEqual(inspection, {
+    commandId: longStimulus.commandId,
+    stimulusSha256: digest,
+    observedEntryCount: 1,
+    observedCanonicalUtf8Bytes: candidateBytes,
+    exhaustedBounds: [{
+      budget: WorkflowChainBudgetKind.CommandRecoveryLedgerBytes,
+      configuredBound: candidateBytes - 1,
+      observedValue: candidateBytes,
+    }],
+  });
+  assert.equal(ledger.snapshot().length, 0);
   const preflight = ledger.preflight(longStimulus);
   assert.deepEqual(preflight, {
     kind: WorkflowCommandRecoveryPreflightKind.CapacityExceeded,
@@ -182,8 +196,11 @@ test("resolves retries and conflicts after capacity fills while refusing unseen 
     assert.fail("expected first command admission");
   }
   const recorded = ledger.record(preflight.admission, CommandOutcome.Rejected);
-  assert.equal(recorded.filledEntryBound, true);
-  assert.equal(recorded.filledByteBound, false);
+  assert.deepEqual(recorded.filledBounds, [{
+    budget: WorkflowChainBudgetKind.CommandRecoveryLedgerEntries,
+    configuredBound: 1,
+    observedValue: 1,
+  }]);
 
   assert.equal(
     ledger.preflight(stimulus).kind,
@@ -251,8 +268,11 @@ test("records only the issued preflight candidate, preserves order, and reports 
       stimulusSha256: digest,
       outcome: CommandOutcome.SemanticFailure,
     },
-    filledEntryBound: false,
-    filledByteBound: true,
+    filledBounds: [{
+      budget: WorkflowChainBudgetKind.CommandRecoveryLedgerBytes,
+      configuredBound: byteBound,
+      observedValue: byteBound,
+    }],
   });
   assert.deepEqual(ledger.snapshot(), [recorded.entry]);
   assert.throws(
@@ -400,6 +420,7 @@ function recoveryRequest(value: CompleteUserTaskInstanceStimulus) {
 
 function terminalReceipt() {
   return {
+    format: processTerminalReceiptFormatV1,
     definition: {
       compiler: "bpmn-source-semantic-process",
       semanticProfile: "profile",
@@ -423,6 +444,5 @@ function terminalReceipt() {
       enabledInteractions: [],
       logicalTimeMs: 0,
     },
-    messageDeliveryRecords: [],
   } as const;
 }
