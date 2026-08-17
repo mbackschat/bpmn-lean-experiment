@@ -170,6 +170,11 @@ export class LazyTemporalClientRuntime {
     }) as unknown as TemporalDefinitionStartClient;
   }
 
+  /** Completes the lazy server handshake or rejects with the SDK connection failure. */
+  ensureConnected(): Promise<void> {
+    return this.#connection.ensureConnected();
+  }
+
   /** Returns one shared close operation even when lifecycle owners close repeatedly. */
   close(): Promise<void> {
     this.#closePromise ??= this.#connection.close();

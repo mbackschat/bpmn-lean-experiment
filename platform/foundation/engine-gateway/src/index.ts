@@ -305,6 +305,11 @@ export class BpmnEngineGatewayRuntime {
     );
   }
 
+  /** Proves the shared lazy Temporal connection before this runtime is declared ready. */
+  ensureConnected(): Promise<void> {
+    return this.#temporalRuntime.ensureConnected();
+  }
+
   close(): Promise<void> {
     return this.#temporalRuntime.close();
   }

@@ -8,6 +8,8 @@ Run an admitted BPMN Process against an existing Temporal service, observe curre
 
 The runner compiles BPMN before it opens a network connection. Temporal records delivery and Workflow decisions, while the semantic core remains the owner of BPMN-visible transitions and canonical observations.
 
+The lazy client runtime exposes an explicit connection handshake for application readiness without coupling construction to network availability.
+
 ## Quick start
 
 Start a local Temporal service in one terminal:

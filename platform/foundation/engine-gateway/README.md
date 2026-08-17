@@ -6,6 +6,8 @@
 
 Compile exact source, prepare and recover exact-definition starts, manage Timer and Message Start host intent, observe Work and Operations facts through opaque locators, and submit published commands without exposing Workflow handles, Run IDs, Task Queues, Event History, or semantic anchors.
 
+The composition runtime remains lazy, exposes an explicit `ensureConnected()` readiness probe, and owns one idempotent close operation for its shared Temporal connection.
+
 ## Quick start
 
 ```sh
