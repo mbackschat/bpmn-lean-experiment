@@ -11,6 +11,7 @@ import {
 import type {
   ClaimCandidatesInput,
   FailLeaseInput,
+  RecoveryDatabaseApply,
   RecoveryLease,
   RecoveryLeaseStore,
   RetryLeaseInput,
@@ -142,15 +143,29 @@ export class PostgresqlRecoveryLeaseStore implements RecoveryLeaseStore {
     });
   }
 
+  /** Applies database-only domain work while retaining the exact current lease unchanged. */
+  async applyWhileOwned(
+    lease: RecoveryLease,
+    apply: RecoveryDatabaseApply,
+  ): Promise<LeaseMutationResult> {
+    const snapshot = snapshotLease(lease);
+    validateApply(apply, "intermediate");
+    return await this.#runtime.transaction(async (session) => {
+      if (!(await ownsLease(session, snapshot))) {
+        return LeaseMutationResult.LeaseLost;
+      }
+      await apply(session);
+      return LeaseMutationResult.Applied;
+    });
+  }
+
   /** Applies database-only domain work and removes the current lease atomically. */
   async complete(
     lease: RecoveryLease,
-    apply: (session: PostgresqlSession) => Promise<void>,
+    apply: RecoveryDatabaseApply,
   ): Promise<LeaseMutationResult> {
     const snapshot = snapshotLease(lease);
-    if (typeof apply !== "function") {
-      throw new TypeError("recovery completion apply must be a function");
-    }
+    validateApply(apply, "completion");
     return await this.#runtime.transaction(async (session) => {
       if (!(await ownsLease(session, snapshot))) {
         return LeaseMutationResult.LeaseLost;
@@ -244,6 +259,15 @@ export class PostgresqlRecoveryLeaseStore implements RecoveryLeaseStore {
       requireOneMutation(updated.rowCount, "fail");
       return LeaseMutationResult.Applied;
     });
+  }
+}
+
+function validateApply(
+  apply: RecoveryDatabaseApply,
+  operation: "intermediate" | "completion",
+): void {
+  if (typeof apply !== "function") {
+    throw new TypeError(`recovery ${operation} apply must be a function`);
   }
 }
 

@@ -44,15 +44,23 @@ export type FailLeaseInput = Readonly<{
   failureEvidence: Uint8Array;
 }>;
 
+export type RecoveryDatabaseApply = (
+  session: PostgresqlSession,
+) => Promise<void>;
+
 /**
  * Owns private lease transitions only. Claim commits before returning; outcome methods
  * compare the exact token and never invoke a completion callback after ownership is lost.
  */
 export interface RecoveryLeaseStore {
   claimCandidates(input: ClaimCandidatesInput): Promise<readonly RecoveryLease[]>;
+  applyWhileOwned(
+    lease: RecoveryLease,
+    apply: RecoveryDatabaseApply,
+  ): Promise<LeaseMutationResult>;
   complete(
     lease: RecoveryLease,
-    apply: (session: PostgresqlSession) => Promise<void>,
+    apply: RecoveryDatabaseApply,
   ): Promise<LeaseMutationResult>;
   retry(
     lease: RecoveryLease,
@@ -89,6 +97,7 @@ export type RecoveryHandlerOutcome =
 export type RecoveryHandlerContext = Readonly<{
   deadlineEpochMs: number;
   signal: AbortSignal;
+  applyWhileOwned: (apply: RecoveryDatabaseApply) => Promise<LeaseMutationResult>;
 }>;
 
 export type RecoveryLoopOptions = Readonly<{

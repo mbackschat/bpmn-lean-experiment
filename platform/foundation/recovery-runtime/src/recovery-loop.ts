@@ -15,6 +15,7 @@ import type {
 import {
   snapshotClaimCandidates,
   snapshotFailure,
+  snapshotLease,
   validateBoundedInteger,
   validateNonnegativeBoundedInteger,
 } from "./recovery-values.js";
@@ -98,33 +99,48 @@ export class RecoveryLoop {
   }
 
   async #handleLease(lease: RecoveryLease, run: MutableRun): Promise<void> {
+    const handlerLease = snapshotLease(lease);
+    const fencedLease = snapshotLease(lease);
     let outcome: RecoveryHandlerOutcome;
     try {
       outcome = await withDeadline(
         this.#options.itemDeadlineMs,
         async (signal, deadlineEpochMs) =>
-          await this.#options.handle(lease, { signal, deadlineEpochMs }),
+          await this.#options.handle(handlerLease, {
+            signal,
+            deadlineEpochMs,
+            applyWhileOwned: async (apply) =>
+              await this.#store.applyWhileOwned(fencedLease, apply),
+          }),
       );
     } catch {
-      await this.#applyRetry(lease, this.#options.retryDelayMs, run);
+      await this.#applyRetry(fencedLease, this.#options.retryDelayMs, run);
       return;
     }
 
     try {
       switch (outcome.kind) {
         case RecoveryHandlerOutcomeKind.Complete:
-          recordMutation(await this.#store.complete(lease, outcome.apply), run, "completed");
+          recordMutation(
+            await this.#store.complete(fencedLease, outcome.apply),
+            run,
+            "completed",
+          );
           return;
         case RecoveryHandlerOutcomeKind.Retry:
           await this.#applyRetry(
-            lease,
+            fencedLease,
             outcome.retryDelayMs ?? this.#options.retryDelayMs,
             run,
           );
           return;
         case RecoveryHandlerOutcomeKind.Fail: {
           const failure = snapshotFailure(outcome);
-          recordMutation(await this.#store.fail(lease, failure), run, "permanentlyFailed");
+          recordMutation(
+            await this.#store.fail(fencedLease, failure),
+            run,
+            "permanentlyFailed",
+          );
           return;
         }
         default:

@@ -149,6 +149,50 @@ test("runs handlers after claims close and bounds independent work concurrency",
   assert.equal(store.maximumOutcomeTransactions, 1);
 });
 
+test("binds guarded intermediate applies to the current lease without spanning external work", async () => {
+  const store = new FakeLeaseStore([lease(1)]);
+  const events: string[] = [];
+  const loop = new RecoveryLoop(
+    store,
+    loopOptions({
+      handle: async (_claimed, context) => {
+        assert.equal(store.outcomeTransactions, 0);
+        events.push("handler");
+        assert.equal(
+          await context.applyWhileOwned(async () => {
+            events.push("intermediate-apply");
+          }),
+          LeaseMutationResult.Applied,
+        );
+        assert.equal(store.outcomeTransactions, 0);
+        events.push("external-work");
+        return {
+          kind: RecoveryHandlerOutcomeKind.Complete,
+          apply: async () => {
+            events.push("final-apply");
+          },
+        };
+      },
+    }),
+  );
+
+  assert.deepEqual(await loop.runOnce(), {
+    claimed: 1,
+    completed: 1,
+    retried: 0,
+    permanentlyFailed: 0,
+    leaseLost: 0,
+    errors: 0,
+  });
+  assert.deepEqual(events, [
+    "handler",
+    "intermediate-apply",
+    "external-work",
+    "final-apply",
+  ]);
+  assert.deepEqual(store.intermediateLeaseTokens, [lease(1).leaseToken]);
+});
+
 test("a timed-out handler retries while unrelated work completes", async () => {
   const store = new FakeLeaseStore([lease(1), lease(2)]);
   const never = new Promise<never>(() => undefined);
@@ -215,6 +259,7 @@ class FakeLeaseStore implements RecoveryLeaseStore {
   claimOpen = false;
   outcomeTransactions = 0;
   maximumOutcomeTransactions = 0;
+  readonly intermediateLeaseTokens: string[] = [];
 
   constructor(leases: readonly RecoveryLease[]) {
     this.#leases = leases;
@@ -231,6 +276,16 @@ class FakeLeaseStore implements RecoveryLeaseStore {
     _lease: RecoveryLease,
     apply: Parameters<RecoveryLeaseStore["complete"]>[1],
   ): Promise<LeaseMutationResult> {
+    return await this.#inOutcomeTransaction(async () => {
+      await apply({ query: async () => ({ rows: [], rowCount: 0 }) });
+    });
+  }
+
+  async applyWhileOwned(
+    claimed: RecoveryLease,
+    apply: Parameters<RecoveryLeaseStore["applyWhileOwned"]>[1],
+  ): Promise<LeaseMutationResult> {
+    this.intermediateLeaseTokens.push(claimed.leaseToken);
     return await this.#inOutcomeTransaction(async () => {
       await apply({ query: async () => ({ rows: [], rowCount: 0 }) });
     });
