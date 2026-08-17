@@ -19,7 +19,6 @@ import type {
   WorkReleaseTransitionResult,
   WorkTaskReference,
 } from "./work-contracts.js";
-import type { WorkAuditOutboxService } from "./work-audit-outbox-service.js";
 import {
   WorkCompletionService,
 } from "./work-completion-service.js";

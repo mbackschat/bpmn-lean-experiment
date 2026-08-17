@@ -131,7 +131,13 @@ export function readPlatformServerConfig(
 export function snapshotPlatformServerConfig(
   config: PlatformServerConfig,
 ): ValidatedPlatformServerConfig {
-  validateStorageConfig(config);
+  const normalized = {
+    ...config,
+    storageMode: config.storageMode ?? PlatformStorageMode.Local,
+    postgresqlRuntimeUrl: config.postgresqlRuntimeUrl ?? null,
+    projectionMaxAgeMs: config.projectionMaxAgeMs ?? null,
+  };
+  validateStorageConfig(normalized);
   requireNonempty(config.host, "host");
   requirePort(config.port, "port");
   const publicOrigin = validatePublicOrigin(config.publicOrigin);
@@ -150,7 +156,7 @@ export function snapshotPlatformServerConfig(
   requireIdentifier(config.operationsGroupId, "operationsGroupId");
   requirePositiveSafeInteger(config.maxWorkProcesses, "maxWorkProcesses");
   requirePositiveSafeInteger(config.maxWorkTasks, "maxWorkTasks");
-  return { ...config, publicOrigin, fakeActorGroups };
+  return { ...normalized, publicOrigin, fakeActorGroups };
 }
 
 function readStorageConfig(environment: NodeJS.ProcessEnv): Pick<

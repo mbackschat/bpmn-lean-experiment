@@ -78,8 +78,12 @@ import {
 
 import {
   snapshotPlatformServerConfig,
+  PlatformStorageMode,
 } from "./config.js";
-import type { PlatformServerConfig } from "./config.js";
+import type {
+  PlatformServerConfig,
+  ValidatedPlatformServerConfig,
+} from "./config.js";
 import {
   createPlatformHttpServerFromValidatedOrigin,
 } from "./http-adapter.js";
@@ -91,14 +95,39 @@ import type {
   CloseableResource,
   PlatformServerRuntime,
 } from "./runtime.js";
+import {
+  createSharedPlatformServer,
+} from "./shared-composition.js";
 
 const presentationGenerationDeadlineMs = 1_000;
 
-/** Creates the M1 modular-monolith runtime from published package entry points. */
+export type PlatformServerCompositionOverrides = Readonly<{
+  createLocalServer?: (
+    config: ValidatedPlatformServerConfig,
+  ) => Promise<PlatformServerRuntime>;
+  createSharedServer?: (
+    config: ValidatedPlatformServerConfig,
+  ) => Promise<PlatformServerRuntime>;
+}>;
+
+/** Selects exactly one complete local or shared storage composition. */
 export async function createPlatformServer(
   config: PlatformServerConfig,
+  overrides: PlatformServerCompositionOverrides = {},
 ): Promise<PlatformServerRuntime> {
   const snapshot = snapshotPlatformServerConfig(config);
+  switch (snapshot.storageMode) {
+    case PlatformStorageMode.Local:
+      return await (overrides.createLocalServer ?? createLocalPlatformServer)(snapshot);
+    case PlatformStorageMode.Shared:
+      return await (overrides.createSharedServer ?? createSharedPlatformServer)(snapshot);
+  }
+}
+
+/** Creates the single-node development composition with filesystem and SQLite owners. */
+async function createLocalPlatformServer(
+  snapshot: ValidatedPlatformServerConfig,
+): Promise<PlatformServerRuntime> {
   await mkdir(snapshot.dataDirectory, { recursive: true });
 
   const engineRuntime = createBpmnEngineGatewayRuntime({

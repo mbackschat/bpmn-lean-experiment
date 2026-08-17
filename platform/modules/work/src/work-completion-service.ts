@@ -23,7 +23,6 @@ import type {
   WorkSubmittedField,
   WorkTaskReference,
 } from "./work-contracts.js";
-import type { WorkAuditOutboxService } from "./work-audit-outbox-service.js";
 import type { WorkStructuredTaskReader } from "./work-service.js";
 import type {
   ActorVisibleWorkTaskDetail,
@@ -101,7 +100,7 @@ export type WorkCompletionServiceOptions = Readonly<{
   actors: ActorResolver;
   repository: WorkCompletionRepository;
   gateway: WorkCompletionGateway;
-  outbox: WorkAuditOutboxService;
+  outbox: Readonly<{ reconcileAll(): Promise<void> }>;
   auditEvents: WorkAuditEventFactory;
 }>;
 

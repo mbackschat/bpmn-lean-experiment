@@ -17,6 +17,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "pnpm build && node dist/main.js",
     "test:built": "node --test --test-concurrency=1 test/*.test.ts",
+    "test:postgresql:built": "node --test --test-concurrency=1 test/postgresql/*.test.ts",
+    "test:postgresql": "pnpm build && pnpm test:postgresql:built",
     "test": "pnpm build && pnpm test:built"
   },
   "dependencies": {
@@ -28,6 +30,7 @@
     "@bpmn-lean/platform-engine-gateway": "workspace:*",
     "@bpmn-lean/platform-identity-policy": "workspace:*",
     "@bpmn-lean/platform-operate": "workspace:*",
+    "@bpmn-lean/platform-postgresql-runtime": "workspace:*",
     "@bpmn-lean/platform-work": "workspace:*"
   }
 }
