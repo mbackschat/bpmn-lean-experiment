@@ -469,7 +469,7 @@ The complete feature-by-feature witness, mutation, durable-history, and replay i
 
 The optional `test:timer-time-skipping` command runs the same exact timer result and durable-history assertion on Temporal's time-skipping test server. It is calibration only and is excluded from `verify.sh`; it cannot replace or weaken the full-server duration, Worker absence, history, replay, or cleanup evidence.
 
-No Event History fixture is committed. No legacy IR reader, Workflow patch branch, or format migration path exists during pre-release. The pre-release infrastructure guard locks this policy.
+No Event History fixture is committed. No legacy IR reader or format migration path exists during pre-release. The pre-release infrastructure guard permits only the exact `bpmn-workflow-chain-v1` patch enrollment, requires ordinary two-argument starts to stay outside it, and locks its stable protocol identity. The explicit-input first-green witness forces two Continue-As-New boundaries and replays all three Runs; it is not production-default activation or a retained-history baseline.
 
 When the owner approves the first immutable deployment/history baseline, retained histories and compatibility paths must be introduced through red replay tests with explicit provenance, version markers, support windows, and removal criteria.
 

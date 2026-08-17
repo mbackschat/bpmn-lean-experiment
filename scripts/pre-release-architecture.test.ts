@@ -5,6 +5,10 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const workflowChainPatchOwner =
+  "packages/temporal-adapter/workflow/src/workflow-implementation.ts";
+const workflowChainPatchIdentityOwner =
+  "packages/temporal-adapter/protocol/src/workflow-continuation.ts";
 
 const temporalSourceRoots = [
   "packages/temporal-adapter/client/src",
@@ -258,7 +262,7 @@ test("starts every cached ephemeral server through the owner that creates its ca
   );
 });
 
-test("keeps pre-release Temporal replay evidence disposable", async () => {
+test("keeps pre-release Temporal replay evidence and patch enrollment exact", async () => {
   const temporalTestFiles = await sourceFiles("packages/temporal-adapter/testkit/test");
   assert.deepEqual(
     temporalTestFiles.filter((relativePath) =>
@@ -280,5 +284,30 @@ test("keeps pre-release Temporal replay evidence disposable", async () => {
       patchedWorkflowSources.push(relativePath);
     }
   }
-  assert.deepEqual(patchedWorkflowSources, []);
+  assert.deepEqual(patchedWorkflowSources, [workflowChainPatchOwner]);
+
+  const patchOwnerSource = await readFile(
+    path.join(projectRoot, workflowChainPatchOwner),
+    "utf8",
+  );
+  assert.equal(
+    patchOwnerSource.match(/\bpatched\(/gu)?.length,
+    1,
+    "the Workflow-chain compatibility branch must remain the only patch call",
+  );
+  assert.match(
+    patchOwnerSource,
+    /hostInput !== undefined &&\s+patched\(bpmnWorkflowChainPatchId\)/u,
+    "ordinary two-argument starts must not enroll in the checkpoint patch branch",
+  );
+
+  const patchIdentitySource = await readFile(
+    path.join(projectRoot, workflowChainPatchIdentityOwner),
+    "utf8",
+  );
+  assert.match(
+    patchIdentitySource,
+    /export const bpmnWorkflowChainPatchId = "bpmn-workflow-chain-v1" as const;/u,
+    "the reviewed Workflow-chain patch identity must remain stable",
+  );
 });

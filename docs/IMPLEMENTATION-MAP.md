@@ -443,6 +443,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - registered Service Task incident hosting with an unchanged bare semantic Activity result union, exact successor-only one-attempt policy, host-only `technicalFailure`, Workflow-derived report command, committed incident Query, content-bound retained retry Update, exact effect restoration, Worker replacement, terminal result recovery, two-command race, typed post-retry host failure, history assertions, and replay
 - registered incident-cancellation hosting with the shared one-attempt Activity/report policy, content-bound exact-root/exact-incident Update, Worker replacement while the incident is open, retained accepted-result recovery, typed cancelled receipt through ordinary Workflow completion, distinct late `processClosed`, preserved committed data, history and replay, and native-termination/completed-receipt mutations
 - a Workflow revision accumulator/cursor Query, strict producer validation, representation-free client, opaque-locator engine API, and real retention evidence covering positive cursors, Worker replacement, terminal retrieval, repeated activation identity, pure Query history stability, and exact replay
+- one explicitly selected v1 first-green Workflow-chain branch, inactive for ordinary two-argument Product 1 starts, that carries committed RuntimeState, bounded command recovery, publication heads/current/open anchors, and completed Message records; a forced cyclic User Task witness crosses exactly three Runs and two Continue-As-New boundaries, preserves the open occurrence identity, recovers an exact prior-Run Update, rejects conflicting content, returns the exact terminal receipt, and replays every Run
 
 #### Explicitly absent
 
@@ -455,7 +456,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - committed Event History fixtures
 - any new Temporal primitive for User Task metadata
 - a second semantic incident, arbitrary retry count or backoff, exception/cause projection, cancellation beyond the exact incident-gated root command, or Product 2 incident ingress
-- patch branches
+- any patch branch other than the exact `bpmn-workflow-chain-v1` checkpoint enrollment
 - legacy representation fallback
 - production history baseline
 - general Worker versioning
@@ -465,7 +466,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
 - Search Attributes
-- Continue-As-New
+- production-default Continue-As-New activation, Product 1 cross-Run client recovery, publication-segment traversal, complete timer/effect/Message rollover evidence, deployment admission, and the full approved capacity matrix
 - task inbox
 
 ### Differential pipeline
