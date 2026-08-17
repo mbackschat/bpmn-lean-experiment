@@ -322,6 +322,32 @@ if (baseUrl === undefined) {
     await runtime.query({
       text: `
         UPDATE bpmn_platform.work_snapshot_generation_items
+        SET observed_at = clock_timestamp() + interval '1 day';
+        UPDATE bpmn_platform.work_snapshot_generations
+        SET observed_after_at = (
+          SELECT min(observed_at) FROM bpmn_platform.work_snapshot_generation_items
+        )
+      `,
+    });
+    await assert.rejects(
+      new PostgresqlWorkSnapshotReader(readerOptions(runtime)).read(),
+      WorkSnapshotUnavailableError,
+    );
+
+    await runtime.query({
+      text: `
+        UPDATE bpmn_platform.work_snapshot_generation_items SET observed_at = NULL;
+        UPDATE bpmn_platform.work_snapshot_generations SET observed_after_at = NULL
+      `,
+    });
+    await assert.rejects(
+      new PostgresqlWorkSnapshotReader(readerOptions(runtime)).read(),
+      WorkSnapshotUnavailableError,
+    );
+
+    await runtime.query({
+      text: `
+        UPDATE bpmn_platform.work_snapshot_generation_items
         SET observed_at = clock_timestamp() - interval '1 hour';
         UPDATE bpmn_platform.work_snapshot_generations
         SET observed_after_at = clock_timestamp() - interval '1 hour'

@@ -78,6 +78,7 @@ const workSnapshotReadSql = `
       generation.materialized_through,
       generation.succeeded_count,
       generation.state AS generation_state,
+      generation.completed_at,
       generation.observed_after_at,
       (SELECT count(*) FROM bpmn_platform.work_snapshot_generation_items AS counted
         WHERE counted.generation = generation.generation) AS item_count,
@@ -94,6 +95,7 @@ const workSnapshotReadSql = `
         control.singleton = true
         AND control.completed_generation IS NOT NULL
         AND generation.state = 'completed'
+        AND generation.completed_at <= clock.observed_now
         AND generation.target_population_head = control.population_head
         AND generation.materialized_through = control.population_head
         AND generation.succeeded_count = control.population_head
@@ -111,11 +113,11 @@ const workSnapshotReadSql = `
           WHERE counted.generation = generation.generation
             AND counted.observed_at IS NOT NULL
         )
-        AND (
-          generation.observed_after_at IS NULL
-          OR clock.observed_now - generation.observed_after_at
+        AND (generation.observed_after_at IS NULL OR (
+          generation.observed_after_at <= clock.observed_now
+          AND clock.observed_now - generation.observed_after_at
             <= ($1::bigint * interval '1 millisecond')
-        )
+        ))
       ) AS valid
     FROM statement_clock AS clock
     LEFT JOIN bpmn_platform.work_snapshot_control AS control
@@ -189,7 +191,8 @@ function decodeRead(
   const observedAfterEpochMs = first.actual_observed_after_at === null
     ? nowEpochMs
     : epochMs(first.actual_observed_after_at, "observed after");
-  if (nowEpochMs - observedAfterEpochMs > maxAgeMs) {
+  if (observedAfterEpochMs > nowEpochMs ||
+      nowEpochMs - observedAfterEpochMs > maxAgeMs) {
     throw new TypeError("snapshot freshness expired");
   }
 
@@ -225,6 +228,13 @@ function decodeRead(
         expected.locator !== current.locator ||
         (expected.observation !== current.observation && current.observation !== "closed")) {
       throw new TypeError("snapshot registration identity drifted");
+    }
+    if (row.item_observed_at !== null &&
+        epochMs(row.item_observed_at, "snapshot item observation") > nowEpochMs) {
+      throw new TypeError("snapshot item timestamp is in the future");
+    }
+    if (row.item_observed_at === null && expected.observation !== "closed") {
+      throw new TypeError("nonterminal snapshot item lacks a Product 1 observation");
     }
     const registrationKey = JSON.stringify(current);
     const priorRegistration = registrations.get(ordinal);
@@ -309,6 +319,7 @@ type SnapshotReadRow = PostgresqlRow & Readonly<{
   materialized_through: unknown;
   succeeded_count: unknown;
   generation_state: unknown;
+  completed_at: unknown;
   observed_after_at: unknown;
   item_count: unknown;
   actual_succeeded_count: unknown;
