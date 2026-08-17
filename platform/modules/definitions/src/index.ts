@@ -170,6 +170,41 @@ export {
 export type {
   DefinitionsRecoveryCandidate,
 } from "./postgresql-definitions-recovery-candidate-source.js";
+export {
+  PostgresqlDefinitionsRecoveryFailureCode,
+  PostgresqlDefinitionsRecoveryFailureEvidence,
+  PostgresqlDefinitionsRecoveryIntermediateResult,
+  PostgresqlDefinitionsRecoveryRetryReason,
+  PostgresqlDefinitionsRecoveryStepKind,
+} from "./postgresql-definitions-recovery-step.js";
+export type {
+  PostgresqlDefinitionsRecoveryStepResult,
+} from "./postgresql-definitions-recovery-step.js";
+export {
+  PostgresqlConfirmedRegistrationRecoveryStep,
+} from "./postgresql-confirmed-registration-recovery-step.js";
+export type {
+  PostgresqlConfirmedRegistrationRecoveryStepOptions,
+  PostgresqlConfirmedRegistrationSubscriber,
+} from "./postgresql-confirmed-registration-recovery-step.js";
+export {
+  PostgresqlDefinitionScheduleRecoveryStep,
+} from "./postgresql-definition-schedule-recovery-step.js";
+export type {
+  PostgresqlDefinitionScheduleRecoveryStepOptions,
+} from "./postgresql-definition-schedule-recovery-step.js";
+export {
+  PostgresqlDirectStartRecoveryStep,
+} from "./postgresql-direct-start-recovery-step.js";
+export type {
+  PostgresqlDirectStartRecoveryStepOptions,
+} from "./postgresql-direct-start-recovery-step.js";
+export {
+  PostgresqlMessageStartRecoveryStep,
+} from "./postgresql-message-start-recovery-step.js";
+export type {
+  PostgresqlMessageStartRecoveryStepOptions,
+} from "./postgresql-message-start-recovery-step.js";
 export type {
   MessageStartPublicationDescriptionResult,
   MessageStartPublicationHost,

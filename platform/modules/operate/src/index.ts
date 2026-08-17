@@ -133,6 +133,7 @@ export type {
 } from "./incident-audit-outbox-service.js";
 export { IncidentMutationService } from "./incident-mutation-service.js";
 export type {
+  IncidentActionRecoveryResult,
   IncidentMutationServiceOptions,
 } from "./incident-mutation-service.js";
 export {
@@ -148,3 +149,31 @@ export {
   OperatePostgresqlRecoveryFamily,
   PostgresqlOperateRecoveryCandidateSource,
 } from "./postgresql-operate-recovery-candidates.js";
+export {
+  PostgresqlOperateRecoveryFailureCode,
+  PostgresqlOperateRecoveryFailureEvidence,
+  PostgresqlOperateRecoveryFenceError,
+  PostgresqlOperateRecoveryRetryReason,
+  PostgresqlOperateRecoveryStepKind,
+} from "./postgresql-operate-recovery-step.js";
+export type {
+  PostgresqlOperateRecoveryStepResult,
+} from "./postgresql-operate-recovery-step.js";
+export { PostgresqlExecutionRecoveryStep } from "./postgresql-execution-recovery-step.js";
+export type {
+  PostgresqlExecutionRecoveryStepOptions,
+} from "./postgresql-execution-recovery-step.js";
+export {
+  PostgresqlFlowNodeOccurrenceRecoveryStep,
+} from "./postgresql-flow-node-occurrence-recovery-step.js";
+export type {
+  PostgresqlFlowNodeOccurrenceRecoveryStepOptions,
+} from "./postgresql-flow-node-occurrence-recovery-step.js";
+export {
+  PostgresqlIncidentAuditRecoveryStep,
+} from "./postgresql-incident-audit-recovery-step.js";
+export type {
+  PostgresqlIncidentAuditRecoveryResult,
+  PostgresqlIncidentAuditRecoverySink,
+  PostgresqlIncidentAuditRecoverySource,
+} from "./postgresql-incident-audit-recovery-step.js";
