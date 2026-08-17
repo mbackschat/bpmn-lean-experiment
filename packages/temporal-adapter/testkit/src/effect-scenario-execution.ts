@@ -5,6 +5,7 @@
  * environment lifecycle and ordinary scenario execution.
  */
 import { setTimeout as delay } from "node:timers/promises";
+import { isDeepStrictEqual } from "node:util";
 
 import type {
   CanonicalObservation,
@@ -20,6 +21,7 @@ import type {
 } from "@temporalio/testing";
 
 import {
+  bpmnEffectExecutionExhaustedFailureType,
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   TemporalCompletionDelivery,
@@ -183,6 +185,18 @@ export async function runEffectExhaustion(
         error.cause instanceof ApplicationFailure
       ) {
         failureType = error.cause.type ?? undefined;
+        const expectedProjection = {
+          failureType: bpmnEffectExecutionExhaustedFailureType,
+          message: "Effect Activity exhausted its bounded execution policy",
+        };
+        if (
+          error.cause.cause !== undefined ||
+          !isDeepStrictEqual(error.cause.details, [expectedProjection])
+        ) {
+          throw new TypeError(
+            "Exhausted effect Workflow retained an unbounded Activity failure",
+          );
+        }
       } else {
         throw error;
       }

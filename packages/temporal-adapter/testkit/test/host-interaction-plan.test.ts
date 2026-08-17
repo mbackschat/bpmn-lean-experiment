@@ -16,6 +16,8 @@ import {
 } from "@bpmn-lean/semantic-core";
 
 import {
+  EffectActivityResultKind,
+  WorkflowChainBudgetKind,
   validateHostEffectHandlers,
   validateHostInteractionPlan,
 } from "@bpmn-lean/temporal-testkit";
@@ -166,6 +168,21 @@ test("rejects an effect result the semantic core would not accept", () => {
       validateHostEffectHandlers([
         { ...handler, result: { kind: "retryLater" } },
       ]),
+    /effect execution result/u,
+  );
+});
+
+test("keeps the Worker-only capacity outcome out of product configuration", () => {
+  assert.throws(
+    () => validateHostEffectHandlers([{
+      ...handler,
+      result: {
+        kind: EffectActivityResultKind.CapacityExceeded,
+        budget: WorkflowChainBudgetKind.EffectActivityResultBytes,
+        configuredBound: 64 * 1_024,
+        observedValue: 64 * 1_024 + 1,
+      },
+    }]),
     /effect execution result/u,
   );
 });

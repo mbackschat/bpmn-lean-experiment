@@ -19,8 +19,12 @@ import type {
   MessageChannel,
   UserTaskCompletionBinding,
 } from "@bpmn-lean/semantic-core";
-import type { EffectActivityResult } from "@bpmn-lean/temporal-protocol";
-import { isWellFormedEffectActivityResult } from "@bpmn-lean/temporal-protocol";
+import type {
+  EffectActivityImplementationResult,
+} from "@bpmn-lean/temporal-protocol";
+import {
+  isWellFormedEffectActivityImplementationResult,
+} from "@bpmn-lean/temporal-protocol";
 
 /**
  * One declared answer to a published interaction.
@@ -59,7 +63,7 @@ export type HostInteractionResponse = DeepReadonly<
 export type HostEffectHandler = DeepReadonly<{
   protocol: string;
   operation: string;
-  result: EffectActivityResult;
+  result: EffectActivityImplementationResult;
 }>;
 
 export function validateHostInteractionPlan(
@@ -89,7 +93,7 @@ export function validateHostEffectHandlers(
     );
     requireNonemptyWireString(record.protocol, "Effect handler protocol");
     requireNonemptyWireString(record.operation, "Effect handler operation");
-    if (!isWellFormedEffectActivityResult(record.result)) {
+    if (!isWellFormedEffectActivityImplementationResult(record.result)) {
       throw new TypeError(
         "Effect handler result must be one canonical effect execution result or technical failure",
       );

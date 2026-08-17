@@ -3,11 +3,9 @@ import {
   EffectExecutionResultKind,
   EffectActivityResultKind,
   completeEffectStimulus,
+  isEffectActivityCapacityExceeded,
   isWellFormedEffectActivityResult,
   reportEffectFailureStimulus,
-} from "@bpmn-lean/temporal-protocol";
-import type {
-  EffectActivityResult,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   CompleteEffectStimulus,
@@ -38,7 +36,10 @@ export function effectActivityResultCommand(
   effect: OpenEffect,
   result: unknown,
 ): EffectHostCommand {
-  if (!isWellFormedEffectActivityResult(result)) {
+  if (
+    !isWellFormedEffectActivityResult(result) ||
+    isEffectActivityCapacityExceeded(result)
+  ) {
     return { kind: "failure", failure: EffectHostFailureKind.InvalidResult };
   }
   if (result.kind !== EffectActivityResultKind.TechnicalFailure) {

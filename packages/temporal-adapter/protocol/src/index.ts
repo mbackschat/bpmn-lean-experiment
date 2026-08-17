@@ -5,6 +5,7 @@ export * from "./contracts.js";
 export * from "./deterministic-sha256.js";
 export * from "./durable-timer-key.js";
 export * from "./effect-contract.js";
+export * from "./effect-activity-capacity.js";
 export * from "./effect-activity-result.js";
 export * from "./effect-transport.js";
 export * from "./flow-node-occurrence-publication.js";

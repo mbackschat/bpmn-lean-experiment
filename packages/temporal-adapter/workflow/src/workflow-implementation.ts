@@ -485,6 +485,19 @@ export async function runBpmnProcessWithHostEffects(
       waitForTimer,
       executeEffect,
       effectActivityPolicy,
+      (failure) => {
+        if (workflowChain === null) {
+          throw ApplicationFailure.nonRetryable(
+            "Effect Activity capacity is exhausted",
+            "BpmnEffectActivityCapacityExceeded",
+            failure,
+          );
+        }
+        throw workflowChain.capacity.applicationFailureForObservedCapacity(
+          failure,
+          commandPublication.execution.headRevision,
+        );
+      },
       reserveStimulus,
       () =>
         workflowChain?.capacity.hasPendingFailure() === true ||

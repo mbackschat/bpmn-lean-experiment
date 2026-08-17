@@ -25,7 +25,8 @@ import {
   normalizeError,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
-import type { EffectActivities } from "@bpmn-lean/temporal-protocol";
+import type { EffectActivityImplementations } from "@bpmn-lean/temporal-protocol";
+import { boundEffectActivities } from "./bounded-effect-activities.js";
 
 const workflowsPath = fileURLToPath(
   import.meta.resolve("@bpmn-lean/temporal-workflow/workflows"),
@@ -60,7 +61,7 @@ export class ExternalTemporalRuntime {
   /** Connects to a caller-managed server and starts polling the selected Task Queue. */
   static async connect(
     options: ExternalTemporalRuntimeOptions,
-    activities: EffectActivities,
+    activities: EffectActivityImplementations,
   ): Promise<ExternalTemporalRuntime> {
     requireOptions(options);
     const connection = await withDeadline(
@@ -81,7 +82,7 @@ export class ExternalTemporalRuntime {
           namespace: options.namespace,
           taskQueue: options.taskQueue,
           workflowsPath,
-          activities,
+          activities: boundEffectActivities(activities),
         }),
         workerStartupDeadlineMs,
         `BPMN Worker startup on ${options.taskQueue}`,

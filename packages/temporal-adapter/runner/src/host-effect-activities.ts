@@ -12,12 +12,15 @@
  * would commit; the approved Activity retry policy then exhausts and surfaces one typed adapter
  * failure, so this module states no retry policy of its own.
  */
-import type { EffectActivities, EffectRequest } from "@bpmn-lean/temporal-protocol";
+import type {
+  EffectActivityImplementations,
+  EffectRequest,
+} from "@bpmn-lean/temporal-protocol";
 import type { HostEffectHandler } from "./host-interaction-plan.js";
 
 export function createHostEffectActivities(
   handlers: ReadonlyArray<HostEffectHandler>,
-): EffectActivities {
+): EffectActivityImplementations {
   const declared = new Map(
     handlers.map((handler) => [
       descriptorKey(handler.protocol, handler.operation),

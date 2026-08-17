@@ -5,7 +5,7 @@ import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { EffectActivities } from "@bpmn-lean/temporal-protocol";
+import type { EffectActivityImplementations } from "@bpmn-lean/temporal-protocol";
 import {
   ExternalTemporalRuntime,
 } from "@bpmn-lean/temporal-worker";
@@ -30,7 +30,7 @@ export interface EvaluationWorkerHealthServer {
 export type EvaluationWorkerDependencies = Readonly<{
   connect(
     options: ExternalTemporalRuntimeOptions,
-    activities: EffectActivities,
+    activities: EffectActivityImplementations,
   ): Promise<EvaluationWorkerRuntime>;
   startHealthServer(
     port: number,

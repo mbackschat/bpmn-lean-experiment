@@ -15,6 +15,8 @@ import {
   timerFiringStimulus,
 } from "@bpmn-lean/temporal-protocol";
 import type {
+  EffectActivityCapacityBound,
+  EffectActivityImplementationResult,
   EffectActivityResult,
   EffectRequest,
 } from "@bpmn-lean/temporal-protocol";
@@ -31,6 +33,10 @@ import {
   effectActivityResultCommand,
   throwEffectHostFailure,
 } from "./effect-execution-host.js";
+import {
+  effectActivityExhaustionFailure,
+  executeEffectWithinCapacity,
+} from "./workflow-effect-capacity.js";
 import type { EventRaceReadinessScheduler } from "./event-race-readiness-scheduler.js";
 import { hostInvariantFailure } from "./host-invariant.js";
 import { isTerminalProcessState } from "./terminal-process-receipt.js";
@@ -54,6 +60,7 @@ export async function waitForHostReadiness(
   waitForTimer: (durationMs: number) => Promise<void>,
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>,
   effectActivityPolicy: EffectActivityPolicy,
+  failEffectCapacity: (failure: EffectActivityCapacityBound) => never,
   reserveStimulus: (stimulus: Stimulus) => boolean,
   hostRecheckRequested: () => boolean,
 ): Promise<HostReadinessAction> {
@@ -168,9 +175,13 @@ export async function waitForHostReadiness(
     idempotencyKey: effectTransportKey(material),
     arguments: material.arguments,
   };
-  let result: EffectActivityResult;
+  let result: EffectActivityImplementationResult;
   try {
-    result = await executeEffect(request);
+    result = await executeEffectWithinCapacity(
+      request,
+      executeEffect,
+      failEffectCapacity,
+    );
   } catch (error: unknown) {
     // Cancellation recovery is unmodeled and must retain its host classification. Only an
     // exhausted non-cancelled Activity execution becomes this capsule's typed adapter failure.
@@ -180,12 +191,7 @@ export async function waitForHostReadiness(
     ) {
       throw error;
     }
-    throw ApplicationFailure.nonRetryable(
-      "Effect Activity exhausted its bounded execution policy",
-      "BPMN_EFFECT_EXECUTION_EXHAUSTED",
-      undefined,
-      error,
-    );
+    throw effectActivityExhaustionFailure(error);
   }
   const command = effectActivityResultCommand(
     effectActivityPolicy,

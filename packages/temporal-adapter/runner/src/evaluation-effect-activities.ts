@@ -10,11 +10,11 @@ import {
   EffectActivityResultKind,
 } from "@bpmn-lean/temporal-protocol";
 import type {
-  EffectActivities,
+  EffectActivityImplementations,
   EffectRequest,
 } from "@bpmn-lean/temporal-protocol";
 
-export function createEvaluationEffectActivities(): EffectActivities {
+export function createEvaluationEffectActivities(): EffectActivityImplementations {
   const invokedKeys = new Set<string>();
   return {
     executeBpmnEffect: async (request: EffectRequest) => {

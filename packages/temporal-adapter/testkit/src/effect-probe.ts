@@ -10,8 +10,8 @@ import type {
   VariableBinding,
 } from "@bpmn-lean/semantic-core";
 import type {
-  EffectActivityResult,
-  EffectActivities,
+  EffectActivityImplementationResult,
+  EffectActivityImplementations,
   EffectRequest,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -53,7 +53,7 @@ export class EffectProbeStore {
   async execute(
     request: EffectRequest,
     schedule: EffectExecutionSchedule,
-  ): Promise<EffectActivityResult> {
+  ): Promise<EffectActivityImplementationResult> {
     requireEffectRequest(request);
     const priorInvocations =
       this.invocationCountByKey.get(request.idempotencyKey) ?? 0;
@@ -103,7 +103,7 @@ export class EffectProbeStore {
 
 type EffectProbeRegistration = DeepReadonly<{
   request: EffectRequest;
-  execute(request: EffectRequest): Promise<EffectActivityResult>;
+  execute(request: EffectRequest): Promise<EffectActivityImplementationResult>;
 }>;
 
 /**
@@ -140,7 +140,7 @@ export class EffectProbeActivityRegistry {
     }
   }
 
-  readonly activities: EffectActivities = {
+  readonly activities: EffectActivityImplementations = {
     executeBpmnEffect: async (request) => {
       requireEffectRequest(request);
       const registration = this.registrations.get(

@@ -11,7 +11,9 @@ import type { WorkflowBundleWithSourceMap } from "@temporalio/worker";
 import {
   bpmnOpenUserTasksQueryName,
   bpmnSemanticTaskQueue,
+  boundEffectActivities,
 } from "@bpmn-lean/temporal-testkit";
+import type { EffectActivityImplementations } from "@bpmn-lean/temporal-testkit";
 import { withDeadline } from "./temporal-test-support.ts";
 
 const operationDeadlineMs = 10_000;
@@ -26,6 +28,7 @@ export async function startBpmnTestWorker(
   environment: TestWorkflowEnvironment,
   workflowBundle: WorkflowBundleWithSourceMap,
   identity: string,
+  activities?: EffectActivityImplementations,
 ): Promise<WorkerLease> {
   const worker = await withDeadline(
     Worker.create({
@@ -33,6 +36,9 @@ export async function startBpmnTestWorker(
       identity,
       taskQueue: bpmnSemanticTaskQueue,
       workflowBundle,
+      ...(activities === undefined
+        ? {}
+        : { activities: boundEffectActivities(activities) }),
     }),
     operationDeadlineMs,
     "Temporal lifecycle Worker startup",
