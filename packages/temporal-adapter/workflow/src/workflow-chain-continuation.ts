@@ -1,10 +1,6 @@
 import {
-  ControlStateKind,
   StimulusKind,
-  enabledInternalOperationCount,
-  isStableStateResumable,
   isWellFormedSemanticProcessProgram,
-  observeStableState,
   stimulusCommandId,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
@@ -31,6 +27,7 @@ import {
   bpmnWorkflowRolloverInProgressFailureType,
   canonicalWorkflowChainJson,
   requireBpmnWorkflowContinuationPublicationV1,
+  requireBpmnWorkflowContinuationStateV1,
   requireBpmnWorkflowHostInputV1,
   requireWorkflowChainInitialArgumentBudgets,
   workflowContinuationBudgetViolation,
@@ -196,6 +193,7 @@ function validateContinuationArguments(
   const publication = requireCarriedPublication(
     carriedPublication,
     program,
+    state,
     start.instanceId,
   );
   requireContinuationIdentity(input, start, program, firstExecutionRunId);
@@ -328,8 +326,24 @@ export function validateWorkflowChainUpdate(
     return;
   }
   switch (fenceState) {
-    case WorkflowChainFenceState.Terminal:
-      return;
+    case WorkflowChainFenceState.Terminal: {
+      const recovered = workflowChain.recovery.lookup(stimulus);
+      switch (recovered.kind) {
+        case WorkflowCommandRecoveryLookupKind.Resolved:
+          return;
+        case WorkflowCommandRecoveryLookupKind.IdentityConflict:
+          throw workflowCommandIdentityConflict(stimulus);
+        case WorkflowCommandRecoveryLookupKind.Unseen:
+          // Rejection precedes handler acceptance, so terminal receipt closure cannot wait on this
+          // command and the caller's retry reaches the existing closed-Process lifecycle.
+          throw ApplicationFailure.retryable(
+            "Workflow terminal receipt is closing",
+            "BpmnWorkflowTerminalReceiptPending",
+          );
+        default:
+          return assertNever(recovered);
+      }
+    }
     case WorkflowChainFenceState.Rollover:
       throw ApplicationFailure.retryable(
         "Workflow rollover is in progress",
@@ -389,11 +403,13 @@ function requireExecutionIdentity(
   start: ProcessStartStimulus,
   program: SemanticProcessProgram,
 ): void {
-  if (
-    !isWellFormedSemanticProcessProgram(program) ||
-    !supportsSemanticProcessExecution(start, program)
-  ) {
-    throw invalidContinuation("Workflow continuation has invalid execution input");
+  try {
+    if (!isWellFormedSemanticProcessProgram(program) ||
+      !supportsSemanticProcessExecution(start, program)) {
+      throw new TypeError("Invalid execution input");
+    }
+  } catch (error: unknown) {
+    throw invalidContinuation("Workflow continuation has invalid execution input", error);
   }
 }
 
@@ -403,18 +419,18 @@ function requireContinuationIdentity(
   program: SemanticProcessProgram,
   firstExecutionRunId: string,
 ): void {
-  if (
-    input.processId !== program.processId ||
-    input.processInstanceId !== start.instanceId ||
-    input.startCommandId !== start.commandId ||
-    input.firstExecutionRunId !== firstExecutionRunId ||
-    canonical(input.definition) !== canonical(program.identity) ||
-    input.completedMessageDeliveryRecords.some(
-      ({ stimulus }) =>
-        stimulus.subscriptionId.processInstanceId !== input.processInstanceId,
-    )
-  ) {
-    throw invalidContinuation("Workflow continuation identity mismatch");
+  try {
+    if (input.processId !== program.processId ||
+      input.processInstanceId !== start.instanceId ||
+      input.startCommandId !== start.commandId ||
+      input.firstExecutionRunId !== firstExecutionRunId ||
+      canonical(input.definition) !== canonical(program.identity) ||
+      input.completedMessageDeliveryRecords.some(({ stimulus }) =>
+        stimulus.subscriptionId.processInstanceId !== input.processInstanceId)) {
+      throw new TypeError("Continuation identity mismatch");
+    }
+  } catch (error: unknown) {
+    throw invalidContinuation("Workflow continuation identity mismatch", error);
   }
 }
 
@@ -423,53 +439,43 @@ function requireCarriedState(
   program: SemanticProcessProgram,
   processInstanceId: string,
 ): RuntimeState {
-  if (
-    !isRecord(value) ||
-    !isRecord(value.control) ||
-    value.control.kind !== ControlStateKind.Running ||
-    value.control.instanceId !== processInstanceId
-  ) {
-    throw invalidContinuation("Malformed committed RuntimeState continuation");
-  }
-  const state = value as RuntimeState;
   try {
-    if (
-      observeStableState(program, state) === null ||
-      !isStableStateResumable(state) ||
-      enabledInternalOperationCount(program, state) !== 0
-    ) {
-      throw new TypeError("RuntimeState is not one resumable stable checkpoint");
-    }
+    return requireBpmnWorkflowContinuationStateV1(
+      value,
+      program,
+      processInstanceId,
+    );
   } catch (error: unknown) {
     throw invalidContinuation("Invalid committed RuntimeState continuation", error);
   }
-  return state;
 }
 
 function requireCarriedRecovery(
   value: unknown,
 ): BpmnWorkflowContinuationRecoveryV1 {
-  if (!isRecord(value) || !hasOnlyKeys(value, ["entries"]) || !Array.isArray(value.entries)) {
-    throw invalidContinuation("Malformed command-recovery continuation");
-  }
   try {
+    if (!isRecord(value) || !hasOnlyKeys(value, ["entries"]) ||
+      !Array.isArray(value.entries)) {
+      throw new TypeError("Malformed command-recovery continuation");
+    }
     new WorkflowCommandRecoveryLedger({ entries: value.entries });
+    return value as BpmnWorkflowContinuationRecoveryV1;
   } catch (error: unknown) {
     throw invalidContinuation("Invalid command-recovery continuation", error);
   }
-  return value as BpmnWorkflowContinuationRecoveryV1;
 }
 
 function requireCarriedPublication(
   value: unknown,
   program: SemanticProcessProgram,
+  state: RuntimeState,
   processInstanceId: string,
 ): BpmnWorkflowContinuationPublicationV1 {
   try {
     return requireBpmnWorkflowContinuationPublicationV1(
       value,
-      program.identity,
-      program.processId,
+      program,
+      state,
       processInstanceId,
     );
   } catch (error: unknown) {

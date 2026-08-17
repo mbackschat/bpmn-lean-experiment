@@ -29,7 +29,9 @@ import {
   buildWorkflowChainSuccessor,
   createCommandPublicationState,
   integrateCommandPublication,
+  recoveredWorkflowCommandOutcome,
   recordCommandPublicationOutcome,
+  terminalProcessReceipt,
   validateIncomingWorkflowContinuation,
   validateWorkflowChainUpdate,
 } from "../dist/index.js";
@@ -59,35 +61,41 @@ test("rejects a terminal RuntimeState as an incoming continuation", () => {
   assertInvalidIncoming(args, { state: terminal });
 });
 
-test("does not classify a distinct User Task Update after terminal fencing as rollover", () => {
+test("refuses an unseen User Task Update after terminal fencing", () => {
   const { runtime } = successorFixture();
 
-  assert.doesNotThrow(() => validateWorkflowChainUpdate(
-    runtime,
-    WorkflowChainFenceState.Terminal,
-    publicationCompletion("UserTask_B", 2),
-  ));
+  assert.throws(
+    () => validateWorkflowChainUpdate(
+      runtime,
+      WorkflowChainFenceState.Terminal,
+      publicationCompletion("UserTask_B", 2),
+    ),
+    isTerminalReceiptPending,
+  );
 });
 
-test("does not classify a distinct Retry Incident Update after terminal fencing as rollover", () => {
+test("refuses an unseen Retry Incident Update after terminal fencing", () => {
   const { runtime } = successorFixture();
 
-  assert.doesNotThrow(() => validateWorkflowChainUpdate(
-    runtime,
-    WorkflowChainFenceState.Terminal,
-    {
-      kind: StimulusKind.RetryIncident,
-      commandId: "retry-after-terminal",
-      incidentId: {
-        effectId: {
-          processInstanceId: publicationStart.instanceId,
-          elementId: "ServiceTask_1",
-          activation: 1,
+  assert.throws(
+    () => validateWorkflowChainUpdate(
+      runtime,
+      WorkflowChainFenceState.Terminal,
+      {
+        kind: StimulusKind.RetryIncident,
+        commandId: "retry-after-terminal",
+        incidentId: {
+          effectId: {
+            processInstanceId: publicationStart.instanceId,
+            elementId: "ServiceTask_1",
+            activation: 1,
+          },
+          generation: 1,
         },
-        generation: 1,
       },
-    },
-  ));
+    ),
+    isTerminalReceiptPending,
+  );
 });
 
 test("keeps rollover retryable and active command identity closed", () => {
@@ -116,18 +124,181 @@ test("keeps rollover retryable and active command identity closed", () => {
     assert.fail("test command was not admitted to recovery");
   }
   runtime.recovery.record(preflight.admission, CommandOutcome.Committed);
+  assert.doesNotThrow(() => validateWorkflowChainUpdate(
+    runtime,
+    WorkflowChainFenceState.Terminal,
+    stimulus,
+  ));
+  assert.equal(
+    recoveredWorkflowCommandOutcome(runtime, stimulus),
+    CommandOutcome.Committed,
+  );
+  const conflict = {
+    ...stimulus,
+    taskId: { ...stimulus.taskId, activation: 3 },
+  };
   assert.throws(
     () => validateWorkflowChainUpdate(
       runtime,
       WorkflowChainFenceState.Active,
-      {
-        ...stimulus,
-        taskId: { ...stimulus.taskId, activation: 3 },
-      },
+      conflict,
     ),
     (error: unknown) =>
       error instanceof ApplicationFailure &&
       error.type === "BpmnCommandIdentityConflict",
+  );
+  assert.throws(
+    () => validateWorkflowChainUpdate(
+      runtime,
+      WorkflowChainFenceState.Terminal,
+      conflict,
+    ),
+    (error: unknown) =>
+      error instanceof ApplicationFailure &&
+      error.type === "BpmnCommandIdentityConflict",
+  );
+});
+
+test("rejects an extra nested RuntimeState field at continuation admission", () => {
+  const args = successorArguments();
+  const state = {
+    ...args[3],
+    variables: {
+      ...args[3].variables,
+      process: { ...args[3].variables.process, unexpected: true },
+    },
+  };
+
+  assertInvalidIncoming(args, { state });
+});
+
+test("rejects a nested RuntimeState getter without executing it", () => {
+  const args = successorArguments();
+  let executed = false;
+  const variables = { ...args[3].variables } as Record<string, unknown>;
+  Object.defineProperty(variables, "process", {
+    enumerable: true,
+    get: () => {
+      executed = true;
+      return args[3].variables.process;
+    },
+  });
+
+  assertInvalidIncoming(args, { state: { ...args[3], variables } });
+  assert.equal(executed, false);
+});
+
+test("rejects a malformed nested occurrence record at continuation admission", () => {
+  const args = successorArguments();
+  const first = args[5].flowNodeOccurrences.currentOpen[0];
+  assert.ok(first !== undefined);
+  const malformed = { ...first, unexpected: true };
+  const publication = {
+    ...args[5],
+    flowNodeOccurrences: {
+      ...args[5].flowNodeOccurrences,
+      currentOpen: [malformed, ...args[5].flowNodeOccurrences.currentOpen.slice(1)],
+      retainedOpen: args[5].flowNodeOccurrences.retainedOpen.map((entry, index) =>
+        index === 0 ? { ...entry, occurrence: malformed } : entry),
+    },
+  };
+
+  assertInvalidIncoming(args, { publication });
+});
+
+test("rejects a nested publication getter without executing it", () => {
+  const args = successorArguments();
+  const carried = args[5].execution.current;
+  assert.ok(carried !== null);
+  let executed = false;
+  const current = { ...carried } as Record<string, unknown>;
+  Object.defineProperty(current, "state", {
+    enumerable: true,
+    get: () => {
+      executed = true;
+      return carried.state;
+    },
+  });
+
+  assertInvalidIncoming(args, {
+    publication: {
+      ...args[5],
+      execution: { ...args[5].execution, current },
+    },
+  });
+  assert.equal(executed, false);
+});
+
+test("rejects publication current logical-time drift from RuntimeState", () => {
+  const args = successorArguments();
+  const current = args[5].execution.current;
+  assert.ok(current !== null);
+  const publication = {
+    ...args[5],
+    execution: {
+      ...args[5].execution,
+      current: {
+        ...current,
+        state: { ...current.state, logicalTimeMs: current.state.logicalTimeMs + 1 },
+      },
+    },
+  };
+
+  assertInvalidIncoming(args, { publication });
+});
+
+test("rejects swapped retained occurrence anchors at continuation admission", () => {
+  const args = successorArguments();
+  const [first, second, ...rest] = args[5].flowNodeOccurrences.retainedOpen;
+  assert.ok(first !== undefined && second !== undefined);
+  const publication = {
+    ...args[5],
+    flowNodeOccurrences: {
+      ...args[5].flowNodeOccurrences,
+      retainedOpen: [
+        { ...first, anchor: second.anchor },
+        { ...second, anchor: first.anchor },
+        ...rest,
+      ],
+    },
+  };
+
+  assertInvalidIncoming(args, { publication });
+});
+
+test("terminal validation prevents enqueue and preserves the terminal receipt", () => {
+  const { runtime } = successorFixture();
+  const terminal = terminalFixture();
+  const before = terminalProcessReceipt(
+    publicationProgram,
+    publicationStart.instanceId,
+    terminal.state,
+    terminal.trace,
+    [],
+  );
+  let handlerStarted = false;
+  const pending: unknown[] = [];
+
+  assert.throws(() => {
+    validateWorkflowChainUpdate(
+      runtime,
+      WorkflowChainFenceState.Terminal,
+      publicationCompletion("UserTask_A", 2),
+    );
+    handlerStarted = true;
+    pending.push("unexpected");
+  }, isTerminalReceiptPending);
+  assert.equal(handlerStarted, false);
+  assert.deepEqual(pending, []);
+  assert.deepEqual(
+    terminalProcessReceipt(
+      publicationProgram,
+      publicationStart.instanceId,
+      terminal.state,
+      terminal.trace,
+      [],
+    ),
+    before,
   );
 });
 
@@ -280,6 +451,25 @@ function successorFixture() {
   return { state: step.state, publication, runtime };
 }
 
+function terminalFixture() {
+  const start = advanceScenario(publicationProgram, initialState, publicationStart);
+  const first = advanceScenario(
+    publicationProgram,
+    start.state,
+    publicationCompletion("UserTask_A"),
+  );
+  const terminal = advanceScenario(
+    publicationProgram,
+    first.state,
+    publicationCompletion("UserTask_B"),
+  );
+  assert.equal(terminal.state.control.kind, ControlStateKind.Completed);
+  return {
+    state: terminal.state,
+    trace: [...start.observations, ...first.observations, ...terminal.observations],
+  };
+}
+
 function assertInvalidIncoming(
   args: WorkflowChainSuccessorArguments,
   substitution: Readonly<{
@@ -304,6 +494,12 @@ function assertInvalidIncoming(
 function isInvalidContinuation(error: unknown): boolean {
   return error instanceof ApplicationFailure &&
     error.type === "BpmnWorkflowContinuationInvalid";
+}
+
+function isTerminalReceiptPending(error: unknown): boolean {
+  return error instanceof ApplicationFailure &&
+    error.type === "BpmnWorkflowTerminalReceiptPending" &&
+    error.nonRetryable === false;
 }
 
 function assertCapacityFailure(
