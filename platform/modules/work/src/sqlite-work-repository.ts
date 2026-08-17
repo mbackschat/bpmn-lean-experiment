@@ -71,7 +71,7 @@ export class SqliteWorkRepository {
     const exact = snapshotPublication(publication);
     this.#transaction(() => {
       const existing = this.#database.prepare(`
-        SELECT public_instance_json, work_locator FROM work_processes
+        SELECT public_instance_json, work_locator, observation FROM work_processes
         WHERE process_instance_id = ?
       `).get(exact.instance.processInstanceId);
       if (existing !== undefined) {
@@ -109,10 +109,18 @@ export class SqliteWorkRepository {
   #recordObservation(processInstanceId: string, observation: WorkProcessObservation): void {
     const exactId = requireString(processInstanceId, "processInstanceId");
     const exactObservation = requireObservation(observation);
-    const changed = this.#database.prepare(`
-      UPDATE work_processes SET observation = ? WHERE process_instance_id = ?
-    `).run(exactObservation, exactId).changes;
-    if (changed !== 1) throw new WorkRepositoryIntegrityError(`unknown Work registration ${exactId}`);
+    const retained = this.#database.prepare(`
+      UPDATE work_processes
+      SET observation = CASE
+        WHEN observation = 'closed' THEN 'closed'
+        ELSE ?
+      END
+      WHERE process_instance_id = ?
+      RETURNING observation
+    `).get(exactObservation, exactId);
+    if (retained === undefined) {
+      throw new WorkRepositoryIntegrityError(`unknown Work registration ${exactId}`);
+    }
   }
 
   async getClaim(task: WorkTaskReference): Promise<WorkClaimSnapshot> {
