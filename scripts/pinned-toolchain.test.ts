@@ -24,7 +24,7 @@ const derivedConsumers = [
 const documentedPins = [
   "README.md",
   "docs/CONTRIBUTOR-SETUP-GUIDE.md",
-  "docs/IMPLEMENTATION-MAP.md",
+  "docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md",
   "docs/SOURCES.md",
 ] as const;
 
