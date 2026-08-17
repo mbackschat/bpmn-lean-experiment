@@ -8,6 +8,8 @@ Register confirmed Process instances, search them by public identity, inspect co
 
 The same four Promise-only repository contracts have local SQLite and shared PostgreSQL adapters. PostgreSQL owns an ordinal-0003 checksum-bound migration for the Process registry, incident actions and source-ordered audit outbox, committed-execution prefix, and flow-node-occurrence prefix. Its adapters use a caller-owned `PostgresqlRuntime`; they never own the pool lifecycle. Ordinary projection writes append only a validated suffix, while the explicit rebuild operations alone may replace a complete prefix.
 
+Shared incident-action recovery is one exact action at a time and two-phase. It prepares Product 1 work outside PostgreSQL, but every action-state or outcome/outbox mutation remains inside the supplied lease-completion session; `reserved` and `indeterminate` actions first advance to `submitting`, and a later lease prepares the content-bound Product 1 result while leaving its outcome audit pending for the separate incident-audit family.
+
 ## Quick start
 
 ```sh
