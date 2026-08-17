@@ -8,6 +8,11 @@ export type ProjectionFreshness = Readonly<{
   maxAgeMs: number;
 }>;
 
+export type ProjectionRead<Value> = Readonly<{
+  value: Value;
+  freshness: ProjectionFreshness | null;
+}>;
+
 /** Validates and formats the exact public headers for a projection-backed success. */
 export function projectionFreshnessResponseHeaders(
   value: ProjectionFreshness,
