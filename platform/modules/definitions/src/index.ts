@@ -67,6 +67,9 @@ export {
 export {
   SqliteConfirmedProcessInstanceRepository,
 } from "./sqlite-confirmed-process-instance-repository.js";
+export {
+  PostgresqlConfirmedProcessInstanceRepository,
+} from "./postgresql-confirmed-process-instance-repository.js";
 export { DefinitionHttpRoutes } from "./http-routes.js";
 export type {
   DefinitionHttpRoutesOptions,
@@ -85,12 +88,18 @@ export {
   SqliteDefinitionPresentationRepository,
 } from "./sqlite-definition-presentation-repository.js";
 export {
+  PostgresqlDefinitionPresentationRepository,
+} from "./postgresql-definition-presentation-repository.js";
+export {
   DefinitionPresentationService,
 } from "./definition-presentation-service.js";
 export type {
   DefinitionPresentationServiceDependencies,
 } from "./definition-presentation-service.js";
 export { SqliteDefinitionRepository } from "./sqlite-definition-repository.js";
+export {
+  PostgresqlDefinitionRepository,
+} from "./postgresql-definition-repository.js";
 export { DefinitionSchemaResetRequiredError } from "./database-schema-epoch.js";
 export {
   DefinitionScheduleConflictError,
@@ -124,6 +133,9 @@ export {
   SqliteDefinitionScheduleRepository,
 } from "./sqlite-definition-schedule-repository.js";
 export {
+  PostgresqlDefinitionScheduleRepository,
+} from "./postgresql-definition-schedule-repository.js";
+export {
   MessageStartPublicationConflictError,
   MessageStartPublicationDeliveryUnavailableError,
   MessageStartPublicationIntegrityError,
@@ -144,6 +156,9 @@ export type {
 export {
   SqliteMessageStartPublicationRepository,
 } from "./sqlite-message-start-publication-repository.js";
+export {
+  PostgresqlMessageStartPublicationRepository,
+} from "./postgresql-message-start-publication-repository.js";
 export { MessageStartPublicationService } from "./message-start-publication-service.js";
 export { MessageStartPublicationHttpRoutes } from "./message-start-publication-http-routes.js";
 export type {

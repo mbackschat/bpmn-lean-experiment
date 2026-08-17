@@ -8,10 +8,18 @@ Deploy exact BPMN bytes, list and inspect versioned definitions, retrieve source
 
 The module reaches Product 1 only through the [engine gateway](../../foundation/engine-gateway/README.md) and stores exact bytes only through the [artifact store](../../foundation/artifact-store/README.md).
 
+Local mode uses the existing SQLite repositories. Shared mode uses caller-owned PostgreSQL runtime sessions and the Definitions-owned ordinal-0002 migration after the artifact-store migration. Both modes execute the same environment-neutral repository contract. PostgreSQL stores unrestricted exact Unicode identifiers as UTF-8 `bytea`, so the shared adapter does not narrow SQLite's accepted value domain.
+
 ## Quick start
 
 ```sh
 ./scripts/pnpm.sh --filter @bpmn-lean/platform-definitions test
+```
+
+The ordinary command is database-free. Run the explicit real-PostgreSQL witness separately:
+
+```sh
+./scripts/with-postgresql-18.sh ./scripts/pnpm.sh --filter @bpmn-lean/platform-definitions test:postgresql
 ```
 
 ## Learn more
@@ -20,5 +28,5 @@ The module reaches Product 1 only through the [engine gateway](../../foundation/
 - [Platform proposal](../../../docs/BPM-PLATFORM-PROPOSAL.md) owns definition deployment and exact-version start behavior.
 - [Diagram presentation decision](../../../docs/BPMN-DIAGRAM-PRESENTATION-DECISION.md) owns source and generated presentation provenance.
 - [Structured Human Work specification](../../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the catalog identity and Product 2 deployment boundary.
-- [Architecture](../../../docs/ARCHITECTURE.md#modules) owns module boundaries, persistence, and composition.
+- [Architecture](../../../docs/ARCHITECTURE.md#business-modules) owns module boundaries, persistence, and composition.
 - [Implementation map](../../../docs/IMPLEMENTATION-MAP.md) records the exact current Definitions surface.

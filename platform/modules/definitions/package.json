@@ -11,18 +11,22 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "migrations"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test:built": "node --test --test-concurrency=1 test/*.test.ts",
-    "test": "pnpm build && pnpm test:built"
+    "test": "pnpm build && pnpm test:built",
+    "test:postgresql:built": "node --test --test-concurrency=1 test/postgresql/*.test.ts",
+    "test:postgresql": "pnpm --filter @bpmn-lean/platform-definitions... build && pnpm test:postgresql:built"
   },
   "dependencies": {
     "@bpmn-lean/contract-types": "workspace:*",
     "@bpmn-lean/platform-artifact-store": "workspace:*",
     "@bpmn-lean/platform-bpmn-definition-projection": "workspace:*",
     "@bpmn-lean/platform-contracts": "workspace:*",
-    "@bpmn-lean/platform-engine-gateway": "workspace:*"
+    "@bpmn-lean/platform-engine-gateway": "workspace:*",
+    "@bpmn-lean/platform-postgresql-runtime": "workspace:*"
   }
 }
