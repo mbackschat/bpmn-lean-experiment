@@ -146,6 +146,7 @@ export {
   PostgresqlIncidentActionRepository,
 } from "./postgresql-incident-action-repository.js";
 export {
+  decodeOperateRecoveryCandidateKey,
   OperatePostgresqlRecoveryFamily,
   PostgresqlOperateRecoveryCandidateSource,
 } from "./postgresql-operate-recovery-candidates.js";

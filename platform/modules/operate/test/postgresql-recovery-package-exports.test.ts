@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  decodeOperateRecoveryCandidateKey,
   PostgresqlExecutionRecoveryStep,
   PostgresqlFlowNodeOccurrenceRecoveryStep,
   PostgresqlIncidentAuditRecoveryStep,
@@ -20,5 +21,6 @@ test("exports every standalone Operate PostgreSQL recovery step from the package
   assert.equal(typeof PostgresqlIncidentSnapshotReader, "function");
   assert.equal(typeof PostgresqlIncidentSnapshotRecoveryStep, "function");
   assert.equal(typeof PostgresqlIncidentSnapshotService, "function");
+  assert.equal(decodeOperateRecoveryCandidateKey(new TextEncoder().encode("id\u0000")), "id\u0000");
   assert.equal(PostgresqlOperateRecoveryStepKind.Complete, "complete");
 });
