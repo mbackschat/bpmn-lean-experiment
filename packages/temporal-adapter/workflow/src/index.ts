@@ -5,6 +5,7 @@ export * from "./command-publication-integration.js";
 export * from "./workflow-command-recovery.js";
 export * from "./workflow-command-ingress.js";
 export * from "./workflow-chain-capacity.js";
+export * from "./workflow-command-capacity.js";
 export * from "./workflow-chain-continuation.js";
 export * from "./workflow-semantic-candidate.js";
 export * from "./durable-timer-owner.js";

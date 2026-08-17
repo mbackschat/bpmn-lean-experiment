@@ -27,39 +27,68 @@ export type MessageDeliveryAcceptance = Readonly<{
   enqueue: boolean;
 }>;
 
+export function messageDeliveryWillEnqueue(
+  resolutions: ReadonlyArray<MessageDeliveryResolution>,
+  stimulus: DeliverMessageStimulus,
+  previouslyAccepted?: Stimulus,
+): boolean {
+  return classifyMessageDelivery(
+    resolutions,
+    stimulus,
+    previouslyAccepted,
+  ) === MessageDeliveryAdmission.Enqueue;
+}
+
 export function acceptMessageDelivery(
   resolutions: MessageDeliveryResolution[],
   stimulus: DeliverMessageStimulus,
   previouslyAccepted?: Stimulus,
 ): MessageDeliveryAcceptance {
-  const exact = findMessageDeliveryResolution(resolutions, stimulus);
-  if (exact !== undefined) {
-    return { enqueue: false };
+  switch (classifyMessageDelivery(resolutions, stimulus, previouslyAccepted)) {
+    case MessageDeliveryAdmission.Exact:
+      return { enqueue: false };
+    case MessageDeliveryAdmission.IdentityConflict:
+      resolutions.push({
+        kind: MessageDeliveryResolutionKind.RequestFailure,
+        stimulus,
+        failure: "commandIdentityConflict",
+      });
+      return { enqueue: false };
+    case MessageDeliveryAdmission.Enqueue:
+      resolutions.push({
+        kind: MessageDeliveryResolutionKind.Pending,
+        stimulus,
+      });
+      return { enqueue: true };
+    default:
+      throw new TypeError("Unsupported Message delivery admission");
   }
-  const accepted = previouslyAccepted ??
-    resolutions.find(
-      ({ stimulus: candidate }) =>
-        candidate.commandId === stimulus.commandId,
-    )?.stimulus;
-  if (
-    accepted !== undefined &&
-    (
-      stimulusCommandId(accepted) !== stimulus.commandId ||
-      !sameStimulus(accepted, stimulus)
-    )
-  ) {
-    resolutions.push({
-      kind: MessageDeliveryResolutionKind.RequestFailure,
-      stimulus,
-      failure: "commandIdentityConflict",
-    });
-    return { enqueue: false };
+}
+
+enum MessageDeliveryAdmission {
+  Exact = "exact",
+  IdentityConflict = "identityConflict",
+  Enqueue = "enqueue",
+}
+
+function classifyMessageDelivery(
+  resolutions: ReadonlyArray<MessageDeliveryResolution>,
+  stimulus: DeliverMessageStimulus,
+  previouslyAccepted?: Stimulus,
+): MessageDeliveryAdmission {
+  if (findMessageDeliveryResolution(resolutions, stimulus) !== undefined) {
+    return MessageDeliveryAdmission.Exact;
   }
-  resolutions.push({
-    kind: MessageDeliveryResolutionKind.Pending,
-    stimulus,
-  });
-  return { enqueue: true };
+  const accepted = previouslyAccepted ?? resolutions.find(
+    ({ stimulus: candidate }) => candidate.commandId === stimulus.commandId,
+  )?.stimulus;
+  return accepted !== undefined &&
+      (
+        stimulusCommandId(accepted) !== stimulus.commandId ||
+        !sameStimulus(accepted, stimulus)
+      )
+    ? MessageDeliveryAdmission.IdentityConflict
+    : MessageDeliveryAdmission.Enqueue;
 }
 
 export function recordMessageDeliveryOutcome(

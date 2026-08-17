@@ -51,6 +51,7 @@ import {
   WorkflowChainCapacityState,
   WorkflowChainRecoveryIngressKind,
 } from "./workflow-chain-capacity.js";
+import { WorkflowCommandCapacityState } from "./workflow-command-capacity.js";
 import {
   bpmnWorkflowContinuationInvalidFailureType,
   emptyWorkflowPublicationSegmentDirectory,
@@ -67,6 +68,7 @@ export type WorkflowChainRuntime = {
   readonly segmentDirectory: WorkflowPublicationSegmentDirectoryV1;
   readonly recovery: WorkflowCommandRecoveryLedger;
   readonly capacity: WorkflowChainCapacityState;
+  readonly commandCapacity: WorkflowCommandCapacityState;
 };
 
 export enum WorkflowChainFenceState {
@@ -126,6 +128,7 @@ export function initializeWorkflowChain(
             processInstanceId: start.instanceId,
             runOrdinal: 1,
           }),
+          commandCapacity: new WorkflowCommandCapacityState(),
         },
         restored: null,
       };
@@ -152,6 +155,7 @@ export function initializeWorkflowChain(
             processInstanceId: start.instanceId,
             runOrdinal: input.runOrdinal,
           }),
+          commandCapacity: new WorkflowCommandCapacityState(),
         },
         restored: {
           state: validated.state,

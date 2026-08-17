@@ -54,6 +54,8 @@ export async function waitForHostReadiness(
   waitForTimer: (durationMs: number) => Promise<void>,
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>,
   effectActivityPolicy: EffectActivityPolicy,
+  reserveStimulus: (stimulus: Stimulus) => boolean,
+  hostRecheckRequested: () => boolean,
 ): Promise<HostReadinessAction> {
   const timers = projectOpenTimers(state);
   const effects = projectOpenEffects(state);
@@ -68,7 +70,12 @@ export async function waitForHostReadiness(
       if (stimulus.kind === StimulusKind.DeliverMessage) {
         pendingStimuli.push(stimulus);
       } else {
-        enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
+        enqueueStimulus(
+          acceptedStimuli,
+          pendingStimuli,
+          stimulus,
+          reserveStimulus,
+        );
       }
     }
     return HostReadinessAction.RecheckMainLoop;
@@ -80,7 +87,10 @@ export async function waitForHostReadiness(
   }
   if (timers.length === 0 && effects.length === 0) {
     await condition(
-      () => pendingStimuli.length > 0 || isTerminalProcessState(state),
+      () =>
+        pendingStimuli.length > 0 ||
+        isTerminalProcessState(state) ||
+        hostRecheckRequested(),
     );
     return HostReadinessAction.DrainSemanticQueue;
   }
@@ -100,7 +110,12 @@ export async function waitForHostReadiness(
           // Its Update handler already accepted it; re-accepting would drop it from the queue.
           pendingStimuli.push(stimulus);
         } else {
-          enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
+          enqueueStimulus(
+            acceptedStimuli,
+            pendingStimuli,
+            stimulus,
+            reserveStimulus,
+          );
         }
       }
       return HostReadinessAction.RecheckMainLoop;
@@ -131,6 +146,7 @@ export async function waitForHostReadiness(
       acceptedStimuli,
       pendingStimuli,
       timerFiringStimulus(timer),
+      reserveStimulus,
     );
     return HostReadinessAction.DrainSemanticQueue;
   }
@@ -183,6 +199,7 @@ export async function waitForHostReadiness(
         acceptedStimuli,
         pendingStimuli,
         command.stimulus,
+        reserveStimulus,
       );
       return HostReadinessAction.DrainSemanticQueue;
     case "failure":
@@ -196,10 +213,14 @@ export function enqueueStimulus(
   acceptedStimuli: Stimulus[],
   pendingStimuli: Stimulus[],
   stimulus: Stimulus,
+  reserveStimulus: (stimulus: Stimulus) => boolean = () => true,
 ): void {
   const commandId = stimulusCommandId(stimulus);
   const accepted = acceptedStimulus(acceptedStimuli, commandId);
   if (accepted === undefined) {
+    if (!reserveStimulus(stimulus)) {
+      return;
+    }
     acceptedStimuli.push(stimulus);
     pendingStimuli.push(stimulus);
     return;

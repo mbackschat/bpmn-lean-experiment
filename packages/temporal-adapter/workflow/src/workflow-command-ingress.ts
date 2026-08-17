@@ -10,6 +10,7 @@ import type {
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
+  ApplicationFailure,
   defineSignal,
   defineUpdate,
   setHandler,
@@ -17,6 +18,7 @@ import {
 import {
   bpmnCompleteUserTaskUpdateName,
   bpmnDeliverMessageSignalName,
+  bpmnWorkflowRolloverInProgressFailureType,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnCompleteUserTaskUpdateArguments,
@@ -44,6 +46,7 @@ import {
 } from "./incident-update-handler.js";
 import {
   acceptMessageDelivery,
+  messageDeliveryWillEnqueue,
 } from "./message-delivery-ledger.js";
 import {
   acceptWorkflowChainSignalCapacity,
@@ -57,6 +60,10 @@ import {
   validateWorkflowChainUpdate,
   WorkflowChainFenceState,
 } from "./workflow-chain-continuation.js";
+import {
+  WorkflowCommandCapacityPreflightKind,
+} from "./workflow-command-capacity.js";
+import { WorkflowCommandRecoveryLookupKind } from "./workflow-command-recovery.js";
 import { enqueueStimulus } from "./workflow-host-readiness.js";
 import {
   acceptedStimulus,
@@ -87,6 +94,7 @@ type WorkflowCommandIngressOptions = Readonly<{
   boundedDeadlineSchedulerFor: (
     state: RuntimeState,
   ) => BoundedDeadlineScheduler | undefined;
+  reserveStimulus: (stimulus: Stimulus) => boolean;
 }>;
 
 /**
@@ -109,6 +117,7 @@ export function registerWorkflowCommandIngress(
     currentFence,
     eventRaceScheduler,
     boundedDeadlineSchedulerFor,
+    reserveStimulus,
   } = options;
 
   setHandler(bpmnDeliverMessageSignal, (stimulus: DeliverMessageStimulus) => {
@@ -120,6 +129,24 @@ export function registerWorkflowCommandIngress(
       acceptedStimuli,
       stimulus.commandId,
     );
+    // A conflict record also retains the full Signal stimulus, so its byte bound must pass before
+    // either a pending or request-failure Message record can become Workflow state.
+    if (!acceptUnqueuedSignalCapacity(
+      workflowChain,
+      stimulus,
+      currentPublication().execution.headRevision,
+    )) {
+      return;
+    }
+    if (
+      messageDeliveryWillEnqueue(
+        messageDeliveryResolutions,
+        stimulus,
+        accepted,
+      ) && !reserveStimulus(stimulus)
+    ) {
+      return;
+    }
     const acceptance = acceptMessageDelivery(
       messageDeliveryResolutions,
       stimulus,
@@ -141,27 +168,35 @@ export function registerWorkflowCommandIngress(
   setHandler(
     bpmnCompleteUserTaskUpdate,
     async (stimulus) => {
-      const recovered = recoveredWorkflowCommandOutcome(workflowChain, stimulus);
-      if (recovered !== undefined) {
-        return recovered;
-      }
-      // A bounded completion races its deadline, so the scheduler classifies it by activation
-      // instead of the loop draining it in arrival order.
-      const state = currentState();
-      if (
-        boundedDeadlineSchedulerFor(state)?.recordCompletionCallback(
-          state,
-          stimulus,
-        ) === true
-      ) {
-        acceptedStimuli.push(stimulus);
-      } else {
-        enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-      }
-      return await awaitWorkflowCommandOutcome(
-        stimulus.commandId,
-        () => commandOutcome(currentPublication(), stimulus.commandId),
-        workflowChain?.capacity ?? null,
+      return await runWorkflowUpdate(
+        workflowChain,
+        stimulus,
+        currentPublication().execution.headRevision,
+        async () => {
+          // A bounded completion races its deadline, so the scheduler classifies it by activation
+          // instead of the loop draining it in arrival order.
+          const state = currentState();
+          if (
+            boundedDeadlineSchedulerFor(state)?.recordCompletionCallback(
+              state,
+              stimulus,
+            ) === true
+          ) {
+            acceptedStimuli.push(stimulus);
+          } else {
+            enqueueStimulus(
+              acceptedStimuli,
+              pendingStimuli,
+              stimulus,
+              reserveStimulus,
+            );
+          }
+          return await awaitWorkflowCommandOutcome(
+            stimulus.commandId,
+            () => commandOutcome(currentPublication(), stimulus.commandId),
+            workflowChain?.capacity ?? null,
+          );
+        },
       );
     },
     {
@@ -173,6 +208,11 @@ export function registerWorkflowCommandIngress(
           stimulus,
           currentPublication().execution.headRevision,
         );
+        validateWorkflowUpdateCapacity(
+          workflowChain,
+          stimulus,
+          currentPublication().execution.headRevision,
+        );
       },
     },
   );
@@ -180,15 +220,23 @@ export function registerWorkflowCommandIngress(
   setHandler(
     bpmnRetryEffectIncidentUpdate,
     async (stimulus: RetryIncidentStimulus) => {
-      const recovered = recoveredWorkflowCommandOutcome(workflowChain, stimulus);
-      if (recovered !== undefined) {
-        return recovered;
-      }
-      enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-      return await awaitWorkflowCommandOutcome(
-        stimulus.commandId,
-        () => commandOutcome(currentPublication(), stimulus.commandId),
-        workflowChain?.capacity ?? null,
+      return await runWorkflowUpdate(
+        workflowChain,
+        stimulus,
+        currentPublication().execution.headRevision,
+        async () => {
+          enqueueStimulus(
+            acceptedStimuli,
+            pendingStimuli,
+            stimulus,
+            reserveStimulus,
+          );
+          return await awaitWorkflowCommandOutcome(
+            stimulus.commandId,
+            () => commandOutcome(currentPublication(), stimulus.commandId),
+            workflowChain?.capacity ?? null,
+          );
+        },
       );
     },
     {
@@ -200,6 +248,11 @@ export function registerWorkflowCommandIngress(
           stimulus,
           currentPublication().execution.headRevision,
         );
+        validateWorkflowUpdateCapacity(
+          workflowChain,
+          stimulus,
+          currentPublication().execution.headRevision,
+        );
       },
     },
   );
@@ -207,15 +260,23 @@ export function registerWorkflowCommandIngress(
   setHandler(
     bpmnCancelIncidentProcessUpdate,
     async (stimulus: CancelIncidentProcessStimulus) => {
-      const recovered = recoveredWorkflowCommandOutcome(workflowChain, stimulus);
-      if (recovered !== undefined) {
-        return recovered;
-      }
-      enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-      return await awaitWorkflowCommandOutcome(
-        stimulus.commandId,
-        () => commandOutcome(currentPublication(), stimulus.commandId),
-        workflowChain?.capacity ?? null,
+      return await runWorkflowUpdate(
+        workflowChain,
+        stimulus,
+        currentPublication().execution.headRevision,
+        async () => {
+          enqueueStimulus(
+            acceptedStimuli,
+            pendingStimuli,
+            stimulus,
+            reserveStimulus,
+          );
+          return await awaitWorkflowCommandOutcome(
+            stimulus.commandId,
+            () => commandOutcome(currentPublication(), stimulus.commandId),
+            workflowChain?.capacity ?? null,
+          );
+        },
       );
     },
     {
@@ -231,7 +292,102 @@ export function registerWorkflowCommandIngress(
           stimulus,
           currentPublication().execution.headRevision,
         );
+        validateWorkflowUpdateCapacity(
+          workflowChain,
+          stimulus,
+          currentPublication().execution.headRevision,
+        );
       },
     },
   );
+}
+
+function acceptUnqueuedSignalCapacity(
+  workflowChain: WorkflowChainRuntime | null,
+  stimulus: Stimulus,
+  publicRevision: number,
+): boolean {
+  if (workflowChain === null) {
+    return true;
+  }
+  const preflight = workflowChain.commandCapacity.preflightStimulus(stimulus);
+  switch (preflight.kind) {
+    case WorkflowCommandCapacityPreflightKind.Ready:
+      return true;
+    case WorkflowCommandCapacityPreflightKind.CapacityExceeded:
+      workflowChain.capacity.retainObservedCapacity(
+        preflight.failure,
+        publicRevision,
+      );
+      return false;
+    case WorkflowCommandCapacityPreflightKind.Rollover:
+      throw new TypeError("Signal stimulus preflight cannot request rollover");
+    default:
+      return assertNever(preflight);
+  }
+}
+
+async function runWorkflowUpdate(
+  workflowChain: WorkflowChainRuntime | null,
+  stimulus: Stimulus,
+  publicRevision: number,
+  execute: () => Promise<CommandOutcome>,
+): Promise<CommandOutcome> {
+  const recovered = recoveredWorkflowCommandOutcome(workflowChain, stimulus);
+  if (workflowChain === null) {
+    return recovered ?? await execute();
+  }
+  const preflight = workflowChain.commandCapacity.beginUpdate(
+    stimulus,
+    recovered === undefined,
+  );
+  requireReadyUpdateCapacity(workflowChain, preflight, publicRevision);
+  try {
+    return recovered ?? await execute();
+  } finally {
+    workflowChain.commandCapacity.finishUpdate();
+  }
+}
+
+function validateWorkflowUpdateCapacity(
+  workflowChain: WorkflowChainRuntime | null,
+  stimulus: Stimulus,
+  publicRevision: number,
+): void {
+  if (workflowChain === null) {
+    return;
+  }
+  const recovered = workflowChain.recovery.lookup(stimulus);
+  const preflight = workflowChain.commandCapacity.preflightUpdate(
+    stimulus,
+    recovered.kind !== WorkflowCommandRecoveryLookupKind.Resolved,
+  );
+  requireReadyUpdateCapacity(workflowChain, preflight, publicRevision);
+}
+
+function requireReadyUpdateCapacity(
+  workflowChain: WorkflowChainRuntime,
+  preflight: ReturnType<WorkflowChainRuntime["commandCapacity"]["preflightUpdate"]>,
+  publicRevision: number,
+): void {
+  switch (preflight.kind) {
+    case WorkflowCommandCapacityPreflightKind.Ready:
+      return;
+    case WorkflowCommandCapacityPreflightKind.Rollover:
+      throw ApplicationFailure.retryable(
+        "Workflow rollover or ingress drain is required before accepting another Update",
+        bpmnWorkflowRolloverInProgressFailureType,
+      );
+    case WorkflowCommandCapacityPreflightKind.CapacityExceeded:
+      throw workflowChain.capacity.applicationFailureForObservedCapacity(
+        preflight.failure,
+        publicRevision,
+      );
+    default:
+      return assertNever(preflight);
+  }
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported Workflow command ingress variant: ${String(value)}`);
 }

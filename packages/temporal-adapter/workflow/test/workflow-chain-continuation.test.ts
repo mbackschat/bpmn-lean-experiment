@@ -25,7 +25,9 @@ import { ApplicationFailure } from "@temporalio/workflow";
 import {
   WorkflowCommandRecoveryLedger,
   WorkflowCommandRecoveryPreflightKind,
+  WorkflowChainCapacityState,
   WorkflowChainFenceState,
+  WorkflowCommandCapacityState,
   buildWorkflowChainSuccessor,
   createCommandPublicationState,
   integrateCommandPublication,
@@ -510,6 +512,11 @@ function successorFixture() {
       segments: [],
     },
     recovery: new WorkflowCommandRecoveryLedger(),
+    capacity: new WorkflowChainCapacityState({
+      processInstanceId: publicationStart.instanceId,
+      runOrdinal: 1,
+    }),
+    commandCapacity: new WorkflowCommandCapacityState(),
   };
   return { state: step.state, publication, runtime };
 }

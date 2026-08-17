@@ -23,6 +23,7 @@ import type {
 import {
   MessageDeliveryResolutionKind,
   ProcessCommandResultKind,
+  WorkflowChainBudgetKind,
   WorkflowChainCommandRecoveryResponseKind,
   bpmnWorkflowChainCapacityExhaustedFailureType,
   bpmnWorkflowChainCommandRecoveryQueryName,
@@ -30,6 +31,7 @@ import {
   contentBoundUpdateId,
   decodeWorkflowTerminalResult,
   requireWorkflowChainCommandRecoveryResponse,
+  requireWorkflowChainCanonicalByteBudget,
   semanticCommandResult,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
@@ -86,6 +88,10 @@ export type WorkflowChainUpdateResolution = Readonly<{
 export async function resolveWorkflowChainUpdate(
   resolution: WorkflowChainUpdateResolution,
 ): Promise<ProcessCommandResult> {
+  requireWorkflowChainCanonicalByteBudget(
+    WorkflowChainBudgetKind.SemanticStimulusBytes,
+    resolution.stimulus,
+  );
   const deadline = Date.now() + operationDeadlineMs;
   const handle = resolution.client.getHandle<BpmnProcessWorkflow>(
     resolution.workflowId,
@@ -145,6 +151,10 @@ export type WorkflowChainMessageResolution = Readonly<{
 export async function resolveWorkflowChainMessage(
   resolution: WorkflowChainMessageResolution,
 ): Promise<ProcessCommandResult> {
+  requireWorkflowChainCanonicalByteBudget(
+    WorkflowChainBudgetKind.SemanticStimulusBytes,
+    resolution.stimulus,
+  );
   const deadline = Date.now() + operationDeadlineMs;
   const handle = resolution.client.getHandle<BpmnProcessWorkflow>(
     resolution.workflowId,

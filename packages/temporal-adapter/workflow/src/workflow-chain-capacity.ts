@@ -317,6 +317,15 @@ export class WorkflowChainCapacityState {
     return workflowChainCapacityApplicationFailure(failure);
   }
 
+  applicationFailureForObservedCapacity(
+    bound: WorkflowChainObservedCapacityBound,
+    publicRevision: number,
+  ): ApplicationFailure {
+    return workflowChainCapacityApplicationFailure(
+      capacityFailure(bound, this.#context(publicRevision)),
+    );
+  }
+
   #context(publicRevision: number): WorkflowChainCapacityContext {
     return { ...this.#identity, publicRevision };
   }

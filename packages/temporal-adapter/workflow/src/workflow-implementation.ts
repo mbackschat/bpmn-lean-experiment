@@ -114,6 +114,7 @@ import type {
   WorkflowChainRuntime,
 } from "./workflow-chain-continuation.js";
 import { registerWorkflowCommandIngress } from "./workflow-command-ingress.js";
+import { WorkflowCommandCapacityPreflightKind } from "./workflow-command-capacity.js";
 import { registerWorkflowPublicationQueries } from "./workflow-publication-segments.js";
 
 export const bpmnTraceQuery =
@@ -177,6 +178,26 @@ export async function runBpmnProcessWithHostEffects(
     createCommandPublicationState(semanticProcess, start.instanceId);
   const workflowChain = chainInitialization?.runtime ?? null;
   let workflowChainFence = WorkflowChainFenceState.Active;
+  const reserveStimulus = (stimulus: Stimulus): boolean => {
+    if (workflowChain === null) {
+      return true;
+    }
+    const preflight = workflowChain.commandCapacity.reserveStimulus(stimulus);
+    switch (preflight.kind) {
+      case WorkflowCommandCapacityPreflightKind.Ready:
+        return true;
+      case WorkflowCommandCapacityPreflightKind.CapacityExceeded:
+        workflowChain.capacity.retainObservedCapacity(
+          preflight.failure,
+          commandPublication.execution.headRevision,
+        );
+        return false;
+      case WorkflowCommandCapacityPreflightKind.Rollover:
+        throw new TypeError("Direct stimulus reservation cannot request rollover");
+      default:
+        return assertNever(preflight);
+    }
+  };
   const effectActivityPolicy = effectActivityPolicyForProfile(
     semanticProcess.identity.semanticProfile,
   );
@@ -212,7 +233,12 @@ export async function runBpmnProcessWithHostEffects(
   // A successor resumes only committed state. Pending host work and the original Start never cross
   // the Run boundary, while an initial Run must place Start before any registered handler can run.
   if (chainInitialization?.restored === null || chainInitialization === null) {
-    enqueueStimulus(acceptedStimuli, pendingStimuli, start);
+    enqueueStimulus(
+      acceptedStimuli,
+      pendingStimuli,
+      start,
+      reserveStimulus,
+    );
   }
 
   if (workflowChain !== null) {
@@ -263,9 +289,14 @@ export async function runBpmnProcessWithHostEffects(
     workflowChain,
     currentState: () => state,
     currentPublication: () => commandPublication,
-    currentFence: () => workflowChainFence,
+    currentFence: () =>
+      workflowChainFence === WorkflowChainFenceState.Active &&
+        workflowChain?.commandCapacity.rolloverRequested() === true
+        ? WorkflowChainFenceState.Rollover
+        : workflowChainFence,
     eventRaceScheduler,
     boundedDeadlineSchedulerFor,
+    reserveStimulus,
   });
 
   while (true) {
@@ -277,6 +308,7 @@ export async function runBpmnProcessWithHostEffects(
           "BpmnSemanticQueueFailure",
         );
       }
+      workflowChain?.commandCapacity.releaseStimulus(stimulus);
       if (workflowChain?.capacity.hasPendingFailure() === true) {
         continue;
       }
@@ -423,6 +455,7 @@ export async function runBpmnProcessWithHostEffects(
       workflowChain !== null &&
       (
         workflowChainFence === WorkflowChainFenceState.Rollover ||
+        workflowChain.commandCapacity.rolloverRequested() ||
         workflowChainRolloverTriggered(workflowChain)
       )
     ) {
@@ -452,6 +485,10 @@ export async function runBpmnProcessWithHostEffects(
       waitForTimer,
       executeEffect,
       effectActivityPolicy,
+      reserveStimulus,
+      () =>
+        workflowChain?.capacity.hasPendingFailure() === true ||
+        workflowChain?.commandCapacity.rolloverRequested() === true,
     );
     if (readinessAction === HostReadinessAction.RecheckMainLoop) {
       continue;
