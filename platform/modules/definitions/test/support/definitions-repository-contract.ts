@@ -355,14 +355,12 @@ export function registerDefinitionsRepositoryContract(
         ),
       ]);
       assert.equal(winners.filter((value) => value !== null).length, 1);
-      assert.equal(
-        (await messages.compareAndSet(
-          first.publicationId,
-          MessageStartPublicationState.Starting,
-          MessageStartPublicationState.Accepted,
-        ))?.state,
+      const accepted = await messages.compareAndSet(
+        first.publicationId,
+        MessageStartPublicationState.Starting,
         MessageStartPublicationState.Accepted,
       );
+      assert.equal(accepted?.state, MessageStartPublicationState.Accepted);
       await assert.rejects(
         messages.compareAndSet(
           first.publicationId,
@@ -375,7 +373,7 @@ export function registerDefinitionsRepositoryContract(
         (await messages.get(first.publicationId))?.state,
         MessageStartPublicationState.Accepted,
       );
-      assert.deepEqual(await messages.listForReconciliation(), []);
+      assert.deepEqual(await messages.listForReconciliation(), [accepted]);
     });
   });
 }

@@ -159,10 +159,26 @@ export class DefinitionScheduleService {
 
   async reconcileAll(): Promise<void> {
     for (const candidate of await this.#dependencies.schedules.listForReconciliation()) {
-      const current = await this.#dependencies.schedules.get(candidate.reference);
-      if (current !== null) {
-        await this.#reconcile(current);
-      }
+      await this.reconcileSchedule(candidate.reference);
+    }
+  }
+
+  /** Re-reads one exact Schedule identity before performing any host work. */
+  async reconcileSchedule(reference: DefinitionScheduleReference): Promise<void> {
+    const selected = cloneScheduleReference(reference);
+    requireScheduleReference(selected);
+    const current = await this.#dependencies.schedules.get(selected);
+    if (
+      current !== null &&
+      !(
+        current.state === DefinitionScheduleState.Started &&
+        current.cleanupComplete &&
+        await this.#dependencies.confirmedInstances.isConfirmed(
+          current.identity.processInstanceId,
+        )
+      )
+    ) {
+      await this.#reconcile(current);
     }
   }
 

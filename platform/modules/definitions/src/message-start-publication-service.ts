@@ -107,16 +107,28 @@ export class MessageStartPublicationService {
 
   async reconcileAll(): Promise<void> {
     for (const candidate of await this.#dependencies.publications.listForReconciliation()) {
-      const current = await this.#dependencies.publications.get(
-        candidate.publicationId,
-      );
-      if (current === null) {
-        continue;
-      }
-      const request = this.#requestFromRecord(current);
-      const prepared = await this.#prepare(current.publicationId, request, current);
-      await this.#reconcile(current, prepared.request);
+      await this.reconcilePublication(candidate.publicationId);
     }
+  }
+
+  /** Re-reads one exact publication identity before performing any host work. */
+  async reconcilePublication(publicationId: string): Promise<void> {
+    requirePublicationId(publicationId);
+    const current = await this.#dependencies.publications.get(publicationId);
+    if (current === null) return;
+    if (current.state === MessageStartPublicationState.Accepted) {
+      if (
+        !await this.#dependencies.confirmedInstances.isConfirmed(
+          current.identity.processInstanceId,
+        )
+      ) {
+        await this.#publishAccepted(current);
+      }
+      return;
+    }
+    const request = this.#requestFromRecord(current);
+    const prepared = await this.#prepare(publicationId, request, current);
+    await this.#reconcile(current, prepared.request);
   }
 
   async #prepare(
@@ -298,17 +310,21 @@ export class MessageStartPublicationService {
   ): Promise<MessageStartPublicationRecord> {
     const reconciled = await this.#reconcileLifecycle(record, request);
     if (reconciled.state === MessageStartPublicationState.Accepted) {
-      await this.#dependencies.confirmedInstances.publishConfirmed({
-        instance: {
-          processInstanceId: reconciled.identity.processInstanceId,
-          definition: toPublicDefinition(reconciled.definition),
-        },
-        locator: this.#dependencies.locators.canonicalLocator(
-          reconciled.identity.processInstanceId,
-        ),
-      });
+      await this.#publishAccepted(reconciled);
     }
     return reconciled;
+  }
+
+  async #publishAccepted(record: MessageStartPublicationRecord): Promise<void> {
+    await this.#dependencies.confirmedInstances.publishConfirmed({
+      instance: {
+        processInstanceId: record.identity.processInstanceId,
+        definition: toPublicDefinition(record.definition),
+      },
+      locator: this.#dependencies.locators.canonicalLocator(
+        record.identity.processInstanceId,
+      ),
+    });
   }
 
   async #reconcileLifecycle(

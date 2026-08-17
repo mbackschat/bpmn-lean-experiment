@@ -128,7 +128,7 @@ export class PostgresqlDefinitionScheduleRepository
     const result = await this.#runtime.query({
       text: `
         SELECT * FROM bpmn_platform.definition_schedules
-        WHERE state IN ('creating', 'creatingHost', 'scheduled', 'cancelling')
+        WHERE state IN ('creating', 'creatingHost', 'scheduled', 'cancelling', 'started')
           OR NOT cleanup_complete
         ORDER BY process_id ASC, version ASC, schedule_id ASC
       `,

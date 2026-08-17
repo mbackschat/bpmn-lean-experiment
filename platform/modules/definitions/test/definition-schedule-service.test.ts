@@ -98,6 +98,11 @@ test("accepted response lost after action exhaustion persists one started instan
     JSON.stringify(fixture.confirmedPublications),
     /configured-base-1/u,
   );
+
+  const hostCalls = fixture.host.scheduleCalls.length;
+  await fixture.service.reconcileSchedule(reference());
+  assert.equal(fixture.host.scheduleCalls.length, hostCalls);
+  assert.equal(fixture.confirmedPublications.length, 1);
 });
 
 test("restart completes terminal cleanup after a successful delete response is lost", async () => {

@@ -22,6 +22,8 @@ import {
   SqliteMessageStartPublicationRepository,
 } from "@bpmn-lean/platform-definitions";
 import type {
+  ConfirmedProcessInstancePublication,
+  ConfirmedProcessInstanceReservationResult,
   DefinitionMetadata,
   DefinitionRepository,
   ExactArtifactStore,
@@ -105,7 +107,66 @@ test("accepted is the only state exposing the reserved semantic instance", async
       JSON.stringify(capture.confirmedPublications),
       /private-workflow/u,
     );
+
+    const hostCalls = host.prepares + host.starts + host.describes;
+    await sut.reconcilePublication("accepted");
+    assert.equal(host.prepares + host.starts + host.describes, hostCalls);
+    assert.equal(capture.confirmedPublications.length, 1);
     repository.close();
+  });
+});
+
+test("restart republishes a stored accepted Message Start after confirmation persistence failed", async () => {
+  await withDatabase(async ({ databaseFile, artifacts, definitions }) => {
+    const host = new RecordingHost();
+    const confirmed = new FailFirstConfirmationRepository();
+    const capture = publicationCapture();
+    const firstRepository = new SqliteMessageStartPublicationRepository(databaseFile);
+    const first = service(
+      firstRepository,
+      host,
+      artifacts,
+      definitions,
+      capture,
+      confirmed,
+    );
+
+    await assert.rejects(
+      first.put("accepted-recovery", request()),
+      /injected confirmation failure/u,
+    );
+    assert.equal(
+      (await firstRepository.get("accepted-recovery"))?.state,
+      MessageStartPublicationState.Accepted,
+    );
+    firstRepository.close();
+
+    const reopenedRepository = new SqliteMessageStartPublicationRepository(databaseFile);
+    const unavailable = unavailableAcceptedRecoveryDependencies();
+    try {
+      await service(
+        reopenedRepository,
+        unavailable.host,
+        unavailable.artifacts,
+        unavailable.definitions,
+        capture,
+        confirmed,
+      ).reconcileAll();
+      assert.deepEqual(unavailable.calls, {
+        prepare: 0,
+        artifactGet: 0,
+        definitionGet: 0,
+      });
+      assert.deepEqual(capture.confirmedPublications, [{
+        instance: {
+          processInstanceId: "instance:accepted-recovery",
+          definition: definition(),
+        },
+        locator: "canonical-locator:instance%3Aaccepted-recovery",
+      }]);
+    } finally {
+      reopenedRepository.close();
+    }
   });
 });
 
@@ -258,6 +319,7 @@ test("describe infrastructure failure preserves starting and returns an unavaila
 });
 
 class RecordingHost implements MessageStartPublicationHost {
+  prepares = 0;
   starts = 0;
   sdkStarts = 0;
   describes = 0;
@@ -269,6 +331,7 @@ class RecordingHost implements MessageStartPublicationHost {
   startedRequest: MessageStartPublicationHostRequest | null = null;
 
   async prepare(request: MessageStartPublicationHostRequest) {
+    this.prepares += 1;
     if (this.mutatePreparationRequest) {
       request.bytes.fill(9);
       Object.assign(request.definition.source, { id: "mutated-source" });
@@ -317,9 +380,10 @@ function service(
   artifacts: ExactArtifactStore,
   definitions: DefinitionRepository,
   capture = publicationCapture(),
+  confirmedRepository = new InMemoryConfirmedProcessInstanceRepository(),
 ): MessageStartPublicationService {
   const confirmedInstances = new ConfirmedProcessInstancePublicationService({
-    repository: new InMemoryConfirmedProcessInstanceRepository(),
+    repository: confirmedRepository,
     operate: { recordConfirmedProcessInstance: async () => undefined },
     work: {
       recordConfirmedProcessInstance: async (publication) => {
@@ -348,6 +412,61 @@ function service(
       },
     },
   });
+}
+
+class FailFirstConfirmationRepository extends InMemoryConfirmedProcessInstanceRepository {
+  #fail = true;
+
+  override async confirm(
+    publication: ConfirmedProcessInstancePublication,
+  ): Promise<ConfirmedProcessInstanceReservationResult> {
+    if (this.#fail) {
+      this.#fail = false;
+      throw new Error("injected confirmation failure");
+    }
+    return await super.confirm(publication);
+  }
+}
+
+function unavailableAcceptedRecoveryDependencies() {
+  const calls = { prepare: 0, artifactGet: 0, definitionGet: 0 };
+  const host: MessageStartPublicationHost = {
+    prepare: async () => {
+      calls.prepare += 1;
+      throw new Error("accepted recovery must not prepare through Product 1");
+    },
+    start: async () => {
+      throw new Error("accepted recovery must not start through Product 1");
+    },
+    describe: async () => {
+      throw new Error("accepted recovery must not describe through Product 1");
+    },
+  };
+  const artifacts: ExactArtifactStore = {
+    put: async () => {
+      throw new Error("accepted recovery must not write artifacts");
+    },
+    get: async () => {
+      calls.artifactGet += 1;
+      throw new Error("accepted recovery must not read artifacts");
+    },
+  };
+  const definitions: DefinitionRepository = {
+    allocateNext: async () => {
+      throw new Error("accepted recovery must not allocate definitions");
+    },
+    listLatest: async () => {
+      throw new Error("accepted recovery must not list definitions");
+    },
+    listVersions: async () => {
+      throw new Error("accepted recovery must not list versions");
+    },
+    get: async () => {
+      calls.definitionGet += 1;
+      throw new Error("accepted recovery must not read definitions");
+    },
+  };
+  return { calls, host, artifacts, definitions };
 }
 
 function expectedWorkflowId(processInstanceId: string): string {

@@ -111,45 +111,69 @@ export class ConfirmedProcessInstancePublicationService {
 
   async reconcileDeliveries(): Promise<void> {
     for (const record of await this.#repository.listForReconciliation()) {
-      if (record.state === ConfirmedProcessInstanceState.Confirmed) {
-        await this.#deliver(record);
-      }
+      await this.reconcileDelivery(record.instance.processInstanceId);
     }
+  }
+
+  /** Re-reads and delivers one exact confirmed registration when still pending. */
+  async reconcileDelivery(processInstanceId: string): Promise<void> {
+    const current = await this.#repository.get(processInstanceId);
+    if (
+      current?.state === ConfirmedProcessInstanceState.Confirmed &&
+      (current.operatePending || current.workPending)
+    ) {
+      await this.#deliver(current);
+    }
+  }
+
+  /** Reports only an exact durable confirmation, never host-derived evidence. */
+  async isConfirmed(processInstanceId: string): Promise<boolean> {
+    return (await this.#repository.get(processInstanceId))?.state ===
+      ConfirmedProcessInstanceState.Confirmed;
   }
 
   /** Dispatches a durable reserved row once; already-dispatched rows are describe-only. */
   async reconcileDirect(host: DirectProcessInstanceHost): Promise<void> {
     for (const initial of await this.#repository.listForReconciliation()) {
-      if (
+      await this.reconcileDirectProcessInstance(
+        initial.instance.processInstanceId,
+        host,
+      );
+    }
+  }
+
+  /** Re-reads one durable direct start before dispatch or describe-only recovery. */
+  async reconcileDirectProcessInstance(
+    processInstanceId: string,
+    host: DirectProcessInstanceHost,
+  ): Promise<void> {
+    const initial = await this.#repository.get(processInstanceId);
+    if (
+      initial === null ||
+      (
         initial.state !== ConfirmedProcessInstanceState.Reserved &&
         initial.state !== ConfirmedProcessInstanceState.Starting &&
         initial.state !== ConfirmedProcessInstanceState.Indeterminate
-      ) {
-        continue;
-      }
-      if (initial.intent === null) {
-        await this.#transitionToIntegrity(initial);
-        throw new ConfirmedProcessInstanceIntegrityError(
-          initial.instance.processInstanceId,
-        );
-      }
-      const reservation = {
-        instance: structuredClone(initial.instance),
-        locator: initial.locator,
-        intent: { ...initial.intent },
-      };
-      if (initial.state === ConfirmedProcessInstanceState.Reserved) {
-        await this.startDirect(reservation, host);
-        continue;
-      }
-      const reconciled = await this.#describeOnly(
-        initial,
-        reservation,
-        host,
-      );
-      if (reconciled.state === ConfirmedProcessInstanceState.Confirmed) {
-        await this.#deliver(reconciled);
-      }
+      )
+    ) {
+      return;
+    }
+    if (initial.intent === null) {
+      await this.#transitionToIntegrity(initial);
+      throw new ConfirmedProcessInstanceIntegrityError(processInstanceId);
+    }
+    const reservation = {
+      instance: structuredClone(initial.instance),
+      locator: initial.locator,
+      intent: { ...initial.intent },
+    };
+    if (initial.state === ConfirmedProcessInstanceState.Reserved) {
+      await this.startDirect(reservation, host);
+      return;
+    }
+    const reconciled = await this.#describeOnly(initial, reservation, host);
+    if (reconciled.state === ConfirmedProcessInstanceState.Confirmed) {
+      await this.#deliver(reconciled);
     }
   }
 

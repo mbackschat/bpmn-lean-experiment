@@ -69,6 +69,39 @@ test("retains subscriber acknowledgements and retries only missing delivery", as
   });
 });
 
+test("single-item delivery re-reads one exact registration", async () => {
+  const repository = new InMemoryConfirmedProcessInstanceRepository();
+  const delivered: string[] = [];
+  const other = {
+    ...structuredClone(publication),
+    instance: {
+      ...structuredClone(publication.instance),
+      processInstanceId: "instance-2",
+    },
+  };
+  await repository.confirm(publication);
+  await repository.confirm(other);
+  const service = new ConfirmedProcessInstancePublicationService({
+    repository,
+    operate: {
+      recordConfirmedProcessInstance: async ({ instance }) => {
+        delivered.push(`operate:${instance.processInstanceId}`);
+      },
+    },
+    work: {
+      recordConfirmedProcessInstance: async ({ instance }) => {
+        delivered.push(`work:${instance.processInstanceId}`);
+      },
+    },
+  });
+
+  await service.reconcileDelivery(publication.instance.processInstanceId);
+
+  assert.deepEqual(delivered, ["operate:instance-1", "work:instance-1"]);
+  assert.equal((await repository.get("instance-1"))?.operatePending, false);
+  assert.equal((await repository.get("instance-2"))?.operatePending, true);
+});
+
 test("never redispatches a direct start after ambiguous transmission", async () => {
   const repository = new InMemoryConfirmedProcessInstanceRepository();
   let starts = 0;

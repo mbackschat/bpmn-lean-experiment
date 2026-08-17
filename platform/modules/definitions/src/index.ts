@@ -161,6 +161,15 @@ export {
 } from "./postgresql-message-start-publication-repository.js";
 export { MessageStartPublicationService } from "./message-start-publication-service.js";
 export { MessageStartPublicationHttpRoutes } from "./message-start-publication-http-routes.js";
+export {
+  DefinitionsRecoveryFamily,
+  PostgresqlDefinitionsRecoveryCandidateSource,
+  decodeDefinitionsRecoveryCandidateKey,
+  encodeDefinitionsRecoveryCandidateKey,
+} from "./postgresql-definitions-recovery-candidate-source.js";
+export type {
+  DefinitionsRecoveryCandidate,
+} from "./postgresql-definitions-recovery-candidate-source.js";
 export type {
   MessageStartPublicationDescriptionResult,
   MessageStartPublicationHost,

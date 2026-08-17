@@ -81,7 +81,7 @@ implements MessageStartPublicationRepository {
   async listForReconciliation(): Promise<ReadonlyArray<MessageStartPublicationRecord>> {
     return this.#database.prepare(`
       ${selectColumns}
-      WHERE state IN ('reserved', 'starting', 'indeterminate')
+      WHERE state IN ('reserved', 'starting', 'indeterminate', 'accepted')
       ORDER BY publication_id COLLATE BINARY ASC
     `).all().map(decodeRecord);
   }

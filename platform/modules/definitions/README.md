@@ -10,6 +10,8 @@ The module reaches Product 1 only through the [engine gateway](../../foundation/
 
 Local mode uses the existing SQLite repositories. Shared mode uses caller-owned PostgreSQL runtime sessions and the Definitions-owned ordinal-0002 migration after the artifact-store migration. Both modes execute the same environment-neutral repository contract. PostgreSQL stores unrestricted exact Unicode identifiers as UTF-8 `bytea`, so the shared adapter does not narrow SQLite's accepted value domain.
 
+Shared recovery discovers bounded, read-only candidate keys for confirmed delivery, direct start, Schedule, and Message Start. The exported canonical key codec and exact-key service methods let the recovery worker lease work outside this module, while Definitions re-reads durable state before any host call and retains ownership of lifecycle meaning.
+
 ## Quick start
 
 ```sh

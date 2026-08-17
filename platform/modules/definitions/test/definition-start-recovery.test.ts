@@ -135,7 +135,7 @@ test("restart dispatches one durable reserved direct start and never redispatche
       publications,
     );
 
-    await service.reconcileAll();
+    await service.reconcileProcessInstance(reservation.instance.processInstanceId);
     await service.reconcileAll();
 
     assert.equal(starts, 1);

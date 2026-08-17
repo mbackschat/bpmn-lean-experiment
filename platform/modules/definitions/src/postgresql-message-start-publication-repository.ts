@@ -108,7 +108,7 @@ export class PostgresqlMessageStartPublicationRepository
     const result = await this.#runtime.query({
       text: `
         SELECT * FROM bpmn_platform.message_start_publications
-        WHERE state IN ('reserved', 'starting', 'indeterminate')
+        WHERE state IN ('reserved', 'starting', 'indeterminate', 'accepted')
         ORDER BY publication_id ASC
       `,
     });

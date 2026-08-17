@@ -98,7 +98,7 @@ implements DefinitionScheduleRepository {
   async listForReconciliation(): Promise<ReadonlyArray<DefinitionScheduleRecord>> {
     return this.#database.prepare(`
       ${selectColumns}
-      WHERE state IN ('creating', 'creatingHost', 'scheduled', 'cancelling')
+      WHERE state IN ('creating', 'creatingHost', 'scheduled', 'cancelling', 'started')
          OR cleanup_complete = 0
       ORDER BY process_id COLLATE BINARY ASC, version ASC,
         schedule_id COLLATE BINARY ASC
