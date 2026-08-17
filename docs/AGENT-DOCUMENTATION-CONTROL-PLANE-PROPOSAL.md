@@ -21,7 +21,7 @@ The recommended decision is approval. The current ownership model protects truth
 |---|---|---|---|---|
 | Proposal | `be62f0c` | `fork-turns-none` | `approve-with-required-edits` | `3b58c68` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `c3bd8ad` | `not-recorded` | `pending` | `not-applicable` |
 
 The proposal stage used two correction rounds. The context-cold review found five required edits, which correction `871d500` closed; its audit exposed one packet-evidence integration defect introduced by that correction. Correction `3b58c68` made the migration matrix reviewer-visible and digest-bound in the closure packet contract, and the same reviewer approved the final audit without new findings.
 

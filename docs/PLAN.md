@@ -29,12 +29,12 @@ The latest complete repository gate is the 2026-08-16 M6 closure run at exit 0. 
 
 The last uncontended comparable warm-pipeline baselines remain 15,986.670 ms for 30 cases at `13cdec8` and 13,476 ms for 28 cases at `ac2813c`. No uncontended baseline exists for the later catalogs, so a new measurement must be interpreted against the per-case trend and must not replace these merely because it passed.
 
-For the active documentation increment, the immutable proposal target is `be62f0c`; two correction rounds closed at `3b58c68`, and owner adoption is recorded at `4964b83`. The focused pre-implementation governance gate passed 39/39. The complete wrapper attempt was bounded at 60 seconds and reached later package tests before the outer bound expired, so it is not recorded as a complete green result.
+For the active documentation increment, the immutable proposal target is `be62f0c`; two correction rounds closed at `3b58c68`, and owner adoption is recorded at `4964b83`. Implementation target `c3bd8ad` passes the strict harness typecheck and the 63-test focused control-plane, migration, packet, policy, link, registry, and path-routing gate. Complete verification and context-cold closure review remain.
 
 ## Exact resume point
 
 Active work ID: `DOC-CONTROL-PLANE`.
 
-Next action: finish the five-map claim migration and executable routing/status/matrix guards, then validate the claim-granular matrix against baseline `b5a2f1a` and the committed closure target. The required oracle is the focused documentation suite, matrix validator, `./scripts/verify.sh`, `git diff --check`, and a context-cold closure review.
+Next action: validate the claim-granular matrix against baseline `b5a2f1a` and implementation target `c3bd8ad`, run `./scripts/verify.sh`, and submit the matrix-bound packet to a context-cold closure reviewer. After approval, record the receipt, delete the one-off proposal, and restore `H2-WORKFLOW-CHAIN` as active.
 
 Stop if a baseline implementation, absence, proof, evidence, product, or semantic claim has no single verified destination; if routing cannot cover a tracked or pending implementation-bearing path without hidden agent knowledge; if a new dependency is required; or if the migration would change Horizon 2 ordering or any governed product or semantic contract.
