@@ -232,7 +232,11 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
-  platform/foundation/artifact-store: {}
+  platform/foundation/artifact-store:
+    dependencies:
+      '@bpmn-lean/platform-postgresql-runtime':
+        specifier: workspace:*
+        version: link:../postgresql-runtime
 
   platform/foundation/audit:
     dependencies:
