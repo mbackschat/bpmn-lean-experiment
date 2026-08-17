@@ -248,7 +248,9 @@ if (baseUrl === undefined) {
     }).page(exact.instance.processInstanceId, { afterRevision: 0, limit: 1 });
     assert.equal(read.kind, PostgresqlProjectionReadKind.Available);
     if (read.kind === PostgresqlProjectionReadKind.Available) {
-      assert.ok(read.read.freshness.observedAfterEpochMs > 0);
+      const freshness = read.read.freshness;
+      assert.ok(freshness !== null);
+      assert.ok(freshness.observedAfterEpochMs > 0);
     }
     const metrics = await new PostgresqlFlowNodeMetricsReader({
       runtime,
@@ -256,7 +258,9 @@ if (baseUrl === undefined) {
     }).read(exact.instance.definition);
     assert.equal(metrics.kind, PostgresqlProjectionReadKind.Available);
     if (metrics.kind === PostgresqlProjectionReadKind.Available) {
-      assert.ok(metrics.read.freshness.observedAfterEpochMs > 0);
+      const freshness = metrics.read.freshness;
+      assert.ok(freshness !== null);
+      assert.ok(freshness.observedAfterEpochMs > 0);
     }
   });
 }
