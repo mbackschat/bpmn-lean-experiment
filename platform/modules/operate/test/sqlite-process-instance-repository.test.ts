@@ -137,6 +137,36 @@ test("persists private classification across independent connections without a c
   });
 });
 
+test("does not reopen a closed registration after a delayed active observation", async () => {
+  await withRepository(async (repository) => {
+    await repository.recordConfirmed(publication(instance("closed-before-active", 1)));
+    await repository.recordObservation("closed-before-active", "closed");
+
+    await repository.recordObservation("closed-before-active", "active");
+
+    assert.equal(
+      (await repository.getRegistration("closed-before-active"))?.observation,
+      "closed",
+    );
+    assert.deepEqual(await repository.listNonclosed(10), []);
+  });
+});
+
+test("does not reopen a closed registration after a delayed indeterminate observation", async () => {
+  await withRepository(async (repository) => {
+    await repository.recordConfirmed(publication(instance("closed-before-indeterminate", 1)));
+    await repository.recordObservation("closed-before-indeterminate", "closed");
+
+    await repository.recordObservation("closed-before-indeterminate", "indeterminate");
+
+    assert.equal(
+      (await repository.getRegistration("closed-before-indeterminate"))?.observation,
+      "closed",
+    );
+    assert.deepEqual(await repository.listNonclosed(10), []);
+  });
+});
+
 test("independent concurrent equivalent records converge to one row and ordinal", async () => {
   await withDatabaseFile(async (databaseFile) => {
     const results = await race(databaseFile, [

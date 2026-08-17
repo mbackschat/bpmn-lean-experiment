@@ -162,7 +162,12 @@ export class SqliteProcessInstanceRepository implements ProcessInstanceRepositor
     const exactId = requireNonemptyString(processInstanceId, "processInstanceId");
     const exactObservation = requireObservation(observation);
     const changes = this.#database.prepare(`
-      UPDATE process_instances SET observation = ? WHERE process_instance_id = ?
+      UPDATE process_instances
+      SET observation = CASE
+        WHEN observation = 'closed' THEN observation
+        ELSE ?
+      END
+      WHERE process_instance_id = ?
     `).run(exactObservation, exactId).changes;
     if (changes !== 1) {
       throw new ProcessInstanceIdentityIntegrityError(exactId);
