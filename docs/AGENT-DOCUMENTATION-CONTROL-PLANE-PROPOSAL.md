@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft. Awaiting owner decision after the requested context-cold review. This proposal changes no current documentation role, startup instruction, implementation claim, product contract, semantic meaning, proof boundary, or verification gate until approved and implemented separately.
+**Owner-approved on 2026-08-17 after the completed context-cold review.** Implementation has not started. This proposal changes no current documentation role, startup instruction, implementation claim, product contract, semantic meaning, proof boundary, or verification gate until implemented separately.
 
 ## Decision requested
 
@@ -14,9 +14,11 @@ The recommended decision is approval. The current ownership model protects truth
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `be62f0c` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `be62f0c` | `fork-turns-none` | `approve-with-required-edits` | `3b58c68` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal stage used two correction rounds. The context-cold review found five required edits, which correction `871d500` closed; its audit exposed one packet-evidence integration defect introduced by that correction. Correction `3b58c68` made the migration matrix reviewer-visible and digest-bound in the closure packet contract, and the same reviewer approved the final audit without new findings.
 
 This proposal is documentation governance rather than a material semantic proposal under [the independent cold-review gate](TESTING-SPEC.md#independent-cold-review-gate). It selects no BPMN meaning, semantic profile, CIB relationship, checked-source or Semantic Process representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. The owner nevertheless requested a context-cold proposal review because an inefficient control plane can repeatedly misroute implementation work.
 
