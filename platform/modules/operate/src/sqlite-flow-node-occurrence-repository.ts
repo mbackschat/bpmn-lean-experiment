@@ -91,7 +91,10 @@ export class SqliteFlowNodeOccurrenceRepository
       const prior = this.#read(registration.instance.processInstanceId, execution) ??
         createEmptyFlowNodeOccurrenceProjection(identity);
       const next = applyFlowNodeOccurrencePage(prior, page, execution);
-      if (JSON.stringify(prior) !== JSON.stringify(next)) this.#persist(next);
+      if (JSON.stringify(prior) !== JSON.stringify(next)) {
+        this.#writeHeader(next);
+        this.#appendSuffix(prior, next);
+      }
       return structuredClone(next);
     });
   }
@@ -140,7 +143,7 @@ export class SqliteFlowNodeOccurrenceRepository
           "rebuilt occurrence publication changed before persistence",
         );
       }
-      this.#persist(verified);
+      this.#replace(verified);
       return structuredClone(verified);
     });
   }
@@ -160,7 +163,7 @@ export class SqliteFlowNodeOccurrenceRepository
       const identity = occurrenceIdentityFromRegistration(registration);
       const prior = this.#read(processInstanceId, execution);
       if (prior === null) {
-        this.#persist({
+        this.#writeHeader({
           ...createEmptyFlowNodeOccurrenceProjection(identity),
           status,
         });
@@ -364,7 +367,7 @@ export class SqliteFlowNodeOccurrenceRepository
     return execution;
   }
 
-  #persist(image: FlowNodeOccurrenceProjectionImage): void {
+  #writeHeader(image: FlowNodeOccurrenceProjectionImage): void {
     const processInstanceId = image.identity.processInstanceId;
     this.#database.prepare(`
       INSERT INTO flow_node_occurrence_publications (
@@ -392,12 +395,77 @@ export class SqliteFlowNodeOccurrenceRepository
       image.lastCommittedAtEpochMs,
       JSON.stringify(image.currentOpen),
     );
+  }
+
+  #replace(image: FlowNodeOccurrenceProjectionImage): void {
+    const processInstanceId = image.identity.processInstanceId;
+    this.#writeHeader(image);
     this.#database.prepare(`
       DELETE FROM flow_node_occurrence_batches WHERE process_instance_id = ?
     `).run(processInstanceId);
     this.#database.prepare(`
       DELETE FROM flow_node_occurrences WHERE hosting_process_instance_id = ?
     `).run(processInstanceId);
+    this.#insertBatches(processInstanceId, image.batches);
+    this.#insertOccurrences(processInstanceId, image.occurrences);
+  }
+
+  #appendSuffix(
+    prior: FlowNodeOccurrenceProjectionImage,
+    next: FlowNodeOccurrenceProjectionImage,
+  ): void {
+    const processInstanceId = next.identity.processInstanceId;
+    this.#insertBatches(
+      processInstanceId,
+      next.batches.slice(prior.batches.length),
+    );
+    const priorById = new Map(prior.occurrences.map((occurrence) => [
+      occurrenceKey(occurrence),
+      occurrence,
+    ]));
+    const newOccurrences: ProjectedFlowNodeOccurrence[] = [];
+    const updateOccurrence = this.#database.prepare(`
+      UPDATE flow_node_occurrences SET occurrence_json = ?
+      WHERE hosting_process_instance_id = ?
+        AND start_revision = ?
+        AND start_index = ?
+        AND occurrence_json = ?
+    `);
+    for (const occurrence of next.occurrences) {
+      const priorOccurrence = priorById.get(occurrenceKey(occurrence));
+      if (priorOccurrence === undefined) {
+        newOccurrences.push(occurrence);
+      } else if (
+        canonicalOccurrenceText(priorOccurrence) !== canonicalOccurrenceText(occurrence)
+      ) {
+        requireTerminalSuccessor(priorOccurrence, occurrence);
+        const changes = updateOccurrence.run(
+          canonicalOccurrenceText(occurrence),
+          processInstanceId,
+          occurrence.id.startRevision,
+          occurrence.id.startIndex,
+          canonicalOccurrenceText(priorOccurrence),
+        ).changes;
+        if (changes !== 1) {
+          throw new FlowNodeOccurrenceIntegrityError(
+            "occurrence terminal update lost its exact retained prefix",
+          );
+        }
+      }
+      priorById.delete(occurrenceKey(occurrence));
+    }
+    if (priorById.size > 0) {
+      throw new FlowNodeOccurrenceIntegrityError(
+        "occurrence suffix removed a retained occurrence",
+      );
+    }
+    this.#insertOccurrences(processInstanceId, newOccurrences);
+  }
+
+  #insertBatches(
+    processInstanceId: string,
+    batches: readonly FlowNodeOccurrenceBatch[],
+  ): void {
     const insertBatch = this.#database.prepare(`
       INSERT INTO flow_node_occurrence_batches (
         process_instance_id,
@@ -408,7 +476,7 @@ export class SqliteFlowNodeOccurrenceRepository
         batch_json
       ) VALUES (?, ?, ?, ?, ?, ?)
     `);
-    for (const batch of image.batches) {
+    for (const batch of batches) {
       insertBatch.run(
         processInstanceId,
         batch.fromRevision,
@@ -418,6 +486,12 @@ export class SqliteFlowNodeOccurrenceRepository
         canonicalBatchText(batch),
       );
     }
+  }
+
+  #insertOccurrences(
+    processInstanceId: string,
+    occurrences: readonly ProjectedFlowNodeOccurrence[],
+  ): void {
     const insertOccurrence = this.#database.prepare(`
       INSERT INTO flow_node_occurrences (
         hosting_process_instance_id,
@@ -426,7 +500,7 @@ export class SqliteFlowNodeOccurrenceRepository
         occurrence_json
       ) VALUES (?, ?, ?, ?)
     `);
-    for (const occurrence of image.occurrences) {
+    for (const occurrence of occurrences) {
       insertOccurrence.run(
         processInstanceId,
         occurrence.id.startRevision,
@@ -446,6 +520,31 @@ export class SqliteFlowNodeOccurrenceRepository
       if (this.#database.isTransaction) this.#database.exec("ROLLBACK");
       throw error;
     }
+  }
+}
+
+function occurrenceKey(occurrence: ProjectedFlowNodeOccurrence): string {
+  return JSON.stringify(occurrence.id);
+}
+
+function requireTerminalSuccessor(
+  prior: ProjectedFlowNodeOccurrence,
+  next: ProjectedFlowNodeOccurrence,
+): void {
+  if (
+    prior.terminal !== null ||
+    prior.terminalAtEpochMs !== null ||
+    next.terminal === null ||
+    next.terminalAtEpochMs === null ||
+    canonicalOccurrenceText(next) !== canonicalOccurrenceText({
+      ...prior,
+      terminal: next.terminal,
+      terminalAtEpochMs: next.terminalAtEpochMs,
+    })
+  ) {
+    throw new FlowNodeOccurrenceIntegrityError(
+      "occurrence suffix changed an accepted occurrence outside terminal closure",
+    );
   }
 }
 

@@ -11,9 +11,11 @@ import {
   SqliteFlowNodeOccurrenceRepository,
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
+import type { FlowNodeOccurrencePage } from "@bpmn-lean/platform-contracts";
 
 import { firstPage, secondPage } from "./execution-publication-fixture.ts";
 import {
+  occurrenceRootScope,
   occurrenceFirstPage,
   occurrenceRegistration,
   occurrenceSecondPage,
@@ -103,6 +105,39 @@ test("reopen reconstructs exact rows and revision-zero replacement is atomic", a
   }
 });
 
+test("appends, advances, and marks occurrences without deleting accepted rows", async () => {
+  await withRepositories(async ({
+    instances,
+    executions,
+    occurrences,
+    databaseFile,
+  }) => {
+    const registration = await recordRegistration(instances);
+    await executions.applyPage(registration, firstPage(3));
+    await executions.applyPage(registration, secondPage());
+    await occurrences.applyPage(registration, occurrenceFirstPage(3));
+    const prefixBatches = semanticRows(databaseFile)[0];
+    installDeleteGuards(databaseFile, [
+      "flow_node_occurrence_batches",
+      "flow_node_occurrences",
+    ]);
+
+    const outcomes = await Promise.allSettled([
+      occurrences.applyPage(registration, occurrenceSuffixWithSuccessor()),
+      occurrences.mark(registration, FlowNodeOccurrenceProjectionStatus.Gap),
+    ]);
+
+    assert.deepEqual(outcomes.map(({ status }) => status), ["fulfilled", "fulfilled"]);
+    const image = await occurrences.get(registration.instance.processInstanceId);
+    assert.equal(image?.headRevision, 3);
+    assert.equal(image?.status, FlowNodeOccurrenceProjectionStatus.Gap);
+    assert.equal(image?.occurrences.length, 2);
+    assert.equal(image?.occurrences[0]?.terminal, "completed");
+    assert.equal(image?.occurrences[1]?.terminal, null);
+    assert.deepEqual(semanticRows(databaseFile)[0].slice(0, prefixBatches.length), prefixBatches);
+  });
+});
+
 async function recordRegistration(instances: SqliteProcessInstanceRepository) {
   await instances.recordConfirmed({
     instance: occurrenceRegistration.instance,
@@ -138,7 +173,7 @@ async function withRepositories(
   }
 }
 
-function semanticRows(databaseFile: string): readonly unknown[] {
+function semanticRows(databaseFile: string): readonly [unknown[], unknown[]] {
   const database = new DatabaseSync(databaseFile, { readOnly: true });
   try {
     return [
@@ -151,6 +186,56 @@ function semanticRows(databaseFile: string): readonly unknown[] {
         ORDER BY hosting_process_instance_id, start_revision, start_index
       `).all(),
     ];
+  } finally {
+    database.close();
+  }
+}
+
+function occurrenceSuffixWithSuccessor(): FlowNodeOccurrencePage {
+  const page = occurrenceSecondPage();
+  const batch = page.batches[0];
+  const transition = batch?.transitions[0];
+  assert.ok(batch);
+  assert.ok(transition);
+  const id = {
+    processInstanceId: occurrenceRegistration.instance.processInstanceId,
+    startRevision: 3,
+    startIndex: 0,
+  } as const;
+  const started = {
+    id,
+    processId: occurrenceRegistration.instance.definition.processId,
+    elementId: "Task_2",
+    owner: occurrenceRootScope,
+  } as const;
+  return {
+    ...page,
+    batches: [{
+      ...batch,
+      transitions: [{
+        ...transition,
+        lifecycle: {
+          started: [started],
+          ended: transition.lifecycle.ended,
+        },
+      }],
+    }],
+    currentOpen: [{ ...started, startedAtEpochMs: batch.committedAtEpochMs }],
+  };
+}
+
+function installDeleteGuards(databaseFile: string, tables: readonly string[]): void {
+  const database = new DatabaseSync(databaseFile);
+  try {
+    for (const table of tables) {
+      database.exec(`
+        CREATE TRIGGER reject_delete_${table}
+        BEFORE DELETE ON ${table}
+        BEGIN
+          SELECT RAISE(ABORT, 'accepted occurrence prefix was deleted');
+        END
+      `);
+    }
   } finally {
     database.close();
   }

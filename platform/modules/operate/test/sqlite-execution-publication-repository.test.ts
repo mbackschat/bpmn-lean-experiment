@@ -125,6 +125,30 @@ test("suppresses every read after a durable gap or unavailable classification", 
   });
 });
 
+test("appends and marks without deleting accepted publication rows", async () => {
+  await withRepositories(async (databaseFile, publications, registered) => {
+    await publications.applyPage(registered, firstPage());
+    const prefix = publicationChildRows(databaseFile);
+    installDeleteGuards(databaseFile, [
+      "execution_publication_batches",
+      "execution_publication_records",
+    ]);
+
+    const outcomes = await Promise.allSettled([
+      publications.applyPage(registered, secondPage()),
+      publications.mark(registered, ExecutionPublicationProjectionStatus.Gap),
+    ]);
+
+    assert.deepEqual(outcomes.map(({ status }) => status), ["fulfilled", "fulfilled"]);
+    const retained = publicationChildRows(databaseFile);
+    assert.deepEqual(retained[0].slice(0, prefix[0].length), prefix[0]);
+    assert.deepEqual(retained[1].slice(0, prefix[1].length), prefix[1]);
+    const image = await publications.get("Instance_1");
+    assert.equal(image?.headRevision, 3);
+    assert.equal(image?.status, ExecutionPublicationProjectionStatus.Gap);
+  });
+});
+
 test("fails closed when a retained record changes independently from its batch", async () => {
   await withRepositories(async (databaseFile, publications, registered) => {
     await publications.applyPage(registered, firstPage());
@@ -165,5 +189,40 @@ async function withRepositories(
     publications.close();
     instances.close();
     await rm(root, { recursive: true, force: true });
+  }
+}
+
+function publicationChildRows(databaseFile: string): readonly [unknown[], unknown[]] {
+  const database = new DatabaseSync(databaseFile, { readOnly: true });
+  try {
+    return [
+      database.prepare(`
+        SELECT * FROM execution_publication_batches
+        ORDER BY process_instance_id, from_revision
+      `).all(),
+      database.prepare(`
+        SELECT * FROM execution_publication_records
+        ORDER BY process_instance_id, revision
+      `).all(),
+    ];
+  } finally {
+    database.close();
+  }
+}
+
+function installDeleteGuards(databaseFile: string, tables: readonly string[]): void {
+  const database = new DatabaseSync(databaseFile);
+  try {
+    for (const table of tables) {
+      database.exec(`
+        CREATE TRIGGER reject_delete_${table}
+        BEFORE DELETE ON ${table}
+        BEGIN
+          SELECT RAISE(ABORT, 'accepted publication prefix was deleted');
+        END
+      `);
+    }
+  } finally {
+    database.close();
   }
 }

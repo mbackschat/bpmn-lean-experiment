@@ -79,7 +79,13 @@ export class SqliteExecutionPublicationRepository
       const prior = this.#read(registration.instance.processInstanceId) ??
         createEmptyExecutionPublicationProjection(identity);
       const next = applyExecutionPublicationPage(prior, page);
-      if (!sameJson(prior, next)) this.#persist(next);
+      if (!sameJson(prior, next)) {
+        this.#writeHeader(next);
+        this.#insertBatches(
+          next.identity.processInstanceId,
+          next.batches.slice(prior.batches.length),
+        );
+      }
       return structuredClone(next);
     });
   }
@@ -105,7 +111,7 @@ export class SqliteExecutionPublicationRepository
     }
     return this.#transaction(() => {
       this.#requireRegistration(registration);
-      this.#persist(candidate);
+      this.#replace(candidate);
       return structuredClone(candidate);
     });
   }
@@ -121,7 +127,7 @@ export class SqliteExecutionPublicationRepository
       const identity = projectionIdentityFromRegistration(registration);
       const prior = this.#read(registration.instance.processInstanceId) ??
         createEmptyExecutionPublicationProjection(identity);
-      if (prior.status !== status) this.#persist({ ...prior, status });
+      if (prior.status !== status) this.#writeHeader({ ...prior, status });
     });
   }
 
@@ -321,7 +327,7 @@ export class SqliteExecutionPublicationRepository
     }
   }
 
-  #persist(image: ExecutionPublicationProjectionImage): void {
+  #writeHeader(image: ExecutionPublicationProjectionImage): void {
     const id = image.identity.processInstanceId;
     this.#database.prepare(`
       INSERT INTO execution_publications (
@@ -355,12 +361,24 @@ export class SqliteExecutionPublicationRepository
       canonicalText(image.scopes),
       image.current === null ? null : canonicalText(image.current),
     );
+  }
+
+  #replace(image: ExecutionPublicationProjectionImage): void {
+    const id = image.identity.processInstanceId;
+    this.#writeHeader(image);
     this.#database.prepare(`
       DELETE FROM execution_publication_records WHERE process_instance_id = ?
     `).run(id);
     this.#database.prepare(`
       DELETE FROM execution_publication_batches WHERE process_instance_id = ?
     `).run(id);
+    this.#insertBatches(id, image.batches);
+  }
+
+  #insertBatches(
+    processInstanceId: string,
+    batches: readonly CommittedTransitionBatch[],
+  ): void {
     const insertBatch = this.#database.prepare(`
       INSERT INTO execution_publication_batches (
         process_instance_id, from_revision, through_revision, command_id, batch_json
@@ -371,16 +389,21 @@ export class SqliteExecutionPublicationRepository
         process_instance_id, revision, batch_from_revision, record_json
       ) VALUES (?, ?, ?, ?)
     `);
-    for (const batch of image.batches) {
+    for (const batch of batches) {
       insertBatch.run(
-        id,
+        processInstanceId,
         batch.fromRevision,
         batch.throughRevision,
         batch.commandId,
         canonicalText(batch),
       );
       for (const record of batch.transitions) {
-        insertRecord.run(id, record.revision, batch.fromRevision, canonicalText(record));
+        insertRecord.run(
+          processInstanceId,
+          record.revision,
+          batch.fromRevision,
+          canonicalText(record),
+        );
       }
     }
   }
