@@ -28,6 +28,7 @@ import type {
 } from "./work-contracts.js";
 import {
   decodeStoredPublicInstance,
+  decodeStoredAuditEvent,
   decodeStoredClaimReleaseAction,
   completionResult,
   decodeStoredCompletionAction,
@@ -354,7 +355,7 @@ export class SqliteWorkRepository {
       WHERE delivered = 0 ORDER BY ordinal ASC
     `).all().map((row) => ({
       ordinal: requirePositiveSafeInteger(row.ordinal, "outbox ordinal"),
-      event: snapshotAuditEvent(JSON.parse(requireString(row.event_json, "event_json"))),
+      event: decodeStoredAuditEvent(row.event_json),
     }));
   }
 
@@ -437,9 +438,7 @@ export class SqliteWorkRepository {
       WHERE action_id = ? AND action_outcome = ?
     `).get(exact.action.actionId, exact.action.outcome);
     if (logical !== undefined) {
-      const retained = snapshotAuditEvent(JSON.parse(
-        requireString(logical.event_json, "stored logical event_json"),
-      ));
+      const retained = decodeStoredAuditEvent(logical.event_json);
       if (!sameAuditLogicalEvent(retained, exact)) {
         throw new WorkRepositoryIntegrityError(
           `audit outcome ${exact.action.actionId}/${exact.action.outcome} conflicts`,

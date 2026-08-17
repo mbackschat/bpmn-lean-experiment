@@ -232,6 +232,7 @@ function decodeRow(row: Record<string, SQLOutputValue>): StoredAuditEvent {
     const encoded = requireString(row.event_json, "event_json");
     const event = decodeWorkAuditEvent(JSON.parse(encoded));
     if (
+      JSON.stringify(event) !== encoded ||
       event.eventId !== requireString(row.event_id, "event_id") ||
       event.actorId !== requireString(row.actor_id, "actor_id") ||
       event.taskId.processInstanceId !== requireString(row.task_process_instance_id, "task_process_instance_id") ||

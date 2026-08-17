@@ -52,7 +52,16 @@ export function snapshotPublication(
 }
 
 export function decodeStoredPublicInstance(value: unknown): PublicProcessInstanceIdentity {
-  return decodePublicProcessInstanceIdentity(parseStoredJson(value, "public_instance_json"));
+  try {
+    return decodeCanonicalStoredJson(
+      value,
+      "public_instance_json",
+      decodePublicProcessInstanceIdentity,
+    );
+  } catch (error: unknown) {
+    if (error instanceof WorkRepositoryStoredValueError) throw error;
+    throw new WorkRepositoryStoredValueError(error);
+  }
 }
 
 export function snapshotTaskReference(task: WorkTaskReference): WorkTaskReference {
@@ -200,6 +209,15 @@ export function snapshotAuditEvent(event: WorkAuditEvent): WorkAuditEvent {
   return decodeWorkAuditEvent(structuredClone(event));
 }
 
+export function decodeStoredAuditEvent(value: unknown): WorkAuditEvent {
+  try {
+    return decodeCanonicalStoredJson(value, "event_json", decodeWorkAuditEvent);
+  } catch (error: unknown) {
+    if (error instanceof WorkRepositoryStoredValueError) throw error;
+    throw new WorkRepositoryStoredValueError(error);
+  }
+}
+
 export function requireAuditMatches(
   event: WorkAuditEvent,
   expected: Readonly<{
@@ -262,13 +280,19 @@ export function decodeStoredCompletionAction(
   resultJson: unknown,
 ): StoredWorkCompletionAction {
   try {
-    const binding = snapshotCompletionBinding(
-      parseStoredJson(bindingJson, "binding_json") as WorkCompletionBinding,
+    const binding = decodeCanonicalStoredJson(
+      bindingJson,
+      "binding_json",
+      (value) => snapshotCompletionBinding(value as WorkCompletionBinding),
     );
     const state = requireCompletionState(stateValue);
     const result = resultJson === null
       ? null
-      : decodeWorkCompletionResult(parseStoredJson(resultJson, "result_json"));
+      : decodeCanonicalStoredJson(
+        resultJson,
+        "result_json",
+        decodeWorkCompletionResult,
+      );
     if (
       (state === "committed" && result?.state !== "committed") ||
       (state === "rejected" && result?.state !== "rejected") ||
@@ -322,10 +346,13 @@ export function decodeStoredClaimReleaseAction(
       generationValue,
       "stored action input_generation",
     );
-    const parsedResult = parseStoredJson(resultJson, "stored action result_json");
     switch (kindValue) {
       case "claim": {
-        const result = decodeWorkClaimResult(parsedResult);
+        const result = decodeCanonicalStoredJson(
+          resultJson,
+          "stored action result_json",
+          decodeWorkClaimResult,
+        );
         if (
           !sameJson(result.taskId, task.taskId) ||
           result.claim.actorId !== actorId ||
@@ -339,7 +366,11 @@ export function decodeStoredClaimReleaseAction(
         };
       }
       case "release": {
-        const result = decodeWorkReleaseResult(parsedResult);
+        const result = decodeCanonicalStoredJson(
+          resultJson,
+          "stored action result_json",
+          decodeWorkReleaseResult,
+        );
         if (
           !sameJson(result.taskId, task.taskId) ||
           result.claimGeneration !== generation + 1 ||
@@ -401,12 +432,17 @@ export function sameJson(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-export function parseStoredJson(value: unknown, label: string): unknown {
-  try {
-    return parseStrictJson(new TextEncoder().encode(requireString(value, label)));
-  } catch (error: unknown) {
-    throw new WorkRepositoryStoredValueError(error);
+function decodeCanonicalStoredJson<Value>(
+  value: unknown,
+  label: string,
+  decode: (parsed: unknown) => Value,
+): Value {
+  const encoded = requireString(value, label);
+  const decoded = decode(parseStrictJson(new TextEncoder().encode(encoded)));
+  if (JSON.stringify(decoded) !== encoded) {
+    throw new TypeError(`${label} is not exact canonical JSON`);
   }
+  return decoded;
 }
 
 function requireCompletionState(value: unknown): StoredWorkCompletionAction["state"] {
