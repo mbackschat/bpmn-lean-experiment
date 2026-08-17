@@ -26,7 +26,7 @@ This document owns current implementation, proof, evidence, and absence status, 
 
 **Current M5 boundary.** The closure-reviewed [E1 specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements replay-complete transitions, exact current positions, a strict Workflow Query, retention/replay, and fail-closed Product 2 History, Diagram, and canonical export. The [metrics specification](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) adds Lean/core lifecycle parity, replay-stable time, exact-version all-or-unavailable frequency and completed duration, HTTP, and a two-width UI. The [operator-history specification](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md) completes M5 with independent bounded Work and incident audit snapshots, Operations authorization, canonical download, restart/privacy/focus evidence, and no merged chronology.
 
-**Current Workflow-chain hosting boundary.** Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, and retained per-Run trace/publication bounds are active before speculative exposure. Retry and conflict precede lifetime capacity, terminal completion wins, and no public contract or host identity changes.
+**Current Workflow-chain hosting boundary.** Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, and pending-Timer bounds are active before speculative exposure or scheduling. Retry and conflict precede lifetime capacity, terminal completion wins, and no public contract or host identity changes.
 
 **Current executable-corpus boundary.** The maintained [executable model corpus](../model-corpus/README.md) binds 24 project models and seven external CIB Seven, OMG, and Betsy files to exact provenance, admission, pipeline, and Product 2 readiness. Its guard requires the canonical catalog and retained coverage to match all 25 pipeline-derived executable variants.
 
@@ -450,6 +450,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - production capacity: 512 recovery entries; atomic 64 KiB state, paired batches, and stimuli; 1,500 Updates/eight in flight; a 64-entry/256 KiB queue; refusals precede transport, acceptance, or evaluation; exact fills request rollover; failures omit Run IDs/candidates; failed histories replay
 - effect Activity capacity: 64 KiB request before scheduling and result before return with Workflow revalidation; fixed 16 KiB cause-free exhaustion detail; oversized-result live failure at revision 3 replays
 - retained per-Run capacity: exact incremental canonical accounting for trace plus aligned E1/E2 batches, a hard 2 MiB ceiling before mutation, and proactive rollover with room for the closing candidate plus one fence-racing Signal; a production-bound witness grows only rejected-command trace, crosses one rollover, preserves the open occurrence and early result, completes, and replays both Runs below the Event History trigger
+- pending-Timer capacity: committed Timers are checked against 64 before scheduling; 65 fails through typed chain capacity, while admitted profiles retain one live Timer
 - one forced cyclic User Task witness lowering only the history threshold, crossing three Runs/two boundaries, preserving occurrence identity and exact retry/conflict, returning the closed receipt/private recovery envelope, and replaying every Run
 - private paired E1/E2 per-Run publication segments with strict descriptor/directory validation and SHA-bound continuation; immutable latest selection followed by an exact selected-Run Query; Run-local pages; selected retained-Run loss mapped to `unavailable`; legacy fallback only for `QueryNotRegisteredError`; and live evidence over Run 1 `0..8`, Run 2 `8..12`, Run 3 `12..16`, cursor pages `0/4/8/12/16`, two occurrence identities spanning Run boundaries, unchanged terminal receipt, no public Workflow/Run identity, and replay of all three Runs
 
@@ -474,7 +475,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
 - Search Attributes
-- post-retention publication reconstruction or archive, complete timer/effect/Message rollover evidence, deployment admission, and the approved timer, Query, terminal, Event History, aggregate, and Run capacity rows
+- post-retention publication reconstruction or archive, complete timer/effect/Message rollover evidence, deployment admission, and the approved Query, terminal, Event History, aggregate, and Run capacity rows
 - task inbox
 
 ### Differential pipeline

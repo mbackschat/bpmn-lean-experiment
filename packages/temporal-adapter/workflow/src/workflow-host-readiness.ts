@@ -15,7 +15,6 @@ import {
   timerFiringStimulus,
 } from "@bpmn-lean/temporal-protocol";
 import type {
-  EffectActivityCapacityBound,
   EffectActivityImplementationResult,
   EffectActivityResult,
   EffectRequest,
@@ -44,6 +43,13 @@ import {
   acceptedStimulus,
   requireSameCommandStimulus,
 } from "./workflow-wire-validation.js";
+import type {
+  WorkflowChainObservedCapacityBound,
+} from "./workflow-chain-capacity.js";
+import {
+  WorkflowTimerCapacityPreflightKind,
+  preflightPendingWorkflowTimers,
+} from "./workflow-timer-capacity.js";
 
 export enum HostReadinessAction {
   DrainSemanticQueue = "drainSemanticQueue",
@@ -60,12 +66,21 @@ export async function waitForHostReadiness(
   waitForTimer: (durationMs: number) => Promise<void>,
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>,
   effectActivityPolicy: EffectActivityPolicy,
-  failEffectCapacity: (failure: EffectActivityCapacityBound) => never,
+  failCapacity: (failure: WorkflowChainObservedCapacityBound) => never,
   reserveStimulus: (stimulus: Stimulus) => boolean,
   hostRecheckRequested: () => boolean,
 ): Promise<HostReadinessAction> {
   const timers = projectOpenTimers(state);
   const effects = projectOpenEffects(state);
+  const timerCapacity = preflightPendingWorkflowTimers(timers.length);
+  switch (timerCapacity.kind) {
+    case WorkflowTimerCapacityPreflightKind.Ready:
+      break;
+    case WorkflowTimerCapacityPreflightKind.CapacityExceeded:
+      failCapacity(timerCapacity.failure);
+    default:
+      return assertNever(timerCapacity);
+  }
   if (state.eventRaces.length > 0) {
     if (effects.length > 0) {
       throw hostInvariantFailure(
@@ -180,7 +195,7 @@ export async function waitForHostReadiness(
     result = await executeEffectWithinCapacity(
       request,
       executeEffect,
-      failEffectCapacity,
+      failCapacity,
     );
   } catch (error: unknown) {
     // Cancellation recovery is unmodeled and must retain its host classification. Only an
