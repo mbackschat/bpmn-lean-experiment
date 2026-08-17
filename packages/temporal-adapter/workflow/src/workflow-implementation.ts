@@ -9,12 +9,8 @@ import {
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
 import type {
-  CancelIncidentProcessStimulus,
   CanonicalObservation,
-  CompleteUserTaskInstanceStimulus,
-  DeliverMessageStimulus,
   OpenUserTask,
-  RetryIncidentStimulus,
   RuntimeState,
   SemanticProcessProgram,
   ProcessStartStimulus,
@@ -26,16 +22,12 @@ import {
   condition,
   continueAsNew,
   defineQuery,
-  defineSignal,
-  defineUpdate,
   patched,
   setHandler,
 } from "@temporalio/workflow";
 
 import {
   bpmnBoundedActivitySchedulerUnavailableFailureType,
-  bpmnCompleteUserTaskUpdateName,
-  bpmnDeliverMessageSignalName,
   bpmnMessageDeliveryResultQueryName,
   bpmnOpenUserTasksQueryName,
   bpmnWorkflowChainPatchId,
@@ -43,8 +35,6 @@ import {
   bpmnTraceQueryName,
 } from "@bpmn-lean/temporal-protocol";
 import type {
-  BpmnCompleteUserTaskUpdateArguments,
-  BpmnDeliverMessageSignalArguments,
   BpmnMessageDeliveryResultQueryArguments,
   BpmnUserTaskDetailQueryArguments,
   BpmnWorkflowContinuationPublicationV1,
@@ -60,16 +50,10 @@ import type {
   EffectRequest,
 } from "@bpmn-lean/temporal-protocol";
 import {
-  acceptMessageDelivery,
   completedMessageDeliveryRecords,
   findMessageDeliveryResolution,
   recordMessageDeliveryOutcome,
 } from "./message-delivery-ledger.js";
-import {
-  acceptedStimulus,
-  validateCompleteUserTaskUpdate,
-  validateDeliverMessageSignal,
-} from "./workflow-wire-validation.js";
 import {
   ActivationDrain,
 } from "./activation-tagged-readiness.js";
@@ -89,14 +73,6 @@ import {
   failRejectedHostEffectResult,
 } from "./effect-execution-host.js";
 import { effectActivityPolicyForProfile } from "./effect-activity-policy.js";
-import {
-  bpmnRetryEffectIncidentUpdate,
-  validateRetryEffectIncidentUpdate,
-} from "./incident-update-handler.js";
-import {
-  bpmnCancelIncidentProcessUpdate,
-  validateCancelIncidentProcessUpdate,
-} from "./incident-cancellation-update-handler.js";
 import { registerIncidentOperationsQueryHandler } from "./incident-operations-query-handler.js";
 import {
   commandOutcome,
@@ -119,8 +95,6 @@ import type {
   WorkflowCommandRecoveryAdmission,
 } from "./workflow-command-recovery.js";
 import {
-  acceptWorkflowChainSignalCapacity,
-  awaitWorkflowCommandOutcome,
   registerWorkflowChainRecoveryQuery,
   WorkflowChainStableCheckpointKind,
 } from "./workflow-chain-capacity.js";
@@ -128,8 +102,6 @@ import {
   buildWorkflowChainSuccessor,
   initializeWorkflowChain,
   isExternallyRecoverableStimulus,
-  recoveredWorkflowCommandOutcome,
-  validateWorkflowChainUpdate,
   workflowCommandIdentityConflict,
   workflowChainRolloverTriggered,
   WorkflowChainFenceState,
@@ -137,6 +109,7 @@ import {
 import type {
   WorkflowChainRuntime,
 } from "./workflow-chain-continuation.js";
+import { registerWorkflowCommandIngress } from "./workflow-command-ingress.js";
 import { registerWorkflowPublicationQueries } from "./workflow-publication-segments.js";
 
 export const bpmnTraceQuery =
@@ -147,15 +120,6 @@ export const bpmnUserTaskDetailQuery = defineQuery<
   UserTaskDetail | null,
   BpmnUserTaskDetailQueryArguments
 >(bpmnUserTaskDetailQueryName);
-export const bpmnCompleteUserTaskUpdate: ReturnType<
-  typeof defineUpdate<CommandOutcome, BpmnCompleteUserTaskUpdateArguments>
-> = defineUpdate<
-  CommandOutcome,
-  BpmnCompleteUserTaskUpdateArguments
->(bpmnCompleteUserTaskUpdateName);
-export const bpmnDeliverMessageSignal = defineSignal<
-  BpmnDeliverMessageSignalArguments
->(bpmnDeliverMessageSignalName);
 export const bpmnMessageDeliveryResultQuery = defineQuery<
   MessageDeliveryResolution | null,
   BpmnMessageDeliveryResultQueryArguments
@@ -287,125 +251,18 @@ export async function runBpmnProcessWithHostEffects(
         stimulus,
       ) ?? null,
   );
-  setHandler(bpmnDeliverMessageSignal, (stimulus) => {
-    validateDeliverMessageSignal(stimulus);
-    if (!acceptWorkflowChainSignalCapacity(workflowChain, stimulus)) {
-      return;
-    }
-    const accepted = acceptedStimulus(
-      acceptedStimuli,
-      stimulus.commandId,
-    );
-    const acceptance = acceptMessageDelivery(
-      messageDeliveryResolutions,
-      stimulus,
-      accepted,
-    );
-    const scheduledByEventRace = eventRaceScheduler.recordMessageCallback(
-      state,
-      stimulus,
-      acceptance.enqueue,
-    );
-    if (acceptance.enqueue) {
-      acceptedStimuli.push(stimulus);
-      if (!scheduledByEventRace) {
-        pendingStimuli.push(stimulus);
-      }
-    }
+  registerWorkflowCommandIngress({
+    processInstanceId: start.instanceId,
+    acceptedStimuli,
+    pendingStimuli,
+    messageDeliveryResolutions,
+    workflowChain,
+    currentState: () => state,
+    currentPublication: () => commandPublication,
+    currentFence: () => workflowChainFence,
+    eventRaceScheduler,
+    boundedDeadlineSchedulerFor,
   });
-  setHandler(
-    bpmnCompleteUserTaskUpdate,
-    async (stimulus) => {
-      const recovered = recoveredWorkflowCommandOutcome(workflowChain, stimulus);
-      if (recovered !== undefined) {
-        return recovered;
-      }
-      // A bounded completion races its deadline, so the scheduler classifies it by activation
-      // instead of the loop draining it in arrival order.
-      if (
-        boundedDeadlineSchedulerFor(state)?.recordCompletionCallback(
-          state,
-          stimulus,
-        ) === true
-      ) {
-        acceptedStimuli.push(stimulus);
-      } else {
-        enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-      }
-      return await awaitWorkflowCommandOutcome(
-        stimulus.commandId,
-        () => commandOutcome(commandPublication, stimulus.commandId),
-        workflowChain?.capacity ?? null,
-      );
-    },
-    {
-      validator: (stimulus) => {
-        validateCompleteUserTaskUpdate(acceptedStimuli, stimulus);
-        validateWorkflowChainUpdate(
-          workflowChain,
-          workflowChainFence,
-          stimulus,
-          commandPublication.execution.headRevision,
-        );
-      },
-    },
-  );
-  setHandler(
-    bpmnRetryEffectIncidentUpdate,
-    async (stimulus: RetryIncidentStimulus) => {
-      const recovered = recoveredWorkflowCommandOutcome(workflowChain, stimulus);
-      if (recovered !== undefined) {
-        return recovered;
-      }
-      enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-      return await awaitWorkflowCommandOutcome(
-        stimulus.commandId,
-        () => commandOutcome(commandPublication, stimulus.commandId),
-        workflowChain?.capacity ?? null,
-      );
-    },
-    {
-      validator: (stimulus) => {
-        validateRetryEffectIncidentUpdate(acceptedStimuli, stimulus);
-        validateWorkflowChainUpdate(
-          workflowChain,
-          workflowChainFence,
-          stimulus,
-          commandPublication.execution.headRevision,
-        );
-      },
-    },
-  );
-  setHandler(
-    bpmnCancelIncidentProcessUpdate,
-    async (stimulus: CancelIncidentProcessStimulus) => {
-      const recovered = recoveredWorkflowCommandOutcome(workflowChain, stimulus);
-      if (recovered !== undefined) {
-        return recovered;
-      }
-      enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-      return await awaitWorkflowCommandOutcome(
-        stimulus.commandId,
-        () => commandOutcome(commandPublication, stimulus.commandId),
-        workflowChain?.capacity ?? null,
-      );
-    },
-    {
-      validator: (stimulus) => {
-        validateCancelIncidentProcessUpdate(
-          acceptedStimuli,
-          start.instanceId,
-          stimulus,
-        );
-        validateWorkflowChainUpdate(
-          workflowChain,
-          workflowChainFence,
-          stimulus,
-          commandPublication.execution.headRevision,
-        );
-      },
-    },
-  );
 
   while (true) {
     while (pendingStimuli.length > 0) {
