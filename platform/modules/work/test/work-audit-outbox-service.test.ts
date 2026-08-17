@@ -17,12 +17,14 @@ const event = {
 test("retries an audit insert after a crash before Work acknowledgement", async () => {
   let acknowledged = false;
   let inserts = 0;
+  const received: unknown[] = [];
   const repository = {
     listUndeliveredAuditEvents: async () => acknowledged ? [] : [{ ordinal: 1, event }],
     acknowledgeAuditEvent: async () => { acknowledged = true; },
   };
   const sink = {
-    record: async () => {
+    record: async (item: unknown) => {
+      received.push(structuredClone(item));
       inserts += 1;
       if (inserts === 1) throw new Error("crash after Work commit");
       return 1;
@@ -35,4 +37,21 @@ test("retries an audit insert after a crash before Work acknowledgement", async 
   await service.reconcileAll();
   assert.equal(inserts, 2);
   assert.equal(acknowledged, true);
+  assert.deepEqual(received, [{ ordinal: 1, event }, { ordinal: 1, event }]);
+});
+
+test("does not acknowledge a rejected source-ordinal gap", async () => {
+  let acknowledged = false;
+  const item = { ordinal: 2, event };
+  const service = new WorkAuditOutboxService({
+    listUndeliveredAuditEvents: async () => [item],
+    acknowledgeAuditEvent: async () => { acknowledged = true; },
+  }, {
+    record: async (received) => {
+      assert.deepEqual(received, item);
+      throw new Error("source ordinal gap");
+    },
+  });
+  await assert.rejects(service.reconcileAll(), /source ordinal gap/u);
+  assert.equal(acknowledged, false);
 });

@@ -1,4 +1,4 @@
-import type { IncidentAuditEvent, IncidentAuditOutboxItem } from "./incident-contracts.js";
+import type { IncidentAuditOutboxItem } from "./incident-contracts.js";
 
 export interface IncidentAuditOutboxRepository {
   listUndeliveredAuditEvents(): Promise<ReadonlyArray<IncidentAuditOutboxItem>>;
@@ -6,7 +6,7 @@ export interface IncidentAuditOutboxRepository {
 }
 
 export interface IncidentAuditSink {
-  record(event: IncidentAuditEvent): Promise<number>;
+  record(item: IncidentAuditOutboxItem): Promise<number>;
 }
 
 /** Delivers exact snapshots before acknowledging their Operate-owned outbox rows. */
@@ -17,9 +17,9 @@ export class IncidentActionAuditOutboxService {
   ) {}
 
   async reconcileAll(): Promise<void> {
-    for (const { event } of await this.repository.listUndeliveredAuditEvents()) {
-      await this.sink.record(event);
-      await this.repository.acknowledgeAuditEvent(event.eventId);
+    for (const item of await this.repository.listUndeliveredAuditEvents()) {
+      await this.sink.record(item);
+      await this.repository.acknowledgeAuditEvent(item.event.eventId);
     }
   }
 }

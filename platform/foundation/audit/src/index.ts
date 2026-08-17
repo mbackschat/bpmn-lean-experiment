@@ -2,6 +2,7 @@ export {
   AuditEventIntegrityError,
   AuditSchemaResetRequiredError,
   AuditStoredValueError,
+  AuditStreamUnavailableError,
 } from "./audit-contracts.js";
 export {
   AuditSnapshotLimitError,
@@ -20,10 +21,12 @@ export { AuditSearchService } from "./audit-search-service.js";
 export { AuditEventFactory } from "./audit-event-factory.js";
 export type { WorkAuditEventSeed } from "./audit-event-factory.js";
 export { SqliteAuditRepository } from "./sqlite-audit-repository.js";
+export { PostgresqlAuditRepository } from "./postgresql-audit-repository.js";
 export {
   IncidentAuditEventIntegrityError,
   IncidentAuditSchemaResetRequiredError,
   IncidentAuditStoredValueError,
+  IncidentAuditStreamUnavailableError,
 } from "./incident-audit-contracts.js";
 export type {
   IncidentAuditRepository,
@@ -39,3 +42,4 @@ export { IncidentAuditEventFactory } from "./incident-audit-event-factory.js";
 export type { IncidentAuditEventSeed } from "./incident-audit-event-factory.js";
 export { IncidentAuditSearchService } from "./incident-audit-search-service.js";
 export { SqliteIncidentAuditRepository } from "./sqlite-incident-audit-repository.js";
+export { PostgresqlIncidentAuditRepository } from "./postgresql-incident-audit-repository.js";

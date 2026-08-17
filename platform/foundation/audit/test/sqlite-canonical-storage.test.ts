@@ -52,7 +52,7 @@ test("Work audit rejects semantically equal noncanonical stored event JSON", asy
   const databaseFile = join(directory, "audit.sqlite");
   try {
     const repository = new SqliteAuditRepository(databaseFile);
-    await repository.record(workEvent);
+    await repository.record({ ordinal: 1, event: workEvent });
     repository.close();
     addLeadingWhitespace(databaseFile, "work_audit_events");
 
@@ -75,7 +75,7 @@ test("incident audit rejects semantically equal noncanonical stored event JSON",
   const databaseFile = join(directory, "incident-audit.sqlite");
   try {
     const repository = new SqliteIncidentAuditRepository(databaseFile);
-    await repository.record(incidentEvent);
+    await repository.record({ ordinal: 1, event: incidentEvent });
     repository.close();
     addLeadingWhitespace(databaseFile, "incident_audit_events");
 

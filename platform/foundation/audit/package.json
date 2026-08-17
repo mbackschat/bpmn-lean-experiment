@@ -11,14 +11,18 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "migrations"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "test:postgresql:built": "node --test --test-concurrency=1 test/postgresql/*.test.ts",
+    "test:postgresql": "pnpm --filter @bpmn-lean/platform-postgresql-runtime run build && pnpm run build && pnpm run test:postgresql:built",
     "test:built": "node --test --test-concurrency=1 test/*.test.ts",
     "test": "pnpm build && pnpm test:built"
   },
   "dependencies": {
-    "@bpmn-lean/platform-contracts": "workspace:*"
+    "@bpmn-lean/platform-contracts": "workspace:*",
+    "@bpmn-lean/platform-postgresql-runtime": "workspace:*"
   }
 }

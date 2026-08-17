@@ -44,6 +44,18 @@ export function readBoundedAuditSnapshot<
   try {
     const head = database.prepare(queries.headSql).get(hostingProcessInstanceId);
     if (head === undefined) throw new TypeError("audit snapshot head is absent");
+    if (head.stream_head !== undefined || head.stream_count !== undefined) {
+      const streamHead = requireNonnegativeSafeInteger(head.stream_head, "audit stream head");
+      const streamCount = requireNonnegativeSafeInteger(head.stream_count, "audit stream count");
+      const complete = streamHead === 0
+        ? streamCount === 0 && head.stream_first === null && head.stream_last === null
+        : streamCount === streamHead &&
+          requirePositiveSafeInteger(head.stream_first, "audit stream first ordinal") === 1 &&
+          requirePositiveSafeInteger(head.stream_last, "audit stream last ordinal") === streamHead;
+      if (!complete) {
+        throw new TypeError("audit stream is not a complete prefix");
+      }
+    }
     const eventCount = requireNonnegativeSafeInteger(
       head.event_count,
       "audit snapshot event count",

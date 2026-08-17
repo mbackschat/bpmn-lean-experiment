@@ -28,9 +28,9 @@ const event = (overrides: Partial<WorkAuditEvent> = {}): WorkAuditEvent => ({
 
 test("rejects changed content under one event ID", async () => {
   await withRepository(async (repository) => {
-    await repository.record(event());
+    await repository.record({ ordinal: 1, event: event() });
     await assert.rejects(
-      repository.record(event({ actorId: "other-user" })),
+      repository.record({ ordinal: 1, event: event({ actorId: "other-user" }) }),
       AuditEventIntegrityError,
     );
   });
@@ -41,8 +41,8 @@ test("stores equivalent retries once and survives reopen", async () => {
   const databaseFile = join(directory, "audit.sqlite");
   try {
     const first = new SqliteAuditRepository(databaseFile);
-    await first.record(event());
-    await first.record(event());
+    await first.record({ ordinal: 1, event: event() });
+    await first.record({ ordinal: 1, event: event() });
     first.close();
     const reopened = new SqliteAuditRepository(databaseFile);
     assert.deepEqual(await new AuditSearchService(reopened).search({
@@ -63,8 +63,8 @@ test("filters exact actor, Process identities, and action kind", async () => {
       taskId: { processInstanceId: "task-process-2", elementId: "Approve", activation: 2 },
       action: { kind: "completion", actionId: "action-2", outcome: "reserved" },
     });
-    await repository.record(event());
-    await repository.record(second);
+    await repository.record({ ordinal: 1, event: event() });
+    await repository.record({ ordinal: 2, event: second });
     const service = new AuditSearchService(repository);
     assert.deepEqual((await service.search({
       actorId: "demo-user",
@@ -79,13 +79,13 @@ test("filters exact actor, Process identities, and action kind", async () => {
 
 test("pages in stable insertion order across newer inserts", async () => {
   await withRepository(async (repository) => {
-    await repository.record(event());
-    await repository.record(event({ eventId: "event-2", recordedAt: "2026-08-12T10:00:01.000Z" }));
+    await repository.record({ ordinal: 1, event: event() });
+    await repository.record({ ordinal: 2, event: event({ eventId: "event-2", recordedAt: "2026-08-12T10:00:01.000Z", action: { kind: "claim", actionId: "action-2", outcome: "claimed" } }) });
     const service = new AuditSearchService(repository);
     const first = await service.search({ actorId: "demo-user", limit: 1 });
     assert.deepEqual(first.events.map(({ eventId }) => eventId), ["event-1"]);
     assert.notEqual(first.nextCursor, null);
-    await repository.record(event({ eventId: "event-3", recordedAt: "2026-08-12T10:00:02.000Z" }));
+    await repository.record({ ordinal: 3, event: event({ eventId: "event-3", recordedAt: "2026-08-12T10:00:02.000Z", action: { kind: "claim", actionId: "action-3", outcome: "claimed" } }) });
     assert.notEqual(first.nextCursor, null);
     const second = await service.search({
       actorId: "demo-user",
@@ -102,14 +102,16 @@ test("takes one bounded hosting-instance snapshot in source-local order", async 
     const other = event({
       eventId: "event-other",
       hostingProcessInstanceId: "host-other",
+      action: { kind: "claim", actionId: "action-other", outcome: "claimed" },
     });
     const later = event({
       eventId: "event-2",
       recordedAt: "2026-08-12T09:59:59.000Z",
+      action: { kind: "claim", actionId: "action-2", outcome: "claimed" },
     });
-    await repository.record(event());
-    await repository.record(other);
-    await repository.record(later);
+    await repository.record({ ordinal: 1, event: event() });
+    await repository.record({ ordinal: 2, event: other });
+    await repository.record({ ordinal: 3, event: later });
     const snapshot = await repository.snapshotHostingProcessInstance("host-1", {
       maxEvents: 10,
       maxStoredBytes: 10_000,
@@ -118,10 +120,11 @@ test("takes one bounded hosting-instance snapshot in source-local order", async 
       headEventId: "event-2",
       events: [event(), later],
     });
-    await repository.record(event({
+    await repository.record({ ordinal: 4, event: event({
       eventId: "event-3",
       recordedAt: "2026-08-12T10:00:02.000Z",
-    }));
+      action: { kind: "claim", actionId: "action-3", outcome: "claimed" },
+    }) });
     assert.deepEqual(snapshot.events.map(({ eventId }) => eventId), [
       "event-1",
       "event-2",
@@ -138,8 +141,8 @@ test("takes one bounded hosting-instance snapshot in source-local order", async 
 test("fails a snapshot above its event or stored UTF-8 byte ceiling", async () => {
   await withRepository(async (repository) => {
     const multibyte = event({ actorId: "operator-🚀" });
-    await repository.record(multibyte);
-    await repository.record(event({ eventId: "event-2" }));
+    await repository.record({ ordinal: 1, event: multibyte });
+    await repository.record({ ordinal: 2, event: event({ eventId: "event-2", action: { kind: "claim", actionId: "action-2", outcome: "claimed" } }) });
     await assert.rejects(
       repository.snapshotHostingProcessInstance("host-1", {
         maxEvents: 1,
@@ -174,7 +177,7 @@ test("fails closed when redundant filter columns disagree with stored JSON", asy
   const databaseFile = join(directory, "audit.sqlite");
   try {
     const repository = new SqliteAuditRepository(databaseFile);
-    await repository.record(event());
+    await repository.record({ ordinal: 1, event: event() });
     repository.close();
     const { DatabaseSync } = requireSqlite();
     const database = new DatabaseSync(databaseFile);
@@ -191,6 +194,33 @@ test("fails closed when redundant filter columns disagree with stored JSON", asy
         maxStoredBytes: 10_000,
       }),
       /stored audit event is invalid/u,
+    );
+    reopened.close();
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("fails searches and snapshots closed for a second gapped Work audit instance", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "bpmn-audit-"));
+  const databaseFile = join(directory, "audit.sqlite");
+  try {
+    const repository = new SqliteAuditRepository(databaseFile);
+    await repository.record({ ordinal: 1, event: event() });
+    await repository.record({ ordinal: 2, event: event({
+      eventId: "event-2",
+      action: { kind: "claim", actionId: "action-2", outcome: "claimed" },
+    }) });
+    repository.close();
+    const { DatabaseSync } = requireSqlite();
+    const database = new DatabaseSync(databaseFile);
+    database.prepare("UPDATE work_audit_events SET ordinal = 3 WHERE ordinal = 2").run();
+    database.close();
+    const reopened = new SqliteAuditRepository(databaseFile);
+    await assert.rejects(reopened.search({ actorId: "demo-user", limit: 50 }), /invalid/u);
+    await assert.rejects(
+      reopened.snapshotHostingProcessInstance("host-1", { maxEvents: 10, maxStoredBytes: 10_000 }),
+      /complete prefix|invalid/u,
     );
     reopened.close();
   } finally {

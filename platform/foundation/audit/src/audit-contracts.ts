@@ -23,7 +23,7 @@ export type StoredAuditEvent = Readonly<{
 }>;
 
 export interface AuditRepository {
-  record(event: WorkAuditEvent): Promise<number>;
+  record(item: StoredAuditEvent): Promise<number>;
   search(query: AuditRepositoryQuery): Promise<ReadonlyArray<StoredAuditEvent>>;
   snapshotHostingProcessInstance(
     hostingProcessInstanceId: string,
@@ -47,6 +47,13 @@ export class AuditStoredValueError extends Error {
   constructor(cause: unknown) {
     super("stored audit event is invalid", { cause });
     this.name = "AuditStoredValueError";
+  }
+}
+
+export class AuditStreamUnavailableError extends Error {
+  constructor(cause?: unknown) {
+    super("the Work audit stream is unavailable", { cause });
+    this.name = "AuditStreamUnavailableError";
   }
 }
 

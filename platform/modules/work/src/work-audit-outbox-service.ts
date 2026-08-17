@@ -1,5 +1,3 @@
-import type { WorkAuditEvent } from "@bpmn-lean/platform-contracts";
-
 import type { WorkAuditOutboxItem } from "./work-contracts.js";
 
 export interface WorkAuditOutboxRepository {
@@ -8,7 +6,7 @@ export interface WorkAuditOutboxRepository {
 }
 
 export interface WorkAuditSink {
-  record(event: WorkAuditEvent): Promise<number>;
+  record(item: WorkAuditOutboxItem): Promise<number>;
 }
 
 /** Delivers exact outbox snapshots before acknowledging their Work-owned rows. */
@@ -19,9 +17,9 @@ export class WorkAuditOutboxService {
   ) {}
 
   async reconcileAll(): Promise<void> {
-    for (const { event } of await this.repository.listUndeliveredAuditEvents()) {
-      await this.sink.record(event);
-      await this.repository.acknowledgeAuditEvent(event.eventId);
+    for (const item of await this.repository.listUndeliveredAuditEvents()) {
+      await this.sink.record(item);
+      await this.repository.acknowledgeAuditEvent(item.event.eventId);
     }
   }
 }

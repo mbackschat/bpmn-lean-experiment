@@ -425,7 +425,7 @@ async function createHarness(options: HarnessOptions = {}) {
   let completionCalls = 0;
   let eventOrdinal = 0;
   const outbox = new WorkAuditOutboxService(repository, {
-    record: async (event) => {
+    record: async ({ event }) => {
       audit.push(structuredClone(event));
       return audit.length;
     },

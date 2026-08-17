@@ -142,7 +142,7 @@ async function createHarness(task: PublicWorkTask["task"]) {
     limits: { maxProcesses: 1, maxTasks: 1 },
   });
   const outbox = new WorkAuditOutboxService(repository, {
-    record: async (event) => {
+    record: async ({ event }) => {
       audit.push(structuredClone(event));
       return audit.length;
     },

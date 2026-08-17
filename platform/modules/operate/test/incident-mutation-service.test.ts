@@ -14,6 +14,7 @@ import {
 import type {
   IncidentActionRequest,
   IncidentAuditEvent,
+  IncidentAuditOutboxItem,
 } from "@bpmn-lean/platform-operate";
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 
@@ -125,7 +126,7 @@ test("delivers and acknowledges reserved audit before the first engine action ca
 
     const events: IncidentAuditEvent[] = [];
     const recovered = service(processRepository, actionRepository, gateway, {
-      record: async (event) => {
+      record: async ({ event }) => {
         events.push(structuredClone(event));
         return events.length;
       },
@@ -229,7 +230,7 @@ function service(
   processRepository: SqliteProcessInstanceRepository,
   actionRepository: SqliteIncidentActionRepository,
   gateway: ReturnType<typeof gatewayFor>,
-  sink = { record: async (_event: IncidentAuditEvent) => 1 },
+  sink = { record: async (_item: IncidentAuditOutboxItem) => 1 },
 ) {
   const timestampByOutcome = {
     reserved: "2026-08-14T00:00:00.001Z",

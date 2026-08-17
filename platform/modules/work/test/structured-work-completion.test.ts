@@ -286,7 +286,7 @@ async function createHarness(options: Readonly<{
   let eventOrdinal = 0;
   const actors = new FakeActorResolver({ id: "demo-user", groups: ["reviewers"] });
   const outbox = new WorkAuditOutboxService(repository, {
-    record: async (event) => {
+    record: async ({ event }) => {
       audit.push(structuredClone(event));
       return audit.length;
     },

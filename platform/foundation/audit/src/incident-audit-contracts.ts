@@ -25,7 +25,7 @@ export type StoredIncidentAuditEvent = Readonly<{
 }>;
 
 export interface IncidentAuditRepository {
-  record(event: IncidentAuditEvent): Promise<number>;
+  record(item: StoredIncidentAuditEvent): Promise<number>;
   search(
     query: IncidentAuditRepositoryQuery,
   ): Promise<ReadonlyArray<StoredIncidentAuditEvent>>;
@@ -49,6 +49,13 @@ export class IncidentAuditStoredValueError extends Error {
   constructor(cause: unknown) {
     super("stored incident audit event is invalid", { cause });
     this.name = "IncidentAuditStoredValueError";
+  }
+}
+
+export class IncidentAuditStreamUnavailableError extends Error {
+  constructor(cause?: unknown) {
+    super("the incident audit stream is unavailable", { cause });
+    this.name = "IncidentAuditStreamUnavailableError";
   }
 }
 

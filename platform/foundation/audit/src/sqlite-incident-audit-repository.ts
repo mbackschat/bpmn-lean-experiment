@@ -25,17 +25,18 @@ import type {
   AuditStreamSnapshot,
 } from "./bounded-audit-snapshot.js";
 
-const schemaEpoch = 2;
+const schemaEpoch = 3;
 const defaultBusyTimeoutMs = 5_000;
 const expectedSchemaObjects = [
   ["index", "incident_audit_host_ordinal", "incident_audit_events"],
   ["index", "sqlite_autoindex_incident_audit_events_1", "incident_audit_events"],
   ["index", "sqlite_autoindex_incident_audit_events_2", "incident_audit_events"],
   ["table", "incident_audit_events", "incident_audit_events"],
+  ["table", "incident_audit_sink_head", "incident_audit_sink_head"],
 ] as const;
 const tableSql = `
   CREATE TABLE incident_audit_events (
-    ordinal INTEGER PRIMARY KEY AUTOINCREMENT CHECK (
+    ordinal INTEGER PRIMARY KEY CHECK (
       ordinal > 0 AND ordinal <= 9007199254740991
     ),
     event_id TEXT NOT NULL UNIQUE,
@@ -56,7 +57,12 @@ const tableSql = `
     ),
     event_json TEXT NOT NULL CHECK (length(event_json) > 0),
     UNIQUE (action_id, outcome)
-  ) STRICT
+  ) STRICT;
+  CREATE TABLE incident_audit_sink_head (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    head INTEGER NOT NULL CHECK (head >= 0 AND head <= 9007199254740991)
+  ) STRICT;
+  INSERT INTO incident_audit_sink_head (singleton, head) VALUES (1, 0)
 `;
 
 /** Append-only incident-action audit storage with its own exact schema epoch. */
@@ -79,41 +85,49 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
     return this.#database.isOpen;
   }
 
-  async record(event: IncidentAuditEvent): Promise<number> {
-    const exact = decodeIncidentAuditEvent(structuredClone(event));
+  async record(item: StoredIncidentAuditEvent): Promise<number> {
+    const ordinal = requirePositiveSafeInteger(item.ordinal, "incident audit source ordinal");
+    const exact = decodeIncidentAuditEvent(structuredClone(item.event));
     const encoded = JSON.stringify(exact);
     this.#database.exec("BEGIN IMMEDIATE");
     try {
-      const existing = this.#database.prepare(`
+      const head = requireDatabaseInteger(this.#database.prepare(`
+        SELECT head FROM incident_audit_sink_head WHERE singleton = 1
+      `).get()?.head, "incident audit sink head");
+      if (ordinal <= head) {
+        const retained = this.#database.prepare(`
         SELECT ordinal, event_id, actor_id, hosting_process_instance_id,
           incident_process_instance_id, incident_element_id,
           incident_activation, incident_generation, action_kind,
           action_id, outcome, event_json
-        FROM incident_audit_events WHERE event_id = ?
-      `).get(exact.eventId);
-      if (existing !== undefined) {
-        const stored = decodeRow(existing);
-        if (JSON.stringify(stored.event) !== encoded) {
+        FROM incident_audit_events WHERE ordinal = ?
+        `).get(ordinal);
+        if (retained === undefined || JSON.stringify(decodeRow(retained).event) !== encoded) {
           throw new IncidentAuditEventIntegrityError(exact.eventId);
         }
         this.#database.exec("COMMIT");
-        return stored.ordinal;
+        return ordinal;
       }
-      const duplicateOutcome = this.#database.prepare(`
-        SELECT event_id FROM incident_audit_events
-        WHERE action_id = ? AND outcome = ?
-      `).get(exact.actionId, exact.outcome);
-      if (duplicateOutcome !== undefined) {
+      if (ordinal !== head + 1) {
+        throw new IncidentAuditEventIntegrityError(exact.eventId);
+      }
+      const occupied = this.#database.prepare(`
+        SELECT ordinal FROM incident_audit_events
+        WHERE event_id = ? OR (action_id = ? AND outcome = ?)
+      `).get(exact.eventId, exact.actionId, exact.outcome);
+      if (occupied !== undefined) {
         throw new IncidentAuditEventIntegrityError(exact.eventId);
       }
       const result = this.#database.prepare(`
         INSERT INTO incident_audit_events (
+          ordinal,
           event_id, actor_id, hosting_process_instance_id,
           incident_process_instance_id, incident_element_id,
           incident_activation, incident_generation, action_kind,
           action_id, outcome, event_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
+        ordinal,
         exact.eventId,
         exact.actorId,
         exact.hostingProcessInstanceId,
@@ -126,10 +140,12 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
         exact.outcome,
         encoded,
       );
-      const ordinal = requirePositiveSafeInteger(
-        result.lastInsertRowid,
-        "inserted incident audit ordinal",
-      );
+      if (result.changes !== 1) throw new IncidentAuditEventIntegrityError(exact.eventId);
+      const advanced = this.#database.prepare(`
+        UPDATE incident_audit_sink_head SET head = ?
+        WHERE singleton = 1 AND head = ?
+      `).run(ordinal, head);
+      if (advanced.changes !== 1) throw new IncidentAuditEventIntegrityError(exact.eventId);
       this.#database.exec("COMMIT");
       return ordinal;
     } catch (error: unknown) {
@@ -142,58 +158,41 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
     query: IncidentAuditRepositoryQuery,
   ): Promise<ReadonlyArray<StoredIncidentAuditEvent>> {
     requireQuery(query);
-    const parameters: SQLInputValue[] = [];
-    const predicates: string[] = [];
-    addOptionalFilter(predicates, parameters, "actor_id", query.actorId);
-    addOptionalFilter(
-      predicates,
-      parameters,
-      "hosting_process_instance_id",
-      query.hostingProcessInstanceId,
-    );
-    if (query.incidentId !== undefined) {
-      const incidentId = decodePublicEffectIncidentId(
-        query.incidentId,
-        "incident audit repository query.incidentId",
-      );
-      addFilter(
+    this.#database.exec("BEGIN DEFERRED");
+    try {
+      requireCompleteStream(this.#database);
+      const parameters: SQLInputValue[] = [];
+      const predicates: string[] = [];
+      addOptionalFilter(predicates, parameters, "actor_id", query.actorId);
+      addOptionalFilter(
         predicates,
         parameters,
-        "incident_process_instance_id",
-        incidentId.effectId.processInstanceId,
+        "hosting_process_instance_id",
+        query.hostingProcessInstanceId,
       );
-      addFilter(
-        predicates,
-        parameters,
-        "incident_element_id",
-        incidentId.effectId.elementId,
+      if (query.incidentId !== undefined) {
+        const incidentId = decodePublicEffectIncidentId(
+          query.incidentId,
+          "incident audit repository query.incidentId",
+        );
+        addFilter(predicates, parameters, "incident_process_instance_id", incidentId.effectId.processInstanceId);
+        addFilter(predicates, parameters, "incident_element_id", incidentId.effectId.elementId);
+        addFilter(predicates, parameters, "incident_activation", incidentId.effectId.activation);
+        addFilter(predicates, parameters, "incident_generation", incidentId.generation);
+      }
+      addOptionalFilter(predicates, parameters, "action_kind", query.actionKind);
+      if (query.afterOrdinal !== undefined) {
+        addFilter(predicates, parameters, "ordinal", query.afterOrdinal, ">");
+      }
+      parameters.push(query.limit);
+      const combinedPredicates = predicates.reduce(
+        (sql, predicate) => sql.length === 0 ? predicate : `${sql} AND ${predicate}`,
+        "",
       );
-      addFilter(
-        predicates,
-        parameters,
-        "incident_activation",
-        incidentId.effectId.activation,
-      );
-      addFilter(
-        predicates,
-        parameters,
-        "incident_generation",
-        incidentId.generation,
-      );
-    }
-    addOptionalFilter(predicates, parameters, "action_kind", query.actionKind);
-    if (query.afterOrdinal !== undefined) {
-      addFilter(predicates, parameters, "ordinal", query.afterOrdinal, ">");
-    }
-    parameters.push(query.limit);
-    const combinedPredicates = predicates.reduce(
-      (sql, predicate) => sql.length === 0 ? predicate : `${sql} AND ${predicate}`,
-      "",
-    );
-    const where = combinedPredicates.length === 0
-      ? ""
-      : `WHERE ${combinedPredicates}`;
-    return this.#database.prepare(`
+      const where = combinedPredicates.length === 0
+        ? ""
+        : `WHERE ${combinedPredicates}`;
+      const rows = this.#database.prepare(`
       SELECT ordinal, event_id, actor_id, hosting_process_instance_id,
         incident_process_instance_id, incident_element_id,
         incident_activation, incident_generation, action_kind,
@@ -202,7 +201,13 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
       ${where}
       ORDER BY ordinal ASC
       LIMIT ?
-    `).all(...parameters).map(decodeRow);
+      `).all(...parameters).map(decodeRow);
+      this.#database.exec("COMMIT");
+      return rows;
+    } catch (error: unknown) {
+      if (this.#database.isTransaction) this.#database.exec("ROLLBACK");
+      throw error;
+    }
   }
 
   async snapshotHostingProcessInstance(
@@ -217,7 +222,11 @@ export class SqliteIncidentAuditRepository implements IncidentAuditRepository {
         headSql: `
           SELECT COUNT(*) AS event_count,
             COALESCE(SUM(length(CAST(event_json AS BLOB))), 0) AS stored_bytes,
-            MAX(ordinal) AS head_ordinal
+            MAX(ordinal) AS head_ordinal,
+            (SELECT head FROM incident_audit_sink_head WHERE singleton = 1) AS stream_head,
+            (SELECT COUNT(*) FROM incident_audit_events) AS stream_count,
+            (SELECT MIN(ordinal) FROM incident_audit_events) AS stream_first,
+            (SELECT MAX(ordinal) FROM incident_audit_events) AS stream_last
           FROM incident_audit_events
           WHERE hosting_process_instance_id = ?
         `,
@@ -261,8 +270,10 @@ function initializeSchema(database: DatabaseSync): void {
     }
     if (
       version !== schemaEpoch ||
-      tables.length !== 1 ||
-      tables[0] !== "incident_audit_events"
+      JSON.stringify(tables) !== JSON.stringify([
+        "incident_audit_events",
+        "incident_audit_sink_head",
+      ])
     ) {
       throw new IncidentAuditSchemaResetRequiredError();
     }
@@ -271,6 +282,32 @@ function initializeSchema(database: DatabaseSync): void {
   } catch (error: unknown) {
     if (database.isTransaction) database.exec("ROLLBACK");
     throw error;
+  }
+}
+
+function requireCompleteStream(database: DatabaseSync): void {
+  const row = database.prepare(`
+    SELECT h.head, COUNT(e.ordinal) AS event_count,
+      MIN(e.ordinal) AS first_ordinal, MAX(e.ordinal) AS last_ordinal
+    FROM incident_audit_sink_head h
+    LEFT JOIN incident_audit_events e ON true
+    WHERE h.singleton = 1
+    GROUP BY h.head
+  `).get();
+  if (row === undefined) {
+    throw new IncidentAuditStoredValueError(new TypeError("incident audit sink head is absent"));
+  }
+  const head = requireDatabaseInteger(row.head, "incident audit sink head");
+  const count = requireDatabaseInteger(row.event_count, "incident audit event count");
+  if (
+    count !== head ||
+    (head === 0 ? row.first_ordinal !== null || row.last_ordinal !== null :
+      requirePositiveSafeInteger(row.first_ordinal, "first incident audit ordinal") !== 1 ||
+      requirePositiveSafeInteger(row.last_ordinal, "last incident audit ordinal") !== head)
+  ) {
+    throw new IncidentAuditStoredValueError(
+      new TypeError("incident audit sink is not a complete prefix"),
+    );
   }
 }
 
@@ -293,9 +330,17 @@ function requireCurrentSchema(database: DatabaseSync): void {
     SELECT name, type, "notnull", pk
     FROM pragma_table_info('incident_audit_events') ORDER BY cid
   `).all().map((row) => [row.name, row.type, row.notnull, row.pk]);
+  const headActual = database.prepare(`
+    SELECT name, type, "notnull", pk
+    FROM pragma_table_info('incident_audit_sink_head') ORDER BY cid
+  `).all().map((row) => [row.name, row.type, row.notnull, row.pk]);
   const strict = database.prepare(`
     SELECT strict FROM pragma_table_list
     WHERE schema = 'main' AND name = 'incident_audit_events'
+  `).get()?.strict;
+  const headStrict = database.prepare(`
+    SELECT strict FROM pragma_table_list
+    WHERE schema = 'main' AND name = 'incident_audit_sink_head'
   `).get()?.strict;
   const objects = database.prepare(`
     SELECT type, name, tbl_name FROM sqlite_schema
@@ -308,7 +353,12 @@ function requireCurrentSchema(database: DatabaseSync): void {
   `).all().map((row) => [row.type, row.name, row.tbl_name]);
   if (
     JSON.stringify(actual) !== JSON.stringify(expected) ||
+    JSON.stringify(headActual) !== JSON.stringify([
+      ["singleton", "INTEGER", 0, 1],
+      ["head", "INTEGER", 1, 0],
+    ]) ||
     strict !== 1 ||
+    headStrict !== 1 ||
     JSON.stringify(objects) !== JSON.stringify(expectedSchemaObjects)
   ) {
     throw new IncidentAuditSchemaResetRequiredError();
