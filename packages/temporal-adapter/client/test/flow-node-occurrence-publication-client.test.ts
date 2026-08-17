@@ -2,7 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { SemanticProcessCompilerId } from "@bpmn-lean/semantic-core";
-import { WorkflowNotFoundError } from "@temporalio/client";
+import {
+  QueryNotRegisteredError,
+  WorkflowNotFoundError,
+} from "@temporalio/client";
+import {
+  bpmnWorkflowPublicationSegmentDescriptorV1,
+  bpmnWorkflowPublicationSegmentDirectoryV1,
+  bpmnWorkflowPublicationSegmentQueryName,
+  bpmnWorkflowPublicationSegmentSelectionQueryName,
+  bpmnWorkflowPublicationSegmentsV1,
+  workflowPublicationSegmentSha256,
+} from "@bpmn-lean/temporal-protocol";
 
 import {
   observeTemporalFlowNodeOccurrences,
@@ -48,6 +59,41 @@ test("queries the exact occurrence address and validates the public transport pa
     name: "bpmn-flow-node-occurrences",
     request: { afterRevision: 0, limit: 1 },
   }]);
+});
+
+test("reads the current occurrence segment without exposing its Run address", async () => {
+  const fixture = currentSegmentFixture();
+  const addresses: unknown[] = [];
+  const client = fakeClient({
+    execution: {
+      segmentQueries: true,
+      query: async (name, request) => {
+        assert.equal(name, bpmnWorkflowPublicationSegmentSelectionQueryName);
+        return fixture.selection;
+      },
+    },
+    "current-run": {
+      segmentQueries: true,
+      query: async (name, request) => {
+        assert.equal(name, bpmnWorkflowPublicationSegmentQueryName);
+        return fixture.segmentResponse(request);
+      },
+    },
+  }, addresses);
+
+  assert.deepEqual(
+    await observeTemporalFlowNodeOccurrences(
+      client,
+      "execution",
+      expected,
+      { afterRevision: 0, limit: 1 },
+    ),
+    { kind: "available", page: fixture.flowNodeOccurrences },
+  );
+  assert.deepEqual(addresses, [
+    { workflowId: "execution", runId: undefined },
+    { workflowId: "execution", runId: "current-run" },
+  ]);
 });
 
 test("fails closed on identity, range, cursor, private-anchor, and shape substitutions", async () => {
@@ -211,16 +257,135 @@ function occurrencePage() {
   };
 }
 
+function currentSegmentFixture() {
+  const execution = alignedExecutionPage();
+  const flowNodeOccurrences = occurrencePage();
+  const selected = {
+    format: bpmnWorkflowPublicationSegmentDescriptorV1,
+    runId: "current-run",
+    runOrdinal: 1,
+    fromRevision: 0,
+    throughRevision: 1,
+    sha256: workflowPublicationSegmentSha256(
+      execution.batches,
+      flowNodeOccurrences.batches,
+    ),
+  } as const;
+  const selection = {
+    protocol: bpmnWorkflowPublicationSegmentsV1,
+    processInstanceId,
+    afterRevision: 0,
+    limit: 1,
+    kind: "available",
+    directory: {
+      format: bpmnWorkflowPublicationSegmentDirectoryV1,
+      segments: [],
+    },
+    selected,
+    currentRun: selected,
+    snapshot: {
+      definition,
+      processId,
+      processInstanceId,
+      headRevision: 1,
+      current: execution.current,
+      currentOpen: flowNodeOccurrences.currentOpen,
+    },
+  } as const;
+  return {
+    flowNodeOccurrences,
+    selection,
+    segmentResponse: (request: unknown) => ({
+      ...(request as Record<string, unknown>),
+      kind: "available",
+      execution: { kind: "available", page: execution },
+      flowNodeOccurrences: { kind: "available", page: flowNodeOccurrences },
+    }),
+  };
+}
+
+function alignedExecutionPage() {
+  return {
+    definition,
+    processId,
+    processInstanceId,
+    requestedAfterRevision: 0,
+    pageThroughRevision: 1,
+    headRevision: 1,
+    batches: [{
+      commandId: "command-start",
+      fromRevision: 0,
+      throughRevision: 1,
+      transitions: [{
+        revision: 1,
+        logicalTimeMs: 0,
+        transition: {
+          kind: "externalStimulus",
+          stimulus: {
+            kind: "startProcess",
+            commandId: "command-start",
+            processId,
+            instanceId: processInstanceId,
+            initialVariables: [],
+          },
+        },
+        positionDelta: {
+          consumedTokens: [],
+          producedTokens: [],
+          enteredScopes: [],
+          exitedScopes: [],
+        },
+      }],
+    }],
+    current: {
+      revision: 1,
+      state: {
+        kind: "state",
+        instanceId: processInstanceId,
+        status: "running",
+        activeWaits: [],
+        openUserTasks: [],
+        openMessageSubscriptions: [],
+        openTimers: [],
+        openEffects: [],
+        openIncidents: [],
+        variables: [],
+        enabledInteractions: [],
+        logicalTimeMs: 0,
+      },
+      controlTokens: [],
+      scopes: [],
+    },
+  } as const;
+}
+
 type FakeHandle = Readonly<{
+  segmentQueries?: boolean;
   query: (name: string, request: unknown) => Promise<unknown>;
 }>;
 
-function fakeClient(handles: Readonly<Record<string, FakeHandle>>): never {
+function fakeClient(
+  handles: Readonly<Record<string, FakeHandle>>,
+  addresses?: unknown[],
+): never {
   return {
-    getHandle: (workflowId: string) => handles[workflowId] ?? {
-      query: async () => {
-        throw new WorkflowNotFoundError("not found", workflowId, undefined);
-      },
+    getHandle: (workflowId: string, runId?: string) => {
+      addresses?.push({ workflowId, runId });
+      const handle = handles[runId ?? workflowId];
+      if (handle === undefined) return {
+        query: async () => {
+          throw new WorkflowNotFoundError("not found", workflowId, runId);
+        },
+      };
+      return {
+        query: async (name: string, request: unknown) => {
+          if (name === bpmnWorkflowPublicationSegmentSelectionQueryName &&
+            handle.segmentQueries !== true) {
+            throw new QueryNotRegisteredError("not registered", 0 as never);
+          }
+          return handle.query(name, request);
+        },
+      };
     },
   } as never;
 }

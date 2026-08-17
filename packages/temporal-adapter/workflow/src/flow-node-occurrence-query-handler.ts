@@ -56,6 +56,7 @@ export function queryFlowNodeOccurrences(
   execution: ExecutionPublicationState,
   occurrences: FlowNodeOccurrencePublicationState,
   requestValue: unknown,
+  segmentStartRevision = 0,
 ): FlowNodeOccurrencePublicationResult {
   const request = requireFlowNodeOccurrencePublicationRequest(requestValue);
   requireAlignedAccumulatorHeads(execution, occurrences);
@@ -63,6 +64,7 @@ export function queryFlowNodeOccurrences(
     program,
     execution,
     request,
+    segmentStartRevision,
   );
   switch (executionResult.kind) {
     case ExecutionPublicationResultKind.NotReady:

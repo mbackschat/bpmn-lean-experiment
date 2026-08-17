@@ -26,6 +26,8 @@ This document owns current implementation, proof, evidence, and absence status, 
 
 **Current M5 boundary.** The closure-reviewed [E1 specification](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) implements replay-complete transitions, exact current positions, a strict Workflow Query, retention/replay, and fail-closed Product 2 History, Diagram, and canonical export. The [metrics specification](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) adds Lean/core lifecycle parity, replay-stable time, exact-version all-or-unavailable frequency and completed duration, HTTP, and a two-width UI. The [operator-history specification](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md) completes M5 with independent bounded Work and incident audit snapshots, Operations authorization, canonical download, restart/privacy/focus evidence, and no merged chronology.
 
+**Current Workflow-chain publication boundary.** Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New. Strict descriptors and a contiguous directory are SHA-bound through continuation; each observation takes one immutable latest-selection snapshot and queries the exact selected Run. Pages remain Run-local, and no public API, public shape, terminal receipt, Workflow identity, or Run identity changes.
+
 **Current executable-corpus boundary.** The maintained [executable model corpus](../model-corpus/README.md) binds 24 project models and seven external CIB Seven, OMG, and Betsy files to exact provenance, admission, pipeline, and Product 2 readiness. Its guard requires the canonical catalog and retained coverage to match all 25 pipeline-derived executable variants.
 
 External drift fails closed. The sequential metadata, parallel metadata-composition, and structured expense-exception models have production Chromium journeys; the other 21 are browser-ineligible.
@@ -446,6 +448,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - production Product 1 enrollment in the exact `bpmn-workflow-chain-v1` branch through a fixed Initial host envelope, with explicit production budgets, committed RuntimeState, bounded command recovery, and publication heads/current/open anchors carried across Runs; retained direct two-argument Workflow starts remain outside the patch for exact pre-v1 replay compatibility
 - chain-relative Product 1 recovery for User Task completion, Message delivery, incident Retry, and incident Cancel through a private identity-echoing latest-Run Query, including exact retry/conflict precedence, typed capacity failure, closed-receipt classification, Call Activity host/task identity separation, and no public SDK handle or Run identity
 - one forced cyclic User Task witness that lowers only the Event History threshold, crosses exactly three Runs and two Continue-As-New boundaries, preserves the open occurrence identity, recovers an exact prior-Run Update, rejects conflicting content, returns the closed v1 terminal receipt with its private recovery envelope, and replays every Run
+- private paired E1/E2 per-Run publication segments with strict descriptor/directory validation and SHA-bound continuation; immutable latest selection followed by an exact selected-Run Query; Run-local pages; selected retained-Run loss mapped to `unavailable`; legacy fallback only for `QueryNotRegisteredError`; and live evidence over Run 1 `0..8`, Run 2 `8..12`, Run 3 `12..16`, cursor pages `0/4/8/12/16`, two occurrence identities spanning Run boundaries, unchanged terminal receipt, no public Workflow/Run identity, and replay of all three Runs
 
 #### Explicitly absent
 
@@ -468,7 +471,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
 - Search Attributes
-- publication-segment traversal, complete timer/effect/Message rollover evidence, deployment admission, and the full approved capacity matrix
+- post-retention publication reconstruction or archive, complete timer/effect/Message rollover evidence, deployment admission, and the full approved capacity matrix
 - task inbox
 
 ### Differential pipeline

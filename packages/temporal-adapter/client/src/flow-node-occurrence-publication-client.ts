@@ -24,6 +24,10 @@ import type {
 } from "@bpmn-lean/temporal-protocol";
 
 import type { TemporalDefinitionStartClient } from "./definition-start-client.js";
+import {
+  WorkflowPublicationObservationKind,
+  observeWorkflowPublicationSegment,
+} from "./workflow-publication-segment-client.js";
 
 const operationDeadlineMs = 5_000;
 
@@ -52,10 +56,36 @@ export async function observeTemporalFlowNodeOccurrences(
   const expected = snapshotIdentity(expectedValue);
   const request = requireFlowNodeOccurrencePublicationRequest(requestValue);
   requireNonempty(workflowId, "workflowId");
+  const workflowClient = workflowClientOf(client);
+  const observation = await observeWorkflowPublicationSegment(
+    workflowClient,
+    workflowId,
+    expected.processInstanceId,
+    request,
+  );
+  switch (observation.kind) {
+    case WorkflowPublicationObservationKind.Paired:
+      return requireFlowNodeOccurrencePublicationTransportResult(
+        observation.flowNodeOccurrences,
+        {
+          ...expected,
+          afterRevision: request.afterRevision,
+          ...(request.limit === undefined ? {} : { limit: request.limit }),
+        },
+      );
+    case WorkflowPublicationObservationKind.NotFound:
+      return { kind: FlowNodeOccurrencePublicationResultKind.NotFound };
+    case WorkflowPublicationObservationKind.Unavailable:
+      return { kind: FlowNodeOccurrencePublicationResultKind.Unavailable };
+    case WorkflowPublicationObservationKind.Legacy:
+      break;
+    default:
+      return assertNever(observation);
+  }
   let value: unknown;
   try {
     value = await withDeadline(
-      workflowClientOf(client).getHandle<BpmnProcessWorkflow>(workflowId)
+      workflowClient.getHandle<BpmnProcessWorkflow>(workflowId)
         .query<unknown, [FlowNodeOccurrencePublicationRequest]>(
           bpmnFlowNodeOccurrencesQueryName,
           request,
@@ -121,4 +151,8 @@ function requireNonempty(value: string, name: string): void {
 function isNonempty(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 &&
     isWellFormedWireString(value);
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported Workflow publication observation: ${String(value)}`);
 }

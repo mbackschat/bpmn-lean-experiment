@@ -30,6 +30,7 @@ import {
   requireBpmnWorkflowContinuationStateV1,
   requireBpmnWorkflowHostInputV1,
   requireWorkflowChainInitialArgumentBudgets,
+  workflowPublicationSegmentDirectorySha256,
   workflowContinuationBudgetViolation,
   workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-protocol";
@@ -43,6 +44,7 @@ import type {
   TerminalProcessReceipt,
   WorkflowChainCommandRecoveryRequest,
   WorkflowChainCommandRecoveryResponse,
+  WorkflowPublicationSegmentDirectoryV1,
 } from "@bpmn-lean/temporal-protocol";
 
 import type {
@@ -52,8 +54,13 @@ import {
   WorkflowCommandRecoveryLedger,
   WorkflowCommandRecoveryLookupKind,
 } from "./workflow-command-recovery.js";
-
-const continuationInvalidFailureType = "BpmnWorkflowContinuationInvalid";
+import {
+  bpmnWorkflowContinuationInvalidFailureType,
+  emptyWorkflowPublicationSegmentDirectory,
+  requireWorkflowPublicationSuccessor,
+  restoreWorkflowCommandPublication,
+  snapshotWorkflowPublicationForSuccessor,
+} from "./workflow-publication-segments.js";
 
 export const bpmnWorkflowChainCommandRecoveryQuery = defineQuery<
   WorkflowChainCommandRecoveryResponse,
@@ -62,8 +69,10 @@ export const bpmnWorkflowChainCommandRecoveryQuery = defineQuery<
 
 export type WorkflowChainRuntime = {
   readonly eventHistoryEventLimit: number;
+  readonly runId: string;
   readonly runOrdinal: number;
   readonly firstExecutionRunId: string;
+  readonly segmentDirectory: WorkflowPublicationSegmentDirectoryV1;
   readonly recovery: WorkflowCommandRecoveryLedger;
 };
 
@@ -114,8 +123,10 @@ export function initializeWorkflowChain(
       return {
         runtime: {
           eventHistoryEventLimit: input.eventHistoryEventLimit,
+          runId: workflowInfo().runId,
           runOrdinal: 1,
           firstExecutionRunId: workflowInfo().firstExecutionRunId,
+          segmentDirectory: emptyWorkflowPublicationSegmentDirectory(),
           recovery: new WorkflowCommandRecoveryLedger(),
         },
         restored: null,
@@ -133,13 +144,15 @@ export function initializeWorkflowChain(
       return {
         runtime: {
           eventHistoryEventLimit: input.eventHistoryEventLimit,
+          runId: workflowInfo().runId,
           runOrdinal: input.runOrdinal,
           firstExecutionRunId: input.firstExecutionRunId,
+          segmentDirectory: validated.publication.segmentDirectory,
           recovery: new WorkflowCommandRecoveryLedger(validated.recovery),
         },
         restored: {
           state: validated.state,
-          publication: restoreCommandPublication(validated.publication),
+          publication: restoreWorkflowCommandPublication(validated.publication),
           messageDeliveryRecords: [...input.completedMessageDeliveryRecords],
         },
       };
@@ -195,8 +208,16 @@ function validateContinuationArguments(
     program,
     state,
     start.instanceId,
+    input.firstExecutionRunId,
+    input.runOrdinal,
   );
-  requireContinuationIdentity(input, start, program, firstExecutionRunId);
+  requireContinuationIdentity(
+    input,
+    start,
+    program,
+    firstExecutionRunId,
+    publication,
+  );
   requireIncomingContinuationArgumentBudgets(
     start,
     program,
@@ -247,6 +268,10 @@ export function buildWorkflowChainSuccessor(
       runtime.runOrdinal,
     );
   }
+  const closedPublication = snapshotWorkflowPublicationForSuccessor(
+    publication,
+    runtime,
+  );
   const host: BpmnWorkflowContinuationHostInputV1 = {
     protocol: bpmnWorkflowContinuationV1,
     kind: BpmnWorkflowHostInputKind.Continuation,
@@ -257,6 +282,7 @@ export function buildWorkflowChainSuccessor(
     processId: program.processId,
     processInstanceId: start.instanceId,
     startCommandId: start.commandId,
+    publicationSegmentDirectorySha256: closedPublication.directorySha256,
     completedMessageDeliveryRecords: messageDeliveryRecords.map((record) => ({
       ...record,
       stimulus: { ...record.stimulus },
@@ -265,7 +291,7 @@ export function buildWorkflowChainSuccessor(
   const recovery: BpmnWorkflowContinuationRecoveryV1 = {
     entries: runtime.recovery.snapshot(),
   };
-  const continuationPublication = snapshotCommandPublication(publication);
+  const continuationPublication = closedPublication.publication;
   requireSuccessorArgumentBudgets(
     start,
     program,
@@ -274,6 +300,14 @@ export function buildWorkflowChainSuccessor(
     recovery,
     continuationPublication,
     runtime,
+  );
+  requireWorkflowPublicationSuccessor(
+    continuationPublication,
+    program,
+    state,
+    start.instanceId,
+    runtime.firstExecutionRunId,
+    runOrdinal,
   );
   return [start, program, host, state, recovery, continuationPublication];
 }
@@ -418,12 +452,15 @@ function requireContinuationIdentity(
   start: ProcessStartStimulus,
   program: SemanticProcessProgram,
   firstExecutionRunId: string,
+  publication: BpmnWorkflowContinuationPublicationV1,
 ): void {
   try {
     if (input.processId !== program.processId ||
       input.processInstanceId !== start.instanceId ||
       input.startCommandId !== start.commandId ||
       input.firstExecutionRunId !== firstExecutionRunId ||
+      input.publicationSegmentDirectorySha256 !==
+        workflowPublicationSegmentDirectorySha256(publication.segmentDirectory) ||
       canonical(input.definition) !== canonical(program.identity) ||
       input.completedMessageDeliveryRecords.some(({ stimulus }) =>
         stimulus.subscriptionId.processInstanceId !== input.processInstanceId)) {
@@ -470,6 +507,8 @@ function requireCarriedPublication(
   program: SemanticProcessProgram,
   state: RuntimeState,
   processInstanceId: string,
+  firstExecutionRunId: string,
+  successorRunOrdinal: number,
 ): BpmnWorkflowContinuationPublicationV1 {
   try {
     return requireBpmnWorkflowContinuationPublicationV1(
@@ -477,46 +516,11 @@ function requireCarriedPublication(
       program,
       state,
       processInstanceId,
+      { firstExecutionRunId, successorRunOrdinal },
     );
   } catch (error: unknown) {
     throw invalidContinuation("Invalid publication continuation", error);
   }
-}
-
-function snapshotCommandPublication(
-  state: CommandPublicationState,
-): BpmnWorkflowContinuationPublicationV1 {
-  return {
-    execution: {
-      definition: state.execution.definition,
-      processId: state.execution.processId,
-      processInstanceId: state.execution.processInstanceId,
-      headRevision: state.execution.headRevision,
-      current: state.execution.current,
-    },
-    flowNodeOccurrences: {
-      definition: state.flowNodeOccurrences.definition,
-      processId: state.flowNodeOccurrences.processId,
-      processInstanceId: state.flowNodeOccurrences.processInstanceId,
-      headRevision: state.flowNodeOccurrences.headRevision,
-      currentOpen: state.flowNodeOccurrences.currentOpen,
-      retainedOpen: state.flowNodeOccurrences.retainedOpen,
-      lastCommittedAtEpochMs: state.flowNodeOccurrences.lastCommittedAtEpochMs,
-    },
-  };
-}
-
-function restoreCommandPublication(
-  value: BpmnWorkflowContinuationPublicationV1,
-): CommandPublicationState {
-  return {
-    execution: { ...value.execution, batches: [] },
-    flowNodeOccurrences: {
-      ...value.flowNodeOccurrences,
-      batches: [],
-    },
-    commandResults: [],
-  };
 }
 
 function requireIncomingContinuationArgumentBudgets(
@@ -590,7 +594,7 @@ function capacityFailure(
 function invalidContinuation(message: string, cause?: unknown): ApplicationFailure {
   return ApplicationFailure.nonRetryable(
     message,
-    continuationInvalidFailureType,
+    bpmnWorkflowContinuationInvalidFailureType,
     ...(cause === undefined ? [] : [String(cause)]),
   );
 }

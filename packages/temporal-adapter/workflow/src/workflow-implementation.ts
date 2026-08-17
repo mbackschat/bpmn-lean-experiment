@@ -101,14 +101,12 @@ import {
   validateCancelIncidentProcessUpdate,
 } from "./incident-cancellation-update-handler.js";
 import { registerIncidentOperationsQueryHandler } from "./incident-operations-query-handler.js";
-import { registerExecutionPublicationQueryHandler } from "./execution-publication-query-handler.js";
 import {
   commandOutcome,
   createCommandPublicationState,
   integrateCommandPublication,
   recordCommandPublicationOutcome,
 } from "./command-publication-integration.js";
-import { registerFlowNodeOccurrenceQueryHandler } from "./flow-node-occurrence-query-handler.js";
 import {
   isTerminalProcessState,
   terminalProcessReceipt,
@@ -137,6 +135,7 @@ import {
 import type {
   WorkflowChainRuntime,
 } from "./workflow-chain-continuation.js";
+import { registerWorkflowPublicationQueries } from "./workflow-publication-segments.js";
 
 export const bpmnTraceQuery =
   defineQuery<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName);
@@ -261,14 +260,11 @@ export async function runBpmnProcessWithHostEffects(
     );
   }
 
-  registerExecutionPublicationQueryHandler(
+  registerWorkflowPublicationQueries(
     semanticProcess,
-    () => commandPublication.execution,
-  );
-  registerFlowNodeOccurrenceQueryHandler(
-    semanticProcess,
-    () => commandPublication.execution,
-    () => commandPublication.flowNodeOccurrences,
+    start.instanceId,
+    workflowChain,
+    () => commandPublication,
   );
   registerIncidentOperationsQueryHandler(semanticProcess, () => state);
   setHandler(bpmnTraceQuery, () => [...trace]);

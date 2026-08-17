@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("registers the Query before commit and publishes before command-result resolution", async () => {
-  const [source, integration] = await Promise.all([
+  const [source, integration, registrations] = await Promise.all([
     readFile(
       new URL("../src/workflow-implementation.ts", import.meta.url),
       "utf8",
@@ -12,16 +12,39 @@ test("registers the Query before commit and publishes before command-result reso
       new URL("../src/command-publication-integration.ts", import.meta.url),
       "utf8",
     ),
+    readFile(
+      new URL("../src/workflow-publication-segments.ts", import.meta.url),
+      "utf8",
+    ),
   ]);
-  const registration = source.indexOf("registerExecutionPublicationQueryHandler(");
-  const occurrenceRegistration = source.indexOf("registerFlowNodeOccurrenceQueryHandler(");
+  const registration = source.indexOf("registerWorkflowPublicationQueries(");
   const semanticLoop = source.indexOf("while (true)");
   const evaluation = source.indexOf("advanceScenario(", semanticLoop);
   const append = source.indexOf("integrateCommandPublication(", evaluation);
   const record = source.indexOf("recordCommandPublicationOutcome(", append);
   const result = source.indexOf("commandOutcome(", record);
   assert.ok(registration >= 0 && registration < semanticLoop);
-  assert.ok(occurrenceRegistration > registration && occurrenceRegistration < semanticLoop);
+  const executionRegistration = registrations.indexOf(
+    "registerExecutionPublicationQueryHandler(",
+  );
+  const occurrenceRegistration = registrations.indexOf(
+    "registerFlowNodeOccurrenceQueryHandler(",
+    executionRegistration,
+  );
+  const privateSelectionRegistration = registrations.indexOf(
+    "bpmnWorkflowPublicationSegmentSelectionQuery,",
+    occurrenceRegistration,
+  );
+  const privateSegmentRegistration = registrations.indexOf(
+    "bpmnWorkflowPublicationSegmentQuery,",
+    privateSelectionRegistration,
+  );
+  assert.ok(
+    executionRegistration >= 0 &&
+      occurrenceRegistration > executionRegistration &&
+      privateSelectionRegistration > occurrenceRegistration &&
+      privateSegmentRegistration > privateSelectionRegistration,
+  );
   assert.ok(evaluation >= 0 && append > evaluation && record > append && result > record);
   assert.doesNotMatch(source.slice(evaluation, append), /\bawait\b/u);
   assert.doesNotMatch(source.slice(append, result), /\bawait\b/u);

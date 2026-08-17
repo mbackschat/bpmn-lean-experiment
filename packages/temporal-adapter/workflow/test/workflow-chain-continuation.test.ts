@@ -247,6 +247,44 @@ test("rejects publication current logical-time drift from RuntimeState", () => {
   assertInvalidIncoming(args, { publication });
 });
 
+test("rejects substituted publication segment identity, digest, and directory shape", () => {
+  const args = successorArguments();
+  const segment = args[5].segmentDirectory.segments[0];
+  assert.ok(segment !== undefined);
+  for (const substituted of [
+    { ...segment, runId: "substituted-run" },
+    { ...segment, sha256: "f".repeat(64) },
+    { ...segment, fromRevision: 1 },
+  ]) {
+    assertInvalidIncoming(args, {
+      publication: {
+        ...args[5],
+        segmentDirectory: {
+          ...args[5].segmentDirectory,
+          segments: [substituted],
+        },
+      },
+    });
+  }
+  assertInvalidIncoming(args, {
+    publication: {
+      ...args[5],
+      segmentDirectory: {
+        ...args[5].segmentDirectory,
+        segments: [],
+      },
+    },
+  });
+  assertInvalidIncoming([
+    args[0],
+    args[1],
+    { ...args[2], publicationSegmentDirectorySha256: "0".repeat(64) },
+    args[3],
+    args[4],
+    args[5],
+  ]);
+});
+
 test("rejects swapped retained occurrence anchors at continuation admission", () => {
   const args = successorArguments();
   const [first, second, ...rest] = args[5].flowNodeOccurrences.retainedOpen;
@@ -405,6 +443,28 @@ test("measures successor host metadata under the publication-continuation bound"
   );
 });
 
+test("classifies an oversized publication segment directory before continuation", () => {
+  const base = successorFixture();
+  const oversizedRunId = "r".repeat(70 * 1_024);
+  assertCapacityFailure(
+    () => buildWorkflowChainSuccessor(
+      {
+        ...base.runtime,
+        runId: oversizedRunId,
+        firstExecutionRunId: oversizedRunId,
+      },
+      publicationStart,
+      publicationProgram,
+      base.state,
+      base.publication,
+      [],
+    ),
+    WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes,
+    undefined,
+    base.publication.execution.headRevision,
+  );
+});
+
 function successorArguments(
   messageDeliveryRecords: ReadonlyArray<MessageDeliveryRecord> = [],
 ): WorkflowChainSuccessorArguments {
@@ -442,8 +502,13 @@ function successorFixture() {
   );
   const runtime: WorkflowChainRuntime = {
     eventHistoryEventLimit: 4,
+    runId: firstExecutionRunId,
     runOrdinal: 1,
     firstExecutionRunId,
+    segmentDirectory: {
+      format: "bpmn-lean.workflow-publication-segment-directory.v1",
+      segments: [],
+    },
     recovery: new WorkflowCommandRecoveryLedger(),
   };
   return { state: step.state, publication, runtime };

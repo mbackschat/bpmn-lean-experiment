@@ -1,7 +1,6 @@
 import {
   ControlStateKind,
   MappingExpressionKind,
-  SemanticFlowNodeOccurrenceAnchorKind,
   SemanticOriginKind,
   enabledInternalOperationCount,
   isMessageChannel,
@@ -17,7 +16,6 @@ import type {
   DeepReadonly,
   ProcessStartStimulus,
   RuntimeState,
-  SemanticFlowNodeOccurrenceAnchor,
   SemanticProcessIdentity,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
@@ -25,17 +23,6 @@ import type {
 import type {
   MessageDeliveryRecord,
 } from "./contracts.js";
-import type {
-  OpenFlowNodeOccurrence,
-} from "./flow-node-occurrence-publication.js";
-import {
-  FlowNodeOccurrencePublicationResultKind,
-  requireFlowNodeOccurrencePublicationResult,
-} from "./flow-node-occurrence-publication.js";
-import type {
-  CurrentCommittedExecution,
-} from "./semantic-publication.js";
-import { requireExecutionPublicationPage } from "./semantic-publication.js";
 import type {
   WorkflowChainRecoveryEntry,
 } from "./workflow-chain.js";
@@ -46,7 +33,15 @@ import {
   workflowChainCanonicalUtf8ByteLength,
   workflowChainProductionLimit,
 } from "./workflow-chain.js";
+import { requireWorkflowChainPlainDataTree } from "./workflow-chain-plain-data.js";
 import { isMessageDeliveryRecord } from "./lifecycle-results.js";
+import type {
+  BpmnWorkflowContinuationPublicationV1,
+} from "./workflow-publication-segments.js";
+
+export type {
+  BpmnWorkflowContinuationPublicationV1,
+} from "./workflow-publication-segments.js";
 
 export const bpmnWorkflowContinuationV1 =
   "bpmn-lean.workflow-continuation.v1" as const;
@@ -77,6 +72,7 @@ export type BpmnWorkflowContinuationHostInputV1 = DeepReadonly<{
   processId: string;
   processInstanceId: string;
   startCommandId: string;
+  publicationSegmentDirectorySha256: string;
   completedMessageDeliveryRecords: MessageDeliveryRecord[];
 }>;
 
@@ -87,6 +83,7 @@ export type BpmnWorkflowHostInputV1 =
 export function requireBpmnWorkflowHostInputV1(
   value: unknown,
 ): BpmnWorkflowHostInputV1 {
+  requireWorkflowChainPlainDataTree(value);
   if (!isRecord(value) || value.protocol !== bpmnWorkflowContinuationV1) {
     throw new TypeError("Unsupported Workflow continuation schema");
   }
@@ -106,7 +103,8 @@ export function requireBpmnWorkflowHostInputV1(
       requireOnlyKeys(value, [
         "protocol", "kind", "eventHistoryEventLimit", "runOrdinal",
         "firstExecutionRunId", "definition", "processId", "processInstanceId",
-        "startCommandId", "completedMessageDeliveryRecords",
+        "startCommandId", "publicationSegmentDirectorySha256",
+        "completedMessageDeliveryRecords",
       ]);
       if (
         !Number.isSafeInteger(value.runOrdinal) ||
@@ -117,6 +115,7 @@ export function requireBpmnWorkflowHostInputV1(
         !isNonemptyString(value.processId) ||
         !isNonemptyString(value.processInstanceId) ||
         !isNonemptyString(value.startCommandId) ||
+        !isSha256(value.publicationSegmentDirectorySha256) ||
         !Array.isArray(value.completedMessageDeliveryRecords) ||
         !value.completedMessageDeliveryRecords.every(isMessageDeliveryRecord)
       ) {
@@ -136,7 +135,7 @@ export function requireBpmnWorkflowContinuationStateV1(
   program: SemanticProcessProgram,
   processInstanceId: string,
 ): BpmnWorkflowContinuationStateV1 {
-  requirePlainDataTree(value);
+  requireWorkflowChainPlainDataTree(value);
   if (!isRuntimeState(value) ||
     value.control.kind !== ControlStateKind.Running ||
     value.control.instanceId !== processInstanceId) {
@@ -156,129 +155,6 @@ export function requireBpmnWorkflowContinuationStateV1(
 export type BpmnWorkflowContinuationRecoveryV1 = DeepReadonly<{
   entries: WorkflowChainRecoveryEntry[];
 }>;
-
-export type BpmnWorkflowContinuationPublicationV1 = DeepReadonly<{
-  execution: {
-    definition: SemanticProcessIdentity;
-    processId: string;
-    processInstanceId: string;
-    headRevision: number;
-    current: CurrentCommittedExecution | null;
-  };
-  flowNodeOccurrences: {
-    definition: SemanticProcessIdentity;
-    processId: string;
-    processInstanceId: string;
-    headRevision: number;
-    currentOpen: OpenFlowNodeOccurrence[];
-    retainedOpen: Array<{
-      anchor: SemanticFlowNodeOccurrenceAnchor;
-      occurrence: OpenFlowNodeOccurrence;
-    }>;
-    lastCommittedAtEpochMs: number | null;
-  };
-}>;
-
-export function requireBpmnWorkflowContinuationPublicationV1(
-  value: unknown,
-  program: SemanticProcessProgram,
-  state: BpmnWorkflowContinuationStateV1,
-  processInstanceId: string,
-): BpmnWorkflowContinuationPublicationV1 {
-  requirePlainDataTree(value);
-  if (!isRecord(value)) {
-    throw new TypeError("Malformed publication continuation");
-  }
-  requireOnlyKeys(value, ["execution", "flowNodeOccurrences"]);
-  if (!isRecord(value.execution) || !isRecord(value.flowNodeOccurrences)) {
-    throw new TypeError("Malformed publication continuation");
-  }
-  requireOnlyKeys(value.execution, [
-    "definition", "processId", "processInstanceId", "headRevision", "current",
-  ]);
-  requireOnlyKeys(value.flowNodeOccurrences, [
-    "definition", "processId", "processInstanceId", "headRevision",
-    "currentOpen", "retainedOpen", "lastCommittedAtEpochMs",
-  ]);
-  const execution = value.execution;
-  const occurrences = value.flowNodeOccurrences;
-  const canonical = canonicalWorkflowChainJson;
-  if (
-    execution.processId !== program.processId ||
-    execution.processInstanceId !== processInstanceId ||
-    occurrences.processId !== program.processId ||
-    occurrences.processInstanceId !== processInstanceId ||
-    !Number.isSafeInteger(execution.headRevision) ||
-    Number(execution.headRevision) < 1 ||
-    !Number.isSafeInteger(occurrences.headRevision) ||
-    Number(occurrences.headRevision) < 1 ||
-    execution.headRevision !== occurrences.headRevision ||
-    canonical(execution.definition) !== canonical(program.identity) ||
-    canonical(occurrences.definition) !== canonical(program.identity) ||
-    !isRecord(execution.current) ||
-    !Array.isArray(occurrences.currentOpen) ||
-    !Array.isArray(occurrences.retainedOpen) ||
-    !Number.isSafeInteger(occurrences.lastCommittedAtEpochMs) ||
-    Number(occurrences.lastCommittedAtEpochMs) < 0
-  ) {
-    throw new TypeError("Publication continuation identity or head mismatch");
-  }
-  const headRevision = Number(execution.headRevision);
-  const executionPage = requireExecutionPublicationPage({
-    definition: execution.definition,
-    processId: execution.processId,
-    processInstanceId: execution.processInstanceId,
-    requestedAfterRevision: headRevision,
-    pageThroughRevision: headRevision,
-    headRevision,
-    batches: [],
-    current: execution.current,
-  }, {
-    program,
-    processInstanceId,
-    afterRevision: headRevision,
-    limit: 1,
-  });
-  const observation = observeStableState(program, state);
-  const positions = projectCurrentControlPositions(program, state);
-  if (observation === null || positions === null || canonical(execution.current) !== canonical({
-    revision: headRevision,
-    state: observation,
-    controlTokens: positions.controlTokens,
-    scopes: positions.scopes,
-  })) {
-    throw new TypeError("Publication current does not match committed RuntimeState");
-  }
-  requireFlowNodeOccurrencePublicationResult({
-    kind: FlowNodeOccurrencePublicationResultKind.Available,
-    page: {
-      definition: occurrences.definition,
-      processId: occurrences.processId,
-      processInstanceId: occurrences.processInstanceId,
-      requestedAfterRevision: headRevision,
-      pageThroughRevision: headRevision,
-      headRevision,
-      batches: [],
-      currentOpen: occurrences.currentOpen,
-    },
-  }, {
-    program,
-    processInstanceId,
-    executionPublication: executionPage,
-    afterRevision: headRevision,
-    limit: 1,
-  });
-  const projectedOpen = projectOpenFlowNodeOccurrences(program, state);
-  if (projectedOpen === null || !retainedOpenMatchesRuntime(
-    occurrences.retainedOpen,
-    occurrences.currentOpen,
-    projectedOpen,
-    Number(occurrences.lastCommittedAtEpochMs),
-  )) {
-    throw new TypeError("Publication open occurrences do not match RuntimeState");
-  }
-  return value as BpmnWorkflowContinuationPublicationV1;
-}
 
 export type WorkflowContinuationBudgetViolation = Readonly<{
   budget: WorkflowChainBudgetKind;
@@ -503,83 +379,6 @@ function isScopeId(value: unknown): boolean {
     isNonemptyString(value.definitionScopeId) && isSafeInteger(value.activation, 1);
 }
 
-function retainedOpenMatchesRuntime(
-  retained: ReadonlyArray<unknown>,
-  current: ReadonlyArray<unknown>,
-  projected: NonNullable<ReturnType<typeof projectOpenFlowNodeOccurrences>>,
-  lastCommittedAtEpochMs: number,
-): boolean {
-  if (retained.length !== current.length || retained.length !== projected.length ||
-    canonicalWorkflowChainJson(current) !== canonicalWorkflowChainJson(
-      retained.map((entry) => isRecord(entry) ? entry.occurrence : undefined),
-    )) return false;
-  const anchors = new Set<string>();
-  return retained.every((entry) => {
-    if (!isRecord(entry) || !hasOnlyKeys(entry, ["anchor", "occurrence"]) ||
-      !isAnchor(entry.anchor) || !isRecord(entry.occurrence) ||
-      !isSafeInteger(entry.occurrence.startedAtEpochMs, 0) ||
-      Number(entry.occurrence.startedAtEpochMs) > lastCommittedAtEpochMs) return false;
-    const key = canonicalWorkflowChainJson(entry.anchor);
-    if (anchors.has(key)) return false;
-    anchors.add(key);
-    const match = projected.find((candidate) =>
-      canonicalWorkflowChainJson(candidate.anchor) === key);
-    return match !== undefined && match.processId === entry.occurrence.processId &&
-      match.elementId === entry.occurrence.elementId &&
-      canonicalWorkflowChainJson(match.owner) ===
-        canonicalWorkflowChainJson(entry.occurrence.owner);
-  });
-}
-
-function isAnchor(value: unknown): value is SemanticFlowNodeOccurrenceAnchor {
-  if (!isRecord(value)) return false;
-  switch (value.kind) {
-    case SemanticFlowNodeOccurrenceAnchorKind.Wait:
-    case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
-      return hasOnlyKeys(value, ["kind", "id"]) && isOccurrenceId(value.id);
-    case SemanticFlowNodeOccurrenceAnchorKind.Scope:
-      return hasOnlyKeys(value, ["kind", "id"]) && isScopeId(value.id);
-    case SemanticFlowNodeOccurrenceAnchorKind.Transition:
-      return hasOnlyKeys(value, ["kind", "commandId", "transitionIndex", "localIndex"]) &&
-        isNonemptyString(value.commandId) && isSafeInteger(value.transitionIndex, 0) &&
-        isSafeInteger(value.localIndex, 0);
-    default:
-      return false;
-  }
-}
-
-function requirePlainDataTree(value: unknown, seen = new Set<object>()): void {
-  if (value === null || typeof value === "string" || typeof value === "boolean" ||
-    typeof value === "number") return;
-  if (typeof value !== "object" || seen.has(value)) {
-    throw new TypeError("Workflow continuation must be an acyclic plain-data tree");
-  }
-  seen.add(value);
-  const array = Array.isArray(value);
-  const prototype = Object.getPrototypeOf(value);
-  if (prototype !== (array ? Array.prototype : Object.prototype) && prototype !== null) {
-    throw new TypeError("Workflow continuation contains a non-plain object");
-  }
-  const descriptors = Object.getOwnPropertyDescriptors(value);
-  const keys = Reflect.ownKeys(descriptors);
-  if (keys.some((key) => typeof key === "symbol") ||
-    (array && (keys.length !== value.length + 1 ||
-      !Array.from({ length: value.length }, (_, index) => String(index))
-        .every((key) => Object.hasOwn(descriptors, key))))) {
-    throw new TypeError("Workflow continuation contains non-JSON properties");
-  }
-  for (const key of keys) {
-    const descriptor = Reflect.get(descriptors, key) as PropertyDescriptor | undefined;
-    if (descriptor === undefined || !("value" in descriptor) ||
-      (!array && !descriptor.enumerable) ||
-      (array && key !== "length" && !descriptor.enumerable)) {
-      throw new TypeError("Workflow continuation contains an executable property");
-    }
-    if (key !== "length") requirePlainDataTree(descriptor.value, seen);
-  }
-  seen.delete(value);
-}
-
 function isList(
   value: unknown,
   predicate: (candidate: unknown) => boolean,
@@ -601,6 +400,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonemptyString(value: unknown): value is string {
   return isWireString(value) && value.length > 0;
+}
+
+function isSha256(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{64}$/u.test(value);
 }
 
 function hasOnlyKeys(

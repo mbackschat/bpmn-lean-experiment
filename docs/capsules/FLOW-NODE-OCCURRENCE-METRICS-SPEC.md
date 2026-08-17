@@ -6,6 +6,8 @@
 
 The implemented [Product 2 shared-persistence addendum](../BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) adds a PostgreSQL suffix-only occurrence adapter, one bounded lease-fenced recovery page, and one metrics statement that materializes the visible exact-definition population cut and validates aligned fresh execution and occurrence heads. It adds no metrics generation table or recovery family. Existing occurrence identity, commit time, aggregation, authorization, and semantic claims remain unchanged; SQLite aggregation passages below describe local mode only.
 
+The later approved [Workflow-chain proposal](../TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) extends only Temporal retention. Chain-enrolled Runs close E2 together with E1 in private digest-bound segments, carry the exact open-occurrence anchors across Run boundaries, and let Product 1 traverse retained Runs without changing the public occurrence wire, aggregation, UI, or any BPMN meaning. Run identity remains private and post-retention reconstruction remains excluded.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -282,13 +284,13 @@ The definition-version workspace renders one Flow-node metrics detail. Frequency
 
 ## Temporal hosting and refinement contract
 
-The existing semantic Workflow remains the lifetime owner. No new Signal, Update, Activity, Timer, cancellation mechanism, Task Queue, or Child Workflow is required. The occurrence Query is unconditional and read-only like the E1 Query. It is served from deterministic Workflow state and remains available for running, completed, and cancelled instances during the existing retention boundary.
+The existing semantic Workflow chain remains the lifetime owner. No new Signal, Update, Activity, Timer, cancellation mechanism, Task Queue, or Child Workflow is required. The occurrence Query is unconditional and read-only like the E1 Query. Each chain-enrolled Run retains one local E1/E2 segment; rollover carries the global head, commit-time anchor, current open occurrences, and private semantic anchors into the successor while restoring empty local batch arrays. Product 1 selects and reads the exact retained paired segment privately, so the unchanged public occurrence page never crosses a Run and remains available for running, completed, and cancelled instances while its owning Run is retained.
 
 Durable ingress remains the existing content-bound command queue. A committed command is evaluated once through `advanceScenario`. The Workflow preflights and validates the E1 and occurrence successors using the retained time anchor, takes one `Date.now()` sample only after that complete preflight succeeds, then materializes both immutable successors before recording the result or resolving an Update. There is no `await` between these state changes. Any exception rolls back the Workflow Task, so no timestamp, occurrence prefix, head, or result becomes visible alone.
 
 Ordering is the existing accepted-stimulus queue order. Duplicate command recovery returns the retained command result and creates no new occurrence or timestamp. Worker replacement and replay reconstruct both accumulators. Queries do not mutate state or add history events. Event History may retain the deterministic clock input as part of ordinary Workflow replay, but neither Product 2 nor a diagnostic reader interprets Event History to manufacture the public fact.
 
-The smallest executable refinement witness starts one Process that reaches a User Task, stops the Worker across the wait, completes the same task after replacement, reaches an End Event, and retrieves the terminal occurrence page. It proves exact Start Event, User Task, and End Event lifecycles, positive elapsed User Task duration, same-batch zero duration for instantaneous nodes, E1 revision alignment, duplicate command recovery, pure repeated Queries, completed-history replay, and no platform or Event History fallback. A second bounded witness covers Event-Based Gateway loser cancellation, Call Activity or embedded Sub-Process pairing, and interrupting Boundary Event host cancellation.
+The smallest executable refinement witness starts one Process that reaches a User Task, stops the Worker across the wait, completes the same task after replacement, reaches an End Event, and retrieves the terminal occurrence page. It proves exact Start Event, User Task, and End Event lifecycles, positive elapsed User Task duration, same-batch zero duration for instantaneous nodes, E1 revision alignment, duplicate command recovery, pure repeated Queries, completed-history replay, and no platform or Event History fallback. A second bounded witness covers Event-Based Gateway loser cancellation, Call Activity or embedded Sub-Process pairing, and interrupting Boundary Event host cancellation. The later Workflow-chain witness proves paired E1/E2 segments `0..8`, `8..12`, and `12..16`, Run-local cursor pages at `0`, `4`, `8`, `12`, and `16`, two exact occurrence identities spanning adjacent Continue-As-New boundaries, no public host or segment fields, the unchanged terminal receipt, and replay of every Run.
 
 ## Separating witnesses and evidence matrix
 
@@ -311,6 +313,7 @@ Required:
 - exact flow-node start, completed, and cancelled facts for every currently admitted flow-node family;
 - repeated-activation identity, multiple starts in one transition, long-lived pairing, and exact owner identity;
 - separate byte-stable occurrence publication aligned to the unchanged E1 revisions and batches;
+- paired private retained-Run traversal with exact global head, commit-time, and open-anchor continuity and no public Workflow or Run identity;
 - deterministic batch commit time with replay, duplicate-command, rollback, and nondecreasing-time evidence;
 - strict Query, client, engine API, gateway, Product 2 contract, schema, transactional projection, restart, and revision-zero rebuild;
 - all-or-error exact-definition aggregation over at most 100 confirmed instances;
@@ -335,7 +338,7 @@ Excluded:
 
 ## Versioning consequences
 
-This is an additive pre-release public-observation change. Existing profile, checked graph, IL, RuntimeState, command result, scenario observation, E1 publication, CIB evidence, Workflow result, and terminal receipt bytes remain exact. Histories generated by the reviewed target replay under that target. Cross-version history compatibility remains unclaimed until the project retains an immutable deployment and history baseline. The occurrence wire is strict from its first version; changing its lifecycle unit, time meaning, identity, terminal dispositions, or retention requires a new version and migration account.
+This is an additive pre-release public-observation change. Existing profile, checked graph, IL, RuntimeState, command result, scenario observation, E1 publication, CIB evidence, Workflow result, and terminal receipt bytes remain exact. Histories generated by the reviewed target replay under that target. Cross-version history compatibility remains unclaimed until the project retains an immutable deployment and history baseline. The occurrence wire is strict from its first version; changing its lifecycle unit, time meaning, identity, terminal dispositions, or retention requires a new version and migration account. The paired segment protocol is private Product 1 hosting state and changes no public occurrence request, result, Product 2 transport, metric, or terminal-receipt shape.
 
 ### Verification boundary
 

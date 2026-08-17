@@ -41,6 +41,7 @@ export function queryExecutionPublication(
   program: SemanticProcessProgram,
   state: ExecutionPublicationState,
   requestValue: unknown,
+  segmentStartRevision = 0,
 ): ExecutionPublicationResult {
   const request = requireExecutionPublicationRequest(requestValue);
   if (state.headRevision === 0) {
@@ -48,7 +49,11 @@ export function queryExecutionPublication(
       kind: ExecutionPublicationResultKind.NotReady,
     });
   }
-  const startIndex = batchStartIndex(state, request.afterRevision);
+  const startIndex = batchStartIndex(
+    state,
+    request.afterRevision,
+    segmentStartRevision,
+  );
   if (startIndex === null) {
     return requireResult(program, state, request, {
       kind: ExecutionPublicationResultKind.Gap,
@@ -78,15 +83,19 @@ export function queryExecutionPublication(
 function batchStartIndex(
   state: ExecutionPublicationState,
   afterRevision: number,
+  segmentStartRevision: number,
 ): number | null {
   if (afterRevision > state.headRevision) {
     return null;
   }
-  if (afterRevision === 0) {
-    return state.batches[0]?.fromRevision === 0 ? 0 : null;
+  if (afterRevision === segmentStartRevision) {
+    return state.batches.length === 0
+      ? segmentStartRevision === state.headRevision ? 0 : null
+      : state.batches[0]?.fromRevision === segmentStartRevision ? 0 : null;
   }
   if (afterRevision === state.headRevision) {
-    return state.batches.at(-1)?.throughRevision === state.headRevision
+    return (state.batches.at(-1)?.throughRevision ?? segmentStartRevision) ===
+        state.headRevision
       ? state.batches.length
       : null;
   }

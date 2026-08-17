@@ -18,5 +18,7 @@ export * from "./timer-command.js";
 export * from "./user-task-detail.js";
 export * from "./workflow-chain.js";
 export * from "./workflow-continuation.js";
+export * from "./workflow-publication-segment-query-validation.js";
+export * from "./workflow-publication-segments.js";
 export * from "./workflow-recovery-request.js";
 export * from "./workflow-terminal-result.js";
