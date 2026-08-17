@@ -1,0 +1,35 @@
+{
+  "name": "@bpmn-lean/platform-postgresql-migrate",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "bpmn-platform-postgresql-migrate": "./dist/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "pnpm run build && node dist/main.js",
+    "test:built": "node --test --test-concurrency=1 test/*.test.ts",
+    "test": "pnpm run build && pnpm run test:built",
+    "test:postgresql:built": "node --test --test-concurrency=1 test/postgresql/*.test.ts",
+    "test:postgresql": "pnpm --filter @bpmn-lean/platform-postgresql-runtime run build && pnpm run build && pnpm run test:postgresql:built"
+  },
+  "dependencies": {
+    "@bpmn-lean/platform-artifact-store": "workspace:*",
+    "@bpmn-lean/platform-audit": "workspace:*",
+    "@bpmn-lean/platform-definitions": "workspace:*",
+    "@bpmn-lean/platform-operate": "workspace:*",
+    "@bpmn-lean/platform-postgresql-runtime": "workspace:*",
+    "@bpmn-lean/platform-work": "workspace:*"
+  }
+}

@@ -332,7 +332,7 @@ function isApprovedTemporalHistoryEvidence(relativePath: string, apiName: string
 }
 
 const PlatformOwnerKind = {
-  Server: "server",
+  ServerApplication: "serverApplication",
   Web: "web",
   Contracts: "contracts",
   Foundation: "foundation",
@@ -351,7 +351,9 @@ type PlatformOwner = {
 function platformOwner(relativePath: string): PlatformOwner | null {
   const normalized = relativePath.replaceAll("\\", "/");
   const fixedOwners = [
-    { kind: PlatformOwnerKind.Server, root: "platform/apps/server" },
+    { kind: PlatformOwnerKind.ServerApplication, root: "platform/apps/server" },
+    { kind: PlatformOwnerKind.ServerApplication, root: "platform/apps/postgresql-migrate" },
+    { kind: PlatformOwnerKind.ServerApplication, root: "platform/apps/recovery-worker" },
     { kind: PlatformOwnerKind.Web, root: "platform/apps/web" },
     { kind: PlatformOwnerKind.Contracts, root: "platform/contracts" },
     { kind: PlatformOwnerKind.UiKit, root: "platform/ui-kit" },
@@ -381,8 +383,8 @@ function platformOwner(relativePath: string): PlatformOwner | null {
 
 function platformDependencyAllowed(source: PlatformOwner, target: PlatformOwner): boolean {
   switch (source.kind) {
-    case PlatformOwnerKind.Server:
-      return target.kind === PlatformOwnerKind.Server ||
+    case PlatformOwnerKind.ServerApplication:
+      return (target.kind === PlatformOwnerKind.ServerApplication && target.root === source.root) ||
         target.kind === PlatformOwnerKind.Module ||
         target.kind === PlatformOwnerKind.Foundation ||
         target.kind === PlatformOwnerKind.Contracts;

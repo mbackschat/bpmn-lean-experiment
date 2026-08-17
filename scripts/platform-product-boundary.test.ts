@@ -223,6 +223,69 @@ test("applies path-based ownership to exact package names and subpaths", () => {
   );
 });
 
+test("allows only the named server-side application composition roots", () => {
+  const packageRoots = packageRootsFromManifests([
+    {
+      path: "platform/apps/postgresql-migrate/package.json",
+      source: '{"name":"@bpmn-lean/platform-postgresql-migrate"}',
+    },
+    {
+      path: "platform/apps/recovery-worker/package.json",
+      source: '{"name":"@bpmn-lean/platform-recovery-worker"}',
+    },
+    {
+      path: "platform/apps/server/package.json",
+      source: '{"name":"@bpmn-lean/platform-server"}',
+    },
+    {
+      path: "platform/apps/web/package.json",
+      source: '{"name":"@bpmn-lean/platform-web"}',
+    },
+    {
+      path: "platform/foundation/postgresql-runtime/package.json",
+      source: '{"name":"@bpmn-lean/platform-postgresql-runtime"}',
+    },
+    {
+      path: "platform/modules/definitions/package.json",
+      source: '{"name":"@bpmn-lean/platform-definitions"}',
+    },
+  ]);
+  assert.deepEqual(
+    assessPlatformProductBoundary([
+      {
+        path: "platform/apps/postgresql-migrate/src/composition.ts",
+        source: 'import { migrate } from "@bpmn-lean/platform-postgresql-runtime";',
+      },
+      {
+        path: "platform/apps/recovery-worker/src/worker.ts",
+        source: 'import { recover } from "@bpmn-lean/platform-definitions";',
+      },
+      {
+        path: "platform/apps/server/src/automatic-migration.ts",
+        source: 'import { migrate } from "@bpmn-lean/platform-postgresql-migrate";',
+      },
+      {
+        path: "platform/apps/recovery-worker/src/automatic-migration.ts",
+        source: 'import { migrate } from "@bpmn-lean/platform-postgresql-migrate";',
+      },
+      {
+        path: "platform/apps/postgresql-migrate/src/browser.ts",
+        source: 'import { view } from "@bpmn-lean/platform-web";',
+      },
+      {
+        path: "platform/apps/unplanned/src/orphan.ts",
+        source: "export const orphan = true;",
+      },
+    ], { packageRoots }),
+    [
+      "platform/apps/postgresql-migrate/src/browser.ts: disallowed platform dependency @bpmn-lean/platform-web",
+      "platform/apps/recovery-worker/src/automatic-migration.ts: disallowed platform dependency @bpmn-lean/platform-postgresql-migrate",
+      "platform/apps/server/src/automatic-migration.ts: disallowed platform dependency @bpmn-lean/platform-postgresql-migrate",
+      "platform/apps/unplanned/src/orphan.ts: source outside an approved platform owner",
+    ],
+  );
+});
+
 test("classifies only contract-types as a neutral cross-product package", () => {
   const packageRoots = packageRootsFromManifests([
     {
