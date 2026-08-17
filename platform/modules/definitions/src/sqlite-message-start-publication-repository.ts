@@ -92,12 +92,13 @@ implements MessageStartPublicationRepository {
     next: MessageStartPublicationState,
   ): Promise<MessageStartPublicationRecord | null> {
     requireLegalTransition(expected, next);
-    const result = this.#database.prepare(`
+    const row = this.#database.prepare(`
       UPDATE message_start_publications
       SET state = ?
       WHERE publication_id = ? AND state = ?
-    `).run(next, publicationId, expected);
-    return result.changes === 1 ? this.#require(publicationId) : null;
+      RETURNING *
+    `).get(next, publicationId, expected);
+    return row === undefined ? null : decodeRecord(row);
   }
 
   close(): void {

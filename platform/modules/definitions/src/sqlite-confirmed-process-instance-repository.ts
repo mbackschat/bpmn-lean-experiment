@@ -125,14 +125,15 @@ export class SqliteConfirmedProcessInstanceRepository
     next: ConfirmedProcessInstanceState,
   ): Promise<ConfirmedProcessInstanceRecord | null> {
     requireAllowedTransition(expected, next);
-    const result = this.#database.prepare(`
+    const row = this.#database.prepare(`
       UPDATE confirmed_process_instances
       SET state = ?,
         operate_pending = CASE WHEN ? = 'confirmed' THEN 1 ELSE 0 END,
         work_pending = CASE WHEN ? = 'confirmed' THEN 1 ELSE 0 END
       WHERE process_instance_id = ? AND state = ?
-    `).run(next, next, next, processInstanceId, expected);
-    return result.changes === 1 ? await this.get(processInstanceId) : null;
+      RETURNING *
+    `).get(next, next, next, processInstanceId, expected);
+    return row === undefined ? null : decodeRow(row);
   }
 
   async acknowledge(

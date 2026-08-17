@@ -116,12 +116,13 @@ implements DefinitionScheduleRepository {
     }
     const next = applyTransition(current, transition);
     requireLegalTransition(current, next);
-    const result = this.#database.prepare(`
+    const row = this.#database.prepare(`
       UPDATE definition_schedules
       SET state = ?, cleanup_complete = ?, cancellation_origin = ?,
         execution_workflow_id = ?, first_run_id = ?
       WHERE process_id = ? AND version = ? AND schedule_id = ? AND state = ?
-    `).run(
+      RETURNING *
+    `).get(
       next.state,
       next.cleanupComplete ? 1 : 0,
       next.cancellationOrigin,
@@ -132,7 +133,7 @@ implements DefinitionScheduleRepository {
       reference.scheduleId,
       expected,
     );
-    return result.changes === 1 ? this.#require(reference) : null;
+    return row === undefined ? null : decodeRecord(row);
   }
 
   async requestCancellation(
