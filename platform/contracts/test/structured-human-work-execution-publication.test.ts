@@ -21,6 +21,26 @@ function withVariables(variables: readonly unknown[]): unknown {
   };
 }
 
+function withUserTaskMetadata(metadata: unknown): unknown {
+  const page = executionPublicationPage();
+  const taskId = {
+    processInstanceId: publicationIdentity.processInstanceId,
+    elementId: "ReviewExpense",
+    activation: 1,
+  };
+  return {
+    ...page,
+    current: {
+      ...page.current,
+      state: {
+        ...page.current?.state,
+        openUserTasks: [{ id: taskId, name: "Review expense", state: "active", metadata }],
+        enabledInteractions: [{ kind: "completeUserTaskInstance", taskId }],
+      },
+    },
+  };
+}
+
 test("decodes safe integers and ordered duplicate-preserving string lists", () => {
   const variables = [
     { name: "approvedAmount", value: { kind: "integer", value: 4250 } },
@@ -55,4 +75,31 @@ test("rejects invalid integer and string-list publication values", () => {
       JSON.stringify(value),
     );
   }
+});
+
+test("decodes both closed User Task metadata arms and rejects unknown fields", () => {
+  const assignment = {
+    candidates: [{ kind: "group", id: "reviewers" }],
+  };
+  const assignmentOnly = { assignment };
+  const assignmentAndForm = {
+    assignment,
+    form: { fields: [{ key: "approved", type: "boolean" }] },
+  };
+
+  for (const metadata of [assignmentOnly, assignmentAndForm]) {
+    const decoded = decodeExecutionPublicationPage(withUserTaskMetadata(metadata), {
+      ...publicationIdentity,
+      afterRevision: 0,
+    });
+    assert.deepEqual(decoded.current?.state.openUserTasks[0]?.metadata, metadata);
+  }
+
+  assert.throws(
+    () => decodeExecutionPublicationPage(withUserTaskMetadata({ ...assignmentOnly, extra: null }), {
+      ...publicationIdentity,
+      afterRevision: 0,
+    }),
+    /must contain exactly its public fields/u,
+  );
 });

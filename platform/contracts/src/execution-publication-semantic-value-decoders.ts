@@ -441,7 +441,8 @@ function requireEffectResult(value: unknown, label: string): void {
 
 function requireUserTaskMetadata(value: unknown, label: string): void {
   requireObject(value, label);
-  exact(value, label, ["assignment", "form"]);
+  const hasForm = Object.hasOwn(value, "form");
+  exact(value, label, hasForm ? ["assignment", "form"] : ["assignment"]);
   const assignment = readOwn(value, "assignment");
   requireObject(assignment, `${label}.assignment`);
   exact(assignment, `${label}.assignment`, ["candidates"]);
@@ -452,6 +453,7 @@ function requireUserTaskMetadata(value: unknown, label: string): void {
   exact(candidate, `${label}.candidate`, ["kind", "id"]);
   if (readOwn(candidate, "kind") !== "group") throw new TypeError(`${label}.candidate.kind must be group`);
   requireMetadataIdentity(readOwn(candidate, "id"), `${label}.candidate.id`, true);
+  if (!hasForm) return;
   const form = readOwn(value, "form");
   requireObject(form, `${label}.form`);
   exact(form, `${label}.form`, ["fields"]);
