@@ -228,7 +228,7 @@ Reopen before raising any production budget, changing the 128-Run or 512-command
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `aa2a75457d3a003e40d1400a8da70dc4185817a8` | `fork-turns-none` | `approve-with-required-edits` | `4431f13b367d8bc4f14011e382d9c743c3e3af39` |
-| Semantic checkpoint | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `0b33dbc8bc35574685572fe913dbdcf58bf9f8d5` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The isolated proposal review required six corrections covering cross-Run result recovery, the raw SDK-handle leak, mixed Worker deployment, combined failure witnesses, owner routing, and the exact non-returning Continue-As-New call. The same reviewer audited correction target `4431f13b367d8bc4f14011e382d9c743c3e3af39`, closed every finding, and approved both additional clarifications for one-activation threshold overshoot and publication-page linearization without a material redesign.
