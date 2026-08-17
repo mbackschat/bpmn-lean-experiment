@@ -126,7 +126,7 @@ External drift fails closed. The sequential metadata, parallel metadata-composit
 
 #### Explicitly absent
 
-- Product 2 shared deployment: persistence, leases, candidate sources, four Definitions handlers, and bounded Audit delivery exist; remaining handlers, process composition, freshness reads, and replica evidence are incomplete, so the [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) has no shared-mode evidence
+- Product 2 shared deployment: persistence, leases, eleven candidate families, and nine fenced recovery families exist; snapshot handlers, composition, freshness reads, and replica evidence remain incomplete, so the [scale-out roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-1-remove-product-2s-single-node-scale-boundary) has no shared-mode evidence
 - Adjustable metric periods, running pseudo-duration, charts, heatmaps, metric export, post-retention archive, and cross-instance semantic ordering
 
 - a production identity provider, directory synchronization, administrator role, claim delegation, or authorization model beyond the exact fake actor and group policy
