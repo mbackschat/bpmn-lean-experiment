@@ -45,8 +45,23 @@ export {
   WorkService,
   WorkSnapshotUnavailableError,
 } from "./work-service.js";
-export type { SystemWorkTask } from "./work-service.js";
-export type { ActorVisibleSystemWorkTask } from "./work-service.js";
+export type {
+  ActorVisibleSystemWorkTask,
+  ExactCurrentActorVisibleWorkTask,
+  SystemWorkTask,
+  WorkExactTaskDetailReader,
+  WorkStructuredTaskReader,
+  WorkTaskAccess,
+  WorkTaskCandidateReader,
+  WorkVisibleTaskReader,
+} from "./work-service.js";
+export {
+  ExactCurrentWorkTaskReader,
+} from "./exact-current-work-task-reader.js";
+export type {
+  ExactCurrentWorkTaskGateway,
+  ExactCurrentWorkTaskReaderOptions,
+} from "./exact-current-work-task-reader.js";
 export type {
   BoundHumanTaskDefinitionV1,
   HumanTaskCatalogReader,

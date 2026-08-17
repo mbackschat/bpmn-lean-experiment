@@ -24,7 +24,7 @@ import type {
   WorkTaskReference,
 } from "./work-contracts.js";
 import type { WorkAuditOutboxService } from "./work-audit-outbox-service.js";
-import type { WorkService } from "./work-service.js";
+import type { WorkStructuredTaskReader } from "./work-service.js";
 import type {
   ActorVisibleWorkTaskDetail,
   WorkTaskDetailService,
@@ -96,8 +96,8 @@ type EngineCompletionResult =
     }>;
 
 export type WorkCompletionServiceOptions = Readonly<{
-  work: WorkService;
-  details: WorkTaskDetailService;
+  work: WorkStructuredTaskReader;
+  details: Pick<WorkTaskDetailService, "findVisibleTaskDetail">;
   actors: ActorResolver;
   repository: WorkCompletionRepository;
   gateway: WorkCompletionGateway;

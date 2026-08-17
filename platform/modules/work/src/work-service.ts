@@ -45,6 +45,33 @@ export type ActorVisibleSystemWorkTask = SystemWorkTask & Readonly<{
   publicTask: PublicWorkTask;
 }>;
 
+export type WorkVisibleTaskReader = Readonly<{
+  findVisibleTask(taskId: PublicWorkTaskId): Promise<ActorVisibleSystemWorkTask | null>;
+}>;
+
+export type ExactCurrentActorVisibleWorkTask = ActorVisibleSystemWorkTask & Readonly<{
+  inputVariables: readonly unknown[];
+}>;
+
+export type WorkExactTaskDetailReader = Readonly<{
+  findVisibleTaskDetail(
+    taskId: PublicWorkTaskId,
+  ): Promise<ExactCurrentActorVisibleWorkTask | null>;
+}>;
+
+export type WorkTaskCandidateReader = Readonly<{
+  findTaskCandidate(taskId: PublicWorkTaskId): Promise<SystemWorkTask | null>;
+}>;
+
+export type WorkStructuredTaskReader = Readonly<{
+  readStructuredTask(
+    identity: HumanTaskCatalogBindingIdentityV1,
+    elementId: string,
+  ): Promise<BoundHumanTaskDefinitionV1 | null>;
+}>;
+
+export type WorkTaskAccess = WorkVisibleTaskReader & WorkStructuredTaskReader;
+
 type WorkRepositoryPort = Readonly<{
   listProcessRegistrations(): Promise<ReadonlyArray<WorkProcessRegistration>>;
   recordObservation(

@@ -29,7 +29,7 @@ import type {
 } from "./work-completion-service.js";
 import type {
   ActorVisibleSystemWorkTask,
-  WorkService,
+  WorkTaskAccess,
 } from "./work-service.js";
 
 export type WorkClaimServiceResult =
@@ -56,7 +56,7 @@ type WorkMutationServiceOptions = Omit<
   WorkCompletionServiceOptions,
   "actors" | "repository" | "work"
 > & Readonly<{
-  work: WorkService;
+  work: WorkTaskAccess;
   actors: ActorResolver;
   repository: WorkMutationRepository;
 }>;

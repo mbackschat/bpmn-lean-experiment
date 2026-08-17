@@ -212,6 +212,57 @@ test("fails closed when detail drifts from the freshly observed occurrence", asy
   await assert.rejects(service.getTaskDetail(task.id), WorkSnapshotUnavailableError);
 });
 
+test("rechecks a metadata-free projected task through the exact current detail read", async () => {
+  const metadataFreeTask: PublicWorkTask["task"] = {
+    id: task.id,
+    name: task.name,
+    state: task.state,
+  };
+  let detailCalls = 0;
+  const registration = {
+    instance: { processInstanceId: "host-1", definition },
+    locator: "private:host-1",
+    observation: "active" as const,
+  };
+  const current = {
+    registration,
+    task: metadataFreeTask,
+    claim: { claimGeneration: 0, claim: null },
+    structuredTask: null,
+    publicTask: {
+      task: metadataFreeTask,
+      hostingInstance: registration.instance,
+      claimGeneration: 0,
+      claim: null,
+      claimableByCurrentActor: false,
+    },
+  };
+  const service = new WorkTaskDetailService({
+    work: { findVisibleTask: async () => structuredClone(current) },
+    gateway: {
+      readWorkDetail: async () => {
+        detailCalls += 1;
+        return {
+          status: "found",
+          detail: { task: structuredClone(metadataFreeTask), inputVariables: [] },
+        };
+      },
+    },
+  });
+
+  assert.deepEqual(await service.getTaskDetail(task.id), {
+    workTask: {
+      task: metadataFreeTask,
+      hostingInstance: { processInstanceId: "host-1", definition },
+      claimGeneration: 0,
+      claim: null,
+      claimableByCurrentActor: false,
+    },
+    form: null,
+  });
+  assert.equal(detailCalls, 1);
+});
+
 function createDetailService(
   inputVariables: readonly unknown[],
   detailTask: PublicWorkTask["task"] = task,

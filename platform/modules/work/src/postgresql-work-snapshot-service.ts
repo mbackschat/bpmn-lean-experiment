@@ -1,6 +1,7 @@
 import type {
   ProjectionRead,
   PublicWorkTask,
+  PublicWorkTaskId,
   WorkTaskSnapshot,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -9,6 +10,8 @@ import type {
 } from "@bpmn-lean/platform-identity-policy";
 
 import type { PostgresqlWorkSnapshotReader } from "./postgresql-work-snapshot-reader.js";
+import type { SystemWorkTask } from "./work-service.js";
+import { WorkSnapshotUnavailableError } from "./work-service.js";
 import {
   projectVisibleSystemWorkTask,
   sortPublicWorkTasks,
@@ -45,4 +48,20 @@ export class PostgresqlWorkSnapshotService {
       freshness: read.freshness === null ? null : { ...read.freshness },
     };
   }
+
+  async findTaskCandidate(
+    taskId: PublicWorkTaskId,
+  ): Promise<SystemWorkTask | null> {
+    const matches = (await this.#options.reader.read()).value.filter(({ task }) =>
+      sameTaskId(task.id, taskId)
+    );
+    if (matches.length > 1) throw new WorkSnapshotUnavailableError();
+    return matches.length === 0 ? null : structuredClone(matches[0]!);
+  }
+}
+
+function sameTaskId(left: PublicWorkTaskId, right: PublicWorkTaskId): boolean {
+  return left.processInstanceId === right.processInstanceId &&
+    left.elementId === right.elementId &&
+    left.activation === right.activation;
 }

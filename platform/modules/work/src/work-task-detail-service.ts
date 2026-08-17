@@ -13,7 +13,9 @@ import {
 } from "./structured-form-computation.js";
 import {
   type ActorVisibleSystemWorkTask,
-  WorkService,
+  type ExactCurrentActorVisibleWorkTask,
+  type WorkExactTaskDetailReader,
+  type WorkVisibleTaskReader,
   WorkSnapshotUnavailableError,
 } from "./work-service.js";
 
@@ -36,7 +38,7 @@ type WorkDetailGatewayPort = Readonly<{
 }>;
 
 type WorkTaskDetailServiceOptions = Readonly<{
-  work: WorkService;
+  work: WorkVisibleTaskReader | WorkExactTaskDetailReader;
   gateway: WorkDetailGatewayPort;
 }>;
 
@@ -60,25 +62,29 @@ export class WorkTaskDetailService {
   async findVisibleTaskDetail(
     taskId: PublicWorkTaskId,
   ): Promise<ActorVisibleWorkTaskDetail | null> {
-    const current = await this.#options.work.findVisibleTask(structuredClone(taskId));
-    if (current === null) return null;
-    const metadata = current.task.metadata;
-    if (metadata === undefined) {
-      return {
-        ...current,
-        detail: { workTask: current.publicTask, form: null },
-      };
+    let current: ActorVisibleSystemWorkTask;
+    let inputVariables: readonly unknown[];
+    if (isExactTaskDetailReader(this.#options.work)) {
+      const exact = await this.#options.work.findVisibleTaskDetail(
+        structuredClone(taskId),
+      );
+      if (exact === null) return null;
+      current = withoutInputVariables(exact);
+      inputVariables = exact.inputVariables;
+    } else {
+      const visible = await this.#options.work.findVisibleTask(structuredClone(taskId));
+      if (visible === null) return null;
+      const result = await this.#readDetail(visible, inputVariableNamesFor(visible));
+      if (result === null) return null;
+      current = visible;
+      inputVariables = result.inputVariables;
     }
+
     const structuredTask = current.structuredTask;
     if (structuredTask !== null) {
-      const inputVariableNames = structuredTask.taskDefinition.form.fields
-        .map(({ key }) => key)
-        .toSorted(compareStrings);
-      const result = await this.#readDetail(current, inputVariableNames);
-      if (result === null) return null;
       const fields = projectStructuredCurrentFieldValues(
         structuredTask.taskDefinition,
-        result.inputVariables,
+        inputVariables,
       );
       if (fields === null) throw new WorkSnapshotUnavailableError();
       return {
@@ -94,40 +100,22 @@ export class WorkTaskDetailService {
         },
       };
     }
-    if (!("form" in metadata)) {
+    const metadata = current.task.metadata;
+    if (metadata === undefined || !("form" in metadata)) {
+      if (inputVariables.length !== 0) throw new WorkSnapshotUnavailableError();
       return {
         ...current,
         detail: { workTask: current.publicTask, form: null },
       };
     }
     const field = metadata.form.fields[0];
-    const result = await this.#options.gateway.readWorkDetail({
-      locator: current.registration.locator,
-      hostingProcessInstanceId: current.registration.instance.processInstanceId,
-      taskId: current.task.id,
-      inputVariableNames: [field.key],
-    });
-    switch (result.status) {
-      case "notFound":
-      case "closed":
-        return null;
-      case "unknown":
-      case "unavailable":
-        throw new WorkSnapshotUnavailableError();
-      case "found":
-        if (!sameTask(result.detail.task, current.task)) {
-          throw new WorkSnapshotUnavailableError();
-        }
-        return {
-          ...current,
-          detail: {
-            workTask: current.publicTask,
-            form: {
-              fields: [projectField(field, result.detail.inputVariables)],
-            },
-          },
-        };
-    }
+    return {
+      ...current,
+      detail: {
+        workTask: current.publicTask,
+        form: { fields: [projectField(field, inputVariables)] },
+      },
+    };
   }
 
   async #readDetail(
@@ -154,6 +142,31 @@ export class WorkTaskDetailService {
         return { inputVariables: result.detail.inputVariables };
     }
   }
+}
+
+function isExactTaskDetailReader(
+  reader: WorkVisibleTaskReader | WorkExactTaskDetailReader,
+): reader is WorkExactTaskDetailReader {
+  return "findVisibleTaskDetail" in reader;
+}
+
+function inputVariableNamesFor(current: ActorVisibleSystemWorkTask): readonly string[] {
+  if (current.structuredTask !== null) {
+    return current.structuredTask.taskDefinition.form.fields
+      .map(({ key }) => key)
+      .toSorted(compareStrings);
+  }
+  const metadata = current.task.metadata;
+  return metadata !== undefined && "form" in metadata
+    ? [metadata.form.fields[0].key]
+    : [];
+}
+
+function withoutInputVariables(
+  exact: ExactCurrentActorVisibleWorkTask,
+): ActorVisibleSystemWorkTask {
+  const { inputVariables: _inputVariables, ...current } = exact;
+  return current;
 }
 
 function projectField(
