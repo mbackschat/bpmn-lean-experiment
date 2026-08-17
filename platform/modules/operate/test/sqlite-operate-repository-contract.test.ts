@@ -1,4 +1,5 @@
 import { mkdtemp, rm } from "node:fs/promises";
+import { DatabaseSync } from "node:sqlite";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -46,6 +47,28 @@ registerIncidentActionRepositoryContract(
     return {
       processes,
       incidents,
+      damageReservedAudit: async (actionId, damage) => {
+        const database = new DatabaseSync(store.databaseFile);
+        try {
+          switch (damage) {
+            case "missing":
+              database.prepare(`
+                DELETE FROM incident_action_audit_outbox
+                WHERE action_id = ? AND action_outcome = 'reserved'
+              `).run(actionId);
+              return;
+            case "corrupt":
+              database.prepare(`
+                UPDATE incident_action_audit_outbox
+                SET event_json = ' ' || event_json
+                WHERE action_id = ? AND action_outcome = 'reserved'
+              `).run(actionId);
+              return;
+          }
+        } finally {
+          database.close();
+        }
+      },
       dispose: async () => {
         incidents.close();
         processes.close();

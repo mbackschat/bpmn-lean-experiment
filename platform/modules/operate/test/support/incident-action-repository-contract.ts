@@ -12,6 +12,10 @@ import { processPublication } from "./process-instance-repository-contract.ts";
 export type IncidentRepositoryContractFixture = Readonly<{
   processes: ProcessInstanceRepository;
   incidents: IncidentActionRepository;
+  damageReservedAudit: (
+    actionId: string,
+    damage: "missing" | "corrupt",
+  ) => Promise<void>;
   dispose: () => Promise<void>;
 }>;
 
@@ -168,6 +172,47 @@ export function registerIncidentActionRepositoryContract(
       );
       assert.equal(await fixture.incidents.get(binding.actionId), null);
       assert.deepEqual(await fixture.incidents.listUndeliveredAuditEvents(), []);
+    } finally {
+      await fixture.dispose();
+    }
+  });
+
+  test(`${label} reads one exact snapshotted reserved-audit delivery state`, async () => {
+    const fixture = await create();
+    try {
+      await fixture.processes.recordConfirmed(
+        processPublication("incident-instance", "Incident_Process"),
+      );
+      const exact = incidentBinding("reserved\u0000action");
+      await fixture.incidents.reserve(exact, incidentAudit(exact, "reserved"));
+      const mutable = structuredClone(exact);
+      const pending = fixture.incidents.getReservedAuditDelivery(mutable);
+      (mutable as { actionId: string }).actionId = "changed-after-call";
+      (mutable as { actorId: string }).actorId = "changed-after-call";
+      assert.deepEqual(await pending, { kind: "pending" });
+      await fixture.incidents.acknowledgeAuditEvent(
+        incidentAudit(exact, "reserved").eventId,
+      );
+      assert.deepEqual(
+        await fixture.incidents.getReservedAuditDelivery(exact),
+        { kind: "acknowledged" },
+      );
+
+      const missing = incidentBinding("missing-reserved-audit");
+      await fixture.incidents.reserve(missing, incidentAudit(missing, "reserved"));
+      await fixture.damageReservedAudit(missing.actionId, "missing");
+      await assert.rejects(
+        fixture.incidents.getReservedAuditDelivery(missing),
+        { name: "OperateIncidentIntegrityError" },
+      );
+
+      const corrupt = incidentBinding("corrupt-reserved-audit");
+      await fixture.incidents.reserve(corrupt, incidentAudit(corrupt, "reserved"));
+      await fixture.damageReservedAudit(corrupt.actionId, "corrupt");
+      await assert.rejects(
+        fixture.incidents.getReservedAuditDelivery(corrupt),
+        { name: "OperateIncidentStoredValueError" },
+      );
     } finally {
       await fixture.dispose();
     }

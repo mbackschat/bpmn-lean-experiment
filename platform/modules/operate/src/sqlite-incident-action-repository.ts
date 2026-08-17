@@ -58,6 +58,23 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
     return row === undefined ? null : decodeActionRow(row);
   }
 
+  async getReservedAuditDelivery(
+    bindingValue: IncidentActionBinding,
+  ): Promise<Readonly<{ kind: "pending" | "acknowledged" }>> {
+    const binding = snapshotActionBinding(bindingValue);
+    const row = this.#database.prepare(`
+      SELECT action_id, action_outcome, event_json, delivered
+      FROM incident_action_audit_outbox
+      WHERE action_id = ? AND action_outcome = 'reserved'
+    `).get(binding.actionId);
+    if (row === undefined) {
+      throw new OperateIncidentIntegrityError(
+        `incident action ${binding.actionId} has no reserved audit`,
+      );
+    }
+    return decodeReservedAuditDelivery(row, binding);
+  }
+
   async reserve(
     bindingValue: IncidentActionBinding,
     auditValue: IncidentAuditEvent,
@@ -296,8 +313,35 @@ function decodeActionRow(row: Record<string, SQLOutputValue>): StoredIncidentAct
 
 function decodeAuditRow(value: unknown): IncidentAuditEvent {
   try {
-    return snapshotAuditEvent(JSON.parse(requireNonemptyString(value, "event_json")));
+    const encoded = requireNonemptyString(value, "event_json");
+    const event = snapshotAuditEvent(JSON.parse(encoded));
+    if (JSON.stringify(event) !== encoded) {
+      throw new TypeError("stored incident audit is not canonical JSON");
+    }
+    return event;
   } catch (error: unknown) {
+    throw new OperateIncidentStoredValueError(error);
+  }
+}
+
+function decodeReservedAuditDelivery(
+  row: Record<string, SQLOutputValue>,
+  binding: IncidentActionBinding,
+): Readonly<{ kind: "pending" | "acknowledged" }> {
+  try {
+    const event = decodeAuditRow(row.event_json);
+    if (
+      requireNonemptyString(row.action_id, "action_id") !== binding.actionId ||
+      row.action_outcome !== "reserved"
+    ) {
+      throw new TypeError("stored reserved audit columns disagree");
+    }
+    requireAuditMatches(event, binding, "reserved");
+    if (row.delivered === 0) return { kind: "pending" };
+    if (row.delivered === 1) return { kind: "acknowledged" };
+    throw new TypeError("stored reserved audit delivery state is invalid");
+  } catch (error: unknown) {
+    if (error instanceof OperateIncidentStoredValueError) throw error;
     throw new OperateIncidentStoredValueError(error);
   }
 }

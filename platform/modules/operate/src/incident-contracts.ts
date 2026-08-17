@@ -12,6 +12,7 @@ import type {
   PublicProcessInstanceIdentity,
   PublicRetryIncidentInteraction,
 } from "@bpmn-lean/platform-contracts";
+import type { PostgresqlSession } from "@bpmn-lean/platform-postgresql-runtime";
 
 export type {
   IncidentActionRequest,
@@ -126,6 +127,9 @@ export type IncidentActionOutcomeResult =
 
 export interface IncidentActionRepository {
   get(actionId: string): Promise<StoredIncidentAction | null>;
+  getReservedAuditDelivery(
+    binding: IncidentActionBinding,
+  ): Promise<Readonly<{ kind: "pending" | "acknowledged" }>>;
   reserve(
     binding: IncidentActionBinding,
     audit: IncidentAuditEvent,
@@ -142,6 +146,20 @@ export interface IncidentActionRepository {
   listReconciliableActions(): Promise<ReadonlyArray<StoredIncidentAction>>;
   listUndeliveredAuditEvents(limit?: number): Promise<ReadonlyArray<IncidentAuditOutboxItem>>;
   acknowledgeAuditEvent(eventId: string): Promise<void>;
+}
+
+/** Applies lease-fenced incident-action transitions through the caller's transaction. */
+export interface IncidentActionRecoveryRepository {
+  applyRecoverySubmission(
+    session: PostgresqlSession,
+    expected: StoredIncidentAction,
+  ): Promise<void>;
+  applyRecoveryOutcome(
+    session: PostgresqlSession,
+    expected: StoredIncidentAction,
+    result: IncidentActionResult,
+    audit: IncidentAuditEvent,
+  ): Promise<void>;
 }
 
 export const maximumIncidentAuditDeliveryBatchSize = 1_000;

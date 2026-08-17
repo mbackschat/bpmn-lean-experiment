@@ -7,6 +7,7 @@ import type {
 import type {
   IncidentActionBinding,
   IncidentActionOutcomeResult,
+  IncidentActionRecoveryRepository,
   IncidentActionRepository,
   IncidentActionReservationResult,
   IncidentActionResult,
@@ -29,8 +30,10 @@ import {
   snapshotAuditEvent,
 } from "./incident-values.js";
 import {
-  decodePostgresqlOperateRegistration,
-} from "./postgresql-process-instance-repository.js";
+  applyPostgresqlIncidentRecoveryOutcome,
+  applyPostgresqlIncidentRecoverySubmission,
+} from "./postgresql-incident-action-recovery-storage.js";
+import { decodePostgresqlOperateRegistration } from "./postgresql-process-instance-repository.js";
 import {
   encodePostgresqlByteText,
   requirePostgresqlByteText,
@@ -54,7 +57,7 @@ const actionColumns = `
 
 /** Shared PostgreSQL incident-action CAS state and source-ordered audit outbox. */
 export class PostgresqlIncidentActionRepository
-  implements IncidentActionRepository
+  implements IncidentActionRepository, IncidentActionRecoveryRepository
 {
   readonly #runtime: PostgresqlRuntime;
 
@@ -63,9 +66,7 @@ export class PostgresqlIncidentActionRepository
   }
 
   async get(actionIdValue: string): Promise<StoredIncidentAction | null> {
-    const actionId = encodePostgresqlByteText(
-      requireNonemptyString(actionIdValue, "actionId"),
-    );
+    const actionId = encodePostgresqlByteText(requireNonemptyString(actionIdValue, "actionId"));
     const row = (await this.#runtime.query({
       text: `
         SELECT ${actionColumns}
@@ -75,6 +76,37 @@ export class PostgresqlIncidentActionRepository
       values: [actionId],
     })).rows[0];
     return row === undefined ? null : decodeActionRow(row);
+  }
+
+  async getReservedAuditDelivery(
+    bindingValue: IncidentActionBinding,
+  ): Promise<Readonly<{ kind: "pending" | "acknowledged" }>> {
+    return queryReservedAuditDelivery(this.#runtime, snapshotActionBinding(bindingValue));
+  }
+
+  async applyRecoverySubmission(
+    session: PostgresqlSession, expectedValue: StoredIncidentAction,
+  ): Promise<void> {
+    await applyPostgresqlIncidentRecoverySubmission(
+      incidentRecoveryStorage,
+      session,
+      expectedValue,
+    );
+  }
+
+  async applyRecoveryOutcome(
+    session: PostgresqlSession,
+    expectedValue: StoredIncidentAction,
+    resultValue: IncidentActionResult,
+    auditValue: IncidentAuditEvent,
+  ): Promise<void> {
+    await applyPostgresqlIncidentRecoveryOutcome(
+      incidentRecoveryStorage,
+      session,
+      expectedValue,
+      resultValue,
+      auditValue,
+    );
   }
 
   async reserve(
@@ -479,6 +511,36 @@ function decodeAuditItem(row: PostgresqlRow): IncidentAuditOutboxItem {
   }
 }
 
+function decodeReservedAuditDelivery(
+  row: PostgresqlRow, binding: IncidentActionBinding,
+): Readonly<{ kind: "pending" | "acknowledged" }> {
+  try {
+    const item = decodeAuditItem(row);
+    requireAuditMatches(item.event, binding, "reserved");
+    return row.delivered === true ? { kind: "acknowledged" } : { kind: "pending" };
+  } catch (error: unknown) {
+    if (error instanceof OperateIncidentStoredValueError) throw error;
+    throw new OperateIncidentStoredValueError(error);
+  }
+}
+
+async function queryReservedAuditDelivery(
+  session: PostgresqlSession, binding: IncidentActionBinding,
+): Promise<Readonly<{ kind: "pending" | "acknowledged" }>> {
+  const row = (await session.query({
+    text: `
+      SELECT ordinal, event_id, action_id, action_outcome, event_json, delivered
+      FROM bpmn_platform.operate_incident_action_audit_outbox
+      WHERE action_id = $1 AND action_outcome = 'reserved'
+    `,
+    values: [encodePostgresqlByteText(binding.actionId)],
+  })).rows[0];
+  if (row === undefined) {
+    throw new OperateIncidentIntegrityError(`incident action ${binding.actionId} has no reserved audit`);
+  }
+  return decodeReservedAuditDelivery(row, binding);
+}
+
 function requireAuditMatches(
   event: IncidentAuditEvent,
   binding: IncidentActionBinding,
@@ -504,3 +566,11 @@ function sameLogicalAudit(
   const { eventId: _rightEvent, recordedAt: _rightTime, ...rightLogical } = right;
   return sameJson(leftLogical, rightLogical);
 }
+
+const incidentRecoveryStorage = {
+  loadForUpdate: async (session: PostgresqlSession, actionId: string) =>
+    await selectAction(session, encodePostgresqlByteText(actionId), true),
+  getReservedAuditDelivery: queryReservedAuditDelivery,
+  recordOutbox,
+  requireAuditMatches,
+};

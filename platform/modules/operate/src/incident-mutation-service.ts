@@ -1,6 +1,7 @@
 import type {
   AuthorizedIncidentActor,
   IncidentActionBinding,
+  IncidentActionRecoveryRepository,
   IncidentActionRepository,
   IncidentActionRequest,
   IncidentActionResult,
@@ -11,12 +12,14 @@ import type {
   IncidentOperationsGateway,
   StoredIncidentAction,
 } from "./incident-contracts.js";
+import type { PostgresqlSession } from "@bpmn-lean/platform-postgresql-runtime";
 import { OperateIncidentIntegrityError } from "./incident-contracts.js";
 import type { IncidentAggregationService } from "./incident-aggregation-service.js";
 import type { IncidentActionAuditOutboxService } from "./incident-audit-outbox-service.js";
 import {
   requireNonemptyString,
   sameJson,
+  snapshotAuditEvent,
   snapshotIncidentActionRequest,
 } from "./incident-values.js";
 
@@ -26,12 +29,22 @@ export type IncidentMutationServiceOptions = Readonly<{
   gateway: Pick<IncidentOperationsGateway, "submitIncidentOperation">;
   outbox: IncidentActionAuditOutboxService;
   auditEvents: IncidentAuditEventFactory;
+  recovery?: IncidentActionRecoveryRepository;
 }>;
+
+export type IncidentActionRecoveryResult =
+  | Readonly<{
+      kind: "complete";
+      apply: (session: PostgresqlSession) => Promise<void>;
+    }>
+  | Readonly<{ kind: "retry"; reason: "reservedAuditPending" }>;
+
+type IncidentMutationSuccess = Extract<IncidentMutationResult, { kind: "result" }>;
 
 /** Coordinates durable exact binding, reserved-audit delivery, and Product 1 submission. */
 export class IncidentMutationService {
   readonly #options: IncidentMutationServiceOptions;
-  readonly #active = new Map<string, Promise<IncidentMutationResult>>();
+  readonly #active = new Map<string, Promise<IncidentMutationSuccess>>();
 
   constructor(options: IncidentMutationServiceOptions) {
     this.#options = options;
@@ -107,7 +120,64 @@ export class IncidentMutationService {
     return this.#advance(retained);
   }
 
-  async #advance(action: StoredIncidentAction): Promise<IncidentMutationResult> {
+  /** Prepares one lease-fenced shared-worker step without mutating PostgreSQL. */
+  async prepareRecoveryCandidate(
+    actionIdValue: string,
+  ): Promise<IncidentActionRecoveryResult> {
+    const actionId = requireNonemptyString(actionIdValue, "actionId");
+    const retained = await this.#options.repository.get(actionId);
+    if (retained === null) return completeWithoutMutation();
+    switch (retained.state) {
+      case "committed":
+      case "rejected":
+        return completeWithoutMutation();
+      case "reserved":
+      case "submitting":
+      case "indeterminate":
+        break;
+    }
+    const audit = await this.#options.repository.getReservedAuditDelivery(
+      retained.binding,
+    );
+    switch (audit.kind) {
+      case "pending":
+        return { kind: "retry", reason: "reservedAuditPending" };
+      case "acknowledged": {
+        const recovery = this.#requireRecovery();
+        switch (retained.state) {
+          case "reserved":
+          case "indeterminate":
+            return {
+              kind: "complete",
+              apply: async (session) => {
+                await recovery.applyRecoverySubmission(session, retained);
+              },
+            };
+          case "submitting": {
+            const result = await this.#requestOutcome(retained.binding);
+            const auditEvent = snapshotAuditEvent(
+              this.#audit(retained.binding, result.state),
+            );
+            return {
+              kind: "complete",
+              apply: async (session) => {
+                await recovery.applyRecoveryOutcome(
+                  session,
+                  retained,
+                  result,
+                  auditEvent,
+                );
+              },
+            };
+          }
+        }
+      }
+    }
+  }
+
+  async #advance(
+    action: StoredIncidentAction,
+  ): Promise<IncidentMutationSuccess> {
     switch (action.state) {
       case "committed":
       case "rejected":
@@ -141,7 +211,9 @@ export class IncidentMutationService {
     }
   }
 
-  #submitOnce(binding: IncidentActionBinding): Promise<IncidentMutationResult> {
+  #submitOnce(
+    binding: IncidentActionBinding,
+  ): Promise<IncidentMutationSuccess> {
     const active = this.#active.get(binding.actionId);
     if (active !== undefined) return active;
     const submitted = this.#submitOwned(binding);
@@ -154,20 +226,10 @@ export class IncidentMutationService {
     return tracked;
   }
 
-  async #submitOwned(binding: IncidentActionBinding): Promise<IncidentMutationResult> {
-    let result: IncidentActionResult;
-    try {
-      result = classifyEngineResult(
-        await this.#options.gateway.submitIncidentOperation({
-          locator: binding.locator,
-          hostingProcessInstanceId: binding.hostingInstance.processInstanceId,
-          stimulus: stimulusFor(binding),
-        }),
-        binding,
-      );
-    } catch {
-      result = indeterminateResult(binding);
-    }
+  async #submitOwned(
+    binding: IncidentActionBinding,
+  ): Promise<IncidentMutationSuccess> {
+    const result = await this.#requestOutcome(binding);
     const recorded = await this.#options.repository.recordOutcome(
       binding,
       result,
@@ -183,6 +245,32 @@ export class IncidentMutationService {
     }
   }
 
+  async #requestOutcome(
+    binding: IncidentActionBinding,
+  ): Promise<IncidentActionResult> {
+    try {
+      return classifyEngineResult(
+        await this.#options.gateway.submitIncidentOperation({
+          locator: binding.locator,
+          hostingProcessInstanceId: binding.hostingInstance.processInstanceId,
+          stimulus: stimulusFor(binding),
+        }),
+        binding,
+      );
+    } catch {
+      return indeterminateResult(binding);
+    }
+  }
+
+  #requireRecovery(): IncidentActionRecoveryRepository {
+    if (this.#options.recovery === undefined) {
+      throw new OperateIncidentIntegrityError(
+        "incident-action recovery repository is not configured",
+      );
+    }
+    return this.#options.recovery;
+  }
+
   #audit(
     binding: IncidentActionBinding,
     outcome: IncidentAuditEvent["outcome"],
@@ -196,6 +284,10 @@ export class IncidentMutationService {
       outcome,
     });
   }
+}
+
+function completeWithoutMutation(): IncidentActionRecoveryResult {
+  return { kind: "complete", apply: async () => undefined };
 }
 
 function stimulusFor(binding: IncidentActionBinding): IncidentOperationStimulus {

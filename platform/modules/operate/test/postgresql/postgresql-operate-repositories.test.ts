@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
 import {
+  IncidentActionAuditOutboxService,
+  IncidentActionReconciliationService,
+  IncidentAggregationService,
+  IncidentMutationService,
   PostgresqlExecutionPublicationRepository,
   PostgresqlFlowNodeOccurrenceRepository,
   PostgresqlIncidentActionRepository,
@@ -68,6 +72,29 @@ if (baseUrl === undefined) {
       return {
         processes: new PostgresqlProcessInstanceRepository(runtime),
         incidents: new PostgresqlIncidentActionRepository(runtime),
+        damageReservedAudit: async (actionId, damage) => {
+          switch (damage) {
+            case "missing":
+              await runtime.query({
+                text: `
+                  DELETE FROM bpmn_platform.operate_incident_action_audit_outbox
+                  WHERE action_id = $1 AND action_outcome = 'reserved'
+                `,
+                values: [Buffer.from(actionId, "utf8")],
+              });
+              return;
+            case "corrupt":
+              await runtime.query({
+                text: `
+                  UPDATE bpmn_platform.operate_incident_action_audit_outbox
+                  SET event_json = ' ' || event_json
+                  WHERE action_id = $1 AND action_outcome = 'reserved'
+                `,
+                values: [Buffer.from(actionId, "utf8")],
+              });
+              return;
+          }
+        },
         dispose: async () => undefined,
       };
     },
@@ -148,6 +175,69 @@ if (baseUrl === undefined) {
     } finally {
       await Promise.all(runtimes.map(async (independent) => await independent.close()));
     }
+  });
+
+  test("incident recovery mutates only inside the supplied completion session", async () => {
+    await resetOperateDatabase(runtime);
+    const processes = new PostgresqlProcessInstanceRepository(runtime);
+    const incidents = new PostgresqlIncidentActionRepository(runtime);
+    await processes.recordConfirmed(
+      processPublication("incident-instance", "Incident_Process"),
+    );
+    const binding = incidentBinding("fenced-recovery-action");
+    await incidents.reserve(binding, incidentAudit(binding, "reserved"));
+    const outbox = new IncidentActionAuditOutboxService(incidents, {
+      record: async ({ ordinal }) => ordinal,
+    });
+    await outbox.reconcileBatch(1);
+    let gatewayCalls = 0;
+    const gateway = {
+      observeIncidents: async () => ({ status: "observed", incidents: [] }),
+      submitIncidentOperation: async () => {
+        gatewayCalls += 1;
+        return {
+          kind: "semantic",
+          commandId: binding.actionId,
+          outcome: "committed",
+        };
+      },
+    };
+    const mutations = new IncidentMutationService({
+      aggregation: new IncidentAggregationService({ repository: processes, gateway }),
+      repository: incidents,
+      recovery: incidents,
+      gateway,
+      outbox,
+      auditEvents: {
+        create: (seed) => incidentAudit(binding, seed.outcome),
+      },
+    });
+    const reconciliation = new IncidentActionReconciliationService(
+      incidents,
+      mutations,
+      outbox,
+    );
+
+    const submission = await reconciliation.reconcileAction(binding.actionId);
+    assert.equal(submission.kind, "complete");
+    assert.equal((await incidents.get(binding.actionId))?.state, "reserved");
+    assert.equal(gatewayCalls, 0);
+    if (submission.kind !== "complete") assert.fail("submission was not prepared");
+    await runtime.transaction(submission.apply);
+    assert.equal((await incidents.get(binding.actionId))?.state, "submitting");
+
+    const outcome = await reconciliation.reconcileAction(binding.actionId);
+    assert.equal(outcome.kind, "complete");
+    assert.equal(gatewayCalls, 1);
+    assert.equal((await incidents.get(binding.actionId))?.state, "submitting");
+    assert.deepEqual(await incidents.listUndeliveredAuditEvents(), []);
+    if (outcome.kind !== "complete") assert.fail("outcome was not prepared");
+    await runtime.transaction(outcome.apply);
+    assert.equal((await incidents.get(binding.actionId))?.state, "committed");
+    assert.deepEqual(
+      (await incidents.listUndeliveredAuditEvents()).map(({ event }) => event.outcome),
+      ["committed"],
+    );
   });
 
   test("outbox conflict rolls back action and source head before the next contiguous event", async () => {
