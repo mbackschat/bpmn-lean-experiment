@@ -7,6 +7,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Task | Read |
 |---|---|
 | Add, rename, graduate, archive, or classify a document | [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) |
+| Run a JavaScript or TypeScript command that may outlive one execution-tool yield or overflow transient output | [Long-running command policy](TESTING-SPEC.md#long-running-javascript-and-typescript-commands) |
 | Change or review the implemented Lean comment discipline and anti-boilerplate guardrails | [CLAUDE.md](../CLAUDE.md#comments--document-semantic-surplus), [TESTING-SPEC.md](TESTING-SPEC.md#default-verification), and the [archived proposal rationale](archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md) |
 | Understand the product division, BPMN core, CIB overlay, and platform boundary | [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division), [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md#layering-and-coverage-accounting), and [PLAN.md](PLAN.md) |
 | Change or review repository layout, modular-monolith modules, dependency direction, composition roots, or deployment shape | [ARCHITECTURE.md](ARCHITECTURE.md), [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2), and the [platform tree guide](../platform/README.md) |

@@ -143,7 +143,42 @@ The executable model corpus has the same cost separation. During research and ma
 
 Default verification runs the checked-source executable once. Lake builds the target when stale, kernel-checking its theorem declarations and Stage 3a witnesses before the executable evaluates `stageTwoAdmissionChecks`, `stageThreeAFrontierChecks`, and the retained positional-lowering controls. `scripts/verification-entrypoint.test.ts` guards the exact command plus the Stage 3a module imports, so neither theorem reachability nor executable negative-witness coverage can silently leave the default lane. Because the frozen experiment consumes the current checked-source contract, every closed-union widening must keep its exhaustive readers compiling and must explicitly reject any new variant outside the experiment's frozen semantic surface; the transitive executable build is the atomic-consumer guard.
 
-For JavaScript and TypeScript tests use the global long-running-command policy: pnpm, `CI=true`, tests bounded to 60 seconds, builds bounded to 120 seconds, and no indefinite watch process.
+## Long-running JavaScript and TypeScript commands
+
+This policy preserves the result of a test or build when terminal output is truncated, an execution tool yields, or conversational context is compacted. Compaction is routine and must not force duplicate work or turn a completed gate into an unknown result.
+
+Use durable capture for a JavaScript or TypeScript test, build, verification wrapper, browser run, or container orchestration command that may outlive one execution-tool yield or emit more output than the tool can retain. A short focused command whose complete output and exit status return in one invocation does not need a receipt.
+
+Continue to use pnpm, `CI=true`, the repository wrappers, and the owning gate bounds: tests are bounded to 60 seconds and builds to 120 seconds unless an owning composed gate documents a different aggregate deadline. Never start an indefinite watch process as verification.
+
+Before launch:
+
+1. Create an isolated receipt directory under `${TMPDIR:-/tmp}`.
+2. Record or report its exact path before starting the command, so context compaction cannot erase the recovery location.
+3. Name the exact command in that directory or in the accompanying progress update.
+4. Start the command through a resumable execution facility and retain its resumable session ID. Retain the child command session ID, not only an outer tool-cell identifier.
+
+During execution, stream combined standard output and error to the user and a durable log, resume the existing session after a yield, and do not start a replacement process merely to obtain more output. Do not poll only for activity; wait for meaningful output or completion while continuing the normal user-update cadence.
+
+On completion, capture the command's pipeline status immediately and write the numeric exit status to an exit-status receipt only after the command and log capture have completed. A present receipt is the authoritative result. Retain the log until the result has been reported or incorporated into required review evidence.
+
+After compaction or a lost tool response, resume by session ID first. If that session is unavailable, inspect the receipt, the durable log, and the operating-system process state. An absent receipt means only that completion was not recorded: the command may still be running or may have been interrupted. Never rerun a command merely because transient output was lost or unavailable. Rerun only after confirming that no prior process remains active and that its outcome cannot be recovered; report that evidence gap explicitly.
+
+[`scripts/run-with-receipt.sh`](../scripts/run-with-receipt.sh) is the executable mechanism. It uses `set -o pipefail`, `tee`, immediate `PIPESTATUS[0]` capture, atomic receipt publication, and refusal to overwrite prior evidence. Allocate and report the receipt directory before launching the long-running command:
+
+```bash
+command_receipt_root=$(mktemp -d "${TMPDIR:-/tmp}/bpmn-lean-command.XXXXXX")
+printf 'command receipt: %s\n' "$command_receipt_root"
+```
+
+Then run the exact command through the wrapper in the same shell:
+
+```bash
+./scripts/run-with-receipt.sh "$command_receipt_root" -- \
+  env CI=true ./scripts/pnpm.sh run test:pre-push:verify
+```
+
+When an execution tool uses a new shell for each invocation, copy the printed absolute receipt path into the wrapper invocation instead of relying on the shell variable to survive. Use the actual project command in place of the example. `command.txt` records the working directory and shell-escaped command, `output.log` retains combined output, and `exit-status` appears only after authoritative completion. Exit `125` means the command result could not be retained reliably because log capture failed.
 
 ## Direct TypeScript harnesses
 
