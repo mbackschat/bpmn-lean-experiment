@@ -46,6 +46,7 @@ export {
 export * from "./process-instance-search-routes.js";
 export * from "./process-instance-search.js";
 export * from "./process-instances.js";
+export * from "./projection-freshness.js";
 export * from "./strict-json.js";
 export * from "./work-task-decoders.js";
 export * from "./work-task-routes.js";
