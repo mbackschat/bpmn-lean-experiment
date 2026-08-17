@@ -142,7 +142,7 @@ Implementation proceeds as one documentation-governance increment with an immuta
 5. run a dependency-free migration checker that derives the baseline side independently from Git, rejects a missing or duplicate unit, verifies unchanged destinations mechanically, and emits the changed/deleted rows for closure review;
 6. run the complete documentation and repository gates before closure.
 
-The matrix is review-only evidence, stored in temporary review input and hash-bound in the closure packet rather than retained as another status source. The migration checker and its adversarial self-tests remain reusable. The migration may improve headings and remove exact duplicates, but it must not broaden or narrow a product, semantic, proof, evidence, or absence claim. Any such change is split into its own governed work.
+The matrix is review-only evidence, stored in temporary review input rather than retained as another status source. `semantic-review-packet.ts` gains an optional singleton `--migration-matrix <path>` input. For this closure it requires the matrix baseline and target to equal the packet commits, validates the complete structured rows, embeds their normalized reviewer-visible content plus exact-byte SHA-256 in the packet JSON, and includes both in `packetSha256`. The neutral reviewer prompt pastes that packet verbatim, so no unavailable temporary path or digest-only assertion substitutes for the matrix. The migration checker and its adversarial self-tests remain reusable. The migration may improve headings and remove exact duplicates, but it must not broaden or narrow a product, semantic, proof, evidence, or absence claim. Any such change is split into its own governed work.
 
 ## Executable guard contract
 
@@ -154,6 +154,7 @@ The existing plan and document-reviewability guards are changed at the root mech
 - migrate `map-scope-delegation.test.ts` to the registered detail maps and add valid detail-map delegation plus missing, empty, missing-half, root-proxy, and unclassified fixtures;
 - remove the complete root README `Current state` table and its capability paragraph, replacing them with links to `PLAN.md`, root `IMPLEMENTATION-MAP.md`, the platform map, and the executable-corpus owner; replace the milestone and README status comparisons in `plan-status-consistency.test.ts` with link-only and no-volatile-status checks;
 - require every active proposal Status section to contain exactly `Lifecycle: <closed-value>` and `Review: <closed-value>` lines, migrate every active proposal, and make `isOwnerApproved` recognize only the approved lifecycle values;
+- extend `semantic-review-packet.ts` with the optional validated `--migration-matrix` input and add adversarial tests for an unknown flag, missing or malformed matrix, baseline or target substitution, duplicate or missing unit, byte mutation, normalized-content visibility, and packet-digest sensitivity;
 - keep all current Markdown link, role, receipt, registry, and source-hygiene guards;
 - add a focused fixture proving that a compact plan and routed map pass without closed history, and adversarial fixtures for a dangling work ID, omitted current path family, user override to a different area, missing detail route, duplicate detail registration, and oversized dense table cell.
 
@@ -193,6 +194,7 @@ The proposal implementation is complete only when:
 - every generated baseline paragraph, list item, and table row has one verified destination or an explicit reviewed duplicate/history deletion;
 - an ordinary single-area status change needs no proposal or research edit and changes no root-map prose;
 - all routing, delegated-scope, migration, word-bound, review-unit, registry, link, receipt, and status-consistency adversarial fixtures pass;
+- the closure packet embeds the complete validated migration matrix, binds its exact bytes and normalized content to `packetSha256`, and its focused packet tests pass;
 - `node --test scripts/plan-status-consistency.test.ts scripts/document-reviewability.test.ts scripts/markdown-links.test.ts scripts/independent-review-policy.test.ts`, `./scripts/verify.sh`, and `git diff --check` pass within their existing command bounds;
 - the closure reviewer confirms no semantic, product, proof, evidence, or absence claim changed and no required startup route became implicit;
 - the implemented discipline is measured after one subsequent ordinary single-area increment; if it needs more than `PLAN.md` plus its one affected detail map without another genuine owner change, the design reopens.
