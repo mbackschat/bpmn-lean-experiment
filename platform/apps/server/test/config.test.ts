@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  PlatformStorageMode,
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
 
 test("provides bounded local-MVP defaults", () => {
   assert.deepEqual(readPlatformServerConfig({}), {
+    storageMode: PlatformStorageMode.Local,
+    postgresqlRuntimeUrl: null,
+    projectionMaxAgeMs: null,
     host: "127.0.0.1",
     port: 3000,
     publicOrigin: "http://127.0.0.1:3000",
@@ -46,6 +50,9 @@ test("snapshots explicit environment configuration", () => {
   const config = readPlatformServerConfig(environment);
   environment.PLATFORM_HOST = "attacker.invalid";
   assert.deepEqual(config, {
+    storageMode: PlatformStorageMode.Local,
+    postgresqlRuntimeUrl: null,
+    projectionMaxAgeMs: null,
     host: "localhost",
     port: 4321,
     publicOrigin: "https://process.example",
@@ -64,6 +71,51 @@ test("snapshots explicit environment configuration", () => {
   });
 });
 
+test("requires an explicit runtime credential and freshness age in shared mode", () => {
+  assert.deepEqual(readPlatformServerConfig({
+    PLATFORM_STORAGE_MODE: "shared",
+    PLATFORM_POSTGRESQL_RUNTIME_URL: "postgresql://runtime@localhost/platform",
+    PLATFORM_PROJECTION_MAX_AGE_MS: "2500",
+  }), {
+    storageMode: PlatformStorageMode.Shared,
+    postgresqlRuntimeUrl: "postgresql://runtime@localhost/platform",
+    projectionMaxAgeMs: 2500,
+    host: "127.0.0.1",
+    port: 3000,
+    publicOrigin: "http://127.0.0.1:3000",
+    dataDirectory: ".data/platform",
+    maxSourceBytes: 1024 * 1024,
+    parserDeadlineMs: 1000,
+    temporalAddress: "127.0.0.1:7233",
+    temporalNamespace: "default",
+    temporalTaskQueue: "bpmn-semantic",
+    temporalConnectTimeoutMs: 5000,
+    fakeActorId: "demo-user",
+    fakeActorGroups: ["reviewers", "operators"],
+    operationsGroupId: "operators",
+    maxWorkProcesses: 100,
+    maxWorkTasks: 1000,
+  });
+
+  for (const environment of [
+    { PLATFORM_STORAGE_MODE: "shared" },
+    {
+      PLATFORM_STORAGE_MODE: "shared",
+      PLATFORM_POSTGRESQL_MIGRATION_URL: "postgresql://migration@localhost/platform",
+      PLATFORM_PROJECTION_MAX_AGE_MS: "2500",
+    },
+    {
+      PLATFORM_STORAGE_MODE: "shared",
+      PLATFORM_POSTGRESQL_RUNTIME_URL: "postgresql://runtime@localhost/platform",
+    },
+  ]) {
+    assert.throws(
+      () => readPlatformServerConfig(environment),
+      /PLATFORM_POSTGRESQL_RUNTIME_URL|PLATFORM_PROJECTION_MAX_AGE_MS/u,
+    );
+  }
+});
+
 test("rejects empty strings and malformed, unsafe, or out-of-range integers", () => {
   for (const name of [
     "PLATFORM_HOST",
@@ -74,6 +126,7 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
     "PLATFORM_TEMPORAL_TASK_QUEUE",
     "PLATFORM_FAKE_ACTOR_ID",
     "PLATFORM_OPERATIONS_GROUP_ID",
+    "PLATFORM_POSTGRESQL_RUNTIME_URL",
   ]) {
     assert.throws(
       () => readPlatformServerConfig({ [name]: "" }),
@@ -93,6 +146,7 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
     "PLATFORM_TEMPORAL_CONNECT_TIMEOUT_MS",
     "PLATFORM_MAX_WORK_PROCESSES",
     "PLATFORM_MAX_WORK_TASKS",
+    "PLATFORM_PROJECTION_MAX_AGE_MS",
   ]) {
     for (const value of ["0", "-1", "1.5", "1e3", "abc", "9007199254740992"]) {
       assert.throws(
@@ -101,6 +155,10 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
       );
     }
   }
+  assert.throws(
+    () => readPlatformServerConfig({ PLATFORM_STORAGE_MODE: "postgresql" }),
+    /PLATFORM_STORAGE_MODE/u,
+  );
   assert.throws(
     () => readPlatformServerConfig({ PLATFORM_PORT: "65536" }),
     /PLATFORM_PORT/u,

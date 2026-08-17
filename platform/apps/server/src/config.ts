@@ -18,7 +18,18 @@ const defaultOperationsGroupId = "operators";
 const defaultMaxWorkProcesses = 100;
 const defaultMaxWorkTasks = 1_000;
 
+export const PlatformStorageMode = Object.freeze({
+  Local: "local",
+  Shared: "shared",
+} as const);
+
+export type PlatformStorageMode =
+  typeof PlatformStorageMode[keyof typeof PlatformStorageMode];
+
 export type PlatformServerConfig = Readonly<{
+  storageMode: PlatformStorageMode;
+  postgresqlRuntimeUrl: string | null;
+  projectionMaxAgeMs: number | null;
   host: string;
   port: number;
   publicOrigin: string;
@@ -46,9 +57,11 @@ export type ValidatedPlatformServerConfig = Readonly<
 export function readPlatformServerConfig(
   environment: NodeJS.ProcessEnv = process.env,
 ): PlatformServerConfig {
+  const storage = readStorageConfig(environment);
   const host = readNonemptyString(environment, "PLATFORM_HOST", defaultHost);
   const port = readPort(environment, "PLATFORM_PORT", defaultPort);
   return {
+    ...storage,
     host,
     port,
     publicOrigin: readNonemptyString(
@@ -118,6 +131,7 @@ export function readPlatformServerConfig(
 export function snapshotPlatformServerConfig(
   config: PlatformServerConfig,
 ): ValidatedPlatformServerConfig {
+  validateStorageConfig(config);
   requireNonempty(config.host, "host");
   requirePort(config.port, "port");
   const publicOrigin = validatePublicOrigin(config.publicOrigin);
@@ -137,6 +151,50 @@ export function snapshotPlatformServerConfig(
   requirePositiveSafeInteger(config.maxWorkProcesses, "maxWorkProcesses");
   requirePositiveSafeInteger(config.maxWorkTasks, "maxWorkTasks");
   return { ...config, publicOrigin, fakeActorGroups };
+}
+
+function readStorageConfig(environment: NodeJS.ProcessEnv): Pick<
+  PlatformServerConfig,
+  "storageMode" | "postgresqlRuntimeUrl" | "projectionMaxAgeMs"
+> {
+  const storageMode = environment.PLATFORM_STORAGE_MODE ?? PlatformStorageMode.Local;
+  switch (storageMode) {
+    case PlatformStorageMode.Local:
+      requireAbsent(environment, "PLATFORM_POSTGRESQL_RUNTIME_URL");
+      requireAbsent(environment, "PLATFORM_PROJECTION_MAX_AGE_MS");
+      return { storageMode, postgresqlRuntimeUrl: null, projectionMaxAgeMs: null };
+    case PlatformStorageMode.Shared:
+      return {
+        storageMode,
+        postgresqlRuntimeUrl: readRequiredNonemptyString(
+          environment,
+          "PLATFORM_POSTGRESQL_RUNTIME_URL",
+        ),
+        projectionMaxAgeMs: readRequiredPositiveSafeInteger(
+          environment,
+          "PLATFORM_PROJECTION_MAX_AGE_MS",
+        ),
+      };
+    default:
+      throw new TypeError("PLATFORM_STORAGE_MODE must be local or shared");
+  }
+}
+
+function validateStorageConfig(config: PlatformServerConfig): void {
+  switch (config.storageMode) {
+    case PlatformStorageMode.Local:
+      if (config.postgresqlRuntimeUrl !== null || config.projectionMaxAgeMs !== null) {
+        throw new TypeError("local storage mode cannot carry shared storage configuration");
+      }
+      return;
+    case PlatformStorageMode.Shared:
+      if (config.postgresqlRuntimeUrl === null || config.projectionMaxAgeMs === null) {
+        throw new TypeError("shared storage mode requires PostgreSQL and freshness configuration");
+      }
+      requireNonempty(config.postgresqlRuntimeUrl, "postgresqlRuntimeUrl");
+      requirePositiveSafeInteger(config.projectionMaxAgeMs, "projectionMaxAgeMs");
+      return;
+  }
 }
 
 function readFakeActorGroups(environment: NodeJS.ProcessEnv): readonly string[] {
@@ -184,6 +242,16 @@ function readNonemptyString(
   return value;
 }
 
+function readRequiredNonemptyString(
+  environment: NodeJS.ProcessEnv,
+  name: string,
+): string {
+  const value = environment[name];
+  if (value === undefined) throw new TypeError(`${name} is required`);
+  requireNonempty(value, name);
+  return value;
+}
+
 function readIdentifier(
   environment: NodeJS.ProcessEnv,
   name: string,
@@ -226,6 +294,26 @@ function readPositiveSafeInteger(
   const decoded = Number(value);
   requirePositiveSafeInteger(decoded, name);
   return decoded;
+}
+
+function readRequiredPositiveSafeInteger(
+  environment: NodeJS.ProcessEnv,
+  name: string,
+): number {
+  const value = environment[name];
+  if (value === undefined) throw new TypeError(`${name} is required`);
+  if (!/^(?:0*[1-9][0-9]*)$/u.test(value)) {
+    throw new RangeError(`${name} must be a positive safe integer`);
+  }
+  const decoded = Number(value);
+  requirePositiveSafeInteger(decoded, name);
+  return decoded;
+}
+
+function requireAbsent(environment: NodeJS.ProcessEnv, name: string): void {
+  if (environment[name] !== undefined) {
+    throw new TypeError(`${name} is available only in shared storage mode`);
+  }
 }
 
 function requireNonempty(value: string, name: string): void {

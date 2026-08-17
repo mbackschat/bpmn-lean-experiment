@@ -6,10 +6,9 @@ export type {
   PlatformHttpServerOptions,
 } from "./http-adapter.js";
 export {
+  PlatformStorageMode,
   readPlatformServerConfig,
-} from "./config.js";
-export type {
-  PlatformServerConfig,
+  type PlatformServerConfig,
 } from "./config.js";
 export {
   createPlatformServer,
