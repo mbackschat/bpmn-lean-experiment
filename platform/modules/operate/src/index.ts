@@ -27,6 +27,12 @@ export type {
 } from "./execution-publication-reconciliation-service.js";
 export { SqliteExecutionPublicationRepository } from "./sqlite-execution-publication-repository.js";
 export { PostgresqlExecutionPublicationRepository } from "./postgresql-execution-publication-repository.js";
+export {
+  PostgresqlExecutionProjectionReader,
+} from "./postgresql-execution-projection-reader.js";
+export type {
+  PostgresqlExecutionProjectionReaderOptions,
+} from "./postgresql-execution-projection-reader.js";
 export { ExecutionPublicationHttpRoutes } from "./execution-publication-http-routes.js";
 export {
   OperatorAuditExportService,
@@ -71,6 +77,18 @@ export type {
   FlowNodeMetricsDefinitionResolver,
 } from "./flow-node-metrics-aggregation-service.js";
 export { FlowNodeMetricsHttpRoutes } from "./flow-node-metrics-http-routes.js";
+export {
+  PostgresqlFlowNodeMetricsReader,
+} from "./postgresql-flow-node-metrics-reader.js";
+export type {
+  PostgresqlFlowNodeMetricsReaderOptions,
+} from "./postgresql-flow-node-metrics-reader.js";
+export {
+  PostgresqlProjectionReadKind,
+} from "./postgresql-projection-read.js";
+export type {
+  PostgresqlProjectionRead,
+} from "./postgresql-projection-read.js";
 export type {
   ProcessInstanceRepository,
   ProcessInstanceRepositoryQuery,

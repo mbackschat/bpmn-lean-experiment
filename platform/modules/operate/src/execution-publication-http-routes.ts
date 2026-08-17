@@ -3,11 +3,15 @@ import {
   PublicApiErrorCode,
   matchExecutionPublicationExportPath,
   matchExecutionPublicationPath,
+  projectionFreshnessResponseHeaders,
   requireExecutionPublicationRequestBodyLength,
   serializeExecutionPublicationExport,
 } from "@bpmn-lean/platform-contracts";
 import type {
   ExecutionPublicationRouteRequest,
+  ExecutionPublicationExport,
+  ExecutionPublicationPage,
+  ProjectionRead,
   PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
 } from "@bpmn-lean/platform-contracts";
@@ -29,13 +33,38 @@ import {
 import type {
   ExecutionPublicationReconciliationService,
 } from "./execution-publication-reconciliation-service.js";
+import {
+  PostgresqlProjectionReadKind,
+} from "./postgresql-projection-read.js";
+import type {
+  PostgresqlProjectionRead,
+} from "./postgresql-projection-read.js";
 
-type ExecutionPublicationHttpRoutesOptions = Readonly<{
+type ExecutionPublicationHttpRoutesCommonOptions = Readonly<{
   actors: ActorResolver;
   authorization: Pick<OperationsAuthorizationPolicy, "decide">;
-  reconciliation: Pick<ExecutionPublicationReconciliationService, "reconcile">;
-  publications: Pick<ExecutionPublicationRepository, "page" | "export">;
 }>;
+
+type ExecutionPublicationHttpRoutesOptions = ExecutionPublicationHttpRoutesCommonOptions & (
+  | Readonly<{
+      reconciliation: Pick<ExecutionPublicationReconciliationService, "reconcile">;
+      publications: Pick<ExecutionPublicationRepository, "page" | "export">;
+      projectedReads?: never;
+    }>
+  | Readonly<{
+      projectedReads: Readonly<{
+        page(
+          processInstanceId: string,
+          request: Readonly<{ afterRevision: number; limit?: number }>,
+        ): Promise<PostgresqlProjectionRead<ExecutionPublicationPage>>;
+        export(
+          processInstanceId: string,
+        ): Promise<PostgresqlProjectionRead<ExecutionPublicationExport>>;
+      }>;
+      reconciliation?: never;
+      publications?: never;
+    }>
+);
 
 const RouteKind = {
   Page: "page",
@@ -93,6 +122,24 @@ export class ExecutionPublicationHttpRoutes {
       const processInstanceId = route.kind === RouteKind.Page
         ? route.request.processInstanceId
         : route.processInstanceId;
+      if (this.options.projectedReads !== undefined) {
+        return route.kind === RouteKind.Page
+          ? projectedPageResponse(await this.options.projectedReads.page(
+              processInstanceId,
+              {
+                afterRevision: route.request.afterRevision,
+                ...(route.request.limit === undefined
+                  ? {}
+                  : { limit: route.request.limit }),
+              },
+            ))
+          : projectedExportResponse(
+              processInstanceId,
+              await this.options.projectedReads.export(processInstanceId),
+            );
+      }
+      const publications = this.options.publications;
+      if (publications === undefined) throw new TypeError("local publications are missing");
       const reconciled = await this.options.reconciliation.reconcile(processInstanceId);
       switch (reconciled.kind) {
         case ExecutionPublicationReconciliationKind.NotFound:
@@ -103,8 +150,8 @@ export class ExecutionPublicationHttpRoutes {
           return publicationUnavailable();
         case ExecutionPublicationReconciliationKind.Available:
           return route.kind === RouteKind.Page
-            ? await this.#page(route.request)
-            : await this.#export(route.processInstanceId);
+            ? await this.#page(publications, route.request)
+            : await this.#export(publications, route.processInstanceId);
       }
     } catch (error: unknown) {
       return error instanceof RangeError && route.kind === RouteKind.Page
@@ -113,16 +160,22 @@ export class ExecutionPublicationHttpRoutes {
     }
   }
 
-  async #page(request: ExecutionPublicationRouteRequest): Promise<Response> {
-    const page = await this.options.publications.page(request.processInstanceId, {
+  async #page(
+    publications: Pick<ExecutionPublicationRepository, "page" | "export">,
+    request: ExecutionPublicationRouteRequest,
+  ): Promise<Response> {
+    const page = await publications.page(request.processInstanceId, {
       afterRevision: request.afterRevision,
       ...(request.limit === undefined ? {} : { limit: request.limit }),
     });
     return page === null ? publicationUnavailable() : jsonResponse(200, page);
   }
 
-  async #export(processInstanceId: string): Promise<Response> {
-    const publication = await this.options.publications.export(processInstanceId);
+  async #export(
+    publications: Pick<ExecutionPublicationRepository, "page" | "export">,
+    processInstanceId: string,
+  ): Promise<Response> {
+    const publication = await publications.export(processInstanceId);
     if (publication === null) return publicationUnavailable();
     const bytes = serializeExecutionPublicationExport(publication, {
       definition: publication.definition,
@@ -137,6 +190,70 @@ export class ExecutionPublicationHttpRoutes {
           `attachment; filename="${executionExportFilename(processInstanceId)}"`,
       },
     });
+  }
+}
+
+function projectedPageResponse(
+  result: PostgresqlProjectionRead<ExecutionPublicationPage>,
+): Response {
+  switch (result.kind) {
+    case PostgresqlProjectionReadKind.Available:
+      return projectionJsonResponse(result.read);
+    case PostgresqlProjectionReadKind.NotFound:
+      return notFound();
+    case PostgresqlProjectionReadKind.Unavailable:
+      return publicationUnavailable();
+  }
+}
+
+function projectedExportResponse(
+  processInstanceId: string,
+  result: PostgresqlProjectionRead<ExecutionPublicationExport>,
+): Response {
+  switch (result.kind) {
+    case PostgresqlProjectionReadKind.Available:
+      return exportResponse(processInstanceId, result.read);
+    case PostgresqlProjectionReadKind.NotFound:
+      return notFound();
+    case PostgresqlProjectionReadKind.Unavailable:
+      return publicationUnavailable();
+  }
+}
+
+function projectionJsonResponse(read: ProjectionRead<ExecutionPublicationPage>): Response {
+  const response = jsonResponse(200, read.value);
+  addFreshness(response, read);
+  return response;
+}
+
+function exportResponse(
+  processInstanceId: string,
+  read: ProjectionRead<ExecutionPublicationExport>,
+): Response {
+  const publication = read.value;
+  const bytes = serializeExecutionPublicationExport(publication, {
+    definition: publication.definition,
+    processId: publication.processId,
+    processInstanceId: publication.processInstanceId,
+  });
+  const response = new Response(bytes, {
+    status: 200,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "content-disposition":
+        `attachment; filename="${executionExportFilename(processInstanceId)}"`,
+    },
+  });
+  addFreshness(response, read);
+  return response;
+}
+
+function addFreshness(response: Response, read: ProjectionRead<unknown>): void {
+  if (read.freshness === null) return;
+  for (const [name, value] of Object.entries(
+    projectionFreshnessResponseHeaders(read.freshness),
+  )) {
+    response.headers.set(name, value);
   }
 }
 

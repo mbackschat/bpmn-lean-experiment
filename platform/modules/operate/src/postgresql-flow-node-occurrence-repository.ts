@@ -238,20 +238,28 @@ function snapshotMarkStatus(
 export async function writePostgresqlOccurrenceHeader(
   session: PostgresqlSession,
   image: FlowNodeOccurrenceProjectionImage,
+  completeObservation = false,
 ): Promise<void> {
   await session.query({
     text: `
       INSERT INTO bpmn_platform.operate_flow_node_occurrence_publications (
         process_instance_id, identity_json, status, head_revision,
-        producer_head_revision, last_committed_at_epoch_ms, current_open_json
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        producer_head_revision, last_committed_at_epoch_ms, current_open_json,
+        last_complete_observed_at_epoch_ms
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7,
+        CASE WHEN $8 THEN
+          floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint
+        ELSE NULL END
+      )
       ON CONFLICT (process_instance_id) DO UPDATE SET
         identity_json = excluded.identity_json,
         status = excluded.status,
         head_revision = excluded.head_revision,
         producer_head_revision = excluded.producer_head_revision,
         last_committed_at_epoch_ms = excluded.last_committed_at_epoch_ms,
-        current_open_json = excluded.current_open_json
+        current_open_json = excluded.current_open_json,
+        last_complete_observed_at_epoch_ms = excluded.last_complete_observed_at_epoch_ms
     `,
     values: [
       encodePostgresqlText(image.identity.processInstanceId),
@@ -261,6 +269,7 @@ export async function writePostgresqlOccurrenceHeader(
       image.producerHeadRevision,
       image.lastCommittedAtEpochMs,
       JSON.stringify(image.currentOpen),
+      completeObservation,
     ],
   });
 }

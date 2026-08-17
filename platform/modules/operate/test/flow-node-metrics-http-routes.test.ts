@@ -76,10 +76,55 @@ test("serves available exact-version metrics and maps absence to 404", async () 
   };
   const available = await permittedRoutes(async () => result).handle(new Request(route));
   assert.equal(available?.status, 200);
+  assert.equal(available?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
   assert.deepEqual(await available?.json(), result);
 
   const missing = await permittedRoutes(async () => null).handle(new Request(route));
   assert.equal(missing?.status, 404);
+});
+
+test("adds shared freshness only to successful metrics responses", async () => {
+  const definition = {
+    processId: "Process_1",
+    version: 7,
+    source: {
+      kind: "bpmnSource" as const,
+      id: "process.bpmn",
+      sha256: "a".repeat(64),
+      byteLength: 42,
+      declaredEncoding: null,
+      decodedAs: "UTF-8" as const,
+    },
+    semanticProfile: "profile",
+    startCapabilities: { messageStarts: [], timerStarts: [] },
+  };
+  const result: FlowNodeMetricsResult = {
+    kind: "available",
+    snapshot: {
+      definition,
+      population: { processInstances: 0, label: "allRetainedEvidence" },
+      flowNodes: [],
+    },
+  };
+  const response = await new FlowNodeMetricsHttpRoutes({
+    actors: { resolveActor: () => ({ id: "operator", groups: ["operators"] }) },
+    authorization: { decide: () => OperationsAuthorizationDecision.Permitted },
+    aggregation: {
+      get: async () => ({
+        value: result,
+        freshness: { observedAfterEpochMs: 8_388_001, maxAgeMs: 5_000 },
+      }),
+    },
+  }).handle(new Request(route));
+  assert.equal(response?.status, 200);
+  assert.equal(response?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), "8388001");
+  assert.equal(response?.headers.get("Bpmn-Projection-Max-Age-Ms"), "5000");
+
+  const unavailable = await permittedRoutes(async () => ({
+    kind: "unavailable",
+    reason: "flowNodeMetricsUnavailable",
+  })).handle(new Request(route));
+  assert.equal(unavailable?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
 });
 
 test("admits only bodyless GET on the canonical route", async () => {

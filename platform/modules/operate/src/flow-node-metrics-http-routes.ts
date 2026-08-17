@@ -2,10 +2,13 @@ import {
   FlowNodeMetricsResultKind,
   FlowNodeMetricsUnavailableMessage,
   matchFlowNodeMetricsPath,
+  projectionFreshnessResponseHeaders,
   PublicApiErrorCode,
   requireFlowNodeMetricsRequestBodyLength,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  FlowNodeMetricsResult,
+  ProjectionRead,
   PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
 } from "@bpmn-lean/platform-contracts";
@@ -27,7 +30,11 @@ import type {
 type FlowNodeMetricsHttpRoutesOptions = Readonly<{
   actors: ActorResolver;
   authorization: Pick<OperationsAuthorizationPolicy, "decide">;
-  aggregation: Pick<FlowNodeMetricsAggregationService, "get">;
+  aggregation: Readonly<{
+    get(
+      reference: Parameters<FlowNodeMetricsAggregationService["get"]>[0],
+    ): Promise<FlowNodeMetricsResult | ProjectionRead<FlowNodeMetricsResult> | null>;
+  }>;
 }>;
 
 /** Authorization-first bodyless GET owner for exact-version flow-node metrics. */
@@ -69,18 +76,49 @@ export class FlowNodeMetricsHttpRoutes {
     }
 
     try {
-      const result = await this.options.aggregation.get(reference);
-      if (result === null) return notFound();
+      const resultValue = await this.options.aggregation.get(reference);
+      if (resultValue === null) return notFound();
+      let read: ProjectionRead<FlowNodeMetricsResult> | null;
+      let result: FlowNodeMetricsResult;
+      if (isProjectionRead(resultValue)) {
+        read = resultValue;
+        result = resultValue.value;
+      } else {
+        read = null;
+        result = resultValue;
+      }
       switch (result.kind) {
         case FlowNodeMetricsResultKind.Available:
-          return jsonResponse(200, result);
+          return metricsResponse(result, read);
         case FlowNodeMetricsResultKind.Unavailable:
           return metricsUnavailable();
       }
+      return internalFailure();
     } catch {
       return internalFailure();
     }
   }
+}
+
+function isProjectionRead(
+  value: FlowNodeMetricsResult | ProjectionRead<FlowNodeMetricsResult>,
+): value is ProjectionRead<FlowNodeMetricsResult> {
+  return "value" in value && "freshness" in value;
+}
+
+function metricsResponse(
+  result: FlowNodeMetricsResult,
+  read: ProjectionRead<FlowNodeMetricsResult> | null,
+): Response {
+  const response = jsonResponse(200, result);
+  if (read?.freshness !== null && read !== null) {
+    for (const [name, value] of Object.entries(
+      projectionFreshnessResponseHeaders(read.freshness),
+    )) {
+      response.headers.set(name, value);
+    }
+  }
+  return response;
 }
 
 function jsonResponse(status: number, value: unknown): Response {

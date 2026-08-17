@@ -12,6 +12,8 @@ Shared incident-action recovery is one exact action at a time and two-phase. It 
 
 The ordinal-0008 migration adds immutable incident snapshot generations. Candidate discovery materializes a bounded population cut, each recovery step observes at most one Process outside PostgreSQL, and the supplied lease session atomically revalidates and replaces that Process image. Shared incident list and detail reads prove complete, age-bounded coverage in one SQL statement and return the standard projection-freshness headers; local reads retain the same bodies without freshness metadata.
 
+The ordinal-0009 migration adds database-clock completion watermarks to the append-only committed-execution and flow-node-occurrence headers, plus a constrained redundant current Process status. Lease-fenced recovery refreshes those facts even for an exact no-suffix Product 1 observation. Shared per-instance execution reads require one fresh aligned E1 and occurrence head, while shared metrics materialize and validate one exact-definition population cut in one SQL statement. Neither path calls Product 1 from the request, and metrics add no generation table or recovery family.
+
 ## Quick start
 
 ```sh

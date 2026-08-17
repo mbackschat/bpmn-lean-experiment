@@ -5,6 +5,9 @@ import type {
   PostgresqlSession,
 } from "@bpmn-lean/platform-postgresql-runtime";
 
+import {
+  ExecutionPublicationProjectionStatus,
+} from "./execution-publication-contracts.js";
 import type {
   ExecutionPublicationProjectionImage,
 } from "./execution-publication-contracts.js";
@@ -45,8 +48,11 @@ export async function applyPreparedExecutionPublicationPage(
     projectionIdentityFromRegistration(expectedRegistration),
   );
   const next = applyExecutionPublicationPage(prior, page);
-  if (sameCanonicalValue(prior, next)) return;
-  await writeExecutionPublicationHeader(session, next);
+  const completeObservation = next.status === ExecutionPublicationProjectionStatus.Healthy &&
+    next.current !== null &&
+    next.headRevision === next.producerHeadRevision;
+  if (sameCanonicalValue(prior, next) && !completeObservation) return;
+  await writeExecutionPublicationHeader(session, next, completeObservation);
   await insertExecutionPublicationBatches(
     session,
     next.identity.processInstanceId,

@@ -58,14 +58,22 @@ export async function readStoredExecutionPublication(
 export async function writeExecutionPublicationHeader(
   session: PostgresqlSession,
   image: ExecutionPublicationProjectionImage,
+  completeObservation = false,
 ): Promise<void> {
   await session.query({
     text: `
       INSERT INTO bpmn_platform.operate_execution_publications (
         process_instance_id, identity_json, status, head_revision,
         producer_head_revision, last_logical_time_ms, control_tokens_json,
-        scopes_json, current_json
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        scopes_json, current_json, last_complete_observed_at_epoch_ms,
+        current_process_status
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9,
+        CASE WHEN $10 THEN
+          floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint
+        ELSE NULL END,
+        $11
+      )
       ON CONFLICT (process_instance_id) DO UPDATE SET
         identity_json = excluded.identity_json,
         status = excluded.status,
@@ -74,7 +82,9 @@ export async function writeExecutionPublicationHeader(
         last_logical_time_ms = excluded.last_logical_time_ms,
         control_tokens_json = excluded.control_tokens_json,
         scopes_json = excluded.scopes_json,
-        current_json = excluded.current_json
+        current_json = excluded.current_json,
+        last_complete_observed_at_epoch_ms = excluded.last_complete_observed_at_epoch_ms,
+        current_process_status = excluded.current_process_status
     `,
     values: [
       encodeByteText(image.identity.processInstanceId),
@@ -86,6 +96,8 @@ export async function writeExecutionPublicationHeader(
       canonicalText(image.controlTokens),
       canonicalText(image.scopes),
       image.current === null ? null : canonicalText(image.current),
+      completeObservation,
+      image.current?.state.status ?? null,
     ],
   });
 }
@@ -166,6 +178,9 @@ function publicationReadSql(lockRegistration: boolean): string {
       SELECT
         ordinal,
         process_instance_id,
+        process_id,
+        definition_version,
+        source_sha256,
         public_identity_json,
         process_locator,
         observation
@@ -176,6 +191,9 @@ function publicationReadSql(lockRegistration: boolean): string {
     SELECT
       r.ordinal AS registration_ordinal,
       r.process_instance_id AS registration_process_instance_id,
+      r.process_id AS registration_process_id,
+      r.definition_version AS registration_definition_version,
+      r.source_sha256 AS registration_source_sha256,
       r.public_identity_json AS registration_identity_json,
       r.process_locator AS registration_locator,
       r.observation AS registration_observation,
@@ -236,7 +254,19 @@ function decodeRegistration(row: PostgresqlRow): OperateProcessRegistration {
   const instance = decodePublicProcessInstanceIdentity(JSON.parse(identityJson));
   if (
     JSON.stringify(instance) !== identityJson ||
-    instance.processInstanceId !== processInstanceId
+    instance.processInstanceId !== processInstanceId ||
+    instance.definition.processId !== decodeByteText(
+      row.registration_process_id,
+      "registration_process_id",
+    ) ||
+    instance.definition.version !== requirePositive(
+      row.registration_definition_version,
+      "registration_definition_version",
+    ) ||
+    instance.definition.source.sha256 !== requireText(
+      row.registration_source_sha256,
+      "registration_source_sha256",
+    )
   ) {
     throw new TypeError("stored registration identity disagrees with its key");
   }

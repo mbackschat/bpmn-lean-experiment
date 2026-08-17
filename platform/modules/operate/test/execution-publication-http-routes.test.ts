@@ -17,6 +17,7 @@ import {
 } from "@bpmn-lean/platform-identity-policy";
 
 import { firstPage } from "./execution-publication-fixture.ts";
+import { PostgresqlProjectionReadKind } from "../dist/postgresql-projection-read.js";
 
 test("serves the exact projected page and canonical export bytes", async () => {
   const calls = counters();
@@ -25,12 +26,14 @@ test("serves the exact projected page and canonical export bytes", async () => {
     "/api/v1/process-instances/Instance_1/execution?afterRevision=0&limit=1",
   ));
   assert.equal(pageResponse?.status, 200);
+  assert.equal(pageResponse?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
   assert.deepEqual(await pageResponse?.json(), firstPage());
 
   const exportResponse = await routes.handle(request(
     "/api/v1/process-instances/Instance_1/execution/export",
   ));
   assert.equal(exportResponse?.status, 200);
+  assert.equal(exportResponse?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
   assert.equal(
     exportResponse?.headers.get("content-type"),
     "application/json; charset=utf-8",
@@ -53,6 +56,62 @@ test("serves the exact projected page and canonical export bytes", async () => {
     OperationsAuthorizationSurface.ExecutionExport,
   ]);
   assert.deepEqual(calls.reconciliations, ["Instance_1", "Instance_1"]);
+});
+
+test("shared projected reads add freshness only to successful page and export responses", async () => {
+  let projectedCalls = 0;
+  const freshness = { observedAfterEpochMs: 8_388_001, maxAgeMs: 5_000 };
+  const routes = new ExecutionPublicationHttpRoutes({
+    actors: { resolveActor: () => ({ id: "operator-1", groups: ["operators"] }) },
+    authorization: { decide: () => OperationsAuthorizationDecision.Permitted },
+    projectedReads: {
+      page: async () => {
+        projectedCalls += 1;
+        return {
+          kind: PostgresqlProjectionReadKind.Available,
+          read: { value: firstPage(), freshness },
+        };
+      },
+      export: async () => {
+        projectedCalls += 1;
+        return {
+          kind: PostgresqlProjectionReadKind.Available,
+          read: { value: publicationExport(), freshness },
+        };
+      },
+    },
+  });
+  for (const path of [
+    "/api/v1/process-instances/Instance_1/execution?afterRevision=0&limit=1",
+    "/api/v1/process-instances/Instance_1/execution/export",
+  ]) {
+    const response = await routes.handle(request(path));
+    assert.equal(response?.status, 200);
+    assert.equal(response?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), "8388001");
+    assert.equal(response?.headers.get("Bpmn-Projection-Max-Age-Ms"), "5000");
+  }
+  assert.equal(projectedCalls, 2);
+
+  const unavailable = new ExecutionPublicationHttpRoutes({
+    actors: { resolveActor: () => ({ id: "operator-1", groups: ["operators"] }) },
+    authorization: { decide: () => OperationsAuthorizationDecision.Permitted },
+    projectedReads: {
+      page: async () => ({ kind: PostgresqlProjectionReadKind.Unavailable }),
+      export: async () => ({ kind: PostgresqlProjectionReadKind.NotFound }),
+    },
+  });
+  const unavailableResponse = await unavailable.handle(request(
+    "/api/v1/process-instances/Instance_1/execution?afterRevision=0",
+  ));
+  const missingResponse = await unavailable.handle(request(
+    "/api/v1/process-instances/Instance_1/execution/export",
+  ));
+  assert.equal(unavailableResponse?.status, 503);
+  assert.equal(missingResponse?.status, 404);
+  for (const response of [unavailableResponse, missingResponse]) {
+    assert.equal(response?.headers.get("Bpmn-Projection-Observed-After-Epoch-Ms"), null);
+    assert.equal(response?.headers.get("Bpmn-Projection-Max-Age-Ms"), null);
+  }
 });
 
 test("authorizes before reconciliation or any projected repository read", async () => {

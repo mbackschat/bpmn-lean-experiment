@@ -127,17 +127,24 @@ export async function readPostgresqlOccurrenceSnapshot(
   try {
     const row = result.rows[0];
     if (row === undefined) return null;
-    const registration = decodeRegistration(row);
-    const execution = decodeExecution(row, registration);
-    return {
-      registration,
-      execution,
-      occurrence: decodeOccurrence(row, registration, execution),
-    };
+    return decodePostgresqlOccurrenceSnapshotRow(row);
   } catch (error: unknown) {
     if (error instanceof FlowNodeOccurrenceStoredValueError) throw error;
     throw new FlowNodeOccurrenceStoredValueError(error);
   }
+}
+
+/** Decodes one aggregate row selected by a caller-owned coherent PostgreSQL statement. */
+export function decodePostgresqlOccurrenceSnapshotRow(
+  row: PostgresqlRow,
+): PostgresqlOccurrenceSnapshot {
+  const registration = decodeRegistration(row);
+  const execution = decodeExecution(row, registration);
+  return {
+    registration,
+    execution,
+    occurrence: decodeOccurrence(row, registration, execution),
+  };
 }
 
 export function snapshotRegistration(

@@ -8,6 +8,7 @@ import type {
 import {
   applyFlowNodeOccurrencePage,
   createEmptyFlowNodeOccurrenceProjection,
+  FlowNodeOccurrenceProjectionStatus,
   occurrenceIdentityFromRegistration,
 } from "./flow-node-occurrence-projection.js";
 import type {
@@ -63,7 +64,10 @@ export async function applyPreparedFlowNodeOccurrencePage(
     snapshot.execution,
     "mayBeAhead",
   );
-  if (sameCanonicalValue(prior, next)) return;
-  await writePostgresqlOccurrenceHeader(session, next);
+  const completeObservation = next.status === FlowNodeOccurrenceProjectionStatus.Healthy &&
+    page.currentOpen !== null &&
+    next.headRevision === next.producerHeadRevision;
+  if (sameCanonicalValue(prior, next) && !completeObservation) return;
+  await writePostgresqlOccurrenceHeader(session, next, completeObservation);
   await appendPostgresqlOccurrenceSuffix(session, prior, next);
 }
