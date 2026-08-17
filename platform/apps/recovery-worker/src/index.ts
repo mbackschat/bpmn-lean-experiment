@@ -22,3 +22,7 @@ export type {
   RecoveryRunReport,
   RecoveryRunReporter,
 } from "./runtime.js";
+export {
+  checkRecoveryWorkerReadiness,
+  RECOVERY_WORKER_SCHEMA_EPOCH,
+} from "./readiness.js";

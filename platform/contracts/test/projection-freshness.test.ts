@@ -4,7 +4,7 @@ import { test } from "node:test";
 import {
   ProjectionFreshnessHttpHeader,
   projectionFreshnessResponseHeaders,
-} from "../dist/index.js";
+} from "@bpmn-lean/platform-contracts";
 
 test("formats the exact projection freshness response headers", () => {
   assert.deepEqual(

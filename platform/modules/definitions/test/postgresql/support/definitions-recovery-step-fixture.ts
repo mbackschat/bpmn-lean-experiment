@@ -18,14 +18,14 @@ import type {
 import {
   PostgresqlDefinitionsRecoveryIntermediateResult,
   PostgresqlDefinitionsRecoveryStepKind,
-} from "../../../dist/postgresql-definitions-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
 import type {
   PostgresqlDefinitionsRecoveryStepResult,
-} from "../../../dist/postgresql-definitions-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
 import {
   encodeDefinitionsRecoveryCandidateKey,
   DefinitionsRecoveryFamily,
-} from "../../../dist/postgresql-definitions-recovery-candidate-source.js";
+} from "@bpmn-lean/platform-definitions";
 
 export async function continueIntermediate(
   runtime: PostgresqlRuntime,
@@ -44,8 +44,12 @@ export async function continueIntermediate(
 
 export async function applyIntermediateFence(
   runtime: PostgresqlRuntime,
-  step: Extract<PostgresqlDefinitionsRecoveryStepResult, { kind: "intermediate" }>,
+  step: PostgresqlDefinitionsRecoveryStepResult,
 ) {
+  assert.equal(step.kind, PostgresqlDefinitionsRecoveryStepKind.Intermediate);
+  if (step.kind !== PostgresqlDefinitionsRecoveryStepKind.Intermediate) {
+    throw new TypeError("expected an intermediate recovery step");
+  }
   return await runtime.transaction(
     async (session) => await step.applyWhileOwned(session),
   );

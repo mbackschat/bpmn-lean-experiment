@@ -11,7 +11,7 @@ import {
   DefinitionScheduleState,
   MessageStartPublicationIntegrityError,
   MessageStartPublicationState,
-} from "../../dist/index.js";
+} from "@bpmn-lean/platform-definitions";
 import type {
   ConfirmedProcessInstanceRepository,
   DefinitionMetadata,
@@ -21,7 +21,7 @@ import type {
   HumanTaskCatalogRepository,
   MessageStartPublicationRepository,
   NewDefinitionMetadata,
-} from "../../dist/index.js";
+} from "@bpmn-lean/platform-definitions";
 
 export type DefinitionsRepositoryContractFixture = Readonly<{
   definitions: DefinitionRepository & HumanTaskCatalogRepository;

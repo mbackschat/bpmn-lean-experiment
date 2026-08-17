@@ -122,10 +122,7 @@ if (baseUrl === undefined) {
       processPublication("incident-instance", "Incident_Process"),
     );
     const exact = incidentBinding("identity-race");
-    const changed = structuredClone(exact);
-    changed.incident.id.effectId.elementId = "Changed_Task";
-    changed.incident.effect.id.elementId = "Changed_Task";
-    changed.interaction.incidentId.effectId.elementId = "Changed_Task";
+    const changed = withChangedIncidentElementId(exact, "Changed_Task");
     const left = createOperateTestRuntime(baseUrl, "operate-action-identity-left", 2);
     const right = createOperateTestRuntime(baseUrl, "operate-action-identity-right", 2);
     try {
@@ -153,11 +150,7 @@ if (baseUrl === undefined) {
     const exactRegistration = { ...registration, ordinal };
     await new PostgresqlExecutionPublicationRepository(runtime)
       .applyPage(exactRegistration, firstPage());
-    const changed = structuredClone(secondPage());
-    changed.batches[0]!.commandId = "changed-command";
-    const transition = changed.batches[0]!.transitions[0]!.transition;
-    if (transition.kind !== "externalStimulus") assert.fail("fixture drifted");
-    transition.stimulus.commandId = "changed-command";
+    const changed = withChangedExecutionCommand(secondPage(), "changed-command");
     const left = createOperateTestRuntime(baseUrl, "operate-e1-left", 2);
     const right = createOperateTestRuntime(baseUrl, "operate-e1-right", 2);
     try {
@@ -210,4 +203,38 @@ if (baseUrl === undefined) {
       await Promise.all([left.close(), right.close()]);
     }
   });
+}
+
+function withChangedIncidentElementId(
+  exact: ReturnType<typeof incidentBinding>,
+  elementId: string,
+): ReturnType<typeof incidentBinding> {
+  const changed = structuredClone(exact);
+  const writable = changed as unknown as {
+    incident: {
+      id: { effectId: { elementId: string } };
+      effect: { id: { elementId: string } };
+    };
+    interaction: { incidentId: { effectId: { elementId: string } } };
+  };
+  writable.incident.id.effectId.elementId = elementId;
+  writable.incident.effect.id.elementId = elementId;
+  writable.interaction.incidentId.effectId.elementId = elementId;
+  return changed;
+}
+
+function withChangedExecutionCommand(
+  exact: ReturnType<typeof secondPage>,
+  commandId: string,
+): ReturnType<typeof secondPage> {
+  const changed = structuredClone(exact);
+  const batch = changed.batches[0];
+  if (batch === undefined) throw new TypeError("fixture has no execution batch");
+  (batch as unknown as { commandId: string }).commandId = commandId;
+  const transition = batch.transitions[0]?.transition;
+  if (transition?.kind !== "externalStimulus") {
+    throw new TypeError("fixture has no external stimulus transition");
+  }
+  (transition.stimulus as unknown as { commandId: string }).commandId = commandId;
+  return changed;
 }

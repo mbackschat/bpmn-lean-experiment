@@ -41,6 +41,18 @@
       "@bpmn-lean/platform-operate": [
         "./platform/modules/operate/src/index.ts"
       ],
+      "@bpmn-lean/platform-postgresql-runtime": [
+        "./platform/foundation/postgresql-runtime/src/index.ts"
+      ],
+      "@bpmn-lean/platform-postgresql-runtime/migrations": [
+        "./platform/foundation/postgresql-runtime/src/postgresql-migrations.ts"
+      ],
+      "@bpmn-lean/platform-recovery-runtime": [
+        "./platform/foundation/recovery-runtime/src/index.ts"
+      ],
+      "@bpmn-lean/platform-recovery-worker": [
+        "./platform/apps/recovery-worker/src/index.ts"
+      ],
       "@bpmn-lean/platform-work": [
         "./platform/modules/work/src/index.ts"
       ],

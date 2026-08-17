@@ -22,22 +22,22 @@ import type {
 } from "@bpmn-lean/platform-postgresql-runtime";
 import { runPostgresqlMigrations } from "@bpmn-lean/platform-postgresql-runtime/migrations";
 
-import { ExactCurrentWorkTaskReader } from "../../dist/exact-current-work-task-reader.js";
+import { ExactCurrentWorkTaskReader } from "@bpmn-lean/platform-work";
 import {
   PostgresqlWorkRecoveryCandidateSource,
   WorkPostgresqlRecoveryFamily,
-} from "../../dist/postgresql-work-recovery-candidates.js";
-import { PostgresqlWorkRepository } from "../../dist/postgresql-work-repository.js";
-import { PostgresqlWorkSnapshotReader } from "../../dist/postgresql-work-snapshot-reader.js";
+} from "@bpmn-lean/platform-work";
+import { PostgresqlWorkRepository } from "@bpmn-lean/platform-work";
+import { PostgresqlWorkSnapshotReader } from "@bpmn-lean/platform-work";
 import {
   decodeWorkSnapshotCandidateKey,
   PostgresqlWorkSnapshotRecoveryStep,
   PostgresqlWorkSnapshotStepKind,
-} from "../../dist/postgresql-work-snapshot-recovery-step.js";
-import { PostgresqlWorkSnapshotService } from "../../dist/postgresql-work-snapshot-service.js";
-import { WorkAuditOutboxService } from "../../dist/work-audit-outbox-service.js";
-import { WorkMutationService } from "../../dist/work-mutation-service.js";
-import { WorkTaskDetailService } from "../../dist/work-task-detail-service.js";
+} from "@bpmn-lean/platform-work";
+import { PostgresqlWorkSnapshotService } from "@bpmn-lean/platform-work";
+import { WorkAuditOutboxService } from "@bpmn-lean/platform-work";
+import { WorkMutationService } from "@bpmn-lean/platform-work";
+import { WorkTaskDetailService } from "@bpmn-lean/platform-work";
 
 const baseUrl = process.env.BPMN_TEST_POSTGRES_URL;
 
@@ -233,7 +233,7 @@ if (baseUrl === undefined) {
         key: "approved",
         value: { kind: "boolean" as const, value: true },
       }],
-    };
+    } as const;
     const readsBeforeCompletion = detailCalls.length;
     const completed = await mutations.completeTask("complete-1", completionRequest);
     assert.equal(

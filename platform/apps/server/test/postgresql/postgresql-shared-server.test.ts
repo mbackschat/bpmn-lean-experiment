@@ -6,6 +6,9 @@ import { after, before, test } from "node:test";
 import {
   PostgresqlIncidentSnapshotGeneration,
 } from "@bpmn-lean/platform-operate";
+import type {
+  BpmnEngineGatewayRuntime,
+} from "@bpmn-lean/platform-engine-gateway";
 import {
   createPostgresqlRuntime,
 } from "@bpmn-lean/platform-postgresql-runtime";
@@ -120,7 +123,7 @@ async function createReplica(port: number, engine: ReturnType<typeof fakeEngine>
   return await createPlatformServer(config, {
     createSharedServer: async (validated) => await createSharedPlatformServer(
       validated,
-      { createEngineRuntime: () => engine },
+      { createEngineRuntime: () => engine as unknown as BpmnEngineGatewayRuntime },
     ),
   });
 }

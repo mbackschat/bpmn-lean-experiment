@@ -3,16 +3,16 @@ import { test } from "node:test";
 
 import {
   PostgresqlOperateRecoveryStepKind,
-} from "../dist/postgresql-operate-recovery-step.js";
+} from "@bpmn-lean/platform-operate";
 import {
   decodeOperateRecoveryCandidateKey,
-} from "../dist/postgresql-operate-recovery-candidates.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlExecutionRecoveryStep,
-} from "../dist/postgresql-execution-recovery-step.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlFlowNodeOccurrenceRecoveryStep,
-} from "../dist/postgresql-flow-node-occurrence-recovery-step.js";
+} from "@bpmn-lean/platform-operate";
 
 test("PostgreSQL Operate recovery exposes one erasable closed step result", () => {
   assert.deepEqual(Object.values(PostgresqlOperateRecoveryStepKind), [

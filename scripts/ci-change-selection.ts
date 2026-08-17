@@ -2,12 +2,14 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const product2OnlyRootFiles = new Set([
+  ".github/workflows/platform-postgresql-quality.yml",
   ".github/workflows/platform-quality.yml",
   ".github/workflows/showcase-quality.yml",
   ".github/workflows/ui-quality.yml",
   "scripts/playwright-loopback-ports.test.ts",
   "scripts/playwright-loopback-ports.ts",
   "tsconfig.platform-harness.json",
+  "tsconfig.platform-postgresql-harness.json",
 ]);
 
 export function requiresProduct1Verification(paths: readonly string[]): boolean {

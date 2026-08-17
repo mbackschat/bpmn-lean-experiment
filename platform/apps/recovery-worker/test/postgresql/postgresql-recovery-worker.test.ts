@@ -21,7 +21,7 @@ import {
 import {
   checkRecoveryWorkerReadiness,
   RECOVERY_WORKER_SCHEMA_EPOCH,
-} from "../../dist/readiness.js";
+} from "@bpmn-lean/platform-recovery-worker";
 
 const connectionString = process.env.BPMN_TEST_POSTGRES_URL;
 

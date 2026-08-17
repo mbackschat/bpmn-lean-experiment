@@ -275,7 +275,7 @@ function service(
   actionRepository: SqliteIncidentActionRepository,
   gateway: ReturnType<typeof gatewayFor>,
   sink = { record: async (_item: IncidentAuditOutboxItem) => 1 },
-  deliveryMode = IncidentMutationDeliveryMode.Immediate,
+  deliveryMode: IncidentMutationDeliveryMode = IncidentMutationDeliveryMode.Immediate,
 ) {
   const timestampByOutcome = {
     reserved: "2026-08-14T00:00:00.001Z",

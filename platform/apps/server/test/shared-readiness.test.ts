@@ -4,19 +4,22 @@ import { test } from "node:test";
 import {
   checkSharedPlatformServerReadiness,
 } from "@bpmn-lean/platform-server";
+import type {
+  PostgresqlQuery,
+  PostgresqlQueryResult,
+  PostgresqlRow,
+  PostgresqlSession,
+} from "@bpmn-lean/platform-postgresql-runtime";
 
 test("proves only PostgreSQL 18, epoch 9, and engine connectivity", async () => {
   const statements: string[] = [];
   let engineChecks = 0;
   await checkSharedPlatformServerReadiness({
     runtime: {
-      query: async ({ text }) => {
+      query: readinessQuery((text) => {
         statements.push(text);
-        return {
-          rows: [{ server_major: 18, epoch_rows: 1, schema_epoch: 9 }],
-          rowCount: 1,
-        };
-      },
+        return { server_major: 18, epoch_rows: 1, schema_epoch: 9 };
+      }),
     },
     engineRuntime: {
       ensureConnected: async () => {
@@ -40,7 +43,7 @@ test("refuses the wrong PostgreSQL major or schema epoch before engine readiness
     let engineChecks = 0;
     await assert.rejects(checkSharedPlatformServerReadiness({
       runtime: {
-        query: async () => ({ rows: [row], rowCount: 1 }),
+        query: readinessQuery(() => row),
       },
       engineRuntime: {
         ensureConnected: async () => {
@@ -51,3 +54,14 @@ test("refuses the wrong PostgreSQL major or schema epoch before engine readiness
     assert.equal(engineChecks, 0);
   }
 });
+
+function readinessQuery(
+  row: (text: string) => PostgresqlRow,
+): Pick<PostgresqlSession, "query">["query"] {
+  return async <ResultRow extends PostgresqlRow = PostgresqlRow>(
+    { text }: PostgresqlQuery,
+  ): Promise<PostgresqlQueryResult<ResultRow>> => ({
+    rows: [row(text) as ResultRow],
+    rowCount: 1,
+  });
+}

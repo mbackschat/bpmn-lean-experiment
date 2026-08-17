@@ -22,13 +22,13 @@ import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 
 import {
   PostgresqlExecutionProjectionReader,
-} from "../../dist/postgresql-execution-projection-reader.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlFlowNodeMetricsReader,
-} from "../../dist/postgresql-flow-node-metrics-reader.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlProjectionReadKind,
-} from "../../dist/postgresql-projection-read.js";
+} from "@bpmn-lean/platform-operate";
 import {
   firstPage,
   registration,

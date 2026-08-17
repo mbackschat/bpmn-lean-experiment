@@ -23,16 +23,16 @@ import type {
 
 import {
   PostgresqlExecutionRecoveryStep,
-} from "../../dist/postgresql-execution-recovery-step.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlFlowNodeOccurrenceRecoveryStep,
-} from "../../dist/postgresql-flow-node-occurrence-recovery-step.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlOperateRecoveryFailureCode,
   PostgresqlOperateRecoveryFenceError,
   PostgresqlOperateRecoveryRetryReason,
   PostgresqlOperateRecoveryStepKind,
-} from "../../dist/postgresql-operate-recovery-step.js";
+} from "@bpmn-lean/platform-operate";
 import {
   firstPage,
   registration,

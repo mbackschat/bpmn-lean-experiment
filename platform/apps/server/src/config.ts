@@ -27,9 +27,9 @@ export type PlatformStorageMode =
   typeof PlatformStorageMode[keyof typeof PlatformStorageMode];
 
 export type PlatformServerConfig = Readonly<{
-  storageMode: PlatformStorageMode;
-  postgresqlRuntimeUrl: string | null;
-  projectionMaxAgeMs: number | null;
+  storageMode?: PlatformStorageMode;
+  postgresqlRuntimeUrl?: string | null;
+  projectionMaxAgeMs?: number | null;
   host: string;
   port: number;
   publicOrigin: string;
@@ -48,8 +48,17 @@ export type PlatformServerConfig = Readonly<{
 }>;
 
 export type ValidatedPlatformServerConfig = Readonly<
-  Omit<PlatformServerConfig, "publicOrigin"> & {
+  Omit<
+    PlatformServerConfig,
+    | "publicOrigin"
+    | "storageMode"
+    | "postgresqlRuntimeUrl"
+    | "projectionMaxAgeMs"
+  > & {
     publicOrigin: ValidatedPublicOrigin;
+    storageMode: PlatformStorageMode;
+    postgresqlRuntimeUrl: string | null;
+    projectionMaxAgeMs: number | null;
   }
 >;
 
@@ -186,7 +195,11 @@ function readStorageConfig(environment: NodeJS.ProcessEnv): Pick<
   }
 }
 
-function validateStorageConfig(config: PlatformServerConfig): void {
+function validateStorageConfig(config: Readonly<{
+  storageMode: PlatformStorageMode;
+  postgresqlRuntimeUrl: string | null;
+  projectionMaxAgeMs: number | null;
+}>): void {
   switch (config.storageMode) {
     case PlatformStorageMode.Local:
       if (config.postgresqlRuntimeUrl !== null || config.projectionMaxAgeMs !== null) {

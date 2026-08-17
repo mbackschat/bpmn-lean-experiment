@@ -6,7 +6,7 @@ import { createPostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime"
 import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 import { runPostgresqlMigrations } from "@bpmn-lean/platform-postgresql-runtime/migrations";
 
-import { PostgresqlExactArtifactStore } from "../../dist/index.js";
+import { PostgresqlExactArtifactStore } from "@bpmn-lean/platform-artifact-store";
 import { registerExactArtifactStoreContract } from "../support/artifact-store-contract.ts";
 import type { StoredArtifactRecord } from "../support/artifact-store-contract.ts";
 

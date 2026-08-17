@@ -10,28 +10,28 @@ import type {
 
 import {
   PostgresqlIncidentSnapshotGeneration,
-} from "../../dist/postgresql-incident-snapshot-generation.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlIncidentSnapshotReader,
-} from "../../dist/postgresql-incident-snapshot-reader.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlIncidentSnapshotRecoveryStep,
-} from "../../dist/postgresql-incident-snapshot-recovery-step.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlIncidentSnapshotService,
-} from "../../dist/postgresql-incident-snapshot-service.js";
+} from "@bpmn-lean/platform-operate";
 import {
   OperatePostgresqlRecoveryFamily,
   PostgresqlOperateRecoveryCandidateSource,
   decodeOperateRecoveryCandidateKey,
-} from "../../dist/postgresql-operate-recovery-candidates.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlOperateRecoveryStepKind,
-} from "../../dist/postgresql-operate-recovery-step.js";
+} from "@bpmn-lean/platform-operate";
 import {
   PostgresqlProcessInstanceRepository,
-} from "../../dist/postgresql-process-instance-repository.js";
-import { IncidentSnapshotUnavailableError } from "../../dist/incident-contracts.js";
+} from "@bpmn-lean/platform-operate";
+import { IncidentSnapshotUnavailableError } from "@bpmn-lean/platform-operate";
 
 import { processPublication } from "../support/process-instance-repository-contract.ts";
 import {

@@ -4,10 +4,10 @@ import { test } from "node:test";
 import {
   PostgresqlDefinitionsRecoveryFailureEvidence,
   PostgresqlDefinitionsRecoveryStepKind,
-} from "../dist/postgresql-definitions-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
 import {
   PostgresqlDirectStartRecoveryStep,
-} from "../dist/postgresql-direct-start-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
 
 test("Definitions recovery exposes one erasable closed step result", () => {
   assert.deepEqual(Object.values(PostgresqlDefinitionsRecoveryStepKind), [

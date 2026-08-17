@@ -11,6 +11,7 @@ import {
   PostgresqlIncidentActionRepository,
   PostgresqlProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
+import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 
 import {
   firstPage,
@@ -284,12 +285,15 @@ if (baseUrl === undefined) {
     const repository = new PostgresqlExecutionPublicationRepository(runtime);
     await repository.applyPage({ ...registration, ordinal }, firstPage());
     let queryCount = 0;
-    const countedRuntime = {
-      ...runtime,
+    const countedRuntime: PostgresqlRuntime = {
       query: async (query: Parameters<typeof runtime.query>[0]) => {
         queryCount += 1;
         return await runtime.query(query);
       },
+      transaction: async (run) => await runtime.transaction(run),
+      withDedicatedSession: async (run) => await runtime.withDedicatedSession(run),
+      databaseClockEpochMs: async () => await runtime.databaseClockEpochMs(),
+      close: async () => await runtime.close(),
     };
     const image = await new PostgresqlExecutionPublicationRepository(countedRuntime)
       .get(registration.instance.processInstanceId);

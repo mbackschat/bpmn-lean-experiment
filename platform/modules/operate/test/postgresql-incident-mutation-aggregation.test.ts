@@ -24,7 +24,7 @@ import type {
 
 import {
   PostgresqlIncidentMutationAggregation,
-} from "../dist/postgresql-incident-mutation-aggregation.js";
+} from "@bpmn-lean/platform-operate";
 
 test("prepares one exact shared incident action without fleet observation", async () => {
   await withActionRepository(async ({ actions, processes }) => {

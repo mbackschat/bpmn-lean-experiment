@@ -24,15 +24,15 @@ import type {
 
 import {
   PostgresqlAuditRepository,
-} from "../../../../foundation/audit/dist/postgresql-audit-repository.js";
+} from "@bpmn-lean/platform-audit";
 import {
   PostgresqlWorkAuditRecoveryStep,
-} from "../../dist/postgresql-work-audit-recovery-step.js";
+} from "@bpmn-lean/platform-work";
 import {
   claimInput,
   publication,
   task,
-} from "../support/work-repository-contract.ts";
+} from "../../../../modules/work/test/support/work-repository-contract.ts";
 
 const baseUrl = process.env.BPMN_TEST_POSTGRES_URL;
 
@@ -48,9 +48,9 @@ if (baseUrl === undefined) {
       connectionString: baseUrl,
       migrationDirectories: [
         fileURLToPath(new URL("../../../../foundation/artifact-store/migrations", import.meta.url)),
-        fileURLToPath(new URL("../../../definitions/migrations", import.meta.url)),
-        fileURLToPath(new URL("../../../operate/migrations", import.meta.url)),
-        fileURLToPath(new URL("../../migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../modules/definitions/migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../modules/operate/migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../modules/work/migrations", import.meta.url)),
         fileURLToPath(new URL("../../../../foundation/audit/migrations", import.meta.url)),
         fileURLToPath(new URL("../../../../foundation/recovery-runtime/migrations", import.meta.url)),
       ],

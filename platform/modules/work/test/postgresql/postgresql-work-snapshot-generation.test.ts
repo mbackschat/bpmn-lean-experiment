@@ -20,17 +20,17 @@ import {
   runPostgresqlMigrations,
 } from "@bpmn-lean/platform-postgresql-runtime/migrations";
 
-import { PostgresqlWorkRecoveryCandidateSource } from "../../dist/postgresql-work-recovery-candidates.js";
-import { WorkPostgresqlRecoveryFamily } from "../../dist/postgresql-work-recovery-candidates.js";
-import { PostgresqlWorkRepository } from "../../dist/postgresql-work-repository.js";
-import { PostgresqlWorkSnapshotReader } from "../../dist/postgresql-work-snapshot-reader.js";
+import { PostgresqlWorkRecoveryCandidateSource } from "@bpmn-lean/platform-work";
+import { WorkPostgresqlRecoveryFamily } from "@bpmn-lean/platform-work";
+import { PostgresqlWorkRepository } from "@bpmn-lean/platform-work";
+import { PostgresqlWorkSnapshotReader } from "@bpmn-lean/platform-work";
 import {
   PostgresqlWorkSnapshotRecoveryStep,
   PostgresqlWorkSnapshotStepKind,
   decodeWorkSnapshotCandidateKey,
-} from "../../dist/postgresql-work-snapshot-recovery-step.js";
-import { PostgresqlWorkSnapshotService } from "../../dist/postgresql-work-snapshot-service.js";
-import { WorkSnapshotUnavailableError } from "../../dist/work-service.js";
+} from "@bpmn-lean/platform-work";
+import { PostgresqlWorkSnapshotService } from "@bpmn-lean/platform-work";
+import { WorkSnapshotUnavailableError } from "@bpmn-lean/platform-work";
 
 const baseUrl = process.env.BPMN_TEST_POSTGRES_URL;
 

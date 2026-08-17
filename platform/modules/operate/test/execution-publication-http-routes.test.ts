@@ -17,7 +17,7 @@ import {
 } from "@bpmn-lean/platform-identity-policy";
 
 import { firstPage } from "./execution-publication-fixture.ts";
-import { PostgresqlProjectionReadKind } from "../dist/postgresql-projection-read.js";
+import { PostgresqlProjectionReadKind } from "@bpmn-lean/platform-operate";
 
 test("serves the exact projected page and canonical export bytes", async () => {
   const calls = counters();

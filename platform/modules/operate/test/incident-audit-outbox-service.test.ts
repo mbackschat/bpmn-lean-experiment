@@ -16,7 +16,7 @@ const item = {
     hostingProcessInstanceId: "host",
     incidentId: {
       effectId: { processInstanceId: "host", elementId: "Service", activation: 1 },
-      generation: 1,
+      generation: 1 as const,
     },
     actionId: "incident-action-2",
     actionKind: "retryIncident" as const,

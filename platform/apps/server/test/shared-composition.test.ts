@@ -7,6 +7,14 @@ import {
   createSharedPlatformServer,
   PlatformStorageMode,
 } from "@bpmn-lean/platform-server";
+import type { BpmnEngineGatewayRuntime } from "@bpmn-lean/platform-engine-gateway";
+import type {
+  PostgresqlQuery,
+  PostgresqlQueryResult,
+  PostgresqlRow,
+  PostgresqlRuntime,
+  PostgresqlSession,
+} from "@bpmn-lean/platform-postgresql-runtime";
 
 test("shared startup performs one bounded readiness query and closes engine before PostgreSQL", async () => {
   const events: string[] = [];
@@ -61,12 +69,18 @@ test("shared composition contains no local owner, startup scan, or request-time 
   }
 });
 
-function fakeDatabase(statements: string[], events: string[]) {
+function fakeDatabase(statements: string[], events: string[]): PostgresqlRuntime {
   return {
-    query: async ({ text }) => {
+    query: async <Row extends PostgresqlRow = PostgresqlRow>(
+      { text }: PostgresqlQuery,
+    ): Promise<PostgresqlQueryResult<Row>> => {
       statements.push(text);
       return {
-        rows: [{ server_major: 18, epoch_rows: 1, schema_epoch: 9 }],
+        rows: [{
+          server_major: 18,
+          epoch_rows: 1,
+          schema_epoch: 9,
+        } as unknown as Row],
         rowCount: 1,
       };
     },
@@ -79,13 +93,15 @@ function fakeDatabase(statements: string[], events: string[]) {
   };
 }
 
-function databaseSession() {
+function databaseSession(): PostgresqlSession {
   return {
-    query: async () => ({ rows: [], rowCount: 0 }),
+    query: async <Row extends PostgresqlRow = PostgresqlRow>(): Promise<
+      PostgresqlQueryResult<Row>
+    > => ({ rows: [], rowCount: 0 }),
   };
 }
 
-function fakeEngine(events: string[]) {
+function fakeEngine(events: string[]): BpmnEngineGatewayRuntime {
   const noCalls = new Proxy({}, {
     get: (_target, property) => async () => {
       throw new Error(`unexpected Product 1 call ${String(property)}`);
@@ -105,7 +121,7 @@ function fakeEngine(events: string[]) {
     close: async () => {
       events.push("engine-close");
     },
-  };
+  } as unknown as BpmnEngineGatewayRuntime;
 }
 
 function sharedConfig() {

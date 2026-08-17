@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import type { PostgresqlSession } from "@bpmn-lean/platform-postgresql-runtime";
 
-import { PostgresqlIncidentAuditRecoveryStep } from "../dist/postgresql-incident-audit-recovery-step.js";
+import { PostgresqlIncidentAuditRecoveryStep } from "@bpmn-lean/platform-operate";
 
 const first = {
   ordinal: 1,
@@ -14,7 +14,7 @@ const first = {
     hostingProcessInstanceId: "host",
     incidentId: {
       effectId: { processInstanceId: "host", elementId: "Service", activation: 1 },
-      generation: 1,
+      generation: 1 as const,
     },
     actionId: "incident-action-1",
     actionKind: "retryIncident" as const,

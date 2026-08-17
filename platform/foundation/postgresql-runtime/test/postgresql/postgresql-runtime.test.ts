@@ -9,11 +9,11 @@ import pg from "pg";
 
 import {
   createPostgresqlRuntime,
-} from "../../dist/index.js";
+} from "@bpmn-lean/platform-postgresql-runtime";
 import {
   MigrationChecksumMismatchError,
   runPostgresqlMigrations,
-} from "../../dist/postgresql-migrations.js";
+} from "@bpmn-lean/platform-postgresql-runtime/migrations";
 
 const baseUrl = process.env.BPMN_TEST_POSTGRES_URL;
 

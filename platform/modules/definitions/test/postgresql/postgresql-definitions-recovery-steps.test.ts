@@ -12,18 +12,18 @@ import { runPostgresqlMigrations } from "@bpmn-lean/platform-postgresql-runtime/
 
 import {
   PostgresqlConfirmedRegistrationRecoveryStep,
-} from "../../dist/postgresql-confirmed-registration-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
 import {
   PostgresqlDefinitionScheduleRecoveryStep,
-} from "../../dist/postgresql-definition-schedule-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
 import {
   PostgresqlDefinitionsRecoveryIntermediateResult,
   PostgresqlDefinitionsRecoveryStepKind,
-} from "../../dist/postgresql-definitions-recovery-step.js";
-import { PostgresqlDirectStartRecoveryStep } from "../../dist/postgresql-direct-start-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
+import { PostgresqlDirectStartRecoveryStep } from "@bpmn-lean/platform-definitions";
 import {
   PostgresqlMessageStartRecoveryStep,
-} from "../../dist/postgresql-message-start-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
 import {
   apply,
   applyIntermediateFence,

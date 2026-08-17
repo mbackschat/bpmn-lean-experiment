@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import { ArtifactPutStatus } from "@bpmn-lean/platform-artifact-store";
 import {
+  DefinitionStartDescriptionStatus,
   DefinitionStartStatus as EngineDefinitionStartStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
@@ -23,7 +24,7 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import {
   PostgresqlDirectStartRecoveryStep,
-} from "../dist/postgresql-direct-start-recovery-step.js";
+} from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
   DefinitionRepository,
@@ -175,7 +176,7 @@ test("composition obtains the artifact-validating direct recovery host", async (
     },
     describeDefinitionVersionStart: async () => {
       describes += 1;
-      return { status: "matching" };
+      return { status: DefinitionStartDescriptionStatus.Matching };
     },
     startDefinitionVersion: async () => {
       throw new Error("legacy start must not be used");

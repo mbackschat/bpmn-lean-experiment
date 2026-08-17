@@ -1,6 +1,7 @@
 /** Product 2's only entry into the BPMN engine contract. */
 import {
   EngineDefinitionCompilationStatus,
+  EngineDefinitionStartDescriptionStatus,
   EngineDefinitionStartStatus,
   compileBpmnDefinition,
   describeBpmnDefinitionVersionStart,
@@ -60,6 +61,7 @@ export type DefinitionCompilationResult =
   | Extract<EngineDefinitionCompilationResult, { status: "rejected" }>;
 
 export const DefinitionStartStatus = EngineDefinitionStartStatus;
+export const DefinitionStartDescriptionStatus = EngineDefinitionStartDescriptionStatus;
 
 export type DefinitionStartResult = EngineDefinitionStartResult;
 export type DefinitionStartIntent = EngineDefinitionStartIntent;

@@ -7,6 +7,7 @@ import {
   PostgresqlIncidentActionRepository,
   PostgresqlProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
+import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 
 import {
   firstPage,
@@ -238,12 +239,15 @@ if (baseUrl === undefined) {
   test("occurrence batch and row corruption fails closed and one get uses one query", async () => {
     const { repository, processInstanceId } = await prepareOccurrence();
     let queryCount = 0;
-    const countedRuntime = {
-      ...runtime,
+    const countedRuntime: PostgresqlRuntime = {
       query: async (query: Parameters<typeof runtime.query>[0]) => {
         queryCount += 1;
         return await runtime.query(query);
       },
+      transaction: async (run) => await runtime.transaction(run),
+      withDedicatedSession: async (run) => await runtime.withDedicatedSession(run),
+      databaseClockEpochMs: async () => await runtime.databaseClockEpochMs(),
+      close: async () => await runtime.close(),
     };
     assert.equal(
       (await new PostgresqlFlowNodeOccurrenceRepository(countedRuntime)

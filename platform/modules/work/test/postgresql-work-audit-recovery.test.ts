@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import type { PostgresqlSession } from "@bpmn-lean/platform-postgresql-runtime";
 
-import { PostgresqlWorkAuditRecoveryStep } from "../dist/postgresql-work-audit-recovery-step.js";
+import { PostgresqlWorkAuditRecoveryStep } from "@bpmn-lean/platform-work";
 
 const first = {
   ordinal: 1,

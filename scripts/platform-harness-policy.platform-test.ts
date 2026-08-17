@@ -37,6 +37,14 @@ test("the engine harness excludes every platform source and platform-only test",
   assert.doesNotMatch(readFileSync("scripts/verify.sh", "utf8"), /test:platform|tsconfig\.platform/u);
 });
 
+test("the PostgreSQL harness inherits the source-only platform mappings", () => {
+  const config = JSON.parse(
+    readFileSync("tsconfig.platform-postgresql-harness.json", "utf8"),
+  ) as Readonly<{ extends?: string; compilerOptions?: Readonly<{ noEmit?: boolean }> }>;
+  assert.equal(config.extends, "./tsconfig.platform-harness.json");
+  assert.equal(config.compilerOptions?.noEmit, true);
+});
+
 test("the generated-output policy rejects the clean-checkout failure class", () => {
   assert.deepEqual(
     generatedOutputImports(
@@ -56,23 +64,33 @@ test("the generated-output policy rejects the clean-checkout failure class", () 
 });
 
 test("the platform harness resolves no project build output", () => {
-  const paths = configuredFiles("tsconfig.platform-harness.json");
-  assert.ok(paths.some((path) => path.includes("/platform/modules/definitions/test/")));
-  assert.ok(paths.some((path) => path.endsWith(".platform-test.ts")));
-  assert.deepEqual(
-    paths.flatMap((path) => generatedOutputImports(path, readFileSync(path, "utf8"))),
-    [],
-    "platform harnesses must import package entry points so their type gate is clean-checkout hermetic",
-  );
+  for (const configPath of [
+    "tsconfig.platform-harness.json",
+    "tsconfig.platform-postgresql-harness.json",
+  ]) {
+    const paths = configuredFiles(configPath);
+    assert.ok(paths.some((path) => path.includes("/platform/modules/definitions/test/")));
+    assert.deepEqual(
+      paths.flatMap((path) => generatedOutputImports(path, readFileSync(path, "utf8"))),
+      [],
+      `${configPath} must import package entry points so its type gate is clean-checkout hermetic`,
+    );
+  }
+  assert.ok(configuredFiles("tsconfig.platform-harness.json").some((path) => path.endsWith(".platform-test.ts")));
 });
 
 test("direct platform harnesses use only erasable syntax", () => {
-  assert.deepEqual(
-    erasableSyntaxDiagnostics(
-      configuredFiles("tsconfig.platform-harness.json")
-        .filter((path) => path.includes("/test/") || path.endsWith(".platform-test.ts")),
-    ),
-    [],
-    "Node executes platform harness TypeScript without a transform step",
-  );
+  for (const configPath of [
+    "tsconfig.platform-harness.json",
+    "tsconfig.platform-postgresql-harness.json",
+  ]) {
+    assert.deepEqual(
+      erasableSyntaxDiagnostics(
+        configuredFiles(configPath)
+          .filter((path) => path.includes("/test/") || path.endsWith(".platform-test.ts")),
+      ),
+      [],
+      `Node executes ${configPath} TypeScript without a transform step`,
+    );
+  }
 });

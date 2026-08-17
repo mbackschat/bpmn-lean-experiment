@@ -12,6 +12,8 @@ test("skips the heavy Product 1 matrix only for Product 2-only paths", () => {
   assert.equal(requiresProduct1Verification(["platform/apps/web/src/app.tsx"]), false);
   assert.equal(requiresProduct1Verification(["showcase/m3-human-work/e2e/human-work.spec.ts"]), false);
   assert.equal(requiresProduct1Verification(["scripts/ui-quality-boundary.platform-test.ts"]), false);
+  assert.equal(requiresProduct1Verification([".github/workflows/platform-postgresql-quality.yml"]), false);
+  assert.equal(requiresProduct1Verification(["tsconfig.platform-postgresql-harness.json"]), false);
   assert.equal(requiresProduct1Verification(["packages/semantic-core/src/index.ts"]), true);
   assert.equal(requiresProduct1Verification(["docs/TESTING-SPEC.md"]), true);
   assert.equal(requiresProduct1Verification(["package.json"]), true);
@@ -23,14 +25,16 @@ test("skips the heavy Product 1 matrix only for Product 2-only paths", () => {
 });
 
 test("builds feedback graphs once and keeps independent lanes parallel", async () => {
-  const [guide, testingSpec, verifyWorkflow, uiWorkflow, platformWorkflow, showcaseWorkflow, rootSource, webSource, uiKitSource, playwrightConfig, verifyScript, pipelineScript] = await Promise.all([
+  const [guide, testingSpec, verifyWorkflow, uiWorkflow, platformWorkflow, postgresqlWorkflow, showcaseWorkflow, rootSource, postgresqlRunner, webSource, uiKitSource, playwrightConfig, verifyScript, pipelineScript] = await Promise.all([
     read("CLAUDE.md"),
     read("docs/TESTING-SPEC.md"),
     read(".github/workflows/verify.yml"),
     read(".github/workflows/ui-quality.yml"),
     read(".github/workflows/platform-quality.yml"),
+    read(".github/workflows/platform-postgresql-quality.yml"),
     read(".github/workflows/showcase-quality.yml"),
     read("package.json"),
+    read("platform/foundation/postgresql-runtime/test/run-platform-postgresql-suites.ts"),
     read("platform/apps/web/package.json"),
     read("platform/ui-kit/package.json"),
     read("showcase/platform-ui-quality/playwright.config.ts"),
@@ -45,6 +49,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(testingSpec, /GitHub runs those jobs in parallel/u);
 
   assert.match(platformWorkflow, /test:pre-push:platform/u);
+  assert.match(postgresqlWorkflow, /test:pre-push:platform-postgresql/u);
   assert.match(showcaseWorkflow, /test:pre-push:showcase/u);
   assert.match(uiWorkflow, /test:pre-push:ui/u);
   assert.match(verifyWorkflow, /node scripts\/ci-change-selection\.ts/u);
@@ -53,6 +58,9 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(verifyWorkflow, /test "\$\{\{ needs\.changes\.outputs\.product1 \}\}" = "false" \|\| test "\$\{\{ needs\.verify\.result \}\}" = "success"/u);
   assert.doesNotMatch(uiWorkflow, /test:platform-operations-checkpoint/u);
   assert.doesNotMatch(platformWorkflow, /playwright|chromium|test:ui-quality/iu);
+  assert.doesNotMatch(platformWorkflow, /postgres(?:ql)?:18\.4|BPMN_TEST_POSTGRES_URL/iu);
+  assert.match(postgresqlWorkflow, /postgres:18\.4/u);
+  assert.match(postgresqlWorkflow, /BPMN_TEST_POSTGRES_URL/u);
   assert.doesNotMatch(showcaseWorkflow, /playwright|chromium|test:ui-quality/iu);
   assert.match(showcaseWorkflow, /showcase\/m1-definition-deployment\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m2-definition-scheduling\/\*\*/u);
@@ -60,7 +68,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(showcaseWorkflow, /showcase\/m2-process-instance-search\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m3-human-work\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m4-incident-operations\/\*\*/u);
-  for (const workflow of [platformWorkflow, showcaseWorkflow, uiWorkflow]) {
+  for (const workflow of [platformWorkflow, postgresqlWorkflow, showcaseWorkflow, uiWorkflow]) {
     assert.match(workflow, /^\s*- "package\.json"$/mu);
     assert.match(workflow, /^\s*- "pnpm-lock\.yaml"$/mu);
     assert.match(workflow, /^\s*- "pnpm-workspace\.yaml"$/mu);
@@ -72,6 +80,17 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.equal(root["test:infrastructure:runtime"], "node --test --test-concurrency=2 scripts/*.test.ts");
   assert.equal(root["test:temporal:built"], "node --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts");
   assert.equal(root["test:pre-push:platform"], "pnpm check:clean-head && pnpm test:platform-operations-checkpoint");
+  assert.equal(root["test:pre-push:platform-postgresql"], "pnpm check:clean-head && pnpm test:platform-postgresql");
+  assert.equal(root["build:platform-postgresql"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/platform-recovery-worker... --filter @bpmn-lean/platform-postgresql-migrate... --if-present run build");
+  assert.equal(root["check:platform-postgresql-harness-types"], "tsc -p tsconfig.platform-postgresql-harness.json");
+  assert.equal(root["test:platform-postgresql"], "pnpm build:platform-postgresql && pnpm check:platform-postgresql-harness-types && pnpm test:platform-postgresql:built");
+  assert.equal(root["test:platform-postgresql:local"], "./scripts/with-postgresql-18.sh ./scripts/pnpm.sh test:platform-postgresql");
+  assert.equal(matches(root["test:platform-postgresql"] ?? "", /\bbuild:/gu), 1);
+  assert.doesNotMatch(root["test:platform-postgresql:built"] ?? "", /(?:^|\s)(?:pnpm\s+)?(?:run\s+)?build(?::|\s)/u);
+  assert.equal(root["test:platform-postgresql:built"], "pnpm --filter @bpmn-lean/platform-postgresql-runtime exec node test/run-platform-postgresql-suites.ts");
+  assert.equal(matches(postgresqlRunner, /packageName: "@bpmn-lean\//gu), 10);
+  assert.equal(matches(postgresqlRunner, /"test:postgresql:built"/gu), 1);
+  assert.match(postgresqlRunner, /platformPostgresqlSuiteTimeoutMs = 60_000/u);
   assert.equal(root["test:pre-push:showcase"], "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types");
   assert.equal(root["test:pre-push:ui"], "pnpm check:clean-head && pnpm test:feedback-policy && pnpm build:platform-web && pnpm test:platform-web:built && pnpm test:ui-quality:built");
   assert.equal(root["test:platform-web"], "pnpm build:platform-web && pnpm test:platform-web:built");

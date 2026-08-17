@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.platform-harness.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "platform/foundation/bpmn-definition-projection/src/bpmn-moddle-types.d.ts",
+    "platform/foundation/postgresql-runtime/test/run-platform-postgresql-suites.ts",
+    "platform/**/test/postgresql/**/*.ts"
+  ],
+  "exclude": []
+}

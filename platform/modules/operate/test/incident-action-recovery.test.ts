@@ -15,6 +15,7 @@ import {
 } from "@bpmn-lean/platform-operate";
 import type {
   IncidentActionBinding,
+  IncidentActionRecoveryRepository,
   IncidentActionResult,
   IncidentAuditOutboxItem,
   StoredIncidentAction,
@@ -57,7 +58,7 @@ test("advances reserved and outcome states only through separate apply callbacks
       reason: "reservedAuditPending",
     });
     assert.equal(fixture.gatewayCalls.length, 0);
-    assert.deepEqual(fixture.delivered, []);
+    assert.equal(fixture.delivered.length, 0);
 
     assert.equal(await fixture.outbox.reconcileBatch(1), 1);
     const submission = await fixture.reconciliation.reconcileAction(binding.actionId);
@@ -222,7 +223,7 @@ const unusedSession = {
 
 function sqliteRecovery(
   incidents: SqliteIncidentActionRepository,
-) {
+): IncidentActionRecoveryRepository {
   return {
     applyRecoverySubmission: async (_session, expected) => {
       const current = await requireExpected(incidents, expected);
