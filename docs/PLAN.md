@@ -6,7 +6,7 @@ This file owns immediate execution order, blockers, current measured evidence, a
 
 M0 through M6 and Horizon 1 are closed. Horizon 2 Product 1 Workflow-chain work has implemented production enrollment, handle-free start, content-bound recovery, closed v1 terminal receipts, private paired E1/E2 traversal, and recovery, semantic-candidate, command-ingress, effect, retained-Run, and pending-Timer capacity. Query, terminal, Event History, aggregate, Run, deployment, forced Message/Timer/effect rollover, and closure evidence remain open in the [Workflow-chain proposal](TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) and [Temporal hosting map](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md).
 
-The owner has temporarily overridden that sequence to settle the agent documentation control plane. The root/detail split is implemented, but closure target `8c73c00` was not approved because its guard still inferred ownership from natural-language clauses. The owner selected a structural route-record redesign and requested a new proposal review before implementation. This documentation-only increment changes no Horizon 2 order, capacity policy, BPMN meaning, product contract, proof boundary, runtime behavior, or evidence claim.
+The owner has temporarily overridden that sequence to settle the agent documentation control plane. The root/detail split is implemented, but closure target `8c73c00` was not approved because its guard still inferred ownership from natural-language clauses. Structural redesign target `59e0a2a` received `approve-with-required-edits`: it needs a typed delegation route, a lossless route atom for anchored and table-local references, and exact parsers for every special control context. This documentation-only increment changes no Horizon 2 order, capacity policy, BPMN meaning, product contract, proof boundary, runtime behavior, or evidence claim.
 
 ## Ordered work
 
@@ -32,8 +32,8 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `DOC-CONTROL-PLANE`.
 
-Next action: generate the neutral proposal-review packet for redesign target `59e0a2a` and send it to a new context-cold reviewer. Do not implement the redesign before review and renewed owner authorization.
+Next action: obtain owner direction on whether to correct redesign target `59e0a2a` by adding a structural delegation role, a lossless inline/table route atom with exact fragment and duplicate rules, and exact parsers for PLAN, registry, and startup special contexts. Do not implement the redesign.
 
-Oracle: the reviewer approves a closed structural grammar that routes every root/detail map reference without interpreting English, adding a second status source, or weakening planned and user-overridden discovery.
+Oracle: a corrected proposal receives context-cold approval for a closed structural grammar that preserves delegation, anchored and table-local evidence, planned work, user overrides, registry navigation, and startup routing without interpreting English or adding a second status source.
 
 Stop if the design still depends on ownership words, clause splitting, punctuation, or approved-phrase exemptions; if it requires a new dependency or duplicate area-to-map manifest; if a required route becomes implicit; or if it changes Horizon 2 ordering or any governed product or semantic contract.
