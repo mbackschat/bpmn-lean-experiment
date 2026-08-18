@@ -168,6 +168,51 @@ IMPLEMENTATION-MAP.md
   }
 });
 
+test("preserves quote-list suffix blanks in ordered nested fences at exact offsets", () => {
+  for (const fence of ["```", "~~~"]) {
+    for (const example of [
+      `> - ${fence}md
+>   UNKNOWN-IMPLEMENTATION-MAP.md
+>
+>   [hidden](UNKNOWN-IMPLEMENTATION-MAP.md)
+>   ${fence}`,
+      `- > - ${fence}md
+  >   UNKNOWN-IMPLEMENTATION-MAP.md
+  >
+  >   [hidden](UNKNOWN-IMPLEMENTATION-MAP.md)
+  >   ${fence}`,
+    ]) {
+      const live = "[live](live.md)";
+      const markdown = `before\n${example}\n${live}`;
+      const liveStart = markdown.indexOf(live);
+
+      assert.equal(
+        maskMarkdownIgnoredRegions(markdown),
+        `before\n${example.replace(/[^\n]/gu, " ")}\n${live}`,
+      );
+      assert.deepEqual(scanMarkdownLinks(markdown), [{
+        start: liveStart,
+        end: liveStart + live.length,
+        label: "live",
+        destination: "live.md",
+        isImage: false,
+        containerStart: liveStart,
+        containerEnd: markdown.length,
+      }]);
+    }
+  }
+});
+
+test("never skips a remaining quote after list prefixes", () => {
+  for (const fence of ["```", "~~~"]) {
+    const markdown = `- - > ${fence}md
+    > [hidden](hidden.md)
+${"    "}
+[outer](outer.md)`;
+    assert.deepEqual(scanMarkdownLinks(markdown).map(({ destination }) => destination), ["outer.md"]);
+  }
+});
+
 test("preserves list-owned fences across blank lines at exact offsets", () => {
   for (const fence of ["```", "~~~"]) {
     for (const blank of ["", " "]) {

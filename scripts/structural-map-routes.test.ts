@@ -359,6 +359,42 @@ test("full list continuation width governs structural route visibility", () => {
   expectError(tabbed, /NOTE\.md.*bare implementation-map path/u);
 });
 
+test("quoted blanks stay inside ordered quote-list structural examples", () => {
+  for (const fence of ["```", "~~~"]) {
+    for (const example of [
+      `> - ${fence}md
+>   UNKNOWN-IMPLEMENTATION-MAP.md
+>
+>   [\`implementation-status-owner:UNKNOWN\`](UNKNOWN-IMPLEMENTATION-MAP.md)
+>   ${fence}`,
+      `- > - ${fence}md
+  >   UNKNOWN-IMPLEMENTATION-MAP.md
+  >
+  >   [\`implementation-status-owner:UNKNOWN\`](UNKNOWN-IMPLEMENTATION-MAP.md)
+  >   ${fence}`,
+    ]) {
+      const documents = validDocuments();
+      documents.set("docs/NOTE.md", `${example}\n`);
+      assert.deepEqual(errors(documents), []);
+    }
+  }
+});
+
+test("a list blank cannot skip a remaining quote in a structural example", () => {
+  for (const fence of ["```", "~~~"]) {
+    const documents = validDocuments();
+    documents.set(
+      "docs/NOTE.md",
+      `- - > ${fence}md
+    > UNKNOWN-IMPLEMENTATION-MAP.md
+${"    "}
+UNKNOWN-IMPLEMENTATION-MAP.md
+`,
+    );
+    expectError(documents, /NOTE\.md.*bare implementation-map path/u);
+  }
+});
+
 test("blank lines stay inside list-owned structural examples", () => {
   for (const fence of ["```", "~~~"]) {
     for (const blank of ["", " "]) {

@@ -57,13 +57,13 @@ function containerContent(
   let index = 0;
   const prefixes: ContainerPrefix[] = [];
   if (expected !== undefined) {
-    if (line.trim() === "" && !expected.includes(">")) return { content: "", prefixes: expected };
-    for (const prefix of expected) {
+    for (const [position, prefix] of expected.entries()) {
       if (prefix === ">") {
         const quote = /^ {0,3}> ?/u.exec(line.slice(index));
         if (quote === null) return null;
         index += quote[0].length;
       } else {
+        if (line.slice(index).trim() === "" && expected.slice(position).every((remaining) => typeof remaining === "number")) return { content: "", prefixes: expected };
         if (!line.startsWith(" ".repeat(prefix), index)) return null;
         index += prefix;
       }
