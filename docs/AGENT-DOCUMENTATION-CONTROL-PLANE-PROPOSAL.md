@@ -2,16 +2,16 @@
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved-with-required-edits
+Lifecycle: draft
+Review: pending
 
 ## Current boundary
 
-Owner-approved on 2026-08-17 after the completed context-cold review. The selected control plane and claim-preservation migration are implemented, but closure remains pending. The third correction closed four residual root-map ownership references, while its audit exposed that a valid routing clause could still mask a stale ownership clause in the same sentence. The owner authorized one final fourth correction and same-reviewer audit after reviewing that root cause. Target `8c73c00` binds an exemption only to its exact root-to-detail relationship and evaluates remaining ownership clauses independently; its focused documentation gate and complete repository gate pass. The same claim-preservation and routing reviewers must approve the regenerated target-bound packet before closure. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
+The root/detail split and claim-preservation migration are implemented, but closure target `8c73c00` is not approved. Its two final reviewers independently found that the guard still approximates natural-language ownership with broad regular expressions: routing language can mask a later stale ownership clause, punctuation can separate an ownership predicate from its root-map link, and valid navigation can be rejected by the same heuristic. The owner selected a redesign that replaces prose inference with closed structural Markdown route records. This document therefore returns to proposal review before any implementation of that redesign. The current repository behavior remains unchanged, the prior closure target remains unapproved, and Horizon 2 remains paused. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
 
 ## Decision
 
-Replace the two monolithic agent-facing living documents with a compact execution control file, a compact implementation-routing map, and five cohesive detail maps. Preserve exact current claims and executable drift protection while reducing mandatory universal startup reading from 15,983 words to at most 4,000 words and ordinary active-area reading to at most 8,000 words.
+Replace the two monolithic agent-facing living documents with a compact execution control file, a compact implementation-routing map, and five cohesive detail maps. Preserve exact current claims and executable drift protection while reducing mandatory universal startup reading from 15,983 words to at most 4,000 words and ordinary active-area reading to at most 8,000 words. Represent implementation-status routing as closed machine-readable Markdown records rather than deriving ownership from natural-language prose.
 
 The recommended decision is approval. The current ownership model protects truth effectively, but its physical layout now makes every agent session load unrelated closed work and makes each small implementation increment restate one status across several documents.
 
@@ -19,13 +19,13 @@ The recommended decision is approval. The current ownership model protects truth
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `be62f0c` | `fork-turns-none` | `approve-with-required-edits` | `3b58c68` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `8c73c00` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal stage used two correction rounds. The context-cold review found five required edits, which correction `871d500` closed; its audit exposed one packet-evidence integration defect introduced by that correction. Correction `3b58c68` made the migration matrix reviewer-visible and digest-bound in the closure packet contract, and the same reviewer approved the final audit without new findings.
+The earlier proposal version used two correction rounds. The context-cold review found five required edits, which correction `871d500` closed; its audit exposed one packet-evidence integration defect introduced by that correction. Correction `3b58c68` made the migration matrix reviewer-visible and digest-bound in the closure packet contract, and the same reviewer approved that design. The structural routing redesign changes the selected guard contract materially, so the earlier approval does not approve this version and a new context-cold proposal review is required.
 
-The closure stage used two ordinary correction rounds at `b67d048` and `ccf1a78`. The owner authorized correction `b98c3f8` for four residual stale consumers and their line-wide guard escape, then authorized final correction `8c73c00` when the same reviewer proved that the sentence-level replacement retained the same association defect between clauses. The final correction covers the two reviewer examples, a repeated-root variant, and the predicted dual false-positive case. No fifth correction round is authorized.
+The earlier closure stage used two ordinary correction rounds at `b67d048` and `ccf1a78`. The owner authorized correction `b98c3f8` for four residual stale consumers and their line-wide guard escape, then authorized final correction `8c73c00` when the same reviewer proved that the sentence-level replacement retained the same association defect between clauses. The final reviewers still found mechanism-level false negatives and false positives. The structural redesign is a new proposal boundary, not a fifth patch or audit round against that failed mechanism.
 
 This proposal is documentation governance rather than a material semantic proposal under [the independent cold-review gate](TESTING-SPEC.md#independent-cold-review-gate). It selects no BPMN meaning, semantic profile, CIB relationship, checked-source or Semantic Process representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. The owner nevertheless requested a context-cold proposal review because an inefficient control plane can repeatedly misroute implementation work.
 
@@ -123,6 +123,23 @@ The root implementation map changes only when an area state, route, or cross-are
 
 This rule intentionally permits two detail maps when one increment genuinely crosses two implementation owners. It forbids updating a nominally affected document merely to repeat status.
 
+### Structural implementation-status routes
+
+Implementation-status navigation is declared through standalone Markdown list records with a closed grammar. It is never inferred from a sentence, clause, link label, ownership verb, punctuation mark, or nearby routing phrase.
+
+```md
+- `implementation-status-router`: [Implementation map](IMPLEMENTATION-MAP.md)
+- `implementation-status-owner:TEMPORAL-HOSTING`: [Temporal hosting](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md)
+```
+
+Each record is one complete list item containing exactly one inline-code role token, a colon, and one relative Markdown link. The closed roles are `implementation-status-router` and `implementation-status-owner:<AREA-ID>`. The router role resolves only to root `IMPLEMENTATION-MAP.md`. An owner role names one registered area ID and resolves only to that area's exact detail map. Link display text is presentation only and carries no routing meaning.
+
+The root map's registered `Routing` table, `PLAN.md`'s guarded `Maps:` fields, the documentation registry row, and the session-start instruction are already closed structural controls and remain explicitly parsed by their owners. Every other maintained Markdown reference to root or detail implementation maps must use a standalone route record. Ordinary prose links, reference-style links, HTML links, autolinks, bare map-path literals, malformed records, unknown roles, unknown area IDs, mismatched role targets, duplicate records, and extra prose inside a record fail closed. Fenced examples are not live declarations.
+
+A route record owns navigation only. It does not copy an implementation, absence, evidence, or lifecycle fact from the destination. The root routing table remains the only area-to-detail registration, and each detail map remains the only exact status owner. The guard derives owner targets from that existing registration rather than maintaining another map.
+
+The implementation uses a dependency-free parser for this exact record grammar and the existing exact structural parsers for the four special control contexts. It removes `isUnroutedRootImplementationMapStatusLine` and every natural-language status-word, ownership-verb, clause-boundary, and routing-phrase expression. There is no compatibility fallback that attempts to interpret legacy prose.
+
 ## Startup and routing contract
 
 The implemented change updates the session-start instruction to this order:
@@ -164,12 +181,13 @@ The existing plan and document-reviewability guards are changed at the root mech
 - remove the complete root README `Current state` table and its capability paragraph, replacing them with links to `PLAN.md`, root `IMPLEMENTATION-MAP.md`, the platform map, and the executable-corpus owner; replace the milestone and README status comparisons in `plan-status-consistency.test.ts` with link-only and no-volatile-status checks;
 - require every active proposal Status section to contain exactly `Lifecycle: <closed-value>` and `Review: <closed-value>` lines, migrate every active proposal, and make `isOwnerApproved` recognize only the approved lifecycle values;
 - extend `semantic-review-packet.ts` with the optional validated `--migration-matrix` input and add adversarial tests for an unknown flag, missing or malformed matrix, baseline or target substitution, duplicate or missing unit, byte mutation, normalized-content visibility, and packet-digest sensitivity;
+- replace natural-language root-map ownership detection with the structural route-record grammar, migrate every live implementation-map reference, and reject every map link or path literal outside a recognized structural control;
 - keep all current Markdown link, role, receipt, registry, and source-hygiene guards;
-- add a focused fixture proving that a compact plan and routed map pass without closed history, and adversarial fixtures for a dangling work ID, omitted current path family, user override to a different area, missing detail route, duplicate detail registration, and oversized dense table cell.
+- add a focused fixture proving that a compact plan and routed map pass without closed history, and adversarial fixtures for a dangling work ID, omitted current path family, user override to a different area, missing detail route, duplicate detail registration, oversized dense table cell, ordinary root/detail links, bare path literals, wrong role targets, unknown owner IDs, duplicate records, extra record prose, reference-style links, HTML links, autolinks, and fenced non-declarations.
 
 The proposal lifecycle values are `draft`, `owner-approved`, `implementation-in-progress`, `implemented-awaiting-closure`, `superseded`, and `archived`. The review values are `pending`, `approved`, `approved-with-required-edits`, `rejected`, and `not-required`. Dates, commits, findings, and implementation-row narration remain in the receipt, plan, or detail map rather than Status. `owner-approved`, `implementation-in-progress`, and `implemented-awaiting-closure` are the exact values that satisfy owner-approval detection.
 
-No guard measures prose quality, rewards additional documents, or requires every implementation change to touch documentation. The same-change trigger remains conditional on an actual status change.
+No guard measures prose quality, parses English ownership, rewards additional documents, or requires every implementation change to touch documentation. The same-change trigger remains conditional on an actual status change.
 
 ## Required, optional, and excluded scope
 
@@ -179,6 +197,7 @@ No guard measures prose quality, rewards additional documents, or requires every
 - Lower the root word backstops and add the routing and stable-ID guards.
 - Update `CLAUDE.md`, [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), [docs/README.md](README.md), and affected guard documentation in the same change.
 - Remove closed or duplicated plan prose only after its current owner is verified.
+- Replace every live implementation-map reference with a valid structural route record or one of the four existing structural control contexts, then delete the natural-language ownership heuristic without retaining a compatibility path.
 - Perform a context-cold, read-only closure review of the migration because its principal risk is silent claim loss even though it changes no semantic contract.
 
 ### Optional
@@ -191,6 +210,8 @@ No guard measures prose quality, rewards additional documents, or requires every
 - Changing Horizon 2 ordering, capacity policy, BPMN meaning, semantic profiles, CIB relationships, public contracts, proof boundaries, runtime behavior, or product scope.
 - Creating a feature-history board, chronological gate diary, second backlog, generic index, or archive of text already retained by Git.
 - Generating authoritative status from prose or requiring an external service, database, or model to resume work.
+- Inferring status ownership from English words, clause boundaries, punctuation, link labels, or regular-expression exemptions for approved phrases.
+- Adding a second area-to-map manifest, a Markdown parser dependency, or per-document copies of implementation facts.
 - Making the human-facing root README carry volatile implementation status.
 - Rewriting capsule specifications, decisions, research, or requirement ledgers merely for stylistic uniformity.
 
@@ -203,6 +224,7 @@ The proposal implementation is complete only when:
 - every generated baseline paragraph, list item, and table row has one verified destination or an explicit reviewed duplicate/history deletion;
 - an ordinary single-area status change needs no proposal or research edit and changes no root-map prose;
 - all routing, delegated-scope, migration, word-bound, review-unit, registry, link, receipt, and status-consistency adversarial fixtures pass;
+- every implementation-map reference is either one valid route record or a member of an exact existing structural control, and no natural-language ownership classifier remains in production code;
 - the closure packet embeds the complete validated migration matrix, binds its exact bytes and normalized content to `packetSha256`, and its focused packet tests pass;
 - `node --test scripts/plan-status-consistency.test.ts scripts/document-reviewability.test.ts scripts/markdown-links.test.ts scripts/independent-review-policy.test.ts`, `./scripts/verify.sh`, and `git diff --check` pass within their existing command bounds;
 - the closure reviewer confirms no semantic, product, proof, evidence, or absence claim changed and no required startup route became implicit;
@@ -215,6 +237,8 @@ The proposal implementation is complete only when:
 | A split hides a relevant claim from the active agent. | The plan names active maps, user overrides resolve through an independent exhaustive route inventory, and uncovered or ambiguous paths fail executable guards. |
 | Moving text silently loses an exclusion. | Git derives every baseline unit independently, the migration matrix accounts for each once, and unowned loss blocks the cold closure review. |
 | Five maps become overlapping truth sources. | Each map has disjoint named ownership, one fact has one owner, and root/detail duplicate status prose is prohibited. |
+| Structural route records become another status source. | Records contain only a role, registered area ID, and link; they carry no implementation fact, and owner targets are derived from the root routing table. |
+| Fixed route syntax adds boilerplate. | One standalone list item replaces an ambiguous sentence, requires no new section, and is used only when a document actually routes implementation status. |
 | Stable IDs become another bureaucracy. | IDs exist only for active ordered work and implementation areas; completed work leaves the plan and no permanent per-task ledger is created. |
 | Lower word bounds cause dense unreadable tables. | Routing tables have bounded cells, detail claims remain prose bullets, and the existing 120-word review-unit limit remains. |
 | The proposal/status boundary stays ambiguous. | Proposals own selected future contracts, detail maps own current implementation, and the guard restricts proposal Status to lifecycle and review state. |
@@ -231,7 +255,8 @@ The review should answer:
 3. Are the five map boundaries and delegated capsule sections cohesive, or does any fact require routine duplication or ambiguous ownership?
 4. Are the 2,000/250/4,000-word bounds achievable without dense prose or loss of exact claims?
 5. Do the migration and guard contracts make silent claim loss, dangling routes, duplicate status, and stale resume state observable?
-6. Does any requirement create a new history board, status manifest, or bespoke source of truth that merely relocates the current problem?
-7. Is the expected reduction in startup context and ordinary edit churn large enough to justify the migration cost?
+6. Does the structural route-record grammar eliminate all natural-language ownership inference while remaining complete for planned work, user overrides, registry navigation, and contributor startup?
+7. Does any requirement create a new history board, status manifest, or bespoke source of truth that merely relocates the current problem?
+8. Is the expected reduction in startup context and ordinary edit churn large enough to justify the migration cost?
 
 Use the issue-first verdict format in [the independent cold-review gate](TESTING-SPEC.md#independent-cold-review-gate). Classify any route that can silently omit required context, any ambiguous owner, or any unguarded claim-loss path as required rather than advisory.
