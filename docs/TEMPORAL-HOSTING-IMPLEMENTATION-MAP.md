@@ -4,7 +4,7 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced Intermediate Catch Message and Timer rollover are evidenced; effect rollover closure remains open.
+One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are evidenced; the complete gate and closure review remain open.
 
 The active bounded Workflow-chain contract owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; stop-the-world deployment compatibility; and forced evidence. This remains the highest current durable-hosting risk because every long-lived Process and every later repeating BPMN mechanism inherits it. Temporal Run identity remains private.
 
@@ -27,6 +27,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - deployment compatibility evidence: the candidate replays both a retained two-argument legacy history and all three v1 Runs before polling; the old bundle fails the closed v1 Run on the `bpmn-workflow-chain-v1` marker; mixed old/new or incomplete poller inventories are refused; the legacy open User Task then resumes under the candidate and reaches the exact semantic-core terminal state without changing public Product 1, BPMN, or CIB facts
 - forced Intermediate Catch Message rollover: a wrong-channel Signal is durably accepted and reduced once as semantic rejection immediately before Run 1 closes; the exact subscription and operation-addressed channel survive into Run 2; the valid delivery is sent only after that closure, commits once, and crosses into Run 3 as the trailing User Task; exact duplicate and changed-content recovery add no semantic transition; the closed v1 receipt, pure semantic-core trace, four exact Signal payloads, and all three replayed Runs preserve the registered standards-only Message profile and its unchanged User Task CIB premise
 - forced Intermediate Catch Timer rollover: Run 1 closes before scheduling the committed definition-derived `PT1S` Timer; a fresh successor defers the still-triggered Event History threshold until it retains work, preserving the exact Timer occurrence, 1,000 ms deadline, and logical time zero; Run 2 records exactly one matched Timer-started/Timer-fired pair, derives one `fireTimer` stimulus, reaches the pure semantic-core terminal trace, and replays both Runs under the registered standards-only Timer profile and its unchanged `CIB-AGR-0004`/`CIB-CFG-0001` classifications
+- forced Service Task effect rollover: Run 1 closes with the committed effect occurrence, neutral descriptor, empty request arguments, and content-bound transport key before any Activity is scheduled; Run 2 exposes the same semantic wait while one probe Activity is held in flight, then records exactly one schedule/start/completion lifecycle, derives one `completeEffect` stimulus, reaches the pure semantic-core terminal trace with one external mutation, and replays both Runs under the registered success-only profile and unchanged `CIB-EXT-0001`/`CIB-CFG-0002` classifications
 - canonical start/completion data, effect transport, interaction/task projection, closed v1 receipts, private exact legacy normalization, and strict external-runtime configuration
 - one live product example per distinct host mechanism, with reused mechanisms checked without a Temporal service and optional time-skipping calibration outside default verification
 - direct `client.start` hosting for exact registered Message Start identity through the ordinary Workflow start input, with wrong Interface Operation rejection before Workflow creation, service acceptance while no Worker polls, later User Task completion, no Signal Event, exact history replay, and a test-owned Signal-With-Start discriminator
@@ -74,7 +75,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - Activity heartbeats
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
-- post-retention publication reconstruction or archive and complete effect rollover evidence
+- post-retention publication reconstruction or archive
 - timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload, key-based or global correlation, modeled throw, Message Flow, and other Message Event loci beyond the direct payload-free catch
 - multi-instance, migration, and Workflow-chain policies beyond the approved bounded Continue-As-New contract
 - immutable profile or production Event History compatibility
@@ -86,6 +87,6 @@ The separate protocol, client, Workflow, Worker, runner, and testkit packages un
 
 ## Nearest unsupported claims
 
-- **Workflow-chain closure:** post-retention publication reconstruction and complete effect rollover evidence remain absent.
+- **Workflow-chain closure:** the implementation and focused forced-rollover matrix are complete; the complete gate and closure review remain pending. Post-retention publication reconstruction or archive remains outside the bounded contract, whose public result is `unavailable` after the selected retained Run disappears.
 - **Workload isolation:** complete Horizon 3 with queue and Worker isolation, backpressure, tenant fairness, capacity observability, shared-store failover, representative mixed-model tests, and published throughput, latency, saturation, recovery, and cost evidence. More Workers or queue partitions alone do not constitute this result.
 - **Hosting breadth:** Message payload and routing, general Worker versioning, Activity heartbeats, Search Attributes, general cancellation recovery, and broader timer, effect, and expression families remain absent.

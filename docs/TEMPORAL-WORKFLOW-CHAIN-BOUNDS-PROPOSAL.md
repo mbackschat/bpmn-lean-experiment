@@ -7,7 +7,7 @@ Review: approved-with-required-edits
 
 ## Current boundary
 
-Owner-approved on 2026-08-17; the independently reviewed first-green checkpoint plus recovery, atomic RuntimeState/paired-publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, Query-response, terminal-result, Event History, aggregate continuation, 128-Run capacity, stop-the-world deployment admission, and forced Intermediate Catch Message and Timer rollover are implemented. Production completion remains open.
+Owner-approved on 2026-08-17; the independently reviewed first-green checkpoint plus recovery, atomic RuntimeState/paired-publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, Query-response, terminal-result, Event History, aggregate continuation, 128-Run capacity, stop-the-world deployment admission, and forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are implemented. The complete gate and closure review remain open under the owner's current no-full-gate boundary.
 
 This proposal selects the smallest complete Horizon 2 contract for Product 1. Owner approval authorizes the bounded contract below, followed by the required first-green semantic checkpoint and closure review.
 

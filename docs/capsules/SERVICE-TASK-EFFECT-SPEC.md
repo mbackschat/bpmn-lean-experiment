@@ -426,6 +426,7 @@ Canonical equality does not erase these fidelity distinctions. In particular, CI
 | Host failure schedule has the same canonical trace as plain success | Transport attempts leak into BPMN observations |
 | Activity-bypass mutation lacks a scheduled/completed Activity pair and fails | Pure trace agreement permits a fabricated external effect |
 | Worker replacement while the Activity is pending still completes once | An in-memory Workflow callback implements the effect |
+| Forced pre-schedule rollover carries the intent into Run 2, where exactly one Activity mutates and completes | The old Run schedules before its fence, an in-flight Activity is copied or abandoned, or the successor duplicates the effect |
 | CIB first failure records `3 → 2` and second execution completes with one test-local mutation | Administrative retry editing or automatic execution is mistaken for engine retry evidence |
 
 ## Runtime-only and synthetic constructs
@@ -459,7 +460,7 @@ Canonical equality does not erase these fidelity distinctions. In particular, CI
 - exact domain-separated transport and `completeEffect` encodings through the shared canonical encoder, fixed current digest locks, SHA-256 padding/multi-block/supplementary-plane vectors, and an exact transport cross-check against native crypto outside Workflow code;
 - eight answer-free scenarios, sixteen Temporal executions, nine replayed histories, and the documented failure-schedule substitution for Service Task isolation;
 - Activity-bypass mutation rejected by Event History evidence;
-- Worker-replacement, exhausted-Activity typed Workflow failure, semantic-lifetime completion, receipt reconciliation, cleanup, live-history replay, and exact Activity policy evidence;
+- Worker-replacement, forced pre-schedule rollover, exhausted-Activity typed Workflow failure, semantic-lifetime completion, receipt reconciliation, cleanup, live-history replay, and exact Activity policy evidence;
 - full applicable gate within existing feedback budgets without weakening an assertion.
 
 ## Epistemic closure
