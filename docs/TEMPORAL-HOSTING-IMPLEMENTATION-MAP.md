@@ -4,7 +4,7 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are evidenced; the complete gate and closure review remain open.
+One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are evidenced; the owner-authorized complete gate and closure review remain open.
 
 The active bounded Workflow-chain contract owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; stop-the-world deployment compatibility; and forced evidence. This remains the highest current durable-hosting risk because every long-lived Process and every later repeating BPMN mechanism inherits it. Temporal Run identity remains private.
 
