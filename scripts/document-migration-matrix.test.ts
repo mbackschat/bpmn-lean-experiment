@@ -80,10 +80,10 @@ test("a complete migration matrix is independently derived and validated", async
   try {
     await mkdir(path.join(repository, "docs"), { recursive: true });
     git(repository, ["init", "--quiet"]);
-    await writeFile(path.join(repository, "docs/PLAN.md"), "# Plan\n\n## Active\n\nOne claim.\n", "utf8");
+    await writeFile(path.join(repository, "docs/PLAN.md"), "# Plan\n\n## Active\n\nOne claim containing two allocations.\n", "utf8");
     await writeFile(path.join(repository, "docs/IMPLEMENTATION-MAP.md"), "# Map\n\n## State\n\n- One fact.\n", "utf8");
     const baseline = commitAll(repository, "baseline");
-    await writeFile(path.join(repository, "docs/PLAN.md"), "# Plan\n\n## Active\n\nOne revised claim.\n", "utf8");
+    await writeFile(path.join(repository, "docs/PLAN.md"), "# Plan\n\n## Active\n\nFirst allocated claim.\n\nSecond allocated claim.\n", "utf8");
     const target = commitAll(repository, "target");
     const baselineUnits = deriveDocumentUnits(repository, baseline, DOCUMENT_MIGRATION_SOURCE_PATHS);
     const targetUnits = deriveDocumentUnits(repository, target, DOCUMENT_MIGRATION_SOURCE_PATHS);
@@ -96,11 +96,12 @@ test("a complete migration matrix is independently derived and validated", async
         source: identity(source),
         disposition: {
           kind: "destination",
-          target: (() => {
-            const destination = targetUnits.find((unit) => unit.path === source.path && unit.owningHeading === source.owningHeading && unit.ordinal === source.ordinal);
-            assert.ok(destination);
-            return identity(destination);
-          })(),
+          targets: targetUnits
+            .filter((unit) => unit.path === source.path && (source.path === "docs/PLAN.md" || unit.ordinal === source.ordinal))
+            .map((destination, index) => ({
+              target: identity(destination),
+              allocation: source.path === "docs/PLAN.md" ? `Source claim allocation ${index + 1}.` : "Complete source claim.",
+            })),
         },
       })),
     };
@@ -109,15 +110,38 @@ test("a complete migration matrix is independently derived and validated", async
 
     const validated = loadDocumentMigrationMatrix({ repositoryRoot: repository, matrixPath, baseline, target });
     assert.equal(validated.normalized.rows.length, baselineUnits.length);
-    assert.equal(validated.diagnostics.changed.length, 1);
+    assert.equal(validated.diagnostics.changed.length, 2);
     assert.equal(validated.diagnostics.deleted.length, 0);
+    const splitSource = baselineUnits[0];
+    assert.ok(splitSource);
+    assert.deepEqual(
+      validated.diagnostics.changed.map(({ source, target: changedTarget, allocation }) => ({
+        source: source.sha256,
+        target: changedTarget.sha256,
+        allocation,
+      })),
+      targetUnits.slice(0, 2).map(({ sha256: targetSha256 }, index) => ({
+        source: splitSource.sha256,
+        target: targetSha256,
+        allocation: `Source claim allocation ${index + 1}.`,
+      })),
+    );
     const firstNormalizedRow = validated.normalized.rows[0];
     assert.ok(firstNormalizedRow);
     assert.equal(firstNormalizedRow.source.text.length > 0, true);
     assert.deepEqual(
       validated.normalized.rows.map(({ disposition }) =>
-        disposition.kind === "destination" ? disposition.changed : undefined),
-      [true, false],
+        disposition.kind === "destination" ? disposition.targets.map(({ changed }) => changed) : undefined),
+      [[true, true], [false]],
+    );
+    assert.deepEqual(
+      firstNormalizedRow.disposition.kind === "destination"
+        ? firstNormalizedRow.disposition.targets.map(({ target, allocation }) => ({ text: target.text, allocation }))
+        : [],
+      [
+        { text: "First allocated claim.", allocation: "Source claim allocation 1." },
+        { text: "Second allocated claim.", allocation: "Source claim allocation 2." },
+      ],
     );
 
     await writeMatrix(matrixPath, matrix, "\n");
@@ -141,6 +165,7 @@ test("a complete migration matrix is independently derived and validated", async
     assert.deepEqual(deleted.diagnostics.deleted.map(({ disposition }) => disposition), ["duplicate", "history"]);
 
     const invalidMatrices: ReadonlyArray<Readonly<{ value: unknown; message: RegExp }>> = [
+      { value: { ...matrix, format: "document-migration-matrix/v1" }, message: /unknown format/u },
       { value: { ...matrix, rows: matrix.rows.slice(1) }, message: /omits 1 baseline source unit/u },
       { value: { ...matrix, rows: [...matrix.rows, firstRow] }, message: /repeats a baseline source unit/u },
       { value: { ...matrix, baseline: target }, message: /equal the requested commits/u },
@@ -156,9 +181,51 @@ test("a complete migration matrix is independently derived and validated", async
       {
         value: {
           ...matrix,
-          rows: [{ ...firstRow, disposition: { kind: "destination", target: { ...firstRow.disposition.target, sha256: "0".repeat(64) } } }, ...matrix.rows.slice(1)],
+          rows: [{ ...firstRow, disposition: { kind: "destination", targets: [{ ...firstRow.disposition.targets[0], target: { ...firstRow.disposition.targets[0]?.target, sha256: "0".repeat(64) } }] } }, ...matrix.rows.slice(1)],
         },
         message: /destination unit does not resolve/u,
+      },
+      {
+        value: {
+          ...matrix,
+          rows: [{ ...firstRow, disposition: { kind: "destination", targets: [] } }, ...matrix.rows.slice(1)],
+        },
+        message: /nonempty targets array/u,
+      },
+      {
+        value: {
+          ...matrix,
+          rows: [{ ...firstRow, disposition: { kind: "destination", targets: [firstRow.disposition.targets[0], firstRow.disposition.targets[0]] } }, ...matrix.rows.slice(1)],
+        },
+        message: /repeats a target identity/u,
+      },
+      {
+        value: {
+          ...matrix,
+          rows: [{ ...firstRow, disposition: { kind: "destination", targets: [firstRow.disposition.targets[0], { ...firstRow.disposition.targets[1], allocation: firstRow.disposition.targets[0]?.allocation }] } }, ...matrix.rows.slice(1)],
+        },
+        message: /repeats an allocation/u,
+      },
+      {
+        value: {
+          ...matrix,
+          rows: [{ ...firstRow, disposition: { kind: "destination", targets: [{ ...firstRow.disposition.targets[0], allocation: " " }] } }, ...matrix.rows.slice(1)],
+        },
+        message: /allocation must be a nonempty string/u,
+      },
+      {
+        value: {
+          ...matrix,
+          rows: [{ ...firstRow, disposition: { kind: "destination", targets: [{ ...firstRow.disposition.targets[0], surplus: true }] } }, ...matrix.rows.slice(1)],
+        },
+        message: /needs exactly allocation, target/u,
+      },
+      {
+        value: {
+          ...matrix,
+          rows: [{ ...firstRow, disposition: { kind: "destination", target: firstRow.disposition.targets[0]?.target } }, ...matrix.rows.slice(1)],
+        },
+        message: /needs exactly kind, targets/u,
       },
       {
         value: {

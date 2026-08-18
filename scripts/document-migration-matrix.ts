@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { compareExactStrings, sha256 } from "./semantic-review-text.ts";
 
-export const DOCUMENT_MIGRATION_MATRIX_FORMAT = "document-migration-matrix/v1" as const;
+export const DOCUMENT_MIGRATION_MATRIX_FORMAT = "document-migration-matrix/v2" as const;
 export const DOCUMENT_MIGRATION_SOURCE_PATHS = Object.freeze([
   "docs/PLAN.md",
   "docs/IMPLEMENTATION-MAP.md",
@@ -24,7 +24,10 @@ export type DocumentUnit = DocumentUnitIdentity & Readonly<{ text: string }>;
 
 type DestinationDisposition = Readonly<{
   kind: "destination";
-  target: DocumentUnitIdentity;
+  targets: ReadonlyArray<Readonly<{
+    target: DocumentUnitIdentity;
+    allocation: string;
+  }>>;
 }>;
 
 type DuplicateDisposition = Readonly<{
@@ -53,19 +56,37 @@ export type NormalizedDocumentMigrationMatrix = Readonly<{
   rows: ReadonlyArray<Readonly<{
     source: DocumentUnit;
     disposition:
-      | Readonly<{ kind: "destination"; target: DocumentUnit; changed: boolean }>
+      | Readonly<{
+          kind: "destination";
+          targets: ReadonlyArray<Readonly<{
+            target: DocumentUnit;
+            allocation: string;
+            changed: boolean;
+          }>>;
+        }>
       | DuplicateDisposition
       | HistoryDisposition;
   }>>;
 }>;
 
-export type DocumentMigrationDiagnostic = Readonly<{
-  source: DocumentUnitIdentity;
-  disposition: "changed" | "duplicate" | "history";
-  target?: DocumentUnitIdentity;
-  ownerPath?: string;
-  rationale?: string;
-}>;
+export type DocumentMigrationDiagnostic =
+  | Readonly<{
+      source: DocumentUnitIdentity;
+      disposition: "changed";
+      target: DocumentUnitIdentity;
+      allocation: string;
+    }>
+  | Readonly<{
+      source: DocumentUnitIdentity;
+      disposition: "duplicate";
+      ownerPath: string;
+      rationale: string;
+    }>
+  | Readonly<{
+      source: DocumentUnitIdentity;
+      disposition: "history";
+      rationale: string;
+    }>;
 
 export type ValidatedDocumentMigrationMatrix = Readonly<{
   exactBytesSha256: string;
@@ -282,9 +303,30 @@ function parseDisposition(value: unknown, label: string): MatrixDisposition {
   assertPlainRecord(value, label);
   const kind = value.kind;
   switch (kind) {
-    case "destination":
-      assertExactKeys(value, ["kind", "target"], label);
-      return { kind, target: parseIdentity(value.target, `${label} target`) };
+    case "destination": {
+      assertExactKeys(value, ["kind", "targets"], label);
+      if (!Array.isArray(value.targets) || value.targets.length === 0) {
+        throw new Error(`${label} needs a nonempty targets array`);
+      }
+      const targets = value.targets.map((candidate, index) => {
+        const targetLabel = `${label} target ${index + 1}`;
+        assertPlainRecord(candidate, targetLabel);
+        assertExactKeys(candidate, ["target", "allocation"], targetLabel);
+        return {
+          target: parseIdentity(candidate.target, `${targetLabel} identity`),
+          allocation: parseNonemptyString(candidate.allocation, `${targetLabel} allocation`),
+        };
+      });
+      const targetKeys = targets.map(({ target }) => identityKey(target));
+      if (new Set(targetKeys).size !== targetKeys.length) {
+        throw new Error(`${label} repeats a target identity`);
+      }
+      const allocations = targets.map(({ allocation }) => allocation);
+      if (new Set(allocations).size !== allocations.length) {
+        throw new Error(`${label} repeats an allocation`);
+      }
+      return { kind, targets };
+    }
     case "duplicate": {
       assertExactKeys(value, ["kind", "ownerPath", "rationale"], label);
       const ownerPath = parseNonemptyString(value.ownerPath, `${label} ownerPath`);
@@ -393,13 +435,18 @@ export function loadDocumentMigrationMatrix(input: DocumentMigrationMatrixLoadIn
     if (row === undefined) throw new Error("migration matrix lost a validated source row");
     switch (row.disposition.kind) {
       case "destination": {
-        const destination = targetUnit(row.disposition.target);
-        const isChanged = destination.text !== source.text;
-        if (!isChanged && destination.sha256 !== source.sha256) {
-          throw new Error("byte-identical destination has inconsistent SHA-256");
-        }
-        if (isChanged) changed.push({ source: row.source, disposition: "changed", target: row.disposition.target });
-        return { source, disposition: { kind: "destination" as const, target: destination, changed: isChanged } };
+        const targets = row.disposition.targets.map(({ target: targetIdentity, allocation }) => {
+          const destination = targetUnit(targetIdentity);
+          const isChanged = destination.text !== source.text;
+          if (!isChanged && destination.sha256 !== source.sha256) {
+            throw new Error("byte-identical destination has inconsistent SHA-256");
+          }
+          if (isChanged) {
+            changed.push({ source: row.source, disposition: "changed", target: targetIdentity, allocation });
+          }
+          return { target: destination, allocation, changed: isChanged };
+        });
+        return { source, disposition: { kind: "destination" as const, targets } };
       }
       case "duplicate":
         assertTargetPathExists(input.repositoryRoot, target, row.disposition.ownerPath);

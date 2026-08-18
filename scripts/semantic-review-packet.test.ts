@@ -137,7 +137,10 @@ function completeMatrix(repository: string, baseline: string, target: string) {
         source: { path: source.path, owningHeading: source.owningHeading, ordinal: source.ordinal, sha256: source.sha256 },
         disposition: {
           kind: "destination",
-          target: { path: destination.path, owningHeading: destination.owningHeading, ordinal: destination.ordinal, sha256: destination.sha256 },
+          targets: [{
+            target: { path: destination.path, owningHeading: destination.owningHeading, ordinal: destination.ordinal, sha256: destination.sha256 },
+            allocation: "Complete source claim.",
+          }],
         },
       };
     }),
@@ -487,13 +490,34 @@ test("the semantic review packet CLI binds a complete migration matrix", async (
       packetSha256: string;
       migrationMatrix: Readonly<{
         exactBytesSha256: string;
-        normalized: Readonly<{ rows: ReadonlyArray<Readonly<{ source: Readonly<{ text: string }> }>> }>;
+        normalized: Readonly<{ rows: ReadonlyArray<Readonly<{
+          source: Readonly<{ sha256: string; text: string }>;
+          disposition: Readonly<{
+            kind: "destination";
+            targets: ReadonlyArray<Readonly<{
+              target: Readonly<{ path: string; owningHeading: string; ordinal: number; sha256: string; text: string }>;
+              allocation: string;
+              changed: boolean;
+            }>>;
+          }>;
+        }>> }>;
       }>;
     }>;
     const packet = JSON.parse(result.stdout) as MigrationPacketOutput;
     const firstNormalizedRow = packet.migrationMatrix.normalized.rows[0];
     assert.ok(firstNormalizedRow);
     assert.equal(firstNormalizedRow.source.text, "Baseline plan claim.");
+    assert.deepEqual(firstNormalizedRow.disposition.targets[0], {
+      target: {
+        path: "docs/PLAN.md",
+        owningHeading: "Plan",
+        ordinal: 1,
+        sha256: firstNormalizedRow.source.sha256,
+        text: "Baseline plan claim.",
+      },
+      allocation: "Complete source claim.",
+      changed: false,
+    });
     assert.match(packet.migrationMatrix.exactBytesSha256, /^[0-9a-f]{64}$/u);
 
     await writeFile(matrixPath, `${JSON.stringify(matrix)}\n`, "utf8");
