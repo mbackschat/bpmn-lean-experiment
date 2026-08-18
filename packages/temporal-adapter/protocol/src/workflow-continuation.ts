@@ -197,7 +197,6 @@ export function workflowContinuationBudgetViolation(
   recovery: BpmnWorkflowContinuationRecoveryV1,
   publication: BpmnWorkflowContinuationPublicationV1,
 ): WorkflowContinuationBudgetViolation | null {
-  const aggregate = [start, program, host, state, recovery, publication];
   const measured: ReadonlyArray<readonly [WorkflowChainBudgetKind, unknown]> = [
     [WorkflowChainBudgetKind.InitialStartStimulusBytes, start],
     [WorkflowChainBudgetKind.SemanticProcessProgramBytes, program],
@@ -205,7 +204,6 @@ export function workflowContinuationBudgetViolation(
     [WorkflowChainBudgetKind.CommittedRuntimeStateBytes, state],
     [WorkflowChainBudgetKind.CommandRecoveryLedgerBytes, recovery.entries],
     [WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes, publication],
-    [WorkflowChainBudgetKind.ContinueAsNewCarriedArgumentsBytes, aggregate],
   ];
   for (const [budget, value] of measured) {
     const observedValue = workflowChainCanonicalUtf8ByteLength(value);
@@ -213,6 +211,22 @@ export function workflowContinuationBudgetViolation(
     if (observedValue > configuredBound) {
       return { budget, observedValue, configuredBound };
     }
+  }
+  // Temporal transports six separate payloads. Array brackets and separators are not carried.
+  const observedValue = [start, program, host, state, recovery, publication]
+    .reduce(
+      (total, value) => total + workflowChainCanonicalUtf8ByteLength(value),
+      0,
+    );
+  const configuredBound = workflowChainProductionLimit(
+    WorkflowChainBudgetKind.ContinueAsNewCarriedArgumentsBytes,
+  );
+  if (observedValue > configuredBound) {
+    return {
+      budget: WorkflowChainBudgetKind.ContinueAsNewCarriedArgumentsBytes,
+      observedValue,
+      configuredBound,
+    };
   }
   return null;
 }
