@@ -92,8 +92,8 @@ export type ValidatedDocumentMigrationMatrix = Readonly<{
   exactBytesSha256: string;
   normalized: NormalizedDocumentMigrationMatrix;
   diagnostics: Readonly<{
-    changed: ReadonlyArray<DocumentMigrationDiagnostic>;
-    deleted: ReadonlyArray<DocumentMigrationDiagnostic>;
+    changed: ReadonlyArray<Extract<DocumentMigrationDiagnostic, { disposition: "changed" }>>;
+    deleted: ReadonlyArray<Exclude<DocumentMigrationDiagnostic, { disposition: "changed" }>>;
   }>;
 }>;
 
@@ -428,8 +428,8 @@ export function loadDocumentMigrationMatrix(input: DocumentMigrationMatrixLoadIn
     return resolved;
   };
 
-  const changed: DocumentMigrationDiagnostic[] = [];
-  const deleted: DocumentMigrationDiagnostic[] = [];
+  const changed: Array<Extract<DocumentMigrationDiagnostic, { disposition: "changed" }>> = [];
+  const deleted: Array<Exclude<DocumentMigrationDiagnostic, { disposition: "changed" }>> = [];
   const normalizedRows = baselineUnits.map((source) => {
     const row = rowBySource.get(identityKey(source));
     if (row === undefined) throw new Error("migration matrix lost a validated source row");
