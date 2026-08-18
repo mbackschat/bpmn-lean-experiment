@@ -161,6 +161,9 @@ test("ties root-map routing exemptions to the root-map reference", () => {
     "The implemented owners are routed through executable guards. The [implementation map](../IMPLEMENTATION-MAP.md) owns the exact source allocation.",
     "Implementation inventory belongs only in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).",
     "The current live queue remains in [PLAN.md](../PLAN.md) and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).",
+    "Exact platform implementation status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), while semantic proof status belongs in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
+    "Exact implementation status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md); applicable detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) remain authoritative.",
+    "Exact implementation status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) routes exact status to the applicable detail maps.",
   ]) assert.equal(isUnroutedRootImplementationMapStatusLine(line), true, line);
 
   for (const line of [
@@ -169,6 +172,9 @@ test("ties root-map routing exemptions to the root-map reference", () => {
     "Exact current source allocation belongs in the applicable detail maps routed by the [implementation map](../IMPLEMENTATION-MAP.md).",
     "Use [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) to route to the detail maps that own exact current status.",
     "[IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) routes exact implementation status to the applicable detail maps.",
+    "See [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), while exact semantic proof status belongs in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
+    "See [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and exact semantic proof status belongs in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
+    "See [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md): exact semantic proof status belongs in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
   ]) assert.equal(isUnroutedRootImplementationMapStatusLine(line), false, line);
 });
 

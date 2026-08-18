@@ -81,8 +81,6 @@ function linkedDetailMaps(value: string): ReadonlyArray<string> {
 const rootImplementationMapLinkSource =
   String.raw`\[[^\]\n]+\]\((?:[^)\n]*/)?IMPLEMENTATION-MAP\.md(?:#[^)\n]*)?\)`;
 const rootImplementationMapLink = new RegExp(rootImplementationMapLinkSource, "iu");
-const detailImplementationMapLink =
-  /\[[^\]\n]+\]\([^)\n]*(?:ENGINE-CONTRACTS-AND-SOURCE|ENGINE-RUNTIME-AND-PROOF|TEMPORAL-HOSTING|BPM-PLATFORM|ASSURANCE-AND-ADOPTION)-IMPLEMENTATION-MAP\.md(?:#[^)\n]*)?\)/iu;
 const implementationStatusWords =
   /\b(?:exact|current|implemented|implementation|inventory|absent|absence|evidence|coverage|support|status|surface|boundary)\b/iu;
 const directImplementationOwnership =
@@ -90,28 +88,35 @@ const directImplementationOwnership =
 const explicitRootImplementationMapRouting = [
   new RegExp(
     String.raw`\b(?:applicable\s+)?detail(?:\s+implementation)?\s+maps?\s+routed?\s+(?:by|through)(?:\s+the)?\s+${rootImplementationMapLinkSource}`,
-    "iu",
+    "giu",
   ),
-  new RegExp(String.raw`\buse\s+${rootImplementationMapLinkSource}\s+to\s+route\b`, "iu"),
+  new RegExp(String.raw`\buse\s+${rootImplementationMapLinkSource}\s+to\s+route\b`, "giu"),
   new RegExp(
     String.raw`${rootImplementationMapLinkSource}\s+routes?\b`,
-    "iu",
+    "giu",
   ),
   new RegExp(
     String.raw`\broot\s+(?:map\s+)?(?:router|routing)\b[^.!?\n]{0,160}${rootImplementationMapLinkSource}`,
-    "iu",
+    "giu",
   ),
 ];
+const implementationOwnershipClauseBoundary =
+  /(?<=[.!?])\s+|;\s*|:\s+|,\s+(?=(?:and|or|yet|while|whereas|but|although|though|however)\b)/iu;
 
 export function isUnroutedRootImplementationMapStatusLine(line: string): boolean {
-  return line.split(/(?<=[.!?])\s+/u).some((sentence) => {
+  return line.split(implementationOwnershipClauseBoundary).some((clause) => {
+    // Remove only the exact root-to-detail relationship that makes a root-map link navigational.
+    // A separate valid relationship must not launder another root-map ownership claim in the clause.
+    const unroutedClause = explicitRootImplementationMapRouting.reduce(
+      (remaining, routing) => remaining.replace(routing, ""),
+      clause,
+    );
     if (
-      !rootImplementationMapLink.test(sentence) ||
-      !implementationStatusWords.test(sentence) ||
-      !directImplementationOwnership.test(sentence)
+      !rootImplementationMapLink.test(unroutedClause) ||
+      !implementationStatusWords.test(unroutedClause) ||
+      !directImplementationOwnership.test(unroutedClause)
     ) return false;
-    if (detailImplementationMapLink.test(sentence)) return false;
-    return !explicitRootImplementationMapRouting.some((routing) => routing.test(sentence));
+    return true;
   });
 }
 
