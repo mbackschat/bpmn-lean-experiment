@@ -54,6 +54,13 @@ test("search terms of a root-level path stop at the path itself", () => {
   assert.deepEqual(searchTerms("CLAUDE.md"), ["CLAUDE.md"]);
 });
 
+test("pure binding resolution rejects traversal before matching", () => {
+  for (const target of [
+    "platform/../packages/bpmn-source/src/compile.ts",
+    "packages/semantic-core/../../platform/apps/web/src/main.tsx",
+  ]) assert.throws(() => bindingsFor(target, []), /canonical repository-relative path/u, target);
+});
+
 // Historical miss: a second example configuration was planned for one profile while an oracle
 // asserted exact multiset equality between profiles and example files. The tree term is what
 // reaches it, because the planned file did not exist yet and no guard could name it.
@@ -271,4 +278,18 @@ test("the command reports implementation maps and fails closed for an unknown ro
       stdio: "pipe",
     }),
   );
+  for (const target of [
+    "platform/../packages/bpmn-source/src/compile.ts",
+    "packages/semantic-core/../../platform/apps/web/src/main.tsx",
+  ]) {
+    assert.throws(
+      () => execFileSync(process.execPath, ["scripts/what-binds.ts", target], {
+        cwd: projectRoot,
+        encoding: "utf8",
+        stdio: "pipe",
+      }),
+      /canonical repository-relative path/u,
+      target,
+    );
+  }
 });

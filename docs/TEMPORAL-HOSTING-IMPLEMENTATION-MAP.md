@@ -6,6 +6,10 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure or scheduling. Query, terminal, Event History, aggregate, Run, deployment, and forced non-User-Task rollover closure remain open.
 
+The active bounded Workflow-chain contract owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; stop-the-world deployment compatibility; and forced evidence. This remains the highest current durable-hosting risk because every long-lived Process and every later repeating BPMN mechanism inherits it. Temporal Run identity remains private.
+
+Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, and pending-Timer bounds are active before speculative exposure or scheduling. Retry and conflict precede lifetime capacity, terminal completion wins, and no public contract or host identity changes.
+
 ## Implemented
 
 ### Temporal adapter
@@ -50,6 +54,7 @@ One Temporal Workflow Execution chain durably hosts one semantic Process instanc
 - Message payloads, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
 - Message ingress broker/router, definition-version fanout, or multi-target publication receipt
 - committed Event History fixtures
+- engine-global task discovery through Search Attributes; Product 2 instead owns its current-task projection from published engine facts
 - any new Temporal primitive for User Task metadata
 - a second semantic incident, arbitrary retry count or backoff, exception/cause projection, cancellation beyond the exact incident-gated root command, or Product 2 incident ingress
 - any patch branch other than the exact `bpmn-workflow-chain-v1` checkpoint enrollment
@@ -61,8 +66,10 @@ One Temporal Workflow Execution chain durably hosts one semantic Process instanc
 - Activity heartbeats
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
-- Search Attributes
 - post-retention publication reconstruction or archive, complete timer/effect/Message rollover evidence, deployment admission, and the approved Query, terminal, Event History, aggregate, and Run capacity rows
+- timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload, key-based or global correlation, modeled throw, Message Flow, and other Message Event loci beyond the direct payload-free catch
+- multi-instance, migration, and Workflow-chain policies beyond the approved bounded Continue-As-New contract
+- immutable profile or production Event History compatibility
 - task inbox
 
 ## Evidence owners
@@ -72,4 +79,5 @@ The separate protocol, client, Workflow, Worker, runner, and testkit packages un
 ## Nearest unsupported claims
 
 - **Workflow-chain closure:** post-retention publication reconstruction, complete Timer/effect/Message rollover evidence, deployment admission, and the approved Query, terminal, Event History, aggregate, and Run capacity rows remain absent.
+- **Workload isolation:** complete Horizon 3 with queue and Worker isolation, backpressure, tenant fairness, capacity observability, shared-store failover, representative mixed-model tests, and published throughput, latency, saturation, recovery, and cost evidence. More Workers or queue partitions alone do not constitute this result.
 - **Hosting breadth:** Message payload and routing, general Worker versioning, Activity heartbeats, Search Attributes, general cancellation recovery, and broader timer, effect, and expression families remain absent.

@@ -10,6 +10,8 @@ The denominator begins when commit-bounded measurement became mandatory. Earlier
 
 ## Measurements
 
+The retained M6 closure gate ran on 2026-08-16 and exited zero. It covered Lean, the semantic core, BPMN source, protocol/schema/canonical bytes, Workflow Query, client/API, both pinned CIB releases, differential comparison, 219 Temporal adapter tests, retained history replays, and the complete registered pipeline. The separate path-scoped Product 2 browser evidence covered the 1280/1600 structured Human Work journey. This is correctness evidence, not an uncontended performance baseline or a production-scalability claim.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |

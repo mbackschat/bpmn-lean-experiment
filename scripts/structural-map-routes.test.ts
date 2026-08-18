@@ -245,6 +245,51 @@ test("requires reciprocal substantive delegation and rejects owner downgrade", (
   expectError(documents, /at least 100 words/u);
 });
 
+test("ignored Markdown cannot launder delegation markers or substance", () => {
+  const hidden = Array.from({ length: 105 }, (_, index) => `hidden${index}`).join(" ");
+  const conceal: ReadonlyArray<(value: string) => string> = [
+    (value) => `<!-- ${value} -->`,
+    (value) => `\`\`\`md\n${value}\n\`\`\``,
+    (value) => `\`${value}\``,
+    (value) => `    ${value}`,
+  ];
+  for (const wrap of conceal) {
+    for (const concealed of [
+      wrap(`**Implemented.** ${hidden} **Absent.**`),
+      `**Implemented.** Visible.\n\n${wrap(hidden)}\n\n**Absent.** Visible.`,
+    ]) {
+      const documents = validDocuments();
+      documents.set(
+        `docs/${alphaFile}`,
+        detailMap("Alpha", `\n\n## Delegated scope\n\n[Capsule](capsules/ALPHA-SPEC.md)\n\n${concealed}\n`),
+      );
+      documents.set(
+        "docs/capsules/ALPHA-SPEC.md",
+        "# Alpha\n\n[`implementation-status-delegation:ALPHA`](../ALPHA-IMPLEMENTATION-MAP.md#delegated-scope)\n",
+      );
+      expectError(documents, /delegation lacks|at least 100 words/u);
+    }
+  }
+});
+
+test("ignored Markdown cannot supply the reciprocal delegation backlink", () => {
+  const documents = validDocuments();
+  const words = Array.from({ length: 105 }, (_, index) => `fact${index}`).join(" ");
+  documents.set(
+    `docs/${alphaFile}`,
+    detailMap(
+      "Alpha",
+      `\n\n## Delegated scope\n\n<!-- [Capsule](capsules/ALPHA-SPEC.md) -->\n\n**Implemented.** ${words}\n\n**Absent.** Explicit absence.\n`,
+    ),
+  );
+  documents.set(
+    "docs/capsules/ALPHA-SPEC.md",
+    "# Alpha\n\n[`implementation-status-delegation:ALPHA`](../ALPHA-IMPLEMENTATION-MAP.md#delegated-scope)\n",
+  );
+
+  expectError(documents, /delegation lacks.*backlink/u);
+});
+
 test("allows owner navigation beside the unique matching delegation", () => {
   const documents = validDocuments();
   documents.set(
@@ -278,6 +323,21 @@ IMPLEMENTATION-MAP.md
 `,
   );
   assert.deepEqual(errors(documents), []);
+});
+
+test("normalizes escapes before rejecting inline and reference-style map destinations", () => {
+  const inline = validDocuments();
+  inline.set("docs/NOTE.md", String.raw`Stale [status](IMPLEMENTATION-MAP\.md).`);
+  expectError(inline, /NOTE\.md.*route atom/u);
+
+  const reference = validDocuments();
+  reference.set(
+    "docs/NOTE.md",
+    String.raw`Stale [status][map].
+
+[map]: IMPLEMENTATION-MAP\.md`,
+  );
+  expectError(reference, /NOTE\.md.*bare implementation-map path/u);
 });
 
 test("special controls consume only their exact cell or step", () => {

@@ -102,6 +102,20 @@ test("routes overrides and explicit multi-area paths without plan knowledge", ()
   assert.throws(() => routeImplementationPath("root-new-engine.ts"), /unrouted/u);
 });
 
+test("rejects every noncanonical repository-relative routing path", () => {
+  for (const candidate of [
+    "/packages/bpmn-source/src/compile.ts",
+    "C:/packages/bpmn-source/src/compile.ts",
+    "packages\\bpmn-source\\src\\compile.ts",
+    "packages//bpmn-source/src/compile.ts",
+    "./packages/bpmn-source/src/compile.ts",
+    "packages/./bpmn-source/src/compile.ts",
+    "packages/bpmn-source/../semantic-core/src/runtime.ts",
+    "platform/../packages/bpmn-source/src/compile.ts",
+    "packages/semantic-core/../../platform/apps/web/src/main.tsx",
+  ]) assert.throws(() => routeImplementationPath(candidate), /canonical repository-relative path/u, candidate);
+});
+
 test("rejects hollow plan and root-map contracts", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
   const rootMap = await readFile(path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"), "utf8");

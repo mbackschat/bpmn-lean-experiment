@@ -18,6 +18,15 @@ export type AreaId = (typeof AreaId)[keyof typeof AreaId];
 
 export const allAreaIds: ReadonlyArray<AreaId> = Object.freeze(Object.values(AreaId));
 
+export function assertCanonicalRepositoryPath(file: string): void {
+  const segments = file.split("/");
+  if (
+    file === "" || file.startsWith("/") || /^[A-Za-z]:\//u.test(file) ||
+    file.includes("\\") || /[\0\r\n]/u.test(file) ||
+    segments.some((segment) => segment === "" || segment === "." || segment === "..")
+  ) throw new Error(`not a canonical repository-relative path: ${file}`);
+}
+
 export function wordCount(value: string): number {
   return value.trim().split(/\s+/u).filter(Boolean).length;
 }
@@ -203,6 +212,7 @@ function packageRoutes(pathParts: ReadonlyArray<string>): ReadonlyArray<AreaId> 
 }
 
 export function routeImplementationPath(file: string): ReadonlyArray<AreaId> {
+  assertCanonicalRepositoryPath(file);
   const pathParts = file.split("/");
   if (pathParts.length === 1) return rootPathRoutes(file);
   switch (pathParts[0]) {

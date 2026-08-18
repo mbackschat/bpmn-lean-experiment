@@ -4,11 +4,11 @@ This repository-wide map is the mandatory implementation-status router. Read it 
 
 ## Current claim
 
-The repository contains two separate MIT products: a bounded BPMN 2.0.2 execution engine hosted on Temporal and a downstream BPM platform. M1 through M6 and Horizon 1 shared Product 2 persistence are closed. Horizon 2 Workflow-chain bounds are active. The engine admits exact BPMN bytes only through guarded profiles, executes project-owned Semantic Process programs through Lean and an independently written pure TypeScript core, and uses Temporal only for durable hosting.
+The two separate MIT products follow [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division) and [ARCHITECTURE.md](ARCHITECTURE.md). M0 through M6 and Horizon 1 are closed. Product 2 shared mode uses PostgreSQL 18 with replicated API and bounded recovery-worker composition; local mode remains single-node. The evaluation Compose distribution and browser walkthrough are complete. The owner approved bounded Horizon 2 Workflow-chain work on 2026-08-17. Product 1 starts enroll in its versioned contract, return no SDK handle, recover content-bound commands through the latest Run, expose only the closed v1 receipt, traverse paired E1/E2 segments privately, and enforce the implemented capacity bounds. Query, terminal, Event History, aggregate, Run, deployment, forced-rollover, and closure remain open. Routed detail maps own exact surfaces; specifications and closure-reviewed proposals own stable contracts and evidence.
 
 The platform consumes the engine's published compile, start, observation, and command contracts. It does not derive BPMN facts from Temporal Event History or its own store. Local platform mode remains single-node; shared mode uses PostgreSQL 18 with replicated API and bounded recovery-worker composition. The evaluation distribution is not a production-capacity claim.
 
-This is not a general BPMN engine, an OMG Process Execution Conformance result, a broad CIB compatibility claim, a production CIB deployment baseline, or a production scale result. Exact implemented and absent surfaces are routed below.
+This is not a general BPMN engine, an OMG Process Execution Conformance result, a broad CIB compatibility claim, a production CIB deployment or history compatibility baseline, or a production scale result. Individual evidence-bound calibration profile artifacts may already be immutable under the narrower [profile-registry definition](../profiles/README.md). Exact implemented and absent surfaces are routed below.
 
 ## Routing
 
@@ -31,3 +31,5 @@ The executable inventory conservatively routes an overridden or newly named `doc
 - Product 2 consumes only published engine facts and occurrence identities. A missing fact is routed to an engine requirement rather than reconstructed downstream.
 - A12 Workflows remains an optional external adoption input under EUPL-1.2. No A12 source, runtime, dependency, or product decision enters the MIT engine or platform.
 - No implementation or evidence claim exceeds its exact profile, environment, observation boundary, retained oracle, and executable gate.
+
+[The BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md) is the primary engine-coverage view; [the CIB and BPMN register](CIB-BPMN-RELATION-REGISTER.md) owns classified profile additions; [the A12 ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) owns downstream adoption. The three denominators never combine. There is no A12 adapter package, Java Worker, facade bridge, Java semantic core, or JUEL dependency in this repository; [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-compatibility-and-polyglot-effect-execution) owns the reopen trigger for a second core.

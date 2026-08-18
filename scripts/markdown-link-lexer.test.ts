@@ -103,6 +103,30 @@ test("requires a matching fence character and a sufficiently long closing run", 
   );
 });
 
+test("masks blockquote and list-nested backtick and tilde fences at exact offsets", () => {
+  const markdown = `before
+> \`\`\`md
+> [blockquote-hidden](quote.md)
+> \`\`\`
+
+- ~~~
+  [list-hidden](list.md)
+  ~~~
+
+[live](live.md)
+after`;
+  const masked = maskMarkdownIgnoredRegions(markdown);
+
+  assert.equal(masked.length, markdown.length);
+  assert.deepEqual(
+    [...masked.matchAll(/\n/gu)].map(({ index }) => index),
+    [...markdown.matchAll(/\n/gu)].map(({ index }) => index),
+  );
+  assert.equal(masked.includes("blockquote-hidden"), false);
+  assert.equal(masked.includes("list-hidden"), false);
+  assert.deepEqual(scanMarkdownLinks(markdown).map(({ destination }) => destination), ["live.md"]);
+});
+
 test("does not treat reference links or escaped opening brackets as inline links", () => {
   assert.deepEqual(
     scanMarkdownLinks(

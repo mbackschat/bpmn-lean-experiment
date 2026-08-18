@@ -26,7 +26,10 @@ import {
   nonblankLines,
   type SourceMeasurement,
 } from "./source-measure.ts";
-import { implementationMapRoutes } from "./document-control-plane.ts";
+import {
+  assertCanonicalRepositoryPath,
+  implementationMapRoutes,
+} from "./document-control-plane.ts";
 import { parseImplementationMapDirectory } from "./structural-map-routes.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -66,6 +69,7 @@ export type ChangeBindings = Readonly<{
  * named by any guard, so the tree it will join is the only term that can reach its constraints.
  */
 export function searchTerms(target: string): ReadonlyArray<string> {
+  assertCanonicalRepositoryPath(target);
   const segments = target.split("/");
   const basename = segments[segments.length - 1] ?? target;
   const ancestors = segments
@@ -139,6 +143,7 @@ export function ownerMeasurement(
   target: string,
   source: string | null,
 ): SourceMeasurement | null {
+  assertCanonicalRepositoryPath(target);
   return source === null || !isHandWrittenSourcePath(target)
     ? null
     : { path: target, lines: nonblankLines(source) };
@@ -209,6 +214,7 @@ async function main(targets: ReadonlyArray<string>): Promise<void> {
     process.exitCode = 2;
     return;
   }
+  for (const target of targets) assertCanonicalRepositoryPath(target);
   const corpus = await loadBindingCorpus();
   const rootMap = await readFile(path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"), "utf8");
   const parsedDirectory = parseImplementationMapDirectory(rootMap);

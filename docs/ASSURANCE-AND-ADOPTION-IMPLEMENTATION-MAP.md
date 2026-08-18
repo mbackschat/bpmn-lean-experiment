@@ -52,6 +52,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 - optional exact external `CreateDocument.bpmn` static compilation through the product-neutral mapped-success profile and current data-only overlay, plus exact external boundary-Error source-shape calibration
 - a preservation oracle that executes the immutable baseline tooling in an isolated export and compares its selected legacy/current checked graphs, Semantic Process programs, runtime results, and CIB evidence bodies outside the approved profile/overlay identity translation, plus a separate byte oracle for the payload-free Service Task's exact bounded wire-only changes
 - two completed target-shaped legacy feasibility slices retained as adoption evidence rather than product implementation
+- The [implemented A12 boundary specification](A12-ADD-ON-BOUNDARY-SPEC.md) adds no A12-specific production decision. Neutral mapped-boundary output passes shared schemas and checked-to-IL Error-route verification; the MIT-closure inventory and preservation oracle are exact-byte bound to baseline `02330ad`. Closure correction `8d6ea1a` and the [future adoption handoff](../adoption/a12/current/README.md#resume-point-for-a-future-a12-add-on) own the boundary.
 
 ### CIB oracle
 
@@ -138,7 +139,14 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 
 [TESTING-SPEC.md](TESTING-SPEC.md), the generated pipeline report, guarded scenario/profile catalogs, [CIB relationship register](CIB-BPMN-RELATION-REGISTER.md), [A12 compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md), and executable corpus bind these claims. Latest measured results belong in [PLAN.md](PLAN.md).
 
+Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, and pinned CIB lanes with seeded mutations and content-bound evidence. TypeScript produces the shared checked graph and program, while Lean checks lowering independently without parsing XML. Product drivers use published interactions and occurrence identities. Live execution is required once per distinct host mechanism; composed product examples are not an independent semantic lane.
+
+Per-scenario requirements are owned by the guarded artifact catalogs and each capsule's rule-to-evidence matrix and are not restated in this inventory. The registered scenarios, their declared target relations, their seeded mutations, and the exact cases the pipeline ran are emitted by the generated pipeline report; [TESTING-SPEC.md](TESTING-SPEC.md#complete-differentialrefinement-pipeline) owns what the gate requires.
+
+The complete prepared pipeline enforces the cross-cutting CIB, Lean, core, Temporal, mutation, replay, and teardown invariants defined by [TESTING-SPEC.md](TESTING-SPEC.md#complete-differentialrefinement-pipeline). Exact counts and latest measurements belong to the generated report and [PLAN.md](PLAN.md).
+
 ## Nearest unsupported claims
 
-- **A12 adoption:** the closed exact-model product count remains zero. No A12 add-on, Java delegate Worker, facade, JUEL Worker, script/listener runtime, migration, or EUPL-licensed product dependency exists in the MIT engine.
+- **A12 adoption evidence:** the optional adoption lane admits the exact external `CreateDocument.bpmn` bytes through the product-neutral mapped-success profile plus a content-bound data-only overlay. Its current oracle proves the two project-authored adoption projections equal the selected frozen generation outside the approved profile/overlay identity translation. The frozen manifest at immutable target `02330ad` derives the complete A12-specific baseline set plus the original validator, projector, and effect-projection roots independently of its own entries. Closure correction `8d6ea1a` is approved, and the [handoff](../adoption/a12/current/README.md#resume-point-for-a-future-a12-add-on) records how future product-3 work resumes.
+- **A12 product boundary:** the closed exact-model product count remains zero because no external EUPL-1.2 model and Java delegate have executed through an A12-owned add-on. This is optional adoption evidence, not the primary BPMN coverage measure or Product 1 implementation. The active Simple Boolean language matches none of the retained A12 JUEL sources and claims zero adoption coverage. No A12 add-on, Java delegate Worker, facade, JUEL Worker, script or listener runtime, migration, or EUPL-licensed product dependency exists in the MIT engine.
 - **Assurance:** universal equivalence, majority voting, a general conformance suite, independent reconstruction of every CIB projection rule, and proof that the TypeScript core or Temporal host corresponds to Lean remain absent.

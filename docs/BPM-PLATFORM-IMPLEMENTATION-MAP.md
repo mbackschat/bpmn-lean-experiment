@@ -6,6 +6,8 @@ This detail map owns exact current Product 2 modules, persistence, HTTP, UI, dep
 
 M1 through M6 and Horizon 1 shared persistence are closed. Local mode remains single-node; shared mode uses PostgreSQL 18 with replicated API and bounded recovery-worker composition. The evaluation Compose distribution is complete, but no production-capacity, database-high-availability, or complete external-instance-discovery claim is made.
 
+The closure-reviewed [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) is evidence-closed across Product 1 semantics and Product 2 forms.
+
 ## Implemented
 
 ### BPM platform
@@ -49,6 +51,7 @@ M1 through M6 and Horizon 1 shared persistence are closed. Local mode remains si
 - Adjustable metric periods, running pseudo-duration, charts, heatmaps, metric export, post-retention archive, and cross-instance semantic ordering
 
 - a production identity provider, directory synchronization, administrator role, claim delegation, or authorization model beyond the exact fake actor and group policy
+- separately deployed or arbitrary rendered forms, nested structured values, BPMN data associations, or assignment expressions beyond the implemented metadata and fake-identity boundary
 - a client router, form library, themed component framework, virtualization, visual form builder, arbitrary or nested form schema, remote options, draft storage, attachments, or validation/computation involving I/O or user-authored expressions
 - complete discovery of engine Process instances started outside Product 2
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location

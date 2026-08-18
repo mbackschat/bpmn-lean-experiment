@@ -135,6 +135,8 @@ The package does not export raw moddle objects as a public cross-package contrac
 
 ## Admission and security policy
 
+A future MIWG calibration records all four project-admission by CIB-deployment quadrants over the pinned corpus. Schedule it with or after the admission-successor checkpoint, report all four quadrants without asserting set equality, and do not count deployment or admission as execution evidence.
+
 `bpmn-moddle` imports in lax mode and can return a structural result with warnings after discarding or normalizing invalid content. The project must therefore distinguish:
 
 1. **source capture** — exact bytes and identity were retained;

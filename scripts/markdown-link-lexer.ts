@@ -18,6 +18,8 @@ export type MarkdownAnchorSpan = Readonly<{
 type Fence = Readonly<{
   character: "`" | "~";
   length: number;
+  quoteDepth: number;
+  listIndent: number;
 }>;
 
 type Line = Readonly<{
@@ -41,8 +43,21 @@ function markdownLines(markdown: string): ReadonlyArray<Line> {
   return lines;
 }
 
+function blockquoteContent(line: string): Readonly<{ content: string; depth: number }> {
+  let content = line;
+  let depth = 0;
+  while (/^ {0,3}>/u.test(content)) {
+    content = content.replace(/^ {0,3}>[ \t]?/u, "");
+    depth += 1;
+  }
+  return { content, depth };
+}
+
 function fenceAtLineStart(line: string): Fence | null {
-  const match = /^( {0,3})(`{3,}|~{3,})(.*)$/u.exec(line);
+  const quote = blockquoteContent(line);
+  const list = /^( {0,3})(?:[-+*]|\d+[.)])[ \t]+/u.exec(quote.content);
+  const listIndent = list?.[0].length ?? 0;
+  const match = /^( {0,3})(`{3,}|~{3,})(.*)$/u.exec(quote.content.slice(listIndent));
   if (match === null) {
     return null;
   }
@@ -58,18 +73,22 @@ function fenceAtLineStart(line: string): Fence | null {
   if (character === "`" && suffix.includes("`")) {
     return null;
   }
-  return { character, length: run.length };
+  return { character, length: run.length, quoteDepth: quote.depth, listIndent };
 }
 
 function closesFence(line: string, fence: Fence): boolean {
-  const leadingSpaces = /^ {0,3}/u.exec(line)?.[0].length ?? 0;
+  const quote = blockquoteContent(line);
+  if (quote.depth !== fence.quoteDepth) return false;
+  if (fence.listIndent > 0 && !new RegExp(`^[ \\t]{${fence.listIndent}}`, "u").test(quote.content)) return false;
+  const content = quote.content.slice(fence.listIndent);
+  const leadingSpaces = /^ {0,3}/u.exec(content)?.[0].length ?? 0;
   let index = leadingSpaces;
-  while (line[index] === fence.character) {
+  while (content[index] === fence.character) {
     index += 1;
   }
   return (
     index - leadingSpaces >= fence.length &&
-    /^[ \t]*$/u.test(line.slice(index))
+    /^[ \t]*$/u.test(content.slice(index))
   );
 }
 

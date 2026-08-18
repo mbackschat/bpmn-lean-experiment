@@ -385,22 +385,31 @@ function reciprocal(
   const section = headings(target).get(atom.fragment);
   if (section === undefined || section.level !== 2) return { isReciprocal: false, wordCount: 0 };
   const body = target.slice(section.range.start, section.range.end);
+  const visibleBody = maskMarkdownIgnoredRegions(body);
   const backlink = scanMarkdownLinks(body).some((link) => {
     const destination = simpleDestination(link.destination);
     return !link.isImage && destination !== undefined &&
       normalizeTarget(atom.target, destination) === atom.source;
   });
+  const visibleProse = scanMarkdownLinks(visibleBody).reduceRight(
+    (text, link) => `${text.slice(0, link.start)}${link.label}${text.slice(link.end)}`,
+    visibleBody,
+  );
   return {
-    isReciprocal: backlink && body.includes("**Implemented.**") && body.includes("**Absent.**"),
-    wordCount: body.trim().split(/\s+/u).filter(Boolean).length,
+    isReciprocal: backlink && visibleBody.includes("**Implemented.**") && visibleBody.includes("**Absent.**"),
+    wordCount: visibleProse.match(/[\p{L}\p{M}\p{N}\p{Pc}]+/gu)?.length ?? 0,
   };
+}
+
+function normalizeMarkdownEscapes(value: string): string {
+  return value.replace(/\\([\u0021-\u002F\u003A-\u0040\u005B-\u0060\u007B-\u007E])/gu, "$1");
 }
 
 function candidateMapReference(
   link: MarkdownLink,
 ): boolean {
   return link.label.includes("implementation-status-") ||
-    new RegExp(implementationMapNameSource, "u").test(link.destination);
+    new RegExp(implementationMapNameSource, "u").test(normalizeMarkdownEscapes(link.destination));
 }
 
 function bareMapPaths(
@@ -414,7 +423,7 @@ function bareMapPaths(
     }
   }
   const pattern = new RegExp(implementationMapNameSource, "gu");
-  return [...masked.join("").matchAll(pattern)].map((match) => match.index);
+  return [...normalizeMarkdownEscapes(masked.join("")).matchAll(pattern)].map((match) => match.index);
 }
 
 export function validateStructuralMapRoutes(
