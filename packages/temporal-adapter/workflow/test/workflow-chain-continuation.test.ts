@@ -504,6 +504,9 @@ function successorFixture() {
   );
   const runtime: WorkflowChainRuntime = {
     eventHistoryEventLimit: 4,
+    eventHistoryByteLimit: workflowChainProductionLimit(
+      WorkflowChainBudgetKind.EventHistoryBytes,
+    ),
     runId: firstExecutionRunId,
     runOrdinal: 1,
     firstExecutionRunId,

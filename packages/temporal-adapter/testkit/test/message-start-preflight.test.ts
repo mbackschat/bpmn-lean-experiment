@@ -94,6 +94,9 @@ test("rejects a wrong Interface Operation before creating a Workflow", async () 
         eventHistoryEventLimit: workflowChainProductionLimit(
           WorkflowChainBudgetKind.EventHistoryEvents,
         ),
+        eventHistoryByteLimit: workflowChainProductionLimit(
+          WorkflowChainBudgetKind.EventHistoryBytes,
+        ),
       },
     ],
   );

@@ -14,6 +14,7 @@ import type {
 import {
   ExecutionPublicationResultKind,
   FlowNodeOccurrencePublicationResultKind,
+  WorkflowChainBudgetKind,
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   createCachedLocalEnvironment,
@@ -26,6 +27,7 @@ import {
   processTerminalReceiptFormatV1,
   processWorkflowId,
   submitUserTaskCompletion,
+  workflowChainProductionLimit,
   workflowTerminalResultFormatV1,
 } from "@bpmn-lean/temporal-testkit";
 import type {
@@ -146,6 +148,9 @@ test("traverses aligned publication segments without exposing Workflow Runs", as
             protocol: "bpmn-lean.workflow-continuation.v1",
             kind: "initial",
             eventHistoryEventLimit: 4,
+            eventHistoryByteLimit: workflowChainProductionLimit(
+              WorkflowChainBudgetKind.EventHistoryBytes,
+            ),
           },
         ],
         taskQueue: bpmnSemanticTaskQueue,

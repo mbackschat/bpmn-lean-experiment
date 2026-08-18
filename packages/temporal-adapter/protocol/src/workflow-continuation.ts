@@ -59,6 +59,7 @@ export type BpmnWorkflowInitialHostInputV1 = DeepReadonly<{
   protocol: typeof bpmnWorkflowContinuationV1;
   kind: BpmnWorkflowHostInputKind.Initial;
   eventHistoryEventLimit: number;
+  eventHistoryByteLimit: number;
 }>;
 
 /** Private chain metadata. Run identity remains absent from every public engine contract. */
@@ -66,6 +67,7 @@ export type BpmnWorkflowContinuationHostInputV1 = DeepReadonly<{
   protocol: typeof bpmnWorkflowContinuationV1;
   kind: BpmnWorkflowHostInputKind.Continuation;
   eventHistoryEventLimit: number;
+  eventHistoryByteLimit: number;
   runOrdinal: number;
   firstExecutionRunId: string;
   definition: SemanticProcessIdentity;
@@ -95,13 +97,23 @@ export function requireBpmnWorkflowHostInputV1(
   ) {
     throw new RangeError("Event History event limit is outside production bounds");
   }
+  if (
+    !Number.isSafeInteger(value.eventHistoryByteLimit) ||
+    Number(value.eventHistoryByteLimit) < 1 ||
+    Number(value.eventHistoryByteLimit) >
+      workflowChainProductionLimit(WorkflowChainBudgetKind.EventHistoryBytes)
+  ) {
+    throw new RangeError("Event History byte limit is outside production bounds");
+  }
   switch (value.kind) {
     case BpmnWorkflowHostInputKind.Initial:
-      requireOnlyKeys(value, ["protocol", "kind", "eventHistoryEventLimit"]);
+      requireOnlyKeys(value, [
+        "protocol", "kind", "eventHistoryEventLimit", "eventHistoryByteLimit",
+      ]);
       return value as BpmnWorkflowInitialHostInputV1;
     case BpmnWorkflowHostInputKind.Continuation:
       requireOnlyKeys(value, [
-        "protocol", "kind", "eventHistoryEventLimit", "runOrdinal",
+        "protocol", "kind", "eventHistoryEventLimit", "eventHistoryByteLimit", "runOrdinal",
         "firstExecutionRunId", "definition", "processId", "processInstanceId",
         "startCommandId", "publicationSegmentDirectorySha256",
         "completedMessageDeliveryRecords",

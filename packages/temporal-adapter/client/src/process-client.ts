@@ -215,6 +215,9 @@ export async function startBpmnProcess(
           eventHistoryEventLimit: workflowChainProductionLimit(
             WorkflowChainBudgetKind.EventHistoryEvents,
           ),
+          eventHistoryByteLimit: workflowChainProductionLimit(
+            WorkflowChainBudgetKind.EventHistoryBytes,
+          ),
         }],
       },
     ),

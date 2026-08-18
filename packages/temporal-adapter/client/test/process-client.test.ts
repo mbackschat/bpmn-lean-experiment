@@ -45,6 +45,9 @@ test("starts the exact Workflow request and returns only semantic Process identi
         eventHistoryEventLimit: workflowChainProductionLimit(
           WorkflowChainBudgetKind.EventHistoryEvents,
         ),
+        eventHistoryByteLimit: workflowChainProductionLimit(
+          WorkflowChainBudgetKind.EventHistoryBytes,
+        ),
       }],
     },
   }]);

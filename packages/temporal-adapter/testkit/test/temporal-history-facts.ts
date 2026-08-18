@@ -245,6 +245,9 @@ export function assertExactCompletionUpdateHistory(
         eventHistoryEventLimit: workflowChainProductionLimit(
           WorkflowChainBudgetKind.EventHistoryEvents,
         ),
+        eventHistoryByteLimit: workflowChainProductionLimit(
+          WorkflowChainBudgetKind.EventHistoryBytes,
+        ),
       },
     );
   }

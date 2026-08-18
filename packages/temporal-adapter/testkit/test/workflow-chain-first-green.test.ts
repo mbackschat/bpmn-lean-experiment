@@ -27,7 +27,10 @@ import {
   processWorkflowId,
   readTestProcessTerminalResult,
   submitUserTaskCompletion,
+  WorkflowChainBudgetKind,
   WorkflowChainCommandRecoveryResponseKind,
+  requireWorkflowChainEventHistoryMargin,
+  workflowChainProductionLimit,
   workflowCommandStimulusSha256,
 } from "@bpmn-lean/temporal-testkit";
 import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
@@ -57,13 +60,52 @@ const bpmnUrl = new URL(
   import.meta.url,
 );
 const operationDeadlineMs = 20_000;
-test("a cyclic User Task process crosses at least two Workflow Runs", async () => {
+const productionHistoryEvents = workflowChainProductionLimit(
+  WorkflowChainBudgetKind.EventHistoryEvents,
+);
+const productionHistoryBytes = workflowChainProductionLimit(
+  WorkflowChainBudgetKind.EventHistoryBytes,
+);
+
+for (const rolloverCase of [
+  {
+    title: "a cyclic User Task process crosses two event-triggered Run boundaries",
+    eventHistoryEventLimit: 4,
+    eventHistoryByteLimit: productionHistoryBytes,
+    expectedRunCount: 3,
+    trigger: "event",
+  },
+  {
+    title: "a cyclic User Task process crosses a byte-triggered Run boundary",
+    eventHistoryEventLimit: productionHistoryEvents,
+    eventHistoryByteLimit: 48 * 1_024,
+    expectedRunCount: 2,
+    historyPressureCommands: 4,
+    trigger: "byte",
+  },
+] as const) {
+  test(rolloverCase.title, async (context) => {
+    await runRolloverCase(context, rolloverCase);
+  });
+}
+
+async function runRolloverCase(
+  context: Readonly<{ diagnostic(message: string): void }>,
+  rolloverCase: Readonly<{
+    eventHistoryEventLimit: number;
+    eventHistoryByteLimit: number;
+    expectedRunCount: number;
+    historyPressureCommands?: number;
+    trigger: "event" | "byte";
+  }>,
+): Promise<void> {
   const scenario = await loadJson<Scenario>(scenarioUrl);
   const { semanticProcess } = await compileExecutionInput(scenario, bpmnUrl);
   const expected = runScenario(scenario, semanticProcess);
   const start = requiredStart(scenario);
   const workflowId = processWorkflowId(start.instanceId);
   const completions = [1, 2, 3].map((index) => requiredCompletion(scenario, index));
+  const expectedRecoveryCommandIds: string[] = [];
   const environment = await withDeadline(
     createCachedLocalEnvironment({
       identity: "bpmn-lean-workflow-chain-first-green",
@@ -86,7 +128,8 @@ test("a cyclic User Task process crosses at least two Workflow Runs", async () =
           {
             protocol: "bpmn-lean.workflow-continuation.v1",
             kind: "initial",
-            eventHistoryEventLimit: 4,
+            eventHistoryEventLimit: rolloverCase.eventHistoryEventLimit,
+            eventHistoryByteLimit: rolloverCase.eventHistoryByteLimit,
           },
         ],
         taskQueue: bpmnSemanticTaskQueue,
@@ -108,6 +151,7 @@ test("a cyclic User Task process crosses at least two Workflow Runs", async () =
       );
       assert.equal(result.kind, "semantic");
       assert.equal(result.outcome, CommandOutcome.Committed);
+      expectedRecoveryCommandIds.push(stimulus.commandId);
       if (index === 0) {
         const successor = getTestProcessHandle(
           environment.client.workflow,
@@ -155,6 +199,32 @@ test("a cyclic User Task process crosses at least two Workflow Runs", async () =
             error.cause instanceof ApplicationFailure &&
             error.cause.type === "BpmnCommandIdentityConflict",
         );
+        for (let conflictIndex = 0;
+          conflictIndex < (rolloverCase.historyPressureCommands ?? 0);
+          conflictIndex += 1) {
+          const historyPressureStimulus = {
+            ...stimulus,
+            commandId: `history-pressure-${conflictIndex}`,
+            taskId: { ...stimulus.taskId, activation: 100 + conflictIndex },
+            submittedValues: [
+              {
+                name: "route",
+                value: {
+                  kind: "string" as const,
+                  value: `${conflictIndex}:${"x".repeat(12 * 1_024)}`,
+                },
+              },
+            ],
+          };
+          const pressureResult = await submitUserTaskCompletion(
+            environment.client.workflow,
+            start.instanceId,
+            historyPressureStimulus,
+          );
+          assert.equal(pressureResult.kind, "semantic");
+          assert.equal(pressureResult.outcome, CommandOutcome.Rejected);
+          expectedRecoveryCommandIds.push(historyPressureStimulus.commandId);
+        }
       }
     }
 
@@ -171,10 +241,13 @@ test("a cyclic User Task process crosses at least two Workflow Runs", async () =
     const expectedFinalState = expected.trace.at(-1);
     assert.equal(expectedFinalState?.kind, CanonicalObservationKind.State);
     assert.deepEqual(receipt.finalState, expectedFinalState as StateObservation);
-    assert.equal(terminalResult.recoveryEntries.length, completions.length);
+    assert.equal(
+      terminalResult.recoveryEntries.length,
+      expectedRecoveryCommandIds.length,
+    );
     assert.deepEqual(
       terminalResult.recoveryEntries.map((entry) => entry.commandId),
-      completions.map((stimulus) => stimulus.commandId),
+      expectedRecoveryCommandIds,
     );
     assert.deepEqual(terminalResult.legacyMessageDeliveryRecords, []);
 
@@ -184,26 +257,93 @@ test("a cyclic User Task process crosses at least two Workflow Runs", async () =
         runIds.push(execution.runId);
       }
     }
-    assert.equal(runIds.length, 3);
     let continuationCount = 0;
+    const margin = requireWorkflowChainEventHistoryMargin();
     for (const runId of runIds) {
       const runHandle = environment.client.workflow.getHandle(workflowId, runId);
       const history = await runHandle.fetchHistory();
       const typedHistory = history as TemporalHistory;
-      continuationCount += historyEvents(
+      const description = await runHandle.describe();
+      assert.equal(description.historyLength, typedHistory.events.length);
+      assert.ok(
+        typeof description.historySize === "number" &&
+          Number.isSafeInteger(description.historySize) &&
+          description.historySize > 0,
+      );
+      context.diagnostic(
+        `Workflow-chain Run history: ${typedHistory.events.length} events, ${description.historySize} bytes`,
+      );
+      assert.ok(typedHistory.events.length < margin.eventWarningLimit);
+      assert.ok(description.historySize < margin.byteWarningLimit);
+      assertContinueAsNewNotSuggested(typedHistory);
+      const runContinuations = historyEvents(
         typedHistory,
         "workflowExecutionContinuedAsNewEventAttributes",
       ).length;
+      continuationCount += runContinuations;
+      if (runContinuations === 1) {
+        if (rolloverCase.trigger === "event") {
+          assert.ok(
+            typedHistory.events.length >= rolloverCase.eventHistoryEventLimit,
+          );
+          assert.ok(
+            typedHistory.events.length - rolloverCase.eventHistoryEventLimit <=
+              margin.maximumActivationEvents,
+          );
+          assert.ok(
+            description.historySize < rolloverCase.eventHistoryByteLimit,
+          );
+        } else {
+          assert.ok(
+            typedHistory.events.length < rolloverCase.eventHistoryEventLimit,
+          );
+          assert.ok(
+            description.historySize >= rolloverCase.eventHistoryByteLimit,
+          );
+          assert.ok(
+            description.historySize - rolloverCase.eventHistoryByteLimit <=
+              margin.maximumActivationBytes,
+          );
+        }
+      }
       await replayBpmnHistory(bundle, history, workflowId);
     }
-    assert.equal(continuationCount, 2);
+    assert.equal(runIds.length, rolloverCase.expectedRunCount);
+    assert.equal(continuationCount, rolloverCase.expectedRunCount - 1);
   } finally {
     if (worker !== undefined) {
       await stopBpmnTestWorker(worker);
     }
     await environment.teardown();
   }
-});
+}
+
+function assertContinueAsNewNotSuggested(history: TemporalHistory): void {
+  const startedTasks = historyEvents(
+    history,
+    "workflowTaskStartedEventAttributes",
+  );
+  assert.ok(startedTasks.length > 0, "history has no started Workflow Task");
+  for (const event of startedTasks) {
+    const attributes = event["workflowTaskStartedEventAttributes"];
+    assert.ok(
+      attributes !== null &&
+        typeof attributes === "object" &&
+        !Array.isArray(attributes),
+    );
+    assert.equal(
+      (attributes as Readonly<Record<string, unknown>>)["suggestContinueAsNew"] ??
+        false,
+      false,
+    );
+    assert.deepEqual(
+      (attributes as Readonly<Record<string, unknown>>)[
+        "suggestContinueAsNewReasons"
+      ] ?? [],
+      [],
+    );
+  }
+}
 
 function requiredStart(scenario: Scenario) {
   const stimulus = requiredAt(scenario.stimuli, 0, "cycle stimuli");

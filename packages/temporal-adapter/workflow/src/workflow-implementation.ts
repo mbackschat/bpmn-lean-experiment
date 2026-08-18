@@ -106,9 +106,9 @@ import {
   initializeWorkflowChain,
   isExternallyRecoverableStimulus,
   workflowCommandIdentityConflict,
-  workflowChainRolloverTriggered,
   WorkflowChainFenceState,
 } from "./workflow-chain-continuation.js";
+import { workflowChainRolloverTriggered } from "./workflow-event-history-capacity.js";
 import {
   WorkflowSemanticCandidatePreflightKind,
   preflightWorkflowSemanticCandidate,

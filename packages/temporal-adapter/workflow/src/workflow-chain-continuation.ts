@@ -62,6 +62,7 @@ import {
 
 export type WorkflowChainRuntime = {
   readonly eventHistoryEventLimit: number;
+  readonly eventHistoryByteLimit: number;
   readonly runId: string;
   readonly runOrdinal: number;
   readonly firstExecutionRunId: string;
@@ -119,6 +120,7 @@ export function initializeWorkflowChain(
       return {
         runtime: {
           eventHistoryEventLimit: input.eventHistoryEventLimit,
+          eventHistoryByteLimit: input.eventHistoryByteLimit,
           runId: workflowInfo().runId,
           runOrdinal: 1,
           firstExecutionRunId: workflowInfo().firstExecutionRunId,
@@ -146,6 +148,7 @@ export function initializeWorkflowChain(
       return {
         runtime: {
           eventHistoryEventLimit: input.eventHistoryEventLimit,
+          eventHistoryByteLimit: input.eventHistoryByteLimit,
           runId: workflowInfo().runId,
           runOrdinal: input.runOrdinal,
           firstExecutionRunId: input.firstExecutionRunId,
@@ -236,17 +239,6 @@ function validateContinuationArguments(
   return { state, recovery, publication };
 }
 
-export function workflowChainRolloverTriggered(
-  runtime: WorkflowChainRuntime,
-): boolean {
-  const info = workflowInfo();
-  return info.continueAsNewSuggested ||
-    info.historyLength >= runtime.eventHistoryEventLimit ||
-    info.historySize >= workflowChainProductionLimit(
-      WorkflowChainBudgetKind.EventHistoryBytes,
-    );
-}
-
 export function buildWorkflowChainSuccessor(
   runtime: WorkflowChainRuntime,
   start: ProcessStartStimulus,
@@ -283,6 +275,7 @@ export function buildWorkflowChainSuccessor(
     protocol: bpmnWorkflowContinuationV1,
     kind: BpmnWorkflowHostInputKind.Continuation,
     eventHistoryEventLimit: runtime.eventHistoryEventLimit,
+    eventHistoryByteLimit: runtime.eventHistoryByteLimit,
     runOrdinal,
     firstExecutionRunId: runtime.firstExecutionRunId,
     definition: program.identity,

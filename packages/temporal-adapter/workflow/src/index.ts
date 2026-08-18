@@ -7,6 +7,7 @@ export * from "./workflow-command-ingress.js";
 export * from "./workflow-chain-capacity.js";
 export * from "./workflow-command-capacity.js";
 export * from "./workflow-chain-continuation.js";
+export * from "./workflow-event-history-capacity.js";
 export * from "./workflow-semantic-candidate.js";
 export * from "./workflow-run-retention.js";
 export * from "./workflow-timer-capacity.js";
