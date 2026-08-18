@@ -4,11 +4,11 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure or scheduling. Query, terminal, Event History, aggregate, Run, deployment, and forced non-User-Task rollover closure remain open.
+One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure or scheduling. Terminal, Event History, aggregate, Run, deployment, and forced non-User-Task rollover closure remain open.
 
 The active bounded Workflow-chain contract owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; stop-the-world deployment compatibility; and forced evidence. This remains the highest current durable-hosting risk because every long-lived Process and every later repeating BPMN mechanism inherits it. Temporal Run identity remains private.
 
-Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, and pending-Timer bounds are active before speculative exposure or scheduling. Retry and conflict precede lifetime capacity, terminal completion wins, and no public contract or host identity changes.
+Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, and Query-response bounds are active before speculative exposure or scheduling. Retry and conflict precede lifetime capacity, terminal completion wins, and no public contract or host identity changes.
 
 ## Implemented
 
@@ -42,6 +42,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - pending-Timer capacity: committed Timers are checked against 64 before scheduling; 65 fails through typed chain capacity, while admitted profiles retain one live Timer
 - one forced cyclic User Task witness lowering only the history threshold, crossing three Runs/two boundaries, preserving occurrence identity and exact retry/conflict, returning the closed receipt/private recovery envelope, and replaying every Run
 - private paired E1/E2 per-Run publication segments with strict descriptor/directory validation and SHA-bound continuation; immutable latest selection followed by an exact selected-Run Query; Run-local pages; selected retained-Run loss mapped to `unavailable`; legacy fallback only for `QueryNotRegisteredError`; and live evidence over Run 1 `0..8`, Run 2 `8..12`, Run 3 `12..16`, cursor pages `0/4/8/12/16`, two occurrence identities spanning Run boundaries, unchanged terminal receipt, no public Workflow/Run identity, and replay of all three Runs
+- selected-Run Query-response capacity: a 192 KiB canonical UTF-8 ceiling at producer and client boundaries; the producer returns the largest complete aligned E1/E2 batch prefix that fits, never splits a command batch or Run segment, and withholds current/open snapshots until the page reaches the immutable head; exact-fit, one-byte-lower, oversized-client, malformed-pair, deterministic-remainder, and real BPMN cycle evidence preserve the original semantic-core batches unchanged
 
 ## Explicitly absent
 
@@ -66,7 +67,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - Activity heartbeats
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
-- post-retention publication reconstruction or archive, complete timer/effect/Message rollover evidence, deployment admission, and the approved Query, terminal, Event History, aggregate, and Run capacity rows
+- post-retention publication reconstruction or archive, complete timer/effect/Message rollover evidence, deployment admission, and the approved terminal, Event History, aggregate, and Run capacity rows
 - timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload, key-based or global correlation, modeled throw, Message Flow, and other Message Event loci beyond the direct payload-free catch
 - multi-instance, migration, and Workflow-chain policies beyond the approved bounded Continue-As-New contract
 - immutable profile or production Event History compatibility
@@ -78,6 +79,6 @@ The separate protocol, client, Workflow, Worker, runner, and testkit packages un
 
 ## Nearest unsupported claims
 
-- **Workflow-chain closure:** post-retention publication reconstruction, complete Timer/effect/Message rollover evidence, deployment admission, and the approved Query, terminal, Event History, aggregate, and Run capacity rows remain absent.
+- **Workflow-chain closure:** post-retention publication reconstruction, complete Timer/effect/Message rollover evidence, deployment admission, and the approved terminal, Event History, aggregate, and Run capacity rows remain absent.
 - **Workload isolation:** complete Horizon 3 with queue and Worker isolation, backpressure, tenant fairness, capacity observability, shared-store failover, representative mixed-model tests, and published throughput, latency, saturation, recovery, and cost evidence. More Workers or queue partitions alone do not constitute this result.
 - **Hosting breadth:** Message payload and routing, general Worker versioning, Activity heartbeats, Search Attributes, general cancellation recovery, and broader timer, effect, and expression families remain absent.

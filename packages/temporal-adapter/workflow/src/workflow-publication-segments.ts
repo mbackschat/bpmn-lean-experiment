@@ -46,6 +46,12 @@ import {
   queryFlowNodeOccurrences,
   registerFlowNodeOccurrenceQueryHandler,
 } from "./flow-node-occurrence-query-handler.js";
+import {
+  fitWorkflowPublicationSegmentQueryResponse,
+} from "./workflow-publication-query-capacity.js";
+import type {
+  WorkflowPublicationQueryCapacityLimits,
+} from "./workflow-publication-query-capacity.js";
 
 export const bpmnWorkflowPublicationSegmentSelectionQuery = defineQuery<
   WorkflowPublicationSegmentSelectionResultV1,
@@ -252,6 +258,7 @@ export function queryWorkflowPublicationSegment(
   runtime: WorkflowPublicationSegmentRuntime,
   state: CommandPublicationState,
   requestValue: unknown,
+  capacityLimits?: WorkflowPublicationQueryCapacityLimits,
 ): WorkflowPublicationSegmentQueryResultV1 {
   const request = requireWorkflowPublicationSegmentQueryRequestV1(requestValue);
   requireQueryIdentity(program, processInstanceId, state, request.processInstanceId);
@@ -295,12 +302,13 @@ export function queryWorkflowPublicationSegment(
     publicRequest,
     request.descriptor.fromRevision,
   );
-  return requireWorkflowPublicationSegmentQueryResultV1({
-    ...request,
-    kind: WorkflowPublicationSegmentQueryResultKind.Available,
+  const bounded = fitWorkflowPublicationSegmentQueryResponse(
+    request,
     execution,
     flowNodeOccurrences,
-  }, request);
+    capacityLimits,
+  );
+  return requireWorkflowPublicationSegmentQueryResultV1(bounded, request);
 }
 
 function snapshotWorkflowPublication(

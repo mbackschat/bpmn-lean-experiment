@@ -77,6 +77,43 @@ test("reselects the complete snapshot when the selected current segment changes"
   });
 });
 
+test("rejects an oversized paired response before exposing public publication", async () => {
+  const oversizedCommandId = "x".repeat(100 * 1_024);
+  const client = {
+    getHandle: (_workflowId: string, runId?: string) => ({
+      query: async (name: string, request: unknown) => {
+        if (name === bpmnWorkflowPublicationSegmentSelectionQueryName) {
+          return selection(2, false);
+        }
+        assert.equal(name, bpmnWorkflowPublicationSegmentQueryName);
+        assert.equal(runId, "run-1");
+        return {
+          ...(request as Record<string, unknown>),
+          kind: "available",
+          execution: {
+            kind: "available",
+            page: executionPage(oversizedCommandId),
+          },
+          flowNodeOccurrences: {
+            kind: "available",
+            page: occurrencePage(oversizedCommandId),
+          },
+        };
+      },
+    }),
+  } as never;
+
+  await assert.rejects(
+    observeWorkflowPublicationSegment(
+      client,
+      "workflow-id",
+      processInstanceId,
+      { afterRevision: 0, limit: 1 },
+    ),
+    /queryResponseBytes/u,
+  );
+});
+
 function selection(headRevision: number, continued: boolean) {
   const closed = descriptor("run-1", 1, 0, headRevision, continued ? "c" : "b");
   const current = continued
@@ -127,7 +164,7 @@ function descriptor(
   } as const;
 }
 
-function executionPage() {
+function executionPage(commandId = "start") {
   return {
     definition,
     processId: "Process_1",
@@ -136,7 +173,7 @@ function executionPage() {
     pageThroughRevision: 1,
     headRevision: 2,
     batches: [{
-      commandId: "start",
+      commandId,
       fromRevision: 0,
       throughRevision: 1,
       transitions: [{
@@ -146,7 +183,7 @@ function executionPage() {
           kind: "externalStimulus",
           stimulus: {
             kind: "startProcess",
-            commandId: "start",
+            commandId,
             processId: "Process_1",
             instanceId: processInstanceId,
             initialVariables: [],
@@ -164,7 +201,7 @@ function executionPage() {
   } as const;
 }
 
-function occurrencePage() {
+function occurrencePage(commandId = "start") {
   return {
     definition,
     processId: "Process_1",
@@ -173,7 +210,7 @@ function occurrencePage() {
     pageThroughRevision: 1,
     headRevision: 2,
     batches: [{
-      commandId: "start",
+      commandId,
       fromRevision: 0,
       throughRevision: 1,
       committedAtEpochMs: 1_000,
