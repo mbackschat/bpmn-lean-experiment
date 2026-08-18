@@ -127,6 +127,33 @@ after`;
   assert.deepEqual(scanMarkdownLinks(markdown).map(({ destination }) => destination), ["live.md"]);
 });
 
+test("parses ordered list-then-blockquote fences and tab columns symmetrically", () => {
+  const nested = `before
+- > \`\`\`md
+  > [backtick-hidden](backtick.md)
+  > \`\`\`
+
+- > ~~~
+  > [tilde-hidden](tilde.md)
+  > ~~~
+
+[nested-live](nested-live.md)`;
+  const tabbed = "-\t```md\n\t[tab-hidden](tab.md)\n\t```\nIMPLEMENTATION-MAP.md\n[tab-live](tab-live.md)";
+  for (const [markdown, live] of [
+    [nested, ["nested-live.md"]],
+    [tabbed, ["tab-live.md"]],
+  ] as const) {
+    const masked = maskMarkdownIgnoredRegions(markdown);
+    assert.equal(masked.length, markdown.length);
+    assert.deepEqual(
+      [...masked.matchAll(/\n/gu)].map(({ index }) => index),
+      [...markdown.matchAll(/\n/gu)].map(({ index }) => index),
+    );
+    assert.deepEqual(scanMarkdownLinks(markdown).map(({ destination }) => destination), live);
+  }
+  assert.equal(maskMarkdownIgnoredRegions(tabbed).includes("IMPLEMENTATION-MAP.md"), true);
+});
+
 test("does not treat reference links or escaped opening brackets as inline links", () => {
   assert.deepEqual(
     scanMarkdownLinks(

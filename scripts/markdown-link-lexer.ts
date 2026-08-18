@@ -15,12 +15,8 @@ export type MarkdownAnchorSpan = Readonly<{
   end: number;
 }>;
 
-type Fence = Readonly<{
-  character: "`" | "~";
-  length: number;
-  quoteDepth: number;
-  listIndent: number;
-}>;
+type ContainerPrefix = ">" | number;
+type Fence = Readonly<{ character: "`" | "~"; length: number; prefixes: ReadonlyArray<ContainerPrefix> }>;
 
 type Line = Readonly<{
   start: number;
@@ -43,53 +39,63 @@ function markdownLines(markdown: string): ReadonlyArray<Line> {
   return lines;
 }
 
-function blockquoteContent(line: string): Readonly<{ content: string; depth: number }> {
-  let content = line;
-  let depth = 0;
-  while (/^ {0,3}>/u.test(content)) {
-    content = content.replace(/^ {0,3}>[ \t]?/u, "");
-    depth += 1;
+function markdownColumn(line: string, end: number): number {
+  let column = 0;
+  for (let index = 0; index < end; index += 1) {
+    column = line[index] === "\t" ? column + 4 - column % 4 : column + 1;
   }
-  return { content, depth };
+  return column;
+}
+
+function continuationEnd(line: string, start: number, columns: number): number {
+  const initial = markdownColumn(line, start);
+  let end = start;
+  while (/[ \t]/u.test(line[end] ?? "") && markdownColumn(line, end) - initial < columns) end += 1;
+  return markdownColumn(line, end) - initial === columns ? end : -1;
+}
+
+function containerContent(
+  line: string, expected?: ReadonlyArray<ContainerPrefix>,
+): Readonly<{ content: string; prefixes: ReadonlyArray<ContainerPrefix> }> | null {
+  let index = 0;
+  const prefixes: ContainerPrefix[] = [];
+  if (expected !== undefined) {
+    for (const prefix of expected) {
+      if (prefix === ">") {
+        const quote = /^ {0,3}>[ \t]?/u.exec(line.slice(index));
+        if (quote === null) return null;
+        index += quote[0].length;
+      } else {
+        const end = continuationEnd(line, index, prefix);
+        if (end === -1) return null;
+        index = end;
+      }
+    }
+    return { content: line.slice(index), prefixes: expected };
+  }
+  while (true) {
+    const prefix = /^( {0,3})(?:(>)[ \t]?|(?:[-+*]|\d{1,9}[.)])([ \t]))/u.exec(line.slice(index));
+    if (prefix === null) break;
+    const end = index + prefix[0].length;
+    prefixes.push(prefix[2] === ">" ? ">" : markdownColumn(line, end) - markdownColumn(line, index));
+    index = end;
+  }
+  return { content: line.slice(index), prefixes };
 }
 
 function fenceAtLineStart(line: string): Fence | null {
-  const quote = blockquoteContent(line);
-  const list = /^( {0,3})(?:[-+*]|\d+[.)])[ \t]+/u.exec(quote.content);
-  const listIndent = list?.[0].length ?? 0;
-  const match = /^( {0,3})(`{3,}|~{3,})(.*)$/u.exec(quote.content.slice(listIndent));
-  if (match === null) {
-    return null;
-  }
-  const run = match[2];
-  const suffix = match[3];
-  if (run === undefined || suffix === undefined) {
-    return null;
-  }
+  const container = containerContent(line);
+  const match = /^( {0,3})(`{3,}|~{3,})(.*)$/u.exec(container?.content ?? "");
+  if (match === null) return null;
+  const run = match[2] ?? "";
   const character = run[0];
-  if (character === undefined || (character !== "`" && character !== "~")) {
-    return null;
-  }
-  if (character === "`" && suffix.includes("`")) {
-    return null;
-  }
-  return { character, length: run.length, quoteDepth: quote.depth, listIndent };
+  if ((character !== "`" && character !== "~") || (character === "`" && (match[3] ?? "").includes("`"))) return null;
+  return { character, length: run.length, prefixes: container?.prefixes ?? [] };
 }
 
 function closesFence(line: string, fence: Fence): boolean {
-  const quote = blockquoteContent(line);
-  if (quote.depth !== fence.quoteDepth) return false;
-  if (fence.listIndent > 0 && !new RegExp(`^[ \\t]{${fence.listIndent}}`, "u").test(quote.content)) return false;
-  const content = quote.content.slice(fence.listIndent);
-  const leadingSpaces = /^ {0,3}/u.exec(content)?.[0].length ?? 0;
-  let index = leadingSpaces;
-  while (content[index] === fence.character) {
-    index += 1;
-  }
-  return (
-    index - leadingSpaces >= fence.length &&
-    /^[ \t]*$/u.test(content.slice(index))
-  );
+  const content = containerContent(line, fence.prefixes)?.content;
+  return content !== undefined && new RegExp(`^ {0,3}${fence.character}{${fence.length},}[ \\t]*$`, "u").test(content);
 }
 
 function isIndentedCode(line: string): boolean {

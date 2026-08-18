@@ -325,6 +325,31 @@ IMPLEMENTATION-MAP.md
   assert.deepEqual(errors(documents), []);
 });
 
+test("nested list-then-blockquote fences cannot create fake routes", () => {
+  const documents = validDocuments();
+  documents.set(
+    "docs/NOTE.md",
+    `- > \`\`\`md
+  > [\`implementation-status-owner:UNKNOWN\`](UNKNOWN-IMPLEMENTATION-MAP.md)
+  > \`\`\`
+
+- > ~~~
+  > UNKNOWN-IMPLEMENTATION-MAP.md
+  > ~~~
+`,
+  );
+  assert.deepEqual(errors(documents), []);
+});
+
+test("a closed tab-indented list fence cannot mask a later live route", () => {
+  const documents = validDocuments();
+  documents.set(
+    "docs/NOTE.md",
+    "-\t```md\n\tIMPLEMENTATION-MAP.md\n\t```\nIMPLEMENTATION-MAP.md\n",
+  );
+  expectError(documents, /NOTE\.md.*bare implementation-map path/u);
+});
+
 test("normalizes escapes before rejecting inline and reference-style map destinations", () => {
   const inline = validDocuments();
   inline.set("docs/NOTE.md", String.raw`Stale [status](IMPLEMENTATION-MAP\.md).`);
