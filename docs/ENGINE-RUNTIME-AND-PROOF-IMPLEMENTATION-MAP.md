@@ -1,6 +1,6 @@
 # Engine runtime and proof implementation map
 
-This detail map owns exact current runtime-state, scope, Lean, TypeScript semantic-core, BPMN-conformance, and capsule-delegated semantic-family status. Root routing and cross-area claims remain in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+This detail map owns exact current runtime-state, scope, Lean, TypeScript semantic-core, BPMN-conformance, and capsule-delegated semantic-family status. Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
 ## Current boundary
 
@@ -145,7 +145,7 @@ The [interrupting Activity boundary Timer specification](capsules/ACTIVITY-BOUND
 
 **Implemented.** Source, checked graph, `AwaitBoundedUserTask` lowering, Lean, the independent core, both registered victory routes, Worker-absence durability, shared-activation refusal, replay, and product examples are green.
 
-**Absent in Lean.** Quantified state preservation for a stale identity after a victory still depends on a key-uniqueness invariant that `RuntimeState` does not enforce. The capsule records the required hypotheses instead of assuming them.
+**Absent.** In Lean, quantified state preservation for a stale identity after a victory still depends on a key-uniqueness invariant that `RuntimeState` does not enforce. The capsule records the required hypotheses instead of assuming them.
 
 **Absent in evidence.** No target can present an off-deadline firing because the host derives the firing instant from committed state. The abandoned Activity's stale completion has no non-racing delivery mode after its task disappears. CIB observation is not selected. The shared-activation refusal identity reaches the Workflow result and Event History, but not a caller awaiting the completion Update.
 
@@ -163,6 +163,6 @@ The [non-interrupting boundary Timer specification](capsules/NON-INTERRUPTING-BO
 
 **Implemented.** The source, checked graph, `enterBoundedScope` wire operation, independent Lean and core arming and victory transitions, two registered routes with mutations, distinct shared-activation refusal, Worker-absence durability, and replay are green. The host reuses the family-parameterized boundary deadline scheduler while retaining a distinct refusal identity.
 
-**Absent in Lean, and owned only here.** Both victory bridges take hypotheses their own transitions do not establish: `running` and `bounded` on the quiescence arm, and the quantified `parentOwned` on the deadline arm, whose derivation would additionally need scope-tree acyclicity and an empty called-instance closure that `RuntimeState` does not enforce. `deadline_arm_bridge_premise_is_satisfiable` is what keeps `parentOwned` non-vacuous. `BoundedScopeVictoryStep` is **not** wired into the global `ProgramStep` soundness; only `BoundedScopeArmingStep` is. The relation-level logical-time law is a joint bound over both arms rather than a law separating them.
+**Absent.** In Lean, and owned only here, both victory bridges take hypotheses their own transitions do not establish: `running` and `bounded` on the quiescence arm, and the quantified `parentOwned` on the deadline arm, whose derivation would additionally need scope-tree acyclicity and an empty called-instance closure that `RuntimeState` does not enforce. `deadline_arm_bridge_premise_is_satisfiable` is what keeps `parentOwned` non-vacuous. `BoundedScopeVictoryStep` is **not** wired into the global `ProgramStep` soundness; only `BoundedScopeArmingStep` is. The relation-level logical-time law is a joint bound over both arms rather than a law separating them.
 
 **Absent in evidence.** CIB observation is not selected. Off-deadline and stale-child witnesses remain outside the registered schedules because no Temporal target can present them without replacing committed deadline derivation or racing task disappearance; Lean and the focused core test carry those refusals.

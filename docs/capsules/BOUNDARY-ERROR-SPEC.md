@@ -2,11 +2,11 @@
 
 ## Status
 
-Implemented current capsule contract; exact evidence status belongs in the [runtime and proof implementation map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).
+Implemented current capsule contract; exact evidence status belongs in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).
 
 ## Role
 
-This specification owns the implemented semantic contract and retained decision record for one bounded typed business-error result and one matching interrupting BPMN Error boundary route. Exact implementation status belongs in the [runtime and proof implementation map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the A12 product denominator belongs in the [A12 Workflows compatibility ledger](../research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md).
+This specification owns the implemented semantic contract and retained decision record for one bounded typed business-error result and one matching interrupting BPMN Error boundary route. Exact implementation status belongs in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the A12 product denominator belongs in the [A12 Workflows compatibility ledger](../research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md).
 
 The owner first approved the seven amended selections on 2026-07-27, conditional on the complete phase-zero CIB Seven `2.0.0` probe leaving every stop condition clear. The probe found that caught and unmatched Errors interact with output mapping differently from the selected account and correctly stopped production implementation. After reviewing that counterexample, the owner approved revised option 2 on 2026-07-27 with all six reviewer conditions: profile-scoped caught-error output mapping, discriminated null values, identical success/error patch validation, explicit evidence-independence limits, a mapping-free unmatched control, and atomic patch → mapping → cleanup → boundary ordering.
 

@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Current boundary
 
-The root/detail split and claim-preservation migration are implemented, but closure target `8c73c00` is not approved. Its two final reviewers independently found that the guard still approximates natural-language ownership with broad regular expressions: routing language can mask a later stale ownership clause, punctuation can separate an ownership predicate from its root-map link, and valid navigation can be rejected by the same heuristic. The owner selected redesign target `59e0a2a`, which replaces prose inference with closed structural Markdown routes. Its context-cold reviewer required an explicit delegation role, lossless inline and table-local routes, and exact parsers for all four special contexts. Proposal correction `e56d552` closed those findings, and the same reviewer approved the final metadata correction `5ab6f1f`. The owner renewed implementation authorization on 2026-08-18, so the reviewed structural route contract is now active while the prior closure target remains unapproved and Horizon 2 remains paused. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
+The root/detail split, shared live Markdown lexer, closed structural route grammar, four exact special-context parsers, root-table-derived targets, tracked-path routing, reciprocal capsule delegation, and live-reference migration are implemented. The focused control-plane, route, lexer, link, delegation, plan, reviewability, and binding guards are green, and a byte-level audit proves that every migrated document outside the explicit control-plane owners differs only in implementation-map link labels. Closure still requires an immutable target, the baseline-to-target claim matrix, the complete repository gate, and independent claim-preservation and route-guard reviews. The prior closure target `8c73c00` remains unapproved and Horizon 2 remains paused. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, evidence claim, or Horizon 2 order.
 
 ## Decision
 
@@ -33,7 +33,7 @@ This proposal is documentation governance rather than a material semantic propos
 
 ## Problem and measured baseline
 
-[PLAN.md](PLAN.md) correctly owns immediate work order and exact resume state, while [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) correctly owns exact live implementation, proof, evidence, and absence status. Their content ownership is sound. Their mandatory-read shape is not.
+[PLAN.md](PLAN.md) correctly owns immediate work order and exact resume state, while [`implementation-status-router`](IMPLEMENTATION-MAP.md) correctly owns exact live implementation, proof, evidence, and absence status. Their content ownership is sound. Their mandatory-read shape is not.
 
 At proposal baseline `b5a2f1a`, `PLAN.md` contains 5,988 words against its 6,000-word backstop and `IMPLEMENTATION-MAP.md` contains 9,995 words against its 10,000-word backstop. Every session must therefore read 15,983 words before routing to the active proposal, specification, source, and tests.
 
@@ -74,7 +74,7 @@ Closed milestone narratives, adopted durable decisions, general coverage policy,
 
 `PLAN.md` has a 2,000-word whole-file backstop and a 250-word exact-resume backstop. These are maximums, not targets. The current 6,000 and 500 limits are lowered rather than raised.
 
-### IMPLEMENTATION-MAP.md is universal routing only
+### The root implementation map is universal routing only
 
 `IMPLEMENTATION-MAP.md` remains the repository-wide implementation-status entry point, but no longer contains every detailed surface. It owns only:
 
@@ -267,7 +267,7 @@ The proposal implementation is complete only when:
 
 ## Cold-review contract
 
-The requested reviewer works read-only against the immutable proposal commit with no forked conversation. It reads this proposal completely, [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), the current [PLAN.md](PLAN.md), the current [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), the session-start instructions in [`CLAUDE.md`](../CLAUDE.md#start-every-session), and the current plan/map guards.
+The requested reviewer works read-only against the immutable proposal commit with no forked conversation. It reads this proposal completely, [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), the current [PLAN.md](PLAN.md), the current [`implementation-status-router`](IMPLEMENTATION-MAP.md), the session-start instructions in [`CLAUDE.md`](../CLAUDE.md#start-every-session), and the current plan/map guards.
 
 The review should answer:
 

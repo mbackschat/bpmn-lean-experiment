@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented current pre-release product contract; not an immutable release or production-history baseline.** The product surface spans every registered semantic profile through one driver keyed to published enabled interactions. Exact implemented and absent evidence belongs in the [Temporal hosting implementation map](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md).
+**Implemented current pre-release product contract; not an immutable release or production-history baseline.** The product surface spans every registered semantic profile through one driver keyed to published enabled interactions. Exact implemented and absent evidence belongs in the [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md).
 
 ## Scope
 

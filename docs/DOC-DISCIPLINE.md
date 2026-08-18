@@ -6,7 +6,7 @@ This document owns the repository’s documentation roles, filename contracts, l
 
 The convention deliberately aligns with the sibling `a12-rulekit` documentation discipline inspected at the revision recorded in [SOURCES.md](SOURCES.md). The central shared rule is lifecycle-sensitive: `-SPEC` means an implemented current contract, while approved intent that is not implemented remains `-PROPOSAL`.
 
-This project retains two deliberate assurance-specific control surfaces that `a12-rulekit` does not use in the same way: [PLAN.md](PLAN.md) owns immediate execution order and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) routes exact current claims to five cohesive detail implementation maps. Neither is a feature-history board.
+This project retains two deliberate assurance-specific control surfaces that `a12-rulekit` does not use in the same way: [PLAN.md](PLAN.md) owns immediate execution order and [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes exact current claims to five cohesive detail implementation maps. Neither is a feature-history board.
 
 ## Filename grammar
 
@@ -108,7 +108,7 @@ Do not leave a `-PROPOSAL.md` describing a shipped current surface. Do not creat
 
 Specs own stable method, contracts, invariants, exclusions, and acceptance criteria. They do not own a chronological run diary.
 
-Current measured verification results and exact resume state belong in [PLAN.md](PLAN.md). Stable gate definitions and evidence requirements belong in [TESTING-SPEC.md](TESTING-SPEC.md). The root [implementation map](IMPLEMENTATION-MAP.md) routes exact implemented or absent claims to the applicable detail map and does not duplicate them.
+Current measured verification results and exact resume state belong in [PLAN.md](PLAN.md). Stable gate definitions and evidence requirements belong in [TESTING-SPEC.md](TESTING-SPEC.md). The root [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes exact implemented or absent claims to the applicable detail map and does not duplicate them.
 
 ## Project document homes
 
@@ -141,7 +141,7 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 - A new external finding updates its owning research document and [SOURCES.md](SOURCES.md) when provenance changes.
 - A new experiment records its question, competing accounts, separating witness, result, and disposition; an experiment never becomes semantic authority merely by passing.
 - A changed gate updates [TESTING-SPEC.md](TESTING-SPEC.md); the last verified command and exact next action update [PLAN.md](PLAN.md).
-- A changed implemented or absent surface updates each genuinely affected detail map registered by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The root map changes only when an area state, route, or cross-area invariant changes.
+- A changed implemented or absent surface updates each genuinely affected detail map registered by [`implementation-status-router`](IMPLEMENTATION-MAP.md). The root map changes only when an area state, route, or cross-area invariant changes.
 - A directory source map, register, or other purpose-named navigation owner changes in the same change as the contents it inventories.
 
 ## Writing and linking
@@ -153,6 +153,8 @@ Markdown line count is not a useful generic size metric under the one-paragraph-
 Match a document's length to the substance its owner actually holds. Do not pad with filler sections, redundant summaries, restated context, or boilerplate. Apply a deletion test to each paragraph: if removing it loses no owned fact, invariant, decision, evidence pointer, or exclusion, remove it.
 
 Use regular relative Markdown links for project documents. Do not duplicate an owned fact merely to avoid a link.
+
+Implementation-status navigation uses one exact inline route atom: `implementation-status-router` for the fragment-free root router, `implementation-status-root-owner` for an owned root section, `implementation-status-owner:<AREA-ID>` for a registered detail owner, or `implementation-status-delegation:<AREA-ID>` for a capsule's single reciprocal implemented/absent section. The atom is the entire code-formatted link label and carries no status claim itself. Ordinary implementation-map links are reserved for the root Routing table, the `Maps` field of [PLAN.md](PLAN.md), the first cell of each map row in the [documentation registry](README.md#registry), and the exact root-map step in [`CLAUDE.md`](../CLAUDE.md#start-every-session). Every other live implementation-map link or bare path is rejected. [TESTING-SPEC.md](TESTING-SPEC.md#default-verification) owns the executable live-universe, target, anchor, duplicate, and delegation checks.
 
 When a fact genuinely must appear in two owners, the change that creates the second copy adds an executable check that fails when the copies disagree. A claim written about a referent without reading that referent is the mechanism behind both rejected closure targets recorded in this repository, and a copy nobody compares is the same defect waiting on a reader who does not check. Project boundaries belong in [PROJECT-DESIGN.md](PROJECT-DESIGN.md); their concrete package realization belongs in [ARCHITECTURE.md](ARCHITECTURE.md), which links to those boundaries instead of restating their rationale.
 

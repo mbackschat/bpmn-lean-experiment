@@ -2,11 +2,11 @@
 
 ## Status
 
-Implemented current capsule contract; exact evidence status belongs in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
+Implemented current capsule contract; exact evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md).
 
 ## Role
 
-This specification owns the approved bounded source, data, mapping, effect-result, host-refinement, evidence, and exclusion contract for the A12-shaped `CreateDocument` slice. Exact current implementation and evidence status belongs in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).
+This specification owns the approved bounded source, data, mapping, effect-result, host-refinement, evidence, and exclusion contract for the A12-shaped `CreateDocument` slice. Exact current implementation and evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).
 
 This capsule defines the smallest semantic and compatibility contract needed to admit the maintained A12 Workflows `CreateDocument.bpmn` source unchanged while preserving the project's single TypeScript semantic core, Temporal Activity boundary, and Lean assurance model.
 

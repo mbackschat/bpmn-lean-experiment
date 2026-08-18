@@ -27,6 +27,7 @@ import {
   type SourceMeasurement,
 } from "./source-measure.ts";
 import { implementationMapRoutes } from "./document-control-plane.ts";
+import { parseImplementationMapDirectory } from "./structural-map-routes.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const runCommand = promisify(execFile);
@@ -209,6 +210,11 @@ async function main(targets: ReadonlyArray<string>): Promise<void> {
     return;
   }
   const corpus = await loadBindingCorpus();
+  const rootMap = await readFile(path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"), "utf8");
+  const parsedDirectory = parseImplementationMapDirectory(rootMap);
+  if (parsedDirectory.errors.length > 0) {
+    throw new Error(parsedDirectory.errors.join("\n"));
+  }
   for (const target of targets) {
     const bindingLines = reportLines({
       target,
@@ -218,7 +224,9 @@ async function main(targets: ReadonlyArray<string>): Promise<void> {
     const [targetLine, ...remainingLines] = bindingLines;
     const lines = [
       targetLine,
-      ...implementationMapRoutes(target).map(({ id, file }) => `MAP ${id} ${file}`),
+      ...implementationMapRoutes(target, parsedDirectory.directory).map(({ id, file }) =>
+        `MAP ${id} ${file}`
+      ),
       ...remainingLines,
     ];
     process.stdout.write(`${lines.join("\n")}\n`);

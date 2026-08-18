@@ -13,5 +13,5 @@ No local command exists because no Worker implementation or Java dependency is p
 ## Learn more
 
 - [JUEL evaluation architecture decision](../../../docs/JUEL-EVALUATION-ARCHITECTURE-DECISION.md) owns the semantic and capability boundary.
-- [BPM platform implementation map](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md#explicitly-absent) records the absence explicitly.
+- [`implementation-status-owner:BPM-PLATFORM`](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md#explicitly-absent) records the absence explicitly.
 - [Plan](../../../docs/PLAN.md) owns when the lane may open.

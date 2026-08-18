@@ -4,7 +4,7 @@
 
 Implemented living evidence map.
 
-This document is the feature-by-feature lookup for the witnesses, mutations, durable-history checks, and replay coverage exercised by [the focused Temporal gate](TESTING-SPEC.md#current-temporal-gate). The testing specification owns the command, gate-selection policy, calibration lane, pre-release history policy, and release requirements. This map records what the gate covers; current implementation remains in the [Temporal hosting implementation map](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), and latest measured status remains in [PLAN.md](PLAN.md).
+This document is the feature-by-feature lookup for the witnesses, mutations, durable-history checks, and replay coverage exercised by [the focused Temporal gate](TESTING-SPEC.md#current-temporal-gate). The testing specification owns the command, gate-selection policy, calibration lane, pre-release history policy, and release requirements. This map records what the gate covers; current implementation remains in the [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), and latest measured status remains in [PLAN.md](PLAN.md).
 
 ## Temporal witness and mutation inventory
 

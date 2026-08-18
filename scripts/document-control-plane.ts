@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
 
+import { scanMarkdownLinks } from "./markdown-link-lexer.ts";
+import {
+  parseImplementationMapDirectory,
+  type ImplementationMapDirectoryEntry,
+} from "./structural-map-routes.ts";
+
 export const AreaId = Object.freeze({
   EngineContractsSource: "ENGINE-CONTRACTS-SOURCE",
   EngineRuntimeProof: "ENGINE-RUNTIME-PROOF",
@@ -10,51 +16,7 @@ export const AreaId = Object.freeze({
 
 export type AreaId = (typeof AreaId)[keyof typeof AreaId];
 
-export const detailMapContracts = [
-  {
-    id: AreaId.EngineContractsSource,
-    state: "implemented",
-    file: "ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md",
-    label: "Engine contracts and source",
-    sourceFamilies:
-      "`contracts/`, `profiles/`, `packages/contract-types/`, `packages/bpmn-source/`, `packages/engine-api/`, routed `docs/` and root documentation",
-  },
-  {
-    id: AreaId.EngineRuntimeProof,
-    state: "implemented",
-    file: "ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md",
-    label: "Engine runtime and proof",
-    sourceFamilies:
-      "`BpmnSemantics/`, `packages/semantic-core/`, root Lean entry points, routed `docs/` and root documentation",
-  },
-  {
-    id: AreaId.TemporalHosting,
-    state: "active",
-    file: "TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
-    label: "Temporal hosting",
-    sourceFamilies:
-      "`packages/temporal-adapter/`, `packages/engine-api/`, `examples/temporal-mvp/`, deployment roots, routed `docs/` and root documentation",
-  },
-  {
-    id: AreaId.BpmPlatform,
-    state: "implemented",
-    file: "BPM-PLATFORM-IMPLEMENTATION-MAP.md",
-    label: "BPM platform",
-    sourceFamilies:
-      "`platform/`, `showcase/`, `workers/`, deployment roots, routed `docs/` and root documentation",
-  },
-  {
-    id: AreaId.AssuranceAdoption,
-    state: "implemented",
-    file: "ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md",
-    label: "Assurance and adoption",
-    sourceFamilies:
-      "`adoption/`, `model-corpus/`, `packages/differential/`, `runners/`, `scenarios/`, `scripts/`, root tooling, root Lean entry points, routed `docs/` and root documentation",
-  },
-] as const;
-
-const detailMapFiles = new Set<string>(detailMapContracts.map((contract) => contract.file));
-const allAreaIds = detailMapContracts.map((contract) => contract.id);
+export const allAreaIds: ReadonlyArray<AreaId> = Object.freeze(Object.values(AreaId));
 
 export function wordCount(value: string): number {
   return value.trim().split(/\s+/u).filter(Boolean).length;
@@ -73,53 +35,6 @@ function section(document: string, heading: string): string {
   return document.slice(bodyStart, end === -1 ? undefined : end).trim();
 }
 
-function linkedDetailMaps(value: string): ReadonlyArray<string> {
-  return [...value.matchAll(/\]\(([^)#]+-IMPLEMENTATION-MAP\.md)(?:#[^)]+)?\)/gu)]
-    .flatMap((match) => (match[1] === undefined ? [] : [match[1]]));
-}
-
-const rootImplementationMapLinkSource =
-  String.raw`\[[^\]\n]+\]\((?:[^)\n]*/)?IMPLEMENTATION-MAP\.md(?:#[^)\n]*)?\)`;
-const rootImplementationMapLink = new RegExp(rootImplementationMapLinkSource, "iu");
-const implementationStatusWords =
-  /\b(?:exact|current|implemented|implementation|inventory|absent|absence|evidence|coverage|support|status|surface|boundary)\b/iu;
-const directImplementationOwnership =
-  /\b(?:belongs?|owned?|owns?|recorded|records?|closed|remains?|stays?|retains?|with the exact boundary in)\b/iu;
-const explicitRootImplementationMapRouting = [
-  new RegExp(
-    String.raw`\b(?:applicable\s+)?detail(?:\s+implementation)?\s+maps?\s+routed?\s+(?:by|through)(?:\s+the)?\s+${rootImplementationMapLinkSource}`,
-    "giu",
-  ),
-  new RegExp(String.raw`\buse\s+${rootImplementationMapLinkSource}\s+to\s+route\b`, "giu"),
-  new RegExp(
-    String.raw`${rootImplementationMapLinkSource}\s+routes?\b`,
-    "giu",
-  ),
-  new RegExp(
-    String.raw`\broot\s+(?:map\s+)?(?:router|routing)\b[^.!?\n]{0,160}${rootImplementationMapLinkSource}`,
-    "giu",
-  ),
-];
-const implementationOwnershipClauseBoundary =
-  /(?<=[.!?])\s+|;\s*|:\s+|,\s+(?=(?:and|or|yet|while|whereas|but|although|though|however)\b)/iu;
-
-export function isUnroutedRootImplementationMapStatusLine(line: string): boolean {
-  return line.split(implementationOwnershipClauseBoundary).some((clause) => {
-    // Remove only the exact root-to-detail relationship that makes a root-map link navigational.
-    // A separate valid relationship must not launder another root-map ownership claim in the clause.
-    const unroutedClause = explicitRootImplementationMapRouting.reduce(
-      (remaining, routing) => remaining.replace(routing, ""),
-      clause,
-    );
-    if (
-      !rootImplementationMapLink.test(unroutedClause) ||
-      !implementationStatusWords.test(unroutedClause) ||
-      !directImplementationOwnership.test(unroutedClause)
-    ) return false;
-    return true;
-  });
-}
-
 export type OrderedWorkEntry = Readonly<{
   id: string;
   state: "active" | "queued" | "later";
@@ -128,18 +43,13 @@ export type OrderedWorkEntry = Readonly<{
 
 export function parseOrderedWork(plan: string): ReadonlyArray<OrderedWorkEntry> {
   return section(plan, "Ordered work").split("\n").flatMap((line) => {
-    const match = /^\d+\. `([A-Z][A-Z0-9-]*)` · \*\*(active|queued|later)\*\* · /u.exec(line);
+    const match = /^\d+\. `([A-Z][A-Z0-9-]*)` · \*\*(active|queued|later)\*\* · Owners?: (.+?) · Maps?: (.+?) · Action: \S.+$/u.exec(line);
     if (match === null) return [];
-    const [, id, state] = match;
+    const [, id, state, ownerField = "", mapsField = ""] = match;
     assert.ok(id !== undefined && state !== undefined);
-    assert.match(
-      line,
-      / · Owners?: [^·]*\[[^\]]+\]\([^)]+\)[^·]* · Maps?: /u,
-      `${id} must name an owner link before its map routes`,
-    );
-    const maps = linkedDetailMaps(line);
+    assert.ok(scanMarkdownLinks(ownerField).length > 0, `${id} must name an owner link before its map routes`);
+    const maps = scanMarkdownLinks(mapsField).map(({ destination }) => destination);
     assert.ok(maps.length > 0, `${id} must route to at least one detail map`);
-    for (const map of maps) assert.ok(detailMapFiles.has(map), `${id} routes to unknown ${map}`);
     return [{ id, state: state as OrderedWorkEntry["state"], detailMaps: maps }];
   });
 }
@@ -199,32 +109,6 @@ export function assertPlanControlPlane(plan: string): OrderedWorkEntry {
   return activeEntry;
 }
 
-type RoutingRow = Readonly<{
-  id: string;
-  state: string;
-  file: string;
-  label: string;
-  sourceFamilies: string;
-}>;
-
-export function parseRoutingRows(rootMap: string): ReadonlyArray<RoutingRow> {
-  return section(rootMap, "Routing").split("\n").flatMap((line) => {
-    if (!line.startsWith("| `")) return [];
-    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
-    assert.equal(cells.length, 4, `malformed routing row: ${line}`);
-    const [idCell, stateCell, mapCell, sourceFamilies] = cells;
-    const map = /^\[([^\]]+)\]\(([^)]+)\)$/u.exec(mapCell ?? "");
-    assert.ok(map !== null, `malformed detail-map cell: ${mapCell}`);
-    return [{
-      id: (idCell ?? "").replaceAll("`", ""),
-      state: (stateCell ?? "").replaceAll("`", ""),
-      label: map[1] ?? "",
-      file: map[2] ?? "",
-      sourceFamilies: sourceFamilies ?? "",
-    }];
-  });
-}
-
 export function assertRootImplementationMap(rootMap: string): void {
   assert.deepEqual(levelTwoHeadings(rootMap), [
     "Current claim",
@@ -237,23 +121,14 @@ export function assertRootImplementationMap(rootMap: string): void {
     wordCount(section(rootMap, "Cross-area invariants")) > 0,
     "cross-area invariants must not be empty",
   );
-  const rows = parseRoutingRows(rootMap);
+  const parsed = parseImplementationMapDirectory(rootMap);
+  assert.deepEqual(parsed.errors, []);
   for (const line of section(rootMap, "Routing").split("\n").filter((candidate) => candidate.startsWith("|"))) {
     for (const cell of line.split("|").slice(1, -1)) {
       assert.ok(wordCount(cell) <= 32, `dense routing cell exceeds 32 words: ${cell}`);
     }
   }
-  assert.deepEqual(
-    rows,
-    detailMapContracts.map((contract) => ({
-      id: contract.id,
-      state: contract.state,
-      file: contract.file,
-      label: contract.label,
-      sourceFamilies: contract.sourceFamilies,
-    })),
-  );
-  assert.equal(new Set(rows.map((row) => row.id)).size, rows.length, "duplicate area ID");
+  assert.deepEqual([...parsed.directory.keys()].sort(), [...allAreaIds].sort());
 }
 
 export function assertDetailImplementationMap(
@@ -365,11 +240,14 @@ export type ImplementationMapRoute = Readonly<{
   file: string;
 }>;
 
-export function implementationMapRoutes(file: string): ReadonlyArray<ImplementationMapRoute> {
+export function implementationMapRoutes(
+  file: string,
+  directory: ReadonlyMap<string, ImplementationMapDirectoryEntry>,
+): ReadonlyArray<ImplementationMapRoute> {
   return routeImplementationPath(file).map((id) => {
-    const contract = detailMapContracts.find((candidate) => candidate.id === id);
-    assert.ok(contract !== undefined, `${file} has unknown route ${id}`);
-    return { id, file: `docs/${contract.file}` };
+    const entry = directory.get(id);
+    assert.ok(entry !== undefined, `${file} has unknown route ${id}`);
+    return { id, file: entry.path };
   });
 }
 

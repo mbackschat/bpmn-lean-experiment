@@ -26,4 +26,4 @@ Read the smallest relevant document before changing a boundary:
 | CIB Seven and Temporal source instrumentation | [Reference instrumentation](../REFERENCE-INSTRUMENTATION-POLICY.md) |
 | Exact source revisions and controlled sibling checkouts | [Sources](../SOURCES.md) |
 
-Research that creates an executable discriminator must have a corresponding record under [experiments](../experiments/README.md). Settled architectural decisions belong in [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) or an explicitly introduced decision record, live sequencing belongs in [PLAN.md](../PLAN.md), and implemented facts belong in the applicable detail map routed by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
+Research that creates an executable discriminator must have a corresponding record under [experiments](../experiments/README.md). Settled architectural decisions belong in [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) or an explicitly introduced decision record, live sequencing belongs in [PLAN.md](../PLAN.md), and implemented facts belong in the applicable detail map routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md).

@@ -2,7 +2,7 @@
 
 ## Status
 
-**Project-authored research carrying a bounded full-scope recommendation.** It is design input, not product authority and not an implementation claim. [The owner-approved BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md) owns the first product contract, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) owns durable architecture and product boundaries, [PLAN.md](../PLAN.md) owns accepted sequencing, and the [BPM platform implementation map](../BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns the exact implemented and absent surface.
+**Project-authored research carrying a bounded full-scope recommendation.** It is design input, not product authority and not an implementation claim. [The owner-approved BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md) owns the first product contract, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) owns durable architecture and product boundaries, [PLAN.md](../PLAN.md) owns accepted sequencing, and the [`implementation-status-owner:BPM-PLATFORM`](../BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns the exact implemented and absent surface.
 
 **This document stays research until the approved proposal's surfaces are implemented.** The owner decided on 2026-08-07 that its competitive positioning and full-scope modules are not adopted into any owning document before then, so that the first product is finished rather than widened while it is being built. The trigger is exact and checkable: M5 of [the showcase milestone ladder](../SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder) closing its exit gate, which is where the proposal's deployment, task, operations, incident, history, and mining surfaces are all reached. At that point this document is reconsidered as a whole, and whatever is adopted moves into its proper owner rather than being cited from here.
 
@@ -75,7 +75,7 @@ The project definition now correctly assigns deployment, versioning, task intera
 - native Temporal Workflow interoperability;
 - unified but explicitly separated BPMN, platform, native-Workflow, and host operations beyond the initial Temporal UI links.
 
-There was no `platform/` implementation tree when this research established its baseline. The [BPM platform implementation map](../BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns the current Product 2 surface and absences. This means the proposal is a reviewed product contract, not by itself evidence of an implemented surface.
+There was no `platform/` implementation tree when this research established its baseline. The [`implementation-status-owner:BPM-PLATFORM`](../BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns the current Product 2 surface and absences. This means the proposal is a reviewed product contract, not by itself evidence of an implemented surface.
 
 ## Bidirectional assessment of the new product vision
 
@@ -805,7 +805,7 @@ Metering, if a managed product later needs it, should be predictable for long-ru
 
 ## Immediate documentation recommendation
 
-The earlier recommendation to create a governed platform-scope proposal has now been satisfied by [BPM-PLATFORM-PROPOSAL.md](../BPM-PLATFORM-PROPOSAL.md), supported by [BPM-PLATFORM-STACK-RESEARCH.md](BPM-PLATFORM-STACK-RESEARCH.md), the product division in [PROJECT-DESIGN.md](../PROJECT-DESIGN.md#product-division), and the explicit absence boundary in [the platform implementation map](../BPM-PLATFORM-IMPLEMENTATION-MAP.md#explicitly-absent).
+The earlier recommendation to create a governed platform-scope proposal has now been satisfied by [BPM-PLATFORM-PROPOSAL.md](../BPM-PLATFORM-PROPOSAL.md), supported by [BPM-PLATFORM-STACK-RESEARCH.md](BPM-PLATFORM-STACK-RESEARCH.md), the product division in [PROJECT-DESIGN.md](../PROJECT-DESIGN.md#product-division), and the explicit absence boundary in [`implementation-status-owner:BPM-PLATFORM`](../BPM-PLATFORM-IMPLEMENTATION-MAP.md#explicitly-absent).
 
 The next documentation action should be smaller and operational:
 
@@ -850,7 +850,7 @@ This preserves focus without reducing ambition. The proposal is the correct firs
 
 The principal input is the imported [competitive landscape dossier](ENTERPRISE-PROCESS-ORCHESTRATION-COMPETITIVE-LANDSCAPE-RESEARCH.md), researched on 31 July 2026 and bound to the exact received content by the SHA-256 recorded in its provenance section and [SOURCES.md](../SOURCES.md#enterprise-process-orchestration-competitive-landscape-dossier).
 
-Project assessment uses the current [BPM-PLATFORM-PROPOSAL.md](../BPM-PLATFORM-PROPOSAL.md), [BPM-PLATFORM-STACK-RESEARCH.md](BPM-PLATFORM-STACK-RESEARCH.md), [PROJECT-DESIGN.md](../PROJECT-DESIGN.md), [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), [PLAN.md](../PLAN.md), and [README.md](../../README.md).
+Project assessment uses the current [BPM-PLATFORM-PROPOSAL.md](../BPM-PLATFORM-PROPOSAL.md), [BPM-PLATFORM-STACK-RESEARCH.md](BPM-PLATFORM-STACK-RESEARCH.md), [PROJECT-DESIGN.md](../PROJECT-DESIGN.md), [`implementation-status-router`](../IMPLEMENTATION-MAP.md), [PLAN.md](../PLAN.md), and [README.md](../../README.md).
 
 The central migration and lifecycle claims were narrowly checked against current official documentation:
 

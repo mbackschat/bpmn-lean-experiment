@@ -1,6 +1,6 @@
 # BPM platform implementation map
 
-This detail map owns exact current Product 2 modules, persistence, HTTP, UI, deployment composition, browser evidence, and platform exclusions. Root routing and cross-area claims remain in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+This detail map owns exact current Product 2 modules, persistence, HTTP, UI, deployment composition, browser evidence, and platform exclusions. Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
 ## Current boundary
 

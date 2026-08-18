@@ -8,7 +8,7 @@ No sentence in this document is a coverage, conformance, or CIB compatibility cl
 
 This paragraph previously carried a per-lane inventory of what Lean and the evidence lanes did and did not yet contain. It is deleted rather than re-synchronized, which is the correction [the process-assessment ledger](../PROCESS-ASSESSMENT-LEDGER.md#findings) already records for this mechanism: three landed lanes had made that copy false while the owner one line below stayed correct. The owner is the only place that inventory belongs.
 
-Implemented and absent scope is owned by [the runtime and proof map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
+Implemented and absent scope is owned by [`implementation-status-delegation:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
 
 ## Independent cold-review receipt
 
@@ -216,7 +216,7 @@ Required checked non-laws and negative witnesses:
 - an executable witness that the normal Sub-Process output is unreachable on the deadline arm, which is the analogue of `SUBERR-NORMAL-01`;
 - an executable witness that a firing one millisecond early leaves the armed triple and its deadline exactly intact and still able to win at the exact instant.
 
-Two hypotheses are expected to be stated rather than assumed, for the same reason the sibling states them: `RuntimeState` carries no uniqueness invariant over `timerWaits`, and the stronger claim that no later lookup *by key* can rediscover a withdrawn deadline needs uniqueness of the occurrence key. Both remain explicit hypotheses here. This capsule does **not** establish that invariant, whose scheduling is coupled to `stableStateResumable` and recorded in the [runtime/proof map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#nearest-unsupported-claims).
+Two hypotheses are expected to be stated rather than assumed, for the same reason the sibling states them: `RuntimeState` carries no uniqueness invariant over `timerWaits`, and the stronger claim that no later lookup *by key* can rediscover a withdrawn deadline needs uniqueness of the occurrence key. Both remain explicit hypotheses here. This capsule does **not** establish that invariant, whose scheduling is coupled to `stableStateResumable` and recorded in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#nearest-unsupported-claims).
 
 The separating witness is the follow-on User Task identity at the approved public boundary. A hidden microstep, storage order, or evaluator choice is not a discriminator.
 

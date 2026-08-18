@@ -4,6 +4,11 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import {
+  scanMarkdownAnchors,
+  scanMarkdownLinks,
+} from "./markdown-link-lexer.ts";
+
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const documentRoots = [
   "contracts",
@@ -99,8 +104,8 @@ type LocalLinkTarget = Readonly<{
 }>;
 
 function localLinkTargets(markdown: string): ReadonlyArray<LocalLinkTarget> {
-  return [...markdown.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/gu)]
-    .flatMap((match) => (match[1] === undefined ? [] : [match[1].trim()]))
+  return scanMarkdownLinks(markdown)
+    .map(({ destination }) => destination)
     .filter((target) => !/^[a-z][a-z0-9+.-]*:/iu.test(target))
     .map((target) => {
       const withoutTitle = target.startsWith("<")
@@ -120,45 +125,8 @@ function localLinkTargets(markdown: string): ReadonlyArray<LocalLinkTarget> {
     .filter((target) => target.relativePath !== "" || target.fragment !== null);
 }
 
-function markdownHeadingText(value: string): string {
-  return value
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1")
-    .replace(/!?\[([^\]]*)\]\[[^\]]*\]/gu, "$1")
-    .replace(/<[^>]+>/gu, "")
-    .replace(/[`*_~]/gu, "")
-    .replace(/\\([\\`*_{}\[\]()#+.!-])/gu, "$1");
-}
-
-function githubHeadingSlug(value: string): string {
-  return markdownHeadingText(value)
-    .trim()
-    .toLocaleLowerCase("en-US")
-    .replace(/[^\p{L}\p{M}\p{N}\p{Pc}\s-]/gu, "")
-    .replace(/\s/gu, "-");
-}
-
 function markdownAnchors(markdown: string): ReadonlySet<string> {
-  const anchors = new Set<string>();
-  const slugCounts = new Map<string, number>();
-  const headingPattern = /^#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*$/gmu;
-  for (const match of markdown.matchAll(headingPattern)) {
-    const heading = match[1];
-    assert.ok(heading);
-    const base = githubHeadingSlug(heading);
-    if (base === "") {
-      continue;
-    }
-    const occurrence = slugCounts.get(base) ?? 0;
-    slugCounts.set(base, occurrence + 1);
-    anchors.add(occurrence === 0 ? base : `${base}-${occurrence}`);
-  }
-  const explicitAnchorPattern = /<(?:a|h[1-6]|span)\b[^>]*(?:id|name)=["']([^"']+)["'][^>]*>/gimu;
-  for (const match of markdown.matchAll(explicitAnchorPattern)) {
-    const anchor = match[1];
-    assert.ok(anchor);
-    anchors.add(anchor);
-  }
-  return anchors;
+  return new Set(scanMarkdownAnchors(markdown).map(({ name }) => name));
 }
 
 test("retains same-document and cross-document anchor targets", () => {
@@ -173,6 +141,27 @@ test("retains same-document and cross-document anchor targets", () => {
         fragment: "independent-cold-review-gate",
       },
     ],
+  );
+});
+
+test("ignores links in Markdown code and comments", () => {
+  assert.deepEqual(
+    localLinkTargets(`
+[live](live.md)
+
+\`\`\`md
+[fenced](fenced.md)
+\`\`\`
+
+    [indented](indented.md)
+
+\`[inline](inline.md)\`
+
+<!-- [comment](comment.md) -->
+
+\`\` \` [mismatched-run](mismatched-run.md) \`\`
+`),
+    [{ relativePath: "live.md", fragment: null }],
   );
 });
 

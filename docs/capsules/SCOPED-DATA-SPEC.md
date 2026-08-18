@@ -8,7 +8,7 @@
 
 This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. It changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.
 
-Exact implementation status belongs in the [runtime and proof implementation map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the runtime representation boundary belongs in [the Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md).
+Exact implementation status belongs in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the runtime representation boundary belongs in [the Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md).
 
 ## Question
 

@@ -23,13 +23,13 @@ Preserve the implemented [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPE
 
 The platform consumes only the engine's published contract: compile, start, observe committed state, submit a command. It takes occurrence identity from a publication and never constructs one, and a fact the engine does not publish is a stop condition routed to an engine requirement, never derived from Temporal Event History, a state difference, or the platform's own store.
 
-The exact current implementation and evidence boundary belongs in the detail maps routed by [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), concrete repository and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), and active sequencing in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+The exact current implementation and evidence boundary belongs in the detail maps routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md), concrete repository and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), and active sequencing in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
 The primary execution architecture is **an interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**: exact BPMN XML bytes → private structural import → checked project-owned BPMN graph → [Semantic Process IL](docs/SEMANTIC-PROCESS-IL-SPEC.md) → semantic-core evaluation → Temporal hosting. Generated source may be a derived diagnostic or optimization only after equivalence evidence; it is never the profile or semantic authority.
 
-Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence in the detail maps routed by [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
+Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence in the detail maps routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md).
 
 ## Start every session
 
@@ -225,7 +225,7 @@ The source-hygiene gate detects hard file-size violations and requires an explic
 
 BPMN XML parsing, admission, and lowering run before Workflow start with an explicit byte limit and parser Promise-settlement deadline. The current timeout cannot preempt synchronous parser CPU; production untrusted uploads still require a bounded Worker or process. Every new Workflow execution must contain the admitted current executable definition; no fallback constructor may invent it.
 
-Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in every applicable detail map routed by [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim. [TESTING-SPEC.md](docs/TESTING-SPEC.md#evidence-lanes) owns the definition of an evidence lane, including the requirement that two lanes count as two only when their failure modes are uncorrelated.
+Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in every applicable detail map routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim. [TESTING-SPEC.md](docs/TESTING-SPEC.md#evidence-lanes) owns the definition of an evidence lane, including the requirement that two lanes count as two only when their failure modes are uncorrelated.
 
 Give every material semantic rule a stable capsule-owned identifier and a rule-to-evidence row. An editorial correction may retain an identifier; a materially different proposition requires a new identifier and, when already used by evidence or running instances, the applicable profile or artifact version change. Rule identifiers are traceability labels and do not enter runtime wire contracts without a concrete consumer and versioning decision.
 
@@ -265,7 +265,7 @@ After the technical gate is green but before marking a milestone or semantic cap
 
 Answer the same self-assessment questions at each session handoff, not only at a capsule boundary. A finding that already has a row gets its instance count incremented rather than a second near-duplicate row, because that count is what the escalation rule reads: a mechanism seen twice has already refuted the prose meant to prevent it and requires an executable guard. Assume your own fresh prose does not bind you.
 
-Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](docs/PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), concrete package and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in the applicable detail map routed by [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
+Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](docs/PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), concrete package and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in the applicable detail map routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
 
 ### Architecture experiments
 
@@ -303,7 +303,7 @@ Use one owner for each fact and link to it elsewhere:
 | Semantic Process IL contract, exact proof boundary, maintained obligations, and growth rules | [SEMANTIC-PROCESS-IL-SPEC.md](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
 | Reviewed BPMN Process Execution requirements and dispositions | [BPMN-REQUIREMENT-LEDGER.md](docs/BPMN-REQUIREMENT-LEDGER.md) |
 | Downstream A12 model, delegate, façade, blueprint, and migration-adoption denominator | [A12-WORKFLOWS-COMPATIBILITY-LEDGER.md](docs/research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) |
-| Route to exact current implementation, proof, test, and absence status | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) and its registered detail maps |
+| Route to exact current implementation, proof, test, and absence status | [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) and its registered detail maps |
 | Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |
 | Commit-bounded completed capsule and enabling-increment cost | [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) |
 | Self-assessment questions, retained process findings, and their dispositions | [PROCESS-ASSESSMENT-LEDGER.md](docs/PROCESS-ASSESSMENT-LEDGER.md) |
@@ -323,7 +323,7 @@ Treat feedback efficiency and development speed as non-negotiable engineering co
 
 Never activate the `linear-walkthrough` skill and never invoke `showboat` directly or indirectly. Author maintained Markdown directly and verify it only through the repository-owned documentation, infrastructure, and applicable complete gates.
 
-Keep the top-level `README.md` as a durable project front door. Do not put live status, evidence counts, current support inventories, or next-work narration there; link to the detail maps routed by [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) and to [PLAN.md](docs/PLAN.md) instead. The sole non-semantic exception is governed by [the publication-statistics contract](docs/TESTING-SPEC.md#default-verification); follow that owner rather than restating its generated blocks or maintainer requirements here.
+Keep the top-level `README.md` as a durable project front door. Do not put live status, evidence counts, current support inventories, or next-work narration there; link to the detail maps routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) and to [PLAN.md](docs/PLAN.md) instead. The sole non-semantic exception is governed by [the publication-statistics contract](docs/TESTING-SPEC.md#default-verification); follow that owner rather than restating its generated blocks or maintainer requirements here.
 
 The rationale and transfer limits for the semantic-capsule workflow are recorded in [the `a12-kernel-lean` process-transfer study](docs/research/A12-KERNEL-LEAN-PROCESS-RESEARCH.md).
 
@@ -612,7 +612,7 @@ node scripts/project-tags.ts push release 0.2.0-rc.1
 
 Before handing off:
 
-1. update every affected detail map routed by [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) with exact implemented and absent scope;
+1. update every affected detail map routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) with exact implemented and absent scope;
 2. update [PLAN.md](docs/PLAN.md) with the last verified command and exact next action;
 3. run the applicable gates and `git diff --check`;
 4. leave a clean working tree, or explicitly document every unfinished file and failing command.

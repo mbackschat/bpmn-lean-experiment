@@ -45,6 +45,7 @@ The report names the required implementation detail maps, guards, this registry,
 | Build or check review continuity | [`semantic-review-manifest.ts`](semantic-review-manifest.ts) | Create the hash-bound checkpoint-to-closure manifest required for eligible warm continuity. |
 | Measure a capsule | [`capsule-cost.ts`](capsule-cost.ts) | Report commit-bounded nonblank code and documentation additions/removals. |
 | Validate a documentation migration | [`document-migration-matrix.ts`](document-migration-matrix.ts) | Derive and validate claim-granular baseline-to-target routing for a bounded documentation migration. |
+| Validate structural implementation-status routes | [`document-control-plane.test.ts`](document-control-plane.test.ts) | Run the live documentation-universe guard. [`structural-map-routes.ts`](structural-map-routes.ts) owns the closed route grammar and [`markdown-link-lexer.ts`](markdown-link-lexer.ts) owns the shared live-link spans used by it and the local-link guard. |
 | Confirm a clean immutable target | [`clean-committed-head.ts`](clean-committed-head.ts) | Refuse review or release evidence when the target is not the clean committed `HEAD`. |
 | Update publication statistics | [`publication-statistics.ts`](publication-statistics.ts) | Use the package commands `publication-stats:update` and `publication-stats:check`; normal verification does not require local Tokei. |
 | Create or push project tags | [`project-tags.ts`](project-tags.ts) | Use `tag:create` and `tag:push` so tag identity and preconditions stay centralized. |

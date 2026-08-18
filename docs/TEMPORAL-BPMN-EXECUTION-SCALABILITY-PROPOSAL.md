@@ -9,7 +9,7 @@ Review: approved-with-required-edits
 
 Owner-approved theoretical roadmap. The owner directed that Product 2's horizontal-scaling blocker be resolved as the first post-MVP scalability increment. A context-cold proposal review approved the direction after two bounded warm correction audits closed its architecture, refinement, resource-budget, and owner-routing findings. This document changes no current BPMN meaning, semantic profile, public observation, Temporal Workflow behavior, persistence implementation, deployment claim, or performance service level.
 
-[PLAN.md](PLAN.md) owns immediate sequencing, the [Temporal hosting implementation map](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns the implemented and absent boundary, [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns the current Workflow lifecycle, and [Temporal execution research](research/TEMPORAL-EXECUTION-RESEARCH.md) owns the general Temporal-to-BPMN mapping.
+[PLAN.md](PLAN.md) owns immediate sequencing, the [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns the implemented and absent boundary, [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns the current Workflow lifecycle, and [Temporal execution research](research/TEMPORAL-EXECUTION-RESEARCH.md) owns the general Temporal-to-BPMN mapping.
 
 ## Decision
 

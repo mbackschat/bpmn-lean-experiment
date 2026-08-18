@@ -34,7 +34,7 @@ Run the focused compiler gate:
 - [Profile-parameterized admission specification](../../docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns profile capability and admission behavior.
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the exact closure-reviewed two-task source restriction.
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 candidate-group projection and execution-neutral Rendering preservation boundary.
-- [Contracts and source implementation map](../../docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) records the exact accepted and rejected surface.
+- [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](../../docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) records the exact accepted and rejected surface.
 - [Executable model corpus](../../model-corpus/README.md) exercises this production compiler against retained and external whole models.
 
 Run the optional MIWG lane with `./scripts/pnpm.sh run test:miwg` after provisioning the registered research checkout.

@@ -120,7 +120,7 @@ Targeted diagnostics may override `BPMN_XSD_PATH`, `BPMN_CMOF_PATH`, or `BPMN_MI
 
 ## Coding-agent startup checklist
 
-1. Read the current checkpoint in [PLAN.md](PLAN.md), then use [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) to route to the detail maps that own the exact implemented/absent boundary.
+1. Read the current checkpoint in [PLAN.md](PLAN.md), then use [`implementation-status-router`](IMPLEMENTATION-MAP.md) to route to the detail maps that own the exact implemented/absent boundary.
 2. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated work.
 3. Run `./scripts/doctor.sh verify`. If it reports missing external inputs, run `./scripts/setup-external-sources.sh verify`; if it reports missing workspace packages, install the frozen pnpm lock.
 4. Use `./scripts/setup-external-sources.sh research` and `./scripts/doctor.sh research` before a task that depends on registered research checkouts.

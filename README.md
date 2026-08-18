@@ -4,7 +4,7 @@ BPMN is a portable process language. Executing it durably without letting parser
 
 This repository builds two MIT-licensed products around that boundary: a BPMN 2.0.2 execution engine hosted on Temporal, and an HTTP-first BPM platform that consumes only the engine's published contract. BPMN meaning is stated in reviewed semantic profiles, made executable in Lean, independently transcribed into a pure TypeScript evaluator, and then hosted by a Temporal adapter that adds durability without adding BPMN semantics.
 
-[PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) owns the product and authority model. [ARCHITECTURE.md](docs/ARCHITECTURE.md) owns the concrete package and deployment shape. [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) routes exact implemented-and-absent inventories, while [PLAN.md](docs/PLAN.md) records only current work.
+[PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) owns the product and authority model. [ARCHITECTURE.md](docs/ARCHITECTURE.md) owns the concrete package and deployment shape. [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) routes exact implemented-and-absent inventories, while [PLAN.md](docs/PLAN.md) records only current work.
 
 ## Why this project exists
 
@@ -18,7 +18,7 @@ A direct BPMN-to-Temporal translation can accidentally turn Workflow handlers, r
 
 ## Current implementation
 
-Read [PLAN.md](docs/PLAN.md) for current execution order, root [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for implementation routing, the [BPM platform detail map](docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) for Product 2 status, and the [executable model corpus](model-corpus/README.md) for retained whole-model coverage. These agent-facing owners carry volatile status; this human-facing README does not duplicate it.
+Read [PLAN.md](docs/PLAN.md) for current execution order, root [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) for implementation routing, the [`implementation-status-owner:BPM-PLATFORM`](docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) for Product 2 status, and the [executable model corpus](model-corpus/README.md) for retained whole-model coverage. These agent-facing owners carry volatile status; this human-facing README does not duplicate it.
 
 ## Architecture at a glance
 
@@ -240,7 +240,7 @@ showcase/            Production-bound Product 2 acceptance harnesses
 | Need | Read |
 |---|---|
 | Try the browser product | [Browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) |
-| Route to exact support and restrictions | [Implementation map](docs/IMPLEMENTATION-MAP.md) |
+| Route to exact support and restrictions | [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) |
 | Understand the semantic and product boundaries | [Project design](docs/PROJECT-DESIGN.md) |
 | Understand packages and deployment | [Architecture](docs/ARCHITECTURE.md) |
 | Inspect the executable model collection | [Model corpus](model-corpus/README.md) |

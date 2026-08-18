@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { lstat, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -11,13 +11,33 @@ import {
   assertPlanControlPlane,
   assertRootImplementationMap,
   assertTrackedPathRoutes,
-  detailMapContracts,
-  isUnroutedRootImplementationMapStatusLine,
   parseOrderedWork,
   routeImplementationPath,
 } from "./document-control-plane.ts";
+import {
+  parseImplementationMapDirectory,
+  validateStructuralMapRoutes,
+} from "./structural-map-routes.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+
+async function maintainedMarkdownDocuments(): Promise<ReadonlyMap<string, string>> {
+  const paths = execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "*.md"],
+    { cwd: projectRoot, encoding: "utf8" },
+  ).split("\0").filter((file) =>
+    file !== "" &&
+    !file.startsWith("docs/archived/") &&
+    !file.startsWith("docs/reference/")
+  );
+  const documents = await Promise.all(paths.map(async (file): Promise<readonly [string, string] | null> => {
+    const absolute = path.join(projectRoot, file);
+    if ((await lstat(absolute)).isSymbolicLink()) return null;
+    return [file, await readFile(absolute, "utf8")] as const;
+  }));
+  return new Map(documents.filter((entry): entry is readonly [string, string] => entry !== null));
+}
 
 function replaceSection(document: string, heading: string, body: string): string {
   const marker = `## ${heading}\n`;
@@ -38,10 +58,16 @@ test("uses the compact routed documentation control plane", async () => {
   assertPlanControlPlane(plan);
   assertRootImplementationMap(implementationMap);
 
-  for (const contract of detailMapContracts) {
-    const document = await readFile(path.join(projectRoot, "docs", contract.file), "utf8");
-    assertDetailImplementationMap(contract.file, document);
+  const directory = parseImplementationMapDirectory(implementationMap);
+  assert.deepEqual(directory.errors, []);
+  for (const entry of directory.directory.values()) {
+    const document = await readFile(path.join(projectRoot, entry.path), "utf8");
+    assertDetailImplementationMap(entry.path, document);
   }
+});
+
+test("uses only structural implementation-map routes across maintained Markdown", async () => {
+  assert.deepEqual(validateStructuralMapRoutes(await maintainedMarkdownDocuments()), []);
 });
 
 test("routes every tracked, pending, and workspace-package path independently", async () => {
@@ -90,7 +116,10 @@ test("rejects hollow plan and root-map contracts", async () => {
     /resume work ID/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replaceAll("-IMPLEMENTATION-MAP.md", "-MAP.md")),
+    () => assertPlanControlPlane(plan.replace(
+      /(1\. `DOC-CONTROL-PLANE`.+? · Maps: )(.+?)( · Action:)/u,
+      "$1none$3",
+    )),
     /route to at least one detail map/u,
   );
   assert.throws(
@@ -133,52 +162,6 @@ test("rejects hollow plan and root-map contracts", async () => {
     () => assertRootImplementationMap(rootMap.replace("root documentation", dense)),
     /dense routing cell/u,
   );
-});
-
-test("keeps exact status references routed to a detail owner", async () => {
-  const tracked = execFileSync("git", ["ls-files", "-z", "--", "*.md"], {
-    cwd: projectRoot,
-    encoding: "utf8",
-  }).split("\0").filter(Boolean);
-  const maintainedOwners = tracked.filter(
-    (file) =>
-      !file.startsWith("docs/archived/") &&
-      !file.startsWith("docs/reference/") &&
-      file !== "docs/AGENT-DOCUMENTATION-CONTROL-PLANE-PROPOSAL.md",
-  );
-  const invalid: string[] = [];
-  for (const file of maintainedOwners) {
-    const document = await readFile(path.join(projectRoot, file), "utf8");
-    for (const [index, line] of document.split("\n").entries()) {
-      if (isUnroutedRootImplementationMapStatusLine(line)) {
-        invalid.push(`${file}:${index + 1}: ${line}`);
-      }
-    }
-  }
-  assert.deepEqual(invalid, [], "exact-status claims must route beyond the root map");
-});
-
-test("ties root-map routing exemptions to the root-map reference", () => {
-  for (const line of [
-    "Exact implementation status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), beside one matching boundary route.",
-    "The implemented owners are routed through executable guards. The [implementation map](../IMPLEMENTATION-MAP.md) owns the exact source allocation.",
-    "Implementation inventory belongs only in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).",
-    "The current live queue remains in [PLAN.md](../PLAN.md) and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).",
-    "Exact platform implementation status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), while semantic proof status belongs in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
-    "Exact implementation status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md); applicable detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) remain authoritative.",
-    "Exact implementation status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) routes exact status to the applicable detail maps.",
-  ]) assert.equal(isUnroutedRootImplementationMapStatusLine(line), true, line);
-
-  for (const line of [
-    "Exact implementation status belongs in the [runtime and proof implementation map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
-    "Implementation inventory belongs in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).",
-    "Exact current source allocation belongs in the applicable detail maps routed by the [implementation map](../IMPLEMENTATION-MAP.md).",
-    "Use [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) to route to the detail maps that own exact current status.",
-    "[IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) routes exact implementation status to the applicable detail maps.",
-    "See [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), while exact semantic proof status belongs in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
-    "See [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and exact semantic proof status belongs in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
-    "See [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md): exact semantic proof status belongs in the [runtime and proof implementation map](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
-  ]) assert.equal(isUnroutedRootImplementationMapStatusLine(line), false, line);
 });
 
 test("keeps the exact closed semantic-family owner complete", async () => {

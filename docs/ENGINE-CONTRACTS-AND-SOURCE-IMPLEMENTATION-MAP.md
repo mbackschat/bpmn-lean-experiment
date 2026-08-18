@@ -1,6 +1,6 @@
 # Engine contracts and source implementation map
 
-This detail map owns exact current wire, semantic-profile, checked-source, Semantic Process IL, and source-admission status. Root routing and cross-area claims remain in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+This detail map owns exact current wire, semantic-profile, checked-source, Semantic Process IL, and source-admission status. Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
 ## Current boundary
 

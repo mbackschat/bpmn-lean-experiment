@@ -2,11 +2,11 @@
 
 ## Status
 
-Implemented current capsule contract; exact evidence status belongs in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
+Implemented current capsule contract; exact evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md).
 
 ## Role
 
-This specification owns the approved bounded meaning, host-refinement contract, witnesses, and exclusions for one extension-bound Service Task effect. Exact current implementation and evidence status belongs in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).
+This specification owns the approved bounded meaning, host-refinement contract, witnesses, and exclusions for one extension-bound Service Task effect. Exact current implementation and evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).
 
 The project-wide [CIB Seven compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) is owner-approved, including this capsule's exact paired binding. The [dual semantic-core architecture](../archived/DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is owner-rejected, so the TypeScript semantic-core and Workflow language boundary is settled. The green [phase-zero probe](#phase-zero-cib-seven-probe) removes the packaged-engine uncertainty.
 

@@ -48,7 +48,7 @@ platform/                         product 2 modular monolith and production Work
 showcase/                         product 2 milestone acceptance gates
 ```
 
-[ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete application, contract, foundation, business-module, UI, Worker, and showcase layout. The detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) record which of those locations and mechanisms exist. This document does not duplicate the package tree because it owns the product boundary and rationale rather than implementation structure.
+[ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete application, contract, foundation, business-module, UI, Worker, and showcase layout. The detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md) record which of those locations and mechanisms exist. This document does not duplicate the package tree because it owns the product boundary and rationale rather than implementation structure.
 
 Because the repository wall is gone, the boundary must be executable instead. An owned guard must fail when a product-1 tree references `platform/`; when a platform package deep-imports an engine internal path instead of its public entry point; when a platform package imports Temporal Event History APIs at all; and when a production JUEL Worker appears under the external-oracle `runners/` tree. The only neutral cross-product package is `@bpmn-lean/contract-types`, which owns type-level immutability and no runtime, BPMN, engine, platform, or transport behavior. The engine's complete gate must additionally keep passing without building any platform package, which is what demonstrates that the engine remains self-contained.
 
@@ -90,7 +90,7 @@ Temporal durability and effect infrastructure
 
 Product 2's permitted surface for **consuming semantic state** is the engine's published contract, in four kinds: compile exact bytes against a selected profile, start an admitted program, observe committed canonical state, and submit a command. Nothing else of that kind crosses.
 
-Those four are a taxonomy of permitted consumption, not a generic portability interface. [The Temporal adapter subsystem](ARCHITECTURE.md#temporal-adapter-subsystem) realizes the hosting side as separate protocol, client, Workflow, Worker, runner, and testkit packages. Product 2 consumes the concrete Temporal client package only through its engine gateway, so adopting Temporal remains explicit while Worker and test infrastructure stay outside the platform server's dependency closure. The [BPM platform implementation map](BPM-PLATFORM-IMPLEMENTATION-MAP.md) records whether that package boundary is implemented.
+Those four are a taxonomy of permitted consumption, not a generic portability interface. [The Temporal adapter subsystem](ARCHITECTURE.md#temporal-adapter-subsystem) realizes the hosting side as separate protocol, client, Workflow, Worker, runner, and testkit packages. Product 2 consumes the concrete Temporal client package only through its engine gateway, so adopting Temporal remains explicit while Worker and test infrastructure stay outside the platform server's dependency closure. The [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md) records whether that package boundary is implemented.
 
 Consumption is not the only direction. The platform additionally **hosts** engine-defined work: it runs the Workflow Worker carrying the admitted program, implements the effect Activity Worker, and will host the pinned JUEL runtime. Hosting an evaluator whose result decides a Sequence Flow is safe only under the existing isolation, where an explicitly selected language profile bounds the evaluator and the semantic core validates the content-bound result before applying the consuming BPMN rule. Hosting is a responsibility, never a fifth way to reach semantic state.
 
@@ -119,7 +119,7 @@ Coverage is accounted separately:
 2. CIB coverage counts classified source extensions and behavioral relationships for named profiles;
 3. platform coverage counts closed showcase milestones and their acceptance gates, against the denominator in [the showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder).
 
-No aggregate percentage may combine these denominators, and no public claim may exceed the exact profile and evidence recorded in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The architecture is built so that a conformance claim becomes provable; the claim itself stays bounded until the evidence supports it.
+No aggregate percentage may combine these denominators, and no public claim may exceed the exact profile and evidence recorded in the applicable detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md). The architecture is built so that a conformance claim becomes provable; the claim itself stays bounded until the evidence supports it.
 
 ## CIB Seven 2.2.0 breadth ordering
 
@@ -151,7 +151,7 @@ Breadth is how the approach's unknown failure modes are found, not what they are
 |---|---|---|
 | Proved | The risk is an invariant no finite test can cover: progress under cycles, cancellation removing exactly the owned subtree, trace completeness with respect to the transition relation | A quantified theorem with useful hypotheses |
 | Checked | The proposition is finite and the risk is a coding slip | A decided fixture or executable guard |
-| Deliberately open | Neither is affordable within the capsule's effort bound | An explicit absence in the applicable detail map routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), with its reason and reopen trigger |
+| Deliberately open | Neither is affordable within the capsule's effort bound | An explicit absence in the applicable detail map routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md), with its reason and reopen trigger |
 
 The first two shapes are the choice [the targeted preservation gate](#semantic-increment-preservation-gate) already permits between "the smallest reusable theorem or executable guard". **The third is new and widens a proof boundary**: that gate requires every capsule in its scope to close one of those two, and "deliberately open" closes neither, so it changes the minimum assurance a capsule may close with. It is recorded as an owner decision superseding that part of the 2026-07-30 gate rather than presented as a permission that already existed, and it is therefore a material change under [the materiality definition](../CLAUDE.md#independent-cold-review). The reason for keeping it is that some obligations are genuinely unaffordable within a capsule, and a recorded gap is better than an unrecorded one.
 
@@ -367,7 +367,7 @@ A semantic capsule is closed only when:
 6. CIB evidence is pinned, content-bound, and mutation-sensitive;
 7. Temporal’s observable behavior refines the core and live histories replay;
 8. harness, semantic, and infrastructure outcomes remain separate;
-9. all public claims and exclusions match [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md);
+9. all public claims and exclusions match [`implementation-status-router`](IMPLEMENTATION-MAP.md);
 10. feedback budgets, cleanup, documentation ownership, and common-mode risks have been reviewed;
 11. every rule is assigned to the BPMN core, a selected CIB overlay, or downstream adoption, and an existing mechanism is reused instead of adding a model-specific semantic path.
 12. any external language evaluator is pinned and capability-bounded, its context and result are content-bound, its evidence correlation is stated, and Lean/TypeScript claims stop at the consuming transition unless expression truth is actually formalized.

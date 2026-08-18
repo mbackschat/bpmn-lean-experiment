@@ -24,4 +24,4 @@ Ordinary verification never rewrites retained evidence. Use `./scripts/pnpm.sh r
 - [CIB Seven BPMN relation register](../../docs/CIB-BPMN-RELATION-REGISTER.md) owns every selected compatibility relationship and candidate deviation.
 - [Reference instrumentation policy](../../docs/REFERENCE-INSTRUMENTATION-POLICY.md) owns the boundary between public observation, diagnostics, and experimental instrumentation.
 - [Testing specification](../../docs/TESTING-SPEC.md) owns oracle, evidence-replacement, and differential gates.
-- [Assurance and adoption implementation map](../../docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) records exact current CIB profile and evidence coverage.
+- [`implementation-status-owner:ASSURANCE-ADOPTION`](../../docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) records exact current CIB profile and evidence coverage.

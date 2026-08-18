@@ -26,7 +26,7 @@ Set `PLATFORM_WEB_ASSET_DIRECTORY` to serve one built web application from the s
 - [Architecture](../../../docs/ARCHITECTURE.md#applications) owns composition, dependency direction, and deployment shape.
 - [Platform proposal](../../../docs/BPM-PLATFORM-PROPOSAL.md) owns the public product contract.
 - [Shared persistence and projection proposal](../../../docs/BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) owns the two storage modes and horizontally safe read/recovery boundary.
-- [BPM platform implementation map](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) records the exact current server surface.
+- [`implementation-status-owner:BPM-PLATFORM`](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) records the exact current server surface.
 - [M1 showcase](../../../showcase/m1-definition-deployment/README.md) provides the first complete real-host journey.
 
 Run the package gate with `./scripts/pnpm.sh --filter @bpmn-lean/platform-server test`.
