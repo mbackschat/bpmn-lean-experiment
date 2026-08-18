@@ -6,7 +6,7 @@
 
 The implemented [Product 2 shared-persistence addendum](../BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) adds a PostgreSQL suffix-only adapter, one bounded lease-fenced recovery page, database-clock completion watermarks, and one-statement projection reads with freshness headers. Exact overlap, changed-overlap and gap refusal, explicit rebuild, authorization order, Product 1 publication bytes, and every semantic claim in this capsule remain unchanged. The SQLite startup-reconciliation passages below describe local mode only.
 
-The later approved [Workflow-chain proposal](../TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) extends only the Temporal retention mechanism. Chain-enrolled Runs close E1 together with its aligned occurrence publication in private digest-bound segments and Product 1 traverses retained Runs without changing this public wire, its semantic meaning, Product 2 projection, or any BPMN claim. Run identity remains private and post-retention reconstruction remains excluded.
+The later implemented [Workflow-chain production contract](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) extends only the Temporal retention mechanism. Chain-enrolled Runs close E1 together with its aligned occurrence publication in private digest-bound segments and Product 1 traverses retained Runs without changing this public wire, its semantic meaning, Product 2 projection, or any BPMN claim. Run identity remains private and post-retention reconstruction remains excluded.
 
 ## Independent cold-review receipt
 

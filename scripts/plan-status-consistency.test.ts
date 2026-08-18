@@ -4,7 +4,10 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { assertPlanControlPlane } from "./document-control-plane.ts";
+import {
+  assertPlanControlPlane,
+  parseOrderedWork,
+} from "./document-control-plane.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const planPath = path.join(projectRoot, "docs/PLAN.md");
@@ -16,20 +19,37 @@ test("keeps the plan as one compact execution control document", async () => {
 
 test("rejects multiple active items, malformed states, duplicate IDs, and a dangling resume", async () => {
   const plan = await readFile(planPath, "utf8");
+  const entries = parseOrderedWork(plan);
+  const activeEntry = entries.find((entry) => entry.state === "active");
+  const queuedEntry = entries.find((entry) => entry.state === "queued");
+  assert.ok(activeEntry !== undefined);
+  assert.ok(queuedEntry !== undefined);
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("`INTERCHANGE-ADMISSION` · **queued**", "`INTERCHANGE-ADMISSION` · **active**")),
+    () => assertPlanControlPlane(plan.replace(
+      `\`${queuedEntry.id}\` · **queued**`,
+      `\`${queuedEntry.id}\` · **active**`,
+    )),
     /exactly one active/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("`INTERCHANGE-ADMISSION` · **queued**", "`INTERCHANGE-ADMISSION` · **completed**")),
+    () => assertPlanControlPlane(plan.replace(
+      `\`${queuedEntry.id}\` · **queued**`,
+      `\`${queuedEntry.id}\` · **completed**`,
+    )),
     /stable work contract/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("`INTERCHANGE-ADMISSION` · **queued**", "`H2-WORKFLOW-CHAIN` · **queued**")),
+    () => assertPlanControlPlane(plan.replace(
+      `\`${queuedEntry.id}\` · **queued**`,
+      `\`${activeEntry.id}\` · **queued**`,
+    )),
     /duplicate work ID/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("Active work ID: `H2-WORKFLOW-CHAIN`.", "Active work ID: `UNKNOWN-WORK`.")),
+    () => assertPlanControlPlane(plan.replace(
+      `Active work ID: \`${activeEntry.id}\`.`,
+      "Active work ID: `UNKNOWN-WORK`.",
+    )),
     /resume work ID/u,
   );
 });

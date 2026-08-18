@@ -4,9 +4,9 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are evidenced; the owner-authorized complete gate and closure review remain open.
+One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are evidenced, and Horizon 2 is closure-reviewed.
 
-The active bounded Workflow-chain contract owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; stop-the-world deployment compatibility; and forced evidence. This remains the highest current durable-hosting risk because every long-lived Process and every later repeating BPMN mechanism inherits it. Temporal Run identity remains private.
+The implemented bounded Workflow-chain contract owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; stop-the-world deployment compatibility; and forced evidence. Every later repeating BPMN mechanism inherits this host boundary rather than reopening it. Temporal Run identity remains private.
 
 Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, Query-response, terminal-result, Event History, aggregate continuation, and 128-Run bounds are active before speculative exposure, scheduling, or return. Retry and conflict precede lifetime capacity, semantic terminal state and accepted-handler draining precede terminal-envelope capacity, and no public contract or host identity changes.
 
@@ -83,10 +83,10 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 
 ## Evidence owners
 
-The separate protocol, client, Workflow, Worker, runner, and testkit packages under [`packages/temporal-adapter/`](../packages/temporal-adapter/), [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [Workflow-chain proposal](TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md), and [Temporal evidence map](TEMPORAL-TEST-EVIDENCE-MAP.md) bind these claims.
+The separate protocol, client, Workflow, Worker, runner, and testkit packages under [`packages/temporal-adapter/`](../packages/temporal-adapter/), [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), and [Temporal evidence map](TEMPORAL-TEST-EVIDENCE-MAP.md) bind these claims. The [archived Workflow-chain proposal](archived/TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) retains the selected-design and review rationale.
 
 ## Nearest unsupported claims
 
-- **Workflow-chain closure:** the implementation and focused forced-rollover matrix are complete; the complete gate and closure review remain pending. Post-retention publication reconstruction or archive remains outside the bounded contract, whose public result is `unavailable` after the selected retained Run disappears.
+- **Post-retention publication:** reconstruction or archive remains outside the bounded Workflow-chain contract, whose public result is `unavailable` after the selected retained Run disappears.
 - **Workload isolation:** complete Horizon 3 with queue and Worker isolation, backpressure, tenant fairness, capacity observability, shared-store failover, representative mixed-model tests, and published throughput, latency, saturation, recovery, and cost evidence. More Workers or queue partitions alone do not constitute this result.
 - **Hosting breadth:** Message payload and routing, general Worker versioning, Activity heartbeats, Search Attributes, general cancellation recovery, and broader timer, effect, and expression families remain absent.

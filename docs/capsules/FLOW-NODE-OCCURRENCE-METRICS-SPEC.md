@@ -6,7 +6,7 @@
 
 The implemented [Product 2 shared-persistence addendum](../BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) adds a PostgreSQL suffix-only occurrence adapter, one bounded lease-fenced recovery page, and one metrics statement that materializes the visible exact-definition population cut and validates aligned fresh execution and occurrence heads. It adds no metrics generation table or recovery family. Existing occurrence identity, commit time, aggregation, authorization, and semantic claims remain unchanged; SQLite aggregation passages below describe local mode only.
 
-The later approved [Workflow-chain proposal](../TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) extends only Temporal retention. Chain-enrolled Runs close E2 together with E1 in private digest-bound segments, carry the exact open-occurrence anchors across Run boundaries, and let Product 1 traverse retained Runs without changing the public occurrence wire, aggregation, UI, or any BPMN meaning. Run identity remains private and post-retention reconstruction remains excluded.
+The later implemented [Workflow-chain production contract](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) extends only Temporal retention. Chain-enrolled Runs close E2 together with E1 in private digest-bound segments, carry the exact open-occurrence anchors across Run boundaries, and let Product 1 traverse retained Runs without changing the public occurrence wire, aggregation, UI, or any BPMN meaning. Run identity remains private and post-retention reconstruction remains excluded.
 
 ## Independent cold-review receipt
 

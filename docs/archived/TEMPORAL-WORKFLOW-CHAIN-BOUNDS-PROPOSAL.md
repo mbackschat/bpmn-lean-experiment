@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
+Lifecycle: archived
 Review: approved-with-required-edits
 
 ## Current boundary
 
-Owner-approved on 2026-08-17; the independently reviewed first-green checkpoint plus recovery, atomic RuntimeState/paired-publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, Query-response, terminal-result, Event History, aggregate continuation, 128-Run capacity, stop-the-world deployment admission, and forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are implemented. The owner authorized the single complete gate and closure review on 2026-08-18; both remain open at this closure target.
+Owner-approved on 2026-08-17 and closure-approved on 2026-08-18. The implemented contract now lives in the [production lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract); this archived proposal retains the selected design, exclusions, evidence contract, and governed review chronology.
 
-This proposal selects the smallest complete Horizon 2 contract for Product 1. Owner approval authorizes the bounded contract below, followed by the required first-green semantic checkpoint and closure review.
+This proposal selected the smallest complete Horizon 2 contract for Product 1. Owner approval authorized the bounded contract below, followed by the required first-green semantic checkpoint and closure review.
 
 **Recommendation:** approve the bounded in-Temporal design. It preserves exact command and publication behavior without adding a Product 1 database, and it fails explicitly when a declared capacity is exhausted instead of weakening retry, conflict, history, or replay guarantees.
 
@@ -23,7 +23,7 @@ The supported pre-release Process lifetime is finite and explicit: at most 128 R
 
 ## Source basis and authority
 
-This proposal specializes [Horizon 2 of the scalability roadmap](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-2-bound-product-1-workflow-chains) and reopens the current [production lifecycle exclusion](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#optional-and-excluded-functionality). [Temporal execution research](research/TEMPORAL-EXECUTION-RESEARCH.md#continue-as-new) owns the source-grounded hosting facts: Continue-As-New starts a new Run with the same Workflow ID and empty Event History; carried state must be explicit; handlers must finish before rollover; Update deduplication is Run-local; and Run identity is not semantic identity.
+This proposal specializes [Horizon 2 of the scalability roadmap](../TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md#horizon-2-bound-product-1-workflow-chains) and reopens the current [production lifecycle exclusion](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#optional-and-excluded-functionality). [Temporal execution research](../research/TEMPORAL-EXECUTION-RESEARCH.md#continue-as-new) owns the source-grounded hosting facts: Continue-As-New starts a new Run with the same Workflow ID and empty Event History; carried state must be explicit; handlers must finish before rollover; Update deduplication is Run-local; and Run identity is not semantic identity.
 
 The selected operating margins are below Temporal's documented default warnings and limits: 10,240 Events or 10 MiB warning thresholds, 51,200 Events or 50 MiB hard limits, a 256 KiB payload warning and 2 MiB payload limit, a 4 MiB transaction limit, ten in-flight Updates, and 2,000 total Updates per Run. These Temporal figures are ceilings and evidence inputs, not the project contract.
 
@@ -201,22 +201,22 @@ The first production test must set a test-only Event History threshold low enoug
 - an adversarial mutation that clears the recovery ledger on rollover, which must fail duplicate and conflict recovery in the next Run;
 - an adversarial mutation that resets publication revision or open occurrence anchors, which must fail cross-segment continuity.
 
-The decisive focused gate is `./scripts/pnpm.sh run test:temporal`. Documentation, receipt, package-boundary, and source-hygiene consequences also run through `./scripts/pnpm.sh run test:infrastructure`. The root integrator then runs `./scripts/verify.sh`; every JavaScript or TypeScript gate follows the [long-running command receipt policy](TESTING-SPEC.md#long-running-javascript-and-typescript-commands).
+The decisive focused gate is `./scripts/pnpm.sh run test:temporal`. Documentation, receipt, package-boundary, and source-hygiene consequences also run through `./scripts/pnpm.sh run test:infrastructure`. The root integrator then runs `./scripts/verify.sh`; every JavaScript or TypeScript gate follows the [long-running command receipt policy](../TESTING-SPEC.md#long-running-javascript-and-typescript-commands).
 
 ## Atomic owner consequences
 
 Approval changes no file by itself. The later implementation checkpoint must update these owners atomically with the production contract:
 
-- [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) for the implemented lifecycle, terminal receipt, command recovery, rollover, failure, and exclusions;
-- [TEMPORAL-TEST-EVIDENCE-MAP.md](TEMPORAL-TEST-EVIDENCE-MAP.md) and [TESTING-SPEC.md](TESTING-SPEC.md) for the exact forced-rollover, mutation, history, replay, and limit gates;
-- the [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) and [PLAN.md](PLAN.md) for the implemented and next-work boundary;
-- [INTERMEDIATE-CATCH-MESSAGE-SPEC.md](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) and [SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md](capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md) for the host-only terminal-ledger move without changing their semantic accounts;
-- [RECEIVE-TASK-MESSAGE-SPEC.md](capsules/RECEIVE-TASK-MESSAGE-SPEC.md) for the same shared Message recovery lifecycle, and any other exact terminal-ledger assertion discovered during implementation;
-- [TEMPORAL-EXECUTION-RESEARCH.md](research/TEMPORAL-EXECUTION-RESEARCH.md) for the implemented Continue-As-New, recovery, deployment, and Worker-compatibility boundary;
-- [temporal protocol](../packages/temporal-adapter/protocol/src/contracts.ts), canonical command identity, lifecycle validators, and package guide for versioned continuation, budgets, failure types, internal terminal envelope, and legacy receipt normalization;
-- [Temporal Workflow](../packages/temporal-adapter/workflow/src/workflow-implementation.ts), command/publication integration, publication accumulators, Message ledger, terminal receipt, and scheduler owners for the safe checkpoint and carried state;
-- [Product 1 Temporal client](../packages/temporal-adapter/client/src/process-client.ts), its public export and public-surface guards, shared semantic Update resolution, Message ingress, terminal retrieval, execution publication, and occurrence publication for a handle-free start, chain-relative retry, and private segment traversal;
-- [Temporal testkit](../packages/temporal-adapter/testkit/test/production-lifecycle.test.ts) and retained history fixtures for the real-server and adversarial evidence.
+- [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) for the implemented lifecycle, terminal receipt, command recovery, rollover, failure, and exclusions;
+- [TEMPORAL-TEST-EVIDENCE-MAP.md](../TEMPORAL-TEST-EVIDENCE-MAP.md) and [TESTING-SPEC.md](../TESTING-SPEC.md) for the exact forced-rollover, mutation, history, replay, and limit gates;
+- the [`implementation-status-owner:TEMPORAL-HOSTING`](../TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) and [PLAN.md](../PLAN.md) for the implemented and next-work boundary;
+- [INTERMEDIATE-CATCH-MESSAGE-SPEC.md](../capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) and [SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md](../capsules/SERVICE-TASK-INCIDENT-CANCELLATION-SPEC.md) for the host-only terminal-ledger move without changing their semantic accounts;
+- [RECEIVE-TASK-MESSAGE-SPEC.md](../capsules/RECEIVE-TASK-MESSAGE-SPEC.md) for the same shared Message recovery lifecycle, and any other exact terminal-ledger assertion discovered during implementation;
+- [TEMPORAL-EXECUTION-RESEARCH.md](../research/TEMPORAL-EXECUTION-RESEARCH.md) for the implemented Continue-As-New, recovery, deployment, and Worker-compatibility boundary;
+- [temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts), canonical command identity, lifecycle validators, and package guide for versioned continuation, budgets, failure types, internal terminal envelope, and legacy receipt normalization;
+- [Temporal Workflow](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts), command/publication integration, publication accumulators, Message ledger, terminal receipt, and scheduler owners for the safe checkpoint and carried state;
+- [Product 1 Temporal client](../../packages/temporal-adapter/client/src/process-client.ts), its public export and public-surface guards, shared semantic Update resolution, Message ingress, terminal retrieval, execution publication, and occurrence publication for a handle-free start, chain-relative retry, and private segment traversal;
+- [Temporal testkit](../../packages/temporal-adapter/testkit/test/production-lifecycle.test.ts) and retained history fixtures for the real-server and adversarial evidence.
 
 `workflow-implementation.ts` currently has only 39 nonblank lines before the 600-line review target reported by `node scripts/what-binds.ts`. The implementation must first extract the existing handler or scheduler responsibilities in a separate non-semantic refactor rather than grow that owner through the review target. The protocol and client owners retain headroom, but new continuation and budget contracts should still use cohesive dedicated modules instead of accumulating unrelated lifecycle variants in `contracts.ts`.
 
@@ -234,8 +234,10 @@ Reopen before raising any production budget, changing the 128-Run or 512-command
 |---|---|---|---|---|
 | Proposal | `aa2a75457d3a003e40d1400a8da70dc4185817a8` | `fork-turns-none` | `approve-with-required-edits` | `4431f13b367d8bc4f14011e382d9c743c3e3af39` |
 | Semantic checkpoint | `0b33dbc8bc35574685572fe913dbdcf58bf9f8d5` | `fork-turns-none` | `approve-with-required-edits` | `4479ac60f08abf85404774ddd37def3741583324` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `c2f9a5dc5369b73ff61b363c53bcac74ab2b05fe` | `fork-turns-none` | `approve-with-required-edits` | `5b9e028a643e3af744ccdc72a437014e8e581230` |
 
 The isolated proposal review required six corrections covering cross-Run result recovery, the raw SDK-handle leak, mixed Worker deployment, combined failure witnesses, owner routing, and the exact non-returning Continue-As-New call. The same reviewer audited correction target `4431f13b367d8bc4f14011e382d9c743c3e3af39`, closed every finding, and approved both additional clarifications for one-activation threshold overshoot and publication-page linearization without a material redesign.
 
 The isolated semantic-checkpoint review required closed recursive validation of carried RuntimeState and publication identity plus a terminal fence that preserves retained retry and conflict precedence while refusing unseen Updates before handler acceptance. The same reviewer audited correction target `4479ac60f08abf85404774ddd37def3741583324`, closed both findings, and approved the checkpoint without expanding its cyclic User Task evidence boundary.
+
+The isolated closure review accepted the complete Workflow-chain, BPMN/CIB refinement, capacity, replay, and deployment evidence but required the Timer Start Schedule result to expose only the existing opaque Process locator and the mixed cost range to be identified as a contaminated conservative upper bound. The same reviewer audited correction target `5b9e028a643e3af744ccdc72a437014e8e581230`, closed both findings, and approved closure without changing BPMN, CIB, semantic-core, Workflow-chain, or published locator meaning.

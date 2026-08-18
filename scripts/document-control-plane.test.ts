@@ -142,8 +142,8 @@ test("rejects hollow plan and root-map contracts", async () => {
   );
   assert.throws(
     () => assertPlanControlPlane(plan.replace(
-      /(1\. `[^`]+` · \*\*active\*\* · Owner: )\[[^\]]+\]\([^)]+\)/u,
-      "$1proposal",
+      /(1\. `[^`]+` · \*\*active\*\* · Owner: ).+?( · Maps:)/u,
+      "$1proposal$2",
     )),
     /owner link/u,
   );
