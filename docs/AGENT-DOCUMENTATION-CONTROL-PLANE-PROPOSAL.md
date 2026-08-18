@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved-with-required-edits
 
 ## Current boundary
 
-The root/detail split and claim-preservation migration are implemented, but closure target `8c73c00` is not approved. Its two final reviewers independently found that the guard still approximates natural-language ownership with broad regular expressions: routing language can mask a later stale ownership clause, punctuation can separate an ownership predicate from its root-map link, and valid navigation can be rejected by the same heuristic. The owner selected redesign target `59e0a2a`, which replaces prose inference with closed structural Markdown routes. Its context-cold proposal reviewer returned required edits: delegation needs its own structural role and exact anchor, the route syntax must preserve anchored and table-local references rather than require standalone records only, and all four special contexts need exact parsers rather than assumed exceptions. The owner authorized one proposal-only correction and same-reviewer audit; no redesign implementation is authorized. The current repository behavior remains unchanged, the prior closure target remains unapproved, and Horizon 2 remains paused. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
+The root/detail split and claim-preservation migration are implemented, but closure target `8c73c00` is not approved. Its two final reviewers independently found that the guard still approximates natural-language ownership with broad regular expressions: routing language can mask a later stale ownership clause, punctuation can separate an ownership predicate from its root-map link, and valid navigation can be rejected by the same heuristic. The owner selected redesign target `59e0a2a`, which replaces prose inference with closed structural Markdown routes. Its context-cold reviewer required an explicit delegation role, lossless inline and table-local routes, and exact parsers for all four special contexts. Proposal correction `e56d552` closed those findings, and the same reviewer approved the final metadata correction `5ab6f1f`. The owner renewed implementation authorization on 2026-08-18, so the reviewed structural route contract is now active while the prior closure target remains unapproved and Horizon 2 remains paused. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
 
 ## Decision
 
@@ -19,11 +19,13 @@ The recommended decision is approval. The current ownership model protects truth
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `59e0a2a` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `59e0a2a` | `fork-turns-none` | `approve-with-required-edits` | `5ab6f1f` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The earlier proposal version used two correction rounds. The context-cold review found five required edits, which correction `871d500` closed; its audit exposed one packet-evidence integration defect introduced by that correction. Correction `3b58c68` made the migration matrix reviewer-visible and digest-bound in the closure packet contract, and the same reviewer approved that design. The structural routing redesign changes the selected guard contract materially, so the earlier approval does not approve this version and a new context-cold proposal review is required.
+The earlier proposal version used two correction rounds. The context-cold review found five required edits, which correction `871d500` closed; its audit exposed one packet-evidence integration defect introduced by that correction. Correction `3b58c68` made the migration matrix reviewer-visible and digest-bound in the closure packet contract, and the same reviewer approved that design.
+
+The structural routing redesign used a new context-cold reviewer and three owner-authorized correction rounds. Proposal correction `e56d552` closed the three original findings; its audit found stale PLAN execution authority, correction `e55aa06` narrowed the resume action but retained one already-completed commit instruction, and correction `5ab6f1f` removed it. The same reviewer approved the final target with the proposal bytes unchanged.
 
 The earlier closure stage used two ordinary correction rounds at `b67d048` and `ccf1a78`. The owner authorized correction `b98c3f8` for four residual stale consumers and their line-wide guard escape, then authorized final correction `8c73c00` when the same reviewer proved that the sentence-level replacement retained the same association defect between clauses. The final reviewers still found mechanism-level false negatives and false positives. The structural redesign is a new proposal boundary, not a fifth patch or audit round against that failed mechanism.
 
