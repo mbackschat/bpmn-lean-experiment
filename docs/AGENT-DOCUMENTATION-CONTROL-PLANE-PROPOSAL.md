@@ -7,7 +7,7 @@ Review: pending
 
 ## Current boundary
 
-The root/detail split and claim-preservation migration are implemented, but closure target `8c73c00` is not approved. Its two final reviewers independently found that the guard still approximates natural-language ownership with broad regular expressions: routing language can mask a later stale ownership clause, punctuation can separate an ownership predicate from its root-map link, and valid navigation can be rejected by the same heuristic. The owner selected a redesign that replaces prose inference with closed structural Markdown route records. This document therefore returns to proposal review before any implementation of that redesign. The current repository behavior remains unchanged, the prior closure target remains unapproved, and Horizon 2 remains paused. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
+The root/detail split and claim-preservation migration are implemented, but closure target `8c73c00` is not approved. Its two final reviewers independently found that the guard still approximates natural-language ownership with broad regular expressions: routing language can mask a later stale ownership clause, punctuation can separate an ownership predicate from its root-map link, and valid navigation can be rejected by the same heuristic. The owner selected redesign target `59e0a2a`, which replaces prose inference with closed structural Markdown route records. This document therefore returns to proposal review before any implementation of that redesign. The current repository behavior remains unchanged, the prior closure target remains unapproved, and Horizon 2 remains paused. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
 
 ## Decision
 
@@ -19,7 +19,7 @@ The recommended decision is approval. The current ownership model protects truth
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `59e0a2a` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 

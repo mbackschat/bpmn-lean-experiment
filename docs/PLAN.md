@@ -26,13 +26,13 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 ## Current evidence
 
 - Complete repository gate. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-08-18`. Commit: `8c73c00`. It covered Lean, the semantic core, BPMN source, shared contracts and canonical bytes, CIB targets, differential comparison, Temporal adapter tests and history replay, Product 2 package evidence, and the registered pipeline; this establishes correctness, not production scalability. The last uncontended comparable warm-pipeline baselines remain 15,986.670 ms for 30 cases at `13cdec8` and 13,476 ms for 28 cases at `ac2813c`. Two independent 34-case runs measured 20,406.710 ms and 20,036 ms, agreeing within 2 percent; treat roughly 20 seconds as unexplained rather than a regression until an uncontended run settles it.
-- Active documentation gate. Command: `node --test scripts/document-control-plane.test.ts scripts/document-migration-matrix.test.ts scripts/semantic-review-packet.test.ts scripts/plan-status-consistency.test.ts scripts/document-reviewability.test.ts scripts/map-scope-delegation.test.ts scripts/markdown-links.test.ts scripts/independent-review-policy.test.ts scripts/pinned-toolchain.test.ts scripts/what-binds.test.ts scripts/pre-release-architecture.test.ts scripts/ui-quality-boundary.platform-test.ts`. Status: `exit 0`. Date: `2026-08-18`. Commit: `8c73c00`. Both final closure reviewers returned `approve-with-required-edits`: the migration preserves all claims, but the natural-language root-map ownership guard remains unsound. The structural redesign is not implemented.
+- Active documentation gate. Command: `node --test scripts/document-control-plane.test.ts scripts/document-reviewability.test.ts scripts/independent-review-policy.test.ts scripts/markdown-links.test.ts scripts/plan-status-consistency.test.ts scripts/semantic-review-packet.test.ts`. Status: `exit 0`. Date: `2026-08-18`. Commit: `59e0a2a`. The structural route-record redesign is proposal-only and unimplemented; prior closure target `8c73c00` remains unapproved because its natural-language ownership guard is unsound.
 
 ## Exact resume point
 
 Active work ID: `DOC-CONTROL-PLANE`.
 
-Next action: commit the structural route-record proposal as an immutable target, record that target in a metadata-only follow-up, generate its neutral proposal-review packet, and send it to a new context-cold reviewer. Do not implement the redesign before review and renewed owner authorization.
+Next action: generate the neutral proposal-review packet for redesign target `59e0a2a` and send it to a new context-cold reviewer. Do not implement the redesign before review and renewed owner authorization.
 
 Oracle: the reviewer approves a closed structural grammar that routes every root/detail map reference without interpreting English, adding a second status source, or weakening planned and user-overridden discovery.
 
