@@ -168,6 +168,58 @@ IMPLEMENTATION-MAP.md
   }
 });
 
+test("preserves list-owned fences across blank lines at exact offsets", () => {
+  for (const fence of ["```", "~~~"]) {
+    for (const blank of ["", " "]) {
+      const example = `- ${fence}md
+  UNKNOWN-IMPLEMENTATION-MAP.md
+${blank}
+  [hidden](UNKNOWN-IMPLEMENTATION-MAP.md)
+  ${fence}`;
+      const live = "[live](live.md)";
+      const markdown = `before\n${example}\n${live}`;
+      const liveStart = markdown.indexOf(live);
+
+      assert.equal(
+        maskMarkdownIgnoredRegions(markdown),
+        `before\n${example.replace(/[^\n]/gu, " ")}\n${live}`,
+      );
+      assert.deepEqual(scanMarkdownLinks(markdown), [{
+        start: liveStart,
+        end: liveStart + live.length,
+        label: "live",
+        destination: "live.md",
+        isImage: false,
+        containerStart: liveStart,
+        containerEnd: markdown.length,
+      }]);
+    }
+  }
+});
+
+test("a blank list-fence line does not mask later outer Markdown", () => {
+  for (const fence of ["```", "~~~"]) {
+    const markdown = `- ${fence}md
+  [hidden](hidden.md)
+
+[outer](outer.md)`;
+    const outerStart = markdown.indexOf("[outer]");
+    assert.equal(maskMarkdownIgnoredRegions(markdown).slice(outerStart), "[outer](outer.md)");
+    assert.deepEqual(scanMarkdownLinks(markdown).map(({ destination }) => destination), ["outer.md"]);
+  }
+});
+
+test("does not preserve a missing blockquote prefix across a blank line", () => {
+  for (const fence of ["```", "~~~"]) {
+    const markdown = `- > ${fence}md
+  > [hidden](hidden.md)
+
+  > [outer](outer.md)
+  > ${fence}`;
+    assert.deepEqual(scanMarkdownLinks(markdown).map(({ destination }) => destination), ["outer.md"]);
+  }
+});
+
 test("does not let an under-indented closer end a wider list fence", () => {
   const wide = `-    \`\`\`md
      [hidden](hidden.md)

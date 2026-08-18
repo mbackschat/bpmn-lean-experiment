@@ -57,6 +57,7 @@ function containerContent(
   let index = 0;
   const prefixes: ContainerPrefix[] = [];
   if (expected !== undefined) {
+    if (line.trim() === "" && !expected.includes(">")) return { content: "", prefixes: expected };
     for (const prefix of expected) {
       if (prefix === ">") {
         const quote = /^ {0,3}> ?/u.exec(line.slice(index));

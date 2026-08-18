@@ -359,6 +359,55 @@ test("full list continuation width governs structural route visibility", () => {
   expectError(tabbed, /NOTE\.md.*bare implementation-map path/u);
 });
 
+test("blank lines stay inside list-owned structural examples", () => {
+  for (const fence of ["```", "~~~"]) {
+    for (const blank of ["", " "]) {
+      const documents = validDocuments();
+      documents.set(
+        "docs/NOTE.md",
+        `- ${fence}md
+  UNKNOWN-IMPLEMENTATION-MAP.md
+${blank}
+  [\`implementation-status-owner:UNKNOWN\`](UNKNOWN-IMPLEMENTATION-MAP.md)
+  ${fence}
+`,
+      );
+      assert.deepEqual(errors(documents), []);
+    }
+  }
+});
+
+test("a blank list-fence line cannot mask genuinely outer structural content", () => {
+  for (const fence of ["```", "~~~"]) {
+    const documents = validDocuments();
+    documents.set(
+      "docs/NOTE.md",
+      `- ${fence}md
+  UNKNOWN-IMPLEMENTATION-MAP.md
+
+IMPLEMENTATION-MAP.md
+`,
+    );
+    expectError(documents, /NOTE\.md.*bare implementation-map path/u);
+  }
+});
+
+test("a blank line without a quote marker ends a list-owned blockquote fence", () => {
+  for (const fence of ["```", "~~~"]) {
+    const documents = validDocuments();
+    documents.set(
+      "docs/NOTE.md",
+      `- > ${fence}md
+  > UNKNOWN-IMPLEMENTATION-MAP.md
+
+  > UNKNOWN-IMPLEMENTATION-MAP.md
+  > ${fence}
+`,
+    );
+    expectError(documents, /NOTE\.md.*bare implementation-map path/u);
+  }
+});
+
 test("an under-indented closer cannot expose a fake structural route", () => {
   const underIndented = validDocuments();
   underIndented.set(
