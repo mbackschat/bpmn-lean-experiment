@@ -191,7 +191,6 @@ if (baseUrl === undefined) {
           deleteCalls += 1;
         },
       },
-      locators: { scheduleExecutionLocator: (id) => `schedule:${id}` },
     });
 
     const dispatch = await recovery.prepare(scheduleKey(record));
@@ -207,8 +206,7 @@ if (baseUrl === undefined) {
     assert.equal((await schedules.get(record.reference))?.state, "scheduled");
     await schedules.compareAndSet(record.reference, "scheduled", {
       state: "started",
-      executionWorkflowId: "execution\u0000😀",
-      firstRunId: "run\u0000😀",
+      processLocator: "bpmn-process-work-v1:execution%00%F0%9F%98%80",
     });
 
     const lostCleanup = await recovery.prepare(scheduleKey(record));

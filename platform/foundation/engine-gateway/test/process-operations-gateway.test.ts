@@ -3,8 +3,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  engineProcessLocatorForScheduleExecution,
-  serializeEngineProcessLocator,
   EngineIncidentOperationKind,
 } from "@bpmn-lean/engine-api";
 
@@ -45,9 +43,7 @@ test("uses the retained locator and omits private address material from observat
       };
     },
   } as never);
-  const locator = serializeEngineProcessLocator(
-    engineProcessLocatorForScheduleExecution("execution-workflow"),
-  );
+  const locator = "bpmn-process-work-v1:execution-workflow";
 
   const result = await gateway.observeIncidents({
     locator,
@@ -89,9 +85,7 @@ test("submits the exact published action without returning its private address",
       },
     }),
   } as never);
-  const locator = serializeEngineProcessLocator(
-    engineProcessLocatorForScheduleExecution("execution-workflow"),
-  );
+  const locator = "bpmn-process-work-v1:execution-workflow";
   const stimulus = { ...retry, commandId: "retry-action" } as const;
 
   const result = await gateway.submitIncidentOperation({

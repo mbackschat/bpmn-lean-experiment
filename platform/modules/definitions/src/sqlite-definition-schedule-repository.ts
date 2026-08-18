@@ -119,15 +119,14 @@ implements DefinitionScheduleRepository {
     const row = this.#database.prepare(`
       UPDATE definition_schedules
       SET state = ?, cleanup_complete = ?, cancellation_origin = ?,
-        execution_workflow_id = ?, first_run_id = ?
+        process_locator = ?
       WHERE process_id = ? AND version = ? AND schedule_id = ? AND state = ?
       RETURNING *
     `).get(
       next.state,
       next.cleanupComplete ? 1 : 0,
       next.cancellationOrigin,
-      next.executionWorkflowId,
-      next.firstRunId,
+      next.processLocator,
       reference.processId,
       reference.version,
       reference.scheduleId,
@@ -247,8 +246,8 @@ implements DefinitionScheduleRepository {
         semantic_profile, start_capabilities_json, timer_start_event_id,
         timer_duration_ms, activation_at, due_at, process_instance_id,
         host_schedule_id, configured_workflow_id_base, state, cleanup_complete,
-        cancellation_origin, execution_workflow_id, first_run_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, NULL)
+        cancellation_origin, process_locator
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL)
     `).run(
       record.reference.processId,
       record.reference.version,
@@ -279,7 +278,7 @@ const selectColumns = `SELECT
   semantic_profile, start_capabilities_json, timer_start_event_id,
   timer_duration_ms, activation_at, due_at, process_instance_id,
   host_schedule_id, configured_workflow_id_base, state, cleanup_complete,
-  cancellation_origin, execution_workflow_id, first_run_id
+  cancellation_origin, process_locator
 FROM definition_schedules`;
 
 function initializeSchema(database: DatabaseSync): void {
@@ -317,16 +316,15 @@ function initializeSchema(database: DatabaseSync): void {
         cancellation_origin IS NULL
         OR cancellation_origin IN ('creatingHost', 'scheduled')
       ),
-      execution_workflow_id TEXT,
-      first_run_id TEXT,
+      process_locator TEXT,
       PRIMARY KEY (process_id, version, schedule_id),
       CHECK (
         (state = 'cancelling' AND cancellation_origin IS NOT NULL)
         OR (state <> 'cancelling' AND cancellation_origin IS NULL)
       ),
       CHECK (
-        (state = 'started' AND execution_workflow_id IS NOT NULL AND first_run_id IS NOT NULL)
-        OR (state <> 'started' AND execution_workflow_id IS NULL AND first_run_id IS NULL)
+        (state = 'started' AND process_locator IS NOT NULL)
+        OR (state <> 'started' AND process_locator IS NULL)
       ),
       CHECK (
         state IN ('started', 'missed', 'cancelled') OR cleanup_complete = 0
@@ -345,9 +343,8 @@ function decodeRecord(row: Record<string, SQLOutputValue>): DefinitionScheduleRe
   const cancellationOrigin = decodeCancellationOrigin(
     requireNullableString(row, "cancellation_origin"),
   );
-  const executionWorkflowId = requireNullableString(row, "execution_workflow_id");
-  const firstRunId = requireNullableString(row, "first_run_id");
-  requireStateFields(state, cancellationOrigin, executionWorkflowId, firstRunId);
+  const processLocator = requireNullableString(row, "process_locator");
+  requireStateFields(state, cancellationOrigin, processLocator);
   const definition = decodeDefinition(row, sourceKind, decodedAs);
   const timerStart = {
     startEventId: requireNonemptyString(row, "timer_start_event_id"),
@@ -393,8 +390,7 @@ function decodeRecord(row: Record<string, SQLOutputValue>): DefinitionScheduleRe
     state,
     cleanupComplete,
     cancellationOrigin,
-    executionWorkflowId,
-    firstRunId,
+    processLocator,
   };
 }
 
@@ -434,12 +430,9 @@ function applyTransition(
           ? current.cancellationOrigin
           : null)
       : transition.cancellationOrigin,
-    executionWorkflowId: transition.executionWorkflowId === undefined
-      ? current.executionWorkflowId
-      : transition.executionWorkflowId,
-    firstRunId: transition.firstRunId === undefined
-      ? current.firstRunId
-      : transition.firstRunId,
+    processLocator: transition.processLocator === undefined
+      ? current.processLocator
+      : transition.processLocator,
   };
 }
 
@@ -458,8 +451,7 @@ function requireLegalTransition(
   requireStateFields(
     next.state,
     next.cancellationOrigin,
-    next.executionWorkflowId,
-    next.firstRunId,
+    next.processLocator,
   );
 }
 
@@ -498,23 +490,22 @@ function legalNextStates(state: DefinitionScheduleRecord["state"]): readonly Def
 function requireStateFields(
   state: DefinitionScheduleRecord["state"],
   origin: DefinitionScheduleCancellationOrigin | null,
-  workflowId: string | null,
-  runId: string | null,
+  processLocator: string | null,
 ): void {
   if ((state === DefinitionScheduleState.Cancelling) !== (origin !== null)) {
     throw new TypeError("SQLite schedule row has invalid cancellation origin");
   }
   if (
     (state === DefinitionScheduleState.Started) !==
-      (workflowId !== null && runId !== null)
+      (processLocator !== null)
   ) {
-    throw new TypeError("SQLite schedule row has invalid execution identity");
+    throw new TypeError("SQLite schedule row has invalid Process locator");
   }
   if (
-    (workflowId !== null && (workflowId.length === 0 || !workflowId.isWellFormed())) ||
-    (runId !== null && (runId.length === 0 || !runId.isWellFormed()))
+    processLocator !== null &&
+    (processLocator.length === 0 || !processLocator.isWellFormed())
   ) {
-    throw new TypeError("SQLite schedule row has malformed execution identity");
+    throw new TypeError("SQLite schedule row has malformed Process locator");
   }
 }
 

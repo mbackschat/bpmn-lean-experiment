@@ -6,18 +6,11 @@ import {
   ProcessWorkObservationStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 
-test("mints distinct canonical and service-returned Schedule locators", () => {
+test("mints one canonical opaque Process locator", () => {
   const gateway = new BpmnProcessWorkGateway(fakeClient());
   const canonical = gateway.canonicalLocator("semantic-instance");
-  const scheduled = gateway.scheduleExecutionLocator("execution-workflow");
 
   assert.match(canonical, /^bpmn-process-work-v1:/u);
-  assert.match(scheduled, /^bpmn-process-work-v1:/u);
-  assert.notEqual(canonical, scheduled);
-  assert.notEqual(
-    gateway.scheduleExecutionLocator("configured-workflow-base"),
-    scheduled,
-  );
 });
 
 test("interprets the private locator and exposes only closed engine task facts", async () => {
@@ -34,7 +27,7 @@ test("interprets the private locator and exposes only closed engine task facts",
       state: "active",
     }],
   }));
-  const locator = gateway.scheduleExecutionLocator("execution-workflow");
+  const locator = "bpmn-process-work-v1:execution-workflow";
   const result = await gateway.observeOpenWork({
     locator,
     hostingProcessInstanceId: "semantic-instance",

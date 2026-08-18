@@ -48,6 +48,12 @@ test("adapts create, pause confirmation, inspect, and delete without raw Schedul
     phase: DefinitionScheduleHostPhase.Pending,
     paused: false,
   });
+  fake.started = true;
+  assert.deepEqual(await host.inspect(binding), {
+    phase: DefinitionScheduleHostPhase.Started,
+    processLocator: "bpmn-process-work-v1:execution-workflow",
+  });
+  fake.started = false;
   assert.deepEqual(await host.pause(binding), {
     phase: DefinitionScheduleHostPhase.Pending,
     paused: true,
@@ -89,6 +95,7 @@ class GatewayScheduleClient {
   pauses = 0;
   deletes = 0;
   paused = false;
+  started = false;
   options: unknown;
 
   readonly client = {
@@ -147,16 +154,24 @@ class GatewayScheduleClient {
         workflowTaskTimeout: undefined,
       },
       policies: options.policies,
-      state: { paused: this.paused, remainingActions: 1 },
+      state: { paused: this.paused, remainingActions: this.started ? 0 : 1 },
       info: {
         recentActions: [],
-        nextActionTimes: [dueAt],
-        numActionsTaken: 0,
+        nextActionTimes: this.started ? [] : [dueAt],
+        numActionsTaken: this.started ? 1 : 0,
         numActionsMissedCatchupWindow: 0,
         numActionsSkippedOverlap: 0,
         createdAt: new Date(dueAt.getTime() - 1_000),
         lastUpdatedAt: undefined,
-        runningActions: [],
+        runningActions: this.started
+          ? [{
+              type: "startWorkflow",
+              workflow: {
+                workflowId: "execution-workflow",
+                firstExecutionRunId: "private-first-run",
+              },
+            }]
+          : [],
       },
       searchAttributes: {},
       typedSearchAttributes: {},

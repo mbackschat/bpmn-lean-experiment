@@ -1,7 +1,6 @@
 import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 
 import type { ExactArtifactStore } from "./contracts.js";
-import type { ProcessWorkLocatorFactory } from "./confirmed-process-instance-contracts.js";
 import {
   DefinitionScheduleHostPhase,
   DefinitionScheduleState,
@@ -39,7 +38,6 @@ export type PostgresqlDefinitionScheduleRecoveryStepOptions = Readonly<{
   runtime: PostgresqlRuntime;
   artifacts: ExactArtifactStore;
   host: Pick<DefinitionScheduleHost, "createOrCompare" | "inspect" | "pause" | "delete">;
-  locators: Pick<ProcessWorkLocatorFactory, "scheduleExecutionLocator">;
 }>;
 
 /** Prepares one bounded Schedule lifecycle step and defers every write to its fence. */
@@ -194,17 +192,15 @@ export class PostgresqlDefinitionScheduleRecoveryStep {
   }
 
   #confirmation(record: DefinitionScheduleRecord) {
-    if (record.executionWorkflowId === null) {
-      throw new TypeError("started Schedule has no execution Workflow identity");
+    if (record.processLocator === null) {
+      throw new TypeError("started Schedule has no opaque Process locator");
     }
     return {
       instance: {
         processInstanceId: record.identity.processInstanceId,
         definition: toPublicDefinition(record.definition),
       },
-      locator: this.#options.locators.scheduleExecutionLocator(
-        record.executionWorkflowId,
-      ),
+      locator: record.processLocator,
     };
   }
 }
@@ -234,7 +230,7 @@ function applyHostResult(
         ? apply(record, { state: DefinitionScheduleState.Scheduled })
         : completeWithoutDatabaseChange();
     case DefinitionScheduleHostPhase.Started:
-      if (!isIdentity(result.executionWorkflowId) || !isIdentity(result.firstRunId)) {
+      if (!isIdentity(result.processLocator)) {
         return failRecovery(
           PostgresqlDefinitionsRecoveryFailureCode.HostIntegrityFailure,
           PostgresqlDefinitionsRecoveryFailureEvidence.HostResult,
@@ -242,8 +238,7 @@ function applyHostResult(
       }
       return apply(record, {
         state: DefinitionScheduleState.Started,
-        executionWorkflowId: result.executionWorkflowId,
-        firstRunId: result.firstRunId,
+        processLocator: result.processLocator,
       });
     case DefinitionScheduleHostPhase.Missed:
       return apply(record, { state: DefinitionScheduleState.Missed });

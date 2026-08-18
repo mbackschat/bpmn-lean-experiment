@@ -3,8 +3,8 @@ import test from "node:test";
 
 import { SemanticProcessCompilerId } from "@bpmn-lean/semantic-core";
 import {
-  engineProcessLocatorForScheduleExecution,
   observeEngineProcessFlowNodeOccurrences,
+  parseEngineProcessLocator,
 } from "@bpmn-lean/engine-api";
 
 const definition = {
@@ -21,13 +21,18 @@ test("observes occurrences through one opaque locator without exposing host iden
     getHandle: (workflowId: string) => ({
       query: async (name: string, request: unknown) => {
         calls.push({ workflowId, name, request });
-        return { kind: "notReady" };
+        return {
+          ...(request as Record<string, unknown>),
+          kind: "notReady",
+        };
       },
     }),
   } as never;
   const result = await observeEngineProcessFlowNodeOccurrences({
     temporalClient,
-    locator: engineProcessLocatorForScheduleExecution("execution-address"),
+    locator: parseEngineProcessLocator(
+      "bpmn-process-work-v1:execution-address",
+    ),
     definition,
     processId: "Process_1",
     processInstanceId: "Instance_1",
@@ -37,8 +42,13 @@ test("observes occurrences through one opaque locator without exposing host iden
   assert.deepEqual(result, { kind: "notReady" });
   assert.deepEqual(calls, [{
     workflowId: "execution-address",
-    name: "bpmn-flow-node-occurrences",
-    request: { afterRevision: 9, limit: 7 },
+    name: "bpmn-workflow-publication-segment-selection",
+    request: {
+      protocol: "bpmn-lean.workflow-publication-segments.v1",
+      processInstanceId: "Instance_1",
+      afterRevision: 9,
+      limit: 7,
+    },
   }]);
   assert.equal(JSON.stringify(result).includes("execution-address"), false);
 });
@@ -70,7 +80,7 @@ test("rejects malformed locators before delegation and keeps unavailability sepa
   assert.deepEqual(
     await observeEngineProcessFlowNodeOccurrences({
       temporalClient,
-      locator: engineProcessLocatorForScheduleExecution("missing"),
+      locator: parseEngineProcessLocator("bpmn-process-work-v1:missing"),
       definition,
       processId: "Process_1",
       processInstanceId: "Instance_1",

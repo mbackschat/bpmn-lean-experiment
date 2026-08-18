@@ -154,8 +154,7 @@ test("compare-and-set admits only the closed lifecycle and cleanup progression",
       DefinitionScheduleState.Cancelling,
       {
         state: DefinitionScheduleState.Started,
-        executionWorkflowId: "opaque-workflow",
-        firstRunId: "opaque-first-run",
+        processLocator: "bpmn-process-work-v1:opaque-workflow",
       },
     );
     assert.equal(started?.state, DefinitionScheduleState.Started);

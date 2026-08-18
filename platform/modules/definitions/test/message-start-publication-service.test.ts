@@ -407,9 +407,6 @@ function service(
         capture.canonicalInputs.push(processInstanceId);
         return `canonical-locator:${encodeURIComponent(processInstanceId)}`;
       },
-      scheduleExecutionLocator: () => {
-        throw new Error("Message Start must not mint a Schedule locator");
-      },
     },
   });
 }

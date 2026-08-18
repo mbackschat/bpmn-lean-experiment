@@ -123,9 +123,7 @@ export * from "./definition-message-start.js";
 export * from "./definition-schedule.js";
 export {
   engineProcessLocatorForCanonicalProcess,
-  engineProcessLocatorForScheduleExecution,
   engineProcessWorkLocatorForCanonicalProcess,
-  engineProcessWorkLocatorForScheduleExecution,
   parseEngineProcessLocator,
   parseEngineProcessWorkLocator,
   serializeEngineProcessLocator,

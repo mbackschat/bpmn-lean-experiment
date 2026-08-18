@@ -99,7 +99,5 @@ function requireNonemptyWireString(value: string, name: string): string {
 export type EngineProcessWorkLocator = EngineProcessLocator;
 export const engineProcessWorkLocatorForCanonicalProcess =
   engineProcessLocatorForCanonicalProcess;
-export const engineProcessWorkLocatorForScheduleExecution =
-  engineProcessLocatorForScheduleExecution;
 export const serializeEngineProcessWorkLocator = serializeEngineProcessLocator;
 export const parseEngineProcessWorkLocator = parseEngineProcessLocator;

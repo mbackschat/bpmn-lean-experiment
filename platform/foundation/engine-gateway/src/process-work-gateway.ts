@@ -3,7 +3,6 @@ import {
   EngineWorkDetailStatus,
   completeWork as completeEngineWork,
   engineProcessWorkLocatorForCanonicalProcess,
-  engineProcessWorkLocatorForScheduleExecution,
   observeOpenWork as observeEngineOpenWork,
   parseEngineProcessWorkLocator,
   readWorkDetail as readEngineWorkDetail,
@@ -56,14 +55,6 @@ export class BpmnProcessWorkGateway {
   canonicalLocator(processInstanceId: string): SerializedProcessWorkLocator {
     return serializeEngineProcessWorkLocator(
       engineProcessWorkLocatorForCanonicalProcess(processInstanceId),
-    );
-  }
-
-  scheduleExecutionLocator(
-    executionWorkflowId: string,
-  ): SerializedProcessWorkLocator {
-    return serializeEngineProcessWorkLocator(
-      engineProcessWorkLocatorForScheduleExecution(executionWorkflowId),
     );
   }
 

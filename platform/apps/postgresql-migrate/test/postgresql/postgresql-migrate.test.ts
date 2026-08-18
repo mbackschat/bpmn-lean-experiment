@@ -24,6 +24,7 @@ const expectedMigrationNames = [
   "0007_work-snapshot-projections__7ce3355fe4f46448e40657fe33eec4571eb4ebe881f1bec52b23cd3a699c8238",
   "0008_incident-snapshot-projections__475e620b5e1e088138ef0c39d83ad2b91813eb48129c53f32c1bfc60b53d45ab",
   "0009_projection-freshness__4be40408ea54a7eff181520e52acfa0d4685b76ce141d5b6f9b39b844e849ea9",
+  "0010_definitions-process-locator__ee9f0d01f34e89b0fcc0e28a38eb1446badb9d025e6d780f2e2f1971131db611",
 ] as const;
 const requiredRelations = [
   "bpmn_platform.exact_artifacts",
@@ -92,7 +93,7 @@ test(
     try {
       const first = await runMigrationApplication(databaseUrl.toString());
       assert.deepEqual(first, {
-        stdout: "9 PostgreSQL migrations are applied.\n",
+        stdout: "10 PostgreSQL migrations are applied.\n",
         stderr: "",
       });
 
@@ -122,7 +123,28 @@ test(
             WHERE singleton = true
           `,
         });
-        assert.deepEqual(schemaEpoch.rows, [{ epoch: 9 }]);
+        assert.deepEqual(schemaEpoch.rows, [{ epoch: 10 }]);
+
+        const scheduleLocatorColumns = await database.query<
+          Readonly<Record<string, unknown>> & Readonly<{ column_name: string }>
+        >({
+          text: `
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'bpmn_platform'
+              AND table_name = 'definition_schedules'
+              AND column_name IN (
+                'execution_workflow_id',
+                'first_run_id',
+                'process_locator'
+              )
+            ORDER BY column_name
+          `,
+        });
+        assert.deepEqual(
+          scheduleLocatorColumns.rows.map(({ column_name }) => column_name),
+          ["process_locator"],
+        );
 
         const relations = await database.query<
           Readonly<Record<string, unknown>> & Readonly<{

@@ -35,6 +35,12 @@ import type {
 import {
   assessDefinitionScheduleDescription,
 } from "./definition-schedule-description.js";
+import {
+  engineProcessLocatorForScheduleExecution,
+} from "./process-locator.js";
+import type {
+  EngineProcessLocator,
+} from "./process-locator.js";
 
 export const EngineDefinitionScheduleStatus = {
   Pending: "pending",
@@ -94,8 +100,7 @@ export type EngineDefinitionScheduleResult =
   | Readonly<{
       status: typeof EngineDefinitionScheduleStatus.Started;
       paused: boolean;
-      workflowId: string;
-      firstExecutionRunId: string;
+      locator: EngineProcessLocator;
     }>
   | Readonly<{
       status: typeof EngineDefinitionScheduleStatus.Missed;
@@ -287,8 +292,9 @@ async function inspectPreparedSchedule(
         ? {
             status: EngineDefinitionScheduleStatus.Started,
             paused: assessment.paused,
-            workflowId: assessment.workflowId,
-            firstExecutionRunId: assessment.firstExecutionRunId,
+            locator: engineProcessLocatorForScheduleExecution(
+              assessment.workflowId,
+            ),
           }
         : unexpectedPauseState(expectedPaused);
     case "missed":

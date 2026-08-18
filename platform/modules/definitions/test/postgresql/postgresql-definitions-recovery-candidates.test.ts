@@ -295,8 +295,8 @@ async function storeStartedSchedule(
     "creatingHost",
     {
       state: "started",
-      executionWorkflowId: `execution:${record.reference.scheduleId}`,
-      firstRunId: `run:${record.reference.scheduleId}`,
+      processLocator:
+        `bpmn-process-work-v1:execution%3A${record.reference.scheduleId}`,
     },
   );
   await repository.markCleanupComplete(record.reference, "started");

@@ -70,8 +70,7 @@ test("accepted response lost after action exhaustion persists one started instan
   const fixture = createFixture();
   fixture.host.createResults.push({
     phase: DefinitionScheduleHostPhase.Started,
-    executionWorkflowId: "opaque-workflow",
-    firstRunId: "opaque-first-run",
+    processLocator: "bpmn-process-work-v1:opaque-workflow",
   });
 
   const first = await fixture.service.put({ ...reference(), activationAt });
@@ -83,16 +82,12 @@ test("accepted response lost after action exhaustion persists one started instan
   assert.equal(first.schedule.instance?.processInstanceId, "process-instance-1");
   assert.equal(fixture.host.createCalls.length, 1);
   assert.equal(fixture.schedules.records.size, 1);
-  assert.deepEqual(fixture.scheduleLocatorInputs, [
-    "opaque-workflow",
-    "opaque-workflow",
-  ]);
   assert.deepEqual(fixture.confirmedPublications, [{
     instance: {
       processInstanceId: "process-instance-1",
       definition: timerDefinition(),
     },
-    locator: "schedule-locator:opaque-workflow",
+    locator: "bpmn-process-work-v1:opaque-workflow",
   }]);
   assert.doesNotMatch(
     JSON.stringify(fixture.confirmedPublications),
@@ -109,8 +104,7 @@ test("restart completes terminal cleanup after a successful delete response is l
   const fixture = createFixture();
   fixture.host.createResults.push({
     phase: DefinitionScheduleHostPhase.Started,
-    executionWorkflowId: "opaque-workflow",
-    firstRunId: "opaque-first-run",
+    processLocator: "bpmn-process-work-v1:opaque-workflow",
   });
   fixture.host.failNextDeleteAfterSuccess = true;
 
@@ -206,8 +200,7 @@ test("started host action wins a cancellation race and remains privately address
   await fixture.service.put({ ...reference(), activationAt });
   fixture.host.pauseResults.push({
     phase: DefinitionScheduleHostPhase.Started,
-    executionWorkflowId: "opaque-race-workflow",
-    firstRunId: "opaque-race-run",
+    processLocator: "bpmn-process-work-v1:opaque-race-workflow",
   });
 
   await assert.rejects(
@@ -216,7 +209,10 @@ test("started host action wins a cancellation race and remains privately address
   );
   const stored = await fixture.schedules.get(reference());
   assert.equal(stored?.state, DefinitionScheduleState.Started);
-  assert.equal(stored?.executionWorkflowId, "opaque-race-workflow");
+  assert.equal(
+    stored?.processLocator,
+    "bpmn-process-work-v1:opaque-race-workflow",
+  );
   const visible = await fixture.service.get(reference());
   assert.equal(visible?.status, DefinitionScheduleState.Started);
   assert.doesNotMatch(JSON.stringify(visible), /opaque-race/u);
@@ -312,7 +308,6 @@ function createFixture() {
     instance: Readonly<{ processInstanceId: string; definition: DefinitionMetadata }>;
     locator: string;
   }>> = [];
-  const scheduleLocatorInputs: string[] = [];
   const confirmedInstances = new ConfirmedProcessInstancePublicationService({
     repository: new InMemoryConfirmedProcessInstanceRepository(),
     operate: { recordConfirmedProcessInstance: async () => undefined },
@@ -338,10 +333,6 @@ function createFixture() {
       canonicalLocator: () => {
         throw new Error("Schedule must not mint a canonical Process locator");
       },
-      scheduleExecutionLocator: (executionWorkflowId: string) => {
-        scheduleLocatorInputs.push(executionWorkflowId);
-        return `schedule-locator:${executionWorkflowId}`;
-      },
     },
   } as const;
   const service = new DefinitionScheduleService(dependencies);
@@ -351,7 +342,6 @@ function createFixture() {
     schedules,
     host,
     confirmedPublications,
-    scheduleLocatorInputs,
     setNow: (value: string) => {
       now = Date.parse(value);
     },
@@ -431,8 +421,7 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
       state: DefinitionScheduleState.Creating,
       cleanupComplete: false,
       cancellationOrigin: null,
-      executionWorkflowId: null,
-      firstRunId: null,
+      processLocator: null,
     };
     this.records.set(key, record);
     return { inserted: true, record: structuredClone(record) };

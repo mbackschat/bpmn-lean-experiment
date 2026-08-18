@@ -7,6 +7,7 @@ import {
   deleteBpmnDefinitionSchedule,
   inspectBpmnDefinitionSchedule,
   pauseBpmnDefinitionSchedule,
+  serializeEngineProcessLocator,
 } from "@bpmn-lean/engine-api";
 import type {
   EngineDefinitionCompilationResult,
@@ -81,8 +82,7 @@ export type DefinitionScheduleHostResult =
     }>
   | Readonly<{
       phase: typeof DefinitionScheduleHostPhase.Started;
-      executionWorkflowId: string;
-      firstRunId: string;
+      processLocator: string;
     }>
   | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Missed }>
   | Readonly<{
@@ -233,8 +233,7 @@ function mapHostResult(
     case EngineDefinitionScheduleStatus.Started:
       return {
         phase: DefinitionScheduleHostPhase.Started,
-        executionWorkflowId: result.workflowId,
-        firstRunId: result.firstExecutionRunId,
+        processLocator: serializeEngineProcessLocator(result.locator),
       };
     case EngineDefinitionScheduleStatus.Missed:
       return { phase: DefinitionScheduleHostPhase.Missed };

@@ -181,7 +181,6 @@ export function createCrossReplicaEngineRuntime(
     },
     processWork: {
       canonicalLocator: (processInstanceId: string) => `shared:${processInstanceId}`,
-      scheduleExecutionLocator: (workflowId: string) => `shared:${workflowId}`,
       readWorkDetail: async (request: Readonly<{
         hostingProcessInstanceId: string;
         taskId: PublicWorkTask["task"]["id"];

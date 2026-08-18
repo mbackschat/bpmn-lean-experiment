@@ -85,7 +85,6 @@ export interface ConfirmedProcessInstanceWorkSubscriber {
 /** Product 1 owns locator minting; Definitions persists only its opaque wire value. */
 export interface ProcessWorkLocatorFactory {
   canonicalLocator(processInstanceId: string): string;
-  scheduleExecutionLocator(executionWorkflowId: string): string;
 }
 
 export type DirectProcessInstanceDescription = Readonly<{

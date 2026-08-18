@@ -135,8 +135,14 @@ test("started Schedule retry repairs recording without repeating its host action
   assert.deepEqual(retried.schedule.instance, exactIdentity("schedule-instance"));
   assert.equal(hostCreates, 1);
   assert.deepEqual(publisher.attempts, [
-    exactPublication("schedule-instance", "schedule:execution-workflow"),
-    exactPublication("schedule-instance", "schedule:execution-workflow"),
+    exactPublication(
+      "schedule-instance",
+      "bpmn-process-work-v1:execution-workflow",
+    ),
+    exactPublication(
+      "schedule-instance",
+      "bpmn-process-work-v1:execution-workflow",
+    ),
   ]);
 });
 
@@ -370,8 +376,7 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
       state: DefinitionScheduleState.Creating,
       cleanupComplete: false,
       cancellationOrigin: null,
-      executionWorkflowId: null,
-      firstRunId: null,
+      processLocator: null,
     };
     return { inserted: true, record: structuredClone(this.record) };
   }
@@ -485,8 +490,7 @@ function scheduleHost(
     case DefinitionScheduleHostPhase.Started:
       result = {
         phase,
-        executionWorkflowId: "execution-workflow",
-        firstRunId: "first-run",
+        processLocator: "bpmn-process-work-v1:execution-workflow",
       };
       break;
     case DefinitionScheduleHostPhase.Pending:
@@ -564,8 +568,6 @@ function publicationIdentities() {
 const testLocators = {
   canonicalLocator: (processInstanceId: string) =>
     `canonical:${encodeURIComponent(processInstanceId)}`,
-  scheduleExecutionLocator: (executionWorkflowId: string) =>
-    `schedule:${encodeURIComponent(executionWorkflowId)}`,
 } as const;
 
 function confirmedInstances(

@@ -174,20 +174,22 @@ test("response-lost inspection classifies the same running and exhausted action 
   );
 
   fake.phase = "running";
-  assert.deepEqual(await inspectBpmnDefinitionSchedule(request), {
+  const running = await inspectBpmnDefinitionSchedule(request);
+  assert.deepEqual(running, {
     status: EngineDefinitionScheduleStatus.Started,
     paused: false,
-    workflowId: "execution-workflow-opaque",
-    firstExecutionRunId: "first-run-opaque",
+    locator: "bpmn-process-work-v1:execution-workflow-opaque",
   });
+  assert.deepEqual(findPrivateResultKeys(running), []);
 
   fake.phase = "recent";
-  assert.deepEqual(await inspectBpmnDefinitionSchedule(request), {
+  const recent = await inspectBpmnDefinitionSchedule(request);
+  assert.deepEqual(recent, {
     status: EngineDefinitionScheduleStatus.Started,
     paused: false,
-    workflowId: "execution-workflow-opaque",
-    firstExecutionRunId: "first-run-opaque",
+    locator: "bpmn-process-work-v1:execution-workflow-opaque",
   });
+  assert.deepEqual(findPrivateResultKeys(recent), []);
   assert.notEqual("execution-workflow-opaque", "configured-workflow-base-42");
   assert.equal(fake.scheduleCreates, 1);
 });
@@ -454,6 +456,20 @@ function normalizedSpec(dueAt: Date): unknown {
 function requireRecord(value: unknown): Record<string, unknown> {
   assert.ok(typeof value === "object" && value !== null && !Array.isArray(value));
   return value as Record<string, unknown>;
+}
+
+function findPrivateResultKeys(value: unknown, path = "result"): string[] {
+  if (typeof value !== "object" || value === null) return [];
+  return Object.entries(value).flatMap(([key, nested]) => {
+    const nestedPath = `${path}.${key}`;
+    return [
+      ...(/^(?:client|descriptor|directory|firstExecutionRunId|handle|recovery|runId|segment|workflowId)$/u
+          .test(key)
+        ? [nestedPath]
+        : []),
+      ...findPrivateResultKeys(nested, nestedPath),
+    ];
+  });
 }
 
 function sha256(bytes: Uint8Array): string {

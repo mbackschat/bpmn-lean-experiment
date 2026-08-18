@@ -6,8 +6,8 @@ import { ProcessStatus, StimulusKind } from "@bpmn-lean/semantic-core";
 
 import {
   EngineIncidentObservationStatus,
-  engineProcessLocatorForScheduleExecution,
   observeEngineProcessIncidents,
+  parseEngineProcessLocator,
   submitEngineIncidentOperation,
 } from "@bpmn-lean/engine-api";
 
@@ -41,7 +41,7 @@ test("uses the exact execution locator and maps every observation status", async
   assert.deepEqual(
     await observeEngineProcessIncidents({
       temporalClient: client,
-      locator: engineProcessLocatorForScheduleExecution("execution"),
+      locator: parseEngineProcessLocator("bpmn-process-work-v1:execution"),
       hostingProcessInstanceId: instanceId,
     }),
     {
@@ -52,7 +52,7 @@ test("uses the exact execution locator and maps every observation status", async
   assert.deepEqual(
     await observeEngineProcessIncidents({
       temporalClient: client,
-      locator: engineProcessLocatorForScheduleExecution("unavailable"),
+      locator: parseEngineProcessLocator("bpmn-process-work-v1:unavailable"),
       hostingProcessInstanceId: instanceId,
     }),
     { status: EngineIncidentObservationStatus.Unavailable },
@@ -74,7 +74,7 @@ test("submits the exact command at the decoded private address", async () => {
   assert.deepEqual(
     await submitEngineIncidentOperation({
       temporalClient: client,
-      locator: engineProcessLocatorForScheduleExecution("execution"),
+      locator: parseEngineProcessLocator("bpmn-process-work-v1:execution"),
       hostingProcessInstanceId: instanceId,
       stimulus,
     }),

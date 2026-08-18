@@ -60,11 +60,11 @@ export class PostgresqlDefinitionScheduleRepository
             timer_start_event_id, timer_duration_ms, activation_at, due_at,
             process_instance_id, host_schedule_id, configured_workflow_id_base,
             state, cleanup_complete, cancellation_origin,
-            execution_workflow_id, first_run_id
+            process_locator
           ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
             $12, $13, $14, $15, $16, $17, $18,
-            'creating', false, NULL, NULL, NULL
+            'creating', false, NULL, NULL
           )
           ON CONFLICT (process_id, version, schedule_id) DO NOTHING
           RETURNING *
@@ -149,17 +149,16 @@ export class PostgresqlDefinitionScheduleRepository
       text: `
         UPDATE bpmn_platform.definition_schedules
         SET state = $1, cleanup_complete = $2, cancellation_origin = $3,
-          execution_workflow_id = $4, first_run_id = $5
-        WHERE process_id = $6 AND version = $7 AND schedule_id = $8
-          AND state = $9
+          process_locator = $4
+        WHERE process_id = $5 AND version = $6 AND schedule_id = $7
+          AND state = $8
         RETURNING *
       `,
       values: [
         next.state,
         next.cleanupComplete,
         next.cancellationOrigin,
-        encodeNullablePostgresqlText(next.executionWorkflowId),
-        encodeNullablePostgresqlText(next.firstRunId),
+        encodeNullablePostgresqlText(next.processLocator),
         encodePostgresqlText(reference.processId),
         reference.version,
         encodePostgresqlText(reference.scheduleId),
@@ -300,9 +299,8 @@ export function decodePostgresqlDefinitionScheduleRecord(
   const cancellationOrigin = decodeCancellationOrigin(
     requireNullableString(row, "cancellation_origin"),
   );
-  const executionWorkflowId = requireNullableByteText(row, "execution_workflow_id");
-  const firstRunId = requireNullableByteText(row, "first_run_id");
-  requireStateFields(state, cancellationOrigin, executionWorkflowId, firstRunId);
+  const processLocator = requireNullableByteText(row, "process_locator");
+  requireStateFields(state, cancellationOrigin, processLocator);
   const cleanupComplete = requireBoolean(row, "cleanup_complete");
   if (!isTerminal(state) && cleanupComplete) {
     throw new TypeError("PostgreSQL schedule cleaned a nonterminal Schedule");
@@ -328,8 +326,7 @@ export function decodePostgresqlDefinitionScheduleRecord(
     state,
     cleanupComplete,
     cancellationOrigin,
-    executionWorkflowId,
-    firstRunId,
+    processLocator,
   };
 }
 
@@ -370,12 +367,9 @@ function applyTransition(
           ? current.cancellationOrigin
           : null)
       : transition.cancellationOrigin,
-    executionWorkflowId: transition.executionWorkflowId === undefined
-      ? current.executionWorkflowId
-      : transition.executionWorkflowId,
-    firstRunId: transition.firstRunId === undefined
-      ? current.firstRunId
-      : transition.firstRunId,
+    processLocator: transition.processLocator === undefined
+      ? current.processLocator
+      : transition.processLocator,
   };
 }
 
@@ -394,8 +388,7 @@ function requireLegalTransition(
   requireStateFields(
     next.state,
     next.cancellationOrigin,
-    next.executionWorkflowId,
-    next.firstRunId,
+    next.processLocator,
   );
 }
 
@@ -436,19 +429,17 @@ function legalNextStates(
 function requireStateFields(
   state: DefinitionScheduleState,
   origin: DefinitionScheduleCancellationOrigin | null,
-  workflowId: string | null,
-  runId: string | null,
+  processLocator: string | null,
 ): void {
   if ((state === DefinitionScheduleState.Cancelling) !== (origin !== null)) {
     throw new TypeError("PostgreSQL schedule has invalid cancellation origin");
   }
   if ((state === DefinitionScheduleState.Started) !==
-      (workflowId !== null && runId !== null)) {
-    throw new TypeError("PostgreSQL schedule has invalid execution identity");
+      (processLocator !== null)) {
+    throw new TypeError("PostgreSQL schedule has invalid Process locator");
   }
-  if ((workflowId !== null && !isNonemptyWellFormed(workflowId)) ||
-      (runId !== null && !isNonemptyWellFormed(runId))) {
-    throw new TypeError("PostgreSQL schedule has malformed execution identity");
+  if (processLocator !== null && !isNonemptyWellFormed(processLocator)) {
+    throw new TypeError("PostgreSQL schedule has malformed Process locator");
   }
 }
 

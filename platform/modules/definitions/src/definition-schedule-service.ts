@@ -290,9 +290,9 @@ export class DefinitionScheduleService {
   ): Promise<DefinitionScheduleRecord> {
     const reconciled = await this.#reconcileLifecycle(record, knownBytes);
     if (reconciled.state === DefinitionScheduleState.Started) {
-      if (reconciled.executionWorkflowId === null) {
+      if (reconciled.processLocator === null) {
         throw new DefinitionScheduleIntegrityError(
-          "started Schedule has no execution Workflow identity",
+          "started Schedule has no opaque Process locator",
         );
       }
       await this.#dependencies.confirmedInstances.publishConfirmed({
@@ -300,9 +300,7 @@ export class DefinitionScheduleService {
           processInstanceId: reconciled.identity.processInstanceId,
           definition: toPublicDefinition(reconciled.definition),
         },
-        locator: this.#dependencies.locators.scheduleExecutionLocator(
-          reconciled.executionWorkflowId,
-        ),
+        locator: reconciled.processLocator,
       });
     }
     return reconciled;
@@ -439,14 +437,12 @@ export class DefinitionScheduleService {
           `pending host result is invalid from ${record.state}`,
         );
       case DefinitionScheduleHostPhase.Started:
-        requireScheduleIdentity(result.executionWorkflowId, "executionWorkflowId");
-        requireScheduleIdentity(result.firstRunId, "firstRunId");
+        requireScheduleIdentity(result.processLocator, "processLocator");
         return await this.#transitionTerminal(
           record,
           DefinitionScheduleState.Started,
           input,
-          result.executionWorkflowId,
-          result.firstRunId,
+          result.processLocator,
         );
       case DefinitionScheduleHostPhase.Missed:
         return await this.#transitionTerminal(
@@ -465,8 +461,7 @@ export class DefinitionScheduleService {
       typeof DefinitionScheduleState.Missed |
       typeof DefinitionScheduleState.Cancelled,
     input: DefinitionScheduleHostRequest,
-    executionWorkflowId: string | null = null,
-    firstRunId: string | null = null,
+    processLocator: string | null = null,
   ): Promise<DefinitionScheduleRecord> {
     if (
       record.state !== DefinitionScheduleState.CreatingHost &&
@@ -483,7 +478,7 @@ export class DefinitionScheduleService {
     const terminal = await this.#dependencies.schedules.compareAndSet(
       record.reference,
       record.state,
-      { state, executionWorkflowId, firstRunId },
+      { state, processLocator },
     );
     if (terminal === null) {
       return await this.#reconcileCurrent(record.reference);

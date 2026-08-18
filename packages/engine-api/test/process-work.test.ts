@@ -5,7 +5,6 @@ import { test } from "node:test";
 import {
   EngineOpenWorkStatus,
   engineProcessWorkLocatorForCanonicalProcess,
-  engineProcessWorkLocatorForScheduleExecution,
   observeOpenWork,
   parseEngineProcessWorkLocator,
   serializeEngineProcessWorkLocator,
@@ -13,7 +12,9 @@ import {
 
 test("round-trips canonical and service-returned locators without exposing a field shape", () => {
   const direct = engineProcessWorkLocatorForCanonicalProcess("semantic-instance-42");
-  const schedule = engineProcessWorkLocatorForScheduleExecution("execution/id ✓ 42");
+  const schedule = parseEngineProcessWorkLocator(
+    "bpmn-process-work-v1:execution%2Fid%20%E2%9C%93%2042",
+  );
 
   assert.match(serializeEngineProcessWorkLocator(direct), /^bpmn-process-work-v1:/u);
   assert.equal(
@@ -34,8 +35,12 @@ test("round-trips canonical and service-returned locators without exposing a fie
 });
 
 test("addresses Schedule work only through the service execution locator", async () => {
-  const configured = engineProcessWorkLocatorForScheduleExecution("configured-base");
-  const execution = engineProcessWorkLocatorForScheduleExecution("service-execution");
+  const configured = parseEngineProcessWorkLocator(
+    "bpmn-process-work-v1:configured-base",
+  );
+  const execution = parseEngineProcessWorkLocator(
+    "bpmn-process-work-v1:service-execution",
+  );
   const task = {
     id: { processInstanceId: "host", elementId: "Task", activation: 1 },
     name: null,

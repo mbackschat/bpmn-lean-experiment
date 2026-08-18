@@ -217,7 +217,7 @@ export function registerDefinitionsRepositoryContract(
         await schedules.reserve(changedA),
         { inserted: false, record: { ...exactA, state: DefinitionScheduleState.Creating,
           cleanupComplete: false, cancellationOrigin: null,
-          executionWorkflowId: null, firstRunId: null } },
+          processLocator: null } },
       );
       assert.deepEqual(
         (await schedules.listForDefinition(definition)).map(
@@ -258,8 +258,7 @@ export function registerDefinitionsRepositoryContract(
           DefinitionScheduleState.Creating,
           {
             state: DefinitionScheduleState.Started,
-            executionWorkflowId: "execution",
-            firstRunId: "run",
+            processLocator: "bpmn-process-work-v1:execution",
           },
         ),
         /illegal schedule transition/u,

@@ -65,8 +65,7 @@ export type DefinitionScheduleRecord = NewDefinitionScheduleRecord & Readonly<{
   state: DefinitionScheduleState;
   cleanupComplete: boolean;
   cancellationOrigin: DefinitionScheduleCancellationOrigin | null;
-  executionWorkflowId: string | null;
-  firstRunId: string | null;
+  processLocator: string | null;
 }>;
 
 export type DefinitionScheduleReservation = Readonly<{
@@ -77,8 +76,7 @@ export type DefinitionScheduleReservation = Readonly<{
 export type DefinitionScheduleTransition = Readonly<{
   state: DefinitionScheduleState;
   cancellationOrigin?: DefinitionScheduleCancellationOrigin | null;
-  executionWorkflowId?: string | null;
-  firstRunId?: string | null;
+  processLocator?: string | null;
   cleanupComplete?: boolean;
 }>;
 
@@ -151,8 +149,7 @@ export type PendingDefinitionScheduleHostResult = Readonly<{
 
 export type StartedDefinitionScheduleHostResult = Readonly<{
   phase: typeof DefinitionScheduleHostPhase.Started;
-  executionWorkflowId: string;
-  firstRunId: string;
+  processLocator: string;
 }>;
 
 export type MissedDefinitionScheduleHostResult = Readonly<{

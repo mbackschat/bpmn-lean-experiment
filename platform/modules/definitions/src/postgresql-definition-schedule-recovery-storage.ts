@@ -67,16 +67,15 @@ export async function applyDefinitionScheduleRecovery(
       text: `
         UPDATE bpmn_platform.definition_schedules
         SET state = $1, cleanup_complete = $2, cancellation_origin = $3,
-          execution_workflow_id = $4, first_run_id = $5
-        WHERE process_id = $6 AND version = $7 AND schedule_id = $8
-          AND state = $9
+          process_locator = $4
+        WHERE process_id = $5 AND version = $6 AND schedule_id = $7
+          AND state = $8
       `,
       values: [
         next.state,
         next.cleanupComplete,
         next.cancellationOrigin,
-        encodeNullablePostgresqlText(next.executionWorkflowId),
-        encodeNullablePostgresqlText(next.firstRunId),
+        encodeNullablePostgresqlText(next.processLocator),
         encodePostgresqlText(expected.reference.processId),
         expected.reference.version,
         encodePostgresqlText(expected.reference.scheduleId),
@@ -108,11 +107,8 @@ function applyTransition(
     cancellationOrigin: transition.cancellationOrigin === undefined
       ? (transition.state === "cancelling" ? current.cancellationOrigin : null)
       : transition.cancellationOrigin,
-    executionWorkflowId: transition.executionWorkflowId === undefined
-      ? current.executionWorkflowId
-      : transition.executionWorkflowId,
-    firstRunId: transition.firstRunId === undefined
-      ? current.firstRunId
-      : transition.firstRunId,
+    processLocator: transition.processLocator === undefined
+      ? current.processLocator
+      : transition.processLocator,
   };
 }

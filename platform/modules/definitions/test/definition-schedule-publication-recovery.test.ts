@@ -36,8 +36,7 @@ test("restart republishes a stored started Schedule after confirmation persisten
       DefinitionScheduleState.CreatingHost,
       {
         state: DefinitionScheduleState.Started,
-        executionWorkflowId: "execution-workflow",
-        firstRunId: "first-run",
+        processLocator: "bpmn-process-work-v1:execution-workflow",
       },
     );
     await initial.markCleanupComplete(
@@ -76,7 +75,6 @@ test("restart republishes a stored started Schedule after confirmation persisten
         confirmedInstances,
         locators: {
           canonicalLocator: () => "unused-canonical",
-          scheduleExecutionLocator: (workflowId) => `locator:${workflowId}`,
         },
       }).reconcileAll();
       assert.deepEqual(confirmedPublications, [record.identity.processInstanceId]);

@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  engineProcessLocatorForScheduleExecution,
-  serializeEngineProcessLocator,
-} from "@bpmn-lean/engine-api";
 import type {
   EngineProcessExecutionObservationRequest,
 } from "@bpmn-lean/engine-api";
@@ -12,6 +8,8 @@ import {
   BpmnProcessExecutionPublicationGateway,
   createBpmnEngineGatewayRuntime,
 } from "@bpmn-lean/platform-engine-gateway";
+
+import { publicationSegmentResponse } from "./publication-segment-test-support.ts";
 
 const definition: EngineProcessExecutionObservationRequest["definition"] = {
   compiler: "bpmn-source-semantic-process" as
@@ -22,75 +20,33 @@ const definition: EngineProcessExecutionObservationRequest["definition"] = {
   sourceOverlay: null,
 } as const;
 
-test("delegates once with exact public identity and returns no private locator", async () => {
+test("traverses one paired segment snapshot without returning its private locator", async () => {
   const calls: unknown[] = [];
   const processId = "Process";
   const processInstanceId = "instance";
+  const execution = executionResult(processId, processInstanceId);
   const gateway = new BpmnProcessExecutionPublicationGateway({
     getHandle: (workflowId: string) => ({
       query: async (name: string, request: unknown) => {
         calls.push({ workflowId, name, request });
-        return {
-          kind: "available",
-          page: {
+        return publicationSegmentResponse(
+          name,
+          request,
+          {
             definition,
             processId,
             processInstanceId,
-            requestedAfterRevision: 0,
-            pageThroughRevision: 1,
             headRevision: 1,
-            batches: [{
-              commandId: "start",
-              fromRevision: 0,
-              throughRevision: 1,
-              transitions: [{
-                revision: 1,
-                logicalTimeMs: 0,
-                transition: {
-                  kind: "externalStimulus",
-                  stimulus: {
-                    kind: "startProcess",
-                    commandId: "start",
-                    processId,
-                    instanceId: processInstanceId,
-                    initialVariables: [],
-                  },
-                },
-                positionDelta: {
-                  consumedTokens: [],
-                  producedTokens: [],
-                  enteredScopes: [],
-                  exitedScopes: [],
-                },
-              }],
-            }],
-            current: {
-              revision: 1,
-              state: {
-                kind: "state",
-                instanceId: processInstanceId,
-                status: "completed",
-                activeWaits: [],
-                openUserTasks: [],
-                openMessageSubscriptions: [],
-                openTimers: [],
-                openEffects: [],
-                openIncidents: [],
-                variables: [],
-                enabledInteractions: [],
-                logicalTimeMs: 0,
-              },
-              controlTokens: [],
-              scopes: [],
-            },
+            current: execution.page.current,
+            currentOpen: [],
           },
-        };
+          execution,
+          occurrenceCounterpart(processId, processInstanceId),
+        );
       },
     }),
   } as never);
-  const locator = serializeEngineProcessLocator(
-    engineProcessLocatorForScheduleExecution("execution-workflow"),
-  );
+  const locator = "bpmn-process-work-v1:execution-workflow";
 
   const result = await gateway.observe({
     locator,
@@ -102,13 +58,96 @@ test("delegates once with exact public identity and returns no private locator",
   });
 
   assert.equal(result.kind, "available");
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
   assert.equal(JSON.stringify(calls).includes("execution-workflow"), true);
   assert.equal(JSON.stringify(calls).includes('"afterRevision":0'), true);
   assert.equal("locator" in result, false);
   assert.equal("workflowId" in result, false);
   assert.equal("runId" in result, false);
 });
+
+function executionResult(processId: string, processInstanceId: string) {
+  return {
+    kind: "available",
+    page: {
+      definition,
+      processId,
+      processInstanceId,
+      requestedAfterRevision: 0,
+      pageThroughRevision: 1,
+      headRevision: 1,
+      batches: [{
+        commandId: "start",
+        fromRevision: 0,
+        throughRevision: 1,
+        transitions: [{
+          revision: 1,
+          logicalTimeMs: 0,
+          transition: {
+            kind: "externalStimulus",
+            stimulus: {
+              kind: "startProcess",
+              commandId: "start",
+              processId,
+              instanceId: processInstanceId,
+              initialVariables: [],
+            },
+          },
+          positionDelta: {
+            consumedTokens: [],
+            producedTokens: [],
+            enteredScopes: [],
+            exitedScopes: [],
+          },
+        }],
+      }],
+      current: {
+        revision: 1,
+        state: {
+          kind: "state",
+          instanceId: processInstanceId,
+          status: "completed",
+          activeWaits: [],
+          openUserTasks: [],
+          openMessageSubscriptions: [],
+          openTimers: [],
+          openEffects: [],
+          openIncidents: [],
+          variables: [],
+          enabledInteractions: [],
+          logicalTimeMs: 0,
+        },
+        controlTokens: [],
+        scopes: [],
+      },
+    },
+  } as const;
+}
+
+function occurrenceCounterpart(processId: string, processInstanceId: string) {
+  return {
+    kind: "available",
+    page: {
+      definition,
+      processId,
+      processInstanceId,
+      requestedAfterRevision: 0,
+      pageThroughRevision: 1,
+      headRevision: 1,
+      batches: [{
+        commandId: "start",
+        fromRevision: 0,
+        throughRevision: 1,
+        committedAtEpochMs: 0,
+        transitions: [{
+          revision: 1,
+          lifecycle: { started: [], ended: [] },
+        }],
+      }],
+      currentOpen: [],
+    },
+  };
+}
 
 test("rejects a noncanonical locator before any engine lookup", () => {
   let calls = 0;
