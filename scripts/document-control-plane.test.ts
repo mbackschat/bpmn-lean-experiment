@@ -121,24 +121,28 @@ test("rejects hollow plan and root-map contracts", async () => {
   const rootMap = await readFile(path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"), "utf8");
   const entries = parseOrderedWork(plan);
   assert.ok(entries.length > 1);
+  const activeEntry = entries.find((entry) => entry.state === "active");
+  const queuedEntry = entries.find((entry) => entry.state === "queued");
+  assert.ok(activeEntry !== undefined);
+  assert.ok(queuedEntry !== undefined);
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("`H2-WORKFLOW-CHAIN`", "`DOC-CONTROL-PLANE`")),
+    () => assertPlanControlPlane(plan.replace(`\`${queuedEntry.id}\` · **queued**`, `\`${activeEntry.id}\` · **queued**`)),
     /duplicate work ID/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("Active work ID: `DOC-CONTROL-PLANE`.", "Active work ID: `MISSING-WORK`.")),
+    () => assertPlanControlPlane(plan.replace(`Active work ID: \`${activeEntry.id}\`.`, "Active work ID: `MISSING-WORK`.")),
     /resume work ID/u,
   );
   assert.throws(
     () => assertPlanControlPlane(plan.replace(
-      /(1\. `DOC-CONTROL-PLANE`.+? · Maps: )(.+?)( · Action:)/u,
+      /(1\. `[^`]+` · \*\*active\*\*.+? · Maps: )(.+?)( · Action:)/u,
       "$1none$3",
     )),
     /route to at least one detail map/u,
   );
   assert.throws(
     () => assertPlanControlPlane(plan.replace(
-      /(1\. `DOC-CONTROL-PLANE` · \*\*active\*\* · Owner: )\[[^\]]+\]\([^)]+\)/u,
+      /(1\. `[^`]+` · \*\*active\*\* · Owner: )\[[^\]]+\]\([^)]+\)/u,
       "$1proposal",
     )),
     /owner link/u,
@@ -149,7 +153,7 @@ test("rejects hollow plan and root-map contracts", async () => {
   );
   assert.throws(
     () => assertPlanControlPlane(
-      replaceSection(plan, "Exact resume point", "Active work ID: `DOC-CONTROL-PLANE`."),
+      replaceSection(plan, "Exact resume point", `Active work ID: \`${activeEntry.id}\`.`),
     ),
     /next action/u,
   );
@@ -158,7 +162,7 @@ test("rejects hollow plan and root-map contracts", async () => {
       replaceSection(
         plan,
         "Exact resume point",
-        "Active work ID: `DOC-CONTROL-PLANE`.\n\nNext action: Do it.\n\nOracle: A gate.",
+        `Active work ID: \`${activeEntry.id}\`.\n\nNext action: Do it.\n\nOracle: A gate.`,
       ),
     ),
     /stop condition/u,

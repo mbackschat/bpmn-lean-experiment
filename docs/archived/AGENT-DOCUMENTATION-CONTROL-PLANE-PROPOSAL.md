@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
+Lifecycle: archived
 Review: approved-with-required-edits
 
 ## Current boundary
 
-The root/detail split, shared live Markdown lexer, closed structural route grammar, four exact special-context parsers, root-table-derived targets, tracked-path routing, reciprocal capsule delegation, and live-reference migration are implemented. The first structural closure audit confirmed every original defect was closed but exposed two remaining evidence-mechanism defects: nested container prefixes were not parsed as an ordered stack, and a singular destination could not account for a compound baseline unit whose claims intentionally moved to different owners. Closure remains blocked until those mechanisms, the exact matrix, and both same-reviewer audits are green. The prior closure targets `8c73c00` and `6af796e` remain unapproved and Horizon 2 remains paused. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, evidence claim, or Horizon 2 order.
+Archived after implementation. The stable control-plane contract now lives in `CLAUDE.md`, `DOC-DISCIPLINE.md`, `TESTING-SPEC.md`, `PLAN.md`, the routed implementation maps, and the executable scripts. The claim-preservation reviewer approved target `63e23a9`; the structural reviewer required one final exact ASCII-whitespace correction, implemented and executable-gate verified at `7710702`. The owner then directed that no further review be performed. This archived proposal retains rationale and review chronology but owns no current status, work order, or contract.
 
 ## Decision
 
@@ -29,11 +29,11 @@ The structural routing redesign used a new context-cold reviewer and three owner
 
 The earlier closure stage used two ordinary correction rounds at `b67d048` and `ccf1a78`. The owner authorized correction `b98c3f8` for four residual stale consumers and their line-wide guard escape, then authorized final correction `8c73c00` when the same reviewer proved that the sentence-level replacement retained the same association defect between clauses. The final reviewers still found mechanism-level false negatives and false positives. The structural redesign is a new proposal boundary, not a fifth patch or audit round against that failed mechanism.
 
-This proposal is documentation governance rather than a material semantic proposal under [the independent cold-review gate](TESTING-SPEC.md#independent-cold-review-gate). It selects no BPMN meaning, semantic profile, CIB relationship, checked-source or Semantic Process representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. The owner nevertheless requested a context-cold proposal review because an inefficient control plane can repeatedly misroute implementation work.
+This proposal is documentation governance rather than a material semantic proposal under [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). It selects no BPMN meaning, semantic profile, CIB relationship, checked-source or Semantic Process representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. The owner nevertheless requested a context-cold proposal review because an inefficient control plane can repeatedly misroute implementation work.
 
 ## Problem and measured baseline
 
-[PLAN.md](PLAN.md) correctly owns immediate work order and exact resume state, while [`implementation-status-router`](IMPLEMENTATION-MAP.md) correctly owns exact live implementation, proof, evidence, and absence status. Their content ownership is sound. Their mandatory-read shape is not.
+[PLAN.md](../PLAN.md) correctly owns immediate work order and exact resume state, while [`implementation-status-router`](../IMPLEMENTATION-MAP.md) correctly owns exact live implementation, proof, evidence, and absence status. Their content ownership is sound. Their mandatory-read shape is not.
 
 At proposal baseline `b5a2f1a`, `PLAN.md` contains 5,988 words against its 6,000-word backstop and `IMPLEMENTATION-MAP.md` contains 9,995 words against its 10,000-word backstop. Every session must therefore read 15,983 words before routing to the active proposal, specification, source, and tests.
 
@@ -43,7 +43,7 @@ The implementation map combines project foundation, Product 2, A12 adoption, wir
 
 The six most recent capacity increments all edited `PLAN.md`, `IMPLEMENTATION-MAP.md`, and Temporal research; five also edited the active Workflow-chain proposal. The same implementation state is currently summarized in the plan checkpoint, plan resume, plan evidence, implementation-map current claim, implementation-map Temporal inventory, proposal status, and research. Both latest increments crossed a documentation backstop and required prose compression instead of an ownership correction.
 
-This is the exact split trigger already stated by [the documentation discipline](DOC-DISCIPLINE.md#writing-and-linking): mandatory context has become impractical to read in full. Raising either word limit would preserve the mechanism that caused the pressure.
+This is the exact split trigger already stated by [the documentation discipline](../DOC-DISCIPLINE.md#writing-and-linking): mandatory context has become impractical to read in full. Raising either word limit would preserve the mechanism that caused the pressure.
 
 ## Selected control-plane contract
 
@@ -130,10 +130,10 @@ This rule intentionally permits two detail maps when one increment genuinely cro
 Implementation-status navigation is declared through one inline route atom with a closed source grammar. An atom is a regular inline Markdown link whose entire label is one exact inline-code role token, so it remains attached to the paragraph, list item, blockquote, or table cell whose local consequence needs the route.
 
 ```md
-[`implementation-status-router`](IMPLEMENTATION-MAP.md)
-[`implementation-status-root-owner`](IMPLEMENTATION-MAP.md#cross-area-invariants)
-[`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md#current-boundary)
-[`implementation-status-delegation:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer)
+[`implementation-status-router`](../IMPLEMENTATION-MAP.md)
+[`implementation-status-root-owner`](../IMPLEMENTATION-MAP.md#cross-area-invariants)
+[`implementation-status-owner:TEMPORAL-HOSTING`](../TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md#current-boundary)
+[`implementation-status-delegation:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer)
 ```
 
 The closed roles are:
@@ -215,7 +215,7 @@ No guard measures prose quality, parses English ownership, rewards additional do
 
 - Implement the selected root and five-map ownership split without losing or changing a current claim.
 - Lower the root word backstops and add the routing and stable-ID guards.
-- Update `CLAUDE.md`, [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), [docs/README.md](README.md), and affected guard documentation in the same change.
+- Update `CLAUDE.md`, [DOC-DISCIPLINE.md](../DOC-DISCIPLINE.md), [docs/README.md](../README.md), and affected guard documentation in the same change.
 - Remove closed or duplicated plan prose only after its current owner is verified.
 - Replace every live implementation-map reference with a valid structural route atom or one of the four exact structural controls, replace prose-based capsule delegation with the reciprocal delegation atom, and delete both natural-language classifiers without retaining a compatibility path.
 - Perform a context-cold, read-only closure review of the migration because its principal risk is silent claim loss even though it changes no semantic contract.
@@ -267,7 +267,7 @@ The proposal implementation is complete only when:
 
 ## Cold-review contract
 
-The requested reviewer works read-only against the immutable proposal commit with no forked conversation. It reads this proposal completely, [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), the current [PLAN.md](PLAN.md), the current [`implementation-status-router`](IMPLEMENTATION-MAP.md), the session-start instructions in [`CLAUDE.md`](../CLAUDE.md#start-every-session), and the current plan/map guards.
+The requested reviewer works read-only against the immutable proposal commit with no forked conversation. It reads this proposal completely, [DOC-DISCIPLINE.md](../DOC-DISCIPLINE.md), the current [PLAN.md](../PLAN.md), the current [`implementation-status-router`](../IMPLEMENTATION-MAP.md), the session-start instructions in [`CLAUDE.md`](../../CLAUDE.md#start-every-session), and the current plan/map guards.
 
 The review should answer:
 
@@ -280,4 +280,4 @@ The review should answer:
 7. Does any requirement create a new history board, status manifest, or bespoke source of truth that merely relocates the current problem?
 8. Is the expected reduction in startup context and ordinary edit churn large enough to justify the migration cost?
 
-Use the issue-first verdict format in [the independent cold-review gate](TESTING-SPEC.md#independent-cold-review-gate). Classify any route that can silently omit required context, any ambiguous owner, or any unguarded claim-loss path as required rather than advisory.
+Use the issue-first verdict format in [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Classify any route that can silently omit required context, any ambiguous owner, or any unguarded claim-loss path as required rather than advisory.

@@ -17,19 +17,19 @@ test("keeps the plan as one compact execution control document", async () => {
 test("rejects multiple active items, malformed states, duplicate IDs, and a dangling resume", async () => {
   const plan = await readFile(planPath, "utf8");
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("`H2-WORKFLOW-CHAIN` · **queued**", "`H2-WORKFLOW-CHAIN` · **active**")),
+    () => assertPlanControlPlane(plan.replace("`INTERCHANGE-ADMISSION` · **queued**", "`INTERCHANGE-ADMISSION` · **active**")),
     /exactly one active/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("`H2-WORKFLOW-CHAIN` · **queued**", "`H2-WORKFLOW-CHAIN` · **completed**")),
+    () => assertPlanControlPlane(plan.replace("`INTERCHANGE-ADMISSION` · **queued**", "`INTERCHANGE-ADMISSION` · **completed**")),
     /stable work contract/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("`H2-WORKFLOW-CHAIN`", "`DOC-CONTROL-PLANE`")),
+    () => assertPlanControlPlane(plan.replace("`INTERCHANGE-ADMISSION` · **queued**", "`H2-WORKFLOW-CHAIN` · **queued**")),
     /duplicate work ID/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("Active work ID: `DOC-CONTROL-PLANE`.", "Active work ID: `UNKNOWN-WORK`.")),
+    () => assertPlanControlPlane(plan.replace("Active work ID: `H2-WORKFLOW-CHAIN`.", "Active work ID: `UNKNOWN-WORK`.")),
     /resume work ID/u,
   );
 });

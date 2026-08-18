@@ -114,6 +114,8 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 
 Default to common, established ecosystem practices and native tool mechanisms. Do not invent a bespoke abstraction, policy, manifest, workflow, or duplicate source of truth when the standard practice satisfies the requirement. When a concrete project constraint requires a deviation, explain the standard approach, the exact gap, and the tradeoff to the owner and obtain approval before implementing the deviation.
 
+If ordinary work exposes a defect in the documentation control plane, surface it and treat it as a regular project defect: identify the root mechanism, reproduce the class with a separating guard, fix it proportionately, and continue the selected work. Do not silently route around the defect or automatically reopen a special documentation programme.
+
 For Product 2 PostgreSQL runtime or migration work, keep the ordinary package loop database-free and run the explicit runtime witness with `./scripts/pnpm.sh run test:platform-postgresql:runtime:local`. Run the complete shared-mode witness with `./scripts/pnpm.sh run test:platform-postgresql:local`; after committing PostgreSQL-backed platform changes, run `./scripts/pnpm.sh run test:pre-push:platform-postgresql` against an explicit database or use the local disposable-cluster command.
 
 ### Product 2 UI/UX source preflight
