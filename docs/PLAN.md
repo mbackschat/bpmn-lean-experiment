@@ -32,7 +32,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `DOC-CONTROL-PLANE`.
 
-Next action: commit this metadata-only PLAN correction and return it with proposal correction `e56d552` to the same reviewer for the already-authorized re-audit. Do not change the proposal or implement the redesign.
+Next action: return this committed metadata-only PLAN correction with proposal correction `e56d552` to the same reviewer for the already-authorized re-audit. Do not change the proposal or implement the redesign.
 
 Oracle: the same reviewer explicitly closes the stale execution-authority finding while retaining all three original proposal findings as closed and reports no new required finding.
 
