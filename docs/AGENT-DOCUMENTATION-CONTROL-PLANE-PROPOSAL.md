@@ -7,7 +7,7 @@ Review: approved-with-required-edits
 
 ## Current boundary
 
-Owner-approved on 2026-08-17 after the completed context-cold review. The selected control plane, claim-preservation migration, and review-required routing and guard corrections are implemented at `ccf1a78`; the focused documentation gate and complete repository gate pass there. The first correction audit closed the original findings and exposed stale matrix identities plus residual root-map ownership references. Target `ccf1a78` corrects the repository references, and its regenerated closure packet corrects the matrix identities for the second and final audit round. The same claim-preservation and routing reviewers must approve that correction target before closure. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
+Owner-approved on 2026-08-17 after the completed context-cold review. The selected control plane and claim-preservation migration are implemented, but closure remains pending. The two ordinary correction audits closed the claim-preservation findings and most routing findings; the owner then authorized one strictly bounded third correction and same-reviewer audit for four residual root-map ownership references and the guard escape that admitted them. Target `b98c3f8` closes exactly that scope, and its focused documentation gate and complete repository gate pass. The same claim-preservation and routing reviewers must approve the regenerated target-bound packet before closure. This proposal changes no product contract, semantic meaning, proof boundary, runtime behavior, or Horizon 2 order.
 
 ## Decision
 
@@ -21,9 +21,11 @@ The recommended decision is approval. The current ownership model protects truth
 |---|---|---|---|---|
 | Proposal | `be62f0c` | `fork-turns-none` | `approve-with-required-edits` | `3b58c68` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `ccf1a78` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `b98c3f8` | `not-recorded` | `pending` | `not-applicable` |
 
 The proposal stage used two correction rounds. The context-cold review found five required edits, which correction `871d500` closed; its audit exposed one packet-evidence integration defect introduced by that correction. Correction `3b58c68` made the migration matrix reviewer-visible and digest-bound in the closure packet contract, and the same reviewer approved the final audit without new findings.
+
+The closure stage used two ordinary correction rounds at `b67d048` and `ccf1a78`. After the routing reviewer found one remaining class of sentence-level guard escapes, the owner authorized one exceptional third correction and same-reviewer audit. Correction `b98c3f8` is limited to that class and its four known stale consumers. No fourth correction round is authorized.
 
 This proposal is documentation governance rather than a material semantic proposal under [the independent cold-review gate](TESTING-SPEC.md#independent-cold-review-gate). It selects no BPMN meaning, semantic profile, CIB relationship, checked-source or Semantic Process representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. The owner nevertheless requested a context-cold proposal review because an inefficient control plane can repeatedly misroute implementation work.
 
