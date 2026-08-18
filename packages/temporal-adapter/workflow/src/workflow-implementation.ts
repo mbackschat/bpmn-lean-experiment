@@ -503,7 +503,10 @@ export async function runBpmnProcessWithHostEffects(
         workflowChainFence === WorkflowChainFenceState.Rollover ||
         workflowChain.commandCapacity.rolloverRequested() ||
         runRetention?.rolloverRequested === true ||
-        workflowChainRolloverTriggered(workflowChain)
+        workflowChainRolloverTriggered(
+          workflowChain,
+          runRetention !== null && runRetention.traceEntries > 0,
+        )
       )
     ) {
       workflowChainFence = WorkflowChainFenceState.Rollover;

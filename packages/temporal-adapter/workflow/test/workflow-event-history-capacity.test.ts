@@ -20,7 +20,7 @@ test("selects the earliest SDK, count, or byte rollover trigger", () => {
       continueAsNewSuggested: false,
       historyLength: limits.eventHistoryEventLimit - 1,
       historySize: limits.eventHistoryByteLimit - 1,
-    }),
+    }, true),
     WorkflowChainEventHistoryTrigger.None,
   );
   assert.equal(
@@ -28,7 +28,7 @@ test("selects the earliest SDK, count, or byte rollover trigger", () => {
       continueAsNewSuggested: false,
       historyLength: limits.eventHistoryEventLimit,
       historySize: limits.eventHistoryByteLimit - 1,
-    }),
+    }, true),
     WorkflowChainEventHistoryTrigger.EventCount,
   );
   assert.equal(
@@ -36,7 +36,7 @@ test("selects the earliest SDK, count, or byte rollover trigger", () => {
       continueAsNewSuggested: false,
       historyLength: limits.eventHistoryEventLimit - 1,
       historySize: limits.eventHistoryByteLimit,
-    }),
+    }, true),
     WorkflowChainEventHistoryTrigger.ByteCount,
   );
   assert.equal(
@@ -44,9 +44,38 @@ test("selects the earliest SDK, count, or byte rollover trigger", () => {
       continueAsNewSuggested: true,
       historyLength: limits.eventHistoryEventLimit,
       historySize: limits.eventHistoryByteLimit,
-    }),
+    }, true),
     WorkflowChainEventHistoryTrigger.SdkSuggested,
   );
+});
+
+test("defers every history trigger until the current Run has retained work", () => {
+  for (const information of [
+    {
+      continueAsNewSuggested: true,
+      historyLength: 1,
+      historySize: 1,
+    },
+    {
+      continueAsNewSuggested: false,
+      historyLength: limits.eventHistoryEventLimit,
+      historySize: 1,
+    },
+    {
+      continueAsNewSuggested: false,
+      historyLength: 1,
+      historySize: limits.eventHistoryByteLimit,
+    },
+  ]) {
+    assert.equal(
+      decideWorkflowChainEventHistoryRollover(limits, information, false),
+      WorkflowChainEventHistoryTrigger.None,
+    );
+    assert.notEqual(
+      decideWorkflowChainEventHistoryRollover(limits, information, true),
+      WorkflowChainEventHistoryTrigger.None,
+    );
+  }
 });
 
 test("fails closed on malformed deterministic history information", () => {
@@ -56,7 +85,7 @@ test("fails closed on malformed deterministic history information", () => {
         continueAsNewSuggested: false,
         historyLength,
         historySize: 1,
-      }),
+      }, false),
       /historyLength/u,
     );
   }
@@ -66,7 +95,7 @@ test("fails closed on malformed deterministic history information", () => {
         continueAsNewSuggested: false,
         historyLength: 1,
         historySize,
-      }),
+      }, false),
       /historySize/u,
     );
   }

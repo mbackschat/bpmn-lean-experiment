@@ -249,6 +249,7 @@ Any future capsule with a time-sensitive race must reopen the logical-clock mapp
 - No Update handler transports the timer firing.
 - Workflow completion occurs only after the firing commits, internal closure reaches semantic completion, and accepted handlers have drained under the existing lifecycle specification.
 - Replay reconstructs the same timer command from the recorded timer Events and does not create a second semantic firing.
+- When a Workflow-chain Event History trigger is already active before the durable Timer is armed, the current Run may close with the committed Timer wait. A fresh successor defers that same trigger until it retains local work, then schedules the Timer from the carried occurrence, deadline, and logical time. This prevents an empty Continue-As-New loop without copying an armed Timer or changing BPMN time.
 - A duplicate callback is not expected from Temporal replay. Pure Lean/core witnesses still require identical-command stability and distinct-command stale refusal so adapter mistakes cannot create extra progress.
 - There is no caller-order or handler-interleaving question in the admitted topology. This absence is part of the profile, not a general timer guarantee.
 
@@ -285,6 +286,7 @@ The time-skipping server is an optional acceleration/calibration lane, not a sec
 | CIB due-date probe | Due transition is relative to controlled clock and job execution follows eligibility | Administrative job execution is mistaken for timer semantics |
 | Temporal bypass mutation | Missing durable timer history fails refinement although pure outcome matches | Workflow may synthesize deadline completion without waiting |
 | Worker-down-at-due witness | Timer survives Worker absence and completes after restart/replay | In-memory `setTimeout` or Worker-local callback implements durability |
+| Forced pre-arm rollover | Run 1 closes with the committed Timer wait before scheduling; Run 2 schedules and fires it exactly once | Timer is armed in the old Run, lost at the boundary, duplicated, or trapped in an empty continuation loop |
 
 ## Maintained evidence contract
 

@@ -62,9 +62,16 @@ const historyEventEnvelopeBytes = 4 * 1_024;
 export function decideWorkflowChainEventHistoryRollover(
   limits: WorkflowChainEventHistoryLimits,
   information: WorkflowChainEventHistoryInformation,
+  hasRetainedWork: boolean,
 ): WorkflowChainEventHistoryTrigger {
   requireNonnegativeSafeInteger(information.historyLength, "historyLength");
   requireNonnegativeSafeInteger(information.historySize, "historySize");
+  // A fresh continuation cannot shrink its own start history by continuing again. Deferring until
+  // this Run retains work prevents a low test threshold or SDK suggestion from creating an empty
+  // Continue-As-New loop; production continuation inputs remain bounded independently.
+  if (!hasRetainedWork) {
+    return WorkflowChainEventHistoryTrigger.None;
+  }
   if (information.continueAsNewSuggested) {
     return WorkflowChainEventHistoryTrigger.SdkSuggested;
   }
@@ -79,9 +86,14 @@ export function decideWorkflowChainEventHistoryRollover(
 
 export function workflowChainRolloverTriggered(
   limits: WorkflowChainEventHistoryLimits,
+  hasRetainedWork: boolean,
 ): boolean {
   const info = workflowInfo();
-  return decideWorkflowChainEventHistoryRollover(limits, info) !==
+  return decideWorkflowChainEventHistoryRollover(
+    limits,
+    info,
+    hasRetainedWork,
+  ) !==
     WorkflowChainEventHistoryTrigger.None;
 }
 

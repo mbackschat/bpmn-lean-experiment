@@ -1,7 +1,6 @@
 /** Forced chain evidence for the registered standards-only Message catch semantics. */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { setTimeout as delay } from "node:timers/promises";
 
 import {
   CanonicalObservationKind,
@@ -20,12 +19,9 @@ import type {
   StateObservation,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
-import type { WorkflowHandle } from "@temporalio/client";
-
 import {
   BpmnCommandIdentityConflict,
   BpmnWorkflowHostInputKind,
-  ExecutionPublicationResultKind,
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   bpmnTraceQueryName,
@@ -34,7 +30,6 @@ import {
   getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
-  observeTemporalExecutionPublication,
   processWorkflowId,
   readTestProcessTerminalResult,
   submitMessageDelivery,
@@ -44,7 +39,6 @@ import {
 } from "@bpmn-lean/temporal-testkit";
 import type {
   BpmnProcessWorkflow,
-  TemporalExecutionPublicationClient,
   TemporalHistory,
 } from "@bpmn-lean/temporal-testkit";
 
@@ -70,6 +64,11 @@ import {
   stopBpmnTestWorker,
 } from "./temporal-worker-test-support.ts";
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
+import {
+  waitForPublishedWorkflowChainState,
+  waitForWorkflowChainRunCount,
+  workflowChainRuns,
+} from "./workflow-chain-test-support.ts";
 
 const scenarioUrl = new URL(
   "../../../../scenarios/intermediate-catch-message/scenario.json",
@@ -183,9 +182,9 @@ test("a Message subscription and delivery cross forced Workflow Runs", async () 
         outcome: CommandOutcome.Rejected,
       },
     );
-    await waitForRunCount(environment, workflowId, 2);
+    await waitForWorkflowChainRunCount(environment, workflowId, 2);
 
-    const successorWaitingState = await waitForPublishedState(
+    const successorWaitingState = await waitForPublishedWorkflowChainState(
       environment,
       workflowId,
       semanticProcess,
@@ -206,8 +205,8 @@ test("a Message subscription and delivery cross forced Workflow Runs", async () 
         outcome: CommandOutcome.Committed,
       },
     );
-    await waitForRunCount(environment, workflowId, 3);
-    const taskState = await waitForPublishedState(
+    await waitForWorkflowChainRunCount(environment, workflowId, 3);
+    const taskState = await waitForPublishedWorkflowChainState(
       environment,
       workflowId,
       semanticProcess,
@@ -244,7 +243,7 @@ test("a Message subscription and delivery cross forced Workflow Runs", async () 
       BpmnCommandIdentityConflict,
     );
     assert.deepEqual(
-      await waitForPublishedState(
+      await waitForPublishedWorkflowChainState(
         environment,
         workflowId,
         semanticProcess,
@@ -295,7 +294,7 @@ test("a Message subscription and delivery cross forced Workflow Runs", async () 
     ]);
     assert.deepEqual(terminal.legacyMessageDeliveryRecords, []);
 
-    const runs = await workflowRuns(environment, workflowId);
+    const runs = await workflowChainRuns(environment, workflowId);
     assert.equal(runs.length, 3);
     const histories: TemporalHistory[] = [];
     const trace = [];
@@ -336,20 +335,6 @@ test("a Message subscription and delivery cross forced Workflow Runs", async () 
   }
 });
 
-async function waitForRunCount(
-  environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>>,
-  workflowId: string,
-  expected: number,
-): Promise<void> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    if ((await workflowRuns(environment, workflowId)).length === expected) {
-      return;
-    }
-    await delay(25);
-  }
-  assert.fail(`Message Workflow chain did not reach ${expected} Runs`);
-}
-
 function expectedSemanticExecution(
   semanticProcess: SemanticProcessProgram,
   stimuli: ReadonlyArray<Stimulus>,
@@ -378,58 +363,4 @@ function expectedSemanticExecution(
   }
   assert.ok(finalState !== undefined);
   return { trace, finalState };
-}
-
-async function waitForPublishedState(
-  environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>>,
-  workflowId: string,
-  semanticProcess: SemanticProcessProgram,
-  processInstanceId: string,
-  predicate: (state: StateObservation) => boolean,
-): Promise<StateObservation> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    let afterRevision = 0;
-    for (let pageIndex = 0; pageIndex < 16; pageIndex += 1) {
-      const result = await observeTemporalExecutionPublication(
-        environment.client.workflow as unknown as TemporalExecutionPublicationClient,
-        workflowId,
-        {
-          definition: semanticProcess.identity,
-          processId: semanticProcess.processId,
-          processInstanceId,
-        },
-        { afterRevision },
-      );
-      if (result.kind !== ExecutionPublicationResultKind.Available) {
-        break;
-      }
-      if (result.page.current !== null && predicate(result.page.current.state)) {
-        return result.page.current.state;
-      }
-      if (result.page.pageThroughRevision <= afterRevision) {
-        break;
-      }
-      afterRevision = result.page.pageThroughRevision;
-    }
-    await delay(25);
-  }
-  throw new Error("Message Workflow publication did not reach the expected state");
-}
-
-async function workflowRuns(
-  environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>>,
-  workflowId: string,
-): Promise<ReadonlyArray<Readonly<{ runId: string; startedAt: number }>>> {
-  return withDeadline((async () => {
-    const runs: Array<{ runId: string; startedAt: number }> = [];
-    for await (const execution of environment.client.workflow.list()) {
-      if (execution.workflowId === workflowId) {
-        runs.push({
-          runId: execution.runId,
-          startedAt: execution.startTime.getTime(),
-        });
-      }
-    }
-    return runs.sort((left, right) => left.startedAt - right.startedAt);
-  })(), 1_000, "Message Workflow-chain listing");
 }
