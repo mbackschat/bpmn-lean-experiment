@@ -15,13 +15,20 @@ import type {
   WorkflowTerminalResultV1,
 } from "@bpmn-lean/temporal-protocol";
 import {
+  WorkflowChainBudgetKind,
   canonicalWorkflowChainJson,
   requireWorkflowTerminalResultV1,
+  workflowChainCanonicalUtf8ByteLength,
+  workflowChainProductionLimit,
   workflowTerminalResultFormatV1,
 } from "@bpmn-lean/temporal-protocol";
 
 import { terminalProcessReceipt } from "./terminal-process-receipt.js";
 import type { WorkflowCommandRecoveryLedger } from "./workflow-command-recovery.js";
+import type {
+  WorkflowChainCapacityState,
+  WorkflowChainObservedCapacityBound,
+} from "./workflow-chain-capacity.js";
 
 type LegacyTerminalProcessReceipt = DeepReadonly<{
   definition: SemanticProcessIdentity;
@@ -32,6 +39,25 @@ type LegacyTerminalProcessReceipt = DeepReadonly<{
   };
   messageDeliveryRecords: MessageDeliveryRecord[];
 }>;
+
+export type WorkflowTerminalResultCapacityLimits = Readonly<{
+  terminalResultEnvelopeBytes: number;
+}>;
+
+export enum WorkflowTerminalResultCapacityPreflightKind {
+  Ready = "ready",
+  CapacityExceeded = "capacityExceeded",
+}
+
+export type WorkflowTerminalResultCapacityPreflight =
+  | Readonly<{
+      kind: WorkflowTerminalResultCapacityPreflightKind.Ready;
+      result: WorkflowTerminalResultV1;
+    }>
+  | Readonly<{
+      kind: WorkflowTerminalResultCapacityPreflightKind.CapacityExceeded;
+      failure: WorkflowChainObservedCapacityBound;
+    }>;
 
 export function terminalWorkflowResult(
   semanticProcess: SemanticProcessProgram,
@@ -94,6 +120,79 @@ export function terminalWorkflowResult(
   );
 }
 
+/** Converts an oversized private terminal envelope into the chain's typed host failure. */
+export function completeWorkflowChainTerminalResult(
+  semanticProcess: SemanticProcessProgram,
+  processInstanceId: string,
+  state: RuntimeState,
+  trace: ReadonlyArray<CanonicalObservation>,
+  recovery: WorkflowCommandRecoveryLedger,
+  capacity: WorkflowChainCapacityState,
+  publicRevision: number,
+  limits?: WorkflowTerminalResultCapacityLimits,
+): WorkflowTerminalResultV1 {
+  const preflight = preflightWorkflowTerminalResult(
+    semanticProcess,
+    processInstanceId,
+    state,
+    trace,
+    recovery,
+    limits,
+  );
+  switch (preflight.kind) {
+    case WorkflowTerminalResultCapacityPreflightKind.Ready:
+      return preflight.result;
+    case WorkflowTerminalResultCapacityPreflightKind.CapacityExceeded:
+      throw capacity.applicationFailureForObservedCapacity(
+        preflight.failure,
+        publicRevision,
+      );
+    default:
+      return assertNever(preflight);
+  }
+}
+
+export function preflightWorkflowTerminalResult(
+  semanticProcess: SemanticProcessProgram,
+  processInstanceId: string,
+  state: RuntimeState,
+  trace: ReadonlyArray<CanonicalObservation>,
+  recovery: WorkflowCommandRecoveryLedger,
+  limits: WorkflowTerminalResultCapacityLimits = productionCapacityLimits(),
+): WorkflowTerminalResultCapacityPreflight {
+  const configured = requireCapacityLimits(limits);
+  const candidate = {
+    format: workflowTerminalResultFormatV1,
+    receipt: terminalProcessReceipt(
+      semanticProcess,
+      processInstanceId,
+      state,
+      trace,
+    ),
+    entries: recovery.snapshot(),
+  } as const;
+  const observedValue = workflowChainCanonicalUtf8ByteLength(candidate);
+  if (observedValue > configured.terminalResultEnvelopeBytes) {
+    return {
+      kind: WorkflowTerminalResultCapacityPreflightKind.CapacityExceeded,
+      failure: {
+        budget: WorkflowChainBudgetKind.TerminalResultEnvelopeBytes,
+        configuredBound: configured.terminalResultEnvelopeBytes,
+        observedValue,
+      },
+    };
+  }
+  return {
+    kind: WorkflowTerminalResultCapacityPreflightKind.Ready,
+    result: requireWorkflowTerminalResultForExecution(
+      candidate,
+      semanticProcess,
+      processInstanceId,
+      recovery,
+    ),
+  };
+}
+
 /** Validates the private envelope against the exact execution and lifetime ledger before return. */
 export function requireWorkflowTerminalResultForExecution(
   value: unknown,
@@ -117,4 +216,38 @@ export function requireWorkflowTerminalResultForExecution(
     throw new TypeError("Workflow terminal result differs from its recovery ledger snapshot");
   }
   return result;
+}
+
+function productionCapacityLimits(): WorkflowTerminalResultCapacityLimits {
+  return {
+    terminalResultEnvelopeBytes: workflowChainProductionLimit(
+      WorkflowChainBudgetKind.TerminalResultEnvelopeBytes,
+    ),
+  };
+}
+
+function requireCapacityLimits(
+  value: WorkflowTerminalResultCapacityLimits,
+): WorkflowTerminalResultCapacityLimits {
+  if (value === null || typeof value !== "object" || Array.isArray(value) ||
+    Object.keys(value).length !== 1 ||
+    !Object.hasOwn(value, "terminalResultEnvelopeBytes")) {
+    throw new TypeError("Workflow terminal-envelope capacity limits are not closed");
+  }
+  if (!Number.isSafeInteger(value.terminalResultEnvelopeBytes) ||
+    value.terminalResultEnvelopeBytes < 1) {
+    throw new RangeError(
+      "terminalResultEnvelopeBytes limit must be a positive safe integer",
+    );
+  }
+  if (value.terminalResultEnvelopeBytes > workflowChainProductionLimit(
+    WorkflowChainBudgetKind.TerminalResultEnvelopeBytes,
+  )) {
+    throw new RangeError("terminalResultEnvelopeBytes limit exceeds production");
+  }
+  return { terminalResultEnvelopeBytes: value.terminalResultEnvelopeBytes };
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported Workflow terminal-capacity variant: ${String(value)}`);
 }

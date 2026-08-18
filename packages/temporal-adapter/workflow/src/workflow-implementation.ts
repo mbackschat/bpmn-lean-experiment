@@ -84,7 +84,10 @@ import {
   isTerminalProcessState,
   terminalProcessReceipt,
 } from "./terminal-process-receipt.js";
-import { terminalWorkflowResult } from "./workflow-terminal-completion.js";
+import {
+  completeWorkflowChainTerminalResult,
+  terminalWorkflowResult,
+} from "./workflow-terminal-completion.js";
 import {
   HostReadinessAction,
   enqueueStimulus,
@@ -552,13 +555,24 @@ export async function runBpmnProcessWithHostEffects(
     }
   }
 
+  if (workflowChain !== null) {
+    return completeWorkflowChainTerminalResult(
+      semanticProcess,
+      start.instanceId,
+      state,
+      trace,
+      workflowChain.recovery,
+      workflowChain.capacity,
+      commandPublication.execution.headRevision,
+    );
+  }
   return terminalWorkflowResult(
     semanticProcess,
     start.instanceId,
     state,
     trace,
     completedMessageDeliveryRecords(messageDeliveryResolutions),
-    workflowChain?.recovery ?? null,
+    null,
   );
 }
 

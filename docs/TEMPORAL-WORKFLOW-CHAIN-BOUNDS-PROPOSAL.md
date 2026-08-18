@@ -7,7 +7,7 @@ Review: approved-with-required-edits
 
 ## Current boundary
 
-Owner-approved on 2026-08-17; the independently reviewed first-green checkpoint plus recovery, atomic RuntimeState/paired-publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, and Query-response capacity are implemented. Production completion remains open.
+Owner-approved on 2026-08-17; the independently reviewed first-green checkpoint plus recovery, atomic RuntimeState/paired-publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, Query-response, and terminal-result capacity are implemented. Production completion remains open.
 
 This proposal selects the smallest complete Horizon 2 contract for Product 1. Owner approval authorizes the bounded contract below, followed by the required first-green semantic checkpoint and closure review.
 
@@ -139,7 +139,7 @@ The Product 1 client linearizes a page when one successful Query against the lat
 
 If Temporal no longer retains a selected closed Run, the client returns the existing `unavailable` result. It does not return `gap`, invent a batch from Event History, or derive an occurrence from a state difference. Availability after Temporal retention remains unsupported. Product 2's independently persisted projection remains the durable operator-history owner and never becomes semantic authority.
 
-The terminal result does not copy publication segments or the segment directory. Closed-Workflow observation continues through retained Queries and private segment traversal. The terminal result carries only the bounded terminal receipt and private command-recovery material required to close the command-response race.
+The terminal result does not copy publication segments or the segment directory. Closed-Workflow observation continues through retained Queries and private segment traversal. The terminal result carries only the bounded terminal receipt and private command-recovery material required to close the command-response race. After semantic terminal state and accepted-handler draining, the Workflow measures that exact envelope before return. Exactly 192 KiB returns unchanged; an overage fails with the typed adapter capacity contract while the retained failed Run continues to resolve the closing command and its conflict before using the exact terminal receipt as the unseen-command fallback.
 
 ## Safe rollover algorithm
 
