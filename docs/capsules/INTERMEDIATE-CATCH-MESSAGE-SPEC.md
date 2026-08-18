@@ -300,7 +300,7 @@ Two identical Signal deliveries with the same command ID and content are coalesc
 
 After the valid delivery, the existing User Task Update completes the Process. A Signal addressed only after Workflow closure is a Temporal closed-Workflow transport result, not a fabricated semantic stale rejection.
 
-No Message-specific timer, Activity, external effect, cancellation scope, retry policy, or rollover rule is added. Product 1 supplies the shared Workflow-chain lifecycle, but forced cross-Run Message rollover remains a separate hosting-evidence obligation. Temporal may retry Workflow Tasks, replay the Signal Event, or reconstruct a later Run; none creates another semantic delivery.
+No Message-specific timer, Activity, external effect, cancellation scope, retry policy, or rollover rule is added. Product 1 supplies the shared Workflow-chain lifecycle. Its forced cross-Run witness reduces one wrong-channel Signal before closing Run 1, carries the unchanged subscription into Run 2, accepts the valid delivery only after that closure, and preserves duplicate/conflict recovery in Run 3 without another semantic transition. Temporal may retry Workflow Tasks, replay the Signal Event, or reconstruct a later Run; none creates another semantic delivery.
 
 ### Host-capability obligation
 
