@@ -152,7 +152,7 @@ The following practices improve the existing project without expanding semantic 
 | Generic observation-bundle loader | Defer | One production semantic family does not justify infrastructure; the current scenario and pipeline already enforce answer separation and mutation sensitivity |
 | Immediate Lean folder reorganization into `Semantics/Conformance/Proofs` | Defer | The claim lanes are adopted, but moving one small capsule would be imitation-driven churn |
 | Tracked language-neutral `spec/` tree | Defer to first general ingestion capsule | It needs an approved clause format, parser preservation contract, and concrete second consumer; OMG text cannot be redistributed |
-| Open-only semantic-gaps document | Defer | [PLAN.md](../PLAN.md) and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) currently own the small live queue without duplication |
+| Open-only semantic-gaps document | Defer | [PLAN.md](../PLAN.md) and the applicable detail maps routed by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) currently own the small live queue without duplication |
 | Cross-project specification-sync ledger | Reject for current topology | There is no maintained second semantic repository requiring outbound reconciliation |
 | Full Lean trust-zone and axiom audit machinery | Defer | The current dependency-free theory is small; revisit when evidence I/O, generated code, opaque axioms, or public proof shipment materially enlarge the trust boundary |
 | A12 evidence schema, proof statements, or domain types | Reject | They encode a validation kernel rather than BPMN execution and would violate clean domain transfer |

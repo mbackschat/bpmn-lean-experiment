@@ -78,6 +78,43 @@ function linkedDetailMaps(value: string): ReadonlyArray<string> {
     .flatMap((match) => (match[1] === undefined ? [] : [match[1]]));
 }
 
+const rootImplementationMapLinkSource =
+  String.raw`\[[^\]\n]+\]\((?:[^)\n]*/)?IMPLEMENTATION-MAP\.md(?:#[^)\n]*)?\)`;
+const rootImplementationMapLink = new RegExp(rootImplementationMapLinkSource, "iu");
+const detailImplementationMapLink =
+  /\[[^\]\n]+\]\([^)\n]*(?:ENGINE-CONTRACTS-AND-SOURCE|ENGINE-RUNTIME-AND-PROOF|TEMPORAL-HOSTING|BPM-PLATFORM|ASSURANCE-AND-ADOPTION)-IMPLEMENTATION-MAP\.md(?:#[^)\n]*)?\)/iu;
+const implementationStatusWords =
+  /\b(?:exact|current|implemented|implementation|inventory|absent|absence|evidence|coverage|support|status|surface|boundary)\b/iu;
+const directImplementationOwnership =
+  /\b(?:belongs?|owned?|owns?|recorded|records?|closed|remains?|stays?|retains?|with the exact boundary in)\b/iu;
+const explicitRootImplementationMapRouting = [
+  new RegExp(
+    String.raw`\b(?:applicable\s+)?detail(?:\s+implementation)?\s+maps?\s+routed?\s+(?:by|through)(?:\s+the)?\s+${rootImplementationMapLinkSource}`,
+    "iu",
+  ),
+  new RegExp(String.raw`\buse\s+${rootImplementationMapLinkSource}\s+to\s+route\b`, "iu"),
+  new RegExp(
+    String.raw`${rootImplementationMapLinkSource}\s+routes?\b`,
+    "iu",
+  ),
+  new RegExp(
+    String.raw`\broot\s+(?:map\s+)?(?:router|routing)\b[^.!?\n]{0,160}${rootImplementationMapLinkSource}`,
+    "iu",
+  ),
+];
+
+export function isUnroutedRootImplementationMapStatusLine(line: string): boolean {
+  return line.split(/(?<=[.!?])\s+/u).some((sentence) => {
+    if (
+      !rootImplementationMapLink.test(sentence) ||
+      !implementationStatusWords.test(sentence) ||
+      !directImplementationOwnership.test(sentence)
+    ) return false;
+    if (detailImplementationMapLink.test(sentence)) return false;
+    return !explicitRootImplementationMapRouting.some((routing) => routing.test(sentence));
+  });
+}
+
 export type OrderedWorkEntry = Readonly<{
   id: string;
   state: "active" | "queued" | "later";

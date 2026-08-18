@@ -2,7 +2,7 @@
 
 ## Boundary
 
-This ledger owns the disposition of reviewed BPMN 2.0.2 Process Execution requirements. It records what the standard requires and how the project currently classifies that requirement; it does not describe implementation inventory, which belongs only in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+This ledger owns the disposition of reviewed BPMN 2.0.2 Process Execution requirements. It records what the standard requires and how the project currently classifies that requirement; it does not describe implementation inventory, which belongs in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
 The ledger is deliberately seeded from the requirements already reviewed for the sequential lifecycle, User Task interaction, import boundary, parallel fork/join, and Intermediate Catch Timer specs. It is not an exhaustive extraction of BPMN 2.0.2 and supplies no denominator for Process Execution Conformance. Counts here measure reviewed scope only.
 

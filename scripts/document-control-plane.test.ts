@@ -12,6 +12,7 @@ import {
   assertRootImplementationMap,
   assertTrackedPathRoutes,
   detailMapContracts,
+  isUnroutedRootImplementationMapStatusLine,
   parseOrderedWork,
   routeImplementationPath,
 } from "./document-control-plane.ts";
@@ -142,24 +143,33 @@ test("keeps exact status references routed to a detail owner", async () => {
       !file.startsWith("docs/reference/") &&
       file !== "docs/AGENT-DOCUMENTATION-CONTROL-PLANE-PROPOSAL.md",
   );
-  const statusWords = /\b(?:exact|current|implemented|absent|absence|evidence|coverage|support|status|surface|boundary)\b/iu;
-  const directOwnership = /\b(?:belongs?|owned?|owns?|recorded|records?|closed|remains?|stays?|retains?|with the exact boundary in)\b/iu;
-  const rootMap = /IMPLEMENTATION-MAP\.md/u;
-  const detailMap = /(?:ENGINE-CONTRACTS-AND-SOURCE|ENGINE-RUNTIME-AND-PROOF|TEMPORAL-HOSTING|BPM-PLATFORM|ASSURANCE-AND-ADOPTION)-IMPLEMENTATION-MAP\.md/u;
-  const routing = /\b(?:route|routes|routed|router|routing|entry point)\b/iu;
-
   const invalid: string[] = [];
   for (const file of maintainedOwners) {
     const document = await readFile(path.join(projectRoot, file), "utf8");
     for (const [index, line] of document.split("\n").entries()) {
-      if (rootMap.test(line) && statusWords.test(line) && directOwnership.test(line)) {
-        if (!detailMap.test(line) && !routing.test(line)) {
-          invalid.push(`${file}:${index + 1}: ${line}`);
-        }
+      if (isUnroutedRootImplementationMapStatusLine(line)) {
+        invalid.push(`${file}:${index + 1}: ${line}`);
       }
     }
   }
   assert.deepEqual(invalid, [], "exact-status claims must route beyond the root map");
+});
+
+test("ties root-map routing exemptions to the root-map reference", () => {
+  for (const line of [
+    "Exact implementation status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), beside one matching boundary route.",
+    "The implemented owners are routed through executable guards. The [implementation map](../IMPLEMENTATION-MAP.md) owns the exact source allocation.",
+    "Implementation inventory belongs only in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).",
+    "The current live queue remains in [PLAN.md](../PLAN.md) and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).",
+  ]) assert.equal(isUnroutedRootImplementationMapStatusLine(line), true, line);
+
+  for (const line of [
+    "Exact implementation status belongs in the [runtime and proof implementation map](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).",
+    "Implementation inventory belongs in the applicable detail maps routed by [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).",
+    "Exact current source allocation belongs in the applicable detail maps routed by the [implementation map](../IMPLEMENTATION-MAP.md).",
+    "Use [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) to route to the detail maps that own exact current status.",
+    "[IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) routes exact implementation status to the applicable detail maps.",
+  ]) assert.equal(isUnroutedRootImplementationMapStatusLine(line), false, line);
 });
 
 test("keeps the exact closed semantic-family owner complete", async () => {
