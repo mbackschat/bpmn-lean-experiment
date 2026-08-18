@@ -5,6 +5,7 @@ import {
   CanonicalObservationKind,
   CommandOutcome,
   StimulusKind,
+  VariableValueKind,
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import { ApplicationFailure } from "@temporalio/workflow";
@@ -202,7 +203,7 @@ async function runRolloverCase(
         for (let conflictIndex = 0;
           conflictIndex < (rolloverCase.historyPressureCommands ?? 0);
           conflictIndex += 1) {
-          const historyPressureStimulus = {
+          const historyPressureStimulus: CompleteUserTaskInstanceStimulus = {
             ...stimulus,
             commandId: `history-pressure-${conflictIndex}`,
             taskId: { ...stimulus.taskId, activation: 100 + conflictIndex },
@@ -210,7 +211,7 @@ async function runRolloverCase(
               {
                 name: "route",
                 value: {
-                  kind: "string" as const,
+                  kind: VariableValueKind.String,
                   value: `${conflictIndex}:${"x".repeat(12 * 1_024)}`,
                 },
               },
