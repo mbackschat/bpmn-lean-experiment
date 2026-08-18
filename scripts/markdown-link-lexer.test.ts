@@ -154,6 +154,39 @@ test("parses ordered list-then-blockquote fences and tab columns symmetrically",
   assert.equal(maskMarkdownIgnoredRegions(tabbed).includes("IMPLEMENTATION-MAP.md"), true);
 });
 
+test("compares complete list prefixes and closers in Markdown columns", () => {
+  for (const fence of ["```", "~~~"]) {
+    const markdown = `- ${fence}md
+  [hidden](hidden.md)
+\t${fence}
+IMPLEMENTATION-MAP.md
+[live](live.md)`;
+    const masked = maskMarkdownIgnoredRegions(markdown);
+    assert.equal(masked.length, markdown.length);
+    assert.equal(masked.includes("IMPLEMENTATION-MAP.md"), true);
+    assert.deepEqual(scanMarkdownLinks(markdown).map(({ destination }) => destination), ["live.md"]);
+  }
+});
+
+test("does not let an under-indented closer end a wider list fence", () => {
+  const wide = `-    \`\`\`md
+     [hidden](hidden.md)
+  \`\`\`
+[fake](UNKNOWN-IMPLEMENTATION-MAP.md)
+\`\`\`
+[live](live.md)`;
+  assert.deepEqual(scanMarkdownLinks(wide).map(({ destination }) => destination), ["live.md"]);
+});
+
+test("re-evaluates a nonmatching container line as outer Markdown", () => {
+  const markdown = `- \`\`\`md
+  [hidden](hidden.md)
+IMPLEMENTATION-MAP.md
+[live](live.md)`;
+  assert.equal(maskMarkdownIgnoredRegions(markdown).includes("IMPLEMENTATION-MAP.md"), true);
+  assert.deepEqual(scanMarkdownLinks(markdown).map(({ destination }) => destination), ["live.md"]);
+});
+
 test("does not treat reference links or escaped opening brackets as inline links", () => {
   assert.deepEqual(
     scanMarkdownLinks(

@@ -29,7 +29,7 @@ Exact BPMN bytes are captured, admitted under a guarded profile into a project-o
 - Process-variable observation, immutable effect arguments, and closed string/null successful/business-error patches
 - required canonical `submittedValues` on exact User Task completion, with empty-patch preservation and no legacy reader
 - raw CIB state-query, task-query, timer-job, effect-job, effect-execution, and mapping-execution observations with verifier-reconstructed canonical projections that reuse the adapter's ordering and constant-field rules
-- exhaustive schema-depth CIB fidelity classification for all twelve top-level state fields and every nested field
+- exhaustive schema-depth CIB fidelity classification for all twelve top-level state fields and every nested field, with exact schema/table path equality rejecting any top-level or nested omission
 - required `openMessageSubscriptions`, `openTimers`, and separate `openEffects`
 - typed `deliverMessage`, `fireTimer`, and `completeEffect`
 - registered literal-generation-1 effect-incident identity, strict `reportEffectFailure` and `retryIncident` stimuli, required `openIncidents`, incident active waits, and retry interactions, including nested public occurrence-equality validation outside JSON Schema

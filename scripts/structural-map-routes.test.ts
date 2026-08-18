@@ -350,6 +350,33 @@ test("a closed tab-indented list fence cannot mask a later live route", () => {
   expectError(documents, /NOTE\.md.*bare implementation-map path/u);
 });
 
+test("full list continuation width governs structural route visibility", () => {
+  const tabbed = validDocuments();
+  tabbed.set(
+    "docs/NOTE.md",
+    "- ```md\n  UNKNOWN-IMPLEMENTATION-MAP.md\n\t```\n- ~~~md\n  UNKNOWN-IMPLEMENTATION-MAP.md\n\t~~~\nIMPLEMENTATION-MAP.md\n",
+  );
+  expectError(tabbed, /NOTE\.md.*bare implementation-map path/u);
+});
+
+test("an under-indented closer cannot expose a fake structural route", () => {
+  const underIndented = validDocuments();
+  underIndented.set(
+    "docs/NOTE.md",
+    "-    ```md\n     hidden\n  ```\n[bad](UNKNOWN-IMPLEMENTATION-MAP.md)\n     ```\n",
+  );
+  assert.deepEqual(errors(underIndented), []);
+});
+
+test("a nonmatching container line ends a list-owned structural example", () => {
+  const documents = validDocuments();
+  documents.set(
+    "docs/NOTE.md",
+    "- ```md\n  UNKNOWN-IMPLEMENTATION-MAP.md\nIMPLEMENTATION-MAP.md\n",
+  );
+  expectError(documents, /NOTE\.md.*bare implementation-map path/u);
+});
+
 test("normalizes escapes before rejecting inline and reference-style map destinations", () => {
   const inline = validDocuments();
   inline.set("docs/NOTE.md", String.raw`Stale [status](IMPLEMENTATION-MAP\.md).`);

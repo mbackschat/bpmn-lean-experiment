@@ -39,46 +39,47 @@ function markdownLines(markdown: string): ReadonlyArray<Line> {
   return lines;
 }
 
-function markdownColumn(line: string, end: number): number {
+function expandTabs(line: string): string {
   let column = 0;
-  for (let index = 0; index < end; index += 1) {
-    column = line[index] === "\t" ? column + 4 - column % 4 : column + 1;
+  let expanded = "";
+  for (const character of line) {
+    const width = character === "\t" ? 4 - column % 4 : 1;
+    expanded += character === "\t" ? " ".repeat(width) : character;
+    column += width;
   }
-  return column;
-}
-
-function continuationEnd(line: string, start: number, columns: number): number {
-  const initial = markdownColumn(line, start);
-  let end = start;
-  while (/[ \t]/u.test(line[end] ?? "") && markdownColumn(line, end) - initial < columns) end += 1;
-  return markdownColumn(line, end) - initial === columns ? end : -1;
+  return expanded;
 }
 
 function containerContent(
   line: string, expected?: ReadonlyArray<ContainerPrefix>,
 ): Readonly<{ content: string; prefixes: ReadonlyArray<ContainerPrefix> }> | null {
+  line = expandTabs(line);
   let index = 0;
   const prefixes: ContainerPrefix[] = [];
   if (expected !== undefined) {
     for (const prefix of expected) {
       if (prefix === ">") {
-        const quote = /^ {0,3}>[ \t]?/u.exec(line.slice(index));
+        const quote = /^ {0,3}> ?/u.exec(line.slice(index));
         if (quote === null) return null;
         index += quote[0].length;
       } else {
-        const end = continuationEnd(line, index, prefix);
-        if (end === -1) return null;
-        index = end;
+        if (!line.startsWith(" ".repeat(prefix), index)) return null;
+        index += prefix;
       }
     }
     return { content: line.slice(index), prefixes: expected };
   }
   while (true) {
-    const prefix = /^( {0,3})(?:(>)[ \t]?|(?:[-+*]|\d{1,9}[.)])([ \t]))/u.exec(line.slice(index));
-    if (prefix === null) break;
-    const end = index + prefix[0].length;
-    prefixes.push(prefix[2] === ">" ? ">" : markdownColumn(line, end) - markdownColumn(line, index));
-    index = end;
+    const quote = /^ {0,3}> ?/u.exec(line.slice(index));
+    if (quote !== null) {
+      prefixes.push(">");
+      index += quote[0].length;
+      continue;
+    }
+    const list = /^ {0,3}(?:[-+*]|\d{1,9}[.)]) {1,4}/u.exec(line.slice(index));
+    if (list === null) break;
+    prefixes.push(list[0].length);
+    index += list[0].length;
   }
   return { content: line.slice(index), prefixes };
 }
@@ -93,9 +94,8 @@ function fenceAtLineStart(line: string): Fence | null {
   return { character, length: run.length, prefixes: container?.prefixes ?? [] };
 }
 
-function closesFence(line: string, fence: Fence): boolean {
-  const content = containerContent(line, fence.prefixes)?.content;
-  return content !== undefined && new RegExp(`^ {0,3}${fence.character}{${fence.length},}[ \\t]*$`, "u").test(content);
+function closesFence(content: string, fence: Fence): boolean {
+  return new RegExp(`^ {0,3}${fence.character}{${fence.length},}[ \\t]*$`, "u").test(content);
 }
 
 function isIndentedCode(line: string): boolean {
@@ -112,9 +112,9 @@ function fenceEnd(markdown: string, openingLineEnd: number, fence: Fence): numbe
   while (start <= markdown.length) {
     const end = lineEnd(markdown, start);
     const source = markdown.slice(start, end).replace(/\r$/u, "");
-    if (closesFence(source, fence)) {
-      return end;
-    }
+    const content = containerContent(source, fence.prefixes)?.content;
+    if (content === undefined) return start;
+    if (closesFence(content, fence)) return end;
     if (end === markdown.length) {
       break;
     }
