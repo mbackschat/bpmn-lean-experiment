@@ -94,7 +94,10 @@ test("rejects hollow plan and root-map contracts", async () => {
     /route to at least one detail map/u,
   );
   assert.throws(
-    () => assertPlanControlPlane(plan.replace("Owner: [approved proposal]", "Owner: approved proposal")),
+    () => assertPlanControlPlane(plan.replace(
+      /(1\. `DOC-CONTROL-PLANE` · \*\*active\*\* · Owner: )\[[^\]]+\]\([^)]+\)/u,
+      "$1proposal",
+    )),
     /owner link/u,
   );
   assert.throws(
