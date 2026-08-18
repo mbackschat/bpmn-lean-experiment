@@ -6,7 +6,6 @@
  * configuration declared the matching handlers.
  */
 import { setTimeout as delay } from "node:timers/promises";
-import { fileURLToPath } from "node:url";
 import type {
   DeepReadonly,
 } from "@bpmn-lean/semantic-core";
@@ -27,10 +26,12 @@ import {
 } from "@bpmn-lean/temporal-protocol";
 import type { EffectActivityImplementations } from "@bpmn-lean/temporal-protocol";
 import { boundEffectActivities } from "./bounded-effect-activities.js";
-
-const workflowsPath = fileURLToPath(
-  import.meta.resolve("@bpmn-lean/temporal-workflow/workflows"),
-);
+import type { BpmnWorkflowBundle } from "./workflow-bundle.js";
+import { loadBpmnWorkflowBundle } from "./workflow-bundle.js";
+import {
+  workflowBundleIdentity,
+  workflowDeploymentPollerIdentity,
+} from "./workflow-deployment-admission.js";
 const connectionDeadlineMs = 10_000;
 const workerStartupDeadlineMs = 20_000;
 const shutdownDeadlineMs = 10_000;
@@ -54,6 +55,10 @@ export class ExternalTemporalRuntime {
   private constructor(
     private readonly connection: NativeConnection,
     readonly workflowClient: TemporalWorkflowClient,
+    /** Exact executable bundle identity used by this Worker's pollers. */
+    readonly bundleIdentity: ReturnType<typeof workflowBundleIdentity>,
+    /** Fleet-visible identity content-bound to {@link bundleIdentity}. */
+    readonly workerIdentity: ReturnType<typeof workflowDeploymentPollerIdentity>,
     private readonly worker: Worker,
     private readonly workerRun: Promise<void>,
   ) {}
@@ -63,7 +68,25 @@ export class ExternalTemporalRuntime {
     options: ExternalTemporalRuntimeOptions,
     activities: EffectActivityImplementations,
   ): Promise<ExternalTemporalRuntime> {
+    return this.connectBundle(
+      options,
+      activities,
+      await loadBpmnWorkflowBundle(),
+    );
+  }
+
+  /** Starts from exact prebuilt bytes so deployment replay and polling share one artifact. */
+  static async connectBundle(
+    options: ExternalTemporalRuntimeOptions,
+    activities: EffectActivityImplementations,
+    workflowBundle: BpmnWorkflowBundle,
+  ): Promise<ExternalTemporalRuntime> {
     requireOptions(options);
+    const bundleIdentity = workflowBundleIdentity(workflowBundle);
+    const workerIdentity = workflowDeploymentPollerIdentity(
+      bundleIdentity,
+      options.identity,
+    );
     const connection = await withDeadline(
       NativeConnection.connect({ address: options.address }),
       connectionDeadlineMs,
@@ -78,10 +101,10 @@ export class ExternalTemporalRuntime {
       const worker = await withDeadline(
         Worker.create({
           connection,
-          identity: options.identity,
+          identity: workerIdentity,
           namespace: options.namespace,
           taskQueue: options.taskQueue,
-          workflowsPath,
+          workflowBundle,
           activities: boundEffectActivities(activities),
         }),
         workerStartupDeadlineMs,
@@ -97,6 +120,8 @@ export class ExternalTemporalRuntime {
       runtime = new ExternalTemporalRuntime(
         connection,
         workflowClient,
+        bundleIdentity,
+        workerIdentity,
         worker,
         workerRun,
       );
