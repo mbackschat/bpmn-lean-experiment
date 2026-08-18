@@ -63,7 +63,7 @@ function containerContent(
         if (quote === null) return null;
         index += quote[0].length;
       } else {
-        if (line.slice(index).trim() === "" && expected.slice(position).every((remaining) => typeof remaining === "number")) return { content: "", prefixes: expected };
+        if (/^ *$/u.test(line.slice(index)) && expected.slice(position).every((remaining) => typeof remaining === "number")) return { content: "", prefixes: expected };
         if (!line.startsWith(" ".repeat(prefix), index)) return null;
         index += prefix;
       }

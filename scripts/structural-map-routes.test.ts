@@ -397,7 +397,7 @@ UNKNOWN-IMPLEMENTATION-MAP.md
 
 test("blank lines stay inside list-owned structural examples", () => {
   for (const fence of ["```", "~~~"]) {
-    for (const blank of ["", " "]) {
+    for (const blank of ["", " ", "\t"]) {
       const documents = validDocuments();
       documents.set(
         "docs/NOTE.md",
@@ -409,6 +409,21 @@ ${blank}
 `,
       );
       assert.deepEqual(errors(documents), []);
+    }
+  }
+});
+
+test("Unicode whitespace cannot prolong list-owned structural examples", () => {
+  for (const fence of ["```", "~~~"]) {
+    for (const whitespace of ["\u00a0", "\u2003"]) {
+      for (const { opening, hidden, separator, continuation } of [
+        { opening: `- ${fence}md`, hidden: "  UNKNOWN-IMPLEMENTATION-MAP.md", separator: whitespace, continuation: "  " },
+        { opening: `> - ${fence}md`, hidden: ">   UNKNOWN-IMPLEMENTATION-MAP.md", separator: `> ${whitespace}`, continuation: ">   " },
+      ]) {
+        const documents = validDocuments();
+        documents.set("docs/NOTE.md", `${opening}\n${hidden}\n${separator}\n${continuation}IMPLEMENTATION-MAP.md\n`);
+        expectError(documents, /NOTE\.md.*bare implementation-map path/u);
+      }
     }
   }
 });

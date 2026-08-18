@@ -215,7 +215,7 @@ ${"    "}
 
 test("preserves list-owned fences across blank lines at exact offsets", () => {
   for (const fence of ["```", "~~~"]) {
-    for (const blank of ["", " "]) {
+    for (const blank of ["", " ", "\t"]) {
       const example = `- ${fence}md
   UNKNOWN-IMPLEMENTATION-MAP.md
 ${blank}
@@ -238,6 +238,27 @@ ${blank}
         containerStart: liveStart,
         containerEnd: markdown.length,
       }]);
+    }
+  }
+});
+
+test("Unicode whitespace cannot stand in for a list-owned ASCII blank", () => {
+  for (const fence of ["```", "~~~"]) {
+    for (const whitespace of ["\u00a0", "\u2003"]) {
+      for (const { opening, hidden, separator, continuation } of [
+        { opening: `- ${fence}md`, hidden: "  [hidden](hidden.md)", separator: whitespace, continuation: "  " },
+        { opening: `> - ${fence}md`, hidden: ">   [hidden](hidden.md)", separator: `> ${whitespace}`, continuation: ">   " },
+      ]) {
+        const fake = "[fake](UNKNOWN-IMPLEMENTATION-MAP.md)";
+        const markdown = `${opening}\n${hidden}\n${separator}\n${continuation}${fake}`;
+        const fakeStart = markdown.indexOf(fake);
+
+        assert.equal(maskMarkdownIgnoredRegions(markdown).slice(fakeStart), fake);
+        const [link] = scanMarkdownLinks(markdown);
+        assert.equal(link?.start, fakeStart);
+        assert.equal(link?.end, fakeStart + fake.length);
+        assert.equal(link?.destination, "UNKNOWN-IMPLEMENTATION-MAP.md");
+      }
     }
   }
 });
