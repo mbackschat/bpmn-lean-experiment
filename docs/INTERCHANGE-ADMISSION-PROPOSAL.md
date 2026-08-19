@@ -2,14 +2,16 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved-with-required-edits
+Lifecycle: draft
+Review: pending
 
 ## Current boundary
 
-This owner-approved proposal selects the first `INTERCHANGE-ADMISSION` tranche. The context-cold review of immutable proposal target `db18ea3` returned `approve-with-required-edits`. Its decisive counterexample found that the semantic-core value-domain gate currently admits string/null Process data for profiles whose artifacts exclude variables, including both the preserved-notation and Timer/User Task composition profiles. That is an existing profile-contract defect and a prerequisite to this composition, not behavior this proposal may preserve. The first warm correction audit of `b6c7716` closed the Definitions-metadata and finite-assurance findings but retained the need for a complete nonempty value-domain matrix and exact corpus denominators. The second warm correction audit of `d0bb491` closed the corpus finding and retained one missing approved value-domain cell: Structured Human Work Process start admits String/Null. The owner-authorized third correction `f773977` closed that cell and its artifact-reconciliation obligation, and the same reviewer approved it without further findings. Owner approval was recorded on 2026-08-19; implementation may proceed under the contract below. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
+This proposal selects the first `INTERCHANGE-ADMISSION` tranche. The context-cold review of immutable proposal target `db18ea3` returned `approve-with-required-edits`. Its decisive counterexample found that the semantic-core value-domain gate currently admits string/null Process data for profiles whose artifacts exclude variables, including both the preserved-notation and Timer/User Task composition profiles. That is an existing profile-contract defect and a prerequisite to this composition, not behavior this proposal may preserve. Three same-reviewer corrections through `f773977` closed the review findings, and owner approval was recorded on 2026-08-19.
 
-The source compiler already implements the reviewed preservation mechanism under `bpmn-2.0.2-user-task-preserved-notation-draft`. The current interchange gap is composition: that capability is unavailable to the CIB Seven User Task Process-data profile used to calibrate external whole models. Before composition, two declaration defects must close: external variable writes must follow an exhaustive profile-and-surface value-domain contract, and the already-preserved standard Definitions metadata must gain an explicit requirement-ledger row plus a profile feature. This proposal otherwise reuses the reviewed mechanism and its five existing structural requirements. It does not reinterpret Diagram Interchange, Collaboration, Lanes, Artifacts, Documentation, User Task lifecycle, or Process data.
+Implementation preflight then exposed a conflict the reviewed proposal had not accounted for: four value-domain profiles and the preserved-notation predecessor are content-bound by the non-updatable cyclic-control-flow preservation baseline. Adding feature atoms in place changed those profile digests and made the complete BPMN-source package gate fail before the new composition existed. This correction preserves those exact artifacts, replaces in-place atom reconciliation with the closed legacy-declaration rule below, and returns the changed evidence strategy to context-cold proposal review. Implementation remains paused. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
+
+The source compiler already implements the reviewed preservation mechanism under `bpmn-2.0.2-user-task-preserved-notation-draft`. The current interchange gap is composition: that capability is unavailable to the CIB Seven User Task Process-data profile used to calibrate external whole models. Before composition, two declaration defects must close: external variable writes must follow an exhaustive profile-and-surface value-domain contract, and the already-preserved standard Definitions metadata must gain an explicit requirement-ledger row plus an exact declaration that does not replace the frozen predecessor artifact. This proposal otherwise reuses the reviewed mechanism and its five existing structural requirements. It does not reinterpret Diagram Interchange, Collaboration, Lanes, Artifacts, Documentation, User Task lifecycle, or Process data.
 
 [PRESERVE-ONLY-ADMISSION-SPEC.md](PRESERVE-ONLY-ADMISSION-SPEC.md) owns preservation meaning, [PROFILE-PARAMETERIZED-ADMISSION-SPEC.md](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns executable profile composition, the [CIB-BPMN relationship register](CIB-BPMN-RELATION-REGISTER.md) owns CIB calibration, and [executable model corpus research](research/EXECUTABLE-BPMN-MODEL-CORPUS-RESEARCH.md) owns the external blocker ranking.
 
@@ -22,16 +24,16 @@ Add one named profile, `cibseven-2.2.0-user-task-process-data-preserved-notation
 
 The composition is registered as one closed profile identity. A caller does not select an execution profile and an independent preservation overlay. This prevents unreviewed arbitrary combinations and keeps admitted meaning content-bound to one profile ID.
 
-Before registering that successor, replace the semantic core's permissive value-domain default with a total profile-by-surface contract. Every registered profile and each external write surface, Process start, User Task completion, and effect completion, maps by exhaustive enum-based dispatch to one closed admitted value-kind set. An empty set admits only an empty patch. A missing profile or surface case is a compile-time or fail-closed error, never string/null permission by default. Each nonempty cell must correspond to an exact feature or extension declared by that profile artifact.
+Before registering that successor, replace the semantic core's permissive value-domain default with a total profile-by-surface contract. Every registered profile and each external write surface, Process start, User Task completion, and effect completion, maps by exhaustive enum-based dispatch to one closed admitted value-kind set. An empty set admits only an empty patch. A missing profile or surface case is a compile-time or fail-closed error, never string/null permission by default. Each nonempty cell must have one exact public declaration: a surface-specific feature atom in its profile artifact, or one closed legacy declaration whose immutable artifact digest is derived from the existing cyclic-control-flow baseline and whose profile README names the surface and value kinds exactly.
 
 This table is the complete nonempty matrix. Every omitted profile/surface cell is empty.
 
-| Registered profile | Surface | Admitted value kinds | Exact artifact atom after prerequisite reconciliation |
+| Registered profile | Surface | Admitted value kinds | Exact public declaration after prerequisite reconciliation |
 |---|---|---|---|
-| `cibseven-2.0.0-mapped-success-service-task-draft` | Effect completion | String | `effect-completion-string-local-data` |
-| `cibseven-2.0.0-mapped-boundary-error-service-task-draft` | Effect completion | String, Null | `effect-completion-string-null-local-data` |
-| `bpmn-2.0.2-simple-boolean-exclusive-gateway-draft` | Process start | String, Null | `process-start-string-null-data` |
-| `bpmn-2.0.2-inclusive-gateway-selected-branches-draft` | Process start | String, Null | `process-start-string-null-data` |
+| `cibseven-2.0.0-mapped-success-service-task-draft` | Effect completion | String | Frozen artifact features `string-variable`, `local-variable-output-mapping`, and `successful-effect-result`, plus the exact profile README declaration |
+| `cibseven-2.0.0-mapped-boundary-error-service-task-draft` | Effect completion | String, Null | Frozen artifact features `string-and-null-variables`, `local-variable-output-mapping`, and `typed-bpmn-error-result`, plus the exact profile README declaration |
+| `bpmn-2.0.2-simple-boolean-exclusive-gateway-draft` | Process start | String, Null | Frozen artifact feature `simple-boolean-expression-v1`, exclusions of Boolean, number, and nested Process values, plus the exact profile README declaration |
+| `bpmn-2.0.2-inclusive-gateway-selected-branches-draft` | Process start | String, Null | Frozen artifact feature `simple-boolean-expression-v1`, exclusions of data writes and non-selected value families, plus the exact profile README declaration |
 | `cibseven-2.2.0-service-task-incident-cancellation-draft` | Process start | String | `string-process-start-variable` |
 | `cibseven-2.2.0-user-task-process-data-draft` and the new preserved-notation successor | Process start | String, Null | `process-start-string-null-data` |
 | `cibseven-2.2.0-user-task-process-data-draft` and the new preserved-notation successor | User Task completion | String, Null | `user-task-string-null-completion-data` |
@@ -41,16 +43,18 @@ This table is the complete nonempty matrix. Every omitted profile/surface cell i
 | `bpmn-2.0.2-bpmn-lean-structured-human-work-draft` | Process start | String, Null | `process-start-string-null-data` |
 | `bpmn-2.0.2-bpmn-lean-structured-human-work-draft` | User Task completion | String, Null, Boolean, Integer, StringList | `user-task-string-null-boolean-completion-data`, `user-task-integer-completion-data`, and `user-task-ordered-string-list-completion-data` |
 
-The table does not infer capability from scenario payloads. Each cell restates an already-approved owner: the Simple Boolean language's String/Null Process context for Exclusive and Inclusive selection, the cyclic-control-flow specification's String/Null completion patch, the two mapped-effect specifications' Activity-local results, the incident-cancellation specification's selected String start binding, and the existing Process-data and Human Work accounts. The Structured Human Work artifact currently records only the negative Process-start exclusion for Integer and StringList; prerequisite reconciliation adds the exact positive `process-start-string-null-data` atom required by its existing String/Null account before executable dispatch changes. Where an artifact currently has only a broad atom such as `string-variable`, a negative exclusion, or no positive atom, the prerequisite replaces or supplements it with the exact atom in this table before the executable switch changes. This declaration repair does not add a value kind or write surface to any approved semantic account. In particular, the preserved-notation and Timer/User Task composition profiles remain empty at all three surfaces, and the parallel metadata profile remains empty at Process start.
+The table does not infer capability from scenario payloads. Each cell restates an already-approved owner: the Simple Boolean language's String/Null Process context for Exclusive and Inclusive selection, the cyclic-control-flow specification's String/Null completion patch, the two mapped-effect specifications' Activity-local results, the incident-cancellation specification's selected String start binding, and the existing Process-data and Human Work accounts. The Structured Human Work artifact currently records only the negative Process-start exclusion for Integer and StringList; prerequisite reconciliation adds the exact positive `process-start-string-null-data` atom required by its existing String/Null account before executable dispatch changes. This declaration repair does not add a value kind or write surface to any approved semantic account. In particular, the preserved-notation and Timer/User Task composition profiles remain empty at all three surfaces, and the parallel metadata profile remains empty at Process start.
 
-Production source may internally map several registered profiles to one enum-valued preservation capability. That internal reuse is not a second public profile language, wire field, manifest, or source of truth. The profile artifact remains the public declaration.
+The four legacy value-domain exceptions are closed to the mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, and Inclusive Gateway profile IDs above. Their expected artifact digests are read from the existing immutable cyclic-control-flow baseline rather than copied into another manifest. Each profile README must name the same surface and value kinds as this table, and the executable consistency guard must reject a changed digest, missing declaration, changed declaration, fifth exception, or exception for a profile absent from that baseline. Every other current or future nonempty cell requires the exact surface-specific artifact atom. No caller selects this exception and no production runtime reads Markdown.
+
+Production source may internally map several registered profiles to one enum-valued preservation capability. That internal reuse is not a second public profile language, wire field, manifest, or source of truth. A profile artifact remains the public machine-readable declaration; only the four frozen value-domain artifacts above use their existing feature/exclusion set plus exact profile README text as one closed compatibility declaration.
 
 ## Required, optional, and excluded
 
 Required:
 
 - a fail-closed, exhaustive profile-by-surface Process-data value-domain contract that removes undeclared string/null acceptance before composition;
-- one supported structural requirement, `BPMN-STRUCT-DEFINITIONS-METADATA-01`, plus the `retained-definitions-metadata` profile feature for standard Definitions `name`, `exporter`, and `exporterVersion`;
+- one supported structural requirement, `BPMN-STRUCT-DEFINITIONS-METADATA-01`; an exact predecessor README declaration that preserves its baseline-bound profile artifact; and the `retained-definitions-metadata` feature in the new successor profile for standard Definitions `name`, `exporter`, and `exporterVersion`;
 - one new CIB Seven User Task Process-data profile with the exact preservation bundle below;
 - unchanged contract-conforming old-profile behavior, caller bytes, and source-admission diagnostics, while undeclared variable-bearing caller bytes are intentionally rejected;
 - exact-source retention with preserved material excluded from the checked graph, Semantic Process program, runtime state, and public observation;
@@ -89,7 +93,7 @@ Preservation remains closed and recursive. A container is preserved only when ev
 
 `camunda:historyTimeToLive` is not safe inert metadata in this tranche. It is a source-level CIB configuration choice, while `CIB-CFG-0001` records the pinned host environment and default history TTL. The attribute remains rejected until a separate classified requirement selects its exact source spelling, value, and consequence. Rejecting it prevents the standard-preservation bundle from becoming a blanket vendor-extension bypass.
 
-`BPMN-STRUCT-DEFINITIONS-METADATA-01` owns only the standard `Definitions` attributes `name`, `exporter`, and `exporterVersion`, grounded in BPMN 2.0.2 Clause 8.2.1 and Table 8.1 plus the corresponding CMOF properties and XSD `tDefinitions` attributes. Production already retains those values in exact source bytes, but the preservation specification, requirement ledger, and predecessor profile artifact do not yet declare that capability exactly. The prerequisite reconciles those declarations and adds the feature to both the predecessor and successor profile artifacts without widening the parser, checked graph, runtime, or observation surface.
+`BPMN-STRUCT-DEFINITIONS-METADATA-01` owns only the standard `Definitions` attributes `name`, `exporter`, and `exporterVersion`, grounded in BPMN 2.0.2 Clause 8.2.1 and Table 8.1 plus the corresponding CMOF properties and XSD `tDefinitions` attributes. Production already retains those values in exact source bytes. The prerequisite adds the requirement-ledger and preservation-specification declarations, requires the frozen predecessor's README to name the exact retained attributes, and leaves that profile artifact byte-identical to the cyclic-control-flow baseline. The new successor alone adds the `retained-definitions-metadata` feature atom. Neither path widens the parser, checked graph, runtime, or observation surface.
 
 ## Profile contract
 
@@ -140,7 +144,7 @@ The first green reuses the exact [preserved-notation BPMN source](../scenarios/u
 The evidence lanes remain independent and finite:
 
 - source admission checks the closed recursive preserve/reject partition and typed refusals for the registered fixture and perturbation denominator;
-- an exhaustive profile-by-surface value-domain guard enumerates every registered profile independently of production dispatch, requires each admitted kind to have an artifact declaration, and checks both undeclared-data counterexamples;
+- an exhaustive profile-by-surface value-domain guard enumerates every registered profile independently of production dispatch, requires each admitted kind to have either its exact surface-specific artifact atom or one of the four digest-bound legacy declarations, and checks both undeclared-data counterexamples plus changed-digest, changed-README, and fifth-exception mutations;
 - the generalized seeded non-interference guard enumerates every preservation-enabled profile independently of production classification and checks that notation cannot reach the executed projection for the registered source/twin and perturbation denominator;
 - Lean and the pure TypeScript core execute the existing User Task Process-data account under the new profile identity;
 - pinned CIB Seven executes the exact notation-bearing source with the same selected string/null public-service behavior and produces new content-bound evidence;
@@ -160,7 +164,7 @@ The new scenario uses the existing Process-start command and User Task completio
 
 ## Compatibility and evolution
 
-This is an additive pre-release successor. It does not widen or replace an evidence-bound profile in place. Existing scenario, evidence, public example, and contract-conforming caller bytes remain valid and retain their current profile identity. Variable-bearing caller bytes that relied on the undeclared permissive default are deliberately rejected by the prerequisite correction.
+This is an additive pre-release successor. It does not widen or replace an evidence-bound profile in place. The five baseline-bound artifacts touched by the earlier attempted reconciliation, the four value-domain profiles plus the preserved-notation predecessor, remain byte-identical to their cyclic-control-flow baseline entries. Existing scenario, evidence, public example, and contract-conforming caller bytes remain valid and retain their current profile identity. Variable-bearing caller bytes that relied on the undeclared permissive default are deliberately rejected by the prerequisite correction.
 
 The shared internal preservation capability and the external variable-write value domain are selected by separate enum-based exhaustive switches over registered profile IDs. Unknown profiles and registered profiles without preservation reject the notation exactly as before; profiles without an explicitly declared value-domain cell accept only an empty patch at that surface. A second public capability-composition language is deferred unless repeated named successors demonstrate that the closed profile catalog is no longer maintainable.
 
@@ -168,7 +172,7 @@ The shared internal preservation capability and the external variable-write valu
 
 The current preservation owner, [preserved-element-classification.ts](../packages/bpmn-source/src/preserved-element-classification.ts), is near its owner limit. Reuse must extract the cohesive standard-notation capability rather than grow a second classifier or duplicate its lists. The current [pipeline case catalog](../packages/differential/test/pipeline-cases.ts) is at its owner limit and must not grow; the new case belongs in a separate registered case owner. `node scripts/what-binds.ts` remains the authority for the exact guards, registries, and current headroom when implementation begins.
 
-The implementation must not alter [semantic-profile.schema.json](../contracts/schemas/semantic-profile.schema.json) to admit two authorities or a caller-selected overlay. It must not add a second preservation manifest. The root profile artifact and the registered capability switch remain the two appropriate views: public declaration and executable dispatch.
+The implementation must not alter [semantic-profile.schema.json](../contracts/schemas/semantic-profile.schema.json) to admit two authorities or a caller-selected overlay. It must not add a second preservation or value-domain manifest, replace the cyclic-control-flow baseline, or add an allowlist that bypasses its profile-digest comparison. The existing baseline artifact is the sole digest source for the four legacy value-domain declarations and the preserved-notation predecessor. Profile artifacts plus the exact legacy README clauses form the public declaration, while the registered capability switches remain executable dispatch.
 
 ## Review and implementation boundary
 
@@ -178,14 +182,14 @@ A semantic-checkpoint review is required after the first complete executable pro
 
 ## Reopen conditions
 
-Reopen before preserving any construct that can change execution; before admitting foreign source content; before accepting a second unbound executable Process; before letting notation reach checked source, IL, runtime, or public observation; before changing the selected CIB relationships or value domain; before making preservation caller-selectable; or if the independent source/twin and seeded-defect guard cannot discriminate a leak.
+Reopen before preserving any construct that can change execution; before admitting foreign source content; before accepting a second unbound executable Process; before letting notation reach checked source, IL, runtime, or public observation; before changing the selected CIB relationships or value domain; before making preservation caller-selectable; before adding a fifth legacy value-domain declaration or changing one of its frozen profile digests; or if the independent source/twin and seeded-defect guard cannot discriminate a leak.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `db18ea3` | `fork-turns-none` | `approve-with-required-edits` | `f773977` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal stage used three correction rounds. The first two automatic rounds closed the original Definitions-metadata, finite-assurance, corpus-denominator, and value-domain-matrix findings except for one Structured Human Work Process-start cell. The owner explicitly authorized the third proposal-only round; correction `f773977` added that exact String/Null cell and its artifact-reconciliation obligation, and the same reviewer approved it without further findings.
+The earlier proposal stage used three correction rounds through `f773977`. Implementation then falsified its in-place artifact-reconciliation premise against the immutable cyclic-control-flow baseline. This redesign retains the selected semantics and public profile addition but changes the declaration evidence strategy, so it requires a new context-cold proposal review rather than another warm correction audit.
