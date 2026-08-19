@@ -48,6 +48,8 @@ const userTaskMetadataProfileId =
   "cibseven-2.2.0-user-task-assignment-form-metadata-draft";
 const parallelUserTaskMetadataProfileId =
   "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
+const processDataPreservedNotationProfileId =
+  "cibseven-2.2.0-user-task-process-data-preserved-notation-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -103,6 +105,59 @@ test("gives every registered semantic profile at least one example and no exampl
         ),
     },
     { profilesWithoutExample: [], unregisteredProfiles: [] },
+  );
+});
+
+test("registers Process data with preserved notation through the existing User Task driver", async () => {
+  assert.equal(
+    registeredProfiles.includes(processDataPreservedNotationProfileId),
+    true,
+  );
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) =>
+        path.basename(file) ===
+          "user-task-process-data-preserved-notation.json"
+      )
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  assert.deepEqual(
+    {
+      source: config.bpmn.file,
+      semanticProfile: config.bpmn.semanticProfile,
+      process: config.process,
+      interactions: config.interactions,
+      effectHandlers: config.effectHandlers,
+    },
+    {
+      source: path.join(
+        projectRoot,
+        "scenarios/user-task-preserved-notation/process.bpmn",
+      ),
+      semanticProfile: processDataPreservedNotationProfileId,
+      process: {
+        instanceId: "MvpExample_user_task_process_data_preserved_notation_1",
+        initialVariables: [
+          { name: "decision", value: { kind: "string", value: "pending" } },
+          {
+            name: "requestTitle",
+            value: { kind: "string", value: "Review invoice 42" },
+          },
+        ],
+      },
+      interactions: [{
+        kind: "completeUserTaskInstance",
+        elementId: "UserTask_Approve",
+        delayMs: 250,
+        inputVariableNames: ["decision", "requestTitle"],
+        submittedValues: [
+          { name: "decision", value: { kind: "string", value: "approved" } },
+          { name: "reviewNote", value: { kind: "null" } },
+        ],
+      }],
+      effectHandlers: [],
+    },
   );
 });
 

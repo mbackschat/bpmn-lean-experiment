@@ -1,0 +1,64 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/user-task-preserved-notation/process.bpmn",
+    "sourceId": "user-task-process-data-preserved-notation-source",
+    "semanticProfile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_user_task_process_data_preserved_notation_1",
+    "initialVariables": [
+      {
+        "name": "decision",
+        "value": {
+          "kind": "string",
+          "value": "pending"
+        }
+      },
+      {
+        "name": "requestTitle",
+        "value": {
+          "kind": "string",
+          "value": "Review invoice 42"
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Approve",
+      "delayMs": 250,
+      "inputVariableNames": [
+        "decision",
+        "requestTitle"
+      ],
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        },
+        {
+          "name": "reviewNote",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}
