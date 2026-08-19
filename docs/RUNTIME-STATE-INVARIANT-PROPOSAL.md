@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: owner-approved
 Review: approved-with-required-edits
 
 ## Question and current boundary
@@ -144,9 +144,9 @@ This proposal selects no CIB Seven relationship and requires no register entry. 
 
 ## Required, optional, and excluded
 
-Required: the three-layer predicate with per-conjunct named sub-predicates, the six obligations, the fourteen-arm bridge reclassification, the independent TypeScript validator, the four separating negatives carried through the existing parity channel, and the owner-document amendments.
+Required: the three-layer predicate with per-conjunct named sub-predicates, the six obligations, the fourteen-arm bridge reclassification, the independent TypeScript validator **wired into the fail-closed `admit` path**, the four separating negatives carried through the existing parity channel, and the owner-document amendments.
 
-Optional: wiring the core validator into the fail-closed `admit` path, and installing the Lean gate at its single existing pre-dispatch site if the cost measurement permits. Retiring `deadline_arm_bridge_premise_is_satisfiable` is **not** proposed, because its premise needs the empty called-instance closure that this slice does not supply.
+Optional: installing the Lean gate at its single existing pre-dispatch site, which stays conditional on the cost measurement and is not an implementation blocker. Retiring `deadline_arm_bridge_premise_is_satisfiable` is **not** proposed, because its premise needs the empty called-instance closure that this slice does not supply.
 
 Excluded: any BPMN capability, operation, field, observation, profile, or scenario; the shared Activity occurrence record owned by `ACTIVITY-OCCURRENCE-OWNERSHIP`; the commutation and semantic-choice account owned by `INTERNAL-COMMUTATION`; sequential Multi-Instance runtime; liveness, progress, termination, and confluence claims; a general checked-source-to-run preservation theorem; and any Temporal or CIB behavioral claim.
 
@@ -231,15 +231,23 @@ The nearest realistic counterexample to the proposal's usefulness is an arm whos
 
 Reopen when a capsule needs a state fact the list lacks, when a new operation kind or stimulus is registered, or when the optional gate's cost measurement changes.
 
-## Owner questions
+## Owner decisions
 
-Three decisions, each with a recommendation.
+All three questions are resolved. Each selects the reviewed recommendation rather than redesigning it, so no further proposal review is owed.
 
-First, predicate form. Recommendation: one executable `Bool` predicate with `Prop` laws stated over `= true`. Rationale: the three existing conjuncts are already `Bool` guards inside operations and appear as `= true` law hypotheses, a `Prop` twin would be a second copy of one fact that nothing compares, and a `Bool` keeps kernel-decided negative witnesses available. The cost is that laws carry `= true` hypotheses rather than propositional ones, which the repository already does everywhere this invariant touches.
+**Predicate form: `Bool` only.** One executable `runtimeStateWellFormed : Program → RuntimeState → Bool`, with laws stated over `runtimeStateWellFormed program state = true` and no independently maintained `Prop` twin.
 
-Second, enforcement, which is two decisions rather than one because the two sides have different costs. For Lean: prove first, then install the gate at the single existing pre-dispatch site, and only if the narrow-target measurement of CPU and resident memory permits, because that is the side where every kernel-decided fixture would re-reduce the conjunction. For the core: the validator is required either way, and wiring it into `admit` is a plain fail-closed decision with no measurement gate. Recommendation: prove first on both sides, wire the core validator, and treat the Lean gate as measurement-conditional. Rationale: the ordering is what makes either gate behavior-preserving, and the measurement is what keeps the Lean side from repeating the two reverted memory conversions. If the Lean measurement rejects the gate, the predicate and theorems still supply the wait-uniqueness and acyclicity facts, which is the substance of the item.
+The deciding argument is not that Lean cannot branch on a proposition, because it can, through that proposition's `Decidable` instance. It is that this repository already needs an executable checker, that the three existing fragments are Boolean guards, and that a second logical definition would add synchronization risk without adding evidence.
 
-Third, scope of the bridge reclassification. Recommendation: reclassify all fourteen definitional arms now and rewrite none of them into genuine relations. Rationale: converting them would mostly restate each function one level up; the falsifiable content arrives through preservation instead. `BoundedScopeArmingStep` shows both sides of this: it is a genuine decomposition, because it names its ownership and entry premises separately, and it is also the ceiling on what such a conversion buys, because its result is still the function's own value. The alternative worth naming is converting only the two single-constructor wrappers, which is cheap but leaves the twelve larger cases misclassified.
+If proof ergonomics turn out to be genuinely bad during the first preservation arms, the first response is named decomposition and reflection lemmas over the existing Boolean, not a change of representation. The representation reopens only if that fails, and even then the replacement is one propositional source with a derived decision procedure. Two manually synchronized definitions are excluded outright.
+
+**Enforcement: split, with the TypeScript gate required.** In Lean, prove initialization and preservation first, then measure the pre-dispatch gate on a narrow target under an operating-system-enforced memory bound, and install it only if the CPU and resident-memory evidence permit. That gate is not an implementation blocker. In TypeScript, implement the validator independently, establish preservation through its own executable evidence, and then wire it into the fail-closed `admit` path unconditionally.
+
+The two sides earn their confidence by different means, and the wording matters: Lean carries quantified proofs, TypeScript carries an independently structured validator with executable preservation and malformed-state evidence. TypeScript tests are not proofs and this specification does not call them proofs anywhere.
+
+**Bridge reclassification: reclassify all fourteen.** Keep every existing theorem as a dispatcher, exhaustiveness, and constructor-selection check, and stop counting any of them as an independent semantic evidence lane. Neither rewriting them into nominally richer relations nor repairing only the two single-constructor wrappers is approved.
+
+The falsifiable semantic evidence becomes invariant preservation, monotonicity, and the ten genuinely decomposed relations. The four standing owners named under [versioning consequences](#versioning-consequences) are amended atomically with that reclassification, during implementation rather than at approval.
 
 ## Independent cold-review receipt
 

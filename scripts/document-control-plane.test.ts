@@ -14,6 +14,7 @@ import {
   documentSection,
   parseOrderedWork,
   planGateTokenFindings,
+  planReviewOwnerPaths,
   planReviewRestatementFindings,
   routeImplementationPath,
 } from "./document-control-plane.ts";
@@ -78,11 +79,7 @@ test("the plan never restates a review state its receipt owns", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
   const resume = documentSection(plan, "Exact resume point");
   const owners = await Promise.all(
-    [...new Set(
-      [...resume.matchAll(/\]\(([A-Za-z0-9./-]+-(?:PROPOSAL|SPEC)\.md)\)/gu)]
-        .map((match) => match[1])
-        .filter((candidate): candidate is string => candidate !== undefined),
-    )].map(async (relative) => {
+    planReviewOwnerPaths(resume).map(async (relative) => {
       const documentPath = path.join("docs", relative);
       const document = await readFile(path.join(projectRoot, documentPath), "utf8");
       const row = receiptRow(
@@ -124,6 +121,13 @@ test("rejects a stale review state and a misplaced gate token", () => {
     }]),
     [],
     "an unsettled receipt and a pending plan agree",
+  );
+  assert.deepEqual(
+    planReviewOwnerPaths(
+      "Next action: see [decisions](RUNTIME-STATE-INVARIANT-PROPOSAL.md#owner-decisions) and [spec](capsules/CALL-ACTIVITY-SPEC.md).",
+    ),
+    ["RUNTIME-STATE-INVARIANT-PROPOSAL.md", "capsules/CALL-ACTIVITY-SPEC.md"],
+    "an anchored link routes to the same governed owner",
   );
   const plan = [
     "## Current checkpoint",

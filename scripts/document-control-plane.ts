@@ -150,6 +150,23 @@ export type PlanReviewOwner = Readonly<{
   target: string;
 }>;
 
+/**
+ * Governed review owners the resume point routes to, tolerating an anchor.
+ *
+ * The fragment is deliberately optional: a resume point that deep-links a document's decisions or
+ * receipt section routes to the same owner, and a rule defeated by `#anchor` would report no owner and
+ * pass vacuously. That is exactly what the anti-vacuity assertion beside this caught on its first run.
+ */
+export function planReviewOwnerPaths(resume: string): ReadonlyArray<string> {
+  return [
+    ...new Set(
+      [...resume.matchAll(/\]\(([A-Za-z0-9./-]+-(?:PROPOSAL|SPEC)\.md)(?:#[A-Za-z0-9-]+)?\)/gu)]
+        .map((match) => match[1])
+        .filter((candidate): candidate is string => candidate !== undefined),
+    ),
+  ];
+}
+
 const settledReviewVerdicts = new Set(["approve", "approve-with-required-edits", "reject"]);
 const pendingReviewWords = ["outstanding", "pending", "awaiting", "unreviewed"];
 
