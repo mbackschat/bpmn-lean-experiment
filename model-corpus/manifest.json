@@ -926,10 +926,10 @@
         "relativePath": "webapps/assembly/src/main/runtime/develop/resources/pa1/order-process.bpmn",
         "sha256": "5868192ac735538edc6b087e72459d63e20261f2854057c4c0216f30414377d6"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
       "admission": {
         "kind": "rejected",
-        "diagnosticDigest": "1d5b4dde0fc5a96784e2cc2ef83b04fcf2aed225aecf792191f08cfe000ecc3c"
+        "diagnosticDigest": "e80c279c0942d19f8617aacd341935d7eeb156935707c16ed172d329ad60b2d4"
       },
       "pipelineCaseId": null,
       "product2": {
@@ -964,10 +964,10 @@
         "relativePath": "examples/invoice/src/main/resources/reviewInvoice.bpmn",
         "sha256": "da8ca354b4c56afff9962041fdeb3127529a8c2fe02b2f8714b60a6c2c74c929"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
       "admission": {
         "kind": "rejected",
-        "diagnosticDigest": "8d178cbfbbfce3f22fa39d1259759853338828cad971dfbde647601607504c68"
+        "diagnosticDigest": "b8529da8f6b00072dee20f07c7113c24eb6648f15696868ec7d984f874792ce5"
       },
       "pipelineCaseId": null,
       "product2": {
@@ -1016,10 +1016,10 @@
         "relativePath": "examples/invoice/src/main/resources/invoice.v1.bpmn",
         "sha256": "65882530f1be2d0e094b34ab4bb4bb01b22603f35c1d2bf36425421274cb29f8"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
       "admission": {
         "kind": "rejected",
-        "diagnosticDigest": "fdfe2dc474f97d2cf28de79b2a9951dd999c00d63e7dd5dd67a70b48871ab93f"
+        "diagnosticDigest": "4352a6d2d0bde97e14babe781b73de6f9fc13c07ca52a9273cadfdd5c1ba3328"
       },
       "pipelineCaseId": null,
       "product2": {
@@ -1068,10 +1068,10 @@
         "relativePath": "examples/invoice/src/main/resources/invoice.v2.bpmn",
         "sha256": "229b3db18f9fc99db7078e4142938a1c8a533a8a3ebca68d1cc46ed6eb5546cb"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
       "admission": {
         "kind": "rejected",
-        "diagnosticDigest": "f00285ed8441208342dff0a27bf0dc78aeb0c15dbadbdeda8fc5920a17a25058"
+        "diagnosticDigest": "c6524aed9213e6811a63ac9fd13baf76536df95cfd7ef6a907bb65a33a6399af"
       },
       "pipelineCaseId": null,
       "product2": {
@@ -1108,10 +1108,10 @@
         "relativePath": "engine/src/test/resources/org/cibseven/bpm/engine/test/api/form/util/VacationRequest.bpmn20.xml",
         "sha256": "5e6d9f3367c314f6375c908a996a70da60bd6550177cda45c345badf0c3bf121"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
       "admission": {
         "kind": "rejected",
-        "diagnosticDigest": "e42c57d2263d380c98c7abc39d72ae2d9107c9aa5d25b1d7888c05ccbdc6755b"
+        "diagnosticDigest": "4ae74803213b3b9bb28ea76d2b7a87fdcae9084c01a0f48afbb20a5f1ab09be9"
       },
       "pipelineCaseId": null,
       "product2": {

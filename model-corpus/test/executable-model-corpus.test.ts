@@ -76,6 +76,58 @@ test("binds every retained and external model to exact local evidence", async ()
   );
 });
 
+test("reclassifies external CIB models under the closest interchange profile", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const cibModels = manifest.models.filter(
+    ({ source }) =>
+      source.kind === "externalGit" &&
+      source.externalSourceId === "cibseven-2.2.0",
+  );
+  assert.equal(cibModels.length, 5);
+  assert.deepEqual(
+    [...new Set(cibModels.map(({ profile }) => profile))],
+    ["cibseven-2.2.0-user-task-process-data-preserved-notation-draft"],
+  );
+
+  const report = await inspectExecutableModelCorpus(manifest, {
+    projectRoot,
+    externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
+      path.resolve(projectRoot, "../oss"),
+    pipelineCases,
+    compileModel: compileCorpusModel,
+  });
+  const reportsById = new Map(report.models.map((model) => [model.id, model]));
+  const admittedNotationBlockers = new Set([
+    "preserveProperty:bpmn:Definitions:diagrams",
+    "preserveProperty:bpmn:Definitions:exporter",
+    "preserveProperty:bpmn:Definitions:exporterVersion",
+    "preserveProperty:bpmn:UserTask:documentation",
+  ]);
+  for (const model of cibModels) {
+    const modelReport = reportsById.get(model.id);
+    assert.ok(modelReport !== undefined);
+    assert.equal(modelReport.admission, "rejected");
+    assert.ok(modelReport.blockers.length > 0);
+    assert.equal(
+      modelReport.blockers.some((blocker) => admittedNotationBlockers.has(blocker)),
+      false,
+    );
+  }
+
+  assert.deepEqual(
+    report.unsupportedMechanisms.filter(({ key }) =>
+      key === "diagramInterchange" ||
+      key === "collaborationPresentation" ||
+      key === "lanePresentation"
+    ),
+    [
+      { key: "diagramInterchange", cloneFamilies: 4, models: 5 },
+      { key: "collaborationPresentation", cloneFamilies: 3, models: 4 },
+      { key: "lanePresentation", cloneFamilies: 2, models: 3 },
+    ],
+  );
+});
+
 test("requires every retained model to state a business purpose", async () => {
   const manifest = requireExecutableModelCorpusManifest(await loadManifest());
   for (const model of manifest.models.filter(
@@ -329,13 +381,13 @@ test("deduplicates blocker ranks by clone family rather than file count", async 
     pipelineCases,
     compileModel: compileCorpusModel,
   });
-  const definitionDiagram = report.blockers.find(
-    ({ key }) => key === "preserveProperty:bpmn:Definitions:diagrams",
+  const versionTag = report.blockers.find(
+    ({ key }) => key === "consumeForeignAttribute:bpmn:Process:camunda:versionTag",
   );
 
-  assert.ok(definitionDiagram !== undefined);
-  assert.equal(definitionDiagram.models, 4);
-  assert.equal(definitionDiagram.cloneFamilies, 3);
+  assert.ok(versionTag !== undefined);
+  assert.equal(versionTag.models, 2);
+  assert.equal(versionTag.cloneFamilies, 1);
 });
 
 test("ranks reusable mechanism gaps by independent model family", async () => {
