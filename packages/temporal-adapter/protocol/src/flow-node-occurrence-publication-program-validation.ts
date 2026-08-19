@@ -134,6 +134,12 @@ function internalOperationStarts(
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteScope:
       return false;
+    // The source and IL lanes admit this operation before its runtime transition exists, so no
+    // committed transition can name it: the core's evaluator returns no step for it and its
+    // publication completeness fails closed. It therefore licenses no occurrence start here, and a
+    // publication claiming one is rejected rather than credited to the ordinary User Task arm.
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return false;
     default:
       return assertNever(operation);
   }
@@ -306,6 +312,10 @@ function operationPublishesNestedElement(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
+      return false;
+    // Same fail-closed reason as the start side above: it ends no occurrence because it commits no
+    // transition.
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return false;
     default:
       return assertNever(operation);

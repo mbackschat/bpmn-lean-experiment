@@ -23,6 +23,11 @@ import type {
  * split combined with a timer or effect can create more than one host-driven
  * branch, which requires a scheduler that this adapter does not implement.
  *
+ * One class is neither passive nor managed: an operation whose shape the contract admits before its
+ * runtime transition exists is refused outright, before any composition reasoning, because simplifying
+ * the composition could not make it runnable. That refusal is typed, so an unrunnable program reaches
+ * an operator as a semantic outcome rather than as a thrown host error.
+ *
  * Four operation classes are managed rather than passive, each owning one
  * scheduler instance: the Event-Based Gateway race, the bounded User Task, the
  * bounded Sub-Process scope, and the monitored User Task whose deadline spawns
@@ -38,6 +43,19 @@ import type {
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
+  const unhostable = program.operations.find(
+    ({ kind }) => classifyHostOperation(kind) === HostOperationClass.Unhostable,
+  );
+  if (unhostable !== undefined) {
+    return {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.UnsupportedOperationSemantics,
+        evidence:
+          `Operation ${unhostable.id} of kind ${unhostable.kind} has no reviewed runtime transition, so no Temporal host can run it.`,
+      },
+    };
+  }
   const canSplitTokens = program.operations.some(
     ({ kind }) => classifyHostOperation(kind) === HostOperationClass.TokenSplit,
   );
@@ -94,6 +112,7 @@ const HostOperationClass = {
   BoundedActivityWait: "boundedActivityWait",
   BoundedScopeWait: "boundedScopeWait",
   MonitoredActivityWait: "monitoredActivityWait",
+  Unhostable: "unhostable",
 } as const;
 
 type HostOperationClass =
@@ -199,6 +218,12 @@ function classifyHostOperation(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.CompleteScope:
       return HostOperationClass.Passive;
+    // Before this arm existed the classifier reached `assertNever` and threw, which reports an
+    // unrunnable program as an infrastructure failure rather than as the semantic refusal it is.
+    // `Passive` is the tempting alternative and the wrong one: the admission tail admits every program
+    // that claims no managed scheduler, so passive would turn the crash into a silent admission.
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return HostOperationClass.Unhostable;
     default:
       return assertNever(kind);
   }

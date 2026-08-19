@@ -8,14 +8,26 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  SemanticOperationKind,
   StimulusKind,
   VariableValueKind,
   isWellFormedSemanticProcessProgram,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
+import type {
+  AwaitSequentialMultiInstanceUserTaskOperation,
+  SemanticOperation,
+} from "@bpmn-lean/semantic-core";
 
 const profile = "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
 const userTaskProfile = "cibseven-2.2.0-user-task-process-data-draft";
+
+// `Array.prototype.find` narrows nothing about its result, so the loop-specific `limits` field stays
+// unreachable without an explicit predicate over the operation union.
+const isSequentialMultiInstanceOperation = (
+  candidate: SemanticOperation,
+): candidate is AwaitSequentialMultiInstanceUserTaskOperation =>
+  candidate.kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 const source = await readFile(
   new URL("./fixtures/sequential-multi-instance-user-task.bpmn", import.meta.url),
@@ -105,7 +117,7 @@ test("admits the exact sequential Multi-Instance source as one closed checked no
   });
 
   const operation = result.semanticProcess.operations.find(
-    ({ kind }) => kind === "awaitSequentialMultiInstanceUserTask",
+    isSequentialMultiInstanceOperation,
   );
   assert.deepEqual(operation, {
     id: "operation:UserTask_Review",
@@ -171,7 +183,7 @@ test("binds the exact checked node and operation to closed structural schemas", 
     ({ kind }) => kind === "sequentialMultiInstanceUserTask",
   );
   const operation = result.semanticProcess.operations.find(
-    ({ kind }) => kind === "awaitSequentialMultiInstanceUserTask",
+    isSequentialMultiInstanceOperation,
   );
   assert.ok(node !== undefined && operation !== undefined);
   assert.equal(validateNode(node), true, JSON.stringify(validateNode.errors));

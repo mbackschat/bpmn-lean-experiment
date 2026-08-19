@@ -101,16 +101,30 @@ function collectDiscriminators(node: unknown, found: Set<string>): void {
  * caller asserts a plausible member count so a declaration-shape change fails loudly instead of
  * silently yielding an empty set.
  */
-export function declaredEnumValues(source: string, enumName: string): ReadonlyArray<string> {
+/** One declared member, keeping the TypeScript name beside the wire value it maps to. */
+export type DeclaredEnumMember = Readonly<{ name: string; value: string }>;
+
+/**
+ * Both halves of each member, because a guard that reads case arms sees names while a guard that
+ * reads a schema sees values, and pairing them here keeps one parser rather than two.
+ */
+export function declaredEnumMembers(
+  source: string,
+  enumName: string,
+): ReadonlyArray<DeclaredEnumMember> {
   const start = source.indexOf(`export enum ${enumName} {`);
   assert.notEqual(start, -1, `${enumName} is not declared as an enum`);
   const end = source.indexOf("\n}", start);
   assert.notEqual(end, -1, `${enumName} has no closing brace`);
   return [
-    ...source.slice(start, end).matchAll(/^\s+[A-Za-z0-9_]+ = "([a-zA-Z0-9_]+)",$/gmu),
+    ...source.slice(start, end).matchAll(/^\s+([A-Za-z0-9_]+) = "([a-zA-Z0-9_]+)",$/gmu),
   ].map((match) => {
-    const value = match[1];
-    assert.ok(value !== undefined);
-    return value;
+    const [, name, value] = match;
+    assert.ok(name !== undefined && value !== undefined);
+    return { name, value };
   });
+}
+
+export function declaredEnumValues(source: string, enumName: string): ReadonlyArray<string> {
+  return declaredEnumMembers(source, enumName).map(({ value }) => value);
 }

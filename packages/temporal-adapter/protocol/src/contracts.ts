@@ -88,6 +88,15 @@ export enum TemporalHostAdmissionFailureCode {
    * has no scheduler is the spawn of a concurrent branch.
    */
   MonitoredActivitySchedulerUnavailable = "monitoredActivitySchedulerUnavailable",
+  /**
+   * Not a missing scheduler: a missing semantics.
+   *
+   * The other codes report an operation the host cannot schedule in the offered composition. This one
+   * reports an operation no host can run at all, because the contract admits its shape before its
+   * runtime transition exists. It is reported separately so an operator is not told to simplify a
+   * composition that would still be unrunnable alone.
+   */
+  UnsupportedOperationSemantics = "unsupportedOperationSemantics",
 }
 
 export type TemporalHostAdmissionFailure = DeepReadonly<{

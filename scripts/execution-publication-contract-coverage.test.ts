@@ -9,7 +9,28 @@ import {
   canonicalExportFixture,
   publicationPage,
 } from "../packages/temporal-adapter/protocol/test/semantic-publication-fixture.ts";
-import { declaredEnumValues } from "./schema-structure.ts";
+import { declaredEnumMembers, declaredEnumValues } from "./schema-structure.ts";
+
+/**
+ * Operation kinds the publication contract deliberately cannot carry.
+ *
+ * Derived from the producer that refuses them instead of from a list maintained here: an operation
+ * whose completeness arm fails closed commits no transition, so no publication can name it and the
+ * schema must stay tight against it. A kind that later gains a runtime stops failing closed, and this
+ * guard then requires its schema entry in that same change. Broken extraction cannot pass silently,
+ * because the partition below would demand a schema entry that is absent.
+ */
+function failClosedOperationNames(completenessSource: string): ReadonlyArray<string> {
+  return [
+    ...completenessSource.matchAll(
+      /case SemanticOperationKind\.([A-Za-z0-9_]+):\s*\n\s*return failCompleteness\(\);/gu,
+    ),
+  ].map((match) => {
+    const name = match[1];
+    assert.ok(name !== undefined);
+    return name;
+  });
+}
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -45,20 +66,44 @@ test("validates the closed page, result, and full-export structures", async () =
 });
 
 test("covers every stimulus, operation, result, and safe-integer branch", async () => {
-  const [schema, contractSource, programSource] = await Promise.all([
+  const [schema, contractSource, programSource, completenessSource] = await Promise.all([
     readSchema("semantic-publication.schema.json"),
     readFile(`${projectRoot}/packages/semantic-core/src/contract.ts`, "utf8"),
     readFile(`${projectRoot}/packages/semantic-core/src/semantic-process-contract.ts`, "utf8"),
+    readFile(
+      `${projectRoot}/packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts`,
+      "utf8",
+    ),
   ]);
   const schemaText = JSON.stringify(schema);
   const stimuli = declaredEnumValues(contractSource, "StimulusKind");
-  const operations = declaredEnumValues(programSource, "SemanticOperationKind");
+  const operations = declaredEnumMembers(programSource, "SemanticOperationKind");
+  const failClosed = new Set(failClosedOperationNames(completenessSource));
   assert.ok(stimuli.length >= 10, "StimulusKind extraction lost current variants");
   assert.ok(operations.length >= 20, "SemanticOperationKind extraction lost current variants");
+  for (const name of failClosed) {
+    assert.ok(
+      operations.some((member) => member.name === name),
+      `${name} fails publication completeness but is not a declared operation kind`,
+    );
+  }
   for (const value of stimuli) {
     assert.ok(schemaText.includes(`/$defs/${value}\"`), `schema omits ${value}`);
   }
-  for (const value of [...operations, ...[
+  // Exactly one of the two directions holds for every kind: publishable kinds must be enumerated, and
+  // kinds that commit no transition must stay out so the schema cannot admit a record no producer can
+  // emit.
+  for (const { name, value } of operations) {
+    if (failClosed.has(name)) {
+      assert.ok(
+        !schemaText.includes(`\"${value}\"`),
+        `schema carries ${value} although its completeness arm fails closed`,
+      );
+      continue;
+    }
+    assert.ok(schemaText.includes(`\"${value}\"`), `schema omits ${value}`);
+  }
+  for (const value of [
     "externalStimulus",
     "internalOperation",
     "available",
@@ -67,7 +112,7 @@ test("covers every stimulus, operation, result, and safe-integer branch", async 
     "unavailable",
     "gap",
     "bpmn-lean.execution-publication.v1",
-  ]]) {
+  ]) {
     assert.ok(schemaText.includes(`\"${value}\"`), `schema omits ${value}`);
   }
   const integers = collectIntegerSchemas(schema);
