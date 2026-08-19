@@ -296,7 +296,7 @@ theorem exact_structured_human_work_topology_is_preserved :
     structuredHumanWorkCheckedTopologyValid checkedProcess = true ∧
       structuredHumanWorkProgramTopologyValid executionProgram = true ∧
       executionProgram.identity.semanticProfile = checkedProcess.identity.semanticProfile := by
-  decide +kernel
+  native_decide
 
 /-- Literal, presence, and null checks stay outside the M6 String-equality subprofile. -/
 theorem non_string_equality_conditions_are_rejected :
