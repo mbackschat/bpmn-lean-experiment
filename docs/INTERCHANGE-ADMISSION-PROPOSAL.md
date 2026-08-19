@@ -7,7 +7,7 @@ Review: pending
 
 ## Current boundary
 
-This proposal selects the first `INTERCHANGE-ADMISSION` tranche. The context-cold review of immutable proposal target `db18ea3` returned `approve-with-required-edits`. Its decisive counterexample found that the semantic-core value-domain gate currently admits string/null Process data for profiles whose artifacts exclude variables, including both the preserved-notation and Timer/User Task composition profiles. That is an existing profile-contract defect and a prerequisite to this composition, not behavior this proposal may preserve. The proposal remains blocked on the same reviewer's correction audit and owner approval. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
+This proposal selects the first `INTERCHANGE-ADMISSION` tranche. The context-cold review of immutable proposal target `db18ea3` returned `approve-with-required-edits`. Its decisive counterexample found that the semantic-core value-domain gate currently admits string/null Process data for profiles whose artifacts exclude variables, including both the preserved-notation and Timer/User Task composition profiles. That is an existing profile-contract defect and a prerequisite to this composition, not behavior this proposal may preserve. The first warm correction audit of `b6c7716` closed the Definitions-metadata and finite-assurance findings but retained the need for a complete nonempty value-domain matrix and exact corpus denominators. The proposal remains blocked on the same reviewer's second correction audit and owner approval. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
 
 The source compiler already implements the reviewed preservation mechanism under `bpmn-2.0.2-user-task-preserved-notation-draft`. The current interchange gap is composition: that capability is unavailable to the CIB Seven User Task Process-data profile used to calibrate external whole models. Before composition, two declaration defects must close: external variable writes must follow an exhaustive profile-and-surface value-domain contract, and the already-preserved standard Definitions metadata must gain an explicit requirement-ledger row plus a profile feature. This proposal otherwise reuses the reviewed mechanism and its five existing structural requirements. It does not reinterpret Diagram Interchange, Collaboration, Lanes, Artifacts, Documentation, User Task lifecycle, or Process data.
 
@@ -22,7 +22,25 @@ Add one named profile, `cibseven-2.2.0-user-task-process-data-preserved-notation
 
 The composition is registered as one closed profile identity. A caller does not select an execution profile and an independent preservation overlay. This prevents unreviewed arbitrary combinations and keeps admitted meaning content-bound to one profile ID.
 
-Before registering that successor, replace the semantic core's permissive value-domain default with a total profile-by-surface contract. Every registered profile and each external write surface, Process start, User Task completion, and effect completion, maps by exhaustive enum-based dispatch to one closed admitted value-kind set. An empty set admits only an empty patch. A missing profile or surface case is a compile-time or fail-closed error, never string/null permission by default. Each nonempty cell must correspond to an exact feature or extension declared by that profile artifact. The new profile selects the same string/null Process-start and User Task-completion cells as `cibseven-2.2.0-user-task-process-data-draft`; the preserved-notation and Timer/User Task composition profiles select empty cells because their artifacts exclude variables. Existing profiles retain only the value domains their artifacts already declare.
+Before registering that successor, replace the semantic core's permissive value-domain default with a total profile-by-surface contract. Every registered profile and each external write surface, Process start, User Task completion, and effect completion, maps by exhaustive enum-based dispatch to one closed admitted value-kind set. An empty set admits only an empty patch. A missing profile or surface case is a compile-time or fail-closed error, never string/null permission by default. Each nonempty cell must correspond to an exact feature or extension declared by that profile artifact.
+
+This table is the complete nonempty matrix. Every omitted profile/surface cell is empty.
+
+| Registered profile | Surface | Admitted value kinds | Exact artifact atom after prerequisite reconciliation |
+|---|---|---|---|
+| `cibseven-2.0.0-mapped-success-service-task-draft` | Effect completion | String | `effect-completion-string-local-data` |
+| `cibseven-2.0.0-mapped-boundary-error-service-task-draft` | Effect completion | String, Null | `effect-completion-string-null-local-data` |
+| `bpmn-2.0.2-simple-boolean-exclusive-gateway-draft` | Process start | String, Null | `process-start-string-null-data` |
+| `bpmn-2.0.2-inclusive-gateway-selected-branches-draft` | Process start | String, Null | `process-start-string-null-data` |
+| `cibseven-2.2.0-service-task-incident-cancellation-draft` | Process start | String | `string-process-start-variable` |
+| `cibseven-2.2.0-user-task-process-data-draft` and the new preserved-notation successor | Process start | String, Null | `process-start-string-null-data` |
+| `cibseven-2.2.0-user-task-process-data-draft` and the new preserved-notation successor | User Task completion | String, Null | `user-task-string-null-completion-data` |
+| `bpmn-2.0.2-user-task-cycle-draft` | User Task completion | String, Null | `user-task-string-null-completion-data` |
+| `cibseven-2.2.0-user-task-boolean-completion-data-draft` and `cibseven-2.2.0-user-task-assignment-form-metadata-draft` | Process start | String, Null | `process-start-string-null-data` |
+| `cibseven-2.2.0-user-task-boolean-completion-data-draft`, `cibseven-2.2.0-user-task-assignment-form-metadata-draft`, and `cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft` | User Task completion | String, Null, Boolean | `user-task-string-null-boolean-completion-data` |
+| `bpmn-2.0.2-bpmn-lean-structured-human-work-draft` | User Task completion | String, Null, Boolean, Integer, StringList | `user-task-string-null-boolean-completion-data`, `user-task-integer-completion-data`, and `user-task-ordered-string-list-completion-data` |
+
+The table does not infer capability from scenario payloads. Each cell restates an already-approved owner: the Simple Boolean language's String/Null Process context for Exclusive and Inclusive selection, the cyclic-control-flow specification's String/Null completion patch, the two mapped-effect specifications' Activity-local results, the incident-cancellation specification's selected String start binding, and the existing Process-data and Human Work accounts. Where an artifact currently has only a broad atom such as `string-variable`, a negative exclusion, or no positive atom, the prerequisite replaces or supplements it with the exact atom in this table before the executable switch changes. This declaration repair does not add a value kind or write surface to any approved semantic account. In particular, the preserved-notation and Timer/User Task composition profiles remain empty at all three surfaces, and the parallel metadata profile remains empty at Process start.
 
 Production source may internally map several registered profiles to one enum-valued preservation capability. That internal reuse is not a second public profile language, wire field, manifest, or source of truth. The profile artifact remains the public declaration.
 
@@ -33,7 +51,7 @@ Required:
 - a fail-closed, exhaustive profile-by-surface Process-data value-domain contract that removes undeclared string/null acceptance before composition;
 - one supported structural requirement, `BPMN-STRUCT-DEFINITIONS-METADATA-01`, plus the `retained-definitions-metadata` profile feature for standard Definitions `name`, `exporter`, and `exporterVersion`;
 - one new CIB Seven User Task Process-data profile with the exact preservation bundle below;
-- unchanged contract-conforming old-profile behavior and source-admission diagnostics, while undeclared value-domain acceptance is corrected;
+- unchanged contract-conforming old-profile behavior, caller bytes, and source-admission diagnostics, while undeclared variable-bearing caller bytes are intentionally rejected;
 - exact-source retention with preserved material excluded from the checked graph, Semantic Process program, runtime state, and public observation;
 - one source/twin witness using nonempty string/null start and completion data;
 - exact CIB, Lean, TypeScript, differential, Temporal, and replay evidence appropriate to the already-selected behavior;
@@ -102,11 +120,11 @@ No Product 1 start, command, observation, terminal result, Workflow, Run, or rec
 
 The external CIB model rows move from `cibseven-2.2.0-user-task-process-data-draft` to the new closest profile and receive freshly generated normalized diagnostic digests. This is an admission-analysis change, not an acceptance claim.
 
-The expected global mechanism reach and the narrower CIB-row diagnostic effect are exact and separately counted:
+The expected global mechanism reach and the narrower CIB diagnostic effect are exact and separately counted:
 
-- Diagram Interchange occurs in four deduplicated clone families globally and ceases to be a blocker in three CIB model rows;
-- definitional Collaboration presentation occurs in three clone families globally and ceases to be a blocker in two CIB model rows;
-- Lane presentation occurs in two clone families globally and ceases to be a blocker in one CIB model row;
+- Diagram Interchange occurs in four deduplicated clone families and five physical rows globally; it ceases to be a blocker in three CIB clone families and four physical CIB rows;
+- definitional Collaboration presentation occurs in three clone families and four physical rows globally; it ceases to be a blocker in two CIB clone families and three physical CIB rows;
+- Lane presentation occurs in two clone families and three physical rows globally; it ceases to be a blocker in one CIB clone family and two physical CIB rows;
 - standard Definitions provenance and the other selected notation cease to be blockers where present;
 - every model remains rejected for at least one foreign-metadata, executable-shape, task-metadata, data, or unsupported-mechanism reason.
 
@@ -141,7 +159,7 @@ The new scenario uses the existing Process-start command and User Task completio
 
 ## Compatibility and evolution
 
-This is an additive pre-release successor. It does not widen or replace an evidence-bound profile in place. Existing scenario, evidence, public example, and caller bytes remain valid and retain their current profile identity.
+This is an additive pre-release successor. It does not widen or replace an evidence-bound profile in place. Existing scenario, evidence, public example, and contract-conforming caller bytes remain valid and retain their current profile identity. Variable-bearing caller bytes that relied on the undeclared permissive default are deliberately rejected by the prerequisite correction.
 
 The shared internal preservation capability and the external variable-write value domain are selected by separate enum-based exhaustive switches over registered profile IDs. Unknown profiles and registered profiles without preservation reject the notation exactly as before; profiles without an explicitly declared value-domain cell accept only an empty patch at that surface. A second public capability-composition language is deferred unless repeated named successors demonstrate that the closed profile catalog is no longer maintainable.
 
