@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved-with-required-edits
 
 ## Question and current boundary
 
@@ -45,9 +45,11 @@ One predicate, three layers, each with a distinct type so that a state fact cann
 | `RSI-DISJ-01` | one effect occurrence appears in `effectWaits` or in `effectIncidents`, never in both | in `effectIncidentAssociationValid` |
 | `RSI-ORDER-01` | the five collections that declare a canonical order hold it: `waits`, `activations`, `selectedBranchSets`, `eventRaces`, and `calledProcessOccurrences` | maintained by their insertion functions, unproved |
 
-`RSI-ORDER-01` is deliberately narrow, and the narrowness is a fact about the evaluator rather than a simplification. Six canonical insertion functions exist: `insertUserTaskWait` and `insertTaskActivation` in [`RuntimeState.lean`](../BpmnSemantics/SemanticProcess/RuntimeState.lean), `insertSelectedBranchSetCanonical` in [`InclusiveGateway.lean`](../BpmnSemantics/SemanticProcess/InclusiveGateway.lean), `insertEventRaceCanonical` in [`EventBasedGateway.lean`](../BpmnSemantics/SemanticProcess/EventBasedGateway.lean), and `insertScopeOccurrence` plus `sortCallRecords` in [`CallActivity.lean`](../BpmnSemantics/SemanticProcess/CallActivity.lean). The conjunct follows the collections rather than the functions: `calledProcessOccurrences` has exactly two add sites and both sort, so it is canonically maintained and is listed. `scopeOccurrences` is deliberately excluded for a different reason than the rest, namely that it is mixed: Call Activity inserts into it canonically while `enterScope` prepends. Everything else prepends, starting with `addToken`.
+`RSI-ORDER-01` is deliberately narrow, and the narrowness is a fact about the evaluator rather than a simplification. The conjunct is stated by a criterion rather than by a census of insertion helpers: **a collection is listed when every one of its add sites canonically inserts, and is excluded when its add sites disagree.** The criterion is what the implementation must check, because a hand-counted list drifts from the evaluator in both directions, and this paragraph has already been wrong three times when written as a count.
 
-Since `RuntimeState` derives `DecidableEq`, list order is retained state for the prepending collections, so an invariant asserting canonical order everywhere would be refuted by ordinary reachable states and could not be proved before enforcement because the evaluator does not maintain it. Widening this conjunct, including making `scopeOccurrences` uniformly canonical, is a representation change with its own separating witnesses and is not part of this slice.
+Two collections are excluded for that disagreement rather than for prepending. `scopeOccurrences` is inserted canonically by Call Activity and prepended by `enterScope`. `variables` is mixed on both of its parts: `process.bindings` is canonically merged by `mergeProcessVariableBindings` at User Task completion but takes submitted order at Process start, and `activities` is appended rather than inserted. Every remaining collection prepends, `tokens` through `addToken` being the representative case.
+
+Since `RuntimeState` derives `DecidableEq`, list order is retained state wherever the criterion fails, so an invariant asserting canonical order everywhere would be refuted by ordinary reachable states and could not be proved before enforcement because the evaluator does not maintain it. Widening this conjunct, including making `scopeOccurrences` or `variables` uniformly canonical, is a representation change with its own separating witnesses and is not part of this slice.
 
 ### Layer 2: program agreement
 
@@ -74,7 +76,9 @@ Since `RuntimeState` derives `DecidableEq`, list order is retained state for the
 
 `RSI-MONO-03` is the one monotonicity fact the state conjuncts cannot supply, and the reason is worth recording rather than hiding in a hypothesis. Every time-advancing arm takes logical time from a fired deadline after checking only that the stimulus instant equals it. A state holding one correctly owned, uniquely keyed, live Timer wait whose deadline is below current logical time satisfies every Layer 1 and Layer 2 conjunct, and firing it lowers logical time. `RSI-MONO-03` therefore carries the explicit hypothesis that the fired deadline is at or after current logical time.
 
-The hypothesis is stated over that class of arms rather than over an enumeration, deliberately. The class covers `fireTimer`'s ordinary arm, the bounded task, bounded scope, and monitored task victories, and the Event-Based Gateway timer win, in the evaluators and again in the declarative relations that mirror them. An enumeration is the wrong shape here because it has already failed twice on this exact class: once by naming three boundary victories and omitting the Event-Based Gateway win, and once because the bounded task's evaluator does not assign the field literally at all, it passes the deadline into a shared `commitVictory` parameter, which any grep for the assignment misses. The obligation therefore names the property an arm has, not a list of arms.
+The hypothesis is bound to the `fireTimer` stimulus constructor's committed outcome rather than to a list of arms. That single ingress in `dispatchStimulus` reaches every time-advancing arm: the ordinary timer arm, the bounded task, bounded scope, and monitored task victories, and the Event-Based Gateway timer win, in the evaluators and again in the declarative relations that mirror them. Binding it to the constructor makes coverage structural instead of depending on a reader classifying arms, and it composes with `RSI-OBL-04`, which is already stated per constructor.
+
+An enumeration of arms is the wrong shape here, and not only for tidiness: it failed twice on this exact class, once by naming three boundary victories and omitting the Event-Based Gateway win, and once because the bounded task's evaluator never assigns the field literally at all, passing the deadline into a shared `commitVictory` parameter that any search for the assignment misses.
 
 Promoting that hypothesis to a state conjunct is deliberately **not** proposed, because "no live deadline below logical time" is itself refutable as soon as two Timer waits with different deadlines are concurrently live and the later one fires first. No admitted profile can reach that two-timer state today, so the refutation is a statement about the account's future admission rather than about a currently reachable state. Which of the two shapes is right depends on the multi-timer account that `INTERNAL-COMMUTATION` and parallel Multi-Instance must settle, so this slice names the hypothesis and records the question rather than choosing a conjunct that the next capsule would have to withdraw. Who discharges the hypothesis for a state recovered across a Workflow-chain boundary is part of the Temporal witness below rather than left open.
 
@@ -239,8 +243,10 @@ Third, scope of the bridge reclassification. Recommendation: reclassify all four
 
 ## Independent cold-review receipt
 
+The proposal stage used two correction rounds, which is the applicable bound. Round one closed nine required findings and raised three; round two closed those three and approved, leaving one advisory that this document applies rather than defers.
+
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `4a54981` | `fork-turns-none` | `approve-with-required-edits` | `8e0bfdf` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
