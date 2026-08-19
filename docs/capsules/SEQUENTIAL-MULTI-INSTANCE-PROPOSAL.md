@@ -1,0 +1,295 @@
+# Sequential Multi-Instance User Task proposal
+
+## Status
+
+Lifecycle: draft
+Review: pending
+
+## Question and current boundary
+
+This proposal selects the first bounded `SEQUENTIAL-MULTI-INSTANCE` slice: one private executable Process reviews an ordered collection through one sequential Multi-Instance User Task, aggregates one string result per generated inner instance, and either completes normally or is interrupted by one exact `PT1S` Timer Boundary Event attached to the outer Multi-Instance Activity. The timer route reaches one ordinary escalation User Task so cancellation remains observable before Process completion.
+
+The proposed standards-only profile ID is `bpmn-2.0.2-sequential-multi-instance-user-task-draft`. BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 own the Activity wrapper, once-evaluated instance plan, sequential generation, runtime counters, per-instance input and output items, collection aggregation, completion, and boundary interruption. Existing User Task identity and host mapping remain bounded by `CIB-AGR-0001` and `CIB-OP-0001`; no CIB relationship is selected for Multi-Instance meaning.
+
+This is a new transition family, checked-source shape, Semantic Process operation, runtime record, public observation, data-association slice, and Temporal refinement claim. It does not implement the proposal.
+
+The proposed reviewed requirement ID is `BPMN-SEQUENTIAL-MULTI-INSTANCE-01`. Until implementation and closure evidence exist, its requirement-ledger disposition remains `unsupported`.
+
+## Normative account and selected resolutions
+
+BPMN evaluates the number of desired instances once. With collection-driven setup, that number is the cardinality of the outer Activity's `loopDataInputRef`. Sequential execution generates a new inner instance only after the previous inner instance completes. Each generated inner instance has a `loopCounter`; the outer Activity exposes generated, active, completed, and terminated instance counts. The input collection item is extracted into `inputDataItem`, and a successfully completed inner Activity's output is transferred through `outputDataItem` into the corresponding position of `loopDataOutputRef`. The Process-scope output collection should remain inaccessible until all items have been written.
+
+The standard leaves collection extraction, output collection update, and the first `loopCounter` value underspecified. This profile selects the following project-owned resolutions without claiming them as general BPMN meaning:
+
+- the input collection is copied once, in declared array order, into one immutable private outer-Activity snapshot;
+- `loopCounter` is zero-based and identifies the snapshot position and output slot;
+- collection extraction and update are exact index operations with no expression, coercion, transformation, or reordering;
+- the Process-scope output binding is absent until natural completion has produced every planned output, when the exact ordered collection is published atomically;
+- interruption discards the private partial output collection and publishes no Process-scope output binding.
+
+Tables 10.30 and Clause 13.3.7 appear difficult to combine if `numberOfInstances` is interpreted as the desired collection cardinality from outer entry: the table requires active plus completed plus terminated to equal `numberOfInstances`, while the clause says a later sequential inner instance is generated only after its predecessor completes. This profile preserves both statements by using `numberOfInstances` for the count of inner instances generated so far, exactly as Table 10.30 describes, and exposing the once-evaluated desired cardinality separately as project-owned `plannedInstanceCount`. `pendingItemCount` is also project-owned and equals `plannedInstanceCount - numberOfInstances`. Neither extension is presented as a BPMN runtime attribute.
+
+At every stable open state:
+
+```text
+numberOfInstances
+  = numberOfActiveInstances
+  + numberOfCompletedInstances
+  + numberOfTerminatedInstances
+
+plannedInstanceCount
+  = pendingItemCount
+  + numberOfInstances
+```
+
+For this sequential profile, `numberOfActiveInstances` is exactly `1` while the controller is open, `numberOfTerminatedInstances` is `0` in every stable open state, and completion plus generation of the next inner instance is one atomic transition. A zero-length collection creates no inner instance, publishes an empty output collection, withdraws the boundary deadline before it can become a stable wait, and follows normal control.
+
+The output-on-early-completion question is deliberately not answered. `completionCondition` is excluded because BPMN permits it to cancel remaining instances before every output slot is written while separately cautioning that the Process-scope collection should not be accessible until all items are written. Adding that feature requires a reviewed decision about partial output and Process-scope accessibility.
+
+## Exact admitted source and profile limits
+
+The one registered whole model has a concrete batch-document-review purpose. Its exact executable graph is None Start, one sequential Multi-Instance User Task, one normal None End, one interrupting exact-`PT1S` Timer Boundary Event attached to the outer Multi-Instance Activity, one ordinary escalation User Task, and one escalation None End. The normal and timer routes use distinct Sequence Flow and End Event identities.
+
+The Multi-Instance User Task has exactly one collection-valued input DataInput, one scalar task DataInput, one scalar task DataOutput, and one collection-valued output DataOutput in its `InputOutputSpecification`. It has one direct Process DataObjectReference-to-collection-input association, one direct `inputDataItem`-to-task-input association, one direct task-output-to-`outputDataItem` association, and one direct collection-output-to-Process DataObjectReference association. Every reference resolves by exact ID and the input and output source identities are distinct.
+
+The `MultiInstanceLoopCharacteristics` shape is exact:
+
+| Property | Required value |
+|---|---|
+| `isSequential` | `true` |
+| `behavior` | explicit `all` |
+| `loopDataInputRef` | the exact collection-valued Activity DataInput |
+| `inputDataItem` | one exact scalar string DataInput |
+| `loopDataOutputRef` | the exact collection-valued Activity DataOutput |
+| `outputDataItem` | one exact scalar string DataOutput |
+| `loopCardinality` | absent |
+| `completionCondition` | absent |
+| `oneBehaviorEventRef`, `noneBehaviorEventRef`, and complex behavior | absent |
+
+The Process start accepts exactly one canonical binding whose name is the input Process DataObjectReference ID and whose value is a `StringList`. Completion of the active inner review task accepts exactly one canonical String binding whose name is the scalar task DataOutput ID. Completion of the escalation task accepts an empty patch. Every other binding name, value kind, cardinality, ordering, or task association is rejected before state changes.
+
+The profile limits are inclusive and independently enforced at source-independent execution boundaries:
+
+```ts
+const sequentialMultiInstanceLimits = Object.freeze({
+  maximumItems: 16,
+  maximumItemUtf8Bytes: 512,
+  maximumCanonicalCollectionUtf8Bytes: 8_192,
+});
+```
+
+The input and candidate output collections must each fit the complete canonical tagged `StringList` byte limit. Each input item and submitted output string must fit the item byte limit. A completion that would make the candidate ordered output collection exceed its bound is rejected atomically with an equivalent committed state. These profile limits are narrower than the generic value representation and leave bounded space for the Process input, immutable snapshot, partial output slots, control state, and publication metadata under the existing committed-state capacity.
+
+## Required, optional, and excluded
+
+Required:
+
+- the exact standards profile, source shape, profile limits, and two Process schedules selected above;
+- one outer Multi-Instance identity distinct in shape from inner User Task occurrence identity;
+- once-only input snapshotting, zero-based indexed iteration, one active inner instance, and exact generated/completed progress;
+- direct scalar input and output association, duplicate-preserving declaration order, and atomic final output publication;
+- one deadline for the outer Activity lifetime, not one deadline per iteration;
+- interruption that cancels the active inner task, leaves pending items ungenerated, discards partial output, and routes only the boundary path;
+- stable public progress, existing inner User Task and Timer projections, exact E1/E2 occurrence publication, and stale-identity refusal;
+- proved Lean transitions and evaluator soundness for entry, inner completion, next generation, natural completion, and timer interruption;
+- pure TypeScript correspondence, exact source and IL admission, registered answer-free evidence, Temporal Worker replacement, Continue-As-New carry, command recovery, and replay;
+- a phase-zero CIB probe that keeps any lifecycle agreement or output limitation separate from the standards profile and adds a numbered relationship only with executable evidence.
+
+Optional:
+
+- none in the first slice.
+
+Excluded:
+
+- parallel Multi-Instance, Standard Loop Characteristics, loop cardinality expressions, completion conditions, `none`, `one`, or `complex` behavior events, and compensation;
+- Sub-Process, Call Activity, Service Task, Receive Task, or any other Multi-Instance Activity body;
+- more than one Multi-Instance Activity, repeated outer activation, nesting, cycles, concurrency outside the timer race, or more than one boundary Event;
+- arbitrary ItemDefinition types, null items, object items, transformations, assignments, expressions, non-direct data associations, input or output sets beyond the exact shape, and Process data mutation outside the selected bindings;
+- access to private snapshots or partial output slots, public host identity, Temporal Workflow or Run identity, Event History as semantic evidence, and a caller-selected Multi-Instance policy;
+- a CIB Multi-Instance compatibility claim, Product 2 behavior, general BPMN data support, general Activity repetition, Process Execution Conformance, or any version commitment beyond one additive draft profile.
+
+## Public contract
+
+The existing inner task and timer identities remain unchanged. The outer identity is structurally distinct so a task occurrence cannot be substituted for its controller:
+
+```ts
+type MultiInstanceActivityInstanceId = {
+  processInstanceId: string;
+  activityElementId: string;
+  activation: number;
+};
+
+type OpenSequentialMultiInstanceIteration = {
+  loopCounter: number;
+  taskId: UserTaskInstanceId;
+  taskInput: VariableBinding;
+  completionBindingName: string;
+};
+
+type OpenSequentialMultiInstance = {
+  id: MultiInstanceActivityInstanceId;
+  mode: "sequential";
+  plannedInstanceCount: number;
+  pendingItemCount: number;
+  numberOfInstances: number;
+  numberOfActiveInstances: number;
+  numberOfCompletedInstances: number;
+  numberOfTerminatedInstances: number;
+  activeIterations: OpenSequentialMultiInstanceIteration[];
+};
+```
+
+`activeIterations` is an array rather than a nullable singleton so a later parallel profile can broaden the cardinality without replacing the identity or observation concept. This profile validates exactly one active entry whenever an outer controller is open. The entry's `taskInput.name` is the exact scalar task DataInput ID and its String value is the snapshot item at `loopCounter`. `completionBindingName` is the exact scalar task DataOutput ID.
+
+`StateObservation` gains optional `openMultiInstances`. It is present for every state emitted under this profile, including an empty array after normal or boundary-route completion, and absent for all existing profiles so their canonical observation bytes remain unchanged. `ObservationRequestKind` and the profile observation catalog gain `openMultiInstances`. Consumers must validate the optional field recursively and must not infer Multi-Instance state from `openUserTasks`, `openTimers`, E1/E2 history, or state differences.
+
+The outer controller, snapshot, output slots, planned count, and timer ownership are semantic state, not host state. The public projection contains no output slot, Process output before natural completion, Temporal identifier, recovery entry, or segment descriptor.
+
+## Checked source and Semantic Process IL
+
+The checked graph adds one closed `SequentialMultiInstanceUserTask` node carrying the outer Activity ID, task identity and name, exact input/output ItemAwareElement and association identities, normal output, and exact boundary Timer arm. General moddle objects, expressions, and foreign attributes do not cross this boundary.
+
+The Semantic Process program adds one closed `awaitSequentialMultiInstanceUserTask` operation. It owns the outer controller, the repeated inner User Task, and the single boundary Timer because none is a valid independent stable state: an active iteration without its controller or lifetime deadline, a controller without its exact input/output associations, or a reset deadline for a later iteration would change the selected meaning.
+
+The operation contains only immutable definition facts and profile limits. Collection contents, counters, active task identity, timer occurrence identity, snapshots, and output slots remain runtime state. The normal output is enabled only after atomic final aggregation; the boundary output is enabled only by the exact timer occurrence.
+
+Unknown fields, malformed arrays, duplicate identities, unresolved associations, wrong item types, asymmetric input/output shapes, wrong timer attachment, or a program/state pair whose controller does not match its operation fail closed before evaluation.
+
+## Runtime and synthetic construct inventory
+
+| Runtime or synthetic fact | Derivation and owner | Public projection | Lifecycle invariant |
+|---|---|---|---|
+| Outer Multi-Instance controller | Created from the admitted operation and next outer activation count | `OpenSequentialMultiInstance.id` and counters | Exists only while the outer Activity is open; exactly one for this profile |
+| Immutable input snapshot | Exact clone of the sole accepted Process `StringList` at outer entry | Only the active scalar task input is projected | Never changes; order and duplicates are preserved |
+| Planned count | Snapshot length evaluated once | `plannedInstanceCount` | Constant for the controller lifetime |
+| Generated count and loop counter | Generated inner identities in snapshot order | `numberOfInstances` and active `loopCounter` | Starts at one for nonempty input; increments only with atomic next generation |
+| Active iteration association | Exact controller, loop counter, task ID, and task input/output IDs | One `activeIterations` entry plus existing `openUserTasks` | Cardinality is one while open; task identity changes for each generated instance |
+| Indexed output slots | Accepted scalar task results keyed by loop counter | Never public | Dense from zero through completed count minus one; never completion-order keyed |
+| Outer boundary Timer ownership | One timer ID and one logical deadline created at outer entry | Existing `openTimers`; no duplicate field | Identity and deadline survive task turnover and Continue-As-New; removed on either route |
+
+No synthetic controller is a BPMN FlowNode occurrence. Each generated inner User Task is one E2 FlowNode occurrence using the existing task element ID and its own activation. The boundary Event and both End Events retain their existing occurrence rules.
+
+## Stable semantic rules
+
+| Rule ID | Proposition | Layer |
+|---|---|---|
+| `SMI-ADMIT-01` | Only the exact source, association, value-domain, cardinality, and limit contract is admitted; malformed or broader shapes fail closed. | BPMN/profile admission |
+| `SMI-ENTER-01` | A valid fresh start evaluates and snapshots the input collection once, creates one outer identity and one lifetime timer, and either completes an empty collection atomically or generates only loop counter zero. | BPMN plus project gap resolution |
+| `SMI-DATA-01` | The active task input equals the immutable snapshot item at its loop counter, and an accepted result occupies only the corresponding private output slot. | BPMN data mediation resolution |
+| `SMI-ITERATE-01` | A valid nonfinal inner completion atomically closes that task occurrence, stores its output, increments completed and generated counts, and creates exactly the next inner occurrence. | BPMN sequential generation |
+| `SMI-COMPLETE-01` | The final valid inner completion closes the final task, publishes the exact ordered output collection once, removes the controller and timer, and enables only normal output. | BPMN completion and selected aggregation |
+| `SMI-CANCEL-01` | The exact outer timer cancels the active inner task, generates no pending item, discards partial output, removes the controller, and enables only boundary output. | BPMN interruption plus selected partial-output resolution |
+| `SMI-REFUSE-01` | Wrong, stale, substituted, malformed, over-limit, or inactive task/timer identity commits no semantic state or publication. | Project command closure |
+| `SMI-OBSERVE-01` | Stable progress is derived only from the committed controller and exact active association; private snapshot and output slots remain unobservable. | Public observation |
+| `SMI-OCCURRENCE-01` | E2 counts each generated inner User Task exactly once, never counts the controller as an extra FlowNode occurrence, and closes the active task as completed or cancelled according to the winning transition. | Public occurrence lifecycle |
+
+Task completion and timer firing are separately supplied semantic inputs. If both target the same committed pre-state, the first input evaluated by the explicit schedule commits. Task-first either generates the next task or completes normally while preserving the original timer deadline; timer-first takes the boundary route. The losing input then targets stale state and is rejected by `SMI-REFUSE-01`. No portable physical simultaneity order is claimed.
+
+## Lean assurance lane
+
+The lane is **proved**. Lean defines declarative relations for outer entry, nonfinal iteration completion, final natural completion, and timer interruption, then proves every evaluator-produced transition belongs to the corresponding relation.
+
+The minimum laws are:
+
+- generated equals active plus completed plus terminated while the controller exists;
+- planned equals pending plus generated, active is at most one, and counters are monotone within one controller lifetime;
+- snapshot identity, order, multiplicity, and values are immutable;
+- an accepted inner result writes exactly its loop-counter slot, output slots remain dense, and final aggregation follows index order;
+- Process output is absent before natural completion, exact after natural completion, and absent after interruption;
+- wrong or stale controller, task, timer, loop counter, binding, or output size preserves the complete state;
+- the explicit task/timer schedule selects one transition and makes the competing old identity stale;
+- under the finite snapshot hypothesis, if every active task eventually receives an accepted completion or the outer timer eventually fires, the controller eventually closes.
+
+The nearest checked non-law is unconditional liveness: the engine does not guarantee that a human completes an active User Task or that a chosen host schedule fires the timer. Evaluator soundness alone does not prove completeness, determinism across unspecified schedules, TypeScript correspondence, compiler correspondence, or Temporal refinement.
+
+## CIB Seven relationship boundary
+
+Pinned CIB Seven source parses `loopDataInputRef` as a collection variable, maps `inputDataItem.name` to its per-instance element variable, initializes the desired instance count from collection cardinality, and performs sequential instances at loop counters starting with zero. Its engine parser contains no corresponding `loopDataOutputRef` or `outputDataItem` execution path even though its bundled schema declares both. Its sequential behavior also stores the desired cardinality in `nrOfInstances` from entry rather than the generated-so-far interpretation selected above.
+
+Those source facts are diagnostic, not a compatibility decision. The standards profile reuses only `CIB-AGR-0001` for the bounded base Process/User Task lifecycle and `CIB-OP-0001` for the existing host-task identity mapping. It makes no CIB claim about Multi-Instance counters, data mediation, aggregation, or interruption.
+
+Before Lean or production semantic-core implementation, one exact CIB `2.2.0` public-service probe must separately establish collection order, zero collection, sequential task turnover, boundary interruption, exposed counters, and absence or presence of standard output aggregation. Any agreement, interpretation, or limitation receives a real numbered register entry and verifier coverage atomically. A static source inference or placeholder relation ID is insufficient, and CIB output cannot be used as the final semantic oracle if the standard output path is absent.
+
+## Temporal hosting and refinement preflight
+
+Durable ingress remains the existing Process Start and content-bound User Task completion Update. The boundary timer is derived from committed semantic state. The profile adds no Signal, Activity, Child Workflow, external cancellation, or I/O inside Workflow code.
+
+The stable wait set contains one active inner User Task and one managed outer boundary Timer. The Timer is armed once from the outer entry logical time. Completing an inner task must not cancel and recreate it, alter its semantic identity, or reset its deadline. Natural outer completion withdraws it; exact firing withdraws the task and routes interruption.
+
+The complete outer controller, snapshot, indexed outputs, counters, active task association, timer ID, and logical deadline are committed semantic state and cross Continue-As-New unchanged. The program and profile identity remain immutable. A continuation that loses, duplicates, reorders, or substitutes any of those facts is invalid before Workflow evaluation.
+
+Existing command recovery remains content-bound to the complete task stimulus. Exact retry and identity conflict resolve before capacity and before handler acceptance. A lost successful result can be recovered after Continue-As-New or Worker replacement without repeating the semantic transition. An unseen command after terminal closure follows existing terminal fencing; no recovery entry or Run identity becomes semantic state.
+
+The smallest executable refinement witness uses a lowered history-event threshold to force at least one Continue-As-New boundary between iterations. It starts a three-item collection, replaces the Worker, completes tasks across Runs, drops and recovers one Update result, observes unchanged snapshot-derived inputs and one lifetime deadline, verifies ordered final output and exact E1/E2 inner occurrences, validates the closed terminal receipt, and replays every Run. A second schedule completes one item, fires the original timer while the second task is active, observes only the escalation task and no output collection, rejects the stale second-task completion, completes escalation, and replays every Run. Task-first and timer-first witnesses use explicit logical schedules rather than wall-clock coincidence.
+
+Temporal Event History, Workflow ID, Run ID, Activity attempts, and Continue-As-New boundaries remain hosting evidence only. Public progress and outputs must match the pure semantic state without inspecting them.
+
+## Evidence strategy
+
+The first red is not merely an unsupported XML node. One independently authored three-item scenario must currently fail source admission, while a mutation that removes only Multi-Instance characteristics becomes an ordinary User Task graph and therefore cannot produce the required repeated task/progress/output trace. A second red uses the same command identity against two different loop iterations; current task-only identity handling must not be allowed to substitute one iteration for another.
+
+Answer-free scenario inputs cover zero items, three distinct items, duplicate items, natural completion, timer interruption after one completion, task-first and timer-first schedules, wrong outer/task/timer activation, stale prior task, binding substitution, reordered inputs, oversized item/count/canonical bytes, and a final candidate output that crosses the byte bound.
+
+| Claim | Independent evidence |
+|---|---|
+| Exact source and profile admission | Source compiler fixtures, exact checked graph, foreign/surplus/malformed association mutations, and old-profile rejection |
+| Normative sequential lifecycle and data mediation | BPMN clauses and machine-readable artifacts plus the capsule rules; no CIB majority vote |
+| CIB relationship | Separate public-service probe and raw counter/output projection, classified only after observed evidence |
+| Declarative meaning and laws | Lean relation, evaluator soundness, law proofs, and explicit non-law |
+| TypeScript realization | Independently written semantic-core implementation and exact trace comparison with Lean |
+| Occurrence accounting | E2 start/end batches, open-set identity, and mutations that count the controller, reuse a task ID, or close by completion order |
+| Durable refinement | Product 1 start, Update recovery, one outer timer, forced Continue-As-New, Worker replacement, exact receipt, history exclusions, and replay of every Run |
+| Whole-model reach | One registered project-owned batch-review model, capability row, generated corpus map, and Product 2 About disclosure added atomically with support |
+
+Meaningful mutations reset the timer for each iteration, derive active input from the mutable Process binding instead of the snapshot, aggregate in completion order, expose a partial output, publish output on interruption, increment generated count before task creation, count the controller as a FlowNode occurrence, reuse the prior task identity, accept a result for the right task with the wrong output binding, or drop controller state at Continue-As-New. Each must be caught by an oracle that does not share the mutated mechanism.
+
+## Versioning consequences
+
+This is one additive pre-release profile and one additive optional public observation field. Existing profile artifacts, caller bytes, Semantic Process programs, RuntimeState values, canonical observation bytes, terminal receipts, and retained Temporal histories remain valid and byte-identical. The new operation and runtime record are reachable only under the new profile. Old decoders must be upgraded atomically before the new profile is admitted, while old histories remain decodable without the optional field or new record.
+
+Implementation must update the profile catalog and artifact, source parser/projection, checked graph, Semantic Process contract and schema, Lean wire and evaluator boundary, TypeScript runtime and validators, canonical scenario schema, observation validators, E1/E2 projection, differential case catalog, Product 1 protocol/client/testkit consumers, Workflow continuation validation and capacity measurement, registered corpus, and documentation owners as one compatibility change. Product 2 gains only tolerant decoding and capability disclosure; it does not gain a new workflow or UI behavior in this capsule.
+
+Existing executable constraints include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [semantic closure documentation](../../scripts/semantic-closure-documentation.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [Workflow occurrence authority](../../scripts/workflow-occurrence-semantic-authority.test.ts), [Activity boundary Timer source evidence](../../packages/bpmn-source/test/activity-boundary-timer-source.test.ts), [Activity boundary Timer semantic evidence](../../packages/semantic-core/test/activity-boundary-timer.test.ts), [profile value-domain evidence](../../packages/semantic-core/test/semantic-profile-value-domain.test.ts), [Workflow Timer capacity](../../packages/temporal-adapter/workflow/test/workflow-timer-capacity.test.ts), and this proposal's [reviewability guard](../../scripts/document-reviewability.test.ts).
+
+### Owners this implementation grows
+
+| Owner | Current headroom before the 600-nonblank-line review target |
+|---|---:|
+| [public semantic contract](../../packages/semantic-core/src/contract.ts) | 282 |
+| [checked Process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 356 |
+| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 199 |
+| [runtime state contract](../../packages/semantic-core/src/semantic-process-state.ts) | 234 |
+| [canonical scenario projection](../../packages/semantic-core/src/scenario.ts) | 75 |
+| [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 539 |
+| [profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 397 |
+| [FlowNode occurrence lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 46 |
+| [FlowNode occurrence open set](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 43 |
+| [BPMN source compiler composition](../../packages/bpmn-source/src/compile.ts) | 196 |
+| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 48 |
+| [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
+
+The expected lowering, occurrence, and projection mechanisms cannot fit cohesively in the current 48-, 46-, 43-, and 75-line headroom. Their implementation must create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. This extraction condition stops applying if the review target measurements change enough that the complete cohesive mechanism fits while every owner remains below 600; the table is recomputed by the reviewability guard rather than treated as permanent prose.
+
+## Epistemic closure and reopen conditions
+
+Established by this proposal are the applicable BPMN clauses and conflicts, the exact bounded standards profile, selected zero-based/direct-mediator resolutions, distinct identity and data lifetimes, public progress contract, atomic aggregation, timer interruption, proof obligations, and Temporal information-preservation plan. Static CIB source establishes only the parser/behavior facts stated above.
+
+The nearest unsupported claim is sequential Multi-Instance for another Activity, arbitrary collections or data associations, early completion, repeated outer activation, or CIB-compatible output aggregation. The principal common-mode risk is that source lowering, Lean, TypeScript, and Temporal all consume one mistaken scenario account; independent normative derivation, a separately authored checked graph oracle, CIB public-service observation, identifier substitutions, and seeded timer/output/order mutations constrain but do not eliminate that risk.
+
+The nearest realistic counterexample completes the first item, silently resets the boundary deadline while creating the second task, then publishes an output collection after the reset timer allows work beyond the original outer lifetime. The timer identity/deadline, indexed output, E2 task turnover, and task-first/timer-first witnesses must all reject that implementation.
+
+Reopen before admitting parallel generation, a different Activity body, loop cardinality, completion condition, partial Process output, non-direct mapping, expressions, another value type, repeated or nested controllers, more than one timer, a CIB Multi-Instance profile, a public output-slot projection, or a representation that cannot broaden active iteration cardinality without reinterpreting an already accepted model.
+
+## Review and implementation boundary
+
+Context-cold proposal review is required because this selects new BPMN meaning, data mediation, a checked graph and IL operation, runtime and public observation, proof boundary, and Temporal refinement claim. Owner approval is required after that review and before production implementation.
+
+A semantic-checkpoint review is required after the first complete executable source/Lean/core checkpoint because the profile changes admission, runtime state, public observation, and a transition family. Closure review remains required after Temporal, CIB classification, corpus, full-gate, reflection, and cost evidence. No combined checkpoint and closure is assumed.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
