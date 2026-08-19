@@ -1,0 +1,217 @@
+# Runtime-state well-formedness invariant proposal
+
+## Status
+
+Lifecycle: draft
+Review: pending
+
+## Question and current boundary
+
+This proposal selects the first `RUNTIME-STATE-INVARIANT` slice: one program-indexed predicate that decides which `RuntimeState` values the semantic account admits, proved to hold at every admitted initial state and to be preserved by every currently registered internal and external committed transition. It also reclassifies the evaluator-graph bridge theorems that carry no semantic content, without deleting the dispatcher check they do perform.
+
+The proposal adds no BPMN capability, no operation kind, no runtime field, no public observation field, no profile, no scenario, and no evidence artifact. It changes no admitted model, no accepted transition, and no canonical projection. Its entire subject is which states the account claims to represent and which of that claim is checked rather than assumed.
+
+Three facts define the current boundary and the proposal is written against them rather than against recall.
+
+First, the representation invariant is prose. The complete ownership, scope-tree, wait, incident, activation-high-water, and canonical-order account sits in the module documentation immediately above `structure RuntimeState` in [`RuntimeState.lean`](../BpmnSemantics/SemanticProcess/RuntimeState.lean), over a twenty-two-field flat product, with no Lean predicate and no preservation theorem. [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) records that prose as the implemented shared runtime representation invariant, which is exactly true and is the gap: a comment binds a reader, not the evaluator.
+
+Second, a strong program-indexed validity predicate already exists but is scoped to public projection. `runtimePositionValid` in [`ControlPosition.lean`](../BpmnSemantics/SemanticProcess/ControlPosition.lean) already decides lifecycle agreement, unique live occurrence identity, per-occurrence definition-scope existence, runtime-parent projection of the program's declared parent scope, exactly-one hosting root, call associations, and token place and owner binding. It is invoked only by the control-position projection and by one conformance theorem. Nothing states that the evaluator preserves it, and it omits the five wait families, the selected-branch and event-race records, the retained incident wait, canonical order, and every monotonicity fact.
+
+Third, three family-local state predicates already exist as executable guards and as law hypotheses: `eventRaceAssociationsValid` in [`EventBasedGateway.lean`](../BpmnSemantics/SemanticProcess/EventBasedGateway.lean), `calledProcessAssociationsValid` in [`CallActivity.lean`](../BpmnSemantics/SemanticProcess/CallActivity.lean), and `effectIncidentAssociationsValid` in [`Incident.lean`](../BpmnSemantics/SemanticProcess/Incident.lean). The third already rejects an effect occurrence present in both `effectWaits` and `effectIncidents`. These are not missing work; they are three cohesive fragments of the same invariant, each reached only through its own family's call sites.
+
+The consequence is already recorded as absent status. [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) owns three entries that name the same missing predicate from three directions: both [interrupting Sub-Process boundary Timer](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md) victory bridges take `running`, `bounded`, and a quantified `parentOwned` that their own transitions do not establish, whose derivation would additionally need scope-tree acyclicity and an empty called-instance closure that `RuntimeState` does not enforce; `BoundedScopeVictoryStep` is therefore not wired into global `ProgramStep` soundness; and the Timer stale-identity laws still wait on a uniqueness invariant over the wait collections, whose shape is settled and whose reopen trigger is whichever comes first.
+
+## Selected account
+
+One predicate, three layers, each with a distinct type so that a state fact cannot be confused with a transition fact.
+
+`runtimeStateWellFormed : Program → RuntimeState → Bool` is the state predicate. It is program-indexed because agreement facts quantify over program-declared control places, definition scopes, and operations, and cannot be stated on the state alone.
+
+`RuntimeStateMonotone : RuntimeState → RuntimeState → Prop` is the separate two-state relation. High-water and non-reissue facts are properties of a transition, not of a state, and a state predicate that pretended otherwise would have to invent a history field.
+
+### Layer 1: lifecycle and structure
+
+| Rule | Proposition | Current status |
+|---|---|---|
+| `RSI-LIFE-01` | `notStarted` admits no occurrence, token, wait, hidden record, incident, or pending initiation | partly in `lifecyclePositionValid` |
+| `RSI-LIFE-02` | `completed` and `cancelled` admit no live occurrence and no token | in `lifecyclePositionValid` |
+| `RSI-OWN-01` | every token, User Task wait, Message wait, Timer wait, effect wait, incident-retained wait, selected-branch record, event race, and called-process record names exactly one live scope occurrence as its owner | tokens and effect waits only |
+| `RSI-UNIQ-01` | the occurrence identity triple `(processInstanceId, definitionScopeId, activation)` appears exactly once in `scopeOccurrences` | in `exactLiveOccurrence` |
+| `RSI-UNIQ-02` | within each wait family the family's occurrence key appears at most once: User Task `(instance, element, activation)`, Message subscription identity, Timer occurrence identity, effect occurrence identity | absent except at incident creation |
+| `RSI-DISJ-01` | one effect occurrence appears in `effectWaits` or in `effectIncidents`, never in both | in `effectIncidentAssociationValid` |
+| `RSI-ORDER-01` | every collection holds its declared canonical order, so activation order is not retained as semantic state | absent |
+
+### Layer 2: program agreement
+
+| Rule | Proposition | Current status |
+|---|---|---|
+| `RSI-BIND-01` | a token's control place exists in the program and the program's declared owning definition scope for that place equals the token owner's definition scope | in `tokenBindingValid` |
+| `RSI-BIND-02` | an occurrence's definition scope exists uniquely in the program, its instance identity is nonempty, its activation is positive, and its runtime parent link projects the program's declared parent scope | in `scopeOccurrenceValid` |
+| `RSI-BIND-03` | exactly one parentless occurrence is the hosting root of the running instance, and every other parentless occurrence is the called root of exactly one live called-process record | in `hostingRootCount` and `calledProcessAssociationsValid` |
+| `RSI-BIND-04` | each wait's element, subscription, timer, or effect identity is declared by exactly one program operation of the matching kind, and that operation is owned by the wait owner's definition scope | absent |
+| `RSI-BIND-05` | each selected-branch record's selection key matches exactly one `selectMany`, each event race matches exactly one `awaitEventRace`, and each called record matches exactly one paired `invokeProcess` and `returnProcess` | partly in the two association predicates |
+
+`RSI-BIND-03` is deliberately not "exactly one parentless occurrence". That stronger reading is false while a called Process is live, which is why `rootScopeOccurrence?` returns `none` in that state, and an invariant asserting it would be refuted by the admitted Call Activity profile.
+
+### Layer 3: monotonicity
+
+| Rule | Proposition |
+|---|---|
+| `RSI-MONO-01` | every activation counter family is a per-key high-water mark that never decreases across a committed transition |
+| `RSI-MONO-02` | `endOccurrences` never decreases |
+| `RSI-MONO-03` | `logicalTimeMs` never decreases |
+| `RSI-MONO-04` | a newly created occurrence, task, Message, Timer, effect, race, or call identity is strictly above its key's recorded counter, so a removed identity is never reissued |
+
+### Derived rather than assumed
+
+| Rule | Consequence | Derivation |
+|---|---|---|
+| `RSI-FOREST-01` | the live scope-occurrence graph is an acyclic parent-linked forest | `RSI-BIND-02` projects each runtime parent onto the program's declared parent scope, and `WellFormedProgram` already requires that definition-scope forest to be acyclic, so no runtime cycle can project onto it |
+| `RSI-TERM-01` | a terminal state holds no wait, hidden record, or incident | `RSI-LIFE-02` removes every occurrence and `RSI-OWN-01` requires a live owner for each of them |
+
+`RSI-FOREST-01` is the specific fact the interrupting Sub-Process boundary Timer capsule records as unenforced. It becomes a theorem over the existing conjunct rather than new machinery, which is the main reason this proposal is small.
+
+## Obligations
+
+| ID | Obligation | Shape |
+|---|---|---|
+| `RSI-OBL-01` | `initialState` satisfies the predicate for every well-formed program | quantified over `program` |
+| `RSI-OBL-02` | every admitted start result satisfies it: `runningProgramStartState?`, `admitMessageStart?`, and `admitTimerStart?` under `programWellFormed` and the profile's start admission | quantified, one theorem per start kind |
+| `RSI-OBL-03` | internal preservation for all twenty-four registered `OperationStep` arms: a well-formed state and a successful `fire?` yield a well-formed successor | quantified over `program`, `state`, `operation` |
+| `RSI-OBL-04` | external preservation for all ten `Stimulus` constructors on the committed outcome | quantified per constructor |
+| `RSI-OBL-05` | refusal preservation: a rejected or semantically failed command returns the received state, so well-formedness is preserved trivially and visibly rather than by omission | one shared lemma |
+| `RSI-OBL-06` | `RuntimeStateMonotone` holds across the same thirty-four arms | quantified, separate from `RSI-OBL-03` and `RSI-OBL-04` |
+
+The reserved `awaitSequentialMultiInstanceUserTask` operation has no transition and is therefore outside `RSI-OBL-03`. When `SEQUENTIAL-MULTI-INSTANCE` registers its runtime, the same change extends `RSI-OBL-03` and `RSI-OBL-06`; the invariant is what makes that extension a visible obligation rather than a silent omission.
+
+No obligation may be discharged by deciding a fixture. Each is a statement with binders over program and state, and a concrete decided witness is admissible only as a negative or as an illustration beside the quantified law. An arm that needs an extra hypothesis records that hypothesis by name in the theorem rather than dropping the arm.
+
+## Bridge reclassification
+
+Fourteen of the twenty-four `OperationStep` arms in [`Transition.lean`](../BpmnSemantics/SemanticProcess/Transition.lean) take the executable result as their own premise, so `fire_sound` discharges them by passing the evaluator's equation through unchanged. Twelve state `f state ... = some after` directly for the same `f` that `fire?` calls: `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, `throwError`, `reachNoneEnd`, and `completeScope`. Two more wrap that equation in a single-constructor inductive whose soundness proof is one `exact`: `MessageInitiationStep` in [`MessageStart.lean`](../BpmnSemantics/SemanticProcess/MessageStart.lean) and `TimerInitiationStep` in [`TimerStart.lean`](../BpmnSemantics/SemanticProcess/TimerStart.lean).
+
+For those fourteen arms the relation is the graph of the function. A wrong transformation produces a wrong relation and the bridge still holds, so passage cannot fail apart from the evaluator and the pair is one lane under [the evidence-lane rule](TESTING-SPEC.md#evidence-lanes), not two.
+
+The remaining ten arms are genuine decompositions with independently stated premises, and `MergeExclusiveStep` in [`CyclicControlFlow.lean`](../BpmnSemantics/SemanticProcess/CyclicControlFlow.lean) is the reference shape: it quantifies over an offered token with a membership premise, admits one transition per offered occurrence, and is deliberately broader than the evaluator that selects one of them.
+
+The proposal keeps every existing theorem and changes what is claimed for it.
+
+`fire_sound` and `step_sound` are reclassified as a **dispatcher and constructor-selection check**. That is a real and worthwhile property: it fails if `fire?` routes an operation kind to the wrong state transformation or if a new operation kind is added without a matching relation arm, and it is what makes the twenty-four-way match exhaustive. It is not evidence about meaning, and no capsule may cite it as a semantic lane.
+
+The falsifiable replacement is `RSI-OBL-03` and `RSI-OBL-06`, which a wrong transformation fails: an arm that strands a token on a removed owner, reissues a retired activation, duplicates a wait key, or leaves an occurrence whose parent contradicts the program breaks preservation regardless of how the relation was written.
+
+Implementation amends the exact obligation text in four owners so the reclassification is stated once at each: item 6 of [the Lean proof obligations](SEMANTIC-PROCESS-IL-SPEC.md#lean-specification-and-proof-obligations), the bridge bullet in [two kinds of independence](PROJECT-DESIGN.md#two-kinds-of-independence), items 6 and 7 of [the required capsule structure](capsules/README.md#required-capsule-structure), and the corresponding sentence in [CLAUDE.md](../CLAUDE.md#semantic-code). None of those edits belongs to this proposal-only change.
+
+## Independent TypeScript validation
+
+The TypeScript core already validates the projection-facing half independently and with its own decomposition: `runtimeScopeForestIsValid`, `scopeOccurrenceIsValid`, and `definitionForestIsValid` are private to [`control-position-projection.ts`](../packages/semantic-core/src/control-position-projection.ts), reached from `projectCurrentControlPositions` rather than from a translated Lean conjunction, and they operate on the core's sorted multiplicity representation rather than Lean's lists.
+
+The proposal keeps that independence and extends it on the same terms.
+
+The core owns one validator over its own runtime representation, placed with the state it validates in [`semantic-process-state.ts`](../packages/semantic-core/src/semantic-process-state.ts) and reached from the existing fail-closed pre-dispatch path in [`semantic-command-admission.ts`](../packages/semantic-core/src/semantic-command-admission.ts). It must not mirror Lean's layer split, conjunct order, or helper names, and it must not be derived from the Lean source.
+
+What the two sides share is the reviewed conjunct list identified by `RSI-` rule ID, and a corpus of malformed states in the existing wire format that both must reject. Each side reports which rule identity failed, and the expected rule identity is verifier-only retained evidence rather than part of the scenario input.
+
+That shared corpus is a transcription check and is recorded as one lane, not two. Both sides implement the same reviewed account, so under [two kinds of independence](PROJECT-DESIGN.md#two-kinds-of-independence) agreement between them cannot establish that the account is right, only that neither transcribed it wrongly. Account-level independence for this invariant comes from normative and representation review, and the proposal claims nothing more.
+
+## Required, optional, and excluded
+
+Required: the three-layer predicate, the six obligations, the fourteen-arm bridge reclassification, the independent TypeScript validator, the negative corpus, and the owner-document amendments.
+
+Optional, and recommended only if the cost measurement below permits: promoting the predicate to a fail-closed gate on the pre-dispatch path, and retiring `deadline_arm_bridge_premise_is_satisfiable` once its premise is derivable.
+
+Excluded: any BPMN capability, operation, field, observation, profile, or scenario; the shared Activity occurrence record owned by `ACTIVITY-OCCURRENCE-OWNERSHIP`; the commutation and semantic-choice account owned by `INTERNAL-COMMUTATION`; sequential Multi-Instance runtime; liveness, progress, termination, and confluence claims; a general checked-source-to-run preservation theorem; and any Temporal or CIB behavioral claim.
+
+## Behavior, observation, and cost preservation
+
+Preservation must come before enforcement, in that order, and the reason is not stylistic.
+
+If the predicate were installed as a precondition on the individual arms, any currently reachable state that violates a conjunct would turn a currently accepted transition into a refusal, which is a semantic change to admitted models. Proving `RSI-OBL-01` through `RSI-OBL-04` first establishes that no reachable state violates it, after which a gate can only reject states that were never reachable: a corrupted, cross-program, or injected state. That is precisely the existing purpose of `incidentStateAdmitted` in [`CommandAdmission.lean`](../BpmnSemantics/SemanticProcess/CommandAdmission.lean) and of the core's refusal of cross-program injected incident states, so the gate extends an existing mechanism at one site instead of adding twenty-four.
+
+The Lean build cost is a first-order constraint here, not an afterthought. The repository registers five hundred and seventy `decide +kernel` sites, and every decided fixture that executes a stimulus or an internal step reduces through the admission and transition dispatchers, so a new conjunction on that path is re-reduced by each of them while the kernel holds its terms in resident memory. This repository has already reverted two conversions for exhausting host memory and pins `leanBuildThreads` to one for the same reason. Implementation therefore builds one narrow target under an operating-system-enforced memory bound before any full build, measures CPU and resident memory together, and treats the optional gate as rejected if that measurement regresses. The predicate and its theorems carry no such risk, because a theorem is not reduced by another module's fixtures.
+
+No public observation changes, so the differential catalog, retained CIB evidence, canonical bytes, and registered scenarios are untouched, and no artifact-registry roundtrip obligation is triggered.
+
+## Temporal hosting and refinement preflight
+
+This proposal introduces no transition family, so it needs no durable ingress, wait, timer, effect, or cancellation mechanism, and the adapter's Command, Update, Query, and effect-Activity surfaces are unchanged.
+
+One refinement risk is real and specific. The Workflow reconstructs semantic state across Worker replacement and across the Workflow chain's aggregate continuation, so a state that crosses a Run boundary must satisfy the invariant. If the optional gate is installed, a recovered or continued state that failed any conjunct would change a currently successful recovery into a refusal. The mitigation is the ordering above plus one executable witness: an existing replay and continuation case asserts that the recovered state satisfies the predicate. No new history is retained, consistent with the pre-release policy.
+
+The invariant also strengthens the adapter boundary in one direction worth naming: `RSI-MONO-04` is the semantic statement behind the adapter's assumption that a Timer or task identity is never reused after withdrawal, which the host currently relies on when it joins a durable deadline to committed state.
+
+## Evidence strategy
+
+| Lane | What passage establishes | What it cannot establish |
+|---|---|---|
+| Normative and representation review | the conjunct list is the reviewed account of admitted states | that any implementation enforces it |
+| Lean predicate and theorems | initialization and thirty-four-arm preservation hold for the Lean account | correctness of the core, adapter, parser, or CIB |
+| Lean negative fixtures | each conjunct rejects its own malformed state, decided in the kernel | that the conjunct list is complete |
+| TypeScript validator and shared negative corpus | the independently written core rejects the same malformed states | that the account was independently chosen |
+| Temporal recovery witness | a recovered and continued state satisfies the predicate | any unsupported BPMN meaning |
+
+The separating negatives are the point of the exercise, and each must fail today for a different reason:
+
+`W1`, a token whose owner occurrence has been removed, passes every family-local predicate and violates `RSI-OWN-01`.
+
+`W2`, two Timer waits sharing `(instance, element, activation)`, is the exact state the boundary-Timer stale-identity laws currently assume away, and violates `RSI-UNIQ-02`.
+
+`W3`, an occurrence whose runtime parent contradicts the program's declared parent scope, violates `RSI-BIND-02` and is the state whose absence `RSI-FOREST-01` derives.
+
+`W4`, a Message wait whose subscription identity is declared by no program operation, violates `RSI-BIND-04` and is reachable only through an injected or cross-program state.
+
+`W5`, a successor that lowers an activation counter after removing its wait, satisfies every state conjunct and violates `RSI-MONO-01`, which is why monotonicity is a separate relation.
+
+## Versioning consequences
+
+No wire contract, schema, profile identity, canonical byte, retained evidence artifact, or public observation changes, so no producer or consumer requires an atomic replacement and the pre-release policy applies unchanged: no compatibility switch, no format counter, and no retained history.
+
+The guards that already constrain this work and must stay green are [the Lean source-hygiene and size guard](../scripts/source-hygiene.test.ts), [the Lean decided-site registry](../scripts/lean-source-contracts.test.ts), which records every `decide +kernel` site with its reason and rejects a new site or module until registered, [the Lean import-boundary guard](../scripts/lean-import-boundaries.test.ts), [the harness type gate](../scripts/verification-entrypoint.test.ts), and, for the documentation half, [the reviewability guard](../scripts/document-reviewability.test.ts) and [the review-policy guard](../scripts/independent-review-policy.test.ts).
+
+The oracles that must be extended rather than merely satisfied are [the Lean lifecycle assurance proofs](../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycleProofs.lean), whose quantified cancellation laws are the model this invariant follows, [the core control-position tests](../packages/semantic-core/test/control-position-projection.test.ts), and [the core transition-publication tests](../packages/semantic-core/test/semantic-transition-publication.test.ts).
+
+Two structural claims with their stopping conditions. The Lean predicate and its proofs belong in new narrow modules rather than in `RuntimeState.lean`, and that holds while `RuntimeState.lean` measures 453 of 600 nonblank lines and while the proofs would import owners that `RuntimeState.lean` must not depend on; if the predicate turns out to fit in under roughly 100 lines with no new imports, placing it beside the structure is the better outcome. The core validator belongs in `semantic-process-state.ts` rather than `semantic-process-runtime.ts`, and that holds while the runtime file measures 567 of 600 nonblank lines; the stopping condition is an extraction that gives the runtime file real headroom again.
+
+### Owners this implementation grows
+
+| Owner | Measured size | Planned change |
+|---|---|---|
+| [`BpmnSemantics/SemanticProcess/RuntimeState.lean`](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 453/600 nonblank, 147 lines before the review target | no growth planned; the prose invariant is replaced by a link to the predicate |
+| [`BpmnSemantics/SemanticProcess/ControlPosition.lean`](../BpmnSemantics/SemanticProcess/ControlPosition.lean) | 376/600 nonblank, 224 lines before the review target | existing conjuncts become reusable rather than projection-private |
+| [`BpmnSemantics/SemanticProcess/Transition.lean`](../BpmnSemantics/SemanticProcess/Transition.lean) | 333/600 nonblank, 267 lines before the review target | bridge docstrings reclassified; no relation arm removed |
+| [`BpmnSemantics/SemanticProcess/EventBasedGateway.lean`](../BpmnSemantics/SemanticProcess/EventBasedGateway.lean) | 550/600 nonblank, 50 lines before the review target | its association predicate is subsumed, not moved; no growth permitted here |
+| [`BpmnSemantics/SemanticProcess/CallActivity.lean`](../BpmnSemantics/SemanticProcess/CallActivity.lean) | 479/600 nonblank, 121 lines before the review target | its association predicate is subsumed, not moved |
+| [`BpmnSemantics/SemanticProcess/Incident.lean`](../BpmnSemantics/SemanticProcess/Incident.lean) | 150/600 nonblank, 450 lines before the review target | its association predicate is subsumed, not moved |
+| [`packages/semantic-core/src/semantic-process-state.ts`](../packages/semantic-core/src/semantic-process-state.ts) | 366/600 nonblank, 234 lines before the review target | new independent validator |
+| [`packages/semantic-core/src/semantic-command-admission.ts`](../packages/semantic-core/src/semantic-command-admission.ts) | 329/600 nonblank, 271 lines before the review target | one call site if the optional gate is approved |
+| [`packages/semantic-core/src/semantic-process-runtime.ts`](../packages/semantic-core/src/semantic-process-runtime.ts) | 567/600 nonblank, 33 lines before the review target | no growth permitted; named because it is the tempting wrong home |
+
+New narrow Lean modules are expected for the predicate and its proofs, and each must be independently buildable at its narrowest owner and must not import the `BpmnSemantics.SemanticProcess` umbrella.
+
+## Epistemic closure and reopen conditions
+
+The exact claim this establishes is that the Lean account's admitted state set is stated, holds at every admitted start, and is preserved by every registered transition, and that the invariant's own conjunct list is rejected on five named malformed states. The nearest claim that remains unsupported is that the conjunct list is complete: a missing conjunct is invisible to preservation, because a predicate that omits a fact preserves it vacuously. Only review and a later capsule that needs a fact the list lacks can find that, which is why the reopen trigger below is written against need rather than against a schedule.
+
+The common-mode risk is that the same author writes the predicate and the preservation proofs, so a conjunct weakened to make an arm provable would leave both green. The counter is that each conjunct must be justified by a negative witness that fails without it, and that weakening a conjunct is visible as a diff in the reviewed rule table rather than only in a proof.
+
+The nearest realistic counterexample to the proposal's usefulness is an arm whose preservation needs a hypothesis the invariant cannot supply, in which case the honest outcome is a recorded unresolved boundary for that arm, not a weaker predicate.
+
+Reopen when a capsule needs a state fact the list lacks, when a new operation kind or stimulus is registered, or when the optional gate's cost measurement changes.
+
+## Owner questions
+
+Three decisions, each with a recommendation.
+
+First, predicate form. Recommendation: one executable `Bool` predicate with `Prop` laws stated over `= true`. Rationale: the three existing conjuncts are already `Bool` guards inside operations and appear as `= true` law hypotheses, a `Prop` twin would be a second copy of one fact that nothing compares, and a `Bool` keeps kernel-decided negative witnesses available. The cost is that laws carry `= true` hypotheses rather than propositional ones, which the repository already does everywhere this invariant touches.
+
+Second, enforcement. Recommendation: prove first, then install the gate at the single existing pre-dispatch site, and only if the narrow-target measurement of CPU and resident memory permits. Rationale: the ordering is what makes the gate behavior-preserving, and the measurement is what keeps it from repeating the two reverted memory conversions. If the measurement rejects it, the predicate and theorems still retire the assumed hypotheses, which is the substance of the item.
+
+Third, scope of the bridge reclassification. Recommendation: reclassify all fourteen definitional arms now and rewrite none of them into genuine relations. Rationale: converting them would mostly restate each function one level up, which is what `BoundedScopeArmingStep` already does and which buys little; the falsifiable content arrives through preservation instead. The alternative worth naming is converting only the two single-constructor wrappers, which is cheap but leaves the twelve larger cases misclassified.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
