@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Current boundary
 
-This proposal selects the first `INTERCHANGE-ADMISSION` tranche. The context-cold review of immutable proposal target `db18ea3` returned `approve-with-required-edits`. Its decisive counterexample found that the semantic-core value-domain gate currently admits string/null Process data for profiles whose artifacts exclude variables, including both the preserved-notation and Timer/User Task composition profiles. That is an existing profile-contract defect and a prerequisite to this composition, not behavior this proposal may preserve. The first warm correction audit of `b6c7716` closed the Definitions-metadata and finite-assurance findings but retained the need for a complete nonempty value-domain matrix and exact corpus denominators. The second warm correction audit of `d0bb491` closed the corpus finding and retained one missing approved value-domain cell: Structured Human Work Process start admits String/Null. The owner authorized one third proposal-only correction and same-reviewer audit; production work and proposal approval remain blocked on that audit. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
+This owner-approved proposal selects the first `INTERCHANGE-ADMISSION` tranche. The context-cold review of immutable proposal target `db18ea3` returned `approve-with-required-edits`. Its decisive counterexample found that the semantic-core value-domain gate currently admits string/null Process data for profiles whose artifacts exclude variables, including both the preserved-notation and Timer/User Task composition profiles. That is an existing profile-contract defect and a prerequisite to this composition, not behavior this proposal may preserve. The first warm correction audit of `b6c7716` closed the Definitions-metadata and finite-assurance findings but retained the need for a complete nonempty value-domain matrix and exact corpus denominators. The second warm correction audit of `d0bb491` closed the corpus finding and retained one missing approved value-domain cell: Structured Human Work Process start admits String/Null. The owner-authorized third correction `f773977` closed that cell and its artifact-reconciliation obligation, and the same reviewer approved it without further findings. Owner approval was recorded on 2026-08-19; implementation may proceed under the contract below. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
 
 The source compiler already implements the reviewed preservation mechanism under `bpmn-2.0.2-user-task-preserved-notation-draft`. The current interchange gap is composition: that capability is unavailable to the CIB Seven User Task Process-data profile used to calibrate external whole models. Before composition, two declaration defects must close: external variable writes must follow an exhaustive profile-and-surface value-domain contract, and the already-preserved standard Definitions metadata must gain an explicit requirement-ledger row plus a profile feature. This proposal otherwise reuses the reviewed mechanism and its five existing structural requirements. It does not reinterpret Diagram Interchange, Collaboration, Lanes, Artifacts, Documentation, User Task lifecycle, or Process data.
 
@@ -184,6 +184,8 @@ Reopen before preserving any construct that can change execution; before admitti
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `db18ea3` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `db18ea3` | `fork-turns-none` | `approve-with-required-edits` | `f773977` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal stage used three correction rounds. The first two automatic rounds closed the original Definitions-metadata, finite-assurance, corpus-denominator, and value-domain-matrix findings except for one Structured Human Work Process-start cell. The owner explicitly authorized the third proposal-only round; correction `f773977` added that exact String/Null cell and its artifact-reconciliation obligation, and the same reviewer approved it without further findings.
