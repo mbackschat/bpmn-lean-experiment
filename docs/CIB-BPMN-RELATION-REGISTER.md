@@ -22,13 +22,13 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 10 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Reviewed normative agreements | 11 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB interpretations of BPMN gaps or inconsistencies | 2 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | Selected CIB extensions | 14 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
 | Configuration-specific realizations | 8 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 1 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -206,6 +206,20 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** This establishes one exact code, one attached interrupting handler, one flat Process, and one synchronous CIB host realization. Catch-all handling, nested propagation, Error End Events, multiple handlers, general faults, and unhandled Error behavior remain excluded. The caught-path mapping is classified separately by `CIB-EXT-0009`.
 
+### CIB-AGR-0011: bounded collection-driven sequential Multi-Instance User Task lifecycle
+
+**Status:** Reviewed bounded agreement; no Multi-Instance compatibility profile selected
+
+**BPMN basis:** BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 require collection-driven sequential generation to expose one inner Activity instance at a time in collection order. Clauses 10.5.5, 10.5.6, 13.3.2, and 13.5.3 require the exact interrupting `PT1S` Boundary Timer to cancel the attached outer Activity and follow only its boundary route.
+
+**Pinned CIB observation:** CIB Seven `2.2.0` under `CIB-CFG-0001` deploys the schema-valid exact fixture, exposes three distinct generated User Task IDs in `alpha`, `beta`, `gamma` item order, keeps one unchanged outer Timer job across task turnover, completes a zero-item collection without a task or Timer, and routes exact Timer execution after the first completion to the escalation User Task while making the current review task stale.
+
+**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [Sequential Multi-Instance proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md#cib-seven-relationship-boundary).
+
+**Fidelity boundary:** Task existence, generated task identity, item value, loop-variable values, Timer-job identity and due date, task staleness, boundary-route activation, and Process completion are observed through public CIB services. The probe supplies the collection under the literal `loopDataInputRef` identity because that is CIB's public Process-variable binding; this does not establish general BPMN Data Association execution or the project mediator.
+
+**Boundary:** This agreement is limited to one private executable Process, one collection-driven sequential Multi-Instance User Task, three strings or an empty collection, one exact interrupting Boundary Timer, and one boundary-route User Task. Counter meaning is classified separately by `CIB-INT-0002`; output aggregation is excluded by `CIB-LIM-0001`. General Multi-Instance, another Activity body, completion conditions, parallel generation, other data mapping, repeated activation, and a CIB compatibility profile remain unreviewed.
+
 ## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.
@@ -223,6 +237,36 @@ The selected profile therefore orders candidates by XML `sequenceFlow` declarati
 **Evidence:** The [packaged-engine JUEL gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java) deliberately reverses gateway `<outgoing>` references while keeping declaration order fixed and observes the declaration-first branch. The standards scenario repeats that discriminator without using CIB as its expression oracle; the pinned source path and selected project rule are recorded in the [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md).
 
 **Boundary:** This interpretation is limited to the admitted divergent Exclusive Gateway slice. It is not a general order for other Flow Nodes, event races, parallel scheduling, or runtime occurrences.
+
+### CIB-INT-0002: sequential Multi-Instance `nrOfInstances` is desired cardinality from outer entry
+
+**Status:** Observed bounded interpretation; not selected by the standards profile
+
+BPMN Table 10.30 describes `numberOfInstances` as the number of generated inner instances, while Clause 13.3.7 says a sequential instance is generated only after its predecessor completes. CIB Seven instead initializes public loop variable `nrOfInstances` to the once-evaluated desired collection cardinality before the first inner task appears.
+
+The exact three-item probe observes `nrOfInstances = 3` at loop counters `0`, `1`, and `2`, while `nrOfCompletedInstances` advances through `0`, `1`, and `2` and `nrOfActiveInstances` remains `1`. This is a concrete resolution of the specification tension, not evidence that CIB generates all three sequential instances at entry.
+
+The project standards profile does not adopt that counter identity. It keeps normative generated-instance accounting in `numberOfInstances` and exposes the once-evaluated desired cardinality separately as project-owned `plannedInstanceCount`; neither CIB variable name nor value is semantic authority.
+
+**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), the pinned `SequentialMultiInstanceActivityBehavior`, and the [selected counter resolution](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md#normative-account-and-selected-resolutions).
+
+**Boundary:** This interpretation covers only the exact sequential collection-driven fixture under `CIB-CFG-0001`. It says nothing about parallel Multi-Instance, runtime modification, migration, completion conditions, compensation, or project public counter names.
+
+## Known limitation register
+
+### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
+
+**Status:** Observed bounded limitation; not a confirmed normative deviation
+
+BPMN 2.0.2 Clause 13.3.7 and the `loopDataOutputRef`/`outputDataItem` rows of Table 10.29 describe per-instance output transfer into the outer output collection. Clauses 10.4.1–10.4.2 and the Data Association tables describe copying an Activity output back into its Process context after completion.
+
+The exact schema-valid fixture declares the scalar `outputDataItem`, collection `loopDataOutputRef`, complete InputSet/OutputSet, and a DataOutputAssociation to one Process-scope collection Data Object. The public probe writes one scalar task-local `reviewResult` for each iteration and completes all three tasks. CIB completes the Process but creates no historic output collection under the declared output identity, data-output name, Data Object name, Data Object ID, or Data Object Reference ID. Its execution parser reads `loopDataInputRef` and `inputDataItem` but installs no corresponding `loopDataOutputRef` or `outputDataItem` behavior.
+
+This remains a limitation rather than a confirmed deviation because the phase-zero probe is not retained answer-free producer evidence for a general conformance claim, and CIB exposes no standard User Task output-completion protocol distinct from its public variable API. The project standards profile independently requires exact indexed scalar-to-collection mediation and atomic final publication; it selects no CIB output-aggregation oracle.
+
+**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [project output rule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md#stable-semantic-rules).
+
+**Boundary:** The finding covers only this exact sequential User Task fixture and the five declared output identity/name candidates. It does not classify Camunda input/output extensions, delegates, expressions, Sub-Process data, another Activity body, or general CIB Data Association behavior.
 
 ## Extension register
 
@@ -595,6 +639,7 @@ The registered Service Task incident profile explicitly sets `createIncidentOnFa
 | Process start with a public variable map | `CIB-EXT-0006` under `CIB-CFG-0001` | Runtime-service and first-task observations establish initial Process-variable visibility before completion; BPMN does not define this host start API or universal start-map semantics |
 | Exact-code Error End propagation from an embedded Sub-Process | `CIB-AGR-0008` | Both child-command orders expose only Recover after the Error and complete only after Recover; retained raw task-state mutation detects a wrongly retained child sibling without claiming hidden execution-tree microsteps |
 | Message-addressed Receive Task subscription and completion | `CIB-AGR-0009` | A project-authored direct-Message Receive Task exposes one public Message subscription; exact public delivery removes it and completes the Process, without equating CIB's event name or generated execution ID with project semantic identity |
+| Collection-driven sequential Multi-Instance lifecycle | `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001` under `CIB-CFG-0001` | Public services expose ordered distinct task turnover, zero-item closure, one stable outer Timer, and interruption; desired cardinality is stored at entry, while the standard output collection is not produced |
 | Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |
 | External-task execution | Deferred extension alternative | The protocol is source-realistic but introduces topic, lease, worker, failure, retry, and incident semantics with no current capsule consumer |
 

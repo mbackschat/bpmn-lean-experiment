@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  id="Definitions_SequentialMultiInstanceProbe"
+  targetNamespace="https://bpmn-lean.org/cibseven/sequential-multi-instance-phase-zero">
+  <itemDefinition
+    id="ItemDefinition_String"
+    itemKind="Information"
+    structureRef="xsd:string"
+    isCollection="false" />
+  <itemDefinition
+    id="ItemDefinition_StringList"
+    itemKind="Information"
+    isCollection="true" />
+  <process id="Process_SequentialMultiInstanceProbe" isExecutable="true">
+    <dataObject
+      id="DataObject_Input"
+      name="inputItems"
+      itemSubjectRef="ItemDefinition_StringList"
+      isCollection="true" />
+    <dataObjectReference
+      id="DataObjectReference_Input"
+      name="inputItems"
+      dataObjectRef="DataObject_Input" />
+    <dataObject
+      id="DataObject_Output"
+      name="reviewResults"
+      itemSubjectRef="ItemDefinition_StringList"
+      isCollection="true" />
+    <dataObjectReference
+      id="DataObjectReference_Output"
+      name="reviewResults"
+      dataObjectRef="DataObject_Output" />
+
+    <startEvent id="StartEvent_Probe">
+      <outgoing>Flow_Start_Review</outgoing>
+    </startEvent>
+    <sequenceFlow
+      id="Flow_Start_Review"
+      sourceRef="StartEvent_Probe"
+      targetRef="UserTask_Review" />
+
+    <userTask id="UserTask_Review" name="Review item">
+      <incoming>Flow_Start_Review</incoming>
+      <outgoing>Flow_Review_Completed</outgoing>
+      <ioSpecification id="IoSpecification_Review">
+        <dataInput
+          id="DataInput_Items"
+          name="items"
+          itemSubjectRef="ItemDefinition_StringList"
+          isCollection="true" />
+        <dataInput
+          id="DataInput_Current"
+          name="currentItem"
+          itemSubjectRef="ItemDefinition_String"
+          isCollection="false" />
+        <dataOutput
+          id="DataOutput_Current"
+          name="reviewResult"
+          itemSubjectRef="ItemDefinition_String"
+          isCollection="false" />
+        <dataOutput
+          id="DataOutput_Results"
+          name="results"
+          itemSubjectRef="ItemDefinition_StringList"
+          isCollection="true" />
+        <inputSet id="InputSet_Review">
+          <dataInputRefs>DataInput_Items</dataInputRefs>
+          <dataInputRefs>DataInput_Current</dataInputRefs>
+          <outputSetRefs>OutputSet_Review</outputSetRefs>
+        </inputSet>
+        <outputSet id="OutputSet_Review">
+          <dataOutputRefs>DataOutput_Current</dataOutputRefs>
+          <dataOutputRefs>DataOutput_Results</dataOutputRefs>
+          <inputSetRefs>InputSet_Review</inputSetRefs>
+        </outputSet>
+      </ioSpecification>
+      <dataInputAssociation id="DataInputAssociation_Items">
+        <sourceRef>DataObjectReference_Input</sourceRef>
+        <targetRef>DataInput_Items</targetRef>
+      </dataInputAssociation>
+      <dataOutputAssociation id="DataOutputAssociation_Results">
+        <sourceRef>DataOutput_Results</sourceRef>
+        <targetRef>DataObjectReference_Output</targetRef>
+      </dataOutputAssociation>
+      <multiInstanceLoopCharacteristics isSequential="true" behavior="All">
+        <loopDataInputRef>DataInput_Items</loopDataInputRef>
+        <loopDataOutputRef>DataOutput_Results</loopDataOutputRef>
+        <inputDataItem
+          id="InputDataItem_Current"
+          name="currentItem"
+          itemSubjectRef="ItemDefinition_String"
+          isCollection="false" />
+        <outputDataItem
+          id="OutputDataItem_Current"
+          name="reviewResult"
+          itemSubjectRef="ItemDefinition_String"
+          isCollection="false" />
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <sequenceFlow
+      id="Flow_Review_Completed"
+      sourceRef="UserTask_Review"
+      targetRef="EndEvent_Completed" />
+    <endEvent id="EndEvent_Completed">
+      <incoming>Flow_Review_Completed</incoming>
+    </endEvent>
+
+    <boundaryEvent
+      id="BoundaryTimer_Outer"
+      attachedToRef="UserTask_Review"
+      cancelActivity="true">
+      <outgoing>Flow_Timer_Escalation</outgoing>
+      <timerEventDefinition id="TimerEventDefinition_Outer">
+        <timeDuration>PT1S</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <sequenceFlow
+      id="Flow_Timer_Escalation"
+      sourceRef="BoundaryTimer_Outer"
+      targetRef="UserTask_Escalation" />
+    <userTask id="UserTask_Escalation" name="Handle interrupted review">
+      <incoming>Flow_Timer_Escalation</incoming>
+      <outgoing>Flow_Escalation_End</outgoing>
+    </userTask>
+    <sequenceFlow
+      id="Flow_Escalation_End"
+      sourceRef="UserTask_Escalation"
+      targetRef="EndEvent_Interrupted" />
+    <endEvent id="EndEvent_Interrupted">
+      <incoming>Flow_Escalation_End</incoming>
+    </endEvent>
+  </process>
+</definitions>

@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
 
 ## Question and current boundary
 
 This proposal selects the first bounded `SEQUENTIAL-MULTI-INSTANCE` slice: one private executable Process reviews an ordered collection through one sequential Multi-Instance User Task, aggregates one string result per generated inner instance, and either completes normally or is interrupted by one exact `PT1S` Timer Boundary Event attached to the outer Multi-Instance Activity. The timer route reaches one ordinary escalation User Task so cancellation remains observable before Process completion.
 
-The proposed standards-only profile ID is `bpmn-2.0.2-sequential-multi-instance-user-task-draft`. BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 own the Activity wrapper, once-evaluated instance plan, sequential generation, runtime counters, per-instance input and output items, collection aggregation, and completion. Clauses 10.5.5, 10.5.6, 13.3.2, and 13.5.3 plus Tables 10.91, 10.92, 10.101, and 10.122 own the exact interrupting Timer Boundary Event inherited from the reviewed [Activity boundary Timer account](ACTIVITY-BOUNDARY-TIMER-SPEC.md#normative-basis). Existing User Task identity and host mapping remain bounded by `CIB-AGR-0001` and `CIB-OP-0001`; no CIB relationship is selected for Multi-Instance meaning.
+The proposed standards-only profile ID is `bpmn-2.0.2-sequential-multi-instance-user-task-draft`. BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 own the Activity wrapper, once-evaluated instance plan, sequential generation, runtime counters, per-instance input and output items, collection aggregation, and completion. Clauses 10.5.5, 10.5.6, 13.3.2, and 13.5.3 plus Tables 10.91, 10.92, 10.101, and 10.122 own the exact interrupting Timer Boundary Event inherited from the reviewed [Activity boundary Timer account](ACTIVITY-BOUNDARY-TIMER-SPEC.md#normative-basis). Existing User Task identity and host mapping remain bounded by `CIB-AGR-0001` and `CIB-OP-0001`; phase-zero relations `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001` classify CIB Multi-Instance observations without selecting them as semantic authority.
 
 This is a new transition family, checked-source shape, Semantic Process operation, runtime record, public observation, data-association slice, and Temporal refinement claim. It does not implement the proposal.
 
@@ -228,7 +228,9 @@ Pinned CIB Seven source parses `loopDataInputRef` as a collection variable, maps
 
 Those source facts are diagnostic, not a compatibility decision. The standards profile reuses only `CIB-AGR-0001` for the bounded base Process/User Task lifecycle and `CIB-OP-0001` for the existing host-task identity mapping. It makes no CIB claim about Multi-Instance counters, data mediation, aggregation, or interruption.
 
-Before Lean or production semantic-core implementation, one exact CIB `2.2.0` public-service probe must separately establish collection order, zero collection, sequential task turnover, boundary interruption, exposed counters, and absence or presence of standard output aggregation. Any agreement, interpretation, or limitation receives a real numbered register entry and verifier coverage atomically. A static source inference or placeholder relation ID is insufficient, and CIB output cannot be used as the final semantic oracle if the standard output path is absent.
+The exact CIB `2.2.0` public-service probe is now green. It establishes ordered distinct task turnover, zero-collection closure, one stable outer Timer, interrupting boundary routing, desired-cardinality counters present from outer entry, and absence of the declared standard output collection after scalar task-local results. The register classifies the lifecycle subset as `CIB-AGR-0011`, the counter choice as `CIB-INT-0002`, and missing output aggregation as limitation `CIB-LIM-0001`.
+
+The project profile remains standards-only. It retains the selected generated-instance counter and direct-index atomic output mediator, uses CIB only for the bounded agreement and separating limitation evidence, and has no CIB execution target for Multi-Instance semantics.
 
 ## Temporal hosting and refinement preflight
 
@@ -256,7 +258,7 @@ Answer-free scenario inputs cover zero items, three distinct items, duplicate it
 |---|---|
 | Exact source and profile admission | Source compiler fixtures, exact checked graph, foreign/surplus/malformed association mutations, and old-profile rejection |
 | Normative sequential lifecycle and data mediation | BPMN clauses and machine-readable artifacts plus the capsule rules; no CIB majority vote |
-| CIB relationship | Separate public-service probe and raw counter/output projection, classified only after observed evidence |
+| CIB relationship | Public-service probe for `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001`; no CIB Multi-Instance semantic oracle |
 | Declarative meaning and laws | Lean relation, evaluator soundness, law proofs, and explicit non-law |
 | TypeScript realization | Independently written semantic-core implementation and exact trace comparison with Lean |
 | Occurrence accounting | E2 start/end batches, open-set identity, and mutations that count the controller, reuse a task ID, or close by completion order |

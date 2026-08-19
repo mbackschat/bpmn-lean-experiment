@@ -15,6 +15,7 @@ subprocess_error_probe_path="$project_root/scenarios/subprocess-error-propagatio
 parallel_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn"
 juel_gateway_order_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/exclusive-gateway-source-order.bpmn"
 receive_task_probe_path="$project_root/scenarios/message-addressed-receive-task/process.bpmn"
+sequential_multi_instance_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn"
 
 test -f "$maven_settings"
 "$project_root/scripts/check-external-sources.sh" verify
@@ -29,6 +30,7 @@ test -f "$maven_settings"
   "$subprocess_error_probe_path" \
   "$parallel_probe_path" \
   "$juel_gateway_order_probe_path" \
-  "$receive_task_probe_path"
+  "$receive_task_probe_path" \
+  "$sequential_multi_instance_probe_path"
 
 exec node "$project_root/scripts/run-cibseven-tests.ts"
