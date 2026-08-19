@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Current boundary
@@ -192,6 +192,6 @@ Reopen before preserving any construct that can change execution; before admitti
 |---|---|---|---|---|
 | Proposal | `adec37e` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `55e31d4` | `fork-turns-none` | `approve-with-required-edits` | `dbf5fe7` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `c763d1a` | `not-recorded` | `pending` | `not-applicable` |
 
 The earlier proposal stage used three correction rounds through `f773977`. Implementation then falsified its in-place artifact-reconciliation premise against the immutable cyclic-control-flow baseline. This redesign retains the selected semantics and public profile addition but changes the declaration evidence strategy, so it requires a new context-cold proposal review rather than another warm correction audit.

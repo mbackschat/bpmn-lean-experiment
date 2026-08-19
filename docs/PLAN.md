@@ -32,7 +32,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `INTERCHANGE-ADMISSION`.
 
-Next action: commit the complete-gate evidence and cost record as one immutable closure target, generate the green checkpoint-continuity manifest from `dbf5fe7`, and return that target to the same semantic-checkpoint reviewer for warm closure review. Do not rerun the complete gate or claim interchange closure before review approval.
+Next action: generate the checkpoint-continuity manifest from `dbf5fe7` to immutable closure target `c763d1a833febbce7e1b35d9ff492e6d8b2d8b28`, then return that target and its neutral review packet to the same semantic-checkpoint reviewer for warm closure review. Do not rerun the complete gate or claim interchange closure before review approval.
 
 Oracle: the admitted interchange subset preserves exact source bytes and project-owned checked representations, does not make DI, lane, Collaboration-presentation, documentation, or inert metadata executable, and keeps BPMN requirement coverage, selected CIB compatibility, and corpus reach independently accounted.
 
