@@ -51,118 +51,18 @@ import {
   opaqueRetainedKeys,
   opaqueRetentionRejections,
 } from "./opaque-rendering-retention.js";
-import type {
-  OpaquePropertyRetention,
-} from "./opaque-rendering-retention.js";
+import type { PreservationCapability } from "./preservation-capability.js";
+export {
+  preservationCapability,
+} from "./preservation-capability.js";
+export type {
+  PreservationCapability,
+} from "./preservation-capability.js";
 import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
   type: "json",
 };
 
 const bpmnTypes = metamodelManifest.compilerProjection;
-
-/**
- * One profile's declared preservation capability.
- *
- * Every field is an enumeration rather than a rule, because the default is rejection and an inferred
- * preserved set is how unexamined content reaches an admitted definition.
- */
-export type PreservationCapability = Readonly<{
-  /** `$type`s that may appear anywhere inside a preserved subtree, including at its root. */
-  preservedTypes: ReadonlySet<string>;
-  /** Own keys of `bpmn:Definitions` this profile preserves beyond its executed shape. */
-  definitionsKeys: ReadonlySet<string>;
-  /** Own keys of the executable `bpmn:Process` this profile preserves beyond its executed shape. */
-  processKeys: ReadonlySet<string>;
-  /**
-   * Own keys any executed element may carry and no projector may see.
-   *
-   * BPMN declares `documentation` on `BaseElement`, so a modeler puts it on tasks and events as
-   * readily as on the Process. Restricting retention to the Process would narrow the account the
-   * profile advertises, so these keys are validated as preserved subtrees and then withheld from
-   * projection rather than being taught to every projector individually.
-   */
-  baseElementKeys: ReadonlySet<string>;
-  /** Type-specific properties retained as opaque standard BPMN subtrees. */
-  opaqueProperties: ReadonlyArray<OpaquePropertyRetention>;
-}>;
-
-const diagramInterchangeTypes = [
-  "bpmndi:BPMNDiagram",
-  "bpmndi:BPMNPlane",
-  "bpmndi:BPMNShape",
-  "bpmndi:BPMNEdge",
-  "bpmndi:BPMNLabel",
-  "bpmndi:BPMNLabelStyle",
-  "dc:Bounds",
-  "dc:Point",
-  "dc:Font",
-] as const;
-
-const collaborationTypes = [
-  "bpmn:Collaboration",
-  "bpmn:Participant",
-  "bpmn:MessageFlow",
-] as const;
-
-const laneTypes = ["bpmn:LaneSet", "bpmn:Lane"] as const;
-
-const artifactTypes = [
-  "bpmn:Association",
-  "bpmn:TextAnnotation",
-  "bpmn:Group",
-] as const;
-
-/**
- * The preserve-enabled successor to the runnable User Task profile.
- *
- * `name` on `bpmn:Definitions` is preserved for the same reason `documentation` is: BPMN gives it no
- * execution meaning at all. `exporter` and `exporterVersion` retain modeler provenance.
- */
-const userTaskPreservedNotation: PreservationCapability = Object.freeze({
-  preservedTypes: new Set([
-    ...diagramInterchangeTypes,
-    ...collaborationTypes,
-    ...laneTypes,
-    ...artifactTypes,
-    "bpmn:Documentation",
-  ]),
-  definitionsKeys: new Set([
-    "diagrams",
-    "documentation",
-    "exporter",
-    "exporterVersion",
-    "name",
-  ]),
-  processKeys: new Set(["artifacts", "documentation", "laneSets"]),
-  baseElementKeys: new Set(["documentation"]),
-  opaqueProperties: [],
-});
-
-const structuredHumanWorkRendering: PreservationCapability = Object.freeze({
-  preservedTypes: new Set(["bpmn:Documentation"]),
-  definitionsKeys: new Set<string>(),
-  processKeys: new Set<string>(),
-  baseElementKeys: new Set(["documentation"]),
-  opaqueProperties: [{
-    ownerType: bpmnTypes.userTaskType,
-    property: "renderings",
-    rootType: bpmnTypes.renderingType,
-  }],
-});
-
-/** The capability of one profile, or `undefined` for a profile that executes or rejects everything. */
-export function preservationCapability(
-  semanticProfile: string,
-): PreservationCapability | undefined {
-  switch (semanticProfile) {
-    case SemanticProfileId.UserTaskPreservedNotation:
-      return userTaskPreservedNotation;
-    case SemanticProfileId.StructuredHumanWork:
-      return structuredHumanWorkRendering;
-    default:
-      return undefined;
-  }
-}
 
 /**
  * The `$type`s whose projector reads foreign attributes, per profile.
