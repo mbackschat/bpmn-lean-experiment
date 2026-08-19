@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Current boundary
 
 This proposal selects the first `INTERCHANGE-ADMISSION` tranche. The context-cold review of immutable proposal target `db18ea3` returned `approve-with-required-edits`. Its decisive counterexample found that the semantic-core value-domain gate currently admits string/null Process data for profiles whose artifacts exclude variables, including both the preserved-notation and Timer/User Task composition profiles. That is an existing profile-contract defect and a prerequisite to this composition, not behavior this proposal may preserve. Three same-reviewer corrections through `f773977` closed the review findings, and owner approval was recorded on 2026-08-19.
 
-Implementation preflight then exposed a conflict the reviewed proposal had not accounted for: four value-domain profiles and the preserved-notation predecessor are content-bound by the non-updatable cyclic-control-flow preservation baseline. Adding feature atoms in place changed those profile digests and made the complete BPMN-source package gate fail before the new composition existed. This correction preserves those exact artifacts, replaces in-place atom reconciliation with the closed legacy-declaration rule below, and returns the changed evidence strategy to context-cold proposal review. Implementation remains paused. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
+Implementation preflight then exposed a conflict the reviewed proposal had not accounted for: four value-domain profiles and the preserved-notation predecessor are content-bound by the non-updatable cyclic-control-flow preservation baseline. Adding feature atoms in place changed those profile digests and made the complete BPMN-source package gate fail before the new composition existed. The corrected proposal preserves those exact artifacts and replaces in-place atom reconciliation with the closed legacy-declaration rule below. Context-cold review of immutable target `adec37e` returned `approve` with no findings, and the owner approved implementation on 2026-08-19. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
 
 The source compiler already implements the reviewed preservation mechanism under `bpmn-2.0.2-user-task-preserved-notation-draft`. The current interchange gap is composition: that capability is unavailable to the CIB Seven User Task Process-data profile used to calibrate external whole models. Before composition, two declaration defects must close: external variable writes must follow an exhaustive profile-and-surface value-domain contract, and the already-preserved standard Definitions metadata must gain an explicit requirement-ledger row plus an exact declaration that does not replace the frozen predecessor artifact. This proposal otherwise reuses the reviewed mechanism and its five existing structural requirements. It does not reinterpret Diagram Interchange, Collaboration, Lanes, Artifacts, Documentation, User Task lifecycle, or Process data.
 
@@ -188,7 +188,7 @@ Reopen before preserving any construct that can change execution; before admitti
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `adec37e` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `adec37e` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
