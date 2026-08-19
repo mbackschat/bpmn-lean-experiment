@@ -167,6 +167,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-timer-start-event-draft" then
     some (1, { timerStarts := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
+      profile = userTaskProcessDataPreservedNotationProfileId.value ||
       profile = booleanProcessDataCheckpointProfileId.value ||
       profile = userTaskAssignmentFormMetadataProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
@@ -259,6 +260,7 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1, withScopeCompletions 1
       { timerInitiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
+      profile = userTaskProcessDataPreservedNotationProfileId.value ||
       profile = booleanProcessDataCheckpointProfileId.value ||
       profile = userTaskAssignmentFormMetadataProfileId.value ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then

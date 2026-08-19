@@ -65,4 +65,17 @@ theorem mismatched_completion_preserves_all_scoped_variables
       { exactTaskInstanceId with activation := 2 }
       submittedValues 0 variables (Or.inr (Or.inr (by decide +kernel)))
 
+/-- Null completion data belongs to the Process-data composition, not to a structurally similar profile. -/
+theorem completion_value_domain_is_profile_closed :
+    variableValueAdmitted
+        ⟨"bpmn-2.0.2-user-task-preserved-notation-draft"⟩
+        .userTaskCompletion .null = false ∧
+      variableValueAdmitted
+        ⟨"bpmn-2.0.2-timer-user-task-composition-draft"⟩
+        .userTaskCompletion .null = false ∧
+      variableValueAdmitted
+        ⟨"cibseven-2.2.0-user-task-process-data-preserved-notation-draft"⟩
+        .userTaskCompletion .null = true := by
+  decide +kernel
+
 end BpmnSemantics.UserTaskCompletionDataConformance

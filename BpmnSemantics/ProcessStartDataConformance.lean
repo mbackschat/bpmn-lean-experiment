@@ -47,4 +47,17 @@ theorem first_wait_enabledness_is_initial_data_independent :
         { afterStartState with variables := emptyScopedVariables } := by
   decide +kernel
 
+/-- String start data belongs to the Process-data composition, not to a structurally similar profile. -/
+theorem process_start_value_domain_is_profile_closed :
+    variableValueAdmitted
+        ⟨"bpmn-2.0.2-user-task-preserved-notation-draft"⟩
+        .processStart (.string "unexpected") = false ∧
+      variableValueAdmitted
+        ⟨"bpmn-2.0.2-timer-user-task-composition-draft"⟩
+        .processStart (.string "unexpected") = false ∧
+      variableValueAdmitted
+        ⟨"cibseven-2.2.0-user-task-process-data-preserved-notation-draft"⟩
+        .processStart (.string "selected") = true := by
+  decide +kernel
+
 end BpmnSemantics.ProcessStartDataConformance
