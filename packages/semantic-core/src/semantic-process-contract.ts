@@ -12,6 +12,10 @@
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
+import type {
+  SequentialMultiInstanceDataDefinition,
+  SequentialMultiInstanceLimits,
+} from "./sequential-multi-instance-contract.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
   DefinitionScope,
@@ -39,6 +43,7 @@ export enum SemanticOperationKind {
   InvokeProcess = "invokeProcess",
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
+  AwaitSequentialMultiInstanceUserTask = "awaitSequentialMultiInstanceUserTask",
   AwaitBoundedUserTask = "awaitBoundedUserTask",
   AwaitMonitoredUserTask = "awaitMonitoredUserTask",
   AwaitMessage = "awaitMessage",
@@ -266,6 +271,20 @@ export type AwaitMonitoredUserTaskOperation = OperationBase &
     boundaryTimer: BoundaryTimerArm;
   }>;
 
+export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
+    input: string;
+    task: {
+      elementId: string;
+      name: string | null;
+    };
+    data: SequentialMultiInstanceDataDefinition;
+    normalOutput: string;
+    boundaryTimer: BoundaryTimerArm;
+    limits: SequentialMultiInstanceLimits;
+  }>;
+
 /**
  * One embedded Sub-Process occurrence that owns an interrupting boundary Timer deadline.
  *
@@ -353,6 +372,7 @@ export type SemanticOperation =
       }>)
   | AwaitBoundedUserTaskOperation
   | AwaitMonitoredUserTaskOperation
+  | AwaitSequentialMultiInstanceUserTaskOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.AwaitMessage;

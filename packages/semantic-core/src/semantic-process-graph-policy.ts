@@ -3,6 +3,9 @@ import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
+} from "./sequential-multi-instance-contract.js";
 
 export enum SemanticGraphPolicyKind {
   Acyclic = "acyclic",
@@ -69,6 +72,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.StructuredHumanWork:
     case SemanticProfileId.TerminateEnd:
     case SemanticProfileId.ConfiguredTask:
+    case SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID:
       return acyclicGraphPolicy;
     default:
       return undefined;

@@ -412,6 +412,54 @@
         }
       }
     },
+    "sequentialMultiInstanceInputDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collectionItemDefinitionId",
+        "scalarItemDefinitionId",
+        "dataObjectId",
+        "dataObjectReferenceId",
+        "loopDataInputId",
+        "inputDataItemId",
+        "taskDataInputId",
+        "collectionAssociationId",
+        "itemAssociationId"
+      ],
+      "properties": {
+        "collectionItemDefinitionId": { "$ref": "#/$defs/nonemptyString" },
+        "scalarItemDefinitionId": { "$ref": "#/$defs/nonemptyString" },
+        "dataObjectId": { "$ref": "#/$defs/nonemptyString" },
+        "dataObjectReferenceId": { "$ref": "#/$defs/nonemptyString" },
+        "loopDataInputId": { "$ref": "#/$defs/nonemptyString" },
+        "inputDataItemId": { "$ref": "#/$defs/nonemptyString" },
+        "taskDataInputId": { "$ref": "#/$defs/nonemptyString" },
+        "collectionAssociationId": { "$ref": "#/$defs/nonemptyString" },
+        "itemAssociationId": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
+    "sequentialMultiInstanceOutputDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataObjectId",
+        "dataObjectReferenceId",
+        "taskDataOutputId",
+        "outputDataItemId",
+        "loopDataOutputId",
+        "itemAssociationId",
+        "collectionAssociationId"
+      ],
+      "properties": {
+        "dataObjectId": { "$ref": "#/$defs/nonemptyString" },
+        "dataObjectReferenceId": { "$ref": "#/$defs/nonemptyString" },
+        "taskDataOutputId": { "$ref": "#/$defs/nonemptyString" },
+        "outputDataItemId": { "$ref": "#/$defs/nonemptyString" },
+        "loopDataOutputId": { "$ref": "#/$defs/nonemptyString" },
+        "itemAssociationId": { "$ref": "#/$defs/nonemptyString" },
+        "collectionAssociationId": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
     "errorReference": {
       "type": "object",
       "additionalProperties": false,
@@ -652,6 +700,56 @@
             },
             "metadata": {
               "$ref": "#/$defs/userTaskMetadata"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "name",
+            "input",
+            "output",
+            "normalOutputFlowId",
+            "boundaryTimer"
+          ],
+          "properties": {
+            "kind": {
+              "const": "sequentialMultiInstanceUserTask"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "input": {
+              "$ref": "#/$defs/sequentialMultiInstanceInputDefinition"
+            },
+            "output": {
+              "$ref": "#/$defs/sequentialMultiInstanceOutputDefinition"
+            },
+            "normalOutputFlowId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "boundaryTimer": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "elementId",
+                "durationLiteral",
+                "outputFlowId"
+              ],
+              "properties": {
+                "elementId": { "$ref": "#/$defs/nonemptyString" },
+                "durationLiteral": { "const": "PT1S" },
+                "outputFlowId": { "$ref": "#/$defs/nonemptyString" }
+              }
             }
           }
         },

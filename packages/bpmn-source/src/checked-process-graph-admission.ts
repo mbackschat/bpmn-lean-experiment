@@ -82,9 +82,10 @@ function isAdmittedDefinitionScope(
     scopeId,
   );
   return nodes.every((node) => hasSelectedArity(node, flows)) &&
-    flows.every(
-      ({ sourceId, targetId }) =>
-        nodeIds.has(sourceId) && nodeIds.has(targetId),
+    flows.every((flow) =>
+      nodeIds.has(flow.targetId) &&
+      (nodeIds.has(flow.sourceId) ||
+        embeddedBoundaryHostForFlow(nodes, flow) !== undefined)
     ) &&
     isConnectedGraphUnderPolicy(nodes, flows, exceptionalEdges, graphPolicy);
 }
@@ -148,6 +149,7 @@ function hasSelectedArity(
     case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.UserTask:
+    case CheckedNodeKind.SequentialMultiInstanceUserTask:
     case CheckedNodeKind.IntermediateCatchTimerEvent:
     case CheckedNodeKind.IntermediateCatchMessageEvent:
     case CheckedNodeKind.ReceiveTask:
@@ -207,9 +209,9 @@ function isConnectedGraphUnderPolicy(
     return false;
   }
   const edges = [
-    ...flows.map(({ sourceId: source, targetId: target }) => ({
-      source,
-      target,
+    ...flows.map((flow) => ({
+      source: embeddedBoundaryHostForFlow(nodes, flow)?.id ?? flow.sourceId,
+      target: flow.targetId,
     })),
     ...exceptionalEdges,
   ];
@@ -248,6 +250,24 @@ function graphEdgesSelectedByPolicy(
 }
 
 type NodeEdge = Readonly<{ source: string; target: string }>;
+
+function embeddedBoundaryHostForFlow(
+  nodes: ReadonlyArray<CheckedNode>,
+  flow: CheckedSequenceFlow,
+): Extract<
+  CheckedNode,
+  { kind: CheckedNodeKind.SequentialMultiInstanceUserTask }
+> | undefined {
+  return nodes.find(
+    (node): node is Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.SequentialMultiInstanceUserTask }
+    > =>
+      node.kind === CheckedNodeKind.SequentialMultiInstanceUserTask &&
+      node.boundaryTimer.elementId === flow.sourceId &&
+      node.boundaryTimer.outputFlowId === flow.id,
+  );
+}
 
 /**
  * Reachability edges no Sequence Flow expresses.

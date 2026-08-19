@@ -9,6 +9,9 @@
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
+import type {
+  SequentialMultiInstanceDataDefinition,
+} from "./sequential-multi-instance-contract.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
   DefinitionScope,
@@ -31,6 +34,7 @@ export enum CheckedNodeKind {
   BoundaryErrorEvent = "boundaryErrorEvent",
   TimerBoundaryEvent = "timerBoundaryEvent",
   UserTask = "userTask",
+  SequentialMultiInstanceUserTask = "sequentialMultiInstanceUserTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
   ReceiveTask = "receiveTask",
@@ -157,6 +161,19 @@ export type CheckedNode =
       id: string;
       name: string | null;
       metadata?: UserTaskMetadata;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.SequentialMultiInstanceUserTask;
+      id: string;
+      name: string | null;
+      input: SequentialMultiInstanceDataDefinition["input"];
+      output: SequentialMultiInstanceDataDefinition["output"];
+      normalOutputFlowId: string;
+      boundaryTimer: {
+        elementId: string;
+        durationLiteral: "PT1S";
+        outputFlowId: string;
+      };
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.IntermediateCatchTimerEvent;

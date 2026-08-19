@@ -39,6 +39,9 @@ import {
 } from "./semantic-process-identifiers.js";
 import { lowerTerminateEndEvent } from "./terminate-end-event-lowering.js";
 import { lowerConfiguredTask } from "./configured-task-lowering.js";
+import {
+  lowerSequentialMultiInstanceUserTask,
+} from "./sequential-multi-instance-lowering.js";
 
 type ScopedOperation = Readonly<{
   operation: SemanticOperation;
@@ -188,6 +191,8 @@ function lowerNode(
         },
       });
     }
+    case CheckedNodeKind.SequentialMultiInstanceUserTask:
+      return scoped(lowerSequentialMultiInstanceUserTask(node, source));
     case CheckedNodeKind.IntermediateCatchTimerEvent:
       if (isEventRaceCatch(source, node.id)) {
         return [];

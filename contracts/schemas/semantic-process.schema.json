@@ -332,6 +332,84 @@
         }
       }
     },
+    "sequentialMultiInstanceInputDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collectionItemDefinitionId",
+        "scalarItemDefinitionId",
+        "dataObjectId",
+        "dataObjectReferenceId",
+        "loopDataInputId",
+        "inputDataItemId",
+        "taskDataInputId",
+        "collectionAssociationId",
+        "itemAssociationId"
+      ],
+      "properties": {
+        "collectionItemDefinitionId": { "$ref": "#/$defs/nonemptyString" },
+        "scalarItemDefinitionId": { "$ref": "#/$defs/nonemptyString" },
+        "dataObjectId": { "$ref": "#/$defs/nonemptyString" },
+        "dataObjectReferenceId": { "$ref": "#/$defs/nonemptyString" },
+        "loopDataInputId": { "$ref": "#/$defs/nonemptyString" },
+        "inputDataItemId": { "$ref": "#/$defs/nonemptyString" },
+        "taskDataInputId": { "$ref": "#/$defs/nonemptyString" },
+        "collectionAssociationId": { "$ref": "#/$defs/nonemptyString" },
+        "itemAssociationId": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
+    "sequentialMultiInstanceOutputDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataObjectId",
+        "dataObjectReferenceId",
+        "taskDataOutputId",
+        "outputDataItemId",
+        "loopDataOutputId",
+        "itemAssociationId",
+        "collectionAssociationId"
+      ],
+      "properties": {
+        "dataObjectId": { "$ref": "#/$defs/nonemptyString" },
+        "dataObjectReferenceId": { "$ref": "#/$defs/nonemptyString" },
+        "taskDataOutputId": { "$ref": "#/$defs/nonemptyString" },
+        "outputDataItemId": { "$ref": "#/$defs/nonemptyString" },
+        "loopDataOutputId": { "$ref": "#/$defs/nonemptyString" },
+        "itemAssociationId": { "$ref": "#/$defs/nonemptyString" },
+        "collectionAssociationId": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
+    "sequentialMultiInstanceDataDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input",
+        "output"
+      ],
+      "properties": {
+        "input": {
+          "$ref": "#/$defs/sequentialMultiInstanceInputDefinition"
+        },
+        "output": {
+          "$ref": "#/$defs/sequentialMultiInstanceOutputDefinition"
+        }
+      }
+    },
+    "sequentialMultiInstanceLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maximumItems",
+        "maximumItemUtf8Bytes",
+        "maximumCanonicalCollectionUtf8Bytes"
+      ],
+      "properties": {
+        "maximumItems": { "const": 16 },
+        "maximumItemUtf8Bytes": { "const": 512 },
+        "maximumCanonicalCollectionUtf8Bytes": { "const": 8192 }
+      }
+    },
     "operationMessageChannel": {
       "type": "object",
       "additionalProperties": false,
@@ -627,6 +705,59 @@
         },
         "task": {
           "$ref": "#/$defs/taskDefinition"
+        }
+      }
+    },
+    "awaitSequentialMultiInstanceUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "task",
+        "data",
+        "normalOutput",
+        "boundaryTimer",
+        "limits"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitSequentialMultiInstanceUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "elementId",
+            "name"
+          ],
+          "properties": {
+            "elementId": { "$ref": "#/$defs/nonemptyString" },
+            "name": { "type": ["string", "null"] }
+          }
+        },
+        "data": {
+          "$ref": "#/$defs/sequentialMultiInstanceDataDefinition"
+        },
+        "normalOutput": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "boundaryTimer": {
+          "$ref": "#/$defs/boundaryTimerArm"
+        },
+        "limits": {
+          "$ref": "#/$defs/sequentialMultiInstanceLimits"
         }
       }
     },
@@ -1531,6 +1662,9 @@
         },
         {
           "$ref": "#/$defs/awaitUserTask"
+        },
+        {
+          "$ref": "#/$defs/awaitSequentialMultiInstanceUserTask"
         },
         {
           "$ref": "#/$defs/awaitTimer"

@@ -25,7 +25,10 @@ import {
   mappedSuccessServiceTaskProfile,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
-import { SemanticProfileId } from "@bpmn-lean/semantic-core";
+import {
+  SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
+  SemanticProfileId,
+} from "@bpmn-lean/semantic-core";
 import type {
   CompilationDispatchId,
 } from "../src/compilation-dispatch.ts";
@@ -280,6 +283,16 @@ const dispatchFixtures = {
     sourceId: "user-task-assignment-form-metadata",
     semanticProfile: "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
     find: '<bpmn:startEvent id="StartEvent_1"',
+  },
+  sequentialMultiInstanceUserTask: {
+    path: "the sequential Multi-Instance reader",
+    source: new URL(
+      "./fixtures/sequential-multi-instance-user-task.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "sequential-multi-instance-review",
+    semanticProfile: SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
+    find: '<bpmn:startEvent id="StartEvent_Review"',
   },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 

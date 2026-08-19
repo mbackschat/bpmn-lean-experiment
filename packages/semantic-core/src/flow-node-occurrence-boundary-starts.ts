@@ -68,6 +68,8 @@ export function candidateLongLivedStarts(
       ));
       return oneWaitStart(processId, operation.task.elementId, owner, wait?.id);
     }
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return null;
     case SemanticOperationKind.AwaitMessage: {
       const wait = only(after.messageWaits.filter((candidate) =>
         candidate.id.elementId === operation.message.elementId &&

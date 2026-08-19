@@ -133,7 +133,7 @@ export function isWellFormedEnterBoundedScopeOperation(
       value.boundaryTimer.origin.elementId;
 }
 
-function isWellFormedBoundaryTimerArm(
+export function isWellFormedBoundaryTimerArm(
   value: unknown,
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,

@@ -165,6 +165,8 @@ function internalDelta(
       return lifecycleDelta([
         requireWaitStart(supplied, processId, operation.task.elementId, owner),
       ]);
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return failCompleteness();
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
       return lifecycleDelta([

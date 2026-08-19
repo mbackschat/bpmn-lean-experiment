@@ -291,6 +291,11 @@ function applyInternalOperationState(
         captureOwner,
       );
     }
+    // The source/IL lane admits this immutable definition before the reviewed runtime transition
+    // exists. Returning no step keeps the incomplete operation fail-closed instead of borrowing the
+    // ordinary User Task behavior and losing its outer controller, collection, or lifetime Timer.
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return null;
     case SemanticOperationKind.AwaitMessage: {
       const messageOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(

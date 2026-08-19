@@ -4,6 +4,9 @@ import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
+} from "./sequential-multi-instance-contract.js";
 
 /** One profile's exact checked-graph capability. */
 export type RequiredCheckedProcessShape = Readonly<{
@@ -136,6 +139,14 @@ export function requiredCheckedProcessShape(
         end,
         end,
       ], BoundaryInterruption.Interrupting);
+    case SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID:
+      return rootChecked([
+        start,
+        CheckedNodeKind.SequentialMultiInstanceUserTask,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+      ]);
     case SemanticProfileId.NonInterruptingBoundaryTimer:
       return rootChecked([
         start,

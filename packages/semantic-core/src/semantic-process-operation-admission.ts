@@ -40,6 +40,9 @@ import {
 import {
   hasExactOptionalUserTaskMetadata,
 } from "./user-task-metadata.js";
+import {
+  isWellFormedAwaitSequentialMultiInstanceUserTaskOperation,
+} from "./sequential-multi-instance-admission.js";
 
 /** Validates one operation independently of profile topology and graph reachability. */
 export function isWellFormedSemanticOperation(
@@ -116,6 +119,12 @@ export function isWellFormedSemanticOperation(
         hasExactOptionalUserTaskMetadata(value.task) &&
         value.task.elementId === value.origin.elementId &&
         (value.task.name === null || typeof value.task.name === "string")
+      );
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return isWellFormedAwaitSequentialMultiInstanceUserTaskOperation(
+        value,
+        placeIds,
+        placeOrigins,
       );
     case SemanticOperationKind.AwaitTimer:
       return (

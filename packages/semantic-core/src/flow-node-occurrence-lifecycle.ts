@@ -286,6 +286,8 @@ function internalLifecycle(
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return null;
     case SemanticOperationKind.AwaitEventRace: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       const gateway = instant();

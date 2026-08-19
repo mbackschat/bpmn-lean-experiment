@@ -1,4 +1,5 @@
 import {
+  SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
@@ -35,6 +36,9 @@ import {
   isUserTaskMetadataProfile,
   userTaskMetadataProfile,
 } from "./user-task-metadata-source.js";
+import {
+  compileSequentialMultiInstanceCheckedProcess,
+} from "./sequential-multi-instance-source.js";
 
 export const CompilationDispatchId = Object.freeze({
   Generic: "generic",
@@ -42,6 +46,7 @@ export const CompilationDispatchId = Object.freeze({
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
   CallActivity: "callActivity",
   UserTaskMetadata: "userTaskMetadata",
+  SequentialMultiInstanceUserTask: "sequentialMultiInstanceUserTask",
 } as const);
 
 export type CompilationDispatchId =
@@ -113,6 +118,20 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
         userTaskMetadataProfile,
       ),
     },
+    {
+      id: CompilationDispatchId.SequentialMultiInstanceUserTask,
+      semanticProfile: SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileSequentialMultiInstanceCheckedProcess(
+              rootElement,
+              source,
+              null,
+            )
+          : unsupported(
+              "The Sequential Multi-Instance profile does not admit a source overlay.",
+            ),
+    },
   ]);
 
 export function compileDispatchedCheckedProcess(
@@ -154,6 +173,8 @@ export function compileDispatchedCheckedProcess(
         overlay,
         semanticProfile,
       );
+    case CompilationDispatchId.SequentialMultiInstanceUserTask:
+      return dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);
   }
