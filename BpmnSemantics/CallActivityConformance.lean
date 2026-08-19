@@ -172,20 +172,37 @@ theorem nonempty_start_data_is_rejected_with_exact_preservation :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by decide +kernel
 
-private def nonCallProfileInvokeReuseProgram : Program :=
+private def registeredNonCallStringStartProfileInvokeReuseProgram : Program :=
   { program with
     identity :=
-      { program.identity with semanticProfile := ⟨"non-call-invoke-reuse"⟩ } }
+      { program.identity with
+        semanticProfile := serviceTaskIncidentCancellationCheckpointProfileId } }
 
-theorem non_call_profile_reusing_invoke_does_not_inherit_empty_start_data :
+theorem registered_non_call_string_start_profile_reusing_invoke_does_not_inherit_empty_start_data :
     let initialVariables : List VariableBinding :=
       [{ name := "x", value := .string "y" }]
     let result := applyStimulus scenarioClosureLimit
-      nonCallProfileInvokeReuseProgram initialState
+      registeredNonCallStringStartProfileInvokeReuseProgram initialState
       (.startProcess ⟨"non-call-start"⟩ ⟨callerProcessId.value⟩
         callerInstanceId initialVariables)
     result.outcome = .committed ∧
       result.state.variables.process.bindings = initialVariables := by decide +kernel
+
+private def unregisteredNonCallProfileInvokeReuseProgram : Program :=
+  { program with
+    identity :=
+      { program.identity with semanticProfile := ⟨"non-call-invoke-reuse"⟩ } }
+
+theorem unregistered_non_call_profile_reusing_invoke_is_fail_closed :
+    let result := applyStimulus scenarioClosureLimit
+      unregisteredNonCallProfileInvokeReuseProgram initialState
+      (.startProcess ⟨"unregistered-non-call-start"⟩ ⟨callerProcessId.value⟩
+        callerInstanceId [{ name := "x", value := .string "y" }])
+    result =
+      { outcome := .rejected
+        state := initialState
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by decide +kernel
 
 theorem nonempty_called_completion_data_is_rejected_with_exact_preservation :
     applyStimulus scenarioClosureLimit program calledWaiting.state
