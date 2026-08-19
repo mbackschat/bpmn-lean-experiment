@@ -45,7 +45,7 @@ The engine uses a non-binding pre-1.0 maturity ladder as a compact way to expres
 
 The ladder is intentionally cumulative but not predictive. `v0.2 MUE` is the current direction after the runnable floor; `v0.3`, `v0.9`, and `v1.0` are starting hypotheses whose names help communicate progress without pre-deciding their final contents.
 
-A closed engine-maturity label is recorded by one annotated Git tag named `engine-v<major>.<minor>` whose annotation is `Engine v<major>.<minor>: <name>`. The tag is an immutable evidence-snapshot pointer, not a release tag or SemVer assignment. Create it only after the owner explicitly closes that maturity boundary, and never move it to absorb later work. Historical repository tags such as `MVP`, `M1` through `M6`, and `v0.1.0-preview` retain their original targets and meanings; the engine-maturity ladder neither renames nor rewrites them.
+A closed engine-maturity label is recorded by one annotated Git tag named `engine/v<major>.<minor>` whose annotation is `Engine v<major>.<minor>: <name>`. The component-first Git ref namespace groups engine milestones while keeping them distinct from repository release tags. The tag is an immutable evidence-snapshot pointer, not a release tag or SemVer assignment. Create it only after the owner explicitly closes that maturity boundary, and never move it to absorb later work. Historical repository tags such as `MVP`, `M1` through `M6`, and `v0.1.0-preview` retain their original targets and meanings; the engine-maturity ladder neither renames nor rewrites them.
 
 ### One repository for products 1 and 2
 
