@@ -29,7 +29,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: return immutable correction target `3b8e0df838cd13f2b0142bb7b4887b528bd1e51f` to the exact same context-cold proposal reviewer for the required warm correction audit. The initial review of `70256503c94ee6d2f63be315912d8465894b35f3` returned `approve-with-required-edits`; no implementation begins before that audit closes and the approved receipt is recorded.
+Next action: return immutable second correction target `a064dc8ba871c77a8d27817565e8b3a9f0c019bc` to the exact same context-cold proposal reviewer for the required warm correction audit. The initial target `70256503c94ee6d2f63be315912d8465894b35f3` and first correction target `3b8e0df838cd13f2b0142bb7b4887b528bd1e51f` each returned `approve-with-required-edits`; no implementation begins before the second correction audit closes and the approved receipt is recorded.
 
 Oracle: the next account starts from BPMN's complete sequential multi-instance semantics, keeps conforming deferred behavior forward-compatible, selects a CIB overlay only for a classified compatibility need, and keeps iteration identity, data lifetime, completion, cancellation, progress, and Temporal hosting as distinct review claims.
 
