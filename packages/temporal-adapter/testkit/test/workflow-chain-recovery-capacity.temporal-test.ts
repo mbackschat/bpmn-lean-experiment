@@ -70,6 +70,14 @@ const bpmnUrl = new URL(
   "../../../../scenarios/user-task-cycle/process.bpmn",
   import.meta.url,
 );
+const dataScenarioUrl = new URL(
+  "../../../../scenarios/user-task-discovery-completion/scenario.json",
+  import.meta.url,
+);
+const dataBpmnUrl = new URL(
+  "../../../../scenarios/user-task-discovery-completion/process.bpmn",
+  import.meta.url,
+);
 const operationDeadlineMs = 20_000;
 const recoveryEntryLimit = workflowChainProductionLimit(
   WorkflowChainBudgetKind.CommandRecoveryLedgerEntries,
@@ -233,8 +241,8 @@ test("a ledger-filling command resolves before the retained Run reports capacity
 });
 
 test("state and paired-publication capacity fail before a speculative start is visible", async () => {
-  const scenario = await loadJson<Scenario>(scenarioUrl);
-  const { semanticProcess } = await compileExecutionInput(scenario, bpmnUrl);
+  const scenario = await loadJson<Scenario>(dataScenarioUrl);
+  const { semanticProcess } = await compileExecutionInput(scenario, dataBpmnUrl);
   const baseStart = requiredStart(scenario);
   const publicationLimit = workflowChainProductionLimit(
     WorkflowChainBudgetKind.PublicationBatchBytes,
@@ -289,7 +297,7 @@ test("state and paired-publication capacity fail before a speculative start is v
       exactPublication,
       semanticProcess,
     );
-    await waitForOpenUserTaskIds(exactHandle, ["Review"]);
+    await waitForOpenUserTaskIds(exactHandle, ["UserTask_Approve"]);
     const exactPage = await queryExecution(exactHandle, semanticProcess, exactPublication);
     assert.equal(exactPage.kind, ExecutionPublicationResultKind.Available);
     if (exactPage.kind !== ExecutionPublicationResultKind.Available) {

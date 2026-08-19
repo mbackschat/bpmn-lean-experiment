@@ -58,11 +58,11 @@ import {
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
 
 const scenarioUrl = new URL(
-  "../../../../scenarios/user-task-cycle/scenario.json",
+  "../../../../scenarios/user-task-discovery-completion/scenario.json",
   import.meta.url,
 );
 const bpmnUrl = new URL(
-  "../../../../scenarios/user-task-cycle/process.bpmn",
+  "../../../../scenarios/user-task-discovery-completion/process.bpmn",
   import.meta.url,
 );
 const operationDeadlineMs = 20_000;
@@ -126,7 +126,7 @@ test("Run-local trace growth rolls over before 2 MiB without changing semantic s
       environment.client.workflow,
       start.instanceId,
     );
-    await waitForOpenUserTaskIds(firstHandle, ["Review"]);
+    await waitForOpenUserTaskIds(firstHandle, ["UserTask_Approve"]);
 
     for (let index = 1; index < prediction.commandCount; index += 1) {
       await assertRejectedCompletion(
@@ -152,10 +152,10 @@ test("Run-local trace growth rolls over before 2 MiB without changing semantic s
       environment.client.workflow,
       start.instanceId,
     );
-    const open = await waitForOpenUserTaskIds(successor, ["Review"]);
+    const open = await waitForOpenUserTaskIds(successor, ["UserTask_Approve"]);
     assert.deepEqual(open.map(({ id }) => id), [{
       processInstanceId: start.instanceId,
-      elementId: "Review",
+      elementId: "UserTask_Approve",
       activation: 1,
     }]);
     await assertRejectedCompletion(
@@ -164,29 +164,27 @@ test("Run-local trace growth rolls over before 2 MiB without changing semantic s
       staleCompletion(start.instanceId, 1),
     );
 
-    for (let index = 1; index <= 3; index += 1) {
-      const original = requiredAt(scenario.stimuli, index, "cycle stimuli");
-      if (original.kind !== StimulusKind.CompleteUserTaskInstance) {
-        assert.fail(`cycle stimulus ${index} is not a User Task completion`);
-      }
-      const stimulus = {
-        ...original,
-        commandId: `retained-run-completion-${index}`,
-        taskId: { ...original.taskId, processInstanceId: start.instanceId },
-      };
-      assert.deepEqual(
-        await submitUserTaskCompletion(
-          environment.client.workflow,
-          start.instanceId,
-          stimulus,
-        ),
-        {
-          kind: "semantic",
-          commandId: stimulus.commandId,
-          outcome: CommandOutcome.Committed,
-        },
-      );
+    const original = requiredAt(scenario.stimuli, 1, "User Task stimuli");
+    if (original.kind !== StimulusKind.CompleteUserTaskInstance) {
+      assert.fail("scenario stimulus 1 is not a User Task completion");
     }
+    const stimulus = {
+      ...original,
+      commandId: "retained-run-completion",
+      taskId: { ...original.taskId, processInstanceId: start.instanceId },
+    };
+    assert.deepEqual(
+      await submitUserTaskCompletion(
+        environment.client.workflow,
+        start.instanceId,
+        stimulus,
+      ),
+      {
+        kind: "semantic",
+        commandId: stimulus.commandId,
+        outcome: CommandOutcome.Committed,
+      },
+    );
 
     const terminal = await withDeadline(
       readTestProcessTerminalResult(firstHandle),
@@ -196,7 +194,7 @@ test("Run-local trace growth rolls over before 2 MiB without changing semantic s
     assert.equal(isCompletedProcessReceipt(terminal.receipt), true);
     assert.equal(
       terminal.recoveryEntries.length,
-      prediction.commandCount + 3,
+      prediction.commandCount + 1,
     );
 
     const histories = await workflowRunHistories(environment, workflowId);
@@ -292,7 +290,7 @@ function staleCompletion(
     commandId: `retained-run-rejection-${index}`,
     taskId: {
       processInstanceId,
-      elementId: "Review",
+      elementId: "UserTask_Approve",
       activation: 999,
     },
     submittedValues: [{
