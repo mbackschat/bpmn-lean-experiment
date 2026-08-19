@@ -30,7 +30,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `INTERCHANGE-ADMISSION`.
 
-Next action: commit the exact [interchange admission proposal](INTERCHANGE-ADMISSION-PROPOSAL.md) review target, record that immutable target in its receipt, mint the neutral proposal-review packet, and obtain the required context-cold review. Stop for owner approval after review; do not change production source first.
+Next action: return immutable proposal target `db18ea3` to one `fork-turns-none` context-cold reviewer through the neutral semantic-review packet. Stop for owner approval after review; do not change production source first.
 
 Oracle: the admitted interchange subset preserves exact source bytes and project-owned checked representations, does not make DI, lane, Collaboration-presentation, documentation, or inert metadata executable, and keeps BPMN requirement coverage, selected CIB compatibility, and corpus reach independently accounted.
 

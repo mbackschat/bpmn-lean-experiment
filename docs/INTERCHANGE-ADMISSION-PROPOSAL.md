@@ -7,7 +7,7 @@ Review: pending
 
 ## Current boundary
 
-This proposal selects the first `INTERCHANGE-ADMISSION` tranche. It changes no repository behavior until independent proposal review and owner approval complete. The first exact requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
+This proposal selects the first `INTERCHANGE-ADMISSION` tranche. Immutable proposal review target `db18ea3` changes no repository behavior and remains blocked on independent review and owner approval. The first exact requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
 
 The source compiler already implements the complete reviewed preservation mechanism under `bpmn-2.0.2-user-task-preserved-notation-draft`. The current gap is composition: that capability is unavailable to the CIB Seven User Task Process-data profile used to calibrate external whole models. This proposal reuses the reviewed mechanism and its four adjacent structural requirements. It does not reinterpret Diagram Interchange, Collaboration, Lanes, Artifacts, Documentation, User Task lifecycle, or Process data.
 
@@ -156,6 +156,6 @@ Reopen before preserving any construct that can change execution; before admitti
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `db18ea3` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
