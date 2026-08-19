@@ -32,7 +32,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `INTERCHANGE-ADMISSION`.
 
-Next action: commit the immutable-profile proposal redesign, bind its review target in lifecycle metadata, and obtain one context-cold proposal review. After approval, revert the five prohibited frozen-artifact edits, retain the exhaustive fail-closed dispatch, complete the digest-bound declaration guard and Definitions-metadata prerequisite, and rerun the affected BPMN-source package gate before adding the new preservation-composition profile.
+Next action: return immutable proposal target `adec37e` to one `fork-turns-none` context-cold reviewer. After approval, revert the five prohibited frozen-artifact edits, retain the exhaustive fail-closed dispatch, complete the digest-bound declaration guard and Definitions-metadata prerequisite, and rerun the affected BPMN-source package gate before adding the new preservation-composition profile.
 
 Oracle: the admitted interchange subset preserves exact source bytes and project-owned checked representations, does not make DI, lane, Collaboration-presentation, documentation, or inert metadata executable, and keeps BPMN requirement coverage, selected CIB compatibility, and corpus reach independently accounted.
 
