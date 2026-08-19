@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and current boundary
 
@@ -312,6 +312,8 @@ A semantic-checkpoint review is required after the first complete executable sou
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `70256503c94ee6d2f63be315912d8465894b35f3` | `fork-turns-none` | `approve-with-required-edits` | `a064dc8ba871c77a8d27817565e8b3a9f0c019bc` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal review used two correction-audit rounds. The first audited `3b8e0df838cd13f2b0142bb7b4887b528bd1e51f`; the second and final approved audit is recorded in the table.
