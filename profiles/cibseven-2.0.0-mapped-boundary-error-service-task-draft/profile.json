@@ -23,6 +23,7 @@
       "none-start-event",
       "service-task",
       "string-and-null-variables",
+      "effect-completion-string-null-local-data",
       "literal-input-mapping",
       "local-variable-output-mapping",
       "typed-bpmn-error-result",

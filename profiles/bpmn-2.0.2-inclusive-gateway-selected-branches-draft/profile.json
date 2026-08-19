@@ -17,6 +17,7 @@
     "process": "private-executable",
     "features": [
       "none-start-event",
+      "process-start-string-null-data",
       "inclusive-gateway-all-true-divergence",
       "conditionless-default-sequence-flow",
       "formal-expression",

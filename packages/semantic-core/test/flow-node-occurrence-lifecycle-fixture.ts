@@ -77,6 +77,7 @@ const receiveChannel = {
 
 export const receiveTaskProgram = waitProgram(
   "Process_Receive",
+  SemanticProfileId.MessageAddressedReceiveTask,
   {
     ...operationBase("ReceiveTask_Wait"),
     kind: SemanticOperationKind.AwaitMessage,
@@ -88,12 +89,17 @@ export const receiveTaskProgram = waitProgram(
 
 export const configuredTaskProgram = waitProgram(
   "Process_Configured",
+  SemanticProfileId.ConfiguredTask,
   effectOperation("ConfiguredTask_Probe", "place:Flow_After", null),
 );
 
 export const boundaryErrorProgram: SemanticProcessProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
-  identity: identity("Process_BoundaryError", "boundary-error"),
+  identity: identity(
+    "Process_BoundaryError",
+    "boundary-error",
+    SemanticProfileId.MappedBoundaryErrorServiceTask,
+  ),
   processId: "Process_BoundaryError",
   controlPlaces: ["Flow_Boundary", "Flow_Start"].map(controlPlace),
   operations: [
@@ -123,7 +129,7 @@ export const propagatedErrorProgram = {
   ...terminateProgram,
   identity: {
     ...terminateProgram.identity,
-    semanticProfile: "flow-node-occurrence-propagated-error",
+    semanticProfile: SemanticProfileId.SubProcessErrorPropagation,
   },
   operations: terminateProgram.operations.map((operation) =>
     operation.kind === SemanticOperationKind.TerminateScope
@@ -155,10 +161,11 @@ export const propagatedErrorProgram = {
 
 export const incidentProgram: SemanticProcessProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
-  identity: {
-    ...identity("Process_Incident", "incident-cancellation"),
-    semanticProfile: SemanticProfileId.ServiceTaskIncidentCancellation,
-  },
+  identity: identity(
+    "Process_Incident",
+    "incident-cancellation",
+    SemanticProfileId.ServiceTaskIncidentCancellation,
+  ),
   processId: "Process_Incident",
   controlPlaces: ["Flow_Start", "Flow_ToEnd"].map(controlPlace),
   operations: [
@@ -199,11 +206,12 @@ export function openWait(
 
 function waitProgram(
   processId: string,
+  semanticProfile: string,
   wait: SemanticProcessProgram["operations"][number],
 ): SemanticProcessProgram {
   return rootScopedProgram({
     kind: SemanticProcessKind.SemanticProcess,
-    identity: identity(processId, `wait-${processId}`),
+    identity: identity(processId, `wait-${processId}`, semanticProfile),
     processId,
     controlPlaces: ["Flow_Start"].map(controlPlace),
     operations: [wait, startOperation()],
@@ -244,10 +252,14 @@ function startOperation() {
   } as const;
 }
 
-function identity(processId: string, sourceId: string) {
+function identity(
+  processId: string,
+  sourceId: string,
+  semanticProfile: string,
+) {
   return {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: `flow-node-occurrence-${processId}`,
+    semanticProfile,
     sourceId,
     sourceOverlay: null,
     sourceSha256: "f".repeat(64),

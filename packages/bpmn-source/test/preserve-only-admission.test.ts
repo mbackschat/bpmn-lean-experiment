@@ -25,8 +25,19 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import type { BpmnCompilationResult } from "@bpmn-lean/bpmn-source";
-import { SemanticProfileId } from "@bpmn-lean/semantic-core";
-import type { CheckedProcess } from "@bpmn-lean/semantic-core";
+import {
+  CommandOutcome,
+  SemanticProfileId,
+  StimulusKind,
+  VariableValueKind,
+  applyStimulus,
+  initialState,
+  supportsSemanticProcessExecution,
+} from "@bpmn-lean/semantic-core";
+import type {
+  CheckedProcess,
+  CompleteUserTaskInstanceStimulus,
+} from "@bpmn-lean/semantic-core";
 
 import {
   findModdleElement,
@@ -182,6 +193,67 @@ test("lowers the preserved source to the executed-only twin's program", async ()
   const { identity: _executedIdentity, ...executedProgram } =
     executedOnly.semanticProcess;
   assert.deepEqual(preservedProgram, executedProgram);
+});
+
+test("keeps preserved notation data-neutral at both external write surfaces", async () => {
+  const admitted = await compile(
+    preservedNotationSource,
+    "preserved-notation-user-task",
+    SemanticProfileId.UserTaskPreservedNotation,
+  );
+  assert.ok(admitted.semanticProcess !== undefined);
+  const program = admitted.semanticProcess;
+  const start = {
+    kind: StimulusKind.StartProcess,
+    commandId: "start-preserved-notation",
+    processId: program.processId,
+    instanceId: "PreservedNotationInstance_1",
+    initialVariables: [],
+  } as const;
+  assert.equal(supportsSemanticProcessExecution(start, program), true);
+  const waiting = applyStimulus(program, initialState, start);
+  assert.equal(waiting.outcome, CommandOutcome.Committed);
+  const task = waiting.state.userTaskWaits[0];
+  assert.ok(task !== undefined);
+
+  const refusedBindings = [
+    {
+      name: "request",
+      value: { kind: VariableValueKind.String, value: "preserved" },
+    },
+    {
+      name: "request",
+      value: { kind: VariableValueKind.Null },
+    },
+  ] as const;
+  for (const [index, binding] of refusedBindings.entries()) {
+    const refusedStart = {
+      ...start,
+      commandId: `refuse-preserved-start-${index}`,
+      initialVariables: [binding],
+    };
+    assert.equal(
+      supportsSemanticProcessExecution(refusedStart, program),
+      false,
+    );
+    const startResult = applyStimulus(program, initialState, refusedStart);
+    assert.equal(startResult.outcome, CommandOutcome.Rejected);
+    assert.strictEqual(startResult.state, initialState);
+
+    const completion: CompleteUserTaskInstanceStimulus = {
+      kind: StimulusKind.CompleteUserTaskInstance,
+      commandId: `refuse-preserved-completion-${index}`,
+      taskId: task.id,
+      submittedValues: [binding],
+    };
+    const completionResult = applyStimulus(
+      program,
+      waiting.state,
+      completion,
+    );
+    assert.equal(completionResult.outcome, CommandOutcome.Rejected);
+    assert.strictEqual(completionResult.state, waiting.state);
+  }
 });
 
 /**

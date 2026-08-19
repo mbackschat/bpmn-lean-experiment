@@ -344,7 +344,10 @@ test("refuses wrong, stale, terminal, duplicate, and old-profile commands by sta
     assert.strictEqual(refused.state, incident);
   }
 
-  const oldIncident = incidentState(oldProgram);
+  const oldIncident = incidentState(oldProgram, {
+    ...start,
+    initialVariables: [],
+  });
   const refusedOld = applyStimulus(oldProgram, oldIncident, cancel);
   assert.equal(refusedOld.outcome, CommandOutcome.Rejected);
   assert.strictEqual(refusedOld.state, oldIncident);
@@ -431,8 +434,11 @@ function incidentProgram(semanticProfile: string): SemanticProcessProgram {
   });
 }
 
-function incidentState(candidate: SemanticProcessProgram): RuntimeState {
-  const started = applyStimulus(candidate, initialState, start);
+function incidentState(
+  candidate: SemanticProcessProgram,
+  candidateStart: StartProcessStimulus = start,
+): RuntimeState {
+  const started = applyStimulus(candidate, initialState, candidateStart);
   assert.equal(started.outcome, CommandOutcome.Committed);
   const reported = applyStimulus(candidate, started.state, report);
   assert.equal(reported.outcome, CommandOutcome.Committed);

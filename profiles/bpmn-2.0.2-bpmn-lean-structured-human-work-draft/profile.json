@@ -22,6 +22,8 @@
       "user-task-rendering-preserved-opaque",
       "user-task-discovery",
       "user-task-instance-completion",
+      "process-start-string-null-data",
+      "user-task-string-null-boolean-completion-data",
       "user-task-literal-group-candidate-metadata",
       "user-task-integer-completion-data",
       "user-task-ordered-string-list-completion-data",

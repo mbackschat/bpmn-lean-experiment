@@ -33,6 +33,7 @@
       "user-task",
       "user-task-discovery",
       "user-task-instance-completion",
+      "user-task-string-null-completion-data",
       "repeated-user-task-occurrence",
       "none-end-event",
       "sequence-flow",

@@ -23,6 +23,7 @@
       "none-start-event",
       "service-task",
       "string-variable",
+      "effect-completion-string-local-data",
       "literal-input-mapping",
       "local-variable-output-mapping",
       "successful-effect-result",
