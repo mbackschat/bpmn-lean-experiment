@@ -6,6 +6,8 @@ This file owns immediate execution order, blockers, current measured evidence, a
 
 M0 through M6 and Horizons 1 and 2 are closed. Horizon 2 Product 1 Workflow-chain production enrollment, handle-free start, content-bound recovery, closed v1 terminal receipts, private paired E1/E2 traversal, every approved capacity row, stop-the-world Worker deployment admission, and forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are implemented under the [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) and [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md). The complete gate passed at `c2f9a5d`; the same isolated reviewer approved the opaque Schedule-locator and cost-attribution correction at `5b9e028`. Those corrections changed hosting/API representation and persistence only, leaving the registered BPMN/CIB accounts, semantic-core traces, replay evidence, and published locator meaning unchanged.
 
+`INTERCHANGE-ADMISSION` preflight selected `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` with consequence `preserve`. The [draft proposal](INTERCHANGE-ADMISSION-PROPOSAL.md) composes the already-reviewed standard preservation bundle with the existing CIB Seven User Task Process-data behavior under one additive profile, while retaining foreign source metadata and every broader executable shape as rejection. Production work is blocked on independent proposal review and owner approval.
+
 ## Ordered work
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
@@ -28,8 +30,8 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `INTERCHANGE-ADMISSION`.
 
-Next action: in a new task, select the first exact standard interchange requirement from the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md) and [executable-corpus research](research/EXECUTABLE-BPMN-MODEL-CORPUS-RESEARCH.md), then specify its execute, preserve, or reject admission consequence before changing source. This H2 closure task stops before starting that work.
+Next action: commit the exact [interchange admission proposal](INTERCHANGE-ADMISSION-PROPOSAL.md) review target, record that immutable target in its receipt, mint the neutral proposal-review packet, and obtain the required context-cold review. Stop for owner approval after review; do not change production source first.
 
 Oracle: the admitted interchange subset preserves exact source bytes and project-owned checked representations, does not make DI, lane, Collaboration-presentation, documentation, or inert metadata executable, and keeps BPMN requirement coverage, selected CIB compatibility, and corpus reach independently accounted.
 
-Stop if admission would reinterpret executable BPMN behavior, require an unclassified CIB relationship, change the semantic profile or checked Process meaning, or let presentation/documentation metadata influence runtime execution. Do not begin `INTERCHANGE-ADMISSION` in this H2 closure task.
+Stop if review requires a material redesign, if admission would reinterpret executable BPMN behavior, if a new CIB relationship is required, if checked Process meaning changes, or if presentation or documentation metadata can influence runtime execution.
