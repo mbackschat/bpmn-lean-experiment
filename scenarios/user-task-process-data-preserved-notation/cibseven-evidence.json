@@ -1,0 +1,196 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "user-task-process-data-preserved-notation",
+    "sha256": "dedef4e3f11c89318264986b736555e4eab3b93ebbe4bc512e66bc34db4fbe35"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+    "sha256": "9316b3f08827af9011085e35546420497122bd92227223299289324d788b987b"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process-data-preserved-notation",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": "pending"
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-process-data-preserved-notation",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "decision",
+            "value": "approved"
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
+          },
+          {
+            "name": "reviewNote",
+            "value": null
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process-data-preserved-notation",
+        "tasks": [
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-process-data-preserved-notation",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process-data-preserved-notation",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-process-data-preserved-notation",
+        "jobs": []
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process-data-preserved-notation",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ProcessDataPreservedNotationInstance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Approve",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "ProcessDataPreservedNotationInstance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "name": "Approve",
+            "state": "active"
+          }
+        ],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "openIncidents": [],
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review invoice 42"
+            }
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "ProcessDataPreservedNotationInstance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-process-data-preserved-notation",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ProcessDataPreservedNotationInstance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "openIncidents": [],
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review invoice 42"
+            }
+          },
+          {
+            "name": "reviewNote",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

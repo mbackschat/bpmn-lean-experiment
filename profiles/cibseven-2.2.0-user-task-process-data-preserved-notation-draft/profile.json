@@ -1,0 +1,98 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+  "status": "draft",
+  "claim": "user-task-process-data-with-retained-unexecuted-standard-notation",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "process-start-string-null-data",
+      "user-task-string-null-completion-data",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion",
+      "retained-definitions-metadata",
+      "retained-diagram-interchange",
+      "retained-collaboration-and-participant",
+      "retained-lane-set",
+      "retained-artifacts",
+      "retained-documentation"
+    ],
+    "extensions": [
+      "runtime-service-process-start-variable-map",
+      "task-service-process-variable-completion-patch"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-OP-0001",
+      "CIB-CFG-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "execution-semantics-for-any-retained-construct",
+    "multi-participant-execution",
+    "message-flow-delivery",
+    "lane-based-assignment",
+    "data-objects-data-stores-and-every-data-association",
+    "foreign-content-at-any-locus",
+    "public-projection-of-retained-notation",
+    "claiming",
+    "assignment",
+    "authorization",
+    "forms",
+    "task-local-variables",
+    "variable-deletion",
+    "variable-values-beyond-string-null",
+    "expressions",
+    "gateways",
+    "timers",
+    "messages",
+    "boundary-events",
+    "event-subprocesses",
+    "multi-instance",
+    "compensation",
+    "listeners",
+    "history",
+    "search-attributes",
+    "global-task-inbox",
+    "external-services",
+    "vendor-extensions"
+  ]
+}

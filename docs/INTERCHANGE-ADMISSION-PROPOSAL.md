@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
 
 ## Current boundary
@@ -12,6 +12,8 @@ This proposal selects the first `INTERCHANGE-ADMISSION` tranche. The context-col
 Implementation preflight then exposed a conflict the reviewed proposal had not accounted for: four value-domain profiles and the preserved-notation predecessor are content-bound by the non-updatable cyclic-control-flow preservation baseline. Adding feature atoms in place changed those profile digests and made the complete BPMN-source package gate fail before the new composition existed. The corrected proposal preserves those exact artifacts and replaces in-place atom reconciliation with the closed legacy-declaration rule below. Context-cold review of immutable target `adec37e` returned `approve` with no findings, and the owner approved implementation on 2026-08-19. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with the admission consequence **preserve**.
 
 The source compiler already implements the reviewed preservation mechanism under `bpmn-2.0.2-user-task-preserved-notation-draft`. The current interchange gap is composition: that capability is unavailable to the CIB Seven User Task Process-data profile used to calibrate external whole models. Before composition, two declaration defects must close: external variable writes must follow an exhaustive profile-and-surface value-domain contract, and the already-preserved standard Definitions metadata must gain an explicit requirement-ledger row plus an exact declaration that does not replace the frozen predecessor artifact. This proposal otherwise reuses the reviewed mechanism and its five existing structural requirements. It does not reinterpret Diagram Interchange, Collaboration, Lanes, Artifacts, Documentation, User Task lifecycle, or Process data.
+
+The first executable checkpoint now registers the composed profile and answer-free notation-bearing Process-data scenario, retains content-bound CIB Seven evidence, reuses the exact semantic-core User Task Process-data account, and registers the source/twin non-interference and cross-target pipeline cases. Both predecessor profiles remain separating negatives. Lean registration, live Temporal evidence, external-corpus diagnostic reclassification, and closure evidence remain deliberately deferred until the mandatory semantic-checkpoint review.
 
 [PRESERVE-ONLY-ADMISSION-SPEC.md](PRESERVE-ONLY-ADMISSION-SPEC.md) owns preservation meaning, [PROFILE-PARAMETERIZED-ADMISSION-SPEC.md](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns executable profile composition, the [CIB-BPMN relationship register](CIB-BPMN-RELATION-REGISTER.md) owns CIB calibration, and [executable model corpus research](research/EXECUTABLE-BPMN-MODEL-CORPUS-RESEARCH.md) owns the external blocker ranking.
 

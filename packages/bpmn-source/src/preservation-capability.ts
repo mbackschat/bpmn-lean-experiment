@@ -104,6 +104,7 @@ function preservationCapabilityKind(
   semanticProfile: SemanticProfile,
 ): PreservationCapabilityKind | undefined {
   switch (semanticProfile) {
+    case SemanticProfileId.UserTaskProcessDataPreservedNotation:
     case SemanticProfileId.UserTaskPreservedNotation:
       return PreservationCapabilityKind.StandardNotation;
     case SemanticProfileId.StructuredHumanWork:

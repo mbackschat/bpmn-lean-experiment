@@ -27,6 +27,7 @@ export function requiredProgramShape(
         SemanticOperationKind.CompleteScope,
       ]);
     case SemanticProfileId.UserTask:
+    case SemanticProfileId.UserTaskProcessDataPreservedNotation:
     case SemanticProfileId.UserTaskPreservedNotation:
     case SemanticProfileId.UserTaskBooleanCompletionData:
     case SemanticProfileId.UserTaskAssignmentFormMetadata:

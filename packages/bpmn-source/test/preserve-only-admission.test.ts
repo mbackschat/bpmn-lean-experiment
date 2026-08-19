@@ -451,43 +451,28 @@ test("rejects a preserved set seeded with an executable type", async () => {
 
   const { preservedSubtreeRejections, preservationCapability } =
     await importCompiledClassifier();
-  const honest = preservationCapability(
-    SemanticProfileId.UserTaskPreservedNotation,
-  );
-  assert.ok(honest !== undefined);
   const preserved = (capability: PreservationCapability): boolean =>
     preservedSubtreeRejections(secondProcess, anyLocus, capability).length === 0;
-
-  assert.equal(
-    preserved(honest),
-    false,
-    "an executable Process must never classify as preserved",
-  );
-
-  // Seeding the container alone does not leak, and that is the recursive rule doing the work: the
-  // Process still contains a Start Event no capability preserves. A flat preserved set would leak
-  // here, which is why the rule is stated over the descendant set rather than over the type.
-  assert.equal(
-    preserved({
+  for (const profile of [
+    SemanticProfileId.UserTaskPreservedNotation,
+    SemanticProfileId.UserTaskProcessDataPreservedNotation,
+  ]) {
+    const honest = preservationCapability(profile);
+    assert.ok(honest !== undefined);
+    assert.equal(preserved(honest), false);
+    assert.equal(preserved({
       ...honest,
       preservedTypes: new Set([...honest.preservedTypes, "bpmn:Process"]),
-    }),
-    false,
-    "a preserved container must not swallow an unpreserved descendant",
-  );
-
-  assert.equal(
-    preserved({
+    }), false);
+    assert.equal(preserved({
       ...honest,
       preservedTypes: new Set([
         ...honest.preservedTypes,
         "bpmn:Process",
         "bpmn:StartEvent",
       ]),
-    }),
-    true,
-    "seeding the whole subtree must actually leak, or the checks above are vacuous",
-  );
+    }), true, `${profile} seeded executable subtree`);
+  }
 });
 
 test("keeps the executed-only profile refusing preserved notation", async () => {

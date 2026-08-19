@@ -19,8 +19,9 @@ export function requiredCheckedProcessShape(
   const start = CheckedNodeKind.NoneStartEvent;
   const end = CheckedNodeKind.NoneEndEvent;
   switch (semanticProfile) {
-    // Preserved notation never enters the checked graph, so both profiles have the same shape.
+    // Preservation, value-domain, and passive metadata choices do not change this checked shape.
     case SemanticProfileId.UserTask:
+    case SemanticProfileId.UserTaskProcessDataPreservedNotation:
     case SemanticProfileId.UserTaskPreservedNotation:
     case SemanticProfileId.UserTaskBooleanCompletionData:
     case SemanticProfileId.UserTaskAssignmentFormMetadata:

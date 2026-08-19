@@ -112,6 +112,13 @@ const expectedCapabilities = new Map<string, ProfileCapabilities>([
       "user-task-string-null-completion-data",
     ),
   }],
+  [SemanticProfileId.UserTaskProcessDataPreservedNotation, {
+    processStart: capability(stringNull, "process-start-string-null-data"),
+    userTaskCompletion: capability(
+      stringNull,
+      "user-task-string-null-completion-data",
+    ),
+  }],
   [SemanticProfileId.UserTaskCycle, {
     userTaskCompletion: capability(
       stringNull,

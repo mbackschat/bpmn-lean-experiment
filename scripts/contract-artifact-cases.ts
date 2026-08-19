@@ -31,6 +31,12 @@ export const artifactCases = Object.freeze([
   }),
   Object.freeze({
     scenarioRelativePath:
+      "scenarios/user-task-process-data-preserved-notation/scenario.json",
+    evidenceRelativePath:
+      "scenarios/user-task-process-data-preserved-notation/cibseven-evidence.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
       "scenarios/parallel-fork-join/a-then-b.scenario.json",
     evidenceRelativePath:
       "scenarios/parallel-fork-join/a-then-b.cibseven-evidence.json",

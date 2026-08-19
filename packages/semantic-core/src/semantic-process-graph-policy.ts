@@ -62,6 +62,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.ServiceTaskIncidentCancellation:
     case SemanticProfileId.TimerUserTaskComposition:
     case SemanticProfileId.UserTask:
+    case SemanticProfileId.UserTaskProcessDataPreservedNotation:
     case SemanticProfileId.UserTaskPreservedNotation:
     case SemanticProfileId.UserTaskBooleanCompletionData:
     case SemanticProfileId.UserTaskAssignmentFormMetadata:

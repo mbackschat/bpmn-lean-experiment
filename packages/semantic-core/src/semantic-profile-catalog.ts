@@ -43,6 +43,8 @@ export const SemanticProfileId = Object.freeze({
   UserTaskCycle: "bpmn-2.0.2-user-task-cycle-draft",
   UserTaskPreservedNotation:
     "bpmn-2.0.2-user-task-preserved-notation-draft",
+  UserTaskProcessDataPreservedNotation:
+    "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
   ConfiguredTask:
     "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
   UserTaskBooleanCompletionData:

@@ -1,0 +1,9 @@
+# CIB Seven 2.2.0 User Task Process data with preserved notation draft profile
+
+This draft profile composes the exact executable and String/Null Process-data boundary of the [CIB Seven User Task Process-data profile](../cibseven-2.2.0-user-task-process-data-draft/README.md) with the exact standard preservation capability of the [BPMN User Task preserved-notation profile](../bpmn-2.0.2-user-task-preserved-notation-draft/README.md). The composition is one closed profile identity, not a caller-selected overlay.
+
+The [profile artifact](profile.json) pins the same CIB Seven `2.2.0` revision, Java 21, H2, controlled time, disabled automatic job execution, history configuration, relationship set, executable Process shape, observations, and String/Null Process-start and User Task-completion domains as its Process-data predecessor. CIB Seven is the executable behavioral oracle only. The BPMN requirement ledger and the preserve-only admission specification independently own the retained standard notation.
+
+Standard Definitions `name`, `exporter`, and `exporterVersion`, Diagram Interchange, Collaboration presentation, Lane Sets, artifacts, and Documentation remain only in exact source bytes. They do not enter the checked graph, Semantic Process program, runtime state, public observation, or Temporal Workflow input. The exact boundary is owned by the [interchange admission proposal](../../docs/INTERCHANGE-ADMISSION-PROPOSAL.md), [preserve-only admission specification](../../docs/PRESERVE-ONLY-ADMISSION-SPEC.md), and [profile-parameterized admission specification](../../docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md).
+
+Status remains `draft`. The profile makes no execution claim for retained notation, no broader CIB compatibility or BPMN Process Execution Conformance claim, and no Product 2 claim.

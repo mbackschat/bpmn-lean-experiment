@@ -1,0 +1,103 @@
+{
+  "kind": "scenario",
+  "id": "user-task-process-data-preserved-notation",
+  "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+  "bpmn": {
+    "id": "user-task-process-data-preserved-notation-source",
+    "relativePath": "scenarios/user-task-preserved-notation/process.bpmn",
+    "sha256": "5b9daa05805d7922afb134a345796930d2872a4e0040d235b764851c711bb072",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process-data-preserved-notation",
+      "processId": "Process_SequentialUserTask",
+      "instanceId": "ProcessDataPreservedNotationInstance_1",
+      "initialVariables": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "pending"
+          }
+        },
+        {
+          "name": "requestTitle",
+          "value": {
+            "kind": "string",
+            "value": "Review invoice 42"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-process-data-preserved-notation",
+      "taskId": {
+        "processInstanceId": "ProcessDataPreservedNotationInstance_1",
+        "elementId": "UserTask_Approve",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        },
+        {
+          "name": "reviewNote",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §8.2.1",
+      "BPMN 2.0.2 §8.3.2",
+      "BPMN 2.0.2 §8.4.1",
+      "BPMN 2.0.2 §8.4.13",
+      "BPMN 2.0.2 §9.1",
+      "BPMN 2.0.2 §9.3",
+      "BPMN 2.0.2 §9.3.1",
+      "BPMN 2.0.2 §9.3.2",
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 §10.3.4",
+      "BPMN 2.0.2 §10.5.2",
+      "BPMN 2.0.2 §10.5.3",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §10.8",
+      "BPMN 2.0.2 §12.2",
+      "BPMN 2.0.2 §13.2",
+      "BPMN 2.0.2 §13.3.1",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §13.3.3",
+      "BPMN 2.0.2 §13.5.1",
+      "BPMN 2.0.2 §13.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/UserTaskTest.java#testTaskPropertiesNotNull",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/TaskAssigneeTest.java#testTaskAssignee",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/api/task/TaskServiceTest.java#testCompleteTaskUnexistingTaskId"
+    ]
+  }
+}

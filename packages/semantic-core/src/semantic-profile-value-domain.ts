@@ -108,6 +108,7 @@ function profileValueDomain(
     case SemanticProfileId.ServiceTaskIncidentCancellation:
       return surfaceValueDomain(surface, stringValueDomain);
     case SemanticProfileId.UserTask:
+    case SemanticProfileId.UserTaskProcessDataPreservedNotation:
       return surfaceValueDomain(
         surface,
         stringNullValueDomain,

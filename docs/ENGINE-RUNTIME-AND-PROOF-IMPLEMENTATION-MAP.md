@@ -16,6 +16,8 @@ The closure-reviewed [Boolean Process-data specification](capsules/BOOLEAN-PROCE
 
 The graduated [sequential metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) carries an optional literal group candidate and string-or-Boolean generated-form field through checked source, `awaitUserTask`, committed wait, and public `OpenUserTask`. The closure-reviewed [parallel composition specification](capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) requires that metadata on both tasks of one exact balanced graph, empty Process Start data, and the existing completion and parallel runtime. Lean, core, combined CIB, differential, live Temporal and replay, mutation, corpus, and production-journey evidence are green. Product 2 consumes only published task and form facts through M3 Work.
 
+The first interchange checkpoint registers `cibseven-2.2.0-user-task-process-data-preserved-notation-draft` in the TypeScript semantic core. It reuses the existing sequential User Task Process-data graph, operation, value-domain, transition, and result account while source admission separately retains standard notation. This checkpoint adds no runtime field, IL operation, transition, observation, or CIB interpretation. Lean and Temporal registration remain pending after semantic-checkpoint review.
+
 ## Implemented
 
 ### Runtime scoped data
@@ -79,6 +81,7 @@ The graduated [sequential metadata specification](capsules/USER-TASK-ASSIGNMENT-
 - registered Terminate End admission and execution with no external stimulus, selected-occurrence-retaining subtree cancellation, exact higher-level preservation, aggregate End increment, unchanged scope completion, exact refusal, and 5/3/2 closure bounds
 - registered configured Task admission and execution with exact checked descriptor binding, the existing payload-free Probe effect, effect-only initial exposure, occurrence-only refusal, trailing User Task continuation, and no runtime, stimulus, state, or observation widening
 - exact Process-start installation and atomic User Task completion merge over the shared five-arm representation, with profile admission at deployment and live commands
+- the interchange composition profile reuses that exact String/Null Process-start and User Task completion behavior with the existing acyclic sequential User Task graph and adds no runtime or observation branch
 - registered E2 metadata admission and independent preservation through checked User Task, ordinary operation, committed wait, and public projection, with passive completion, exact refusal preservation, strict wire values, and old-profile exclusion
 - registered literal-generation incident report and exact retry transitions, private and public association validation, incident-aware quiescence and resumability, and pre-dispatch refusal of malformed or cross-program injected incident states
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
@@ -93,7 +96,7 @@ The graduated [sequential metadata specification](capsules/USER-TASK-ASSIGNMENT-
 
 ## Explicitly absent
 
-One generic profile retains selected notation without executing it. The BPMN data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Integer and String-list values appear only at M6 User Task completion, and Product 1 owns no form semantics. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Its successor adds only the exact incident-gated hosting-root cancellation path; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
+Two registered profiles select one internal standard-notation preservation capability without executing the retained material. The BPMN data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Integer and String-list values appear only at M6 User Task completion, and Product 1 owns no form semantics. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Its successor adds only the exact incident-gated hosting-root cancellation path; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
 
 ### Runtime scoped data
 
