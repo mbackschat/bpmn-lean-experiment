@@ -17,6 +17,18 @@ import { markdownTableRows, withoutBackticks } from "./markdown-tables.ts";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const ledgerPath = path.join(projectRoot, "docs/BPMN-REQUIREMENT-LEDGER.md");
 const capsuleRoot = path.join(projectRoot, "docs/capsules");
+const preserveOnlySpecPath = path.join(
+  projectRoot,
+  "docs/PRESERVE-ONLY-ADMISSION-SPEC.md",
+);
+const preservedNotationProfilePath = path.join(
+  projectRoot,
+  "profiles/bpmn-2.0.2-user-task-preserved-notation-draft/profile.json",
+);
+const preservedNotationProfileReadmePath = path.join(
+  projectRoot,
+  "profiles/bpmn-2.0.2-user-task-preserved-notation-draft/README.md",
+);
 const familyMapSectionStart = "## Process Execution mechanism-family map";
 const reviewedRequirementSectionStart = "## Reviewed requirements";
 const familyMapSectionEnd = reviewedRequirementSectionStart;
@@ -294,6 +306,94 @@ test("keeps converted capsule dispositions keyed to one semantic rule", async ()
   assert.deepEqual(
     { convertedCapsuleCount: convertedCapsuleCount > 0, findings },
     { convertedCapsuleCount: true, findings: [] },
+  );
+});
+
+test("binds every preserve-only structural requirement to one exact declaration", async () => {
+  const ledger = await readFile(ledgerPath, "utf8");
+  const rows = new Map(
+    markdownTableRows(
+      ledger,
+      reviewedRequirementSectionStart,
+      reviewedRequirementSectionEnd,
+      requirementCellCount,
+    ).map((cells) => [withoutBackticks(cells[0] ?? ""), cells]),
+  );
+  const profile: unknown = JSON.parse(
+    await readFile(preservedNotationProfilePath, "utf8"),
+  );
+  assert.ok(
+    profile !== null &&
+      typeof profile === "object" &&
+      "bpmn" in profile &&
+      profile.bpmn !== null &&
+      typeof profile.bpmn === "object" &&
+      "features" in profile.bpmn &&
+      Array.isArray(profile.bpmn.features) &&
+      profile.bpmn.features.every((feature) => typeof feature === "string"),
+  );
+  const structuralCapabilities = [
+    ["BPMN-STRUCT-DIAGRAM-INTERCHANGE-01", "retained-diagram-interchange"],
+    ["BPMN-STRUCT-COLLABORATION-01", "retained-collaboration-and-participant"],
+    ["BPMN-STRUCT-LANE-01", "retained-lane-set"],
+    ["BPMN-STRUCT-ARTIFACT-01", "retained-artifacts"],
+    ["BPMN-STRUCT-DOCUMENTATION-01", "retained-documentation"],
+  ] as const;
+  const structuralRequirementIds = [
+    ...structuralCapabilities.map(([requirementId]) => requirementId),
+    "BPMN-STRUCT-DEFINITIONS-METADATA-01",
+  ] as const;
+  const definitionsMetadataRow = rows.get(
+    "BPMN-STRUCT-DEFINITIONS-METADATA-01",
+  );
+
+  assert.deepEqual(
+    {
+      structuralRequirements: structuralRequirementIds.map(
+        (requirementId) => ({
+          requirementId,
+          disposition: withoutBackticks(
+            rows.get(requirementId)?.[dispositionCell] ?? "",
+          ),
+        }),
+      ),
+      retainedFeatures: profile.bpmn.features
+        .filter((feature) => feature.startsWith("retained-"))
+        .sort(),
+      definitionsMetadataRow: definitionsMetadataRow === undefined
+        ? null
+        : {
+            normativeSource: definitionsMetadataRow[1],
+            machineReadableAnchor: definitionsMetadataRow[2],
+          },
+      specificationNamesRequirement: (
+        await readFile(preserveOnlySpecPath, "utf8")
+      ).includes("`BPMN-STRUCT-DEFINITIONS-METADATA-01`"),
+      predecessorReadmeDeclaration: (
+        await readFile(preservedNotationProfileReadmePath, "utf8")
+      ).split("\n").includes(
+        "Preserved Definitions metadata declaration: `name | exporter | exporterVersion`; retained in exact source bytes and excluded from execution projections.",
+      ),
+      predecessorHasDefinitionsFeature: profile.bpmn.features.includes(
+        "retained-definitions-metadata",
+      ),
+    },
+    {
+      structuralRequirements: structuralRequirementIds.map(
+        (requirementId) => ({ requirementId, disposition: "supported" }),
+      ),
+      retainedFeatures: structuralCapabilities
+        .map(([, feature]) => feature)
+        .sort(),
+      definitionsMetadataRow: {
+        normativeSource: "Clause 8.2.1 and Table 8.1",
+        machineReadableAnchor:
+          "CMOF `Definitions-name`, `Definitions-exporter`, and `Definitions-exporterVersion`; XSD `tDefinitions` attributes `name`, `exporter`, and `exporterVersion`",
+      },
+      specificationNamesRequirement: true,
+      predecessorReadmeDeclaration: true,
+      predecessorHasDefinitionsFeature: false,
+    },
   );
 });
 

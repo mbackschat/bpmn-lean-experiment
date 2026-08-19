@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-08 after independent cold review, and fully implemented.** It approves the admission capability that opens M1 of [the showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder): a third party can deploy their own BPMN file. It changes what source is admitted, what the compiler retains, and how a refusal is reported; it changes no runtime transition family, no semantic meaning of any executed construct, and no public observation. [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes the exact reached and absent scope, and the five `BPMN-STRUCT-` rows in [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements) dispose what retention structurally supports. Its closure review returned `approve` on 2026-08-08 after two correction rounds, so it graduated from `-PROPOSAL` to `-SPEC` under [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md).
+**Owner-approved on 2026-08-08 after independent cold review, and fully implemented.** It approves the admission capability that opens M1 of [the showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder): a third party can deploy their own BPMN file. It changes what source is admitted, what the compiler retains, and how a refusal is reported; it changes no runtime transition family, no semantic meaning of any executed construct, and no public observation. [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes the exact reached and absent scope, and the six `BPMN-STRUCT-` rows in [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements) dispose what retention structurally supports. Its closure review returned `approve` on 2026-08-08 after two correction rounds, so it graduated from `-PROPOSAL` to `-SPEC` under [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md).
 
 Admission structure is owned by [the profile-parameterized admission specification](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), which this proposal extends rather than replaces. Requirement dispositions belong to [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md), sequencing to [PLAN.md](PLAN.md), and exact implemented and absent scope to the [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md). The external recommendation this responds to is [the minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md); it disposes no BPMN requirement.
 
@@ -54,6 +54,7 @@ The table below is the intended classification, not the algorithm. It is a state
 
 | Preserved | Rejected when present |
 |---|---|
+| Standard `Definitions` `name`, `exporter`, and `exporterVersion` | General imports, extensions, and relationships |
 | Diagram Interchange: shapes, edges, waypoints, labels | Any flow node whose type the executed profile does not implement |
 | Pools, participants, and collaborations | Data associations, which carry data-flow meaning |
 | Lanes and lane sets | Executable extension elements the profile does not recognize |
@@ -137,7 +138,7 @@ This holds **conditional on D5's corrected guard actually landing**, including i
 
 ## Required, optional, excluded
 
-**Required for M1.** The three-way partition; the preserved set of D2; per-element diagnostics; multi-root admission with explicit executable selection; the non-interference differential guard; retention of the exact source bytes; and one narrowly stated **structural** requirement-ledger row per preserved construct family, which becomes `supported` on its evidence while the corresponding **operational** requirement stays `unsupported`.
+**Required for M1.** The three-way partition; the preserved set of D2; per-element diagnostics; multi-root admission with explicit executable selection; the non-interference differential guard; retention of the exact source bytes; and one narrowly stated **structural** requirement-ledger row per preserved construct family, which becomes `supported` on its evidence while the corresponding **operational** requirement stays `unsupported`. `BPMN-STRUCT-DEFINITIONS-METADATA-01` owns only the standard `Definitions` attributes `name`, `exporter`, and `exporterVersion`; it does not widen the admitted root-element or executable surface.
 
 **Optional, and not scheduled here.** Rendering preserved DI in a product surface; a preserved-material query API; retaining preserved material through to any public observation.
 

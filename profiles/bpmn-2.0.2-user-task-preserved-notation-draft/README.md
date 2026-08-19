@@ -1,6 +1,8 @@
 # BPMN 2.0.2 User Task with preserved notation draft profile
 
-This standards profile selects the same executed Process as the sequential User Task profile — one None Start Event, one User Task, one None End Event — and additionally admits notation the engine retains without executing: Diagram Interchange, a Collaboration with its Participants and Message Flows, Lane Sets and Lanes, Associations, Text Annotations, Groups, and Documentation. It is the first profile whose admitted source contains material the semantics never inspects, and it exists to make a file a modeler actually saved compile without the engine acquiring meaning it cannot check.
+This standards profile selects the same executed Process as the sequential User Task profile: one None Start Event, one User Task, and one None End Event. It additionally admits material the engine retains without executing: standard `Definitions` name and exporter provenance, Diagram Interchange, a Collaboration with its Participants and Message Flows, Lane Sets and Lanes, Associations, Text Annotations, Groups, and Documentation. It is the first profile whose admitted source contains material the semantics never inspects, and it exists to make a file a modeler actually saved compile without the engine acquiring meaning it cannot check.
+
+Preserved Definitions metadata declaration: `name | exporter | exporterVersion`; retained in exact source bytes and excluded from execution projections.
 
 Retention is closed and recursive: a container is admitted only when every descendant it contains is admitted, so a preserved Collaboration cannot conceal an executable element. References are excluded from that walk, which is what lets a preserved shape point at an executed Start Event; an unresolvable reference is a parser warning and blocks admission. The complete BPMN data family and all foreign content reject.
 

@@ -256,6 +256,43 @@ test("keeps preserved notation data-neutral at both external write surfaces", as
   }
 });
 
+test("retains standard Definitions provenance without executing it", async () => {
+  const source = await readFile(preservedNotationSource, "utf8");
+  assert.match(source, /exporter="bpmn-lean fixture author"/u);
+  assert.match(source, /exporterVersion="1\.0"/u);
+  const namedSource = source.replace(
+    'id="Definitions_SequentialUserTask"',
+    'id="Definitions_SequentialUserTask" name="Sequential approval model"',
+  );
+  assert.notEqual(namedSource, source);
+
+  const [named, unnamed] = await Promise.all([
+    compileBpmnToSemanticProcess({
+      bytes: new TextEncoder().encode(namedSource),
+      sourceId: "preserved-notation-named-definitions",
+      expectedSha256: undefined,
+      semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+      sourceOverlay: null,
+      limits: semanticProcessTestLimits,
+    }),
+    compile(
+      preservedNotationSource,
+      "preserved-notation-user-task",
+      SemanticProfileId.UserTaskPreservedNotation,
+    ),
+  ]);
+  assert.ok(named.checkedProcess !== undefined);
+  assert.ok(unnamed.checkedProcess !== undefined);
+  assert.deepEqual(
+    executionProjection(named.checkedProcess),
+    executionProjection(unnamed.checkedProcess),
+  );
+  assert.notEqual(
+    named.checkedProcess.identity.sourceSha256,
+    unnamed.checkedProcess.identity.sourceSha256,
+  );
+});
+
 /**
  * BPMN declares `documentation` on `BaseElement`, so every executed node is a valid locus for it.
  *
