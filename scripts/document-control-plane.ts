@@ -35,7 +35,7 @@ export function levelTwoHeadings(document: string): ReadonlyArray<string> {
   return [...document.matchAll(/^## (.+)$/gmu)].map((match) => match[1] ?? "");
 }
 
-function section(document: string, heading: string): string {
+export function documentSection(document: string, heading: string): string {
   const marker = `## ${heading}\n`;
   const start = document.indexOf(marker);
   assert.notEqual(start, -1, `missing ${marker.trim()}`);
@@ -51,7 +51,7 @@ export type OrderedWorkEntry = Readonly<{
 }>;
 
 export function parseOrderedWork(plan: string): ReadonlyArray<OrderedWorkEntry> {
-  return section(plan, "Ordered work").split("\n").flatMap((line) => {
+  return documentSection(plan, "Ordered work").split("\n").flatMap((line) => {
     const match = /^\d+\. `([A-Z][A-Z0-9-]*)` · \*\*(active|queued|later)\*\* · Owners?: (.+?) · Maps?: (.+?) · Action: \S.+$/u.exec(line);
     if (match === null) return [];
     const [, id, state, ownerField = "", mapsField = ""] = match;
@@ -72,15 +72,15 @@ export function assertPlanControlPlane(plan: string): OrderedWorkEntry {
   ]);
   assert.ok(wordCount(plan) <= 2000, "PLAN.md exceeds its 2,000-word backstop");
   assert.ok(
-    wordCount(section(plan, "Exact resume point")) <= 250,
+    wordCount(documentSection(plan, "Exact resume point")) <= 250,
     "the exact resume point exceeds its 250-word backstop",
   );
   assert.match(
-    section(plan, "Current checkpoint"),
+    documentSection(plan, "Current checkpoint"),
     /\[[^\]]+\]\([^)]+\)/u,
     "the current checkpoint needs an owner link",
   );
-  const evidence = section(plan, "Current evidence");
+  const evidence = documentSection(plan, "Current evidence");
   const evidenceEntries = evidence.split("\n").filter((line) => line.startsWith("- "));
   assert.ok(evidenceEntries.length > 0, "current evidence needs at least one structured entry");
   assert.ok(evidenceEntries.length <= 2, "current evidence may contain at most two structured entries");
@@ -95,7 +95,7 @@ export function assertPlanControlPlane(plan: string): OrderedWorkEntry {
     assert.match(entry, /Date: `\d{4}-\d{2}-\d{2}`/u, "current evidence entry needs a date");
     assert.match(entry, /Commit: `[0-9a-f]{7,40}`/u, "current evidence entry needs an immutable commit");
   }
-  const orderedWork = section(plan, "Ordered work");
+  const orderedWork = documentSection(plan, "Ordered work");
   const numberedLines = orderedWork.split("\n").filter((line) => /^\d+\. /u.test(line));
   const entries = parseOrderedWork(plan);
   assert.equal(entries.length, numberedLines.length, "every ordered item must use the stable work contract");
@@ -107,15 +107,75 @@ export function assertPlanControlPlane(plan: string): OrderedWorkEntry {
   const activeEntry = active[0];
   assert.ok(activeEntry !== undefined);
   assert.match(
-    section(plan, "Exact resume point"),
+    documentSection(plan, "Exact resume point"),
     new RegExp("^Active work ID: `" + activeEntry.id + "`\\.$", "mu"),
     "resume work ID must equal the active ordered-work ID",
   );
-  const resume = section(plan, "Exact resume point");
+  const resume = documentSection(plan, "Exact resume point");
   assert.match(resume, /^Next action: \S.+$/mu, "resume needs a concrete next action");
   assert.match(resume, /^Oracle: \S.+$/mu, "resume needs a required oracle");
   assert.match(resume, /^Stop if \S.+$/mu, "resume needs a genuine stop condition");
+  // Placed last on purpose: a structural contract failure must be reported before a
+  // content-placement finding, or this masks the message the hollow-contract fixtures assert.
+  assert.deepEqual(planGateTokenFindings(plan), []);
   return activeEntry;
+}
+
+/**
+ * Gate script tokens the plan may name only inside `## Current evidence`.
+ *
+ * That section carries the command, exit status, date, and commit contract, so a claim about a gate is
+ * checkable there. The same token in the checkpoint narrative is an unowned copy, and the shape that
+ * copy takes in practice is a negative claim about a gate that has not run yet, which the next
+ * successful run silently falsifies.
+ */
+export function planGateTokenFindings(plan: string): ReadonlyArray<string> {
+  const evidence = documentSection(plan, "Current evidence");
+  const tokens = new Set(
+    [...plan.matchAll(/`((?:test|check):[a-z0-9:-]+)`/gu)]
+      .map((match) => match[1])
+      .filter((token): token is string => token !== undefined),
+  );
+  return [...tokens]
+    .filter((token) => !evidence.includes(`\`${token}\``))
+    .map((token) =>
+      `gate token \`${token}\` belongs in Current evidence, which owns the command and exit status`
+    );
+}
+
+/** One governed document the plan links, paired with the review state its own receipt records. */
+export type PlanReviewOwner = Readonly<{
+  path: string;
+  verdict: string;
+  target: string;
+}>;
+
+const settledReviewVerdicts = new Set(["approve", "approve-with-required-edits", "reject"]);
+const pendingReviewWords = ["outstanding", "pending", "awaiting", "unreviewed"];
+
+/**
+ * The plan may not describe a review stage that a receipt already owns.
+ *
+ * A resume point may instruct that a review be obtained, because that is a next action. It may not
+ * report the stage's state, because the receipt records that with an immutable target and the two
+ * copies then drift in one direction only: the receipt advances and the plan keeps the sentence that
+ * was true when it was written.
+ */
+export function planReviewRestatementFindings(
+  resume: string,
+  owners: ReadonlyArray<PlanReviewOwner>,
+): ReadonlyArray<string> {
+  return owners
+    .filter((owner) =>
+      settledReviewVerdicts.has(owner.verdict) && /^[0-9a-f]{7,40}$/u.test(owner.target)
+    )
+    .flatMap((owner) =>
+      pendingReviewWords
+        .filter((word) => new RegExp(`\\b${word}\\b`, "u").test(resume))
+        .map((word) =>
+          `resume point calls review work "${word}" while ${owner.path} records \`${owner.verdict}\` at \`${owner.target}\``
+        )
+    );
 }
 
 export function assertRootImplementationMap(rootMap: string): void {
@@ -125,14 +185,14 @@ export function assertRootImplementationMap(rootMap: string): void {
     "Cross-area invariants",
   ]);
   assert.ok(wordCount(rootMap) <= 2000, "root implementation map exceeds 2,000 words");
-  assert.ok(wordCount(section(rootMap, "Current claim")) > 0, "current claim must not be empty");
+  assert.ok(wordCount(documentSection(rootMap, "Current claim")) > 0, "current claim must not be empty");
   assert.ok(
-    wordCount(section(rootMap, "Cross-area invariants")) > 0,
+    wordCount(documentSection(rootMap, "Cross-area invariants")) > 0,
     "cross-area invariants must not be empty",
   );
   const parsed = parseImplementationMapDirectory(rootMap);
   assert.deepEqual(parsed.errors, []);
-  for (const line of section(rootMap, "Routing").split("\n").filter((candidate) => candidate.startsWith("|"))) {
+  for (const line of documentSection(rootMap, "Routing").split("\n").filter((candidate) => candidate.startsWith("|"))) {
     for (const cell of line.split("|").slice(1, -1)) {
       assert.ok(wordCount(cell) <= 32, `dense routing cell exceeds 32 words: ${cell}`);
     }

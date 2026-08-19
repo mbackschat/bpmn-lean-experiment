@@ -11,9 +11,17 @@ import {
   assertPlanControlPlane,
   assertRootImplementationMap,
   assertTrackedPathRoutes,
+  documentSection,
   parseOrderedWork,
+  planGateTokenFindings,
+  planReviewRestatementFindings,
   routeImplementationPath,
 } from "./document-control-plane.ts";
+import {
+  ReviewStage,
+  parseReceipt,
+  receiptRow,
+} from "./independent-review-receipt.ts";
 import {
   parseImplementationMapDirectory,
   validateStructuralMapRoutes,
@@ -64,6 +72,76 @@ test("uses the compact routed documentation control plane", async () => {
     const document = await readFile(path.join(projectRoot, entry.path), "utf8");
     assertDetailImplementationMap(entry.path, document);
   }
+});
+
+test("the plan never restates a review state its receipt owns", async () => {
+  const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
+  const resume = documentSection(plan, "Exact resume point");
+  const owners = await Promise.all(
+    [...new Set(
+      [...resume.matchAll(/\]\(([A-Za-z0-9./-]+-(?:PROPOSAL|SPEC)\.md)\)/gu)]
+        .map((match) => match[1])
+        .filter((candidate): candidate is string => candidate !== undefined),
+    )].map(async (relative) => {
+      const documentPath = path.join("docs", relative);
+      const document = await readFile(path.join(projectRoot, documentPath), "utf8");
+      const row = receiptRow(
+        parseReceipt(document, documentPath),
+        ReviewStage.Proposal,
+        documentPath,
+      );
+      return { path: documentPath, verdict: row.verdict, target: row.target };
+    }),
+  );
+  // Anti-vacuity: the rule is only meaningful while the resume point actually routes to a governed
+  // owner, so an empty owner set is itself a finding rather than a silent pass.
+  assert.ok(owners.length > 0, "resume point routes to no governed review owner");
+  assert.deepEqual(planReviewRestatementFindings(resume, owners), []);
+});
+
+test("rejects a stale review state and a misplaced gate token", () => {
+  const settled = [{
+    path: "docs/EXAMPLE-PROPOSAL.md",
+    verdict: "approve-with-required-edits",
+    target: "0123abc",
+  }];
+  assert.deepEqual(
+    planReviewRestatementFindings("Next action: the second audit round is outstanding.", settled),
+    [
+      'resume point calls review work "outstanding" while docs/EXAMPLE-PROPOSAL.md records `approve-with-required-edits` at `0123abc`',
+    ],
+  );
+  assert.deepEqual(
+    planReviewRestatementFindings("Next action: obtain the required cold review before implementing.", settled),
+    [],
+    "instructing that a review be obtained is a next action, not a restated state",
+  );
+  assert.deepEqual(
+    planReviewRestatementFindings("Next action: the audit is outstanding.", [{
+      path: "docs/EXAMPLE-PROPOSAL.md",
+      verdict: "pending",
+      target: "not-recorded",
+    }]),
+    [],
+    "an unsettled receipt and a pending plan agree",
+  );
+  const plan = [
+    "## Current checkpoint",
+    "",
+    "The `test:temporal` gate has not run.",
+    "",
+    "## Ordered work",
+    "",
+    "## Current evidence",
+    "",
+    "- Command: `env CI=true ./scripts/verify.sh`. Status: `exit 0`.",
+    "",
+    "## Exact resume point",
+    "",
+  ].join("\n");
+  assert.deepEqual(planGateTokenFindings(plan), [
+    "gate token `test:temporal` belongs in Current evidence, which owns the command and exit status",
+  ]);
 });
 
 test("uses only structural implementation-map routes across maintained Markdown", async () => {
