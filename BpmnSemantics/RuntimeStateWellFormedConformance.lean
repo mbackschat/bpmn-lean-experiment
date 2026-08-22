@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.ActivityBoundaryTimerConformance
+import BpmnSemantics.EventBasedGatewayConformance
 
 /-! # Runtime-state well-formedness negative fixtures
 
@@ -119,27 +120,35 @@ theorem not_started_with_pending_initiation_is_refused :
 theorem not_started_with_pending_initiation_fails_lifecycle :
     notStartedStateEmpty notStartedWithPendingInitiationState = false := by decide +kernel
 
-/-- Violating the `awaitEventRace` half of `RSI-BIND-05`: an event race no operation declares.
+/-- Violating the `awaitEventRace` half of `RSI-BIND-05`: a live race whose gateway element no
+operation declares.
 
-The hidden records need their own witness because their conjunct reaches neither wait ownership nor
-wait identity: a race can name a live owner and a unique key while matching no gateway operation at
-all, so without this fixture deleting the conjunct would leave every other lane green. -/
+Built on the armed Event-Based Gateway state rather than on the boundary-Timer state, and perturbing
+only `race.id.elementId`. That matters for attribution: an injected race carrying invented
+subscription and timer identities is already refused by `eventRaceAssociationsValid`, whose
+cardinality-one requirement no such state can meet, so the aggregate would refuse it without this
+conjunct existing. Leaving the association intact is what makes the refusal attributable here, and
+the siblings-intact theorem is what checks that. -/
 def undeclaredEventRaceState : RuntimeState :=
-  { armedState with
-    eventRaces :=
-      [ { id := { processInstanceId := instanceId, elementId := ⟨"Gateway_Injected"⟩, activation := 1 }
-        , owner := (armedState.scopeOccurrences.head?).elim
-            { processInstanceId := instanceId, definitionScopeId := ⟨""⟩, activation := 1 } (·.id)
-        , messageSubscriptionId :=
-            { processInstanceId := instanceId, elementId := ⟨"Message_Injected"⟩, activation := 1 }
-        , timerOccurrenceId :=
-            { processInstanceId := instanceId, elementId := ⟨"Timer_Injected"⟩, activation := 1 } } ] }
+  { EventBasedGatewayConformance.armed.state with
+    eventRaces := EventBasedGatewayConformance.armed.state.eventRaces.map fun race =>
+      { race with id := { race.id with elementId := ⟨race.id.elementId.value ++ "_Injected"⟩ } } }
 
 theorem undeclared_event_race_is_refused :
-    runtimeStateWellFormed program instanceId undeclaredEventRaceState = false := by decide +kernel
+    runtimeStateWellFormed EventBasedGatewayConformance.program
+      EventBasedGatewayConformance.instanceId undeclaredEventRaceState = false := by decide +kernel
 
-theorem undeclared_event_race_fails_hidden_record_declaration :
-    hiddenRecordDeclarationsValid program undeclaredEventRaceState = false := by decide +kernel
+theorem undeclared_event_race_fails_declaration_with_association_intact :
+    hiddenRecordDeclarationsValid EventBasedGatewayConformance.program
+        undeclaredEventRaceState = false ∧
+      eventRaceAssociationsValid undeclaredEventRaceState = true ∧
+      waitOwnersLive undeclaredEventRaceState = true ∧
+      waitIdentitiesUnique undeclaredEventRaceState = true := by decide +kernel
+
+theorem armed_event_race_state_is_well_formed :
+    runtimeStateWellFormed EventBasedGatewayConformance.program
+      EventBasedGatewayConformance.instanceId
+      EventBasedGatewayConformance.armed.state = true := by decide +kernel
 
 /-- `W4`, violating `RSI-MONO-01`: a successor that lowers an activation counter after removing its
 wait.
