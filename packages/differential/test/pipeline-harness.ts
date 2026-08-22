@@ -5,7 +5,7 @@ import {
   mkdtemp,
   rm,
 } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { availableParallelism, loadavg, tmpdir } from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
@@ -260,6 +260,15 @@ export async function runPipelineCases(
     },
     isolation: {
       temporalWorkflowIds: targets.temporal.workflowIds,
+    },
+    // Every wall-time figure above is only comparable against a run under similar load, and a
+    // reader cannot recover that from the timings. Sampled after the warm phase so it describes the
+    // load the run actually competed with; `loadPerCore` at or below roughly 1 is an idle host,
+    // while this project has recorded a 52-case figure as "uncontended" that was taken at 2.6.
+    host: {
+      cores: availableParallelism(),
+      loadAverage1m: loadavg()[0] ?? 0,
+      loadPerCore: (loadavg()[0] ?? 0) / availableParallelism(),
     },
   };
 

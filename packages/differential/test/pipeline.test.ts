@@ -510,10 +510,24 @@ test(
     }
     // Derived from the registered catalog so the target measures per-case speed rather than how
     // many cases exist; a fixed total made every run on a grown catalog breach it.
+    // A timing figure is only comparable against a run under similar load, and this project has
+    // recorded a figure as uncontended that was taken on a busy host. Asserting the host block
+    // exists is what keeps that checkable: the number travels with the load it was measured under,
+    // including into any document that quotes this line.
+    assert.ok(report.host.cores >= 1, "the report must record the host it was measured on");
+    assert.ok(
+      Number.isFinite(report.host.loadAverage1m) && report.host.loadAverage1m >= 0,
+      "the report must record host load beside its timings",
+    );
+    assert.equal(
+      report.host.loadPerCore,
+      report.host.loadAverage1m / report.host.cores,
+      "load per core must be derived from the same sample it reports",
+    );
     const warmSoftTarget = warmSoftTargetMsFor(pipelineCases.length);
     if (report.phaseMs.warmTotal >= warmSoftTarget) {
       console.log(
-        `BPMN_PIPELINE_WARM_SOFT_TARGET exceeded: ${report.phaseMs.warmTotal.toFixed(3)}ms against the ${warmSoftTarget}ms feedback target for ${pipelineCases.length} cases; compare with the last uncontended per-case measurement before treating it as a regression`,
+        `BPMN_PIPELINE_WARM_SOFT_TARGET exceeded: ${report.phaseMs.warmTotal.toFixed(3)}ms against the ${warmSoftTarget}ms feedback target for ${pipelineCases.length} cases at loadPerCore ${report.host.loadPerCore.toFixed(2)}; a figure above roughly 1 is a contended host and not a comparable measurement`,
       );
     }
     assert.ok(
