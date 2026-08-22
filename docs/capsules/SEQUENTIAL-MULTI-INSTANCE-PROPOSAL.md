@@ -124,15 +124,11 @@ Excluded:
 
 ## Public contract
 
-The existing inner task and timer identities remain unchanged. The outer identity is structurally distinct so a task occurrence cannot be substituted for its controller:
+The existing inner task and timer identities remain unchanged. The outer identity is [the shared Activity occurrence identity](../ACTIVITY-OCCURRENCE-OWNERSHIP-PROPOSAL.md), which is structurally distinct from `OccurrenceId` by field name so a task occurrence cannot be substituted for its controller.
+
+An earlier draft of this section declared its own `MultiInstanceActivityInstanceId` over exactly the three fields `ActivityOccurrenceId` carries. It is retired rather than kept as an alias: the shape is identical, so no projected byte changes, and two names for one identity is the second disagreeing fact this capsule's own rule forbids.
 
 ```ts
-type MultiInstanceActivityInstanceId = {
-  processInstanceId: string;
-  activityElementId: string;
-  activation: number;
-};
-
 type OpenSequentialMultiInstanceIteration = {
   loopCounter: number;
   taskId: UserTaskInstanceId;
@@ -141,7 +137,7 @@ type OpenSequentialMultiInstanceIteration = {
 };
 
 type OpenSequentialMultiInstance = {
-  id: MultiInstanceActivityInstanceId;
+  id: ActivityOccurrenceId;
   mode: "sequential";
   plannedInstanceCount: number;
   pendingItemCount: number;
@@ -159,7 +155,9 @@ type OpenSequentialMultiInstance = {
 
 The outer controller, snapshot, output slots, planned count, and timer ownership are semantic state, not host state. `RuntimeState` gains one profile-gated optional `sequentialMultiInstanceControllers` collection. It is absent from every old-profile state and history, and is required under this profile, including as an empty array before outer entry and after either closing route. The structural decoder admits the optional member, while cross-profile validation rejects presence under every old profile and rejects absence under this profile. This preserves old canonical bytes without giving the new profile an ambiguous missing-controller state.
 
-Each controller record carries the complete outer identity, owning `ScopeOccurrenceId`, immutable operation ID, immutable input snapshot, planned/generated/completed/terminated counts, dense indexed output slots, the exact active loop counter and task association when one exists, and the one Timer occurrence identity plus logical deadline. Active count is derived as zero or one from that association rather than stored as a second disagreeing fact. The outer identity's activation, the scope occurrence, and the operation ID jointly bind the controller to one activation of one admitted Activity. A mismatched scope owner, duplicated controller or activation, missing or extra active association, non-dense output, or wait identity not owned by the same controller is invalid before evaluation. The public projection contains no output slot, Process output before natural completion, Temporal identifier, recovery entry, or segment descriptor.
+Each controller record carries its `ActivityOccurrenceId`, the immutable input snapshot, planned/generated/completed/terminated counts, dense indexed output slots, and the exact active loop counter. It does not restate what the Activity occurrence already owns: the owning `ScopeOccurrenceId`, the immutable operation ID, the active task association, and the one attached Timer occurrence identity all live in [the Activity occurrence record](../ACTIVITY-OCCURRENCE-OWNERSHIP-PROPOSAL.md) keyed by that same identity, and the Timer's logical deadline lives in its Timer wait exactly as it does for the three boundary-Timer families. Active count is derived as zero or one from that record's body rather than stored as a second disagreeing fact, and the record binds the controller to one activation of one admitted Activity through its identity, owner, and operation ID, so the controller adds no second binding.
+
+A controller with no Activity occurrence record of the same identity, a duplicated controller or activation, a missing or extra active association in that record, non-dense output, or a wait not listed by that record is invalid before evaluation. The record's own conjuncts, body liveness and attached-wait unambiguity among them, are not restated here; the controller adds only what is its own. The public projection contains no output slot, Process output before natural completion, Temporal identifier, recovery entry, or segment descriptor.
 
 ## Checked source and Semantic Process IL
 
@@ -201,7 +199,7 @@ No synthetic controller is a BPMN FlowNode occurrence. Each generated inner User
 
 Task completion and timer firing are separately supplied semantic inputs. If both target the same committed pre-state, the first input evaluated by the explicit schedule commits. A nonfinal task-first transition replaces only the inner task, preserves the original Timer identity and deadline, and leaves a later firing valid against the controller's new active task. A final task-first transition removes the Timer, so that firing becomes stale. Timer-first takes the boundary route and makes the old task completion stale. No portable physical simultaneity order is claimed.
 
-That semantic schedule does not license Temporal callback order. A `doUpdate` completion and the lifetime Timer callback delivered in one Workflow activation have no portable winner and must fail closed before either stimulus reaches the semantic core. The adapter adds an exhaustive sequential-Multi-Instance boundary-deadline host class and the distinct nonretryable failure identity `BpmnSequentialMultiInstanceSchedulerUnavailable`; neither the Event-race nor bounded-Activity failure identity may be reused. The managed scheduler joins the committed controller, its current generated task, and its one Timer occurrence, so task turnover cannot detach the still-live deadline or associate it with a stale iteration.
+That semantic schedule does not license Temporal callback order. A `doUpdate` completion and the lifetime Timer callback delivered in one Workflow activation have no portable winner and must fail closed before either stimulus reaches the semantic core. The adapter adds an exhaustive sequential-Multi-Instance boundary-deadline host class and the distinct nonretryable failure identity `BpmnSequentialMultiInstanceSchedulerUnavailable`; neither the Event-race nor bounded-Activity failure identity may be reused. The managed scheduler joins the committed controller, its current generated task, and its one Timer occurrence through the Activity occurrence record rather than through wait cardinality or an activation-ordinal agreement, so task turnover cannot detach the still-live deadline or associate it with a stale iteration.
 
 The coalesced evidence reuses only the reviewed activation-tag and drain-barrier mechanism, not an assumed premise. A direct-VM witness supplies one `doUpdate` job and the Timer callback in one non-replay activation, a source lock retains the pinned SDK fact that `hasSignals` excludes `doUpdate`, and both prove that callbacks accumulate before core advancement. A real-service probe separately proves the accepted Update is durably resolved when the Workflow fails. Mutations that advance either arm, reuse another family's failure identity, lose the Update response, omit the new operation from exhaustive host admission, or bind the Timer to the prior generated task must fail, and the failing history must replay to the same typed adapter result.
 
