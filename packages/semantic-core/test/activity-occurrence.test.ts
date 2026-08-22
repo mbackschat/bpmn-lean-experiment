@@ -100,6 +100,7 @@ test("removing the region together with its attached deadline stays admitted", (
       owner.definitionScopeId !== child.id.definitionScopeId
     ),
     timerWaits: [],
+    activityOccurrences: [],
   };
 
   assert.deepEqual(defects(withdrawn), []);

@@ -2,7 +2,12 @@ import {
   SemanticOperationKind,
   type SemanticProcessProgram,
 } from "./semantic-process-contract.js";
-import type { OccurrenceId } from "./contract.js";
+import type { OccurrenceId, TimerOccurrenceId } from "./contract.js";
+import {
+  ActivityBodyKind,
+  compareActivityOccurrences,
+  type ActivityOccurrence,
+} from "./activity-occurrence.js";
 import {
   compareCalledProcessOccurrences,
   compareEventRaces,
@@ -45,6 +50,9 @@ export const RuntimeStateDefect = {
   UndeclaredWaitIdentity: "undeclaredWaitIdentity",
   UndeclaredHiddenRecord: "undeclaredHiddenRecord",
   UnorderedCollection: "unorderedCollection",
+  ActivityOccurrenceBodyAbsent: "activityOccurrenceBodyAbsent",
+  UnownedAttachedWait: "unownedAttachedWait",
+  DuplicateActivityOccurrence: "duplicateActivityOccurrence",
 } as const;
 
 export type RuntimeStateDefect =
@@ -181,7 +189,8 @@ export function runtimeStateDefects(
       state.effectIncidents.length > 0 ||
       state.selectedBranchSets.length > 0 ||
       state.eventRaces.length > 0 ||
-      state.calledProcessOccurrences.length > 0;
+      state.calledProcessOccurrences.length > 0 ||
+      state.activityOccurrences.length > 0;
     return started ? [RuntimeStateDefect.NotStartedWithWork] : [];
   }
 
@@ -199,7 +208,8 @@ export function runtimeStateDefects(
     state.effectIncidents.every(({ wait }) => owned(wait.owner)) &&
     state.selectedBranchSets.every(({ owner }) => owned(owner)) &&
     state.eventRaces.every(({ owner }) => owned(owner)) &&
-    state.calledProcessOccurrences.every(({ caller }) => owned(caller));
+    state.calledProcessOccurrences.every(({ caller }) => owned(caller)) &&
+    state.activityOccurrences.every(({ owner }) => owned(owner));
   if (!ownersLive) {
     defects.push(RuntimeStateDefect.DanglingWaitOwner);
   }
@@ -257,7 +267,10 @@ export function runtimeStateDefects(
     defects.push(RuntimeStateDefect.UndeclaredHiddenRecord);
   }
 
+  defects.push(...activityOwnershipDefects(state));
+
   const ordered =
+    isSorted(state.activityOccurrences, compareActivityOccurrences) &&
     isSorted(state.userTaskWaits, compareUserTaskWaits) &&
     isSorted(state.selectedBranchSets, compareSelectedBranchSets) &&
     isSorted(state.eventRaces, compareEventRaces) &&
@@ -267,6 +280,64 @@ export function runtimeStateDefects(
     );
   if (!ordered) {
     defects.push(RuntimeStateDefect.UnorderedCollection);
+  }
+
+  return defects;
+}
+
+/**
+ * Every way the Activity occurrence records disagree with what they claim to own.
+ *
+ * The two directions are both required and neither implies the other. A record whose body is gone is
+ * an Activity that outlived its own execution, which is what an owner-filtered region removal
+ * produces when the handler it strands is owned by a scope outside that region. A handler wait no
+ * record lists is the same defect seen from the wait: nothing identifies the Activity it guards, so
+ * no cancellation can find it.
+ *
+ * Ownership agreement is checked too, because a record and its attached wait naming different scope
+ * occurrences would let a withdrawal cross a region boundary in the other direction.
+ */
+function activityOwnershipDefects(
+  state: RuntimeState,
+): ReadonlyArray<RuntimeStateDefect> {
+  const defects: RuntimeStateDefect[] = [];
+
+  const bodyLive = ({ body }: ActivityOccurrence): boolean => {
+    switch (body.kind) {
+      case ActivityBodyKind.UserTask:
+        return state.userTaskWaits
+          .filter(({ id }) => sameOccurrence(id, body.task)).length === 1;
+      case ActivityBodyKind.ChildScope:
+        return state.scopeOccurrences
+          .filter(({ id }) => sameScopeOccurrence(id, body.scope)).length === 1;
+    }
+  };
+  const listedTimerLive = (record: ActivityOccurrence): boolean =>
+    record.attachedTimers.every((timer) =>
+      state.timerWaits.some(({ id, owner }) =>
+        sameOccurrence(id, timer) && sameScopeOccurrence(owner, record.owner)
+      )
+    );
+  if (!state.activityOccurrences.every((record) => bodyLive(record) && listedTimerLive(record))) {
+    defects.push(RuntimeStateDefect.ActivityOccurrenceBodyAbsent);
+  }
+
+  const listed = (timer: TimerOccurrenceId): number =>
+    state.activityOccurrences.filter((record) =>
+      record.attachedTimers.some((candidate) => sameOccurrence(candidate, timer))
+    ).length;
+  // Only a Timer an Activity occurrence claims can be judged here. A Timer that belongs to no
+  // Activity at all — an Intermediate Catch Timer, or an event-race arm — is listed by no record and
+  // must stay admitted, so the criterion is "at most one" rather than "exactly one".
+  if (!state.timerWaits.every(({ id }) => listed(id) <= 1)) {
+    defects.push(RuntimeStateDefect.UnownedAttachedWait);
+  }
+
+  const identities = state.activityOccurrences.map(({ id }) =>
+    `${id.processInstanceId}\u0000${id.activityElementId}\u0000${id.activation}`
+  );
+  if (new Set(identities).size !== identities.length) {
+    defects.push(RuntimeStateDefect.DuplicateActivityOccurrence);
   }
 
   return defects;

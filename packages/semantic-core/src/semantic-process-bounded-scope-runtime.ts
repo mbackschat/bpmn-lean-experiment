@@ -20,6 +20,12 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
+  ActivityBodyKind,
+  activityOccurrenceForScopeBody,
+  compareActivityOccurrences,
+  sameActivityOccurrence,
+} from "./activity-occurrence.js";
+import {
   removeScopeOccurrenceSubtree,
 } from "./semantic-process-scope-cancellation.js";
 import {
@@ -73,20 +79,49 @@ export function armBoundedScope(
   if (!Number.isSafeInteger(deadlineMs)) {
     throw new RangeError("Timer deadline exceeds the safe integer boundary");
   }
+  const child = entered.scopeOccurrences.find(({ id, parent: owner }) =>
+    id.definitionScopeId === operation.childScopeId &&
+    owner !== null &&
+    sameScopeOccurrence(owner, parent)
+  );
+  if (child === undefined) {
+    return null;
+  }
+  const activityActivation = nextActivation(
+    entered.activityActivations,
+    operation.origin.elementId,
+  );
+  const deadlineId = {
+    processInstanceId: parent.processInstanceId,
+    elementId: operation.boundaryTimer.elementId,
+    activation,
+  } as const;
   return {
     ...entered,
-    timerWaits: [
-      ...entered.timerWaits,
+    // The record is created in the same transition as the body and the deadline, because a state
+    // holding any two of the three is invalid rather than a resumption surface.
+    activityOccurrences: [
+      ...entered.activityOccurrences,
       {
         id: {
           processInstanceId: parent.processInstanceId,
-          elementId: operation.boundaryTimer.elementId,
-          activation,
+          activityElementId: operation.origin.elementId,
+          activation: activityActivation,
         },
         owner: parent,
-        deadlineMs,
-        output: operation.boundaryTimer.output,
+        operationId: operation.id,
+        body: { kind: ActivityBodyKind.ChildScope, scope: child.id } as const,
+        attachedTimers: [deadlineId],
       },
+    ].sort(compareActivityOccurrences),
+    activityActivations: setActivationCount(
+      entered.activityActivations,
+      operation.origin.elementId,
+      activityActivation,
+    ),
+    timerWaits: [
+      ...entered.timerWaits,
+      { id: deadlineId, owner: parent, deadlineMs, output: operation.boundaryTimer.output },
     ].sort(compareTimerWaits),
     timerActivations: setActivationCount(
       entered.timerActivations,
@@ -130,18 +165,26 @@ function withdrawBoundedScopeDeadline(
   if (definition === undefined) {
     return after;
   }
-  const parent = before.scopeOccurrences.find(
+  // Read from the record rather than matching the Timer element under the parent scope. The previous
+  // form compared no activation at all, so it took whichever deadline of that element the collection
+  // held first; under any repetition that is the wrong one.
+  const child = before.scopeOccurrences.find(
     ({ id }) => id.definitionScopeId === completedScopeId,
-  )?.parent;
-  const deadline = parent === undefined || parent === null
+  );
+  const record = child === undefined
     ? undefined
-    : after.timerWaits.find((candidate) =>
-      candidate.id.elementId === definition.boundaryTimer.elementId &&
-      sameScopeOccurrence(candidate.owner, parent)
-    );
-  return deadline === undefined ? null : {
+    : activityOccurrenceForScopeBody(before.activityOccurrences, child.id);
+  if (record === undefined) {
+    return null;
+  }
+  return {
     ...after,
-    timerWaits: after.timerWaits.filter((candidate) => candidate !== deadline),
+    timerWaits: after.timerWaits.filter(({ id }) =>
+      !record.attachedTimers.some((attached) => sameOccurrence(attached, id))
+    ),
+    activityOccurrences: after.activityOccurrences.filter(
+      (candidate) => !sameActivityOccurrence(candidate.id, record.id),
+    ),
   };
 }
 
@@ -174,6 +217,9 @@ export function interruptBoundedScope(
   ) {
     return null;
   }
+  // Regional cancellation now withdraws the deadline with the region, because the Activity
+  // occurrence record names it. It used to be consumed explicitly here, which was the only reason
+  // an owner-filtered removal did not strand it.
   const cancelled = removeScopeOccurrenceSubtree(state, armed.child);
   return {
     ...cancelled,
@@ -181,9 +227,6 @@ export function interruptBoundedScope(
       cancelled.controlTokens,
       armed.definition.boundaryTimer.output,
       parent,
-    ),
-    timerWaits: cancelled.timerWaits.filter(
-      (candidate) => candidate !== armed.deadline,
     ),
     logicalTimeMs: armed.deadline.deadlineMs,
   };

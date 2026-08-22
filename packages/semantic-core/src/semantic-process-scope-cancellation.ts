@@ -11,6 +11,8 @@
 import {
   removeCalledProcessSubtreesForCallers,
 } from "./semantic-process-call-runtime.js";
+import { ActivityBodyKind } from "./activity-occurrence.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import {
   sameOccurrence,
   sameScopeOccurrence,
@@ -50,6 +52,20 @@ function removeScopeOccurrenceRegion(
   const interrupted = scopeOccurrenceSubtree(state.scopeOccurrences, attached);
   const isInterrupted = (owner: ScopeOccurrenceId): boolean =>
     interrupted.some(({ id }) => sameScopeOccurrence(id, owner));
+  // A record is in the region when either end of it is: its owner, or its body. The two differ, and
+  // the difference is the whole defect this closes. A boundary handler is owned by the scope holding
+  // the Activity, so an owner-only rule leaves a deadline whose body has just been removed alive and
+  // unreachable, with no state naming the Activity it was guarding.
+  // Only the child-scope arm can differ from its owner. A task body shares its record's owner by
+  // `AOO-OWN-01`, so `isInterrupted(owner)` already decides it; a child scope is the body while the
+  // owner is the parent holding the Activity, which is precisely why an owner-only rule stranded the
+  // deadline.
+  const isInterruptedRecord = ({ owner, body }: ActivityOccurrence): boolean =>
+    isInterrupted(owner) ||
+    (body.kind === ActivityBodyKind.ChildScope && isInterrupted(body.scope));
+  const withdrawnRecords = state.activityOccurrences.filter(isInterruptedRecord);
+  const withdrawnTimers = withdrawnRecords.flatMap(({ attachedTimers }) => attachedTimers);
+
   const interruptedEffects = state.effectWaits
     .filter(({ owner }) => isInterrupted(owner))
     .map(({ id }) => id)
@@ -78,8 +94,12 @@ function removeScopeOccurrenceRegion(
     messageWaits: withoutCalledProcesses.messageWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
-    timerWaits: withoutCalledProcesses.timerWaits.filter(
-      ({ owner }) => !isInterrupted(owner),
+    timerWaits: withoutCalledProcesses.timerWaits.filter(({ id, owner }) =>
+      !isInterrupted(owner) &&
+      !withdrawnTimers.some((withdrawn) => sameOccurrence(withdrawn, id))
+    ),
+    activityOccurrences: withoutCalledProcesses.activityOccurrences.filter((record) =>
+      !withdrawnRecords.includes(record)
     ),
     effectWaits: withoutCalledProcesses.effectWaits.filter(
       ({ owner }) => !isInterrupted(owner),
