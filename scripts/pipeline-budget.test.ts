@@ -9,7 +9,6 @@ import {
   warmBudgetPerCaseMs,
   warmSoftTargetMsFor,
 } from "./pipeline-budget.ts";
-import { pipelineCases } from "../packages/differential/test/pipeline-cases.ts";
 
 test("keeps the portable budget and both process deadlines ordered", () => {
   assert.equal(warmBudgetMs({}), defaultWarmBudgetMs);
@@ -66,9 +65,9 @@ test("rejects a case count that cannot describe a catalog", () => {
   }
 });
 
-test("the pathology ceiling covers the slowest supported hardware at the current catalog", () => {
+test("the pathology ceiling carries headroom over the slowest measured hardware", () => {
   // Measured, not assumed. The same 52-case catalog runs at 515 ms per case on an eight-core
-  // development machine and 1,038 ms per case on a four-core GitHub runner, so a ceiling chosen
+  // development machine and 1,038 ms per case on a four-core hosted runner, so a ceiling chosen
   // against the faster machine refuses healthy runs on the slower one: the 40,000 ms this replaced
   // was already 35% below the 53,975 ms a runner actually took, and only the workflow's declared
   // override hid that.
@@ -76,13 +75,8 @@ test("the pathology ceiling covers the slowest supported hardware at the current
     warmBudgetPerCaseMs >= 1_300,
     "the per-case ceiling must retain headroom above the slowest observed 1,038 ms per case",
   );
-  assert.ok(
-    defaultWarmBudgetMs >= pipelineCases.length * warmBudgetPerCaseMs,
-    `the ${defaultWarmBudgetMs}ms ceiling is below ${pipelineCases.length} cases at ${warmBudgetPerCaseMs}ms each`,
-  );
-  // Anti-vacuity: a ceiling far above the catalog stops being a pathology detector at all.
-  assert.ok(
-    defaultWarmBudgetMs < pipelineCases.length * warmBudgetPerCaseMs * 2,
-    "a ceiling this loose would no longer detect a pathological run",
-  );
+  // This file stays build-free because `test:infrastructure` runs before any package is built, so
+  // the catalog-tied half of this contract lives with the catalog in the differential package.
+  assert.ok(defaultWarmBudgetMs >= 52 * warmBudgetPerCaseMs);
+  assert.ok(defaultWarmBudgetMs < 52 * warmBudgetPerCaseMs * 2);
 });

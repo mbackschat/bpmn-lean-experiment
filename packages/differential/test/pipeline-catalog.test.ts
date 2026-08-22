@@ -22,6 +22,10 @@ import {
   verifyPipelineRegistration,
 } from "../../../scripts/capsule-roundtrip.ts";
 import {
+  defaultWarmBudgetMs,
+  warmBudgetPerCaseMs,
+} from "../../../scripts/pipeline-budget.ts";
+import {
   eventBasedGatewayPipelineCases,
 } from "./event-based-gateway-pipeline-cases.ts";
 import {
@@ -597,4 +601,14 @@ test("distinguishes a retained Timer loser and a wrong Timer-wins continuation",
       pipelineCase.expectedInjectedDisagreement,
     );
   }
+});
+
+test("the pathology ceiling still covers the registered catalog", () => {
+  // The budget module states the per-case rate but cannot read the case list: the deadlines derive
+  // from it before any catalog exists, and the infrastructure gate that owns its unit assertions
+  // runs before any package is built. This is the half that needs the catalog, so it lives here.
+  assert.ok(
+    defaultWarmBudgetMs >= pipelineCases.length * warmBudgetPerCaseMs,
+    `the ${defaultWarmBudgetMs}ms ceiling is below ${pipelineCases.length} cases at ${warmBudgetPerCaseMs}ms each`,
+  );
 });
