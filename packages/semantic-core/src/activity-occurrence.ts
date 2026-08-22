@@ -150,6 +150,26 @@ export function activityOccurrenceForAttachedTimer(
   ));
 }
 
+/**
+ * The task occurrence a record's body names, or `undefined` when its body is a child scope.
+ *
+ * These two accessors exist so a consumer reads a body without restating the union discriminator at
+ * every call site. That matters most in the publication owners, which have the least size headroom in
+ * this package and must not grow to replace a derivation with a lookup.
+ */
+export function activityBodyTask(
+  record: ActivityOccurrence,
+): UserTaskInstanceId | undefined {
+  return record.body.kind === ActivityBodyKind.UserTask ? record.body.task : undefined;
+}
+
+/** The child scope occurrence a record's body names, or `undefined` when its body is a task. */
+export function activityBodyScope(
+  record: ActivityOccurrence,
+): ScopeOccurrenceId | undefined {
+  return record.body.kind === ActivityBodyKind.ChildScope ? record.body.scope : undefined;
+}
+
 function only<T>(values: ReadonlyArray<T>): T | undefined {
   return values.length === 1 ? values[0] : undefined;
 }

@@ -6,6 +6,11 @@
  * but deliberately excluded because neither is an executing BPMN flow node.
  */
 import type { OccurrenceId } from "./contract.js";
+import {
+  activityBodyScope,
+  activityBodyTask,
+  activityOccurrenceForAttachedTimer,
+} from "./activity-occurrence.js";
 import { sameMessageChannel } from "./message-channel.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
@@ -113,53 +118,49 @@ export function projectOpenFlowNodeOccurrences(
   return canonicalOpenSet(projected);
 }
 
-/** Resolves one private Boundary Timer deadline to its exact live host. */
+/**
+ * Resolves one private Boundary Timer deadline to its exact live host.
+ *
+ * Read from the Activity occurrence record that owns the deadline. The previous form scanned every
+ * operation and required the host's activation ordinal to equal the Timer's, a comparison across two
+ * counter families that no state asserted; because this owner feeds the publication contract, a
+ * diverged pair would have misattributed a published occurrence rather than merely refused a
+ * transition.
+ */
 export function resolveBoundaryTimerBinding(
   program: SemanticProcessProgram,
   state: RuntimeState,
   wait: RuntimeState["timerWaits"][number],
 ): BoundaryTimerBinding | null {
-  const matches: BoundaryTimerBinding[] = [];
-  for (const operation of program.operations) {
-    if (!operationOwnedBy(program, operation, wait.owner)) continue;
-    switch (operation.kind) {
-      case SemanticOperationKind.AwaitBoundedUserTask:
-      case SemanticOperationKind.AwaitMonitoredUserTask: {
-        const task = only(state.userTaskWaits.filter((candidate) =>
-          candidate.id.elementId === operation.task.elementId &&
-          candidate.id.activation === wait.id.activation &&
-          sameScopeOccurrence(candidate.owner, wait.owner)
-        ));
-        if (
-          operation.boundaryTimer.elementId === wait.id.elementId &&
-          operation.boundaryTimer.output === wait.output &&
-          task !== undefined
-        ) {
-          matches.push({ operation, hostId: task.id });
-        }
-        break;
-      }
-      case SemanticOperationKind.EnterBoundedScope: {
-        const child = only(state.scopeOccurrences.filter(({ id, parent }) =>
-          id.definitionScopeId === operation.childScopeId &&
-          id.activation === wait.id.activation &&
-          parent !== null &&
-          sameScopeOccurrence(parent, wait.owner)
-        ));
-        if (
-          operation.boundaryTimer.elementId === wait.id.elementId &&
-          operation.boundaryTimer.output === wait.output &&
-          child !== undefined
-        ) {
-          matches.push({ operation, child });
-        }
-        break;
-      }
-      default:
-        break;
+  const record = activityOccurrenceForAttachedTimer(state.activityOccurrences, wait.id);
+  const operation = record === undefined ? undefined : only(
+    program.operations.filter((candidate) => candidate.id === record.operationId),
+  );
+  if (record === undefined || operation === undefined) return null;
+  // The output check distinguishes this operation's own deadline from another Timer of the same
+  // element and depends on no ordinal agreement. Kinds are switched rather than filtered so each arm
+  // carries the narrowed operation the binding union requires.
+  switch (operation.kind) {
+    case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMonitoredUserTask: {
+      const body = activityBodyTask(record);
+      const task = body === undefined ? undefined
+        : only(state.userTaskWaits.filter(({ id }) => sameOccurrence(id, body)));
+      return task === undefined || operation.boundaryTimer.output !== wait.output
+        ? null
+        : { operation, hostId: task.id };
     }
+    case SemanticOperationKind.EnterBoundedScope: {
+      const body = activityBodyScope(record);
+      const child = body === undefined ? undefined
+        : only(state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, body)));
+      return child === undefined || operation.boundaryTimer.output !== wait.output
+        ? null
+        : { operation, child };
+    }
+    default:
+      return null;
   }
-  return only(matches) ?? null;
 }
 
 /** Resolves the semantic Process containing one exact runtime scope occurrence. */
