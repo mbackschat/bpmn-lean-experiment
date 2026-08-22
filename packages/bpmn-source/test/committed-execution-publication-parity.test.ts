@@ -7,11 +7,13 @@ import { test } from "node:test";
 
 import type {
   CurrentControlPositions,
-  RuntimeState,
-  SemanticProcessProgram,
   StartProcessStimulus,
   UnnumberedCommittedTransitionRecord,
 } from "../../semantic-core/src/index.ts";
+import {
+  projectNegativePositionClasses,
+  type LeanProjectionRejections,
+} from "./publication-parity-negative-class-test-support.ts";
 
 const execFileAsync = promisify(execFile);
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -45,18 +47,6 @@ type Publication = Readonly<{
   current: CurrentControlPositions;
 }>;
 
-type LeanProjectionRejections = Readonly<{
-  unassociatedParentlessRoot: boolean;
-  completedWithLivePositions: boolean;
-  calledRootProcessDrift: boolean;
-}>;
-
-type CalledAssociationRejections = Readonly<{
-  duplicateCalledProcessRecords: boolean;
-  nonDerivedCalledRootInstance: boolean;
-}>;
-
-type ProjectionRejections = LeanProjectionRejections & CalledAssociationRejections;
 
 type PublicationParityEvidence = Readonly<{
   publication: Publication;
@@ -291,127 +281,6 @@ async function runLeanPublicationEmitter(): Promise<PublicationParityEvidence> {
   return decodePublicationParityEvidence(decoded);
 }
 
-function projectNegativePositionClasses(
-  semanticCore: SemanticCoreApi,
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-): ProjectionRejections {
-  const hostingRoot = state.scopeOccurrences[0];
-  const startFlowPlace = program.controlPlaces.find(
-    ({ origin }) => origin.elementId === "Flow_StartToFork",
-  );
-  assert.ok(hostingRoot !== undefined);
-  assert.ok(startFlowPlace !== undefined);
-
-  const unassociatedRootState: RuntimeState = {
-    ...state,
-    scopeOccurrences: [
-      ...state.scopeOccurrences,
-      {
-        id: {
-          ...hostingRoot.id,
-          processInstanceId: "Instance_Rogue",
-        },
-        parent: null,
-      },
-    ],
-  };
-  const completedWithLivePositionsState: RuntimeState = {
-    ...state,
-    control: {
-      kind: semanticCore.ControlStateKind.Completed,
-      instanceId: hostingRoot.id.processInstanceId,
-    },
-    controlTokens: [{
-      placeId: startFlowPlace.id,
-      owner: hostingRoot.id,
-      multiplicity: 1,
-    }],
-  };
-
-  const callActivityElementId = "CallActivity_Parity";
-  const calledProcessId = "CalledProcess_Parity";
-  const calledRoot = {
-    id: {
-      processInstanceId: semanticCore.deriveCalledProcessInstanceId(
-        hostingRoot.id.processInstanceId,
-        callActivityElementId,
-        1,
-      ),
-      definitionScopeId: "scope:CalledProcess_Parity",
-      activation: 1,
-    },
-    parent: null,
-  } as const;
-  const calledProgram: SemanticProcessProgram = {
-    ...program,
-    definitionScopes: [
-      ...program.definitionScopes,
-      {
-        id: calledRoot.id.definitionScopeId,
-        parentScopeId: null,
-        originElementId: calledProcessId,
-      },
-    ],
-  };
-  const calledRecord = {
-    id: {
-      processInstanceId: hostingRoot.id.processInstanceId,
-      elementId: callActivityElementId,
-      activation: 1,
-    },
-    caller: hostingRoot.id,
-    calledProcessId,
-    calledRoot: calledRoot.id,
-    returnOperationId: "operation:return-process:CallActivity_Parity",
-  } as const;
-  const calledTreeState: RuntimeState = {
-    ...state,
-    scopeOccurrences: [...state.scopeOccurrences, calledRoot],
-    calledProcessOccurrences: [calledRecord],
-  };
-  assert.notEqual(
-    semanticCore.projectCurrentControlPositions(calledProgram, calledTreeState),
-    null,
-    "an exactly associated called-Process root must remain projectable",
-  );
-  const calledRootProcessDriftState: RuntimeState = {
-    ...calledTreeState,
-    calledProcessOccurrences: calledTreeState.calledProcessOccurrences.map(
-      (record) => ({ ...record, calledProcessId: "CalledProcess_Drift" }),
-    ),
-  };
-  const nonDerivedRoot = {
-    ...calledRoot,
-    id: { ...calledRoot.id, processInstanceId: "call:not-derived" },
-  } as const;
-
-  return {
-    unassociatedParentlessRoot:
-      semanticCore.projectCurrentControlPositions(program, unassociatedRootState) === null,
-    completedWithLivePositions:
-      semanticCore.projectCurrentControlPositions(
-        program,
-        completedWithLivePositionsState,
-      ) === null,
-    calledRootProcessDrift:
-      semanticCore.projectCurrentControlPositions(
-        calledProgram,
-        calledRootProcessDriftState,
-      ) === null,
-    duplicateCalledProcessRecords:
-      semanticCore.projectCurrentControlPositions(calledProgram, {
-        ...calledTreeState,
-        calledProcessOccurrences: [calledRecord, calledRecord],
-      }) === null,
-    nonDerivedCalledRootInstance:
-      semanticCore.projectCurrentControlPositions(calledProgram, {
-        ...calledTreeState,
-        scopeOccurrences: [...state.scopeOccurrences, nonDerivedRoot],
-        calledProcessOccurrences: [{ ...calledRecord, calledRoot: nonDerivedRoot.id }],
-      }) === null,
-  };
-}
 
 function decodePublicationParityEvidence(
   value: unknown,
