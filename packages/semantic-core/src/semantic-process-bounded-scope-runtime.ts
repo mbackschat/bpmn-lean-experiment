@@ -21,6 +21,7 @@ import type {
 } from "./semantic-process-contract.js";
 import {
   ActivityBodyKind,
+  activityOccurrenceForAttachedTimer,
   activityOccurrenceForScopeBody,
   compareActivityOccurrences,
   sameActivityOccurrence,
@@ -262,24 +263,17 @@ function armedBoundedScopeForDeadline(
   state: RuntimeState,
   timerId: OccurrenceId,
 ): ArmedBoundedScope | undefined {
-  const deadline = state.timerWaits.find((candidate) =>
-    sameOccurrence(candidate.id, timerId)
+  const record = activityOccurrenceForAttachedTimer(state.activityOccurrences, timerId);
+  if (record === undefined || record.body.kind !== ActivityBodyKind.ChildScope) {
+    return undefined;
+  }
+  const body = record.body.scope;
+  const definition = boundedScopeOperations(program).find(
+    (operation) => operation.id === record.operationId,
   );
-  const definition = deadline === undefined ? undefined : boundedScopeOperations(
-    program,
-  ).find(
-    (operation) =>
-      operation.boundaryTimer.elementId === deadline.id.elementId,
-  );
-  const child = definition === undefined || deadline === undefined
-    ? undefined
-    : state.scopeOccurrences.find(({ id, parent }) =>
-      id.definitionScopeId === definition.childScopeId &&
-      id.activation === deadline.id.activation &&
-      parent !== null &&
-      sameScopeOccurrence(parent, deadline.owner)
-    );
-  return definition === undefined || deadline === undefined || child === undefined
+  const child = state.scopeOccurrences.find(({ id }) => sameScopeOccurrence(id, body));
+  const deadline = state.timerWaits.find(({ id }) => sameOccurrence(id, timerId));
+  return definition === undefined || child === undefined || deadline === undefined
     ? undefined
     : { definition, child, deadline };
 }
