@@ -216,14 +216,14 @@ Existing executable constraints include [the runtime-state invariant's negatives
 
 | Owner | Current headroom before the 600-nonblank-line review target |
 |---|---:|
-| [runtime state contract](../packages/semantic-core/src/semantic-process-state.ts) | 234 |
-| [runtime-state well-formedness](../packages/semantic-core/src/runtime-state-well-formedness.ts) | 261 |
-| [bounded task runtime](../packages/semantic-core/src/semantic-process-bounded-task-runtime.ts) | 333 |
-| [monitored task runtime](../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 306 |
-| [bounded scope runtime](../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 360 |
-| [scope cancellation](../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 476 |
+| [runtime state contract](../packages/semantic-core/src/semantic-process-state.ts) | 213 |
+| [runtime-state well-formedness](../packages/semantic-core/src/runtime-state-well-formedness.ts) | 196 |
+| [bounded task runtime](../packages/semantic-core/src/semantic-process-bounded-task-runtime.ts) | 320 |
+| [monitored task runtime](../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 262 |
+| [bounded scope runtime](../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 323 |
+| [scope cancellation](../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 457 |
 | [scope runtime](../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 415 |
-| [FlowNode occurrence open set](../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 43 |
+| [FlowNode occurrence open set](../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 42 |
 | [FlowNode occurrence lifecycle](../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 44 |
 | [publication external completeness](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 167 |
 | [bounded deadline scheduler](../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) | 359 |

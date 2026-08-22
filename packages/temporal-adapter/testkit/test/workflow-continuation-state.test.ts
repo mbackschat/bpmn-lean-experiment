@@ -112,6 +112,7 @@ const resumable = {
   selectedBranchSets: [],
   eventRaces: [],
   calledProcessOccurrences: [],
+  activityOccurrences: [],
   variables: { process: { bindings: [] }, activities: [] },
   taskActivations: [],
   messageActivations: [],
@@ -120,6 +121,7 @@ const resumable = {
   callActivations: [],
   effectActivations: [],
   scopeActivations: [{ elementId: scopeId, count: 1 }],
+  activityActivations: [],
   endOccurrences: 0,
   logicalTimeMs: 0,
 } as const satisfies RuntimeState;
