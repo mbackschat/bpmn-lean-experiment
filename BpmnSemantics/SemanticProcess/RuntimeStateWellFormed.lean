@@ -74,7 +74,7 @@ def waitOwnersLive (state : RuntimeState) : Bool :=
     state.eventRaces.all (fun race => exactLiveOccurrence state race.owner) &&
     state.calledProcessOccurrences.all (fun record => exactLiveOccurrence state record.caller)
 
-private def occursOnce {α : Type} (key : α → α → Bool) (values : List α) (value : α) : Bool :=
+def occursOnce {α : Type} (key : α → α → Bool) (values : List α) (value : α) : Bool :=
   (values.filter (key value)).length = 1
 
 /-- `RSI-UNIQ-02`. Within each wait family the family's occurrence key appears at most once.
@@ -82,23 +82,33 @@ private def occursOnce {α : Type} (key : α → α → Bool) (values : List α)
 This is the fact the boundary-Timer stale-identity laws currently assume away: two Timer waits
 sharing `(instance, element, activation)` make "the" wait for a fired deadline ambiguous, and the
 evaluator would resolve the ambiguity by list order rather than by meaning. -/
+def userTaskWaitKeyMatches (left right : UserTaskWait) : Bool :=
+  decide (left.processInstanceId = right.processInstanceId) &&
+    decide (left.task.id = right.task.id) &&
+    decide (left.activation = right.activation)
+
+def messageWaitKeyMatches (left right : MessageWait) : Bool :=
+  decide (left.processInstanceId = right.processInstanceId) &&
+    decide (left.elementId = right.elementId) &&
+    decide (left.activation = right.activation)
+
+/-- The key `fireTimer` looks a deadline up by. It is named rather than inlined so the uniqueness
+conjunct and the withdrawal-finality law below cannot drift apart into two different keys. -/
+def timerWaitKeyMatches (left right : TimerWait) : Bool :=
+  decide (left.processInstanceId = right.processInstanceId) &&
+    decide (left.elementId = right.elementId) &&
+    decide (left.activation = right.activation)
+
+def effectWaitKeyMatches (left right : EffectWait) : Bool :=
+  decide (left.processInstanceId = right.processInstanceId) &&
+    decide (left.elementId = right.elementId) &&
+    decide (left.activation = right.activation)
+
 def waitIdentitiesUnique (state : RuntimeState) : Bool :=
-  state.waits.all (occursOnce (fun left right =>
-    decide (left.processInstanceId = right.processInstanceId) &&
-      decide (left.task.id = right.task.id) &&
-      decide (left.activation = right.activation)) state.waits) &&
-  state.messageWaits.all (occursOnce (fun left right =>
-    decide (left.processInstanceId = right.processInstanceId) &&
-      decide (left.elementId = right.elementId) &&
-      decide (left.activation = right.activation)) state.messageWaits) &&
-  state.timerWaits.all (occursOnce (fun left right =>
-    decide (left.processInstanceId = right.processInstanceId) &&
-      decide (left.elementId = right.elementId) &&
-      decide (left.activation = right.activation)) state.timerWaits) &&
-  state.effectWaits.all (occursOnce (fun left right =>
-    decide (left.processInstanceId = right.processInstanceId) &&
-      decide (left.elementId = right.elementId) &&
-      decide (left.activation = right.activation)) state.effectWaits)
+  state.waits.all (occursOnce userTaskWaitKeyMatches state.waits) &&
+    state.messageWaits.all (occursOnce messageWaitKeyMatches state.messageWaits) &&
+    state.timerWaits.all (occursOnce timerWaitKeyMatches state.timerWaits) &&
+    state.effectWaits.all (occursOnce effectWaitKeyMatches state.effectWaits)
 
 /-- `RSI-ORDER-01`. The five collections whose every add site canonically inserts hold that order.
 
