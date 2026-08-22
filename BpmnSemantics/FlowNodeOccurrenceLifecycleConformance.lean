@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceCancellationProofs
 import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.CallActivityConformance
 import BpmnSemantics.EmbeddedSubProcessCompletionConformance
