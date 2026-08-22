@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Question and current boundary
