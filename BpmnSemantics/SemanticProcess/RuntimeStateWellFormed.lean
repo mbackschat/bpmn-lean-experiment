@@ -11,10 +11,16 @@ The two have different types on purpose. A high-water or non-reissue fact cannot
 state without inventing a history field, so encoding it as a state conjunct would either be
 unprovable or force a representation change.
 
-The predicate is indexed by the expected semantic instance identity as well as by the program.
-Reading that identity out of the state it is checking would make the check self-consistent, so an
-injected or cross-program state that merely agrees with itself would pass; `runtimePositionValid`
-already takes the same parameter for the same reason.
+The predicate is indexed by the expected semantic instance identity as well as by the program,
+because reading that identity out of the state under check would make the check self-consistent and
+admit any internally consistent injected state; `runtimePositionValid` already takes the same
+parameter for the same reason.
+
+Where that index actually bites is worth stating exactly, because both installed call sites are
+narrower than the parameter suggests. The Workflow-continuation boundary is the only one holding an
+independent expectation, and it already refuses an instance mismatch before this predicate runs, so
+the identity conjunct fires at neither site today. The parameter is what lets a future caller with a
+genuine third-party expectation use it, and no evidence lane claims otherwise.
 
 Each conjunct carries the `RSI-` rule identifier of the reviewed account and is a separately named
 sub-predicate, so a fixture can assert which named conjunct rejects a malformed state rather than
@@ -216,12 +222,15 @@ def waitDeclarationsValid (program : Program) (instanceId : SemanticId)
       declaredByExactlyOneOwnedOperation program
         (effectWaitDeclarers program incident.wait.elementId) incident.wait.owner)
 
-/-- `RSI-BIND-05`. Each selected-branch record matches exactly one `selectMany` and each event race
-exactly one `awaitEventRace`.
+/-- The `selectMany` and `awaitEventRace` halves of `RSI-BIND-05`: each selected-branch record
+matches exactly one `selectMany` and each event race exactly one `awaitEventRace`.
 
-Called-process records are not restated here: `calledProcessAssociationsValid` already binds each
-record to its paired `invokeProcess` and `returnProcess`, and consuming that predicate keeps one
-owner for the fact. -/
+The rule's third clause is **not** decided here or anywhere else in this predicate. Binding a called
+record to its paired `invokeProcess` and `returnProcess` is a program-side fact, and
+`calledProcessAssociationsValid` cannot supply it: that predicate takes only a `RuntimeState` and
+decides runtime-to-runtime association, never reading `program.operations`. Supplying it needs the
+paired operations looked up by the record's `returnOperationId`, and is recorded as absent rather
+than assumed. -/
 def hiddenRecordDeclarationsValid (program : Program) (state : RuntimeState) : Bool :=
   state.selectedBranchSets.all (fun record =>
     (program.operations.filter fun
@@ -268,13 +277,14 @@ private def scopeCountFor (activations : List ScopeActivation) (scopeId : Defini
   (activations.find? fun activation => decide (activation.scopeId = scopeId)).map (·.count)
     |>.getD 0
 
-/-- `RSI-MONO-01`, `RSI-MONO-02`, and `RSI-MONO-04`. Every activation counter family is a per-key
-high-water mark that never decreases across a committed transition, and `endOccurrences` never
-decreases.
+/-- `RSI-MONO-01` and `RSI-MONO-02`. Every activation counter family is a per-key high-water mark
+that never decreases across a committed transition, and `endOccurrences` never decreases.
 
-Because a counter never decreases and a newly issued identity is numbered strictly above its key's
-recorded count, a removed identity is never reissued. That is `RSI-MONO-04`, and it is the semantic
-statement behind the adapter's assumption that a Timer or task identity stays retired once withdrawn.
+`RSI-MONO-04` is deliberately **not** stated here. Non-reissue needs the further fact that a newly
+issued identity is numbered strictly above its key's recorded count, which is a property of the
+issuing transition rather than of the counter pair; asserting it in this relation would make it an
+unstated premise of every use. It remains an explicit absence, and the adapter's assumption that a
+Timer or task identity stays retired once withdrawn rests on it rather than on this relation.
 
 `logicalTimeMs` is deliberately absent. Every time-advancing arm takes its time from a fired
 deadline, so monotonic time holds only under the hypothesis that the fired deadline is at or after

@@ -100,13 +100,17 @@ def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
 /-- Declarative transition relation for one explicitly selected Semantic Process operation.
 
 The arms are not uniform in what they claim, and the difference decides what may be cited as
-evidence. Fourteen take the executable result as their own premise, so for those the relation is the
-graph of the function: a wrong state transformation produces a wrong relation and the pair still
-agrees, which makes them one evidence lane rather than two. Twelve state `f before ... = some after`
-for the same `f` that `fire?` calls, and `initiateMessage` and `initiateTimer` wrap that same
-equation in a single-constructor inductive.
+evidence. The test is a criterion rather than a count, because a census drifts from the tree in both
+directions: **an arm is the graph of the evaluator whenever passage cannot fail apart from it**, and
+that happens in two ways. Twelve arms state `f before ... = some after` for the same `f` that
+`fire?` calls, and `initiateMessage` and `initiateTimer` wrap that equation in a single-constructor
+inductive. Three arming arms reach the same place by a different route: `BoundedTaskArmingStep`,
+`MonitoredTaskArmingStep`, and `BoundedScopeArmingStep` bind their premises and then name the
+evaluator's own transformation as the successor, so a wrong `activateBoundedUserTask` or
+`armScopeDeadline` produces a wrong relation that the bridge still satisfies. For every arm meeting
+the criterion the bridge is one evidence lane, not two.
 
-The remaining ten arms are genuine decompositions with independently stated premises.
+An arm earns an independent lane only by stating premises the evaluator does not supply.
 `MergeExclusiveStep` is the reference shape: it quantifies over an offered token with a membership
 premise and admits one transition per offered occurrence, so it is deliberately broader than the
 evaluator that selects one of them, and a wrong selection is visible against it.

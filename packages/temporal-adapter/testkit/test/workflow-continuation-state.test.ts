@@ -21,11 +21,14 @@ import { requireBpmnWorkflowContinuationStateV1 } from "@bpmn-lean/temporal-prot
  * the Workflow knows which instance it is.
  *
  * Only one malformed class here is new at this boundary, and that is a finding rather than an
- * omission. The pre-existing resumability checks already refuse an orphaned wait owner and a
- * duplicate wait key, so neither is an admissible witness for the runtime-state invariant here; the
- * invariant's structural half is still applied as defence in depth, but this boundary is not an
- * evidence lane for it and no witness claims otherwise. Recovered logical time against live
- * deadlines is the fact nothing here previously decided.
+ * omission. Measured against this fixture, both an orphaned wait owner and a duplicate wait key are
+ * already refused with `RuntimeState is not one resumable stable checkpoint`. That refusal is the
+ * combined condition, not `isStableStateResumable` alone: its association checks are vacuous here
+ * because the fixture holds no event race, call record, or incident, and it is the projection
+ * conditions in the same test that reject both. Neither is therefore an admissible witness for the
+ * invariant here, so the invariant's structural half is applied as defence in depth and this
+ * boundary is not an evidence lane for it. Recovered logical time against live deadlines is the one
+ * fact nothing here previously decided.
  */
 
 const instanceId = "Instance_Continuation";

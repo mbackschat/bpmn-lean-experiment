@@ -216,7 +216,7 @@ Required checked non-laws and negative witnesses:
 - an executable witness that the normal Sub-Process output is unreachable on the deadline arm, which is the analogue of `SUBERR-NORMAL-01`;
 - an executable witness that a firing one millisecond early leaves the armed triple and its deadline exactly intact and still able to win at the exact instant.
 
-Two hypotheses are expected to be stated rather than assumed, for the same reason the sibling states them: `RuntimeState` carries no uniqueness invariant over `timerWaits`, and the stronger claim that no later lookup *by key* can rediscover a withdrawn deadline needs uniqueness of the occurrence key. Both remain explicit hypotheses here. This capsule does **not** establish that invariant, whose scheduling is coupled to `stableStateResumable` and recorded in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#nearest-unsupported-claims).
+Two hypotheses are expected to be stated rather than assumed, for the same reason the sibling states them: the stronger claim that no later lookup *by key* can rediscover a withdrawn deadline needs uniqueness of the occurrence key. Both remain explicit hypotheses here. The uniqueness fact is now **stated** elsewhere, as the `waitIdentitiesUnique` conjunct of the runtime-state invariant, but its preservation is unproved and this capsule's own consequence has not been specialized from the generic withdrawal-finality lemma, so nothing here may assume it holds of a reachable state. The residue is recorded in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#nearest-unsupported-claims).
 
 The separating witness is the follow-on User Task identity at the approved public boundary. A hidden microstep, storage order, or evaluator choice is not a discriminator.
 
@@ -320,7 +320,7 @@ Stop and return to review rather than deciding in implementation if any of the f
 - the deadline's owning scope occurrence cannot be the parent occurrence, which would make `SPTIMER-QUIESCE-01` unreachable for the reason [the runtime-state section](#runtime-state) gives;
 - the host cannot recognise the scope deadline from committed state alone;
 - a public observation requires an engine-specific choice, which is a phase-zero probe obligation;
-- a required Lean law needs the unstated key-uniqueness invariant, which this capsule may not establish.
+- a required Lean law needs key uniqueness to hold of reachable states. The invariant is now stated as a named conjunct elsewhere, but its preservation is unproved and this capsule may not establish it.
 
 ## Owner decisions
 

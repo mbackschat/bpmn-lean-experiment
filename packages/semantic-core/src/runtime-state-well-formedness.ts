@@ -134,15 +134,29 @@ function isSorted<T>(
 }
 
 /**
- * Every way this committed state contradicts the account, in a stable order.
+ * The defect classes this owner decides, in a stable order.
  *
- * `expectedInstanceId` is supplied by the caller rather than read from `state.control`. A validator
- * that took the expectation from the state it is checking would accept any internally consistent
- * injected or cross-program state, which is precisely what the boundary using it needs to refuse.
+ * It decides a **subset** of the reviewed conjunct list, and the subset is stated rather than
+ * implied: lifecycle emptiness before start, owner liveness for every wait and hidden record,
+ * per-family wait-identity uniqueness, declaration of hosted wait element identities, the
+ * `selectMany` and `awaitEventRace` halves of hidden-record declaration, canonical order of the
+ * collections whose add sites all insert canonically, and instance agreement. Occurrence uniqueness,
+ * effect wait/incident disjointness, token and scope binding, terminal emptiness, and the
+ * event-race, called-process, and incident association conjuncts are decided by predicates this
+ * package already owns and are not composed in here.
+ *
+ * Declaration is checked by existence only. Lean additionally requires exactly one declarer and that
+ * the declaring operation's scope equal the wait owner's definition scope; this owner checks
+ * neither, so the two sides do not decide the same proposition for `RSI-BIND-04` and the parity
+ * channel must not treat them as agreeing on it.
+ *
+ * `expectedInstanceId` is supplied by the caller rather than read from `state.control`, because a
+ * validator that took the expectation from the state under check would accept any internally
+ * consistent injected state. Both installed call sites pass an identity that cannot disagree, so
+ * that conjunct is inert today and no witness claims otherwise.
  *
  * The result is empty for every state admitted execution can reach. It is not a capability check:
- * refusing a state here changes no BPMN meaning, and no state a transition can produce appears in
- * it.
+ * refusing a state here changes no BPMN meaning.
  */
 export function runtimeStateDefects(
   program: SemanticProcessProgram,

@@ -5,6 +5,7 @@ import {
   applyStimulus,
   CommandOutcome,
   initialState,
+  projectCurrentControlPositions,
   RuntimeStateDefect,
   runtimeStateDefects,
   runtimeStateRegressions,
@@ -46,13 +47,27 @@ test("a state reached by admitted execution is well-formed", () => {
   assert.deepEqual(runtimeStateDefects(eventRaceProgram, instanceId(), initialState), []);
 });
 
-test("W1: a wait whose owner occurrence was removed is refused", () => {
-  const orphaned: RuntimeState = { ...armed, scopeOccurrences: [] };
+test("W1: a wait naming an occurrence that does not exist is refused", () => {
+  // The owner is stranded by pointing the wait at an activation no occurrence carries, not by
+  // emptying `scopeOccurrences`. Emptying it would destroy the hosting root, which the existing
+  // position predicate already rejects, and a witness an existing predicate catches measures
+  // nothing new. Here the root stays valid and only the wait's owner is dead.
+  const [timerWait] = armed.timerWaits;
+  assert.ok(timerWait !== undefined, "the armed race must hold one Timer wait");
+  const stranded: RuntimeState = {
+    ...armed,
+    timerWaits: [{ ...timerWait, owner: { ...timerWait.owner, activation: 2 } }],
+  };
 
   assert.deepEqual(
-    runtimeStateDefects(eventRaceProgram, instanceId(), orphaned)
+    runtimeStateDefects(eventRaceProgram, instanceId(), stranded)
       .filter((defect) => defect === RuntimeStateDefect.DanglingWaitOwner),
     [RuntimeStateDefect.DanglingWaitOwner],
+  );
+  assert.notEqual(
+    projectCurrentControlPositions(eventRaceProgram, stranded),
+    null,
+    "the existing position projection must still accept it, or this witness measures nothing",
   );
 });
 
@@ -126,7 +141,12 @@ test("a not-started state holding runtime work is refused", () => {
 });
 
 test("a malformed state is refused instead of transitioned from", () => {
-  const orphaned: RuntimeState = { ...armed, scopeOccurrences: [] };
+  const [strandedTimer] = armed.timerWaits;
+  assert.ok(strandedTimer !== undefined);
+  const orphaned: RuntimeState = {
+    ...armed,
+    timerWaits: [{ ...strandedTimer, owner: { ...strandedTimer.owner, activation: 2 } }],
+  };
 
   // The discriminating part is that this firing *commits* on the well-formed state. A stimulus the
   // account already refuses for another reason would pass this test without the gate existing.
@@ -140,7 +160,7 @@ test("a malformed state is refused instead of transitioned from", () => {
   assert.deepEqual(refused.state, orphaned);
 });
 
-test("every well-formed state still accepts the commands it accepted before", () => {
+test("the empty state still accepts the start it accepted before", () => {
   const accepted = applyStimulus(eventRaceProgram, initialState, eventRaceStart);
 
   assert.notEqual(accepted.outcome, CommandOutcome.Rejected);

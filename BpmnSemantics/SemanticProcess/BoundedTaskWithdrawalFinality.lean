@@ -6,10 +6,16 @@ import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 This module owns the quantified stale-identity law for the interrupting Activity boundary Timer.
 
 The capsule deferred that law with a named blocker: refuting a later lookup needs uniqueness of the
-`(instance, element, activation)` key, which `RuntimeState` does not enforce and which the finite
-witnesses could not supply, because one concrete state never holds the duplicate that would break the
-argument. `waitIdentitiesUnique` now supplies it, so the law is stated here over every state and both
-victory arms rather than over one scenario.
+`(instance, element, activation)` key, which the finite witnesses could not supply because one
+concrete state never holds the duplicate that would break the argument.
+
+What changed is narrower than closing that blocker, and the difference matters. The key-uniqueness
+fact is still an **assumed hypothesis** of the law below; `waitIdentitiesUnique` gives it a named
+owner inside a reviewed invariant instead of leaving it an unstated premise, but no theorem yet
+proves that any reachable state satisfies it. Preservation across the registered transition arms is
+unimplemented, and the initialization theorems establish the conjunct only on states whose wait
+collections are empty, where it holds vacuously. Until preservation lands, this law says what
+follows *if* the state is unique-keyed, not that a state reached by execution is.
 
 It is a separate module because the generic withdrawal lemmas belong with the invariant and this
 consequence belongs with the boundary-Timer family, and because `BoundedTask` cannot import the
@@ -25,8 +31,8 @@ afterwards no wait carries either withdrawn key, so neither losing arm can be fo
 
 This is what the two finite refusal witnesses could only illustrate. A wrong withdrawal that erased
 some other wait, or a state holding a second wait under the same key, fails it; the uniqueness
-hypothesis is exactly what rules the second case out and is discharged from
-`runtimeStateWellFormed`.
+hypothesis is exactly what rules the second case out and is **assumed**, not discharged. Its named
+owner is the `waitIdentitiesUnique` conjunct, whose preservation is an open lane.
 
 The statement stops at unfindability rather than asserting a refusal outcome, because the outcome is
 the stimulus dispatcher's, and joining the two would make one law depend on both accounts. -/

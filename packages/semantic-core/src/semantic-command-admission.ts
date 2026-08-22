@@ -85,10 +85,10 @@ export type CommandAdmission = DeepReadonly<{
  * Whether this committed state is one the account represents at all.
  *
  * The expectation available at this boundary is the program, not an instance identity: a caller
- * supplies both, and there is no third party whose instance the state should match. The instance
- * expectation is checked where one exists, at the host's Workflow-continuation boundary. Passing
- * the state's own running identity here therefore weakens nothing that was previously checked and
- * adds every wait, ownership, uniqueness, declaration, and order conjunct.
+ * supplies both, and there is no third party whose instance the state should match. Passing the
+ * state's own running identity therefore makes the instance conjunct inert here, which weakens
+ * nothing that was previously checked but must not be read as an instance check: nothing at this
+ * site refuses a state belonging to another instance of the same program.
  *
  * Ordering matters more than the check: initialization and preservation come first, so every state
  * a transition can produce already satisfies this and only a corrupted or injected state is
