@@ -116,7 +116,8 @@ premise and admits one transition per offered occurrence, so it is deliberately 
 evaluator that selects one of them, and a wrong selection is visible against it.
 
 Falsifiable evidence about meaning comes from runtime-state well-formedness preservation and
-monotonicity, not from this relation's agreement with the evaluator on the fourteen. -/
+monotonicity, not from this relation's agreement with the evaluator on the arms meeting the
+criterion above. -/
 inductive OperationStep (program : Program) :
     SemanticOperation → RuntimeState → RuntimeState → Prop where
   | initiate (id origin output) (before after : RuntimeState)
@@ -294,8 +295,8 @@ transformation its relation arm names, and the twenty-four-way match is exhausti
 
 This is worth having and it is not evidence about BPMN meaning. It fails if an operation kind is
 routed to the wrong transformation or added without a matching arm; it cannot fail because a
-transformation is semantically wrong, since fourteen arms take that transformation's own result as
-their premise. No capsule may cite it as a semantic evidence lane. -/
+transformation is semantically wrong, for every arm meeting the criterion documented on
+`OperationStep`. No capsule may cite it as a semantic evidence lane. -/
 theorem fire_sound (program : Program) (operation : SemanticOperation)
     (before after : RuntimeState)
     (result : fire? program operation before = some after) :

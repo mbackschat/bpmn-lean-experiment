@@ -144,7 +144,7 @@ This proposal selects no CIB Seven relationship and requires no register entry. 
 
 ## Required, optional, and excluded
 
-Required: the three-layer predicate with per-conjunct named sub-predicates, the six obligations, the fourteen-arm bridge reclassification, the independent TypeScript validator **wired into the fail-closed `admit` path**, the four separating negatives carried through the existing parity channel, and the owner-document amendments.
+Required: the three-layer predicate with per-conjunct named sub-predicates, the six obligations, the bridge reclassification of every arm meeting the criterion, the independent TypeScript validator **wired into the fail-closed `admit` path**, the four separating negatives carried through the existing parity channel, and the owner-document amendments.
 
 Optional: installing the Lean gate at its single existing pre-dispatch site, which stays conditional on the cost measurement and is not an implementation blocker. Retiring `deadline_arm_bridge_premise_is_satisfiable` is **not** proposed, because its premise needs the empty called-instance closure that this slice does not supply.
 
@@ -175,7 +175,7 @@ The invariant also strengthens the adapter boundary in one direction worth namin
 | Normative and representation review | the conjunct list is the reviewed account of admitted states | that any implementation enforces it |
 | Lean predicate and theorems | initialization and thirty-four-arm preservation hold for the Lean account | correctness of the core, adapter, parser, or CIB |
 | Lean negative fixtures | each conjunct rejects its own malformed state, decided in the kernel | that the conjunct list is complete |
-| TypeScript validator and the existing parity channel | the independently written core rejects the same malformed states by case name | that the account was independently chosen |
+| TypeScript validator and the existing parity channel | the independently written core rejects the same malformed states by case name, for the conjuncts both sides decide identically | that the account was independently chosen, or agreement on a conjunct the two sides state differently, such as declaration where Lean also requires exactly one declarer and scope agreement |
 | Temporal recovery witness | a recovered and continued state satisfies the predicate | any unsupported BPMN meaning |
 
 Four separating negatives are new, and each fails today for a distinct reason. The states that `runtimePositionValid` already rejects are deliberately excluded, because a witness that an existing predicate already catches measures nothing new: `stateWithBadTokenOwner` and `stateWithBadScopeParent` in [`CommittedExecutionPublicationConformance.lean`](../BpmnSemantics/CommittedExecutionPublicationConformance.lean) are already locked by `public_position_projection_fails_closed_on_binding_corruption`, so a dead-owner token and a contradicted runtime parent are not admissible witnesses here.

@@ -90,10 +90,11 @@ export type CommandAdmission = DeepReadonly<{
  * nothing that was previously checked but must not be read as an instance check: nothing at this
  * site refuses a state belonging to another instance of the same program.
  *
- * Ordering matters more than the check: initialization and preservation come first, so every state
- * a transition can produce already satisfies this and only a corrupted or injected state is
- * refused. Installing it the other way round would turn accepted transitions into refusals and
- * change admitted models.
+ * Ordering matters more than the check: enforcement follows preservation, so a state this refuses
+ * should be unreachable. The evidence is the registered corpus passing with the gate installed, not
+ * a proof over the transition arms, so a newly refused state is a defect here until shown
+ * unreachable. Installing the gate the other way round would turn accepted transitions into
+ * refusals and change admitted models.
  */
 function admissibleCommittedState(
   program: SemanticProcessProgram,

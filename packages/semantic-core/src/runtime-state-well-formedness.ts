@@ -155,8 +155,10 @@ function isSorted<T>(
  * consistent injected state. Both installed call sites pass an identity that cannot disagree, so
  * that conjunct is inert today and no witness claims otherwise.
  *
- * The result is empty for every state admitted execution can reach. It is not a capability check:
- * refusing a state here changes no BPMN meaning.
+ * The result is empty for every state the registered corpus reaches with this owner installed,
+ * which is what the gates establish. It is not established for every reachable state: no
+ * preservation lane exists over the transition arms, so that stronger claim is owed rather than
+ * held. Refusing a state here changes no BPMN meaning.
  */
 export function runtimeStateDefects(
   program: SemanticProcessProgram,
@@ -333,9 +335,11 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
 /**
  * Whether the fail-closed command boundary admits this committed state.
  *
- * Preservation comes before enforcement: every state a transition produces satisfies this, so the
- * only states it refuses are corrupted, injected, or otherwise unreachable ones, and no admitted
- * model loses a command.
+ * Preservation before enforcement is the rule this follows, and the evidence for it is bounded:
+ * every case in the registered corpus passes with this gate installed, and installing it turned two
+ * hand-built states red, which is how the program-agreement classes came to be excluded. That is
+ * executable evidence over a finite corpus, not a proof that no reachable state is refused. Treat a
+ * newly refused state as a defect in this owner until the state is shown unreachable.
  */
 export function isGateAdmissibleRuntimeState(
   program: SemanticProcessProgram,
