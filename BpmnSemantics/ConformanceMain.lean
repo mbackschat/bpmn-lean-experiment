@@ -1,4 +1,5 @@
 import BpmnSemantics.ActivityBoundaryTimerConformance
+import BpmnSemantics.RuntimeStateWellFormedConformance
 import BpmnSemantics.Conformance
 import BpmnSemantics.ConfiguredTaskConformance
 import BpmnSemantics.CommittedExecutionPublicationConformance

@@ -1,0 +1,141 @@
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import BpmnSemantics.ActivityBoundaryTimerConformance
+
+/-! # Runtime-state well-formedness negative fixtures
+
+This module owns the concrete malformed states the runtime-state invariant refuses, one per conjunct
+this slice adds, each decided in the kernel.
+
+The fixtures exist because preservation cannot find a weakened conjunct: a predicate that omits a
+fact preserves it vacuously, so every conjunct needs a state that fails it and would pass without it.
+They are the falsifying half of the account, not illustrations of it.
+
+Every state here is unreachable by construction, built by perturbing one field of the armed
+boundary-Timer state. A class an admitted transition could actually produce would be a semantic
+defect rather than a witness, and the positive fact below is what keeps the perturbations honest: the
+unperturbed state is well-formed, so each negative differs from a reachable state in exactly the one
+respect its conjunct names.
+-/
+
+namespace BpmnSemantics.RuntimeStateWellFormedConformance
+
+open BpmnSemantics
+open BpmnSemantics.SemanticProcess
+
+/-- The armed state and its expected instance, reused so every negative below differs from a
+reachable state in one field only. -/
+def program : Program := ActivityBoundaryTimerConformance.program
+
+def instanceId : SemanticId := ActivityBoundaryTimerConformance.instanceId
+
+def armedState : RuntimeState := ActivityBoundaryTimerConformance.armedState
+
+theorem armed_state_is_well_formed :
+    runtimeStateWellFormed program instanceId armedState = true := by decide +kernel
+
+/-- `W1`, violating `RSI-OWN-01`: a Timer wait whose owner occurrence does not exist.
+
+The owner is stranded by naming an activation no occurrence carries rather than by emptying
+`scopeOccurrences`, which would destroy the hosting root and be refused by the existing position
+predicate instead. -/
+def strandedTimerOwnerState : RuntimeState :=
+  { armedState with
+    timerWaits := armedState.timerWaits.map fun wait =>
+      { wait with owner := { wait.owner with activation := wait.owner.activation + 1 } } }
+
+theorem stranded_timer_owner_is_refused :
+    runtimeStateWellFormed program instanceId strandedTimerOwnerState = false := by decide +kernel
+
+theorem stranded_timer_owner_fails_exactly_ownership :
+    waitOwnersLive strandedTimerOwnerState = false ∧
+      waitIdentitiesUnique strandedTimerOwnerState = true ∧
+      canonicalCollectionOrder strandedTimerOwnerState = true := by decide +kernel
+
+/-- `W2`, violating `RSI-UNIQ-02`: two Timer waits sharing one occurrence key.
+
+The duplicate differs in its deadline, so the pair is not caught by ordinary structural equality and
+the state is refused for the key rather than for the value. -/
+def duplicateTimerKeyState : RuntimeState :=
+  { armedState with
+    timerWaits := armedState.timerWaits ++
+      armedState.timerWaits.map fun wait => { wait with deadlineMs := wait.deadlineMs + 1 } }
+
+theorem duplicate_timer_key_is_refused :
+    runtimeStateWellFormed program instanceId duplicateTimerKeyState = false := by decide +kernel
+
+theorem duplicate_timer_key_fails_exactly_uniqueness :
+    waitIdentitiesUnique duplicateTimerKeyState = false ∧
+      waitOwnersLive duplicateTimerKeyState = true := by decide +kernel
+
+/-- `W3`, violating `RSI-BIND-04`: a Timer wait whose element identity no operation declares.
+
+Reachable only through an injected or cross-program state, because no arming operation can produce a
+wait for an element the program does not carry. -/
+def undeclaredTimerElementState : RuntimeState :=
+  { armedState with
+    timerWaits := armedState.timerWaits.map fun wait =>
+      { wait with elementId := ⟨wait.elementId.value ++ "_Injected"⟩ } }
+
+theorem undeclared_timer_element_is_refused :
+    runtimeStateWellFormed program instanceId undeclaredTimerElementState = false := by
+  decide +kernel
+
+theorem undeclared_timer_element_fails_exactly_declaration :
+    waitDeclarationsValid program instanceId undeclaredTimerElementState = false ∧
+      waitOwnersLive undeclaredTimerElementState = true ∧
+      waitIdentitiesUnique undeclaredTimerElementState = true := by decide +kernel
+
+/-- Violating `RSI-ORDER-01`: a canonically ordered collection holding its elements reversed.
+
+Separate from the wait conjuncts because order is retained state: `RuntimeState` derives
+`DecidableEq`, so a collection whose add sites all insert canonically carries its order as meaning
+rather than as presentation. -/
+def unorderedActivationsState : RuntimeState :=
+  { armedState with
+    activations :=
+      [ { taskId := ⟨"Task_ZZZ"⟩, count := 1 }
+      , { taskId := ⟨"Task_AAA"⟩, count := 1 } ] }
+
+theorem unordered_activations_are_refused :
+    runtimeStateWellFormed program instanceId unorderedActivationsState = false := by decide +kernel
+
+theorem unordered_activations_fail_exactly_order :
+    canonicalCollectionOrder unorderedActivationsState = false ∧
+      waitOwnersLive unorderedActivationsState = true := by decide +kernel
+
+/-- Violating `RSI-LIFE-01`: a not-started state holding runtime work.
+
+`lifecyclePositionValid` reaches occurrences and tokens here but no wait family, so a pending
+initiation flag with no occurrences is admitted by the existing predicate and refused only by this
+conjunct. -/
+def notStartedWithPendingInitiationState : RuntimeState :=
+  { initialState with initiationPending := true }
+
+theorem not_started_with_pending_initiation_is_refused :
+    runtimeStateWellFormed program instanceId notStartedWithPendingInitiationState = false := by
+  decide +kernel
+
+theorem not_started_with_pending_initiation_fails_exactly_lifecycle :
+    notStartedStateEmpty notStartedWithPendingInitiationState = false := by decide +kernel
+
+/-- `W4`, violating `RSI-MONO-01`: a successor that lowers an activation counter after removing its
+wait.
+
+It satisfies every state conjunct, which is why monotonicity is a separate relation rather than a
+conjunct: no predicate over one state can refuse it. -/
+def rewoundCounterSuccessor : RuntimeState :=
+  { armedState with
+    timerWaits := []
+    timerActivations := armedState.timerActivations.map fun activation =>
+      { activation with count := activation.count - 1 } }
+
+theorem rewound_counter_successor_is_still_well_formed :
+    runtimeStateWellFormed program instanceId rewoundCounterSuccessor = true := by decide +kernel
+
+theorem rewound_counter_successor_breaks_monotonicity :
+    ¬ RuntimeStateMonotone armedState rewoundCounterSuccessor := by
+  intro monotone
+  -- Instantiated at the deadline's own element, which is the only key the perturbation lowers.
+  exact absurd (monotone.2.2.1 ⟨"Deadline"⟩) (by decide +kernel)
+
+end BpmnSemantics.RuntimeStateWellFormedConformance

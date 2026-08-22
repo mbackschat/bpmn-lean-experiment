@@ -161,3 +161,84 @@ export function projectNegativePositionClasses(
       }) === null,
   };
 }
+
+/**
+ * Which of the invariant's own malformed states this side refuses, by label.
+ *
+ * Labels are the shared contract with Lean, and nothing else is: the states are built here over the
+ * core's own representation, in which every wait carries a composite occurrence identity, and the
+ * verdict comes from the core's defect classes rather than from a translated conjunction. Agreement
+ * therefore establishes that neither side transcribed the reviewed account wrongly, and cannot
+ * establish that the account is right.
+ */
+export type LeanWellFormednessRejections = Readonly<{
+  strandedWaitOwner: boolean;
+  duplicateWaitIdentity: boolean;
+  undeclaredWaitIdentity: boolean;
+  unorderedCollection: boolean;
+  notStartedWithWork: boolean;
+}>;
+
+/** The core surface the malformed-state constructions need, narrower than the parity test's own. */
+export type WellFormednessProjectionApi = Pick<
+  typeof import("../../semantic-core/src/index.ts"),
+  "isWellFormedRuntimeState"
+>;
+
+/**
+ * Refusal of each named malformed class, built by perturbing one field of a state the caller reached
+ * by admitted execution.
+ *
+ * Perturbing a reachable state rather than constructing one from nothing is what makes each result
+ * attributable: the unperturbed state is admitted, so a `true` here says the single named
+ * perturbation is what the account refuses. The families differ from Lean's on purpose. Lean
+ * perturbs a Timer wait and this side a User Task wait, because the classes are family-independent
+ * and using the same family on both sides would let one family-specific mistake satisfy both.
+ */
+export function projectWellFormednessRejections(
+  semanticCore: WellFormednessProjectionApi,
+  program: SemanticProcessProgram,
+  expectedInstanceId: string,
+  reached: RuntimeState,
+  emptyState: RuntimeState,
+): LeanWellFormednessRejections {
+  const [userTaskWait] = reached.userTaskWaits;
+  assert.ok(userTaskWait !== undefined, "the reached state must hold one User Task wait");
+  const refuses = (state: RuntimeState): boolean =>
+    !semanticCore.isWellFormedRuntimeState(program, expectedInstanceId, state);
+
+  assert.equal(
+    refuses(reached),
+    false,
+    "the unperturbed state must be admitted, or every result below is unattributable",
+  );
+
+  return {
+    strandedWaitOwner: refuses({
+      ...reached,
+      userTaskWaits: [{
+        ...userTaskWait,
+        owner: { ...userTaskWait.owner, activation: userTaskWait.owner.activation + 1 },
+      }],
+    }),
+    duplicateWaitIdentity: refuses({
+      ...reached,
+      userTaskWaits: [userTaskWait, { ...userTaskWait, output: `${userTaskWait.output}:copy` }],
+    }),
+    undeclaredWaitIdentity: refuses({
+      ...reached,
+      userTaskWaits: [{
+        ...userTaskWait,
+        id: { ...userTaskWait.id, elementId: `${userTaskWait.id.elementId}_Injected` },
+      }],
+    }),
+    unorderedCollection: refuses({
+      ...reached,
+      taskActivations: [
+        { elementId: "Task_ZZZ", count: 1 },
+        { elementId: "Task_AAA", count: 1 },
+      ],
+    }),
+    notStartedWithWork: refuses({ ...emptyState, initiationPending: true }),
+  };
+}

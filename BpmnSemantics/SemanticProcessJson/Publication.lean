@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # Committed execution publication JSON
@@ -163,14 +164,28 @@ private def projectionRejectionsJson
   Json.mkObj <| cases.map fun (label, program, instanceId, state) =>
     (label, toJson (projectControlPosition? program instanceId state).isNone)
 
+/-- Report whether each named malformed state is refused as a representable committed state.
+
+Separate from `projectionRejectionsJson` because the two decide different propositions: that one asks
+whether a state projects, this one whether the account admits it at all. A state can fail either
+without failing the other, so folding them into one section would let a disagreement in one hide
+behind agreement in the other. -/
+private def wellFormednessRejectionsJson
+    (cases : List (String × Program × SemanticId × RuntimeState)) : Json :=
+  Json.mkObj <| cases.map fun (label, program, instanceId, state) =>
+    (label, toJson (!runtimeStateWellFormed program instanceId state))
+
 /-- Preserve the exact positive publication while reporting cross-target rejection of named malformed positions. -/
 def committedExecutionPublicationParityJson? (closureLimit : Nat) (program : Program)
     (instanceId : SemanticId) (initial : RuntimeState) (stimulus : Stimulus)
-    (rejectionCases : List (String × Program × SemanticId × RuntimeState)) : Option Json := do
+    (rejectionCases : List (String × Program × SemanticId × RuntimeState))
+    (wellFormednessCases : List (String × Program × SemanticId × RuntimeState)) :
+    Option Json := do
   let publication ←
     committedExecutionPublicationJson? closureLimit program instanceId initial stimulus
   pure <| Json.mkObj
     [ ("publication", publication)
-    , ("projectionRejections", projectionRejectionsJson rejectionCases) ]
+    , ("projectionRejections", projectionRejectionsJson rejectionCases)
+    , ("wellFormednessRejections", wellFormednessRejectionsJson wellFormednessCases) ]
 
 end BpmnSemantics.SemanticProcessJson.Publication

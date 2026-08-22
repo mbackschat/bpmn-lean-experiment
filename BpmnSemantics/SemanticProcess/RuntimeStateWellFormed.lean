@@ -268,7 +268,11 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
 private def taskCountFor (activations : List TaskActivation) (taskId : TaskDefinitionId) : Nat :=
   (activations.find? fun activation => decide (activation.taskId = taskId)).map (·.count) |>.getD 0
 
-private def nodeCountFor {α : Type} (key : α → NodeId) (count : α → Nat) (values : List α)
+/-- The count an element-keyed activation family has reached, or zero when the key is absent.
+
+Public because the monotonicity relation quantifies over it, so a negative witness must be able to
+name the same accessor the relation uses rather than restating the lookup. -/
+def nodeCountFor {α : Type} (key : α → NodeId) (count : α → Nat) (values : List α)
     (elementId : NodeId) : Nat :=
   (values.find? fun value => decide (key value = elementId)).map count |>.getD 0
 

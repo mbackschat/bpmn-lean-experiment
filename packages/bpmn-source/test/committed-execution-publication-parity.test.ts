@@ -12,7 +12,9 @@ import type {
 } from "../../semantic-core/src/index.ts";
 import {
   projectNegativePositionClasses,
+  projectWellFormednessRejections,
   type LeanProjectionRejections,
+  type LeanWellFormednessRejections,
 } from "./publication-parity-negative-class-test-support.ts";
 
 const execFileAsync = promisify(execFile);
@@ -51,6 +53,7 @@ type Publication = Readonly<{
 type PublicationParityEvidence = Readonly<{
   publication: Publication;
   projectionRejections: LeanProjectionRejections;
+  wellFormednessRejections: LeanWellFormednessRejections;
 }>;
 
 type InternalTransition = Extract<
@@ -70,6 +73,7 @@ type SemanticCoreApi = Pick<
   | "SemanticOriginKind"
   | "StimulusKind"
   | "applyStimulusWithTrace"
+  | "isWellFormedRuntimeState"
   | "deriveCalledProcessInstanceId"
   | "initialState"
   | "isWellFormedStimulus"
@@ -140,6 +144,19 @@ test("Lean and TypeScript publish the exact parallel start trace and current pos
     duplicateCalledProcessRecords: true,
     nonDerivedCalledRootInstance: true,
   });
+  // The invariant's own negatives, compared by case name rather than by shared code. Lean decides
+  // the same five states in the kernel, so a wrong state cannot satisfy both this comparison and
+  // that lane.
+  assert.deepEqual(
+    leanEvidence.wellFormednessRejections,
+    projectWellFormednessRejections(
+      semanticCore,
+      compilation.semanticProcess,
+      scenario.stimulus.instanceId,
+      traced.result.state,
+      semanticCore.initialState,
+    ),
+  );
   assert.deepEqual(leanEvidence.projectionRejections, {
     unassociatedParentlessRoot: projectionRejections.unassociatedParentlessRoot,
     completedWithLivePositions: projectionRejections.completedWithLivePositions,
@@ -288,7 +305,8 @@ function decodePublicationParityEvidence(
   if (
     !isRecord(value) ||
     !isRecord(value.publication) ||
-    !isRecord(value.projectionRejections)
+    !isRecord(value.projectionRejections) ||
+    !isRecord(value.wellFormednessRejections)
   ) {
     throw new Error("Lean publication parity evidence must be an object");
   }
@@ -299,6 +317,19 @@ function decodePublicationParityEvidence(
   ]) {
     if (typeof value.projectionRejections[field] !== "boolean") {
       throw new Error(`Lean projection rejection ${field} must be Boolean`);
+    }
+  }
+  // Named exactly, so a section that silently loses a case fails the decode rather than passing a
+  // comparison over the labels that happen to be present on both sides.
+  for (const field of [
+    "strandedWaitOwner",
+    "duplicateWaitIdentity",
+    "undeclaredWaitIdentity",
+    "unorderedCollection",
+    "notStartedWithWork",
+  ]) {
+    if (typeof value.wellFormednessRejections[field] !== "boolean") {
+      throw new Error(`Lean well-formedness rejection ${field} must be Boolean`);
     }
   }
   return value as unknown as PublicationParityEvidence;
