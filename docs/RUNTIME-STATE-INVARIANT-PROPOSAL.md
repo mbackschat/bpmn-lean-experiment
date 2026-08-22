@@ -97,10 +97,10 @@ Promoting that hypothesis to a state conjunct is deliberately **not** proposed, 
 |---|---|---|
 | `RSI-OBL-01` | `initialState` satisfies the predicate for every well-formed program | quantified over `program` |
 | `RSI-OBL-02` | every admitted start result satisfies it: `runningProgramStartState?`, `admitMessageStart?`, and `admitTimerStart?` under `programWellFormed` and the profile's start admission | quantified, one theorem per start kind |
-| `RSI-OBL-03` | internal preservation for all twenty-four registered `OperationStep` arms: a well-formed state and a successful `fire?` yield a well-formed successor | quantified over `program`, `state`, `operation` |
-| `RSI-OBL-04` | external preservation for all ten `Stimulus` constructors on the committed outcome, including the three boundary victory transitions, which are reached from `fireTimer` rather than from `fire?` | quantified per constructor |
+| `RSI-OBL-03` | internal preservation for all twenty-four registered `OperationStep` arms: a well-formed state and a successful `fire?` yield a well-formed successor | `open`, see the Lean lane shape decision |
+| `RSI-OBL-04` | external preservation for all ten `Stimulus` constructors on the committed outcome, including the three boundary victory transitions, which are reached from `fireTimer` rather than from `fire?` | `open`, see the Lean lane shape decision |
 | `RSI-OBL-05` | refusal preservation: a rejected or semantically failed command returns the received state, so well-formedness is preserved trivially and visibly rather than by omission | one shared lemma |
-| `RSI-OBL-06` | `RuntimeStateMonotone` holds across the same thirty-four arms | quantified, separate from `RSI-OBL-03` and `RSI-OBL-04` |
+| `RSI-OBL-06` | `RuntimeStateMonotone` holds across the same thirty-four arms | `open`, see the Lean lane shape decision |
 
 The reserved `awaitSequentialMultiInstanceUserTask` operation has no transition and is therefore outside `RSI-OBL-03`. When `SEQUENTIAL-MULTI-INSTANCE` registers its runtime, the same change extends `RSI-OBL-03` and `RSI-OBL-06`; the invariant is what makes that extension a visible obligation rather than a silent omission.
 
@@ -144,7 +144,7 @@ This proposal selects no CIB Seven relationship and requires no register entry. 
 
 ## Required, optional, and excluded
 
-Required: the three-layer predicate with per-conjunct named sub-predicates, the six obligations, the bridge reclassification of every arm meeting the criterion, the independent TypeScript validator **wired into the fail-closed `admit` path**, separating negatives for every added conjunct carried through the existing parity channel, six single-state classes rather than the four originally named, because `W4` is a two-state fact that no single-state rejection section can carry and the hidden-record and order conjuncts each needed their own, and the owner-document amendments.
+Required: the three-layer predicate with per-conjunct named sub-predicates, `RSI-OBL-01`, `RSI-OBL-02`, and `RSI-OBL-05`, with `RSI-OBL-03`, `RSI-OBL-04`, and `RSI-OBL-06` recorded as a deliberately open lane rather than required, the bridge reclassification of every arm meeting the criterion, the independent TypeScript validator **wired into the fail-closed `admit` path**, separating negatives for every added conjunct carried through the existing parity channel, six single-state classes rather than the four originally named, because `W4` is a two-state fact that no single-state rejection section can carry and the hidden-record and order conjuncts each needed their own, and the owner-document amendments.
 
 Optional: installing the Lean gate at its single existing pre-dispatch site, which stays conditional on the cost measurement and is not an implementation blocker. Retiring `deadline_arm_bridge_premise_is_satisfiable` is **not** proposed, because its premise needs the empty called-instance closure that this slice does not supply.
 
@@ -242,13 +242,21 @@ The deciding argument is not that Lean cannot branch on a proposition, because i
 
 If proof ergonomics turn out to be genuinely bad during the first preservation arms, the first response is named decomposition and reflection lemmas over the existing Boolean, not a change of representation. The representation reopens only if that fails, and even then the replacement is one propositional source with a derived decision procedure. Two manually synchronized definitions are excluded outright.
 
-**Enforcement: split, with the TypeScript gate required.** In Lean, prove initialization and preservation first, then measure the pre-dispatch gate on a narrow target under an operating-system-enforced memory bound, and install it only if the CPU and resident-memory evidence permit. That gate is not an implementation blocker. In TypeScript, implement the validator independently, establish preservation through its own executable evidence, and then wire it into the fail-closed `admit` path unconditionally.
+**Enforcement: split, with the TypeScript gate required.** In Lean, prove initialization; preservation is the deliberately open lane declared below, and the pre-dispatch gate is therefore not installed. The reason is no longer cost: gating on a predicate whose preservation is unproved would risk refusing a reachable state, which is the one outcome the ordering rule exists to prevent. In TypeScript, implement the validator independently, establish preservation through its own executable evidence, and then wire it into the fail-closed `admit` path unconditionally.
+
+The implementation inverted that TypeScript order: the `admit` gate landed at the semantic checkpoint and the core preservation lane at closure. The inversion is recorded here and in both source owners rather than presented as the approved sequence.
 
 The two sides earn their confidence by different means, and the wording matters: Lean carries quantified proofs, TypeScript carries an independently structured validator with executable preservation and malformed-state evidence. TypeScript tests are not proofs and this specification does not call them proofs anywhere.
 
 **Bridge reclassification: reclassify all fourteen.** Keep every existing theorem as a dispatcher, exhaustiveness, and constructor-selection check, and stop counting any of them as an independent semantic evidence lane. Neither rewriting them into nominally richer relations nor repairing only the two single-constructor wrappers is approved.
 
 The falsifiable semantic evidence becomes invariant preservation, monotonicity, and the ten genuinely decomposed relations. The four standing owners named under [versioning consequences](#versioning-consequences) are amended atomically with that reclassification, during implementation rather than at approval.
+
+**Lean lane shape: deliberately open, indefinitely.** The Lean lane for `RSI-OBL-03` through `RSI-OBL-06` is declared **deliberately open** under [the assurance-lane rule](PROJECT-DESIGN.md#lean-assurance-lane), superseding this document's earlier commitment to a proved lane. The reason is a measured effort bound, not a preference. Preservation of the uniqueness conjunct alone reaches ninety-one wait-collection assignment sites across fifteen semantic modules, and proving that a newly armed wait carries a fresh key additionally requires `RSI-MONO-04`, which the monotonicity relation does not state. Neither the full obligation nor the uniqueness-only subset is affordable within this capsule.
+
+Open means open indefinitely, and the record must not read as queued work. The two standing consumers, the [interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) and [Sub-Process boundary Timer](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md) deferrals, are unmet demand that this capsule does not satisfy and may never satisfy. A capsule citing the invariant cites a stated, unpreserved predicate.
+
+What this decision does not weaken: every conjunct keeps a falsifying negative decided in the kernel, so a wrong conjunct fails a fixture rather than passing silently; the executable core-side preservation lane and the fail-closed `admit` gate stand on their own evidence; and every Lean law consuming a conjunct over a live wait states its hypothesis explicitly rather than assuming it silently.
 
 ## Independent cold-review receipt
 
