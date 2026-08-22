@@ -159,11 +159,11 @@ def interruptBoundedScope? (program : Program) (state : RuntimeState)
           | none => none
           | some child =>
               if logicalTimeMs = deadline.deadlineMs then
-                let cancelled :=
-                  interruptScope state child deadline.owner definition.2.output
+                -- No explicit erase: regional cancellation withdraws the deadline with the Activity
+                -- occurrence record that lists it. The erase used to be necessary because the deadline
+                -- is parent-owned and therefore outside the cancelled subtree.
                 some
-                  { cancelled with
-                    timerWaits := cancelled.timerWaits.erase deadline
+                  { interruptScope state child deadline.owner definition.2.output with
                     logicalTimeMs := deadline.deadlineMs }
               else none
   | _, _ => none
@@ -224,7 +224,10 @@ def completeBoundedScope? (program : Program) (state : RuntimeState)
               | none => none
               | some deadline =>
                   some { completed with
-                          timerWaits := completed.timerWaits.erase deadline }
+                          timerWaits := completed.timerWaits.erase deadline
+                          activityOccurrences :=
+                            completed.activityOccurrences.filter fun record =>
+                              !decide (record.body = .childScope occurrence.1) }
 
 /-- Completing a scope that no bounded-scope operation entered is exactly the shared completion, so this family adds no behavior to an ordinary Sub-Process. -/
 theorem completeBoundedScope_eq_completeScope_of_unbounded (program : Program)
@@ -286,20 +289,19 @@ inductive BoundedScopeVictoryStep (program : Program) :
           some completed)
       (deadlineSurvives : deadline ∈ completed.timerWaits) :
       BoundedScopeVictoryStep program before
-        { completed with timerWaits := completed.timerWaits.erase deadline }
+        { completed with
+          timerWaits := completed.timerWaits.erase deadline
+          activityOccurrences :=
+            completed.activityOccurrences.filter fun record =>
+              !decide (record.body = .childScope child) }
   | deadline (before : RuntimeState) (instanceId : SemanticId)
       (child : ScopeOccurrenceId) (deadline : TimerWait)
       (output : ControlPlaceId)
       (running : before.control = .running instanceId)
       (deadlineLive : deadline ∈ before.timerWaits)
-      (paired : BoundedScopePairing program child deadline)
-      (parentOwned :
-        deadline ∈ (interruptScope before child deadline.owner output).timerWaits) :
+      (paired : BoundedScopePairing program child deadline) :
       BoundedScopeVictoryStep program before
         { interruptScope before child deadline.owner output with
-          timerWaits :=
-            (interruptScope before child deadline.owner output).timerWaits.erase
-              deadline
           logicalTimeMs := deadline.deadlineMs }
 
 private theorem boundedScopeChildFor_matches (state : RuntimeState)
@@ -324,29 +326,19 @@ private theorem boundedScopeDefinitionFor_pairs (program : Program)
 
 /-- Every deadline victory the evaluator produces is permitted by the declarative relation.
 
-`parentOwned` is an explicit hypothesis rather than a derivation, and the gap it names is real: the
-evaluator erases the deadline after regional cancellation without re-checking that cancellation left it
-there. Atomic arming establishes it — `armScopeDeadline` sets the owner to the parent, which is outside
-the cancelled subtree — but that is a property of arming rather than of this transition, and deriving it
-here would additionally need scope-tree acyclicity and an empty called-instance closure, neither of
-which `RuntimeState` enforces.
+This bridge previously took a `parentOwned` hypothesis: that regional cancellation left the deadline in
+`timerWaits`, so the evaluator's subsequent erase had something to erase. The hypothesis existed only
+because a parent-owned deadline was outside the cancelled subtree by construction, and it was assumed
+rather than derived. The Activity occurrence record discharges it by removing the reason it existed:
+cancellation now withdraws the deadline with the record that lists it, the evaluator erases nothing, and
+the premise is gone rather than weakened.
 
-Its three antecedents are load-bearing rather than decorative. They pin the hypothesis to the exact
-deadline, definition, and child occurrence this evaluator selects, so it constrains only states the
-transition actually reaches. Stating it over *every* `TimerWait` instead would be unsatisfiable —
-`interruptScope` only filters `timerWaits`, so no state contains a timer absent from `before` — and an
-unsatisfiable premise does not weaken a theorem, it deletes it.
-`deadline_arm_bridge_premise_is_satisfiable` in the conformance module holds that line by instantiating
-this premise at the armed state. -/
+`deadline_arm_bridge_premise_is_satisfiable` went with it. That theorem existed to keep the premise
+non-vacuous, and a satisfiability witness for a premise that no longer appears would assert nothing. Its
+disappearance is the intended outcome of the fix and not a lost check. -/
 theorem interruptBoundedScope_sound (program : Program) (before after : RuntimeState)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
-    (success : interruptBoundedScope? program before timerId logicalTimeMs = some after)
-    (parentOwned : ∀ deadline definition child,
-      boundedScopeDeadlineWait? before timerId = some deadline →
-      boundedScopeDefinitionFor? program deadline = some definition →
-      boundedScopeChildFor? before definition.1 deadline = some child →
-      deadline ∈
-        (interruptScope before child deadline.owner definition.2.output).timerWaits) :
+    (success : interruptBoundedScope? program before timerId logicalTimeMs = some after) :
     BoundedScopeVictoryStep program before after := by
   unfold interruptBoundedScope? at success
   cases running : before.control with
@@ -381,8 +373,6 @@ theorem interruptBoundedScope_sound (program : Program) (before after : RuntimeS
                         (by simpa [boundedScopeDeadlineWait?] using deadlineFound))
                       ⟨definition, definitionLive, childScope.symm, elementMatches,
                         childActivation⟩
-                      (parentOwned deadline definition child deadlineFound
-                        definitionFound childFound)
                   · simp at success
 
 private theorem boundedScopeDefinitionForChild_pairs (program : Program)
@@ -502,7 +492,7 @@ theorem bounded_scope_victory_logical_time (program : Program)
       exact .inl
         (completeScopeState_preserves_unrelated_components _ completed _ parentOutput
           completion).2.2.2.2.2
-  | deadline _ _ deadline _ _ deadlineLive _ _ =>
+  | deadline _ _ deadline _ _ deadlineLive _ =>
       exact .inr ⟨deadline, deadlineLive, rfl⟩
 
 /-- The quiescence arm leaves logical time untouched, for every program, scope, and parent output.
@@ -581,13 +571,20 @@ theorem interruptBoundedScope_logical_time (program : Program) (before after : R
 /-- No victory half-withdraws the triple: both arms retire exactly the deadline they were armed with, and that deadline is paired to the child occurrence by a committed operation rather than by proximity.
 
 Stated over the arm's own pending timer list rather than as a non-membership claim, because
+The two arms withdraw the deadline by different mechanisms and the statement is unchanged, because the
+existential over the pending list absorbs the difference. Quiescence erases from the completed state's
+own `timerWaits`; the deadline arm withdraws through regional cancellation of the Activity occurrence
+record that lists it, and witnesses the same shape with `deadline :: after.timerWaits` as its pending
+list. Stating absence instead would have been an over-reach in exactly the direction the paragraph below
+warns about.
+
 `RuntimeState` carries no uniqueness invariant over `timerWaits`: nothing in the type rules out two
 identical occurrences, so `erase` removing one does not by itself establish that no copy remains. The
 stronger claim — that no later lookup *by key* can rediscover a withdrawn deadline — needs uniqueness of
 the (instance, element, activation) key. The type still does not enforce it; `waitIdentitiesUnique`
 now names it, and no theorem establishes it of a reachable state. Neither fact is assumed here: the
-whole-value fact is why this theorem is stated over the arm's own pending list, and the key-uniqueness
-fact is named as a claim it does not make. -/
+whole-value fact is why this theorem is stated over a pending list, and the key-uniqueness fact is named
+as a claim it does not make. -/
 theorem bounded_scope_victory_withdraws_its_own_deadline (program : Program)
     (before after : RuntimeState)
     (step : BoundedScopeVictoryStep program before after) :
@@ -599,9 +596,9 @@ theorem bounded_scope_victory_withdraws_its_own_deadline (program : Program)
   | quiescence completed _ child deadline _ _ deadlineLive paired _ deadlineSurvives =>
       exact ⟨child, deadline, completed.timerWaits, deadlineLive, paired,
         deadlineSurvives, rfl⟩
-  | deadline _ child deadline output _ deadlineLive paired parentOwned =>
+  | deadline _ child deadline output _ deadlineLive paired =>
       exact ⟨child, deadline,
-        (interruptScope before child deadline.owner output).timerWaits,
-        deadlineLive, paired, parentOwned, rfl⟩
+        deadline :: (interruptScope before child deadline.owner output).timerWaits,
+        deadlineLive, paired, by simp, by simp⟩
 
 end BpmnSemantics.SemanticProcess
