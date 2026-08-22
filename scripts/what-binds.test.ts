@@ -90,6 +90,32 @@ test("reports the guard that constrains a not-yet-existing artifact through its 
 
 // Historical miss: a new scenario family directory was created while a reachability guard required
 // every directory under the tree to be linked from its registry README.
+// Historical miss: a guard pinning the exact text of root commands was invisible because its name
+// ends in `-test.ts` rather than `.test.ts`, so a change to those commands was planned without it
+// and only failed later, in a lane the focused gates did not run.
+test("reports a guard whatever supported test suffix its name carries", () => {
+  const bindings = bindingsFor("package.json", [
+    {
+      path: "scripts/ordinary.test.ts",
+      text: 'const root = read("package.json");',
+    },
+    {
+      path: "scripts/product-two.platform-test.ts",
+      text: 'const root = read("package.json");',
+    },
+    {
+      path: "packages/temporal-adapter/testkit/test/hosted.temporal-test.ts",
+      text: 'const root = read("package.json");',
+    },
+  ]);
+
+  assert.deepEqual(bindings.map(({ kind, path: file }) => ({ kind, path: file })), [
+    { kind: BindingKind.Guard, path: "packages/temporal-adapter/testkit/test/hosted.temporal-test.ts" },
+    { kind: BindingKind.Guard, path: "scripts/ordinary.test.ts" },
+    { kind: BindingKind.Guard, path: "scripts/product-two.platform-test.ts" },
+  ]);
+});
+
 test("reports both the tree guard and the registry a new artifact family must reach", () => {
   const bindings = bindingsFor(
     "scenarios/activity-boundary-timer/deadline-wins-scenario.json",
