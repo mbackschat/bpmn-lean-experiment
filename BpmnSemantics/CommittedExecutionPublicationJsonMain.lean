@@ -47,7 +47,10 @@ def wellFormednessCases : List (String × Program × SemanticId × RuntimeState)
       RuntimeStateWellFormedConformance.unorderedActivationsState)
   , ("notStartedWithWork", RuntimeStateWellFormedConformance.program,
       RuntimeStateWellFormedConformance.instanceId,
-      RuntimeStateWellFormedConformance.notStartedWithPendingInitiationState) ]
+      RuntimeStateWellFormedConformance.notStartedWithPendingInitiationState)
+  , ("undeclaredHiddenRecord", RuntimeStateWellFormedConformance.program,
+      RuntimeStateWellFormedConformance.instanceId,
+      RuntimeStateWellFormedConformance.undeclaredEventRaceState) ]
 
 def emit : IO Unit :=
   match committedExecutionPublicationParityJson?

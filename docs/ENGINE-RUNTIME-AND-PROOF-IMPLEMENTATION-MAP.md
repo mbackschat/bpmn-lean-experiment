@@ -161,6 +161,16 @@ The Lean modules under [`BpmnSemantics/`](../BpmnSemantics/), the pure core unde
 - **Strongest unresolved proof claim:** full observational checked-source-to-program-run preservation. [The bounded experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) retains a provisional direct account, a renamed positional-lowering discriminator, and accepted bounded structural and frontier results, but no run theorem. Production work uses the targeted preservation boundary in [the IL specification](SEMANTIC-PROCESS-IL-SPEC.md#lean-specification-and-proof-obligations); the general theorem reopens only when a second capsule needs the same proposition.
 - **Unsupported across families:** arbitrary serial composition, arbitrary graph progress, repeated or nested scope activation, cycles outside the exact registered root-scope User Task profile, concurrent Multi-Merge execution, Standard Loop Characteristics, executable sequential or parallel Multi-Instance semantics, Message payload, key, and global correlation, compensation, and general Event semantics.
 
+## Runtime-state well-formedness
+
+The runtime-state invariant states which `RuntimeState` values the account admits as one executable predicate rather than as prose, adding no BPMN capability, operation, field, observation, profile, or scenario.
+
+**Implemented.** `runtimeStateWellFormed`, indexed by program and expected instance identity, with named sub-predicates for lifecycle emptiness, owner liveness, wait-identity uniqueness, hosted wait declaration, two thirds of hidden-record declaration, and canonical collection order. `RuntimeStateMonotone` and `RuntimeStateTimeMonotone` as separate relations. `RSI-OBL-01`, and `RSI-OBL-02` under an assumed `runtimePositionValid` of the start result. Quantified withdrawal finality and its boundary-Timer consequence. Kernel-decided negatives per added conjunct, carried cross-language. An independent TypeScript validator on the fail-closed `admit` path with a five-schedule preservation lane. A Workflow-continuation witness for recovered time against live deadlines.
+
+**Absent.** Quantified Lean preservation and monotonicity across the registered arms, `RSI-OBL-03` through `RSI-OBL-06`: a **deliberately open** lane under [the assurance-lane rule](PROJECT-DESIGN.md#lean-assurance-lane). Reason: thirty-four arms whose hard cases each risk a predicate change invalidating arms already proved, and arms proved without a consumer buy no falsifiability. Reopen trigger: a consumer needing a stated conjunct discharged rather than assumed, which both boundary-Timer deferrals already are; a capsule needing a fact the list lacks; or a new operation kind or stimulus.
+
+Every Lean law consuming `waitIdentitiesUnique` therefore assumes it. Also absent: `RSI-BIND-05`'s called-record clause; `RSI-MONO-04`, not stated by the relation; and execution witnesses for branches no schedule reaches, including effect, incident, and event-race owners and the declaration instance scoping.
+
 ## Interrupting Activity boundary Timer
 
 The [interrupting Activity boundary Timer specification](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) is **implemented and evidence-closed** for one interrupting exact-`PT1S` deadline on a User Task.

@@ -177,6 +177,7 @@ export type LeanWellFormednessRejections = Readonly<{
   undeclaredWaitIdentity: boolean;
   unorderedCollection: boolean;
   notStartedWithWork: boolean;
+  undeclaredHiddenRecord: boolean;
 }>;
 
 /** The core surface the malformed-state constructions need, narrower than the parity test's own. */
@@ -191,9 +192,14 @@ export type WellFormednessProjectionApi = Pick<
  *
  * Perturbing a reachable state rather than constructing one from nothing is what makes each result
  * attributable: the unperturbed state is admitted, so a `true` here says the single named
- * perturbation is what the account refuses. The families differ from Lean's on purpose. Lean
- * perturbs a Timer wait and this side a User Task wait, because the classes are family-independent
- * and using the same family on both sides would let one family-specific mistake satisfy both.
+ * perturbation is what the account refuses.
+ *
+ * The wait families differ from Lean's on purpose: Lean perturbs a Timer wait and this side a User
+ * Task wait, so one family-specific mistake cannot satisfy both. That divergence covers only the
+ * three wait classes. `unorderedCollection` perturbs the same activation collection with the same
+ * two keys on both sides, `notStartedWithWork` sets the same flag on the empty state, and
+ * `undeclaredHiddenRecord` injects a comparable race, so for those three the construction is a
+ * mirror and agreement establishes only that neither side transcribed the account wrongly.
  */
 export function projectWellFormednessRejections(
   semanticCore: WellFormednessProjectionApi,
@@ -240,5 +246,28 @@ export function projectWellFormednessRejections(
       ],
     }),
     notStartedWithWork: refuses({ ...emptyState, initiationPending: true }),
+    // The hidden records need their own class: a race can name a live owner and a unique key while
+    // matching no gateway operation, so no wait conjunct reaches it.
+    undeclaredHiddenRecord: refuses({
+      ...reached,
+      eventRaces: [{
+        id: {
+          processInstanceId: expectedInstanceId,
+          elementId: "Gateway_Injected",
+          activation: 1,
+        },
+        owner: userTaskWait.owner,
+        messageSubscriptionId: {
+          processInstanceId: expectedInstanceId,
+          elementId: "Message_Injected",
+          activation: 1,
+        },
+        timerOccurrenceId: {
+          processInstanceId: expectedInstanceId,
+          elementId: "Timer_Injected",
+          activation: 1,
+        },
+      }],
+    }),
   };
 }

@@ -327,6 +327,7 @@ function decodePublicationParityEvidence(
     "undeclaredWaitIdentity",
     "unorderedCollection",
     "notStartedWithWork",
+    "undeclaredHiddenRecord",
   ]) {
     if (typeof value.wellFormednessRejections[field] !== "boolean") {
       throw new Error(`Lean well-formedness rejection ${field} must be Boolean`);

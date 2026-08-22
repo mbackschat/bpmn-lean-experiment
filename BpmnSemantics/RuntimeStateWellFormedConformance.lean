@@ -10,8 +10,9 @@ The fixtures exist because preservation cannot find a weakened conjunct: a predi
 fact preserves it vacuously, so every conjunct needs a state that fails it and would pass without it.
 They are the falsifying half of the account, not illustrations of it.
 
-Every state here is unreachable by construction, built by perturbing one field of the armed
-boundary-Timer state. A class an admitted transition could actually produce would be a semantic
+Every state here is unreachable by construction. All but one perturb a single field of the armed
+boundary-Timer state; the lifecycle negative perturbs the empty state instead, because a not-started
+state is the only place its conjunct applies. A class an admitted transition could actually produce would be a semantic
 defect rather than a witness, and the positive fact below is what keeps the perturbations honest: the
 unperturbed state is well-formed, so each negative differs from a reachable state in exactly the one
 respect its conjunct names.
@@ -46,7 +47,7 @@ def strandedTimerOwnerState : RuntimeState :=
 theorem stranded_timer_owner_is_refused :
     runtimeStateWellFormed program instanceId strandedTimerOwnerState = false := by decide +kernel
 
-theorem stranded_timer_owner_fails_exactly_ownership :
+theorem stranded_timer_owner_fails_ownership_with_siblings_intact :
     waitOwnersLive strandedTimerOwnerState = false ∧
       waitIdentitiesUnique strandedTimerOwnerState = true ∧
       canonicalCollectionOrder strandedTimerOwnerState = true := by decide +kernel
@@ -63,7 +64,7 @@ def duplicateTimerKeyState : RuntimeState :=
 theorem duplicate_timer_key_is_refused :
     runtimeStateWellFormed program instanceId duplicateTimerKeyState = false := by decide +kernel
 
-theorem duplicate_timer_key_fails_exactly_uniqueness :
+theorem duplicate_timer_key_fails_uniqueness_with_ownership_intact :
     waitIdentitiesUnique duplicateTimerKeyState = false ∧
       waitOwnersLive duplicateTimerKeyState = true := by decide +kernel
 
@@ -80,7 +81,7 @@ theorem undeclared_timer_element_is_refused :
     runtimeStateWellFormed program instanceId undeclaredTimerElementState = false := by
   decide +kernel
 
-theorem undeclared_timer_element_fails_exactly_declaration :
+theorem undeclared_timer_element_fails_declaration_with_siblings_intact :
     waitDeclarationsValid program instanceId undeclaredTimerElementState = false ∧
       waitOwnersLive undeclaredTimerElementState = true ∧
       waitIdentitiesUnique undeclaredTimerElementState = true := by decide +kernel
@@ -99,7 +100,7 @@ def unorderedActivationsState : RuntimeState :=
 theorem unordered_activations_are_refused :
     runtimeStateWellFormed program instanceId unorderedActivationsState = false := by decide +kernel
 
-theorem unordered_activations_fail_exactly_order :
+theorem unordered_activations_fail_order_with_ownership_intact :
     canonicalCollectionOrder unorderedActivationsState = false ∧
       waitOwnersLive unorderedActivationsState = true := by decide +kernel
 
@@ -115,8 +116,30 @@ theorem not_started_with_pending_initiation_is_refused :
     runtimeStateWellFormed program instanceId notStartedWithPendingInitiationState = false := by
   decide +kernel
 
-theorem not_started_with_pending_initiation_fails_exactly_lifecycle :
+theorem not_started_with_pending_initiation_fails_lifecycle :
     notStartedStateEmpty notStartedWithPendingInitiationState = false := by decide +kernel
+
+/-- Violating the `awaitEventRace` half of `RSI-BIND-05`: an event race no operation declares.
+
+The hidden records need their own witness because their conjunct reaches neither wait ownership nor
+wait identity: a race can name a live owner and a unique key while matching no gateway operation at
+all, so without this fixture deleting the conjunct would leave every other lane green. -/
+def undeclaredEventRaceState : RuntimeState :=
+  { armedState with
+    eventRaces :=
+      [ { id := { processInstanceId := instanceId, elementId := ⟨"Gateway_Injected"⟩, activation := 1 }
+        , owner := (armedState.scopeOccurrences.head?).elim
+            { processInstanceId := instanceId, definitionScopeId := ⟨""⟩, activation := 1 } (·.id)
+        , messageSubscriptionId :=
+            { processInstanceId := instanceId, elementId := ⟨"Message_Injected"⟩, activation := 1 }
+        , timerOccurrenceId :=
+            { processInstanceId := instanceId, elementId := ⟨"Timer_Injected"⟩, activation := 1 } } ] }
+
+theorem undeclared_event_race_is_refused :
+    runtimeStateWellFormed program instanceId undeclaredEventRaceState = false := by decide +kernel
+
+theorem undeclared_event_race_fails_hidden_record_declaration :
+    hiddenRecordDeclarationsValid program undeclaredEventRaceState = false := by decide +kernel
 
 /-- `W4`, violating `RSI-MONO-01`: a successor that lowers an activation counter after removing its
 wait.

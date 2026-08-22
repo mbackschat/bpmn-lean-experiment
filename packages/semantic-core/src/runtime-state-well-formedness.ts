@@ -155,10 +155,12 @@ function isSorted<T>(
  * consistent injected state. Both installed call sites pass an identity that cannot disagree, so
  * that conjunct is inert today and no witness claims otherwise.
  *
- * The result is empty for every state the registered corpus reaches with this owner installed,
- * which is what the gates establish. It is not established for every reachable state: no
- * preservation lane exists over the transition arms, so that stronger claim is owed rather than
- * held. Refusing a state here changes no BPMN meaning.
+ * The result is empty for every state the five schedules in the preservation lane reach, including
+ * the microsteps inside each stimulus closure. It is not established for every reachable state: no
+ * schedule there arms a boundary Timer, holds an effect wait or incident, starts from a Message or
+ * Timer, or cancels, so several branches of the ownership and declaration conjuncts are unexercised
+ * by execution, and the quantified Lean obligation is open. Refusing a state here changes no BPMN
+ * meaning.
  */
 export function runtimeStateDefects(
   program: SemanticProcessProgram,
@@ -340,11 +342,12 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
 /**
  * Whether the fail-closed command boundary admits this committed state.
  *
- * Preservation before enforcement is the rule this follows, and the evidence for it is not yet a
- * lane. The registered corpus passing with this gate installed is incidental coverage, not a
- * dedicated preservation result, so the owed executable preservation lane is recorded as remaining
- * work rather than treated as held here. Until it exists, treat a newly refused state as a defect in
- * this owner until the state is shown unreachable.
+ * Preservation before enforcement is the rule this follows, and its evidence is the core's own
+ * preservation lane over five schedules, which asserts both directions: that no successor is refused
+ * and that every stimulus commits, the second being what catches a conjunct that wrongly refuses a
+ * reachable state. The gate was nonetheless wired before that lane existed, inverting the order the
+ * owner decision requires. Treat a newly refused state as a defect in this owner until the state is
+ * shown unreachable.
  */
 export function isGateAdmissibleRuntimeState(
   program: SemanticProcessProgram,

@@ -16,11 +16,13 @@ because reading that identity out of the state under check would make the check 
 admit any internally consistent injected state; `runtimePositionValid` already takes the same
 parameter for the same reason.
 
-Where that index actually bites is worth stating exactly, because both installed call sites are
-narrower than the parameter suggests. The Workflow-continuation boundary is the only one holding an
-independent expectation, and it already refuses an instance mismatch before this predicate runs, so
-the identity conjunct fires at neither site today. The parameter is what lets a future caller with a
-genuine third-party expectation use it, and no evidence lane claims otherwise.
+Where that index actually bites is worth stating exactly. This Lean predicate has no gate call site
+at all: the optional pre-dispatch gate was not installed. The two installed sites belong to the
+independently written TypeScript counterpart, in command admission and at the Workflow-continuation
+boundary, and both are narrower than the parameter suggests: the first has no third-party expectation
+to supply and the second refuses an instance mismatch before the predicate runs, so the identity
+conjunct fires at neither. The parameter is what lets a caller with a genuine external expectation
+use it, and no evidence lane claims otherwise.
 
 Each conjunct carries the `RSI-` rule identifier of the reviewed account and is a separately named
 sub-predicate, so a fixture can assert which named conjunct rejects a malformed state rather than

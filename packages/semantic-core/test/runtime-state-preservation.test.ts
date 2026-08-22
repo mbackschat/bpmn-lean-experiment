@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   applyStimulusWithTrace,
+  CommandOutcome,
   initialState,
   isWellFormedRuntimeState,
   replayCommittedTransitions,
@@ -44,10 +45,13 @@ import {
  * produces is one the account admits, and no successor rewinds its predecessor.
  *
  * This is the lane the approved owner decision requires before the fail-closed command gate, and it
- * is deliberately a lane rather than incidental coverage. The other gates run these scenarios and
- * would fail if the gate refused one, but nothing there states preservation as the property under
- * test, so a conjunct that held only by luck of the corpus would look the same. Here the property is
- * the assertion.
+ * is deliberately a lane rather than incidental coverage: nothing else states preservation as the
+ * property under test, so a conjunct that held only by luck of the corpus would look the same.
+ *
+ * Two directions have to be asserted, not one. A conjunct that admits a bad successor is caught by
+ * the defect and regression assertions. A conjunct that wrongly refuses a reachable state is caught
+ * only by requiring each stimulus to commit, because the gate inspects the received state and a
+ * refusal simply produces no transitions to check.
  *
  * It is executable evidence over a finite set of schedules, not a proof. The quantified obligation
  * over every registered transition arm is a separate open lane in Lean, and passage here cannot
@@ -88,8 +92,11 @@ const schedules: ReadonlyArray<Schedule> = [
     name: "inclusive split selecting both branches, then joining",
     program: inclusiveProgram,
     instanceId: "inclusive-instance",
+    // `takeA` and `takeB` are the variables the split's candidate conditions test. Naming anything
+    // else selects the default branch instead, which is how this schedule silently asserted over
+    // nothing before commitment was required.
     stimuli: [
-      inclusiveStart([present("a"), present("b")]),
+      inclusiveStart([present("takeA"), present("takeB")]),
       inclusiveCompletion("Task_A"),
       inclusiveCompletion("Task_B"),
     ],
@@ -129,9 +136,17 @@ function committedStatesFor(
 ): ReadonlyArray<RuntimeState> {
   const traced = applyStimulusWithTrace(program, from, stimulus);
   const records = traced.committedTransitions;
-  if (records.length === 0) {
-    return [];
-  }
+  // A refused command yields no trace, so an empty record list would make every assertion below
+  // iterate nothing and report green. That is the failure this lane exists to catch: the gate
+  // inspects the *received* state, so a conjunct that wrongly refuses a reachable state refuses the
+  // next stimulus rather than producing a bad successor. Asserting commitment here is what makes the
+  // lane fail in that case instead of passing vacuously.
+  assert.equal(
+    traced.result.outcome,
+    CommandOutcome.Committed,
+    "the schedule must commit, or preservation below is asserted over nothing",
+  );
+  assert.ok(records.length > 0, "a committed stimulus must record at least one transition");
   // Replaying each prefix yields the state after each committed transition. `replayCommittedTransitions`
   // returns only the final state, so a single call would check the stimulus boundary and skip every
   // microstep inside it, which is where a closure of several internal operations lives.

@@ -117,7 +117,9 @@ evaluator that selects one of them, and a wrong selection is visible against it.
 
 Falsifiable evidence about meaning comes from runtime-state well-formedness preservation and
 monotonicity, not from this relation's agreement with the evaluator on the arms meeting the
-criterion above. -/
+criterion above. That evidence is executable in the semantic core over a bounded schedule set; the
+quantified Lean obligation over these arms is an open lane, so neither is a substitute for the
+other. -/
 inductive OperationStep (program : Program) :
     SemanticOperation → RuntimeState → RuntimeState → Prop where
   | initiate (id origin output) (before after : RuntimeState)
