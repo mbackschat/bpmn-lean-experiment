@@ -111,7 +111,7 @@ private def programProjectionBindingsValid (program : Program) : Bool :=
       (program.definitionScopes.filter fun candidate =>
         decide (candidate.originElementId = scope.originElementId)).length = 1
 
-private def exactLiveOccurrence (state : RuntimeState) (id : ScopeOccurrenceId) : Bool :=
+def exactLiveOccurrence (state : RuntimeState) (id : ScopeOccurrenceId) : Bool :=
   (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = id)).length = 1
 
 private def hostingRoot (program : Program) (instanceId : SemanticId)

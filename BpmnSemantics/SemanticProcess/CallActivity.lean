@@ -17,7 +17,7 @@ private def occurrenceBefore (left right : ScopeOccurrenceId) : Bool :=
     left.definitionScopeId.value < right.definitionScopeId.value
   else left.activation < right.activation
 
-private def callRecordBefore
+def callRecordBefore
     (left right : CalledProcessOccurrence) : Bool :=
   if occurrenceBefore left.caller right.caller then true
   else if left.caller = right.caller then

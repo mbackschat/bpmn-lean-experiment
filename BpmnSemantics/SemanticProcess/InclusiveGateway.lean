@@ -24,7 +24,7 @@ private def sameSelectionOwner (owner : ScopeOccurrenceId) (key : String)
     (record : SelectedBranchSet) : Bool :=
   decide (record.owner = owner && record.selectionKey = key)
 
-private def selectionBefore (left right : SelectedBranchSet) : Bool :=
+def selectionBefore (left right : SelectedBranchSet) : Bool :=
   if left.owner.processInstanceId.value ≠ right.owner.processInstanceId.value then
     left.owner.processInstanceId.value < right.owner.processInstanceId.value
   else if left.owner.definitionScopeId.value ≠

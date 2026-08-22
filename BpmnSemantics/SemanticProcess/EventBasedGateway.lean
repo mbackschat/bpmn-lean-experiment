@@ -34,7 +34,7 @@ def eventRaceTimerActivationCount (state : RuntimeState)
   nodeActivationCount (state.timerActivations.map fun value =>
     (value.elementId, value.count)) elementId
 
-private def eventRaceBefore (left right : EventRace) : Bool :=
+def eventRaceBefore (left right : EventRace) : Bool :=
   if left.id.processInstanceId.value ≠ right.id.processInstanceId.value then
     left.id.processInstanceId.value < right.id.processInstanceId.value
   else if left.id.elementId.value ≠ right.id.elementId.value then

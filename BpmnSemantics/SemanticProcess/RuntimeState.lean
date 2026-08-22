@@ -298,7 +298,7 @@ private def setActivationCount (activations : List TaskActivation)
   insertTaskActivation { taskId, count }
     (activations.filter fun activation => decide (activation.taskId ≠ taskId))
 
-private def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
+def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
   if left.processInstanceId.value ≠ right.processInstanceId.value then
     left.processInstanceId.value < right.processInstanceId.value
   else if left.owner.definitionScopeId.value ≠
