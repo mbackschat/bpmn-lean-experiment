@@ -91,10 +91,10 @@ export type CommandAdmission = DeepReadonly<{
  * site refuses a state belonging to another instance of the same program.
  *
  * Ordering matters more than the check: enforcement follows preservation, so a state this refuses
- * should be unreachable. The evidence is the registered corpus passing with the gate installed, not
- * a proof over the transition arms, so a newly refused state is a defect here until shown
- * unreachable. Installing the gate the other way round would turn accepted transitions into
- * refusals and change admitted models.
+ * should be unreachable. The core's own preservation evidence is owed rather than held, which the
+ * validator's owner records, so a newly refused state is a defect here until shown unreachable.
+ * Installing the gate the other way round would turn accepted transitions into refusals and change
+ * admitted models.
  */
 function admissibleCommittedState(
   program: SemanticProcessProgram,

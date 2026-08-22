@@ -562,8 +562,10 @@ Stated over the arm's own pending timer list rather than as a non-membership cla
 `RuntimeState` carries no uniqueness invariant over `timerWaits`: nothing in the type rules out two
 identical occurrences, so `erase` removing one does not by itself establish that no copy remains. The
 stronger claim — that no later lookup *by key* can rediscover a withdrawn deadline — needs uniqueness of
-the (instance, element, activation) key, and that invariant is likewise unstated. Both are left explicit
-rather than assumed. -/
+the (instance, element, activation) key. The type still does not enforce it; `waitIdentitiesUnique`
+now names it, and no theorem establishes it of a reachable state. Neither fact is assumed here: the
+whole-value fact is why this theorem is stated over the arm's own pending list, and the key-uniqueness
+fact is named as a claim it does not make. -/
 theorem bounded_scope_victory_withdraws_its_own_deadline (program : Program)
     (before after : RuntimeState)
     (step : BoundedScopeVictoryStep program before after) :

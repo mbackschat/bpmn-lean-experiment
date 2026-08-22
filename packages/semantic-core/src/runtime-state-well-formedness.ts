@@ -335,11 +335,11 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
 /**
  * Whether the fail-closed command boundary admits this committed state.
  *
- * Preservation before enforcement is the rule this follows, and the evidence for it is bounded:
- * every case in the registered corpus passes with this gate installed, and installing it turned two
- * hand-built states red, which is how the program-agreement classes came to be excluded. That is
- * executable evidence over a finite corpus, not a proof that no reachable state is refused. Treat a
- * newly refused state as a defect in this owner until the state is shown unreachable.
+ * Preservation before enforcement is the rule this follows, and the evidence for it is not yet a
+ * lane. The registered corpus passing with this gate installed is incidental coverage, not a
+ * dedicated preservation result, so the owed executable preservation lane is recorded as remaining
+ * work rather than treated as held here. Until it exists, treat a newly refused state as a defect in
+ * this owner until the state is shown unreachable.
  */
 export function isGateAdmissibleRuntimeState(
   program: SemanticProcessProgram,
