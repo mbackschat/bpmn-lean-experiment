@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Question and current boundary
 
@@ -278,8 +278,10 @@ A semantic checkpoint review is required after the first green checkpoint coveri
 
 ## Independent cold-review receipt
 
+The proposal review used two correction-audit rounds, which is the applicable bound. Round one closed seven required findings and three advisories and raised two new items; round two closed both and raised one required correction in [PLAN.md](PLAN.md) rather than in this capsule, which the same audit recorded as not consuming a third round because this document needed no change. The owner delegated the four recorded decisions with instruction to take the author's recommendations, so approval covers the account as decided here.
+
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `bf90dad` | `fork-turns-none` | `approve-with-required-edits` | `873f1b0` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
