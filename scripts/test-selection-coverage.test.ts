@@ -16,24 +16,11 @@ import { runnableTestFiles, unselectedTestFiles } from "./test-selection-coverag
  * newly orphaned file cannot hide inside an unchanged count.
  */
 
-/**
- * Files whose gate placement is an open decision, not an accepted gap.
- *
- * These four need a live Temporal server and are the only `.temporal-test.ts` files the capacity
- * lane's hand-written list omits. That list is the mechanism: it names five siblings explicitly, so
- * every file added afterwards had to be appended by hand and these were not. Their correct lane
- * depends on whether they are concurrency-safe, which takes a server run to establish, so they are
- * recorded with that reason rather than wired into a lane chosen by guess.
- */
-const pendingLaneDecision = [
-  "packages/temporal-adapter/testkit/test/workflow-chain-effect-rollover.temporal-test.ts",
-  "packages/temporal-adapter/testkit/test/workflow-chain-message-rollover.temporal-test.ts",
-  "packages/temporal-adapter/testkit/test/workflow-chain-timer-rollover.temporal-test.ts",
-  "packages/temporal-adapter/testkit/test/workflow-deployment-admission.temporal-test.ts",
-];
-
 test("every tracked test file is selected by a gate command", () => {
-  assert.deepEqual(unselectedTestFiles(), pendingLaneDecision);
+  // No allowance list. A gate lane that names its files by hand is exactly how four
+  // `.temporal-test.ts` witnesses came to run nowhere, so each lane globs the convention that
+  // decides its membership and this set stays empty.
+  assert.deepEqual(unselectedTestFiles(), []);
 });
 
 test("the runnable set excludes frozen legacy evidence and still covers the repository", () => {
