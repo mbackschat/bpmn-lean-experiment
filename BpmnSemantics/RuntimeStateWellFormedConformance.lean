@@ -43,6 +43,66 @@ def armedState : RuntimeState := ActivityBoundaryTimerConformance.armedState
 theorem armed_state_is_well_formed :
     runtimeStateWellFormed program instanceId armedState = true := by decide +kernel
 
+/-- `A1`, violating `AOO-BODY-01`: a record whose body has been removed while it survives.
+
+This is the state an owner-filtered region removal produces when the handler it strands is owned by a
+scope outside that region. The perturbation empties the task wait rather than the record, because that
+is the direction a cancellation takes: the body goes and the record is left naming it. -/
+def strandedActivityBodyState : RuntimeState :=
+  { armedState with waits := [] }
+
+theorem stranded_activity_body_is_refused :
+    runtimeStateWellFormed program instanceId strandedActivityBodyState = false := by decide +kernel
+
+theorem stranded_activity_body_fails_ownership_with_siblings_intact :
+    activityRecordsOwnLiveWork strandedActivityBodyState = false ∧
+      attachedTimersUnambiguous strandedActivityBodyState = true ∧
+      activityIdentitiesUnique strandedActivityBodyState = true ∧
+      waitOwnersLive strandedActivityBodyState = true := by decide +kernel
+
+/-- `A2`, violating `AOO-ATTACH-01`: two records claiming one live deadline.
+
+The duplicate names a different Activity element, so identity uniqueness stays true and the refusal is
+attributable to the ambiguity rather than to a repeated identity. -/
+def ambiguousAttachedTimerState : RuntimeState :=
+  { armedState with
+    activityOccurrences := armedState.activityOccurrences ++
+      armedState.activityOccurrences.map fun record =>
+        { record with activityElementId := { value := record.activityElementId.value ++ "_Other" } } }
+
+theorem ambiguous_attached_timer_is_refused :
+    runtimeStateWellFormed program instanceId ambiguousAttachedTimerState = false := by decide +kernel
+
+theorem ambiguous_attached_timer_fails_attachment_with_identity_intact :
+    attachedTimersUnambiguous ambiguousAttachedTimerState = false ∧
+      activityIdentitiesUnique ambiguousAttachedTimerState = true := by decide +kernel
+
+/-- `A3`, violating `AOO-ID-01`: one Activity occurrence identity carried twice. -/
+def duplicateActivityIdentityState : RuntimeState :=
+  { armedState with
+    activityOccurrences := armedState.activityOccurrences ++ armedState.activityOccurrences }
+
+theorem duplicate_activity_identity_is_refused :
+    runtimeStateWellFormed program instanceId duplicateActivityIdentityState = false := by
+  decide +kernel
+
+theorem duplicate_activity_identity_fails_uniqueness :
+    activityIdentitiesUnique duplicateActivityIdentityState = false := by decide +kernel
+
+/-- The counter agreement is asserted nowhere, so a state where it fails stays admitted.
+
+`activityActivations` agrees with `activations` under every registered profile because an Activity is
+armed once per body it produces. Asserting that agreement would install exactly the ordinal
+coincidence the record removes, so this is a positive fact rather than a negative. -/
+def disagreeingActivityCounterState : RuntimeState :=
+  { armedState with
+    activityActivations := armedState.activityActivations.map fun activation =>
+      { activation with count := activation.count + 4 } }
+
+theorem disagreeing_activity_counter_is_admitted :
+    runtimeStateWellFormed program instanceId disagreeingActivityCounterState = true := by
+  decide +kernel
+
 /-- `W1`, violating `RSI-OWN-01`: a Timer wait whose owner occurrence does not exist.
 
 The owner is stranded by naming an activation no occurrence carries rather than by emptying
@@ -171,6 +231,10 @@ conjunct: no predicate over one state can refuse it. -/
 def rewoundCounterSuccessor : RuntimeState :=
   { armedState with
     timerWaits := []
+    -- The Activity occurrence record is withdrawn with its deadline, as a real victory withdraws it.
+    -- Leaving the record behind would make this state malformed under `activityRecordsOwnLiveWork`,
+    -- and the fixture's whole point is that no single-state conjunct can refuse it.
+    activityOccurrences := []
     timerActivations := armedState.timerActivations.map fun activation =>
       { activation with count := activation.count - 1 } }
 

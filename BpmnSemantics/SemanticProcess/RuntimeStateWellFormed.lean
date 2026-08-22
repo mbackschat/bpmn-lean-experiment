@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 
@@ -65,7 +66,8 @@ def notStartedStateEmpty (state : RuntimeState) : Bool :=
   state.waits.isEmpty && state.messageWaits.isEmpty && state.timerWaits.isEmpty &&
     state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
     state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
-    state.calledProcessOccurrences.isEmpty && !state.initiationPending
+    state.calledProcessOccurrences.isEmpty && state.activityOccurrences.isEmpty &&
+    !state.initiationPending
 
 /-- `RSI-OWN-01`. Every wait, hidden record, and incident-retained wait names exactly one live scope
 occurrence as its owner.
@@ -80,7 +82,8 @@ def waitOwnersLive (state : RuntimeState) : Bool :=
     state.effectIncidents.all (fun incident => exactLiveOccurrence state incident.wait.owner) &&
     state.selectedBranchSets.all (fun record => exactLiveOccurrence state record.owner) &&
     state.eventRaces.all (fun race => exactLiveOccurrence state race.owner) &&
-    state.calledProcessOccurrences.all (fun record => exactLiveOccurrence state record.caller)
+    state.calledProcessOccurrences.all (fun record => exactLiveOccurrence state record.caller) &&
+    state.activityOccurrences.all (fun record => exactLiveOccurrence state record.owner)
 
 def occursOnce {α : Type} (key : α → α → Bool) (values : List α) (value : α) : Bool :=
   (values.filter (key value)).length = 1
@@ -118,7 +121,50 @@ def waitIdentitiesUnique (state : RuntimeState) : Bool :=
     state.timerWaits.all (occursOnce timerWaitKeyMatches state.timerWaits) &&
     state.effectWaits.all (occursOnce effectWaitKeyMatches state.effectWaits)
 
-/-- `RSI-ORDER-01`. The five collections whose every add site canonically inserts hold that order.
+/-! ## Activity occurrence ownership
+
+Two directions, and neither implies the other. A record whose body is gone is an Activity that
+outlived its own execution, which is exactly what an owner-filtered region removal produced when the
+handler it stranded was owned by a scope outside that region. A handler wait no record lists is the
+same defect seen from the wait: nothing identifies the Activity it guards, so no cancellation can find
+it.
+-/
+
+/-- Whether one record's body is live in this state. -/
+def activityBodyLive (state : RuntimeState) (record : ActivityOccurrence) : Bool :=
+  match record.body with
+  | .userTask task =>
+      (state.waits.filter fun wait =>
+        decide (wait.processInstanceId = task.processInstanceId) &&
+          decide (wait.task.id.value = task.elementId.value) &&
+          decide (wait.activation = task.activation)).length = 1
+  | .childScope scope => exactLiveOccurrence state scope
+
+/-- `AOO-BODY-01` and `AOO-OWN-01`. Every record has exactly one live body, and every Timer it lists
+is live under the record's own owner. -/
+def activityRecordsOwnLiveWork (state : RuntimeState) : Bool :=
+  state.activityOccurrences.all fun record =>
+    activityBodyLive state record &&
+      record.attachedTimers.all fun timer =>
+        state.timerWaits.any fun wait =>
+          timerIdNamesWait timer wait && decide (wait.owner = record.owner)
+
+/-- `AOO-ATTACH-01`. No Timer wait is claimed by two records.
+
+The criterion is "at most one" rather than "exactly one" on purpose: a Timer that belongs to no
+Activity at all, an Intermediate Catch Timer or an event-race arm, is listed by no record and must
+stay admitted. -/
+def attachedTimersUnambiguous (state : RuntimeState) : Bool :=
+  state.timerWaits.all fun wait =>
+    (state.activityOccurrences.filter fun record =>
+      anyTimerIdNamesWait record.attachedTimers wait).length ≤ 1
+
+/-- `AOO-ID-01`. The Activity occurrence triple appears at most once. -/
+def activityIdentitiesUnique (state : RuntimeState) : Bool :=
+  state.activityOccurrences.all
+    (occursOnce sameActivityOccurrence state.activityOccurrences)
+
+/-- `RSI-ORDER-01`. The collections whose every add site canonically inserts hold that order.
 
 The membership rule is a criterion rather than a list: a collection belongs here when all of its add
 sites insert canonically, and is excluded when they disagree. `scopeOccurrences` is excluded because
@@ -132,7 +178,8 @@ def canonicalCollectionOrder (state : RuntimeState) : Bool :=
       state.activations &&
     orderedBy selectionBefore state.selectedBranchSets &&
     orderedBy eventRaceBefore state.eventRaces &&
-    orderedBy callRecordBefore state.calledProcessOccurrences
+    orderedBy callRecordBefore state.calledProcessOccurrences &&
+    orderedBy activityOccurrenceBefore state.activityOccurrences
 
 /-! ## Layer 2: program agreement -/
 
@@ -261,6 +308,9 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     waitDeclarationsValid program instanceId state &&
     hiddenRecordDeclarationsValid program state &&
     canonicalCollectionOrder state &&
+    activityRecordsOwnLiveWork state &&
+    attachedTimersUnambiguous state &&
+    activityIdentitiesUnique state &&
     (match state.control with
      | .notStarted => notStartedStateEmpty state
      | _ => true)

@@ -16,8 +16,19 @@ open BpmnSemantics
 
 /-- Adds the parent-owned deadline to a state that has already entered the child scope. Separate from the entry so the shared scope-entry mechanism stays one owner. -/
 def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (boundaryTimer : BoundaryTimerArm) : RuntimeState :=
+    (childScopeId : DefinitionScopeId) (boundaryTimer : BoundaryTimerArm) : RuntimeState :=
   let activation := timerActivationCount state boundaryTimer.elementId + 1
+  let deadlineId : OccurrenceId :=
+    { processInstanceId := owner.processInstanceId
+      elementId := { value := boundaryTimer.elementId.value }
+      activation }
+  -- The Activity here is the Sub-Process node, and it is keyed by the definition scope it owns. The
+  -- two are in bijection: `WellFormedProgram` gives every non-root scope exactly one owning
+  -- `embeddedSubProcess`/`enterScope` pair, so the scope identifies the Activity as precisely as the
+  -- node would, without threading an origin through this relation and every theorem naming it.
+  let childOccurrence := state.scopeOccurrences.find? fun occurrence =>
+    decide (occurrence.id.definitionScopeId = childScopeId) &&
+      decide (occurrence.parent = some owner)
   { state with
     timerWaits :=
       { processInstanceId := owner.processInstanceId
@@ -26,6 +37,16 @@ def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
         activation
         deadlineMs := state.logicalTimeMs + boundaryTimer.durationMs
         output := boundaryTimer.output } :: state.timerWaits
+    activityOccurrences :=
+      match childOccurrence with
+      | none => state.activityOccurrences
+      | some child =>
+          { processInstanceId := owner.processInstanceId
+            activityElementId := { value := childScopeId.value }
+            activation := child.id.activation
+            owner
+            body := .childScope child.id
+            attachedTimers := [deadlineId] } :: state.activityOccurrences
     timerActivations :=
       { elementId := boundaryTimer.elementId, count := activation } ::
         state.timerActivations.filter fun value =>
@@ -37,7 +58,7 @@ def armBoundedScopeState? (state : RuntimeState) (input childEntry : ControlPlac
     Option RuntimeState := do
   let parent ← onlyTokenOwner? state input
   let entered ← enterScopeState? state input childEntry childScopeId
-  pure (armScopeDeadline entered parent boundaryTimer)
+  pure (armScopeDeadline entered parent childScopeId boundaryTimer)
 
 /-- Atomic declarative arming relation with explicit parent ownership, the shared scope entry, and the exact resulting state. -/
 inductive BoundedScopeArmingStep : RuntimeState → ControlPlaceId → ControlPlaceId →
@@ -48,7 +69,7 @@ inductive BoundedScopeArmingStep : RuntimeState → ControlPlaceId → ControlPl
       (owned : onlyTokenOwner? before input = some parent)
       (entry : enterScopeState? before input childEntry childScopeId = some entered) :
       BoundedScopeArmingStep before input childEntry childScopeId boundaryTimer
-        (armScopeDeadline entered parent boundaryTimer)
+        (armScopeDeadline entered parent childScopeId boundaryTimer)
 
 theorem armBoundedScopeState_sound (before after : RuntimeState)
     (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
@@ -70,8 +91,9 @@ theorem armBoundedScopeState_sound (before after : RuntimeState)
 
 /-- Arming never leaves the child scope without its deadline: the armed state always holds one more Timer wait than the entry it refines. -/
 theorem armBoundedScope_adds_one_deadline (state : RuntimeState)
-    (owner : ScopeOccurrenceId) (boundaryTimer : BoundaryTimerArm) :
-    (armScopeDeadline state owner boundaryTimer).timerWaits.length =
+    (owner : ScopeOccurrenceId) (childScopeId : DefinitionScopeId)
+    (boundaryTimer : BoundaryTimerArm) :
+    (armScopeDeadline state owner childScopeId boundaryTimer).timerWaits.length =
       state.timerWaits.length + 1 := by
   simp [armScopeDeadline]
 

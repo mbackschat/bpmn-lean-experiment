@@ -144,13 +144,19 @@ mechanical argument that a child-owned deadline would leave the child permanentl
 
 `attachedTimers` names Timer occurrences rather than a union of handler families, because Timer is the
 only attached-handler family that produces a wait. What keeps a foreign identity out is the
-well-formedness conjunct requiring each entry to resolve in `timerWaits`, not the field's type. -/
+well-formedness conjunct requiring each entry to resolve in `timerWaits`, not the field's type.
+
+This carries no operation identity, and that is a deliberate divergence from the TypeScript record
+rather than an omission. The semantic core reads the operation off the record to find its definition;
+here the Activity element determines that operation uniquely under `programWellFormed`, so the field
+would need threading through the arming relation and every theorem naming it for no consumer. The two
+runtime representations are permitted to differ where the transition account and the canonical
+observation contract do not. -/
 structure ActivityOccurrence where
   processInstanceId : SemanticId
   activityElementId : NodeId
   activation : Nat
   owner : ScopeOccurrenceId
-  operationId : OperationId
   body : ActivityBody
   attachedTimers : List OccurrenceId
   deriving Repr, DecidableEq
@@ -315,6 +321,16 @@ private def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
   (state.activations.find? fun activation =>
     decide (activation.taskId = taskId)).map (·.count) |>.getD 0
 
+/-- The Activity-element activation high-water mark, or zero when the element is absent.
+
+Separate from `activationCount` even though both are keyed by the same identifier, because they count
+different things: how many times an Activity was activated, against how many occurrences its body has
+produced. They agree under every registered profile and nothing reads the agreement. -/
+private def activityActivationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
+    Nat :=
+  (state.activityActivations.find? fun activation =>
+    decide (activation.taskId = taskId)).map (·.count) |>.getD 0
+
 private def insertTaskActivation (activation : TaskActivation) :
     List TaskActivation → List TaskActivation
   | [] => [activation]
@@ -422,6 +438,7 @@ def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
     (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm) : RuntimeState :=
   let taskActivation := activationCount state task.id + 1
   let timerActivation := timerActivationCount state boundaryTimer.elementId + 1
+  let activityActivation := activityActivationCount state task.id + 1
   { state with
     tokens := removeToken state.tokens input owner
     waits := insertUserTaskWait
@@ -442,7 +459,24 @@ def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
     timerActivations :=
       { elementId := boundaryTimer.elementId, count := timerActivation } ::
         state.timerActivations.filter fun value =>
-          decide (value.elementId ≠ boundaryTimer.elementId) }
+          decide (value.elementId ≠ boundaryTimer.elementId)
+    activityOccurrences :=
+      { processInstanceId := instanceId
+        activityElementId := { value := task.id.value }
+        activation := activityActivation
+        owner
+        body := .userTask
+          { processInstanceId := instanceId
+            elementId := { value := task.id.value }
+            activation := taskActivation }
+        attachedTimers :=
+          [{ processInstanceId := instanceId
+             elementId := { value := boundaryTimer.elementId.value }
+             activation := timerActivation }] } :: state.activityOccurrences
+    activityActivations :=
+      { taskId := task.id, count := activityActivation } ::
+        state.activityActivations.filter fun value =>
+          decide (value.taskId ≠ task.id) }
 
 def activateMessage (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
