@@ -170,6 +170,41 @@ export function activityBodyScope(
   return record.body.kind === ActivityBodyKind.ChildScope ? record.body.scope : undefined;
 }
 
+/**
+ * The live wait a record's body names, or `undefined` when its body is a child scope or is gone.
+ *
+ * Generic over the wait shape rather than taking `RuntimeState`, because the state module imports this
+ * one for the record type; a value dependency the other way would close a cycle. Consumers pass the
+ * collection they already hold.
+ */
+export function activityBodyTaskWait<Wait extends { readonly id: UserTaskInstanceId }>(
+  record: ActivityOccurrence,
+  userTaskWaits: ReadonlyArray<Wait>,
+): Wait | undefined {
+  const body = activityBodyTask(record);
+  return body === undefined
+    ? undefined
+    : only(userTaskWaits.filter(({ id }) => sameOccurrenceId(id, body)));
+}
+
+/** The live Timer waits a record's attached list names, in the list's order. */
+export function attachedTimerWaits<Wait extends { readonly id: TimerOccurrenceId }>(
+  record: ActivityOccurrence,
+  timerWaits: ReadonlyArray<Wait>,
+): ReadonlyArray<Wait> {
+  return record.attachedTimers.flatMap((attached) => {
+    const wait = only(timerWaits.filter(({ id }) => sameOccurrenceId(id, attached)));
+    return wait === undefined ? [] : [wait];
+  });
+}
+
+/** Identity equality for the shared three-field occurrence shape. */
+export function sameOccurrenceId(left: OccurrenceId, right: OccurrenceId): boolean {
+  return left.processInstanceId === right.processInstanceId &&
+    left.elementId === right.elementId &&
+    left.activation === right.activation;
+}
+
 function only<T>(values: ReadonlyArray<T>): T | undefined {
   return values.length === 1 ? values[0] : undefined;
 }

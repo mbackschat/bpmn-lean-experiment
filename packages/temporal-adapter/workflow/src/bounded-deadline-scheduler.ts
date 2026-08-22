@@ -23,10 +23,13 @@ import type {
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
+  activityBodyTaskWait,
+  attachedTimerWaits,
   isBoundaryTimerDefinition,
   isBoundedScopeDeadlineDefinition,
   isMonitoredBoundaryTimerDefinition,
 } from "@bpmn-lean/semantic-core";
+import type { ActivityOccurrence } from "@bpmn-lean/semantic-core";
 import { ApplicationFailure } from "@temporalio/workflow";
 
 import {
@@ -207,49 +210,68 @@ export function createBoundedDeadlineScheduler(
 /**
  * The bounded pair, or `undefined` when this state holds no boundary deadline of this family.
  *
- * Pre-start host admission already restricts the program to one isolated bounded wait with an exact
- * `PT1S` deadline, so this reads the committed state rather than re-deciding admission.
+ * Read from the Activity occurrence record. The previous form paired by whole-state wait cardinality,
+ * requiring `timerWaits.length === 1` here and `userTaskWaits.length === 1` below, which is an
+ * assumption about the entire runtime state rather than a statement about one Activity. It held only
+ * because every profile admitting a boundary deadline admits nothing concurrent with it, and it was
+ * weaker than the core's own join, which at least compared ordinals.
  */
+function managedPair(
+  semanticProcess: SemanticProcessProgram,
+  state: RuntimeState,
+  family: BoundedDeadlineFamily,
+): Readonly<{ deadline: DurableTimer; record: ActivityOccurrence }> | undefined {
+  const owned = state.activityOccurrences.flatMap((record) =>
+    record.attachedTimers.flatMap((attached) =>
+      family.ownsDeadline(semanticProcess, attached) ? [{ record, attached }] : []
+    )
+  );
+  const [only] = owned;
+  if (owned.length !== 1 || only === undefined) {
+    return undefined;
+  }
+  const [timer] = attachedTimerWaits(only.record, state.timerWaits);
+  return timer === undefined ? undefined : {
+    deadline: {
+      id: timer.id,
+      deadlineMs: timer.deadlineMs,
+      remainingMs: timer.deadlineMs - state.logicalTimeMs,
+    },
+    record: only.record,
+  };
+}
+
 function managedDeadline(
   semanticProcess: SemanticProcessProgram,
   state: RuntimeState,
   family: BoundedDeadlineFamily,
 ): DurableTimer | undefined {
-  const [timer] = state.timerWaits;
-  if (
-    state.timerWaits.length !== 1 ||
-    timer === undefined ||
-    !family.ownsDeadline(semanticProcess, timer.id)
-  ) {
-    return undefined;
-  }
-  return {
-    id: timer.id,
-    deadlineMs: timer.deadlineMs,
-    remainingMs: timer.deadlineMs - state.logicalTimeMs,
-  };
+  return managedPair(semanticProcess, state, family)?.deadline;
 }
 
 /**
- * Both admitted profiles hold exactly one live bounded wait while the deadline runs — the bounded
- * Activity's own task, or the bounded scope's single child task — so this shape check is shared even
- * though the semantic outcome each family protects is not.
+ * The deadline plus the invariant that its Activity is the one this family hosts.
+ *
+ * Both admitted profiles hold exactly one live bounded body while the deadline runs — the bounded
+ * Activity's own task, or the bounded scope's single child task — but that is now checked as a
+ * property of the record's own body rather than of the whole state's wait count.
  */
 function requireManagedDeadline(
   semanticProcess: SemanticProcessProgram,
   state: RuntimeState,
   family: BoundedDeadlineFamily,
 ): DurableTimer {
-  const deadline = managedDeadline(semanticProcess, state, family);
-  const [task] = state.userTaskWaits;
+  const pair = managedPair(semanticProcess, state, family);
+  const task = pair === undefined
+    ? undefined
+    : activityBodyTaskWait(pair.record, state.userTaskWaits);
   if (
-    deadline === undefined ||
-    state.userTaskWaits.length !== 1 ||
+    pair === undefined ||
     task === undefined ||
-    task.id.processInstanceId !== deadline.id.processInstanceId ||
-    deadline.remainingMs !== 1_000
+    task.id.processInstanceId !== pair.deadline.id.processInstanceId ||
+    pair.deadline.remainingMs !== 1_000
   ) {
     throw hostInvariantFailure(family.invariantMessage);
   }
-  return deadline;
+  return pair.deadline;
 }
