@@ -2,12 +2,15 @@ import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Activity occurrence ownership
 
-This module owns the canonical order over Activity occurrence records, the lookups that replace the
-activation-ordinal joins, and the laws about what a record's removal withdraws.
+This module owns the lookups that replace the activation-ordinal joins and the laws about what a
+record's removal withdraws.
 
-The representation itself lives with `RuntimeState`, because it names `ScopeOccurrenceId` and a
-separate module holding the structure would close an import cycle. That split follows `EventRace`,
-whose structure is declared there and whose runtime account lives elsewhere.
+The representation lives with `RuntimeState`, because it names `ScopeOccurrenceId` and a separate
+module holding the structure would close an import cycle. That split follows `EventRace`, whose
+structure is declared there and whose runtime account lives elsewhere. `activityOccurrenceBefore` and
+`insertActivityOccurrence` live there for the same reason and are not restated here: the arming
+transitions that must insert canonically are themselves in that module, so a copy of the order here
+would be the second disagreeing fact.
 
 Scope boundary: identity, ownership, and withdrawal completeness. It adds no BPMN capability, no
 operation kind, and no public observation, and it states nothing about preservation of the
@@ -18,15 +21,6 @@ deliberately open lane.
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-/-- Canonical order: Process instance, then Activity element, then activation. -/
-def activityOccurrenceBefore (left right : ActivityOccurrence) : Bool :=
-  if left.processInstanceId.value ≠ right.processInstanceId.value then
-    left.processInstanceId.value < right.processInstanceId.value
-  else if left.activityElementId.value ≠ right.activityElementId.value then
-    left.activityElementId.value < right.activityElementId.value
-  else
-    left.activation < right.activation
 
 /-- Identity equality for the Activity occurrence triple. -/
 def sameActivityOccurrence (left right : ActivityOccurrence) : Bool :=

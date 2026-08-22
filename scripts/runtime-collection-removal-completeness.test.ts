@@ -7,12 +7,18 @@ import { fileURLToPath } from "node:url";
 /**
  * Both removal routes must clean every live owner-keyed runtime collection.
  *
- * A live owner disappears through exactly two routes, and they classify by different keys. Regional
- * cancellation selects a scope occurrence and its descendants; called-instance removal selects a
- * process-instance closure, because a called root has no runtime parent and is therefore in no
- * subtree. A collection cleaned by one route and forgotten by the other is not a partial fix: it is a
- * state whose entries name owners that no longer exist, reachable only through the route that forgot
+ * Two routes remove a live owner *by filtering every collection*, and they classify by different keys.
+ * Regional cancellation selects a scope occurrence and its descendants; called-instance removal
+ * selects a process-instance closure, because a called root has no runtime parent and is therefore in
+ * no subtree. A collection cleaned by one route and forgotten by the other is not a partial fix: it is
+ * a state whose entries name owners that no longer exist, reachable only through the route that forgot
  * it, which is why such an omission survives every schedule the other route covers.
+ *
+ * `completeScope` also removes a scope occurrence and is deliberately not a third route here. It
+ * removes only a quiescent occurrence, and quiescence excludes every owned wait, so there is nothing
+ * for it to filter; a record that nonetheless survived would name a missing owner and trip the already
+ * gated `DanglingWaitOwner`. Its withdrawal path refuses outright when the record is absent rather
+ * than filtering collections, so this guard's shape does not describe it.
  *
  * The guard is source-derived because neither route is on the package surface and no registered
  * program composes regional cancellation with a Call Activity, so no executable schedule reaches the

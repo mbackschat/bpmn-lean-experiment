@@ -41,13 +41,13 @@ def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
         activation
         deadlineMs := state.logicalTimeMs + boundaryTimer.durationMs
         output := boundaryTimer.output } :: state.timerWaits
-    activityOccurrences :=
+    activityOccurrences := insertActivityOccurrence
       { processInstanceId := owner.processInstanceId
         activityElementId := { value := childScopeId.value }
         activation := activityActivation
         owner
         body := .childScope child
-        attachedTimers := [deadlineId] } :: state.activityOccurrences
+        attachedTimers := [deadlineId] } state.activityOccurrences
     activityActivations :=
       { taskId := { value := childScopeId.value }, count := activityActivation } ::
         state.activityActivations.filter fun value =>
@@ -121,7 +121,7 @@ theorem armBoundedScope_records_one_occurrence (state : RuntimeState)
     (child : ScopeOccurrenceId) (boundaryTimer : BoundaryTimerArm) :
     (armScopeDeadline state owner childScopeId child boundaryTimer).activityOccurrences.length =
       state.activityOccurrences.length + 1 := by
-  simp [armScopeDeadline]
+  simp [armScopeDeadline, insertActivityOccurrence_length]
 
 /-- Every committed bounded-scope operation, as the child scope it enters paired with its deadline. -/
 def boundedScopeOperations (program : Program) :

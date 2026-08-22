@@ -228,7 +228,7 @@ Existing executable constraints include [the runtime-state invariant's negatives
 | [FlowNode occurrence lifecycle](../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 44 |
 | [publication external completeness](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 167 |
 | [bounded deadline scheduler](../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) | 325 |
-| [Lean runtime state](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 90 |
+| [Lean runtime state](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 60 |
 | [Lean runtime-state well-formedness](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 271 |
 | [Lean bounded task](../BpmnSemantics/SemanticProcess/BoundedTask.lean) | 186 |
 | [Lean monitored task](../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 126 |
@@ -247,7 +247,7 @@ Nearest unsupported claim, and it is sharper than preservation: that the record'
 
 Principal common-mode risk: one author would write the record, the conjuncts, the migration, and the negatives, so a wrong ownership account could be consistently wrong everywhere. Three things constrain it. `AOO-MIGRATE-01` is judged by retained results the migration does not author. The Lean and TypeScript negatives are separately written and reach the parity channel by defect label, not by shared code. And the adapter's pairing is judged against a state holding a second concurrent wait, which no core test constructs.
 
-Nearest realistic counterexample, and it has already happened once on paper: a migration that records the edge correctly and *also* leaves an ordinal comparison somewhere as a redundant second check, so the two agree under every registered profile and the record's value is untested. An earlier draft of this capsule enumerated four derivation sites and missed the two in the publication path, which is that counterexample as a census error rather than an implementation one. The six-site static guard exists for exactly this, and it is seeded by reintroducing one comparison in a publication owner, because that is the half a transition-focused census loses.
+Nearest realistic counterexample, and it has already happened once on paper: a migration that records the edge correctly and *also* leaves an ordinal comparison somewhere as a redundant second check, so the two agree under every registered profile and the record's value is untested. An earlier draft of this capsule enumerated four derivation sites and missed the two in the publication path, which is that counterexample as a census error rather than an implementation one. The five-producer static guard exists for exactly this, and it is seeded by reintroducing one comparison in the migrated publication owner, because that is the half a transition-focused census loses.
 
 Reopen before admitting a non-Timer attached handler, an effect body arm, body replacement, repeated boundary firing, repeated outer activation, concurrent occurrences of one Activity element, a public projection of any record field, a loop controller that stores its payload in this record rather than referencing its identity, or a representation that cannot broaden body cardinality without reinterpreting a model accepted here.
 

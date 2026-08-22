@@ -126,7 +126,7 @@ Excluded:
 
 The existing inner task and timer identities remain unchanged. The outer identity is [the shared Activity occurrence identity](../ACTIVITY-OCCURRENCE-OWNERSHIP-PROPOSAL.md), which is structurally distinct from `OccurrenceId` by field name so a task occurrence cannot be substituted for its controller.
 
-An earlier draft of this section declared its own `MultiInstanceActivityInstanceId` over exactly the three fields `ActivityOccurrenceId` carries. It is retired rather than kept as an alias: the shape is identical, so no projected byte changes, and two names for one identity is the second disagreeing fact this capsule's own rule forbids.
+An earlier draft of this section declared its own outer identity over exactly the three fields `ActivityOccurrenceId` carries. `MultiInstanceActivityInstanceId` is retired rather than kept as an alias: the shape is identical, so no projected byte changes, and two names for one identity is the second disagreeing fact this capsule's own rule forbids.
 
 ```ts
 type OpenSequentialMultiInstanceIteration = {

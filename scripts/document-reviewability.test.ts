@@ -487,13 +487,11 @@ test("every capsule proposal names the guards and owners that already bind it", 
     const markdown = await readFile(path.join(projectRoot, capsuleRoot, proposal), "utf8");
     const headroomOnly = capsuleRoot === "docs";
     const section = headingSection(markdown, bindingInventoryHeading);
-    if (section === null) {
-      if (!headroomOnly) {
-        findings.push(`${proposal}: no ${bindingInventoryHeading} section`);
-      }
+    if (section === null && !headroomOnly) {
+      findings.push(`${proposal}: no ${bindingInventoryHeading} section`);
       continue;
     }
-    const linked = [...new Set(linkedPaths(section, capsuleRoot))];
+    const linked = [...new Set(linkedPaths(section ?? "", capsuleRoot))];
     const unresolved: string[] = [];
     for (const target of linked) {
       if (!await exists(target)) {
@@ -516,11 +514,18 @@ test("every capsule proposal names the guards and owners that already bind it", 
     ) {
       findings.push(`${proposal}: names no source owner it will grow`);
     }
-    const owners = headingSection(section, ownerInventoryHeading);
+    // The section contract requires the owner table *inside* the binding section, and that requirement
+    // applies to capsules only. The headroom half then looks the table up document-wide, because
+    // reaching it through the binding section made a second placement decide jurisdiction one level
+    // down: a root proposal without that section escaped the staleness check entirely. Row scoping
+    // stays at the heading rather than the whole document, because other tables also open with a link
+    // cell and would be read as malformed headroom rows.
+    if (section !== null && !headroomOnly && headingSection(section, ownerInventoryHeading) === null) {
+      findings.push(`${proposal}: no ${ownerInventoryHeading} subsection`);
+      continue;
+    }
+    const owners = headingSection(markdown, ownerInventoryHeading);
     if (owners === null) {
-      if (!headroomOnly) {
-        findings.push(`${proposal}: no ${ownerInventoryHeading} subsection`);
-      }
       continue;
     }
     findings.push(

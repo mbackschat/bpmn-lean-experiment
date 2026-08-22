@@ -17,6 +17,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityBodyKind,
   CommandOutcome,
   applyStimulus,
   initialState,
@@ -24,7 +25,12 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState } from "@bpmn-lean/semantic-core";
 
-import { boundedScopeProgram, instanceId, start } from "./bounded-scope-fixture.ts";
+import {
+  boundedScopeProgram,
+  fireDeadline,
+  instanceId,
+  start,
+} from "./bounded-scope-fixture.ts";
 
 function armedState(): RuntimeState {
   const started = applyStimulus(boundedScopeProgram, initialState, start);
@@ -50,31 +56,86 @@ test("the armed state is admitted, and its deadline is owned outside the child r
   assert.deepEqual(defects(state), []);
 });
 
-test("a region removal that leaves its attached deadline behind is refused", () => {
-  const state = armedState();
+/**
+ * Exactly what owner-filtered subtree removal produces: the child region is gone, every token and
+ * wait it owned is gone, and the parent-owned deadline is untouched.
+ */
+function strandedState(state: RuntimeState): RuntimeState {
   const child = state.scopeOccurrences.find(({ parent }) => parent !== null);
-  assert.ok(child !== undefined);
-
-  // Exactly what owner-filtered subtree removal produces: the child region is gone, every token and
-  // wait it owned is gone, and the parent-owned deadline is untouched.
-  const stranded: RuntimeState = {
+  assert.ok(child !== undefined, "arming must create one child occurrence");
+  const outsideChild = (scopeId: string): boolean =>
+    scopeId !== child.id.definitionScopeId;
+  return {
     ...state,
-    scopeOccurrences: state.scopeOccurrences.filter((candidate) =>
-      candidate.id.definitionScopeId !== child.id.definitionScopeId
+    scopeOccurrences: state.scopeOccurrences.filter(({ id }) =>
+      outsideChild(id.definitionScopeId)
     ),
     controlTokens: state.controlTokens.filter(({ owner }) =>
-      owner.definitionScopeId !== child.id.definitionScopeId
+      outsideChild(owner.definitionScopeId)
     ),
     userTaskWaits: state.userTaskWaits.filter(({ owner }) =>
-      owner.definitionScopeId !== child.id.definitionScopeId
+      outsideChild(owner.definitionScopeId)
     ),
   };
+}
 
+test("a region removal that leaves its attached deadline behind is refused", () => {
   assert.notDeepEqual(
-    defects(stranded),
+    defects(strandedState(armedState())),
     [],
     "a deadline whose Activity body is gone must be refused, not admitted",
   );
+});
+
+/**
+ * The fail-closed command boundary, not only the predicate.
+ *
+ * Adding the three ownership classes to the gated set changed which committed states accept a command,
+ * and the predicate tests above cannot see that: they passed before the gating too. This asserts the
+ * behaviour the gating bought, and it asserts it attributably. The same stimulus commits against the
+ * admitted armed state, so the refusal is the record's stranding rather than the stimulus, and the
+ * refused command must leave the received state byte-identical because a fail-closed boundary that
+ * mutated on refusal would be worse than no boundary.
+ */
+test("the fail-closed command gate refuses a stranded record and preserves the state", () => {
+  const control = armedState();
+  const admitted = applyStimulus(boundedScopeProgram, control, fireDeadline);
+  assert.equal(admitted.outcome, CommandOutcome.Committed);
+
+  const [record] = control.activityOccurrences;
+  assert.ok(record !== undefined);
+  // The perturbation is confined to `activityOccurrences`: every scope occurrence, token, and wait is
+  // the admitted control's, and only the record's claim about its own body moves off the live task.
+  // Removing the child region instead would also refuse, but not attributably, because the deadline
+  // could then be refused for the missing region rather than by this boundary.
+  const bodyAbsent: RuntimeState = {
+    ...control,
+    activityOccurrences: [{
+      ...record,
+      body: record.body.kind === ActivityBodyKind.ChildScope
+        ? {
+          kind: ActivityBodyKind.ChildScope,
+          scope: { ...record.body.scope, activation: record.body.scope.activation + 1 },
+        }
+        : record.body,
+    }],
+  };
+  assert.notDeepEqual(defects(bodyAbsent), [], "the perturbation must be refused by the predicate");
+  assert.deepEqual(
+    { ...bodyAbsent, activityOccurrences: control.activityOccurrences },
+    control,
+    "the perturbation must differ from the control in activityOccurrences alone",
+  );
+
+  const refused = applyStimulus(boundedScopeProgram, bodyAbsent, fireDeadline);
+  assert.notEqual(refused.outcome, CommandOutcome.Committed);
+  assert.deepEqual(refused.state, bodyAbsent);
+
+  // The stranded state the subtree removal produces is refused by the same boundary.
+  const stranded = strandedState(armedState());
+  const strandedRefusal = applyStimulus(boundedScopeProgram, stranded, fireDeadline);
+  assert.notEqual(strandedRefusal.outcome, CommandOutcome.Committed);
+  assert.deepEqual(strandedRefusal.state, stranded);
 });
 
 /**

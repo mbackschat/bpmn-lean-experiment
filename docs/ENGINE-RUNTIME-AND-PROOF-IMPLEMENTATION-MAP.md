@@ -197,7 +197,8 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 
 - both first reds are state-level negatives, because no public transition produces either state: every profile admitting a boundary deadline admits exactly one Activity armed exactly once
 - the reachable schedule-level evidence is conservation, byte-identical retained results across the three families' six registered scenarios, which says nothing changed rather than that anything improved
-- positive schedule-level evidence for the join reduces to the enumerated six-site guard
+- positive schedule-level evidence for the join reduces to the enumerated five-producer guard with its one exempt oracle
+- no fixture rewinds `activityActivations`, so the new monotonicity family is asserted only positively by the five-schedule preservation lane. Both languages carry the family in their regression oracle; neither carries a negative that would fail if the family were dropped from it
 - the called-instance removal route has no executable schedule, because no registered program composes regional cancellation with a Call Activity. Its record filter is held by [a source-derived completeness guard](../scripts/runtime-collection-removal-completeness.test.ts) that derives the required collections from `RuntimeState`, and by Lean's quantified `cancelScopeSubtree_retains_no_withdrawn_record`, whose region predicate unions the subtree with the called-instance closure
 - three cancellation routes reach a bounded region without being composable with one today: Error interruption, incident-gated cancellation, and `terminateScope`
 

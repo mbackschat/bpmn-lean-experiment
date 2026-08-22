@@ -364,6 +364,40 @@ private def insertUserTaskWait (wait : UserTaskWait) :
         wait :: current :: rest
       else current :: insertUserTaskWait wait rest
 
+/-- Canonical order: Process instance, then Activity element, then activation. -/
+def activityOccurrenceBefore (left right : ActivityOccurrence) : Bool :=
+  if left.processInstanceId.value ≠ right.processInstanceId.value then
+    left.processInstanceId.value < right.processInstanceId.value
+  else if left.activityElementId.value ≠ right.activityElementId.value then
+    left.activityElementId.value < right.activityElementId.value
+  else
+    left.activation < right.activation
+
+/-- Canonical insertion, so an arming transition preserves `RSI-ORDER-01` rather than prepending.
+
+An ordered insert rather than a sort of the whole list: the invariant already holds of the list being
+inserted into, so sorting would re-derive what is given, and the kernel reduces this to the singleton
+arm at the one-record cardinality every current profile admits.
+-/
+def insertActivityOccurrence (record : ActivityOccurrence) :
+    List ActivityOccurrence → List ActivityOccurrence
+  | [] => [record]
+  | current :: rest =>
+      if activityOccurrenceBefore record current then
+        record :: current :: rest
+      else current :: insertActivityOccurrence record rest
+
+/-- Canonical insertion adds exactly one record, whichever position the order selects. -/
+theorem insertActivityOccurrence_length (record : ActivityOccurrence)
+    (records : List ActivityOccurrence) :
+    (insertActivityOccurrence record records).length = records.length + 1 := by
+  induction records with
+  | nil => rfl
+  | cons current rest ih =>
+      by_cases before : activityOccurrenceBefore record current
+      · simp [insertActivityOccurrence, before]
+      · simp [insertActivityOccurrence, before, ih]
+
 private def elementActivationCount (activations : List (NodeId × Nat))
     (elementId : NodeId) : Nat :=
   (activations.find? fun activation => decide (activation.1 = elementId))
@@ -460,7 +494,7 @@ def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
       { elementId := boundaryTimer.elementId, count := timerActivation } ::
         state.timerActivations.filter fun value =>
           decide (value.elementId ≠ boundaryTimer.elementId)
-    activityOccurrences :=
+    activityOccurrences := insertActivityOccurrence
       { processInstanceId := instanceId
         activityElementId := { value := task.id.value }
         activation := activityActivation
@@ -472,7 +506,7 @@ def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
         attachedTimers :=
           [{ processInstanceId := instanceId
              elementId := { value := boundaryTimer.elementId.value }
-             activation := timerActivation }] } :: state.activityOccurrences
+             activation := timerActivation }] } state.activityOccurrences
     activityActivations :=
       { taskId := task.id, count := activityActivation } ::
         state.activityActivations.filter fun value =>
