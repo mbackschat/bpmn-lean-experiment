@@ -181,27 +181,40 @@ private def declaredByExactlyOneOwnedOperation (program : Program)
       | none => false
   | _ => false
 
-/-- `RSI-BIND-04`. Each wait's identity is declared by exactly one program operation from that wait
-family's declaring set, and that operation is owned by the wait owner's definition scope.
+/-- `RSI-BIND-04`. Each wait of the hosting instance is declared by exactly one program operation
+from that wait family's declaring set, and that operation is owned by the wait owner's definition
+scope.
 
 The scope agreement is what makes this more than an existence check: a wait whose declaring
-operation lives in a different scope would be owned by an occurrence that cannot have armed it. -/
-def waitDeclarationsValid (program : Program) (state : RuntimeState) : Bool :=
-  state.waits.all (fun wait =>
+operation lives in a different scope would be owned by an occurrence that cannot have armed it.
+
+Waits of a called instance are outside it, and the restriction is a fact about what this program can
+decide rather than a claim that such a wait is undeclared. A called Process is a separate definition
+that `RuntimeState` does not carry, so its waits name elements the caller's operations never declare
+and requiring otherwise would reject every live Call Activity tree. Broadening this needs the called
+definitions reachable from the state, which is a representation change with its own witnesses. -/
+def waitDeclarationsValid (program : Program) (instanceId : SemanticId)
+    (state : RuntimeState) : Bool :=
+  (state.waits.filter (fun wait => decide (wait.processInstanceId = instanceId))).all (fun wait =>
     declaredByExactlyOneOwnedOperation program
       (userTaskWaitDeclarers program wait.task.id) wait.owner) &&
-  state.messageWaits.all (fun wait =>
-    declaredByExactlyOneOwnedOperation program
-      (messageWaitDeclarers program wait.elementId) wait.owner) &&
-  state.timerWaits.all (fun wait =>
-    declaredByExactlyOneOwnedOperation program
-      (timerWaitDeclarers program wait.elementId) wait.owner) &&
-  state.effectWaits.all (fun wait =>
-    declaredByExactlyOneOwnedOperation program
-      (effectWaitDeclarers program wait.elementId) wait.owner) &&
-  state.effectIncidents.all (fun incident =>
-    declaredByExactlyOneOwnedOperation program
-      (effectWaitDeclarers program incident.wait.elementId) incident.wait.owner)
+  (state.messageWaits.filter (fun wait => decide (wait.processInstanceId = instanceId))).all
+    (fun wait =>
+      declaredByExactlyOneOwnedOperation program
+        (messageWaitDeclarers program wait.elementId) wait.owner) &&
+  (state.timerWaits.filter (fun wait => decide (wait.processInstanceId = instanceId))).all
+    (fun wait =>
+      declaredByExactlyOneOwnedOperation program
+        (timerWaitDeclarers program wait.elementId) wait.owner) &&
+  (state.effectWaits.filter (fun wait => decide (wait.processInstanceId = instanceId))).all
+    (fun wait =>
+      declaredByExactlyOneOwnedOperation program
+        (effectWaitDeclarers program wait.elementId) wait.owner) &&
+  (state.effectIncidents.filter
+      (fun incident => decide (incident.wait.processInstanceId = instanceId))).all
+    (fun incident =>
+      declaredByExactlyOneOwnedOperation program
+        (effectWaitDeclarers program incident.wait.elementId) incident.wait.owner)
 
 /-- `RSI-BIND-05`. Each selected-branch record matches exactly one `selectMany` and each event race
 exactly one `awaitEventRace`.
@@ -234,7 +247,7 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     effectIncidentAssociationsValid state &&
     waitOwnersLive state &&
     waitIdentitiesUnique state &&
-    waitDeclarationsValid program state &&
+    waitDeclarationsValid program instanceId state &&
     hiddenRecordDeclarationsValid program state &&
     canonicalCollectionOrder state &&
     (match state.control with

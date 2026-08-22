@@ -70,6 +70,7 @@ import {
   setActivationCount,
 } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
+import { isGateAdmissibleRuntimeState } from "./runtime-state-well-formedness.js";
 
 export type SemanticCommandOutcome =
   | CommandOutcome.Committed
@@ -80,6 +81,29 @@ export type CommandAdmission = DeepReadonly<{
   state: RuntimeState;
 }>;
 
+/**
+ * Whether this committed state is one the account represents at all.
+ *
+ * The expectation available at this boundary is the program, not an instance identity: a caller
+ * supplies both, and there is no third party whose instance the state should match. The instance
+ * expectation is checked where one exists, at the host's Workflow-continuation boundary. Passing
+ * the state's own running identity here therefore weakens nothing that was previously checked and
+ * adds every wait, ownership, uniqueness, declaration, and order conjunct.
+ *
+ * Ordering matters more than the check: initialization and preservation come first, so every state
+ * a transition can produce already satisfies this and only a corrupted or injected state is
+ * refused. Installing it the other way round would turn accepted transitions into refusals and
+ * change admitted models.
+ */
+function admissibleCommittedState(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): boolean {
+  return state.control.kind === ControlStateKind.NotStarted
+    ? isGateAdmissibleRuntimeState(program, "", state)
+    : isGateAdmissibleRuntimeState(program, state.control.instanceId, state);
+}
+
 export function admit(
   program: SemanticProcessProgram,
   state: RuntimeState,
@@ -87,6 +111,7 @@ export function admit(
 ): CommandAdmission {
   if (
     !incidentStateAllowsDispatch(program, state) ||
+    !admissibleCommittedState(program, state) ||
     !profileAllowsStimulusValueDomain(
       program.identity.semanticProfile,
       stimulus,
