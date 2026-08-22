@@ -142,11 +142,11 @@ That shared channel is a transcription check and is recorded as one lane, not tw
 
 This proposal selects no CIB Seven relationship and requires no register entry. It states which of its own runtime-state values the project's account admits, which is a project-internal representation obligation with no CIB-observable consequence: no admitted model, accepted command, refusal outcome, or canonical observation changes, so there is nothing for a pinned engine to agree or disagree with. Any future conjunct that would change a refusal outcome leaves this boundary and needs its own classification in [the register](CIB-BPMN-RELATION-REGISTER.md).
 
-## Required, optional, and excluded
+## Required and excluded
 
 Required: the three-layer predicate with per-conjunct named sub-predicates, `RSI-OBL-01` and `RSI-OBL-02`, with `RSI-OBL-03` through `RSI-OBL-06` recorded as a deliberately open lane rather than required, the bridge reclassification of every arm meeting the criterion, the independent TypeScript validator **wired into the fail-closed `admit` path**, separating negatives for every added conjunct carried through the existing parity channel, six single-state classes rather than the four originally named, because `W4` is a two-state fact that no single-state rejection section can carry and the hidden-record and order conjuncts each needed their own, and the owner-document amendments.
 
-Excluded: the Lean pre-dispatch gate, withdrawn under the enforcement decision because gating on a predicate whose preservation is unproved would risk refusing a reachable state. Cost is no longer the deciding reason. Retiring `deadline_arm_bridge_premise_is_satisfiable` is **not** proposed, because its premise needs the empty called-instance closure that this slice does not supply.
+The Lean pre-dispatch gate is withdrawn under the enforcement decision, because gating on a predicate whose preservation is unproved would risk refusing a reachable state. Cost is no longer the deciding reason. Retiring `deadline_arm_bridge_premise_is_satisfiable` is **not** proposed, because its premise needs the empty called-instance closure that this slice does not supply.
 
 Excluded: any BPMN capability, operation, field, observation, profile, or scenario; the shared Activity occurrence record owned by `ACTIVITY-OCCURRENCE-OWNERSHIP`; the commutation and semantic-choice account owned by `INTERNAL-COMMUTATION`; sequential Multi-Instance runtime; liveness, progress, termination, and confluence claims; a general checked-source-to-run preservation theorem; and any Temporal or CIB behavioral claim.
 

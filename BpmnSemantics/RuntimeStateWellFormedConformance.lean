@@ -16,10 +16,12 @@ conjunct can apply to: the boundary-Timer armed state for the wait and order con
 state for the lifecycle conjunct, and the Event-Based Gateway armed race for the hidden-record
 conjunct.
 
-Each negative is paired with a theorem naming the sibling conjuncts that stay true, so a refusal is
-attributable to the named conjunct rather than to something the aggregate already caught. That
-pairing is not decoration: the first hidden-record fixture was refused by the event-race association
-predicate instead, and only the sibling theorem exposed it. A class an admitted transition could actually produce would be a semantic
+Each negative is paired with a theorem naming sibling conjuncts that stay true, so a refusal is
+attributable to the named conjunct rather than to something the aggregate already caught.
+
+That pairing is not decoration. The first hidden-record fixture was refused by the event-race
+association predicate instead of by the conjunct it was written for, and only a sibling theorem
+exposed it. A class an admitted transition could actually produce would be a semantic
 defect rather than a witness, and the positive fact below is what keeps the perturbations honest: the
 unperturbed state is well-formed, so each negative differs from a reachable state in exactly the one
 respect its conjunct names.
@@ -124,7 +126,10 @@ theorem not_started_with_pending_initiation_is_refused :
   decide +kernel
 
 theorem not_started_with_pending_initiation_fails_lifecycle :
-    notStartedStateEmpty notStartedWithPendingInitiationState = false := by decide +kernel
+    notStartedStateEmpty notStartedWithPendingInitiationState = false ∧
+      waitOwnersLive notStartedWithPendingInitiationState = true ∧
+      waitIdentitiesUnique notStartedWithPendingInitiationState = true ∧
+      canonicalCollectionOrder notStartedWithPendingInitiationState = true := by decide +kernel
 
 /-- Violating the `awaitEventRace` half of `RSI-BIND-05`: a live race whose gateway element no
 operation declares.
@@ -149,7 +154,9 @@ theorem undeclared_event_race_fails_declaration_with_association_intact :
         undeclaredEventRaceState = false ∧
       eventRaceAssociationsValid undeclaredEventRaceState = true ∧
       waitOwnersLive undeclaredEventRaceState = true ∧
-      waitIdentitiesUnique undeclaredEventRaceState = true := by decide +kernel
+      waitIdentitiesUnique undeclaredEventRaceState = true ∧
+      waitDeclarationsValid EventBasedGatewayConformance.program
+        EventBasedGatewayConformance.instanceId undeclaredEventRaceState = true := by decide +kernel
 
 theorem armed_event_race_state_is_well_formed :
     runtimeStateWellFormed EventBasedGatewayConformance.program
