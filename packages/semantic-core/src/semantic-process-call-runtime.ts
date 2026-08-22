@@ -288,6 +288,13 @@ function removeCalledProcessTree(
   return {
     ...state,
     scopeOccurrences: state.scopeOccurrences.filter(({ id }) => !removedOwner(id)),
+    // Records owned inside a removed called instance go with it. Regional cancellation cannot reach
+    // them: it classifies by subtree membership, and a called root has no runtime parent, so a called
+    // instance is removed here instead. Lean's cancellation predicate already covers both because it
+    // unions the subtree with the called-instance closure.
+    activityOccurrences: state.activityOccurrences.filter(
+      ({ owner }) => !removedOwner(owner),
+    ),
     controlTokens: state.controlTokens.filter(({ owner }) => !removedOwner(owner)),
     userTaskWaits: state.userTaskWaits.filter(({ owner }) => !removedOwner(owner)),
     messageWaits: state.messageWaits.filter(({ owner }) => !removedOwner(owner)),
