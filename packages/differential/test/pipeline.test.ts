@@ -44,7 +44,7 @@ import {
   defaultWarmBudgetMs,
   warmBudgetMs,
   warmPipelineTestTimeoutMs,
-  warmSoftTargetMs,
+  warmSoftTargetMsFor,
 } from "../../../scripts/pipeline-budget.ts";
 
 /**
@@ -508,9 +508,12 @@ test(
         `BPMN_PIPELINE_WARM_BUDGET ${warmBudget.toFixed(0)}ms declared instead of the ${defaultWarmBudgetMs}ms default ceiling`,
       );
     }
-    if (report.phaseMs.warmTotal >= warmSoftTargetMs) {
+    // Derived from the registered catalog so the target measures per-case speed rather than how
+    // many cases exist; a fixed total made every run on a grown catalog breach it.
+    const warmSoftTarget = warmSoftTargetMsFor(pipelineCases.length);
+    if (report.phaseMs.warmTotal >= warmSoftTarget) {
       console.log(
-        `BPMN_PIPELINE_WARM_SOFT_TARGET exceeded: ${report.phaseMs.warmTotal.toFixed(3)}ms against the ${warmSoftTargetMs}ms feedback target; compare with the last uncontended measurement before treating it as a regression`,
+        `BPMN_PIPELINE_WARM_SOFT_TARGET exceeded: ${report.phaseMs.warmTotal.toFixed(3)}ms against the ${warmSoftTarget}ms feedback target for ${pipelineCases.length} cases; compare with the last uncontended per-case measurement before treating it as a regression`,
       );
     }
     assert.ok(

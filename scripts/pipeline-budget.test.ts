@@ -6,6 +6,7 @@ import {
   warmBudgetMs,
   warmPipelineCommandTimeoutMs,
   warmPipelineTestTimeoutMs,
+  warmSoftTargetMsFor,
 } from "./pipeline-budget.ts";
 
 test("keeps the portable budget and both process deadlines ordered", () => {
@@ -42,5 +43,23 @@ test("rejects malformed warm-pipeline budgets", () => {
       () => warmBudgetMs({ BPMN_PIPELINE_WARM_BUDGET_MS: declared }),
       TypeError,
     );
+  }
+});
+
+test("scales the warm feedback target with the registered case count", () => {
+  // The original fixed 15,000 ms target was set against a roughly thirty-case catalog, which is the
+  // 500 ms per case this preserves. Anchoring on the rate rather than the total is what stops a
+  // grown catalog from breaching the target for a reason that says nothing about pipeline speed.
+  assert.equal(warmSoftTargetMsFor(30), 15_000);
+  assert.equal(warmSoftTargetMsFor(52), 26_000);
+
+  // A per-case regression must still breach it. At 52 cases the last uncontended run measured
+  // 26,624.797 ms, so the target it is read against has to sit below that figure.
+  assert.ok(warmSoftTargetMsFor(52) < 26_624.797);
+});
+
+test("rejects a case count that cannot describe a catalog", () => {
+  for (const count of [0, -1, 1.5, Number.NaN]) {
+    assert.throws(() => warmSoftTargetMsFor(count), TypeError);
   }
 });
