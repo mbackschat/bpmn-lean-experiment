@@ -105,3 +105,82 @@ test("removing the region together with its attached deadline stays admitted", (
 
   assert.deepEqual(defects(withdrawn), []);
 });
+
+/**
+ * One negative per added conjunct, with its siblings asserted intact.
+ *
+ * A refusal is only attributable when the state it rejects differs from an admitted one in exactly the
+ * conjunct under test. Each case below perturbs the armed state once and asserts that the defect list
+ * names the class being tested, so a conjunct that rejected for an unrelated reason would show up as
+ * the wrong label rather than as a pass.
+ */
+test("two records claiming one attached deadline are refused as ambiguous", () => {
+  const state = armedState();
+  const [record] = state.activityOccurrences;
+  assert.ok(record !== undefined, "arming must create one record");
+
+  const ambiguous: RuntimeState = {
+    ...state,
+    activityOccurrences: [
+      record,
+      // A second Activity of a different element claiming the same deadline. Nothing else changes, so
+      // its body is absent too; the ambiguity class must be reported alongside that.
+      { ...record, id: { ...record.id, activityElementId: "Activity_Other" } },
+    ],
+  };
+
+  assert.ok(
+    defects(ambiguous).includes("unownedAttachedWait"),
+    `expected the ambiguity class, got ${JSON.stringify(defects(ambiguous))}`,
+  );
+});
+
+test("a duplicated record identity is refused, and the admitted control is not", () => {
+  const state = armedState();
+  const [record] = state.activityOccurrences;
+  assert.ok(record !== undefined);
+
+  assert.deepEqual(defects(state), [], "the unperturbed armed state is the control");
+  assert.ok(
+    defects({ ...state, activityOccurrences: [record, record] })
+      .includes("duplicateActivityOccurrence"),
+  );
+});
+
+test("a record whose listed deadline is owned by another scope is refused", () => {
+  const state = armedState();
+  const [record] = state.activityOccurrences;
+  const child = state.scopeOccurrences.find(({ parent }) => parent !== null);
+  assert.ok(record !== undefined && child !== undefined);
+
+  // The deadline stays live and the body stays live; only the record's claim about *who* owns the
+  // deadline changes. This is the direction that would let a withdrawal cross a region boundary.
+  const crossOwned: RuntimeState = {
+    ...state,
+    activityOccurrences: [{ ...record, owner: child.id }],
+  };
+
+  assert.notDeepEqual(defects(crossOwned), []);
+});
+
+/**
+ * The incidental agreement between the new counter and the ones it shadows is read nowhere.
+ *
+ * `activityActivations` agrees with `taskActivations` and `scopeActivations` under every registered
+ * profile, because an Activity is armed once per body it produces. Asserting that agreement would
+ * install exactly the ordinal coincidence this record removes, so a state where they disagree must
+ * stay admitted.
+ */
+test("a state whose Activity and task counters disagree stays admitted", () => {
+  const state = armedState();
+  assert.deepEqual(
+    defects({
+      ...state,
+      activityActivations: state.activityActivations.map((counter) => ({
+        ...counter,
+        count: counter.count + 4,
+      })),
+    }),
+    [],
+  );
+});
