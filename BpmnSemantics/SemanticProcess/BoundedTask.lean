@@ -403,10 +403,10 @@ The `Nodup` hypothesis is load-bearing and names a fact the state type does not 
 carries no uniqueness invariant over `timerWaits`, so nothing in the type rules out two identical
 occurrences. The stronger claim — that no later lookup *by key* can rediscover the withdrawn
 deadline — needs uniqueness of the (instance, element, activation) key rather than of the whole
-value. The type still does not enforce that key uniqueness; `waitIdentitiesUnique` now names it, and
-no theorem establishes it of a reachable state, so it is carried as this theorem's explicit
-hypothesis rather than assumed silently. The whole-value fact above is named as a claim this theorem
-does *not* make. -/
+value, and is a claim this theorem does *not* make: its hypothesis and its conclusion are both
+whole-value. The type still does not enforce that key uniqueness; `waitIdentitiesUnique` now names
+it, and no theorem establishes it of a reachable state. The by-key form is proved separately by
+`bounded_task_victory_withdrawals_are_final`, under that named conjunct as an explicit hypothesis. -/
 theorem bounded_victory_removes_its_own_deadline (program : Program)
     (before after : RuntimeState)
     (step : BoundedTaskVictoryStep program before after)
