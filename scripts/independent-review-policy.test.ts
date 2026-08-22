@@ -8,6 +8,7 @@ import {
   assertIndependentlyApproved,
   assertReceiptRow,
   assertReviewContinuity,
+  correctionAuditRounds,
   gitLines,
   isOwnerApproved,
   isReviewCommitTarget,
@@ -398,6 +399,10 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
   assert.match(testingSpec, /^## Independent cold-review gate$/mu);
   assert.match(testingSpec, /^### When a warm review is valid$/mu);
   assert.match(testingSpec, /external-fresh-session/u);
+  // The bound is stated in two places by necessity: the guard decides it and the contract explains
+  // it. These bind the pair so a future edit cannot relax one without the other going red.
+  assert.match(testingSpec, /comma-separated in round order/u);
+  assert.match(testingSpec, /Listing more than two rounds requires `owner-authorized`/u);
   assert.match(testingSpec, /fork-turns-none/u);
   assert.match(testingSpec, /`fork_turns: "none"`/u);
   assert.match(testingSpec, new RegExp(reviewPolicyBaseline, "u"));
@@ -445,4 +450,53 @@ test("keeps delegated implementation orchestration in its documentation owners",
   assert.match(testingSpec, /Focused gates green/u);
   assert.match(testingSpec, /repository-wide full gate exactly once/u);
   assert.match(testingSpec, /worktree-local dependency projection/u);
+});
+
+test("bounds correction-audit rounds and demands owner authorization past the bound", () => {
+  // Round history is the fact this test protects. The receipt used to hold one commit per stage, so
+  // a stage that ran four correction rounds and a stage that ran one were indistinguishable, and the
+  // two-round bound had no repository fact behind it.
+  const rounds = gitLines(["rev-list", "--max-count=4", "HEAD"]);
+  assert.equal(rounds.length, 4);
+  const [first, second, third, fourth] = rounds;
+  assert.ok(first && second && third && fourth);
+
+  const row = (correctionAudit: string): ReviewReceipt => ({
+    stage: ReviewStage.Closure,
+    target: subagentReviewPolicyBaseline,
+    isolation: "fork-turns-none",
+    verdict: "approve-with-required-edits",
+    correctionAudit,
+  });
+
+  assert.deepEqual(correctionAuditRounds("not-required"), []);
+  assert.deepEqual(correctionAuditRounds(`${first}, ${second}`), [first, second]);
+
+  assertReceiptRow(row(first), "one-round");
+  assertReceiptRow(row(`${first}, ${second}`), "two-rounds");
+  assertReceiptRow(
+    row(`${first}, ${second}, ${third}, owner-authorized`),
+    "three-rounds-authorized",
+  );
+
+  assert.throws(
+    () => assertReceiptRow(row(`${first}, ${second}, ${third}`), "three-rounds-unauthorized"),
+    /more than two correction-audit rounds need `owner-authorized`/u,
+  );
+  assert.throws(
+    () => assertReceiptRow(row(`${first}, ${second}, owner-authorized`), "authorized-within-bound"),
+    /`owner-authorized` claims rounds past the bound that this row does not record/u,
+  );
+  assert.throws(
+    () => assertReceiptRow(row(`${first}, owner-authorized, ${second}, ${third}`), "misplaced"),
+    /`owner-authorized` must be the last correction-audit entry/u,
+  );
+  assert.throws(
+    () => assertReceiptRow(row("owner-authorized"), "marker-only"),
+    /required edits need a correction-audit target/u,
+  );
+  assert.throws(
+    () => assertReceiptRow(row(`${first}, ${first}`), "repeated-round"),
+    /repeats correction-audit target/u,
+  );
 });

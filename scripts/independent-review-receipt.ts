@@ -26,6 +26,12 @@ const receiptHeading = "## Independent cold-review receipt";
 const commitPattern = /^[0-9a-f]{7,40}$/u;
 const approvedVerdicts = new Set(["approve", "approve-with-required-edits"]);
 
+/** The standing per-stage correction-audit bound. Exceeding it takes an owner authorization. */
+const standingCorrectionAuditBound = 2;
+
+/** Attests an owner authorization Git cannot check, the same way `fork-turns-none` does. */
+const ownerAuthorizedRounds = "owner-authorized";
+
 export const ProposalLifecycle = Object.freeze({
   Draft: "draft",
   OwnerApproved: "owner-approved",
@@ -228,6 +234,65 @@ export function parseReceipt(
   return rows;
 }
 
+/**
+ * The commits a stage's correction audits landed at, in round order.
+ *
+ * The cell holds one commit per completed round, so the count *is* the round count. A cell naming a
+ * single commit is a one-round list, which is why every receipt written before this contract stays
+ * valid without being rewritten. Non-commit entries — the placeholders and the authorization
+ * attestation — are not rounds and are excluded.
+ */
+export function correctionAuditRounds(cell: string): ReadonlyArray<string> {
+  return cell
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => commitPattern.test(entry));
+}
+
+/**
+ * Rejects an unbounded correction-audit loop.
+ *
+ * Every round is fresh prose and fresh prose can carry a fresh defect, so a loop that closes each
+ * round's findings can run indefinitely while every round looks like convergence. The bound is what
+ * forces the third round to be an owner decision rather than the author's. `owner-authorized` cannot
+ * be verified from Git, so it is an attestation and is required to be false-free by being rejected
+ * when the row records no rounds past the bound to authorize.
+ */
+function assertCorrectionAuditRounds(row: ReviewReceipt, context: string): void {
+  const entries = row.correctionAudit.split(",").map((entry) => entry.trim());
+  const authorizedAt = entries.indexOf(ownerAuthorizedRounds);
+  if (authorizedAt !== -1) {
+    assert.equal(
+      authorizedAt,
+      entries.length - 1,
+      `${context} \`${ownerAuthorizedRounds}\` must be the last correction-audit entry`,
+    );
+  }
+  const rounds = entries.filter((entry) => entry !== ownerAuthorizedRounds);
+  assert.ok(
+    rounds.length > 0 && rounds.every((entry) => isReviewCommitTarget(entry)),
+    `${context} required edits need a correction-audit target`,
+  );
+  assert.equal(
+    new Set(rounds).size,
+    rounds.length,
+    `${context} repeats correction-audit target`,
+  );
+  if (rounds.length > standingCorrectionAuditBound) {
+    assert.notEqual(
+      authorizedAt,
+      -1,
+      `${context} more than two correction-audit rounds need \`${ownerAuthorizedRounds}\``,
+    );
+    return;
+  }
+  assert.equal(
+    authorizedAt,
+    -1,
+    `${context} \`${ownerAuthorizedRounds}\` claims rounds past the bound that this row does not record`,
+  );
+}
+
 export function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
   const context = `${relativePath} ${row.stage}`;
 
@@ -264,11 +329,7 @@ export function assertReceiptRow(row: ReviewReceipt, relativePath: string): void
       );
     }
     if (row.verdict === "approve-with-required-edits") {
-      assert.equal(
-        isReviewCommitTarget(row.correctionAudit),
-        true,
-        `${context} required edits need a correction-audit target`,
-      );
+      assertCorrectionAuditRounds(row, context);
     } else {
       assert.equal(row.correctionAudit, "not-required");
     }
