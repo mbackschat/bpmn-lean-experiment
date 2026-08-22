@@ -156,11 +156,11 @@ function isSorted<T>(
  * that conjunct is inert today and no witness claims otherwise.
  *
  * The result is empty for every state the five schedules in the preservation lane reach, including
- * the microsteps inside each stimulus closure. It is not established for every reachable state: no
- * schedule there arms a boundary Timer, holds an effect wait or incident, starts from a Message or
- * Timer, or cancels, so several branches of the ownership and declaration conjuncts are unexercised
- * by execution, and the quantified Lean obligation is open. Refusing a state here changes no BPMN
- * meaning.
+ * the microsteps inside each stimulus closure. It is not established for every reachable state, and
+ * the gap is narrower than the schedule list suggests: those schedules do reach Message waits, Timer
+ * waits, event races, selected-branch sets, and called-process records. What they never hold is an
+ * effect wait or effect incident, and none exercises the instance scoping on declaration. The
+ * quantified Lean obligation is open regardless. Refusing a state here changes no BPMN meaning.
  */
 export function runtimeStateDefects(
   program: SemanticProcessProgram,
