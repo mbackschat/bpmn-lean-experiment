@@ -90,7 +90,7 @@ Required:
 - one distinct Activity occurrence identity, its counter family, and its canonical collection order;
 - the closed two-arm body union and the listed attached-Timer collection;
 - new well-formedness conjuncts for identity uniqueness, body liveness, attached-wait reachability, owner agreement, and program agreement;
-- `activityOccurrences` added to the `RSI-ORDER-01` canonical-order conjunct, which its add sites satisfy because every insertion is canonical, and to `RSI-LIFE-01`'s and `RSI-LIFE-02`'s explicit collection enumerations, so a `notStarted` or terminal state holding a record is refused;
+- `activityOccurrences` added to the `RSI-ORDER-01` canonical-order conjunct, which its add sites satisfy because every insertion is canonical, and to `RSI-LIFE-01`'s explicit collection enumeration in `notStartedStateEmpty`, so a `notStarted` state holding a record is refused. Terminal emptiness needs no second enumeration and must not be given one: `RSI-LIFE-02` is `scopeOccurrences.isEmpty && tokens.isEmpty` with no collection list, so a terminal state holding a record is already refused derivatively, by the `RSI-TERM-01` path the invariant specification records, since `AOO-OWN-01` requires each record to name a live scope occurrence and `RSI-LIFE-02` leaves none;
 - `activityActivations` added to the `RSI-MONO-01` counter families in both the Lean relation and its executable core counterpart, which today enumerate exactly seven families plus `endOccurrences`;
 - migration of all three registered boundary-Timer families to read the record instead of comparing ordinals;
 - regional cancellation that withdraws a record and every wait it lists, including a wait owned outside the cancelled region;
