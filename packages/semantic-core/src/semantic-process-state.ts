@@ -14,6 +14,7 @@ import type {
   VariableMapping,
 } from "./semantic-value-contract.js";
 import type { BpmnErrorRoute } from "./semantic-process-contract.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
 import { compareCanonicalStrings } from "./wire.js";
 
@@ -152,6 +153,15 @@ export type RuntimeState = DeepReadonly<{
   selectedBranchSets: SelectedBranchSet[];
   eventRaces: EventRace[];
   calledProcessOccurrences: CalledProcessOccurrence[];
+  /**
+   * What each open Activity occurrence owns: its body, and the handler waits attached to it.
+   *
+   * Present for exactly those Activities whose program gives them a wait-producing attached handler,
+   * which makes existence a program property rather than a state one. Canonically ordered, and never
+   * publicly projected: it replaces a derivation inside the publication path without becoming
+   * publishable itself.
+   */
+  activityOccurrences: ActivityOccurrence[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   messageActivations: ActivationCounter[];
@@ -160,6 +170,15 @@ export type RuntimeState = DeepReadonly<{
   callActivations: ActivationCounter[];
   effectActivations: ActivationCounter[];
   scopeActivations: ActivationCounter[];
+  /**
+   * Per-Activity-element activation high-water mark.
+   *
+   * Agrees with `taskActivations` for the two task families, whose Activity element *is* the task
+   * element, and with `scopeActivations` for the Sub-Process family. The agreement is incidental: the
+   * two count different things, an Activity's activations against the occurrences its body produced,
+   * and nothing reads it. Asserting it would install the ordinal coincidence this record removes.
+   */
+  activityActivations: ActivationCounter[];
   endOccurrences: number;
   logicalTimeMs: number;
 }>;
@@ -177,6 +196,7 @@ export const initialState: RuntimeState = {
   selectedBranchSets: [],
   eventRaces: [],
   calledProcessOccurrences: [],
+  activityOccurrences: [],
   variables: {
     process: { bindings: [] },
     activities: [],
@@ -188,6 +208,7 @@ export const initialState: RuntimeState = {
   callActivations: [],
   effectActivations: [],
   scopeActivations: [],
+  activityActivations: [],
   endOccurrences: 0,
   logicalTimeMs: 0,
 };

@@ -1,4 +1,5 @@
 export * from "./contract.js";
+export * from "./activity-occurrence.js";
 export * from "./call-activity-admission.js";
 export * from "./control-position-projection.js";
 export { deriveCalledProcessInstanceId } from "./semantic-process-call-runtime.js";
