@@ -1,16 +1,25 @@
 /**
  * Executable transitions for one User Task occurrence that owns an interrupting boundary Timer.
  *
- * Unlike the Event-Based Gateway race, this family keeps no hidden ownership record. The pair is
- * recovered by joining the committed operation to the two live waits, which is sound only because the
- * profile admits exactly one such Activity with exactly one boundary Timer, and because arming and
- * removal are atomic so the two occurrences always share one activation ordinal. A repeated or
- * Multi-Instance Activity would break that recovery and requires an explicit occurrence record.
+ * The pair is read from the Activity occurrence record that arming creates, which names the body and
+ * the deadline attached to it. It used to be recovered by requiring the task and Timer activation
+ * ordinals to be equal under one scope owner, which held only while each element was armed once per
+ * arming of the other; nothing in the state said so, and a diverged pair yielded the wrong sibling
+ * or none rather than an ambiguity. Repetition and Multi-Instance are what break that agreement, and
+ * both remain outside this profile.
  *
  * Arming on Activity activation is a recorded project interpretation: BPMN 2.0.2 starts a catch
  * Event's wait when a token *reaches* it, and a Boundary Event is never reached. Only the pre-due
  * firing witness discriminates that instant, so it is evidence rather than bookkeeping.
  */
+import {
+  ActivityBodyKind,
+  activityOccurrenceForAttachedTimer,
+  activityOccurrenceForTaskBody,
+  compareActivityOccurrences,
+  sameActivityOccurrence,
+} from "./activity-occurrence.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitBoundedUserTaskOperation,
@@ -23,7 +32,6 @@ import {
   ControlStateKind,
   removeToken,
   sameOccurrence,
-  sameScopeOccurrence,
   setActivationCount,
 } from "./semantic-process-state.js";
 import type {
@@ -41,6 +49,7 @@ import type {
 
 type BoundedPair = Readonly<{
   definition: AwaitBoundedUserTaskOperation;
+  record: ActivityOccurrence;
   task: SemanticUserTaskWait;
   timer: SemanticTimerWait;
 }>;
@@ -66,34 +75,49 @@ export function armBoundedUserTask(
   if (!Number.isSafeInteger(deadlineMs)) {
     throw new RangeError("Timer deadline exceeds the safe integer boundary");
   }
+  const activityActivation = nextActivation(
+    state.activityActivations,
+    operation.task.elementId,
+  );
+  const taskId = {
+    processInstanceId: owner.processInstanceId,
+    elementId: operation.task.elementId,
+    activation: taskActivation,
+  } as const;
+  const timerId = {
+    processInstanceId: owner.processInstanceId,
+    elementId: operation.boundaryTimer.elementId,
+    activation: timerActivation,
+  } as const;
   return {
     ...state,
+    activityOccurrences: [
+      ...state.activityOccurrences,
+      {
+        id: {
+          processInstanceId: owner.processInstanceId,
+          activityElementId: operation.task.elementId,
+          activation: activityActivation,
+        },
+        owner,
+        operationId: operation.id,
+        body: { kind: ActivityBodyKind.UserTask, task: taskId } as const,
+        attachedTimers: [timerId],
+      },
+    ].sort(compareActivityOccurrences),
+    activityActivations: setActivationCount(
+      state.activityActivations,
+      operation.task.elementId,
+      activityActivation,
+    ),
     controlTokens: removeToken(state.controlTokens, operation.input, owner),
     userTaskWaits: [
       ...state.userTaskWaits,
-      {
-        id: {
-          processInstanceId: owner.processInstanceId,
-          elementId: operation.task.elementId,
-          activation: taskActivation,
-        },
-        owner,
-        name: operation.task.name,
-        output: operation.task.output,
-      },
+      { id: taskId, owner, name: operation.task.name, output: operation.task.output },
     ].sort(compareUserTaskWaits),
     timerWaits: [
       ...state.timerWaits,
-      {
-        id: {
-          processInstanceId: owner.processInstanceId,
-          elementId: operation.boundaryTimer.elementId,
-          activation: timerActivation,
-        },
-        owner,
-        deadlineMs,
-        output: operation.boundaryTimer.output,
-      },
+      { id: timerId, owner, deadlineMs, output: operation.boundaryTimer.output },
     ].sort(compareTimerWaits),
     taskActivations: setActivationCount(
       state.taskActivations,
@@ -193,10 +217,8 @@ function boundedPairForTask(
   state: RuntimeState,
   taskId: OccurrenceId,
 ): BoundedPair | undefined {
-  const task = state.userTaskWaits.find((candidate) =>
-    sameOccurrence(candidate.id, taskId)
-  );
-  return task === undefined ? undefined : boundedPair(program, state, task);
+  const record = activityOccurrenceForTaskBody(state.activityOccurrences, taskId);
+  return record === undefined ? undefined : boundedPairForRecord(program, state, record);
 }
 
 function boundedPairForTimer(
@@ -204,51 +226,39 @@ function boundedPairForTimer(
   state: RuntimeState,
   timerId: OccurrenceId,
 ): BoundedPair | undefined {
-  const timer = state.timerWaits.find((candidate) =>
-    sameOccurrence(candidate.id, timerId)
-  );
-  if (timer === undefined) {
-    return undefined;
-  }
-  const definition = boundedTaskOperations(program).find(
-    (operation) => operation.boundaryTimer.elementId === timer.id.elementId,
-  );
-  const task = definition === undefined
-    ? undefined
-    : state.userTaskWaits.find((candidate) =>
-      candidate.id.elementId === definition.task.elementId &&
-      candidate.id.activation === timer.id.activation &&
-      sameScopeOccurrence(candidate.owner, timer.owner)
-    );
-  return definition === undefined || task === undefined
-    ? undefined
-    : { definition, task, timer };
+  const record = activityOccurrenceForAttachedTimer(state.activityOccurrences, timerId);
+  return record === undefined ? undefined : boundedPairForRecord(program, state, record);
 }
 
 /**
- * Joins one live task wait to its committed definition and deadline.
+ * Joins one Activity occurrence record to its committed definition, body, and deadline.
  *
  * Both waits must exist. `ABTIMER-ARM-01` makes a state holding one without the other invalid rather
- * than a resumption surface, so this refuses instead of repairing it.
+ * than a resumption surface, so this refuses instead of repairing it. What changed is where the pair
+ * comes from: it is read off the record, not recovered by requiring a task activation ordinal to
+ * equal a Timer activation ordinal. Those two counters agree only while each element is armed once
+ * per arming of the other, and nothing in the state said so.
  */
-function boundedPair(
+function boundedPairForRecord(
   program: SemanticProcessProgram,
   state: RuntimeState,
-  task: SemanticUserTaskWait,
+  record: ActivityOccurrence,
 ): BoundedPair | undefined {
   const definition = boundedTaskOperations(program).find(
-    (operation) => operation.task.elementId === task.id.elementId,
+    (operation) => operation.id === record.operationId,
   );
-  const timer = definition === undefined
+  if (definition === undefined || record.body.kind !== ActivityBodyKind.UserTask) {
+    return undefined;
+  }
+  const body = record.body.task;
+  const task = state.userTaskWaits.find(({ id }) => sameOccurrence(id, body));
+  const [attached] = record.attachedTimers;
+  const timer = attached === undefined
     ? undefined
-    : state.timerWaits.find((candidate) =>
-      candidate.id.elementId === definition.boundaryTimer.elementId &&
-      candidate.id.activation === task.id.activation &&
-      sameScopeOccurrence(candidate.owner, task.owner)
-    );
-  return definition === undefined || timer === undefined
+    : state.timerWaits.find(({ id }) => sameOccurrence(id, attached));
+  return task === undefined || timer === undefined
     ? undefined
-    : { definition, task, timer };
+    : { definition, record, task, timer };
 }
 
 function commitVictory(
@@ -267,6 +277,9 @@ function commitVictory(
       (candidate) => candidate !== pair.task,
     ),
     timerWaits: state.timerWaits.filter((candidate) => candidate !== pair.timer),
+    activityOccurrences: state.activityOccurrences.filter(
+      (candidate) => !sameActivityOccurrence(candidate.id, pair.record.id),
+    ),
     logicalTimeMs,
   };
 }

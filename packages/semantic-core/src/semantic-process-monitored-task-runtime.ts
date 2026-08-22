@@ -8,16 +8,23 @@
  * kinds rather than one kind carrying a flag.
  *
  * The join is deliberately one-sided, and that is the load-bearing difference from the sibling. A
- * monitored task whose deadline has already fired is the normal state here, so the task wait plus
- * the committed operation identify the family and the deadline is looked up as an optional live
- * wait. Soundness rests on the profile admitting exactly one such Activity with exactly one boundary
- * Timer; a repeated or Multi-Instance Activity refutes it and requires an explicit occurrence
- * record.
+ * monitored task whose deadline has already fired is the normal state here, so the record's attached
+ * list may legitimately be empty while its body is live. That state is also why record existence is a
+ * property of the program rather than of the state: a state-level rule would delete the record at the
+ * moment it is the only thing still identifying the host.
  *
  * Arming on Activity activation is a recorded project interpretation shared with the sibling family:
  * BPMN 2.0.2 starts a catch Event's wait when a token *reaches* it, and a Boundary Event is never
  * reached. Only the pre-due firing witness discriminates that instant.
  */
+import {
+  ActivityBodyKind,
+  activityOccurrenceForAttachedTimer,
+  activityOccurrenceForTaskBody,
+  compareActivityOccurrences,
+  sameActivityOccurrence,
+} from "./activity-occurrence.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitMonitoredUserTaskOperation,
@@ -30,7 +37,6 @@ import {
   ControlStateKind,
   removeToken,
   sameOccurrence,
-  sameScopeOccurrence,
   setActivationCount,
 } from "./semantic-process-state.js";
 import type {
@@ -53,6 +59,7 @@ import type {
  */
 type MonitoredTask = Readonly<{
   definition: AwaitMonitoredUserTaskOperation;
+  record: ActivityOccurrence;
   task: SemanticUserTaskWait;
   timer: SemanticTimerWait | undefined;
 }>;
@@ -81,34 +88,49 @@ export function armMonitoredUserTask(
   if (!Number.isSafeInteger(deadlineMs)) {
     throw new RangeError("Timer deadline exceeds the safe integer boundary");
   }
+  const activityActivation = nextActivation(
+    state.activityActivations,
+    operation.task.elementId,
+  );
+  const taskId = {
+    processInstanceId: owner.processInstanceId,
+    elementId: operation.task.elementId,
+    activation: taskActivation,
+  } as const;
+  const timerId = {
+    processInstanceId: owner.processInstanceId,
+    elementId: operation.boundaryTimer.elementId,
+    activation: timerActivation,
+  } as const;
   return {
     ...state,
     controlTokens: removeToken(state.controlTokens, operation.input, owner),
-    userTaskWaits: [
-      ...state.userTaskWaits,
+    activityOccurrences: [
+      ...state.activityOccurrences,
       {
         id: {
           processInstanceId: owner.processInstanceId,
-          elementId: operation.task.elementId,
-          activation: taskActivation,
+          activityElementId: operation.task.elementId,
+          activation: activityActivation,
         },
         owner,
-        name: operation.task.name,
-        output: operation.task.output,
+        operationId: operation.id,
+        body: { kind: ActivityBodyKind.UserTask, task: taskId } as const,
+        attachedTimers: [timerId],
       },
+    ].sort(compareActivityOccurrences),
+    activityActivations: setActivationCount(
+      state.activityActivations,
+      operation.task.elementId,
+      activityActivation,
+    ),
+    userTaskWaits: [
+      ...state.userTaskWaits,
+      { id: taskId, owner, name: operation.task.name, output: operation.task.output },
     ].sort(compareUserTaskWaits),
     timerWaits: [
       ...state.timerWaits,
-      {
-        id: {
-          processInstanceId: owner.processInstanceId,
-          elementId: operation.boundaryTimer.elementId,
-          activation: timerActivation,
-        },
-        owner,
-        deadlineMs,
-        output: operation.boundaryTimer.output,
-      },
+      { id: timerId, owner, deadlineMs, output: operation.boundaryTimer.output },
     ].sort(compareTimerWaits),
     taskActivations: setActivationCount(
       state.taskActivations,
@@ -160,6 +182,9 @@ export function completeMonitoredUserTask(
     timerWaits: state.timerWaits.filter(
       (candidate) => candidate !== monitored.timer,
     ),
+    activityOccurrences: state.activityOccurrences.filter(
+      (candidate) => !sameActivityOccurrence(candidate.id, monitored.record.id),
+    ),
   };
 }
 
@@ -199,6 +224,14 @@ export function spawnFromMonitoredUserTask(
     ),
     timerWaits: state.timerWaits.filter(
       (candidate) => candidate !== monitored.timer,
+    ),
+    // The record survives with an empty attached list, because its body does. This is the state that
+    // makes record existence a program-level property: a state-level rule would delete the record
+    // here, exactly when it is the only thing still identifying the host.
+    activityOccurrences: state.activityOccurrences.map((candidate) =>
+      sameActivityOccurrence(candidate.id, monitored.record.id)
+        ? { ...candidate, attachedTimers: [] }
+        : candidate
     ),
     logicalTimeMs: monitored.timer.deadlineMs,
   };
@@ -249,21 +282,8 @@ function monitoredTaskFor(
   state: RuntimeState,
   taskId: OccurrenceId,
 ): MonitoredTask | undefined {
-  const task = state.userTaskWaits.find((candidate) =>
-    sameOccurrence(candidate.id, taskId)
-  );
-  const definition = task === undefined ? undefined : monitoredTaskOperations(program).find(
-    (operation) => operation.task.elementId === task.id.elementId,
-  );
-  return task === undefined || definition === undefined ? undefined : {
-    definition,
-    task,
-    timer: state.timerWaits.find((candidate) =>
-      candidate.id.elementId === definition.boundaryTimer.elementId &&
-      candidate.id.activation === task.id.activation &&
-      sameScopeOccurrence(candidate.owner, task.owner)
-    ),
-  };
+  const record = activityOccurrenceForTaskBody(state.activityOccurrences, taskId);
+  return record === undefined ? undefined : monitoredTaskForRecord(program, state, record);
 }
 
 /**
@@ -278,22 +298,47 @@ function monitoredTaskForTimer(
   state: RuntimeState,
   timerId: OccurrenceId,
 ): MonitoredTask | undefined {
-  const timer = state.timerWaits.find((candidate) =>
-    sameOccurrence(candidate.id, timerId)
-  );
-  const definition = timer === undefined ? undefined : monitoredTaskOperations(program).find(
-    (operation) => operation.boundaryTimer.elementId === timer.id.elementId,
-  );
-  const task = definition === undefined || timer === undefined
+  const record = activityOccurrenceForAttachedTimer(state.activityOccurrences, timerId);
+  const monitored = record === undefined
     ? undefined
-    : state.userTaskWaits.find((candidate) =>
-      candidate.id.elementId === definition.task.elementId &&
-      candidate.id.activation === timer.id.activation &&
-      sameScopeOccurrence(candidate.owner, timer.owner)
-    );
-  return definition === undefined || task === undefined || timer === undefined
-    ? undefined
-    : { definition, task, timer };
+    : monitoredTaskForRecord(program, state, record);
+  return monitored?.timer === undefined ? undefined : monitored;
+}
+
+/**
+ * Joins one record to its definition, its live body, and its deadline when one is still live.
+ *
+ * The one-sided shape is this family's whole difference from its interrupting sibling and it survives
+ * the migration: a monitored task whose deadline has already fired is an ordinary state, so `timer` is
+ * optional. What changed is that the deadline is looked up through the record's attached list rather
+ * than by matching its element under the task's scope with an equal activation ordinal — a comparison
+ * across two counter families that no state asserted and that repetition breaks.
+ */
+function monitoredTaskForRecord(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  record: ActivityOccurrence,
+): MonitoredTask | undefined {
+  const definition = monitoredTaskOperations(program).find(
+    (operation) => operation.id === record.operationId,
+  );
+  if (definition === undefined || record.body.kind !== ActivityBodyKind.UserTask) {
+    return undefined;
+  }
+  const body = record.body.task;
+  const task = state.userTaskWaits.find(({ id }) => sameOccurrence(id, body));
+  if (task === undefined) {
+    return undefined;
+  }
+  const [attached] = record.attachedTimers;
+  return {
+    definition,
+    record,
+    task,
+    timer: attached === undefined
+      ? undefined
+      : state.timerWaits.find(({ id }) => sameOccurrence(id, attached)),
+  };
 }
 
 function nextActivation(

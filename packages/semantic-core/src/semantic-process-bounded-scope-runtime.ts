@@ -7,11 +7,11 @@
  * unreachable. Under this profile that failure has no separating witness, because the deadline arm
  * would still behave correctly and only the quiescence arm would silently deadlock.
  *
- * Like the bounded User Task family this keeps no hidden ownership record. The child occurrence and its
- * deadline are recovered by joining the committed operation to the live occurrence and Timer wait,
- * which is sound only because the profile admits exactly one such Sub-Process with exactly one boundary
- * Timer and because arming is atomic, so the two share one activation ordinal. A repeated or
- * Multi-Instance Sub-Process would break that recovery and requires an explicit occurrence record.
+ * The child occurrence and its deadline are read from the Activity occurrence record that arming
+ * creates. They used to be recovered by requiring a child *scope* activation ordinal to equal a Timer
+ * activation ordinal on the deadline arm, and by taking the first Timer of the right element owned by
+ * the parent on the quiescence arm, which compared no ordinal at all. Neither agreement was asserted
+ * anywhere, and repetition breaks both.
  */
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
