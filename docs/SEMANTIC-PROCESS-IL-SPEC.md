@@ -803,7 +803,7 @@ Lean is the formal semantic authority for the approved profile. The Lean lane mu
 3. an exact per-artifact check that the received program equals Lean’s canonical lowering of the received checked graph;
 4. a declarative `ProgramStep` relation over program, runtime state, explicit semantic input, and successor state;
 5. a separately executable `step` evaluator;
-6. a soundness theorem showing that every evaluator-produced transition is permitted by `ProgramStep`;
+6. a soundness theorem showing that every evaluator-produced transition is permitted by `ProgramStep`, counted as a dispatcher and constructor-selection check rather than as semantic evidence wherever the relation arm takes the evaluator's own result as its premise, because passage then cannot fail apart from the evaluator; falsifiable evidence for those arms is runtime-state well-formedness preservation and monotonicity;
 7. useful capsule laws and checked non-laws with exact hypotheses;
 8. a capsule-local source-to-program preservation result or executable discriminator for every material admission, lowering, runtime-representation, or public-observation change, whose statement begins before the changed boundary and does not assume the account it is intended to justify.
 

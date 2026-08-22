@@ -39,14 +39,20 @@ def initiateMessageState? (state : RuntimeState)
     (outputs : List ControlPlaceId) : Option RuntimeState :=
   initiateTriggeredStartState? state outputs
 
-/-- Declarative Message Start initiation, separated from the executable dispatcher. -/
+/-- Declarative Message Start initiation, separated from the executable dispatcher.
+
+The single constructor takes the executable result as its premise, so this relation is the graph
+of `initiateMessageState?` rather than an independent account of what Message Start initiation
+means. Separation buys a named relation for the dispatcher to select, not a second opinion. -/
 inductive MessageInitiationStep :
     RuntimeState → List ControlPlaceId → RuntimeState → Prop where
   | apply (before after : RuntimeState) (outputs : List ControlPlaceId)
       (transition : initiateMessageState? before outputs = some after) :
       MessageInitiationStep before outputs after
 
-/-- Every executable Message Start initiation belongs to the declarative relation. -/
+/-- Constructor-selection check for the Message Start arm. Its proof is one `exact`, because the
+relation's only premise is the equation it is handed; it cannot fail apart from the evaluator and
+is not a semantic evidence lane. -/
 theorem initiateMessageState_sound (before after : RuntimeState)
     (outputs : List ControlPlaceId)
     (result : initiateMessageState? before outputs = some after) :

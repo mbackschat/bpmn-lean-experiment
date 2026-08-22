@@ -97,7 +97,22 @@ def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
       some (interruptScope state owner parent handler.output)
     else none
 
-/-- Declarative transition relation for one explicitly selected Semantic Process operation. -/
+/-- Declarative transition relation for one explicitly selected Semantic Process operation.
+
+The arms are not uniform in what they claim, and the difference decides what may be cited as
+evidence. Fourteen take the executable result as their own premise, so for those the relation is the
+graph of the function: a wrong state transformation produces a wrong relation and the pair still
+agrees, which makes them one evidence lane rather than two. Twelve state `f before ... = some after`
+for the same `f` that `fire?` calls, and `initiateMessage` and `initiateTimer` wrap that same
+equation in a single-constructor inductive.
+
+The remaining ten arms are genuine decompositions with independently stated premises.
+`MergeExclusiveStep` is the reference shape: it quantifies over an offered token with a membership
+premise and admits one transition per offered occurrence, so it is deliberately broader than the
+evaluator that selects one of them, and a wrong selection is visible against it.
+
+Falsifiable evidence about meaning comes from runtime-state well-formedness preservation and
+monotonicity, not from this relation's agreement with the evaluator on the fourteen. -/
 inductive OperationStep (program : Program) :
     SemanticOperation → RuntimeState → RuntimeState → Prop where
   | initiate (id origin output) (before after : RuntimeState)
@@ -270,6 +285,13 @@ def fire? (program : Program) (operation : SemanticOperation)
   | .completeScope _ _ scopeId parentOutput =>
       completeBoundedScope? program state scopeId parentOutput
 
+/-- Dispatcher and constructor-selection check: `fire?` routes every operation kind to the state
+transformation its relation arm names, and the twenty-four-way match is exhaustive.
+
+This is worth having and it is not evidence about BPMN meaning. It fails if an operation kind is
+routed to the wrong transformation or added without a matching arm; it cannot fail because a
+transformation is semantically wrong, since fourteen arms take that transformation's own result as
+their premise. No capsule may cite it as a semantic evidence lane. -/
 theorem fire_sound (program : Program) (operation : SemanticOperation)
     (before after : RuntimeState)
     (result : fire? program operation before = some after) :
@@ -332,7 +354,10 @@ def step (program : Program) (state : RuntimeState) (choice : OperationId) :
   | none => none
   | some operation => fire? program operation state
 
-/-- Every evaluator-produced transition is permitted by the declarative program relation. -/
+/-- The same dispatcher and constructor-selection check as `fire_sound`, one level up: `step`
+resolves the named operation identity and hands it to `fire?`.
+
+It establishes operation selection, not that the selected operation means what it should. -/
 theorem step_sound :
     Obligations.evaluator_sound ProgramStep step := by
   intro program state choice successor result

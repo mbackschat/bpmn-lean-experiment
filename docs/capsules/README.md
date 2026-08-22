@@ -16,7 +16,7 @@ Every new capsule records:
 4. the smallest separating positive and negative witnesses;
 5. source/admission, definition, runtime, command, stable-state, and observation distinctions;
 6. a declarative Lean transition relation and an executable evaluator for every new runtime-transition family;
-7. a checked soundness bridge from every evaluator-produced transition to the relation;
+7. a checked soundness bridge from every evaluator-produced transition to the relation, recorded as a dispatcher and constructor-selection check, not as a semantic lane, for every arm whose premise is the evaluator's own result;
 8. useful laws with exact hypotheses and the nearest plausible checked non-law;
 9. a rule-to-evidence matrix that keeps BPMN/profile, Lean, CIB, TypeScript, Temporal, negative-witness, and mutation claims separate;
 10. an inventory of runtime-only or synthetic constructs, including derivation, ownership, public projection, and lifecycle invariants;
