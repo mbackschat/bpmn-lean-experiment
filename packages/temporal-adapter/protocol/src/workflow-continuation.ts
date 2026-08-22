@@ -3,6 +3,7 @@ import {
   MappingExpressionKind,
   SemanticOriginKind,
   enabledInternalOperationCount,
+  isGateAdmissibleRuntimeState,
   isMessageChannel,
   isStableStateResumable,
   isUserTaskMetadata,
@@ -142,6 +143,19 @@ export function requireBpmnWorkflowHostInputV1(
 /** The committed semantic state is a separate, independently measured Temporal argument. */
 export type BpmnWorkflowContinuationStateV1 = RuntimeState;
 
+/**
+ * Whether recovered logical time still precedes every live deadline.
+ *
+ * This is where the one monotonicity fact the state conjuncts cannot supply is discharged. Every
+ * time-advancing arm takes logical time from the deadline it fires after checking only that the
+ * stimulus instant equals it, so a recovered state holding a live deadline *below* current logical
+ * time would let the next firing move time backwards. A transition cannot produce such a state, but
+ * a Run boundary is where one re-enters the account without passing a transition.
+ */
+function recoveredTimeIsBelowEveryLiveDeadline(state: RuntimeState): boolean {
+  return state.timerWaits.every(({ deadlineMs }) => state.logicalTimeMs <= deadlineMs);
+}
+
 export function requireBpmnWorkflowContinuationStateV1(
   value: unknown,
   program: SemanticProcessProgram,
@@ -159,6 +173,10 @@ export function requireBpmnWorkflowContinuationStateV1(
   if (observation === null || positions === null || occurrences === null ||
     !isStableStateResumable(value) || enabledInternalOperationCount(program, value) !== 0) {
     throw new TypeError("RuntimeState is not one resumable stable checkpoint");
+  }
+  if (!isGateAdmissibleRuntimeState(program, processInstanceId, value) ||
+    !recoveredTimeIsBelowEveryLiveDeadline(value)) {
+    throw new TypeError("RuntimeState is not one representable committed state");
   }
   return value;
 }
