@@ -263,11 +263,12 @@ function createDomainRecoveryBindings(
     runtime: database,
     host: directStartHost,
   });
+  // No locator factory: hiding schedule execution identity removed the Schedule step's locator
+  // option, unlike the Message Start step below, which still resolves a canonical locator.
   const schedules = new PostgresqlDefinitionScheduleRecoveryStep({
     runtime: database,
     artifacts,
     host: engine.scheduleHost,
-    locators: engine.processWork,
   });
   const messageStart = new PostgresqlMessageStartRecoveryStep({
     runtime: database,
