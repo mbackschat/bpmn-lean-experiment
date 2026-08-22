@@ -183,4 +183,47 @@ theorem rewound_counter_successor_breaks_monotonicity :
   -- Instantiated at the deadline's own element, which is the only key the perturbation lowers.
   exact absurd (monotone.2.2.1 ⟨"Deadline"⟩) (by decide +kernel)
 
+/-- Violating `RSI-MONO-03`: a successor whose clock moves backwards while the firing hypothesis
+holds.
+
+The pair is built by moving only `logicalTimeMs`, so both states satisfy every conjunct. That is the
+content rather than an accident: "no live deadline below logical time" is deliberately not a
+conjunct, so a state whose clock has passed its armed deadline is well-formed and only the two-state
+relation can refuse the rewind. Without this witness the relation is a definition nothing consumes,
+which cannot fail and therefore carries no evidence. -/
+def advancedClockState : RuntimeState :=
+  { armedState with logicalTimeMs := 5000 }
+
+def rewoundClockSuccessor : RuntimeState :=
+  { armedState with logicalTimeMs := 4999 }
+
+theorem advanced_clock_state_is_well_formed :
+    runtimeStateWellFormed program instanceId advancedClockState = true := by decide +kernel
+
+theorem rewound_clock_successor_is_still_well_formed :
+    runtimeStateWellFormed program instanceId rewoundClockSuccessor = true := by decide +kernel
+
+theorem rewound_clock_successor_breaks_time_monotonicity :
+    ¬ RuntimeStateTimeMonotone 5000 advancedClockState rewoundClockSuccessor := by
+  intro monotone
+  -- The fired deadline equals the earlier clock, so the hypothesis holds and only the conclusion
+  -- can fail. A witness that discharged it with an unreachable hypothesis would prove nothing.
+  exact absurd (monotone (by decide +kernel)) (by decide +kernel)
+
+/-- Neither monotonicity relation subsumes the other: each admits the successor the other refuses.
+
+The counter rewind leaves logical time untouched and the clock rewind leaves every counter
+untouched, so a single combined relation would have to refuse both for reasons that have no common
+premise. That is why `RSI-MONO-01` and `RSI-MONO-03` are stated separately. -/
+theorem rewound_counter_successor_keeps_time_monotone :
+    RuntimeStateTimeMonotone 0 armedState rewoundCounterSuccessor := by
+  intro _
+  exact Nat.le_refl _
+
+theorem rewound_clock_successor_keeps_counters_monotone :
+    RuntimeStateMonotone armedState rewoundClockSuccessor :=
+  ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _,
+    fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _,
+    fun _ => Nat.le_refl _, Nat.le_refl _⟩
+
 end BpmnSemantics.RuntimeStateWellFormedConformance
