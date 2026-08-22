@@ -1,4 +1,5 @@
 import {
+  ActivityBodyKind,
   ControlStateKind,
   MappingExpressionKind,
   SemanticOriginKind,
@@ -254,9 +255,10 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     "control", "initiationPending", "scopeOccurrences", "controlTokens",
     "userTaskWaits", "messageWaits", "timerWaits", "effectWaits",
     "effectIncidents", "selectedBranchSets", "eventRaces",
-    "calledProcessOccurrences", "variables", "taskActivations",
-    "messageActivations", "timerActivations", "eventRaceActivations",
-    "callActivations", "effectActivations", "scopeActivations",
+    "calledProcessOccurrences", "activityOccurrences", "variables",
+    "taskActivations", "messageActivations", "timerActivations",
+    "eventRaceActivations", "callActivations", "effectActivations",
+    "scopeActivations", "activityActivations",
     "endOccurrences", "logicalTimeMs",
   ]) || !isRecord(value.control) || !hasOnlyKeys(value.control, ["kind", "instanceId"]) ||
     value.control.kind !== ControlStateKind.Running ||
@@ -272,6 +274,7 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     !isList(value.selectedBranchSets, isSelectedBranchSet) ||
     !isList(value.eventRaces, isEventRace) ||
     !isList(value.calledProcessOccurrences, isCalledProcessOccurrence) ||
+    !isList(value.activityOccurrences, isActivityOccurrence) ||
     !isScopedVariables(value.variables) ||
     !isList(value.taskActivations, isActivationCounter) ||
     !isList(value.messageActivations, isActivationCounter) ||
@@ -280,10 +283,45 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     !isList(value.callActivations, isActivationCounter) ||
     !isList(value.effectActivations, isActivationCounter) ||
     !isList(value.scopeActivations, isActivationCounter) ||
+    !isList(value.activityActivations, isActivationCounter) ||
     !isSafeInteger(value.endOccurrences, 0) || !isSafeInteger(value.logicalTimeMs, 0)) {
     return false;
   }
   return true;
+}
+
+/**
+ * One Activity occurrence ownership record, decoded structurally.
+ *
+ * A continuation that loses, duplicates, or substitutes a record is invalid before Workflow
+ * evaluation, because the record is the only thing joining a body to the handler waits attached to it.
+ * The body is a closed two-arm union and each arm's payload is checked against its own identity shape,
+ * so a task identity cannot be carried in a child-scope position.
+ */
+function isActivityOccurrence(value: unknown): boolean {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["id", "owner", "operationId", "body", "attachedTimers"]) &&
+    isRecord(value.id) &&
+    hasOnlyKeys(value.id, ["processInstanceId", "activityElementId", "activation"]) &&
+    isNonemptyString(value.id.processInstanceId) &&
+    isNonemptyString(value.id.activityElementId) &&
+    isSafeInteger(value.id.activation, 1) &&
+    isScopeId(value.owner) &&
+    isNonemptyString(value.operationId) &&
+    isActivityBody(value.body) &&
+    isList(value.attachedTimers, isOccurrenceId);
+}
+
+function isActivityBody(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  switch (value.kind) {
+    case ActivityBodyKind.UserTask:
+      return hasOnlyKeys(value, ["kind", "task"]) && isOccurrenceId(value.task);
+    case ActivityBodyKind.ChildScope:
+      return hasOnlyKeys(value, ["kind", "scope"]) && isScopeId(value.scope);
+    default:
+      return false;
+  }
 }
 
 function isScopeOccurrence(value: unknown): boolean {

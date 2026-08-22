@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Scope-subtree cancellation
@@ -83,13 +84,19 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     cancelled wait.owner
   let cancelledIncidents := state.effectIncidents.filter fun incident =>
     cancelled incident.wait.owner
+  -- A handler attached to an Activity is owned by the scope *holding* that Activity, so an
+  -- owner-only rule leaves a bounded Sub-Process deadline alive after its child region is gone. The
+  -- records name what each Activity owns, and the withdrawn ones carry their attached waits out.
+  let withdrawnTimers := attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)
   { state with
     tokens := state.tokens.filter fun token => !cancelled token.owner
     scopeOccurrences := state.scopeOccurrences.filter
       (keepScopeOccurrence disposition root cancelled)
     waits := state.waits.filter fun wait => !cancelled wait.owner
     messageWaits := state.messageWaits.filter fun wait => !cancelled wait.owner
-    timerWaits := state.timerWaits.filter fun wait => !cancelled wait.owner
+    timerWaits := state.timerWaits.filter fun wait =>
+      !cancelled wait.owner && !anyTimerIdNamesWait withdrawnTimers wait
+    activityOccurrences := retainedByRegion cancelled state.activityOccurrences
     effectWaits := state.effectWaits.filter fun wait => !cancelled wait.owner
     effectIncidents :=
       state.effectIncidents.filter fun incident => !cancelled incident.wait.owner

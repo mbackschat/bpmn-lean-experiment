@@ -129,6 +129,32 @@ structure CalledProcessOccurrence where
   returnOperationId : OperationId
   deriving Repr, DecidableEq
 
+/-- What one Activity occurrence's body currently is. A new arm, never a flag: the interrupting and
+non-interrupting families stay distinct operation kinds and nothing here records which. -/
+inductive ActivityBody where
+  | userTask (task : OccurrenceId)
+  | childScope (scope : ScopeOccurrenceId)
+  deriving Repr, DecidableEq
+
+/-- What one Activity occurrence owns: its body, and the handler waits attached to it.
+
+`owner` is the scope occurrence containing the Activity node, and every wait listed here shares it.
+That is what makes a bounded Sub-Process deadline parent-owned by derivation rather than by the
+mechanical argument that a child-owned deadline would leave the child permanently non-quiescent.
+
+`attachedTimers` names Timer occurrences rather than a union of handler families, because Timer is the
+only attached-handler family that produces a wait. What keeps a foreign identity out is the
+well-formedness conjunct requiring each entry to resolve in `timerWaits`, not the field's type. -/
+structure ActivityOccurrence where
+  processInstanceId : SemanticId
+  activityElementId : NodeId
+  activation : Nat
+  owner : ScopeOccurrenceId
+  operationId : OperationId
+  body : ActivityBody
+  attachedTimers : List OccurrenceId
+  deriving Repr, DecidableEq
+
 /-- Hidden inputs selected for one split activation and awaited by its paired join. -/
 structure SelectedBranchSet where
   owner : ScopeOccurrenceId
@@ -154,6 +180,7 @@ structure RuntimeState where
   selectedBranchSets : List SelectedBranchSet
   eventRaces : List EventRace := []
   calledProcessOccurrences : List CalledProcessOccurrence := []
+  activityOccurrences : List ActivityOccurrence := []
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
@@ -162,6 +189,7 @@ structure RuntimeState where
   scopeActivations : List ScopeActivation
   eventRaceActivations : List EventRaceActivation := []
   callActivations : List CallActivation := []
+  activityActivations : List TaskActivation := []
   endOccurrences : Nat
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
@@ -179,6 +207,7 @@ def initialState : RuntimeState :=
     selectedBranchSets := []
     eventRaces := []
     calledProcessOccurrences := []
+    activityOccurrences := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []
@@ -187,6 +216,7 @@ def initialState : RuntimeState :=
     scopeActivations := []
     eventRaceActivations := []
     callActivations := []
+    activityActivations := []
     endOccurrences := 0
     logicalTimeMs := 0 }
 

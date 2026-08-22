@@ -23,6 +23,7 @@ import type {
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
+  activityBodyScope,
   activityBodyTaskWait,
   attachedTimerWaits,
   isBoundaryTimerDefinition,
@@ -250,11 +251,12 @@ function managedDeadline(
 }
 
 /**
- * The deadline plus the invariant that its Activity is the one this family hosts.
+ * The deadline plus the invariant that its Activity's body is live.
  *
- * Both admitted profiles hold exactly one live bounded body while the deadline runs — the bounded
- * Activity's own task, or the bounded scope's single child task — but that is now checked as a
- * property of the record's own body rather than of the whole state's wait count.
+ * The body differs by family and that is the point: the bounded Activity's body is its own task, while
+ * the bounded scope's body is its child scope occurrence. The previous form checked
+ * `userTaskWaits.length === 1`, which held for both only because the bounded scope profile admits
+ * exactly one child task — a coincidence of the whole state, not a fact about either Activity.
  */
 function requireManagedDeadline(
   semanticProcess: SemanticProcessProgram,
@@ -262,16 +264,28 @@ function requireManagedDeadline(
   family: BoundedDeadlineFamily,
 ): DurableTimer {
   const pair = managedPair(semanticProcess, state, family);
-  const task = pair === undefined
-    ? undefined
-    : activityBodyTaskWait(pair.record, state.userTaskWaits);
+  const bodyLive = pair === undefined ? false : bodyIsLive(pair.record, state);
   if (
     pair === undefined ||
-    task === undefined ||
-    task.id.processInstanceId !== pair.deadline.id.processInstanceId ||
+    !bodyLive ||
     pair.deadline.remainingMs !== 1_000
   ) {
     throw hostInvariantFailure(family.invariantMessage);
   }
   return pair.deadline;
+}
+
+/** Whether the record's own body is live, resolved by the arm the record carries. */
+function bodyIsLive(record: ActivityOccurrence, state: RuntimeState): boolean {
+  const task = activityBodyTaskWait(record, state.userTaskWaits);
+  if (task !== undefined) {
+    return task.id.processInstanceId === record.id.processInstanceId;
+  }
+  const scope = activityBodyScope(record);
+  return scope !== undefined &&
+    state.scopeOccurrences.some(({ id }) =>
+      id.processInstanceId === scope.processInstanceId &&
+      id.definitionScopeId === scope.definitionScopeId &&
+      id.activation === scope.activation
+    );
 }
