@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { markdownTableRows, withoutBackticks } from "./markdown-tables.ts";
+import { reviewedDetailMapWordBudget } from "./document-control-plane.ts";
 import {
   headroom,
   isHandWrittenSourcePath,
@@ -243,7 +244,8 @@ async function exists(repositoryPath: string): Promise<boolean> {
 test("keeps the routed implementation maps reviewable", async () => {
   for (const [relativePath, maximumWords, permitsRoutingTable] of [
     [rootImplementationMap, 2000, true],
-    ...detailImplementationMaps.map((relativePath) => [relativePath, 4000, false] as const),
+    ...detailImplementationMaps.map((relativePath) =>
+      [relativePath, reviewedDetailMapWordBudget(relativePath), false] as const),
   ] as const) {
     const document = await readFile(path.join(projectRoot, relativePath), "utf8");
     const lines = document.split("\n");

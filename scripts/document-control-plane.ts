@@ -235,7 +235,27 @@ export function assertDetailImplementationMap(
     assert.ok(index > previous, `${file} lacks ordered base section ${heading}`);
     previous = index;
   }
-  assert.ok(wordCount(document) <= 4000, `${file} exceeds 4,000 words`);
+  const budget = reviewedDetailMapWordBudget(file);
+  assert.ok(
+    wordCount(document) <= budget,
+    `${file} exceeds ${budget.toLocaleString("en-US")} words`,
+  );
+}
+
+/**
+ * The reviewed word budget for one detail map.
+ *
+ * The default keeps a map readable. A raised budget is an owner decision recorded here rather than
+ * absorbed by compressing the map: when the runtime and proof map reached the default, one edit at
+ * the limit both introduced an over-claim and deleted absence content a review had required to live
+ * there, which is the limit changing what the status owner asserts. That map routes every semantic
+ * family, so its size scales with families closed rather than with narration.
+ *
+ * An agent may not add an entry. The alternative, splitting the map, is a routing change needing a
+ * new area ID.
+ */
+export function reviewedDetailMapWordBudget(file: string): number {
+  return file.endsWith("ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md") ? 5000 : 4000;
 }
 
 function rootPathRoutes(file: string): ReadonlyArray<AreaId> {
