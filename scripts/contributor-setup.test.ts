@@ -13,11 +13,20 @@ type WorkspacePackage = Readonly<{
   path: string;
 }>;
 
+/**
+ * Run a repository command and fail on a nonzero status.
+ *
+ * The timeout is a hang guard, not a performance budget. `doctor.sh verify` hashes the pinned BPMN
+ * corpus and measures 5.9 to 6.9 seconds on an idle development machine, so a ten-second bound left
+ * roughly 1.5x headroom and failed intermittently under this suite's concurrent runner, reporting a
+ * timeout as a doctor failure. A minute still catches a genuine hang while leaving the margin a
+ * CPU-bound command needs when it is competing for cores.
+ */
 function runProjectCommand(command: string, args: ReadonlyArray<string>): string {
   const result = spawnSync(command, args, {
     cwd: projectRoot,
     encoding: "utf8",
-    timeout: 10_000,
+    timeout: 60_000,
   });
   assert.equal(
     result.status,
