@@ -11,9 +11,15 @@ The fixtures exist because preservation cannot find a weakened conjunct: a predi
 fact preserves it vacuously, so every conjunct needs a state that fails it and would pass without it.
 They are the falsifying half of the account, not illustrations of it.
 
-Every state here is unreachable by construction. All but one perturb a single field of the armed
-boundary-Timer state; the lifecycle negative perturbs the empty state instead, because a not-started
-state is the only place its conjunct applies. A class an admitted transition could actually produce would be a semantic
+Every state here is unreachable by construction, and each perturbs a single field of a state its own
+conjunct can apply to: the boundary-Timer armed state for the wait and order conjuncts, the empty
+state for the lifecycle conjunct, and the Event-Based Gateway armed race for the hidden-record
+conjunct.
+
+Each negative is paired with a theorem naming the sibling conjuncts that stay true, so a refusal is
+attributable to the named conjunct rather than to something the aggregate already caught. That
+pairing is not decoration: the first hidden-record fixture was refused by the event-race association
+predicate instead, and only the sibling theorem exposed it. A class an admitted transition could actually produce would be a semantic
 defect rather than a witness, and the positive fact below is what keeps the perturbations honest: the
 unperturbed state is well-formed, so each negative differs from a reachable state in exactly the one
 respect its conjunct names.
