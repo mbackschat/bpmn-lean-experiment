@@ -173,6 +173,33 @@ It consumes lifecycle agreement, occurrence uniqueness, scope and token binding,
 
 Every Lean law consuming `waitIdentitiesUnique` therefore assumes it. Execution witnesses are absent for exactly two conjunct branches, measured rather than inferred: the effect wait and effect incident branches, which no schedule reaches, and the instance scoping on declaration, whose only witness is a hand-built incident state. The Message, Timer, event-race, selected-branch, and called-record branches are reached by the registered schedules. Three rules are implemented narrower than their stated propositions: `RSI-BIND-04` filters to hosting-instance waits, `RSI-BIND-05`'s called-record clause is decided nowhere, and `RSI-MONO-04` is not stated.
 
+## Activity occurrence ownership
+
+One runtime record per Activity occurrence that owns runtime state beyond its body, replacing the activation-ordinal agreements three boundary-Timer families used to recover their pair. [The proposal](ACTIVITY-OCCURRENCE-OWNERSHIP-PROPOSAL.md) owns the account. It adds no BPMN capability, operation kind, profile, scenario, or public observation field.
+
+**Implemented.**
+
+- `ActivityOccurrence` in both languages, with an identity distinct from `OccurrenceId` by field name so no task identity is substitutable for it, a closed two-arm body union, and a listed attached-Timer collection
+- five of six enumerated derivation sites read the record: the four transition owners across all three families, and the open-set publication binding
+- regional cancellation withdraws every record whose owner or body lies in the region together with the waits those records list; the bounded-scope deadline arm's hand-written withdrawal is gone as redundant
+- the adapter pairs a boundary deadline through the record instead of whole-state wait cardinality, and the Workflow continuation decoder admits and structurally validates both new fields
+- Lean carries the representation, canonical order, lookups, region partition, and withdrawal-completeness laws
+- the well-formedness predicate gains body liveness, attached-wait unambiguity, identity uniqueness, owner agreement, canonical order, and lifecycle emptiness in both languages, each with a negative whose siblings are asserted intact
+
+**Absent.**
+
+- the sixth derivation site is deliberately exempt rather than migrated. [The publication completeness relation](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) is an independent reconstruction pairing through the private retained anchor relation, never through state differences, so the producer's records would make it share the mechanism it checks
+- that exemption's reopen trigger is close: under any admitted repetition the record and the ordinal reconstruction would legitimately disagree, and it would reject a correct publication
+- body turnover is withdrawn as unreachable, since no registered family replaces a body; it belongs to sequential Multi-Instance. The effect body arm is unreachable and absent for the same reason
+- preservation of the new conjuncts across the registered transition arms inherits [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) and is not re-declared
+
+**Absent in evidence.**
+
+- both first reds are state-level negatives, because no public transition produces either state: every profile admitting a boundary deadline admits exactly one Activity armed exactly once
+- the reachable schedule-level evidence is conservation, byte-identical retained results across the three families' six registered scenarios, which says nothing changed rather than that anything improved
+- positive schedule-level evidence for the join reduces to the enumerated six-site guard
+- three cancellation routes reach a bounded region without being composable with one today: Error interruption, incident-gated cancellation, and `terminateScope`
+
 ## Interrupting Activity boundary Timer
 
 The [interrupting Activity boundary Timer specification](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) is **implemented and evidence-closed** for one interrupting exact-`PT1S` deadline on a User Task.
