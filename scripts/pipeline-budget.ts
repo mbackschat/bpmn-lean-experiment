@@ -26,7 +26,31 @@ export function warmSoftTargetMsFor(caseCount: number): number {
   return caseCount * warmSoftTargetPerCaseMs;
 }
 
-export const defaultWarmBudgetMs = 40_000;
+/**
+ * Pathology ceiling per registered pipeline case.
+ *
+ * A single absolute total cannot be portable, because the same catalog costs about 515 ms per case
+ * on an eight-core development machine and 1,038 ms per case on a four-core hosted runner. The
+ * previous fixed 40,000 ms was chosen against the faster machine, so a healthy 52-case run on a
+ * runner took 53,975 ms and exceeded it by 35%; only the workflow's declared override kept that
+ * invisible, and a contributor on modest hardware would have seen a hard failure on a correct run.
+ *
+ * The rate carries about a quarter more than the slowest measurement, which is wide enough for
+ * slower hardware and still narrow enough to catch a hang or a quadratic blow-up. It is not a
+ * performance target: [the feedback target](#warmSoftTargetPerCaseMs) owns that, and it is the one
+ * to tighten if per-case cost needs attention.
+ */
+export const warmBudgetPerCaseMs = 1_300;
+
+/**
+ * The portable ceiling for the current catalog.
+ *
+ * Stated as a total because the process deadlines below and the hosted-budget guard both read it
+ * before any case list exists. [The budget guard](pipeline-budget.test.ts) ties it back to
+ * `warmBudgetPerCaseMs` and the registered case count, so catalog growth fails there rather than
+ * silently outrunning this number.
+ */
+export const defaultWarmBudgetMs = 68_000;
 
 /** Resolves the selected pathology ceiling and rejects ambiguous duration syntax. */
 export function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
