@@ -15,7 +15,7 @@ import {
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
 import type {
-  EffectActivities,
+  EffectActivityImplementations,
   EffectRequest,
 } from "@bpmn-lean/temporal-testkit";
 
@@ -204,7 +204,7 @@ export class IncidentOperationsShowcaseRuntime {
 class IncidentEffectActivities {
   readonly #invocations = new Map<string, number>();
 
-  readonly activities: EffectActivities = {
+  readonly activities: EffectActivityImplementations = {
     executeBpmnEffect: async (request: EffectRequest) => {
       const prior = this.#invocations.get(request.idempotencyKey) ?? 0;
       this.#invocations.set(request.idempotencyKey, prior + 1);

@@ -45,11 +45,19 @@ if (baseUrl === undefined) {
   before(async () => {
     await runPostgresqlMigrations({
       connectionString: baseUrl,
+      // The whole platform catalog. Migration ordinals are global and the loader requires them
+      // contiguous, so any multi-package subset is invalid unless it happens to be a prefix.
       migrationDirectories: [
         fileURLToPath(
           new URL("../../../../foundation/artifact-store/migrations", import.meta.url),
         ),
         fileURLToPath(new URL("../../migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../operate/migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../work/migrations", import.meta.url)),
+        fileURLToPath(new URL("../../../../foundation/audit/migrations", import.meta.url)),
+        fileURLToPath(
+          new URL("../../../../foundation/recovery-runtime/migrations", import.meta.url),
+        ),
       ],
     });
   });
