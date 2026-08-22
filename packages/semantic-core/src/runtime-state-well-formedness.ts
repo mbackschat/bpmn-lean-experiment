@@ -212,12 +212,17 @@ export function runtimeStateDefects(
   }
 
   const declared = declaredElementIds(program);
-  // Only waits of the hosting instance are decidable here. A called Process is a separate program
-  // that this state does not carry, so its waits carry element identities the caller's operations
-  // never declare, and requiring otherwise would reject every live Call Activity tree. This is a
-  // bound on what the caller's program can decide, not a claim that a called wait is undeclared:
-  // broadening it needs the called definition, which is a representation change with its own
-  // witnesses.
+  // Only waits of the hosting instance are decidable here. A called Process may be a separate
+  // definition this state does not carry, in which case its waits name element identities the
+  // caller's operations never declare, and requiring otherwise would reject that state. This is a
+  // bound on what the supplied program can decide, not a claim that a called wait is undeclared.
+  //
+  // No executed schedule witnesses the scoping: the Call Activity fixtures carry both scopes'
+  // operations in one program, so their called waits are declared and removing this guard leaves
+  // the preservation lane green. What it is load-bearing for is a hand-built incident-cancellation
+  // state holding a called-instance Timer the program does not declare. Broadening the conjunct
+  // needs the called definitions reachable from the state, which is a representation change with
+  // its own witnesses.
   const hosted = (id: OccurrenceId): boolean => id.processInstanceId === expectedInstanceId;
   const undeclared =
     !state.userTaskWaits.every(({ id }) => !hosted(id) || declared.userTask.has(id.elementId)) ||
