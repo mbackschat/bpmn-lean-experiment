@@ -13,6 +13,10 @@ import {
   analyzeLeanSource,
   worktreeLeanSourceFiles,
 } from "./lean-source-analysis.ts";
+import {
+  readWorktreeSource,
+  readWorktreeSources,
+} from "./worktree-source-read.ts";
 
 export type SourceViolation = Readonly<{
   path: string;
@@ -314,6 +318,28 @@ theorem after_literals : True := by trivial
   assert.equal(analysis.moduleDocuments.length, 1);
 });
 
+test("a worktree scan survives a source deleted between enumeration and read", () => {
+  const vanished = ".worktree-source-read-vanishing-probe.lean";
+  assert.equal(existsSync(vanished), false);
+
+  // The enumerate-then-read split is what makes this reachable: guards list paths in one step and
+  // read them in a later one, while sibling guard processes create and delete probes in the same
+  // tree. Reading a path that is already gone must drop it, not fail the scan.
+  assert.equal(readWorktreeSource(vanished), null);
+  assert.deepEqual(readWorktreeSources([vanished]), []);
+
+  writeFileSync(vanished, "/-! Present. -/\n", "utf8");
+  try {
+    assert.deepEqual(readWorktreeSources([vanished]), [
+      { path: vanished, source: "/-! Present. -/\n" },
+    ]);
+  } finally {
+    unlinkSync(vanished);
+  }
+
+  assert.deepEqual(readWorktreeSources([vanished]), []);
+});
+
 test("maintained Lean discovery includes a non-ignored pending source", () => {
   const pendingSource = ".lean-source-contract-pending-probe.lean";
   assert.equal(existsSync(pendingSource), false);
@@ -341,10 +367,9 @@ test("a ratio-discriminating sparse module remains valid", () => {
 });
 
 test("maintained Lean sources satisfy structural comment contracts", () => {
-  const violations = worktreeLeanSourceFiles().flatMap((sourcePath) => {
-    const source = readFileSync(sourcePath, "utf8");
-    return leanSourceViolations(sourcePath, source);
-  });
+  const violations = readWorktreeSources(worktreeLeanSourceFiles()).flatMap(
+    ({ path, source }) => leanSourceViolations(path, source),
+  );
   assert.deepEqual(
     violations.map(formatViolation),
     [],
@@ -421,10 +446,10 @@ test("native_decide stays inside its exactly recorded exception set", () => {
   const recorded = new Map(
     recordedNativeDecideSites.map(({ path: p, sites }) => [p, sites]),
   );
-  const measured = worktreeLeanSourceFiles()
-    .map((sourcePath) => ({
-      path: sourcePath,
-      sites: nativeDecideSites(readFileSync(sourcePath, "utf8")),
+  const measured = readWorktreeSources(worktreeLeanSourceFiles())
+    .map(({ path, source }) => ({
+      path,
+      sites: nativeDecideSites(source),
     }))
     .filter(({ sites }) => sites > 0)
     .sort((left, right) => right.sites - left.sites || left.path.localeCompare(right.path));

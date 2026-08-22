@@ -8,6 +8,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
+import { readWorktreeSource, readWorktreeSources } from "./worktree-source-read.ts";
 import test from "node:test";
 
 import { analyzeLeanSource } from "./lean-source-analysis.ts";
@@ -386,9 +387,9 @@ test("no shipped composite value is built by joining on a separator", () => {
 
 test("hand-written source respects reviewed module-size boundaries", () => {
   const sourceFiles = worktreeSourceFiles();
-  const measurements = sourceFiles.map((path) => ({
+  const measurements = readWorktreeSources(sourceFiles).map(({ path, source }) => ({
     path,
-    lines: nonblankLines(readFileSync(path, "utf8")),
+    lines: nonblankLines(source),
   }));
   const assessment = assessSourceHygiene(
     measurements,
@@ -419,7 +420,8 @@ test("hand-written source respects reviewed module-size boundaries", () => {
       true,
       `${path} must remain a tracked or pending source file`,
     );
-    const violation = assessLeanUmbrella(path, readFileSync(path, "utf8"));
+    const source = readWorktreeSource(path);
+    const violation = source === null ? null : assessLeanUmbrella(path, source);
     return violation === null ? [] : [violation];
   });
   assert.deepEqual(
@@ -482,7 +484,9 @@ test("every Lean tactic-position decide reduces once, in the kernel", () => {
   assert.ok(leanSources.length > 50, `Lean enumeration returned ${leanSources.length} files`);
 
   assert.deepEqual(
-    leanSources.flatMap((path) => unkernelledDecideSites(path, readFileSync(path, "utf8"))),
+    readWorktreeSources(leanSources).flatMap(({ path, source }) =>
+      unkernelledDecideSites(path, source),
+    ),
     [],
     "replace `decide` with `decide +kernel` so the reduction is not performed twice",
   );

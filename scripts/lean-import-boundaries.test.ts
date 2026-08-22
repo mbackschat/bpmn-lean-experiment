@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readWorktreeSources } from "./worktree-source-read.ts";
 import path from "node:path";
 import test from "node:test";
 
@@ -59,8 +60,8 @@ test("detects the aggregate import without matching comments or the umbrella own
 });
 
 test("semantic leaf modules import narrow owners rather than the aggregate umbrella", () => {
-  const violations = worktreeLeanSourceFiles().flatMap((sourcePath) =>
-    broadSemanticProcessImports(sourcePath, readFileSync(sourcePath, "utf8")),
+  const violations = readWorktreeSources(worktreeLeanSourceFiles()).flatMap(
+    ({ path, source }) => broadSemanticProcessImports(path, source),
   );
   assert.deepEqual(
     violations,

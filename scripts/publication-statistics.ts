@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
+import { readWorktreeSource } from "./worktree-source-read.ts";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -80,7 +81,10 @@ function leanStatistics(): LeanStatistics {
     declarationCommands: 0,
   };
   for (const sourcePath of worktreeLeanSourceFiles()) {
-    const source = readFileSync(path.join(projectRoot, sourcePath), "utf8");
+    const source = readWorktreeSource(path.join(projectRoot, sourcePath));
+    if (source === null) {
+      continue;
+    }
     for (const line of analyzeLeanSource(source).code.split("\n")) {
       const declaration = leadingDeclaration(line);
       if (declaration === null) {
