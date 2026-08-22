@@ -466,19 +466,34 @@ test("the maintained process-assessment ledger satisfies its own escalation rule
 // the capsule having to keep a figure current. `node scripts/what-binds.ts <path>...` derives both
 // lists mechanically; nothing here trusts recall.
 test("every capsule proposal names the guards and owners that already bind it", async () => {
-  const capsuleRoot = path.join(projectRoot, "docs/capsules");
-  const capsules = (await readdir(capsuleRoot))
-    .filter((entry) => entry.endsWith("-PROPOSAL.md") || entry.endsWith("-SPEC.md"));
-  const proposals = capsules.filter((entry) => entry.endsWith("-PROPOSAL.md"));
+  // Two trees with different obligations. `docs/capsules` carries the full binding-inventory contract.
+  // A root-placed proposal carries only the owner-headroom staleness half, and that asymmetry is
+  // deliberate rather than lazy: the section contract was written for capsules and four older root
+  // proposals predate it, while a stale headroom figure is wrong wherever it sits. A cross-cutting
+  // proposal at `docs/` root had left this jurisdiction entirely and carried six stale figures plus a
+  // sentence claiming this guard recomputed them.
+  const proposalTrees = ["docs/capsules", "docs"] as const;
+  const capsules: Array<{ tree: string; entry: string }> = [];
+  for (const tree of proposalTrees) {
+    for (const entry of await readdir(path.join(projectRoot, tree))) {
+      if (entry.endsWith("-PROPOSAL.md") || entry.endsWith("-SPEC.md")) {
+        capsules.push({ tree, entry });
+      }
+    }
+  }
+  const proposals = capsules.filter(({ entry }) => entry.endsWith("-PROPOSAL.md"));
   const findings: string[] = [];
-  for (const proposal of proposals) {
-    const markdown = await readFile(path.join(capsuleRoot, proposal), "utf8");
+  for (const { tree: capsuleRoot, entry: proposal } of proposals) {
+    const markdown = await readFile(path.join(projectRoot, capsuleRoot, proposal), "utf8");
+    const headroomOnly = capsuleRoot === "docs";
     const section = headingSection(markdown, bindingInventoryHeading);
     if (section === null) {
-      findings.push(`${proposal}: no ${bindingInventoryHeading} section`);
+      if (!headroomOnly) {
+        findings.push(`${proposal}: no ${bindingInventoryHeading} section`);
+      }
       continue;
     }
-    const linked = [...new Set(linkedPaths(section, "docs/capsules"))];
+    const linked = [...new Set(linkedPaths(section, capsuleRoot))];
     const unresolved: string[] = [];
     for (const target of linked) {
       if (!await exists(target)) {
@@ -489,10 +504,11 @@ test("every capsule proposal names the guards and owners that already bind it", 
     if (unresolved.length > 0) {
       findings.push(`${proposal}: unresolved ${unresolved.sort().join(", ")}`);
     }
-    if (!resolved.some((target) => target.endsWith(".test.ts"))) {
+    if (!headroomOnly && !resolved.some((target) => target.endsWith(".test.ts"))) {
       findings.push(`${proposal}: names no executable guard or test oracle`);
     }
     if (
+      !headroomOnly &&
       !resolved.some((target) =>
         !target.endsWith(".test.ts") &&
         isHandWrittenSourcePath(target)
@@ -502,11 +518,13 @@ test("every capsule proposal names the guards and owners that already bind it", 
     }
     const owners = headingSection(section, ownerInventoryHeading);
     if (owners === null) {
-      findings.push(`${proposal}: no ${ownerInventoryHeading} subsection`);
+      if (!headroomOnly) {
+        findings.push(`${proposal}: no ${ownerInventoryHeading} subsection`);
+      }
       continue;
     }
     findings.push(
-      ...(await staleOwnerHeadroom(owners, "docs/capsules", async (target) => {
+      ...(await staleOwnerHeadroom(owners, capsuleRoot, async (target) => {
         if (!isHandWrittenSourcePath(target) || !await exists(target)) {
           return null;
         }

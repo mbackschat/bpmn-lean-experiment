@@ -115,6 +115,43 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
             !(cancelledIncidents.any fun incident =>
               activityScopeMatches incident.id.effectId activity) } }
 
+/-! ## Withdrawal completeness
+
+The composed facts, quantified over every state, region, and disposition. The deadline arm of the
+bounded-scope family used to establish withdrawal structurally, by erasing from a list its premise
+forced to contain the deadline. That premise is discharged, so withdrawal now rests on these two.
+-/
+
+/-- No record the region withdrew survives it. -/
+theorem cancelScopeSubtree_retains_no_withdrawn_record (state : RuntimeState)
+    (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition) :
+    ∀ record ∈ (cancelScopeSubtree state root disposition).activityOccurrences,
+      recordInRegion
+        (fun owner =>
+          occurrenceInSubtree state.scopeOccurrences root owner ||
+            (calledInstanceClosure state root).contains owner.processInstanceId)
+        record = false := by
+  intro record retained
+  simp only [cancelScopeSubtree] at retained
+  exact retained_records_are_outside_the_region _ _ record retained
+
+/-- No Timer wait a withdrawn record listed survives the region either. -/
+theorem cancelScopeSubtree_withdraws_listed_timers (state : RuntimeState)
+    (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition) :
+    ∀ wait ∈ (cancelScopeSubtree state root disposition).timerWaits,
+      anyTimerIdNamesWait
+        (attachedTimersOf
+          (withdrawnByRegion
+            (fun owner =>
+              occurrenceInSubtree state.scopeOccurrences root owner ||
+                (calledInstanceClosure state root).contains owner.processInstanceId)
+            state.activityOccurrences))
+        wait = false := by
+  intro wait survives
+  simp only [cancelScopeSubtree, List.mem_filter, Bool.and_eq_true,
+    Bool.not_eq_true'] at survives
+  exact survives.2.2
+
 /-- Regional interruption removes the selected occurrence and then emits the caught route token in its live parent. -/
 def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
     (output : ControlPlaceId) : RuntimeState :=

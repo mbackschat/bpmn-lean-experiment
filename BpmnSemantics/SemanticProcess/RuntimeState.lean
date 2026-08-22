@@ -326,7 +326,7 @@ private def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
 Separate from `activationCount` even though both are keyed by the same identifier, because they count
 different things: how many times an Activity was activated, against how many occurrences its body has
 produced. They agree under every registered profile and nothing reads the agreement. -/
-private def activityActivationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
+def activityActivationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
     Nat :=
   (state.activityActivations.find? fun activation =>
     decide (activation.taskId = taskId)).map (·.count) |>.getD 0

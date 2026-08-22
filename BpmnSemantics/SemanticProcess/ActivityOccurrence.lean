@@ -150,6 +150,31 @@ theorem retained_child_scope_body_survives
   simp only [recordInRegion, body, Bool.or_eq_false_iff] at outside
   exact outside.2
 
+/-- No retained record was in the region, quantified over every state and region.
+
+This is the direction a reader should check first, because the region's own filter is what makes it
+true and a future rewrite that widened the filter would fail here. -/
+theorem retained_records_are_outside_the_region
+    (cancelled : ScopeOccurrenceId → Bool) (records : List ActivityOccurrence) :
+    ∀ record ∈ retainedByRegion cancelled records, recordInRegion cancelled record = false := by
+  intro record retained
+  simp only [retainedByRegion, List.mem_filter, Bool.not_eq_true'] at retained
+  exact retained.2
+
+/-- Every wait a withdrawn record listed is absent from a list the region filtered by that same set.
+
+The composed fact the capsule needs, quantified rather than decided at one fixture: filtering a Timer
+list by "not named by any withdrawn record" leaves no wait any withdrawn record listed. `cancelScopeSubtree`
+performs exactly this filter, so its deadline withdrawal follows from this rather than from the
+structural `erase` the deadline arm used to carry. -/
+theorem filtering_by_withdrawn_timers_leaves_none
+    (withdrawn : List OccurrenceId) (timerWaits : List TimerWait)
+    (survivor : TimerWait)
+    (retained : survivor ∈ timerWaits.filter fun wait => !anyTimerIdNamesWait withdrawn wait) :
+    anyTimerIdNamesWait withdrawn survivor = false := by
+  simp only [List.mem_filter, Bool.not_eq_true'] at retained
+  exact retained.2
+
 /-- Withdrawing a region withdraws every handler wait the withdrawn records listed. -/
 theorem withdrawn_records_carry_their_attached_timers
     (cancelled : ScopeOccurrenceId → Bool) (records : List ActivityOccurrence)

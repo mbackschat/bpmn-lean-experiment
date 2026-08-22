@@ -365,6 +365,8 @@ def RuntimeStateMonotone (before after : RuntimeState) : Prop :=
       nodeCountFor (·.elementId) (·.count) after.callActivations elementId) ∧
   (∀ scopeId, scopeCountFor before.scopeActivations scopeId ≤
     scopeCountFor after.scopeActivations scopeId) ∧
+  (∀ taskId, taskCountFor before.activityActivations taskId ≤
+    taskCountFor after.activityActivations taskId) ∧
   before.endOccurrences ≤ after.endOccurrences
 
 /-- `RSI-MONO-03`. Logical time never decreases, under the named firing hypothesis.

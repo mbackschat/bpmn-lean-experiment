@@ -16,7 +16,8 @@ open BpmnSemantics
 
 /-- Adds the parent-owned deadline to a state that has already entered the child scope. Separate from the entry so the shared scope-entry mechanism stays one owner. -/
 def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (childScopeId : DefinitionScopeId) (boundaryTimer : BoundaryTimerArm) : RuntimeState :=
+    (childScopeId : DefinitionScopeId) (child : ScopeOccurrenceId)
+    (boundaryTimer : BoundaryTimerArm) : RuntimeState :=
   let activation := timerActivationCount state boundaryTimer.elementId + 1
   let deadlineId : OccurrenceId :=
     { processInstanceId := owner.processInstanceId
@@ -26,9 +27,12 @@ def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
   -- two are in bijection: `WellFormedProgram` gives every non-root scope exactly one owning
   -- `embeddedSubProcess`/`enterScope` pair, so the scope identifies the Activity as precisely as the
   -- node would, without threading an origin through this relation and every theorem naming it.
-  let childOccurrence := state.scopeOccurrences.find? fun occurrence =>
-    decide (occurrence.id.definitionScopeId = childScopeId) &&
-      decide (occurrence.parent = some owner)
+  --
+  -- The activation is minted from the Activity's own counter, not from the child's. Reusing the child
+  -- ordinal would make the record unable to express a divergence between an Activity's activations and
+  -- the occurrences its body produced, which is the one thing the record exists for, and a second
+  -- arming would re-mint the same identity.
+  let activityActivation := activityActivationCount state { value := childScopeId.value } + 1
   { state with
     timerWaits :=
       { processInstanceId := owner.processInstanceId
@@ -38,15 +42,16 @@ def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
         deadlineMs := state.logicalTimeMs + boundaryTimer.durationMs
         output := boundaryTimer.output } :: state.timerWaits
     activityOccurrences :=
-      match childOccurrence with
-      | none => state.activityOccurrences
-      | some child =>
-          { processInstanceId := owner.processInstanceId
-            activityElementId := { value := childScopeId.value }
-            activation := child.id.activation
-            owner
-            body := .childScope child.id
-            attachedTimers := [deadlineId] } :: state.activityOccurrences
+      { processInstanceId := owner.processInstanceId
+        activityElementId := { value := childScopeId.value }
+        activation := activityActivation
+        owner
+        body := .childScope child
+        attachedTimers := [deadlineId] } :: state.activityOccurrences
+    activityActivations :=
+      { taskId := { value := childScopeId.value }, count := activityActivation } ::
+        state.activityActivations.filter fun value =>
+          decide (value.taskId ≠ { value := childScopeId.value })
     timerActivations :=
       { elementId := boundaryTimer.elementId, count := activation } ::
         state.timerActivations.filter fun value =>
@@ -58,18 +63,25 @@ def armBoundedScopeState? (state : RuntimeState) (input childEntry : ControlPlac
     Option RuntimeState := do
   let parent ← onlyTokenOwner? state input
   let entered ← enterScopeState? state input childEntry childScopeId
-  pure (armScopeDeadline entered parent childScopeId boundaryTimer)
+  let child ← (entered.scopeOccurrences.find? fun occurrence =>
+    decide (occurrence.id.definitionScopeId = childScopeId) &&
+      decide (occurrence.parent = some parent)).map (·.id)
+  pure (armScopeDeadline entered parent childScopeId child boundaryTimer)
 
 /-- Atomic declarative arming relation with explicit parent ownership, the shared scope entry, and the exact resulting state. -/
 inductive BoundedScopeArmingStep : RuntimeState → ControlPlaceId → ControlPlaceId →
     DefinitionScopeId → BoundaryTimerArm → RuntimeState → Prop where
   | arm (before : RuntimeState) (input childEntry : ControlPlaceId)
       (childScopeId : DefinitionScopeId) (boundaryTimer : BoundaryTimerArm)
-      (parent : ScopeOccurrenceId) (entered : RuntimeState)
+      (parent : ScopeOccurrenceId) (entered : RuntimeState) (child : ScopeOccurrenceId)
       (owned : onlyTokenOwner? before input = some parent)
-      (entry : enterScopeState? before input childEntry childScopeId = some entered) :
+      (entry : enterScopeState? before input childEntry childScopeId = some entered)
+      (entered_child :
+        (entered.scopeOccurrences.find? fun occurrence =>
+          decide (occurrence.id.definitionScopeId = childScopeId) &&
+            decide (occurrence.parent = some parent)).map (·.id) = some child) :
       BoundedScopeArmingStep before input childEntry childScopeId boundaryTimer
-        (armScopeDeadline entered parent childScopeId boundaryTimer)
+        (armScopeDeadline entered parent childScopeId child boundaryTimer)
 
 theorem armBoundedScopeState_sound (before after : RuntimeState)
     (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
@@ -84,17 +96,31 @@ theorem armBoundedScopeState_sound (before after : RuntimeState)
       cases entry : enterScopeState? before input childEntry childScopeId with
       | none => simp [owned, entry] at success
       | some entered =>
-          simp [owned, entry] at success
-          cases success
-          exact .arm before input childEntry childScopeId boundaryTimer parent entered
-            owned entry
+          cases child :
+              (entered.scopeOccurrences.find? fun occurrence =>
+                decide (occurrence.id.definitionScopeId = childScopeId) &&
+                  decide (occurrence.parent = some parent)).map (·.id) with
+          | none => simp [owned, entry, child] at success
+          | some childId =>
+              simp [owned, entry, child] at success
+              cases success
+              exact .arm before input childEntry childScopeId boundaryTimer parent entered
+                childId owned entry child
 
 /-- Arming never leaves the child scope without its deadline: the armed state always holds one more Timer wait than the entry it refines. -/
 theorem armBoundedScope_adds_one_deadline (state : RuntimeState)
     (owner : ScopeOccurrenceId) (childScopeId : DefinitionScopeId)
-    (boundaryTimer : BoundaryTimerArm) :
-    (armScopeDeadline state owner childScopeId boundaryTimer).timerWaits.length =
+    (child : ScopeOccurrenceId) (boundaryTimer : BoundaryTimerArm) :
+    (armScopeDeadline state owner childScopeId child boundaryTimer).timerWaits.length =
       state.timerWaits.length + 1 := by
+  simp [armScopeDeadline]
+
+/-- Arming records exactly one Activity occurrence beside that deadline, so neither exists alone. -/
+theorem armBoundedScope_records_one_occurrence (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (childScopeId : DefinitionScopeId)
+    (child : ScopeOccurrenceId) (boundaryTimer : BoundaryTimerArm) :
+    (armScopeDeadline state owner childScopeId child boundaryTimer).activityOccurrences.length =
+      state.activityOccurrences.length + 1 := by
   simp [armScopeDeadline]
 
 /-- Every committed bounded-scope operation, as the child scope it enters paired with its deadline. -/
@@ -146,8 +172,9 @@ def boundedScopeChildFor? (state : RuntimeState)
 Clause 13.5.3's order — consume the Timer occurrence, cancel every non-final owner of the child
 region, remove the child occurrence, then produce the boundary token in the parent scope — is one
 atomic transition with no observable intermediate state. The deadline is owned by the *parent*
-occurrence and therefore survives regional cancellation, so it is erased explicitly rather than by
-the shared subtree removal. -/
+occurrence and so lies outside the cancelled subtree by construction, which is why it used to be
+erased explicitly here rather than by the shared removal. The Activity occurrence record now carries
+it out with regional cancellation, so this transition erases nothing. -/
 def interruptBoundedScope? (program : Program) (state : RuntimeState)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) : Option RuntimeState :=
   match state.control, boundedScopeDeadlineWait? state timerId with
@@ -570,13 +597,21 @@ theorem interruptBoundedScope_logical_time (program : Program) (before after : R
 
 /-- No victory half-withdraws the triple: both arms retire exactly the deadline they were armed with, and that deadline is paired to the child occurrence by a committed operation rather than by proximity.
 
-Stated over the arm's own pending timer list rather than as a non-membership claim, because
 The two arms withdraw the deadline by different mechanisms and the statement is unchanged, because the
 existential over the pending list absorbs the difference. Quiescence erases from the completed state's
 own `timerWaits`; the deadline arm withdraws through regional cancellation of the Activity occurrence
 record that lists it, and witnesses the same shape with `deadline :: after.timerWaits` as its pending
 list. Stating absence instead would have been an over-reach in exactly the direction the paragraph below
 warns about.
+
+That synthetic witness is weak and must not be read as strong: for *any* successor,
+`deadline :: after.timerWaits` satisfies both pending-list conjuncts, so on the deadline arm this
+theorem carries only the pairing and the deadline's presence in `before`. Withdrawal on that arm is
+established instead by `cancelScopeSubtree_withdraws_listed_timers` in
+[the cancellation owner](ScopeCancellation.lean), quantified over every state and region. Before the
+record existed, the arm's successor was structurally an `erase` of a list its premise forced to contain
+the deadline, so withdrawal was true by construction here; that construction is gone and its
+replacement is named rather than implied.
 
 `RuntimeState` carries no uniqueness invariant over `timerWaits`: nothing in the type rules out two
 identical occurrences, so `erase` removing one does not by itself establish that no copy remains. The

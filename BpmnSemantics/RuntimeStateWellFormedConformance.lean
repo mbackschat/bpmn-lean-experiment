@@ -288,6 +288,6 @@ theorem rewound_clock_successor_keeps_counters_monotone :
     RuntimeStateMonotone armedState rewoundClockSuccessor :=
   ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _,
     fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _,
-    fun _ => Nat.le_refl _, Nat.le_refl _⟩
+    fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, Nat.le_refl _⟩
 
 end BpmnSemantics.RuntimeStateWellFormedConformance

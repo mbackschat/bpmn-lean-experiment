@@ -372,6 +372,7 @@ export function runtimeStateRegressions(
     [before.eventRaceActivations, after.eventRaceActivations],
     [before.callActivations, after.callActivations],
     [before.scopeActivations, after.scopeActivations],
+    [before.activityActivations, after.activityActivations],
   ] as const;
 
   const rewound = counterFamilies.some(([previous, next]) => {
@@ -408,6 +409,13 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.DanglingWaitOwner,
   RuntimeStateDefect.DuplicateWaitIdentity,
   RuntimeStateDefect.UnorderedCollection,
+  // All three are decidable from one state without the called definitions, which is what the gate
+  // excludes program-agreement classes for. Leaving them out meant no boundary refused a record whose
+  // body was gone, so a continuation could carry one across a Run and `AOO-REFUSE-01`'s state clause
+  // held nowhere.
+  RuntimeStateDefect.ActivityOccurrenceBodyAbsent,
+  RuntimeStateDefect.UnownedAttachedWait,
+  RuntimeStateDefect.DuplicateActivityOccurrence,
 ]);
 
 /**

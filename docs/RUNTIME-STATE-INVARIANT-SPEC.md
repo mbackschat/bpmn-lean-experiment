@@ -14,7 +14,7 @@ Exact implemented and absent status, including which conjunct branches a witness
 
 The instance index is not decoration and not currently load-bearing. A predicate that read the expected identity out of the state under check would admit any internally consistent injected state, so the parameter is supplied by the caller. Both installed call sites pass an identity that cannot disagree, so the conjunct is inert today; the parameter exists for a caller holding a genuine external expectation.
 
-Two monotonicity facts are separate relations rather than conjuncts, because a high-water or non-reissue fact belongs to a transition and a state predicate asserting one would need an invented history field. `RuntimeStateMonotone` and `RuntimeStateTimeMonotone` are propositions in Lean. Only the first has an executable core counterpart: `runtimeStateRegressions` decides its seven counter families and `endOccurrences`. `RSI-MONO-03` has none, and the nearest core artifact is not one: the continuation guard's `recoveredTimeIsBelowEveryLiveDeadline` is a one-state check that no live deadline sits below current time, not the two-state implication.
+Two monotonicity facts are separate relations rather than conjuncts, because a high-water or non-reissue fact belongs to a transition and a state predicate asserting one would need an invented history field. `RuntimeStateMonotone` and `RuntimeStateTimeMonotone` are propositions in Lean. Only the first has an executable core counterpart: `runtimeStateRegressions` decides its eight counter families and `endOccurrences`. `RSI-MONO-03` has none, and the nearest core artifact is not one: the continuation guard's `recoveredTimeIsBelowEveryLiveDeadline` is a one-state check that no live deadline sits below current time, not the two-state implication.
 
 ### Layer 1: lifecycle and structure
 
@@ -22,11 +22,11 @@ Two monotonicity facts are separate relations rather than conjuncts, because a h
 |---|---|
 | `RSI-LIFE-01` | `notStarted` admits no occurrence, token, wait, hidden record, incident, or pending initiation |
 | `RSI-LIFE-02` | `completed` and `cancelled` admit no live occurrence and no token |
-| `RSI-OWN-01` | every token, User Task wait, Message wait, Timer wait, effect wait, incident-retained wait, selected-branch record, event race, and called-process record names exactly one live scope occurrence as its owner |
+| `RSI-OWN-01` | every token, User Task wait, Message wait, Timer wait, effect wait, incident-retained wait, selected-branch record, event race, called-process record, and Activity occurrence record names exactly one live scope occurrence as its owner |
 | `RSI-UNIQ-01` | the occurrence identity triple `(processInstanceId, definitionScopeId, activation)` appears exactly once in `scopeOccurrences` |
 | `RSI-UNIQ-02` | within each wait family the family's occurrence key appears at most once: User Task `(instance, element, activation)`, Message subscription identity, Timer occurrence identity, effect occurrence identity |
 | `RSI-DISJ-01` | one effect occurrence appears in `effectWaits` or in `effectIncidents`, never in both |
-| `RSI-ORDER-01` | the five collections that declare a canonical order hold it: `waits`, `activations`, `selectedBranchSets`, `eventRaces`, and `calledProcessOccurrences` |
+| `RSI-ORDER-01` | the six collections that declare a canonical order hold it: `waits`, `activations`, `selectedBranchSets`, `eventRaces`, `calledProcessOccurrences`, and `activityOccurrences` |
 
 ### Layer 2: program agreement
 
@@ -42,7 +42,7 @@ Two monotonicity facts are separate relations rather than conjuncts, because a h
 
 | Rule | Proposition |
 |---|---|
-| `RSI-MONO-01` | every activation counter family is a per-key high-water mark that never decreases across a committed transition |
+| `RSI-MONO-01` | every activation counter family is a per-key high-water mark that never decreases across a committed transition; eight families since `activityActivations` joined |
 | `RSI-MONO-02` | `endOccurrences` never decreases |
 | `RSI-MONO-03` | `logicalTimeMs` never decreases, under the named firing hypothesis below |
 | `RSI-MONO-04` | a newly created occurrence, task, Message, Timer, effect, race, or call identity is strictly above its key's recorded counter, so a removed identity is never reissued. **Not stated:** non-reissue is a property of the issuing transition rather than of the counter pair, so the relation omits it and it remains an explicit absence |

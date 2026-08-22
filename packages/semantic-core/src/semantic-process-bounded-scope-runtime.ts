@@ -194,8 +194,9 @@ function withdrawBoundedScopeDeadline(
  *
  * Clause 13.5.3's order — consume the Timer occurrence, cancel every non-final owner in the child
  * region, remove the child occurrence, then produce the boundary token in the parent scope — is one
- * atomic transition with no observable intermediate state. The deadline itself is owned by the parent
- * and therefore survives regional cancellation, so it is consumed explicitly here.
+ * atomic transition with no observable intermediate state. The deadline is owned by the parent and so
+ * lies outside the cancelled subtree by construction, which is why it used to be consumed explicitly
+ * here; the Activity occurrence record now carries it out with regional cancellation.
  */
 export function interruptBoundedScope(
   program: SemanticProcessProgram,
