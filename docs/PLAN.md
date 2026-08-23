@@ -35,9 +35,11 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: resume the sequential Multi-Instance account the body-turnover amendment unblocked. That amendment is closed: its second cold closure review approved with required edits, two warm audit rounds closed them, and its contract graduated into [the Activity occurrence specification](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) as `AOO-TURNOVER-02` through `AOO-TURNOVER-04`, with the history in [the archived amendment](archived/ACTIVITY-BODY-TURNOVER-PROPOSAL.md).
+Next action: the Lean transition relations and evaluator soundness for the four sequential Multi-Instance arms, then public progress and E2 occurrence accounting. The body-turnover amendment that unblocked this is closed and graduated into [the Activity occurrence specification](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) as `AOO-TURNOVER-02` through `AOO-TURNOVER-04`, with its history in [the archived amendment](archived/ACTIVITY-BODY-TURNOVER-PROPOSAL.md).
 
-The publication-anchor lane has landed: the completeness relation pairs a firing deadline through the retained handler list, the continuation decoder recomputes rather than trusts it, and `AOO-JOIN-03` replaces `AOO-JOIN-02`. The falsified parent passages are bounded by a recorded criterion and two searches rather than a count, because three counts each came up short. The retained shape change is durable and unversioned, which pre-release permits but a history baseline does not.
+Landed for Multi-Instance: the controller in both languages storing only the snapshot and the dense output slots, three binding conjuncts with four kernel-decided negatives, and the four TypeScript transitions. Command-level evidence waits for registration, which admission gates, so transitions are driven through the dispatcher.
+
+The full Lean gate now costs 405 seconds and peaks at 3,045 MB resident at the pinned single thread, against a 5 GB lightweight-runner floor. Each conjunct added to `runtimeStateWellFormed` is re-reduced by every kernel-decided fixture and each new fixture re-reduces every conjunct, so the next capsule that adds conjuncts pays on both axes.
 
 Oracle: replacement keeps one occurrence identity while its body changes, the post-state is well-formed under the two stated hypotheses, and the body's activation diverges from its handler's. An absent or ambiguous body leaves the operation undefined rather than repaired.
 

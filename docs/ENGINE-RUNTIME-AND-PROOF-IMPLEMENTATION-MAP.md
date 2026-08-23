@@ -98,7 +98,14 @@ The first interchange composition registers `cibseven-2.2.0-user-task-process-da
 
 Two registered profiles select one internal standard-notation preservation capability without executing the retained material. The BPMN data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Integer and String-list values appear only at M6 User Task completion, and Product 1 owns no form semantics. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Its successor adds only the exact incident-gated hosting-root cancellation path; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
 
-The sequential Multi-Instance checked node and Semantic Process operation are structurally implemented, schema-validated, and source-lowered, but the profile is not execution-registered. Its runtime controller, public progress, transitions, Lean account, TypeScript evaluator, occurrence lifecycle, and Temporal refinement remain absent at this checkpoint.
+The sequential Multi-Instance checked node, Semantic Process operation, runtime controller, and four state transitions are implemented, and the profile is still not execution-registered.
+
+- the controller stores the immutable snapshot and the dense output slots in both languages. Planned, generated, completed, pending, terminated, and the active loop counter are derived from those, so the normative counter equations hold structurally rather than by validation
+- three binding conjuncts join the well-formedness predicate in both languages, with four kernel-decided negatives and their attribution theorems, and the body-turnover preservation proof now closes over fifteen conjuncts
+- TypeScript carries outer entry with its separate zero-item arm, non-final iteration through [the replacement operation](../packages/semantic-core/src/activity-body-turnover.ts), final completion with atomic index-ordered publication, and deadline interruption that discards the partial collection
+- **absent:** the Lean transition relations and evaluator soundness for all four arms, public progress `openMultiInstances`, E2 occurrence accounting, the Temporal host class and refinement witnesses, the capacity budget owner, and execution registration
+- command-level evidence is absent for a reason rather than untried. Admission refuses an unregistered profile, so every transition is exercised through the dispatcher and the family functions, and `applyStimulus` reaches none of them until registration
+- two listed mutations were measured and narrowed. A per-iteration deadline reset is separable only when it mints a fresh Timer occurrence, because no logical time elapses across an iteration boundary; index-versus-completion aggregation order is not separable at all under a profile with one active instance, and a slot defect is the retained oracle in its place
 
 ### Runtime scoped data
 
