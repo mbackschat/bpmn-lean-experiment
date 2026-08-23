@@ -285,19 +285,24 @@ theorem all_filter {α : Type} (p q : α → Bool) :
 answer it identically.
 
 This is what carries the record-side well-formedness conjuncts across a body rewrite: `occursOnce`
-reads records only through their identity, and replacement leaves the identity sequence alone. -/
-theorem all_occursOnce_of_map_eq {α β : Type} [DecidableEq β] (key : α → β)
-    (same : α → α → Bool) (hsame : ∀ a b, same a b = (key a == key b))
+reads records only through their identity, and replacement leaves the identity sequence alone. The
+key's own comparator is a parameter rather than `BEq β`, so a caller supplies the comparison its
+predicate already performs instead of matching a derived instance. -/
+theorem all_occursOnce_of_map_eq {α β : Type} (key : α → β)
+    (same : α → α → Bool) (keySame : β → β → Bool)
+    (hsame : ∀ a b, same a b = keySame (key a) (key b))
     (left right : List α) (h : left.map key = right.map key) :
     left.all (occursOnce same left) = right.all (occursOnce same right) := by
   have count : ∀ (values : List α) (value : α),
-      (values.filter (same value)).length = (values.map key).countP (· == key value) := by
+      (values.filter (same value)).length =
+        (values.map key).countP (keySame (key value)) := by
     intro values value
     rw [List.countP_map, ← List.countP_eq_length_filter]
-    exact List.countP_congr (fun a _ => by simp [hsame, BEq.comm])
+    exact List.countP_congr (fun a _ => by simp [hsame])
   have expand : ∀ values : List α,
       values.all (occursOnce same values) =
-        (values.map key).all (fun k => decide ((values.map key).countP (· == k) = 1)) := by
+        (values.map key).all
+          (fun k => decide ((values.map key).countP (keySame k) = 1)) := by
     intro values
     rw [List.all_map]
     congr 1

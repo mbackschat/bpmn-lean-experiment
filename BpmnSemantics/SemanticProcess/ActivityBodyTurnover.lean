@@ -167,4 +167,37 @@ theorem hiddenRecordDeclarationsValid_replacedState (program : Program) (state :
     hiddenRecordDeclarationsValid program (replacedState state record wait body) =
       hiddenRecordDeclarationsValid program state := rfl
 
+/-! ## The record-side conjuncts
+
+Both read records through a body-blind projection, so each is a specialisation of the keyed frame law
+rather than an argument of its own. `attachedTimersUnambiguous` counts records per Timer wait and
+`activityIdentitiesUnique` counts records per identity; replacement changes neither count.
+-/
+
+/-- `AOO-ATTACH-01` survives replacement: the attached list is framed, so no Timer changes claimant. -/
+theorem attachedTimersUnambiguous_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    attachedTimersUnambiguous (replacedState state record wait body) =
+      attachedTimersUnambiguous state := by
+  simp only [attachedTimersUnambiguous, replacedState]
+  congr 1
+  funext timer
+  simp only [← List.countP_eq_length_filter]
+  rw [replaceBodyIn_countP_of_frame _ (fun _ _ => rfl)]
+
+/-- `AOO-ID-01` survives replacement: the identity triple is framed. -/
+theorem activityIdentitiesUnique_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    activityIdentitiesUnique (replacedState state record wait body) =
+      activityIdentitiesUnique state := by
+  simp only [activityIdentitiesUnique, replacedState]
+  exact all_occursOnce_of_map_eq
+    (fun candidate => (candidate.processInstanceId, candidate.activityElementId,
+      candidate.activation))
+    sameActivityOccurrence
+    (fun left right => left.1 == right.1 && left.2.1 == right.2.1 && left.2.2 == right.2.2)
+    (fun _ _ => rfl)
+    _ _
+    (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)
+
 end BpmnSemantics.SemanticProcess
