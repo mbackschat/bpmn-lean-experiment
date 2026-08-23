@@ -265,4 +265,23 @@ theorem canonicalCollectionOrder_replacedState (state : RuntimeState)
       (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)]
     exact records
 
+/-- `RSI-BIND-*` for waits: the incoming wait has the outgoing one's definition and owner, so it is
+declared by exactly the operation that declared its predecessor. -/
+theorem waitDeclarationsValid_replacedState (program : Program) (instanceId : SemanticId)
+    (state : RuntimeState) (record : ActivityOccurrence) (wait : UserTaskWait)
+    (body : OccurrenceId) (waitMem : wait ∈ state.waits)
+    (holds : waitDeclarationsValid program instanceId state = true) :
+    waitDeclarationsValid program instanceId (replacedState state record wait body) = true := by
+  simp only [waitDeclarationsValid, Bool.and_eq_true] at holds ⊢
+  obtain ⟨⟨⟨⟨waits, messages⟩, timers⟩, effects⟩, incidents⟩ := holds
+  refine ⟨⟨⟨⟨?_, messages⟩, timers⟩, effects⟩, incidents⟩
+  simp only [List.all_eq_true] at waits ⊢
+  intro candidate mem
+  obtain ⟨memWaits, samePid⟩ := List.mem_filter.mp mem
+  rcases (mem_insertUserTaskWait _ _ _).mp memWaits with rfl | memFiltered
+  · -- The armed wait: same definition and owner as the one withdrawn, so the same declarer.
+    exact waits wait (List.mem_filter.mpr ⟨waitMem, samePid⟩)
+  · exact waits candidate
+      (List.mem_filter.mpr ⟨(List.mem_filter.mp memFiltered).1, samePid⟩)
+
 end BpmnSemantics.SemanticProcess

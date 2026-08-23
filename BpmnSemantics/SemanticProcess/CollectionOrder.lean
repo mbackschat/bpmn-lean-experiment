@@ -403,4 +403,39 @@ theorem orderedBy_of_map_eq {α β : Type} (key : α → β) (before : α → α
         rw [ih]
   rw [expand left, expand right, h]
 
+/-- Canonical insertion adds exactly the inserted wait to the membership of the list.
+
+Membership rather than an algebraic rewrite is what the remaining well-formedness conjuncts need:
+each of them quantifies over the waits, and the interesting cases are "this is the wait just armed"
+and "this wait was already here". -/
+theorem mem_insertUserTaskWait (wait candidate : UserTaskWait) :
+    ∀ waits : List UserTaskWait,
+      candidate ∈ insertUserTaskWait wait waits ↔ candidate = wait ∨ candidate ∈ waits := by
+  intro waits
+  induction waits with
+  | nil => simp [insertUserTaskWait]
+  | cons current rest ih =>
+    unfold insertUserTaskWait
+    by_cases h : userTaskWaitBefore wait current = true
+    · simp [h]
+    · simp only [Bool.not_eq_true] at h
+      simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, List.mem_cons, ih]
+      exact or_left_comm
+
+/-- Canonical insertion adds exactly one occurrence to any count. -/
+theorem countP_insertUserTaskWait (p : UserTaskWait → Bool) (wait : UserTaskWait) :
+    ∀ waits : List UserTaskWait,
+      (insertUserTaskWait wait waits).countP p =
+        (if p wait then 1 else 0) + waits.countP p := by
+  intro waits
+  induction waits with
+  | nil => cases hp : p wait <;> simp [insertUserTaskWait, List.countP_cons, hp]
+  | cons current rest ih =>
+    unfold insertUserTaskWait
+    by_cases h : userTaskWaitBefore wait current = true
+    · cases hp : p wait <;> simp [h, List.countP_cons, hp] <;> omega
+    · simp only [Bool.not_eq_true] at h
+      simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, List.countP_cons, ih]
+      cases hp : p wait <;> cases hq : p current <;> simp [hp, hq] <;> omega
+
 end BpmnSemantics.SemanticProcess
