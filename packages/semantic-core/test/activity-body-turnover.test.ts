@@ -44,9 +44,9 @@ function defects(state: RuntimeState): ReadonlyArray<string> {
 /**
  * The replacement, with its defined-ness asserted at the call site.
  *
- * `replaceActivityBodyTask` is partial on purpose: it refuses a record that names no live task body.
- * Every case below is defined on it, so an unexpected `null` must surface as this assertion rather
- * than as a downstream shape mismatch.
+ * `replaceActivityBodyTask` is partial on purpose: it refuses a record this state does not hold and a
+ * record that names no single live task body. Every case below is defined on it, so an unexpected
+ * `null` must surface as this assertion rather than as a downstream shape mismatch.
  */
 function replaced(state: RuntimeState, record: ActivityOccurrence): RuntimeState {
   const after = replaceActivityBodyTask(state, record);
@@ -187,5 +187,32 @@ test("a record whose body key matches two live waits is refused, not repaired", 
     replaceActivityBodyTask(before, armedRecord(before)),
     null,
     "the unambiguous control must still be defined, or the refusal is not attributable",
+  );
+});
+
+/**
+ * The other domain refusal, which no shape mismatch downstream would report.
+ *
+ * The rewrite locates its record by identity, so a record the state does not hold matches nothing:
+ * continuing would withdraw the outgoing wait and arm a successor while no record named either, and
+ * the resulting state is one the well-formedness predicate does not refuse. The control is the same
+ * record against the state that does hold it, so the refusal is attributable to membership alone.
+ */
+test("a record the state does not hold is refused, not silently half-applied", () => {
+  const before = armed();
+  const record = armedRecord(before);
+
+  const withoutRecord: RuntimeState = { ...before, activityOccurrences: [] };
+  assert.equal(defects(withoutRecord).length, 0, "the stripped state must itself be admitted, or the refusal is redundant");
+
+  assert.equal(
+    replaceActivityBodyTask(withoutRecord, record),
+    null,
+    "a record the state does not hold must leave the operation undefined",
+  );
+  assert.notEqual(
+    replaceActivityBodyTask(before, record),
+    null,
+    "the held control must still be defined, or the refusal is not attributable to membership",
   );
 });

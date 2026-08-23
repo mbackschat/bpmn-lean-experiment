@@ -73,9 +73,12 @@ def replacedState (state : RuntimeState) (record : ActivityOccurrence)
 
 /-- Replaces a task-bodied Activity occurrence's body with a fresh occurrence of the same element.
 
-Answers `none` rather than a repaired state when the record names no unique live task body, which is
-the only shape this operation is defined on. A caller that continued would arm a second body against a
-record still naming the first.
+Answers `none` rather than a repaired state outside the shape this operation is defined on, which is a
+record this state holds naming exactly one live task body. Each refusal excludes a different incoherent
+result: without the unique live body a caller would arm a second body against a record still naming the
+first, and without the state holding the record the rewrite below matches nothing, so the outgoing wait
+would be withdrawn and a successor armed while no record names either. The identity comparison is the
+one `replaceBodyIn` locates by, so the guard admits exactly the records that rewrite.
 
 The incoming wait carries the outgoing wait's definition and output because both describe the same
 program element, so nothing here reads the `Program` and the operation stays total over runtime state
@@ -89,9 +92,11 @@ def replaceActivityBodyTask (state : RuntimeState) (record : ActivityOccurrence)
   match activityBodyTask? record with
   | none => none
   | some body =>
-    match state.waits.filter (taskIdNamesWait body) with
-    | [wait] => some (replacedState state record wait body)
-    | _ => none
+    if state.activityOccurrences.any (sameActivityOccurrence record) then
+      match state.waits.filter (taskIdNamesWait body) with
+      | [wait] => some (replacedState state record wait body)
+      | _ => none
+    else none
 
 /-- Any view of a record that ignores its body is unchanged by replacement.
 
@@ -584,15 +589,19 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     | completed _ => rfl
     | cancelled _ => rfl
 
-/-- The resolver answers with the state rewrite exactly when the record names a unique live body.
+/-- The resolver answers with the state rewrite exactly when the state holds a record naming a unique
+live body.
 
 Stated so the preservation law above applies to the operation a caller actually invokes, rather than
-to the rewrite it delegates to. -/
+to the rewrite it delegates to. The membership hypothesis is the guard's, not the law's: `replacedState`
+is well-formedness-preserving without it, and refusing an unheld record keeps the operation's domain
+identical to the independently written core's. -/
 theorem replaceActivityBodyTask_eq_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
     (bodyOfRecord : activityBodyTask? record = some body)
+    (held : state.activityOccurrences.any (sameActivityOccurrence record) = true)
     (unique : state.waits.filter (taskIdNamesWait body) = [wait]) :
     replaceActivityBodyTask state record = some (replacedState state record wait body) := by
-  simp [replaceActivityBodyTask, bodyOfRecord, unique]
+  simp [replaceActivityBodyTask, bodyOfRecord, held, unique]
 
 end BpmnSemantics.SemanticProcess

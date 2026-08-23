@@ -35,6 +35,7 @@ const pairingOwners = [
   "packages/semantic-core/src/semantic-process-monitored-task-runtime.ts",
   "packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts",
   "packages/semantic-core/src/flow-node-occurrence-open-set.ts",
+  "packages/semantic-core/src/flow-node-occurrence-retained-pairing.ts",
   "packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts",
 ] as const;
 
@@ -56,10 +57,11 @@ const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|Recor
  * naming a submitted identity parameter.
  *
  * That exclusion is line-scoped, and the closure review named the hole: a genuine cross-family join
- * written on a line that also mentions any excluded identifier evades this pattern. The TypeScript
- * pattern below closes the same hole by naming the safe left operand instead, which is the better
- * shape; doing that here needs the Lean owners' exact safe forms enumerated first, so the hole is
- * still recorded rather than closed and the enumeration is what carries the rule.
+ * written on a line that also mentions any excluded identifier evades this pattern. Naming the safe
+ * operand instead, as the TypeScript pattern below does, narrows the trigger from three identifiers to
+ * one exact line but does not close the hole either, because that line is still matched whole: a real
+ * join written beside the safe comparison escapes both patterns. The enumeration is what carries the
+ * rule in both languages, and the residual hole is recorded rather than claimed closed.
  */
 const leanCrossFamilyJoin =
   /\.activation\s*=\s*(?!.*\b(?:timerId|taskId|submitted)\b)[A-Za-z_][\w.]*\.activation\b/u;
@@ -74,8 +76,9 @@ const leanCrossFamilyJoin =
  * is one line, named exactly, and it compares an element of the retained handler list against the
  * submitted deadline, which is an identity equality inside one family.
  *
- * A line-scoped exclusion would also inherit the hole the Lean pattern records. Naming the operand
- * closes it here, and the enumeration below carries the rest of the rule while exempting nothing.
+ * Naming the operand narrows the hole the Lean pattern records rather than closing it: the safe line
+ * is still matched whole, so a real join written on that same line escapes. The enumeration below
+ * carries the rest of the rule while exempting nothing.
  */
 const crossFamilyJoin = /\.activation\s*===\s*[A-Za-z_$][\w$.]*\.activation\b/u;
 
@@ -99,7 +102,11 @@ function joinSites(file: string): ReadonlyArray<string> {
 }
 
 test("every enumerated pairing owner resolves its pair through the ownership record", () => {
-  assert.equal(pairingOwners.length, 5, "four transition owners plus the publication binding");
+  assert.equal(
+    pairingOwners.length,
+    6,
+    "four transition owners across three family runtimes, the open-set binding, the retained-pairing owner, and the completeness relation",
+  );
   assert.deepEqual(pairingOwners.flatMap(joinSites), []);
   for (const owner of pairingOwners) {
     // Anti-vacuity: a file with no join and no lookup would satisfy the assertion above while pairing

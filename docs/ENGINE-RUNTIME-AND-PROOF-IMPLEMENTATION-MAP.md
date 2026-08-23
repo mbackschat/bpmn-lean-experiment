@@ -180,7 +180,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 **Implemented.**
 
 - `ActivityOccurrence` in both languages, with an identity distinct from `OccurrenceId` by field name so no task identity is substitutable for it, a closed two-arm body union, and a listed attached-Timer collection
-- all six enumerated TypeScript derivation sites read the record, the four transition owners across all three families, the open-set publication binding, and, since [the turnover amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md), the publication completeness relation through its retained handler list. All three Lean family modules read it as well. Both declarative relations that carried an activation-ordinal hypothesis now take the shared `RecordJoins` premise
+- all six enumerated TypeScript owner files pair through the record: the four transition owners across the three family runtimes, the open-set publication binding, and, since [the turnover amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md), the retained-pairing owner that derives a record's handler list plus the publication completeness relation, which pairs through that derived list rather than through the record itself. All three Lean family modules read it as well. Both declarative relations that carried an activation-ordinal hypothesis now take the shared `RecordJoins` premise
 - regional cancellation withdraws every record whose owner or body lies in the region together with the waits those records list; the bounded-scope deadline arm's hand-written withdrawal is gone as redundant
 - the adapter pairs a boundary deadline through the record instead of whole-state wait cardinality, and the Workflow continuation decoder admits and structurally validates both new fields
 - Lean carries the representation, canonical order, lookups, region partition, and withdrawal-completeness laws
@@ -223,6 +223,7 @@ One Activity occurrence keeps its identity, owner, operation, and attached handl
 **Absent.**
 
 - the durable retained shape change is unversioned. It is permitted pre-release, but the Temporal preflight must name it before a history baseline is approved
+- the hard-fail-on-a-correct-publication shape the anchor lane was selected to remove survives with a new trigger. [The retained-pairing owner](../packages/semantic-core/src/flow-node-occurrence-retained-pairing.ts) answers an ambiguous body-to-record lookup with the empty list, so the completeness relation's uniqueness requirement throws on a correct deadline publication whenever two records name one body. That is the undischarged sole-claimant premise rather than an admitted schedule, which is a narrower class than the ordinal join's second iteration and not an empty one
 - the two hypotheses the preservation law carries are not state invariants and are not discharged. Nothing bounds a live wait's activation by its counter, so wait-key freshness is stated; nothing refuses two records naming one body, so the sole-claimant premise is stated. Both are dischargeable by construction at an arming call site, and the second is the same premise the ownership account's body-side determinism theorem already carries
 - the general preservation lane for every other transition family, which stays open
 
@@ -233,6 +234,8 @@ One Activity occurrence keeps its identity, owner, operation, and attached handl
 - the continuation decoder's recomputation of the retained handler list has no witness on its populated branch. Every continuation fixture carries an empty retained-open collection, so the refusal that makes a forged pairing unable to survive a restore is exercised by nothing, and the restore boundary is the only place that recomputation runs
 - that recomputation is also not a second lane for the pairing itself. The accumulator and the decoder both call [one retained-pairing owner](../packages/semantic-core/src/flow-node-occurrence-retained-pairing.ts), which is what makes them agree by construction after the single-writer correction; a defect inside that derivation is invisible to both, so under [the evidence-lane rule](TESTING-SPEC.md#evidence-lanes) their failure modes are correlated and count once
 - one clause of the transition rule, that the record names the incoming body, is pinned only in composition by the activation and well-formedness fixtures together rather than by a theorem of its own
+- no executable guard names `AOO-TURNOVER-01` through `AOO-TURNOVER-04` or the `AOO-JOIN` retirement, so the identifiers and their retirements are carried by documents alone. The join guard enumerates owners and patterns rather than rule identifiers, which is what makes it useful and also what leaves the retirement itself unguarded
+- the transition rule's atomicity clause has no oracle at all, and no mutation can supply one. Exposing an intermediate state between withdrawal and arrival breaks nothing, because callers compose the two halves and both quantified laws hold of the composite; the rule states this as a transition obligation precisely because no state predicate can express it
 
 ## Interrupting Activity boundary Timer
 

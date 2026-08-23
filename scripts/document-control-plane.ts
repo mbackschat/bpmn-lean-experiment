@@ -251,14 +251,17 @@ export function assertDetailImplementationMap(
  * there, which is the limit changing what the status owner asserts. That map routes every semantic
  * family, so its size scales with families closed rather than with narration.
  *
- * The runtime-and-proof budget was raised from 5,000 to 6,500 by owner decision when it reached the
- * first raised value with 24 words spare and the next capsule's status could not land. Six semantic
- * capsules remained on the engine roadmap at that point, each contributing a status section of
- * roughly 250 words, so the raise is sized to that remaining set rather than to one capsule; the
- * alternative on offer was compressing the map, which is the failure this budget exists to prevent.
+ * The runtime-and-proof budget was raised from 5,000 to 6,500 when it reached the first raised value
+ * with 24 words spare and the next capsule's status could not land. Six semantic capsules remained on
+ * the engine roadmap at that point, each contributing a status section of roughly 250 words, so the
+ * raise is sized to that remaining set rather than to one capsule; the alternative on offer was
+ * compressing the map, which is the failure this budget exists to prevent.
  *
  * An agent may not add or change an entry. The alternative, splitting the map, is a routing change
- * needing a new area ID.
+ * needing a new area ID. The deciding authority for each value and the standing commitment to split
+ * rather than raise a third time are recorded by their owner, [the documentation
+ * discipline](../docs/DOC-DISCIPLINE.md#reviewed-detail-map-word-budgets), because a threshold whose
+ * only justification is its own comment is not reviewable as a decision.
  */
 export function reviewedDetailMapWordBudget(file: string): number {
   return file.endsWith("ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md") ? 6500 : 4000;

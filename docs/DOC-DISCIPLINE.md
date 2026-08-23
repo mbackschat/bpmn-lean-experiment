@@ -110,6 +110,14 @@ Specs own stable method, contracts, invariants, exclusions, and acceptance crite
 
 Current measured verification results and exact resume state belong in [PLAN.md](PLAN.md). Stable gate definitions and evidence requirements belong in [TESTING-SPEC.md](TESTING-SPEC.md). The root [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes exact implemented or absent claims to the applicable detail map and does not duplicate them.
 
+### Reviewed detail-map word budgets
+
+Every routed detail map carries a reviewed word budget enforced by [the documentation control plane](../scripts/document-control-plane.ts). The budget exists because a map that outgrows review stops being read, and because the cheap way to fit under one is to compress or delete the absence content a review required, which changes what the status owner asserts. The default is 4,000 words.
+
+The runtime-and-proof map is the one exception and its budget stands at 6,500 words. That is its second raise, and both were sized to the semantic capsules still on the engine roadmap rather than to the capsule that hit the limit: this map routes every semantic family, so its size scales with families closed. The second raise was decided by the author under the owner's standing in-session delegation to take the author's recommendation, and it is recorded here rather than only in the guard's own comment, so it is reviewable as a decision instead of appearing as a threshold an agent moved. It awaits owner confirmation at the next capsule boundary.
+
+Two limits are exact. An agent may not add a new exception or change an existing value, because the guard's own threshold is the thing under review. And when 6,500 is exhausted the map splits under a new area ID rather than taking a third raise. Nothing executable enforces that split: the budget guard fails when the limit is reached and forces a decision, but it cannot tell a split from another raise, so the commitment is a review obligation and is named here for the reviewer rather than presented as a gate.
+
 ## Project document homes
 
 | Information | Owner role |

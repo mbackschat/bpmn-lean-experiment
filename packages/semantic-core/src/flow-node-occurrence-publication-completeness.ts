@@ -3,6 +3,12 @@
  *
  * The relation reconstructs the lifecycle owned by each committed Program transition. It uses the
  * private retained anchor relation for pairing, never Temporal Event History or state differences.
+ *
+ * "Independent" is narrower than it was. Pairing a boundary deadline to its host now reads the handler
+ * list the producer's accumulator retained from the Activity occurrence record, so for that one
+ * derivation this relation and its producer share a mechanism and cannot fail apart. The exchange was
+ * deliberate: the activation-ordinal reconstruction it replaced was independent and became wrong under
+ * body turnover, refusing a correct publication. Reconstruction of the lifecycle itself is unchanged.
  */
 import type { DeepReadonly } from "./deep-readonly.js";
 import {

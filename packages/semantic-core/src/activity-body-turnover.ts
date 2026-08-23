@@ -50,8 +50,10 @@ export function replaceActivityBodyTask(
   const outgoing = activityBodyTask(record);
   if (outgoing === undefined) return null;
   // A record the state does not hold would otherwise have its wait withdrawn and a successor armed
-  // while no record names either, because the rewrite below matches nothing. Lean excludes this case
-  // through its sole-claimant hypothesis; refusing it here keeps the two domains the same.
+  // while no record names either, because the rewrite below matches nothing, and the resulting state
+  // is one the well-formedness predicate does not refuse. Lean's resolver carries the same membership
+  // guard over the same identity comparison, so the two operations share one domain rather than
+  // agreeing only on the inputs both happen to accept.
   if (!state.activityOccurrences.some((candidate) =>
     sameActivityOccurrence(candidate.id, record.id)
   )) return null;
