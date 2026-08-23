@@ -306,7 +306,7 @@ Owners this implementation **created**, listed because the recomputing guard mea
 | Owner | Current headroom before the 600-nonblank-line review target |
 |---|---:|
 | [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 501 |
-| [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 241 |
+| [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 137 |
 | [Lean outer controller](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 505 |
 
 The expected lowering, occurrence, and projection mechanisms cannot fit cohesively in the current headroom of the lowering owner at 43 lines, the occurrence lifecycle at 44, the occurrence open set at 42, and the canonical scenario projection at 75. Their implementation must create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. This extraction condition stops applying if the review target measurements change enough that the complete cohesive mechanism fits while every owner remains below 600; the table is recomputed by the reviewability guard rather than treated as permanent prose.

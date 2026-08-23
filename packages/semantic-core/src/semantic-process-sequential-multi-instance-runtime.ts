@@ -9,6 +9,8 @@
  */
 import {
   ActivityBodyKind,
+  activityBodyTask,
+  activityOccurrenceForAttachedTimer,
   activityOccurrenceForTaskBody,
   compareActivityOccurrences,
   sameActivityOccurrence,
@@ -17,6 +19,7 @@ import { replaceActivityBodyTask } from "./activity-body-turnover.js";
 import { VariableValueKind } from "./contract.js";
 import type {
   CompleteUserTaskInstanceStimulus,
+  FireTimerStimulus,
   VariableBinding,
   VariableValue,
 } from "./contract.js";
@@ -370,4 +373,107 @@ export function isSequentialMultiInstanceTaskDefinition(
   taskId: { elementId: string },
 ): boolean {
   return sequentialMultiInstanceOperationFor(program, taskId) !== undefined;
+}
+/**
+ * `SMI-CANCEL-01`. The exact outer deadline interrupts the whole repetition.
+ *
+ * Interruption is not a completion with a different output. It withdraws the one active inner task,
+ * generates no pending item, discards every accepted result, removes the controller and the record,
+ * and enables only the boundary path. Nothing is published to Process scope, which is the resolution
+ * this profile selected: a partial collection would be observable state that no clause defines, and
+ * BPMN's own caution against exposing the output collection before every item is written applies most
+ * sharply to the case where the remaining items never will be.
+ *
+ * The counters this discards are the reason the controller stores none. There is no stable state in
+ * which a terminated count is nonzero, so nothing has to be decremented, transitioned, or projected:
+ * the record and the controller leave together in the transition that terminates the active instance.
+ */
+export function interruptSequentialMultiInstance(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: FireTimerStimulus,
+): RuntimeState | null {
+  if (state.control.kind !== ControlStateKind.Running) {
+    return null;
+  }
+  const operation = sequentialMultiInstanceBoundaryOperationFor(
+    program,
+    stimulus.timerId,
+  );
+  if (operation === undefined) {
+    return null;
+  }
+  const deadline = state.timerWaits.find(({ id }) =>
+    sameOccurrence(id, stimulus.timerId)
+  );
+  const record = activityOccurrenceForAttachedTimer(
+    state.activityOccurrences,
+    stimulus.timerId,
+  );
+  if (deadline === undefined || record === undefined) {
+    return null;
+  }
+  const controller = sequentialMultiInstanceControllerFor(
+    state.sequentialMultiInstanceControllers ?? [],
+    record.id,
+  );
+  const activeTask = activityBodyTask(record);
+  if (controller === undefined || activeTask === undefined) {
+    return null;
+  }
+  // The firing instant is the deadline, never the submitted logical time: the host derives the instant
+  // from committed state, so a stimulus naming a different time is describing a different transition.
+  if (stimulus.logicalTimeMs !== deadline.deadlineMs) {
+    return null;
+  }
+  return {
+    ...state,
+    logicalTimeMs: deadline.deadlineMs,
+    controlTokens: addToken(
+      state.controlTokens,
+      operation.boundaryTimer.output,
+      record.owner,
+    ),
+    userTaskWaits: state.userTaskWaits.filter(({ id }) =>
+      !sameOccurrence(id, activeTask)
+    ),
+    timerWaits: state.timerWaits.filter(({ id }) =>
+      !sameOccurrence(id, stimulus.timerId)
+    ),
+    activityOccurrences: state.activityOccurrences.filter((candidate) =>
+      !sameActivityOccurrence(candidate.id, record.id)
+    ),
+    sequentialMultiInstanceControllers:
+      (state.sequentialMultiInstanceControllers ?? []).filter(
+        (candidate) => candidate !== controller,
+      ),
+  };
+}
+
+/** The Multi-Instance operation whose lifetime deadline this Timer occurrence is, or `undefined`. */
+export function sequentialMultiInstanceBoundaryOperationFor(
+  program: SemanticProcessProgram,
+  timerId: { elementId: string },
+): AwaitSequentialMultiInstanceUserTaskOperation | undefined {
+  const matches = program.operations.filter((operation) =>
+    operation.kind ===
+      SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
+    operation.boundaryTimer.elementId === timerId.elementId
+  );
+  const [operation] = matches;
+  return matches.length === 1 &&
+      operation !== undefined &&
+      operation.kind ===
+        SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+    ? operation
+    : undefined;
+}
+
+/** Whether this Timer occurrence is a sequential Multi-Instance Activity's lifetime deadline. */
+export function isSequentialMultiInstanceBoundaryDefinition(
+  program: SemanticProcessProgram,
+  timerId: { elementId: string },
+): boolean {
+  return sequentialMultiInstanceBoundaryOperationFor(program, timerId) !==
+    undefined;
 }

@@ -61,6 +61,8 @@ import {
 } from "./semantic-process-monitored-task-runtime.js";
 import {
   completeSequentialMultiInstanceIteration,
+  interruptSequentialMultiInstance,
+  isSequentialMultiInstanceBoundaryDefinition,
   isSequentialMultiInstanceTaskDefinition,
 } from "./semantic-process-sequential-multi-instance-runtime.js";
 import { SemanticProfileId } from "./semantic-process-profile.js";
@@ -259,6 +261,12 @@ export function admit(
       }
       if (isMonitoredBoundaryTimerDefinition(program, stimulus.timerId)) {
         const next = spawnFromMonitoredUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
+      if (isSequentialMultiInstanceBoundaryDefinition(program, stimulus.timerId)) {
+        const next = interruptSequentialMultiInstance(program, state, stimulus);
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
