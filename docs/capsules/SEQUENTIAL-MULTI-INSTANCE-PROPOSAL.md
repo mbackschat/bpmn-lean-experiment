@@ -286,7 +286,7 @@ Existing executable constraints include [schema coverage](../../scripts/contract
 | [public semantic contract](../../packages/semantic-core/src/contract.ts) | 282 |
 | [checked Process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 339 |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 180 |
-| [runtime state contract](../../packages/semantic-core/src/semantic-process-state.ts) | 213 |
+| [runtime state contract](../../packages/semantic-core/src/semantic-process-state.ts) | 200 |
 | [canonical scenario projection](../../packages/semantic-core/src/scenario.ts) | 75 |
 | [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 539 |
 | [profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 397 |
