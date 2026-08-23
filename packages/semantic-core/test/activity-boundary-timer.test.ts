@@ -28,123 +28,15 @@ import {
 } from "@bpmn-lean/semantic-core";
 
 import {
-  controlPlace,
-  operationBase,
-} from "./semantic-program-parts.ts";
-import {
-  rootScopedProgram,
-  rootScopeOccurrence,
-} from "./root-scope-fixture.ts";
-
-const sourceSha256 =
-  "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e";
-const instanceId = "BoundedInstance_1";
-
-/** Hand-built to the shape `@bpmn-lean/bpmn-source` lowers, so this lane depends on no compiler. */
-const boundedProgram = rootScopedProgram({
-  kind: SemanticProcessKind.SemanticProcess,
-  identity: {
-    compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: "bpmn-2.0.2-activity-boundary-timer-draft",
-    sourceId: "activity-boundary-timer",
-    sourceOverlay: null,
-    sourceSha256,
-  },
-  processId: "Process_ActivityBoundaryTimer",
-  controlPlaces: [
-    controlPlace("Flow_Boundary"),
-    controlPlace("Flow_Boundary_End"),
-    controlPlace("Flow_Normal"),
-    controlPlace("Flow_Normal_End"),
-    controlPlace("Flow_Start"),
-  ],
-  operations: [
-    {
-      ...operationBase("BoundaryEnd"),
-      kind: SemanticOperationKind.ReachNoneEnd,
-      input: "place:Flow_Boundary_End",
-    },
-    {
-      ...operationBase("BoundaryTask"),
-      kind: SemanticOperationKind.AwaitUserTask,
-      input: "place:Flow_Boundary",
-      output: "place:Flow_Boundary_End",
-      task: { elementId: "BoundaryTask", name: "Deadline reached" },
-    },
-    {
-      ...operationBase("BoundedTask"),
-      kind: SemanticOperationKind.AwaitBoundedUserTask,
-      input: "place:Flow_Start",
-      task: {
-        elementId: "BoundedTask",
-        name: "Bounded work",
-        output: "place:Flow_Normal",
-      },
-      boundaryTimer: {
-        elementId: "Deadline",
-        durationMs: 1000,
-        output: "place:Flow_Boundary",
-        origin: {
-          kind: SemanticOriginKind.BpmnSequenceFlow,
-          elementId: "Flow_Boundary",
-        },
-      },
-    },
-    {
-      ...operationBase("NormalEnd"),
-      kind: SemanticOperationKind.ReachNoneEnd,
-      input: "place:Flow_Normal_End",
-    },
-    {
-      ...operationBase("NormalTask"),
-      kind: SemanticOperationKind.AwaitUserTask,
-      input: "place:Flow_Normal",
-      output: "place:Flow_Normal_End",
-      task: { elementId: "NormalTask", name: "Normal follow-on" },
-    },
-    {
-      ...operationBase("Start"),
-      kind: SemanticOperationKind.Initiate,
-      output: "place:Flow_Start",
-    },
-  ],
-});
-
-const owner = rootScopeOccurrence(boundedProgram.processId, instanceId);
-
-const taskId = Object.freeze({
-  processInstanceId: instanceId,
-  elementId: "BoundedTask",
-  activation: 1,
-});
-
-const deadlineId = Object.freeze({
-  processInstanceId: instanceId,
-  elementId: "Deadline",
-  activation: 1,
-});
-
-const start = Object.freeze({
-  kind: StimulusKind.StartProcess,
-  commandId: "start-bounded",
-  processId: boundedProgram.processId,
+  boundedProgram,
+  completeBoundedTask,
+  deadlineId,
+  fireDeadline,
   instanceId,
-  initialVariables: [],
-});
-
-const completeBoundedTask = Object.freeze({
-  kind: StimulusKind.CompleteUserTaskInstance,
-  commandId: "complete-bounded-task",
+  owner,
+  start,
   taskId,
-  submittedValues: [],
-});
-
-const fireDeadline = Object.freeze({
-  kind: StimulusKind.FireTimer,
-  commandId: "fire-deadline",
-  timerId: deadlineId,
-  logicalTimeMs: 1000,
-});
+} from "./bounded-task-fixture.ts";
 
 function armed() {
   const started = applyStimulus(boundedProgram, initialState, start);
