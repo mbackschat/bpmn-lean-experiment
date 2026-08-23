@@ -307,7 +307,11 @@ Owners this implementation **created**, listed because the recomputing guard mea
 |---|---:|
 | [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 501 |
 | [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 137 |
-| [Lean outer controller](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 505 |
+| [Lean outer controller](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 468 |
+| [Lean definition facts and rewrites](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceRewrite.lean) | 358 |
+| [Lean transitions and bridges](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceTransition.lean) | 154 |
+| [Lean laws](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceLaws.lean) | 348 |
+| [Lean fixtures](../../BpmnSemantics/SequentialMultiInstanceConformance.lean) | 277 |
 | [progress projection](../../packages/semantic-core/src/sequential-multi-instance-observation.ts) | 467 |
 | [occurrence accounting](../../packages/semantic-core/src/flow-node-occurrence-sequential-multi-instance.ts) | 337 |
 

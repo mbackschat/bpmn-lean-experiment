@@ -1,0 +1,295 @@
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+
+/-! # Sequential Multi-Instance laws
+
+The quantified content of the four transitions: what every legal step of each rule preserves,
+publishes, and writes. The account is
+[the sequential Multi-Instance proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md),
+whose Lean lane names these as its minimum laws.
+
+Every law here is stated over a relation rather than over an evaluator, which is what makes it a
+falsifier for an implementation this repository does not contain. Two of them are the capsule's own
+named counterexamples:
+
+* `iteration_preserves_the_outer_deadline` is refused by an evaluator that resets the lifetime
+  deadline for each iteration. Its scope is exact. A reset that mints a fresh Timer occurrence,
+  advances `timerActivations`, or changes `deadlineMs` is caught, because each is visible in the
+  post-state. A reset that withdraws the deadline and re-arms a byte-identical wait without advancing
+  its counter is **not** caught, because that evaluator's post-state is the preserved state and this
+  law compares states; the discriminator there is the host's refusal to arm unless the remaining time
+  equals the armed duration, which is adapter evidence and not this lane's. Every arming primitive in
+  this repository advances the counter it mints from, so an evaluator built from them is caught, and
+  the residual case is recorded rather than closed by asserting that logical time cannot advance.
+* `interruption_publishes_nothing` is refused by an evaluator that publishes the partial collection on
+  interruption. That one has no residual case: Process bindings are state, so any publication at all
+  is a different post-state.
+
+The counters are not restated here. `generatedInstanceCount_eq_active_add_completed` and
+`pendingItemCount_add_generatedInstanceCount` are laws about the representation and live with it, in
+[the controller owner](SequentialMultiInstance.lean); what this module adds is that a transition
+carries them, by preserving every controller's snapshot and therefore every planned count.
+
+Scope boundary: laws over the four relations. It defines no transition, no rewrite, and no evaluator,
+and it claims neither completeness nor determinism. The capsule's nearest checked non-law is
+unconditional liveness, and nothing here bears on it.
+-/
+
+namespace BpmnSemantics.SemanticProcess
+
+open BpmnSemantics
+
+/-! ## The controller frame
+
+Storing a result is a `List.map` that rewrites one field, so the identity triple and the snapshot are
+untouched by construction rather than restored afterwards, and the canonical order key is a projection
+of the frame. This is the shape `activityOccurrenceFrame` gives the record collection, for the same
+reason: one equation carries the whole immutability obligation.
+-/
+
+/-- Storing a result changes no controller's identity and no controller's snapshot. -/
+theorem storeIterationResult_preserves_frame
+    (controllers : List SequentialMultiInstanceController)
+    (target : SequentialMultiInstanceController) (result : String) :
+    (storeIterationResult controllers target result).map
+        sequentialMultiInstanceControllerFrame =
+      controllers.map sequentialMultiInstanceControllerFrame := by
+  simp only [storeIterationResult, List.map_map]
+  refine List.map_congr_left ?_
+  intro candidate _
+  by_cases hit : sameSequentialMultiInstanceController candidate target = true
+  · simp [hit, sequentialMultiInstanceControllerFrame]
+  · simp [hit]
+
+/-- Storing a result changes no controller's snapshot, which is `SMI-DATA-01`'s immutability half. -/
+theorem storeIterationResult_preserves_snapshots
+    (controllers : List SequentialMultiInstanceController)
+    (target : SequentialMultiInstanceController) (result : String) :
+    (storeIterationResult controllers target result).map (·.snapshot) =
+      controllers.map (·.snapshot) := by
+  simp only [storeIterationResult, List.map_map]
+  refine List.map_congr_left ?_
+  intro candidate _
+  by_cases hit : sameSequentialMultiInstanceController candidate target = true
+  · simp [hit]
+  · simp [hit]
+
+/-- Storing a result leaves the canonical controller order in place.
+
+`RSI-ORDER-01` for this collection follows from the frame rather than from an argument about the
+comparator, because the comparator reads only fields the frame preserves. -/
+theorem storeIterationResult_preserves_canonical_order
+    (controllers : List SequentialMultiInstanceController)
+    (target : SequentialMultiInstanceController) (result : String) :
+    orderedBy sequentialMultiInstanceControllerBefore
+        (storeIterationResult controllers target result) =
+      orderedBy sequentialMultiInstanceControllerBefore controllers :=
+  orderedBy_of_map_eq sequentialMultiInstanceControllerFrame
+    sequentialMultiInstanceControllerBefore
+    (fun left right =>
+      if left.1.value ≠ right.1.value then decide (left.1.value < right.1.value)
+      else if left.2.1.value ≠ right.2.1.value then decide (left.2.1.value < right.2.1.value)
+      else decide (left.2.2.1 < right.2.2.1))
+    (fun _ _ => rfl) _ _
+    (storeIterationResult_preserves_frame controllers target result)
+
+/-! ## What one accepted result writes
+
+The target controller gains exactly one slot, at the index that was its loop counter, and every other
+controller is left alone. Density needs no conjunct, because appending is the only way this rewrite
+extends the list, and "no earlier slot is disturbed" is the append equation itself rather than a
+separate claim about a prefix.
+-/
+
+/-- The controller with the target identity gains exactly its own next slot.
+
+The index the result lands at is the pre-state completed count, which is the loop counter the active
+iteration carried, so an accepted result cannot overwrite a filled slot or land out of order. -/
+theorem storeIterationResult_writes_its_own_slot
+    (controllers : List SequentialMultiInstanceController)
+    (target candidate : SequentialMultiInstanceController) (result : String)
+    (present : candidate ∈ controllers)
+    (hit : sameSequentialMultiInstanceController candidate target = true) :
+    ∃ updated ∈ storeIterationResult controllers target result,
+      updated.outputSlots = candidate.outputSlots ++ [result] ∧
+        updated.snapshot = candidate.snapshot ∧
+        completedInstanceCount updated = completedInstanceCount candidate + 1 ∧
+        updated.outputSlots[completedInstanceCount candidate]? = some result := by
+  refine ⟨{ candidate with outputSlots := candidate.outputSlots ++ [result] }, ?_, rfl, rfl, ?_, ?_⟩
+  · simp only [storeIterationResult, List.mem_map]
+    exact ⟨candidate, present, by simp [hit]⟩
+  · simp [completedInstanceCount]
+  · simp [completedInstanceCount]
+
+/-- A controller of another identity is carried through unchanged. -/
+theorem storeIterationResult_leaves_other_controllers
+    (controllers : List SequentialMultiInstanceController)
+    (target candidate : SequentialMultiInstanceController) (result : String)
+    (present : candidate ∈ controllers)
+    (miss : sameSequentialMultiInstanceController candidate target = false) :
+    candidate ∈ storeIterationResult controllers target result := by
+  simp only [storeIterationResult, List.mem_map]
+  exact ⟨candidate, present, by simp [miss]⟩
+
+/-! ## What each transition preserves
+
+Stated over the relations, so a rewrite that stopped satisfying one of these would break here rather
+than in a fixture that happens to exercise it.
+-/
+
+/-- `SMI-ITERATE-01` preserves the outer deadline: its wait collection and its counter both.
+
+The capsule's nearest realistic counterexample completes one item, silently resets the boundary
+deadline while creating the next task, and then publishes an output collection after work that ran
+beyond the original outer lifetime. This is the half of that refusal this lane owns; the module
+document above states exactly which resets it does and does not separate. -/
+theorem iteration_preserves_the_outer_deadline {arm : SequentialMultiInstanceArm}
+    {body : OccurrenceId} {submitted : List VariableBinding} {before after : RuntimeState}
+    (step : SequentialMultiInstanceIterationStep arm body submitted before after) :
+    after.timerWaits = before.timerWaits ∧
+      after.timerActivations = before.timerActivations := by
+  cases step
+  exact ⟨rfl, rfl⟩
+
+/-- `SMI-ITERATE-01` publishes nothing to Process scope, so no output is visible before natural
+completion. -/
+theorem iteration_publishes_nothing {arm : SequentialMultiInstanceArm} {body : OccurrenceId}
+    {submitted : List VariableBinding} {before after : RuntimeState}
+    (step : SequentialMultiInstanceIterationStep arm body submitted before after) :
+    after.variables = before.variables := by
+  cases step
+  rfl
+
+/-- `SMI-ITERATE-01` preserves every controller's snapshot, and therefore every planned count.
+
+Planned is the snapshot length, so "planned is constant for the controller lifetime" is this equation
+rather than an agreement between two stored numbers. -/
+theorem iteration_preserves_snapshots {arm : SequentialMultiInstanceArm} {body : OccurrenceId}
+    {submitted : List VariableBinding} {before after : RuntimeState}
+    (step : SequentialMultiInstanceIterationStep arm body submitted before after) :
+    after.sequentialMultiInstanceControllers.map (·.snapshot) =
+      before.sequentialMultiInstanceControllers.map (·.snapshot) := by
+  cases step
+  exact storeIterationResult_preserves_snapshots _ _ _
+
+/-- `SMI-ITERATE-01` keeps the canonical controller order. -/
+theorem iteration_preserves_canonical_controller_order {arm : SequentialMultiInstanceArm}
+    {body : OccurrenceId} {submitted : List VariableBinding} {before after : RuntimeState}
+    (step : SequentialMultiInstanceIterationStep arm body submitted before after) :
+    orderedBy sequentialMultiInstanceControllerBefore
+        after.sequentialMultiInstanceControllers =
+      orderedBy sequentialMultiInstanceControllerBefore
+        before.sequentialMultiInstanceControllers := by
+  cases step
+  exact storeIterationResult_preserves_canonical_order _ _ _
+
+/-- `SMI-ITERATE-01` keeps every Activity occurrence record's identity, owner, and attached handlers.
+
+The turnover account's `AOO-TURNOVER-03` seen from this family: the outer occurrence is not re-armed,
+so a later firing of the original deadline is still valid against the controller's new active task. -/
+theorem iteration_preserves_activity_frames {arm : SequentialMultiInstanceArm}
+    {body : OccurrenceId} {submitted : List VariableBinding} {before after : RuntimeState}
+    (step : SequentialMultiInstanceIterationStep arm body submitted before after) :
+    after.activityOccurrences.map activityOccurrenceFrame =
+      before.activityOccurrences.map activityOccurrenceFrame := by
+  cases step
+  exact replaceBodyIn_preserves_frame _ _ _
+
+/-- `SMI-COMPLETE-01` publishes exactly the ordered slots, once, through the canonical merge.
+
+The published value is `controller.outputSlots ++ [result]`: the slots in index order with the final
+result in its own position, and no other Process binding changed. The controller is one the pre-state
+carried, which is what stops the existential from being satisfied by a collection this step never held:
+without that membership the law would only say the published bytes have the shape of some slot list.
+
+Which bytes that merge produces for one concrete run is a decided fixture rather than a law, because
+the canonical sort inside the shared merge is private to its own module and no quantified membership
+fact about it is available here. -/
+theorem completion_publishes_the_ordered_collection {arm : SequentialMultiInstanceArm}
+    {body : OccurrenceId} {submitted : List VariableBinding} {before after : RuntimeState}
+    (step : SequentialMultiInstanceCompletionStep arm body submitted before after) :
+    ∃ controller ∈ before.sequentialMultiInstanceControllers, ∃ result : String,
+      after.variables.process.bindings =
+        mergeProcessVariableBindings before.variables.process.bindings
+          [{ name := arm.data.outputDataObjectId
+             value := .stringList (controller.outputSlots ++ [result]) }] := by
+  cases step with
+  | publishes _ _ controller _ _ result _ _ _ _ _ controllerLive =>
+      exact ⟨controller, controllerLive, result, rfl⟩
+
+/-- `SMI-COMPLETE-01` only closes: every surviving controller and record was already there.
+
+Nothing is created, so the controller and its record leave together with the final inner task and the
+lifetime deadline. Stated as membership rather than as the filter it is, because membership is the form
+a consumer needs. -/
+theorem completion_only_removes_controllers_and_records {arm : SequentialMultiInstanceArm}
+    {body : OccurrenceId} {submitted : List VariableBinding} {before after : RuntimeState}
+    (step : SequentialMultiInstanceCompletionStep arm body submitted before after) :
+    (∀ controller ∈ after.sequentialMultiInstanceControllers,
+        controller ∈ before.sequentialMultiInstanceControllers) ∧
+      ∀ record ∈ after.activityOccurrences, record ∈ before.activityOccurrences := by
+  cases step
+  exact ⟨fun _ mem => (List.mem_filter.mp mem).1, fun _ mem => (List.mem_filter.mp mem).1⟩
+
+/-- `SMI-CANCEL-01` publishes nothing at all.
+
+The capsule's second named counterexample as a proposition: an evaluator that exposed the partial
+collection on interruption would produce a state this equation refuses. Process bindings are state, so
+this refusal has no residual case. -/
+theorem interruption_publishes_nothing {arm : SequentialMultiInstanceArm}
+    {timer : TimerOccurrenceId} {logicalTimeMs : Nat} {before after : RuntimeState}
+    (step : SequentialMultiInstanceInterruptionStep arm timer logicalTimeMs before after) :
+    after.variables = before.variables := by
+  cases step
+  rfl
+
+/-- `SMI-CANCEL-01` discards every accepted result by removing the controller that held them.
+
+There is nothing to decrement or transition: the record and the controller leave together in the step
+that terminates the active instance, which is why no stable state can show a nonzero terminated
+count. -/
+theorem interruption_only_removes_controllers_and_records {arm : SequentialMultiInstanceArm}
+    {timer : TimerOccurrenceId} {logicalTimeMs : Nat} {before after : RuntimeState}
+    (step : SequentialMultiInstanceInterruptionStep arm timer logicalTimeMs before after) :
+    (∀ controller ∈ after.sequentialMultiInstanceControllers,
+        controller ∈ before.sequentialMultiInstanceControllers) ∧
+      ∀ record ∈ after.activityOccurrences, record ∈ before.activityOccurrences := by
+  cases step
+  exact ⟨fun _ mem => (List.mem_filter.mp mem).1, fun _ mem => (List.mem_filter.mp mem).1⟩
+
+/-- `SMI-ENTER-01`'s two arms, each characterized completely.
+
+One law with one disjunction rather than two laws with a discriminating hypothesis, because the arms
+are what the relation offers and nothing outside it selects between them.
+
+The empty arm publishes the exact empty output collection through the same merge natural completion
+uses and creates no controller, so no controller, record, task, or deadline exists to be resumed.
+
+The generating arm's snapshot is stated as the value of the sole admitted Process binding rather than
+as some non-empty list, so "snapshotted once, in declared order with duplicates preserved" is the
+equation itself: the snapshot *is* the bound collection rather than a copy computed from it. It fills
+no slot, so the first loop counter is zero, and it publishes nothing, so Process output stays absent
+until natural completion. -/
+theorem entry_publishes_an_empty_collection_or_snapshots_without_publishing
+    {arm : SequentialMultiInstanceArm} {before after : RuntimeState}
+    (step : SequentialMultiInstanceEntryStep arm before after) :
+    (after.sequentialMultiInstanceControllers = before.sequentialMultiInstanceControllers ∧
+        after.variables.process.bindings =
+          mergeProcessVariableBindings before.variables.process.bindings
+            [{ name := arm.data.outputDataObjectId, value := .stringList [] }]) ∨
+      (∃ controller binding,
+        after.sequentialMultiInstanceControllers =
+            controller :: before.sequentialMultiInstanceControllers ∧
+          before.variables.process.bindings.filter
+              (fun candidate => candidate.name == arm.data.inputDataObjectId) = [binding] ∧
+          binding.value = .stringList controller.snapshot ∧
+          controller.snapshot ≠ [] ∧ controller.outputSlots = [] ∧
+          after.variables = before.variables) := by
+  cases step with
+  | completesEmpty => exact Or.inl ⟨rfl, rfl⟩
+  | generatesFirst _ instanceId binding first rest _ _ soleBinding collection =>
+      exact Or.inr ⟨enteredController arm before instanceId (first :: rest), binding, rfl,
+        soleBinding, by simpa [enteredController] using collection,
+        by simp [enteredController], rfl, rfl⟩
+
+end BpmnSemantics.SemanticProcess

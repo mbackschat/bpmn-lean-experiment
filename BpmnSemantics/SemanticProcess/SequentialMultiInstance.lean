@@ -7,10 +7,11 @@ The account is [the sequential Multi-Instance proposal](../../docs/capsules/SEQU
 whose implemented representation stores the owning identity, the immutable snapshot, and the dense
 output slots and derives every other quantity.
 
-Nothing here is a counter, and nothing here is a transition. Planned, generated, completed, active,
-and pending are functions of the two lists, so the equations the normative account states hold
-structurally rather than by validation; `SMI-ENTER-01` through `SMI-CANCEL-01` are stated by the
-capsule and defined nowhere in this module.
+Nothing here is a counter, and nothing here is a transition. Planned, generated, completed, and
+pending are functions of the controller's two lists and active is a function of the body of the
+record it binds to, so the equations the normative account states hold structurally rather than by
+validation; `SMI-ENTER-01` through `SMI-CANCEL-01` are defined by
+[the transition owner](SequentialMultiInstanceTransition.lean) and by nothing in this module.
 
 Terminated instances are absent rather than a constant accessor. No stable state can show a nonzero
 one, because interruption removes the controller in the same transition that terminates its active
@@ -79,6 +80,48 @@ def controllerNamesActivityOccurrence (controller : SequentialMultiInstanceContr
   controller.processInstanceId == record.processInstanceId &&
     controller.activityElementId == record.activityElementId &&
     controller.activation == record.activation
+
+/-- Active inner instances of one controller, read from the record its identity binds to.
+
+Zero or one, and derived rather than stored for the reason the owning account gives for the record's
+own body: a stored active count beside the body that generates it is a second fact that can disagree
+with it. The lookup is `controllersOwnLiveActivity`'s own test, so "the record this controller binds
+to" has one spelling; an unbound or ambiguously bound controller answers `0`, which is unreachable in
+an admitted state and is the only answer that names no record the state does not carry.
+
+Body kind decides the arm because this profile's inner instance is a User Task. A child-scope body
+belongs to no Multi-Instance model admitted here, so it contributes no active inner instance rather
+than being refused: refusing would place a profile fact inside a derivation the profile-independent
+invariant reads. -/
+def activeInstanceCount (state : RuntimeState)
+    (controller : SequentialMultiInstanceController) : Nat :=
+  match state.activityOccurrences.filter (controllerNamesActivityOccurrence controller) with
+  | [record] =>
+      match record.body with
+      | .userTask _ => 1
+      | .childScope _ => 0
+  | _ => 0
+
+/-- Generated equals active plus completed, for a controller bound to one live task-bodied record.
+
+The capsule's first minimum law. Its `numberOfTerminatedInstances` term is absent rather than written
+as `+ 0`: no stable state carries a terminated inner instance, because interruption removes the
+controller in the transition that terminates its active one, so a term for it would be a second name
+for a fact the representation already carries by construction.
+
+Both hypotheses are load-bearing and neither is bookkeeping. Without the binding this would relate a
+controller to an arbitrary record, and the active count would be read off a body that is not this
+controller's; without the task body the record is a shape this profile does not generate and the
+active arm is `0`, which makes the equation false for every nonempty snapshot. -/
+theorem generatedInstanceCount_eq_active_add_completed
+    (state : RuntimeState) (controller : SequentialMultiInstanceController)
+    (record : ActivityOccurrence) (task : OccurrenceId)
+    (bound : state.activityOccurrences.filter
+      (controllerNamesActivityOccurrence controller) = [record])
+    (bodyIsTask : record.body = .userTask task) :
+    generatedInstanceCount controller =
+      activeInstanceCount state controller + completedInstanceCount controller := by
+  simp [activeInstanceCount, bound, bodyIsTask, generatedInstanceCount, Nat.add_comm]
 
 /-- Identity equality for two controllers, over the same triple. -/
 def sameSequentialMultiInstanceController
