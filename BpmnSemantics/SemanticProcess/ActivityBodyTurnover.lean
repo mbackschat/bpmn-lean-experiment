@@ -77,8 +77,9 @@ Answers `none` rather than a repaired state outside the shape this operation is 
 record this state holds naming exactly one live task body. Each refusal excludes a different incoherent
 result: without the unique live body a caller would arm a second body against a record still naming the
 first, and without the state holding the record the rewrite below matches nothing, so the outgoing wait
-would be withdrawn and a successor armed while no record names either. The identity comparison is the
-one `replaceBodyIn` locates by, so the guard admits exactly the records that rewrite.
+would be withdrawn and a successor armed while no record names either. The guard's comparison is `replaceBodyIn`'s own,
+in the same argument order, so it admits exactly the records that rewrite without resting on an
+unstated symmetry.
 
 The incoming wait carries the outgoing wait's definition and output because both describe the same
 program element, so nothing here reads the `Program` and the operation stays total over runtime state
@@ -92,7 +93,7 @@ def replaceActivityBodyTask (state : RuntimeState) (record : ActivityOccurrence)
   match activityBodyTask? record with
   | none => none
   | some body =>
-    if state.activityOccurrences.any (sameActivityOccurrence record) then
+    if state.activityOccurrences.any (fun candidate => sameActivityOccurrence candidate record) then
       match state.waits.filter (taskIdNamesWait body) with
       | [wait] => some (replacedState state record wait body)
       | _ => none
@@ -599,7 +600,8 @@ identical to the independently written core's. -/
 theorem replaceActivityBodyTask_eq_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
     (bodyOfRecord : activityBodyTask? record = some body)
-    (held : state.activityOccurrences.any (sameActivityOccurrence record) = true)
+    (held : state.activityOccurrences.any (fun candidate => sameActivityOccurrence candidate record)
+      = true)
     (unique : state.waits.filter (taskIdNamesWait body) = [wait]) :
     replaceActivityBodyTask state record = some (replacedState state record wait body) := by
   simp [replaceActivityBodyTask, bodyOfRecord, held, unique]
