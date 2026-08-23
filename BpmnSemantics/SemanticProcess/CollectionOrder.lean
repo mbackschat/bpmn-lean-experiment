@@ -438,4 +438,18 @@ theorem countP_insertUserTaskWait (p : UserTaskWait → Bool) (wait : UserTaskWa
       simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, List.countP_cons, ih]
       cases hp : p wait <;> cases hq : p current <;> simp [hp, hq] <;> omega
 
+/-- A positive count names an element that satisfies the predicate. -/
+theorem countP_pos_exists {α : Type} (p : α → Bool) (values : List α)
+    (positive : 0 < values.countP p) : ∃ value ∈ values, p value = true := by
+  induction values with
+  | nil => simp at positive
+  | cons current rest ih =>
+    rw [List.countP_cons] at positive
+    by_cases h : p current = true
+    · exact ⟨current, List.mem_cons_self, h⟩
+    · simp only [Bool.not_eq_true] at h
+      simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, Nat.add_zero] at positive
+      obtain ⟨value, mem, hv⟩ := ih positive
+      exact ⟨value, List.mem_cons_of_mem _ mem, hv⟩
+
 end BpmnSemantics.SemanticProcess

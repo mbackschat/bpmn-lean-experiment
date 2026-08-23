@@ -44,6 +44,18 @@ def replaceBodyIn (records : List ActivityOccurrence) (target : ActivityOccurren
       { candidate with body := .userTask incoming }
     else candidate
 
+/-- The wait the replacement arms: the outgoing one at the next activation of its own element. -/
+def turnoverWait (state : RuntimeState) (wait : UserTaskWait) : UserTaskWait :=
+  { wait with activation := activationCount state wait.task.id + 1 }
+
+/-- The occurrence identity the incoming body takes. Named so the laws below can speak about it
+without restating a five-field literal at every use. -/
+def turnoverBodyId (state : RuntimeState) (wait : UserTaskWait) (body : OccurrenceId) :
+    OccurrenceId :=
+  { processInstanceId := body.processInstanceId
+    elementId := body.elementId
+    activation := activationCount state wait.task.id + 1 }
+
 /-- The state rewrite itself, once the outgoing wait and body have been resolved.
 
 Split from the resolver below so the preservation law has a target whose hypotheses are visible.
@@ -51,15 +63,13 @@ Every field this touches is named here; the four conjuncts that read none of the
 definitional congruence rather than by an argument. -/
 def replacedState (state : RuntimeState) (record : ActivityOccurrence)
     (wait : UserTaskWait) (body : OccurrenceId) : RuntimeState :=
-  let activation := activationCount state wait.task.id + 1
   { state with
-    waits := insertUserTaskWait { wait with activation }
+    waits := insertUserTaskWait (turnoverWait state wait)
       (state.waits.filter fun candidate => !taskIdNamesWait body candidate)
-    activations := setActivationCount state.activations wait.task.id activation
+    activations := setActivationCount state.activations wait.task.id
+      (activationCount state wait.task.id + 1)
     activityOccurrences := replaceBodyIn state.activityOccurrences record
-      { processInstanceId := body.processInstanceId
-        elementId := body.elementId
-        activation } }
+      (turnoverBodyId state wait body) }
 
 /-- Replaces a task-bodied Activity occurrence's body with a fresh occurrence of the same element.
 
@@ -294,7 +304,7 @@ theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : Acti
     (wait : UserTaskWait) (body : OccurrenceId) (waitMem : wait ∈ state.waits)
     (fresh : ∀ candidate ∈ state.waits,
       userTaskWaitKeyMatches
-        { wait with activation := activationCount state wait.task.id + 1 } candidate = false)
+        (turnoverWait state wait) candidate = false)
     (holds : waitIdentitiesUnique state = true) :
     waitIdentitiesUnique (replacedState state record wait body) = true := by
   have symm : ∀ left right : UserTaskWait,
@@ -314,8 +324,7 @@ theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : Acti
   rw [countP_insertUserTaskWait]
   rcases (mem_insertUserTaskWait _ _ _).mp mem with heq | memFiltered
   · -- The wait just armed. Its key is fresh, so nothing surviving the withdrawal shares it.
-    have self : userTaskWaitKeyMatches candidate
-        { wait with activation := activationCount state wait.task.id + 1 } = true := by
+    have self : userTaskWaitKeyMatches candidate (turnoverWait state wait) = true := by
       rw [heq]; simp [userTaskWaitKeyMatches]
     rw [if_pos self]
     have zero : (state.waits.filter fun other => !taskIdNamesWait body other).countP
@@ -328,8 +337,7 @@ theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : Acti
   · -- A wait that was already live. Freshness keeps the armed wait from colliding with it, and the
     -- withdrawn wait cannot have shared its key or the pre-state would have counted two.
     have inState : candidate ∈ state.waits := (List.mem_filter.mp memFiltered).1
-    have notFresh : userTaskWaitKeyMatches candidate
-        { wait with activation := activationCount state wait.task.id + 1 } = false := by
+    have notFresh : userTaskWaitKeyMatches candidate (turnoverWait state wait) = false := by
       rw [symm]
       exact fresh candidate inState
     rw [if_neg (by simp [notFresh])]
@@ -345,5 +353,169 @@ theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : Acti
         simp [userTaskWaitKeyMatches] at absent)
     rw [List.countP_filter] at lower ⊢
     omega
+
+/-! ## Bridging the body key and the wait key
+
+Both collections are keyed on the same three coordinates, but one is stated over an `OccurrenceId` and
+the other over two waits. These three lemmas move between them so the preservation proof argues about
+freshness once rather than unfolding field equalities at every use.
+-/
+
+private theorem taskDefinitionId_of_value {left right : TaskDefinitionId}
+    (h : left.value = right.value) : left = right := by
+  cases left; cases right; simp_all
+
+/-- The wait the replacement arms is the one its new body names. -/
+theorem turnoverBodyId_names_turnoverWait (state : RuntimeState) (wait : UserTaskWait)
+    (body : OccurrenceId) (namesWait : taskIdNamesWait body wait = true) :
+    taskIdNamesWait (turnoverBodyId state wait body) (turnoverWait state wait) = true := by
+  simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at namesWait
+  simp only [taskIdNamesWait, turnoverBodyId, turnoverWait, Bool.and_eq_true, beq_iff_eq]
+  exact ⟨⟨namesWait.1.1, namesWait.1.2⟩, trivial⟩
+
+/-- Any wait the new body names carries the armed key, which freshness forbids of a live wait. -/
+theorem turnoverBodyId_hit_is_turnover_key (state : RuntimeState) (wait : UserTaskWait)
+    (body : OccurrenceId) (namesWait : taskIdNamesWait body wait = true)
+    (candidate : UserTaskWait)
+    (hit : taskIdNamesWait (turnoverBodyId state wait body) candidate = true) :
+    userTaskWaitKeyMatches (turnoverWait state wait) candidate = true := by
+  simp only [taskIdNamesWait, turnoverBodyId, Bool.and_eq_true, beq_iff_eq] at namesWait hit
+  simp only [userTaskWaitKeyMatches, turnoverWait, Bool.and_eq_true, decide_eq_true_eq]
+  refine ⟨⟨?_, ?_⟩, hit.2⟩
+  · rw [← namesWait.1.1]; exact hit.1.1
+  · exact taskDefinitionId_of_value (by rw [← namesWait.1.2]; exact hit.1.2)
+
+/-- If the armed wait answers some body key, every live wait answering it carries the armed key. -/
+theorem turnoverWait_hit_transfers (state : RuntimeState) (wait : UserTaskWait)
+    (task : OccurrenceId) (hit : taskIdNamesWait task (turnoverWait state wait) = true)
+    (candidate : UserTaskWait) (names : taskIdNamesWait task candidate = true) :
+    userTaskWaitKeyMatches (turnoverWait state wait) candidate = true := by
+  simp only [taskIdNamesWait, turnoverWait, Bool.and_eq_true, beq_iff_eq] at hit names
+  simp only [userTaskWaitKeyMatches, turnoverWait, Bool.and_eq_true, decide_eq_true_eq]
+  refine ⟨⟨?_, ?_⟩, ?_⟩
+  · rw [← hit.1.1]; exact names.1.1
+  · exact taskDefinitionId_of_value (by rw [← hit.1.2]; exact names.1.2)
+  · rw [← hit.2]; exact names.2
+
+/-- `activityBodyLive` is the body-keyed wait lookup, written with the shared predicate. -/
+theorem activityBodyLive_userTask (state : RuntimeState) (record : ActivityOccurrence)
+    (task : OccurrenceId) (isTask : record.body = .userTask task) :
+    activityBodyLive state record =
+      decide ((state.waits.filter (taskIdNamesWait task)).length = 1) := by
+  simp only [activityBodyLive, isTask]
+  congr 3
+  apply List.filter_congr
+  intro candidate _
+  simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq]
+  congr 1
+  · congr 1 <;> exact decide_eq_decide.mpr eq_comm
+  · exact decide_eq_decide.mpr eq_comm
+
+/-- `AOO-BODY-01` and `AOO-OWN-01` under the hypothesis that no other record shares the outgoing body.
+
+That second hypothesis is **not** a state invariant, and this proof is where that shows. Nothing in
+`runtimeStateWellFormed` refuses two records naming one body, so a well-formed pre-state can have a
+second record whose body is the wait this transition withdraws; after the withdrawal that record's
+body is gone and the conjunct fails. The parent account already carries the same premise explicitly
+for its body-side lookup determinism, and this is the same premise reappearing as a transition
+obligation rather than a lookup one. -/
+theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
+    (bodyOfRecord : activityBodyTask? record = some body)
+    (unique : state.waits.filter (taskIdNamesWait body) = [wait])
+    (fresh : ∀ candidate ∈ state.waits,
+      userTaskWaitKeyMatches
+        (turnoverWait state wait) candidate = false)
+    (soleBody : ∀ other ∈ state.activityOccurrences,
+      sameActivityOccurrence other record = false → recordBodyNamesWait wait other = false)
+    (holds : activityRecordsOwnLiveWork state = true) :
+    activityRecordsOwnLiveWork (replacedState state record wait body) = true := by
+  have waitInFilter : wait ∈ state.waits.filter (taskIdNamesWait body) := by
+    rw [unique]; simp
+  have waitMem : wait ∈ state.waits := (List.mem_filter.mp waitInFilter).1
+  have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
+  simp only [activityRecordsOwnLiveWork, List.all_eq_true] at holds ⊢
+  intro candidate mem
+  show (activityBodyLive (replacedState state record wait body) candidate &&
+    candidate.attachedTimers.all fun timer =>
+      (replacedState state record wait body).timerWaits.any fun timerWait =>
+        timerIdNamesWait timer timerWait && decide (timerWait.owner = candidate.owner)) = true
+  obtain ⟨other, memOther, rebuilt⟩ := List.mem_map.mp mem
+  have priorHolds := holds other memOther
+  simp only [Bool.and_eq_true] at priorHolds
+  simp only [Bool.and_eq_true]
+  refine ⟨?_, ?_⟩
+  · by_cases h : sameActivityOccurrence other record = true
+    · -- The rewritten record. Its new body is the wait just armed, and freshness makes it unique.
+      have shape : candidate.body = .userTask (turnoverBodyId state wait body) := by
+        rw [← rebuilt]; simp [h]
+      rw [activityBodyLive_userTask _ _ _ shape]
+      simp only [replacedState, decide_eq_true_eq, ← List.countP_eq_length_filter,
+        countP_insertUserTaskWait]
+      rw [if_pos (turnoverBodyId_names_turnoverWait state wait body namesWait)]
+      have zero : (state.waits.filter fun other => !taskIdNamesWait body other).countP
+          (taskIdNamesWait (turnoverBodyId state wait body)) = 0 := by
+        refine List.countP_eq_zero.mpr (fun other memOther => ?_)
+        intro hit
+        have keyed := turnoverBodyId_hit_is_turnover_key state wait body namesWait other hit
+        rw [fresh other (List.mem_filter.mp memOther).1] at keyed
+        exact Bool.noConfusion keyed
+      omega
+    · -- An untouched record. Its body survives because no other record named the withdrawn wait.
+      simp only [Bool.not_eq_true] at h
+      have same : candidate = other := by rw [← rebuilt]; simp [h]
+      subst same
+      cases bodyShape : candidate.body with
+      | childScope scope =>
+        have prior := priorHolds.1
+        simp only [activityBodyLive, bodyShape] at prior ⊢
+        exact prior
+      | userTask task =>
+        have prior := priorHolds.1
+        rw [activityBodyLive_userTask _ _ _ bodyShape, decide_eq_true_eq,
+          ← List.countP_eq_length_filter] at prior
+        rw [activityBodyLive_userTask _ _ _ bodyShape]
+        simp only [replacedState, decide_eq_true_eq, ← List.countP_eq_length_filter,
+          countP_insertUserTaskWait]
+        have notArmed : taskIdNamesWait task (turnoverWait state wait) = false := by
+          rcases hit : taskIdNamesWait task (turnoverWait state wait) with _ | _
+          · rfl
+          · exfalso
+            -- A live wait already carries this element at this activation, so the armed key is not
+            -- fresh after all.
+            obtain ⟨witness, witMem, witNames⟩ :=
+              countP_pos_exists _ _ (by omega : 0 < state.waits.countP (taskIdNamesWait task))
+            have keyed := turnoverWait_hit_transfers state wait task hit witness witNames
+            rw [fresh witness witMem] at keyed
+            exact Bool.noConfusion keyed
+        rw [if_neg (by simp [notArmed])]
+        have keep : ∀ other' ∈ state.waits,
+            ((taskIdNamesWait task other' && !taskIdNamesWait body other') = true ↔
+              taskIdNamesWait task other' = true) := by
+          intro other' memOther'
+          rcases hp : taskIdNamesWait task other' with _ | _
+          · simp
+          · have notBody : taskIdNamesWait body other' = false := by
+              rcases hb : taskIdNamesWait body other' with _ | _
+              · rfl
+              · exfalso
+                have inFilter : other' ∈ state.waits.filter (taskIdNamesWait body) :=
+                  List.mem_filter.mpr ⟨memOther', hb⟩
+                rw [unique, List.mem_singleton] at inFilter
+                subst inFilter
+                have notNamed := soleBody candidate memOther h
+                simp only [recordBodyNamesWait, activityBodyTask?, bodyShape] at notNamed
+                rw [notNamed] at hp
+                exact Bool.noConfusion hp
+            simp [notBody]
+        rw [List.countP_filter, List.countP_congr keep]
+        omega
+  · -- The attached list and the owner are framed, and the Timer waits are untouched.
+    have frameEq : candidate.attachedTimers = other.attachedTimers ∧
+        candidate.owner = other.owner := by
+      rw [← rebuilt]
+      by_cases h : sameActivityOccurrence other record = true <;> simp [h]
+    rw [frameEq.1, frameEq.2]
+    exact priorHolds.2
 
 end BpmnSemantics.SemanticProcess
