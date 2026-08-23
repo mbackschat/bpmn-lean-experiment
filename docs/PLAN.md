@@ -35,12 +35,14 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: the conditional semantic-checkpoint review [the capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) requires, because this increment changed a runtime representation, transition family, proof boundary, and public observation. Then `RSI-MONO-04`, which is what registration waits on.
+Next action: the cold proposal review of [the identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) is open on target `3e89868`; an earlier target was rejected. Nothing in that amendment may be implemented before owner approval.
 
-Landed: the controller in both languages, four TypeScript transitions, public progress, E2 occurrence accounting, and the Lean account as five modules with four relations, three evaluators, three soundness bridges, the laws, and the kernel-decided fixtures. The full Lean gate is green with all five wired into both umbrellas.
+Registration needs more than that amendment, and an earlier plan entry said otherwise. [The capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) conditions registration on the non-reissue obligation being stated or the projection narrowed. The bound narrows that absence to the issuing discipline rather than stating it, because non-reissue also needs the transition-level fact that a new identity is numbered strictly above its key's count. So registration requires either that discipline discharged for the activity family's minting sites, which is bounded, or the public `ActivityOccurrenceId` projection narrowed. That choice is unmade.
 
-Registration is blocked on `RSI-MONO-04`: the public contract projects an `ActivityOccurrenceId`, which [the capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) conditions on one conjunct bounding a live wait's activation by its key's counter. Stating it also discharges the turnover preservation law's `fresh` hypothesis and an adapter assumption that is currently unstated. Measure one narrow fixture module before adding it: every kernel-decided fixture re-reduces the whole predicate.
+Landed for Multi-Instance: the controller, four transitions, public progress, E2 occurrence accounting, the five-module Lean account, and an approved semantic checkpoint whose two correction rounds closed four required findings.
 
-Oracle: every evaluator-produced transition is permitted by its relation, iteration preserves the outer deadline and its activation counters, and interruption publishes nothing. A byte-identical deadline re-arm is not separable at the state boundary and is recorded rather than closed.
+Also open, each as its own change: withdrawing every wait a removed Activity occurrence record named holds in two of four Activity families, and belongs in [the Activity occurrence specification](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md); the Temporal host class, refinement witnesses, and capacity budget owner are absent; PostgreSQL migration runtime evidence needs a database this host lacks.
+
+Oracle: every evaluator-produced transition is permitted by its relation, iteration preserves the outer deadline and its counters, interruption publishes nothing, and both count identities are arithmetic over the same published sum.
 
 Stop if a hypothesis is discharged by weakening a conjunct rather than at an arming call site.
