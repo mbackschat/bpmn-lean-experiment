@@ -39,7 +39,7 @@ The first threads the Activity occurrence records of the semantic **pre-state** 
 
 The second adds the pairing to the retained anchor set, which is durable Workflow state. Its cost is that "no wire artifact changes" in the versioning section below and "durable ingress is unchanged" in the Temporal preflight both stop being true, and the preflight must then name a retained-shape change it currently does not.
 
-**This proposal selects neither.** The anchor lane is where that choice belongs, because its deciding input is which independence the capsule is willing to lose, and neither shape is forced by the representation change this document owns. What is settled here is that the ordinal reconstruction cannot survive admitted repetition, and that a lane which hard-fails on a correct publication is not evidence. Recording both shapes and their exact costs is the obligation this document discharges; selecting between them without a consumer would be the speculative half.
+Between those two shapes, this proposal selects neither. The anchor lane is where that choice belongs, because its deciding input is which independence the capsule is willing to lose, and neither shape is forced by the representation change this document owns. What is settled here is that the ordinal reconstruction cannot survive admitted repetition, and that a lane which hard-fails on a correct publication is not evidence. Recording both shapes and their exact costs is the obligation this document discharges; selecting between them without a consumer would be the speculative half.
 
 This owner is therefore added to the owners the anchor lane grows.
 
@@ -128,11 +128,11 @@ Owners this implementation **created**, listed because the recomputing guard mea
 | Owner | Current headroom before the 600-nonblank-line review target |
 |---|---:|
 | [Lean body turnover](../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean) | 64 |
-| [Lean collection laws](../BpmnSemantics/SemanticProcess/CollectionOrder.lean) | 186 |
-| [Lean turnover fixtures](../BpmnSemantics/ActivityBodyTurnoverConformance.lean) | 548 |
+| [Lean collection laws](../BpmnSemantics/SemanticProcess/CollectionOrder.lean) | 183 |
+| [Lean turnover fixtures](../BpmnSemantics/ActivityBodyTurnoverConformance.lean) | 549 |
 | [core body turnover](../packages/semantic-core/src/activity-body-turnover.ts) | 519 |
 
-`RuntimeState.lean` was the binding constraint at 60 lines and its extraction has since landed: the five wait-arming transitions moved to `WaitActivation.lean`, which is a different responsibility from the representation they transition over, and the dependency runs one way. The tightest remaining owner is [runtime-state well-formedness](../packages/semantic-core/src/runtime-state-well-formedness.ts), which is where the replacement's conjunct work would land if any were needed; the review concluded none is.
+`RuntimeState.lean` was the binding constraint at 60 lines and its extraction has since landed: the five wait-arming transitions moved to `WaitActivation.lean`, which is a different responsibility from the representation they transition over, and the dependency runs one way. The tightest *pre-existing* owner is [runtime-state well-formedness](../packages/semantic-core/src/runtime-state-well-formedness.ts), which is where the replacement's conjunct work would land if any were needed; the review concluded none is. The tightest owner overall is [Lean body turnover](../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean) at 64, created by this change, and the anchor lane must not grow it further without extracting first.
 
 ## Epistemic closure and reopen conditions
 
@@ -140,7 +140,7 @@ Established by this proposal, if approved: that turnover is expressible without 
 
 Inherited and unresolved: `RSI-MONO-04`, non-reissue of an identity after removal, which both the parent account and the consuming capsule make a precondition for registering that profile. Turnover widens rather than narrows the reliance on it, because a task identity is withdrawn once per iteration and the host separates "same handler" from "reissued" by key equality alone. This proposal does not discharge it and must not be read as having done so.
 
-Nearest unsupported claim: that a *sequence* of replacements behaves, rather than one. The witness is two iterations because that is the smallest case where the ordinals diverge; nothing here establishes behaviour at the profile's sixteen-item bound, and the capacity question for that bound belongs to the Multi-Instance capsule.
+Nearest unsupported claim: that a *sequence* of replacements behaves, rather than one. One replacement is the smallest state where the ordinals diverge and is what this document checks; two iterations is the smallest *public* case and is the open obligation named above, not a delivered witness. Neither establishes a sequence, nothing here establishes behaviour at the profile's sixteen-item bound, and the capacity question for that bound belongs to the Multi-Instance capsule.
 
 Reopen before admitting concurrent bodies, an effect body arm, handler turnover, repeated outer activation, or any public projection of the record's *contents*. Projection of its identity is not a reopen trigger here because it is already the case; it is the subject of the separate amendment named above.
 
@@ -149,5 +149,5 @@ Reopen before admitting concurrent bodies, an effect body arm, handler turnover,
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `4f346b2` | `fork-turns-none` | `approve-with-required-edits` | `2c74836, 23a9d57` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `0bc20eb` | `fork-turns-none` | `approve-with-required-edits` | `697a337` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

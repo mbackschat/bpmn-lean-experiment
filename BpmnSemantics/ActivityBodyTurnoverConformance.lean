@@ -39,7 +39,6 @@ def turnedOver? : Option RuntimeState :=
   | some record => replaceActivityBodyTask armedState record
   | none => none
 
-/-- The pre-state is the ordinal coincidence: all three families agree at activation `1`. -/
 theorem armed_state_carries_the_ordinal_coincidence :
     (armedState.waits.map (·.activation), armedState.timerWaits.map (·.activation),
       armedState.activityOccurrences.map (·.activation)) = ([1], [1], [1]) := by

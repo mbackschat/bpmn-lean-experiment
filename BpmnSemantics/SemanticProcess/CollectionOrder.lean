@@ -216,11 +216,13 @@ theorem userTaskWaitBefore_compose (a b c : UserTaskWait) :
   simp only [decide_eq_false_iff_not] at *
   omega
 
-/-! ## Canonical insertion for waits, and the key-factoring laws
+/-! ## Canonical insertion for waits, and the laws that read a collection through a key
 
 Insertion needs only asymmetry: the element placed before `current` must not also belong after it.
-The three `all`-shaped laws that follow it are not about insertion at all; they are the key-factoring
-group, kept beside it because every conjunct that uses one also crosses the other.
+`all_insertUserTaskWait` and `all_filter` follow it because a conjunct crossing this transition meets
+the inserted element and the filtered ones in the same step. The three `of_map_eq` laws after them are
+the key-factoring group and are about neither insertion nor filtering: they are what turns a frame law
+into a preservation law.
 -/
 
 /-- Insertion puts either the new wait or the old head first, which is what the adjacent-pair check
@@ -332,11 +334,30 @@ theorem all_of_map_eq {α β : Type} (key : α → β) (p : α → Bool) (q : β
     exact hp a
   rw [expand left, expand right, h]
 
-/-! ## The task activation comparator, and the counting laws
+/-- An adjacent-pair check whose comparator factors through a key is decided by the key sequence. -/
+theorem orderedBy_of_map_eq {α β : Type} (key : α → β) (before : α → α → Bool)
+    (keyBefore : β → β → Bool) (hb : ∀ a b, before a b = keyBefore (key a) (key b))
+    (left right : List α) (h : left.map key = right.map key) :
+    orderedBy before left = orderedBy before right := by
+  have expand : ∀ values : List α,
+      orderedBy before values = orderedBy keyBefore (values.map key) := by
+    intro values
+    induction values with
+    | nil => rfl
+    | cons first rest ih =>
+      cases rest with
+      | nil => rfl
+      | cons second more =>
+        simp only [List.map_cons, orderedBy, hb] at *
+        rw [ih]
+  rw [expand left, expand right, h]
+
+/-! ## The task activation comparator, and the membership and counting laws
 
 One level rather than five, so the two order facts come straight from `String`. The membership and
-counting laws after it belong to the wait insertion above; they are stated here because both
-uniqueness conjuncts consume them together with `countP_pos_exists`.
+counting laws after the comparator belong to the wait insertion further up; they are stated here
+because both uniqueness conjuncts consume them together with `countP_pos_exists`, which has no other
+consumer.
 -/
 
 theorem activationBefore_asymm (left right : TaskActivation) :
@@ -392,24 +413,6 @@ theorem orderedBy_insertTaskActivation (activation : TaskActivation) :
           refine ⟨ordered.1, ?_⟩
           have := ih tail
           simpa [insertTaskActivation, h2] using this
-
-/-- An adjacent-pair check whose comparator factors through a key is decided by the key sequence. -/
-theorem orderedBy_of_map_eq {α β : Type} (key : α → β) (before : α → α → Bool)
-    (keyBefore : β → β → Bool) (hb : ∀ a b, before a b = keyBefore (key a) (key b))
-    (left right : List α) (h : left.map key = right.map key) :
-    orderedBy before left = orderedBy before right := by
-  have expand : ∀ values : List α,
-      orderedBy before values = orderedBy keyBefore (values.map key) := by
-    intro values
-    induction values with
-    | nil => rfl
-    | cons first rest ih =>
-      cases rest with
-      | nil => rfl
-      | cons second more =>
-        simp only [List.map_cons, orderedBy, hb] at *
-        rw [ih]
-  rw [expand left, expand right, h]
 
 /-- Canonical insertion adds exactly the inserted wait to the membership of the list.
 

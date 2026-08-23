@@ -190,7 +190,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 
 - the sixth derivation site is deliberately exempt rather than migrated. [The publication completeness relation](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) is an independent reconstruction pairing through the private retained anchor relation, never through state differences, so the producer's records would make it share the mechanism it checks
 - that exemption's reopen trigger is close: under any admitted repetition the record and the ordinal reconstruction would legitimately disagree, and it would reject a correct publication
-- body turnover is withdrawn as unreachable, since no registered family replaces a body; it belongs to sequential Multi-Instance. The effect body arm is unreachable and absent for the same reason
+- the effect body arm is unreachable and absent, since no registered family gives an Activity an effect body. Body turnover is no longer withdrawn: [its amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) owns the account and the status this map cannot yet carry
 - preservation of the new conjuncts across the registered transition arms inherits [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) and is not re-declared
 
 **Absent in evidence.**
