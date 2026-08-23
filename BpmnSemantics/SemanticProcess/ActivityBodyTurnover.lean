@@ -284,4 +284,66 @@ theorem waitDeclarationsValid_replacedState (program : Program) (instanceId : Se
   · exact waits candidate
       (List.mem_filter.mpr ⟨(List.mem_filter.mp memFiltered).1, samePid⟩)
 
+/-- `RSI-UNIQ-02` under the freshness hypothesis this transition cannot discharge on its own.
+
+The hypothesis is stated rather than derived because no conjunct of `runtimeStateWellFormed` bounds a
+live wait's activation by its counter. The arming step establishes it by construction, minting from
+the pre-state counter; the residual gap is exactly `RSI-MONO-04`, which no relation in this account
+states. Declaring the law without it would assert something the account does not enforce. -/
+theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : ActivityOccurrence)
+    (wait : UserTaskWait) (body : OccurrenceId) (waitMem : wait ∈ state.waits)
+    (fresh : ∀ candidate ∈ state.waits,
+      userTaskWaitKeyMatches
+        { wait with activation := activationCount state wait.task.id + 1 } candidate = false)
+    (holds : waitIdentitiesUnique state = true) :
+    waitIdentitiesUnique (replacedState state record wait body) = true := by
+  have symm : ∀ left right : UserTaskWait,
+      userTaskWaitKeyMatches left right = userTaskWaitKeyMatches right left := by
+    intro left right
+    simp only [userTaskWaitKeyMatches]
+    congr 1
+    · congr 1 <;> exact decide_eq_decide.mpr eq_comm
+    · exact decide_eq_decide.mpr eq_comm
+  simp only [waitIdentitiesUnique, Bool.and_eq_true] at holds ⊢
+  obtain ⟨⟨⟨waits, messages⟩, timers⟩, effects⟩ := holds
+  refine ⟨⟨⟨?_, messages⟩, timers⟩, effects⟩
+  simp only [List.all_eq_true] at waits ⊢
+  intro candidate mem
+  simp only [occursOnce, ← List.countP_eq_length_filter, decide_eq_true_eq] at waits ⊢
+  show (insertUserTaskWait _ _).countP (userTaskWaitKeyMatches candidate) = 1
+  rw [countP_insertUserTaskWait]
+  rcases (mem_insertUserTaskWait _ _ _).mp mem with heq | memFiltered
+  · -- The wait just armed. Its key is fresh, so nothing surviving the withdrawal shares it.
+    have self : userTaskWaitKeyMatches candidate
+        { wait with activation := activationCount state wait.task.id + 1 } = true := by
+      rw [heq]; simp [userTaskWaitKeyMatches]
+    rw [if_pos self]
+    have zero : (state.waits.filter fun other => !taskIdNamesWait body other).countP
+        (userTaskWaitKeyMatches candidate) = 0 := by
+      refine List.countP_eq_zero.mpr (fun other memOther => ?_)
+      rw [heq]
+      simp only [Bool.not_eq_true]
+      exact fresh other (List.mem_filter.mp memOther).1
+    omega
+  · -- A wait that was already live. Freshness keeps the armed wait from colliding with it, and the
+    -- withdrawn wait cannot have shared its key or the pre-state would have counted two.
+    have inState : candidate ∈ state.waits := (List.mem_filter.mp memFiltered).1
+    have notFresh : userTaskWaitKeyMatches candidate
+        { wait with activation := activationCount state wait.task.id + 1 } = false := by
+      rw [symm]
+      exact fresh candidate inState
+    rw [if_neg (by simp [notFresh])]
+    have counted := waits candidate inState
+    have mono : state.waits.countP (fun other =>
+        userTaskWaitKeyMatches candidate other && !taskIdNamesWait body other) ≤
+          state.waits.countP (userTaskWaitKeyMatches candidate) :=
+      List.countP_mono_left (fun other _ h => by simp at h; exact h.1)
+    have lower : 0 < (state.waits.filter fun other => !taskIdNamesWait body other).countP
+        (userTaskWaitKeyMatches candidate) :=
+      Nat.pos_of_ne_zero (fun contra => by
+        have absent := List.countP_eq_zero.mp contra candidate memFiltered
+        simp [userTaskWaitKeyMatches] at absent)
+    rw [List.countP_filter] at lower ⊢
+    omega
+
 end BpmnSemantics.SemanticProcess
