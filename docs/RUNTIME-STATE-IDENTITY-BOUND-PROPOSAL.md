@@ -7,51 +7,81 @@ Review: pending
 
 ## Question and current boundary
 
-[The runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity) records `RSI-MONO-04`, non-reissue of an identity after removal, as an explicit absence, and gives its reason in the Contract section: a high-water or non-reissue fact belongs to a transition, and a state predicate asserting one would need an invented history field. That reason is correct and this proposal does not dispute it.
+[The runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity) records `RSI-MONO-04`, non-reissue of an identity after removal, as an explicit absence. Its Contract section gives the reason: a high-water or non-reissue fact belongs to a transition, and a state predicate asserting one would need an invented history field. That reason is correct and this proposal does not dispute it.
 
-The question is narrower. Non-reissue is a conjunction of two facts, and only one of them is about two states. Counters never decreasing is already `RSI-MONO-01`, a relation with an executable core counterpart in `runtimeStateRegressions`. The other half is that no live identity has already passed its counter, which mentions only the state under check. **Can the state carry that half, so that non-reissue becomes a derivation from an existing relation rather than an absence?**
+The question is what part of that absence a single state can carry. One part can: whether any live member of a counter family has an activation above its key's recorded count. That mentions only the state under check, so it needs no history field and no predecessor.
 
-The absence has three consumers today, which is what makes the question due rather than tidy. The adapter joins a durable deadline to committed state assuming a withdrawn Timer or task identity is never reused, and the invariant spec records that this rests on the evaluator's issuing discipline rather than on the account. The Activity body turnover preservation law states a `fresh` hypothesis it cannot discharge, and its Lean docstring names the reason exactly: no conjunct bounds a live wait's activation by its counter. And the sequential Multi-Instance capsule conditions registering its profile for execution on this obligation being stated or its public projection being narrowed, because once a controller's `ActivityOccurrenceId` is a public field a reissued identity is visible to an external consumer as the same open controller.
+**What that part is worth, stated exactly.** It discharges the `fresh` hypothesis of `waitIdentitiesUnique_replacedState` in [`ActivityBodyTurnover.lean`](../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean), whose own docstring names this conjunct as the residual gap: no conjunct of `runtimeStateWellFormed` bounds a live wait's activation by its counter. In that proof the arming step's minting equation is available in context, so the bound alone closes it and monotonicity is not needed.
+
+**What it is not worth, and an earlier version of this proposal claimed otherwise.** It does **not** derive non-reissue. Non-reissue is a conjunction of three facts, not two: the bound above, `RSI-MONO-01`'s per-key non-decrease, and the fact that a newly issued identity is numbered strictly *above* its key's count. The third is `RSI-MONO-04`'s own proposition, and [`RuntimeStateWellFormed.lean`](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) already says so where `RuntimeStateMonotone` is defined. The bound is an upper bound on live identities; freshness needs a lower bound on new ones, and no combination of the two stated facts produces one. A three-state counterexample satisfies both while reissuing: a Timer wait at activation 1 with its counter at 1, then withdrawal, then arming a second wait at activation 1. Every bound holds, monotonicity holds, and the retired identity is back.
+
+So the amendment **narrows the absence** from non-reissue to the issuing discipline. What remains absent is a per-arm obligation that each minting site numbers strictly above the pre-state count, which belongs in [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) beside preservation rather than in this rule.
 
 ## The proposed rule
 
-`RSI-BOUND-01`: for each of the eight counter families, every live member's activation is at most the recorded count for its key, and an absent counter is read as zero, so a live member whose key has no counter violates the bound.
+`RSI-BOUND-01`: in every counter-minted family, no live member's occurrence activation exceeds its key's recorded count, and an absent counter reads as zero so a live member whose key has no count violates the bound.
 
-The eight pairs are the ones `RSI-MONO-01` already enumerates: `activations` against `waits`, `messageActivations` against `messageWaits`, `timerActivations` against `timerWaits`, `effectActivations` against `effectWaits`, `scopeActivations` against `scopeOccurrences`, `eventRaceActivations` against `eventRaces`, `callActivations` against `calledProcessOccurrences`, and `activityActivations` against `activityOccurrences`.
+**Membership criterion, not an enumeration.** A family is counter-minted when *every* site that creates one of its live members numbers it from that family's counter. A family with any site that derives its identity another way is excluded, because a counter cannot bound an identity it did not issue. The criterion decides whether a future family joins; a census does not, and [the `RSI-ORDER-01` membership paragraph](RUNTIME-STATE-INVARIANT-SPEC.md#facts-the-rules-depend-on) records that this same account was written as a count and wrong three times before it was written as a criterion.
 
-The rule belongs in Layer 1, because it is a structural fact about one state rather than an agreement with the program or a fact about a transition.
+Under that criterion:
 
-## Why this is one state fact and not a disguised two-state one
+| Family | Counter | Live members | In the rule |
+|---|---|---|---|
+| User Task | `activations` / `taskActivations` | `waits` / `userTaskWaits` | yes |
+| Message | `messageActivations` | `messageWaits` | yes |
+| Timer | `timerActivations` | `timerWaits` | yes |
+| Effect | `effectActivations` | `effectWaits` **and** the wait each `effectIncidents` entry retains | yes |
+| Event race | `eventRaceActivations` | `eventRaces` | yes |
+| Call | `callActivations` | `calledProcessOccurrences` | yes |
+| Activity | `activityActivations` | `activityOccurrences` | yes |
+| Scope | `scopeActivations` | `scopeOccurrences` | **no**, see below |
 
-The predicate reads only the state it is given: for each live member it compares one number against one counter in the same value. No history field, no predecessor, and no invented field. That is the whole of the Contract section's objection, and the bound does not meet it.
+The effect row names two collections on purpose. An incident retains a complete suspended wait carrying its occurrence activation, `RSI-DISJ-01` keeps it out of `effectWaits`, and the account already treats it as live work. Bounding only `effectWaits` would let a live identity sit above its counter inside an incident, which is exactly what the rule exists to refuse.
 
-Non-reissue then moves from absent to derived, and belongs in the Derived rather than asserted table with its derivation stated: if every live identity is at or below its counter, and the counter never decreases across a committed transition, then an identity minted strictly above the pre-state counter cannot equal any identity live before it, so a removed identity is not reissued while `RSI-MONO-01` holds. This proposal does not move non-reissue into the conjunct, and the distinction matters: the conjunct is checkable on one state, the derivation needs the relation, and a reader must be able to see which of the two any later claim depends on.
+## Why the scope family is excluded
+
+The scope family has two minting disciplines and only one uses the counter. `enterScope` mints a child occurrence from `scopeActivations`. `invokeProcess` mints a called root at the constant activation 1 and takes uniqueness from the derived called instance identity instead, writing `callActivations` and never `scopeActivations`; both the executable arm and `InvokeProcessStep.permitted` in [`CallActivity.lean`](../BpmnSemantics/SemanticProcess/CallActivity.lean) do this, and so does [the core](../packages/semantic-core/src/semantic-process-call-runtime.ts) independently.
+
+So every state holding a live called Process carries a scope occurrence whose key has no count. Under a uniform bound that state is refused, and it is not a defect: [the preservation lane](../packages/semantic-core/test/runtime-state-preservation.test.ts) drives it today and the invariant reports no defect for it. `scopeActivations` is keyed by definition scope alone, so it is instance-agnostic and cannot express a bound for an occurrence whose identity is instance-scoped; the gap is structural rather than a missing write. Repairing it by writing a scope counter at invoke would change a shipped transition family's committed state, which this proposal excludes.
+
+The exclusion is recorded in the rule row rather than left implicit, in the form `RSI-BIND-04` and `RSI-BIND-05` already use for a rule implemented narrower than its general reading.
+
+## The remaining activation-bearing collections are covered rather than omitted
+
+Four collections carry an occurrence identity without being one of the families above, and each is already bound to a member the rule covers, so the criterion leaves nothing unbounded:
+
+- `sequentialMultiInstanceControllers` through `controllersOwnLiveActivity`, which ties each controller to a live Activity occurrence record;
+- an event race's message and timer arms through `eventRaceAssociationsValid`;
+- a called record's `calledRoot` through `RSI-BIND-03`;
+- an Activity record's body and attached timers through `activityRecordsOwnLiveWork`.
 
 ## What this establishes and what it does not
 
-Established, if implemented: `RSI-BOUND-01` holds of every state the predicate admits, in both languages, with the derivation of non-reissue recorded against `RSI-MONO-01`.
+Established, if implemented: `RSI-BOUND-01` holds of every state the predicate admits, in both languages, and the turnover preservation law loses a hypothesis it currently cannot discharge.
 
-Not established, and each is a separate lane:
+Not established:
 
-- **Preservation.** That every transition preserves `RSI-BOUND-01` is not proved. Preservation of the uniqueness conjunct alone reaches ninety-one wait-collection assignment sites across fifteen semantic modules, and this conjunct touches the same sites plus every counter write. It stays inside [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) rather than being smuggled in beside the statement.
-- **The adapter's assumption.** Stating the bound narrows what that assumption rests on but does not discharge it, because the adapter needs non-reissue across a durable boundary and this account proves nothing about Continue-As-New carrying a state that satisfies the conjunct.
-- **Any BPMN meaning.** No profile, operation kind, admission capability, public observation, or transition family changes. A state a registered scenario reaches today either already satisfies the bound or is a defect the predicate should always have refused.
+- **Non-reissue.** Absent still, narrowed to the issuing discipline as above.
+- **Preservation.** That every transition preserves the bound is unproved and stays in the open lane. Preservation of the uniqueness conjunct alone reaches ninety-one wait-collection assignment sites across fifteen semantic modules.
+- **The adapter's assumption.** Its durable deadline join needs non-reissue across a Continue-As-New boundary. This narrows what that rests on and discharges none of it.
+- **Sequential Multi-Instance registration.** [That capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) conditions registration on the obligation being *stated* or its projection narrowed, and a narrowed absence is not a statement. Registration therefore needs either the issuing discipline discharged for the activity family's minting sites, which is bounded and is the natural follow-on, or the public projection narrowed. This proposal does not unblock it, and an earlier version implied that it did.
+- **Any BPMN meaning.** No profile, operation kind, admission capability, public observation, or transition family changes.
 
-The one behavioural consequence worth naming precisely: adding a conjunct narrows the admitted set, so a state that passes today and violates the bound stops being admitted. That is the intended effect and it is also the risk, which is why the evidence below requires the existing registered corpus to be shown unaffected rather than assumed to be.
+## Consumers, which fix the family set
 
-## Cost preflight, and the measurement that decides the shape
+Three consumers exist, and they decide which families matter rather than a measurement deciding it. The adapter's durable deadline join needs the **Timer** and **User Task** families. The turnover preservation law needs **User Task**. The Multi-Instance projection needs **Activity**. If cost forces a narrowing, the narrowed set is those three, and the remaining four counter-minted families are recorded as narrower than stated. Negative witnesses follow the same set: one decided negative per consuming family, three rather than two.
 
-This is the expensive class. Every conjunct added to `runtimeStateWellFormed` is re-reduced by every kernel-decided fixture, and every new fixture re-reduces every conjunct, so cost grows multiplicatively rather than additively. The current full Lean gate is 139 seconds incremental against a 5 GB lightweight-runner floor, and one fixture module already peaks at 2.16 GB after the sequential Multi-Instance capsule.
+## Cost preflight
 
-Eight sub-bounds is therefore a measurement question rather than a design one. The obligation on implementation is to build one narrow fixture module before and after the conjunct, under the memory bound, and record CPU and peak resident memory for both. If the delta is affordable, all eight families are stated. If it is not, the bound is stated for the families that have consumers today, the task and activity families, and the narrowing is recorded in the rule row as an implemented-narrower-than-stated fact in the form `RSI-BIND-04` and `RSI-BIND-05` already use. What is not permitted is discovering the cost mid-implementation and quietly stating fewer families than the rule claims.
+Every conjunct added to `runtimeStateWellFormed` is re-reduced by every kernel-decided fixture, and every new fixture re-reduces every conjunct, so cost grows multiplicatively. [The thread-pin rationale](../CLAUDE.md#verification) records the only durable measurements this repository has for that effect.
 
-Negative witnesses follow the same rule. Two decided negatives, one per consuming family, with the remaining six resting on the shared shape of the predicate; eight would re-reduce in every downstream fixture for evidence that does not separate anything the first two leave open.
+The obligation on implementation is to build one narrow fixture module before and after the conjunct under the bound described in [the contributor setup guide](CONTRIBUTOR-SETUP-GUIDE.md#memory-bounded-lean-measurements), and to record both figures where cost lives, in [the capsule cost ledger](CAPSULE-COST-LEDGER.md). The measurement decides only whether the four consumer-free families land now or are recorded as narrower than stated. It does not decide *which* families, because the criterion and the consumers already do.
 
 ## Versioning consequences
 
-One additive conjunct in a pre-release predicate. No wire contract, schema, profile, scenario, or retained evidence projection changes shape, and no producer or consumer of a published contract is affected. Under [the pre-release policy](../CLAUDE.md#pre-release-evolution) no compatibility switch or migration branch is added.
+One additive conjunct in a pre-release predicate. No wire contract, schema, profile, scenario, or retained evidence projection changes shape. Under [the pre-release policy](../CLAUDE.md#pre-release-evolution) no compatibility switch or migration branch is added.
 
-Owners this implementation grows, with headroom before the 600-nonblank review target, measured rather than recalled:
+Owners this implementation grows, with headroom before the 600-nonblank review target:
 
 | Owner | Current headroom |
 |---|---:|
@@ -60,19 +90,21 @@ Owners this implementation grows, with headroom before the 600-nonblank review t
 | [TypeScript invariant](../packages/semantic-core/src/runtime-state-well-formedness.ts) | 117 |
 | [runtime state contract](../packages/semantic-core/src/semantic-process-state.ts) | 185 |
 
-The bound is one cohesive responsibility across eight families, so it gets its own owner on each side rather than eight additions to the two predicates above: the TypeScript predicate has 117 lines of headroom and would be written under a size squeeze, which this project's own rule forbids. Each existing predicate gains one conjunct reference. That extraction condition stops applying only if a measurement shows the complete bound fits in both predicates while each stays below 600.
+The bound is one cohesive responsibility across seven families and gets its own owner on each side for that reason, not for a size reason: only the TypeScript predicate at 117 lines would be written under a squeeze, while the Lean predicate has room. Each existing predicate gains one conjunct reference.
 
-Executable constraints that already bind this work: [the runtime-state invariant guard](../packages/semantic-core/test/runtime-state-well-formedness.test.ts), [the collection-removal completeness guard](../scripts/runtime-collection-removal-completeness.test.ts), [the Lean source contracts ratchet](../scripts/lean-source-contracts.test.ts), [the Lean import boundaries guard](../scripts/lean-import-boundaries.test.ts), [the source-hygiene gate](../scripts/source-hygiene.test.ts), and [the reviewability guard](../scripts/document-reviewability.test.ts), which recomputes every headroom figure in the table above.
+Executable constraints that already bind this work: [the runtime-state invariant guard](../packages/semantic-core/test/runtime-state-well-formedness.test.ts), [the preservation lane](../packages/semantic-core/test/runtime-state-preservation.test.ts), [the collection-removal completeness guard](../scripts/runtime-collection-removal-completeness.test.ts), [the Lean import boundaries guard](../scripts/lean-import-boundaries.test.ts), [the source-hygiene gate](../scripts/source-hygiene.test.ts), and [the reviewability guard](../scripts/document-reviewability.test.ts), which recomputes every headroom figure above. [The Lean source-contracts ratchet](../scripts/lean-source-contracts.test.ts) records `native_decide` sites and modules only, so a new module carrying `decide +kernel` negatives is admissible without a registry edit.
+
+One existing evidence claim changes meaning and must be corrected in the same change. `rewoundCounterSuccessor` in [the invariant fixtures](../BpmnSemantics/RuntimeStateWellFormedConformance.lean) survives a counter rewind only because it withdraws the wait and the Activity record first, and its docstring's claim that no predicate over one state can refuse such a rewind stops being true in general. The amendment absorbs part of `RSI-MONO-01`'s discriminating power, and the evidence-lane row for that relation should say so.
 
 ## Epistemic closure and reopen conditions
 
-The claim this proposal would establish is that one state fact, checkable in both languages, plus one existing relation, together entail a property three consumers currently assume. The nearest unsupported claim is that any transition preserves it.
+The claim is that one single-state fact, checkable in both languages, discharges one named proof hypothesis and narrows one documented absence. Nothing here entails non-reissue, and this proposal's first version asserted that it did.
 
-The common-mode risk is that both languages get the bound from the same reading of `RSI-MONO-01`'s family list, so a family missing from that list would be missing from both. The mitigation is to derive the eight pairs from the counter families the runtime state declares rather than from the relation's prose, and to require the negative witnesses to name their family explicitly so a dropped family fails a test rather than passing silently.
+The common-mode risk is that both languages take the family set from the same reading, so a family whose minting discipline is misread would be misread in both. The mitigation is the criterion rather than the table: implementation must check each family's create sites, and the scope family sits in the table as an exclusion precisely so a reader can see the criterion applied against a real counterexample rather than only stated.
 
-The nearest realistic counterexample is a state built by a host recovery path rather than by a transition: Continue-As-New carries committed state, and if a carried state violated the bound the conjunct would refuse it at the continuation boundary rather than at an arming site. That is the fail-closed direction, and the continuation validator is where it should be observed rather than argued.
+The nearest realistic counterexample is a state built by a host recovery path rather than by a transition, since Continue-As-New carries committed state. The conjunct would refuse a carried state that violates the bound at the continuation boundary, which is the fail-closed direction and should be observed there rather than argued.
 
-Reopen if a family joins the counter set, if a transition is proved to preserve the bound and the derivation can be strengthened, or if the measurement forces the narrowed form and a later consumer needs one of the six unstated families.
+Reopen if a family's minting discipline changes, if the issuing discipline is discharged for any family and the derivation can be strengthened, or if a consumer needs one of the four families a cost narrowing left unstated.
 
 ## Independent cold-review receipt
 
@@ -82,4 +114,6 @@ Reopen if a family joins the counter set, if a transition is proved to preserve 
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-Cold proposal review is required because this changes which runtime states the account admits and moves a named absence into a derivation, so it changes both admission and the proof boundary. Owner approval is required after that review and before implementation.
+Cold proposal review is required because this changes which runtime states the account admits and narrows a named absence, so it changes both admission and the proof boundary. Owner approval is required after that review and before implementation.
+
+One earlier target was rejected. `2321f058919f3ab1ea38c674a08cea383c137bb3` claimed the bound plus `RSI-MONO-01` derives non-reissue, which does not follow; stated a uniform eight-family rule that refuses every state holding a live called Process; enumerated families where a criterion was required, omitting the wait an effect incident retains; and proposed a narrowed family set that dropped the Timer family its own consumer inventory needs. Because those corrections change the selected account, this target requires a newly spawned cold reviewer rather than a warm audit of the rejected one.
