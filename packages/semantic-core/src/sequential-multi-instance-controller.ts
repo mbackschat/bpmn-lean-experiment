@@ -23,6 +23,7 @@
 import { sameActivityOccurrence } from "./activity-occurrence.js";
 import type { ActivityOccurrenceId } from "./activity-occurrence.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import { compareCanonicalStrings } from "./wire.js";
 
 /**
  * One open outer controller.
@@ -82,12 +83,24 @@ export function sequentialMultiInstanceControllerFor(
  * Canonical order, by the owning Activity occurrence identity.
  *
  * One controller per open Multi-Instance Activity occurrence, so the identity is a total key.
+ *
+ * Ordered by code point, through the same comparator `compareActivityOccurrences` uses over the same
+ * three fields. A locale comparison would have been a second canonical order for one identity,
+ * disagreeing with the record collection's order on case-varying or non-ASCII element ids and with the
+ * Lean account, which orders by code point; every current element id is ASCII lowercase, so no fixture
+ * would have separated them.
  */
 export function compareSequentialMultiInstanceControllers(
   left: SequentialMultiInstanceController,
   right: SequentialMultiInstanceController,
 ): number {
-  return left.id.processInstanceId.localeCompare(right.id.processInstanceId) ||
-    left.id.activityElementId.localeCompare(right.id.activityElementId) ||
+  return compareCanonicalStrings(
+      left.id.processInstanceId,
+      right.id.processInstanceId,
+    ) ||
+    compareCanonicalStrings(
+      left.id.activityElementId,
+      right.id.activityElementId,
+    ) ||
     left.id.activation - right.id.activation;
 }

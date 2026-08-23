@@ -273,6 +273,8 @@ Answer-free scenario inputs cover zero items, three distinct items, duplicate it
 
 Meaningful mutations use lowercase `behavior="all"`, reset the timer for each iteration, derive active input from the mutable Process binding instead of the snapshot, aggregate in completion order, expose a partial output, publish output on interruption, increment generated count before task creation, count the controller as a FlowNode occurrence, reuse the prior task identity, accept a result for the right task with the wrong output binding, roll over while the native Timer is armed, or drop controller state at the pre-arming Continue-As-New boundary. Each must be caught by an oracle that does not share the mutated mechanism.
 
+Two of those mutations were measured against the implemented core transitions and one of them is not separable there, which is recorded rather than left to be discovered. **Resetting the timer for each iteration** is caught only when the reset mints a fresh Timer occurrence: no logical time elapses across an iteration boundary, so a deadline recomputed from the same logical time and the same duration is byte-identical to the preserved one, and only the host's refusal to arm unless the remaining time equals the armed duration separates them. That half is adapter evidence, not core evidence. **Aggregating in completion order** is not separable at all under this profile, because one active instance means completion order is index order in every admitted schedule; the retained oracle in its place is a slot defect, where a result lands in the wrong position, overwrites a filled slot, or is dropped. Both corrections narrow the claimed evidence rather than the rule.
+
 ## Versioning consequences
 
 This is one additive pre-release profile, one additive optional public observation field, and one additive optional `RuntimeState.sequentialMultiInstanceControllers` field. Existing profile artifacts, caller bytes, Semantic Process programs, RuntimeState values, canonical observation bytes, terminal receipts, and retained Temporal histories remain valid and byte-identical because both new fields are absent under every old profile. The new operation and controller field are reachable only under the new profile, where the controller field is strictly required. Decoders and profile-aware validators must be upgraded atomically before the new profile is admitted; retained old histories decode and replay with the field absent, while presence-under-old-profile, absence-under-new-profile, surplus controller fields, and substituted scope/activation identities are explicit mutations.
@@ -303,8 +305,9 @@ Owners this implementation **created**, listed because the recomputing guard mea
 
 | Owner | Current headroom before the 600-nonblank-line review target |
 |---|---:|
-| [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 514 |
-| [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 384 |
+| [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 501 |
+| [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 241 |
+| [Lean outer controller](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 505 |
 
 The expected lowering, occurrence, and projection mechanisms cannot fit cohesively in the current headroom of the lowering owner at 43 lines, the occurrence lifecycle at 44, the occurrence open set at 42, and the canonical scenario projection at 75. Their implementation must create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. This extraction condition stops applying if the review target measurements change enough that the complete cohesive mechanism fits while every owner remains below 600; the table is recomputed by the reviewability guard rather than treated as permanent prose.
 

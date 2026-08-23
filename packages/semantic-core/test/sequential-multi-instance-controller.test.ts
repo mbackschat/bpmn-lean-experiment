@@ -16,12 +16,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityBodyKind,
   applyStimulus,
   CommandOutcome,
+  compareActivityOccurrences,
+  compareSequentialMultiInstanceControllers,
   initialState,
   RuntimeStateDefect,
   runtimeStateDefects,
   type RuntimeState,
+  type ActivityOccurrence,
   type SequentialMultiInstanceController,
 } from "@bpmn-lean/semantic-core";
 
@@ -123,5 +127,48 @@ test("unordered controllers are refused", () => {
   assert.ok(
     defects(withControllers(before, [higher, lower]))
       .includes(RuntimeStateDefect.UnorderedCollection),
+  );
+});
+
+/**
+ * One canonical order for one identity, locked where the two plausible comparators disagree.
+ *
+ * `"a"` and `"B"` are the discriminating pair: a locale comparison orders `a` before `B`, and code
+ * point orders it after. The controller collection and the record collection are keyed on the same
+ * three fields, so if their comparators disagreed anywhere, a state could satisfy one collection's
+ * order conjunct and fail the other's. Every current element id is ASCII lowercase, which is why no
+ * other fixture separates them and why this one names the pair explicitly.
+ */
+test("controllers and records share one canonical order, including where locale order differs", () => {
+  const base = { processInstanceId: instanceId, activation: 1 };
+  const lower = { ...base, activityElementId: "a" };
+  const upper = { ...base, activityElementId: "B" };
+  const controller = (
+    id: typeof lower,
+  ): SequentialMultiInstanceController => ({ id, snapshot: ["x"], outputSlots: [] });
+  const record = (id: typeof lower): ActivityOccurrence => ({
+    id,
+    owner: {
+      processInstanceId: instanceId,
+      definitionScopeId: "scope",
+      activation: 1,
+    },
+    operationId: "operation",
+    body: {
+      kind: ActivityBodyKind.UserTask,
+      task: { processInstanceId: instanceId, elementId: "t", activation: 1 },
+    },
+    attachedTimers: [],
+  });
+
+  assert.equal(
+    Math.sign(compareSequentialMultiInstanceControllers(controller(lower), controller(upper))),
+    Math.sign(compareActivityOccurrences(record(lower), record(upper))),
+    "the two collections must order one identity the same way",
+  );
+  assert.equal(
+    Math.sign(compareSequentialMultiInstanceControllers(controller(lower), controller(upper))),
+    1,
+    "and that way is code point, where lowercase sorts after uppercase",
   );
 });

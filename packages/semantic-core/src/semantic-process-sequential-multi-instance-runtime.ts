@@ -9,12 +9,23 @@
  */
 import {
   ActivityBodyKind,
+  activityOccurrenceForTaskBody,
   compareActivityOccurrences,
+  sameActivityOccurrence,
 } from "./activity-occurrence.js";
+import { replaceActivityBodyTask } from "./activity-body-turnover.js";
 import { VariableValueKind } from "./contract.js";
-import type { VariableBinding, VariableValue } from "./contract.js";
+import type {
+  CompleteUserTaskInstanceStimulus,
+  VariableBinding,
+  VariableValue,
+} from "./contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import type { AwaitSequentialMultiInstanceUserTaskOperation } from "./semantic-process-contract.js";
+import type {
+  AwaitSequentialMultiInstanceUserTaskOperation,
+  SemanticProcessProgram,
+} from "./semantic-process-contract.js";
+
 import {
   ControlStateKind,
   addToken,
@@ -22,10 +33,14 @@ import {
   compareUserTaskWaits,
   nextActivation,
   removeToken,
+  sameOccurrence,
   setActivationCount,
 } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
-import { compareSequentialMultiInstanceControllers } from "./sequential-multi-instance-controller.js";
+import {
+  compareSequentialMultiInstanceControllers,
+  sequentialMultiInstanceControllerFor,
+} from "./sequential-multi-instance-controller.js";
 import { utf8ByteLength } from "./wire.js";
 
 /**
@@ -215,10 +230,144 @@ export function enterSequentialMultiInstanceUserTask(
   };
 }
 
-/** Whether this operation is the sequential Multi-Instance arm, for the dispatcher's exhaustive switch. */
-export function isSequentialMultiInstanceOperation(
-  operation: { kind: SemanticOperationKind },
-): operation is AwaitSequentialMultiInstanceUserTaskOperation {
-  return operation.kind ===
-    SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
+/**
+ * The exact scalar result this profile accepts, or `undefined`.
+ *
+ * One binding, named by the task's own DataOutput, carrying a String. Anything else leaves the
+ * transition undefined rather than partially applied: an accepted completion writes one output slot,
+ * so a submission this account cannot place in a slot must not commit.
+ */
+function acceptedResult(
+  operation: AwaitSequentialMultiInstanceUserTaskOperation,
+  submitted: ReadonlyArray<VariableBinding>,
+): string | undefined {
+  const [binding] = submitted;
+  if (submitted.length !== 1 || binding === undefined) {
+    return undefined;
+  }
+  return binding.name === operation.data.output.taskDataOutputId &&
+      binding.value.kind === VariableValueKind.String
+    ? binding.value.value
+    : undefined;
+}
+
+/**
+ * `SMI-ITERATE-01` and `SMI-COMPLETE-01`, which are one transition with two arms.
+ *
+ * They are one function because the deciding fact is the same read: whether this completion filled
+ * the last slot. Splitting them would mean asking that question twice, and the intermediate state
+ * between "output stored" and "next instance generated" is exactly the state `SMI-ITERATE-01` forbids
+ * from becoming stable.
+ *
+ * The non-final arm delegates the body swap to the Activity occurrence account's replacement
+ * operation, which is what keeps the outer identity, the owner, the operation ID, and the attached
+ * lifetime deadline exactly as they were while the inner task identity advances. That is the whole
+ * reason this capsule needed the turnover amendment: resetting the deadline per iteration, or
+ * re-arming the outer Activity, would both be visible here as a changed handler occurrence.
+ *
+ * The final arm publishes the ordered collection once, in index order rather than completion order,
+ * and removes the controller, the record, and the deadline in the same step.
+ */
+export function completeSequentialMultiInstanceIteration(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: CompleteUserTaskInstanceStimulus,
+): RuntimeState | null {
+  if (state.control.kind !== ControlStateKind.Running) {
+    return null;
+  }
+  const operation = sequentialMultiInstanceOperationFor(program, stimulus.taskId);
+  if (operation === undefined) {
+    return null;
+  }
+  const record = activityOccurrenceForTaskBody(
+    state.activityOccurrences,
+    stimulus.taskId,
+  );
+  if (record === undefined) {
+    return null;
+  }
+  const controller = sequentialMultiInstanceControllerFor(
+    state.sequentialMultiInstanceControllers ?? [],
+    record.id,
+  );
+  const result = acceptedResult(operation, stimulus.submittedValues);
+  if (controller === undefined || result === undefined) {
+    return null;
+  }
+  const outputSlots = [...controller.outputSlots, result];
+  const others = (state.sequentialMultiInstanceControllers ?? []).filter(
+    (candidate) => candidate !== controller,
+  );
+
+  if (outputSlots.length < controller.snapshot.length) {
+    const replaced = replaceActivityBodyTask(state, record);
+    if (replaced === null) {
+      return null;
+    }
+    return {
+      ...replaced,
+      sequentialMultiInstanceControllers: [
+        ...others,
+        { ...controller, outputSlots },
+      ].sort(compareSequentialMultiInstanceControllers),
+    };
+  }
+
+  const [timerId] = record.attachedTimers;
+  return {
+    ...state,
+    controlTokens: addToken(
+      state.controlTokens,
+      operation.normalOutput,
+      record.owner,
+    ),
+    userTaskWaits: state.userTaskWaits.filter(({ id }) =>
+      !sameOccurrence(id, stimulus.taskId)
+    ),
+    timerWaits: timerId === undefined
+      ? state.timerWaits
+      : state.timerWaits.filter(({ id }) => !sameOccurrence(id, timerId)),
+    activityOccurrences: state.activityOccurrences.filter((candidate) =>
+      !sameActivityOccurrence(candidate.id, record.id)
+    ),
+    sequentialMultiInstanceControllers: others,
+    variables: {
+      ...state.variables,
+      process: {
+        bindings: publishedCollection(
+          state.variables.process.bindings,
+          operation.data.output.dataObjectId,
+          outputSlots,
+        ),
+      },
+    },
+  };
+}
+
+/** The Multi-Instance operation that declares this task element, or `undefined`. */
+export function sequentialMultiInstanceOperationFor(
+  program: SemanticProcessProgram,
+  taskId: { elementId: string },
+): AwaitSequentialMultiInstanceUserTaskOperation | undefined {
+  const matches = program.operations.filter((operation) =>
+    operation.kind ===
+      SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
+    operation.task.elementId === taskId.elementId
+  );
+  const [operation] = matches;
+  return matches.length === 1 &&
+      operation !== undefined &&
+      operation.kind ===
+        SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+    ? operation
+    : undefined;
+}
+
+/** Whether this task occurrence belongs to a sequential Multi-Instance Activity. */
+export function isSequentialMultiInstanceTaskDefinition(
+  program: SemanticProcessProgram,
+  taskId: { elementId: string },
+): boolean {
+  return sequentialMultiInstanceOperationFor(program, taskId) !== undefined;
 }

@@ -59,6 +59,10 @@ import {
   isMonitoredTaskDefinition,
   spawnFromMonitoredUserTask,
 } from "./semantic-process-monitored-task-runtime.js";
+import {
+  completeSequentialMultiInstanceIteration,
+  isSequentialMultiInstanceTaskDefinition,
+} from "./semantic-process-sequential-multi-instance-runtime.js";
 import { SemanticProfileId } from "./semantic-process-profile.js";
 import {
   profileAllowsStimulusValueDomain,
@@ -184,6 +188,16 @@ export function admit(
       }
       if (isMonitoredTaskDefinition(program, stimulus.taskId)) {
         const next = completeMonitoredUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
+      if (isSequentialMultiInstanceTaskDefinition(program, stimulus.taskId)) {
+        const next = completeSequentialMultiInstanceIteration(
+          program,
+          state,
+          stimulus,
+        );
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };

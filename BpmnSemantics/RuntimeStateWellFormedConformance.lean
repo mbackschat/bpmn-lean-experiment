@@ -12,9 +12,9 @@ fact preserves it vacuously, so every conjunct needs a state that fails it and w
 They are the falsifying half of the account, not illustrations of it.
 
 Every state here is unreachable by construction, and each perturbs a single field of a state its own
-conjunct can apply to: the boundary-Timer armed state for the wait and order conjuncts, the empty
-state for the lifecycle conjunct, and the Event-Based Gateway armed race for the hidden-record
-conjunct.
+conjunct can apply to: the boundary-Timer armed state for the wait and order conjuncts, that state
+carrying one outer Multi-Instance controller for the controller conjuncts, the empty state for the
+lifecycle conjunct, and the Event-Based Gateway armed race for the hidden-record conjunct.
 
 Each negative is paired with a theorem naming sibling conjuncts that stay true, so a refusal is
 attributable to the named conjunct rather than to something the aggregate already caught.
@@ -102,6 +102,112 @@ def disagreeingActivityCounterState : RuntimeState :=
 theorem disagreeing_activity_counter_is_admitted :
     runtimeStateWellFormed program instanceId disagreeingActivityCounterState = true := by
   decide +kernel
+
+/-- One outer Multi-Instance controller bound to an Activity occurrence record.
+
+Only the identity is derived from the record, so each controller negative below perturbs exactly one of
+identity binding, cardinality, or remaining work while the other two stay satisfied. The snapshot is
+the fixture's own two-item batch, which is what leaves an item to generate after zero results. -/
+private def controllerOn (record : ActivityOccurrence)
+    (outputSlots : List String) : SequentialMultiInstanceController :=
+  { processInstanceId := record.processInstanceId
+    activityElementId := record.activityElementId
+    activation := record.activation
+    snapshot := ["Invoice_1", "Invoice_2"]
+    outputSlots }
+
+/-- The unperturbed controller state: one open controller on the armed Activity occurrence.
+
+The baseline the three controller negatives differ from in one respect each. No registered profile
+reaches it, because no transition creates a controller yet; what it establishes is that the three
+conjuncts admit the shape the capsule's entry transition will produce, so each refusal below is
+attributable to its own perturbation rather than to the controller field being populated at all. -/
+def openControllerState : RuntimeState :=
+  { armedState with
+    sequentialMultiInstanceControllers :=
+      armedState.activityOccurrences.map (controllerOn · []) }
+
+theorem open_controller_state_is_well_formed :
+    runtimeStateWellFormed program instanceId openControllerState = true := by decide +kernel
+
+/-- `C1`: a controller whose identity names no Activity occurrence record.
+
+The activation is advanced by one rather than the element renamed, because that is the shape a reissued
+or stale identity takes: every other field still resolves, so nothing but the binding conjunct can
+refuse it. -/
+def unownedControllerState : RuntimeState :=
+  { openControllerState with
+    sequentialMultiInstanceControllers :=
+      openControllerState.sequentialMultiInstanceControllers.map fun controller =>
+        { controller with activation := controller.activation + 1 } }
+
+theorem unowned_controller_is_refused :
+    runtimeStateWellFormed program instanceId unownedControllerState = false := by decide +kernel
+
+theorem unowned_controller_fails_binding_with_siblings_intact :
+    controllersOwnLiveActivity unownedControllerState = false ∧
+      controllerIdentitiesUnique unownedControllerState = true ∧
+      controllersNotExhausted unownedControllerState = true ∧
+      activityRecordsOwnLiveWork unownedControllerState = true ∧
+      activityIdentitiesUnique unownedControllerState = true ∧
+      canonicalCollectionOrder unownedControllerState = true := by decide +kernel
+
+/-- `C2`: one Activity occurrence carrying two controllers.
+
+Both duplicates resolve to the one record, so the binding conjunct stays true and the refusal is
+attributable to the cardinality. That is the direction that matters: the record-side conjuncts count
+records per controller and cannot see a second controller on one record. -/
+def duplicateControllerState : RuntimeState :=
+  { openControllerState with
+    sequentialMultiInstanceControllers :=
+      openControllerState.sequentialMultiInstanceControllers ++
+        openControllerState.sequentialMultiInstanceControllers }
+
+theorem duplicate_controller_is_refused :
+    runtimeStateWellFormed program instanceId duplicateControllerState = false := by decide +kernel
+
+theorem duplicate_controller_fails_uniqueness_with_binding_intact :
+    controllerIdentitiesUnique duplicateControllerState = false ∧
+      controllersOwnLiveActivity duplicateControllerState = true ∧
+      controllersNotExhausted duplicateControllerState = true ∧
+      canonicalCollectionOrder duplicateControllerState = true := by decide +kernel
+
+/-- `C3`: an open controller whose slots already cover its whole snapshot.
+
+Unreachable because final completion removes the controller in the step that fills the last slot, so a
+state that still holds it has either published its output twice or lost the removal. -/
+def exhaustedControllerState : RuntimeState :=
+  { armedState with
+    sequentialMultiInstanceControllers :=
+      armedState.activityOccurrences.map (controllerOn · ["Reviewed_1", "Reviewed_2"]) }
+
+theorem exhausted_controller_is_refused :
+    runtimeStateWellFormed program instanceId exhaustedControllerState = false := by decide +kernel
+
+theorem exhausted_controller_fails_remaining_work_with_binding_intact :
+    controllersNotExhausted exhaustedControllerState = false ∧
+      controllersOwnLiveActivity exhaustedControllerState = true ∧
+      controllerIdentitiesUnique exhaustedControllerState = true := by decide +kernel
+
+/-- `C4`: a controller over an empty collection, refused by the same conjunct as `C3`.
+
+Its own fact rather than a variant of `C3`, because the reason differs: a zero-item collection completes
+atomically at entry and creates no controller at all, so this is the entry transition's refusal seen as
+a state rather than an off-by-one in the exhaustion test. -/
+def emptySnapshotControllerState : RuntimeState :=
+  { openControllerState with
+    sequentialMultiInstanceControllers :=
+      openControllerState.sequentialMultiInstanceControllers.map fun controller =>
+        { controller with snapshot := [] } }
+
+theorem empty_snapshot_controller_is_refused :
+    runtimeStateWellFormed program instanceId emptySnapshotControllerState = false := by
+  decide +kernel
+
+theorem empty_snapshot_controller_fails_remaining_work_with_binding_intact :
+    controllersNotExhausted emptySnapshotControllerState = false ∧
+      controllersOwnLiveActivity emptySnapshotControllerState = true ∧
+      controllerIdentitiesUnique emptySnapshotControllerState = true := by decide +kernel
 
 /-- `W1`, violating `RSI-OWN-01`: a Timer wait whose owner occurrence does not exist.
 

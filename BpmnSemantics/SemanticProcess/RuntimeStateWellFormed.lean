@@ -35,8 +35,10 @@ Conjuncts that an existing predicate already decides are consumed rather than re
 `runtimePositionValid` supplies lifecycle agreement, unique live occurrence identity, scope binding,
 the hosting-root count, token binding, and, for a running state, the called-process associations,
 while `eventRaceAssociationsValid` and `effectIncidentAssociationsValid` supply their families'
-association facts. This module adds only what none of them reaches: wait ownership, wait-identity
-uniqueness, wait declaration binding, and canonical collection order.
+association facts. What this module adds is every remaining single-state conjunct, and
+`runtimeStateWellFormed` below is that enumeration. Restating the list here would be a second copy of
+it, and the copy is what drifts; membership is decided by a criterion instead, namely that the fact
+constrains one state and no predicate this one consumes already decides it.
 
 `calledProcessAssociationsValid` is deliberately not conjoined here. It decides a running state and
 answers `false` when there is no root instance identity, so stating it outside the running case
@@ -230,6 +232,42 @@ theorem activityOccurrenceForTaskWait_unique (state : RuntimeState) (wait : User
     simpa using this
   simp [activityOccurrenceForTaskWait?, singleton, sameRecord]
 
+/-! ## Sequential Multi-Instance controller binding
+
+Three conjuncts, none of which checks a number. The representation stores no counter, so the equations
+relating planned, generated, active, completed, terminated, and pending hold structurally and no state
+can violate them; `pendingItemCount_add_generatedInstanceCount` is that fact rather than a conjunct.
+What a state can get wrong is the binding to the record owning the body, the number of controllers per
+Activity occurrence, and whether an open controller still has an item left to generate.
+
+Body kind is deliberately absent. `activityRecordsOwnLiveWork` already requires exactly one live body,
+and restricting that body to a User Task is this profile's admission, so checking it here would assert
+a profile fact inside a profile-independent predicate.
+-/
+
+/-- Every controller names exactly one live Activity occurrence record of its own identity.
+
+Exactly one rather than at least one, because a controller that named two records would leave the
+active iteration's task ambiguous while every lookup keyed on it degraded to `none`. -/
+def controllersOwnLiveActivity (state : RuntimeState) : Bool :=
+  state.sequentialMultiInstanceControllers.all fun controller =>
+    (state.activityOccurrences.filter (controllerNamesActivityOccurrence controller)).length = 1
+
+/-- No two controllers share one Activity occurrence identity. -/
+def controllerIdentitiesUnique (state : RuntimeState) : Bool :=
+  state.sequentialMultiInstanceControllers.all
+    (occursOnce sameSequentialMultiInstanceController state.sequentialMultiInstanceControllers)
+
+/-- Every open controller still has a snapshot item left to generate.
+
+The conjunct that reads like an off-by-one and is not. A controller whose slots already cover its whole
+snapshot should have been removed by final completion in the step that filled the last slot, and an
+empty snapshot fails the same test correctly: a zero-item collection completes atomically at entry and
+creates no controller at all. -/
+def controllersNotExhausted (state : RuntimeState) : Bool :=
+  state.sequentialMultiInstanceControllers.all fun controller =>
+    completedInstanceCount controller < controller.snapshot.length
+
 /-- `RSI-ORDER-01`. The collections whose every add site canonically inserts hold that order.
 
 The membership rule is a criterion rather than a list: a collection belongs here when all of its add
@@ -237,14 +275,20 @@ sites insert canonically, and is excluded when they disagree. `scopeOccurrences`
 Call Activity inserts canonically while `enterScope` prepends, and `variables` because process
 bindings are merged canonically at User Task completion but take submitted order at Process start.
 Asserting order for either would be refuted by ordinary reachable states, since `RuntimeState`
-derives `DecidableEq` and therefore retains list order as state. -/
+derives `DecidableEq` and therefore retains list order as state.
+
+The controller collection is included although this capsule adds no Lean insertion site for it, because
+the independently written core does maintain and check that order: admitting an unordered controller
+list here would be a state one target refuses and the other accepts. -/
 def canonicalCollectionOrder (state : RuntimeState) : Bool :=
   orderedBy userTaskWaitBefore state.waits &&
     orderedBy activationBefore state.activations &&
     orderedBy selectionBefore state.selectedBranchSets &&
     orderedBy eventRaceBefore state.eventRaces &&
     orderedBy callRecordBefore state.calledProcessOccurrences &&
-    orderedBy activityOccurrenceBefore state.activityOccurrences
+    orderedBy activityOccurrenceBefore state.activityOccurrences &&
+    orderedBy sequentialMultiInstanceControllerBefore
+      state.sequentialMultiInstanceControllers
 
 /-! ## Layer 2: program agreement -/
 
@@ -376,6 +420,9 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     activityRecordsOwnLiveWork state &&
     attachedTimersUnambiguous state &&
     activityIdentitiesUnique state &&
+    controllersOwnLiveActivity state &&
+    controllerIdentitiesUnique state &&
+    controllersNotExhausted state &&
     (match state.control with
      | .notStarted => notStartedStateEmpty state
      | _ => true)

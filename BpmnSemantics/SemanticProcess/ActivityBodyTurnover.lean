@@ -59,7 +59,7 @@ def turnoverBodyId (state : RuntimeState) (wait : UserTaskWait) (body : Occurren
 /-- The state rewrite itself, once the outgoing wait and body have been resolved.
 
 Split from the resolver below so the preservation law has a target whose hypotheses are visible.
-Every field this touches is named here; the four conjuncts that read none of them are settled by
+Every field this touches is named here; the six conjuncts that read none of them are settled by
 definitional congruence rather than by an argument. -/
 def replacedState (state : RuntimeState) (record : ActivityOccurrence)
     (wait : UserTaskWait) (body : OccurrenceId) : RuntimeState :=
@@ -157,7 +157,7 @@ theorem replaceBodyIn_length (records : List ActivityOccurrence)
 
 /-! ## What replacement does not read
 
-Four of the twelve well-formedness conjuncts read none of the three collections replacement rewrites,
+Six of the fifteen well-formedness conjuncts read none of the three collections replacement rewrites,
 so they are preserved definitionally. Stating them is what lets the main proof discharge a third of
 its obligations without an argument, and it records which conjuncts a future body arm would newly
 have to reason about. -/
@@ -183,11 +183,22 @@ theorem hiddenRecordDeclarationsValid_replacedState (program : Program) (state :
     hiddenRecordDeclarationsValid program (replacedState state record wait body) =
       hiddenRecordDeclarationsValid program state := rfl
 
+theorem controllerIdentitiesUnique_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    controllerIdentitiesUnique (replacedState state record wait body) =
+      controllerIdentitiesUnique state := rfl
+
+theorem controllersNotExhausted_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    controllersNotExhausted (replacedState state record wait body) =
+      controllersNotExhausted state := rfl
+
 /-! ## The record-side conjuncts
 
-Both read records through a body-blind projection, so each is a specialisation of the keyed frame law
-rather than an argument of its own. `attachedTimersUnambiguous` counts records per Timer wait and
-`activityIdentitiesUnique` counts records per identity; replacement changes neither count.
+All three read records through a body-blind projection, so each is a specialisation of the keyed frame
+law rather than an argument of its own. `attachedTimersUnambiguous` counts records per Timer wait,
+`activityIdentitiesUnique` counts records per identity, and `controllersOwnLiveActivity` counts records
+per controller identity; replacement changes none of those counts.
 -/
 
 /-- `AOO-ATTACH-01` survives replacement: the attached list is framed, so no Timer changes claimant. -/
@@ -215,6 +226,18 @@ theorem activityIdentitiesUnique_replacedState (state : RuntimeState)
     (fun _ _ => rfl)
     _ _
     (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)
+
+/-- The controller binding survives replacement: a controller reads a record only through its
+identity, and turnover leaves every identity where it was. -/
+theorem controllersOwnLiveActivity_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    controllersOwnLiveActivity (replacedState state record wait body) =
+      controllersOwnLiveActivity state := by
+  simp only [controllersOwnLiveActivity, replacedState]
+  congr 1
+  funext controller
+  simp only [← List.countP_eq_length_filter]
+  rw [replaceBodyIn_countP_of_frame _ (fun _ _ => rfl)]
 
 /-! ## The wait-side conjuncts
 
@@ -253,7 +276,7 @@ theorem waitOwnersLive_replacedState (state : RuntimeState) (record : ActivityOc
 
 /-- `RSI-ORDER-01`: every canonically ordered collection stays ordered.
 
-Three of the six collections are untouched. The wait list is filtered and then inserted into, which is
+Four of the seven collections are untouched. The wait list is filtered and then inserted into, which is
 exactly the pair of lemmas the order theory supplies; the counter list is the same shape; and the
 record list is rewritten by a map whose comparator reads only framed fields. -/
 theorem canonicalCollectionOrder_replacedState (state : RuntimeState)
@@ -261,8 +284,8 @@ theorem canonicalCollectionOrder_replacedState (state : RuntimeState)
     (holds : canonicalCollectionOrder state = true) :
     canonicalCollectionOrder (replacedState state record wait body) = true := by
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at holds ⊢
-  obtain ⟨⟨⟨⟨⟨waits, activations⟩, selections⟩, races⟩, calls⟩, records⟩ := holds
-  refine ⟨⟨⟨⟨⟨?_, ?_⟩, selections⟩, races⟩, calls⟩, ?_⟩
+  obtain ⟨⟨⟨⟨⟨⟨waits, activations⟩, selections⟩, races⟩, calls⟩, records⟩, controllers⟩ := holds
+  refine ⟨⟨⟨⟨⟨⟨?_, ?_⟩, selections⟩, races⟩, calls⟩, ?_⟩, ?_⟩
   · exact orderedBy_insertUserTaskWait _ _
       (orderedBy_filter userTaskWaitBefore_compose _ _ waits)
   · exact orderedBy_insertTaskActivation _ _
@@ -280,6 +303,7 @@ theorem canonicalCollectionOrder_replacedState (state : RuntimeState)
       (fun _ _ => rfl) _ state.activityOccurrences
       (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)]
     exact records
+  · exact controllers
 
 /-- `RSI-BIND-*` for waits: the incoming wait has the outgoing one's definition and owner, so it is
 declared by exactly the operation that declared its predecessor. -/
@@ -525,7 +549,7 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
 
 /-! ## The preservation law
 
-The second of the two results this capsule declares. Twelve conjuncts, four of them definitional,
+The second of the two results this capsule declares. Fifteen conjuncts, six of them definitional,
 under two hypotheses neither of which `runtimeStateWellFormed` supplies.
 -/
 
@@ -560,9 +584,10 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     rw [unique]; simp
   have waitMem : wait ∈ state.waits := (List.mem_filter.mp waitInFilter).1
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩, declarations⟩,
-    hidden⟩, order⟩, bodies⟩, attached⟩, unique'⟩, lifecycle⟩ := wellFormed
-  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩, declarations⟩,
+    hidden⟩, order⟩, bodies⟩, attached⟩, unique'⟩, owned⟩, controllerIds⟩, notExhausted⟩,
+    lifecycle⟩ := wellFormed
+  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · rw [runtimePositionValid_replacedState]; exact position
   · rw [eventRaceAssociationsValid_replacedState]; exact races
   · rw [effectIncidentAssociationsValid_replacedState]; exact incidents
@@ -576,6 +601,9 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       fresh soleBody bodies
   · rw [attachedTimersUnambiguous_replacedState]; exact attached
   · rw [activityIdentitiesUnique_replacedState]; exact unique'
+  · rw [controllersOwnLiveActivity_replacedState]; exact owned
+  · rw [controllerIdentitiesUnique_replacedState]; exact controllerIds
+  · rw [controllersNotExhausted_replacedState]; exact notExhausted
   · -- The lifecycle clause. A live wait exists, so the pre-state cannot have been `notStarted`, and
     -- the control field itself is untouched.
     have sameControl : (replacedState state record wait body).control = state.control := rfl

@@ -21,6 +21,7 @@ import {
   VariableValueKind,
   initialState,
   sequentialMultiInstanceLimits,
+  type CompleteUserTaskInstanceStimulus,
   type VariableBinding,
 } from "@bpmn-lean/semantic-core";
 
@@ -198,8 +199,11 @@ export function startedState(stimulus: { initialVariables: ReadonlyArray<Variabl
 }
 
 /** The completion of the iteration at `counter`, carrying its scalar result. */
-export function completeIteration(counter: number, result: string) {
-  return Object.freeze({
+export function completeIteration(
+  counter: number,
+  result: string,
+): CompleteUserTaskInstanceStimulus {
+  return {
     kind: StimulusKind.CompleteUserTaskInstance,
     commandId: `complete-review-${counter}`,
     taskId: innerTaskId(counter),
@@ -209,7 +213,7 @@ export function completeIteration(counter: number, result: string) {
         value: { kind: VariableValueKind.String, value: result },
       },
     ],
-  });
+  };
 }
 
 export const fireOuterTimer = Object.freeze({
