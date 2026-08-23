@@ -35,11 +35,11 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: decide how the routed runtime-and-proof detail map will carry per-capsule status, then run the publication-anchor lane. The [body-turnover amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) is approved and checkpoint-reviewed; its receipt owns that history.
+Next action: close the [body-turnover amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) through cold closure review, then resume the sequential Multi-Instance account it unblocks. The amendment is approved, checkpoint-reviewed, and implemented in both languages; its receipt owns that history.
 
-**Owner decision required before that map can record another capsule.** It stands at 4,976 of its 5,000-word reviewed budget, so it records only that turnover is no longer withdrawn and routes to the amendment. [The control-plane guard](../scripts/document-control-plane.ts) reserves both remedies for an owner: an agent may not raise the budget, and splitting the map needs a new area ID. Six MUE capsules remain, each adding a status section.
+The publication-anchor lane has landed. The completeness relation pairs a firing deadline through the handler list the accumulator retains from the record, the continuation decoder recomputes rather than trusts it, `AOO-JOIN-03` replaces `AOO-JOIN-02`, and all seven falsified parent passages are corrected. The retained shape change is durable and unversioned, which pre-release permits but the Temporal preflight must name before a history baseline.
 
-The publication-anchor lane is what remains of the amendment. The completeness relation still pairs a boundary Timer to its host by activation equality, so `AOO-JOIN-02` and the join guard's exemption stay true. That lane chooses between the two shapes the amendment records, removes the exemption, mints `AOO-JOIN-03`, and corrects the three parent passages carrying it.
+The runtime-and-proof map's reviewed word budget was raised from 5,000 to 6,500 by owner decision, sized to the six remaining semantic capsules rather than to this one. That is its second raise, so the next capsule to exhaust it should split the map under a new area ID instead.
 
 Oracle: replacement keeps one occurrence identity while its body changes, the post-state is well-formed under the two stated hypotheses, and the body's activation diverges from its handler's. An absent or ambiguous body leaves the operation undefined rather than repaired.
 

@@ -217,11 +217,14 @@ One Activity occurrence keeps its identity, owner, operation, and attached handl
 - Lean carries two quantified results: frame preservation, generalised so any body-blind projection of the record collection is unchanged, and preservation of all twelve well-formedness conjuncts, four of them definitionally
 - [the collection laws](../BpmnSemantics/SemanticProcess/CollectionOrder.lean) that made the second possible: order preservation under filtering and canonical insertion for both affected families, the lexicographic step both comparators are built from, and the key-factoring laws that carry a frame equation into a conjunct. This is the account's first transition-level preservation law; every earlier well-formedness fact was decided of a concrete state, where empty collections needed no order argument
 - [kernel-decided fixtures](../BpmnSemantics/ActivityBodyTurnoverConformance.lean) pinning the pre-state at `([1], [1], [1])` and the post-state at `([2], [1], [1])` for the body, handler, and Activity activation families. They exist because both quantified laws remain provable of an operation that returns its argument unchanged, so neither witnesses the transition's content
+- the publication anchor. The completeness relation pairs a firing deadline to its host through the handler list the Workflow accumulator retains from the record when the body opens, rather than by activation equality. The continuation decoder recomputes that list from state instead of trusting the payload, so a forged pairing is refused, and the join guard exempts nothing: `AOO-JOIN-03` replaces `AOO-JOIN-02`
+- the focused witness that path had never had. A mutation to the pairing predicate passed the entire port-free suite, because every other oracle for it is in the differential pipeline or the Temporal gate
 
 **Absent.**
 
+- the durable retained shape change is unversioned. It is permitted pre-release, but the Temporal preflight must name it before a history baseline is approved
 - the two hypotheses the preservation law carries are not state invariants and are not discharged. Nothing bounds a live wait's activation by its counter, so wait-key freshness is stated; nothing refuses two records naming one body, so the sole-claimant premise is stated. Both are dischargeable by construction at an arming call site, and the second is the same premise the ownership account's body-side determinism theorem already carries
-- the publication-anchor lane. The completeness relation still pairs a boundary Timer to its host by activation equality, so `AOO-JOIN-02` and the join guard's exemption remain true of the tree. [The amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) records the two reachable shapes and their costs and selects neither
+
 - the general preservation lane for every other transition family, which stays open
 
 **Absent in evidence.**
