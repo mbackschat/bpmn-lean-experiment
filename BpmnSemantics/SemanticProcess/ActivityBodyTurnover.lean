@@ -200,4 +200,39 @@ theorem activityIdentitiesUnique_replacedState (state : RuntimeState)
     _ _
     (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)
 
+/-! ## The wait-side conjuncts
+
+Replacement withdraws one wait and arms another that differs from it in `activation` alone. Every
+conjunct that reads waits reads them through fields that difference leaves alone, so each reduces to
+the same two steps: the inserted wait satisfies the predicate because the withdrawn one did, and
+filtering cannot break a check that already held of every element.
+
+`wait ∈ state.waits` is the hypothesis that makes the first step available. `replacedState` takes the
+outgoing wait as a parameter, so nothing in its type says the wait was live; the resolver supplies
+that, and the law states it rather than assuming it.
+-/
+
+/-- `RSI-OWN-*` for waits: the incoming wait inherits its owner, so no owner check changes. -/
+theorem waitOwnersLive_replacedState (state : RuntimeState) (record : ActivityOccurrence)
+    (wait : UserTaskWait) (body : OccurrenceId) (waitMem : wait ∈ state.waits)
+    (holds : waitOwnersLive state = true) :
+    waitOwnersLive (replacedState state record wait body) = true := by
+  simp only [waitOwnersLive, Bool.and_eq_true] at holds ⊢
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨waits, messages⟩, timers⟩, effects⟩, incidents⟩, selections⟩, races⟩, calls⟩,
+    records⟩ := holds
+  refine ⟨⟨⟨⟨⟨⟨⟨⟨?_, messages⟩, timers⟩, effects⟩, incidents⟩, selections⟩, races⟩, calls⟩, ?_⟩
+  · show (insertUserTaskWait _ _).all _ = true
+    rw [all_insertUserTaskWait]
+    simp only [Bool.and_eq_true]
+    exact ⟨by
+      simp only [List.all_eq_true] at waits
+      exact waits wait waitMem, all_filter _ _ _ waits⟩
+  · show (replaceBodyIn state.activityOccurrences record _).all
+      (fun candidate => exactLiveOccurrence state candidate.owner) = true
+    rw [all_of_map_eq (fun candidate => candidate.owner)
+      (fun candidate => exactLiveOccurrence state candidate.owner)
+      (fun owner => exactLiveOccurrence state owner) (fun _ => rfl)
+      _ state.activityOccurrences (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)]
+    exact records
+
 end BpmnSemantics.SemanticProcess

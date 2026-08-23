@@ -310,4 +310,16 @@ theorem all_occursOnce_of_map_eq {α β : Type} (key : α → β)
     simp only [Function.comp_apply, occursOnce, count values a]
   rw [expand left, expand right, h]
 
+/-- An `all` check whose predicate factors through a key is decided by the key sequence alone. -/
+theorem all_of_map_eq {α β : Type} (key : α → β) (p : α → Bool) (q : β → Bool)
+    (hp : ∀ a, p a = q (key a)) (left right : List α)
+    (h : left.map key = right.map key) : left.all p = right.all p := by
+  have expand : ∀ values : List α, values.all p = (values.map key).all q := by
+    intro values
+    rw [List.all_map]
+    congr 1
+    funext a
+    exact hp a
+  rw [expand left, expand right, h]
+
 end BpmnSemantics.SemanticProcess
