@@ -121,7 +121,7 @@ Existing executable constraints that already bind this work include [the runtime
 | [Lean runtime state](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 180 |
 | [Lean Activity occurrence](../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean) | 359 |
 | [Lean runtime-state well-formedness](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 214 |
-| [publication external completeness](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 167 |
+| [publication external completeness](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 135 |
 
 Owners this implementation **created**, listed because the recomputing guard measures rows that exist and cannot report rows nobody wrote:
 
@@ -131,6 +131,7 @@ Owners this implementation **created**, listed because the recomputing guard mea
 | [Lean collection laws](../BpmnSemantics/SemanticProcess/CollectionOrder.lean) | 183 |
 | [Lean turnover fixtures](../BpmnSemantics/ActivityBodyTurnoverConformance.lean) | 549 |
 | [core body turnover](../packages/semantic-core/src/activity-body-turnover.ts) | 519 |
+| [retained pairing](../packages/semantic-core/src/flow-node-occurrence-retained-pairing.ts) | 557 |
 
 `RuntimeState.lean` was the binding constraint at 60 lines and its extraction has since landed: the five wait-arming transitions moved to `WaitActivation.lean`, which is a different responsibility from the representation they transition over, and the dependency runs one way. The tightest *pre-existing* owner is [runtime-state well-formedness](../packages/semantic-core/src/runtime-state-well-formedness.ts), which is where the replacement's conjunct work would land if any were needed; the review concluded none is. The tightest owner overall is [Lean body turnover](../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean) at 64, created by this change, and the anchor lane must not grow it further without extracting first.
 

@@ -25,11 +25,28 @@ import type { ScopeOccurrenceId } from "./semantic-process-state.js";
 import type { UnnumberedCommittedTransitionRecord } from "./semantic-transition-trace.js";
 import { compareCanonicalStrings } from "./wire.js";
 
+/**
+ * One open flow-node occurrence as this relation sees it.
+ *
+ * `attachedTimers` is the retained half of the Activity occurrence record: the handler occurrences the
+ * record listed at the moment this body opened. It exists because the alternative is an ordinal join.
+ * Pairing a boundary Timer to its host by activation equality holds only while an Activity is armed
+ * once per body, and body turnover is exactly the state where that fails: the host advances and the
+ * deadline does not, so the ordinal join returns no pair and this relation rejects a correct
+ * publication.
+ *
+ * Retaining it costs this relation part of its independence, and that cost is accepted rather than
+ * hidden: the pairing originates in the producer's record, so a producer that mispairs is no longer
+ * contradicted here. The pairing cannot instead ride the published delta, because that would change a
+ * wire schema, and it cannot be recomputed from semantic state, because no pre-state reaches this
+ * boundary. Empty for every occurrence that no record lists.
+ */
 export type OpenOccurrence = Readonly<{
   anchor: SemanticFlowNodeOccurrenceAnchor;
   processId: string;
   elementId: string;
   owner: ScopeOccurrenceId;
+  attachedTimers: readonly OccurrenceId[];
 }>;
 
 export function expectedExternalLifecycle(
@@ -118,6 +135,22 @@ export function expectedExternalLifecycle(
   }
 }
 
+/**
+ * Whether this open occurrence's record listed the firing deadline as its own handler.
+ *
+ * The predicate that replaces an activation-ordinal comparison across two counter families. The
+ * ordinal held only while an Activity was armed once per body; under body turnover the host advances
+ * and its deadline does not, so the ordinal matched nothing and this relation refused a correct
+ * publication. Reading the retained list pairs them by ownership instead, which is what the Activity
+ * occurrence record was introduced to express.
+ */
+function listsTimer(entry: OpenOccurrence, timerId: OccurrenceId): boolean {
+  return entry.attachedTimers.some((attached) =>
+    attached.processInstanceId === timerId.processInstanceId &&
+    attached.elementId === timerId.elementId &&
+    attached.activation === timerId.activation);
+}
+
 function boundaryTimerLifecycle(
   program: SemanticProcessProgram,
   open: readonly OpenOccurrence[],
@@ -139,7 +172,7 @@ function boundaryTimerLifecycle(
         entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
         entry.anchor.id.processInstanceId === timerId.processInstanceId &&
         entry.anchor.id.elementId === operation.task.elementId &&
-        entry.anchor.id.activation === timerId.activation &&
+        listsTimer(entry, timerId) &&
         operationOwnedBy(program, operation, entry.owner)));
       return lifecycleDelta(
         [],
@@ -156,7 +189,7 @@ function boundaryTimerLifecycle(
         entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope &&
         entry.anchor.id.processInstanceId === timerId.processInstanceId &&
         entry.anchor.id.definitionScopeId === operation.childScopeId &&
-        entry.anchor.id.activation === timerId.activation &&
+        listsTimer(entry, timerId) &&
         operationOwnedBy(program, operation, entry.owner)));
       if (child.anchor.kind !== SemanticFlowNodeOccurrenceAnchorKind.Scope) {
         failCompleteness();

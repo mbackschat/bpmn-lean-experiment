@@ -2,6 +2,7 @@ import {
   FlowNodeOccurrenceTerminalKind as SemanticTerminalKind,
   ScenarioStepKind,
   SemanticFlowNodeOccurrenceAnchorKind,
+  attachedTimersForBodyAnchor,
   compareCanonicalStrings,
   isWellFormedWireString,
   requireCompleteFlowNodeOccurrenceLifecycles,
@@ -9,7 +10,9 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
+  OccurrenceId,
   RetainedFlowNodeOccurrence,
+  RuntimeState,
   ScenarioStep,
   ScopeOccurrenceId,
   SemanticFlowNodeOccurrenceAnchor,
@@ -38,6 +41,15 @@ import type {
 type RetainedOpenFlowNodeOccurrence = DeepReadonly<{
   anchor: SemanticFlowNodeOccurrenceAnchor;
   occurrence: OpenFlowNodeOccurrence;
+  /**
+   * The handler occurrences the Activity occurrence record listed when this body opened.
+   *
+   * Retained because the completeness relation must pair a boundary Timer to its host without an
+   * activation ordinal, and this is the only point where the record and the newly opened entry
+   * coexist: the relation sees no semantic state, and the published delta cannot carry the pairing
+   * without changing a wire schema. Empty for every occurrence that no record lists.
+   */
+  attachedTimers: OccurrenceId[];
 }>;
 
 export type FlowNodeOccurrencePublicationState = DeepReadonly<{
@@ -130,6 +142,7 @@ export function accumulateFlowNodeOccurrencePublication(
       lifecycle,
       committedAtEpochMs,
       retained,
+      step.state,
     ),
   );
   const first = transitions[0];
@@ -190,6 +203,7 @@ function numberLifecycleDelta(
   lifecycle: UnnumberedFlowNodeOccurrenceDelta,
   committedAtEpochMs: number,
   retained: RetainedOpenFlowNodeOccurrence[],
+  stateAfter: RuntimeState,
 ) {
   if (
     !canonical(lifecycle.started, (left, right) =>
@@ -215,6 +229,7 @@ function numberLifecycleDelta(
     retained.push({
       anchor: cloneAnchor(semanticStart.anchor),
       occurrence: { ...publicStart, startedAtEpochMs: committedAtEpochMs },
+      attachedTimers: attachedTimersForBodyAnchor(stateAfter, semanticStart.anchor),
     });
   }
   const ended: FlowNodeOccurrenceEnd[] = [];
@@ -435,6 +450,15 @@ function cloneRetained(
   return {
     anchor: cloneAnchor(value.anchor),
     occurrence: cloneOpen(value.occurrence),
+    attachedTimers: value.attachedTimers.map(cloneOccurrenceId),
+  };
+}
+
+function cloneOccurrenceId(value: OccurrenceId): OccurrenceId {
+  return {
+    processInstanceId: value.processInstanceId,
+    elementId: value.elementId,
+    activation: value.activation,
   };
 }
 
@@ -446,8 +470,10 @@ function toCoreRetained(
     processId: value.occurrence.processId,
     elementId: value.occurrence.elementId,
     owner: value.occurrence.owner,
+    attachedTimers: value.attachedTimers,
   };
 }
+
 
 function cloneAnchor(
   value: SemanticFlowNodeOccurrenceAnchor,

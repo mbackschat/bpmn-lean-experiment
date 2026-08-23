@@ -13,6 +13,7 @@ import {
   SemanticOperationKind,
   SemanticTransitionKind,
   applyStimulusWithTrace,
+  attachedTimersForBodyAnchor,
   foldFlowNodeOccurrenceLifecycleDelta,
   initialState,
   requireCompleteFlowNodeOccurrenceLifecycles,
@@ -34,6 +35,11 @@ import {
   parallelProgram,
   startStimulus,
 } from "./parallel-fork-join-fixture.ts";
+import {
+  boundedProgram,
+  fireDeadline,
+  start as startBounded,
+} from "./bounded-task-fixture.ts";
 
 test("rejects a state-difference substitute that omits Join, End, and scope-completion lifecycles from a valid E1 batch", () => {
   const started = applyStimulusWithTrace(
@@ -148,6 +154,69 @@ test("rejects a validly shaped event-race substitution missing the loser termina
   );
 });
 
+/**
+ * The boundary-Timer host resolution, which is the one path the retained pairing exists for.
+ *
+ * This relation resolves a firing deadline to the occurrence it interrupts. It used to do that by
+ * requiring the host's activation ordinal to equal the Timer's, a comparison across two counter
+ * families that no state asserts and that body turnover breaks. It now reads the handler list the
+ * accumulator retained from the Activity occurrence record.
+ *
+ * The case exists because nothing else covers it without a host port: every other oracle for this
+ * path is in the differential pipeline or the Temporal gate, so a mutation to the pairing predicate
+ * passed the whole port-free suite. Seeding `listsTimer` to `false` must fail here.
+ */
+test("resolves a firing boundary deadline to its host through the retained handler list", () => {
+  const started = applyStimulusWithTrace(boundedProgram, initialState, startBounded);
+  const retained = requireAndFold(
+    boundedProgram,
+    [],
+    startBounded.commandId,
+    started,
+  );
+  // Anti-vacuity: the arming command must have retained a handler, or the assertion below would hold
+  // for a relation that reads nothing.
+  assert.equal(
+    retained.filter(({ attachedTimers }) => attachedTimers.length === 1).length,
+    1,
+    "arming must retain exactly one host carrying its deadline",
+  );
+
+  const fired = applyStimulusWithTrace(boundedProgram, started.result.state, fireDeadline);
+  assert.doesNotThrow(() => requireAndFold(
+    boundedProgram,
+    retained,
+    fireDeadline.commandId,
+    fired,
+  ));
+});
+
+/**
+ * The same command, against a retained set whose handler list was dropped.
+ *
+ * This is what the ordinal join degraded to under turnover: the host is live and correct, the
+ * publication is correct, and the relation finds no pair and refuses. Asserting the refusal is what
+ * makes the positive case above attributable to the retained list rather than to anything else.
+ */
+test("a retained host that lists no handler makes a correct deadline publication unpairable", () => {
+  const started = applyStimulusWithTrace(boundedProgram, initialState, startBounded);
+  const retained = requireAndFold(
+    boundedProgram,
+    [],
+    startBounded.commandId,
+    started,
+  ).map((entry) => ({ ...entry, attachedTimers: [] }));
+
+  const fired = applyStimulusWithTrace(boundedProgram, started.result.state, fireDeadline);
+  assert.throws(() => requireCompleteFlowNodeOccurrenceLifecycles(
+    boundedProgram,
+    retained,
+    fireDeadline.commandId,
+    fired.committedTransitions,
+    fired.flowNodeOccurrenceLifecycles,
+  ));
+});
+
 function requireAndFold(
   program: SemanticProcessProgram,
   retained: readonly RetainedFlowNodeOccurrence[],
@@ -161,11 +230,17 @@ function requireAndFold(
     traced.committedTransitions,
     traced.flowNodeOccurrenceLifecycles,
   );
-  let open = [...retained];
+  let open: RetainedFlowNodeOccurrence[] = [...retained];
   for (const lifecycle of traced.flowNodeOccurrenceLifecycles) {
     const next = foldFlowNodeOccurrenceLifecycleDelta(open, lifecycle);
     assert.ok(next !== null);
-    open = next;
+    // Stands in for the Workflow accumulator, which retains each opening body's attached handlers
+    // from the committed post-state. Folding without that step would leave every boundary Timer
+    // unpairable, so this is the accumulator's obligation rather than test scaffolding.
+    open = next.map((entry) => ({
+      ...entry,
+      attachedTimers: attachedTimersForBodyAnchor(traced.result.state, entry.anchor),
+    }));
   }
   return open;
 }

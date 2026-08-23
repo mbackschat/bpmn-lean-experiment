@@ -38,23 +38,6 @@ const pairingOwners = [
   "packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts",
 ] as const;
 
-/**
- * The one exempt owner, and why it is exempt rather than migrated.
- *
- * The publication completeness relation is an *independent* reconstruction: its own contract says it
- * pairs through the private retained anchor relation and never through state differences. Giving it the
- * producer's ownership records would make it share the mechanism it exists to check, and that
- * independence is what lets it count as a separate evidence lane. Its surviving ordinal reconstruction
- * is therefore a cross-check on the record-based producer rather than a redundant copy of it.
- *
- * The exemption has a reopen trigger and it is close: under any admitted repetition the record and the
- * ordinal reconstruction would legitimately disagree, and this owner would then reject a correct
- * publication. Admitting repeated boundary firing, repeated outer activation, or Multi-Instance must
- * resolve that, either by retaining an Activity occurrence anchor or by accepting the coupling.
- */
-const exemptOwner =
-  "packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts";
-
 /** The Lean family modules that recover a body-to-handler pair. */
 const leanPairingOwners = [
   "BpmnSemantics/SemanticProcess/BoundedTask.lean",
@@ -64,7 +47,20 @@ const leanPairingOwners = [
 
 const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|RecordJoins/u;
 
-const crossFamilyJoin = /\.activation\s*===\s*[A-Za-z_$][\w$.]*\.activation\b/u;
+/**
+ * A join across two counter families, written in TypeScript.
+ *
+ * The right-hand exclusion is the same one the Lean pattern carries and for the same reason: comparing
+ * a retained identity's activation against a *submitted* occurrence identity's is an identity equality,
+ * not a join. The publication relation's retained handler lookup is exactly that shape, and before this
+ * exclusion existed on both sides the enumeration had to exempt that owner instead.
+ *
+ * It inherits the recorded hole too: the exclusion is line-scoped, so a genuine cross-family join on a
+ * line that also mentions an excluded identifier evades the pattern. The enumeration below is what
+ * carries the rule, and it now exempts nothing.
+ */
+const crossFamilyJoin =
+  /\.activation\s*===\s*(?!.*\b(?:timerId|taskId|submitted)\b)[A-Za-z_$][\w$.]*\.activation\b/u;
 /**
  * The Lean form of the same defect.
  *
@@ -80,7 +76,15 @@ const crossFamilyJoin = /\.activation\s*===\s*[A-Za-z_$][\w$.]*\.activation\b/u;
  */
 const leanCrossFamilyJoin =
   /\.activation\s*=\s*(?!.*\b(?:timerId|taskId|submitted)\b)[A-Za-z_][\w.]*\.activation\b/u;
-const recordLookup = /activityOccurrenceFor|activityBody(Task|Scope)/u;
+/**
+ * Evidence that an owner actually pairs through the record rather than pairing nothing.
+ *
+ * Two shapes count. Most owners hold runtime state and call a record lookup. The publication
+ * completeness relation holds none, so it reads `attachedTimers`, the record's own field, from the
+ * accumulator's retained copy. Both are the record; the second is one step removed, and admitting only
+ * the first is what forced this owner to be exempted from the rule instead of covered by it.
+ */
+const recordLookup = /activityOccurrenceFor|activityBody(Task|Scope)|attachedTimers/u;
 
 function lines(file: string): ReadonlyArray<string> {
   return readFileSync(path.join(projectRoot, file), "utf8").split("\n");
@@ -92,11 +96,10 @@ function joinSites(file: string): ReadonlyArray<string> {
   );
 }
 
-test("every migrated pairing owner resolves its pair through the ownership record", () => {
-  const migrated = pairingOwners.filter((owner) => owner !== exemptOwner);
-  assert.equal(migrated.length, 4, "four transition and open-set owners are migrated");
-  assert.deepEqual(migrated.flatMap(joinSites), []);
-  for (const owner of migrated) {
+test("every enumerated pairing owner resolves its pair through the ownership record", () => {
+  assert.equal(pairingOwners.length, 5, "four transition owners plus the publication binding");
+  assert.deepEqual(pairingOwners.flatMap(joinSites), []);
+  for (const owner of pairingOwners) {
     // Anti-vacuity: a file with no join and no lookup would satisfy the assertion above while pairing
     // nothing, which is what a botched migration or a moved function looks like.
     assert.ok(
@@ -136,22 +139,17 @@ test("the Lean pattern separates a cross-family join from a same-family identity
   );
 });
 
-test("the exemption names a file that still holds the pattern it exempts", () => {
-  assert.notDeepEqual(
-    joinSites(exemptOwner),
-    [],
-    "a vacuous exemption should be deleted rather than left standing as a claim",
-  );
-});
-
 test("the pattern separates a cross-family join from a cardinality check", () => {
   const sample = [
     "  candidate.id.activation === wait.id.activation &&",
     "  entry.anchor.id.activation === 1 &&",
     "  left.activation - right.activation;",
+    // The retained handler lookup: an identity equality against a submitted Timer identity.
+    "    attached.activation === timerId.activation);",
   ];
   assert.deepEqual(
     sample.flatMap((line, index) => crossFamilyJoin.test(line) ? [index] : []),
     [0],
+    "only the cross-family join matches, and the submitted-identity comparison does not",
   );
 });

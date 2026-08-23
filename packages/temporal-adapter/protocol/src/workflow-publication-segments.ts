@@ -1,12 +1,14 @@
 import {
-  SemanticFlowNodeOccurrenceAnchorKind,
+  attachedTimersForBodyAnchor,
   isWellFormedWireString,
   observeStableState,
   projectCurrentControlPositions,
   projectOpenFlowNodeOccurrences,
+  SemanticFlowNodeOccurrenceAnchorKind,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
+  OccurrenceId,
   RuntimeState,
   SemanticFlowNodeOccurrenceAnchor,
   SemanticProcessIdentity,
@@ -81,6 +83,7 @@ export type BpmnWorkflowContinuationPublicationV1 = DeepReadonly<{
     retainedOpen: Array<{
       anchor: SemanticFlowNodeOccurrenceAnchor;
       occurrence: OpenFlowNodeOccurrence;
+      attachedTimers: OccurrenceId[];
     }>;
     lastCommittedAtEpochMs: number | null;
   };
@@ -294,6 +297,7 @@ export function requireBpmnWorkflowContinuationPublicationV1(
     occurrences.currentOpen,
     projectedOpen,
     Number(occurrences.lastCommittedAtEpochMs),
+    state,
   )) {
     throw new TypeError("Publication open occurrences do not match RuntimeState");
   }
@@ -330,11 +334,20 @@ export function requireWorkflowPublicationSegmentDescriptorV1(
   return value as WorkflowPublicationSegmentDescriptorV1;
 }
 
+/**
+ * Whether the retained accumulator agrees with the runtime state it claims to describe.
+ *
+ * `attachedTimers` is recomputed from the state's Activity occurrence records rather than trusted,
+ * because a continuation payload is untrusted input and this field is what the completeness relation
+ * pairs a boundary Timer through. Admitting a forged pairing would let a restored Workflow attribute a
+ * deadline to the wrong host, which is the failure the ordinal join it replaces could not produce.
+ */
 function retainedOpenMatchesRuntime(
   retained: ReadonlyArray<unknown>,
   current: ReadonlyArray<unknown>,
   projected: NonNullable<ReturnType<typeof projectOpenFlowNodeOccurrences>>,
   lastCommittedAtEpochMs: number,
+  state: RuntimeState,
 ): boolean {
   if (retained.length !== current.length || retained.length !== projected.length ||
     canonicalWorkflowChainJson(current) !== canonicalWorkflowChainJson(
@@ -342,10 +355,14 @@ function retainedOpenMatchesRuntime(
     )) return false;
   const anchors = new Set<string>();
   return retained.every((entry) => {
-    if (!isRecord(entry) || !hasOnlyKeys(entry, ["anchor", "occurrence"]) ||
+    if (!isRecord(entry) ||
+      !hasOnlyKeys(entry, ["anchor", "occurrence", "attachedTimers"]) ||
       !isAnchor(entry.anchor) || !isRecord(entry.occurrence) ||
+      !Array.isArray(entry.attachedTimers) ||
       !isSafe(entry.occurrence.startedAtEpochMs, 0) ||
       Number(entry.occurrence.startedAtEpochMs) > lastCommittedAtEpochMs) return false;
+    if (canonicalWorkflowChainJson(entry.attachedTimers) !==
+      canonicalWorkflowChainJson(attachedTimersForBodyAnchor(state, entry.anchor))) return false;
     const key = canonicalWorkflowChainJson(entry.anchor);
     if (anchors.has(key)) return false;
     anchors.add(key);

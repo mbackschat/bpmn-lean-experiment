@@ -20,6 +20,7 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
+import type { OccurrenceId } from "./contract.js";
 import { stimulusCommandId } from "./stimulus.js";
 import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import type {
@@ -50,6 +51,8 @@ export type RetainedFlowNodeOccurrence = DeepReadonly<{
   processId: string;
   elementId: string;
   owner: ScopeOccurrenceId;
+  /** The handler occurrences the Activity occurrence record listed when this body opened. */
+  attachedTimers: OccurrenceId[];
 }>;
 
 /** Requires every supplied delta to be the complete lifecycle of its exact E1 transition. */
@@ -60,11 +63,12 @@ export function requireCompleteFlowNodeOccurrenceLifecycles(
   transitions: readonly UnnumberedCommittedTransitionRecord[],
   supplied: readonly UnnumberedFlowNodeOccurrenceDelta[],
 ): void {
-  const open = retained.map(({ anchor, processId, elementId, owner }) => ({
+  const open = retained.map(({ anchor, processId, elementId, owner, attachedTimers }) => ({
     anchor,
     processId,
     elementId,
     owner,
+    attachedTimers,
   }));
   const first = transitions[0];
   if (!retainedOpenSetIsExact(program, open)) {
@@ -350,7 +354,11 @@ function applyCompleteDelta(
     if (open.some(({ anchor }) => sameAnchor(anchor, start.anchor))) {
       failCompleteness();
     }
-    open.push(start);
+    // No attached handlers on an occurrence this command opened. A boundary Timer firing is an
+    // external stimulus and therefore the first transition of its own command, so an occurrence
+    // opened here cannot be the host of a deadline that fires here. The retained set carries the
+    // anchor for every host that can be.
+    open.push({ ...start, attachedTimers: [] });
   }
   for (const terminal of lifecycle.ended) {
     const matches = open.flatMap((entry, index) =>
