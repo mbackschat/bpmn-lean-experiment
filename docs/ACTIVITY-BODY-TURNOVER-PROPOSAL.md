@@ -92,11 +92,11 @@ Existing executable constraints that already bind this work include [the runtime
 | [runtime state contract](../packages/semantic-core/src/semantic-process-state.ts) | 213 |
 | [Activity occurrence owner](../packages/semantic-core/src/activity-occurrence.ts) | 406 |
 | [runtime-state well-formedness](../packages/semantic-core/src/runtime-state-well-formedness.ts) | 188 |
-| [Lean runtime state](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 60 |
+| [Lean runtime state](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 189 |
 | [Lean Activity occurrence](../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean) | 359 |
 | [Lean runtime-state well-formedness](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 213 |
 
-`RuntimeState.lean` at 60 lines is the binding constraint and it is the owner most likely to need the replacement helper. Land its extraction as a behaviour-preserving commit before adding the transition, rather than writing the amendment under a size squeeze.
+`RuntimeState.lean` was the binding constraint at 60 lines and its extraction has since landed: the five wait-arming transitions moved to `WaitActivation.lean`, which is a different responsibility from the representation they transition over, and the dependency runs one way. The tightest remaining owner is [runtime-state well-formedness](../packages/semantic-core/src/runtime-state-well-formedness.ts), which is where the replacement's conjunct work would land if any were needed; the review concluded none is.
 
 ## Epistemic closure and reopen conditions
 

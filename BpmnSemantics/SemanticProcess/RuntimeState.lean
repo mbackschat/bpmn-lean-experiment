@@ -316,7 +316,7 @@ def addTokens (tokens : List ControlToken) (places : List ControlPlaceId)
     (owner : ScopeOccurrenceId) : List ControlToken :=
   places.foldr (fun place current => addToken current place owner) tokens
 
-private def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
+def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
     Nat :=
   (state.activations.find? fun activation =>
     decide (activation.taskId = taskId)).map (·.count) |>.getD 0
@@ -339,7 +339,7 @@ private def insertTaskActivation (activation : TaskActivation) :
         activation :: current :: rest
       else current :: insertTaskActivation activation rest
 
-private def setActivationCount (activations : List TaskActivation)
+def setActivationCount (activations : List TaskActivation)
     (taskId : TaskDefinitionId) (count : Nat) : List TaskActivation :=
   insertTaskActivation { taskId, count }
     (activations.filter fun activation => decide (activation.taskId ≠ taskId))
@@ -356,7 +356,7 @@ def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
     left.task.id.value < right.task.id.value
   else left.activation < right.activation
 
-private def insertUserTaskWait (wait : UserTaskWait) :
+def insertUserTaskWait (wait : UserTaskWait) :
     List UserTaskWait → List UserTaskWait
   | [] => [wait]
   | current :: rest =>
@@ -398,7 +398,7 @@ theorem insertActivityOccurrence_length (record : ActivityOccurrence)
       · simp [insertActivityOccurrence, before]
       · simp [insertActivityOccurrence, before, ih]
 
-private def elementActivationCount (activations : List (NodeId × Nat))
+def elementActivationCount (activations : List (NodeId × Nat))
     (elementId : NodeId) : Nat :=
   (activations.find? fun activation => decide (activation.1 = elementId))
     |>.map (·.2) |>.getD 0
@@ -407,16 +407,6 @@ private def elementActivationCount (activations : List (NodeId × Nat))
 def timerActivationCount (state : RuntimeState) (elementId : NodeId) :
     Nat :=
   elementActivationCount (state.timerActivations.map fun value =>
-    (value.elementId, value.count)) elementId
-
-private def messageActivationCount (state : RuntimeState)
-    (elementId : NodeId) : Nat :=
-  elementActivationCount (state.messageActivations.map fun value =>
-    (value.elementId, value.count)) elementId
-
-private def effectActivationCount (state : RuntimeState) (elementId : NodeId) :
-    Nat :=
-  elementActivationCount (state.effectActivations.map fun value =>
     (value.elementId, value.count)) elementId
 
 private def scopeActivationCount (state : RuntimeState)
@@ -432,132 +422,6 @@ def setCallActivationCount (state : RuntimeState) (elementId : NodeId)
     (count : Nat) : List CallActivation :=
   { elementId, count } :: state.callActivations.filter fun value =>
     decide (value.elementId ≠ elementId)
-
-def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
-    (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
-    (task : UserTaskDefinition) : RuntimeState :=
-  let activation := activationCount state task.id + 1
-  { state with
-    tokens := removeToken state.tokens input owner
-    waits := insertUserTaskWait
-      { processInstanceId := instanceId
-        owner
-        task
-        activation
-        output
-        metadata := task.metadata } state.waits
-    activations := setActivationCount state.activations task.id activation }
-
-def activateTimer (state : RuntimeState) (instanceId : SemanticId)
-    (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
-    (timer : TimerDefinition) : RuntimeState :=
-  let activation := timerActivationCount state timer.elementId + 1
-  { state with
-    tokens := removeToken state.tokens input owner
-    timerWaits :=
-      { processInstanceId := instanceId
-        owner
-        elementId := timer.elementId
-        activation
-        deadlineMs := state.logicalTimeMs + timer.durationMs
-        output } :: state.timerWaits
-    timerActivations :=
-      { elementId := timer.elementId, count := activation } ::
-        state.timerActivations.filter fun value =>
-          decide (value.elementId ≠ timer.elementId) }
-
-/-- Arms the Activity occurrence and its boundary deadline as one transition, in either interruption disposition, consuming the incoming token exactly once. Both occurrences take a fresh ordinal from their own element's counter, so the pair shares one activation only because arming is atomic; that shared ordinal is what later recovers the pair without a stored ownership record. -/
-def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
-    (owner : ScopeOccurrenceId) (input : ControlPlaceId)
-    (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm) : RuntimeState :=
-  let taskActivation := activationCount state task.id + 1
-  let timerActivation := timerActivationCount state boundaryTimer.elementId + 1
-  let activityActivation := activityActivationCount state task.id + 1
-  { state with
-    tokens := removeToken state.tokens input owner
-    waits := insertUserTaskWait
-      { processInstanceId := instanceId
-        owner
-        task := { id := task.id, name := task.name }
-        activation := taskActivation
-        output := task.output
-        metadata := none } state.waits
-    timerWaits :=
-      { processInstanceId := instanceId
-        owner
-        elementId := boundaryTimer.elementId
-        activation := timerActivation
-        deadlineMs := state.logicalTimeMs + boundaryTimer.durationMs
-        output := boundaryTimer.output } :: state.timerWaits
-    activations := setActivationCount state.activations task.id taskActivation
-    timerActivations :=
-      { elementId := boundaryTimer.elementId, count := timerActivation } ::
-        state.timerActivations.filter fun value =>
-          decide (value.elementId ≠ boundaryTimer.elementId)
-    activityOccurrences := insertActivityOccurrence
-      { processInstanceId := instanceId
-        activityElementId := { value := task.id.value }
-        activation := activityActivation
-        owner
-        body := .userTask
-          { processInstanceId := instanceId
-            elementId := { value := task.id.value }
-            activation := taskActivation }
-        attachedTimers :=
-          [{ processInstanceId := instanceId
-             elementId := { value := boundaryTimer.elementId.value }
-             activation := timerActivation }] } state.activityOccurrences
-    activityActivations :=
-      { taskId := task.id, count := activityActivation } ::
-        state.activityActivations.filter fun value =>
-          decide (value.taskId ≠ task.id) }
-
-def activateMessage (state : RuntimeState) (instanceId : SemanticId)
-    (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
-    (message : MessageDefinition) : RuntimeState :=
-  let activation := messageActivationCount state message.elementId + 1
-  { state with
-    tokens := removeToken state.tokens input owner
-    messageWaits :=
-      { processInstanceId := instanceId
-        owner
-        elementId := message.elementId
-        activation
-        channel := message.channel
-        output } :: state.messageWaits
-    messageActivations :=
-      { elementId := message.elementId, count := activation } ::
-        state.messageActivations.filter fun value =>
-          decide (value.elementId ≠ message.elementId) }
-
-def activateEffect (state : RuntimeState) (instanceId : SemanticId)
-    (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
-    (effect : EffectDefinition) (bpmnErrorRoute : Option BpmnErrorRoute) :
-    RuntimeState :=
-  let activation := effectActivationCount state effect.elementId + 1
-  let arguments := (evaluateInputMappings effect.inputMappings).getD []
-  let effectOwner : EffectOccurrenceId :=
-    { processInstanceId := instanceId
-      elementId := ⟨effect.elementId.value⟩
-      activation }
-  { state with
-    tokens := removeToken state.tokens input owner
-    effectWaits :=
-      { processInstanceId := instanceId
-        owner
-        elementId := effect.elementId
-        activation
-        descriptor := effect.descriptor
-        arguments
-        outputMappings := effect.outputMappings
-        output
-        bpmnErrorRoute
-        incidentAlreadyRetried := false } :: state.effectWaits
-    variables := addActivityVariableScope state.variables effectOwner arguments
-    effectActivations :=
-      { elementId := effect.elementId, count := activation } ::
-        state.effectActivations.filter fun value =>
-          decide (value.elementId ≠ effect.elementId) }
 
 def duplicateToken (state : RuntimeState) (owner : ScopeOccurrenceId)
     (input : ControlPlaceId) (outputs : List ControlPlaceId) : RuntimeState :=

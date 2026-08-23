@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.WaitActivation
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.RootScopeFixtures

@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.WaitActivation
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Non-interrupting boundary Timer
