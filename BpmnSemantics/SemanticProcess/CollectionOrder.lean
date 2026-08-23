@@ -260,4 +260,49 @@ theorem orderedBy_insertUserTaskWait (wait : UserTaskWait) :
         · simp only [heq, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
           exact ⟨ordered.1, by rw [← heq]; exact inner⟩
 
+/-- Insertion contributes exactly the inserted wait to any `all` check. -/
+theorem all_insertUserTaskWait (p : UserTaskWait → Bool) (wait : UserTaskWait) :
+    ∀ waits : List UserTaskWait,
+      (insertUserTaskWait wait waits).all p = (p wait && waits.all p) := by
+  intro waits
+  induction waits with
+  | nil => simp [insertUserTaskWait]
+  | cons current rest ih =>
+    unfold insertUserTaskWait
+    by_cases h : userTaskWaitBefore wait current = true
+    · simp [h]
+    · simp only [Bool.not_eq_true] at h
+      simp [h, ih, Bool.and_left_comm]
+
+/-- Filtering cannot break an `all` check. -/
+theorem all_filter {α : Type} (p q : α → Bool) :
+    ∀ values : List α, values.all p = true → (values.filter q).all p = true := by
+  intro values hall
+  simp only [List.all_eq_true] at *
+  exact fun value mem => hall value (List.mem_filter.mp mem).1
+
+/-- A uniqueness check factors through the key it compares, so two lists with the same key sequence
+answer it identically.
+
+This is what carries the record-side well-formedness conjuncts across a body rewrite: `occursOnce`
+reads records only through their identity, and replacement leaves the identity sequence alone. -/
+theorem all_occursOnce_of_map_eq {α β : Type} [DecidableEq β] (key : α → β)
+    (same : α → α → Bool) (hsame : ∀ a b, same a b = (key a == key b))
+    (left right : List α) (h : left.map key = right.map key) :
+    left.all (occursOnce same left) = right.all (occursOnce same right) := by
+  have count : ∀ (values : List α) (value : α),
+      (values.filter (same value)).length = (values.map key).countP (· == key value) := by
+    intro values value
+    rw [List.countP_map, ← List.countP_eq_length_filter]
+    exact List.countP_congr (fun a _ => by simp [hsame, BEq.comm])
+  have expand : ∀ values : List α,
+      values.all (occursOnce same values) =
+        (values.map key).all (fun k => decide ((values.map key).countP (· == k) = 1)) := by
+    intro values
+    rw [List.all_map]
+    congr 1
+    funext a
+    simp only [Function.comp_apply, occursOnce, count values a]
+  rw [expand left, expand right, h]
+
 end BpmnSemantics.SemanticProcess

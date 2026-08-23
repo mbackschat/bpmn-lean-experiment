@@ -44,6 +44,23 @@ def replaceBodyIn (records : List ActivityOccurrence) (target : ActivityOccurren
       { candidate with body := .userTask incoming }
     else candidate
 
+/-- The state rewrite itself, once the outgoing wait and body have been resolved.
+
+Split from the resolver below so the preservation law has a target whose hypotheses are visible.
+Every field this touches is named here; the four conjuncts that read none of them are settled by
+definitional congruence rather than by an argument. -/
+def replacedState (state : RuntimeState) (record : ActivityOccurrence)
+    (wait : UserTaskWait) (body : OccurrenceId) : RuntimeState :=
+  let activation := activationCount state wait.task.id + 1
+  { state with
+    waits := insertUserTaskWait { wait with activation }
+      (state.waits.filter fun candidate => !taskIdNamesWait body candidate)
+    activations := setActivationCount state.activations wait.task.id activation
+    activityOccurrences := replaceBodyIn state.activityOccurrences record
+      { processInstanceId := body.processInstanceId
+        elementId := body.elementId
+        activation } }
+
 /-- Replaces a task-bodied Activity occurrence's body with a fresh occurrence of the same element.
 
 Answers `none` rather than a repaired state when the record names no unique live task body, which is
@@ -63,19 +80,46 @@ def replaceActivityBodyTask (state : RuntimeState) (record : ActivityOccurrence)
   | none => none
   | some body =>
     match state.waits.filter (taskIdNamesWait body) with
-    | [wait] =>
-      let activation := activationCount state wait.task.id + 1
-      let incoming : OccurrenceId :=
-        { processInstanceId := body.processInstanceId
-          elementId := body.elementId
-          activation }
-      some
-        { state with
-          waits := insertUserTaskWait { wait with activation }
-            (state.waits.filter fun candidate => !taskIdNamesWait body candidate)
-          activations := setActivationCount state.activations wait.task.id activation
-          activityOccurrences := replaceBodyIn state.activityOccurrences record incoming }
+    | [wait] => some (replacedState state record wait body)
     | _ => none
+
+/-- Any view of a record that ignores its body is unchanged by replacement.
+
+The general form of `AOO-TURNOVER-03`. Stating it over an arbitrary `key` rather than over the frame
+tuple alone is what lets the well-formedness conjuncts reuse it: each of them reads records through a
+different projection, and every one of those projections ignores the body. -/
+theorem replaceBodyIn_map_of_frame {β : Type} (key : ActivityOccurrence → β)
+    (frameOnly : ∀ (record : ActivityOccurrence) (incoming : OccurrenceId),
+      key { record with body := .userTask incoming } = key record) :
+    ∀ (records : List ActivityOccurrence) (target : ActivityOccurrence)
+      (incoming : OccurrenceId),
+      (replaceBodyIn records target incoming).map key = records.map key := by
+  intro records target incoming
+  induction records with
+  | nil => rfl
+  | cons current rest ih =>
+    simp only [replaceBodyIn, List.map_cons] at *
+    by_cases h : sameActivityOccurrence current target = true
+    · simp [h, frameOnly, ih]
+    · simp only [Bool.not_eq_true] at h
+      simp [h, ih]
+
+/-- The same, for a count: a body-blind predicate selects the same number of records. -/
+theorem replaceBodyIn_countP_of_frame (p : ActivityOccurrence → Bool)
+    (frameOnly : ∀ (record : ActivityOccurrence) (incoming : OccurrenceId),
+      p { record with body := .userTask incoming } = p record) :
+    ∀ (records : List ActivityOccurrence) (target : ActivityOccurrence)
+      (incoming : OccurrenceId),
+      (replaceBodyIn records target incoming).countP p = records.countP p := by
+  intro records target incoming
+  induction records with
+  | nil => rfl
+  | cons current rest ih =>
+    simp only [replaceBodyIn, List.map_cons, List.countP_cons] at *
+    by_cases h : sameActivityOccurrence current target = true
+    · simp [h, frameOnly, ih]
+    · simp only [Bool.not_eq_true] at h
+      simp [h, ih]
 
 /-- `AOO-TURNOVER-03`: replacement preserves every record's identity, owner, and attached handlers.
 
@@ -86,19 +130,41 @@ occurrence after it with its deadline unchanged. -/
 theorem replaceBodyIn_preserves_frame (records : List ActivityOccurrence)
     (target : ActivityOccurrence) (incoming : OccurrenceId) :
     (replaceBodyIn records target incoming).map activityOccurrenceFrame =
-      records.map activityOccurrenceFrame := by
-  induction records with
-  | nil => rfl
-  | cons current rest ih =>
-    simp only [replaceBodyIn, List.map_cons, List.map_map] at *
-    by_cases h : sameActivityOccurrence current target = true
-    · simp [h, activityOccurrenceFrame, ih]
-    · simp [h, ih]
+      records.map activityOccurrenceFrame :=
+  replaceBodyIn_map_of_frame activityOccurrenceFrame (fun _ _ => rfl) records target incoming
 
 /-- Replacement changes the length of no collection it rewrites. -/
 theorem replaceBodyIn_length (records : List ActivityOccurrence)
     (target : ActivityOccurrence) (incoming : OccurrenceId) :
     (replaceBodyIn records target incoming).length = records.length := by
   simp [replaceBodyIn]
+
+/-! ## What replacement does not read
+
+Four of the twelve well-formedness conjuncts read none of the three collections replacement rewrites,
+so they are preserved definitionally. Stating them is what lets the main proof discharge a third of
+its obligations without an argument, and it records which conjuncts a future body arm would newly
+have to reason about. -/
+
+theorem runtimePositionValid_replacedState (program : Program) (instanceId : SemanticId)
+    (state : RuntimeState) (record : ActivityOccurrence) (wait : UserTaskWait)
+    (body : OccurrenceId) :
+    runtimePositionValid program instanceId (replacedState state record wait body) =
+      runtimePositionValid program instanceId state := rfl
+
+theorem eventRaceAssociationsValid_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    eventRaceAssociationsValid (replacedState state record wait body) =
+      eventRaceAssociationsValid state := rfl
+
+theorem effectIncidentAssociationsValid_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    effectIncidentAssociationsValid (replacedState state record wait body) =
+      effectIncidentAssociationsValid state := rfl
+
+theorem hiddenRecordDeclarationsValid_replacedState (program : Program) (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    hiddenRecordDeclarationsValid program (replacedState state record wait body) =
+      hiddenRecordDeclarationsValid program state := rfl
 
 end BpmnSemantics.SemanticProcess
