@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.BoundedScopeArming
 import BpmnSemantics.SemanticProcess.BoundedScope
 import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.EventBasedGateway
