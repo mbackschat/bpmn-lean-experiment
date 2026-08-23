@@ -301,7 +301,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
               -- lookup answers `none`, which is what makes the arm reduce away here.
               cases definitionFound : boundedScopeDefinitionFor? program wait <;>
                 simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
-                  activityOccurrenceForTimerWait?, boundedScopeChildFor?,
+                  activityOccurrenceForTimerWait?,
                   singletonTimerWaitingState, initialState,
                   processMatches, elementMatches,
                   activationMatches, timeMismatch, definitionFound,
