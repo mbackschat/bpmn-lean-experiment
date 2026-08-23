@@ -420,10 +420,12 @@ theorem completeBoundedScope_sound (program : Program) (before after : RuntimeSt
                     (by rw [occurrenceScope]; exact completion)
                     (by rw [timersPreserved]; exact deadlineInBefore)
 
-/-- Neither arm rewinds an activation counter and neither invents End history, so a withdrawn occurrence can never be reissued and no victory is mistaken for a completion event.
+/-- Both arms preserve the activation counters and End history across the victory, so the transition
+is compatible with counter and End-history monotonicity and is not mistaken for a completion event.
 
-Both counters are load-bearing: the scope counter keeps a cancelled child from being re-entered under
-its old ordinal, and the timer counter keeps a withdrawn deadline from being re-armed under its own. -/
+The counter equalities keep withdrawal from lowering either high-water mark. They do not by
+themselves rule out a later issuing transition reusing the cancelled child or withdrawn deadline
+identity; that requires the separate issuing discipline. -/
 theorem bounded_scope_victory_preserves_counters_and_history (program : Program)
     (before after : RuntimeState)
     (step : BoundedScopeVictoryStep program before after) :

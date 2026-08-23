@@ -456,7 +456,9 @@ theorem completeBoundedUserTask_none_of_no_match (program : Program)
   unfold completeBoundedUserTask?
   simp [missing]
 
-/-- Neither arm rewinds an activation counter, so a withdrawn occurrence can never be reissued. -/
+/-- Both arms preserve the activation counters across the victory. This makes the transition
+compatible with counter monotonicity; it does not by itself rule out a later issuing transition
+reusing the withdrawn identity. -/
 theorem bounded_victory_preserves_activation_counters (program : Program)
     (before after : RuntimeState)
     (step : BoundedTaskVictoryStep program before after) :

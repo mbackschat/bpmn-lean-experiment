@@ -423,11 +423,13 @@ export function isWellFormedRuntimeState(
 }
 
 /**
- * Every way `after` rewinds `before`.
+ * Every activation-counter or End-history regression from `before` to `after`.
  *
- * Activation counters are per-key high-water marks and `endOccurrences` never decreases, so a
- * successor that lowers either has reissued an identity it already retired. That is what the
- * adapter relies on when it joins a durable deadline to committed state.
+ * Activation counters are per-key high-water marks and `endOccurrences` never decreases. A lower
+ * value is a rewind, not evidence that `after` has already reissued a retired identity: reissue also
+ * needs a later mint of that identity. This function therefore reports only monotonicity
+ * regressions; the adapter's durable deadline join still relies on the separate issuing discipline
+ * for non-reissue.
  */
 export function runtimeStateRegressions(
   before: RuntimeState,
