@@ -2,8 +2,13 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved-with-required-edits
+**Implemented and independently closure-reviewed for one runtime ownership record per Activity occurrence, replacing the activation-ordinal agreements three boundary-Timer families used to recover their body-to-handler pair.** The record, its identity, its two-arm body union, its attached-wait list, and the six well-formedness conjuncts are implemented in both languages. Every producer of the pair reads the record: the four TypeScript transition owners, the open-set publication binding, and all three Lean family modules. One independent oracle stays exempt by construction and is named in the enumerating guard.
+
+This adds no BPMN capability, operation kind, profile, scenario, or public observation field. No admitted model, accepted transition, or canonical projection changes, which is what the conservation oracle measures and also the reason no separating witness distinguishes before from after.
+
+Two claims are deliberately narrower than a reader might expect. Body turnover is excluded and is the reopen trigger sequential Multi-Instance fires. Body-side lookup determinism is proved under an explicit premise no conjunct enforces, because two records naming one body are admitted today.
+
+Exact implemented and absent status is owned by [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).
 
 ## Question and current boundary
 
@@ -222,32 +227,11 @@ One approved capsule's declared public contract is also affected and is named ra
 
 Existing executable constraints include [the runtime-state invariant's negatives](../BpmnSemantics/RuntimeStateWellFormedConformance.lean), [the semantic-core well-formedness guard](../packages/semantic-core/test/runtime-state-well-formedness.test.ts), [the three family semantic tests](../packages/semantic-core/test/subprocess-boundary-timer.test.ts), [the FlowNode occurrence publication coverage guard](../scripts/execution-publication-contract-coverage.test.ts), [the Workflow occurrence authority guard](../scripts/workflow-occurrence-semantic-authority.test.ts), [the Lean import-boundary guard](../scripts/lean-import-boundaries.test.ts), [the Lean source-contracts guard](../scripts/lean-source-contracts.test.ts), [source hygiene](../scripts/source-hygiene.test.ts), [semantic type contracts](../scripts/contract-schema-coverage.test.ts), and [this proposal's reviewability guard](../scripts/document-reviewability.test.ts).
 
-### Owners this implementation grows
+### Owners this implementation grew
 
-| Owner | Current headroom before the 600-nonblank-line review target |
-|---|---:|
-| [runtime state contract](../packages/semantic-core/src/semantic-process-state.ts) | 213 |
-| [runtime-state well-formedness](../packages/semantic-core/src/runtime-state-well-formedness.ts) | 188 |
-| [bounded task runtime](../packages/semantic-core/src/semantic-process-bounded-task-runtime.ts) | 320 |
-| [monitored task runtime](../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 262 |
-| [bounded scope runtime](../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 320 |
-| [scope cancellation](../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 457 |
-| [scope runtime](../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 415 |
-| [FlowNode occurrence open set](../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 42 |
-| [FlowNode occurrence lifecycle](../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 44 |
-| [publication external completeness](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 167 |
-| [bounded deadline scheduler](../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) | 325 |
-| [Lean runtime state](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 60 |
-| [Lean runtime-state well-formedness](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 213 |
-| [Lean bounded task](../BpmnSemantics/SemanticProcess/BoundedTask.lean) | 165 |
-| [Lean monitored task](../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 108 |
-| [Lean bounded scope](../BpmnSemantics/SemanticProcess/BoundedScope.lean) | 78 |
-| [Lean bounded scope arming](../BpmnSemantics/SemanticProcess/BoundedScopeArming.lean) | 476 |
-| [Lean scope cancellation](../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 458 |
+The measured headroom table that planned this work is removed on graduation, because a specification describes a contract rather than a plan and a retained figure drifts against the tree that outgrew it.
 
-Five owners cannot absorb the shared mechanism and must receive only bounded wiring, and the two tightest are the publication owners an earlier draft of this table omitted: `flow-node-occurrence-open-set.ts` at 43 lines, `flow-node-occurrence-lifecycle.ts` at 44, `BoundedScope.lean` at 68 before its arming half was extracted, `MonitoredTask.lean` at 126, and `RuntimeState.lean` at 147. Replacing a derivation with a record lookup should not grow the publication owners, and if it does the lookup belongs in the shared owner. Measured, the open-set owner grew by one nonblank line, 557 to 558, after the body lookup was moved into the shared owner; the rule as first written said "at all", which that one line breaches. The residue is recorded rather than removed, because deleting a comment to reach a round number is the compression the hygiene rule forbids. The representation, its canonical order, its lookups, and its laws therefore land in dedicated `ActivityOccurrence.lean` and `activity-occurrence.ts` owners, built as narrow targets before the umbrella gate. That extraction condition stops applying only if these measurements change enough that the cohesive mechanism fits while every owner stays below 600.
-
-The claim that a guard recomputes this table was false when this document was written, and the reason is worth keeping: [the reviewability guard](../scripts/document-reviewability.test.ts) read `docs/capsules` only, so placing a cross-cutting proposal at `docs/` root moved it out of that coverage and six figures went stale while the sentence promising otherwise stayed green. The guard now reads root-placed proposals too, for the headroom half of its contract; the section contract remains capsule-only because four older root proposals predate it. This is the same mechanism as the ninth and tenth instances in [the process-assessment ledger](PROCESS-ASSESSMENT-LEDGER.md): a placement decision moved a document out of the jurisdiction that was supposed to bind it.
+What the measurements decided is durable and stays. Five owners could not absorb the shared mechanism and received only bounded wiring, the two tightest being the publication owners an earlier draft of the census omitted. The representation, its canonical order, its lookups, and its laws therefore landed in dedicated `ActivityOccurrence.lean` and `activity-occurrence.ts` owners rather than inside a family, and `BoundedScope.lean` was split at its arming-against-victory seam before it could be edited under a size squeeze.
 
 ## Epistemic closure and reopen conditions
 

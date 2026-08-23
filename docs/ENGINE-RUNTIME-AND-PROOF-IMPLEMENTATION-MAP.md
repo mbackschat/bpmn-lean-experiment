@@ -175,7 +175,7 @@ Every Lean law consuming `waitIdentitiesUnique` therefore assumes it. Execution 
 
 ## Activity occurrence ownership
 
-One runtime record per Activity occurrence that owns runtime state beyond its body, replacing the activation-ordinal agreements three boundary-Timer families used to recover their pair. [The proposal](ACTIVITY-OCCURRENCE-OWNERSHIP-PROPOSAL.md) owns the account. It adds no BPMN capability, operation kind, profile, scenario, or public observation field.
+One runtime record per Activity occurrence that owns runtime state beyond its body, replacing the activation-ordinal agreements three boundary-Timer families used to recover their pair. [The proposal](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) owns the account. It adds no BPMN capability, operation kind, profile, scenario, or public observation field.
 
 **Implemented.**
 
