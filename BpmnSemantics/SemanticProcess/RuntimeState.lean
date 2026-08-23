@@ -331,7 +331,11 @@ def activityActivationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
   (state.activityActivations.find? fun activation =>
     decide (activation.taskId = taskId)).map (·.count) |>.getD 0
 
-private def insertTaskActivation (activation : TaskActivation) :
+/-- Canonical insertion for the task activation family, ordered by element identifier.
+
+Public for the same reason `insertUserTaskWait` and `insertActivityOccurrence` are: a law about the
+order this preserves has to speak about the term the counter update actually inserts with. -/
+def insertTaskActivation (activation : TaskActivation) :
     List TaskActivation → List TaskActivation
   | [] => [activation]
   | current :: rest =>

@@ -322,4 +322,66 @@ theorem all_of_map_eq {α β : Type} (key : α → β) (p : α → Bool) (q : β
     exact hp a
   rw [expand left, expand right, h]
 
+/-! ## The task activation comparator
+
+One level rather than five, so the two order facts come straight from `String`.
+-/
+
+private def activationBefore (left right : TaskActivation) : Bool :=
+  decide (left.taskId.value < right.taskId.value)
+
+private theorem activationBefore_asymm (left right : TaskActivation) :
+    activationBefore left right = true → activationBefore right left = false := by
+  simp only [activationBefore, decide_eq_true_eq, decide_eq_false_iff_not]
+  exact String.lt_asymm
+
+private theorem activationBefore_compose (a b c : TaskActivation) :
+    activationBefore b a = false → activationBefore c b = false →
+      activationBefore c a = false := by
+  simp only [activationBefore, decide_eq_false_iff_not]
+  intro h1 h2
+  have hab : a.taskId.value ≤ b.taskId.value := by simpa using h1
+  have hbc : b.taskId.value ≤ c.taskId.value := by simpa using h2
+  simpa using Std.le_trans hab hbc
+
+/-- Canonical insertion preserves the activation order. -/
+theorem orderedBy_insertTaskActivation (activation : TaskActivation) :
+    ∀ activations : List TaskActivation,
+      orderedBy activationBefore activations = true →
+        orderedBy activationBefore (insertTaskActivation activation activations) = true := by
+  intro activations
+  induction activations with
+  | nil => intro _; rfl
+  | cons current rest ih =>
+    intro ordered
+    have tail : orderedBy activationBefore rest = true := by
+      cases rest with
+      | nil => rfl
+      | cons second more =>
+        simp only [orderedBy, Bool.and_eq_true] at ordered
+        exact ordered.2
+    unfold insertTaskActivation
+    by_cases h : activation.taskId.value < current.taskId.value
+    · simp only [h, if_pos]
+      simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true']
+      exact ⟨activationBefore_asymm _ _ (by simpa [activationBefore] using h), ordered⟩
+    · simp only [h, if_neg, not_false_eq_true]
+      have inner := ih tail
+      cases rest with
+      | nil =>
+        simp only [insertTaskActivation, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
+        exact ⟨by simpa [activationBefore] using h, trivial⟩
+      | cons second more =>
+        simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true'] at ordered
+        unfold insertTaskActivation
+        by_cases h2 : activation.taskId.value < second.taskId.value
+        · simp only [h2, if_pos, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
+          refine ⟨by simpa [activationBefore] using h, ?_, tail⟩
+          exact activationBefore_asymm _ _ (by simpa [activationBefore] using h2)
+        · simp only [h2, if_neg, not_false_eq_true, orderedBy, Bool.and_eq_true,
+            Bool.not_eq_true']
+          refine ⟨ordered.1, ?_⟩
+          have := ih tail
+          simpa [insertTaskActivation, h2] using this
+
 end BpmnSemantics.SemanticProcess
