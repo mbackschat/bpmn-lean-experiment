@@ -299,7 +299,7 @@ Existing executable constraints include [schema coverage](../../scripts/contract
 | [BPMN source compiler composition](../../packages/bpmn-source/src/compile.ts) | 196 |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
 | [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
-| [runtime-state well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 117 |
+| [runtime-state well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 115 |
 
 Owners this implementation **created**, listed because the recomputing guard measures rows that exist and cannot report rows nobody wrote:
 
