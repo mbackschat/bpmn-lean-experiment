@@ -149,6 +149,8 @@ type OpenSequentialMultiInstance = {
 };
 ```
 
+Projecting `ActivityOccurrenceId` publicly carries one obligation this capsule inherits rather than creates. `RSI-MONO-04`, non-reissue of an identity after removal, is still unstated, and the Activity occurrence account excludes it while its adapter join already depends on it. Once this controller's `id` is a public field, a reissued identity is visible to an external consumer as the same open controller, so the assumption acquires a consumer outside the host. Registering this profile for execution requires that obligation to be stated or the projection to be narrowed.
+
 `activeIterations` is an array rather than a nullable singleton so a later parallel profile can broaden the cardinality without replacing the identity or observation concept. This profile validates exactly one active entry whenever an outer controller is open. The entry's `taskInput.name` is the exact scalar task DataInput ID and its String value is the snapshot item at `loopCounter`. `completionBindingName` is the exact scalar task DataOutput ID.
 
 `StateObservation` gains optional `openMultiInstances`. It is present for every state emitted under this profile, including an empty array after normal or boundary-route completion, and absent for all existing profiles so their canonical observation bytes remain unchanged. `ObservationRequestKind` and the profile observation catalog gain `openMultiInstances`. Consumers must validate the optional field recursively and must not infer Multi-Instance state from `openUserTasks`, `openTimers`, E1/E2 history, or state differences.

@@ -133,7 +133,7 @@ No record is a BPMN FlowNode occurrence. E1/E2 occurrence accounting is unchange
 | `AOO-ID-01` | An Activity occurrence identity is `(processInstanceId, activityElementId, activation)`, minted from its own counter family, and shares neither type nor serialized shape with any task, Message, Timer, effect, race, or call identity. | Project representation |
 | `AOO-OWN-01` | A record names exactly one live scope occurrence, the one owning the Activity node, and every wait the record lists names that same scope occurrence as its owner. | Project ownership |
 | `AOO-BODY-01` | A record has exactly one live body: one live User Task wait or one live child scope occurrence. None and two are both invalid before evaluation. | Project ownership |
-| `AOO-ATTACH-01` | Every attached-handler Timer wait of an admitted program is listed by exactly one live record, and every listed Timer is live. | Project ownership |
+| `AOO-ATTACH-01` | Every Timer wait is listed by **at most one** live record, and every listed Timer is live. | Project ownership |
 | `AOO-JOIN-02` | Every producer of a body-to-handler pair reads it from the record, in both languages: the four TypeScript transition owners, the open-set publication binding, and all three Lean family modules. One independent oracle is exempt by construction and named in the guard, so this is a producer rule rather than a whole-tree one. | Project representation |
 | `AOO-CANCEL-01` | Cancelling a region withdraws every record whose owner or body lies in it, together with every wait those records list, including a wait owned by a scope outside the region. | Project ownership |
 | `AOO-MIGRATE-01` | For each of the three registered boundary-Timer profiles, the migrated transitions accept exactly the same stimuli, refuse exactly the same stimuli, and produce byte-identical canonical observations, publications, and terminal receipts. | Project migration closure |
@@ -151,10 +151,11 @@ This is the property that makes `AOO-MIGRATE-01` a strong oracle rather than a r
 
 ## Lean assurance lane
 
-The lane is **proved**, scoped exactly to two quantified results that no finite fixture set can cover:
+The lane is **proved**, scoped exactly to three quantified results that no finite fixture set can cover:
 
 - **cancellation completeness:** for every state and every region, the cancelled state holds no record whose owner or body was in the region and no wait such a record listed. This is the [assurance-lane rule's](PROJECT-DESIGN.md#lean-assurance-lane) named proved case, cancellation removing exactly the owned subtree, extended to the waits the region owns indirectly;
-- **join determinism:** under the new uniqueness conjuncts as explicit hypotheses, at most one record carries a given body or a given attached Timer, so the pair any site reads is unique.
+- **Timer-side lookup determinism:** with `attachedTimersUnambiguous` as an explicit hypothesis, any record naming a live Timer wait *is* the record the lookup answers, so the lookup cannot degrade to `none` on an admitted state. Soundness alone did not give this: every lookup answers `none` on ambiguity, so "the pair any site reads is unique" was carried rather than proved until this theorem existed.
+- **body-side lookup determinism, under a premise this account does not enforce:** the same result for a task wait, with the at-most-one bound stated as an explicit hypothesis rather than drawn from a conjunct. There is no conjunct: two records naming one body satisfy identity uniqueness, body liveness, and attached-wait unambiguity, so the account admits a state on which every body-keyed lookup degrades. No registered profile reaches it, and refusing it would broaden what this capsule refuses, so the premise is carried in the open where a reader can see it instead of inside a lookup's `match`.
 
 Turnover stability is deliberately not a third result here, for the reason given with the withdrawn `AOO-TURNOVER-01` above: no registered family replaces a body, so the law would quantify over an empty set of admitted transitions.
 
@@ -199,6 +200,12 @@ Both first reds are **state-level negatives, not schedules**, and that limit mus
 | `AOO-REFUSE-01` | Core refusal tests with exact state preservation for an absent record, a disagreeing body, and a disagreeing attached list |
 | Adapter pairing | [The host reads the record](../packages/temporal-adapter/workflow/test/bounded-deadline-record-pairing.test.ts): it owns its deadline and admits reconciliation beside a second concurrent Timer wait and a second concurrent task wait, each of which the retired whole-state cardinality rule rejected, and it refuses a withdrawn body and two records claiming one deadline. Constructed rather than scheduled, for the same reason as the two first reds, and the witness asserts the cardinality the retired rule read so it cannot degenerate into a state both rules accept |
 
+`AOO-ATTACH-01` said "exactly one" until closure, and both languages implement at most one. The code is right and the sentence was wrong, for a reason worth keeping: the enforced predicate is program-free by construction, and deciding *exactly* one would need the program to know which live Timer waits are attached handlers. A state-only predicate demanding a record per Timer wait would refuse every Intermediate Catch Timer and every event-race arm, which are legitimately listed by nobody.
+
+The direction that remains unenforced is stated rather than hidden: nothing refuses a state that drops a record while keeping the deadline it listed. The two opposite directions are refused, a record whose body is gone and a Timer claimed by two records, and this third one is absent from the mutation list below for the same reason it is absent from the conjuncts. Closing it needs the program, which is the boundary this capsule holds.
+
+One Required-list item is withdrawn rather than deferred. It asked for a **program-agreement** conjunct over `activityOccurrences`; none exists in either language, [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) already lists the six conjuncts that do exist without claiming it, and the capsule was the document out of step with both the code and its own detail map.
+
 Meaningful mutations: pair by ordinal equality again; drop the body-matching case from regional cancellation; keep a record after its body is withdrawn; withdraw a listed Timer without updating the list; mint the Activity identity from `taskActivations` instead of its own counter; alias the identity to `OccurrenceId`; carry a record across Continue-As-New without its body. Each must be caught by an oracle that does not share the mutated mechanism.
 
 ## Versioning consequences
@@ -231,7 +238,7 @@ Existing executable constraints include [the runtime-state invariant's negatives
 | [publication external completeness](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 167 |
 | [bounded deadline scheduler](../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) | 325 |
 | [Lean runtime state](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 60 |
-| [Lean runtime-state well-formedness](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 271 |
+| [Lean runtime-state well-formedness](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 213 |
 | [Lean bounded task](../BpmnSemantics/SemanticProcess/BoundedTask.lean) | 165 |
 | [Lean monitored task](../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 108 |
 | [Lean bounded scope](../BpmnSemantics/SemanticProcess/BoundedScope.lean) | 78 |
@@ -251,6 +258,8 @@ Nearest unsupported claim, and it is sharper than preservation: that the record'
 Principal common-mode risk: one author would write the record, the conjuncts, the migration, and the negatives, so a wrong ownership account could be consistently wrong everywhere. Three things constrain it. `AOO-MIGRATE-01` is judged by retained results the migration does not author. The Lean and TypeScript negatives are separately written and reach the parity channel by defect label, not by shared code. And the adapter's pairing is judged against a state holding a second concurrent wait, which no core test constructs.
 
 Nearest realistic counterexample, and it has already happened once on paper: a migration that records the edge correctly and *also* leaves an ordinal comparison somewhere as a redundant second check, so the two agree under every registered profile and the record's value is untested. An earlier draft of this capsule enumerated four derivation sites and missed the two in the publication path, which is that counterexample as a census error rather than an implementation one. The five-producer static guard exists for exactly this, and it is seeded by reintroducing one comparison in the migrated publication owner, because that is the half a transition-focused census loses.
+
+The body-replacement trigger below is not hypothetical, and naming which capsule fires it is part of closing this one. [The sequential Multi-Instance capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md#public-contract) is `implementation-in-progress` and its active iteration association changes task identity for each generated instance, which is body turnover. So the withdrawal of `AOO-TURNOVER-01` as unreachable, justified here by no registered family replacing a body, is falsified by the next capsule in the plan rather than by some distant one. That capsule cannot implement its first transition until this record admits a body that changes.
 
 Reopen before admitting a non-Timer attached handler, an effect body arm, body replacement, repeated boundary firing, repeated outer activation, concurrent occurrences of one Activity element, a public projection of any record field, a loop controller that stores its payload in this record rather than referencing its identity, or a representation that cannot broaden body cardinality without reinterpreting a model accepted here.
 
@@ -288,10 +297,14 @@ A semantic checkpoint review is required after the first green checkpoint coveri
 
 ## Independent cold-review receipt
 
+The closure review ran cold at `7e1c17f` and **refused** closure, returning eight required edits and five advisories with no mechanism defect among them: the record, the conjuncts, the migration, the cancellation laws, and the adapter pairing all held. Every blocking finding was a claim or record defect, which is the failure mode this capsule exists to remove, one level up. Its row stays `not-reached` until the warm correction audit supplies the target the receipt guard requires, because a verdict recorded without its audit is the same defect as a review recorded as never held.
+
+The checkpoint review also used two correction-audit rounds, which is the applicable bound; its residue is recorded in the capsule rather than carried into a third round. That the checkpoint row read `not-reached` until closure is itself a recorded defect: the guard accepts a `not-reached` row and validates only commits that are present, so the receipt stated the opposite of the history and no gate could see it.
+
 The proposal review used two correction-audit rounds, which is the applicable bound. Round one closed seven required findings and three advisories and raised two new items; round two closed both and raised one required correction in [PLAN.md](PLAN.md) rather than in this capsule, which the same audit recorded as not consuming a third round because this document needed no change. The owner delegated the four recorded decisions with instruction to take the author's recommendations, so approval covers the account as decided here.
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `bf90dad` | `fork-turns-none` | `approve-with-required-edits` | `873f1b0` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `2d81777` | `fork-turns-none` | `approve-with-required-edits` | `f275359` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

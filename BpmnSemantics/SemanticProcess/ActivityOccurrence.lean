@@ -92,6 +92,16 @@ def taskIdNamesWait (task : OccurrenceId) (wait : UserTaskWait) : Bool :=
     task.elementId.value == wait.task.id.value &&
     task.activation == wait.activation
 
+/-- Whether a record's body is the task one live wait holds.
+
+Named rather than inlined into the lookup, for the same reason `recordAttaches` is: a law about the
+lookup has to speak about the same predicate the lookup filters by, and an anonymous `match` inside a
+filter is not that term. -/
+def recordBodyNamesWait (wait : UserTaskWait) (record : ActivityOccurrence) : Bool :=
+  match activityBodyTask? record with
+  | some task => taskIdNamesWait task wait
+  | none => false
+
 /-- The unique record whose body is the task one live wait holds, or `none`.
 
 Wait-keyed rather than identity-keyed, because a family recovering its pair starts from a wait and
@@ -99,10 +109,7 @@ would otherwise rebuild the body identity itself, which is the derivation the re
 Ambiguity answers `none` for the reason `activityOccurrenceForTimer?` gives. -/
 def activityOccurrenceForTaskWait? (records : List ActivityOccurrence) (wait : UserTaskWait) :
     Option ActivityOccurrence :=
-  match records.filter fun record =>
-      match activityBodyTask? record with
-      | some task => taskIdNamesWait task wait
-      | none => false with
+  match records.filter (recordBodyNamesWait wait) with
   | [record] => some record
   | _ => none
 
@@ -155,6 +162,7 @@ theorem activityOccurrenceForTaskWait_sound {records : List ActivityOccurrence}
       cases found
       obtain ⟨mem, holds⟩ := mem_of_filter_eq_singleton singleton
       refine ⟨mem, ?_⟩
+      unfold recordBodyNamesWait at holds
       split at holds
       · next body body_eq => exact ⟨body, body_eq, holds⟩
       · exact absurd holds (by simp)

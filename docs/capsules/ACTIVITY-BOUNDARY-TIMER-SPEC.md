@@ -151,7 +151,7 @@ This is a deliberate difference from `EventRace`, and it rests on one falsifiabl
 
 Both waits belong to one live scope occurrence, and either arm's victory removes both. Monotonic activation counters are preserved on interruption, exactly as the Sub-Process Error propagation capsule established.
 
-Omitting the record has an adapter consequence that this capsule owns rather than inherits. The existing event-race scheduler keys on `state.eventRaces` to recognize a managed wait and to derive its durable timer identity, so with no record the adapter must instead join the committed `awaitBoundedUserTask` operation to the two live waits to know that a timer wait is a boundary deadline rather than an ordinary `awaitTimer`. That join is new derivation work, not detector reuse, and the implementation must not describe it as reuse.
+Omitting the record had an adapter consequence that this capsule owned rather than inherited. The existing event-race scheduler keys on `state.eventRaces` to recognize a managed wait and to derive its durable timer identity, so with no record the adapter had to join the committed `awaitBoundedUserTask` operation to the two live waits to know that a timer wait was a boundary deadline rather than an ordinary `awaitTimer`. That join was new derivation work and was never detector reuse. The adapter no longer performs it: it reads the ownership record added by the capsule named in the superseding note above, which is the same correction its Sub-Process sibling records.
 
 ## Proposed semantic rules
 

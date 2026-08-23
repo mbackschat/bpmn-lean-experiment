@@ -72,6 +72,11 @@ const crossFamilyJoin = /\.activation\s*===\s*[A-Za-z_$][\w$.]*\.activation\b/u;
  * activation against a submitted occurrence identity's, which is a wrong-identity refusal and not a
  * join, so the pattern requires both sides to end in `.activation` and excludes a right-hand side
  * naming a submitted identity parameter.
+ *
+ * That exclusion is line-scoped, and the closure review named the hole: a genuine cross-family join written on a line that
+ * also mentions any excluded identifier evades this pattern. The alternative, matching across lines, would need a parser for
+ * a claim an enumeration already bounds, so the hole is recorded rather than closed and the enumeration is what carries the
+ * rule.
  */
 const leanCrossFamilyJoin =
   /\.activation\s*=\s*(?!.*\b(?:timerId|taskId|submitted)\b)[A-Za-z_][\w.]*\.activation\b/u;

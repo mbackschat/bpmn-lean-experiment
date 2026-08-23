@@ -164,6 +164,71 @@ def activityIdentitiesUnique (state : RuntimeState) : Bool :=
   state.activityOccurrences.all
     (occursOnce sameActivityOccurrence state.activityOccurrences)
 
+/-! ## Lookup determinism
+
+Soundness says the record a lookup answers really names the wait it was asked about. It does not say the
+lookup answers at all: every lookup degrades to `none` when two records match, so "the pair any site
+reads is unique" is a separate claim, and it is the one a consumer actually relies on.
+
+The two directions are not symmetric, and the asymmetry is the useful part. The Timer direction follows
+from a conjunct this account enforces. The body direction does not: nothing refuses two records naming
+one body, so its premise is stated explicitly and is *not* a state invariant today.
+-/
+
+/-- A Timer wait an unambiguous state lists is found, so the lookup cannot degrade to `none`.
+
+This is the determinism the record was introduced for. `attachedTimersUnambiguous` bounds the matching
+records at one, so any record that names the wait is *the* record the lookup answers. Weakening that
+conjunct breaks this proof, which is what makes the theorem worth stating rather than restating the
+lookup. -/
+theorem activityOccurrenceForTimerWait_unique (state : RuntimeState) (wait : TimerWait)
+    (record : ActivityOccurrence)
+    (unambiguous : attachedTimersUnambiguous state = true)
+    (waitLive : wait ∈ state.timerWaits)
+    (mem : record ∈ state.activityOccurrences)
+    (names : anyTimerIdNamesWait record.attachedTimers wait = true) :
+    activityOccurrenceForTimerWait? state.activityOccurrences wait = some record := by
+  have bound : (state.activityOccurrences.filter fun candidate =>
+      anyTimerIdNamesWait candidate.attachedTimers wait).length ≤ 1 := by
+    have := List.all_eq_true.mp unambiguous wait waitLive
+    simpa using this
+  have memFilter : record ∈ state.activityOccurrences.filter fun candidate =>
+      anyTimerIdNamesWait candidate.attachedTimers wait := List.mem_filter.mpr ⟨mem, names⟩
+  have positive := List.length_pos_of_mem memFilter
+  obtain ⟨only, singleton⟩ :=
+    List.length_eq_one_iff.mp (Nat.le_antisymm bound positive)
+  have sameRecord : record = only := by
+    have := singleton ▸ memFilter
+    simpa using this
+  simp [activityOccurrenceForTimerWait?, singleton, sameRecord]
+
+/-- The body direction, under a premise this account does not yet enforce.
+
+Stated with the bound as an explicit hypothesis rather than derived from a conjunct, because there is
+no conjunct: two records naming one body satisfy identity uniqueness, body liveness, and attached-wait
+unambiguity, so the account admits a state on which every body-keyed lookup degrades to `none`. No
+registered profile reaches it, and adding the refusal would broaden what this capsule refuses, so the
+premise is carried in the open here where a reader can see it. -/
+theorem activityOccurrenceForTaskWait_unique (state : RuntimeState) (wait : UserTaskWait)
+    (record : ActivityOccurrence)
+    (unambiguous :
+      (state.activityOccurrences.filter (recordBodyNamesWait wait)).length ≤ 1)
+    (mem : record ∈ state.activityOccurrences)
+    (body : ∃ task, activityBodyTask? record = some task ∧ taskIdNamesWait task wait = true) :
+    activityOccurrenceForTaskWait? state.activityOccurrences wait = some record := by
+  obtain ⟨task, bodyEq, names⟩ := body
+  have bodyMatches : recordBodyNamesWait wait record = true := by
+    simp [recordBodyNamesWait, bodyEq, names]
+  have memFilter : record ∈ state.activityOccurrences.filter (recordBodyNamesWait wait) :=
+    List.mem_filter.mpr ⟨mem, bodyMatches⟩
+  have positive := List.length_pos_of_mem memFilter
+  obtain ⟨only, singleton⟩ :=
+    List.length_eq_one_iff.mp (Nat.le_antisymm unambiguous positive)
+  have sameRecord : record = only := by
+    have := singleton ▸ memFilter
+    simpa using this
+  simp [activityOccurrenceForTaskWait?, singleton, sameRecord]
+
 /-- `RSI-ORDER-01`. The collections whose every add site canonically inserts hold that order.
 
 The membership rule is a criterion rather than a list: a collection belongs here when all of its add
