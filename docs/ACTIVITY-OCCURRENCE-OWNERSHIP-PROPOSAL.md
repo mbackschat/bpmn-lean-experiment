@@ -89,7 +89,7 @@ Required:
 
 - one distinct Activity occurrence identity, its counter family, and its canonical collection order;
 - the closed two-arm body union and the listed attached-Timer collection;
-- new well-formedness conjuncts for identity uniqueness, body liveness, attached-wait reachability, owner agreement, and program agreement;
+- new well-formedness conjuncts for identity uniqueness, body liveness, attached-wait reachability, and owner agreement;
 - `activityOccurrences` added to the `RSI-ORDER-01` canonical-order conjunct, which its add sites satisfy because every insertion is canonical, and to `RSI-LIFE-01`'s explicit collection enumeration in `notStartedStateEmpty`, so a `notStarted` state holding a record is refused. Terminal emptiness needs no second enumeration and must not be given one: `RSI-LIFE-02` is `scopeOccurrences.isEmpty && tokens.isEmpty` with no collection list, so a terminal state holding a record is already refused derivatively, by the `RSI-TERM-01` path the invariant specification records, since `AOO-OWN-01` requires each record to name a live scope occurrence and `RSI-LIFE-02` leaves none;
 - `activityActivations` added to the `RSI-MONO-01` counter families in both the Lean relation and its executable core counterpart, which today enumerate exactly seven families plus `endOccurrences`;
 - migration of every *producer* of the pair to read the record instead of comparing ordinals: the four transition owners across all three families, and the open-set publication binding;
@@ -297,7 +297,7 @@ A semantic checkpoint review is required after the first green checkpoint coveri
 
 ## Independent cold-review receipt
 
-The closure review ran cold at `7e1c17f` and **refused** closure, returning eight required edits and five advisories with no mechanism defect among them: the record, the conjuncts, the migration, the cancellation laws, and the adapter pairing all held. Every blocking finding was a claim or record defect, which is the failure mode this capsule exists to remove, one level up. Its row stays `not-reached` until the warm correction audit supplies the target the receipt guard requires, because a verdict recorded without its audit is the same defect as a review recorded as never held.
+The closure review ran cold at `7e1c17f` and **refused** closure, returning eight required edits and five advisories with no mechanism defect among them: the record, the conjuncts, the migration, the cancellation laws, and the adapter pairing all held. Every blocking finding was a claim or record defect, which is the failure mode this capsule exists to remove, one level up. Its row stayed `not-reached` until the warm correction audit supplied the target the receipt guard requires, because a verdict recorded without its audit is the same defect as a review recorded as never held. Seven of the eight required edits were documentation or claim corrections closed in `a601896`; the eighth was the clean-worktree gate, which no agent could satisfy while an untracked probe file left by an earlier review lane sat inside the semantic-core test glob. The owner removed that file and the run is recorded in [PLAN.md](PLAN.md). The warm audit accepted `a601896` and left two residues, the Required list still naming a withdrawn conjunct and the body-side degradation absent from the routing map, both closed here.
 
 The checkpoint review also used two correction-audit rounds, which is the applicable bound; its residue is recorded in the capsule rather than carried into a third round. That the checkpoint row read `not-reached` until closure is itself a recorded defect: the guard accepts a `not-reached` row and validates only commits that are present, so the receipt stated the opposite of the history and no gate could see it.
 
@@ -307,4 +307,4 @@ The proposal review used two correction-audit rounds, which is the applicable bo
 |---|---|---|---|---|
 | Proposal | `bf90dad` | `fork-turns-none` | `approve-with-required-edits` | `873f1b0` |
 | Semantic checkpoint | `2d81777` | `fork-turns-none` | `approve-with-required-edits` | `f275359` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `7e1c17f` | `fork-turns-none` | `approve-with-required-edits` | `a601896` |
