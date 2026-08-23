@@ -1,7 +1,7 @@
 /**
  * Body turnover: replacing what an Activity occurrence owns without replacing the occurrence.
  *
- * The contract is [the approved proposal](../../../docs/ACTIVITY-BODY-TURNOVER-PROPOSAL.md), rules
+ * The contract is [the ownership specification](../../../docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), rules
  * `AOO-TURNOVER-02` through `AOO-TURNOVER-04`. Turnover is one whole-state step by requirement, not
  * by convenience: the intermediate state in which the outgoing body is withdrawn and the incoming one
  * is not yet armed satisfies no well-formedness conjunct that mentions a body, so exposing it would

@@ -180,7 +180,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 **Implemented.**
 
 - `ActivityOccurrence` in both languages, with an identity distinct from `OccurrenceId` by field name so no task identity is substitutable for it, a closed two-arm body union, and a listed attached-Timer collection
-- all six enumerated TypeScript owner files pair through the record: the four transition owners across the three family runtimes, the open-set publication binding, and, since [the turnover amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md), the retained-pairing owner that derives a record's handler list plus the publication completeness relation, which pairs through that derived list rather than through the record itself. All three Lean family modules read it as well. Both declarative relations that carried an activation-ordinal hypothesis now take the shared `RecordJoins` premise
+- all six enumerated TypeScript owner files pair through the record: the four transition owners across the three family runtimes, the open-set publication binding, and, since [the turnover amendment](archived/ACTIVITY-BODY-TURNOVER-PROPOSAL.md), the retained-pairing owner that derives a record's handler list plus the publication completeness relation, which pairs through that derived list rather than through the record itself. All three Lean family modules read it as well. Both declarative relations that carried an activation-ordinal hypothesis now take the shared `RecordJoins` premise
 - regional cancellation withdraws every record whose owner or body lies in the region together with the waits those records list; the bounded-scope deadline arm's hand-written withdrawal is gone as redundant
 - the adapter pairs a boundary deadline through the record instead of whole-state wait cardinality, and the Workflow continuation decoder admits and structurally validates both new fields
 - Lean carries the representation, canonical order, lookups, region partition, and withdrawal-completeness laws
@@ -208,7 +208,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 
 ## Activity body turnover
 
-One Activity occurrence keeps its identity, owner, operation, and attached handlers while the body it owns is replaced. [The amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) owns the account. It adds no BPMN capability, operation kind, profile, scenario, or public observation field, and no registered construct can drive it: the operation exists so a later repetition capsule can define transitions over it.
+One Activity occurrence keeps its identity, owner, operation, and attached handlers while the body it owns is replaced. [The amendment](archived/ACTIVITY-BODY-TURNOVER-PROPOSAL.md) owns the account. It adds no BPMN capability, operation kind, profile, scenario, or public observation field, and no registered construct can drive it: the operation exists so a later repetition capsule can define transitions over it.
 
 **Implemented.**
 

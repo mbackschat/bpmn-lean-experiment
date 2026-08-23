@@ -4,7 +4,7 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 /-! # Activity body turnover
 
 Replacing what an Activity occurrence owns without replacing the occurrence. The contract is
-[the approved proposal](../../docs/ACTIVITY-BODY-TURNOVER-PROPOSAL.md), rules `AOO-TURNOVER-02`
+[the ownership specification](../../docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), rules `AOO-TURNOVER-02`
 through `AOO-TURNOVER-04`.
 
 The operation is whole-state by requirement rather than convenience. Between withdrawing the outgoing

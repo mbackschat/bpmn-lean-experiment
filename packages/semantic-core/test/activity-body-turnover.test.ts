@@ -1,7 +1,7 @@
 /**
  * Body turnover: one Activity occurrence keeps its identity while the body it owns is replaced.
  *
- * The oracle is [the approved proposal](../../../docs/ACTIVITY-BODY-TURNOVER-PROPOSAL.md), rules
+ * The oracle is [the ownership specification](../../../docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), rules
  * `AOO-TURNOVER-02` through `AOO-TURNOVER-04`.
  *
  * Nothing drives this transition yet: no registered profile admits a construct that replaces a body,
