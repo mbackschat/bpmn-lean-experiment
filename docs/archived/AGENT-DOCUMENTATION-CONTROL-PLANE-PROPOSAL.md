@@ -133,7 +133,7 @@ Implementation-status navigation is declared through one inline route atom with 
 [`implementation-status-router`](../IMPLEMENTATION-MAP.md)
 [`implementation-status-root-owner`](../IMPLEMENTATION-MAP.md#cross-area-invariants)
 [`implementation-status-owner:TEMPORAL-HOSTING`](../TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md#current-boundary)
-[`implementation-status-delegation:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer)
+[`implementation-status-delegation:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer)
 ```
 
 The closed roles are:

@@ -181,7 +181,8 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [archived/README.md](archived/README.md) | Contributors and researchers; registry and authority boundary for resolved, superseded, or parked documentation |
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Resuming agents and maintainers; mandatory area and source-path router for exact implementation status |
 | [ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) | Engine contract and source contributors; exact wire, profile, checked-source, Semantic Process IL, and source-admission status |
-| [ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) | Engine runtime and assurance contributors; exact runtime-state, scope, Lean, semantic-core, conformance, and delegated semantic-family status |
+| [ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) | Engine runtime and assurance contributors; the cross-cutting runtime-state, scope, Lean, semantic-core, and conformance boundary |
+| [ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md) | Engine runtime and assurance contributors; exact implemented and absent status per capsule-delegated semantic family |
 | [TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) | Product 1 adapter contributors; exact protocol, client, Workflow, Worker, runner, testkit, replay, hosting, and capacity status |
 | [BPM-PLATFORM-IMPLEMENTATION-MAP.md](BPM-PLATFORM-IMPLEMENTATION-MAP.md) | Product 2 contributors; exact modules, persistence, HTTP, UI, deployment, browser-evidence, and platform-exclusion status |
 | [ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) | Assurance and adoption contributors; exact project-foundation, CIB, differential, evidence-infrastructure, and optional A12 status |

@@ -18,11 +18,12 @@ This is not a general BPMN engine, an OMG Process Execution Conformance result, 
 |---|---|---|---|
 | `ENGINE-CONTRACTS-SOURCE` | `implemented` | [Engine contracts and source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) | `contracts/`, `profiles/`, `packages/contract-types/`, `packages/bpmn-source/`, `packages/engine-api/`, routed `docs/` and root documentation |
 | `ENGINE-RUNTIME-PROOF` | `implemented` | [Engine runtime and proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) | `BpmnSemantics/`, `packages/semantic-core/`, root Lean entry points, routed `docs/` and root documentation |
+| `ENGINE-SEMANTIC-FAMILY` | `implemented` | [Engine semantic family](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md) | `BpmnSemantics/`, `packages/semantic-core/`, routed `docs/capsules/` and `docs/` documentation |
 | `TEMPORAL-HOSTING` | `implemented` | [Temporal hosting](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) | `packages/temporal-adapter/`, `packages/engine-api/`, `examples/temporal-mvp/`, deployment roots, routed `docs/` and root documentation |
 | `BPM-PLATFORM` | `implemented` | [BPM platform](BPM-PLATFORM-IMPLEMENTATION-MAP.md) | `platform/`, `showcase/`, `workers/`, deployment roots, routed `docs/` and root documentation |
 | `ASSURANCE-ADOPTION` | `implemented` | [Assurance and adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) | `adoption/`, `model-corpus/`, `packages/differential/`, `runners/`, `scenarios/`, `scripts/`, root tooling, root Lean entry points, routed `docs/` and root documentation |
 
-The executable inventory conservatively routes an overridden or newly named `docs/` path to all five maps; an active work entry or an explicitly named area may narrow that set by subject. It independently covers tracked and pending implementation-bearing paths and must agree with this table.
+The executable inventory conservatively routes an overridden or newly named `docs/` path to all six maps; an active work entry or an explicitly named area may narrow that set by subject. It independently covers tracked and pending implementation-bearing paths and must agree with this table.
 
 ## Cross-area invariants
 

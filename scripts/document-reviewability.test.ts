@@ -245,7 +245,7 @@ test("keeps the routed implementation maps reviewable", async () => {
   for (const [relativePath, maximumWords, permitsRoutingTable] of [
     [rootImplementationMap, 2000, true],
     ...detailImplementationMaps.map((relativePath) =>
-      [relativePath, reviewedDetailMapWordBudget(relativePath), false] as const),
+      [relativePath, reviewedDetailMapWordBudget(), false] as const),
   ] as const) {
     const document = await readFile(path.join(projectRoot, relativePath), "utf8");
     const lines = document.split("\n");

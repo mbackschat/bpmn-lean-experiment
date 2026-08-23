@@ -9,6 +9,7 @@ import {
 export const AreaId = Object.freeze({
   EngineContractsSource: "ENGINE-CONTRACTS-SOURCE",
   EngineRuntimeProof: "ENGINE-RUNTIME-PROOF",
+  EngineSemanticFamily: "ENGINE-SEMANTIC-FAMILY",
   TemporalHosting: "TEMPORAL-HOSTING",
   BpmPlatform: "BPM-PLATFORM",
   AssuranceAdoption: "ASSURANCE-ADOPTION",
@@ -235,7 +236,7 @@ export function assertDetailImplementationMap(
     assert.ok(index > previous, `${file} lacks ordered base section ${heading}`);
     previous = index;
   }
-  const budget = reviewedDetailMapWordBudget(file);
+  const budget = reviewedDetailMapWordBudget();
   assert.ok(
     wordCount(document) <= budget,
     `${file} exceeds ${budget.toLocaleString("en-US")} words`,
@@ -245,26 +246,22 @@ export function assertDetailImplementationMap(
 /**
  * The reviewed word budget for one detail map.
  *
- * The default keeps a map readable. A raised budget is an owner decision recorded here rather than
- * absorbed by compressing the map: when the runtime and proof map reached the default, one edit at
- * the limit both introduced an over-claim and deleted absence content a review had required to live
- * there, which is the limit changing what the status owner asserts. That map routes every semantic
- * family, so its size scales with families closed rather than with narration.
+ * One budget for every routed map, and no exception. The runtime-and-proof map twice outgrew this
+ * value and was twice raised instead of split, because its size scaled with semantic families closed
+ * rather than with the engine boundary it describes. Both raises bought one capsule of headroom and
+ * the second reached its limit again, at which point landing a correction required tightening wording,
+ * which is the limit changing what the status owner asserts rather than the map being reviewed.
  *
- * The runtime-and-proof budget was raised from 5,000 to 6,500 when it reached the first raised value
- * with 24 words spare and the next capsule's status could not land. Six semantic capsules remained on
- * the engine roadmap at that point, each contributing a status section of roughly 250 words, so the
- * raise is sized to that remaining set rather than to one capsule; the alternative on offer was
- * compressing the map, which is the failure this budget exists to prevent.
- *
- * An agent may not add or change an entry. The alternative, splitting the map, is a routing change
- * needing a new area ID. The deciding authority for each value and the standing commitment to split
- * rather than raise a third time are recorded by their owner, [the documentation
+ * Splitting on the family axis retired both raises: per-family status moved to its own area and both
+ * maps came back under this default, so a newly closed family grows the family map instead of pushing
+ * a shared one past a threshold. An agent may not reintroduce an exception. The alternative to a raise
+ * is another split, which is a routing change needing a new area ID and therefore visible, and the
+ * deciding authority is recorded by its owner, [the documentation
  * discipline](../docs/DOC-DISCIPLINE.md#reviewed-detail-map-word-budgets), because a threshold whose
  * only justification is its own comment is not reviewable as a decision.
  */
-export function reviewedDetailMapWordBudget(file: string): number {
-  return file.endsWith("ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md") ? 6500 : 4000;
+export function reviewedDetailMapWordBudget(): number {
+  return 4000;
 }
 
 function rootPathRoutes(file: string): ReadonlyArray<AreaId> {

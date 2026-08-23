@@ -282,9 +282,9 @@ test("keeps the exact closed semantic-family owner complete", async () => {
   ]) assert.match(currentBoundary, new RegExp(family, "iu"), family);
 });
 
-test("keeps delegated Timer scope in the runtime detail map", async () => {
+test("keeps delegated Timer scope in the semantic family detail map", async () => {
   const runtimeMap = await readFile(
-    path.join(projectRoot, "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md"),
+    path.join(projectRoot, "docs/ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md"),
     "utf8",
   );
   for (const heading of [

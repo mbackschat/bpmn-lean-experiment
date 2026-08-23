@@ -17,6 +17,7 @@ async function delegationDocuments(): Promise<ReadonlyMap<string, string>> {
     "docs/IMPLEMENTATION-MAP.md",
     "docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md",
     "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md",
+    "docs/ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md",
     "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
     "docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md",
     "docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md",
@@ -35,25 +36,25 @@ test("answers every structural capsule delegation with its exact detail-map sect
     .filter(([file]) => /^docs\/capsules\/[^/]+-SPEC\.md$/u.test(file))
     .flatMap(([file, markdown]) =>
       scanMarkdownLinks(markdown).flatMap(({ label, destination }) =>
-        label === "`implementation-status-delegation:ENGINE-RUNTIME-PROOF`"
+        label === "`implementation-status-delegation:ENGINE-SEMANTIC-FAMILY`"
           ? [{ file, destination }]
           : []
       )
     )
-    .sort((left, right) => left.file.localeCompare(right.file));
+    .sort((left, right) => (left.file < right.file ? -1 : left.file > right.file ? 1 : 0));
 
   assert.deepEqual(delegations, [
     {
       file: "docs/capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md",
-      destination: "../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#interrupting-activity-boundary-timer",
+      destination: "../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#interrupting-activity-boundary-timer",
     },
     {
       file: "docs/capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md",
-      destination: "../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#non-interrupting-boundary-timer",
+      destination: "../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#non-interrupting-boundary-timer",
     },
     {
       file: "docs/capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md",
-      destination: "../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer",
+      destination: "../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer",
     },
   ]);
   assert.deepEqual(
