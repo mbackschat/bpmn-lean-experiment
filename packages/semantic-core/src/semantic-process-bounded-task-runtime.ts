@@ -30,6 +30,7 @@ import {
   compareTimerWaits,
   compareUserTaskWaits,
   ControlStateKind,
+  nextActivation,
   removeToken,
   sameOccurrence,
   setActivationCount,
@@ -282,11 +283,4 @@ function commitVictory(
     ),
     logicalTimeMs,
   };
-}
-
-function nextActivation(
-  counts: ReadonlyArray<{ readonly elementId: string; readonly count: number }>,
-  elementId: string,
-): number {
-  return (counts.find((entry) => entry.elementId === elementId)?.count ?? 0) + 1;
 }

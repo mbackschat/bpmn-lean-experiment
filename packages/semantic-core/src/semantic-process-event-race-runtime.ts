@@ -21,6 +21,7 @@ import {
   compareMessageWaits,
   compareTimerWaits,
   ControlStateKind,
+  nextActivation,
   removeToken,
   sameOccurrence,
   sameScopeOccurrence,
@@ -318,11 +319,4 @@ function raceOwnsTimer(
 
 function only<T>(values: ReadonlyArray<T>): T | undefined {
   return values.length === 1 ? values[0] : undefined;
-}
-
-function nextActivation(
-  counters: ReadonlyArray<Readonly<{ elementId: string; count: number }>>,
-  elementId: string,
-): number {
-  return (counters.find((counter) => counter.elementId === elementId)?.count ?? 0) + 1;
 }

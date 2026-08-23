@@ -273,6 +273,20 @@ export function tokenOwners(
     .map(({ owner }) => owner);
 }
 
+/**
+ * The activation one more element occurrence would take, without recording it.
+ *
+ * A counter family with no entry for an element has issued nothing, so the first activation is `1`.
+ * Callers pair this with `setActivationCount` in the same transition; reading it without recording it
+ * would hand two occurrences the same key.
+ */
+export function nextActivation(
+  counters: ReadonlyArray<{ readonly elementId: string; readonly count: number }>,
+  elementId: string,
+): number {
+  return (counters.find((entry) => entry.elementId === elementId)?.count ?? 0) + 1;
+}
+
 export function setActivationCount(
   counters: ReadonlyArray<ActivationCounter>,
   elementId: string,

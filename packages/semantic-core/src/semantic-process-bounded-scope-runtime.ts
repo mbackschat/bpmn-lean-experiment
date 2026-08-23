@@ -37,6 +37,7 @@ import {
   addToken,
   compareTimerWaits,
   ControlStateKind,
+  nextActivation,
   sameOccurrence,
   sameScopeOccurrence,
   setActivationCount,
@@ -279,11 +280,4 @@ function armedBoundedScopeForDeadline(
   return definition === undefined || child === undefined || deadline === undefined
     ? undefined
     : { definition, child, deadline };
-}
-
-function nextActivation(
-  counts: ReadonlyArray<{ readonly elementId: string; readonly count: number }>,
-  elementId: string,
-): number {
-  return (counts.find((entry) => entry.elementId === elementId)?.count ?? 0) + 1;
 }
