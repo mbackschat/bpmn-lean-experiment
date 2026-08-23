@@ -251,11 +251,17 @@ export function assertDetailImplementationMap(
  * there, which is the limit changing what the status owner asserts. That map routes every semantic
  * family, so its size scales with families closed rather than with narration.
  *
- * An agent may not add an entry. The alternative, splitting the map, is a routing change needing a
- * new area ID.
+ * The runtime-and-proof budget was raised from 5,000 to 6,500 by owner decision when it reached the
+ * first raised value with 24 words spare and the next capsule's status could not land. Six semantic
+ * capsules remained on the engine roadmap at that point, each contributing a status section of
+ * roughly 250 words, so the raise is sized to that remaining set rather than to one capsule; the
+ * alternative on offer was compressing the map, which is the failure this budget exists to prevent.
+ *
+ * An agent may not add or change an entry. The alternative, splitting the map, is a routing change
+ * needing a new area ID.
  */
 export function reviewedDetailMapWordBudget(file: string): number {
-  return file.endsWith("ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md") ? 5000 : 4000;
+  return file.endsWith("ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md") ? 6500 : 4000;
 }
 
 function rootPathRoutes(file: string): ReadonlyArray<AreaId> {

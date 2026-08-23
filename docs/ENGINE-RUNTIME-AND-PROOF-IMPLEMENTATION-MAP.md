@@ -190,7 +190,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 
 - the sixth derivation site is deliberately exempt rather than migrated. [The publication completeness relation](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) is an independent reconstruction pairing through the private retained anchor relation, never through state differences, so the producer's records would make it share the mechanism it checks
 - that exemption's reopen trigger is close: under any admitted repetition the record and the ordinal reconstruction would legitimately disagree, and it would reject a correct publication
-- the effect body arm is unreachable and absent, since no registered family gives an Activity an effect body. Body turnover is no longer withdrawn: [its amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) owns the account and the status this map cannot yet carry
+- the effect body arm is unreachable and absent, since no registered family gives an Activity an effect body. Body turnover is no longer withdrawn; its status is the section below
 - preservation of the new conjuncts across the registered transition arms inherits [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) and is not re-declared
 
 **Absent in evidence.**
@@ -205,6 +205,30 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 - the continuation witness the Temporal preflight names does not exist. The only continuation fixture carries an empty record collection, so the populated branch of the continuation decoder and the two-arm body union are exercised by no test, and the mutation that carries a record across Continue-As-New without its body has no oracle on that path. The refusal itself is wired and gated; what is absent is the witness
 - the called-instance removal route has no executable schedule, because no registered program composes regional cancellation with a Call Activity. Its record filter is held by [a source-derived completeness guard](../scripts/runtime-collection-removal-completeness.test.ts) that derives the required collections from `RuntimeState`, and by Lean's quantified `cancelScopeSubtree_retains_no_withdrawn_record`, whose region predicate unions the subtree with the called-instance closure
 - three cancellation routes reach a bounded region without being composable with one today: Error interruption, incident-gated cancellation, and `terminateScope`
+
+## Activity body turnover
+
+One Activity occurrence keeps its identity, owner, operation, and attached handlers while the body it owns is replaced. [The amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) owns the account. It adds no BPMN capability, operation kind, profile, scenario, or public observation field, and no registered construct can drive it: the operation exists so a later repetition capsule can define transitions over it.
+
+**Implemented.**
+
+- a whole-state replacement in both languages that withdraws the outgoing body wait, arms the incoming one from the body element's own counter family, advances that counter, and rewrites the record in one step. Both refuse a record whose body does not resolve to exactly one live wait, so the ambiguous state is undefined rather than repaired
+- the Activity's own counter is deliberately not advanced, which is the whole source of the divergence the record exists to survive
+- Lean carries two quantified results: frame preservation, generalised so any body-blind projection of the record collection is unchanged, and preservation of all twelve well-formedness conjuncts, four of them definitionally
+- [the collection laws](../BpmnSemantics/SemanticProcess/CollectionOrder.lean) that made the second possible: order preservation under filtering and canonical insertion for both affected families, the lexicographic step both comparators are built from, and the key-factoring laws that carry a frame equation into a conjunct. This is the account's first transition-level preservation law; every earlier well-formedness fact was decided of a concrete state, where empty collections needed no order argument
+- [kernel-decided fixtures](../BpmnSemantics/ActivityBodyTurnoverConformance.lean) pinning the pre-state at `([1], [1], [1])` and the post-state at `([2], [1], [1])` for the body, handler, and Activity activation families. They exist because both quantified laws remain provable of an operation that returns its argument unchanged, so neither witnesses the transition's content
+
+**Absent.**
+
+- the two hypotheses the preservation law carries are not state invariants and are not discharged. Nothing bounds a live wait's activation by its counter, so wait-key freshness is stated; nothing refuses two records naming one body, so the sole-claimant premise is stated. Both are dischargeable by construction at an arming call site, and the second is the same premise the ownership account's body-side determinism theorem already carries
+- the publication-anchor lane. The completeness relation still pairs a boundary Timer to its host by activation equality, so `AOO-JOIN-02` and the join guard's exemption remain true of the tree. [The amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) records the two reachable shapes and their costs and selects neither
+- the general preservation lane for every other transition family, which stays open
+
+**Absent in evidence.**
+
+- the separating witness is over runtime state, not the public observation boundary. No admitted construct can drive a second iteration, so the public witness belongs to the consuming capsule
+- no fixture exercises a *sequence* of replacements. One replacement is checked; the profile's sixteen-item bound is untouched
+- one clause of the transition rule, that the record names the incoming body, is pinned only in composition by the activation, cardinality, and well-formedness fixtures together rather than by a theorem of its own
 
 ## Interrupting Activity boundary Timer
 
