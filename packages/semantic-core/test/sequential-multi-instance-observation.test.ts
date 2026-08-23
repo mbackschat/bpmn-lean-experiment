@@ -230,5 +230,13 @@ test("Table 10.30's identity holds where the record carries no Task body", () =>
       open.numberOfTerminatedInstances,
     "generated is the sum of the counts published beside it",
   );
+  // The second identity is the one a per-field correction breaks: publishing generated as completed
+  // plus active while pending still derives it as completed plus one satisfies the identity above and
+  // violates this one on the same state, so both belong in one test.
+  assert.equal(
+    open.plannedInstanceCount,
+    open.pendingItemCount + open.numberOfInstances,
+    "planned is pending plus generated over the same published counts",
+  );
   assert.deepEqual(open.activeIterations, []);
 });

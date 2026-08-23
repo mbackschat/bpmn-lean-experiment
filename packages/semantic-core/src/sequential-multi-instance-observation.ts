@@ -30,7 +30,6 @@ import type { RuntimeState } from "./semantic-process-state.js";
 import {
   activeSnapshotItem,
   completedInstanceCount,
-  pendingItemCount,
 } from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
 
@@ -116,7 +115,18 @@ export function projectOpenMultiInstances(
           id: controller.id,
           mode: "sequential" as const,
           plannedInstanceCount: controller.snapshot.length,
-          pendingItemCount: pendingItemCount(controller),
+          // Both normative identities are arithmetic over the three counts published beside them,
+          // because both derive generated the same way. Reading `pendingItemCount(controller)` here
+          // instead would derive generated twice, as completed plus active for the published field and
+          // as completed plus one inside the controller helper, and those disagree on exactly the state
+          // that made the first identity fail: a controller bound to a record whose body is not a Task
+          // has no active instance, which no conjunct refuses. The controller helper stays as it is,
+          // because it is the controller-only representation fact Lean's counter law shares.
+          pendingItemCount: Math.max(
+            0,
+            controller.snapshot.length -
+              (completedInstanceCount(controller) + iterations.length),
+          ),
           numberOfInstances: completedInstanceCount(controller) +
             iterations.length,
           numberOfActiveInstances: iterations.length,
