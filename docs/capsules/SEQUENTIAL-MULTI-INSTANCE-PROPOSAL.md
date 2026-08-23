@@ -294,8 +294,8 @@ Existing executable constraints include [schema coverage](../../scripts/contract
 | [canonical scenario projection](../../packages/semantic-core/src/scenario.ts) | 68 |
 | [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 539 |
 | [profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 397 |
-| [FlowNode occurrence lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 44 |
-| [FlowNode occurrence open set](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 42 |
+| [FlowNode occurrence lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 28 |
+| [FlowNode occurrence open set](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 27 |
 | [BPMN source compiler composition](../../packages/bpmn-source/src/compile.ts) | 196 |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
 | [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
@@ -309,8 +309,9 @@ Owners this implementation **created**, listed because the recomputing guard mea
 | [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 137 |
 | [Lean outer controller](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 505 |
 | [progress projection](../../packages/semantic-core/src/sequential-multi-instance-observation.ts) | 467 |
+| [occurrence accounting](../../packages/semantic-core/src/flow-node-occurrence-sequential-multi-instance.ts) | 337 |
 
-The expected lowering, occurrence, and projection mechanisms cannot fit cohesively in the current headroom of the lowering owner at 43 lines, the occurrence lifecycle at 44, the occurrence open set at 42, and the canonical scenario projection at 75. Their implementation must create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. This extraction condition stops applying if the review target measurements change enough that the complete cohesive mechanism fits while every owner remains below 600; the table is recomputed by the reviewability guard rather than treated as permanent prose.
+At proposal time the lowering owner had 43 lines of headroom, the occurrence lifecycle 44, the occurrence open set 42, and the canonical scenario projection 75, so the expected lowering, occurrence, and projection mechanisms could not fit cohesively in any of them. Their implementation must therefore create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. The occurrence extraction has discharged that condition: the accounting mechanism lives in its own owner and the two occurrence files kept only a delegating arm each, which is why their rows above now measure lower rather than higher. The condition stops applying to a remaining mechanism only if the review target measurements change enough that its complete cohesive form fits while every owner remains below 600; every figure in these tables is recomputed by the reviewability guard rather than treated as permanent prose.
 
 ## Epistemic closure and reopen conditions
 

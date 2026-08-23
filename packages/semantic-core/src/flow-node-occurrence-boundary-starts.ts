@@ -25,6 +25,9 @@ import type {
   SemanticFlowNodeOccurrenceAnchorKind,
   UnnumberedFlowNodeOccurrenceStart,
 } from "./flow-node-occurrence-lifecycle.js";
+import {
+  sequentialMultiInstanceEntryStarts,
+} from "./flow-node-occurrence-sequential-multi-instance.js";
 
 const WaitAnchorKind = "wait" as SemanticFlowNodeOccurrenceAnchorKind.Wait;
 const ScopeAnchorKind = "scope" as SemanticFlowNodeOccurrenceAnchorKind.Scope;
@@ -69,7 +72,7 @@ export function candidateLongLivedStarts(
       return oneWaitStart(processId, operation.task.elementId, owner, wait?.id);
     }
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
-      return null;
+      return sequentialMultiInstanceEntryStarts(after, operation, owner, processId);
     case SemanticOperationKind.AwaitMessage: {
       const wait = only(after.messageWaits.filter((candidate) =>
         candidate.id.elementId === operation.message.elementId &&

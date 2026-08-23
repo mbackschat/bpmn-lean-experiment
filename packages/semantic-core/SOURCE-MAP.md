@@ -36,6 +36,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [flow-node-occurrence-open-set.ts](src/flow-node-occurrence-open-set.ts) | Open flow-node occurrence projection |
 | [flow-node-occurrence-publication-completeness.ts](src/flow-node-occurrence-publication-completeness.ts) | Internal-transition publication completeness |
 | [flow-node-occurrence-publication-external-completeness.ts](src/flow-node-occurrence-publication-external-completeness.ts) | External-stimulus and cancellation publication completeness |
+| [flow-node-occurrence-sequential-multi-instance.ts](src/flow-node-occurrence-sequential-multi-instance.ts) | Sequential Multi-Instance inner-instance occurrence accounting |
 | [control-position-projection.ts](src/control-position-projection.ts) | Public control-position projection and transition deltas |
 | [scenario.ts](src/scenario.ts) | Stable observation and scenario evaluation |
 | [stimulus.ts](src/stimulus.ts) | Stimulus validation, command identity, and equality |

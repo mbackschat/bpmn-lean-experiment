@@ -43,6 +43,10 @@ import type {
   SemanticFlowNodeOccurrenceAnchorKind,
   UnnumberedFlowNodeOccurrenceStart,
 } from "./flow-node-occurrence-lifecycle.js";
+import {
+  sequentialMultiInstanceBoundaryTimerBinding,
+  sequentialMultiInstanceTaskWaitMatches,
+} from "./flow-node-occurrence-sequential-multi-instance.js";
 
 const WaitAnchorKind = "wait" as SemanticFlowNodeOccurrenceAnchorKind.Wait;
 const ScopeAnchorKind = "scope" as SemanticFlowNodeOccurrenceAnchorKind.Scope;
@@ -66,6 +70,13 @@ export type BoundaryTimerBinding =
         { kind: SemanticOperationKind.EnterBoundedScope }
       >;
       child: RuntimeScopeOccurrence;
+    }
+  | {
+      operation: Extract<
+        SemanticOperation,
+        { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
+      >;
+      activeTask: OccurrenceId;
     };
 
 /** Projects every exact long-lived flow-node occurrence or fails closed. */
@@ -150,6 +161,8 @@ export function resolveBoundaryTimerBinding(
         ? null
         : { operation, hostId: task.id };
     }
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return sequentialMultiInstanceBoundaryTimerBinding(state, record, operation, wait);
     case SemanticOperationKind.EnterBoundedScope: {
       const body = activityBodyScope(record);
       const child = body === undefined ? undefined
@@ -310,6 +323,8 @@ function waitMatchesUserTask(
           operation.task.output === wait.output &&
           operation.task.name === wait.name &&
           wait.metadata === undefined;
+      case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+        return sequentialMultiInstanceTaskWaitMatches(state, operation, wait);
       default:
         return false;
     }

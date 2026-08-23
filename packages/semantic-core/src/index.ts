@@ -14,6 +14,7 @@ export * from "./exact-balanced-two-branch-topology.js";
 export * from "./flow-node-occurrence-lifecycle.js";
 export * from "./flow-node-occurrence-open-set.js";
 export * from "./flow-node-occurrence-publication-completeness.js";
+export * from "./flow-node-occurrence-sequential-multi-instance.js";
 export { isMessageChannel, sameMessageChannel } from "./message-channel.js";
 export {
   isWellFormedInitiateMessageOperation,

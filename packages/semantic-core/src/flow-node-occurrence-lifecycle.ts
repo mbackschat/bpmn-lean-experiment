@@ -35,6 +35,13 @@ import {
   projectOpenFlowNodeOccurrences,
   resolveBoundaryTimerBinding,
 } from "./flow-node-occurrence-open-set.js";
+import {
+  sequentialMultiInstanceInterruptionOccurrences,
+  sequentialMultiInstanceIterationOccurrences,
+} from "./flow-node-occurrence-sequential-multi-instance.js";
+import {
+  isSequentialMultiInstanceTaskDefinition,
+} from "./semantic-process-sequential-multi-instance-runtime.js";
 
 export enum FlowNodeOccurrenceTerminalKind {
   Completed = "completed",
@@ -106,7 +113,7 @@ export function projectFlowNodeOccurrenceLifecycleDelta(
     return null;
   }
   const pieces = boundary.kind === "external"
-    ? externalLifecycle(program, before, boundary.stimulus)
+    ? externalLifecycle(program, before, after, boundary.stimulus)
     : internalLifecycle(program, before, after, boundary.operation, boundary.owner);
   if (pieces === null) {
     return null;
@@ -175,6 +182,7 @@ export function foldFlowNodeOccurrenceLifecycleDelta(
 function externalLifecycle(
   program: SemanticProcessProgram,
   before: RuntimeState,
+  after: RuntimeState,
   stimulus: Stimulus,
 ): LifecyclePieces | null {
   const completed = (id: OccurrenceId): LifecyclePieces => pieces([], [{ anchor: waitAnchor(id), terminal: FlowNodeOccurrenceTerminalKind.Completed }]);
@@ -185,8 +193,13 @@ function externalLifecycle(
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
       return pieces();
-    case StimulusKind.CompleteUserTaskInstance:
-      return completed(stimulus.taskId);
+    case StimulusKind.CompleteUserTaskInstance: {
+      if (!isSequentialMultiInstanceTaskDefinition(program, stimulus.taskId)) {
+        return completed(stimulus.taskId);
+      }
+      const iteration = sequentialMultiInstanceIterationOccurrences(program, before, after, stimulus);
+      return iteration === null ? null : pieces(iteration.started, iteration.ended);
+    }
     case StimulusKind.DeliverMessage: {
       const race = only(before.eventRaces.filter(({ messageSubscriptionId }) => sameOccurrence(messageSubscriptionId, stimulus.subscriptionId)));
       return race === undefined
@@ -220,6 +233,10 @@ function externalLifecycle(
             : null;
         case SemanticOperationKind.AwaitMonitoredUserTask:
           return "hostId" in boundary ? pieces([], [], [instant]) : null;
+        case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask: {
+          const cancelled = sequentialMultiInstanceInterruptionOccurrences(boundary);
+          return cancelled === null ? null : pieces([], cancelled.ended, [instant]);
+        }
         case SemanticOperationKind.EnterBoundedScope:
           return "child" in boundary
             ? pieces(
@@ -280,14 +297,13 @@ function internalLifecycle(
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
-    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
-      return null;
     case SemanticOperationKind.AwaitEventRace: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       const gateway = instant();
