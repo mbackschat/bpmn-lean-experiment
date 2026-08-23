@@ -35,11 +35,9 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: close the [body-turnover amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) through cold closure review, then resume the sequential Multi-Instance account it unblocks. The amendment is approved, checkpoint-reviewed, and implemented in both languages; its receipt owns that history.
+Next action: close the [body-turnover amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) through a **new** cold closure review, then resume the sequential Multi-Instance account it unblocks. The first closure review refused. It starts cold rather than warm because the retained handler cache it examined compared a snapshot against a recomputation, which the single-writer fix redesigned; every other finding is closed, including two cost rows that reproduced from no commit pair.
 
-The publication-anchor lane has landed. The completeness relation pairs a firing deadline through the handler list the accumulator retains from the record, the continuation decoder recomputes rather than trusts it, `AOO-JOIN-03` replaces `AOO-JOIN-02`, and all seven falsified parent passages are corrected. The retained shape change is durable and unversioned, which pre-release permits but the Temporal preflight must name before a history baseline.
-
-The runtime-and-proof map's reviewed word budget was raised from 5,000 to 6,500 by owner decision, sized to the six remaining semantic capsules rather than to this one. That is its second raise, so the next capsule to exhaust it should split the map under a new area ID instead.
+The publication-anchor lane has landed: the completeness relation pairs a firing deadline through the retained handler list, the continuation decoder recomputes rather than trusts it, and `AOO-JOIN-03` replaces `AOO-JOIN-02`. The falsified parent passages are bounded by a recorded criterion and two searches rather than a count, because three counts each came up short. The retained shape change is durable and unversioned, which pre-release permits but a history baseline does not.
 
 Oracle: replacement keeps one occurrence identity while its body changes, the post-state is well-formed under the two stated hypotheses, and the body's activation diverges from its handler's. An absent or ambiguous body leaves the operation undefined rather than repaired.
 
