@@ -207,4 +207,57 @@ theorem userTaskWaitBefore_compose (a b c : UserTaskWait) :
   simp only [decide_eq_false_iff_not] at *
   omega
 
+/-! ## Canonical insertion
+
+Arming inserts one wait; turnover withdraws one and inserts one. Both need the same fact, and it
+needs only asymmetry: the element placed before `current` must not also belong after it.
+-/
+
+/-- Insertion puts either the new wait or the old head first, which is what the adjacent-pair check
+needs in order to know what the new first pair is. -/
+private theorem insertUserTaskWait_head (wait current : UserTaskWait)
+    (rest : List UserTaskWait) :
+    (insertUserTaskWait wait (current :: rest) = wait :: current :: rest ∧
+        userTaskWaitBefore wait current = true) ∨
+      ∃ tail, insertUserTaskWait wait (current :: rest) = current :: tail ∧
+        userTaskWaitBefore wait current = false := by
+  unfold insertUserTaskWait
+  by_cases h : userTaskWaitBefore wait current = true
+  · exact Or.inl ⟨by simp [h], h⟩
+  · simp only [Bool.not_eq_true] at h
+    exact Or.inr ⟨insertUserTaskWait wait rest, by simp [h], h⟩
+
+/-- `RSI-ORDER-01` survives canonical insertion. -/
+theorem orderedBy_insertUserTaskWait (wait : UserTaskWait) :
+    ∀ waits : List UserTaskWait, orderedBy userTaskWaitBefore waits = true →
+      orderedBy userTaskWaitBefore (insertUserTaskWait wait waits) = true := by
+  intro waits
+  induction waits with
+  | nil => intro _; rfl
+  | cons current rest ih =>
+    intro ordered
+    have tail : orderedBy userTaskWaitBefore rest = true := by
+      cases rest with
+      | nil => rfl
+      | cons second more =>
+        simp only [orderedBy, Bool.and_eq_true] at ordered
+        exact ordered.2
+    unfold insertUserTaskWait
+    by_cases h : userTaskWaitBefore wait current = true
+    · simp only [h, if_pos]
+      simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true']
+      exact ⟨userTaskWaitBefore_asymm wait current h, ordered⟩
+    · simp only [Bool.not_eq_true] at h
+      simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true]
+      have inner := ih tail
+      cases rest with
+      | nil => simpa [orderedBy, insertUserTaskWait, h] using rfl
+      | cons second more =>
+        simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true'] at ordered
+        rcases insertUserTaskWait_head wait second more with ⟨heq, hlt⟩ | ⟨tailList, heq, _⟩
+        · simp only [heq, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
+          exact ⟨h, userTaskWaitBefore_asymm wait second hlt, tail⟩
+        · simp only [heq, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
+          exact ⟨ordered.1, by rw [← heq]; exact inner⟩
+
 end BpmnSemantics.SemanticProcess
