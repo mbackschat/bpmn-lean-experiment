@@ -142,7 +142,6 @@ export function accumulateFlowNodeOccurrencePublication(
       lifecycle,
       committedAtEpochMs,
       retained,
-      step.state,
     ),
   );
   const first = transitions[0];
@@ -156,7 +155,8 @@ export function accumulateFlowNodeOccurrencePublication(
     committedAtEpochMs,
     transitions: [first, ...transitions.slice(1)],
   };
-  const currentOpen = retained
+  const refreshed = refreshAttachedTimers(retained, step.state);
+  const currentOpen = refreshed
     .map(({ occurrence }) => cloneOpen(occurrence))
     .sort((left, right) => comparePublicId(left.id, right.id));
   const candidate: FlowNodeOccurrencePublicationState = {
@@ -166,7 +166,7 @@ export function accumulateFlowNodeOccurrencePublication(
     headRevision: executionAfter.headRevision,
     batches: [...state.batches, batch],
     currentOpen,
-    retainedOpen: retained,
+    retainedOpen: refreshed,
     lastCommittedAtEpochMs: committedAtEpochMs,
   };
   requireFlowNodeOccurrencePublicationResult(
@@ -203,7 +203,6 @@ function numberLifecycleDelta(
   lifecycle: UnnumberedFlowNodeOccurrenceDelta,
   committedAtEpochMs: number,
   retained: RetainedOpenFlowNodeOccurrence[],
-  stateAfter: RuntimeState,
 ) {
   if (
     !canonical(lifecycle.started, (left, right) =>
@@ -229,7 +228,9 @@ function numberLifecycleDelta(
     retained.push({
       anchor: cloneAnchor(semanticStart.anchor),
       occurrence: { ...publicStart, startedAtEpochMs: committedAtEpochMs },
-      attachedTimers: attachedTimersForBodyAnchor(stateAfter, semanticStart.anchor),
+      // Written once below, from the committed post-state, for every entry rather than only for the
+      // ones this command opened. See `refreshAttachedTimers`.
+      attachedTimers: [],
     });
   }
   const ended: FlowNodeOccurrenceEnd[] = [];
@@ -452,6 +453,34 @@ function cloneRetained(
     occurrence: cloneOpen(value.occurrence),
     attachedTimers: value.attachedTimers.map(cloneOccurrenceId),
   };
+}
+
+/**
+ * Rewrites every retained entry's cached handler list from the committed post-state.
+ *
+ * The cache exists so the publication completeness relation can pair a firing deadline to its host
+ * without an activation ordinal, and the continuation decoder recomputes it from state rather than
+ * trusting it. Those two models agree only if the cache tracks the state, so this is the single writer
+ * and it runs for every entry on every command.
+ *
+ * Writing it only when a body opened is what an earlier form did, and it was wrong for a reachable
+ * schedule rather than a contrived one: a non-interrupting boundary Timer empties a record's handler
+ * list while its host wait stays open, so the stale cache named a withdrawn reminder, the decoder
+ * refused a correct publication, and Continue-As-New failed on a legal state.
+ *
+ * Refreshing after the fold is also what the relation needs. The retained set it reads at one command
+ * was written at the end of the previous one, so it is exactly that command's pre-state view, which is
+ * the view a firing deadline must be resolved against.
+ */
+function refreshAttachedTimers(
+  retained: ReadonlyArray<RetainedOpenFlowNodeOccurrence>,
+  committed: RuntimeState,
+): RetainedOpenFlowNodeOccurrence[] {
+  return retained.map((entry) => ({
+    ...entry,
+    attachedTimers: attachedTimersForBodyAnchor(committed, entry.anchor)
+      .map(cloneOccurrenceId),
+  }));
 }
 
 function cloneOccurrenceId(value: OccurrenceId): OccurrenceId {

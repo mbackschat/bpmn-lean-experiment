@@ -234,9 +234,11 @@ function requireAndFold(
   for (const lifecycle of traced.flowNodeOccurrenceLifecycles) {
     const next = foldFlowNodeOccurrenceLifecycleDelta(open, lifecycle);
     assert.ok(next !== null);
-    // Stands in for the Workflow accumulator, which retains each opening body's attached handlers
-    // from the committed post-state. Folding without that step would leave every boundary Timer
-    // unpairable, so this is the accumulator's obligation rather than test scaffolding.
+    // Stands in for the Workflow accumulator, which rewrites every retained entry's handler list from
+    // the committed post-state at the end of each command. Recomputing for every entry rather than
+    // only for the ones just opened is the production model, not a simplification: a stale entry makes
+    // the continuation decoder refuse a legal state. Folding without this step would leave every
+    // boundary Timer unpairable, so it is the accumulator's obligation rather than test scaffolding.
     open = next.map((entry) => ({
       ...entry,
       attachedTimers: attachedTimersForBodyAnchor(traced.result.state, entry.anchor),
