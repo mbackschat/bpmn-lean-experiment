@@ -50,16 +50,14 @@ theorem turnover_is_defined : turnedOver?.isSome = true := by decide +kernel
 /-- `AOO-TURNOVER-02` and `AOO-TURNOVER-04` as content rather than as definition.
 
 The body advances and the handler does not. An operation that returned its argument unchanged would
-answer `([1], [1], [1])` here, so this is the fact both quantified laws cannot supply. -/
+answer `([1], [1], [1])` here, so this is the fact both quantified laws cannot supply. Each
+singleton also pins its family's cardinality, because `List.map` preserves length: exactly one body
+wait stays live, the outgoing one having been withdrawn in the same step. -/
 theorem turnover_diverges_the_body_from_its_handler :
     turnedOver?.map (fun state =>
       (state.waits.map (·.activation), state.timerWaits.map (·.activation),
         state.activityOccurrences.map (·.activation))) = some ([2], [1], [1]) := by
   decide +kernel
-
-/-- Exactly one body stays live: the outgoing wait is withdrawn in the same step. -/
-theorem turnover_leaves_one_live_body :
-    turnedOver?.map (·.waits.length) = some 1 := by decide +kernel
 
 /-- The post-state is admitted, which the quantified law asserts only under hypotheses. -/
 theorem turnover_reaches_a_well_formed_state :

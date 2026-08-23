@@ -180,7 +180,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 **Implemented.**
 
 - `ActivityOccurrence` in both languages, with an identity distinct from `OccurrenceId` by field name so no task identity is substitutable for it, a closed two-arm body union, and a listed attached-Timer collection
-- five of six enumerated TypeScript derivation sites read the record, the four transition owners across all three families plus the open-set publication binding, and all three Lean family modules do as well. Both declarative relations that carried an activation-ordinal hypothesis now take the shared `RecordJoins` premise
+- all six enumerated TypeScript derivation sites read the record, the four transition owners across all three families, the open-set publication binding, and, since [the turnover amendment](ACTIVITY-BODY-TURNOVER-PROPOSAL.md), the publication completeness relation through its retained handler list. All three Lean family modules read it as well. Both declarative relations that carried an activation-ordinal hypothesis now take the shared `RecordJoins` premise
 - regional cancellation withdraws every record whose owner or body lies in the region together with the waits those records list; the bounded-scope deadline arm's hand-written withdrawal is gone as redundant
 - the adapter pairs a boundary deadline through the record instead of whole-state wait cardinality, and the Workflow continuation decoder admits and structurally validates both new fields
 - Lean carries the representation, canonical order, lookups, region partition, and withdrawal-completeness laws
@@ -188,8 +188,8 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 
 **Absent.**
 
-- the sixth derivation site is deliberately exempt rather than migrated. [The publication completeness relation](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) is an independent reconstruction pairing through the private retained anchor relation, never through state differences, so the producer's records would make it share the mechanism it checks
-- that exemption's reopen trigger is close: under any admitted repetition the record and the ordinal reconstruction would legitimately disagree, and it would reject a correct publication
+- **superseded.** The sixth derivation site was deliberately exempt rather than migrated, on the ground that giving [the publication completeness relation](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) the producer's records would make it share the mechanism it checks. The amendment migrated it and accepted exactly that cost
+- **superseded.** That exemption's reopen trigger fired: under admitted repetition the record and the ordinal reconstruction would legitimately disagree, and the relation would reject a correct publication
 - the effect body arm is unreachable and absent, since no registered family gives an Activity an effect body. Body turnover is no longer withdrawn; its status is the section below
 - preservation of the new conjuncts across the registered transition arms inherits [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) and is not re-declared
 
@@ -197,7 +197,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 
 - both first reds are state-level negatives, because no public transition produces either state: every profile admitting a boundary deadline admits exactly one Activity armed exactly once
 - the reachable schedule-level evidence is conservation, byte-identical retained results across the three families' six registered scenarios, which says nothing changed rather than that anything improved
-- positive schedule-level evidence for the join reduces to the enumerated five-producer guard with its one exempt oracle
+- positive schedule-level evidence for the join reduced to the enumerated five-producer guard with its one exempt oracle. `AOO-JOIN-03` now enumerates six with none exempt, and the guard's exclusion names one safe operand rather than a whole line, so restoring the ordinal join in the migrated owner is caught
 - no fixture rewinds `activityActivations`, so the new monotonicity family is asserted only positively by the five-schedule preservation lane. Both languages carry the family in their regression oracle; neither carries a negative that would fail if the family were dropped from it
 - nothing refuses two records naming one body, so the account admits a state on which every body-keyed lookup degrades to `none`. The body-side determinism theorem therefore carries its at-most-one bound as an explicit hypothesis rather than drawing it from a conjunct. This absence differs from every other one listed here in having **no admission trigger**: two records on one body is not something a future capability produces, it is a defect the fail-closed gate would catch, so no roadmap item will force it to surface. Its trigger is the next deliberate pass over the gated defect classes, named here because otherwise it stays unexamined precisely because nothing reaches it
 - one defect label carries two rules: an owner disagreement under `AOO-OWN-01` is reported as the body-absence class, because the predicate pushes that label for both body liveness and listed-Timer liveness. The cross-owner test asserts only that the defect list is non-empty, so nothing pins the distinction
@@ -224,14 +224,15 @@ One Activity occurrence keeps its identity, owner, operation, and attached handl
 
 - the durable retained shape change is unversioned. It is permitted pre-release, but the Temporal preflight must name it before a history baseline is approved
 - the two hypotheses the preservation law carries are not state invariants and are not discharged. Nothing bounds a live wait's activation by its counter, so wait-key freshness is stated; nothing refuses two records naming one body, so the sole-claimant premise is stated. Both are dischargeable by construction at an arming call site, and the second is the same premise the ownership account's body-side determinism theorem already carries
-
 - the general preservation lane for every other transition family, which stays open
 
 **Absent in evidence.**
 
 - the separating witness is over runtime state, not the public observation boundary. No admitted construct can drive a second iteration, so the public witness belongs to the consuming capsule
 - no fixture exercises a *sequence* of replacements. One replacement is checked; the profile's sixteen-item bound is untouched
-- one clause of the transition rule, that the record names the incoming body, is pinned only in composition by the activation, cardinality, and well-formedness fixtures together rather than by a theorem of its own
+- the continuation decoder's recomputation of the retained handler list has no witness on its populated branch. Every continuation fixture carries an empty retained-open collection, so the refusal that makes a forged pairing unable to survive a restore is exercised by nothing, and the restore boundary is the only place that recomputation runs
+- that recomputation is also not a second lane for the pairing itself. The accumulator and the decoder both call [one retained-pairing owner](../packages/semantic-core/src/flow-node-occurrence-retained-pairing.ts), which is what makes them agree by construction after the single-writer correction; a defect inside that derivation is invisible to both, so under [the evidence-lane rule](TESTING-SPEC.md#evidence-lanes) their failure modes are correlated and count once
+- one clause of the transition rule, that the record names the incoming body, is pinned only in composition by the activation and well-formedness fixtures together rather than by a theorem of its own
 
 ## Interrupting Activity boundary Timer
 

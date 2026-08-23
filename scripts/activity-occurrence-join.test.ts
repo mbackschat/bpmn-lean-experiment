@@ -48,20 +48,6 @@ const leanPairingOwners = [
 const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|RecordJoins/u;
 
 /**
- * A join across two counter families, written in TypeScript.
- *
- * The right-hand exclusion is the same one the Lean pattern carries and for the same reason: comparing
- * a retained identity's activation against a *submitted* occurrence identity's is an identity equality,
- * not a join. The publication relation's retained handler lookup is exactly that shape, and before this
- * exclusion existed on both sides the enumeration had to exempt that owner instead.
- *
- * It inherits the recorded hole too: the exclusion is line-scoped, so a genuine cross-family join on a
- * line that also mentions an excluded identifier evades the pattern. The enumeration below is what
- * carries the rule, and it now exempts nothing.
- */
-const crossFamilyJoin =
-  /\.activation\s*===\s*(?!.*\b(?:timerId|taskId|submitted)\b)[A-Za-z_$][\w$.]*\.activation\b/u;
-/**
  * The Lean form of the same defect.
  *
  * `=` rather than `===`, and it must not match a *same-family* identity check. Those compare a wait's
@@ -69,21 +55,37 @@ const crossFamilyJoin =
  * join, so the pattern requires both sides to end in `.activation` and excludes a right-hand side
  * naming a submitted identity parameter.
  *
- * That exclusion is line-scoped, and the closure review named the hole: a genuine cross-family join written on a line that
- * also mentions any excluded identifier evades this pattern. The alternative, matching across lines, would need a parser for
- * a claim an enumeration already bounds, so the hole is recorded rather than closed and the enumeration is what carries the
- * rule.
+ * That exclusion is line-scoped, and the closure review named the hole: a genuine cross-family join
+ * written on a line that also mentions any excluded identifier evades this pattern. The TypeScript
+ * pattern below closes the same hole by naming the safe left operand instead, which is the better
+ * shape; doing that here needs the Lean owners' exact safe forms enumerated first, so the hole is
+ * still recorded rather than closed and the enumeration is what carries the rule.
  */
 const leanCrossFamilyJoin =
   /\.activation\s*=\s*(?!.*\b(?:timerId|taskId|submitted)\b)[A-Za-z_][\w.]*\.activation\b/u;
+
 /**
- * Evidence that an owner actually pairs through the record rather than pairing nothing.
+ * A join across two counter families, written in TypeScript.
  *
- * Two shapes count. Most owners hold runtime state and call a record lookup. The publication
- * completeness relation holds none, so it reads `attachedTimers`, the record's own field, from the
- * accumulator's retained copy. Both are the record; the second is one step removed, and admitting only
- * the first is what forced this owner to be exempted from the rule instead of covered by it.
+ * The exclusion is the *left* operand, not the line. An earlier form excluded any line mentioning a
+ * submitted identity, which is how the Lean pattern is written and which is wrong here: the join this
+ * capsule removed was `entry.anchor.id.activation === timerId.activation`, so a whole-line exclusion
+ * for `timerId` would have stopped flagging exactly the regression it exists to catch. The safe shape
+ * is one line, named exactly, and it compares an element of the retained handler list against the
+ * submitted deadline, which is an identity equality inside one family.
+ *
+ * A line-scoped exclusion would also inherit the hole the Lean pattern records. Naming the operand
+ * closes it here, and the enumeration below carries the rest of the rule while exempting nothing.
  */
+const crossFamilyJoin = /\.activation\s*===\s*[A-Za-z_$][\w$.]*\.activation\b/u;
+
+/** The one same-family identity comparison the enumerated owners are allowed to contain. */
+const retainedListIdentity = /^\s*attached\.activation\s*===\s*timerId\.activation\b/u;
+
+function joinsAcrossFamilies(line: string): boolean {
+  return crossFamilyJoin.test(line) && !retainedListIdentity.test(line);
+}
+
 const recordLookup = /activityOccurrenceFor|activityBody(Task|Scope)|attachedTimers/u;
 
 function lines(file: string): ReadonlyArray<string> {
@@ -92,7 +94,7 @@ function lines(file: string): ReadonlyArray<string> {
 
 function joinSites(file: string): ReadonlyArray<string> {
   return lines(file).flatMap((line, index) =>
-    crossFamilyJoin.test(line) ? [`${file}:${index + 1}`] : []
+    joinsAcrossFamilies(line) ? [`${file}:${index + 1}`] : []
   );
 }
 
@@ -144,12 +146,15 @@ test("the pattern separates a cross-family join from a cardinality check", () =>
     "  candidate.id.activation === wait.id.activation &&",
     "  entry.anchor.id.activation === 1 &&",
     "  left.activation - right.activation;",
-    // The retained handler lookup: an identity equality against a submitted Timer identity.
+    // The retained handler read: an identity equality inside one family, and the only safe shape.
     "    attached.activation === timerId.activation);",
+    // The join this capsule removed. It mentions a submitted identity too, so a line-scoped
+    // exclusion would have stopped catching its regression.
+    "        entry.anchor.id.activation === timerId.activation &&",
   ];
   assert.deepEqual(
-    sample.flatMap((line, index) => crossFamilyJoin.test(line) ? [index] : []),
-    [0],
-    "only the cross-family join matches, and the submitted-identity comparison does not",
+    sample.flatMap((line, index) => joinsAcrossFamilies(line) ? [index] : []),
+    [0, 4],
+    "the removed join stays flagged while the retained-list identity comparison does not",
   );
 });
