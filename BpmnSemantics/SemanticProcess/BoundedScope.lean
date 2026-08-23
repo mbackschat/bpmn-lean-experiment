@@ -7,7 +7,9 @@ This module owns the resolution of the race between the child scope's completion
 
 The parent owns the deadline, for the reason the arming module records.
 
-This module is half migrated onto the `ActivityOccurrence` record, and the halves are worth separating. Arming writes the record and regional withdrawal reads it, so the deadline is no longer stranded when its child region goes. The child lookup and the declarative pairing below still recover the pair by joining the committed operation to the live occurrence and Timer wait, which is sound only because the profile admits exactly one such Sub-Process with exactly one boundary Timer and because arming is atomic, so the two share one activation ordinal. That remaining ordinal join is a recorded gap in the Lean lane, not a design choice: the TypeScript core reads the record at every one of those sites.
+The pair is recovered through the [Activity occurrence record](ActivityOccurrence.lean). `boundedScopeChildFor?` finds the record listing an arriving deadline and takes the child scope that record names; `parentOwnedDeadline?` goes the other way, from the completing child to the deadline its record lists, and reads the pre-state because completion withdraws the record together with its body while leaving `timerWaits` untouched. `BoundedScopePairing` states the same join declaratively.
+
+The retired form joined the two by requiring the child occurrence's activation to equal the deadline's under the parent as owner. That held only because the profile admits exactly one such Sub-Process with exactly one boundary Timer and arming is atomic, which is a property of the admission rather than a fact the state carried.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -52,11 +54,16 @@ time; the `do` form left the elaborated lambdas unmatchable by a `cases` hypothe
 def boundedScopeChildFor? (state : RuntimeState)
     (childScopeId : DefinitionScopeId) (deadline : TimerWait) :
     Option ScopeOccurrenceId :=
-  (state.scopeOccurrences.find? fun occurrence =>
-    decide (
-      occurrence.id.definitionScopeId = childScopeId &&
-        occurrence.id.activation = deadline.activation &&
-        occurrence.parent = some deadline.owner)).map (·.id)
+  match activityOccurrenceForTimerWait? state.activityOccurrences deadline with
+  | none => none
+  | some record =>
+      match activityBodyScope? record with
+      | none => none
+      | some child =>
+          if decide (child.definitionScopeId = childScopeId) &&
+              state.scopeOccurrences.any (fun occurrence => decide (occurrence.id = child)) then
+            some child
+          else none
 
 /-- Commits the deadline arm at its exact deadline, cancelling the live child region.
 
@@ -108,11 +115,17 @@ equal, so a deadline left from an earlier activation of the same Sub-Process can
 later child's completion. -/
 def parentOwnedDeadline? (state : RuntimeState) (child parent : ScopeOccurrenceId)
     (boundaryTimer : BoundaryTimerArm) : Option TimerWait :=
-  state.timerWaits.find? fun candidate =>
-    decide (
-      candidate.elementId = boundaryTimer.elementId &&
-        candidate.owner = parent &&
-        candidate.activation = child.activation)
+  match activityOccurrenceForScope? state.activityOccurrences child with
+  | none => none
+  | some record =>
+      match record.attachedTimers.find? fun candidate =>
+          decide (candidate.elementId.value = boundaryTimer.elementId.value) with
+      | none => none
+      | some attached =>
+          state.timerWaits.find? fun candidate =>
+            timerIdNamesWait attached candidate &&
+              decide (candidate.elementId = boundaryTimer.elementId) &&
+              decide (candidate.owner = parent)
 
 /-- Commits the quiescence arm: the child scope completes and its deadline is withdrawn in the same transition.
 
@@ -137,7 +150,10 @@ def completeBoundedScope? (program : Program) (state : RuntimeState)
           match boundedScopeChildOccurrence? state scopeId with
           | none => none
           | some occurrence =>
-              match parentOwnedDeadline? completed occurrence.1 occurrence.2
+              -- Read from the pre-state, not from `completed`: the ownership record naming this child
+              -- is withdrawn together with its body, while `completeScopeState?` leaves `timerWaits`
+              -- untouched, so the wait found here is the same one and the record is still present.
+              match parentOwnedDeadline? state occurrence.1 occurrence.2
                   definition.2 with
               | none => none
               | some deadline =>
@@ -179,17 +195,19 @@ Stated over the program's committed operations rather than over either evaluator
 relation below constrains what a legal victory *is* instead of restating how one is computed. The
 activation equality is what atomic arming establishes and what keeps a stale deadline from claiming a
 later child region. -/
-def BoundedScopePairing (program : Program) (child : ScopeOccurrenceId)
-    (deadline : TimerWait) : Prop :=
+def BoundedScopePairing (program : Program) (records : List ActivityOccurrence)
+    (child : ScopeOccurrenceId) (deadline : TimerWait) : Prop :=
   ∃ operation ∈ boundedScopeOperations program,
     operation.1 = child.definitionScopeId ∧
     operation.2.elementId = deadline.elementId ∧
-    deadline.activation = child.activation
+    ∃ record ∈ records,
+      activityBodyScope? record = some child ∧
+      ∃ attached ∈ record.attachedTimers, timerIdNamesWait attached deadline = true
 
 /-- Declarative victory relation with exactly two constructors, one per arm.
 
 Both arms require the live child occurrence *and* the live deadline, and both retire both, which is what
-makes the victories mutually exclusive without an ownership record. They differ in what happens to the
+makes the victories mutually exclusive. They differ in what happens to the
 child region and in logical time: quiescence completes a region that already holds no work and leaves
 logical time untouched, while the deadline arm cancels a region that may still be live and advances
 logical time to exactly the deadline. Neither arm permits a state in which one member of the pair is
@@ -201,7 +219,7 @@ inductive BoundedScopeVictoryStep (program : Program) :
       (parentOutput : Option ControlPlaceId)
       (running : before.control = .running instanceId)
       (deadlineLive : deadline ∈ before.timerWaits)
-      (paired : BoundedScopePairing program child deadline)
+      (paired : BoundedScopePairing program before.activityOccurrences child deadline)
       (completion :
         completeScopeState? before child.definitionScopeId parentOutput =
           some completed)
@@ -217,7 +235,7 @@ inductive BoundedScopeVictoryStep (program : Program) :
       (output : ControlPlaceId)
       (running : before.control = .running instanceId)
       (deadlineLive : deadline ∈ before.timerWaits)
-      (paired : BoundedScopePairing program child deadline) :
+      (paired : BoundedScopePairing program before.activityOccurrences child deadline) :
       BoundedScopeVictoryStep program before
         { interruptScope before child deadline.owner output with
           logicalTimeMs := deadline.deadlineMs }
@@ -227,12 +245,25 @@ private theorem boundedScopeChildFor_matches (state : RuntimeState)
     (child : ScopeOccurrenceId)
     (found : boundedScopeChildFor? state childScopeId deadline = some child) :
     child.definitionScopeId = childScopeId ∧
-      deadline.activation = child.activation := by
+      ∃ record ∈ state.activityOccurrences,
+        activityBodyScope? record = some child ∧
+        ∃ attached ∈ record.attachedTimers, timerIdNamesWait attached deadline = true := by
   unfold boundedScopeChildFor? at found
-  obtain ⟨occurrence, occurrenceFound, occurrenceId⟩ := Option.map_eq_some_iff.mp found
-  have property := List.find?_some occurrenceFound
-  simp only [Bool.and_eq_true, decide_eq_true_eq] at property
-  exact ⟨occurrenceId ▸ property.1.1, occurrenceId ▸ property.1.2.symm⟩
+  split at found
+  · exact absurd found (by simp)
+  · next record recFound =>
+      split at found
+      · exact absurd found (by simp)
+      · next body bodyEq =>
+          split at found
+          · next matched =>
+              cases found
+              obtain ⟨recordMem, attached, attachedMem, attachedNames⟩ :=
+                activityOccurrenceForTimerWait_sound recFound
+              refine ⟨?_, record, recordMem, bodyEq, attached, attachedMem, attachedNames⟩
+              simp only [Bool.and_eq_true, decide_eq_true_eq] at matched
+              exact matched.1
+          · exact absurd found (by simp)
 
 private theorem boundedScopeDefinitionFor_pairs (program : Program)
     (deadline : TimerWait) (definition : DefinitionScopeId × BoundaryTimerArm)
@@ -307,11 +338,22 @@ private theorem parentOwnedDeadline_matches (state : RuntimeState)
     (found : parentOwnedDeadline? state child parent boundaryTimer = some deadline) :
     deadline ∈ state.timerWaits ∧
       deadline.elementId = boundaryTimer.elementId ∧
-      deadline.activation = child.activation := by
+      ∃ record ∈ state.activityOccurrences,
+        activityBodyScope? record = some child ∧
+        ∃ attached ∈ record.attachedTimers, timerIdNamesWait attached deadline = true := by
   unfold parentOwnedDeadline? at found
-  have property := List.find?_some found
-  simp only [Bool.and_eq_true, decide_eq_true_eq] at property
-  exact ⟨List.mem_of_find?_eq_some found, property.1.1, property.2⟩
+  split at found
+  · exact absurd found (by simp)
+  · next record recFound =>
+      split at found
+      · exact absurd found (by simp)
+      · next attached attachedFound =>
+          have property := List.find?_some found
+          simp only [Bool.and_eq_true, decide_eq_true_eq] at property
+          obtain ⟨recordMem, bodyEq⟩ := activityOccurrenceForScope_sound recFound
+          exact ⟨List.mem_of_find?_eq_some found, property.1.2,
+            record, recordMem, bodyEq,
+            attached, List.mem_of_find?_eq_some attachedFound, property.1.1⟩
 
 private theorem boundedScopeChildOccurrence_scope (state : RuntimeState)
     (childScopeId : DefinitionScopeId)
@@ -349,7 +391,7 @@ theorem completeBoundedScope_sound (program : Program) (before after : RuntimeSt
               simp [completion, definitionFound, occurrenceFound] at success
           | some occurrence =>
               cases deadlineFound :
-                  parentOwnedDeadline? completed occurrence.1 occurrence.2
+                  parentOwnedDeadline? before occurrence.1 occurrence.2
                     definition.2 with
               | none =>
                   simp [completion, definitionFound, occurrenceFound,
@@ -361,8 +403,8 @@ theorem completeBoundedScope_sound (program : Program) (before after : RuntimeSt
                   obtain ⟨definitionLive, childScope⟩ :=
                     boundedScopeDefinitionForChild_pairs program scopeId definition
                       definitionFound
-                  obtain ⟨deadlineInCompleted, elementMatches, activationMatches⟩ :=
-                    parentOwnedDeadline_matches completed occurrence.1 occurrence.2
+                  obtain ⟨deadlineInBefore, elementMatches, recordJoin⟩ :=
+                    parentOwnedDeadline_matches before occurrence.1 occurrence.2
                       definition.2 deadline deadlineFound
                   obtain ⟨timersPreserved, _⟩ :=
                     completeScopeState_preserves_unrelated_components before completed
@@ -371,11 +413,12 @@ theorem completeBoundedScope_sound (program : Program) (before after : RuntimeSt
                     boundedScopeChildOccurrence_scope before scopeId occurrence
                       occurrenceFound
                   exact .quiescence before completed instanceId occurrence.1 deadline
-                    parentOutput running (timersPreserved ▸ deadlineInCompleted)
+                    parentOutput running deadlineInBefore
                     ⟨definition, definitionLive,
                       childScope.trans occurrenceScope.symm, elementMatches.symm,
-                      activationMatches⟩
-                    (by rw [occurrenceScope]; exact completion) deadlineInCompleted
+                      recordJoin⟩
+                    (by rw [occurrenceScope]; exact completion)
+                    (by rw [timersPreserved]; exact deadlineInBefore)
 
 /-- Neither arm rewinds an activation counter and neither invents End history, so a withdrawn occurrence can never be reissued and no victory is mistaken for a completion event.
 
@@ -443,7 +486,7 @@ theorem completeBoundedScope_logical_time (program : Program) (before after : Ru
           | none => simp [definitionFound, occurrenceFound] at success
           | some occurrence =>
               cases deadlineFound :
-                  parentOwnedDeadline? state occurrence.1 occurrence.2 definition.2 with
+                  parentOwnedDeadline? before occurrence.1 occurrence.2 definition.2 with
               | none =>
                   simp [definitionFound, occurrenceFound, deadlineFound] at success
               | some deadline =>
@@ -516,7 +559,7 @@ theorem bounded_scope_victory_withdraws_its_own_deadline (program : Program)
     (step : BoundedScopeVictoryStep program before after) :
     ∃ child deadline, ∃ pending : List TimerWait,
       deadline ∈ before.timerWaits ∧
-      BoundedScopePairing program child deadline ∧
+      BoundedScopePairing program before.activityOccurrences child deadline ∧
       deadline ∈ pending ∧ after.timerWaits = pending.erase deadline := by
   cases step with
   | quiescence completed _ child deadline _ _ deadlineLive paired _ deadlineSurvives =>

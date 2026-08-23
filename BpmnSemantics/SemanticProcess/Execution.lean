@@ -296,8 +296,12 @@ theorem timer_identity_or_time_mismatch_is_rejected
             · -- The bounded-scope deadline arm is unreachable here structurally rather than by
               -- timing: this state holds one root occurrence, so no child region exists to cancel.
               -- Splitting on the definition lookup lets both arms reduce, since each yields `none`.
+              -- `activityOccurrenceForTimerWait?` is in the simp set because the bounded-scope arm
+              -- now reaches its child through the ownership record: on a state holding no record the
+              -- lookup answers `none`, which is what makes the arm reduce away here.
               cases definitionFound : boundedScopeDefinitionFor? program wait <;>
                 simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
+                  activityOccurrenceForTimerWait?, boundedScopeChildFor?,
                   singletonTimerWaitingState, initialState,
                   processMatches, elementMatches,
                   activationMatches, timeMismatch, definitionFound,

@@ -83,9 +83,109 @@ def timerIdNamesWait (timer : OccurrenceId) (wait : TimerWait) : Bool :=
     timer.elementId.value == wait.elementId.value &&
     timer.activation == wait.activation
 
+/-- Whether one task occurrence identity names one live User Task wait.
+
+The wrapper asymmetry is the same one `timerIdNamesWait` documents: a wait carries a
+`UserTaskDefinition` while a body carries a `SemanticId`, so the element is compared through `.value`. -/
+def taskIdNamesWait (task : OccurrenceId) (wait : UserTaskWait) : Bool :=
+  task.processInstanceId == wait.processInstanceId &&
+    task.elementId.value == wait.task.id.value &&
+    task.activation == wait.activation
+
+/-- The unique record whose body is the task one live wait holds, or `none`.
+
+Wait-keyed rather than identity-keyed, because a family recovering its pair starts from a wait and
+would otherwise rebuild the body identity itself, which is the derivation the record replaces.
+Ambiguity answers `none` for the reason `activityOccurrenceForTimer?` gives. -/
+def activityOccurrenceForTaskWait? (records : List ActivityOccurrence) (wait : UserTaskWait) :
+    Option ActivityOccurrence :=
+  match records.filter fun record =>
+      match activityBodyTask? record with
+      | some task => taskIdNamesWait task wait
+      | none => false with
+  | [record] => some record
+  | _ => none
+
 /-- Whether any of the given Timer occurrence identities names one live Timer wait. -/
 def anyTimerIdNamesWait (timers : List OccurrenceId) (wait : TimerWait) : Bool :=
   timers.any (timerIdNamesWait · wait)
+
+/-- The unique record listing one live Timer wait, or `none`. Wait-keyed sibling of `activityOccurrenceForTimer?`. -/
+def activityOccurrenceForTimerWait? (records : List ActivityOccurrence) (wait : TimerWait) :
+    Option ActivityOccurrence :=
+  match records.filter fun record => anyTimerIdNamesWait record.attachedTimers wait with
+  | [record] => some record
+  | _ => none
+
+/-- The record-carried join between one live task wait and one live Timer wait.
+
+The shared premise of every boundary-handler family: some record's body is this task occurrence and
+some wait that record lists is this Timer occurrence. It replaces the retired premise that two
+independently keyed activation counters agree, which was a property of a profile's uniqueness
+admission rather than a fact the state carried.
+
+Named once because two completed families require exactly this invariant over exactly this result
+domain, which is the repository's condition for extracting a shared owner. -/
+def RecordJoins (records : List ActivityOccurrence)
+    (task : UserTaskWait) (timer : TimerWait) : Prop :=
+  ∃ record ∈ records,
+    (∃ body, activityBodyTask? record = some body ∧ taskIdNamesWait body task = true) ∧
+    ∃ deadline ∈ record.attachedTimers, timerIdNamesWait deadline timer = true
+
+/-! ## Lookup soundness
+
+What a family recovering its pair needs from a lookup: that the record it answered is in the state, and
+that it really names the wait the caller started from. Both are proved once here so no family repeats
+the `filter`-singleton case analysis.
+-/
+
+private theorem mem_of_filter_eq_singleton {α : Type} {p : α → Bool} {l : List α} {a : α}
+    (singleton : l.filter p = [a]) : a ∈ l ∧ p a = true :=
+  List.mem_filter.mp (by simp [singleton])
+
+/-- A record answered for a task wait is in the state and its body is that wait's occurrence. -/
+theorem activityOccurrenceForTaskWait_sound {records : List ActivityOccurrence}
+    {wait : UserTaskWait} {record : ActivityOccurrence}
+    (found : activityOccurrenceForTaskWait? records wait = some record) :
+    record ∈ records ∧
+      ∃ body, activityBodyTask? record = some body ∧ taskIdNamesWait body wait = true := by
+  unfold activityOccurrenceForTaskWait? at found
+  split at found
+  · next singleton =>
+      cases found
+      obtain ⟨mem, holds⟩ := mem_of_filter_eq_singleton singleton
+      refine ⟨mem, ?_⟩
+      split at holds
+      · next body body_eq => exact ⟨body, body_eq, holds⟩
+      · exact absurd holds (by simp)
+  · exact absurd found (by simp)
+
+/-- A record answered for a child scope occurrence is in the state and its body is that occurrence. -/
+theorem activityOccurrenceForScope_sound {records : List ActivityOccurrence}
+    {scope : ScopeOccurrenceId} {record : ActivityOccurrence}
+    (found : activityOccurrenceForScope? records scope = some record) :
+    record ∈ records ∧ activityBodyScope? record = some scope := by
+  unfold activityOccurrenceForScope? at found
+  split at found
+  · next singleton =>
+      cases found
+      obtain ⟨mem, holds⟩ := mem_of_filter_eq_singleton singleton
+      exact ⟨mem, by simpa using holds⟩
+  · exact absurd found (by simp)
+
+/-- A record answered for a Timer wait is in the state and lists that wait. -/
+theorem activityOccurrenceForTimerWait_sound {records : List ActivityOccurrence}
+    {wait : TimerWait} {record : ActivityOccurrence}
+    (found : activityOccurrenceForTimerWait? records wait = some record) :
+    record ∈ records ∧
+      ∃ deadline ∈ record.attachedTimers, timerIdNamesWait deadline wait = true := by
+  unfold activityOccurrenceForTimerWait? at found
+  split at found
+  · next singleton =>
+      cases found
+      obtain ⟨mem, holds⟩ := mem_of_filter_eq_singleton singleton
+      exact ⟨mem, by simpa [anyTimerIdNamesWait, List.any_eq_true] using holds⟩
+  · exact absurd found (by simp)
 
 /-! ## Withdrawal completeness
 

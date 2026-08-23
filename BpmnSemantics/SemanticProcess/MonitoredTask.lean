@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Non-interrupting boundary Timer
 
@@ -6,9 +6,9 @@ This module owns the atomic arming relation for one User Task carrying a non-int
 
 The family's whole content is that firing preserves its host. BPMN 2.0.2 Clause 10.5.6 states it directly: the associated Activity continues to be active, and a token is generated for the Sequence Flow from the boundary Event in parallel to that continuing execution. The interrupting sibling's corresponding transition removes the task occurrence, which is why the two are separate operations rather than one carrying a flag.
 
-The join is one-sided, and that is the load-bearing difference from the sibling. A monitored task whose deadline has already fired is the normal state here, so the task wait plus the committed operation identify the family and the deadline is looked up as an optional live wait. Soundness rests on the profile admitting exactly one such Activity with exactly one boundary Timer; a repeated or Multi-Instance Activity refutes it and needs an explicit occurrence record.
+The join is one-sided, and that is the load-bearing difference from the sibling. A monitored task whose deadline has already fired is the normal state here, so the task wait plus the committed operation identify the family and the deadline is looked up as an optional live wait. That one-sidedness is unchanged by what follows.
 
-An `ActivityOccurrence` record for this family exists in `RuntimeState` and the TypeScript core reads it, but this module does not: the joins below are entirely by activation ordinal, hypotheses of the declarative relations included. That is a recorded gap in the Lean lane rather than a design choice, and it is why the paragraph above still holds here while the same claim is false of the core.
+What changed is the join itself. The deadline is now reached through the [Activity occurrence record](ActivityOccurrence.lean) rather than by requiring an equal activation ordinal under one scope owner, and the two declarative relations take `RecordJoins` in place of the two ordinal hypotheses they used to carry. The retired premise was a property of this profile's uniqueness admission rather than a fact the state carried.
 
 Arming on Activity activation is the recorded project interpretation shared with the sibling family, so only the pre-due firing witness discriminates that instant.
 -/
@@ -106,8 +106,7 @@ inductive MonitoredSpawnStep (program : Program) :
       (running : before.control = .running instanceId)
       (taskLive : task ∈ before.waits)
       (timerLive : timer ∈ before.timerWaits)
-      (sameOccurrence : timer.activation = task.activation)
-      (sameOwner : timer.owner = task.owner)
+      (joined : RecordJoins before.activityOccurrences task timer)
       (paired :
         MonitoredPairing program task timer.elementId taskOutput timerOutput) :
       MonitoredSpawnStep program before
@@ -130,8 +129,7 @@ inductive MonitoredCompletionStep (program : Program) :
       (running : before.control = .running instanceId)
       (taskLive : task ∈ before.waits)
       (timerLive : timer ∈ before.timerWaits)
-      (sameOccurrence : timer.activation = task.activation)
-      (sameOwner : timer.owner = task.owner)
+      (joined : RecordJoins before.activityOccurrences task timer)
       (paired :
         MonitoredPairing program task timer.elementId taskOutput timerOutput) :
       MonitoredCompletionStep program before
@@ -165,11 +163,13 @@ private def monitoredTaskForTask? (program : Program) (state : RuntimeState)
     decide (candidate.2.1.id = task.task.id)
   pure
     { task
-      timer := state.timerWaits.find? fun candidate =>
-        decide (
-          candidate.elementId = operation.2.2.elementId &&
-            candidate.activation = task.activation &&
-            candidate.owner = task.owner)
+      timer := do
+        let record ← activityOccurrenceForTaskWait? state.activityOccurrences task
+        let deadline ← record.attachedTimers.find? fun candidate =>
+          decide (candidate.elementId.value = operation.2.2.elementId.value)
+        state.timerWaits.find? fun candidate =>
+          timerIdNamesWait deadline candidate &&
+            decide (candidate.elementId = operation.2.2.elementId)
       taskOutput := operation.2.1.output
       timerOutput := operation.2.2.output
       timerElementId := operation.2.2.elementId }
@@ -179,11 +179,10 @@ private def monitoredTaskForTimer? (program : Program) (state : RuntimeState)
     (timer : TimerWait) : Option MonitoredTask := do
   let operation ← (monitoredTaskOperations program).find? fun candidate =>
     decide (candidate.2.2.elementId = timer.elementId)
+  let record ← activityOccurrenceForTimerWait? state.activityOccurrences timer
+  let body ← activityBodyTask? record
   let task ← state.waits.find? fun candidate =>
-    decide (
-      candidate.task.id = operation.2.1.id &&
-        candidate.activation = timer.activation &&
-        candidate.owner = timer.owner)
+    taskIdNamesWait body candidate && decide (candidate.task.id = operation.2.1.id)
   pure
     { task
       timer := some timer
@@ -241,31 +240,37 @@ private theorem monitoredTaskForTimer_pairing (program : Program)
     MonitoredPairing program monitored.task timer.elementId monitored.taskOutput
         monitored.timerOutput ∧
       monitored.task ∈ state.waits ∧
-      timer.activation = monitored.task.activation ∧
-      timer.owner = monitored.task.owner := by
+      RecordJoins state.activityOccurrences monitored.task timer := by
   unfold monitoredTaskForTimer? at found
   cases opFound : (monitoredTaskOperations program).find? (fun candidate =>
       decide (candidate.2.2.elementId = timer.elementId)) with
   | none => simp [opFound] at found
   | some op =>
-      cases taskFound : state.waits.find? (fun candidate =>
-          decide (candidate.task.id = op.2.1.id) &&
-            decide (candidate.activation = timer.activation) &&
-            decide (candidate.owner = timer.owner)) with
-      | none => simp [opFound, taskFound] at found
-      | some tk =>
-          simp [opFound, taskFound] at found
-          cases found
-          have opProperty : op.2.2.elementId = timer.elementId := by
-            simpa using List.find?_some opFound
-          have taskProperty : tk.task.id = op.2.1.id ∧
-              tk.activation = timer.activation ∧ tk.owner = timer.owner := by
-            simpa [Bool.and_eq_true, decide_eq_true_eq, and_assoc]
-              using List.find?_some taskFound
-          exact ⟨⟨op, List.mem_of_find?_eq_some opFound, taskProperty.1.symm,
-            opProperty, rfl, rfl⟩,
-            List.mem_of_find?_eq_some taskFound,
-            taskProperty.2.1.symm, taskProperty.2.2.symm⟩
+      cases recFound : activityOccurrenceForTimerWait? state.activityOccurrences timer with
+      | none => simp [opFound, recFound] at found
+      | some record =>
+          cases bodyFound : activityBodyTask? record with
+          | none => simp [opFound, recFound, bodyFound] at found
+          | some body =>
+              cases taskFound : state.waits.find? (fun candidate =>
+                  taskIdNamesWait body candidate &&
+                    decide (candidate.task.id = op.2.1.id)) with
+              | none => simp [opFound, recFound, bodyFound, taskFound] at found
+              | some tk =>
+                  simp [opFound, recFound, bodyFound, taskFound] at found
+                  cases found
+                  obtain ⟨recordMem, deadline, deadlineMem, deadlineNames⟩ :=
+                    activityOccurrenceForTimerWait_sound recFound
+                  have opProperty : op.2.2.elementId = timer.elementId := by
+                    simpa using List.find?_some opFound
+                  have taskProperty : taskIdNamesWait body tk = true ∧
+                      tk.task.id = op.2.1.id := by
+                    simpa [Bool.and_eq_true, decide_eq_true_eq] using List.find?_some taskFound
+                  exact ⟨⟨op, List.mem_of_find?_eq_some opFound, taskProperty.2.symm,
+                      opProperty, rfl, rfl⟩,
+                    List.mem_of_find?_eq_some taskFound,
+                    record, recordMem, ⟨body, bodyFound, taskProperty.1⟩,
+                    deadline, deadlineMem, deadlineNames⟩
 
 private theorem monitoredTaskForTask_pairing (program : Program)
     (state : RuntimeState) (task : UserTaskWait) (monitored : MonitoredTask)
@@ -275,7 +280,7 @@ private theorem monitoredTaskForTask_pairing (program : Program)
       monitored.task = task ∧
       ∀ timer, monitored.timer = some timer →
         timer ∈ state.timerWaits ∧ timer.elementId = monitored.timerElementId ∧
-          timer.activation = task.activation ∧ timer.owner = task.owner := by
+          RecordJoins state.activityOccurrences task timer := by
   unfold monitoredTaskForTask? at found
   cases opFound : (monitoredTaskOperations program).find? (fun candidate =>
       decide (candidate.2.1.id = task.task.id)) with
@@ -288,12 +293,24 @@ private theorem monitoredTaskForTask_pairing (program : Program)
       refine ⟨⟨op, List.mem_of_find?_eq_some opFound, opProperty, rfl, rfl, rfl⟩,
         rfl, ?_⟩
       intro timer timerFound
-      have property : timer.elementId = op.2.2.elementId ∧
-          timer.activation = task.activation ∧ timer.owner = task.owner := by
-        simpa [Bool.and_eq_true, decide_eq_true_eq, and_assoc]
-          using List.find?_some timerFound
-      exact ⟨List.mem_of_find?_eq_some timerFound, property.1, property.2.1,
-        property.2.2⟩
+      -- The one-sided lookup is a three-step `Option` chain, so its witness is unpacked step by step
+      -- rather than by one `find?_some`: the record answers which occurrence, the program which element.
+      cases recFound : activityOccurrenceForTaskWait? state.activityOccurrences task with
+      | none => simp [recFound] at timerFound
+      | some record =>
+          cases dlFound : record.attachedTimers.find? (fun candidate =>
+              decide (candidate.elementId.value = op.2.2.elementId.value)) with
+          | none => simp [recFound, dlFound] at timerFound
+          | some deadline =>
+              simp only [recFound, dlFound, Option.bind_some] at timerFound
+              obtain ⟨recordMem, body, bodyEq, bodyNames⟩ :=
+                activityOccurrenceForTaskWait_sound recFound
+              have property : timerIdNamesWait deadline timer = true ∧
+                  timer.elementId = op.2.2.elementId := by
+                simpa [Bool.and_eq_true, decide_eq_true_eq] using List.find?_some timerFound
+              exact ⟨List.mem_of_find?_eq_some timerFound, property.2,
+                record, recordMem, ⟨body, bodyEq, bodyNames⟩,
+                deadline, List.mem_of_find?_eq_some dlFound, property.1⟩
 
 /-- Every spawn the evaluator produces is permitted by the declarative relation. -/
 theorem spawnFromMonitoredUserTask_sound (program : Program)
@@ -312,7 +329,7 @@ theorem spawnFromMonitoredUserTask_sound (program : Program)
       cases pairFound : monitoredTaskForTimer? program before timer with
       | none => simp [timerFound, pairFound] at success
       | some monitored =>
-          obtain ⟨pairing, taskMem, sameActivation, sameOwner⟩ :=
+          obtain ⟨pairing, taskMem, joined⟩ :=
             monitoredTaskForTimer_pairing program before timer monitored pairFound
           have timerLive : timer ∈ before.timerWaits :=
             List.mem_of_find?_eq_some timerFound
@@ -325,7 +342,7 @@ theorem spawnFromMonitoredUserTask_sound (program : Program)
               rw [← running]
               exact .spawn before instanceId monitored.task timer
                 monitored.taskOutput monitored.timerOutput running taskMem
-                timerLive sameActivation sameOwner pairing
+                timerLive joined pairing
           | completed => rw [running] at success; simp at success
           | cancelled => rw [running] at success; simp at success
           | notStarted => rw [running] at success; simp at success
@@ -364,14 +381,14 @@ theorem completeMonitoredUserTask_sound (program : Program)
                     monitored.timerElementId monitored.taskOutput
                     monitored.timerOutput running taskLive pairing
               | some timer =>
-                  obtain ⟨timerLive, elementEq, sameActivation, sameOwner⟩ :=
+                  obtain ⟨timerLive, elementEq, joined⟩ :=
                     timerProperty timer timerFound
                   rw [running, timerFound] at success
                   cases success
                   rw [← running]
                   exact .withdrawing before instanceId monitored.task timer
                     monitored.taskOutput monitored.timerOutput running taskLive
-                    timerLive sameActivation sameOwner (elementEq ▸ pairing)
+                    timerLive joined (elementEq ▸ pairing)
           | completed => rw [running] at success; simp at success
           | cancelled => rw [running] at success; simp at success
           | notStarted => rw [running] at success; simp at success
@@ -386,7 +403,7 @@ theorem monitored_spawn_preserves_host (program : Program)
     after.waits = before.waits ∧ after.activations = before.activations ∧
       after.timerActivations = before.timerActivations := by
   cases step with
-  | spawn _ _ _ _ _ _ _ _ _ _ _ => exact ⟨rfl, rfl, rfl⟩
+  | spawn _ _ _ _ _ _ _ _ _ _ => exact ⟨rfl, rfl, rfl⟩
 
 /-- A spawn adds exactly one token, owned by the deadline's own scope, and advances logical time to that deadline; a completion adds exactly one token, owned by the task's scope, and leaves logical time alone.
 
@@ -398,7 +415,7 @@ theorem monitored_spawn_adds_one_owned_token (program : Program)
       after.tokens = addToken before.tokens timerOutput timer.owner ∧
         after.logicalTimeMs = timer.deadlineMs := by
   cases step with
-  | spawn _ _ timer _ timerOutput _ _ timerLive _ _ _ =>
+  | spawn _ _ timer _ timerOutput _ _ timerLive _ _ =>
       exact ⟨timer, timerLive, timerOutput, rfl, rfl⟩
 
 theorem monitored_completion_adds_one_owned_token (program : Program)
@@ -409,7 +426,7 @@ theorem monitored_completion_adds_one_owned_token (program : Program)
         after.tokens = addToken before.tokens taskOutput task.owner ∧
         after.logicalTimeMs = before.logicalTimeMs := by
   cases step with
-  | withdrawing _ task _ taskOutput _ _ taskLive _ _ _ _ =>
+  | withdrawing _ task _ taskOutput _ _ taskLive _ _ _ =>
       exact ⟨task, taskLive, taskOutput, rfl, rfl, rfl⟩
   | afterSpawn _ task _ taskOutput _ _ taskLive _ =>
       exact ⟨task, taskLive, taskOutput, rfl, rfl, rfl⟩
@@ -433,7 +450,7 @@ theorem monitored_completion_that_changed_deadlines_removed_one
       after.timerWaits = before.timerWaits.erase timer ∧
         timer ∉ after.timerWaits := by
   cases step with
-  | withdrawing _ _ timer _ _ _ _ timerLive _ _ _ =>
+  | withdrawing _ _ timer _ _ _ _ timerLive _ _ =>
       exact ⟨timer, timerLive, rfl, nodup.not_mem_erase⟩
   | afterSpawn _ _ _ _ _ _ _ _ => exact absurd rfl changed
 
@@ -444,7 +461,7 @@ theorem monitored_completion_after_a_spawn_keeps_every_deadline
     (noLiveDeadline : before.timerWaits = []) :
     after.timerWaits = before.timerWaits := by
   cases step with
-  | withdrawing _ _ _ _ _ _ _ timerLive _ _ _ =>
+  | withdrawing _ _ _ _ _ _ _ timerLive _ _ =>
       exact absurd (noLiveDeadline ▸ timerLive) (List.not_mem_nil)
   | afterSpawn _ _ _ _ _ _ _ _ => rfl
 

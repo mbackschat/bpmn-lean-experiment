@@ -1,12 +1,12 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Interrupting Activity boundary Timer
 
 This module owns the atomic arming relation for one User Task that carries an interrupting boundary Timer, both mutually exclusive victories, and the program predicates that route an arriving completion or deadline into this family. It owns no stimulus admission and no scenario projection.
 
-The pair keeps no stored ownership record, unlike an Event-Based Gateway race. It is recovered by joining the committed operation to the two live waits, which is sound only because the profile admits exactly one such Activity with exactly one boundary Timer and because arming is atomic, so the two occurrences always share one activation ordinal. A repeated or Multi-Instance Activity would break that recovery and needs an explicit occurrence record.
+The pair is recovered through the [Activity occurrence record](ActivityOccurrence.lean), from either side: a task wait finds its record and takes the deadline the record lists, and a deadline wait finds the record listing it and takes the body that record names. The committed operation still supplies both element identities and both routes, so the record answers *which occurrence* and the program answers *which element*.
 
-An `ActivityOccurrence` record for this family exists in `RuntimeState` and the TypeScript core reads it, but this module does not: the joins below are entirely by activation ordinal, hypotheses of the declarative relations included. That is a recorded gap in the Lean lane rather than a design choice, and it is why the paragraph above still holds here while the same claim is false of the core.
+The retired form joined the two waits by requiring equal activation ordinals under one scope owner. That held only while each element was armed once per arming of the other, which is a property of this profile's uniqueness admission rather than a fact the state carried, and it is the derivation a repeated or Multi-Instance Activity would have broken.
 
 Arming on Activity activation is a recorded project interpretation. BPMN 2.0.2 Clause 13.5.2 starts a catch Event's wait when a token *reaches* it, and a Boundary Event is never reached, so only the pre-due firing witness discriminates that instant.
 -/
@@ -85,11 +85,11 @@ private def boundedPairForTask? (program : Program) (state : RuntimeState)
     (task : UserTaskWait) : Option BoundedPair := do
   let operation ← (boundedTaskOperations program).find? fun candidate =>
     decide (candidate.2.1.id = task.task.id)
+  let record ← activityOccurrenceForTaskWait? state.activityOccurrences task
+  let deadline ← record.attachedTimers.find? fun candidate =>
+    decide (candidate.elementId.value = operation.2.2.elementId.value)
   let timer ← state.timerWaits.find? fun candidate =>
-    decide (
-      candidate.elementId = operation.2.2.elementId &&
-        candidate.activation = task.activation &&
-        candidate.owner = task.owner)
+    timerIdNamesWait deadline candidate && decide (candidate.elementId = operation.2.2.elementId)
   pure
     { task
       timer
@@ -100,11 +100,10 @@ private def boundedPairForTimer? (program : Program) (state : RuntimeState)
     (timer : TimerWait) : Option BoundedPair := do
   let operation ← (boundedTaskOperations program).find? fun candidate =>
     decide (candidate.2.2.elementId = timer.elementId)
+  let record ← activityOccurrenceForTimerWait? state.activityOccurrences timer
+  let body ← activityBodyTask? record
   let task ← state.waits.find? fun candidate =>
-    decide (
-      candidate.task.id = operation.2.1.id &&
-        candidate.activation = timer.activation &&
-        candidate.owner = timer.owner)
+    taskIdNamesWait body candidate && decide (candidate.task.id = operation.2.1.id)
   pure
     { task
       timer
@@ -127,21 +126,26 @@ private def commitVictory (state : RuntimeState) (pair : BoundedPair)
 /-- A committed bounded-task operation joins this exact task and deadline occurrence, naming both routes.
 
 Stated over the program's committed operations rather than over the evaluator's lookup, so the
-relation below constrains what a legal victory *is* instead of restating how one is computed. -/
-def BoundedPairing (program : Program) (task : UserTaskWait) (timer : TimerWait)
+relation below constrains what a legal victory *is* instead of restating how one is computed.
+
+The join runs through the ownership record, not through an activation-ordinal agreement between two
+independently keyed counters. Under this profile the two coincide, which is why the retired form was
+sound; what the record adds is that the premise is a fact the state carries rather than a coincidence
+the profile's uniqueness admission supplies. -/
+def BoundedPairing (program : Program) (records : List ActivityOccurrence)
+    (task : UserTaskWait) (timer : TimerWait)
     (taskOutput timerOutput : ControlPlaceId) : Prop :=
   ∃ operation ∈ boundedTaskOperations program,
     operation.2.1.id = task.task.id ∧
     operation.2.2.elementId = timer.elementId ∧
     operation.2.1.output = taskOutput ∧
     operation.2.2.output = timerOutput ∧
-    timer.activation = task.activation ∧
-    timer.owner = task.owner
+    RecordJoins records task timer
 
 /-- Declarative victory relation with exactly two constructors, one per arm.
 
 Both arms withdraw both waits and produce a single token, which is what makes the victories mutually
-exclusive without an ownership record. They differ only in the route taken and in logical time: the
+exclusive. They differ only in the route taken and in logical time: the
 Activity arm preserves it, while the deadline arm advances it to the exact deadline. Neither arm
 permits an intermediate state in which one wait is gone and the other is live. -/
 inductive BoundedTaskVictoryStep (program : Program) :
@@ -152,7 +156,7 @@ inductive BoundedTaskVictoryStep (program : Program) :
       (running : before.control = .running instanceId)
       (taskLive : task ∈ before.waits)
       (timerLive : timer ∈ before.timerWaits)
-      (paired : BoundedPairing program task timer taskOutput timerOutput) :
+      (paired : BoundedPairing program before.activityOccurrences task timer taskOutput timerOutput) :
       BoundedTaskVictoryStep program before
         { before with
           waits := before.waits.erase task
@@ -165,7 +169,7 @@ inductive BoundedTaskVictoryStep (program : Program) :
       (running : before.control = .running instanceId)
       (taskLive : task ∈ before.waits)
       (timerLive : timer ∈ before.timerWaits)
-      (paired : BoundedPairing program task timer taskOutput timerOutput) :
+      (paired : BoundedPairing program before.activityOccurrences task timer taskOutput timerOutput) :
       BoundedTaskVictoryStep program before
         { before with
           waits := before.waits.erase task
@@ -176,32 +180,41 @@ inductive BoundedTaskVictoryStep (program : Program) :
 private theorem boundedPairForTask_pairing (program : Program)
     (state : RuntimeState) (task : UserTaskWait) (pair : BoundedPair)
     (found : boundedPairForTask? program state task = some pair) :
-    BoundedPairing program pair.task pair.timer pair.taskOutput pair.timerOutput ∧
+    BoundedPairing program state.activityOccurrences pair.task pair.timer
+        pair.taskOutput pair.timerOutput ∧
       pair.task = task ∧ pair.timer ∈ state.timerWaits := by
   unfold boundedPairForTask? at found
   cases opFound : (boundedTaskOperations program).find? (fun candidate =>
       decide (candidate.2.1.id = task.task.id)) with
   | none => simp [opFound] at found
   | some op =>
-      cases twFound : state.timerWaits.find? (fun candidate =>
-          decide (candidate.elementId = op.2.2.elementId) &&
-            decide (candidate.activation = task.activation) &&
-            decide (candidate.owner = task.owner)) with
-      | none => simp [opFound, twFound] at found
-      | some tw =>
-          simp [opFound, twFound] at found
-          cases found
-          have opProperty : op.2.1.id = task.task.id := by
-            simpa using List.find?_some opFound
-          have twProperty : tw.elementId = op.2.2.elementId ∧
-              tw.activation = task.activation ∧ tw.owner = task.owner := by
-            simpa [Bool.and_eq_true, decide_eq_true_eq, and_assoc]
-              using List.find?_some twFound
-          exact ⟨⟨op, List.mem_of_find?_eq_some opFound, opProperty,
-            twProperty.1.symm, rfl, rfl, twProperty.2.1, twProperty.2.2⟩,
-            rfl, List.mem_of_find?_eq_some twFound⟩
+      cases recFound : activityOccurrenceForTaskWait? state.activityOccurrences task with
+      | none => simp [opFound, recFound] at found
+      | some record =>
+          cases dlFound : record.attachedTimers.find? (fun candidate =>
+              decide (candidate.elementId.value = op.2.2.elementId.value)) with
+          | none => simp [opFound, recFound, dlFound] at found
+          | some deadline =>
+              cases twFound : state.timerWaits.find? (fun candidate =>
+                  timerIdNamesWait deadline candidate &&
+                    decide (candidate.elementId = op.2.2.elementId)) with
+              | none => simp [opFound, recFound, dlFound, twFound] at found
+              | some tw =>
+                  simp [opFound, recFound, dlFound, twFound] at found
+                  cases found
+                  obtain ⟨recordMem, body, bodyEq, bodyNames⟩ :=
+                    activityOccurrenceForTaskWait_sound recFound
+                  have opProperty : op.2.1.id = task.task.id := by
+                    simpa using List.find?_some opFound
+                  have twProperty : timerIdNamesWait deadline tw = true ∧
+                      tw.elementId = op.2.2.elementId := by
+                    simpa [Bool.and_eq_true, decide_eq_true_eq] using List.find?_some twFound
+                  exact ⟨⟨op, List.mem_of_find?_eq_some opFound, opProperty,
+                      twProperty.2.symm, rfl, rfl,
+                      record, recordMem, ⟨body, bodyEq, bodyNames⟩,
+                      deadline, List.mem_of_find?_eq_some dlFound, twProperty.1⟩,
+                    rfl, List.mem_of_find?_eq_some twFound⟩
 
-/-- Commits the Activity arm, withdrawing the deadline. The profile admits no completion patch, so the caller must reject a non-empty submission rather than ignore it: variable submission is a separately reviewed proposition and admitting it here would add a data claim to a timing capsule. -/
 def completeBoundedUserTask? (program : Program) (state : RuntimeState)
     (processInstanceId : SemanticId) (taskId : TaskDefinitionId)
     (activation : Nat) : Option RuntimeState := do
@@ -267,32 +280,40 @@ theorem interruptBoundedUserTask_none_of_no_task_wait (program : Program)
 private theorem boundedPairForTimer_pairing (program : Program)
     (state : RuntimeState) (timer : TimerWait) (pair : BoundedPair)
     (found : boundedPairForTimer? program state timer = some pair) :
-    BoundedPairing program pair.task pair.timer pair.taskOutput pair.timerOutput ∧
+    BoundedPairing program state.activityOccurrences pair.task pair.timer
+        pair.taskOutput pair.timerOutput ∧
       pair.timer = timer ∧ pair.task ∈ state.waits := by
   unfold boundedPairForTimer? at found
   cases opFound : (boundedTaskOperations program).find? (fun candidate =>
       decide (candidate.2.2.elementId = timer.elementId)) with
   | none => simp [opFound] at found
   | some op =>
-      cases taskFound : state.waits.find? (fun candidate =>
-          decide (candidate.task.id = op.2.1.id) &&
-            decide (candidate.activation = timer.activation) &&
-            decide (candidate.owner = timer.owner)) with
-      | none => simp [opFound, taskFound] at found
-      | some tk =>
-          simp [opFound, taskFound] at found
-          cases found
-          have opProperty : op.2.2.elementId = timer.elementId := by
-            simpa using List.find?_some opFound
-          have taskProperty : tk.task.id = op.2.1.id ∧
-              tk.activation = timer.activation ∧ tk.owner = timer.owner := by
-            simpa [Bool.and_eq_true, decide_eq_true_eq, and_assoc]
-              using List.find?_some taskFound
-          exact ⟨⟨op, List.mem_of_find?_eq_some opFound, taskProperty.1.symm,
-            opProperty, rfl, rfl, taskProperty.2.1.symm, taskProperty.2.2.symm⟩,
-            rfl, List.mem_of_find?_eq_some taskFound⟩
+      cases recFound : activityOccurrenceForTimerWait? state.activityOccurrences timer with
+      | none => simp [opFound, recFound] at found
+      | some record =>
+          cases bodyFound : activityBodyTask? record with
+          | none => simp [opFound, recFound, bodyFound] at found
+          | some body =>
+              cases taskFound : state.waits.find? (fun candidate =>
+                  taskIdNamesWait body candidate &&
+                    decide (candidate.task.id = op.2.1.id)) with
+              | none => simp [opFound, recFound, bodyFound, taskFound] at found
+              | some tk =>
+                  simp [opFound, recFound, bodyFound, taskFound] at found
+                  cases found
+                  obtain ⟨recordMem, deadline, deadlineMem, deadlineNames⟩ :=
+                    activityOccurrenceForTimerWait_sound recFound
+                  have opProperty : op.2.2.elementId = timer.elementId := by
+                    simpa using List.find?_some opFound
+                  have taskProperty : taskIdNamesWait body tk = true ∧
+                      tk.task.id = op.2.1.id := by
+                    simpa [Bool.and_eq_true, decide_eq_true_eq] using List.find?_some taskFound
+                  exact ⟨⟨op, List.mem_of_find?_eq_some opFound, taskProperty.2.symm,
+                      opProperty, rfl, rfl,
+                      record, recordMem, ⟨body, bodyFound, taskProperty.1⟩,
+                      deadline, deadlineMem, deadlineNames⟩,
+                    rfl, List.mem_of_find?_eq_some taskFound⟩
 
-/-- Every Activity victory the evaluator produces is permitted by the declarative relation. -/
 theorem completeBoundedUserTask_sound (program : Program)
     (before after : RuntimeState) (processInstanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat)

@@ -13,10 +13,10 @@ import { fileURLToPath } from "node:url";
  * different keys on that one agreement, and none reported an ambiguity when it broke: each silently
  * found a different sibling or none.
  *
- * The enumeration is TypeScript-only, and Lean is outside this guard entirely. That is not an oversight
- * of scope: the Lean families are not migrated, two of the three holding no reference to the record, so
- * a guard extended over them would fail rather than pass. Until they are migrated, nothing here covers
- * the reference interpreter and `AOO-JOIN-02` is a one-language rule.
+ * Both languages are enumerated. The Lean families were migrated after this guard was first written,
+ * and while they were not, this guard covered TypeScript only and said so, because a rule enforced over
+ * one language while asserted over two is the gap the checkpoint review found. The Lean patterns differ
+ * only in syntax: an equality rather than a strict comparison, and `=` rather than `===`.
  *
  * The owner list is enumerated rather than discovered, and that limit is the honest part. A cross-family
  * join and a same-family identity helper are lexically identical — both compare two `.activation`
@@ -55,7 +55,26 @@ const pairingOwners = [
 const exemptOwner =
   "packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts";
 
+/** The Lean family modules that recover a body-to-handler pair. */
+const leanPairingOwners = [
+  "BpmnSemantics/SemanticProcess/BoundedTask.lean",
+  "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
+  "BpmnSemantics/SemanticProcess/BoundedScope.lean",
+] as const;
+
+const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|RecordJoins/u;
+
 const crossFamilyJoin = /\.activation\s*===\s*[A-Za-z_$][\w$.]*\.activation\b/u;
+/**
+ * The Lean form of the same defect.
+ *
+ * `=` rather than `===`, and it must not match a *same-family* identity check. Those compare a wait's
+ * activation against a submitted occurrence identity's, which is a wrong-identity refusal and not a
+ * join, so the pattern requires both sides to end in `.activation` and excludes a right-hand side
+ * naming a submitted identity parameter.
+ */
+const leanCrossFamilyJoin =
+  /\.activation\s*=\s*(?!.*\b(?:timerId|taskId|submitted)\b)[A-Za-z_][\w.]*\.activation\b/u;
 const recordLookup = /activityOccurrenceFor|activityBody(Task|Scope)/u;
 
 function lines(file: string): ReadonlyArray<string> {
@@ -80,6 +99,36 @@ test("every migrated pairing owner resolves its pair through the ownership recor
       `${owner} must resolve its pair through the record`,
     );
   }
+});
+
+test("every Lean family module resolves its pair through the ownership record", () => {
+  for (const owner of leanPairingOwners) {
+    assert.deepEqual(
+      lines(owner).flatMap((line, index) =>
+        leanCrossFamilyJoin.test(line) ? [`${owner}:${index + 1}`] : []
+      ),
+      [],
+    );
+    // Anti-vacuity, for the same reason the TypeScript loop carries it: a module that pairs nothing
+    // satisfies the assertion above, and two of these modules held no record reference at all before
+    // the migration.
+    assert.ok(
+      lines(owner).some((line) => leanRecordLookup.test(line)),
+      `${owner} must resolve its pair through the record`,
+    );
+  }
+});
+
+test("the Lean pattern separates a cross-family join from a same-family identity check", () => {
+  const sample = [
+    "      timer.activation = task.activation ∧",
+    "        wait.activation = timerId.activation)",
+    "  let activityActivation := activityActivationCount state task.id + 1",
+  ];
+  assert.deepEqual(
+    sample.flatMap((line, index) => leanCrossFamilyJoin.test(line) ? [index] : []),
+    [0],
+  );
 });
 
 test("the exemption names a file that still holds the pattern it exempts", () => {
