@@ -30,7 +30,6 @@ import type { RuntimeState } from "./semantic-process-state.js";
 import {
   activeSnapshotItem,
   completedInstanceCount,
-  generatedInstanceCount,
   pendingItemCount,
 } from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
@@ -87,6 +86,13 @@ function activeIterations(
  * definition facts: the input and output binding names are definition-owned, so there is no honest
  * projection of an iteration whose operation is missing, and the well-formedness conjuncts already
  * refuse a controller with no record.
+ *
+ * `numberOfInstances` is the sum of the two counts published beside it rather than a third reading of
+ * the controller. Completed comes from the controller's slots and active from the Activity occurrence
+ * record's body, so a generated count derived from the controller alone can contradict both: a record
+ * whose body is not a User Task yields no active iteration while the controller still shows filled
+ * slots, and body kind is deliberately not a well-formedness conjunct in either language. Summing is
+ * what makes Table 10.30's identity arithmetic rather than an agreement between two structures.
  */
 export function projectOpenMultiInstances(
   program: SemanticProcessProgram,
@@ -111,7 +117,8 @@ export function projectOpenMultiInstances(
           mode: "sequential" as const,
           plannedInstanceCount: controller.snapshot.length,
           pendingItemCount: pendingItemCount(controller),
-          numberOfInstances: generatedInstanceCount(controller),
+          numberOfInstances: completedInstanceCount(controller) +
+            iterations.length,
           numberOfActiveInstances: iterations.length,
           numberOfCompletedInstances: completedInstanceCount(controller),
           numberOfTerminatedInstances: 0,

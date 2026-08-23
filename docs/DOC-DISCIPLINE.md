@@ -118,6 +118,8 @@ The runtime-and-proof map is the one exception and its budget stands at 6,500 wo
 
 Two limits are exact, and the first is prospective: from here, an agent may not add a new exception or change an existing value, because the guard's own threshold is the thing under review. The 6,500 recorded above is the one pending exception to that rule rather than an application of it, which is why it is named as unconfirmed. And when 6,500 is exhausted the map splits under a new area ID rather than taking a third raise. Nothing executable enforces that split: the budget guard fails when the limit is reached and forces a decision, but it cannot tell a split from another raise, so the commitment is a review obligation and is named here for the reviewer rather than presented as a gate.
 
+**That point is now reached.** After the sequential Multi-Instance checkpoint corrections the runtime-and-proof map measures 6,493 words, seven short of its backstop, and landing that correction already required tightening wording rather than adding content. The next status addition to it is therefore the split, not another edit: the map routes every semantic family and the remaining engine roadmap adds more, so the next capsule cannot record its status without one. Recorded here rather than in the plan because the obligation belongs to whoever next reaches for this budget, not to the work item that happened to exhaust it.
+
 ## Project document homes
 
 | Information | Owner role |

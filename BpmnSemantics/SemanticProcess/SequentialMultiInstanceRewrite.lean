@@ -59,11 +59,13 @@ structure SequentialMultiInstanceData where
   outputDataObjectId : String
   deriving Repr, DecidableEq
 
-/-- The profile's inclusive collection bounds, carried by the definition and checked at entry.
+/-- The profile's inclusive collection bounds, carried by the definition and checked wherever a
+collection is given or grown.
 
-Runtime bounds rather than admission bounds: the definition admits the shape, and only entry sees the
-collection a host supplied, so exceeding any of them leaves the transition undefined and the command
-is refused rather than truncated. -/
+Runtime bounds rather than admission bounds: the definition admits the shape, and only execution sees
+the values a host supplied. Entry checks the snapshot it was handed and every inner completion checks
+the candidate output collection its result would produce, so exceeding any bound leaves the transition
+undefined and the command is refused rather than truncated or clamped. -/
 structure SequentialMultiInstanceLimits where
   maximumItems : Nat
   maximumItemUtf8Bytes : Nat
@@ -117,7 +119,13 @@ def canonicalCollectionUtf8Bytes : List String → Nat
         (jsonArrayItemUtf8Bytes first) + 2
 
 /-- Whether a collection fits every profile bound. Item count is tested first, so a refusal for count
-alone never pays for the byte measures. -/
+alone never pays for the byte measures.
+
+One predicate for both collections this profile bounds, the entry snapshot and the candidate output
+collection, because the contract holds them to the same three numbers; a second bound-checking
+function is where the two would drift apart. On the output side two of its arms are subsumed rather
+than needed: a candidate never carries more slots than the snapshot it was admitted against, and its
+earlier items were measured as they were accepted. -/
 def withinSequentialMultiInstanceLimits (arm : SequentialMultiInstanceArm)
     (items : List String) : Bool :=
   decide (items.length ≤ arm.limits.maximumItems) &&
@@ -137,17 +145,29 @@ def admittedSnapshot? (arm : SequentialMultiInstanceArm) (state : RuntimeState) 
       | _ => none
   | _ => none
 
-/-- The exact scalar result an inner completion may submit.
+/-- The exact scalar result an inner completion may store into the slots it would extend.
 
-One binding, named by the task's own DataOutput, carrying a String. Anything else leaves the
-transition undefined rather than partially applied: an accepted completion writes one output slot, so
-a submission this account cannot place in a slot must not commit. -/
-def acceptedIterationResult (arm : SequentialMultiInstanceArm) :
+One binding, named by the task's own DataOutput, carrying a String whose candidate output collection
+still fits every profile bound. Anything else leaves the transition undefined rather than partially
+applied: an accepted completion writes one output slot and the final one publishes the whole
+collection, so a submission this account cannot place in a slot, or one whose collection this profile
+cannot carry, must not commit. `SMI-REFUSE-01` groups both refusals, and both are refusals of the same
+command rather than two admission stages.
+
+The bound is on the candidate collection rather than on the submitted item alone because the last
+result is the one that crosses it: sixteen items at the profile's own item bound are each admissible
+and their canonical array is not, so an item measure alone would publish a collection the same profile
+declares out of range. It is on the candidate rather than on the stored collection because a refusal
+must leave the committed state equivalent, and a collection is stored only by the step this lookup
+gates. -/
+def acceptedIterationResult (arm : SequentialMultiInstanceArm) (slots : List String) :
     List VariableBinding → Option String
   | [binding] =>
       match binding.value with
       | .string result =>
-          if binding.name = arm.data.taskDataOutputId then some result else none
+          if binding.name = arm.data.taskDataOutputId then
+            if withinSequentialMultiInstanceLimits arm (slots ++ [result]) then some result else none
+          else none
       | _ => none
   | _ => none
 
@@ -272,6 +292,15 @@ an omission: a partial collection would be observable state no clause defines, a
 against exposing the output collection before every item is written applies most sharply where the
 remaining items never will be.
 
+Every Timer the record listed is withdrawn, not only the one that fired, which is the same filter
+`finalCompletionState` uses. The record is what names those waits and it leaves in this step, so
+withdrawing less would strand a live deadline whose owner is gone; `attachedTimersUnambiguous` admits a
+record listing two live attached Timers, so the state is one the invariant permits rather than one it
+excludes. The alternative, a conjunct forbidding a second attached Timer, would put this profile's
+handler cardinality inside a profile-independent predicate. The fired wait is covered by that same
+filter rather than separately, because a listed Timer occurrence named it: the relation states that as
+`attaches` and the evaluator obtains it from the record-keyed lookup.
+
 Logical time advances to the deadline the committed state carries, never to a submitted instant. -/
 def interruptionState (arm : SequentialMultiInstanceArm) (state : RuntimeState)
     (record : ActivityOccurrence) (body : OccurrenceId) (deadline : TimerWait)
@@ -281,7 +310,7 @@ def interruptionState (arm : SequentialMultiInstanceArm) (state : RuntimeState)
     tokens := addToken state.tokens arm.boundaryTimer.output record.owner
     waits := state.waits.filter fun candidate => !taskIdNamesWait body candidate
     timerWaits := state.timerWaits.filter fun candidate =>
-      !timerWaitKeyMatches deadline candidate
+      !anyTimerIdNamesWait record.attachedTimers candidate
     activityOccurrences := state.activityOccurrences.filter fun candidate =>
       !sameActivityOccurrence candidate record
     sequentialMultiInstanceControllers := state.sequentialMultiInstanceControllers.filter

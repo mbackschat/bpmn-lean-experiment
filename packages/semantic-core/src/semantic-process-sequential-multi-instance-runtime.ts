@@ -21,13 +21,13 @@ import type {
   CompleteUserTaskInstanceStimulus,
   FireTimerStimulus,
   VariableBinding,
-  VariableValue,
 } from "./contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitSequentialMultiInstanceUserTaskOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
+import { mergeProcessVariableBindings } from "./semantic-process-data.js";
 
 import {
   ControlStateKind,
@@ -70,15 +70,24 @@ function inputCollection(
 }
 
 /**
- * Whether the collection fits the profile's declared bounds.
+ * Whether a collection fits the profile's declared bounds.
  *
- * The bounds are checked here rather than at admission because they constrain a runtime value: the
- * definition admits the shape, and only entry sees the collection the host supplied. Exceeding any of
- * them leaves the transition undefined, so the command is refused rather than truncated.
+ * Both boundaries that see a runtime collection measure it here: entry, with the input collection the
+ * host supplied, and inner completion, with the candidate output collection that completion would
+ * store. The bounds cannot be decided at admission, which admits the shape rather than the values.
+ * Exceeding any of them leaves the transition undefined, so the command is refused rather than
+ * truncated.
+ *
+ * A candidate output collection re-measures the cardinality bound and the already accepted items
+ * instead of skipping them. Both hold by construction there, since the candidate is at most the
+ * snapshot entry already bounded; what the call decides on that side is the submitted result's own size
+ * and the candidate collection's canonical size. One owner for the measure is what keeps the two sides
+ * from drifting into two byte counts that agree only by luck.
  *
  * The canonical byte bound is measured over `JSON.stringify` of the array, which is already canonical
  * for a list of strings: there are no object keys to order, and the wire encoder produces the same
- * bytes for the same items in the same order.
+ * bytes for the same items in the same order. That measure is escape-aware, so a string of characters
+ * JSON escapes counts twice toward the collection bound.
  */
 function withinLimits(
   operation: AwaitSequentialMultiInstanceUserTaskOperation,
@@ -92,20 +101,26 @@ function withinLimits(
       maximumCanonicalCollectionUtf8Bytes;
 }
 
-/** The exact ordered output collection, published once and never before natural completion. */
+/**
+ * The exact ordered output collection, published once and never before natural completion.
+ *
+ * Delegates to the core's one create-or-replace merge, which Lean's `publishProcessCollection` also
+ * calls, so every Process publication in both targets carries one canonical binding order. Sorting
+ * here instead would install a second canonical order: it can disagree with the shared code-point
+ * comparator on any two DataObject IDs differing in case or across `_`, and a locale comparison also
+ * varies with the host's ICU data.
+ */
 function publishedCollection(
   bindings: ReadonlyArray<VariableBinding>,
   name: string,
   items: ReadonlyArray<string>,
 ): ReadonlyArray<VariableBinding> {
-  const value: VariableValue = {
-    kind: VariableValueKind.StringList,
-    value: [...items],
-  };
-  return [
-    ...bindings.filter((binding) => binding.name !== name),
-    { name, value },
-  ].sort((left, right) => left.name.localeCompare(right.name));
+  return mergeProcessVariableBindings(bindings, [
+    {
+      name,
+      value: { kind: VariableValueKind.StringList, value: [...items] },
+    },
+  ]);
 }
 
 /**
@@ -299,6 +314,12 @@ export function completeSequentialMultiInstanceIteration(
     return null;
   }
   const outputSlots = [...controller.outputSlots, result];
+  // Measured before either arm, because the result that crosses the collection bound is the final one
+  // and a check placed on the non-final arm alone would never see it. Refusing here commits nothing:
+  // no slot is stored, no body is replaced, and no collection is published.
+  if (!withinLimits(operation, outputSlots)) {
+    return null;
+  }
   const others = (state.sequentialMultiInstanceControllers ?? []).filter(
     (candidate) => candidate !== controller,
   );
@@ -317,7 +338,6 @@ export function completeSequentialMultiInstanceIteration(
     };
   }
 
-  const [timerId] = record.attachedTimers;
   return {
     ...state,
     controlTokens: addToken(
@@ -328,9 +348,13 @@ export function completeSequentialMultiInstanceIteration(
     userTaskWaits: state.userTaskWaits.filter(({ id }) =>
       !sameOccurrence(id, stimulus.taskId)
     ),
-    timerWaits: timerId === undefined
-      ? state.timerWaits
-      : state.timerWaits.filter(({ id }) => !sameOccurrence(id, timerId)),
+    // Every Timer the record lists leaves with it. The record's attached-wait conjuncts admit more
+    // than one live attached Timer, and a deadline whose Activity occurrence is gone has nothing left
+    // that identifies it, so a head-only withdrawal would strand it; Lean's `finalCompletionState`
+    // filters this same whole list.
+    timerWaits: state.timerWaits.filter(({ id }) =>
+      !record.attachedTimers.some((timerId) => sameOccurrence(id, timerId))
+    ),
     activityOccurrences: state.activityOccurrences.filter((candidate) =>
       !sameActivityOccurrence(candidate.id, record.id)
     ),
@@ -437,8 +461,12 @@ export function interruptSequentialMultiInstance(
     userTaskWaits: state.userTaskWaits.filter(({ id }) =>
       !sameOccurrence(id, activeTask)
     ),
+    // Every Timer the record lists leaves with it, the fired one included: removing an Activity
+    // occurrence record must leave no wait that record named still live, and the record's conjuncts
+    // admit more than one live attached Timer. The fired deadline is a member of this list by
+    // construction, since the record was located through it.
     timerWaits: state.timerWaits.filter(({ id }) =>
-      !sameOccurrence(id, stimulus.timerId)
+      !record.attachedTimers.some((timerId) => sameOccurrence(id, timerId))
     ),
     activityOccurrences: state.activityOccurrences.filter((candidate) =>
       !sameActivityOccurrence(candidate.id, record.id)

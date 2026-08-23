@@ -247,6 +247,53 @@ theorem interruption_discards_partial_results_and_publishes_nothing :
           0, 0, 0, 0, ["place:Flow_Boundary"], 1000) := by
   decide +kernel
 
+/-- The entered state with a second live deadline listed by the same Activity occurrence record.
+
+Hand-perturbed rather than reached by a transition, because this profile arms exactly one boundary
+Timer and no admitted schedule reaches this state. What it perturbs is the number of deadlines and not
+the shape of the join: each wait is still claimed by exactly one record and both are live under that
+record's own owner, which is the state `attachedTimersUnambiguous` admits. -/
+def enteredWithSecondDeadline? : Option RuntimeState := do
+  let state ← entered?
+  let record ← state.activityOccurrences.head?
+  let fired ← record.attachedTimers.head?
+  let deadline ← state.timerWaits.find? (timerIdNamesWait fired)
+  pure
+    { state with
+      activityOccurrences :=
+        [{ record with
+            attachedTimers :=
+              record.attachedTimers ++ [{ fired with activation := fired.activation + 1 }] }]
+      timerWaits :=
+        state.timerWaits ++
+          [{ deadline with
+              activation := deadline.activation + 1
+              deadlineMs := deadline.deadlineMs + 1000 }] }
+
+/-- Interruption withdraws every deadline the record listed, the one not yet due included.
+
+The second deadline stands at 2000 while the fired one is at 1000, so a post-state that keeps it live
+is exactly the stranding this withdrawal prevents: the record that named it is removed in the same
+step, leaving a wait no record owns. Both deadlines, the active task, the record, and the controller
+leave together, only the boundary route is enabled, and logical time advances to the fired instant
+rather than to the later one. -/
+theorem interruption_withdraws_both_deadlines_the_record_listed :
+    (do
+      let arm ← arm?
+      let state ← enteredWithSecondDeadline?
+      let record ← state.activityOccurrences.head?
+      let fired ← record.attachedTimers.head?
+      let deadline ← state.timerWaits.find? (timerIdNamesWait fired)
+      let interrupted ← interruptSequentialMultiInstance? arm state fired deadline.deadlineMs
+      pure
+        (state.timerWaits.map (·.deadlineMs),
+          interrupted.timerWaits.length, interrupted.waits.length,
+          interrupted.activityOccurrences.length,
+          interrupted.sequentialMultiInstanceControllers.length,
+          interrupted.tokens.map (·.placeId.value), interrupted.logicalTimeMs)) =
+      some ([1000, 2000], 0, 0, 0, 0, ["place:Flow_Boundary"], 1000) := by
+  decide +kernel
+
 /-- `SMI-ENTER-01`, empty arm: no inner instance, no deadline, and the empty collection published.
 
 Its own fact rather than a variant of the generating arm, because the profile makes it a different
@@ -372,6 +419,103 @@ theorem a_collection_over_the_canonical_byte_bound_is_refused_at_entry :
       enterSequentialMultiInstance?
         { arm with
           limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 8 } } state) = none := by
+  decide +kernel
+
+/-- Sixteen accepted results of exactly `maximumItemUtf8Bytes` bytes each. -/
+private def maximalOutputCollection (result : String) : List String :=
+  [result, result, result, result, result, result, result, result,
+    result, result, result, result, result, result, result, result]
+
+/-- Sixteen results at the profile's own item bound cross its canonical collection bound.
+
+The case the output-side bound exists for, at the profile's declared numbers rather than at the
+tightened ones the refusals below use. Stated over an arbitrary maximal result so it needs no
+five-hundred-and-twelve-byte literal, which every decided fixture in this module would otherwise
+reduce: sixteen items are exactly `maximumItems`, each is exactly `maximumItemUtf8Bytes`, and their
+canonical array measures 8241 against a declared 8192. Entry admits such a snapshot, every submitted
+result is individually admissible, and the collection is over the bound only once the last slot is
+filled, which is why an entry-side or item-only measure cannot refuse it. -/
+theorem sixteen_results_at_the_item_byte_bound_cross_the_canonical_collection_bound
+    (result : String) (maximal : result.utf8ByteSize = profileLimits.maximumItemUtf8Bytes) :
+    (maximalOutputCollection result).length = profileLimits.maximumItems ∧
+      canonicalCollectionUtf8Bytes (maximalOutputCollection result) = 8241 ∧
+      profileLimits.maximumCanonicalCollectionUtf8Bytes <
+        canonicalCollectionUtf8Bytes (maximalOutputCollection result) := by
+  simp only [profileLimits] at maximal
+  refine ⟨rfl, ?_, ?_⟩ <;>
+    simp only [maximalOutputCollection, canonicalCollectionUtf8Bytes, jsonArrayItemUtf8Bytes,
+      List.foldl_cons, List.foldl_nil, profileLimits] <;>
+    omega
+
+/-- `SMI-REFUSE-01`, non-final arm: a result whose candidate output collection crosses the canonical
+byte bound is refused, and the entered state is what it was.
+
+The perturbation is the bound alone, against the same state and the same accepted result the positive
+iteration fact above stores. Tightened to eight canonical bytes for the reason the entry refusals
+give, while `sixteen_results_at_the_item_byte_bound_cross_the_canonical_collection_bound` carries the
+profile's own numbers; `"Reviewed_1"` alone encodes to fourteen. -/
+theorem a_non_final_result_over_the_candidate_collection_byte_bound_is_refused :
+    (do
+      let arm ← arm?
+      let state ← entered?
+      let record ← state.activityOccurrences.head?
+      let body ← activityBodyTask? record
+      completeSequentialMultiInstanceInnerTask?
+        { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 8 } }
+        state body
+        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_1" }]) = none := by
+  decide +kernel
+
+/-- `SMI-REFUSE-01`, final arm: the completion that would publish an over-bound collection is refused.
+
+The arm the bound is really for. The measure grows with every slot, so the completion that fills the
+last one is the first that a maximal collection can cross, and a bound carried only by the non-final
+arm would leave exactly this step unchecked and publish the result. -/
+theorem a_final_result_over_the_candidate_collection_byte_bound_is_refused :
+    (do
+      let arm ← arm?
+      let state ← afterSecondResult?
+      let record ← state.activityOccurrences.head?
+      let body ← activityBodyTask? record
+      completeSequentialMultiInstanceInnerTask?
+        { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 8 } }
+        state body
+        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_3" }]) = none := by
+  decide +kernel
+
+/-- `SMI-REFUSE-01`: a submitted result longer than the item byte bound is refused.
+
+The item bound needs its own completion-side refusal rather than following from the collection bound:
+one oversized result among few can leave the array inside its own bound, so a collection measure alone
+would store it. -/
+theorem a_result_over_the_item_byte_bound_is_refused :
+    (do
+      let arm ← arm?
+      let state ← entered?
+      let record ← state.activityOccurrences.head?
+      let body ← activityBodyTask? record
+      completeSequentialMultiInstanceInnerTask?
+        { arm with limits := { arm.limits with maximumItemUtf8Bytes := 4 } }
+        state body
+        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_1" }]) = none := by
+  decide +kernel
+
+/-- The candidate collection bound is inclusive, and one byte under the measure it is not met.
+
+The complement that makes the two refusals above about their numbers rather than about a tightened arm
+refusing everything. Stated over the predicate rather than over a completion because the positive
+completion facts above already store results at the profile's own bounds, and a second entry chain
+would be reduced here for a fact about one comparison. -/
+theorem the_candidate_collection_byte_bound_is_inclusive :
+    (do
+      let arm ← arm?
+      pure
+        (withinSequentialMultiInstanceLimits
+            { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 14 } }
+            ["Reviewed_1"],
+          withinSequentialMultiInstanceLimits
+            { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 13 } }
+            ["Reviewed_1"])) = some (true, false) := by
   decide +kernel
 
 /-- The canonical measure counts the JSON array encoding, framing and separators included. -/

@@ -2,10 +2,15 @@
  * The malformed sequential Multi-Instance controller states the account refuses.
  *
  * The oracle is the capsule's controller invariants: a controller is bound to one Activity occurrence
- * record of the same identity, one controller exists per open outer Activity, its body is a User Task,
- * and it still has an item left to generate. Each state below is unreachable by construction, so a
- * class an admitted transition could produce would be a defect in the transition rather than a case
- * for this file.
+ * record of the same identity, one controller exists per open outer Activity, and it still has an item
+ * left to generate. Each state below is unreachable by construction, so a class an admitted transition
+ * could produce would be a defect in the transition rather than a case for this file.
+ *
+ * Body kind is deliberately not among those invariants, in either language: the record's own body
+ * conjunct already requires exactly one live body, and restricting that body to a User Task is a
+ * profile fact rather than a state-decidable one. The state that omission admits, a controller bound to
+ * a child-scope-bodied record, is therefore covered where it is observable, in the progress
+ * projection's own file, rather than as a refusal here.
  *
  * Every negative perturbs the *same* admitted base state, so a refusal is attributable to the one
  * field it changed. The base state is the monitored-task arming, which produces exactly one Activity
@@ -22,6 +27,7 @@ import {
   compareActivityOccurrences,
   compareSequentialMultiInstanceControllers,
   initialState,
+  pendingItemCount,
   RuntimeStateDefect,
   runtimeStateDefects,
   type RuntimeState,
@@ -171,4 +177,19 @@ test("controllers and records share one canonical order, including where locale 
     1,
     "and that way is code point, where lowercase sorts after uppercase",
   );
+});
+
+/**
+ * The pending count truncates at zero, which is the value Lean's `Nat` subtraction yields.
+ *
+ * Only an exhausted controller reaches the truncation, and the conjunct above refuses that state before
+ * evaluation, so this is not a projection a stable state produces. It is the cross-target agreement:
+ * an untruncated difference would make the two accounts publish different numbers for one state.
+ */
+test("an exhausted controller has zero pending items, not a negative count", () => {
+  const exhausted = {
+    ...boundController(armed()),
+    outputSlots: ["one", "two"],
+  };
+  assert.equal(pendingItemCount(exhausted), 0);
 });

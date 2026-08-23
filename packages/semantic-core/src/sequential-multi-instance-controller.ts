@@ -12,8 +12,10 @@
  * - completed is `outputSlots.length`, dense by construction rather than by conjunct;
  * - the active loop counter is `outputSlots.length`, the next slot to fill;
  * - generated is `outputSlots.length + 1` while a body is open, since this profile keeps exactly one
- *   active inner instance;
- * - pending is `snapshot.length - generated`;
+ *   active inner instance; the count the projection *publishes* is instead the sum of the completed
+ *   and active counts published beside it, because the active count is read from the Activity
+ *   occurrence record rather than from here and Table 10.30's identity has to hold arithmetically;
+ * - pending is `snapshot.length - generated`, truncated at zero;
  * - terminated is `0`, and no stable state can show otherwise: interruption removes the controller in
  *   the same transition that terminates the active instance.
  *
@@ -60,11 +62,21 @@ export function generatedInstanceCount(
   return completedInstanceCount(controller) + 1;
 }
 
-/** Snapshot items not yet generated. */
+/**
+ * Snapshot items not yet generated, truncated at zero.
+ *
+ * The truncation is the deliberate choice rather than a guard against a reachable value: Lean computes
+ * the same difference as `Nat` subtraction, so an untruncated result here would be the two targets
+ * disagreeing. It is reachable only on a controller whose slots exhaust its snapshot, which the
+ * exhaustion conjunct refuses before evaluation.
+ */
 export function pendingItemCount(
   controller: SequentialMultiInstanceController,
 ): number {
-  return controller.snapshot.length - generatedInstanceCount(controller);
+  return Math.max(
+    0,
+    controller.snapshot.length - generatedInstanceCount(controller),
+  );
 }
 
 /** The controller an Activity occurrence identity owns, or `undefined`. */

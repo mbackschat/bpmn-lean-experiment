@@ -217,6 +217,26 @@ theorem completion_publishes_the_ordered_collection {arm : SequentialMultiInstan
   | publishes _ _ controller _ _ result _ _ _ _ _ controllerLive =>
       exact ⟨controller, controllerLive, result, rfl⟩
 
+/-- `SMI-COMPLETE-01` publishes no collection the profile cannot carry.
+
+The quantified content of the completion arm's bound: whatever a legal final completion publishes fits
+every profile limit, so no legal run reaches a Process-scope output collection over the declared
+canonical size even though its items were each admissible on their own. Stated over the relation, so an
+evaluator that stored an over-bound candidate could not be shown to satisfy the arm it claims; the
+concrete crossing case is the fixture owner's
+`sixteen_results_at_the_item_byte_bound_cross_the_canonical_collection_bound`. -/
+theorem completion_publishes_a_collection_within_the_profile_bounds
+    {arm : SequentialMultiInstanceArm} {body : OccurrenceId}
+    {submitted : List VariableBinding} {before after : RuntimeState}
+    (step : SequentialMultiInstanceCompletionStep arm body submitted before after) :
+    ∃ items, withinSequentialMultiInstanceLimits arm items = true ∧
+      after.variables.process.bindings =
+        mergeProcessVariableBindings before.variables.process.bindings
+          [{ name := arm.data.outputDataObjectId, value := .stringList items }] := by
+  cases step with
+  | publishes _ _ controller _ _ result _ _ _ _ _ _ _ _ _ _ _ candidateFits =>
+      exact ⟨controller.outputSlots ++ [result], candidateFits, rfl⟩
+
 /-- `SMI-COMPLETE-01` only closes: every surviving controller and record was already there.
 
 Nothing is created, so the controller and its record leave together with the final inner task and the
@@ -242,6 +262,22 @@ theorem interruption_publishes_nothing {arm : SequentialMultiInstanceArm}
     after.variables = before.variables := by
   cases step
   rfl
+
+/-- `SMI-CANCEL-01` strands no deadline the interrupted record listed.
+
+The general invariant behind the withdrawal, rather than a claim about how many deadlines this profile
+arms: removing an Activity occurrence record must leave no Timer wait that record named still live, and
+`attachedTimersUnambiguous` admits a record listing more than one. Stated over the relation, so an
+evaluator that withdrew only the fired deadline would produce a post-state this law refuses. -/
+theorem interruption_strands_no_deadline_its_record_listed {arm : SequentialMultiInstanceArm}
+    {timer : TimerOccurrenceId} {logicalTimeMs : Nat} {before after : RuntimeState}
+    (step : SequentialMultiInstanceInterruptionStep arm timer logicalTimeMs before after) :
+    ∃ record ∈ before.activityOccurrences, recordAttaches record timer = true ∧
+      ∀ wait ∈ after.timerWaits, anyTimerIdNamesWait record.attachedTimers wait = false := by
+  cases step with
+  | interrupts _ record _ _ _ _ _ _ recordLive attaches =>
+      exact ⟨record, recordLive, attaches, fun _ retained =>
+        filtering_by_withdrawn_timers_leaves_none _ _ _ retained⟩
 
 /-- `SMI-CANCEL-01` discards every accepted result by removing the controller that held them.
 

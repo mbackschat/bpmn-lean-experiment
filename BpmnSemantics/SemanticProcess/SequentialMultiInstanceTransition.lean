@@ -13,8 +13,10 @@ is an argument rather than a committed program operation.
 
 What separates a defective evaluator here is each arm's post-state together with the quantified laws
 in [the laws owner](SequentialMultiInstanceLaws.lean). Every conclusion carries the collections its
-rule must not touch verbatim, so an evaluator that re-arms the lifetime deadline across an iteration,
-or publishes a partial collection on interruption, cannot be shown to satisfy the arm it claims.
+rule must not touch verbatim, and each completion arm carries the bound its candidate output
+collection must fit, so an evaluator that re-arms the lifetime deadline across an iteration, publishes
+a partial collection on interruption, or stores a result that pushes the output collection past a
+profile bound cannot be shown to satisfy the arm it claims.
 
 Scope boundary: four transition families over committed runtime state. It owns no admission, no public
 observation, no occurrence projection, no scenario stimulus, and no claim of completeness or
@@ -37,13 +39,16 @@ recovered at all because no evaluator computes it.
 
 /-- Every Timer occurrence a record lists is live in this state.
 
-The iteration and completion arms' one premise that no evaluator result supplies. Stated over the
-whole state rather than over one record so the bridges can take it as a hypothesis without naming the
-record their own lookup finds. It is universally quantified and therefore vacuous for a record with no
-handler, which is deliberate: what it forbids is a state whose record names a withdrawn deadline, and
-that is the state in which "the lifetime deadline survives the turnover" would otherwise be a claim
-about a wait that is not there. `activityRecordsOwnLiveWork` supplies it for every admitted state, and
-`attachedDeadlinesLive_of_activityRecordsOwnLiveWork` is that derivation. -/
+The iteration and completion arms' one premise that no evaluator result supplies, which is where those
+arms carry content of their own: an arm whose every premise is recoverable from its evaluator's success
+cannot fail apart from that evaluator. Stated over the whole state rather than over one record so the
+bridges can take it as a hypothesis without naming the record their own lookup finds. It is
+universally quantified and therefore vacuous for a record with no handler, which is deliberate: what
+it forbids is a state whose record names a withdrawn deadline. What it bounds is the pre-state a legal
+step may start from, and no law in this capsule consumes it, so
+`iteration_preserves_the_outer_deadline` holds without it. `activityRecordsOwnLiveWork` supplies it
+for every admitted state, and `attachedDeadlinesLive_of_activityRecordsOwnLiveWork` is that
+derivation. -/
 def AttachedDeadlinesLive (state : RuntimeState) : Prop :=
   ∀ record ∈ state.activityOccurrences, ∀ deadline ∈ record.attachedTimers,
     ∃ live ∈ state.timerWaits, timerIdNamesWait deadline live = true
@@ -91,9 +96,10 @@ inductive SequentialMultiInstanceEntryStep :
 instance, atomically.
 
 `nonFinal` counts the slot this step fills, so the arm cannot be satisfied by the completion that
-fills the last one. `deadlines` is the premise no evaluator supplies, and it is what makes the
-untouched `timerWaits` in the conclusion a preservation claim rather than a statement about an absent
-wait. -/
+fills the last one. `candidateFits` refuses the result whose candidate output collection crosses a
+profile bound, so the bound is part of what a legal step *is* rather than only of what one evaluator
+happens to check. `deadlines` is the premise no evaluator supplies; it constrains the pre-state this
+step may start from and no law here consumes it. -/
 inductive SequentialMultiInstanceIterationStep :
     SequentialMultiInstanceArm → OccurrenceId → List VariableBinding →
       RuntimeState → RuntimeState → Prop where
@@ -112,6 +118,8 @@ inductive SequentialMultiInstanceIterationStep :
       (submission : submitted = [binding])
       (submittedName : binding.name = arm.data.taskDataOutputId)
       (submittedValue : binding.value = .string result)
+      (candidateFits : withinSequentialMultiInstanceLimits arm
+        (controller.outputSlots ++ [result]) = true)
       (nonFinal : completedInstanceCount controller + 1 < controller.snapshot.length) :
       SequentialMultiInstanceIterationStep arm body submitted before
         (iteratedState before record wait body controller result)
@@ -121,7 +129,12 @@ inductive SequentialMultiInstanceIterationStep :
 `final` is the exact complement of the iteration arm's `nonFinal`, so no state satisfies both, and it
 constrains the controller rather than restating a fact the evaluator hands over. The published
 collection is `controller.outputSlots ++ [result]`: the slots in index order with this result in its
-own position. -/
+own position.
+
+`candidateFits` is the same premise the iteration arm carries, and this is the arm that needs it most.
+The canonical measure grows with every slot, so the completion that fills the last one is the first
+that a maximal collection can cross; a bound carried only by the non-final arm would leave exactly the
+publishing step unchecked. -/
 inductive SequentialMultiInstanceCompletionStep :
     SequentialMultiInstanceArm → OccurrenceId → List VariableBinding →
       RuntimeState → RuntimeState → Prop where
@@ -140,6 +153,8 @@ inductive SequentialMultiInstanceCompletionStep :
       (submission : submitted = [binding])
       (submittedName : binding.name = arm.data.taskDataOutputId)
       (submittedValue : binding.value = .string result)
+      (candidateFits : withinSequentialMultiInstanceLimits arm
+        (controller.outputSlots ++ [result]) = true)
       (final : controller.snapshot.length ≤ completedInstanceCount controller + 1) :
       SequentialMultiInstanceCompletionStep arm body submitted before
         (finalCompletionState arm before record body controller
@@ -201,7 +216,11 @@ Splitting them would ask that question twice, and the intermediate state between
 The live body wait is required in both arms. The independently written core requires it only in the
 non-final arm, where its own body-turnover call does; in a well-formed state the two agree, because
 every record has exactly one live body, and where they differ this side refuses a state the invariant
-already rejects. -/
+already rejects.
+
+The controller is resolved before the submitted value, because admitting the value needs the slots it
+would extend: a result is accepted only when the candidate output collection fits every profile bound,
+and a refusal there commits nothing at all rather than storing a truncated or clamped item. -/
 def completeSequentialMultiInstanceInnerTask? (arm : SequentialMultiInstanceArm)
     (state : RuntimeState) (body : OccurrenceId) (submitted : List VariableBinding) :
     Option RuntimeState :=
@@ -210,7 +229,7 @@ def completeSequentialMultiInstanceInnerTask? (arm : SequentialMultiInstanceArm)
       let record ← activityOccurrenceForTask? state.activityOccurrences body
       let controller ← sequentialMultiInstanceControllerFor?
         state.sequentialMultiInstanceControllers record
-      let result ← acceptedIterationResult arm submitted
+      let result ← acceptedIterationResult arm controller.outputSlots submitted
       if body.elementId.value = arm.taskId.value then
         match state.waits.filter (taskIdNamesWait body) with
         | [wait] =>
@@ -318,12 +337,14 @@ private theorem admittedSnapshot_sound {arm : SequentialMultiInstanceArm} {state
           | integer _ => simp [filtered, value] at found
           | null => simp [filtered, value] at found
 
-/-- The accepted result is one binding of the declared name carrying that exact String. -/
+/-- The accepted result is one binding of the declared name carrying that exact String, and the
+candidate collection it would produce fits every profile bound. -/
 private theorem acceptedIterationResult_sound {arm : SequentialMultiInstanceArm}
-    {submitted : List VariableBinding} {result : String}
-    (found : acceptedIterationResult arm submitted = some result) :
-    ∃ binding, submitted = [binding] ∧ binding.name = arm.data.taskDataOutputId ∧
-      binding.value = .string result := by
+    {slots : List String} {submitted : List VariableBinding} {result : String}
+    (found : acceptedIterationResult arm slots submitted = some result) :
+    (∃ binding, submitted = [binding] ∧ binding.name = arm.data.taskDataOutputId ∧
+        binding.value = .string result) ∧
+      withinSequentialMultiInstanceLimits arm (slots ++ [result]) = true := by
   unfold acceptedIterationResult at found
   cases submitted with
   | nil => simp at found
@@ -334,9 +355,12 @@ private theorem acceptedIterationResult_sound {arm : SequentialMultiInstanceArm}
           cases value : binding.value with
           | string submittedResult =>
               by_cases named : binding.name = arm.data.taskDataOutputId
-              · simp [value, named] at found
-                cases found
-                exact ⟨binding, rfl, named, value⟩
+              · by_cases fits :
+                    withinSequentialMultiInstanceLimits arm (slots ++ [submittedResult]) = true
+                · simp [value, named, fits] at found
+                  cases found
+                  exact ⟨⟨binding, rfl, named, value⟩, fits⟩
+                · simp [value, named, fits] at found
               · simp [value, named] at found
           | stringList _ => simp [value] at found
           | boolean _ => simp [value] at found
@@ -413,18 +437,19 @@ theorem completeSequentialMultiInstanceInnerTask_sound (arm : SequentialMultiIns
           | some controller =>
               obtain ⟨controllerLive, controllerBinds⟩ :=
                 sequentialMultiInstanceControllerFor_sound bound
-              cases accepted : acceptedIterationResult arm submitted with
-              | none => simp [running, found, accepted] at success
+              cases accepted :
+                  acceptedIterationResult arm controller.outputSlots submitted with
+              | none => simp [running, found, bound, accepted] at success
               | some result =>
-                  obtain ⟨binding, submission, submittedName, submittedValue⟩ :=
+                  obtain ⟨⟨binding, submission, submittedName, submittedValue⟩, candidateFits⟩ :=
                     acceptedIterationResult_sound accepted
                   by_cases owns : body.elementId.value = arm.taskId.value
                   · cases waits : before.waits.filter (taskIdNamesWait body) with
-                    | nil => simp [running, found, accepted, owns, waits] at success
+                    | nil => simp [running, found, owns, waits] at success
                     | cons wait others =>
                         cases others with
                         | cons _ _ =>
-                            simp [running, found, accepted, owns, waits] at success
+                            simp [running, found, owns, waits] at success
                         | nil =>
                             by_cases nonFinal :
                                 completedInstanceCount controller + 1 < controller.snapshot.length
@@ -434,15 +459,15 @@ theorem completeSequentialMultiInstanceInnerTask_sound (arm : SequentialMultiIns
                               exact Or.inl (.iterates arm body submitted before instanceId record
                                 controller wait binding result running recordLive bodyIsTask owns
                                 waits controllerLive controllerBinds deadlines submission
-                                submittedName submittedValue nonFinal)
+                                submittedName submittedValue candidateFits nonFinal)
                             · simp [running, found, bound, accepted, owns, waits, nonFinal]
                                 at success
                               cases success
                               exact Or.inr (.publishes arm body submitted before instanceId record
                                 controller wait binding result running recordLive bodyIsTask owns
                                 waits controllerLive controllerBinds deadlines submission
-                                submittedName submittedValue (by omega))
-                  · simp [running, found, accepted, owns] at success
+                                submittedName submittedValue candidateFits (by omega))
+                  · simp [running, found, owns] at success
 
 /-- `SMI-CANCEL-01` soundness. -/
 theorem interruptSequentialMultiInstance_sound (arm : SequentialMultiInstanceArm)

@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityBodyKind,
   SemanticOperationKind,
   VariableValueKind,
   applyInternalOperation,
@@ -23,6 +24,7 @@ import {
   initialState,
   interruptSequentialMultiInstance,
   projectOpenMultiInstances,
+  runtimeStateDefects,
   type RuntimeState,
 } from "@bpmn-lean/semantic-core";
 
@@ -30,8 +32,10 @@ import {
   completeIteration,
   fireOuterTimer,
   innerTaskId,
+  instanceId,
   items,
   outerActivityId,
+  owner,
   reviewData,
   reviewProgram,
   start,
@@ -177,4 +181,54 @@ test("a program with no Multi-Instance Activity omits the key entirely", () => {
     undefined,
     "existing profiles' canonical observation bytes must not move",
   );
+});
+
+/** The same state with the outer record's body replaced by a child scope. */
+function withChildScopeBody(state: RuntimeState): RuntimeState {
+  const [record] = state.activityOccurrences;
+  assert.ok(record !== undefined);
+  return {
+    ...state,
+    activityOccurrences: [{
+      ...record,
+      body: { kind: ActivityBodyKind.ChildScope, scope: owner },
+    }],
+  };
+}
+
+/**
+ * The state that separates an arithmetic identity from an agreement between two structures.
+ *
+ * Body kind is deliberately not a well-formedness conjunct in either language, and the command gate
+ * refuses only the three controller classes, so a controller bound to a child-scope-bodied record
+ * reaches the projection. The completed count comes from the controller and the active count from that
+ * record's body, so a generated count read off the controller can contradict both of the numbers
+ * published beside it. Deriving generated as their sum is what makes Table 10.30's identity hold by
+ * arithmetic instead of by the two structures happening to agree.
+ */
+test("Table 10.30's identity holds where the record carries no Task body", () => {
+  const completed = completeSequentialMultiInstanceIteration(
+    reviewProgram,
+    entered(),
+    completeIteration(0, "reviewed alpha"),
+  );
+  assert.ok(completed !== null);
+  const state = withChildScopeBody(completed);
+  assert.deepEqual(
+    runtimeStateDefects(reviewProgram, instanceId, state),
+    [],
+    "body kind is not a conjunct, so this state is admitted before evaluation",
+  );
+
+  const [open] = progress(state);
+  assert.ok(open !== undefined);
+  assert.equal(open.numberOfActiveInstances, 0, "no Task body, so no active iteration");
+  assert.equal(open.numberOfCompletedInstances, 1);
+  assert.equal(
+    open.numberOfInstances,
+    open.numberOfActiveInstances + open.numberOfCompletedInstances +
+      open.numberOfTerminatedInstances,
+    "generated is the sum of the counts published beside it",
+  );
+  assert.deepEqual(open.activeIterations, []);
 });

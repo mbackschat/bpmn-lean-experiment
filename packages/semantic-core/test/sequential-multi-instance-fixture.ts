@@ -22,6 +22,8 @@ import {
   initialState,
   sequentialMultiInstanceLimits,
   type CompleteUserTaskInstanceStimulus,
+  type RuntimeState,
+  type SemanticProcessProgram,
   type VariableBinding,
 } from "@bpmn-lean/semantic-core";
 
@@ -147,10 +149,20 @@ export const outerActivityId = Object.freeze({
 
 export const items = Object.freeze(["alpha", "beta", "gamma"]);
 
-function startWith(commandId: string, collection: ReadonlyArray<string>) {
+/**
+ * A `StartProcess` carrying `collection` as the sole Process binding.
+ *
+ * `dataObjectId` names the input DataObject that binding belongs to, which entry locates by exact
+ * identity rather than by value kind. It varies only for {@link orderSeparatingProgram}.
+ */
+export function startWithCollection(
+  commandId: string,
+  collection: ReadonlyArray<string>,
+  dataObjectId: string = reviewData.input.dataObjectId,
+) {
   const initialVariables: ReadonlyArray<VariableBinding> = [
     {
-      name: reviewData.input.dataObjectId,
+      name: dataObjectId,
       value: {
         kind: VariableValueKind.StringList,
         value: [...collection],
@@ -166,8 +178,45 @@ function startWith(commandId: string, collection: ReadonlyArray<string>) {
   });
 }
 
-export const start = startWith("start-review", items);
-export const startEmpty = startWith("start-empty-review", []);
+export const start = startWithCollection("start-review", items);
+export const startEmpty = startWithCollection("start-empty-review", []);
+
+/**
+ * The input DataObject identity that separates the two plausible canonical binding orders.
+ *
+ * Against the unchanged output identity `DataObject_OutputResults`, a locale collation places `_`
+ * before `B` while code point places it after, so the two comparators return opposite signs for this
+ * pair. The identities in {@link reviewData} agree under both, so publication order needs its own
+ * program: any admitted model whose Process DataObject IDs differ across `_` or in case separates
+ * them, and this is the smallest such pair.
+ */
+export const orderSeparatingInputDataObjectId = "DataObjectB_InputItems";
+
+/** The review Process with that one input identity substituted, and nothing else changed. */
+export const orderSeparatingProgram: SemanticProcessProgram = {
+  ...reviewProgram,
+  operations: reviewProgram.operations.map((operation) =>
+    operation.kind ===
+        SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+      ? {
+        ...operation,
+        data: {
+          ...operation.data,
+          input: {
+            ...operation.data.input,
+            dataObjectId: orderSeparatingInputDataObjectId,
+          },
+        },
+      }
+      : operation
+  ),
+};
+
+export const startOrderSeparating = startWithCollection(
+  "start-order-separating",
+  items,
+  orderSeparatingInputDataObjectId,
+);
 
 /**
  * The state a committed `StartProcess` would leave, built directly.
@@ -196,6 +245,18 @@ export function startedState(stimulus: { initialVariables: ReadonlyArray<Variabl
       activities: [],
     },
   };
+}
+
+/**
+ * The published Process output collection, or `undefined` while it is still private.
+ *
+ * Keyed on the fixture's own output DataObject identity, which is why it belongs here rather than in one
+ * of the two files that read it.
+ */
+export function outputBinding(state: RuntimeState): VariableBinding | undefined {
+  return state.variables.process.bindings.find(({ name }) =>
+    name === reviewData.output.dataObjectId
+  );
 }
 
 /** The completion of the iteration at `counter`, carrying its scalar result. */

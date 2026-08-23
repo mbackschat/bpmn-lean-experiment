@@ -287,7 +287,7 @@ Existing executable constraints include [schema coverage](../../scripts/contract
 
 | Owner | Current headroom before the 600-nonblank-line review target |
 |---|---:|
-| [public semantic contract](../../packages/semantic-core/src/contract.ts) | 225 |
+| [public semantic contract](../../packages/semantic-core/src/contract.ts) | 229 |
 | [checked Process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 339 |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 180 |
 | [runtime state contract](../../packages/semantic-core/src/semantic-process-state.ts) | 185 |
@@ -305,14 +305,14 @@ Owners this implementation **created**, listed because the recomputing guard mea
 
 | Owner | Current headroom before the 600-nonblank-line review target |
 |---|---:|
-| [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 501 |
-| [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 137 |
+| [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 489 |
+| [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 109 |
 | [Lean outer controller](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 468 |
-| [Lean definition facts and rewrites](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceRewrite.lean) | 358 |
-| [Lean transitions and bridges](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceTransition.lean) | 154 |
-| [Lean laws](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceLaws.lean) | 348 |
-| [Lean fixtures](../../BpmnSemantics/SequentialMultiInstanceConformance.lean) | 277 |
-| [progress projection](../../packages/semantic-core/src/sequential-multi-instance-observation.ts) | 467 |
+| [Lean definition facts and rewrites](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceRewrite.lean) | 332 |
+| [Lean transitions and bridges](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceTransition.lean) | 131 |
+| [Lean laws](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceLaws.lean) | 316 |
+| [Lean fixtures](../../BpmnSemantics/SequentialMultiInstanceConformance.lean) | 148 |
+| [progress projection](../../packages/semantic-core/src/sequential-multi-instance-observation.ts) | 460 |
 | [occurrence accounting](../../packages/semantic-core/src/flow-node-occurrence-sequential-multi-instance.ts) | 337 |
 
 At proposal time the lowering owner had 43 lines of headroom, the occurrence lifecycle 44, the occurrence open set 42, and the canonical scenario projection 75, so the expected lowering, occurrence, and projection mechanisms could not fit cohesively in any of them. Their implementation must therefore create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. The occurrence extraction has discharged that condition: the accounting mechanism lives in its own owner and the two occurrence files kept only a delegating arm each, which is why their rows above now measure lower rather than higher. The condition stops applying to a remaining mechanism only if the review target measurements change enough that its complete cohesive form fits while every owner remains below 600; every figure in these tables is recomputed by the reviewability guard rather than treated as permanent prose.

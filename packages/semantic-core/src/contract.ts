@@ -1,3 +1,4 @@
+import type { ActivityOccurrenceId } from "./activity-occurrence.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
@@ -334,15 +335,16 @@ export type OpenSequentialMultiInstanceIteration = DeepReadonly<{
 /**
  * The stable progress of one open sequential Multi-Instance Activity.
  *
- * Every count here is derived from the committed controller rather than stored beside it: `planned` is
- * the immutable snapshot's length, `completed` and the active loop counter are the filled-slot count,
- * `numberOfInstances` is one more while an inner instance is open, `pending` is the difference, and
- * `terminated` is zero because interruption removes the controller in the transition that terminates
- * the active instance. Table 10.30's identity, generated equals active plus completed plus terminated,
- * therefore holds structurally.
+ * Every count here is derived from committed state rather than stored beside it: `planned` is the
+ * immutable snapshot's length, `completed` and the active loop counter are the filled-slot count,
+ * `active` is read from the Activity occurrence record's body, `pending` is the remaining difference
+ * truncated at zero, and `terminated` is zero because interruption removes the controller in the
+ * transition that terminates the active instance. `numberOfInstances` is the sum of `active`,
+ * `completed`, and `terminated`, so Table 10.30's identity is arithmetic rather than an agreement
+ * between the controller and the record, which are two structures a state can make disagree.
  */
 export type OpenSequentialMultiInstance = DeepReadonly<{
-  id: ActivityOccurrenceIdentity;
+  id: ActivityOccurrenceId;
   mode: "sequential";
   plannedInstanceCount: number;
   pendingItemCount: number;
@@ -351,13 +353,6 @@ export type OpenSequentialMultiInstance = DeepReadonly<{
   numberOfCompletedInstances: number;
   numberOfTerminatedInstances: number;
   activeIterations: OpenSequentialMultiInstanceIteration[];
-}>;
-
-/** The publicly projected Activity occurrence identity, distinct in field name from a task occurrence. */
-export type ActivityOccurrenceIdentity = DeepReadonly<{
-  processInstanceId: string;
-  activityElementId: string;
-  activation: number;
 }>;
 
 export type StateObservation = DeepReadonly<{
