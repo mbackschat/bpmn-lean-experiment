@@ -134,9 +134,12 @@ export async function discoverChecksumBoundMigrationFiles(
     }
   }
 
+  // Code-unit order, never `localeCompare`: migration application order must be identical on every
+  // host, and a locale-sensitive tiebreak lets two hosts apply the same pair in opposite orders.
   migrations.sort(
     (left, right) =>
-      left.ordinal - right.ordinal || left.name.localeCompare(right.name),
+      left.ordinal - right.ordinal ||
+      (left.name < right.name ? -1 : left.name > right.name ? 1 : 0),
   );
   migrations.forEach((migration, index) => {
     const requiredOrdinal = index + 1;

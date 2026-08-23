@@ -348,7 +348,14 @@ function canonicalOpenText(open: readonly OpenFlowNodeOccurrence[]): string {
 }
 
 function compareId(left: FlowNodeOccurrenceId, right: FlowNodeOccurrenceId): number {
-  return left.processInstanceId.localeCompare(right.processInstanceId) ||
+  // Code-unit order, never `localeCompare`: this ordering reaches a public projection, so a
+  // locale-sensitive comparison would order the same occurrences differently on two hosts.
+  const byInstance = left.processInstanceId < right.processInstanceId
+    ? -1
+    : left.processInstanceId > right.processInstanceId
+    ? 1
+    : 0;
+  return byInstance ||
     left.startRevision - right.startRevision ||
     left.startIndex - right.startIndex;
 }
