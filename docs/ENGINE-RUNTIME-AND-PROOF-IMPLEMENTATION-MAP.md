@@ -180,7 +180,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 **Implemented.**
 
 - `ActivityOccurrence` in both languages, with an identity distinct from `OccurrenceId` by field name so no task identity is substitutable for it, a closed two-arm body union, and a listed attached-Timer collection
-- five of six enumerated derivation sites read the record: the four transition owners across all three families, and the open-set publication binding
+- five of six enumerated derivation sites read the record: the four **TypeScript** transition owners across all three families, and the open-set publication binding
 - regional cancellation withdraws every record whose owner or body lies in the region together with the waits those records list; the bounded-scope deadline arm's hand-written withdrawal is gone as redundant
 - the adapter pairs a boundary deadline through the record instead of whole-state wait cardinality, and the Workflow continuation decoder admits and structurally validates both new fields
 - Lean carries the representation, canonical order, lookups, region partition, and withdrawal-completeness laws
@@ -191,6 +191,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 - the sixth derivation site is deliberately exempt rather than migrated. [The publication completeness relation](../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) is an independent reconstruction pairing through the private retained anchor relation, never through state differences, so the producer's records would make it share the mechanism it checks
 - that exemption's reopen trigger is close: under any admitted repetition the record and the ordinal reconstruction would legitimately disagree, and it would reject a correct publication
 - body turnover is withdrawn as unreachable, since no registered family replaces a body; it belongs to sequential Multi-Instance. The effect body arm is unreachable and absent for the same reason
+- the Lean lane is **not migrated**, and no guard covers it. `BoundedTask.lean` and `MonitoredTask.lean` hold no reference to the record and pair by activation ordinal throughout, relation hypotheses included; `BoundedScope.lean` reads the record for arming and withdrawal while its child lookup and declarative pairing still use the ordinal. `AOO-JOIN-02` is therefore enforced over TypeScript only, and the enumerating guard lists TypeScript paths
 - preservation of the new conjuncts across the registered transition arms inherits [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) and is not re-declared
 
 **Absent in evidence.**

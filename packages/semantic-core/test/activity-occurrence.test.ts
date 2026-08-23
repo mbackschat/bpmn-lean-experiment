@@ -23,11 +23,11 @@ import {
   initialState,
   runtimeStateDefects,
 } from "@bpmn-lean/semantic-core";
-import type { RuntimeState } from "@bpmn-lean/semantic-core";
+import type { ActivityOccurrence, RuntimeState } from "@bpmn-lean/semantic-core";
 
 import {
   boundedScopeProgram,
-  fireDeadline,
+  completeChildTask,
   instanceId,
   start,
 } from "./bounded-scope-fixture.ts";
@@ -97,45 +97,99 @@ test("a region removal that leaves its attached deadline behind is refused", () 
  * refused command must leave the received state byte-identical because a fail-closed boundary that
  * mutated on refusal would be worse than no boundary.
  */
-test("the fail-closed command gate refuses a stranded record and preserves the state", () => {
-  const control = armedState();
-  const admitted = applyStimulus(boundedScopeProgram, control, fireDeadline);
-  assert.equal(admitted.outcome, CommandOutcome.Committed);
+/**
+ * Attributability for the gated classes, and the discipline that produced it.
+ *
+ * Two earlier versions of this witness perturbed the *armed* record, and both passed for the wrong
+ * reason: `armedBoundedScopeForDeadline` resolves the child through that same record, so the target
+ * transition refused the state on its own and reverting the gated set left the test green. The rule the
+ * failures teach is that a witness for a fail-closed boundary must perturb state the target transition
+ * never reads, and the check that it did is a seeded revert of the boundary itself.
+ *
+ * Element `Unrelated_Activity` belongs to no Activity this program admits, so no transition looks it up,
+ * and it sorts after the armed record's `Scope` so the canonical-order conjunct cannot be the refusal.
+ */
+const unconsultedElementId = "Unrelated_Activity";
 
-  const [record] = control.activityOccurrences;
-  assert.ok(record !== undefined);
-  // The perturbation is confined to `activityOccurrences`: every scope occurrence, token, and wait is
-  // the admitted control's, and only the record's claim about its own body moves off the live task.
-  // Removing the child region instead would also refuse, but not attributably, because the deadline
-  // could then be refused for the missing region rather than by this boundary.
-  const bodyAbsent: RuntimeState = {
-    ...control,
-    activityOccurrences: [{
-      ...record,
-      body: record.body.kind === ActivityBodyKind.ChildScope
-        ? {
-          kind: ActivityBodyKind.ChildScope,
-          scope: { ...record.body.scope, activation: record.body.scope.activation + 1 },
-        }
-        : record.body,
-    }],
+function withUnconsultedRecords(
+  state: RuntimeState,
+  build: (template: ActivityOccurrence) => ReadonlyArray<ActivityOccurrence>,
+): RuntimeState {
+  const [armed] = state.activityOccurrences;
+  assert.ok(armed !== undefined, "arming must produce the template record");
+  return {
+    ...state,
+    activityOccurrences: [...state.activityOccurrences, ...build({
+      ...armed,
+      id: { ...armed.id, activityElementId: unconsultedElementId, activation: 1 },
+      attachedTimers: [],
+    })],
   };
-  assert.notDeepEqual(defects(bodyAbsent), [], "the perturbation must be refused by the predicate");
-  assert.deepEqual(
-    { ...bodyAbsent, activityOccurrences: control.activityOccurrences },
-    control,
-    "the perturbation must differ from the control in activityOccurrences alone",
+}
+
+test("the fail-closed command gate refuses an unconsulted record, one class at a time", () => {
+  const control = armedState();
+  assert.equal(
+    applyStimulus(boundedScopeProgram, control, completeChildTask).outcome,
+    CommandOutcome.Committed,
+    "the control must commit, or the refusals below are not attributable",
   );
 
-  const refused = applyStimulus(boundedScopeProgram, bodyAbsent, fireDeadline);
-  assert.notEqual(refused.outcome, CommandOutcome.Committed);
-  assert.deepEqual(refused.state, bodyAbsent);
+  const cases = [
+    {
+      // Body absent: the unconsulted record names a scope occurrence that does not exist.
+      defect: "activityOccurrenceBodyAbsent",
+      state: withUnconsultedRecords(control, (template) => [{
+        ...template,
+        body: {
+          kind: ActivityBodyKind.ChildScope,
+          scope: { ...template.owner, definitionScopeId: "scope:Nowhere" },
+        },
+      }]),
+    },
+    {
+      // Duplicate identity, with a live body so the body conjunct cannot fire instead. Two records
+      // of equal identity also satisfy canonical order, so that conjunct cannot fire either.
+      defect: "duplicateActivityOccurrence",
+      state: withUnconsultedRecords(control, (template) => {
+        const live = {
+          ...template,
+          body: { kind: ActivityBodyKind.ChildScope, scope: template.owner },
+        } as const;
+        return [live, live];
+      }),
+    },
+  ] as const;
 
-  // The stranded state the subtree removal produces is refused by the same boundary.
-  const stranded = strandedState(armedState());
-  const strandedRefusal = applyStimulus(boundedScopeProgram, stranded, fireDeadline);
-  assert.notEqual(strandedRefusal.outcome, CommandOutcome.Committed);
-  assert.deepEqual(strandedRefusal.state, stranded);
+  for (const { defect, state } of cases) {
+    assert.deepEqual(defects(state), [defect], `exactly ${defect} must fire`);
+    assert.deepEqual(
+      { ...state, activityOccurrences: control.activityOccurrences },
+      control,
+      `${defect}: the perturbation must differ from the control in activityOccurrences alone`,
+    );
+    const refused = applyStimulus(boundedScopeProgram, state, completeChildTask);
+    assert.notEqual(refused.outcome, CommandOutcome.Committed, defect);
+    assert.deepEqual(refused.state, state, `${defect}: a refusal must preserve the received state`);
+  }
+});
+
+/**
+ * The third gated class has no unconsulted witness on this fixture, and that is a property of the
+ * class rather than an omission. `UnownedAttachedWait` fires only when two records claim one *live*
+ * Timer wait, this profile admits exactly one Timer wait, and it is the deadline the completion path
+ * reads. Any state tripping the class therefore also perturbs state the transition consults. The class
+ * is covered by the predicate negative above and by the gated set it shares with the other two.
+ */
+test("the ambiguity class is gated but has no transition-independent witness here", () => {
+  const control = armedState();
+  assert.equal(control.timerWaits.length, 1, "the premise of the absence is one live Timer wait");
+  const ambiguous = withUnconsultedRecords(control, (template) => [{
+    ...template,
+    body: { kind: ActivityBodyKind.ChildScope, scope: template.owner },
+    attachedTimers: control.activityOccurrences[0]?.attachedTimers ?? [],
+  }]);
+  assert.ok(defects(ambiguous).includes("unownedAttachedWait"));
 });
 
 /**

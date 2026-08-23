@@ -6,6 +6,8 @@ This module owns the atomic arming relation for one User Task that carries an in
 
 The pair keeps no stored ownership record, unlike an Event-Based Gateway race. It is recovered by joining the committed operation to the two live waits, which is sound only because the profile admits exactly one such Activity with exactly one boundary Timer and because arming is atomic, so the two occurrences always share one activation ordinal. A repeated or Multi-Instance Activity would break that recovery and needs an explicit occurrence record.
 
+An `ActivityOccurrence` record for this family exists in `RuntimeState` and the TypeScript core reads it, but this module does not: the joins below are entirely by activation ordinal, hypotheses of the declarative relations included. That is a recorded gap in the Lean lane rather than a design choice, and it is why the paragraph above still holds here while the same claim is false of the core.
+
 Arming on Activity activation is a recorded project interpretation. BPMN 2.0.2 Clause 13.5.2 starts a catch Event's wait when a token *reaches* it, and a Boundary Event is never reached, so only the pre-due firing witness discriminates that instant.
 -/
 

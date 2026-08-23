@@ -138,6 +138,8 @@ The sibling recovers its pair by requiring **both** waits live, which is sound t
 
 That one-sided join is what makes the state machine expressible without a hidden record, and it rests on one falsifiable claim: for an admitted program, a live monitored task wait and an optional live deadline wait sharing its activation ordinal determine the family unambiguously, because the profile admits exactly one such Activity with exactly one boundary Timer. A repeated or Multi-Instance Activity refutes it and forces an explicit occurrence record; this profile excludes both, and a later capsule admitting repetition must revisit it.
 
+**Superseded in part.** [The Activity occurrence ownership capsule](../ACTIVITY-OCCURRENCE-OWNERSHIP-PROPOSAL.md) added the explicit occurrence record this section argued was unnecessary, and it did so because a *different* consequence forced it: a boundary handler owned by the parent scope survived the removal of the child region it guarded. The reopen condition below was therefore discharged by a capsule rather than refuted by an admitted state, and those are different events. What changed is per target and not uniform. The TypeScript core, the Temporal adapter, and the open-set publication binding now read the record. The Lean reference interpreter does not: `MonitoredTask.lean` holds no reference to the record and pairs by activation ordinal throughout, relation hypotheses included. So the falsifiable claim above is false for the executable targets and still true for the formal semantic authority, which is why it is corrected here rather than deleted. The one-sided lookup itself survives unchanged as a semantic fact: a monitored task whose deadline has already fired is still the normal state here.
+
 Both waits belong to one live scope occurrence. Monotonic activation counters are preserved across firing, and firing must leave the task wait byte-identical rather than removing and re-adding it, because the caller holds that occurrence identity.
 
 ## Proposed semantic rules
@@ -330,7 +332,7 @@ These oracles already constrain the planned artifacts; none is new work invented
 Stop for owner direction if:
 
 - the profile would need a wait-set shape the host capability predicate rejects;
-- the one-sided join turns out to be ambiguous in an admitted state, which forces an explicit occurrence record;
+- ~~the one-sided join turns out to be ambiguous in an admitted state, which forces an explicit occurrence record~~ **discharged**, not by an admitted state but by the stranded-handler consequence recorded above;
 - the coalesced fail-closed path cannot durably resolve its in-flight Update and would strand the caller;
 - the `hasSignals === false` premise does not hold for a `doUpdate`-plus-timer activation in the pinned SDK;
 - a corpus fixture would require admitting `timeCycle`, repeated firing, or a boundary flow merging back into the main flow;
@@ -341,7 +343,7 @@ Stop for owner direction if:
 
 1. **Approve the selection** of a non-interrupting boundary Timer on a User Task as the next capsule, against the recorded alternatives.
 2. **Approve the one new operation** `awaitMonitoredUserTask` rather than a flag on `awaitBoundedUserTask` or sibling waits, accepting a third boundary-timer operation kind sharing one arm shape.
-3. **Approve the one-sided join** and the no-runtime-record decision, accepting that a later repetition capsule may have to add an explicit occurrence record.
+3. **Approve the one-sided join** and the no-runtime-record decision, accepting that a later repetition capsule may have to add an explicit occurrence record. That later capsule arrived without repetition being admitted; see the superseding note above.
 4. **Approve the inverted admission** that rejects an omitted `cancelActivity` and lexical `true`, so neither sibling profile's source is admissible to the other. Amended on 2026-08-07: the admitted set is every lexeme the parser coerces to *false* and this profile's exact-lexeme guard preserves, which is `false` and `0`.
 5. **Approve the two-schedule evidence set**, with the reverse completion order covered in the focused core test rather than as a third registered scenario.
 6. **Approve the standards-only boundary** with no CIB relationship and no phase-zero probe unless a stop condition fires.

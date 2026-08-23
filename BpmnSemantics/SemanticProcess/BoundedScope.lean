@@ -7,7 +7,7 @@ This module owns the atomic arming relation for one embedded Sub-Process occurre
 
 The deadline is owned by the *parent* scope occurrence, and that is a correctness requirement rather than a modelling preference. `scopeQuiescent` counts an owned Timer wait as live work, so a child-owned deadline would make the child permanently non-quiescent and its normal completion unreachable, with no separating witness under this profile: the deadline arm would still behave correctly and only the quiescence arm would silently deadlock.
 
-Like the bounded User Task family this keeps no stored ownership record. The child occurrence and its deadline are recovered by joining the committed operation to the live occurrence and Timer wait, which is sound only because the profile admits exactly one such Sub-Process with exactly one boundary Timer and because arming is atomic, so the two share one activation ordinal.
+This module is half migrated onto the `ActivityOccurrence` record, and the halves are worth separating. Arming writes the record and regional withdrawal reads it, so the deadline is no longer stranded when its child region goes. The child lookup and the declarative pairing below still recover the pair by joining the committed operation to the live occurrence and Timer wait, which is sound only because the profile admits exactly one such Sub-Process with exactly one boundary Timer and because arming is atomic, so the two share one activation ordinal. That remaining ordinal join is a recorded gap in the Lean lane, not a design choice: the TypeScript core reads the record at every one of those sites.
 -/
 
 namespace BpmnSemantics.SemanticProcess

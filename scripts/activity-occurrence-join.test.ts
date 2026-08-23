@@ -13,6 +13,11 @@ import { fileURLToPath } from "node:url";
  * different keys on that one agreement, and none reported an ambiguity when it broke: each silently
  * found a different sibling or none.
  *
+ * The enumeration is TypeScript-only, and Lean is outside this guard entirely. That is not an oversight
+ * of scope: the Lean families are not migrated, two of the three holding no reference to the record, so
+ * a guard extended over them would fail rather than pass. Until they are migrated, nothing here covers
+ * the reference interpreter and `AOO-JOIN-02` is a one-language rule.
+ *
  * The owner list is enumerated rather than discovered, and that limit is the honest part. A cross-family
  * join and a same-family identity helper are lexically identical — both compare two `.activation`
  * expressions, and both may compare an element field in the same predicate; what separates them is

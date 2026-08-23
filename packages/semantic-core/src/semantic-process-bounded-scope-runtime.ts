@@ -256,8 +256,10 @@ function boundedScopeOperations(
 /**
  * Joins one live deadline to its committed definition and the child occurrence it bounds.
  *
- * The child is matched on the deadline's own activation ordinal, which atomic arming keeps equal, so a
- * deadline left over from an earlier activation cannot claim a later child region.
+ * The child comes from the ownership record's body, not from the deadline's activation ordinal. The
+ * ordinal agreement it used to rely on still holds under every registered profile, which is why the
+ * old form worked and why replacing it changes no admitted behaviour; what changes is that a stale
+ * deadline is now excluded because no record lists it, rather than because two counters disagree.
  */
 function armedBoundedScopeForDeadline(
   program: SemanticProcessProgram,

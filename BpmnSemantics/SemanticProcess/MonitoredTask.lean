@@ -8,6 +8,8 @@ The family's whole content is that firing preserves its host. BPMN 2.0.2 Clause 
 
 The join is one-sided, and that is the load-bearing difference from the sibling. A monitored task whose deadline has already fired is the normal state here, so the task wait plus the committed operation identify the family and the deadline is looked up as an optional live wait. Soundness rests on the profile admitting exactly one such Activity with exactly one boundary Timer; a repeated or Multi-Instance Activity refutes it and needs an explicit occurrence record.
 
+An `ActivityOccurrence` record for this family exists in `RuntimeState` and the TypeScript core reads it, but this module does not: the joins below are entirely by activation ordinal, hypotheses of the declarative relations included. That is a recorded gap in the Lean lane rather than a design choice, and it is why the paragraph above still holds here while the same claim is false of the core.
+
 Arming on Activity activation is the recorded project interpretation shared with the sibling family, so only the pre-due firing witness discriminates that instant.
 -/
 
