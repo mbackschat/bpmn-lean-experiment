@@ -327,15 +327,16 @@ theorem all_of_map_eq {α β : Type} (key : α → β) (p : α → Bool) (q : β
 One level rather than five, so the two order facts come straight from `String`.
 -/
 
-private def activationBefore (left right : TaskActivation) : Bool :=
+/-- The canonical order on the task activation family, named so laws about it are stateable. -/
+def activationBefore (left right : TaskActivation) : Bool :=
   decide (left.taskId.value < right.taskId.value)
 
-private theorem activationBefore_asymm (left right : TaskActivation) :
+theorem activationBefore_asymm (left right : TaskActivation) :
     activationBefore left right = true → activationBefore right left = false := by
   simp only [activationBefore, decide_eq_true_eq, decide_eq_false_iff_not]
   exact String.lt_asymm
 
-private theorem activationBefore_compose (a b c : TaskActivation) :
+theorem activationBefore_compose (a b c : TaskActivation) :
     activationBefore b a = false → activationBefore c b = false →
       activationBefore c a = false := by
   simp only [activationBefore, decide_eq_false_iff_not]
@@ -383,5 +384,23 @@ theorem orderedBy_insertTaskActivation (activation : TaskActivation) :
           refine ⟨ordered.1, ?_⟩
           have := ih tail
           simpa [insertTaskActivation, h2] using this
+
+/-- An adjacent-pair check whose comparator factors through a key is decided by the key sequence. -/
+theorem orderedBy_of_map_eq {α β : Type} (key : α → β) (before : α → α → Bool)
+    (keyBefore : β → β → Bool) (hb : ∀ a b, before a b = keyBefore (key a) (key b))
+    (left right : List α) (h : left.map key = right.map key) :
+    orderedBy before left = orderedBy before right := by
+  have expand : ∀ values : List α,
+      orderedBy before values = orderedBy keyBefore (values.map key) := by
+    intro values
+    induction values with
+    | nil => rfl
+    | cons first rest ih =>
+      cases rest with
+      | nil => rfl
+      | cons second more =>
+        simp only [List.map_cons, orderedBy, hb] at *
+        rw [ih]
+  rw [expand left, expand right, h]
 
 end BpmnSemantics.SemanticProcess

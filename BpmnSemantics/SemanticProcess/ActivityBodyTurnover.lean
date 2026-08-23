@@ -235,4 +235,34 @@ theorem waitOwnersLive_replacedState (state : RuntimeState) (record : ActivityOc
       _ state.activityOccurrences (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)]
     exact records
 
+/-- `RSI-ORDER-01`: every canonically ordered collection stays ordered.
+
+Three of the six collections are untouched. The wait list is filtered and then inserted into, which is
+exactly the pair of lemmas the order theory supplies; the counter list is the same shape; and the
+record list is rewritten by a map whose comparator reads only framed fields. -/
+theorem canonicalCollectionOrder_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
+    (holds : canonicalCollectionOrder state = true) :
+    canonicalCollectionOrder (replacedState state record wait body) = true := by
+  simp only [canonicalCollectionOrder, Bool.and_eq_true] at holds ⊢
+  obtain ⟨⟨⟨⟨⟨waits, activations⟩, selections⟩, races⟩, calls⟩, records⟩ := holds
+  refine ⟨⟨⟨⟨⟨?_, ?_⟩, selections⟩, races⟩, calls⟩, ?_⟩
+  · exact orderedBy_insertUserTaskWait _ _
+      (orderedBy_filter userTaskWaitBefore_compose _ _ waits)
+  · exact orderedBy_insertTaskActivation _ _
+      (orderedBy_filter activationBefore_compose _ _ activations)
+  · show orderedBy activityOccurrenceBefore
+      (replaceBodyIn state.activityOccurrences record _) = true
+    rw [orderedBy_of_map_eq
+      (fun candidate => (candidate.processInstanceId, candidate.activityElementId,
+        candidate.activation))
+      activityOccurrenceBefore
+      (fun left right =>
+        if left.1.value ≠ right.1.value then decide (left.1.value < right.1.value)
+        else if left.2.1.value ≠ right.2.1.value then decide (left.2.1.value < right.2.1.value)
+        else decide (left.2.2 < right.2.2))
+      (fun _ _ => rfl) _ state.activityOccurrences
+      (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)]
+    exact records
+
 end BpmnSemantics.SemanticProcess
