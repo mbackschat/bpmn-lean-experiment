@@ -368,6 +368,14 @@ def insertUserTaskWait (wait : UserTaskWait) :
         wait :: current :: rest
       else current :: insertUserTaskWait wait rest
 
+/-- Canonical order for the task activation family: by element identifier.
+
+Beside its two siblings because `canonicalCollectionOrder` and the preservation laws must read one
+spelling of this order; an inlined lambda in the conjunct and a named comparator in the laws would be
+two canonical orders that happen to agree. -/
+def activationBefore (left right : TaskActivation) : Bool :=
+  decide (left.taskId.value < right.taskId.value)
+
 /-- Canonical order: Process instance, then Activity element, then activation. -/
 def activityOccurrenceBefore (left right : ActivityOccurrence) : Bool :=
   if left.processInstanceId.value ≠ right.processInstanceId.value then

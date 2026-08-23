@@ -239,8 +239,7 @@ Asserting order for either would be refuted by ordinary reachable states, since 
 derives `DecidableEq` and therefore retains list order as state. -/
 def canonicalCollectionOrder (state : RuntimeState) : Bool :=
   orderedBy userTaskWaitBefore state.waits &&
-    orderedBy (fun left right => decide (left.taskId.value < right.taskId.value))
-      state.activations &&
+    orderedBy activationBefore state.activations &&
     orderedBy selectionBefore state.selectedBranchSets &&
     orderedBy eventRaceBefore state.eventRaces &&
     orderedBy callRecordBefore state.calledProcessOccurrences &&

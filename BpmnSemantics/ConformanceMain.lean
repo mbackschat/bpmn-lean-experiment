@@ -1,4 +1,5 @@
 import BpmnSemantics.ActivityBoundaryTimerConformance
+import BpmnSemantics.ActivityBodyTurnoverConformance
 import BpmnSemantics.RuntimeStateWellFormedConformance
 import BpmnSemantics.Conformance
 import BpmnSemantics.ConfiguredTaskConformance

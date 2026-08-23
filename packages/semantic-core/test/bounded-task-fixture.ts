@@ -22,11 +22,10 @@ import {
   rootScopeOccurrence,
 } from "./root-scope-fixture.ts";
 
-export const sourceSha256 =
+const sourceSha256 =
   "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e";
 export const instanceId = "BoundedInstance_1";
 
-/** Hand-built to the shape `@bpmn-lean/bpmn-source` lowers, so this lane depends on no compiler. */
 export const boundedProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {

@@ -159,3 +159,33 @@ test("the post-replacement state is well-formed, and the pre-state is the contro
     "AOO-TURNOVER-02: every committed state of the replacement is well-formed",
   );
 });
+
+/**
+ * The domain refusal, and why it is a refusal rather than a repair.
+ *
+ * Two waits sharing the body key is the state `waitIdentitiesUnique` rejects. Taking the first and
+ * withdrawing both would arm a replacement against an ambiguity the caller never learns about, so the
+ * operation is undefined there. The Lean operation refuses the same shape, which is what keeps the two
+ * targets comparable rather than merely agreeing on the cases both happen to accept.
+ */
+test("a record whose body key matches two live waits is refused, not repaired", () => {
+  const before = armed();
+  const [wait] = before.userTaskWaits;
+  assert.ok(wait !== undefined);
+
+  const ambiguous: RuntimeState = {
+    ...before,
+    userTaskWaits: [wait, { ...wait, name: "a second wait sharing the body key" }],
+  };
+
+  assert.equal(
+    replaceActivityBodyTask(ambiguous, armedRecord(before)),
+    null,
+    "an ambiguous body must leave the operation undefined",
+  );
+  assert.notEqual(
+    replaceActivityBodyTask(before, armedRecord(before)),
+    null,
+    "the unambiguous control must still be defined, or the refusal is not attributable",
+  );
+});

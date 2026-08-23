@@ -18,11 +18,6 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
-  SemanticOperationKind,
-  SemanticOriginKind,
-  SemanticProcessCompilerId,
-  SemanticProcessKind,
-  StimulusKind,
   applyStimulus,
   initialState,
 } from "@bpmn-lean/semantic-core";

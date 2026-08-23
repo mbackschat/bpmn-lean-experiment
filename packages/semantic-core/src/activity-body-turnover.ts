@@ -30,9 +30,10 @@ import type { RuntimeState } from "./semantic-process-state.js";
 /**
  * Replaces a task-bodied Activity occurrence's body with a fresh occurrence of the same element.
  *
- * Returns `null` rather than a repaired state when the record does not name a live task body, which
- * is the only shape this operation is defined on. A caller that silently continued would arm a second
- * body against a record still naming the first.
+ * Returns `null` rather than a repaired state unless the record names *exactly one* live task body.
+ * Both refusals matter and they are different: no match means the body is already gone, and more than
+ * one means the state is ambiguous in the way `waitIdentitiesUnique` refuses. A caller that silently
+ * continued would arm a second body against a record still naming the first.
  *
  * The incoming wait carries the outgoing wait's `name` and `output` because both describe the same
  * program element; nothing here reads the Program, which is what keeps the operation total over
@@ -47,8 +48,12 @@ export function replaceActivityBodyTask(
 ): RuntimeState | null {
   const outgoing = activityBodyTask(record);
   if (outgoing === undefined) return null;
-  const wait = state.userTaskWaits.find(({ id }) => sameOccurrence(id, outgoing));
-  if (wait === undefined) return null;
+  // Exactly one match, not the first: a state where two waits share the body key is the one
+  // `waitIdentitiesUnique` refuses, and repairing it here would arm a replacement against an
+  // ambiguity the caller never learns about. The Lean operation refuses the same shape.
+  const live = state.userTaskWaits.filter(({ id }) => sameOccurrence(id, outgoing));
+  const [wait] = live;
+  if (live.length !== 1 || wait === undefined) return null;
 
   const activation = nextActivation(state.taskActivations, outgoing.elementId);
   const incoming = {

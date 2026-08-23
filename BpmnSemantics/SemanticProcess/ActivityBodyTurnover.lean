@@ -301,7 +301,7 @@ live wait's activation by its counter. The arming step establishes it by constru
 the pre-state counter; the residual gap is exactly `RSI-MONO-04`, which no relation in this account
 states. Declaring the law without it would assert something the account does not enforce. -/
 theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : ActivityOccurrence)
-    (wait : UserTaskWait) (body : OccurrenceId) (waitMem : wait ∈ state.waits)
+    (wait : UserTaskWait) (body : OccurrenceId)
     (fresh : ∀ candidate ∈ state.waits,
       userTaskWaitKeyMatches
         (turnoverWait state wait) candidate = false)
@@ -406,7 +406,7 @@ theorem activityBodyLive_userTask (state : RuntimeState) (record : ActivityOccur
   congr 3
   apply List.filter_congr
   intro candidate _
-  simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq]
+  simp only [taskIdNamesWait]
   congr 1
   · congr 1 <;> exact decide_eq_decide.mpr eq_comm
   · exact decide_eq_decide.mpr eq_comm
@@ -421,7 +421,6 @@ for its body-side lookup determinism, and this is the same premise reappearing a
 obligation rather than a lookup one. -/
 theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
-    (bodyOfRecord : activityBodyTask? record = some body)
     (unique : state.waits.filter (taskIdNamesWait body) = [wait])
     (fresh : ∀ candidate ∈ state.waits,
       userTaskWaitKeyMatches
@@ -544,7 +543,6 @@ law would then be vacuous on its own hypothesis. -/
 theorem replacedState_preserves_wellFormed (program : Program) (instanceId : SemanticId)
     (state : RuntimeState) (record : ActivityOccurrence) (wait : UserTaskWait)
     (body : OccurrenceId)
-    (bodyOfRecord : activityBodyTask? record = some body)
     (unique : state.waits.filter (taskIdNamesWait body) = [wait])
     (fresh : ∀ candidate ∈ state.waits,
       userTaskWaitKeyMatches (turnoverWait state wait) candidate = false)
@@ -563,12 +561,12 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   · rw [eventRaceAssociationsValid_replacedState]; exact races
   · rw [effectIncidentAssociationsValid_replacedState]; exact incidents
   · exact waitOwnersLive_replacedState state record wait body waitMem owners
-  · exact waitIdentitiesUnique_replacedState state record wait body waitMem fresh identities
+  · exact waitIdentitiesUnique_replacedState state record wait body fresh identities
   · exact waitDeclarationsValid_replacedState program instanceId state record wait body waitMem
       declarations
   · rw [hiddenRecordDeclarationsValid_replacedState]; exact hidden
   · exact canonicalCollectionOrder_replacedState state record wait body order
-  · exact activityRecordsOwnLiveWork_replacedState state record wait body bodyOfRecord unique
+  · exact activityRecordsOwnLiveWork_replacedState state record wait body unique
       fresh soleBody bodies
   · rw [attachedTimersUnambiguous_replacedState]; exact attached
   · rw [activityIdentitiesUnique_replacedState]; exact unique'

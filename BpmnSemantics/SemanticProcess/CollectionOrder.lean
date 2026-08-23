@@ -1,14 +1,23 @@
 import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
-/-! # Canonical collection order
+/-! # Collection laws for transition-level preservation
 
-The order theory `canonicalCollectionOrder` needs but does not contain.
+The list laws a transition needs to carry `runtimeStateWellFormed` across a rewrite, in three groups.
 
-`orderedBy` checks adjacent pairs only. That is the right shape for a decidable conjunct, but it means
-a transition cannot preserve the invariant by local reasoning alone: filtering makes distant elements
-neighbours, so the surviving pair has to be justified from the original list. This module supplies
-that step once, generically over the comparator, together with the order facts each concrete
-comparator needs to use it.
+**Canonical order.** `orderedBy` checks adjacent pairs only. That is the right shape for a decidable
+conjunct, but it means a transition cannot preserve the invariant by local reasoning alone: filtering
+makes distant elements neighbours, so the surviving pair has to be justified from the original list.
+This module supplies that step once, generically over the comparator, together with the order facts
+each concrete comparator needs to use it.
+
+**Canonical insertion.** Arming inserts one wait; turnover withdraws one and inserts one. Both need
+membership, count, and order preservation for `insertUserTaskWait` and `insertTaskActivation`.
+
+**Key factoring.** Several conjuncts read a collection only through a projection — an identity, an
+owner, an order key. When a rewrite leaves that projection alone, the conjunct is decided by the key
+sequence rather than by the elements, and `all_of_map_eq`, `all_occursOnce_of_map_eq`, and
+`orderedBy_of_map_eq` are what turn a frame law into a preservation law without a per-conjunct
+induction.
 
 Its existence is what makes a quantified preservation law possible at all. Every well-formedness fact
 in this repository before it was decided of a concrete state, because the initial state has empty
@@ -207,10 +216,11 @@ theorem userTaskWaitBefore_compose (a b c : UserTaskWait) :
   simp only [decide_eq_false_iff_not] at *
   omega
 
-/-! ## Canonical insertion
+/-! ## Canonical insertion for waits, and the key-factoring laws
 
-Arming inserts one wait; turnover withdraws one and inserts one. Both need the same fact, and it
-needs only asymmetry: the element placed before `current` must not also belong after it.
+Insertion needs only asymmetry: the element placed before `current` must not also belong after it.
+The three `all`-shaped laws that follow it are not about insertion at all; they are the key-factoring
+group, kept beside it because every conjunct that uses one also crosses the other.
 -/
 
 /-- Insertion puts either the new wait or the old head first, which is what the adjacent-pair check
@@ -251,7 +261,7 @@ theorem orderedBy_insertUserTaskWait (wait : UserTaskWait) :
       simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true]
       have inner := ih tail
       cases rest with
-      | nil => simpa [orderedBy, insertUserTaskWait, h] using rfl
+      | nil => simp [orderedBy, insertUserTaskWait, h]
       | cons second more =>
         simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true'] at ordered
         rcases insertUserTaskWait_head wait second more with ⟨heq, hlt⟩ | ⟨tailList, heq, _⟩
@@ -322,14 +332,12 @@ theorem all_of_map_eq {α β : Type} (key : α → β) (p : α → Bool) (q : β
     exact hp a
   rw [expand left, expand right, h]
 
-/-! ## The task activation comparator
+/-! ## The task activation comparator, and the counting laws
 
-One level rather than five, so the two order facts come straight from `String`.
+One level rather than five, so the two order facts come straight from `String`. The membership and
+counting laws after it belong to the wait insertion above; they are stated here because both
+uniqueness conjuncts consume them together with `countP_pos_exists`.
 -/
-
-/-- The canonical order on the task activation family, named so laws about it are stateable. -/
-def activationBefore (left right : TaskActivation) : Bool :=
-  decide (left.taskId.value < right.taskId.value)
 
 theorem activationBefore_asymm (left right : TaskActivation) :
     activationBefore left right = true → activationBefore right left = false := by
@@ -429,14 +437,14 @@ theorem countP_insertUserTaskWait (p : UserTaskWait → Bool) (wait : UserTaskWa
         (if p wait then 1 else 0) + waits.countP p := by
   intro waits
   induction waits with
-  | nil => cases hp : p wait <;> simp [insertUserTaskWait, List.countP_cons, hp]
+  | nil => cases hp : p wait <;> simp [insertUserTaskWait, hp]
   | cons current rest ih =>
     unfold insertUserTaskWait
     by_cases h : userTaskWaitBefore wait current = true
     · cases hp : p wait <;> simp [h, List.countP_cons, hp] <;> omega
     · simp only [Bool.not_eq_true] at h
       simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, List.countP_cons, ih]
-      cases hp : p wait <;> cases hq : p current <;> simp [hp, hq] <;> omega
+      cases hp : p wait <;> cases hq : p current <;> simp <;> omega
 
 /-- A positive count names an element that satisfies the predicate. -/
 theorem countP_pos_exists {α : Type} (p : α → Bool) (values : List α)
