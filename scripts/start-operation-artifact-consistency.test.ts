@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import type {
   CheckedProcessKind,
   CheckedNodeKind,
@@ -121,8 +122,8 @@ test("binds Timer Start origin, duration, and endpoint-derived outputs", () => {
     verifyStartOperationBindings(
       exact.checkedProcess,
       exact.semanticProcess,
-      (left, right) => left.localeCompare(right),
-    )
+      compareCanonicalStrings,
+    ),
   );
 
   const operation = exact.semanticProcess.operations[0];
@@ -163,7 +164,7 @@ test("binds Timer Start origin, duration, and endpoint-derived outputs", () => {
         verifyStartOperationBindings(
           exact.checkedProcess,
           mutation,
-          (left, right) => left.localeCompare(right),
+          compareCanonicalStrings,
         ),
       /Timer Start|cardinality/u,
     );
@@ -172,23 +173,29 @@ test("binds Timer Start origin, duration, and endpoint-derived outputs", () => {
 
 test("checks canonical Timer Start fan-out independently of selected profile cardinality", () => {
   assert.doesNotThrow(() =>
-    verifyCanonicalStartOperationOrder({
-      id: "operation:TimerStart",
-      kind: initiateTimerKind,
-      origin: { kind: bpmnElementOriginKind, elementId: "TimerStart" },
-      timer: { durationMs: 1_000 },
-      outputs: ["place:A", "place:B"],
-    }, (left, right) => left.localeCompare(right))
-  );
-  assert.throws(
-    () =>
-      verifyCanonicalStartOperationOrder({
+    verifyCanonicalStartOperationOrder(
+      {
         id: "operation:TimerStart",
         kind: initiateTimerKind,
         origin: { kind: bpmnElementOriginKind, elementId: "TimerStart" },
         timer: { durationMs: 1_000 },
-        outputs: ["place:B", "place:A"],
-      }, (left, right) => left.localeCompare(right)),
+        outputs: ["place:A", "place:B"],
+      },
+      compareCanonicalStrings,
+    ),
+  );
+  assert.throws(
+    () =>
+      verifyCanonicalStartOperationOrder(
+        {
+          id: "operation:TimerStart",
+          kind: initiateTimerKind,
+          origin: { kind: bpmnElementOriginKind, elementId: "TimerStart" },
+          timer: { durationMs: 1_000 },
+          outputs: ["place:B", "place:A"],
+        },
+        compareCanonicalStrings,
+      ),
     /outputs must be sorted/u,
   );
 });

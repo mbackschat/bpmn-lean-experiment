@@ -20,6 +20,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
+import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   headroomDescription,
   isHandWrittenSourcePath,
@@ -144,8 +145,8 @@ export function bindingsFor(
     })
     .sort((left, right) =>
       left.kind === right.kind
-        ? left.path.localeCompare(right.path)
-        : left.kind.localeCompare(right.kind)
+        ? compareCanonicalStrings(left.path, right.path)
+        : compareCanonicalStrings(left.kind, right.kind)
     );
 }
 

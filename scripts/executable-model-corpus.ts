@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   CibCapabilityEvidenceKind,
   mvpBpmnCapabilities,
@@ -447,7 +448,7 @@ export async function inspectExecutableModelCorpus(
     .sort((left, right) =>
       right.cloneFamilies - left.cloneFamilies ||
       right.models - left.models ||
-      left.key.localeCompare(right.key)
+      compareCanonicalStrings(left.key, right.key)
     );
   const supportedMechanisms = new Set(
     manifest.models
@@ -482,7 +483,7 @@ export async function inspectExecutableModelCorpus(
     .sort((left, right) =>
       right.cloneFamilies - left.cloneFamilies ||
       right.models - left.models ||
-      left.key.localeCompare(right.key)
+      compareCanonicalStrings(left.key, right.key)
     );
   return Object.freeze({
     kind: "executableBpmnModelCorpusReport",

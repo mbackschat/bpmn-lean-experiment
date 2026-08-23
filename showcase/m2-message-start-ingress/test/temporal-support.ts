@@ -162,7 +162,8 @@ async function collectWorkflowExecutions(
       memo: execution.memo,
     });
   }
-  return executions.sort((left, right) => left.workflowId.localeCompare(right.workflowId));
+  return executions.sort((left, right) =>
+    left.workflowId < right.workflowId ? -1 : left.workflowId > right.workflowId ? 1 : 0);
 }
 
 async function collectScheduleIds(client: TemporalClient): Promise<string[]> {

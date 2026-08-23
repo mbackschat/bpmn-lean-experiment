@@ -15,6 +15,8 @@ import { API } from "typescript/unstable/sync";
 import * as ast from "typescript/unstable/ast";
 import type { Node, SourceFile } from "typescript/unstable/ast";
 
+import { compareCanonicalStrings } from "@bpmn-lean/semantic-core";
+
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const sourceRoot = path.join(projectRoot, "packages/bpmn-source/src");
 const tsconfig = path.join(projectRoot, "packages/bpmn-source/tsconfig.json");
@@ -394,7 +396,10 @@ function firstNode<T extends Node>(
 }
 
 function compareMatrixEntry(left: MatrixEntry, right: MatrixEntry): number {
-  return `${left[0]}/${left[1]}`.localeCompare(`${right[0]}/${right[1]}`);
+  return compareCanonicalStrings(
+    `${left[0]}/${left[1]}`,
+    `${right[0]}/${right[1]}`,
+  );
 }
 
 function assertConsumerOwnership(files: ReadonlyMap<string, SourceFile>): void {

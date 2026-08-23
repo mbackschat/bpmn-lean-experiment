@@ -18,6 +18,7 @@ import {
   BpmnSourceDiagnosticCode,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
+import { compareCanonicalStrings } from "@bpmn-lean/semantic-core";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
@@ -97,8 +98,7 @@ console.log(
     models: modelNames.length,
     outcomes: Object.fromEntries(
       [...outcomeCounts.entries()].sort(([left], [right]) =>
-        left.localeCompare(right),
-      ),
+        compareCanonicalStrings(left, right)),
     ),
   })}`,
 );

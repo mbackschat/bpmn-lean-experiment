@@ -2,6 +2,7 @@ import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   flattenElements,
   hasDirectChild,
@@ -433,7 +434,8 @@ function collectTriggerCounts(
 async function discoverBpmnFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
   const files: string[] = [];
-  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+  for (const entry of entries.sort((left, right) =>
+    compareCanonicalStrings(left.name, right.name))) {
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       files.push(...(await discoverBpmnFiles(target)));
@@ -523,7 +525,8 @@ function zeroMetrics(names: readonly string[]): Record<string, CorpusMetric> {
 
 function sortRecord<T>(record: Readonly<Record<string, T>>): Record<string, T> {
   return Object.fromEntries(
-    Object.entries(record).sort(([left], [right]) => left.localeCompare(right)),
+    Object.entries(record).sort(([left], [right]) =>
+      compareCanonicalStrings(left, right)),
   );
 }
 

@@ -9,6 +9,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   analyzeLeanSource,
   worktreeLeanSourceFiles,
@@ -452,13 +453,19 @@ test("native_decide stays inside its exactly recorded exception set", () => {
       sites: nativeDecideSites(source),
     }))
     .filter(({ sites }) => sites > 0)
-    .sort((left, right) => right.sites - left.sites || left.path.localeCompare(right.path));
+    .sort(
+      (left, right) =>
+        right.sites - left.sites || compareCanonicalStrings(left.path, right.path),
+    );
 
   assert.deepEqual(
     measured,
     [...recorded]
       .map(([p, sites]) => ({ path: p, sites }))
-      .sort((left, right) => right.sites - left.sites || left.path.localeCompare(right.path)),
+      .sort(
+        (left, right) =>
+          right.sites - left.sites || compareCanonicalStrings(left.path, right.path),
+      ),
     "a new native_decide site trusts the compiler for a proposition the kernel could decide; use `decide +kernel` or move the recorded figure deliberately",
   );
 });

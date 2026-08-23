@@ -1,5 +1,5 @@
 /**
- * No production source orders or compares strings through the host locale.
+ * No project-authored executable TypeScript orders or compares strings through the host locale.
  *
  * The contract: every ordering this repository produces must be identical on every host. Canonical
  * wire order is owned by `compareCanonicalStrings`, and a site that cannot reach that owner still
@@ -10,14 +10,17 @@
  * ordering for one comparator, and a locale comparison was then written into a neighbouring file in the
  * same capsule; a review found it, and a search for the mechanism found two more in Product 2 that
  * nobody had been told about, one ordering database migrations and one ordering a public projection.
- * Four sites, one class, so the vocabulary is removed rather than each site corrected.
+ * Four production sites exposed the class, but the first guard encoded that search boundary rather
+ * than the repository rule. Widening it found seventeen more live calls across tests, calibration
+ * harnesses, scripts, and showcase support. Those surfaces are executable too: a locale-ordered
+ * expectation or generated artifact can drift across hosts even when production does not.
  *
- * Scope is production source. Test and guard files may name these constructs, because asserting their
- * absence requires spelling them.
+ * Scope is every tracked or non-ignored pending TypeScript execution surface except frozen adoption
+ * evidence, generated dependencies, declarations, and this guard's own adversarial fixture text.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -34,30 +37,38 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const localeSensitiveOrdering =
   /(?:\?\.|\.)\s*localeCompare\s*\(|\[\s*["'`]localeCompare["'`]\s*\]|Intl\s*\.\s*Collator/u;
 
-function productionSourceFiles(): ReadonlyArray<string> {
-  const tracked = execFileSync("git", ["ls-files", "-z", "*.ts"], {
-    cwd: projectRoot,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  })
+function projectExecutableTypeScriptFiles(): ReadonlyArray<string> {
+  const trackedAndPending = execFileSync(
+    "git",
+    ["ls-files", "-co", "--exclude-standard", "-z", "--", "*.ts"],
+    {
+      cwd: projectRoot,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    },
+  )
     .split("\0")
     .filter((entry) => entry.length > 0);
-  return tracked.filter((entry) =>
-    entry.includes("/src/") &&
-    !entry.includes("/dist/") &&
-    !entry.includes("/node_modules/") &&
-    !entry.includes("/adoption/") &&
-    !entry.endsWith(".test.ts") &&
-    !entry.endsWith(".platform-test.ts") &&
-    !entry.endsWith(".temporal-test.ts")
-  );
+  return [...new Set(trackedAndPending)]
+    .filter(
+      (entry) =>
+        entry !== "scripts/canonical-ordering.test.ts" &&
+        !entry.endsWith(".d.ts") &&
+        !entry.includes("/dist/") &&
+        !entry.includes("/node_modules/") &&
+        !entry.startsWith("adoption/") &&
+        !entry.includes("/adoption/") &&
+        existsSync(path.join(projectRoot, entry)),
+    )
+    .sort();
 }
 
-test("no production source compares strings through the host locale", () => {
-  const offenders = productionSourceFiles().filter((relativePath) =>
-    localeSensitiveOrdering.test(
-      readFileSync(path.join(projectRoot, relativePath), "utf8"),
-    )
+test("no project-authored executable TypeScript compares strings through the host locale", () => {
+  const offenders = projectExecutableTypeScriptFiles().filter(
+    (relativePath) =>
+      localeSensitiveOrdering.test(
+        readFileSync(path.join(projectRoot, relativePath), "utf8"),
+      ),
   );
   assert.deepEqual(
     { offenders },
@@ -67,18 +78,27 @@ test("no production source compares strings through the host locale", () => {
 });
 
 test("the inventory is not vacuous", () => {
-  const files = productionSourceFiles();
+  const files = projectExecutableTypeScriptFiles();
   assert.ok(
-    files.length > 200,
-    `expected the production source inventory to be substantial, saw ${files.length}`,
+    files.length > 600,
+    `expected the executable TypeScript inventory to be substantial, saw ${files.length}`,
   );
-  assert.ok(
-    files.some((entry) => entry.startsWith("packages/semantic-core/src/")),
-    "the semantic core must be inside the scanned set",
-  );
-  assert.ok(
-    files.some((entry) => entry.startsWith("platform/")),
-    "Product 2 must be inside the scanned set, because two of the four sites were there",
+  for (const required of [
+    "packages/semantic-core/src/wire.ts",
+    "packages/bpmn-source/calibration/miwg-observation.ts",
+    "packages/bpmn-source/test/projected-flow-element-keys.test.ts",
+    "platform/modules/operate/src/flow-node-occurrence-projection.ts",
+    "scripts/start-operation-artifact-consistency.test.ts",
+    "scripts/what-binds.ts",
+    "showcase/m3-human-work/test/runtime-support.ts",
+  ]) {
+    assert.ok(files.includes(required), `executable inventory must include ${required}`);
+  }
+  assert.equal(files.includes("scripts/canonical-ordering.test.ts"), false);
+  assert.equal(
+    files.some((entry) => entry.startsWith("adoption/")),
+    false,
+    "frozen adoption evidence stays outside project-authored enforcement",
   );
 });
 

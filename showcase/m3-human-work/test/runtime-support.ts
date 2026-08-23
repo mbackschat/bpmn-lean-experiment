@@ -241,5 +241,6 @@ async function collectWorkflowExecutions(
   for await (const execution of client.workflow.list()) {
     executions.push({ workflowId: execution.workflowId, runId: execution.runId });
   }
-  return executions.sort((left, right) => left.workflowId.localeCompare(right.workflowId));
+  return executions.sort((left, right) =>
+    left.workflowId < right.workflowId ? -1 : left.workflowId > right.workflowId ? 1 : 0);
 }
