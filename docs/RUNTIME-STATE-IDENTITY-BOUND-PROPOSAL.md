@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved-with-required-edits
 
 ## Question and current boundary
 
@@ -161,12 +161,14 @@ Reopen if a family's write discipline changes, if the issuing discipline is disc
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `3e89868` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `d8c1091e90c7ff128376633764a6f593fcde8b54` | `fork-turns-none` | `approve-with-required-edits` | `056bd31d45677ec31576388d9fe679eff2538deb` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 Cold proposal review is required because this changes which runtime states the account admits and narrows a named absence, so it changes both admission and the proof boundary. Owner approval is required after that review and before implementation.
 
-The cold review of `3e89868` returned `approve-with-required-edits` with eight required findings, and this document is the correction. The verdict and its correction-audit target are recorded above once the same reviewer has audited this correction in a warm follow-up. The findings were: a stale registry row and a stale plan claim, the second already corrected; missing exact-attribution fixtures and same-change prose; a self-contradicting structural reason for the scope exclusion; false coverage claims that cited the exclusion as its own coverage and omitted `variables.activities`; a membership criterion phrased over minting where the rule asserts a post-state inequality; an unnamed enforcement decision; and an unstated layer and identifier family.
+The cold review of `d8c1091e90c7ff128376633764a6f593fcde8b54` returned `approve-with-required-edits`. The same reviewer audited `056bd31d45677ec31576388d9fe679eff2538deb` and closed every required finding: the false cross-language called-root enforcement and indirect-coverage claim; the inconsistent family, unexercised-branch, and cost account; missing exact-attribution and same-change obligations; and the omitted TypeScript `runtimeStateRegressions` docstring owner. The audit confirmed that the correction stayed within finding closure and did not require another cold review.
+
+An earlier cold review of `3e89868` found the stale registry and plan claims, missing same-change owners, the false structural reason and coverage claims, the minting-shaped membership criterion, the unnamed enforcement decision, and the unstated layer and identifier family. Its corrections produced the `d8c1091e90c7ff128376633764a6f593fcde8b54` target; because they narrowed the exclusion from the scope family to a called root and the original reviewer thread was unavailable, that target received the new cold review recorded above.
 
 One earlier target was rejected. `2321f058919f3ab1ea38c674a08cea383c137bb3` claimed the bound plus `RSI-MONO-01` derives non-reissue, which does not follow; stated a uniform eight-family rule that refuses every state holding a live called Process; enumerated families where a criterion was required, omitting the wait an effect incident retains; and proposed a narrowed family set that dropped the Timer family its own consumer inventory needs. Because those corrections changed the selected account, that target required a newly spawned cold reviewer rather than a warm audit.

@@ -35,7 +35,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: commit the cold review's required corrections to [the identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md), then send that immutable correction target to the exact current reviewer for the required warm correction audit. Nothing may be implemented before that audit and owner approval.
+Next action: obtain owner approval for [the identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md). If approved, record its `owner-approved` lifecycle before opening implementation lanes; nothing may be implemented before that status change.
 
 Registration needs more than that amendment. [The capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) conditions it on the obligation being stated, and the bound narrows that absence rather than stating it. Registration needs either the issuing discipline discharged for the activity family's minting sites, or the public `ActivityOccurrenceId` projection narrowed. That choice is unmade.
 
