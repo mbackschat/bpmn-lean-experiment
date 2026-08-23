@@ -161,6 +161,29 @@ structure ActivityOccurrence where
   attachedTimers : List OccurrenceId
   deriving Repr, DecidableEq
 
+/-- The outer controller of one sequential Multi-Instance Activity occurrence.
+
+Stores generators, not counters. Planned is the snapshot length, completed and the active loop counter
+are the number of filled output slots, generated is one more, pending is the difference, and
+terminated is zero in every stable state; storing any of them would install exactly the
+second-disagreeing-fact defect the account above rejects for an Activity's active count. The
+derivations and their law live with the family, in `SequentialMultiInstance`.
+
+The identity is carried flat, in the three fields `ActivityOccurrence` carries it in. TypeScript nests
+the same triple behind an `ActivityOccurrenceId` that exists there to stop a task identity from being
+substituted for an Activity identity at compile time; Lean names no identity type for either side of
+that pair, so the flat spelling keeps one carrier rather than introducing a second.
+
+The active task identity is not here. It lives in the Activity occurrence record's body, which this
+controller binds to by identity, so iteration turnover changes one fact in one place. -/
+structure SequentialMultiInstanceController where
+  processInstanceId : SemanticId
+  activityElementId : NodeId
+  activation : Nat
+  snapshot : List String
+  outputSlots : List String
+  deriving Repr, DecidableEq
+
 /-- Hidden inputs selected for one split activation and awaited by its paired join. -/
 structure SelectedBranchSet where
   owner : ScopeOccurrenceId
@@ -187,6 +210,10 @@ structure RuntimeState where
   eventRaces : List EventRace := []
   calledProcessOccurrences : List CalledProcessOccurrence := []
   activityOccurrences : List ActivityOccurrence := []
+  /-- Absence and emptiness are one state here: the independently written core makes the same field
+  optional only so continuation payloads under other profiles keep their byte shape, and no predicate
+  or transition in either language distinguishes a missing collection from an empty one. -/
+  sequentialMultiInstanceControllers : List SequentialMultiInstanceController := []
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
@@ -214,6 +241,7 @@ def initialState : RuntimeState :=
     eventRaces := []
     calledProcessOccurrences := []
     activityOccurrences := []
+    sequentialMultiInstanceControllers := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []

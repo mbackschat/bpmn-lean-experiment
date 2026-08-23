@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.InclusiveGateway
+import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 
 /-! # Runtime-state well-formedness
 

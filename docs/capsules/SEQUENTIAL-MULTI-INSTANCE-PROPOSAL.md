@@ -297,13 +297,14 @@ Existing executable constraints include [schema coverage](../../scripts/contract
 | [BPMN source compiler composition](../../packages/bpmn-source/src/compile.ts) | 196 |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
 | [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
-| [runtime-state well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 121 |
+| [runtime-state well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 117 |
 
 Owners this implementation **created**, listed because the recomputing guard measures rows that exist and cannot report rows nobody wrote:
 
 | Owner | Current headroom before the 600-nonblank-line review target |
 |---|---:|
 | [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 514 |
+| [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 384 |
 
 The expected lowering, occurrence, and projection mechanisms cannot fit cohesively in the current headroom of the lowering owner at 43 lines, the occurrence lifecycle at 44, the occurrence open set at 42, and the canonical scenario projection at 75. Their implementation must create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. This extraction condition stops applying if the review target measurements change enough that the complete cohesive mechanism fits while every owner remains below 600; the table is recomputed by the reviewability guard rather than treated as permanent prose.
 

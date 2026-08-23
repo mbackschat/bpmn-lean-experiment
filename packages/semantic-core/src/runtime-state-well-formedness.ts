@@ -114,6 +114,10 @@ function declaredElementIds(
         break;
       case SemanticOperationKind.AwaitBoundedUserTask:
       case SemanticOperationKind.AwaitMonitoredUserTask:
+      // The sequential Multi-Instance operation declares the same two families, and declares the task
+      // family for *every* iteration: each generated inner instance reuses this one element ID with
+      // its own activation, so one declaration covers the whole repetition.
+      case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
         userTask.add(operation.task.elementId);
         timer.add(operation.boundaryTimer.elementId);
         break;

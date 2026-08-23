@@ -3,6 +3,7 @@ export * from "./activity-body-turnover.js";
 export * from "./flow-node-occurrence-retained-pairing.js";
 export * from "./activity-occurrence.js";
 export * from "./sequential-multi-instance-controller.js";
+export * from "./semantic-process-sequential-multi-instance-runtime.js";
 export * from "./call-activity-admission.js";
 export * from "./control-position-projection.js";
 export { deriveCalledProcessInstanceId } from "./semantic-process-call-runtime.js";

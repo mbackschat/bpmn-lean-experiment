@@ -48,6 +48,9 @@ import {
   onlyTokenOwner,
 } from "./semantic-process-scope-runtime.js";
 import {
+  enterSequentialMultiInstanceUserTask,
+} from "./semantic-process-sequential-multi-instance-runtime.js";
+import {
   addToken,
   ControlStateKind,
   ownedTokenMultiplicity,
@@ -291,11 +294,14 @@ function applyInternalOperationState(
         captureOwner,
       );
     }
-    // The source/IL lane admits this immutable definition before the reviewed runtime transition
-    // exists. Returning no step keeps the incomplete operation fail-closed instead of borrowing the
-    // ordinary User Task behavior and losing its outer controller, collection, or lifetime Timer.
-    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
-      return null;
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask: {
+      const multiInstanceOwner = onlyTokenOwner(state, operation.input);
+      return applyOwnedOperation(
+        multiInstanceOwner,
+        (owner) => enterSequentialMultiInstanceUserTask(operation, state, owner),
+        captureOwner,
+      );
+    }
     case SemanticOperationKind.AwaitMessage: {
       const messageOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
