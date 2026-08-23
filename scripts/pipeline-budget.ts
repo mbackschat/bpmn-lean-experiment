@@ -52,6 +52,49 @@ export const warmBudgetPerCaseMs = 1_300;
  */
 export const defaultWarmBudgetMs = 68_000;
 
+/**
+ * Load per core above which a timing figure is not a comparable measurement.
+ *
+ * The soft-target warning already told the reader that a figure above roughly one is contended. The
+ * hard ceilings did not consult it, so a busy host produced a red gate whose message named a duration
+ * and explained nothing, and the only recorded response to such a red was to re-run it. One is the
+ * threshold the report's own text names, kept in one place so the warning and the ceilings cannot
+ * disagree about what contended means.
+ */
+export const contendedLoadPerCore = 1;
+
+/**
+ * Pathology ceiling per registered pipeline case for the cold phase.
+ *
+ * The cold phase builds before it measures, so it is the phase contention lands on hardest, and it
+ * carried a bare inline `45_000` in the pipeline test: not derived from the catalog, not portable
+ * across core counts, and not in this owner. That is the same defect this module's warm docstrings
+ * describe, left standing for the other phase. A 52-case catalog measured 54,397 ms warm-equivalent
+ * cold on a quiet eight-core host, so the rate carries a comparable margin to the warm ceiling.
+ */
+export const coldBudgetPerCaseMs = 1_600;
+
+/** The cold ceiling for a catalog of `caseCount` registered cases. */
+export function coldBudgetMsFor(caseCount: number): number {
+  if (!Number.isSafeInteger(caseCount) || caseCount <= 0) {
+    throw new TypeError(
+      `pipeline case count must be a positive safe integer, received ${JSON.stringify(caseCount)}`,
+    );
+  }
+  return caseCount * coldBudgetPerCaseMs;
+}
+
+/**
+ * Whether a measured phase may be asserted against its ceiling on this host.
+ *
+ * Returns `false` when the recorded load makes the figure non-comparable, which is a refusal to draw a
+ * conclusion rather than a weaker conclusion: a breach on a contended host is reported and left
+ * uncounted, exactly as every contended figure in the plan is. A quiet host still fails.
+ */
+export function timingIsComparable(loadPerCore: number): boolean {
+  return Number.isFinite(loadPerCore) && loadPerCore <= contendedLoadPerCore;
+}
+
 /** Resolves the selected pathology ceiling and rejects ambiguous duration syntax. */
 export function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
   const declared = environment.BPMN_PIPELINE_WARM_BUDGET_MS;

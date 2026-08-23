@@ -8,6 +8,10 @@ import {
   warmPipelineTestTimeoutMs,
   warmBudgetPerCaseMs,
   warmSoftTargetMsFor,
+  coldBudgetMsFor,
+  coldBudgetPerCaseMs,
+  contendedLoadPerCore,
+  timingIsComparable,
 } from "./pipeline-budget.ts";
 
 test("keeps the portable budget and both process deadlines ordered", () => {
@@ -79,4 +83,30 @@ test("the pathology ceiling carries headroom over the slowest measured hardware"
   // the catalog-tied half of this contract lives with the catalog in the differential package.
   assert.ok(defaultWarmBudgetMs >= 52 * warmBudgetPerCaseMs);
   assert.ok(defaultWarmBudgetMs < 52 * warmBudgetPerCaseMs * 2);
+});
+
+/**
+ * The cold ceiling derives from the catalog, and the load gate has both branches.
+ *
+ * A gate that never refuses is worse than the magic number it replaced, because it removes a ceiling
+ * while looking like one. The quiet-host branch must still be able to fail, so both directions are
+ * asserted at the exact threshold rather than only the permissive one.
+ */
+test("the cold ceiling derives from the registered case count", () => {
+  assert.equal(coldBudgetMsFor(1), coldBudgetPerCaseMs);
+  assert.equal(coldBudgetMsFor(52), 52 * coldBudgetPerCaseMs);
+  assert.throws(() => coldBudgetMsFor(0), TypeError);
+  assert.throws(() => coldBudgetMsFor(1.5), TypeError);
+  assert.throws(() => coldBudgetMsFor(-3), TypeError);
+});
+
+test("a timing figure is comparable only on a host at or below the contended threshold", () => {
+  assert.equal(timingIsComparable(0), true);
+  assert.equal(timingIsComparable(contendedLoadPerCore), true);
+  assert.equal(timingIsComparable(contendedLoadPerCore + 0.01), false);
+  // The measured run that exposed the inline ceiling: 81,071 ms at loadPerCore 5.78.
+  assert.equal(timingIsComparable(5.78), false);
+  // A missing or malformed sample is not silently treated as quiet.
+  assert.equal(timingIsComparable(Number.NaN), false);
+  assert.equal(timingIsComparable(Number.POSITIVE_INFINITY), false);
 });

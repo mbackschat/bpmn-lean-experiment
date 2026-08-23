@@ -41,7 +41,9 @@ import {
 } from "./pipeline-cib-targets.ts";
 import { settleOwnedLanes } from "./pipeline-parallel.ts";
 import {
+  coldBudgetMsFor,
   defaultWarmBudgetMs,
+  timingIsComparable,
   warmBudgetMs,
   warmPipelineTestTimeoutMs,
   warmSoftTargetMsFor,
@@ -540,10 +542,20 @@ test(
       if (coldTotal === null) {
         throw new Error("measured pipeline omitted cold timing");
       }
-      assert.ok(
-        coldTotal < 45_000,
-        `cold pipeline took ${coldTotal.toFixed(3)}ms`,
-      );
+      const coldBudget = coldBudgetMsFor(pipelineCases.length);
+      if (!timingIsComparable(report.host.loadPerCore)) {
+        // Reported and left uncounted rather than asserted. The cold phase builds before it measures,
+        // so contention lands here first, and a red gate whose only content is a duration taken on a
+        // busy host teaches a contributor to re-run rather than to look.
+        console.log(
+          `BPMN_PIPELINE_COLD uncounted: ${coldTotal.toFixed(3)}ms against the ${coldBudget}ms ceiling for ${pipelineCases.length} cases at loadPerCore ${report.host.loadPerCore.toFixed(2)}`,
+        );
+      } else {
+        assert.ok(
+          coldTotal < coldBudget,
+          `cold pipeline took ${coldTotal.toFixed(3)}ms against a ${coldBudget}ms ceiling for ${pipelineCases.length} cases at loadPerCore ${report.host.loadPerCore.toFixed(2)}`,
+        );
+      }
     } else {
       assert.equal(report.buildMode, "prebuilt");
       assert.equal(report.phaseMs.coldTotal, null);
