@@ -313,6 +313,53 @@ export type OpenEffectIncident = DeepReadonly<{
   effect: OpenEffect;
 }>;
 
+/**
+ * One iteration of an open sequential Multi-Instance Activity.
+ *
+ * An array rather than a nullable singleton so a later parallel profile can broaden the cardinality
+ * without replacing the identity or the observation concept. The sequential profile validates exactly
+ * one entry whenever a controller is open.
+ *
+ * `taskInput.name` is the exact scalar task DataInput ID and its value is the snapshot item at
+ * `loopCounter`; `completionBindingName` is the exact scalar task DataOutput ID a completion must use.
+ * Neither exposes the private snapshot or any output slot.
+ */
+export type OpenSequentialMultiInstanceIteration = DeepReadonly<{
+  loopCounter: number;
+  taskId: UserTaskInstanceId;
+  taskInput: VariableBinding;
+  completionBindingName: string;
+}>;
+
+/**
+ * The stable progress of one open sequential Multi-Instance Activity.
+ *
+ * Every count here is derived from the committed controller rather than stored beside it: `planned` is
+ * the immutable snapshot's length, `completed` and the active loop counter are the filled-slot count,
+ * `numberOfInstances` is one more while an inner instance is open, `pending` is the difference, and
+ * `terminated` is zero because interruption removes the controller in the transition that terminates
+ * the active instance. Table 10.30's identity, generated equals active plus completed plus terminated,
+ * therefore holds structurally.
+ */
+export type OpenSequentialMultiInstance = DeepReadonly<{
+  id: ActivityOccurrenceIdentity;
+  mode: "sequential";
+  plannedInstanceCount: number;
+  pendingItemCount: number;
+  numberOfInstances: number;
+  numberOfActiveInstances: number;
+  numberOfCompletedInstances: number;
+  numberOfTerminatedInstances: number;
+  activeIterations: OpenSequentialMultiInstanceIteration[];
+}>;
+
+/** The publicly projected Activity occurrence identity, distinct in field name from a task occurrence. */
+export type ActivityOccurrenceIdentity = DeepReadonly<{
+  processInstanceId: string;
+  activityElementId: string;
+  activation: number;
+}>;
+
 export type StateObservation = DeepReadonly<{
   kind: CanonicalObservationKind.State;
   instanceId: string;
@@ -323,6 +370,19 @@ export type StateObservation = DeepReadonly<{
   openTimers: OpenTimer[];
   openEffects: OpenEffect[];
   openIncidents: OpenEffectIncident[];
+  /**
+   * Present exactly when the current program declares a sequential Multi-Instance Activity.
+   *
+   * Presence is a *program* property, not a profile-registration one, which is what keeps every
+   * existing profile's canonical observation bytes unchanged: a program with no such Activity omits the
+   * key entirely rather than carrying an empty array. Under a program that has one it is always
+   * present, including as an empty array before outer entry and after either closing route, so the
+   * profile has no ambiguous missing-controller observation.
+   *
+   * A consumer must validate it recursively and must never infer Multi-Instance state from
+   * `openUserTasks`, `openTimers`, occurrence history, or a difference between two states.
+   */
+  openMultiInstances?: OpenSequentialMultiInstance[];
   variables: VariableBinding[];
   enabledInteractions: EnabledInteraction[];
   logicalTimeMs: number;

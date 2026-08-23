@@ -23,6 +23,7 @@ import type {
   Stimulus,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import { projectOpenMultiInstances } from "./sequential-multi-instance-observation.js";
 import {
   supportsSemanticProcessExecution,
   supportsSemanticProcessScenario,
@@ -186,6 +187,7 @@ export function observeStableState(
     case ControlStateKind.Completed:
     case ControlStateKind.Cancelled: {
       const cancellation = incidentCancellationEligibility(program, state, null);
+      const multiInstances = projectOpenMultiInstances(program, state);
       return {
         kind: CanonicalObservationKind.State,
         instanceId: state.control.instanceId,
@@ -196,6 +198,11 @@ export function observeStableState(
         openTimers: projectOpenTimers(state),
         openEffects: projectOpenEffects(state),
         openIncidents: projectOpenIncidents(state),
+        // Spread rather than assigned, so a program with no Multi-Instance Activity omits the key
+        // entirely and its canonical observation bytes are unchanged.
+        ...(multiInstances === undefined
+          ? {}
+          : { openMultiInstances: multiInstances }),
         variables: state.variables.process.bindings,
         enabledInteractions: [
           ...projectOpenUserTasks(state).map((task) => ({
