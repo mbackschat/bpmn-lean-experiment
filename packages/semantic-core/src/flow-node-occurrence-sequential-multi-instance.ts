@@ -40,7 +40,7 @@ import {
   sequentialMultiInstanceControllerFor,
 } from "./sequential-multi-instance-controller.js";
 import { sequentialMultiInstanceOperationFor } from "./semantic-process-sequential-multi-instance-runtime.js";
-import { candidateOperationOccurrence } from "./flow-node-occurrence-boundary-starts.js";
+import { candidateOperationOccurrence } from "./flow-node-occurrence-candidates.js";
 import type {
   FlowNodeOccurrenceTerminalKind,
   SemanticFlowNodeOccurrenceAnchorKind,

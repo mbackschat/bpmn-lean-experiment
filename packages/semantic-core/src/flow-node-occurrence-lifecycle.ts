@@ -26,11 +26,11 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
+import { candidateLongLivedStarts } from "./flow-node-occurrence-boundary-starts.js";
 import {
   candidateElementOccurrence,
-  candidateLongLivedStarts,
   candidateOperationOccurrence,
-} from "./flow-node-occurrence-boundary-starts.js";
+} from "./flow-node-occurrence-candidates.js";
 import {
   projectOpenFlowNodeOccurrences,
   resolveBoundaryTimerBinding,

@@ -13,7 +13,6 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  ControlStateKind,
   sameOccurrence,
   sameScopeOccurrence,
 } from "./semantic-process-state.js";
@@ -26,18 +25,16 @@ import type {
   UnnumberedFlowNodeOccurrenceStart,
 } from "./flow-node-occurrence-lifecycle.js";
 import {
+  candidateProcessId,
+  operationIsSelectedFromProgram,
+} from "./flow-node-occurrence-candidates.js";
+import {
   sequentialMultiInstanceEntryStarts,
 } from "./flow-node-occurrence-sequential-multi-instance.js";
 
 const WaitAnchorKind = "wait" as SemanticFlowNodeOccurrenceAnchorKind.Wait;
 const ScopeAnchorKind = "scope" as SemanticFlowNodeOccurrenceAnchorKind.Scope;
 const CallAnchorKind = "callActivity" as SemanticFlowNodeOccurrenceAnchorKind.CallActivity;
-
-export type CandidateFlowNodeOccurrence = Readonly<{
-  processId: string;
-  elementId: string;
-  owner: ScopeOccurrenceId;
-}>;
 
 /** Constructs every long-lived start created by one selected internal operation. */
 export function candidateLongLivedStarts(
@@ -162,31 +159,6 @@ export function candidateLongLivedStarts(
   }
 }
 
-/** Binds an instantaneous operation-origin start to its exact selected owner. */
-export function candidateOperationOccurrence(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-  operation: SemanticOperation,
-  owner: ScopeOccurrenceId,
-): CandidateFlowNodeOccurrence | null {
-  return operationIsSelectedFromProgram(program, operation, owner)
-    ? candidateElementOccurrence(program, state, operation.origin.elementId, owner)
-    : null;
-}
-
-/** Binds a route-selected BPMN element to an exact runtime owner. */
-export function candidateElementOccurrence(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-  elementId: string,
-  owner: ScopeOccurrenceId,
-): CandidateFlowNodeOccurrence | null {
-  const processId = candidateProcessId(program, state, owner);
-  return processId === null || elementId.length === 0
-    ? null
-    : { processId, elementId, owner };
-}
-
 function eventRaceStarts(
   program: SemanticProcessProgram,
   after: RuntimeState,
@@ -244,55 +216,6 @@ function oneWaitStart(
 ): UnnumberedFlowNodeOccurrenceStart[] | null {
   const start = id === undefined ? null : waitStart(processId, elementId, owner, id);
   return start === null ? null : [start];
-}
-
-function operationIsSelectedFromProgram(
-  program: SemanticProcessProgram,
-  operation: SemanticOperation,
-  owner: ScopeOccurrenceId,
-): boolean {
-  const bindings = program.operationScopes.filter(({ operationId }) => operationId === operation.id);
-  return program.operations.filter((candidate) =>
-    candidate.id === operation.id && sameJson(candidate, operation)
-  ).length === 1 && bindings.length === 1 && bindings[0]?.scopeId === owner.definitionScopeId;
-}
-
-function candidateProcessId(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-  owner: ScopeOccurrenceId,
-): string | null {
-  if (state.control.kind === ControlStateKind.NotStarted) return null;
-  let record = only(state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner)));
-  const seen = new Set<string>();
-  if (record === undefined) return null;
-  while (record.parent !== null) {
-    if (seen.has(scopeKey(record.id))) return null;
-    seen.add(scopeKey(record.id));
-    const definition = only(program.definitionScopes.filter(({ id }) => id === record!.id.definitionScopeId));
-    const parent = only(state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, record!.parent!)));
-    if (definition === undefined || parent === undefined ||
-        definition.parentScopeId !== parent.id.definitionScopeId ||
-        parent.id.processInstanceId !== record.id.processInstanceId) return null;
-    record = parent;
-  }
-  const root = only(program.definitionScopes.filter(({ id, parentScopeId }) =>
-    id === record!.id.definitionScopeId && parentScopeId === null
-  ));
-  if (root === undefined) return null;
-  if (record.id.processInstanceId === state.control.instanceId) {
-    return root.originElementId === program.processId ? program.processId : null;
-  }
-  const call = only(state.calledProcessOccurrences.filter(({ calledRoot }) =>
-    sameScopeOccurrence(calledRoot, record!.id)
-  ));
-  return call !== undefined && call.calledProcessId === root.originElementId
-    ? call.calledProcessId
-    : null;
-}
-
-function scopeKey(id: ScopeOccurrenceId): string {
-  return JSON.stringify([id.processInstanceId, id.definitionScopeId, id.activation]);
 }
 
 function validOccurrence(id: OccurrenceId): boolean {
