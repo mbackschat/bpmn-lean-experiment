@@ -183,6 +183,8 @@ Unknown fields, malformed arrays, duplicate identities, unresolved associations,
 | Indexed output slots | Accepted scalar task results keyed by loop counter | Never public | Dense from zero through completed count minus one; never completion-order keyed |
 | Outer boundary Timer ownership | One timer ID and one logical deadline created at outer entry | Existing `openTimers`; no duplicate field | Identity and deadline survive task turnover and the pre-arming continuation boundary; no continuation occurs while the native Timer is armed; removed on either route |
 
+**Implemented representation, narrower than the rows above and deliberately so.** [The controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) stores three facts: the owning `ActivityOccurrenceId`, the immutable snapshot, and the dense output slots. Every other row in this table is a function of those and is computed at the projection boundary rather than stored. Planned is `snapshot.length`, which is what "snapshot length evaluated once" means once the snapshot is immutable. Completed is `outputSlots.length`, so density holds by construction instead of by conjunct. The active loop counter is the same number, being the next slot to fill. Generated is one more, because this profile keeps exactly one active inner instance. Pending is planned minus generated. Terminated is zero, and no stable state can show otherwise, because interruption removes the controller in the transition that terminates the active instance. This applies the rule the row above already states for the active count: a stored counter beside its own generator is a second disagreeing fact. It changes no public field, since `OpenSequentialMultiInstance` still carries all of them, and it changes no rule, since `SMI-ENTER-01` through `SMI-CANCEL-01` constrain the same numbers. What it removes is every state in which two stored counters could disagree, so the equations in the normative account hold structurally rather than by validation. The three conjuncts that remain are about binding rather than counting: a controller names exactly one live record of its identity, no two controllers share an identity, and an open controller still has an item left to generate. The third is the one that reads like an off-by-one and is not, because a controller whose slots cover its whole snapshot should have been removed by final completion in the same step, and an empty snapshot fails it correctly since a zero-item collection creates no controller at all. This correction is recorded here for the conditional semantic-checkpoint review rather than applied silently.
+
 No synthetic controller is a BPMN FlowNode occurrence. Each generated inner User Task is one E2 FlowNode occurrence using the existing task element ID and its own activation. The boundary Event and both End Events retain their existing occurrence rules.
 
 ## Stable semantic rules
@@ -286,7 +288,7 @@ Existing executable constraints include [schema coverage](../../scripts/contract
 | [public semantic contract](../../packages/semantic-core/src/contract.ts) | 282 |
 | [checked Process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 339 |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 180 |
-| [runtime state contract](../../packages/semantic-core/src/semantic-process-state.ts) | 200 |
+| [runtime state contract](../../packages/semantic-core/src/semantic-process-state.ts) | 185 |
 | [canonical scenario projection](../../packages/semantic-core/src/scenario.ts) | 75 |
 | [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 539 |
 | [profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 397 |
@@ -295,6 +297,13 @@ Existing executable constraints include [schema coverage](../../scripts/contract
 | [BPMN source compiler composition](../../packages/bpmn-source/src/compile.ts) | 196 |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
 | [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
+| [runtime-state well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 121 |
+
+Owners this implementation **created**, listed because the recomputing guard measures rows that exist and cannot report rows nobody wrote:
+
+| Owner | Current headroom before the 600-nonblank-line review target |
+|---|---:|
+| [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 514 |
 
 The expected lowering, occurrence, and projection mechanisms cannot fit cohesively in the current headroom of the lowering owner at 43 lines, the occurrence lifecycle at 44, the occurrence open set at 42, and the canonical scenario projection at 75. Their implementation must create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. This extraction condition stops applying if the review target measurements change enough that the complete cohesive mechanism fits while every owner remains below 600; the table is recomputed by the reviewability guard rather than treated as permanent prose.
 

@@ -6,6 +6,7 @@ import type { OccurrenceId, TimerOccurrenceId } from "./contract.js";
 import {
   ActivityBodyKind,
   compareActivityOccurrences,
+  sameActivityOccurrence,
   type ActivityOccurrence,
 } from "./activity-occurrence.js";
 import {
@@ -19,6 +20,10 @@ import {
   type RuntimeState,
   type ScopeOccurrenceId,
 } from "./semantic-process-state.js";
+import {
+  compareSequentialMultiInstanceControllers,
+} from "./sequential-multi-instance-controller.js";
+import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 /**
@@ -53,6 +58,9 @@ export const RuntimeStateDefect = {
   ActivityOccurrenceBodyAbsent: "activityOccurrenceBodyAbsent",
   UnownedAttachedWait: "unownedAttachedWait",
   DuplicateActivityOccurrence: "duplicateActivityOccurrence",
+  SequentialMultiInstanceControllerUnowned: "sequentialMultiInstanceControllerUnowned",
+  DuplicateSequentialMultiInstanceController: "duplicateSequentialMultiInstanceController",
+  SequentialMultiInstanceExhausted: "sequentialMultiInstanceExhausted",
 } as const;
 
 export type RuntimeStateDefect =
@@ -268,6 +276,7 @@ export function runtimeStateDefects(
   }
 
   defects.push(...activityOwnershipDefects(state));
+  defects.push(...sequentialMultiInstanceDefects(state));
 
   const ordered =
     isSorted(state.activityOccurrences, compareActivityOccurrences) &&
@@ -275,6 +284,10 @@ export function runtimeStateDefects(
     isSorted(state.selectedBranchSets, compareSelectedBranchSets) &&
     isSorted(state.eventRaces, compareEventRaces) &&
     isSorted(state.calledProcessOccurrences, compareCalledProcessOccurrences) &&
+    isSorted(
+      state.sequentialMultiInstanceControllers ?? [],
+      compareSequentialMultiInstanceControllers,
+    ) &&
     isSorted(state.taskActivations, (left, right) =>
       compareCanonicalStrings(left.elementId, right.elementId),
     );
@@ -297,6 +310,59 @@ export function runtimeStateDefects(
  * Ownership agreement is checked too, because a record and its attached wait naming different scope
  * occurrences would let a withdrawal cross a region boundary in the other direction.
  */
+/**
+ * The controller conjuncts, which are about binding rather than about counting.
+ *
+ * Nothing here checks a counter, because the representation stores none: planned, generated,
+ * completed, pending, and the active loop counter are all functions of the snapshot and the dense
+ * output slots, so the equations the capsule states hold by construction and cannot be violated by a
+ * state. What a state *can* get wrong is the binding to the record that owns the body, the
+ * cardinality of controllers per Activity occurrence, and whether an open controller still has an
+ * item left to generate.
+ *
+ * The exhaustion conjunct is the one that reads like an off-by-one and is not. A controller whose
+ * slots cover its whole snapshot should have been removed by the final-completion transition in the
+ * same step that filled the last slot, so an open controller with nothing left to generate is a state
+ * that transition exists to prevent. An empty snapshot fails the same test, which is correct: a
+ * zero-item collection completes atomically at entry and creates no controller at all.
+ *
+ * Body kind is deliberately not checked here. The record's own `AOO-BODY-01` conjunct already
+ * requires exactly one live body, and this profile's admission is what restricts that body to a User
+ * Task; a second check would assert a profile fact inside a profile-independent predicate.
+ */
+function sequentialMultiInstanceDefects(
+  state: RuntimeState,
+): ReadonlyArray<RuntimeStateDefect> {
+  const controllers = state.sequentialMultiInstanceControllers;
+  if (controllers === undefined) {
+    return [];
+  }
+  const defects: RuntimeStateDefect[] = [];
+
+  const owned = (controller: SequentialMultiInstanceController): boolean =>
+    state.activityOccurrences.filter((record) =>
+      sameActivityOccurrence(record.id, controller.id)
+    ).length === 1;
+  if (!controllers.every(owned)) {
+    defects.push(RuntimeStateDefect.SequentialMultiInstanceControllerUnowned);
+  }
+
+  const identities = controllers.map(({ id }) =>
+    `${id.processInstanceId}\u0000${id.activityElementId}\u0000${id.activation}`
+  );
+  if (new Set(identities).size !== identities.length) {
+    defects.push(RuntimeStateDefect.DuplicateSequentialMultiInstanceController);
+  }
+
+  if (!controllers.every((controller) =>
+    controller.outputSlots.length < controller.snapshot.length
+  )) {
+    defects.push(RuntimeStateDefect.SequentialMultiInstanceExhausted);
+  }
+
+  return defects;
+}
+
 function activityOwnershipDefects(
   state: RuntimeState,
 ): ReadonlyArray<RuntimeStateDefect> {
@@ -416,6 +482,12 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.ActivityOccurrenceBodyAbsent,
   RuntimeStateDefect.UnownedAttachedWait,
   RuntimeStateDefect.DuplicateActivityOccurrence,
+  // The controller classes join for the same reason: each is decidable from one state without the
+  // called definitions, and a continuation that carried an unowned or exhausted controller across a
+  // Run would otherwise be admitted by every boundary.
+  RuntimeStateDefect.SequentialMultiInstanceControllerUnowned,
+  RuntimeStateDefect.DuplicateSequentialMultiInstanceController,
+  RuntimeStateDefect.SequentialMultiInstanceExhausted,
 ]);
 
 /**
