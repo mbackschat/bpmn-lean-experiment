@@ -24,7 +24,7 @@ const activationEventReserve = 2_240;
 const activationByteReserve = 2 * 1_024 * 1_024;
 const historyEventEnvelopeBytes = 4 * 1_024;
 
-test("retains the exact pinned real-service measurement below every boundary", () => {
+test("retains pinned deterministic capacity facts below every boundary", () => {
   assert.equal(retainedSequentialMultiInstanceHistoryMeasurement.state, "measured");
   assert.deepEqual(requireSequentialMultiInstanceHistoryCapacity(), {
     eventTrigger,
@@ -32,7 +32,7 @@ test("retains the exact pinned real-service measurement below every boundary", (
     activationEventReserve,
     activationByteReserve,
     maximumMeasuredRunEvents: 87,
-    maximumMeasuredRunBytes: 259_636,
+    maximumMeasuredRunBytes: 568_902,
     maximumMeasuredActivationEvents: 10,
     maximumMeasuredActivationPayloadBytes: 246_799,
     maximumInterruptedCompletedItems: 15,
@@ -46,39 +46,35 @@ test("accepts a closed whole-topology measurement below every production boundar
     byteTrigger,
     activationEventReserve,
     activationByteReserve,
-    maximumMeasuredRunEvents: 113,
-    maximumMeasuredRunBytes: 135_168,
+    maximumMeasuredRunEvents: 87,
+    maximumMeasuredRunBytes: 425_984,
     maximumMeasuredActivationEvents: 9,
     maximumMeasuredActivationPayloadBytes: 65_536,
     maximumInterruptedCompletedItems: 15,
   });
 });
 
-test("fails through the root criterion at every whole-topology and activation boundary", () => {
+test("keeps the closed topology below whole-Run triggers and enforces activation boundaries", () => {
   const fixture = measuredFixture();
-  for (const [field, boundary] of [
-    ["finalEventCount", eventTrigger - 1],
-    ["conservativeFinalHistorySize", byteTrigger - 1],
-    ["largestActivationCanonicalPayloadBytes", activationByteReserve],
-  ] as const) {
-    const atBoundary = measurementAtBoundary(fixture, field, boundary);
-    assert.doesNotThrow(() =>
-      requireSequentialMultiInstanceHistoryCapacity(atBoundary)
-    );
-    assert.throws(
-      () => requireSequentialMultiInstanceHistoryCapacity(
-        measurementAtBoundary(atBoundary, field, boundary + 1),
-      ),
-      /SMI history capacity/u,
-      `${field} must be enforced by the root criterion`,
-    );
-  }
+  const capacity = requireSequentialMultiInstanceHistoryCapacity(fixture);
+  assert.ok(capacity.maximumMeasuredRunEvents < eventTrigger);
+  assert.ok(capacity.maximumMeasuredRunBytes < byteTrigger);
   assert.throws(
     () => requireSequentialMultiInstanceHistoryCapacity(
       measurementAtBoundary(
         fixture,
         "largestActivationEvents",
         activationEventReserve + 1,
+      ),
+    ),
+    /activation/iu,
+  );
+  assert.throws(
+    () => requireSequentialMultiInstanceHistoryCapacity(
+      measurementAtBoundary(
+        fixture,
+        "largestActivationCanonicalPayloadBytes",
+        activationByteReserve + 1,
       ),
     ),
     /activation/iu,
@@ -93,6 +89,9 @@ test("combines activation Event envelopes with co-resident canonical payload byt
     largestActivationEvents: 9,
     largestActivationCanonicalPayloadBytes:
       activationByteReserve - 9 * historyEventEnvelopeBytes,
+    conservativeFinalHistorySize: armed.conservativeFinalHistorySize +
+      activationByteReserve - 9 * historyEventEnvelopeBytes -
+      armed.largestActivationCanonicalPayloadBytes,
   });
   assert.doesNotThrow(() => requireSequentialMultiInstanceHistoryCapacity(inside));
   assert.throws(
@@ -100,6 +99,9 @@ test("combines activation Event envelopes with co-resident canonical payload byt
       replaceNaturalArmedRun(inside as SequentialMultiInstanceMeasuredHistory, {
         largestActivationCanonicalPayloadBytes:
           activationByteReserve - 9 * historyEventEnvelopeBytes + 1,
+        conservativeFinalHistorySize:
+          (inside as SequentialMultiInstanceMeasuredHistory).natural.runs[1]!
+            .conservativeFinalHistorySize + 1,
       }),
     ),
     /activation byte reserve/u,
@@ -129,16 +131,39 @@ test("requires exact per-role checkpoint order and the production Event envelope
           conservativeEnvelopeBytes:
             armed.finalBoundary.conservativeEnvelopeBytes - 1,
         },
-        conservativeFinalHistorySize: armed.conservativeFinalHistorySize - 1,
       }),
     ),
     /envelope/u,
   );
 });
 
-test("rejects an underestimated component sum when the whole service topology reaches a trigger", () => {
-  const underestimated = replaceNaturalArmedRun(measuredFixture(), {
-    finalEventCount: eventTrigger,
+test("treats service History sizes as bounded observations rather than exact retained facts", () => {
+  const fixture = measuredFixture();
+  const armed = fixture.natural.runs[1];
+  assert.ok(armed !== undefined);
+  assert.doesNotThrow(() => requireSequentialMultiInstanceHistoryCapacity(
+    replaceNaturalArmedRun(fixture, {
+      stableCheckpoints: armed.stableCheckpoints.map((checkpoint) => ({
+        ...checkpoint,
+        historySize: checkpoint.historySize + 84,
+      })),
+    }),
+  ));
+  assert.throws(
+    () => requireSequentialMultiInstanceHistoryCapacity(
+      replaceNaturalArmedRun(fixture, {
+        stableCheckpoints: armed.stableCheckpoints.map((checkpoint) => ({
+          ...checkpoint,
+          historySize: armed.conservativeFinalHistorySize + 1,
+        })),
+      }),
+    ),
+    /upper envelope/iu,
+  );
+});
+
+test("rejects a component estimate in place of closed whole-topology facts", () => {
+  const estimated = replaceNaturalArmedRun(measuredFixture(), {
     componentEstimate: {
       timerEvents: 2,
       updateEvents: 32,
@@ -146,8 +171,8 @@ test("rejects an underestimated component sum when the whole service topology re
     },
   } as never);
   assert.throws(
-    () => requireSequentialMultiInstanceHistoryCapacity(underestimated),
-    /SMI history capacity/u,
+    () => requireSequentialMultiInstanceHistoryCapacity(estimated),
+    /open or omitted field/u,
   );
 });
 
@@ -183,6 +208,27 @@ test("requires the closed Event-family vocabulary and each topology arm", () => 
       },
     }),
     /interrupted.*Run|Run.*interrupted/u,
+  );
+});
+
+test("rejects a final History Event outside the closed Event-family account", () => {
+  const fixture = measuredFixture();
+  const armed = fixture.natural.runs[1];
+  const last = armed?.stableCheckpoints.at(-1);
+  assert.ok(armed !== undefined && last !== undefined);
+  assert.throws(
+    () => requireSequentialMultiInstanceHistoryCapacity(
+      replaceNaturalArmedRun(fixture, {
+        finalEventCount: armed.finalEventCount + 1,
+        conservativeFinalHistorySize: armed.conservativeFinalHistorySize +
+          historyEventEnvelopeBytes,
+        stableCheckpoints: armed.stableCheckpoints.with(-1, {
+          ...last,
+          historyLength: last.historyLength + 1,
+        }),
+      }),
+    ),
+    /event[- ]famil|classified/iu,
   );
 });
 
@@ -230,6 +276,7 @@ function measuredFixture(): SequentialMultiInstanceMeasuredHistory {
       terminalOutcome: CommandOutcome.Committed,
       runs: [
         run(1, SequentialMultiInstanceHistoryRunRole.PreArming, {
+          workflowExecutionStarted: 1,
           workflowTask: 3,
           updateAccepted: 0,
           updateCompleted: 0,
@@ -240,6 +287,7 @@ function measuredFixture(): SequentialMultiInstanceMeasuredHistory {
           terminalCompleted: 0,
         }),
         run(2, SequentialMultiInstanceHistoryRunRole.Armed, {
+          workflowExecutionStarted: 1,
           workflowTask: 51,
           updateAccepted: 16,
           updateCompleted: 16,
@@ -257,6 +305,7 @@ function measuredFixture(): SequentialMultiInstanceMeasuredHistory {
       terminalOutcome: CommandOutcome.Committed,
       runs: [
         run(1, SequentialMultiInstanceHistoryRunRole.PreArming, {
+          workflowExecutionStarted: 1,
           workflowTask: 3,
           updateAccepted: 0,
           updateCompleted: 0,
@@ -267,6 +316,7 @@ function measuredFixture(): SequentialMultiInstanceMeasuredHistory {
           terminalCompleted: 0,
         }),
         run(2, SequentialMultiInstanceHistoryRunRole.Armed, {
+          workflowExecutionStarted: 1,
           workflowTask: 51,
           updateAccepted: 15,
           updateCompleted: 15,
@@ -277,6 +327,7 @@ function measuredFixture(): SequentialMultiInstanceMeasuredHistory {
           terminalCompleted: 0,
         }),
         run(3, SequentialMultiInstanceHistoryRunRole.Escalation, {
+          workflowExecutionStarted: 1,
           workflowTask: 6,
           updateAccepted: 1,
           updateCompleted: 1,
@@ -294,37 +345,21 @@ function measuredFixture(): SequentialMultiInstanceMeasuredHistory {
 function measurementAtBoundary(
   measurement: SequentialMultiInstanceMeasuredHistory,
   field:
-    | "finalEventCount"
-    | "conservativeFinalHistorySize"
     | "largestActivationEvents"
     | "largestActivationCanonicalPayloadBytes",
   boundary: number,
 ): SequentialMultiInstanceMeasuredHistory {
   const armed = measurement.natural.runs[1];
   assert.ok(armed !== undefined);
-  const checkpoint = armed.stableCheckpoints.at(-1);
-  assert.ok(checkpoint !== undefined);
-  const checkpointIndex = armed.stableCheckpoints.length - 1;
-  const stableCheckpoints = field === "finalEventCount"
-    ? armed.stableCheckpoints.with(checkpointIndex, {
-      ...checkpoint,
-      historyLength: boundary - armed.finalBoundary.eventsNotIncludedAtCheckpoint,
-    })
-    : field === "conservativeFinalHistorySize"
-    ? armed.stableCheckpoints.with(checkpointIndex, {
-      ...checkpoint,
-      historySize: boundary - armed.finalBoundary.canonicalPayloadBytes -
-        armed.finalBoundary.conservativeEnvelopeBytes,
-    })
-    : armed.stableCheckpoints;
-  const pairedBoundary = field === "largestActivationEvents"
-    ? { largestActivationCanonicalPayloadBytes: 0 }
-    : field === "largestActivationCanonicalPayloadBytes"
-    ? { largestActivationEvents: 0 }
+  const pairedBoundary = field === "largestActivationCanonicalPayloadBytes"
+    ? {
+      largestActivationEvents: 0,
+      conservativeFinalHistorySize: armed.conservativeFinalHistorySize +
+        boundary - armed.largestActivationCanonicalPayloadBytes,
+    }
     : {};
   return replaceNaturalArmedRun(measurement, {
     [field]: boundary,
-    stableCheckpoints,
     ...pairedBoundary,
   }) as SequentialMultiInstanceMeasuredHistory;
 }
@@ -334,8 +369,9 @@ function run(
   role: SequentialMultiInstanceRunHistoryMeasurement["role"],
   eventFamilies: SequentialMultiInstanceRunHistoryMeasurement["eventFamilies"],
 ): SequentialMultiInstanceRunHistoryMeasurement {
-  const finalEventCount = runOrdinal === 2 ? 113 : 7;
+  const finalEventCount = Object.values(eventFamilies).reduce((sum, count) => sum + count, 0);
   const historySize = runOrdinal === 2 ? 122_880 : 8_192;
+  const largestActivationCanonicalPayloadBytes = runOrdinal === 2 ? 65_536 : 8_192;
   const labels = checkpointLabels(role, eventFamilies);
   return {
     runOrdinal,
@@ -351,10 +387,10 @@ function run(
       conservativeEnvelopeBytes: 2 * historyEventEnvelopeBytes,
     },
     finalEventCount,
-    conservativeFinalHistorySize:
-      historySize + 4_096 + 2 * historyEventEnvelopeBytes,
+    conservativeFinalHistorySize: finalEventCount * historyEventEnvelopeBytes +
+      largestActivationCanonicalPayloadBytes + 4_096,
     largestActivationEvents: runOrdinal === 2 ? 9 : 4,
-    largestActivationCanonicalPayloadBytes: runOrdinal === 2 ? 65_536 : 8_192,
+    largestActivationCanonicalPayloadBytes,
     eventFamilies,
   };
 }

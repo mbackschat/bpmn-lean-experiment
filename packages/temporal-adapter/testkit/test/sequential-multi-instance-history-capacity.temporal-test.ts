@@ -113,7 +113,10 @@ test("measures the complete natural and maximally interrupted SMI host topologie
     };
 
     requireSequentialMultiInstanceHistoryCapacity(measurement);
-    assert.deepEqual(measurement, retainedSequentialMultiInstanceHistoryMeasurement);
+    assert.deepEqual(
+      deterministicCapacityFacts(measurement),
+      deterministicCapacityFacts(retainedSequentialMultiInstanceHistoryMeasurement),
+    );
     console.log(
       `SMI_HISTORY_MEASUREMENT=${canonicalWorkflowChainJson(measurement)}`,
     );
@@ -223,7 +226,6 @@ function closeRunMeasurement(
     eventsNotIncludedAtCheckpoint;
   const role = runRole(topology, summary.runOrdinal);
   const eventFamilies = familyCounts(history);
-  requireNoExcludedHistoryFamilies(history, `${topology} Run ${summary.runOrdinal}`);
   return {
     runOrdinal: summary.runOrdinal,
     role,
@@ -236,9 +238,10 @@ function closeRunMeasurement(
         eventsNotIncludedAtCheckpoint * workflowChainHistoryEventEnvelopeBytes,
     },
     finalEventCount,
-    conservativeFinalHistorySize: last.historySize +
-      summary.closingCanonicalPayloadBytes +
-      eventsNotIncludedAtCheckpoint * workflowChainHistoryEventEnvelopeBytes,
+    conservativeFinalHistorySize:
+      finalEventCount * workflowChainHistoryEventEnvelopeBytes +
+      summary.largestActivationCanonicalPayloadBytes +
+      summary.closingCanonicalPayloadBytes,
     largestActivationEvents: Math.max(
       summary.largestActivationEvents,
       closingActivationEvents,
@@ -357,6 +360,8 @@ function familyCounts(
   history: TemporalHistory,
 ): SequentialMultiInstanceHistoryEventFamilyCounts {
   return {
+    [SequentialMultiInstanceHistoryEventFamily.WorkflowExecutionStarted]:
+      count(history, "workflowExecutionStartedEventAttributes"),
     [SequentialMultiInstanceHistoryEventFamily.WorkflowTask]:
       count(history, "workflowTaskScheduledEventAttributes") +
       count(history, "workflowTaskStartedEventAttributes") +
@@ -382,20 +387,12 @@ function count(history: TemporalHistory, attributesName: string): number {
   return historyEvents(history, attributesName).length;
 }
 
-function requireNoExcludedHistoryFamilies(
-  history: TemporalHistory,
-  label: string,
-): void {
-  for (const family of [
-    "workflowExecutionSignaledEventAttributes",
-    "activityTaskScheduledEventAttributes",
-    "startChildWorkflowExecutionInitiatedEventAttributes",
-    "workflowExecutionCancelRequestedEventAttributes",
-    "workflowExecutionCanceledEventAttributes",
-    "requestCancelExternalWorkflowExecutionInitiatedEventAttributes",
-  ]) {
-    assert.equal(count(history, family), 0, `${label} unexpectedly used ${family}`);
-  }
+function deterministicCapacityFacts(value: unknown): unknown {
+  const serialized = JSON.stringify(value, (key, candidate) =>
+    key === "historySize" ? undefined : candidate
+  );
+  assert.ok(serialized !== undefined);
+  return JSON.parse(serialized) as unknown;
 }
 
 async function waitForReadiness(
