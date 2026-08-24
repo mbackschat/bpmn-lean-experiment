@@ -1,17 +1,14 @@
-# MUE Preview Alpha proposal
+# MUE Preview Alpha specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved
+Implemented, independently closure-reviewed, and evidence-closed. The exact implemented and absent platform boundary is maintained by [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), the hosting evidence boundary by [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), and the governed review history is retained in the receipt below.
 
-## Product question and current boundary
+## Implemented boundary
 
-Owner-approved on 2026-08-24 after the same reviewer approved correction target `bd9b37f9` with no remaining findings. Implementation may open only the bounded checkpoint and later showcase lanes defined below.
+MUE Preview Alpha is a polished Product 2 browser journey over the exact natural and interrupted [Sequential Multi-Instance account](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md). That account owns the BPMN meaning, source, checked representation, runtime state, `openMultiInstances` observation, Temporal deadline scheduler, retained scenarios, and exact natural and interrupting outcomes. This specification owns only the product command, decoding, presentation, and live-showcase contracts needed to let a user see those implemented facts.
 
-[PLAN](PLAN.md#exact-resume-point) requires the first MUE preview to be a polished Product 2 browser journey over the exact natural and interrupted [Sequential Multi-Instance account](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md). That account already owns the BPMN meaning, source, checked representation, runtime state, `openMultiInstances` observation, Temporal deadline scheduler, retained scenarios, and exact natural and interrupting outcomes. This proposal selects only the missing product command, decoding, presentation, and live-showcase contracts needed to let a user see those implemented facts.
-
-The current Product 2 direct-start boundary constructs `StartProcess.initialVariables` as an empty array, so it cannot start the exact retained model with its required three-item input collection. Product 2 also copies the public `StateObservation` shape and rejects `openMultiInstances`, so its strict execution-publication decoder refuses the implemented progress fact. A terminal publication contains the final state and transition records but no prior state snapshots, so neither Product 2 nor the browser may reconstruct progress after the fact.
+Alpha's Product 2 direct-start boundary carries the exact canonical `StartProcess.initialVariables`, including the retained model's required three-item input collection. Product 2's strict execution-publication decoder accepts the public `openMultiInstances` shape. A terminal publication contains the final state and transition records but no prior state snapshots, so neither Product 2 nor the browser may reconstruct progress after the fact.
 
 Alpha changes no MUE content ID, BPMN requirement disposition, semantic profile, model bytes, operation, runtime rule, Temporal version, Work authorization rule, or final-MUE acceptance obligation. It does not close any of the seven remaining MUE content IDs and makes no broader support claim.
 
@@ -23,7 +20,7 @@ The preview is an Operations instance-detail surface, not a new primary navigati
 
 ## Exact start-data contract
 
-The existing Product 2 exact-version start request gains one required body:
+The Product 2 exact-version start request requires this body:
 
 ```ts
 type DefinitionVersionStartCommand = DeepReadonly<{
@@ -39,7 +36,7 @@ A different start-data value creates a different direct-start intent. Mutation a
 
 ## Exact progress-consumer contract
 
-Product 2's execution-publication contract gains the exact public `ActivityOccurrenceId`, `OpenSequentialMultiInstanceIteration`, and `OpenSequentialMultiInstance` shapes already owned by the [Sequential Multi-Instance public contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#public-contract). `StateObservation.openMultiInstances` remains optional because existing programs omit it and the exact Sequential Multi-Instance program carries it in every state, including an empty array after either terminal route.
+Product 2's execution-publication contract includes the exact public `ActivityOccurrenceId`, `OpenSequentialMultiInstanceIteration`, and `OpenSequentialMultiInstance` shapes owned by the [Sequential Multi-Instance public contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#public-contract). `StateObservation.openMultiInstances` remains optional because existing programs omit it and the exact Sequential Multi-Instance program carries it in every state, including an empty array after either terminal route.
 
 The strict decoder validates every nested key, wire string, safe integer, mode, identity, variable binding, canonical order, and the published count equations. It also requires each nested Process-instance identity to equal the containing state identity. A schema-derived executable guard compares the public state properties with the platform decoder's accepted key set, so a future producer field cannot repeat the current copied-contract drift silently.
 
@@ -98,27 +95,27 @@ The preview actor uses the existing User Task Update and existing deadline sched
 
 The smallest live refinement witness is the two-branch browser run above plus exact Workflow replay. The nearest host counterexamples are a reserved start recovered with different initial data, a legacy empty-start reservation not recoverable after either store migration, a post-migration row accepted without stored start bytes, a browser sample fabricated between two observed revisions, a completion using an actor-constructed activation, and a partial output shown after the Timer route. Each must fail at its owning contract boundary.
 
-## Evidence and governed stage plan
+## Evidence contract
 
-Red/green begins with two independent failures: the platform execution-publication decoder refuses the exact current Sequential Multi-Instance state, and the Product 2 exact-version start cannot carry the retained input collection. The class guards are the schema-derived decoder key census and a reserved-start recovery witness whose stored canonical input is the only available command content.
+The independent implementation discriminators are the former platform execution-publication decoder's refusal of the exact current Sequential Multi-Instance state and the former Product 2 exact-version start's inability to carry the retained input collection. The class guards are the schema-derived decoder key census and a reserved-start recovery witness whose stored canonical input is the only available command content.
 
-The first green committed checkpoint includes strict start-data transport and recovery, SQLite and PostgreSQL legacy-empty migration witnesses and post-migration missing-byte refusals, recursive publication decoding, and their adversarial tests. It changes a public command and public observation consumer, so it receives a cold semantic-checkpoint review before UI and showcase work continue. Closure follows only after the complete browser journeys, replay, local and PostgreSQL gates, implementation maps, exact status, and cost record are green. Warm closure continuity may be used only if the checkpoint reviewer and executable manifest satisfy the existing rule.
+Acceptance requires strict start-data transport and recovery, SQLite and PostgreSQL legacy-empty migration witnesses and post-migration missing-byte refusals, recursive publication decoding and adversarial tests, both complete browser journeys, replay, local and PostgreSQL gates, implementation maps, and a reproducible cost record. The public command and public observation consumer remain governed semantic-checkpoint surfaces under the existing review policy.
 
-Focused gates are the engine API, engine gateway, platform contracts, Definitions module, server composition, PostgreSQL migration/runtime, web application, UI-quality, and new Alpha showcase package gates plus `git diff --check`. The root runs every path-selected clean-commit pre-push entry point at each governed boundary. No Temporal dependency or binary version changes.
+Focused gates are the engine API, engine gateway, platform contracts, Definitions module, server composition, PostgreSQL migration/runtime, web application, UI-quality, and Alpha showcase package gates plus `git diff --check`. The root runs every path-selected clean-commit pre-push entry point at each governed boundary. No Temporal dependency or binary version changes.
 
 ## Same-change owners and reopen conditions
 
-Implementation updates the exact boundaries owned by the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary), [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md), [architecture](ARCHITECTURE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [testing specification](TESTING-SPEC.md), showcase registry, web source map, and [PLAN](PLAN.md). The Sequential Multi-Instance specification changes only if implementation evidence or its already-owned Product 2 consumer statement changes; its semantic rules do not move here.
+The current producers and consumers are bound by the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary), [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md), [architecture](ARCHITECTURE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [testing specification](TESTING-SPEC.md), showcase registry, and web source map. The Sequential Multi-Instance specification changes only if implementation evidence or its already-owned Product 2 consumer statement changes; its semantic rules do not move here.
 
-Reopen this proposal if Product 1 changes the start variable domain, `openMultiInstances` shape or presence rule, direct-start recovery protocol, current-state publication boundary, User Task command identity, boundary deadline scheduling, or if Alpha requires a durable snapshot history, a production automated actor, metadata-free Work visibility, or a private API.
+Reopen this specification if Product 1 changes the start variable domain, `openMultiInstances` shape or presence rule, direct-start recovery protocol, current-state publication boundary, User Task command identity, boundary deadline scheduling, or if Alpha requires a durable snapshot history, a production automated actor, metadata-free Work visibility, or a private API.
 
-## Implemented closure boundary
+## Closure evidence
 
-Implementation commit `40c740ae` contains the production-backed showcase package and the root release graph. The exact retained source digest is unit-bound, both browser branches enter through Definitions and Operations, the actor uses only public current state and published interaction identity, and the acceptance owner reads Event History only after both instances terminate to verify exact Update and Timer facts and replay every actual Workflow Run. The natural route publishes `accepted`, `flagged`, `archived` in order; the interrupting route publishes the committed Timer command and escalation interaction and no aggregate output. The production build, six focused package tests, one live two-branch Chromium journey, replay of every observed Run, and 83 fixed-fixture UI-quality tests passed in the complete Alpha release gate. Infrastructure passed 416 of 416 tests when run with the loopback permission its port-allocation guard requires. Exact Temporal CLI 1.8.1, Server 1.31.2, SDK/testing 1.21.0, and UI 2.50.1 remain unchanged.
+The production-backed showcase package and root release graph bind the exact retained source digest. Both browser branches enter through Definitions and Operations, the actor uses only public current state and published interaction identity, and the acceptance owner reads Event History only after both instances terminate to verify exact Update and Timer facts and replay every actual Workflow Run. The natural route publishes `accepted`, `flagged`, `archived` in order; the interrupting route publishes the committed Timer command and escalation interaction and no aggregate output. Exact Temporal CLI 1.8.1, Server 1.31.2, SDK/testing 1.21.0, and UI 2.50.1 remain unchanged.
 
 The implementation adds no durable progress history, interactive metadata-free Work task, private control API, mock semantic response, additional semantic profile, broader Multi-Instance variant, or MUE-complete claim. Browser-session samples remain explicitly transient, and the other seven MUE content IDs remain open.
 
-The reproducible implementation range is `d814cac4..40c740ae`: `+4182/-168` nonblank code lines and `+181/-168` nonblank documentation lines, with elapsed time unknown. The nearest same-layer comparator is Product 2 incident operations at `+13373/-543` code and `+97/-54` documentation. Code additions fell by 9,191 because Alpha reuses the closed Sequential Multi-Instance, confirmed-start, execution-publication, Operations, UI-kit, Workflow-chain, and replay mechanisms. Documentation additions rose by 84 because this delivery selected a new cross-product command and observation consumer and therefore paid proposal and semantic-checkpoint review before its showcase lane. The process weight removed before Beta is repeating that product-level proposal across seven breadth slices: each slice stays with its named semantic or hosting owner and opens a capsule only for a new proposition, while one later Beta integration owner carries the coherent catalog and Product 2 journey.
+The [capsule-cost ledger](CAPSULE-COST-LEDGER.md) owns the reproducible implementation range and comparison. Alpha reuses the closed Sequential Multi-Instance, confirmed-start, execution-publication, Operations, UI-kit, Workflow-chain, and replay mechanisms. Each later breadth slice stays with its named semantic or hosting owner and opens a capsule only for a new proposition, while one Beta integration owner carries the coherent catalog and Product 2 journey.
 
 ## Independent cold-review receipt
 
@@ -126,6 +123,6 @@ The reproducible implementation range is `d814cac4..40c740ae`: `+4182/-168` nonb
 |---|---|---|---|---|
 | Proposal | `40eda701` | `fork-turns-none` | `approve-with-required-edits` | `bd9b37f9` |
 | Semantic checkpoint | `c26a24295eaa482113c2a7f1a74fd3a7e4e37733` | `fork-turns-none` | `approve-with-required-edits` | `ac9f3535007c66c14697b5a5e5a4b3e57a963cc2` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `0a40391a73637b962d6998b5eda7e65a6770cb5f` | `checkpoint-reviewer-warm` | `approve-with-required-edits` | `7566a605b270bf8b376417592258007e58ea6962` |
 
-Cold proposal review was required because Alpha adds Product 2 transport for an existing semantic command and accepts and presents a newly published runtime observation. The semantic-checkpoint reviewer required the platform operation-kind census, equivalence between pre-host and initial runtime start-data admission, exact String-list map exceptions, and capability-identity UI assertions. The same reviewer approved correction target `ac9f3535007c66c14697b5a5e5a4b3e57a963cc2` after the original adversarial probes inverted and the clean Product 1, platform, showcase, and 77-test UI gates passed with output SHA-256 values `f270ee1053ab683d0436dd319f13e10a330ce6193b8e54d98947b57c626a91b3`, `f9cc2aa514550a3eb78048f3899bea57f87ac44b0a352cea006cb874ea4c3267`, `f1c9b61fb93b8c77a45f1bb88e14aad4dd8969f529f025d90171673a1a983254`, and `ed29d00b6cc936a4377245bce2ebd611568f3ac2b3b63508150ae255ec355eea` respectively. UI and showcase implementation may proceed without broadening the reviewed contract.
+Cold proposal review was required because Alpha adds Product 2 transport for an existing semantic command and accepts and presents a newly published runtime observation. The semantic-checkpoint reviewer required the platform operation-kind census, equivalence between pre-host and initial runtime start-data admission, exact String-list map exceptions, and capability-identity UI assertions. The same reviewer approved correction target `ac9f3535007c66c14697b5a5e5a4b3e57a963cc2` after the original adversarial probes inverted. Warm closure continuity was eligible under manifest digest `a4878e8eec0acc20b6b8dc0dddc242200749e44a62401af64190df792b36744b`; the same reviewer approved correction target `7566a605b270bf8b376417592258007e58ea6962` with no remaining findings.
