@@ -36,6 +36,22 @@
   color: var(--ui-color-error);
 }
 
+.previewInput {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2) var(--ui-space-4);
+  align-items: baseline;
+  border-left: 5px solid var(--ui-color-accent);
+  border-radius: var(--ui-radius-control);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  background: var(--ui-color-accent-surface);
+  color: var(--ui-color-text);
+}
+
+.previewInput span {
+  color: var(--ui-color-muted);
+}
+
 .result {
   display: grid;
   grid-template-columns: auto auto minmax(12rem, 1fr);

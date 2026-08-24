@@ -9,6 +9,7 @@ import { Button } from "@bpmn-lean/platform-ui-kit";
 
 import type { DefinitionApiClient } from "./definitions-api";
 import styles from "./definition-start-panel.module.css";
+import { resolveMuePreviewAlphaStart } from "./mue-preview-alpha-start";
 
 export type DefinitionStartPanelProps = Readonly<{
   api: DefinitionApiClient;
@@ -22,13 +23,17 @@ export function DefinitionStartPanel({
   const [result, setResult] = useState<ProcessInstanceStartResult | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const alphaStart = resolveMuePreviewAlphaStart(definition);
 
   async function start(): Promise<void> {
     setStarting(true);
     setError(null);
     setResult(null);
     try {
-      setResult(await api.start(definition, { initialVariables: [] }));
+      setResult(await api.start(
+        definition,
+        alphaStart?.command ?? { initialVariables: [] },
+      ));
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : "Unknown platform failure");
     } finally {
@@ -50,6 +55,12 @@ export function DefinitionStartPanel({
           {starting ? "Starting…" : `Start version ${definition.version}`}
         </Button>
       </div>
+      {alphaStart === null ? null : (
+        <div className={styles.previewInput} data-testid="mue-preview-alpha-start-input">
+          <strong>MUE Preview Alpha</strong>
+          <span>{alphaStart.label}</span>
+        </div>
+      )}
       {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       <StartResult result={result} />
     </section>
