@@ -343,7 +343,7 @@ A semantic-checkpoint review is required after the first complete executable sou
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `70256503c94ee6d2f63be315912d8465894b35f3` | `fork-turns-none` | `approve-with-required-edits` | `a064dc8ba871c77a8d27817565e8b3a9f0c019bc` |
-| Semantic checkpoint | `e4555a818dfe97a72ce5323da52a13431a282f63` | `fork-turns-none` | `approve` | `not-required` |
+| Semantic checkpoint | `0660a79ea569e74ce9f361adb70c4b54d955977d` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The proposal review used two correction-audit rounds. The first audited `3b8e0df838cd13f2b0142bb7b4887b528bd1e51f`; the second and final approved audit is recorded in the table.
@@ -351,3 +351,5 @@ The proposal review used two correction-audit rounds. The first audited `3b8e0df
 The first semantic-checkpoint review used two correction-audit rounds and moved to `approve` at the second. The first audited `4fd006c4b8eb2af97f8cb7bad41af26509f87b92`; the second approved audit was `991bf4834dc53b4dbb2ee5d955c770d8cf41ead8`. Four required findings were raised: the profile's output-side limits enforced in neither language, a locale-dependent second canonical order for published Process bindings, a counter identity that two structures could violate on a state every gate admits, and no TypeScript oracle for the entry-side bounds. The second round existed because correcting one derived count alone relocated the identity violation rather than removing it. One advisory is carried forward as its own change: withdrawing every attached Timer when a record is removed holds in two of four Activity families.
 
 The redesigned semantic-checkpoint review approved `e4555a818dfe97a72ce5323da52a13431a282f63` without findings. It confirmed that the natural schedule remains two Runs, the interruption schedule uses a third Run only after the original Timer callback is reduced, and the correction changes no public contract, exclusion, scope, implementation status, or registration claim.
+
+The next executable Red exposed an evidence-order cycle that the redesigned checkpoint had not tested: the unregistered profile fails both initial and continuation execution identity before either a direct-VM or live production witness can produce a Timer or History. Target `0660a79ea569e74ce9f361adb70c4b54d955977d` replaces that strategy with a private real-service capacity probe before registration and requires the later production histories to validate its bounds. Because this changes the evidence strategy, it invalidates the preceding approval and requires a new context-cold semantic-checkpoint review.
