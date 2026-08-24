@@ -407,8 +407,10 @@ def hiddenRecordDeclarationsValid (program : Program) (state : RuntimeState) : B
 semantic instance identity.
 
 This is a representation obligation, not an admission capability: it changes no admitted model, no
-accepted transition, and no canonical projection. Preservation is proved before the predicate gates
-anything, so a gate built on it can only reject states that were never reachable. -/
+accepted transition, and no canonical projection. Lean installs no gate. The TypeScript command and
+continuation gates intentionally enforce the predicate before general preservation is proved, so any
+newly refused state reached through an accepted transition is a validator defect until it is shown
+unreachable or the predicate or transition account is corrected. -/
 def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     (state : RuntimeState) : Bool :=
   runtimePositionValid program instanceId state &&
