@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented and independently closure-reviewed for the existing executable program-indexed predicate over `RuntimeState`, with the additive `RSI-BOUND-01` implementation awaiting semantic-checkpoint review and quantified Lean preservation declared a deliberately open lane by owner decision.** The predicate, its initialization theorems, its per-conjunct negatives, the independently written TypeScript validator on the fail-closed command path, and the Workflow-continuation witnesses are implemented. Preservation across the registered transition arms is not. The Activity body-turnover preservation law is the first consumer to derive its wait-key freshness premise from well-formedness rather than assume it.
+**Implemented and independently closure-reviewed for the existing executable program-indexed predicate over `RuntimeState`, with the additive `RSI-BOUND-01` implementation independently semantic-checkpoint reviewed and awaiting closure review, and quantified Lean preservation declared a deliberately open lane by owner decision.** The predicate, its initialization theorems, its per-conjunct negatives, the independently written TypeScript validator on the fail-closed command path, and the Workflow-continuation witnesses are implemented. Preservation across the registered transition arms is not. The Activity body-turnover preservation law is the first consumer to derive its wait-key freshness premise from well-formedness rather than assume it.
 
 This adds no BPMN capability, operation kind, runtime field, public observation field, profile, or scenario. No admitted model, accepted transition, or canonical projection changes.
 

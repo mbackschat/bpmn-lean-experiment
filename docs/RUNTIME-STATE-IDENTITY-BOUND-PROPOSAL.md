@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Question and current boundary
@@ -178,8 +178,10 @@ Reopen if a family's write discipline changes, if the issuing discipline is disc
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `d8c1091e90c7ff128376633764a6f593fcde8b54` | `fork-turns-none` | `approve-with-required-edits` | `056bd31d45677ec31576388d9fe679eff2538deb` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `07820fba191851920cd051880fb69fa08cac63a5` | `fork-turns-none` | `approve-with-required-edits` | `32a1fef88e91dea5669ada661edffceae054d0f0` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The semantic-checkpoint review of `07820fba191851920cd051880fb69fa08cac63a5` returned `approve-with-required-edits`. The same reviewer audited `32a1fef88e91dea5669ada661edffceae054d0f0` and closed every required finding: the false Event-race same-change attribution, stale owner headroom, incomplete hard-bound cost provenance, missing TypeScript aggregate source-map inventory, and incomplete routed review packet. The audit found no change to the selected account, public contract, exclusions, or evidence strategy.
 
 Cold proposal review is required because this changes which runtime states the account admits and narrows a named absence, so it changes both admission and the proof boundary. Owner approval is required after that review and before implementation.
 

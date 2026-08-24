@@ -16,7 +16,7 @@ The MUE acceleration procedure is classified non-material under [the negative ca
 
 For the current MUE programme, the owner authorizes pushes at the triggers in [the three-level verification policy](TESTING-SPEC.md#three-level-verification-policy) after every selected pre-push entry point passes. This authorizes neither pushing an unverified target nor bypassing a required review or gate.
 
-The owner-approved [runtime-state identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) is implemented at its semantic checkpoint. Cost selected the proposal's consumer-bound subset: User Task, Timer, and Activity identities are bounded in Lean and TypeScript, the defect gates command and continuation admission, and body turnover derives its wait-key freshness premise from well-formedness. Message, Effect, Event race, Call, ordinary Scope, the called-root exclusion, general preservation, the issuing discipline, non-reissue, and Multi-Instance execution registration remain unchanged and open.
+The owner-approved [runtime-state identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) is implemented and independently approved at its semantic checkpoint, with closure review next. Cost selected the proposal's consumer-bound subset: User Task, Timer, and Activity identities are bounded in Lean and TypeScript, the defect gates command and continuation admission, and body turnover derives its wait-key freshness premise from well-formedness. Message, Effect, Event race, Call, ordinary Scope, the called-root exclusion, general preservation, the issuing discipline, non-reissue, and Multi-Instance execution registration remain unchanged and open.
 
 ## Ordered work
 
@@ -41,7 +41,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: generate the immutable [identity-bound checkpoint](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) packet, spawn a `fork-turns-none` cold reviewer without overrides, and run the complete gate concurrently against that commit. Pause repository writes until both finish. Correct required findings, then close without widening beyond User Task, Timer, and Activity or claiming non-reissue.
+Next action: commit the [identity-bound closure target](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) with its checkpoint receipt, reproducible cost row, and exact current status; run the complete gate against that target; generate the warm-continuity manifest from checkpoint correction `32a1fef88e91dea5669ada661edffceae054d0f0`; and return the closure packet to the exact checkpoint reviewer. Pause repository writes until the gate and review finish. After approval, record the closure receipt, graduate the stable contract into the invariant specification without changing the reviewed account, and resume the active Sequential Multi-Instance work.
 
 Registration still needs a governed account discharging the Activity-family issuing discipline. This is selected over narrowing `ActivityOccurrenceId` because it is additive, contract-preserving, and reusable.
 
