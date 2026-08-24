@@ -16,15 +16,19 @@ import type {
 } from "./confirmed-process-instance-contracts.js";
 import {
   decodeDirectIntent,
+  decodeStartCommandBytes,
   decodePublicInstance,
   encodeDirectIntent,
   encodePublicInstance,
   requireAllowedTransition,
+  requireDirectEvidencePair,
   requireState,
   sameIntent,
   samePublication,
+  sameStartCommandBytes,
   snapshotConfirmedPublication,
   snapshotDirectIntent,
+  snapshotStartCommandBytes,
 } from "./confirmed-process-instance-values.js";
 import {
   encodePostgresqlText,
@@ -49,6 +53,7 @@ export class PostgresqlConfirmedProcessInstanceRepository
     return await this.#insert(
       publication,
       null,
+      null,
       ConfirmedProcessInstanceState.Confirmed,
     );
   }
@@ -59,6 +64,7 @@ export class PostgresqlConfirmedProcessInstanceRepository
     return await this.#insert(
       reservation,
       encodeDirectIntent(snapshotDirectIntent(reservation.intent)),
+      snapshotStartCommandBytes(reservation.startCommandBytes),
       ConfirmedProcessInstanceState.Reserved,
     );
   }
@@ -146,16 +152,19 @@ export class PostgresqlConfirmedProcessInstanceRepository
   async #insert(
     publication: ConfirmedProcessInstancePublication,
     intentJson: string | null,
+    startCommandBytes: Uint8Array | null,
     state: ConfirmedProcessInstanceState,
   ): Promise<ConfirmedProcessInstanceReservationResult> {
     const exact = snapshotConfirmedPublication(publication);
+    requireDirectEvidencePair(decodeDirectIntent(intentJson), startCommandBytes, state);
     return await this.#runtime.transaction(async (session) => {
       const inserted = await session.query({
         text: `
           INSERT INTO bpmn_platform.confirmed_process_instances (
             process_instance_id, public_instance_json, work_locator,
-            direct_intent_json, state, operate_pending, work_pending
-          ) VALUES ($1, $2, $3, $4, $5, $6, $6)
+            direct_intent_json, direct_start_command,
+            state, operate_pending, work_pending
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
           ON CONFLICT (process_instance_id) DO NOTHING
           RETURNING *
         `,
@@ -164,6 +173,7 @@ export class PostgresqlConfirmedProcessInstanceRepository
           encodePublicInstance(exact.instance),
           encodePostgresqlText(exact.locator),
           intentJson,
+          startCommandBytes === null ? null : Buffer.from(startCommandBytes),
           state,
           state === ConfirmedProcessInstanceState.Confirmed,
         ],
@@ -188,7 +198,8 @@ export class PostgresqlConfirmedProcessInstanceRepository
       const existing = decodeRow(existingRow);
       if (
         !samePublication(existing, exact) ||
-        !sameIntent(existing.intent, decodeDirectIntent(intentJson))
+        !sameIntent(existing.intent, decodeDirectIntent(intentJson)) ||
+        !sameStartCommandBytes(existing.startCommandBytes, startCommandBytes)
       ) {
         throw new ConfirmedProcessInstanceIntegrityError(
           exact.instance.processInstanceId,
@@ -214,17 +225,34 @@ export function decodePostgresqlConfirmedProcessInstanceRecord(
     if (instance.processInstanceId !== processInstanceId) {
       throw new TypeError("stored public identity disagrees with its primary key");
     }
+    const intent = decodeDirectIntent(requireNullableString(row, "direct_intent_json"));
+    const startCommandBytes = decodeStartCommandBytes(
+      requireNullablePostgresqlBytes(row, "direct_start_command"),
+    );
+    const state = requireState(requireNonemptyString(row, "state"));
+    requireDirectEvidencePair(intent, startCommandBytes, state);
     return {
       instance,
       locator: requireNonemptyByteText(row, "work_locator"),
-      intent: decodeDirectIntent(requireNullableString(row, "direct_intent_json")),
-      state: requireState(requireNonemptyString(row, "state")),
+      intent,
+      startCommandBytes,
+      state,
       operatePending: requireBoolean(row, "operate_pending"),
       workPending: requireBoolean(row, "work_pending"),
     };
   } catch (error: unknown) {
     throw new ConfirmedProcessInstanceStoredValueError(error);
   }
+}
+
+function requireNullablePostgresqlBytes(
+  row: PostgresqlRow,
+  field: string,
+): Uint8Array | null {
+  const value = row[field];
+  if (value === null) return null;
+  if (value instanceof Uint8Array) return Uint8Array.from(value);
+  throw new TypeError(`PostgreSQL stored value has invalid ${field}`);
 }
 
 const decodeRow = decodePostgresqlConfirmedProcessInstanceRecord;

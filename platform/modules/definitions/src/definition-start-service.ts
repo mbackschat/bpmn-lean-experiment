@@ -9,7 +9,14 @@ import type {
   DefinitionVersionStartRequest,
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
-import type { DeployedDefinitionVersion } from "@bpmn-lean/platform-contracts";
+import {
+  decodeCanonicalDefinitionVersionStartCommand,
+  serializeDefinitionVersionStartCommand,
+} from "@bpmn-lean/platform-contracts";
+import type {
+  DefinitionVersionStartCommand,
+  DeployedDefinitionVersion,
+} from "@bpmn-lean/platform-contracts";
 
 import {
   DefinitionArtifactIntegrityError,
@@ -62,7 +69,12 @@ export class DefinitionStartService {
 
   async start(
     reference: DefinitionReference,
+    command: DefinitionVersionStartCommand,
   ): Promise<DefinitionVersionStartResult> {
+    const startCommandBytes = serializeDefinitionVersionStartCommand(command);
+    const capturedCommand = decodeCanonicalDefinitionVersionStartCommand(
+      startCommandBytes,
+    );
     const selectedReference = cloneReference(reference);
     const stored = await this.#repository.get(selectedReference);
     if (stored === null) {
@@ -106,6 +118,7 @@ export class DefinitionStartService {
       semanticProfile: definition.semanticProfile,
       expectedProcessId: definition.processId,
       processInstanceId,
+      initialVariables: capturedCommand.initialVariables,
     } satisfies DefinitionVersionStartRequest;
     const prepared = await this.#starter.prepareDefinitionVersion(request);
     requireExactDefinitionBinding(
@@ -128,8 +141,19 @@ export class DefinitionStartService {
               instance,
               locator: prepared.locator,
               intent: prepared.intent,
+              startCommandBytes: Uint8Array.from(startCommandBytes),
             },
-            this.#directHost(request, prepared.intent, definition, selectedReference),
+            this.#directHost(
+              {
+                ...request,
+                initialVariables: decodeCanonicalDefinitionVersionStartCommand(
+                  startCommandBytes,
+                ).initialVariables,
+              },
+              prepared.intent,
+              definition,
+              selectedReference,
+            ),
           );
         } catch (error: unknown) {
           if (error instanceof ConfirmedProcessInstanceIntegrityError) {
@@ -182,6 +206,17 @@ export class DefinitionStartService {
             evidence: "reserved direct start has an unsupported intent protocol",
           };
         }
+        let initialVariables;
+        try {
+          initialVariables = decodeCanonicalDefinitionVersionStartCommand(
+            Uint8Array.from(reservation.startCommandBytes),
+          ).initialVariables;
+        } catch {
+          return {
+            status: "integrityFailure",
+            evidence: "reserved direct start has invalid retained command bytes",
+          };
+        }
         const reference = {
           processId: reservation.instance.definition.processId,
           version: reservation.instance.definition.version,
@@ -213,6 +248,7 @@ export class DefinitionStartService {
           semanticProfile: definition.semanticProfile,
           expectedProcessId: definition.processId,
           processInstanceId: reservation.instance.processInstanceId,
+          initialVariables,
         } satisfies DefinitionVersionStartRequest;
         return this.#directHost(
           request,

@@ -264,6 +264,7 @@ export function directReservation(
   return {
     ...confirmedPublication(processInstanceId, definition),
     intent: { protocol: "direct-start-v1", intentSha256: "d".repeat(64) },
+    startCommandBytes: new TextEncoder().encode('{"initialVariables":[]}'),
   };
 }
 

@@ -23,6 +23,7 @@ import {
   createCachedLocalEnvironment,
   createHostEffectActivities,
   isCompletedProcessReceipt,
+  readTestProcessTerminalResult,
   submitUserTaskCompletionAtWorkflowId,
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
@@ -249,8 +250,8 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       throw new TypeError("scheduled Process completion did not return a semantic command result");
     }
     assert.equal(command.outcome, "committed");
-    const receipt = await withDeadline(
-      handle.result(),
+    const { receipt } = await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
       "scheduled version-1 Process completion",
     );

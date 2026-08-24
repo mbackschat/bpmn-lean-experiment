@@ -3,6 +3,7 @@ import {
   EngineDefinitionCompilationStatus,
   EngineDefinitionStartDescriptionStatus,
   EngineDefinitionStartStatus,
+  EngineVariableValueKind,
   compileBpmnDefinition,
   describeBpmnDefinitionVersionStart,
   prepareBpmnDefinitionVersionStart,
@@ -14,9 +15,14 @@ import type {
   EngineDefinitionCompilationResult,
   EngineDefinitionStartDescriptionResult,
   EngineDefinitionStartIntent,
+  EngineDefinitionStartPreparationRequest,
   EngineDefinitionStartPreparationResult,
   EngineDefinitionStartResult,
 } from "@bpmn-lean/engine-api";
+import type {
+  VariableBinding as PlatformVariableBinding,
+  VariableValue as PlatformVariableValue,
+} from "@bpmn-lean/platform-contracts";
 import {
   createLazyTemporalClientRuntime,
 } from "@bpmn-lean/temporal-client/definition-start";
@@ -93,6 +99,7 @@ export type DefinitionVersionStartRequest = Readonly<{
   semanticProfile: string;
   expectedProcessId: string;
   processInstanceId: string;
+  initialVariables: readonly PlatformVariableBinding[];
 }>;
 
 export type PreparedDefinitionVersionStartRequest =
@@ -193,6 +200,7 @@ export class BpmnEngineGateway
   ): Promise<DefinitionStartResult> {
     return startBpmnDefinitionVersion({
       ...request,
+      initialVariables: toEngineVariableBindings(request.initialVariables),
       limits: {
         maxBytes: this.limits.maxSourceBytes,
         parserDeadlineMs: this.limits.parserDeadlineMs,
@@ -207,6 +215,7 @@ export class BpmnEngineGateway
   ): Promise<DefinitionStartPreparationResult> {
     const result = await prepareBpmnDefinitionVersionStart({
       ...request,
+      initialVariables: toEngineVariableBindings(request.initialVariables),
       limits: {
         maxBytes: this.limits.maxSourceBytes,
         parserDeadlineMs: this.limits.parserDeadlineMs,
@@ -226,6 +235,7 @@ export class BpmnEngineGateway
   ): Promise<DefinitionStartResult> {
     return startPreparedBpmnDefinitionVersion({
       ...request,
+      initialVariables: toEngineVariableBindings(request.initialVariables),
       limits: {
         maxBytes: this.limits.maxSourceBytes,
         parserDeadlineMs: this.limits.parserDeadlineMs,
@@ -243,6 +253,34 @@ export class BpmnEngineGateway
       temporalClient: this.temporalClient,
       taskQueue: this.temporalTaskQueue,
     });
+  }
+}
+
+function toEngineVariableBindings(
+  bindings: readonly PlatformVariableBinding[],
+): EngineDefinitionStartPreparationRequest["initialVariables"] {
+  return bindings.map(({ name, value }) => ({
+    name,
+    value: toEngineVariableValue(value),
+  }));
+}
+
+function toEngineVariableValue(
+  value: PlatformVariableValue,
+): EngineDefinitionStartPreparationRequest["initialVariables"][number]["value"] {
+  switch (value.kind) {
+    case "boolean":
+      return { kind: EngineVariableValueKind.Boolean, value: value.value };
+    case "integer":
+      return { kind: EngineVariableValueKind.Integer, value: value.value };
+    case "string":
+      return { kind: EngineVariableValueKind.String, value: value.value };
+    case "stringList":
+      return { kind: EngineVariableValueKind.StringList, value: [...value.value] };
+    case "null":
+      return { kind: EngineVariableValueKind.Null };
+    default:
+      return assertNever(value);
   }
 }
 

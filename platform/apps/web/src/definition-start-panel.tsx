@@ -28,7 +28,7 @@ export function DefinitionStartPanel({
     setError(null);
     setResult(null);
     try {
-      setResult(await api.start(definition));
+      setResult(await api.start(definition, { initialVariables: [] }));
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : "Unknown platform failure");
     } finally {

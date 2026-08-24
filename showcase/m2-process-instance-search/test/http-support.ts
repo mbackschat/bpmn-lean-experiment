@@ -64,7 +64,11 @@ export async function startDefinition(
 ): Promise<CapturedJson<StartedProcessInstanceResult>> {
   const captured = await requestJson(
     new URL(definitionVersionStartPath(definition.processId, definition.version), origin),
-    { method: "POST", headers: { accept: "application/json" } },
+    {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: '{"initialVariables":[]}',
+    },
   );
   requireStatus(captured, [201]);
   const result = decodeProcessInstanceStartResult(captured.json);

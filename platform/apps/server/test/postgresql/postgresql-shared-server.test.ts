@@ -166,7 +166,11 @@ if (connectionString === undefined) {
         secondOrigin,
         `/api/v1/definitions/${deployed.processId}/versions/1/start`,
         201,
-        { method: "POST" },
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: '{"initialVariables":[]}',
+        },
       ) as Readonly<{
         status: string;
         instance: Readonly<{ processInstanceId: string }>;
@@ -280,7 +284,7 @@ async function databaseFacts(runtime: PostgresqlRuntime): Promise<Readonly<{
       WHERE singleton = true
     `,
   });
-  assert.deepEqual(result.rows, [{ postgresql_major: 18, schema_epoch: 10 }]);
+  assert.deepEqual(result.rows, [{ postgresql_major: 18, schema_epoch: 11 }]);
   return {
     postgresqlMajor: result.rows[0]!.postgresql_major,
     schemaEpoch: result.rows[0]!.schema_epoch,

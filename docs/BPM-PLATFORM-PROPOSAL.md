@@ -136,7 +136,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 | Styling method | CSS Modules, natively compiled by Vite to ordinary CSS | Owner-selected 2026-08-12 |
 | Charting | Hand-rolled SVG first; a dependency-free library if that proves insufficient | **Open decision** |
 | Live updates | HTTP long-polling on the Temporal pattern, no WebSockets or server-sent events | Proposed |
-| HTTP surface | Fetch-compatible module routes behind the built-in Node HTTP server; deployment uses one bounded raw XML body and exact-version start accepts no body | Implemented for M1 without an external transport dependency |
+| HTTP surface | Fetch-compatible module routes behind the built-in Node HTTP server; deployment uses one bounded raw XML body and exact-version start accepts one strict canonical `initialVariables` command | Implemented for M1 without an external transport dependency |
 | Browser acceptance | Playwright 1.62.1 with its pinned Chromium | Owner-approved and implemented 2026-08-09 as development/CI-only evidence |
 
 ### Approval record for the selected four

@@ -11,6 +11,7 @@ import {
   EngineDefinitionStartIntegrityCode,
   EngineDefinitionStartDescriptionStatus,
   EngineDefinitionStartStatus,
+  EngineVariableValueKind,
   describeBpmnDefinitionVersionStart,
   prepareBpmnDefinitionVersionStart,
   serializeEngineProcessWorkLocator,
@@ -147,6 +148,95 @@ test("starts one empty-variable instance and projects no private handle field", 
   );
 });
 
+test("binds detached canonical initial variables into the direct-start intent and stimulus", async () => {
+  const bytes = await readFile(new URL(
+    "../../../scenarios/sequential-multi-instance/process.bpmn",
+    import.meta.url,
+  ));
+  const calls: unknown[] = [];
+  const initialVariables = [{
+    name: "DataObjectReference_InputItems",
+    value: {
+      kind: EngineVariableValueKind.StringList,
+      value: ["contract", "invoice", "receipt"],
+    },
+  }] as const;
+  const request = {
+    ...requestFor(bytes, fakeClient(calls)),
+    sourceId: "sequential-multi-instance-review",
+    semanticProfile: "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+    expectedProcessId: "Process_SequentialMultiInstanceReview",
+    initialVariables,
+  } satisfies EngineDefinitionStartRequest;
+  const pending = startBpmnDefinitionVersion(request);
+
+  (initialVariables[0].value.value as unknown as string[])[0] = "mutated";
+
+  const result = await pending;
+  assert.equal(result.status, EngineDefinitionStartStatus.Started);
+  const call = requireStartCall(calls[0]);
+  assert.deepEqual(call.options.args[0], {
+    kind: "startProcess",
+    commandId: "start:semantic-instance-42",
+    processId: "Process_SequentialMultiInstanceReview",
+    instanceId: "semantic-instance-42",
+    initialVariables: [{
+      name: "DataObjectReference_InputItems",
+      value: {
+        kind: "stringList",
+        value: ["contract", "invoice", "receipt"],
+      },
+    }],
+  });
+
+  const { temporalClient: _unused, ...preparationRequest } = request;
+  const original = await prepareBpmnDefinitionVersionStart({
+    ...preparationRequest,
+    initialVariables: [{
+      name: "DataObjectReference_InputItems",
+      value: {
+        kind: EngineVariableValueKind.StringList,
+        value: ["contract"],
+      },
+    }],
+  });
+  const changed = await prepareBpmnDefinitionVersionStart({
+    ...preparationRequest,
+    initialVariables: [{
+      name: "DataObjectReference_InputItems",
+      value: {
+        kind: EngineVariableValueKind.StringList,
+        value: ["invoice"],
+      },
+    }],
+  });
+  assert.equal(original.status, EngineDefinitionStartStatus.Admitted);
+  assert.equal(changed.status, EngineDefinitionStartStatus.Admitted);
+  if (
+    original.status !== EngineDefinitionStartStatus.Admitted ||
+    changed.status !== EngineDefinitionStartStatus.Admitted
+  ) {
+    throw new TypeError("Expected both Direct Start preparations to be admitted");
+  }
+  assert.notEqual(original.intent.intentSha256, changed.intent.intentSha256);
+});
+
+test("rejects a noncanonical initial-variable patch before Temporal start", async () => {
+  const bytes = await readFile(admittedSource);
+  const calls: unknown[] = [];
+  await assert.rejects(
+    startBpmnDefinitionVersion({
+      ...requestFor(bytes, fakeClient(calls)),
+      initialVariables: [
+        { name: "zeta", value: { kind: EngineVariableValueKind.Null } },
+        { name: "alpha", value: { kind: EngineVariableValueKind.Null } },
+      ],
+    }),
+    /initialVariables must be a canonical variable patch/u,
+  );
+  assert.equal(calls.length, 0);
+});
+
 test("snapshots caller-owned bytes and scalars before asynchronous compilation", async () => {
   const bytes = await readFile(admittedSource);
   const calls: unknown[] = [];
@@ -234,6 +324,7 @@ function requestFor(
     semanticProfile,
     expectedProcessId: processId,
     processInstanceId: "semantic-instance-42",
+    initialVariables: [],
     limits: { ...limits },
     temporalClient,
     taskQueue: "m1-start-queue",

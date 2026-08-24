@@ -26,6 +26,8 @@ import {
   PostgresqlDirectStartRecoveryStep,
 } from "@bpmn-lean/platform-definitions";
 import type {
+  ConfirmedProcessInstanceReservationResult,
+  DirectProcessInstanceReservation,
   DefinitionMetadata,
   DefinitionRepository,
   ExactArtifactStore,
@@ -51,7 +53,7 @@ const definition: DefinitionMetadata = {
 test("recovers a lost direct-start response by describing without redispatch", async () => {
   const fixture = createFixture("matching");
 
-  const result = await fixture.service.start(reference());
+  const result = await fixture.service.start(reference(), { initialVariables: [] });
 
   assert.equal(result.status, DefinitionVersionStartStatus.Started);
   assert.equal(fixture.preparedStarts, 1);
@@ -62,7 +64,7 @@ test("restart reconciliation describes an uncertain direct start without redispa
   const fixture = createFixture("missing");
 
   await assert.rejects(
-    fixture.service.start(reference()),
+    fixture.service.start(reference(), { initialVariables: [] }),
     (error: unknown) => error instanceof DefinitionStartIntegrityError,
   );
   fixture.setDescription("matching");
@@ -91,6 +93,7 @@ test("restart dispatches one durable reserved direct start and never redispatche
       protocol: "bpmn-direct-start-v1",
       intentSha256: "e".repeat(64),
     },
+    startCommandBytes: new TextEncoder().encode('{"initialVariables":[]}'),
   } as const;
   let starts = 0;
   let describes = 0;
@@ -154,6 +157,85 @@ test("restart dispatches one durable reserved direct start and never redispatche
   }
 });
 
+test("restart dispatches the exact command captured before a caller mutation", async () => {
+  const repository = new CrashAfterDirectReservationRepository();
+  const dispatchedVariables: unknown[] = [];
+  const publications = new ConfirmedProcessInstancePublicationService({
+    repository,
+    operate: { recordConfirmedProcessInstance: async () => undefined },
+    work: { recordConfirmedProcessInstance: async () => undefined },
+  });
+  const starter: DefinitionVersionStarter = {
+    prepareDefinitionVersion: async (request) => ({
+      status: EngineDefinitionStartStatus.Admitted,
+      source: structuredClone(definition.source),
+      definition: {
+        processId: definition.processId,
+        semanticProfile: definition.semanticProfile,
+      },
+      processInstanceId: request.processInstanceId,
+      locator: "captured-command-locator",
+      intent: {
+        protocol: "bpmn-direct-start-v1",
+        intentSha256: "9".repeat(64),
+      },
+    }),
+    startPreparedDefinitionVersion: async (request) => {
+      dispatchedVariables.push(structuredClone(request.initialVariables));
+      return {
+        status: EngineDefinitionStartStatus.Started,
+        source: structuredClone(definition.source),
+        definition: {
+          processId: definition.processId,
+          semanticProfile: definition.semanticProfile,
+        },
+        processInstanceId: request.processInstanceId,
+      };
+    },
+    describeDefinitionVersionStart: async () => {
+      throw new Error("a reserved recovery must dispatch before describe");
+    },
+    startDefinitionVersion: async () => {
+      throw new Error("legacy single-call direct start must not be used");
+    },
+  };
+  const dependencies = [
+    starter,
+    artifactStore(),
+    definitionRepository(),
+    () => "captured-command-instance",
+    publications,
+  ] as const;
+  const mutableCommand = {
+    initialVariables: [{
+      name: "DataObjectReference_InputItems",
+      value: {
+        kind: "stringList" as const,
+        value: ["contract", "invoice", "receipt"],
+      },
+    }],
+  };
+
+  const interrupted = new DefinitionStartService(...dependencies).start(
+    reference(),
+    mutableCommand,
+  );
+  mutableCommand.initialVariables[0]!.value.value[0] = "mutated-after-capture";
+  await assert.rejects(interrupted, /simulated crash after durable reservation/u);
+
+  await new DefinitionStartService(...dependencies).reconcileProcessInstance(
+    "captured-command-instance",
+  );
+
+  assert.deepEqual(dispatchedVariables, [[{
+    name: "DataObjectReference_InputItems",
+    value: {
+      kind: "stringList",
+      value: ["contract", "invoice", "receipt"],
+    },
+  }]]);
+});
+
 test("composition obtains the artifact-validating direct recovery host", async () => {
   let starts = 0;
   let describes = 0;
@@ -204,6 +286,7 @@ test("composition obtains the artifact-validating direct recovery host", async (
       protocol: "bpmn-direct-start-v1",
       intentSha256: "e".repeat(64),
     },
+    startCommandBytes: new TextEncoder().encode('{"initialVariables":[]}'),
   };
 
   assert.deepEqual(await host.start(reservation), { status: "started" });
@@ -297,4 +380,20 @@ function definitionRepository(): DefinitionRepository {
 
 function reference() {
   return { processId: definition.processId, version: definition.version };
+}
+
+class CrashAfterDirectReservationRepository
+  extends InMemoryConfirmedProcessInstanceRepository {
+  #failReservation = true;
+
+  override async reserveDirect(
+    reservation: DirectProcessInstanceReservation,
+  ): Promise<ConfirmedProcessInstanceReservationResult> {
+    const result = await super.reserveDirect(reservation);
+    if (this.#failReservation) {
+      this.#failReservation = false;
+      throw new Error("simulated crash after durable reservation");
+    }
+    return result;
+  }
 }

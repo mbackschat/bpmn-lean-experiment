@@ -181,10 +181,17 @@ test("starts the selected exact version and rejects response identity drift", as
     });
   };
   const client = new DefinitionApiClient("https://platform.test/ignored/", fetcher);
+  const command = {
+    initialVariables: [{
+      name: "DataObjectReference_InputItems",
+      value: { kind: "stringList" as const, value: ["contract", "invoice", "receipt"] },
+    }],
+  };
 
-  const pending = client.start(definition);
+  const pending = client.start(definition, command);
   Object.assign(definition, { processId: "Process_Mutated", version: 99 });
   Object.assign(definition.source, { sha256: "f".repeat(64) });
+  command.initialVariables[0]!.value.value[0] = "mutated";
   release.resolve();
 
   assert.deepEqual(await pending, {
@@ -200,8 +207,11 @@ test("starts the selected exact version and rejects response identity drift", as
   );
   assert.equal(capturedInit?.method, "POST");
   assert.equal(new Headers(capturedInit?.headers).get("accept"), "application/json");
-  assert.equal(new Headers(capturedInit?.headers).get("content-type"), null);
-  assert.equal(capturedInit?.body, undefined);
+  assert.equal(new Headers(capturedInit?.headers).get("content-type"), "application/json");
+  assert.equal(
+    new TextDecoder().decode(new Uint8Array(capturedInit?.body as ArrayBuffer)),
+    '{"initialVariables":[{"name":"DataObjectReference_InputItems","value":{"kind":"stringList","value":["contract","invoice","receipt"]}}]}',
+  );
 
   const driftedClient = new DefinitionApiClient(
     "https://platform.test/",
@@ -214,7 +224,7 @@ test("starts the selected exact version and rejects response identity drift", as
     }),
   );
   await assert.rejects(
-    driftedClient.start(expectedDefinition),
+    driftedClient.start(expectedDefinition, { initialVariables: [] }),
     (error: unknown) =>
       error instanceof DefinitionProtocolError && /requested definition identity/u.test(error.message),
   );
@@ -236,7 +246,7 @@ test("starts the selected exact version and rejects response identity drift", as
     }),
   );
   await assert.rejects(
-    capabilityDriftClient.start(expectedDefinition),
+    capabilityDriftClient.start(expectedDefinition, { initialVariables: [] }),
     (error: unknown) =>
       error instanceof DefinitionProtocolError && /requested definition identity/u.test(error.message),
   );
@@ -279,7 +289,7 @@ test("starts the selected exact version and rejects response identity drift", as
     }),
   );
   await assert.rejects(
-    messageOperationDriftClient.start(messageDefinition),
+    messageOperationDriftClient.start(messageDefinition, { initialVariables: [] }),
     (error: unknown) =>
       error instanceof DefinitionProtocolError && /requested definition identity/u.test(error.message),
   );
@@ -300,7 +310,10 @@ test("accepts closed start rejection and rejects private or status-inconsistent 
     "https://platform.test/",
     async () => jsonResponse(422, rejection),
   );
-  assert.deepEqual(await rejectedClient.start(definition), rejection);
+  assert.deepEqual(
+    await rejectedClient.start(definition, { initialVariables: [] }),
+    rejection,
+  );
 
   for (const [status, value] of [
     [201, rejection],
@@ -321,7 +334,10 @@ test("accepts closed start rejection and rejects private or status-inconsistent 
       "https://platform.test/",
       async () => jsonResponse(status, value),
     );
-    await assert.rejects(client.start(definition), DefinitionProtocolError);
+    await assert.rejects(
+      client.start(definition, { initialVariables: [] }),
+      DefinitionProtocolError,
+    );
   }
 });
 

@@ -8,6 +8,7 @@ import {
 } from "./decoder-primitives.js";
 import {
   EffectExecutionResultKind,
+  executionPublicationStateAcceptedKeys,
   MessageChannelKind,
   ProcessStatus,
   SemanticOperationKind,
@@ -27,6 +28,7 @@ import type {
   StateObservation,
 } from "./execution-publications.js";
 import { requirePublicationVariableValue } from "./execution-publication-variable-value-decoder.js";
+import { requireOpenSequentialMultiInstances } from "./execution-publication-multi-instance-decoder.js";
 
 const lowercaseSha256 = /^[0-9a-f]{64}$/u;
 
@@ -191,11 +193,9 @@ export function requirePublicationState(
 ): StateObservation {
   const label = "execution publication current.state";
   requireObject(value, label);
-  exact(value, label, [
-    "kind", "instanceId", "status", "activeWaits", "openUserTasks",
-    "openMessageSubscriptions", "openTimers", "openEffects", "openIncidents",
-    "variables", "enabledInteractions", "logicalTimeMs",
-  ]);
+  const hasMultiInstances = Object.hasOwn(value, "openMultiInstances");
+  exact(value, label, hasMultiInstances ? executionPublicationStateAcceptedKeys
+    : executionPublicationStateAcceptedKeys.filter((key) => key !== "openMultiInstances"));
   if (readOwn(value, "kind") !== "state" || readOwn(value, "instanceId") !== instanceId) {
     throw new TypeError(`${label} has the wrong instance identity`);
   }
@@ -212,11 +212,18 @@ export function requirePublicationState(
   requireCanonical(effects, (a, b) => compareOccurrence(a.id, b.id), "openEffects");
   const incidents = requireArray(readOwn(value, "openIncidents"), requireOpenIncident, "openIncidents");
   requireCanonical(incidents, (a, b) => compareOccurrence(a.effect.id, b.effect.id), "openIncidents");
+  const multiInstances = hasMultiInstances
+    ? requireOpenSequentialMultiInstances(
+      readOwn(value, "openMultiInstances"),
+      tasks,
+      instanceId,
+    )
+    : [];
   requirePatch(readOwn(value, "variables"), `${label}.variables`);
   const interactions = readOwn(value, "enabledInteractions");
   requireEnabledInteractions(interactions, tasks, messages, incidents, instanceId);
   requireNonnegativeSafeInteger(readOwn(value, "logicalTimeMs"), `${label}.logicalTimeMs`);
-  if (status !== ProcessStatus.Running && [waits, tasks, messages, timers, effects, incidents, interactions]
+  if (status !== ProcessStatus.Running && [waits, tasks, messages, timers, effects, incidents, multiInstances, interactions]
     .some((items) => (items as unknown[]).length !== 0)) {
     throw new TypeError(`terminal ${label} must have no open work`);
   }
@@ -533,7 +540,7 @@ function requireCanonical<T>(
   }
 }
 
-function exact(value: object, label: string, keys: string[]): void {
+function exact(value: object, label: string, keys: ReadonlyArray<string>): void {
   requireExactKeys(value, label, keys);
 }
 

@@ -135,11 +135,6 @@ export async function readBoundedBody(
   return bytes;
 }
 
-/** Start accepts no semantic input; consume the transport stream and require zero bytes. */
-export async function requireEmptyStartBody(request: Request): Promise<void> {
-  return requireEmptyRequestBody(request, "Definition start");
-}
-
 export async function requireEmptyRequestBody(
   request: Request,
   subject: string,

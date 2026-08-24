@@ -148,7 +148,7 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   const taskName = `Review request ${token}`;
   const row = table.getByRole("row").filter({ hasText: taskName });
   await expect(row).toHaveCount(1);
-  await expect(row.getByRole("cell")).toHaveCount(5);
+  await expect(row.getByRole("cell")).toHaveCount(6);
   await expect(row).toContainText("reviewers");
   await expect(row).toContainText("Unclaimed");
   await expect(row.getByRole("button", { name: taskName, exact: true })).toHaveCount(0);

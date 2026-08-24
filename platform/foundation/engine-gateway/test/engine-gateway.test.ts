@@ -120,6 +120,7 @@ test("starts through the exact gateway boundary without exposing the SDK handle"
     semanticProfile,
     expectedProcessId: "Process_SequentialUserTask",
     processInstanceId: "gateway-instance-1",
+    initialVariables: [],
   });
 
   assert.equal(result.status, DefinitionStartStatus.Started);
@@ -144,6 +145,7 @@ test("prepares without SDK calls and retains an opaque locator for exact start",
     semanticProfile,
     expectedProcessId: "Process_SequentialUserTask",
     processInstanceId: "prepared-instance-1",
+    initialVariables: [],
   };
 
   const prepared = await gateway.prepareDefinitionVersion(request);
@@ -159,6 +161,44 @@ test("prepares without SDK calls and retains an opaque locator for exact start",
   });
   assert.equal(started.status, DefinitionStartStatus.Started);
   assert.equal(calls.length, 1);
+});
+
+test("forwards exact Sequential Multi-Instance start data through the gateway", async () => {
+  const bytes = await readFile(new URL(
+    "../../../../scenarios/sequential-multi-instance/process.bpmn",
+    import.meta.url,
+  ));
+  const calls: unknown[] = [];
+  const gateway = new BpmnEngineGateway({
+    maxSourceBytes: 1_048_576,
+    parserDeadlineMs: 1_000,
+    temporalClient: fakeClient(calls),
+    temporalTaskQueue: "mue-alpha-queue",
+  });
+  const initialVariables = [{
+    name: "DataObjectReference_InputItems",
+    value: {
+      kind: "stringList",
+      value: ["contract", "invoice", "receipt"],
+    },
+  }] as const;
+
+  const result = await gateway.startDefinitionVersion({
+    bytes,
+    sourceId: "sequential-multi-instance-review",
+    expectedSha256: sha256(bytes),
+    semanticProfile: "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+    expectedProcessId: "Process_SequentialMultiInstanceReview",
+    processInstanceId: "gateway-multi-instance-1",
+    initialVariables,
+  });
+
+  assert.equal(result.status, DefinitionStartStatus.Started);
+  assert.deepEqual(
+    (calls[0] as { options: { args: [{ initialVariables: unknown }] } })
+      .options.args[0].initialVariables,
+    initialVariables,
+  );
 });
 
 test("constructs a close-idempotent gateway runtime without connecting", async () => {

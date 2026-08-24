@@ -13,6 +13,7 @@ import type {
 } from "@bpmn-lean/platform-definitions";
 
 const publication = confirmedPublication("instance-1", "direct-locator");
+const emptyStartCommandBytes = new TextEncoder().encode('{"initialVariables":[]}');
 
 test("bootstraps every acknowledged confirmed publication without changing delivery markers", async () => {
   const repository = new InMemoryConfirmedProcessInstanceRepository();
@@ -74,6 +75,7 @@ test("enumerates only confirmed rows for retrospective Operate delivery", async 
     {
       ...confirmed,
       intent: null,
+      startCommandBytes: null,
       state: ConfirmedProcessInstanceState.Confirmed,
       operatePending: true,
       workPending: true,
@@ -189,6 +191,7 @@ async function reserve(
       protocol: "bpmn-direct-start-v1",
       intentSha256: processInstanceId.length.toString(16).padStart(64, "0"),
     },
+    startCommandBytes: Uint8Array.from(emptyStartCommandBytes),
   });
 }
 

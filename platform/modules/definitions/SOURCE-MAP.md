@@ -10,7 +10,7 @@ This contributor map groups source responsibilities inside `@bpmn-lean/platform-
 | [`confirmed-process-instance-publication-service.ts`](src/confirmed-process-instance-publication-service.ts), [`confirmed-process-instance-operate-bootstrap.ts`](src/confirmed-process-instance-operate-bootstrap.ts), and `confirmed-process-instance-*.ts` | Durable confirmed-start publication and downstream recovery |
 | `sqlite-*.ts`, `postgresql-*.ts`, and `in-memory-*.ts` under [`src/`](src/) | Local, shared, and test repository implementations; [`postgresql-definition-values.ts`](src/postgresql-definition-values.ts) owns exact PostgreSQL value decoding without becoming a generic repository layer |
 | [`migrations/`](migrations/) | Checksum-bound Definitions tables applied after the artifact-store schema floor |
-| [`http-routes.ts`](src/http-routes.ts), [`http-request.ts`](src/http-request.ts), and [`definition-http-responses.ts`](src/definition-http-responses.ts) | Definition HTTP contribution and transport adaptation |
+| [`http-routes.ts`](src/http-routes.ts), [`http-request.ts`](src/http-request.ts), [`definition-start-http-request.ts`](src/definition-start-http-request.ts), and [`definition-http-responses.ts`](src/definition-http-responses.ts) | Definition HTTP contribution and transport adaptation |
 | [`contracts.ts`](src/contracts.ts), `*-contracts.ts`, and `*-values.ts` under [`src/`](src/) | Module-private ports and immutable value constructors |
 | [`database-schema-epoch.ts`](src/database-schema-epoch.ts) | Shared Definitions schema-epoch admission |
 | [`index.ts`](src/index.ts) | Public package exports |

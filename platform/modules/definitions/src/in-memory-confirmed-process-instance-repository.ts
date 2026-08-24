@@ -12,10 +12,13 @@ import type {
 } from "./confirmed-process-instance-contracts.js";
 import {
   requireAllowedTransition,
+  requireDirectEvidencePair,
   sameIntent,
   samePublication,
+  sameStartCommandBytes,
   snapshotConfirmedPublication,
   snapshotDirectIntent,
+  snapshotStartCommandBytes,
   snapshotRecord,
 } from "./confirmed-process-instance-values.js";
 
@@ -27,7 +30,12 @@ export class InMemoryConfirmedProcessInstanceRepository
   async confirm(
     publication: ConfirmedProcessInstancePublication,
   ): Promise<ConfirmedProcessInstanceReservationResult> {
-    return this.#insert(publication, null, ConfirmedProcessInstanceState.Confirmed);
+    return this.#insert(
+      publication,
+      null,
+      null,
+      ConfirmedProcessInstanceState.Confirmed,
+    );
   }
 
   async reserveDirect(
@@ -36,6 +44,7 @@ export class InMemoryConfirmedProcessInstanceRepository
     return this.#insert(
       reservation,
       snapshotDirectIntent(reservation.intent),
+      snapshotStartCommandBytes(reservation.startCommandBytes),
       ConfirmedProcessInstanceState.Reserved,
     );
   }
@@ -120,14 +129,17 @@ export class InMemoryConfirmedProcessInstanceRepository
   #insert(
     publication: ConfirmedProcessInstancePublication,
     intent: ConfirmedProcessInstanceRecord["intent"],
+    startCommandBytes: ConfirmedProcessInstanceRecord["startCommandBytes"],
     state: ConfirmedProcessInstanceState,
   ): ConfirmedProcessInstanceReservationResult {
     const exact = snapshotConfirmedPublication(publication);
+    requireDirectEvidencePair(intent, startCommandBytes, state);
     const existing = this.#records.get(exact.instance.processInstanceId);
     if (existing !== undefined) {
       if (
         !samePublication(existing, exact) ||
-        !sameIntent(existing.intent, intent)
+        !sameIntent(existing.intent, intent) ||
+        !sameStartCommandBytes(existing.startCommandBytes, startCommandBytes)
       ) {
         throw new ConfirmedProcessInstanceIntegrityError(
           exact.instance.processInstanceId,
@@ -138,6 +150,7 @@ export class InMemoryConfirmedProcessInstanceRepository
     const record = {
       ...exact,
       intent,
+      startCommandBytes,
       state,
       operatePending: state === ConfirmedProcessInstanceState.Confirmed,
       workPending: state === ConfirmedProcessInstanceState.Confirmed,

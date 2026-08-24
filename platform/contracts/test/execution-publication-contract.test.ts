@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -6,6 +7,7 @@ import {
   decodeExecutionPublicationPage,
   decodeExecutionPublicationResult,
   executionPublicationIdentityForPublicProcessInstance,
+  executionPublicationStateAcceptedKeys,
   ExecutionPublicationResultKind,
 } from "@bpmn-lean/platform-contracts";
 
@@ -36,6 +38,84 @@ test("decodes one exact page and every closed result arm", () => {
       afterRevision: 0,
     }), { kind });
   }
+});
+
+test("accepts the exact sequential Multi-Instance progress publication", () => {
+  const livePage = sequentialMultiInstancePublicationPage();
+
+  assert.deepEqual(
+    decodeExecutionPublicationPage(livePage, {
+      ...publicationIdentity,
+      afterRevision: 0,
+      limit: 1,
+    }),
+    livePage,
+  );
+});
+
+test("keeps the strict state-key decoder synchronized with the producer schema", async () => {
+  const schema = JSON.parse(await readFile(
+    new URL("../../../contracts/schemas/scenario.schema.json", import.meta.url),
+    "utf8",
+  )) as {
+    $defs: { stateObservation: { required: string[]; properties: Record<string, unknown> } };
+  };
+  const producer = schema.$defs.stateObservation;
+  assert.deepEqual(
+    Object.keys(producer.properties).toSorted(),
+    [...executionPublicationStateAcceptedKeys].toSorted(),
+  );
+  assert.equal(producer.required.includes("openMultiInstances"), false);
+});
+
+test("rejects recursive Multi-Instance identity, shape, and binding drift", () => {
+  rejectSequentialState((state) => Object.assign(state.openMultiInstances[0]!, { privateController: true }), /public fields/u);
+  rejectSequentialState((state) => Object.assign(state.openMultiInstances[0]!.activeIterations[0]!, { privateIteration: true }), /public fields/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.id.processInstanceId = "other-instance", /identity/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.id.activityElementId = "OtherTask", /exact open task/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.id.activation = 0, /positive safe integer/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.mode = "parallel", /mode/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations[0]!.taskId.processInstanceId = "other-instance", /exact open task/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations[0]!.taskId.elementId = "OtherTask", /exact open task/u);
+  rejectSequentialState((state) => state.openUserTasks = [], /exact open task/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations[0]!.taskInput.value = { kind: "integer", value: 1 }, /string value/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations[0]!.completionBindingName = "", /must not be empty/u);
+});
+
+test("rejects invalid Multi-Instance counts and active-iteration cardinality", () => {
+  rejectSequentialState((state) => state.openMultiInstances[0]!.numberOfActiveInstances = 0, /count identities/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.numberOfTerminatedInstances = 1, /count identities/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.numberOfInstances = 2, /count identities/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.plannedInstanceCount = 4, /count identities/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.numberOfCompletedInstances = Number.MAX_SAFE_INTEGER + 1, /safe integer/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations[0]!.loopCounter = 1, /completed count/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations = [], /exactly one/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations.push(
+    structuredClone(state.openMultiInstances[0]!.activeIterations[0]!),
+  ), /exactly one/u);
+});
+
+test("requires canonical controllers and globally unique active iteration tasks", () => {
+  rejectSequentialState((state) => {
+    const second = sequentialMultiInstanceController(2, 2);
+    addOpenTask(state, second.activeIterations[0]!.taskId);
+    state.openMultiInstances = [second, state.openMultiInstances[0]!];
+  }, /canonical/u);
+  rejectSequentialState((state) => {
+    const duplicateTaskController = sequentialMultiInstanceController(2, 1);
+    state.openMultiInstances.push(duplicateTaskController);
+  }, /duplicate active task/u);
+});
+
+test("permits terminal omission or emptiness but rejects live progress on a terminal state", () => {
+  const terminal = sequentialMultiInstancePublicationPage();
+  terminal.current.state.status = "completed";
+  terminal.current.state.activeWaits = [];
+  terminal.current.state.openUserTasks = [];
+  terminal.current.state.openMultiInstances = [];
+  terminal.current.state.enabledInteractions = [];
+  assert.deepEqual(decodeSequentialPage(terminal), terminal);
+  rejectSequentialState((state) => state.status = "completed", /terminal/u);
 });
 
 test("derives the exact current admitted Product 2 identity without a host locator", () => {
@@ -312,3 +392,114 @@ test("requires a revision-zero contiguous export and a matching head", () => {
     /current|head/u,
   );
 });
+
+type MutableTaskId = {
+  processInstanceId: string;
+  elementId: string;
+  activation: number;
+};
+
+type MutableSequentialController = {
+  id: { processInstanceId: string; activityElementId: string; activation: number };
+  mode: string;
+  plannedInstanceCount: number;
+  pendingItemCount: number;
+  numberOfInstances: number;
+  numberOfActiveInstances: number;
+  numberOfCompletedInstances: number;
+  numberOfTerminatedInstances: number;
+  activeIterations: Array<{
+    loopCounter: number;
+    taskId: MutableTaskId;
+    taskInput: { name: string; value: { kind: string; value: string | number } };
+    completionBindingName: string;
+  }>;
+};
+
+type MutableSequentialState = {
+  status: string;
+  activeWaits: Array<{ elementId: string; kind: string; multiplicity: number }>;
+  openUserTasks: Array<{ id: MutableTaskId; name: string; state: string }>;
+  openMultiInstances: MutableSequentialController[];
+  enabledInteractions: Array<{ kind: string; taskId: MutableTaskId }>;
+};
+
+type MutableSequentialPage = Record<string, unknown> & {
+  current: Record<string, unknown> & { state: MutableSequentialState };
+};
+
+function sequentialMultiInstanceController(
+  activityActivation = 1,
+  taskActivation = 1,
+): MutableSequentialController {
+  const taskId = {
+    processInstanceId: publicationIdentity.processInstanceId,
+    elementId: "UserTask_Review",
+    activation: taskActivation,
+  };
+  return {
+    id: {
+      processInstanceId: publicationIdentity.processInstanceId,
+      activityElementId: taskId.elementId,
+      activation: activityActivation,
+    },
+    mode: "sequential",
+    plannedInstanceCount: 3,
+    pendingItemCount: 2,
+    numberOfInstances: 1,
+    numberOfActiveInstances: 1,
+    numberOfCompletedInstances: 0,
+    numberOfTerminatedInstances: 0,
+    activeIterations: [{
+      loopCounter: 0,
+      taskId,
+      taskInput: {
+        name: "DataInput_CurrentItem",
+        value: { kind: "string", value: "contract" },
+      },
+      completionBindingName: "DataOutput_CurrentResult",
+    }],
+  };
+}
+
+function sequentialMultiInstancePublicationPage(): MutableSequentialPage {
+  const page = executionPublicationPage();
+  const controller = sequentialMultiInstanceController();
+  const taskId = controller.activeIterations[0]!.taskId;
+  return {
+    ...page,
+    current: {
+      ...page.current!,
+      state: {
+        ...page.current!.state,
+        activeWaits: [{ elementId: taskId.elementId, kind: "userTask", multiplicity: 1 }],
+        openUserTasks: [{ id: taskId, name: "Review item", state: "active" }],
+        openMultiInstances: [controller],
+        enabledInteractions: [{ kind: "completeUserTaskInstance", taskId }],
+      },
+    },
+  } as MutableSequentialPage;
+}
+
+function addOpenTask(state: MutableSequentialState, taskId: MutableTaskId): void {
+  state.openUserTasks.push({ id: taskId, name: "Review item", state: "active" });
+  state.enabledInteractions.push({ kind: "completeUserTaskInstance", taskId });
+  state.activeWaits[0]!.multiplicity += 1;
+}
+
+function decodeSequentialPage(page: MutableSequentialPage) {
+  return decodeExecutionPublicationPage(page, {
+    ...publicationIdentity,
+    afterRevision: 0,
+    limit: 1,
+  });
+}
+
+function rejectSequentialState(
+  mutate: (state: MutableSequentialState) => unknown,
+  expected: RegExp,
+): void {
+  const page = sequentialMultiInstancePublicationPage();
+  mutate(page.current.state);
+  assert.throws(() => decodeSequentialPage(page), expected);
+}

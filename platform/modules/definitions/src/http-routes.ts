@@ -22,6 +22,7 @@ import type {
   DefinitionVersionStartResult,
 } from "./contracts.js";
 import type { DefinitionDeploymentService } from "./definition-deployment-service.js";
+import { readDefinitionVersionStartCommand } from "./definition-start-http-request.js";
 import {
   toPublicDefinition,
   toPublicSource,
@@ -39,7 +40,6 @@ import {
   parseDeploymentQuery,
   parsePositiveVersion,
   readBoundedBody,
-  requireEmptyStartBody,
   requireDeploymentMediaType,
 } from "./http-request.js";
 
@@ -280,11 +280,14 @@ export class DefinitionHttpRoutes {
     url: URL,
   ): Promise<Response> {
     requireNoQuery(request, url);
-    await requireEmptyStartBody(request);
-    const result = await this.#startService.start({
-      processId: decodeProcessId(rawProcessId),
-      version: parsePositiveVersion(rawVersion),
-    });
+    const command = await readDefinitionVersionStartCommand(request);
+    const result = await this.#startService.start(
+      {
+        processId: decodeProcessId(rawProcessId),
+        version: parsePositiveVersion(rawVersion),
+      },
+      command,
+    );
     switch (result.status) {
       case DefinitionVersionStartStatus.Started:
         return jsonResponse(201, toPublicStartResult(result));

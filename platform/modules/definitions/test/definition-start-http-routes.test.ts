@@ -56,8 +56,14 @@ type StartBehavior = typeof StartBehavior[keyof typeof StartBehavior];
 
 test("starts an exact definition version and returns only the public instance identity", async () => {
   const fixture = createFixture();
+  const command = {
+    initialVariables: [{
+      name: "DataObjectReference_InputItems",
+      value: { kind: "stringList", value: ["contract", "invoice", "receipt"] },
+    }],
+  } as const;
 
-  const response = await fixture.routes.handle(startRequest());
+  const response = await fixture.routes.handle(startRequest(command));
 
   assert.equal(response?.status, 201);
   assert.equal(response?.headers.get("content-type"), "application/json; charset=utf-8");
@@ -70,6 +76,7 @@ test("starts an exact definition version and returns only the public instance id
   });
   assert.equal(fixture.repositoryGets, 1);
   assert.equal(fixture.startCalls, 1);
+  assert.deepEqual(fixture.initialVariableCalls, [command.initialVariables]);
 });
 
 test("maps pre-start rejection to 422 with the exact definition and opaque failure", async () => {
@@ -101,41 +108,44 @@ test("returns 404 for an unknown exact version without entering engine start", a
   );
 });
 
-test("rejects query, media type, and claimed body input before service entry", async () => {
+test("rejects query, missing or wrong media type, and malformed claimed length before service entry", async () => {
   const cases = [
-    new Request(`${startUrl()}?unexpected=1`, { method: "POST" }),
+    { request: startRequest({ initialVariables: [] }, `${startUrl()}?unexpected=1`), status: 400 },
+    { request: new Request(startUrl(), { method: "POST" }), status: 415 },
     new Request(startUrl(), {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "text/plain" },
+      body: '{"initialVariables":[]}',
     }),
-    new Request(startUrl(), {
+    { request: new Request(startUrl(), {
       method: "POST",
-      headers: { "content-length": "1" },
-    }),
-    new Request(startUrl(), {
-      method: "POST",
-      headers: { "content-length": "invalid" },
-    }),
+      headers: { "content-type": "application/json", "content-length": "invalid" },
+      body: '{"initialVariables":[]}',
+    }), status: 400 },
   ];
-  for (const request of cases) {
+  for (const candidate of cases) {
+    const { request, status } = candidate instanceof Request
+      ? { request: candidate, status: 415 }
+      : candidate;
     const fixture = createFixture();
     const response = await fixture.routes.handle(request);
-    assert.equal(response?.status, 400, request.url);
+    assert.equal(response?.status, status, request.url);
     assert.equal(fixture.repositoryGets, 0, request.url);
     assert.equal(fixture.startCalls, 0, request.url);
   }
 });
 
-test("rejects a chunked nonempty body without Content-Length before service entry", async () => {
+test("rejects malformed chunked JSON and recursively invalid commands before service entry", async () => {
   const fixture = createFixture();
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(new TextEncoder().encode("hidden input"));
+      controller.enqueue(new TextEncoder().encode('{"initialVariables":['));
       controller.close();
     },
   });
   const init = {
     method: "POST",
+    headers: { "content-type": "application/json" },
     body: stream,
     duplex: "half",
   } satisfies RequestInit & { duplex: "half" };
@@ -145,9 +155,16 @@ test("rejects a chunked nonempty body without Content-Length before service entr
   assert.equal(response?.status, 400);
   assert.equal(fixture.repositoryGets, 0);
   assert.equal(fixture.startCalls, 0);
+
+  const invalid = await fixture.routes.handle(startRequest({
+    initialVariables: [{ name: "input", value: { kind: "integer", value: -1 } }],
+  }));
+  assert.equal(invalid?.status, 422);
+  assert.equal(fixture.repositoryGets, 0);
+  assert.equal(fixture.startCalls, 0);
 });
 
-test("accepts a transport stream only when it contains no body bytes", async () => {
+test("requires a nonempty start-command body", async () => {
   const fixture = createFixture();
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -156,15 +173,15 @@ test("accepts a transport stream only when it contains no body bytes", async () 
   });
   const init = {
     method: "POST",
-    headers: { "content-length": "0" },
+    headers: { "content-type": "application/json", "content-length": "0" },
     body: stream,
     duplex: "half",
   } satisfies RequestInit & { duplex: "half" };
 
   const response = await fixture.routes.handle(new Request(startUrl(), init));
 
-  assert.equal(response?.status, 201);
-  assert.equal(fixture.startCalls, 1);
+  assert.equal(response?.status, 400);
+  assert.equal(fixture.startCalls, 0);
 });
 
 test("returns Allow POST for every wrong method on the recognized start path", async () => {
@@ -187,7 +204,7 @@ test("rejects malformed references and leaves unknown paths unclaimed", async ()
   ];
   for (const url of invalidUrls) {
     const fixture = createFixture();
-    const response = await fixture.routes.handle(new Request(url, { method: "POST" }));
+    const response = await fixture.routes.handle(startRequest({ initialVariables: [] }, url));
     assert.equal(response?.status, 400, url);
     assert.equal(fixture.repositoryGets, 0, url);
   }
@@ -221,6 +238,7 @@ function createFixture(
   repositoryGets: number;
   routes: DefinitionHttpRoutes;
   startCalls: number;
+  initialVariableCalls: unknown[];
 }> {
   let repositoryGets = 0;
   const repository: DefinitionRepository = {
@@ -243,9 +261,11 @@ function createFixture(
     get: async () => Uint8Array.from(bytes),
   };
   let startCalls = 0;
+  const initialVariableCalls: unknown[] = [];
   const starter: DefinitionVersionStarter = {
     prepareDefinitionVersion: async (request) => {
       startCalls += 1;
+      initialVariableCalls.push(structuredClone(request.initialVariables));
       const common = {
         source: { ...storedDefinition.source },
         definition: {
@@ -347,6 +367,7 @@ function createFixture(
       return repositoryGets;
     },
     routes,
+    initialVariableCalls,
     get startCalls() {
       return startCalls;
     },
@@ -357,8 +378,15 @@ function startUrl(): string {
   return "http://platform.test/api/v1/definitions/Process%2FOne/versions/1/start";
 }
 
-function startRequest(): Request {
-  return new Request(startUrl(), { method: "POST" });
+function startRequest(
+  command: unknown = { initialVariables: [] },
+  url = startUrl(),
+): Request {
+  return new Request(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(command),
+  });
 }
 
 async function responseJson(response: Response | null): Promise<unknown> {

@@ -91,7 +91,10 @@ test("direct start suppresses success when recording the exact identity fails", 
   );
 
   await assert.rejects(
-    service.start({ processId: definition.processId, version: definition.version }),
+    service.start(
+      { processId: definition.processId, version: definition.version },
+      { initialVariables: [] },
+    ),
     /recording failed/u,
   );
 
@@ -210,10 +213,13 @@ test("non-confirmed producer states never record an instance", async () => {
     () => "rejected-instance",
     confirmedInstances(publisher),
   );
-  await rejectedStart.start({
-    processId: definition.processId,
-    version: definition.version,
-  });
+  await rejectedStart.start(
+    {
+      processId: definition.processId,
+      version: definition.version,
+    },
+    { initialVariables: [] },
+  );
 
   const schedules = new MemoryScheduleRepository();
   await new DefinitionScheduleService({

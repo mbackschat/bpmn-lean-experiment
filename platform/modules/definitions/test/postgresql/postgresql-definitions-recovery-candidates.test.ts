@@ -267,6 +267,7 @@ function directReservation(processInstanceId: string, definition: DefinitionMeta
       protocol: "bpmn-direct-start-v1",
       intentSha256: "d".repeat(64),
     },
+    startCommandBytes: new TextEncoder().encode('{"initialVariables":[]}'),
   };
 }
 

@@ -33,6 +33,7 @@ import type {
 } from "@bpmn-lean/platform-definitions";
 
 const encoder = new TextEncoder();
+const emptyStartCommand = { initialVariables: [] } as const;
 
 test("starts the exact requested stored version instead of the latest version", async () => {
   const versionOneBytes = encoder.encode("<process version='one'/>");
@@ -44,7 +45,16 @@ test("starts the exact requested stored version instead of the latest version", 
     [versionTwo.source.sha256, versionTwoBytes],
   ]));
 
-  const result = await fixture.service.start({ processId: "Process_A", version: 1 });
+  const command = {
+    initialVariables: [{
+      name: "DataObjectReference_InputItems",
+      value: { kind: "stringList", value: ["contract", "invoice", "receipt"] },
+    }],
+  } as const;
+  const result = await fixture.service.start(
+    { processId: "Process_A", version: 1 },
+    command,
+  );
 
   assert.equal(result.status, DefinitionVersionStartStatus.Started);
   assert.deepEqual(fixture.repositoryReferences, [{ processId: "Process_A", version: 1 }]);
@@ -56,6 +66,7 @@ test("starts the exact requested stored version instead of the latest version", 
     semanticProfile: "profile-v1",
     expectedProcessId: "Process_A",
     processInstanceId: "instance-1",
+    initialVariables: command.initialVariables,
   }]);
   assert.deepEqual(result, {
     status: DefinitionVersionStartStatus.Started,
@@ -69,7 +80,10 @@ test("starts the exact requested stored version instead of the latest version", 
 test("returns not found without reading artifacts, generating identity, or starting", async () => {
   const fixture = createFixture([], new Map());
 
-  const result = await fixture.service.start({ processId: "Missing", version: 3 });
+  const result = await fixture.service.start(
+    { processId: "Missing", version: 3 },
+    emptyStartCommand,
+  );
 
   assert.deepEqual(result, {
     status: DefinitionVersionStartStatus.NotFound,
@@ -92,7 +106,7 @@ test("refuses a repository that redirects an exact reference to the latest versi
   );
 
   await assert.rejects(
-    fixture.service.start({ processId: "Process_A", version: 1 }),
+    fixture.service.start({ processId: "Process_A", version: 1 }, emptyStartCommand),
     (error: unknown) => error instanceof DefinitionStartIntegrityError,
   );
   assert.deepEqual(fixture.artifactGets, []);
@@ -115,7 +129,7 @@ test("rejects missing and wrong-length artifacts before identity generation or s
     const fixture = createFixture([stored], candidate.artifacts);
 
     await assert.rejects(
-      fixture.service.start({ processId: "Process_A", version: 1 }),
+      fixture.service.start({ processId: "Process_A", version: 1 }, emptyStartCommand),
       (error: unknown) => {
         assert.ok(error instanceof DefinitionArtifactIntegrityError, candidate.name);
         assert.deepEqual(error.definition, { processId: "Process_A", version: 1 });
@@ -139,11 +153,21 @@ test("snapshots the selected metadata and returned artifact before the starter y
     startGate,
   });
 
-  const started = fixture.service.start({ processId: "Process_A", version: 1 });
+  const mutableCommand = {
+    initialVariables: [{
+      name: "items",
+      value: { kind: "stringList" as const, value: ["captured"] },
+    }],
+  };
+  const started = fixture.service.start(
+    { processId: "Process_A", version: 1 },
+    mutableCommand,
+  );
   await fixture.startEntered;
   stored.source.id = "redirected-source";
   stored.semanticProfile = "redirected-profile";
   bytes.fill(0);
+  mutableCommand.initialVariables[0]!.value.value[0] = "redirected";
   releaseStart();
 
   const result = await started;
@@ -155,6 +179,10 @@ test("snapshots the selected metadata and returned artifact before the starter y
     semanticProfile: "profile-v1",
     expectedProcessId: "Process_A",
     processInstanceId: "instance-1",
+    initialVariables: [{
+      name: "items",
+      value: { kind: "stringList", value: ["captured"] },
+    }],
   });
   assert.equal(result.instance.definition.source.id, "snapshot-source");
   assert.equal(result.instance.definition.semanticProfile, "profile-v1");
@@ -169,7 +197,10 @@ test("returns a cloned rejection bound to the exact stored definition", async ()
     failure,
   });
 
-  const result = await fixture.service.start({ processId: "Process_A", version: 1 });
+  const result = await fixture.service.start(
+    { processId: "Process_A", version: 1 },
+    emptyStartCommand,
+  );
 
   assert.deepEqual(result, {
     status: DefinitionVersionStartStatus.Rejected,
@@ -201,7 +232,7 @@ test("treats every started identity drift and gateway integrity result as an int
       startedDrift: drift,
     });
     await assert.rejects(
-      fixture.service.start({ processId: "Process_A", version: 1 }),
+      fixture.service.start({ processId: "Process_A", version: 1 }, emptyStartCommand),
       (error: unknown) => error instanceof DefinitionStartIntegrityError,
     );
   }
@@ -211,7 +242,10 @@ test("treats every started identity drift and gateway integrity result as an int
     { startedDrift: { processInstanceId: "returned-other-instance" }, startOnlyDrift: true },
   );
   await assert.rejects(
-    returnedDrift.service.start({ processId: "Process_A", version: 1 }),
+    returnedDrift.service.start(
+      { processId: "Process_A", version: 1 },
+      emptyStartCommand,
+    ),
     (error: unknown) => error instanceof DefinitionStartIntegrityError,
   );
 
@@ -224,7 +258,10 @@ test("treats every started identity drift and gateway integrity result as an int
     },
   );
   await assert.rejects(
-    integrityFixture.service.start({ processId: "Process_A", version: 1 }),
+    integrityFixture.service.start(
+      { processId: "Process_A", version: 1 },
+      emptyStartCommand,
+    ),
     (error: unknown) => error instanceof DefinitionStartIntegrityError,
   );
 });
@@ -237,7 +274,7 @@ test("requires one synchronous nonempty well-formed generated instance identity"
       generatedId: invalidId,
     });
     await assert.rejects(
-      fixture.service.start({ processId: "Process_A", version: 1 }),
+      fixture.service.start({ processId: "Process_A", version: 1 }, emptyStartCommand),
       /nonempty well-formed Unicode/u,
     );
     assert.equal(fixture.generatedIds, 1);

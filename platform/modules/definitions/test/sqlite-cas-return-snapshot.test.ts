@@ -94,6 +94,7 @@ test("confirmed-instance CAS returns its own transition instead of a later state
           protocol: "bpmn-direct-start-v1",
           intentSha256: "2".repeat(64),
         },
+        startCommandBytes: new TextEncoder().encode('{"initialVariables":[]}'),
       });
       createTrigger(databaseFile, `
         CREATE TRIGGER advance_confirmed_after_cas

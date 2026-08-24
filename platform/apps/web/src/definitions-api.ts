@@ -14,8 +14,10 @@ import {
   definitionVersionSourcePath,
   LegacyPublicApiErrorCodes,
   parseStrictJson,
+  serializeDefinitionVersionStartCommand,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  DefinitionVersionStartCommand,
   DefinitionDeployResult,
   DefinitionListResponse,
   DefinitionVersionListResponse,
@@ -193,14 +195,22 @@ export class DefinitionApiClient {
     return presentation;
   }
 
-  async start(definition: DeployedDefinitionVersion): Promise<ProcessInstanceStartResult> {
+  async start(
+    definition: DeployedDefinitionVersion,
+    command: DefinitionVersionStartCommand,
+  ): Promise<ProcessInstanceStartResult> {
     const expected = snapshotExactDefinition(definition);
+    const commandBytes = serializeDefinitionVersionStartCommand(command);
     const response = await this.#fetch(this.#url(definitionVersionStartPath(
       expected.processId,
       expected.version,
     )), {
       method: "POST",
-      headers: { accept: "application/json" },
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      body: Uint8Array.from(commandBytes).buffer,
     });
     if (response.status !== 201 && response.status !== 422) {
       return await this.#throwApiError(response);

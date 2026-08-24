@@ -62,6 +62,13 @@ export type OccurrenceId = DeepReadonly<{
   activation: number;
 }>;
 
+/** Exact Product 1 Activity occurrence identity, distinct from an inner task occurrence. */
+export type ActivityOccurrenceId = DeepReadonly<{
+  processInstanceId: string;
+  activityElementId: string;
+  activation: number;
+}>;
+
 export const VariableValueKind = {
   Boolean: "boolean",
   Integer: "integer",
@@ -329,6 +336,25 @@ export type OpenEffectIncident = DeepReadonly<{
   effect: OpenEffect;
 }>;
 
+export type OpenSequentialMultiInstanceIteration = DeepReadonly<{
+  loopCounter: number;
+  taskId: OccurrenceId;
+  taskInput: VariableBinding;
+  completionBindingName: string;
+}>;
+
+export type OpenSequentialMultiInstance = DeepReadonly<{
+  id: ActivityOccurrenceId;
+  mode: "sequential";
+  plannedInstanceCount: number;
+  pendingItemCount: number;
+  numberOfInstances: number;
+  numberOfActiveInstances: number;
+  numberOfCompletedInstances: number;
+  numberOfTerminatedInstances: number;
+  activeIterations: OpenSequentialMultiInstanceIteration[];
+}>;
+
 export type EnabledInteraction = DeepReadonly<
   | { kind: typeof StimulusKind.CompleteUserTaskInstance; taskId: OccurrenceId }
   | {
@@ -344,6 +370,13 @@ export type EnabledInteraction = DeepReadonly<
     }
 >;
 
+/** The complete producer-owned state key census accepted by the strict Product 2 decoder. */
+export const executionPublicationStateAcceptedKeys = [
+  "kind", "instanceId", "status", "activeWaits", "openUserTasks",
+  "openMessageSubscriptions", "openTimers", "openEffects", "openIncidents",
+  "openMultiInstances", "variables", "enabledInteractions", "logicalTimeMs",
+] as const;
+
 export type StateObservation = DeepReadonly<{
   kind: "state";
   instanceId: string;
@@ -354,6 +387,7 @@ export type StateObservation = DeepReadonly<{
   openTimers: OpenTimer[];
   openEffects: OpenEffect[];
   openIncidents: OpenEffectIncident[];
+  openMultiInstances?: OpenSequentialMultiInstance[];
   variables: VariableBinding[];
   enabledInteractions: EnabledInteraction[];
   logicalTimeMs: number;

@@ -29,11 +29,13 @@ export type DirectProcessInstanceIntent = Readonly<{
 export type DirectProcessInstanceReservation =
   ConfirmedProcessInstancePublication & Readonly<{
     intent: DirectProcessInstanceIntent;
+    startCommandBytes: Uint8Array;
   }>;
 
 export type ConfirmedProcessInstanceRecord =
   ConfirmedProcessInstancePublication & Readonly<{
     intent: DirectProcessInstanceIntent | null;
+    startCommandBytes: Uint8Array | null;
     state: ConfirmedProcessInstanceState;
     operatePending: boolean;
     workPending: boolean;

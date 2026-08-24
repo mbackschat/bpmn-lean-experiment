@@ -11,14 +11,14 @@ import type {
   PostgresqlSession,
 } from "@bpmn-lean/platform-postgresql-runtime";
 
-test("proves only PostgreSQL 18, epoch 10, and engine connectivity", async () => {
+test("proves only PostgreSQL 18, epoch 11, and engine connectivity", async () => {
   const statements: string[] = [];
   let engineChecks = 0;
   await checkSharedPlatformServerReadiness({
     runtime: {
       query: readinessQuery((text) => {
         statements.push(text);
-        return { server_major: 18, epoch_rows: 1, schema_epoch: 10 };
+        return { server_major: 18, epoch_rows: 1, schema_epoch: 11 };
       }),
     },
     engineRuntime: {
@@ -36,9 +36,9 @@ test("proves only PostgreSQL 18, epoch 10, and engine connectivity", async () =>
 
 test("refuses the wrong PostgreSQL major or schema epoch before engine readiness", async () => {
   for (const row of [
-    { server_major: 17, epoch_rows: 1, schema_epoch: 10 },
-    { server_major: 18, epoch_rows: 2, schema_epoch: 10 },
-    { server_major: 18, epoch_rows: 1, schema_epoch: 9 },
+    { server_major: 17, epoch_rows: 1, schema_epoch: 11 },
+    { server_major: 18, epoch_rows: 2, schema_epoch: 11 },
+    { server_major: 18, epoch_rows: 1, schema_epoch: 10 },
   ]) {
     let engineChecks = 0;
     await assert.rejects(checkSharedPlatformServerReadiness({

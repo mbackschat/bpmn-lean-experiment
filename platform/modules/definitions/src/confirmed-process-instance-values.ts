@@ -1,4 +1,5 @@
 import {
+  decodeCanonicalDefinitionVersionStartCommand,
   decodePublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -80,6 +81,38 @@ export function decodeDirectIntent(
   });
 }
 
+export function snapshotStartCommandBytes(bytes: Uint8Array): Uint8Array {
+  if (!(bytes instanceof Uint8Array)) {
+    throw new TypeError("startCommandBytes must be canonical UTF-8 bytes");
+  }
+  const snapshot = Uint8Array.from(bytes);
+  decodeCanonicalDefinitionVersionStartCommand(snapshot);
+  return snapshot;
+}
+
+export function decodeStartCommandBytes(
+  bytes: Uint8Array | null,
+): Uint8Array | null {
+  return bytes === null ? null : snapshotStartCommandBytes(bytes);
+}
+
+export function requireDirectEvidencePair(
+  intent: DirectProcessInstanceIntent | null,
+  startCommandBytes: Uint8Array | null,
+  state?: ConfirmedProcessInstanceState,
+): void {
+  if ((intent === null) !== (startCommandBytes === null)) {
+    throw new TypeError("stored direct intent and start command must both be present or absent");
+  }
+  if (
+    state !== undefined &&
+    state !== ConfirmedProcessInstanceState.Confirmed &&
+    intent === null
+  ) {
+    throw new TypeError("only a confirmed non-direct row may omit direct start evidence");
+  }
+}
+
 export function samePublication(
   left: ConfirmedProcessInstancePublication,
   right: ConfirmedProcessInstancePublication,
@@ -93,6 +126,15 @@ export function sameIntent(
   right: DirectProcessInstanceIntent | null,
 ): boolean {
   return encodeDirectIntent(left) === encodeDirectIntent(right);
+}
+
+export function sameStartCommandBytes(
+  left: Uint8Array | null,
+  right: Uint8Array | null,
+): boolean {
+  if (left === null || right === null) return left === right;
+  return left.byteLength === right.byteLength &&
+    left.every((value, index) => value === right[index]);
 }
 
 export function requireState(value: string): ConfirmedProcessInstanceState {
@@ -117,7 +159,14 @@ export function requireAllowedTransition(
 export function snapshotRecord(
   record: ConfirmedProcessInstanceRecord,
 ): ConfirmedProcessInstanceRecord {
-  return structuredClone(record);
+  const intent = record.intent === null ? null : snapshotDirectIntent(record.intent);
+  const startCommandBytes = decodeStartCommandBytes(record.startCommandBytes);
+  requireDirectEvidencePair(intent, startCommandBytes, record.state);
+  return {
+    ...structuredClone(record),
+    intent,
+    startCommandBytes,
+  };
 }
 
 function nextState(

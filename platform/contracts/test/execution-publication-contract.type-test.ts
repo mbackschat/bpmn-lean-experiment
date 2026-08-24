@@ -2,11 +2,13 @@ import type {
   ExecutionPublicationExport,
   ExecutionPublicationPage,
   ExecutionPublicationResult,
+  StateObservation,
 } from "@bpmn-lean/platform-contracts";
 
 declare const page: ExecutionPublicationPage;
 declare const publication: ExecutionPublicationExport;
 declare const result: ExecutionPublicationResult;
+declare const state: StateObservation;
 
 // @ts-expect-error publication pages are deeply immutable
 page.batches[0]!.transitions[0]!.positionDelta.enteredScopes.push({});
@@ -14,6 +16,10 @@ page.batches[0]!.transitions[0]!.positionDelta.enteredScopes.push({});
 page.current!.state.variables[0]!.value.kind = "null";
 // @ts-expect-error export definition identity is immutable
 publication.definition.sourceOverlay = null;
+state.openMultiInstances![0]!.id.activityElementId satisfies string;
+state.openMultiInstances![0]!.activeIterations[0]!.taskId.elementId satisfies string;
+// @ts-expect-error Multi-Instance progress and nested identities are deeply immutable
+state.openMultiInstances![0]!.activeIterations[0]!.taskId.activation = 2;
 
 switch (result.kind) {
   case "available":

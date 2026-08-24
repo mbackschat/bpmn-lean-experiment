@@ -18,6 +18,7 @@ import {
   historyEvents,
   isCompletedProcessReceipt,
   processWorkflowId,
+  readTestProcessTerminalResult,
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
 import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
@@ -226,12 +227,16 @@ test("runs the complete durable Human Work slice", async () => {
       completionActionId,
       completionRequest,
     );
-    const receipt = await withDeadline(
-      handle.result(),
+    const { receipt } = await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
       "M3 Human Work completed Process receipt",
     );
-    assert.equal(isCompletedProcessReceipt(receipt), true);
+    assert.equal(
+      isCompletedProcessReceipt(receipt),
+      true,
+      "decoded terminal result must carry a completed Process receipt",
+    );
     if (!isCompletedProcessReceipt(receipt)) {
       throw new TypeError("M3 Human Work Workflow returned no completion receipt");
     }

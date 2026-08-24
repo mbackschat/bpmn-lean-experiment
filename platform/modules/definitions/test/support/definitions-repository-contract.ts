@@ -138,11 +138,22 @@ export function registerDefinitionsRepositoryContract(
   test(`${label}: confirmed registrations preserve intent, CAS, and subscriber isolation`, async () => {
     await usingFixture(createFixture, async ({ confirmed }) => {
       const publication = confirmedPublication();
+      const exactStartCommand = '{"initialVariables":[]}';
+      const callerStartCommandBytes = new TextEncoder().encode(exactStartCommand);
       const reservation = await confirmed.reserveDirect({
         ...publication,
         intent: { protocol: "direct-v1", intentSha256: "5".repeat(64) },
+        startCommandBytes: callerStartCommandBytes,
       });
       assert.equal(reservation.inserted, true);
+      callerStartCommandBytes.fill(0);
+      reservation.record.startCommandBytes!.fill(0);
+      assert.equal(
+        new TextDecoder().decode(
+          (await confirmed.get(publication.instance.processInstanceId))!.startCommandBytes!,
+        ),
+        exactStartCommand,
+      );
       const winners = await Promise.all([
         confirmed.compareAndSetState(
           publication.instance.processInstanceId,
@@ -163,6 +174,13 @@ export function registerDefinitionsRepositoryContract(
       );
       assert.equal(confirmedRecord?.operatePending, true);
       assert.equal(confirmedRecord?.workPending, true);
+      confirmedRecord!.startCommandBytes!.fill(0);
+      assert.equal(
+        new TextDecoder().decode(
+          (await confirmed.get(publication.instance.processInstanceId))!.startCommandBytes!,
+        ),
+        exactStartCommand,
+      );
       const afterOperate = await confirmed.acknowledge(
         publication.instance.processInstanceId,
         "operate",
@@ -173,6 +191,7 @@ export function registerDefinitionsRepositoryContract(
         confirmed.reserveDirect({
           ...publication,
           intent: { protocol: "direct-v1", intentSha256: "6".repeat(64) },
+          startCommandBytes: new TextEncoder().encode('{"initialVariables":[]}'),
         }),
         ConfirmedProcessInstanceIntegrityError,
       );
@@ -181,6 +200,17 @@ export function registerDefinitionsRepositoryContract(
           ...publication,
           locator: "different-locator",
           intent: { protocol: "direct-v1", intentSha256: "5".repeat(64) },
+          startCommandBytes: new TextEncoder().encode('{"initialVariables":[]}'),
+        }),
+        ConfirmedProcessInstanceIntegrityError,
+      );
+      await assert.rejects(
+        confirmed.reserveDirect({
+          ...publication,
+          intent: { protocol: "direct-v1", intentSha256: "5".repeat(64) },
+          startCommandBytes: new TextEncoder().encode(
+            '{"initialVariables":[{"name":"changed","value":{"kind":"null"}}]}',
+          ),
         }),
         ConfirmedProcessInstanceIntegrityError,
       );

@@ -22,7 +22,7 @@ A search item means exactly this:
 
 The current producer set is exactly:
 
-1. body-free exact-version definition start returning `started`;
+1. exact-version definition start with its strict canonical command returning `started`;
 2. one-shot definition Schedule reaching `started`;
 3. Message Start publication reaching `accepted`.
 
@@ -149,7 +149,7 @@ Excluded:
 - current running/completed/failed/cancelled status, start or completion timestamps, duration, variables, waits, tasks, incidents, tokens, transition history, diagram position, or audit actor;
 - Event History, Temporal Visibility, Search Attributes, Workflow Query fanout, state differencing, polling every Workflow, or a new engine observation;
 - instance detail, command submission, cancellation, task interaction, forms, identity, authorization, retention, deletion, export, aggregation, mining, full-text search, or fuzzy matching;
-- starts outside Product 2, historical backfill, and, at this M2 closure target, retry-transparent recovery for the existing body-free direct-start ambiguity; the later M3 specification owns the reviewed replacement of that failure boundary;
+- starts outside Product 2, historical backfill, and, at this M2 closure target, retry-transparent recovery for the then body-free direct-start ambiguity; the later M3 specification owns the reviewed replacement of that failure boundary;
 - new BPMN semantics, profile, checked graph, IL, semantic-core transition, Workflow behavior, Lean proof, CIB relationship, Schedule policy, Message routing, broker, or fanout.
 
 ## Acceptance evidence

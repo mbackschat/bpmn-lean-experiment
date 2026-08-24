@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
 import {
   ConfirmedProcessInstanceIntegrityError,
   ConfirmedProcessInstanceState,
+  ConfirmedProcessInstanceStoredValueError,
   SqliteConfirmedProcessInstanceRepository,
 } from "@bpmn-lean/platform-definitions";
 
@@ -85,6 +87,7 @@ test("serializes the closed direct-start state graph and refuses stale transitio
         protocol: "bpmn-direct-start-v1",
         intentSha256: "2".repeat(64),
       },
+      startCommandBytes: new TextEncoder().encode('{"initialVariables":[]}'),
     });
     assert.equal(reservation.record.state, ConfirmedProcessInstanceState.Reserved);
     assert.equal(reservation.record.operatePending, false);
@@ -127,6 +130,50 @@ test("serializes the closed direct-start state graph and refuses stale transitio
     assert.deepEqual(await reopened.listForReconciliation(), [confirmed]);
     assert.deepEqual(await reopened.listConfirmed(), [confirmed]);
     reopened.close();
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("refuses missing and noncanonical command bytes in post-migration direct rows", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-direct-command-corruption-"));
+  const exactBytes = new TextEncoder().encode('{"initialVariables":[]}');
+  try {
+    for (const [name, corrupt] of [
+      ["missing", null],
+      ["noncanonical", new TextEncoder().encode('{ "initialVariables": [] }')],
+    ] as const) {
+      const databaseFile = join(root, `${name}.sqlite`);
+      const repository = new SqliteConfirmedProcessInstanceRepository(databaseFile);
+      const reservation = {
+        ...publication,
+        instance: {
+          ...publication.instance,
+          processInstanceId: `instance-${name}`,
+        },
+        intent: {
+          protocol: "bpmn-direct-start-v1",
+          intentSha256: "8".repeat(64),
+        },
+        startCommandBytes: Uint8Array.from(exactBytes),
+      };
+      await repository.reserveDirect(reservation);
+      repository.close();
+
+      const database = new DatabaseSync(databaseFile);
+      database.exec("PRAGMA ignore_check_constraints = ON");
+      database.prepare(`
+        UPDATE confirmed_process_instances SET direct_start_command = ?
+      `).run(corrupt);
+      database.close();
+
+      const reopened = new SqliteConfirmedProcessInstanceRepository(databaseFile);
+      await assert.rejects(
+        reopened.get(`instance-${name}`),
+        (error: unknown) => error instanceof ConfirmedProcessInstanceStoredValueError,
+      );
+      reopened.close();
+    }
   } finally {
     await rm(root, { recursive: true, force: true });
   }

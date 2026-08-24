@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -237,6 +238,91 @@ if (baseUrl === undefined) {
       }),
       DefinitionPresentationIntegrityError,
     );
+  });
+
+  test("migration 0011 backfills legacy direct starts and preserves non-direct nulls", async () => {
+    await resetDatabase(runtime);
+    const migrationSql = await readFile(
+      new URL(
+        "../../migrations/0011_definitions-start-command__681798219edab00a928b6289190b823aff6836027d40012d55707cb1ef332b8d.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    await runtime.withDedicatedSession(async (session) => {
+      await session.query({ text: "BEGIN" });
+      try {
+        await session.query({ text: `
+          ALTER TABLE bpmn_platform.confirmed_process_instances
+            DROP CONSTRAINT confirmed_process_instances_direct_start_command,
+            DROP COLUMN direct_start_command
+        ` });
+        await session.query({ text: `
+          ALTER TABLE bpmn_platform_meta.schema_epoch
+            DROP CONSTRAINT schema_epoch_epoch_check
+        ` });
+        await session.query({ text: `
+          UPDATE bpmn_platform_meta.schema_epoch SET epoch = 10
+          WHERE singleton = true AND epoch = 11
+        ` });
+        await session.query({ text: `
+          ALTER TABLE bpmn_platform_meta.schema_epoch
+            ADD CONSTRAINT schema_epoch_epoch_check CHECK (epoch = 10)
+        ` });
+        await session.query({
+          text: `
+            INSERT INTO bpmn_platform.confirmed_process_instances (
+              process_instance_id, public_instance_json, work_locator,
+              direct_intent_json, state, operate_pending, work_pending
+            ) VALUES
+              ($1, '{}', $2, $3, 'reserved', false, false),
+              ($4, '{}', $5, NULL, 'confirmed', true, true)
+          `,
+          values: [
+            Buffer.from("legacy-direct", "utf8"),
+            Buffer.from("legacy-direct-locator", "utf8"),
+            JSON.stringify({
+              protocol: "bpmn-direct-start-v1",
+              intentSha256: "b".repeat(64),
+            }),
+            Buffer.from("legacy-confirmed", "utf8"),
+            Buffer.from("legacy-confirmed-locator", "utf8"),
+          ],
+        });
+
+        await session.query({ text: migrationSql });
+
+        const rows = await session.query({
+          text: `
+            SELECT process_instance_id, direct_start_command
+            FROM bpmn_platform.confirmed_process_instances
+            ORDER BY process_instance_id ASC
+          `,
+        });
+        assert.equal(
+          Buffer.from(rows.rows[0]!.process_instance_id as Uint8Array).toString("utf8"),
+          "legacy-confirmed",
+        );
+        assert.equal(rows.rows[0]!.direct_start_command, null);
+        assert.equal(
+          Buffer.from(rows.rows[1]!.process_instance_id as Uint8Array).toString("utf8"),
+          "legacy-direct",
+        );
+        assert.equal(
+          Buffer.from(rows.rows[1]!.direct_start_command as Uint8Array).toString("utf8"),
+          '{"initialVariables":[]}',
+        );
+        const epoch = await session.query({
+          text: `
+            SELECT epoch FROM bpmn_platform_meta.schema_epoch
+            WHERE singleton = true
+          `,
+        });
+        assert.deepEqual(epoch.rows, [{ epoch: 11 }]);
+      } finally {
+        await session.query({ text: "ROLLBACK" });
+      }
+    });
   });
 }
 

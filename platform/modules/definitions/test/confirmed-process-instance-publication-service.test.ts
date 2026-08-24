@@ -32,6 +32,7 @@ const publication = {
   },
   locator: "bpmn-process-work-v1:private-address",
 };
+const emptyStartCommandBytes = new TextEncoder().encode('{"initialVariables":[]}');
 
 test("retains subscriber acknowledgements and retries only missing delivery", async () => {
   const repository = new InMemoryConfirmedProcessInstanceRepository();
@@ -65,6 +66,7 @@ test("retains subscriber acknowledgements and retries only missing delivery", as
   assert.deepEqual(await repository.get("instance-1"), {
     ...publication,
     intent: null,
+    startCommandBytes: null,
     state: ConfirmedProcessInstanceState.Confirmed,
     operatePending: false,
     workPending: false,
@@ -104,6 +106,56 @@ test("single-item delivery re-reads one exact registration", async () => {
   assert.equal((await repository.get("instance-2"))?.operatePending, true);
 });
 
+test("in-memory direct records snapshot, compare, and CAS exact command bytes", async () => {
+  const repository = new InMemoryConfirmedProcessInstanceRepository();
+  const originalText = '{"initialVariables":[{"name":"items","value":{"kind":"stringList","value":["a","b"]}}]}';
+  const callerBytes = new TextEncoder().encode(originalText);
+  const direct = {
+    ...publication,
+    intent: {
+      protocol: "bpmn-direct-start-v1",
+      intentSha256: "3".repeat(64),
+    },
+    startCommandBytes: callerBytes,
+  };
+
+  const reserved = await repository.reserveDirect(direct);
+  callerBytes.fill(0);
+  reserved.record.startCommandBytes!.fill(0);
+  assert.equal(
+    new TextDecoder().decode(
+      (await repository.get(publication.instance.processInstanceId))!.startCommandBytes!,
+    ),
+    originalText,
+  );
+  assert.equal((await repository.reserveDirect({
+    ...direct,
+    startCommandBytes: new TextEncoder().encode(originalText),
+  })).inserted, false);
+  await assert.rejects(
+    repository.reserveDirect({
+      ...direct,
+      startCommandBytes: new TextEncoder().encode(
+        '{"initialVariables":[{"name":"items","value":{"kind":"stringList","value":["changed"]}}]}',
+      ),
+    }),
+    /integrity/u,
+  );
+
+  const starting = await repository.compareAndSetState(
+    publication.instance.processInstanceId,
+    ConfirmedProcessInstanceState.Reserved,
+    ConfirmedProcessInstanceState.Starting,
+  );
+  starting!.startCommandBytes!.fill(0);
+  assert.equal(
+    new TextDecoder().decode(
+      (await repository.get(publication.instance.processInstanceId))!.startCommandBytes!,
+    ),
+    originalText,
+  );
+});
+
 test("never redispatches a direct start after ambiguous transmission", async () => {
   const repository = new InMemoryConfirmedProcessInstanceRepository();
   let starts = 0;
@@ -119,6 +171,7 @@ test("never redispatches a direct start after ambiguous transmission", async () 
       protocol: "bpmn-direct-start-v1",
       intentSha256: "4".repeat(64),
     },
+    startCommandBytes: Uint8Array.from(emptyStartCommandBytes),
   };
   const host = {
     start: async () => {
@@ -154,6 +207,7 @@ test("keeps divergent direct evidence as a stable integrity tombstone", async ()
       protocol: "bpmn-direct-start-v1",
       intentSha256: "5".repeat(64),
     },
+    startCommandBytes: Uint8Array.from(emptyStartCommandBytes),
   };
   let starts = 0;
   const host = {
@@ -181,6 +235,7 @@ test("startup reconciliation describes direct uncertain state without dispatch",
       protocol: "bpmn-direct-start-v1",
       intentSha256: "6".repeat(64),
     },
+    startCommandBytes: Uint8Array.from(emptyStartCommandBytes),
   };
   await repository.reserveDirect(direct);
   await repository.compareAndSetState(
@@ -303,5 +358,6 @@ function directReservation() {
       protocol: "bpmn-direct-start-v1",
       intentSha256: "7".repeat(64),
     },
+    startCommandBytes: Uint8Array.from(emptyStartCommandBytes),
   };
 }

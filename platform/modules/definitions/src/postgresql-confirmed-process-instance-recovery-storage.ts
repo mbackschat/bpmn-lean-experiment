@@ -10,6 +10,7 @@ import type {
 import {
   encodeDirectIntent,
   encodePublicInstance,
+  sameStartCommandBytes,
   sameIntent,
   samePublication,
   snapshotConfirmedPublication,
@@ -82,8 +83,9 @@ export async function confirmProcessInstanceForRecovery(
     text: `
       INSERT INTO bpmn_platform.confirmed_process_instances (
         process_instance_id, public_instance_json, work_locator,
-        direct_intent_json, state, operate_pending, work_pending
-      ) VALUES ($1, $2, $3, NULL, 'confirmed', true, true)
+        direct_intent_json, direct_start_command,
+        state, operate_pending, work_pending
+      ) VALUES ($1, $2, $3, NULL, NULL, 'confirmed', true, true)
       ON CONFLICT (process_instance_id) DO NOTHING
     `,
     values: [
@@ -101,6 +103,7 @@ export async function confirmProcessInstanceForRecovery(
     retained === null ||
     retained.state !== ConfirmedProcessInstanceState.Confirmed ||
     retained.intent !== null ||
+    retained.startCommandBytes !== null ||
     !samePublication(retained, publication)
   ) {
     throw new TypeError("recovery confirmation conflicts with retained identity");
@@ -116,14 +119,15 @@ export function sameConfirmedRecord(
     left.operatePending === right.operatePending &&
     left.workPending === right.workPending &&
     samePublication(left, right) &&
-    sameIntent(left.intent, right.intent);
+    sameIntent(left.intent, right.intent) &&
+    sameStartCommandBytes(left.startCommandBytes, right.startCommandBytes);
 }
 
 export function directReservation(
   record: ConfirmedProcessInstanceRecord,
 ) {
-  if (record.intent === null) {
-    throw new TypeError("direct recovery row has no retained intent");
+  if (record.intent === null || record.startCommandBytes === null) {
+    throw new TypeError("direct recovery row has incomplete retained command evidence");
   }
   return {
     instance: structuredClone(record.instance),
@@ -132,5 +136,6 @@ export function directReservation(
       protocol: string;
       intentSha256: string;
     },
+    startCommandBytes: Uint8Array.from(record.startCommandBytes),
   };
 }

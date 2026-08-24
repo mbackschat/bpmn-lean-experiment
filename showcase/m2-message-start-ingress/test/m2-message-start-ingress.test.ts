@@ -27,6 +27,7 @@ import {
   createCachedLocalEnvironment,
   createHostEffectActivities,
   isCompletedProcessReceipt,
+  readTestProcessTerminalResult,
   submitUserTaskCompletionAtWorkflowId,
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
@@ -236,8 +237,8 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       throw new TypeError("Message Start completion did not return a semantic command result");
     }
     assert.equal(command.outcome, "committed");
-    const receipt = await withDeadline(
-      handle.result(),
+    const { receipt } = await withDeadline(
+      readTestProcessTerminalResult(handle),
       operationDeadlineMs,
       "published Process completion",
     );

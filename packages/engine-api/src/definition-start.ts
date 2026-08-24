@@ -10,12 +10,17 @@ import type {
 } from "@bpmn-lean/bpmn-source";
 import {
   StimulusKind,
+  VariableValueKind,
+  cloneVariableBinding,
+  isVariablePatch,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
   StartProcessStimulus,
+  VariableBinding,
 } from "@bpmn-lean/semantic-core";
+
 import {
   TemporalDefinitionStartDescriptionResultKind,
   TemporalDefinitionStartPreparationResultKind,
@@ -38,6 +43,9 @@ import {
 import type {
   EngineProcessWorkLocator,
 } from "./process-locator.js";
+
+/** Product 1's nominal semantic value tags for exhaustive boundary translation. */
+export const EngineVariableValueKind = VariableValueKind;
 
 export const EngineDefinitionStartStatus = {
   Admitted: "admitted",
@@ -69,6 +77,7 @@ export type EngineDefinitionStartPreparationRequest = Readonly<{
   semanticProfile: string;
   expectedProcessId: string;
   processInstanceId: string;
+  initialVariables: readonly VariableBinding[];
   limits: BpmnSourceLimits;
   taskQueue: string;
 }>;
@@ -354,6 +363,9 @@ function snapshotPreparationRequest(
   if (!(request.bytes instanceof Uint8Array)) {
     throw new TypeError("bytes must be a Uint8Array");
   }
+  if (!isVariablePatch(request.initialVariables)) {
+    throw new TypeError("initialVariables must be a canonical variable patch");
+  }
   return {
     bytes: Uint8Array.from(request.bytes),
     sourceId: request.sourceId,
@@ -364,6 +376,7 @@ function snapshotPreparationRequest(
       request.processInstanceId,
       "processInstanceId",
     ),
+    initialVariables: request.initialVariables.map(cloneVariableBinding),
     limits: { ...request.limits },
     taskQueue: requireNonemptyWireString(request.taskQueue, "taskQueue"),
   };
@@ -385,7 +398,7 @@ function startStimulus(
     commandId: `start:${snapshot.processInstanceId}`,
     processId: compilation.semanticProcess.processId,
     instanceId: snapshot.processInstanceId,
-    initialVariables: [],
+    initialVariables: snapshot.initialVariables.map(cloneVariableBinding),
   };
 }
 

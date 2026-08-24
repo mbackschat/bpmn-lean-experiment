@@ -158,7 +158,7 @@ export class ConfirmedProcessInstancePublicationService {
     ) {
       return;
     }
-    if (initial.intent === null) {
+    if (initial.intent === null || initial.startCommandBytes === null) {
       await this.#transitionToIntegrity(initial);
       throw new ConfirmedProcessInstanceIntegrityError(processInstanceId);
     }
@@ -166,6 +166,7 @@ export class ConfirmedProcessInstancePublicationService {
       instance: structuredClone(initial.instance),
       locator: initial.locator,
       intent: { ...initial.intent },
+      startCommandBytes: Uint8Array.from(initial.startCommandBytes),
     };
     if (initial.state === ConfirmedProcessInstanceState.Reserved) {
       await this.startDirect(reservation, host);

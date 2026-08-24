@@ -8,6 +8,7 @@ import {
   isCancelledProcessReceipt,
   isCompletedProcessReceipt,
   processWorkflowId,
+  readTestProcessTerminalResult,
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
 import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
@@ -48,15 +49,15 @@ export async function verifyIncidentTerminalEvidence(
   const cancellationHandle = input.client.workflow.getHandle(
     processWorkflowId(input.cancelledProcessInstanceId),
   );
-  const [retryReceipt, cancellationReceipt, retryHistory, cancellationHistory] =
+  const [retryResult, cancellationResult, retryHistory, cancellationHistory] =
     await Promise.all([
       withDeadline(
-        retryHandle.result(),
+        readTestProcessTerminalResult(retryHandle),
         operationDeadlineMs,
         "M4 retried Process result",
       ),
       withDeadline(
-        cancellationHandle.result(),
+        readTestProcessTerminalResult(cancellationHandle),
         operationDeadlineMs,
         "M4 cancelled Process result",
       ),
@@ -71,6 +72,8 @@ export async function verifyIncidentTerminalEvidence(
         "M4 cancelled Process history",
       ) as Promise<TemporalHistory>,
     ]);
+  const retryReceipt = retryResult.receipt;
+  const cancellationReceipt = cancellationResult.receipt;
   assert.equal(isCompletedProcessReceipt(retryReceipt), true);
   assert.equal(isCancelledProcessReceipt(cancellationReceipt), true);
   if (!isCompletedProcessReceipt(retryReceipt)) {

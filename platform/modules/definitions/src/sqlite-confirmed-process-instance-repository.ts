@@ -16,38 +16,26 @@ import type {
 } from "./confirmed-process-instance-contracts.js";
 import {
   decodeDirectIntent,
+  decodeStartCommandBytes,
   decodePublicInstance,
   encodeDirectIntent,
   encodePublicInstance,
   requireAllowedTransition,
+  requireDirectEvidencePair,
   requireState,
   sameIntent,
   samePublication,
+  sameStartCommandBytes,
   snapshotConfirmedPublication,
   snapshotDirectIntent,
+  snapshotStartCommandBytes,
 } from "./confirmed-process-instance-values.js";
 import {
+  confirmedProcessInstancesTableSql,
   requireDefinitionDatabaseSchemaEpoch,
 } from "./database-schema-epoch.js";
 
 const defaultBusyTimeoutMs = 5_000;
-const tableSql = `
-  CREATE TABLE confirmed_process_instances (
-    process_instance_id TEXT PRIMARY KEY NOT NULL,
-    public_instance_json TEXT NOT NULL CHECK (length(public_instance_json) > 0),
-    work_locator TEXT NOT NULL CHECK (length(work_locator) > 0),
-    direct_intent_json TEXT,
-    state TEXT NOT NULL CHECK (
-      state IN ('reserved', 'starting', 'indeterminate', 'confirmed', 'integrityFailure')
-    ),
-    operate_pending INTEGER NOT NULL CHECK (operate_pending IN (0, 1)),
-    work_pending INTEGER NOT NULL CHECK (work_pending IN (0, 1)),
-    CHECK (
-      (state = 'confirmed') OR (operate_pending = 0 AND work_pending = 0)
-    )
-  ) STRICT
-`;
-
 /** Exact durable owner for confirmation, direct-start recovery, and subscriber markers. */
 export class SqliteConfirmedProcessInstanceRepository
   implements ConfirmedProcessInstanceRepository {
@@ -76,7 +64,12 @@ export class SqliteConfirmedProcessInstanceRepository
   async confirm(
     publication: ConfirmedProcessInstancePublication,
   ): Promise<ConfirmedProcessInstanceReservationResult> {
-    return this.#insert(publication, null, ConfirmedProcessInstanceState.Confirmed);
+    return this.#insert(
+      publication,
+      null,
+      null,
+      ConfirmedProcessInstanceState.Confirmed,
+    );
   }
 
   async reserveDirect(
@@ -85,6 +78,7 @@ export class SqliteConfirmedProcessInstanceRepository
     return this.#insert(
       reservation,
       encodeDirectIntent(snapshotDirectIntent(reservation.intent)),
+      snapshotStartCommandBytes(reservation.startCommandBytes),
       ConfirmedProcessInstanceState.Reserved,
     );
   }
@@ -158,9 +152,11 @@ export class SqliteConfirmedProcessInstanceRepository
   #insert(
     publication: ConfirmedProcessInstancePublication,
     intentJson: string | null,
+    startCommandBytes: Uint8Array | null,
     state: ConfirmedProcessInstanceState,
   ): ConfirmedProcessInstanceReservationResult {
     const exact = snapshotConfirmedPublication(publication);
+    requireDirectEvidencePair(decodeDirectIntent(intentJson), startCommandBytes, state);
     this.#database.exec("BEGIN IMMEDIATE");
     try {
       const existingRow = this.#database.prepare(`
@@ -170,7 +166,8 @@ export class SqliteConfirmedProcessInstanceRepository
         const existing = decodeRow(existingRow);
         if (
           !samePublication(existing, exact) ||
-          !sameIntent(existing.intent, decodeDirectIntent(intentJson))
+          !sameIntent(existing.intent, decodeDirectIntent(intentJson)) ||
+          !sameStartCommandBytes(existing.startCommandBytes, startCommandBytes)
         ) {
           throw new ConfirmedProcessInstanceIntegrityError(
             exact.instance.processInstanceId,
@@ -185,15 +182,17 @@ export class SqliteConfirmedProcessInstanceRepository
           public_instance_json,
           work_locator,
           direct_intent_json,
+          direct_start_command,
           state,
           operate_pending,
           work_pending
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         exact.instance.processInstanceId,
         encodePublicInstance(exact.instance),
         exact.locator,
         intentJson,
+        startCommandBytes,
         state,
         state === ConfirmedProcessInstanceState.Confirmed ? 1 : 0,
         state === ConfirmedProcessInstanceState.Confirmed ? 1 : 0,
@@ -221,12 +220,12 @@ function initializeSchema(database: DatabaseSync): void {
     WHERE type = 'table' AND name = 'confirmed_process_instances'
   `).get();
   if (table === undefined) {
-    database.exec(tableSql);
+    database.exec(confirmedProcessInstancesTableSql);
     return;
   }
   if (
     typeof table.sql !== "string" ||
-    normalizeSql(table.sql) !== normalizeSql(tableSql)
+    normalizeSql(table.sql) !== normalizeSql(confirmedProcessInstancesTableSql)
   ) {
     throw new ConfirmedProcessInstanceStoredValueError(
       new TypeError("confirmed Process-instance schema is not exact"),
@@ -245,17 +244,36 @@ function decodeRow(
     if (instance.processInstanceId !== processInstanceId) {
       throw new TypeError("stored public identity disagrees with its primary key");
     }
+    const intent = decodeDirectIntent(
+      requireNullableStringField(row, "direct_intent_json"),
+    );
+    const startCommandBytes = decodeStartCommandBytes(
+      requireNullableBlobField(row, "direct_start_command"),
+    );
+    const state = requireState(requireStringField(row, "state"));
+    requireDirectEvidencePair(intent, startCommandBytes, state);
     return {
       instance,
       locator: requireStringField(row, "work_locator"),
-      intent: decodeDirectIntent(requireNullableStringField(row, "direct_intent_json")),
-      state: requireState(requireStringField(row, "state")),
+      intent,
+      startCommandBytes,
+      state,
       operatePending: requireBooleanIntegerField(row, "operate_pending"),
       workPending: requireBooleanIntegerField(row, "work_pending"),
     };
   } catch (error: unknown) {
     throw new ConfirmedProcessInstanceStoredValueError(error);
   }
+}
+
+function requireNullableBlobField(
+  row: Record<string, SQLOutputValue>,
+  label: string,
+): Uint8Array | null {
+  const value = row[label];
+  if (value === null) return null;
+  if (value instanceof Uint8Array) return Uint8Array.from(value);
+  throw new TypeError(`${label} must be a blob or null`);
 }
 
 function requireBooleanIntegerField(

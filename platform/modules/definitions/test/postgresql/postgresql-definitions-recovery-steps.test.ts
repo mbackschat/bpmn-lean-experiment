@@ -146,6 +146,7 @@ if (baseUrl === undefined) {
     assert.deepEqual(await confirmed.get(publication.instance.processInstanceId), {
       ...publication,
       intent: null,
+      startCommandBytes: null,
       state: "confirmed",
       operatePending: false,
       workPending: false,

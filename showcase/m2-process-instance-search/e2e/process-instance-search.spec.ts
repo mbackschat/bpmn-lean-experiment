@@ -200,7 +200,7 @@ async function assertRenderedIdentity(
   await expect(rowHeader, "Process-instance ID rendering").toHaveText(
     expected.processInstanceId,
   );
-  await expect(cells, "complete public identity value count").toHaveCount(5);
+  await expect(cells, "complete public row value and action count").toHaveCount(6);
   await expect(cells.nth(0), "BPMN Process ID rendering").toHaveText(
     expected.definition.processId,
   );
@@ -216,6 +216,12 @@ async function assertRenderedIdentity(
   await expect(cells.nth(4), "exact semantic profile rendering").toHaveText(
     expected.definition.semanticProfile,
   );
+  await expect(
+    cells.nth(5).getByRole("button", {
+      name: `View details ${expected.processInstanceId}`,
+    }),
+    "exact Process-instance detail action",
+  ).toHaveCount(1);
 }
 
 async function deployDefinition(
@@ -250,7 +256,10 @@ async function startDefinition(
   const response = await request.post(new URL(
     definitionVersionStartPath(definition.processId, definition.version),
     apiOrigin,
-  ).toString(), { headers: { accept: "application/json" } });
+  ).toString(), {
+    headers: { accept: "application/json", "content-type": "application/json" },
+    data: { initialVariables: [] },
+  });
   expect(response.status()).toBe(201);
   const result = decodeProcessInstanceStartResult(await response.json() as unknown);
   expect(result.status).toBe(ProcessInstanceStartStatus.Started);
