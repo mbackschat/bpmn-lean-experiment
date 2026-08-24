@@ -23,30 +23,48 @@ Canonical operation-ID selection is necessary for reproducibility but is not evi
 
 Each candidate transition receives a dynamic `InternalTransitionFootprint` derived from the admitted program, the exact pre-state, and the operation before its successor is selected. The footprint contains canonical sets of tagged semantic atoms, split into `reads`, `writes`, and `publications`. Shared reads are permitted. A pair is non-interfering only when neither side's writes intersect the other side's reads or writes and the publication keys are distinct.
 
-The checkpoint atom vocabulary is closed:
+The checkpoint state-atom vocabulary is closed:
 
-- `controlToken(owner, place)` for the exact consumed token;
-- `scopeOccurrence(owner)` and `runtimeControl(instance)` for shared existence and running-state reads;
+- `controlToken(owner, place)` for one exact token unit whose presence enables the operation and whose multiplicity is decremented;
+- `scopeOccurrence(owner)` and `runtimeControl(instance)` for owner liveness and the exact running Process instance;
 - `logicalTime` for Timer deadline calculation;
-- `activation(kind, elementId)` for the counter read and increment that mints the next occurrence;
-- `wait(kind, occurrence)` for the newly created User Task, Message, Timer, or effect wait;
-- `processVariable(scope, name)` for exact effect input-mapping reads;
-- `activityVariable(activityOccurrence, name)` for exact effect-argument writes;
-- `flowNodeOccurrence(kind, occurrence)` for the committed lifecycle publication.
+- `activation(kind, elementId)` for the per-family counter value that mints the next occurrence;
+- `wait(kind, occurrence)` for absence of, and insertion of, the complete User Task, Message, Timer, or effect occurrence;
+- `activityVariableScope(effectOccurrence)` for absence of, and insertion of, the complete effect-owned local scope, including an empty scope;
+- `activityVariable(effectOccurrence, name)` for every literal input binding inserted into that local scope.
 
-Occurrence atoms include the state-derived next activation, not only an element ID. Atom tags keep User Task, Message, Timer, effect, control-place, and variable domains distinct. Every set uses the repository's canonical Unicode scalar ordering and explicit tagged equality. Locale collation, object enumeration order, and a successor-state diff are excluded from footprint construction.
+The closed publication-atom vocabulary is `committedTransition(operationId, kind, origin, owner, logicalTime, positionDelta)`, `flowNodeLifecycle(kind, occurrence)`, and `publicationPair(operationId, occurrence)`. A publication pair binds one transition record and its one lifecycle delta before either receives a batch index. Its canonical sort key is the exact tuple `(operationId, occurrenceKind, processInstanceId, elementId, activation)`.
+
+Occurrence atoms include the state-derived next activation, not only an element ID. Atom tags keep User Task, Message, Timer, effect, control-place, and Activity-local domains distinct. Every set and sort key uses the repository's canonical Unicode scalar ordering, numeric activation ordering, and explicit tagged equality. Locale collation, object enumeration order, and a successor-state diff are excluded from footprint construction.
+
+The constructor equations are exact:
+
+| Constructor | Required reads | Complete writes | Publication bundle |
+|---|---|---|---|
+| `awaitUserTask` | `runtimeControl(instance)`, `scopeOccurrence(owner)`, `controlToken(owner,input)`, `activation(userTask,taskId)`, and absence of `wait(userTask,occurrence)` | decrement `controlToken(owner,input)`; replace `activation(userTask,taskId)` by the next value; canonically insert `wait(userTask,occurrence)` | one `committedTransition` carrying the exact operation metadata, owner, unchanged logical time, and the token-to-User-Task position delta; one started `flowNodeLifecycle(userTask,occurrence)`; one `publicationPair(operationId,occurrence)` |
+| `awaitMessage` | `runtimeControl(instance)`, `scopeOccurrence(owner)`, `controlToken(owner,input)`, `activation(message,elementId)`, and absence of `wait(message,occurrence)` | decrement `controlToken(owner,input)`; replace `activation(message,elementId)` by the next value; canonically insert `wait(message,occurrence)` | one `committedTransition` carrying the exact operation metadata, owner, unchanged logical time, and the token-to-Message position delta; one started `flowNodeLifecycle(message,occurrence)`; one `publicationPair(operationId,occurrence)` |
+| `awaitTimer` | `runtimeControl(instance)`, `scopeOccurrence(owner)`, `controlToken(owner,input)`, `logicalTime`, `activation(timer,elementId)`, and absence of `wait(timer,occurrence)` | decrement `controlToken(owner,input)`; replace `activation(timer,elementId)` by the next value; canonically insert `wait(timer,occurrence)` with deadline `logicalTime + duration` | one `committedTransition` carrying the exact operation metadata, owner, unchanged logical time, and the token-to-Timer position delta; one started `flowNodeLifecycle(timer,occurrence)`; one `publicationPair(operationId,occurrence)` |
+| `awaitEffect` | `runtimeControl(instance)`, `scopeOccurrence(owner)`, `controlToken(owner,input)`, `activation(effect,elementId)`, and absence of both `wait(effect,occurrence)` and `activityVariableScope(occurrence)` | decrement `controlToken(owner,input)`; replace `activation(effect,elementId)` by the next value; canonically insert `wait(effect,occurrence)`, `activityVariableScope(occurrence)`, and one `activityVariable(occurrence,name)` per literal input binding | one `committedTransition` carrying the exact operation metadata, owner, unchanged logical time, and the token-to-effect position delta; one started `flowNodeLifecycle(effect,occurrence)`; one `publicationPair(operationId,occurrence)` |
+
+Current effect input mappings are literals and therefore read no Process or Activity-local runtime variable. Adding a variable-reading expression reopens this table and the atom vocabulary before implementation.
 
 For the first checkpoint, footprint construction returns `none` for every operation outside ordinary `awaitUserTask`, `awaitMessage`, `awaitTimer`, and `awaitEffect`. An unavailable footprint, more or fewer than two enabled operations, an intersection, a duplicate publication key, or a failed second step retains the existing fail-closed ambiguous-choice result. This is a sufficient rule, not a necessary characterization of every commuting transition.
 
 ## Execution and publication contract
 
-Given two enabled operations `left` and `right` with non-interfering footprints, the checkpoint requires all of these facts:
+The pair predicate requires an admitted `WellFormedProgram`, a `runtimeStateWellFormed` exact-instance pre-state, two distinct operations contained in that program, successful independent enabledness witnesses from the same pre-state, complete footprints from the equations above, no write/read or write/write intersection in either direction, and distinct publication atoms. Shared reads are permitted.
+
+Given those premises for `left` and `right`, the checkpoint requires all of these facts:
 
 1. firing `left` preserves `right` enabledness and firing `right` preserves `left` enabledness;
 2. both two-step executions succeed;
-3. both executions produce the same canonical RuntimeState;
+3. both executions produce exactly equal raw RuntimeState values whose affected collections retain canonical order;
 4. the unordered transition and lifecycle facts are identical;
-5. sorting that two-fact batch by canonical operation ID and occurrence key produces one identical committed publication with reassigned consecutive transition indices.
+5. sorting the two unnumbered publication pairs by the complete paired sort key and only then assigning consecutive transition indices produces one identical committed publication without separating a transition from its lifecycle delta.
+
+“Canonical RuntimeState” does not mean equality after a projection or an assertion-time sort. The implementation extends `runtimeStateWellFormed`'s canonical-collection criterion and every production insertion site so User Task, Message, Timer, and effect waits are ordered by complete occurrence identity; their four activation-counter families are ordered by element ID; and Activity-variable scopes are ordered by complete effect-occurrence owner. TypeScript already orders the waits and counters but must canonically insert Activity-variable scopes. Lean must replace Message, Timer, and effect wait and counter prepends plus Activity-variable append with the same canonical insertions. The invariant applies to every add site for an affected collection, including composite operations outside this checkpoint, rather than only to the four constructors named here.
+
+This is an internal pre-release runtime-representation replacement owned jointly with the [scoped runtime data specification](capsules/SCOPED-DATA-SPEC.md#runtime-replacement). It changes no public wire. Its targeted preservation obligation requires every existing producer, consumer, well-formedness check, fixture, and proof to use the replacement order directly; existing canonical observations and retained Temporal histories must replay unchanged; and no compatibility reader, order-normalizing boundary, or second RuntimeState shape is permitted.
 
 The production evaluator continues to select the canonical lowest operation ID first. The proof makes that selection observationally irrelevant for the admitted pair; the sort does not serve as the proof. No existing committed-transition or lifecycle wire shape changes. Raw evaluator visit order remains private, while the published batch order remains canonical and replay-stable.
 
@@ -56,7 +74,7 @@ An overlapping pair is not forced into either order. It remains `ambiguousIntern
 
 The checkpoint's Lean lane is **proved**. A new focused module owns the atom and footprint definitions, the non-interference predicate, enabledness preservation for each supported constructor pair, two-step state commutation, and canonical publication equality. `TransitionTrace.lean` receives only the narrow classifier integration needed to call the proved rule because its current review headroom is 147 nonblank lines.
 
-The theorem begins from two independently enabled `OperationStep` facts and the footprint predicate. It must not assume equal successors, equal final states, or equal publications. Constructor proofs may reuse established transition relations, canonical collection insertion, and exact occurrence issuance laws. They may not cite finite fixture evaluation as the theorem.
+The theorem begins from admitted-program well-formedness, exact-instance runtime-state well-formedness, two independently enabled `OperationStep` facts, and the footprint predicate. It proves both intermediate states well formed before proving the opposite operation remains enabled. It must not assume equal successors, equal final states, canonical intermediate storage, or equal publications. Constructor proofs may reuse established transition relations, canonical collection insertion, and exact occurrence issuance laws. They may not cite finite fixture evaluation as the theorem.
 
 This does not claim arbitrary closure confluence, Church-Rosser, arbitrary-cardinality independence, general BPMN scheduler determinism, or the open run-level checked-source preservation theorem.
 
@@ -70,9 +88,20 @@ The independent executable oracle explicitly runs both orders outside the produc
 
 The durable ingress remains the existing content-bound Start, User Task Update, Message delivery, Timer firing, or effect-result command owned by each already admitted profile. This checkpoint changes only pure internal closure after one accepted ingress. It adds no Workflow command, Signal, Timer, Activity, Child Workflow, cancellation scope, retry policy, Task Queue rule, Workflow-chain field, or external-effect lifecycle.
 
-The preserved state relation is exact equality of the canonical semantic state and committed publication after the commuting batch. Delivery order, duplicate transport, retry, Worker replacement, Continue-As-New, and replay remain outside the internal choice because the Workflow calls one deterministic evaluator and persists only its committed result. Canonical operation-ID selection and canonical publication batching must replay byte-identically under the unchanged Temporal SDK and Server versions.
+| Concern | Unchanged hosting mechanism and required checkpoint fact |
+|---|---|
+| Ingress and acknowledgement | The existing content-bound command enters one Workflow handler and is acknowledged only through its existing committed or non-committed result after the whole evaluator call. An internal publication pair has no separate ingress or acknowledgement. |
+| Semantic waits, timers, effects, and cancellations | The core continues to own every wait and cancellation fact. Temporal schedules a durable wakeup or I/O only from the committed stable result; no host primitive selects either internal order. |
+| Workflow/core state relation | Workflow state contains the exact canonical RuntimeState and committed publication produced by the core. Handler entry, Workflow tasks, Activity attempts, and persistence steps are hidden stuttering steps and cannot expose a half-batch. |
+| Serialization and interleaving | The existing Workflow loop serializes accepted Updates, Signals, Timer firings, and Activity results through one evaluator call. Handler readiness or Promise order cannot choose between the two internal operations. |
+| Delivery, deduplication, and retry | Existing content-bound command identity, occurrence identity, stale refusal, and retry rules remain unchanged. Duplicate host delivery stutters or returns the existing refusal/result and never replays one member of the pair independently. |
+| Completion, failure, cancellation, Continue-As-New, and post-completion commands | Existing terminal receipts, failure mapping, scope cancellation, Workflow-chain rollover, and post-completion refusal apply only to the atomic evaluator result. The checkpoint adds no Continue-As-New field or branch and cannot leave one operation committed when the other fails. |
+| Query, Visibility, and external read models | The existing Query exposes only committed publication and canonical observation. Temporal Visibility remains operational metadata, and Product 2 read models consume only the published engine contract. Neither may reconstruct raw evaluator or Program order. |
+| Replay and versioning | Canonical operation selection, canonical RuntimeState insertion, paired publication sorting, and transition-index assignment must replay byte-identically under the unchanged Temporal SDK and Server versions. Existing histories and current-version Worker replacement remain required evidence. |
 
-The smallest host witness is the existing production parallel User Task profile under reversed program storage, Worker replacement between task completions, and replay of every Run. Host admission must continue to reject an unsupported mixed-wait profile even when its pure internal arming pair has a footprint, because commutation evidence is not source/profile or host-capability admission. A future live mixed-wait witness requires its own profile and host preflight.
+The preserved state relation is exact equality of the canonical semantic state and committed publication after the commuting batch. The smallest host witness is the existing production parallel User Task profile under reversed program storage, Worker replacement between task completions, and replay of every Run. The nearest realistic adapter counterexample is retaining raw evaluator or Program order in Workflow publication: reversing Program storage would then reverse E1/E2 transition/lifecycle pairing or produce a different replay result despite equal semantic work. The witness must reject that account.
+
+Host admission must continue to reject an unsupported mixed-wait profile even when its pure internal arming pair has a footprint, because commutation evidence is not source/profile or host-capability admission. A future live mixed-wait witness requires its own profile and host preflight.
 
 ## Required, optional, and excluded work
 
@@ -99,7 +128,9 @@ Excluded:
 
 ## Evidence and adversarial oracles
 
-The first Red is a synthetic internally valid state with one ordinary User Task arm and one ordinary Timer or Message arm on distinct owner-token places: current closure reports ambiguity even though both explicit execution orders reach the same canonical state. The second Red is the class separator: two effect arms have distinct operation, input, and output IDs but share one effect element and therefore the same activation-counter and occurrence-write atoms. A shallow identifier checklist can accept it; the footprint rule must reject it before either successor is selected.
+The first Red is a synthetic internally valid state with one ordinary User Task arm and one ordinary Timer or Message arm on distinct owner-token places: current closure reports ambiguity even though both explicit execution orders reach the same canonical state. The second Red is the transition-grounded write/write class separator: two effect arms have distinct operation, input, and output IDs but share one effect element and therefore the same activation-counter, wait-occurrence, and Activity-scope atoms. A shallow identifier checklist can accept it; the footprint rule must reject it before either successor is selected.
+
+A separate predicate-level algebra oracle supplies a left footprint whose `writes` contain `activation(userTask,shared)` and a right footprint whose `reads` contain that atom while every write/write comparison and every publication key remains disjoint. The predicate must reject the pair. This is intentionally abstract evidence for the write/read equation: none of the four current arming constructors supplies a transition-grounded pure write/read conflict, and the checkpoint does not invent one.
 
 Further mutations drop one activation write, tag two counter domains as equal, treat a write/read intersection as harmless, derive footprints from successor diffs, accept an unsupported operation, compare only final state, preserve raw execution order in publication, use locale collation, or classify only the selected first two members of a larger enabled set. Each mutation must fail an oracle outside the changed decision branch.
 
@@ -115,6 +146,6 @@ Reopen before adding an atom domain, admitting another operation family, widenin
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `51e59a6d167d2d8dd15fbf7d19355080f5dd493c` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
