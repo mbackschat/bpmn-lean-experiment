@@ -26,6 +26,7 @@ export * from "./incident-cancellation-update-handler.js";
 export * from "./incident-operations-query-handler.js";
 export * from "./host-invariant.js";
 export * from "./message-delivery-ledger.js";
+export * from "./sequential-multi-instance-history-capacity.js";
 export * from "./terminal-process-receipt.js";
 export * from "./workflow-implementation.js";
 export * from "./workflow-wire-validation.js";

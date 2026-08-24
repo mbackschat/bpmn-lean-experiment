@@ -1,9 +1,13 @@
 /** Shared identity pairing and root-state mechanics for closed Process-start families. */
 import { StimulusKind } from "./contract.js";
-import type { ProcessStartStimulus } from "./contract.js";
+import type {
+  ProcessStartStimulus,
+  StartProcessStimulus,
+} from "./contract.js";
 import { sameMessageChannel } from "./message-channel.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
+import { SemanticProfileId } from "./semantic-process-profile.js";
 import {
   addToken,
   ControlStateKind,
@@ -43,6 +47,52 @@ export function processStartMatchesProgram(
     default:
       return assertNever(stimulus);
   }
+}
+
+/** Creates the exact successor for an ordinary None Start command. */
+export function admitProcessStart(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: StartProcessStimulus,
+): RuntimeState | null {
+  const entryScopes = program.definitionScopes.filter(
+    ({ parentScopeId, originElementId }) =>
+      parentScopeId === null && originElementId === program.processId,
+  );
+  const rootScope = entryScopes[0];
+  if (
+    state.control.kind !== ControlStateKind.NotStarted ||
+    !processStartMatchesProgram(stimulus, program) ||
+    entryScopes.length !== 1 ||
+    rootScope === undefined ||
+    (program.identity.semanticProfile === SemanticProfileId.CalledProcessCallActivity &&
+      stimulus.initialVariables.length !== 0)
+  ) {
+    return null;
+  }
+  const rootOccurrence = {
+    processInstanceId: stimulus.instanceId,
+    definitionScopeId: rootScope.id,
+    activation: 1,
+  };
+  return {
+    ...state,
+    control: {
+      kind: ControlStateKind.Running,
+      instanceId: stimulus.instanceId,
+    },
+    initiationPending: true,
+    scopeOccurrences: [{ id: rootOccurrence, parent: null }],
+    scopeActivations: setActivationCount(
+      state.scopeActivations,
+      rootScope.id,
+      1,
+    ),
+    variables: {
+      ...state.variables,
+      process: { bindings: stimulus.initialVariables },
+    },
+  };
 }
 
 /** Creates the empty root occurrence shared by payload-free resolved Process starts. */

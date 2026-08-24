@@ -27,7 +27,6 @@ import {
 } from "./semantic-process-bounded-task-runtime.js";
 import {
   completeActivityVariableScope,
-  mergeProcessVariableBindings,
 } from "./semantic-process-data.js";
 import {
   isEventRaceMessageDefinition,
@@ -50,7 +49,7 @@ import {
   admitMessageStart,
 } from "./semantic-process-message-start.js";
 import {
-  processStartMatchesProgram,
+  admitProcessStart,
 } from "./semantic-process-triggered-start.js";
 import { admitTimerStart } from "./semantic-process-timer-start.js";
 import {
@@ -65,7 +64,9 @@ import {
   isSequentialMultiInstanceBoundaryDefinition,
   isSequentialMultiInstanceTaskDefinition,
 } from "./semantic-process-sequential-multi-instance-runtime.js";
-import { SemanticProfileId } from "./semantic-process-profile.js";
+import {
+  completeOrdinaryUserTask,
+} from "./semantic-process-user-task-runtime.js";
 import {
   profileAllowsStimulusValueDomain,
 } from "./semantic-profile-value-domain.js";
@@ -73,7 +74,6 @@ import {
   addToken,
   ControlStateKind,
   sameOccurrence,
-  setActivationCount,
 } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import { isGateAdmissibleRuntimeState } from "./runtime-state-well-formedness.js";
@@ -128,46 +128,10 @@ export function admit(
   }
   switch (stimulus.kind) {
     case StimulusKind.StartProcess: {
-      const entryScopes = program.definitionScopes.filter(
-        ({ parentScopeId, originElementId }) =>
-          parentScopeId === null && originElementId === program.processId,
-      );
-      const rootScope = entryScopes[0];
-      if (
-        state.control.kind === ControlStateKind.NotStarted &&
-        processStartMatchesProgram(stimulus, program) &&
-        entryScopes.length === 1 &&
-        rootScope !== undefined &&
-        (!isCallActivityProgram(program) || stimulus.initialVariables.length === 0)
-      ) {
-        const rootOccurrence = {
-          processInstanceId: stimulus.instanceId,
-          definitionScopeId: rootScope.id,
-          activation: 1,
-        };
-        return {
-          outcome: CommandOutcome.Committed,
-          state: {
-            ...state,
-            control: {
-              kind: ControlStateKind.Running,
-              instanceId: stimulus.instanceId,
-            },
-            initiationPending: true,
-            scopeOccurrences: [{ id: rootOccurrence, parent: null }],
-            scopeActivations: setActivationCount(
-              state.scopeActivations,
-              rootScope.id,
-              1,
-            ),
-            variables: {
-              ...state.variables,
-              process: { bindings: stimulus.initialVariables },
-            },
-          },
-        };
-      }
-      return { outcome: CommandOutcome.Rejected, state };
+      const next = admitProcessStart(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.TriggerMessageStart: {
       const next = admitMessageStart(program, state, stimulus);
@@ -204,39 +168,10 @@ export function admit(
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
       }
-      const wait = state.userTaskWaits.find((candidate) =>
-        sameOccurrence(candidate.id, stimulus.taskId)
-      );
-      if (
-        state.control.kind !== ControlStateKind.Running ||
-        wait === undefined ||
-        (isCallActivityProgram(program) && stimulus.submittedValues.length !== 0)
-      ) {
-        return { outcome: CommandOutcome.Rejected, state };
-      }
-      return {
-        outcome: CommandOutcome.Committed,
-        state: {
-          ...state,
-          controlTokens: addToken(
-            state.controlTokens,
-            wait.output,
-            wait.owner,
-          ),
-          userTaskWaits: state.userTaskWaits.filter(
-            (candidate) => candidate !== wait,
-          ),
-          variables: {
-            ...state.variables,
-            process: {
-              bindings: mergeProcessVariableBindings(
-                state.variables.process.bindings,
-                stimulus.submittedValues,
-              ),
-            },
-          },
-        },
-      };
+      const next = completeOrdinaryUserTask(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.DeliverMessage: {
       const next = isEventRaceMessageDefinition(program, stimulus.subscriptionId)
@@ -370,11 +305,6 @@ export function admit(
     default:
       return assertNever(stimulus);
   }
-}
-
-function isCallActivityProgram(program: SemanticProcessProgram): boolean {
-  return program.identity.semanticProfile ===
-    SemanticProfileId.CalledProcessCallActivity;
 }
 
 function assertNever(value: never): never {

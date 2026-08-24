@@ -6,7 +6,7 @@ This detail map owns exact current wire, semantic-profile, checked-source, Seman
 
 Exact BPMN bytes are captured, admitted under a guarded profile into a project-owned checked graph, and lowered deterministically into the Semantic Process IL. Current profiles remain bounded, versioned, and fail closed; unsupported source is rejected or preserved only where a reviewed profile says so. The first interchange composition profile combines the existing CIB Seven User Task Process-data surface with the existing standard-notation preservation capability without changing the executed projection.
 
-The sequential Multi-Instance checkpoint admits one exact schema-valid batch-review source into one closed checked node and one `awaitSequentialMultiInstanceUserTask` operation with exact data associations, one lifetime Timer arm, and fixed limits. Its profile identity is reserved at the source/IL boundary but deliberately absent from execution registration until the reviewed Lean and TypeScript runtime lands.
+The sequential Multi-Instance checkpoint admits one exact schema-valid batch-review source into one closed checked node and one `awaitSequentialMultiInstanceUserTask` operation with exact data associations, one lifetime Timer arm, and fixed limits. Its reviewed Lean and TypeScript runtime plus private capacity owner are implemented, while its profile identity remains deliberately absent from execution registration until the production live-refinement witnesses land atomically with it.
 
 ## Implemented
 

@@ -23,6 +23,9 @@ export {
 export {
   isWellFormedInitiateTimerOperation,
 } from "./semantic-process-timer-start.js";
+export {
+  admitProcessStart,
+} from "./semantic-process-triggered-start.js";
 export * from "./semantic-process-admission.js";
 export * from "./inclusive-gateway-admission.js";
 export * from "./event-race-admission.js";
@@ -51,6 +54,7 @@ export * from "./semantic-process-profile.js";
 export * from "./runtime-state-well-formedness.js";
 export * from "./runtime-state-identity-bound.js";
 export * from "./semantic-process-runtime.js";
+export * from "./semantic-process-user-task-runtime.js";
 export * from "./semantic-transition-trace.js";
 export * from "./simple-boolean-expression.js";
 export * from "./source-overlay-identity.js";

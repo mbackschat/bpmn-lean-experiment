@@ -57,7 +57,8 @@ export type WorkflowChainEventHistoryMargin = Readonly<{
 
 const temporalEventHistoryWarningEvents = 10_240;
 const temporalEventHistoryWarningBytes = 10 * 1_024 * 1_024;
-const historyEventEnvelopeBytes = 4 * 1_024;
+/** Conservative production-owned envelope used when service History bytes exclude closing Events. */
+export const workflowChainHistoryEventEnvelopeBytes = 4 * 1_024;
 
 export function decideWorkflowChainEventHistoryRollover(
   limits: WorkflowChainEventHistoryLimits,
@@ -196,7 +197,7 @@ export function requireWorkflowChainEventHistoryMargin(
     Math.max(timers.maximumPayloadBytes, activity.maximumPayloadBytes) +
     continuation.maximumPayloadBytes;
   const maximumActivationBytes = maximumPayloadBytes +
-    maximumActivationEvents * historyEventEnvelopeBytes;
+    maximumActivationEvents * workflowChainHistoryEventEnvelopeBytes;
   if (maximumActivationEvents > reservedEvents) {
     throw new RangeError(
       `Event History event warning margin ${reservedEvents} is below activation ${maximumActivationEvents}`,
