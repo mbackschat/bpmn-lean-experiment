@@ -2,10 +2,12 @@
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: owner-approved
 Review: approved-with-required-edits
 
 ## Product question and current boundary
+
+Owner-approved on 2026-08-24 after the same reviewer approved correction target `bd9b37f9` with no remaining findings. Implementation may open only the bounded checkpoint and later showcase lanes defined below.
 
 [PLAN](PLAN.md#exact-resume-point) requires the first MUE preview to be a polished Product 2 browser journey over the exact natural and interrupted [Sequential Multi-Instance account](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md). That account already owns the BPMN meaning, source, checked representation, runtime state, `openMultiInstances` observation, Temporal deadline scheduler, retained scenarios, and exact natural and interrupting outcomes. This proposal selects only the missing product command, decoding, presentation, and live-showcase contracts needed to let a user see those implemented facts.
 

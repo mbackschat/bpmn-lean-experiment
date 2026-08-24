@@ -44,7 +44,7 @@ After Alpha, the MUE content IDs run breadth-first to their first independently 
 
 Active work ID: `MUE-PREVIEW-ALPHA`.
 
-Next action: obtain the mandatory cold proposal review for the [MUE Preview Alpha proposal](MUE-PREVIEW-ALPHA-PROPOSAL.md), record owner approval after every required finding closes, then implement its strict start-data and progress-consumer checkpoint before opening the UI and showcase lane.
+Next action: implement the owner-approved [MUE Preview Alpha proposal](MUE-PREVIEW-ALPHA-PROPOSAL.md) through its strict start-data and progress-consumer checkpoint, run every focused and path-selected gate, and obtain the mandatory cold semantic-checkpoint review before opening the UI and showcase lane.
 
 Separate open changes: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
 
