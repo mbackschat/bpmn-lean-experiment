@@ -108,6 +108,9 @@ function internalOperationStarts(
     case SemanticOperationKind.AwaitMonitoredUserTask:
       return sameScope(owner, transitionOwner) &&
         operation.task.elementId === value.elementId;
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      return sameScope(owner, transitionOwner) &&
+        operation.task.elementId === value.elementId;
     case SemanticOperationKind.AwaitMessage:
       return sameScope(owner, transitionOwner) &&
         operation.message.elementId === value.elementId;
@@ -133,12 +136,6 @@ function internalOperationStarts(
       );
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteScope:
-      return false;
-    // The source and IL lanes admit this operation before its runtime transition exists, so no
-    // committed transition can name it: the core's evaluator returns no step for it and its
-    // publication completeness fails closed. It therefore licenses no occurrence start here, and a
-    // publication claiming one is rejected rather than credited to the ordinary User Task arm.
-    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return false;
     default:
       return assertNever(operation);
@@ -169,15 +166,44 @@ function externalStimulusStarts(
     case StimulusKind.StartProcess:
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
-    case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
     case StimulusKind.CancelIncidentProcess:
       return false;
+    case StimulusKind.CompleteUserTaskInstance: {
+      if (stimulus.taskId.processInstanceId !== owner.processInstanceId) {
+        return false;
+      }
+      const operation = uniqueSequentialMultiInstanceOperationForTask(
+        program,
+        stimulus.taskId.elementId,
+        owner.definitionScopeId,
+      );
+      return operation !== null &&
+        operation.task.elementId === value.elementId;
+    }
     default:
       return assertNever(stimulus);
   }
+}
+
+function uniqueSequentialMultiInstanceOperationForTask(
+  program: SemanticProcessProgram,
+  taskElementId: string,
+  ownerScopeId: string,
+): Extract<
+  SemanticOperation,
+  { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
+> | null {
+  const matches = program.operations.filter((operation): operation is Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
+  > => operation.kind ===
+      SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
+    operation.task.elementId === taskElementId &&
+    operationOwnsScope(operation, ownerScopeId, program));
+  return matches.length === 1 ? matches[0] ?? null : null;
 }
 
 function uniqueOperation(
@@ -205,6 +231,8 @@ function boundaryTimerElement(
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.EnterBoundedScope:
+      return operation.boundaryTimer.elementId;
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return operation.boundaryTimer.elementId;
     default:
       return null;
@@ -245,6 +273,8 @@ function elementBelongsToProgram(
       operationId === operation.id);
     return ownership !== undefined && (
       (ownership.scopeId === ownerScopeId &&
+        operation.kind !==
+          SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
         operation.origin.elementId === elementId) ||
       operationPublishesNestedElement(
         operation,
@@ -270,6 +300,13 @@ function operationPublishesNestedElement(
       return directlyOwned && operation.task.elementId === elementId;
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
+      return directlyOwned && (
+        operation.task.elementId === elementId ||
+        operation.boundaryTimer.elementId === elementId
+      );
+    // Only generated inner tasks and the lifetime boundary Event are BPMN flow-node occurrences;
+    // the operation origin must not create a second synthetic outer/controller occurrence.
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return directlyOwned && (
         operation.task.elementId === elementId ||
         operation.boundaryTimer.elementId === elementId
@@ -312,10 +349,6 @@ function operationPublishesNestedElement(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
-      return false;
-    // Same fail-closed reason as the start side above: it ends no occurrence because it commits no
-    // transition.
-    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return false;
     default:
       return assertNever(operation);

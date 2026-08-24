@@ -124,6 +124,7 @@ function expectedDelta(
         program,
         open,
         record.transition.stimulus,
+        supplied,
         commandId,
         transitionIndex,
       );
@@ -176,7 +177,12 @@ function internalDelta(
         requireWaitStart(supplied, processId, operation.task.elementId, owner),
       ]);
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
-      return failCompleteness();
+      return lifecycleDelta(optionalWaitStart(
+        supplied,
+        processId,
+        operation.task.elementId,
+        owner,
+      ));
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
       return lifecycleDelta([
@@ -286,14 +292,40 @@ function requireWaitStart(
   elementId: string,
   owner: ScopeOccurrenceId,
 ): UnnumberedFlowNodeOccurrenceStart {
-  return requireUnique(supplied.started.filter((start) =>
+  return requireUnique(matchingWaitStarts(
+    supplied,
+    processId,
+    elementId,
+    owner,
+  ));
+}
+
+/** The zero-or-one generated inner wait the SMI entry producer may publish. */
+function optionalWaitStart(
+  supplied: UnnumberedFlowNodeOccurrenceDelta,
+  processId: string,
+  elementId: string,
+  owner: ScopeOccurrenceId,
+): UnnumberedFlowNodeOccurrenceStart[] {
+  const starts = matchingWaitStarts(supplied, processId, elementId, owner);
+  if (starts.length > 1) failCompleteness();
+  return starts;
+}
+
+function matchingWaitStarts(
+  supplied: UnnumberedFlowNodeOccurrenceDelta,
+  processId: string,
+  elementId: string,
+  owner: ScopeOccurrenceId,
+): UnnumberedFlowNodeOccurrenceStart[] {
+  return supplied.started.filter((start) =>
     start.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
     start.anchor.id.processInstanceId === owner.processInstanceId &&
     start.anchor.id.elementId === elementId &&
     safePositive(start.anchor.id.activation) &&
     start.processId === processId &&
     start.elementId === elementId &&
-    sameScope(start.owner, owner)));
+    sameScope(start.owner, owner));
 }
 
 function requireScopeStart(

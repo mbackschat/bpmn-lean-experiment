@@ -56,6 +56,7 @@ export function expectedExternalLifecycle(
     UnnumberedCommittedTransitionRecord["transition"],
     { kind: "externalStimulus" }
   >["stimulus"],
+  supplied: UnnumberedFlowNodeOccurrenceDelta,
   commandId: string,
   transitionIndex: number,
 ): UnnumberedFlowNodeOccurrenceDelta {
@@ -66,11 +67,22 @@ export function expectedExternalLifecycle(
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
       return lifecycleDelta();
-    case StimulusKind.CompleteUserTaskInstance:
-      return lifecycleDelta([], [lifecycleEnd(
-        requireWait(open, stimulus.taskId),
-        FlowNodeOccurrenceTerminalKind.Completed,
-      )]);
+    case StimulusKind.CompleteUserTaskInstance: {
+      const completed = requireWait(open, stimulus.taskId);
+      const operation = sequentialMultiInstanceOperationForWait(
+        program,
+        completed,
+      );
+      return operation === null
+        ? lifecycleDelta([], [lifecycleEnd(
+            completed,
+            FlowNodeOccurrenceTerminalKind.Completed,
+          )])
+        : lifecycleDelta(
+            optionalSequentialSuccessor(supplied, completed, operation),
+            [lifecycleEnd(completed, FlowNodeOccurrenceTerminalKind.Completed)],
+          );
+    }
     case StimulusKind.DeliverMessage: {
       const message = requireWait(open, stimulus.subscriptionId);
       const pair = eventRacePair(program, open, message, "message");
@@ -161,13 +173,16 @@ function boundaryTimerLifecycle(
   const operations = program.operations.filter((operation) =>
     (operation.kind === SemanticOperationKind.AwaitBoundedUserTask ||
       operation.kind === SemanticOperationKind.AwaitMonitoredUserTask ||
+      operation.kind ===
+        SemanticOperationKind.AwaitSequentialMultiInstanceUserTask ||
       operation.kind === SemanticOperationKind.EnterBoundedScope) &&
     operation.boundaryTimer.elementId === timerId.elementId);
   if (operations.length !== 1) failCompleteness();
   const operation = operations[0]!;
   switch (operation.kind) {
     case SemanticOperationKind.AwaitBoundedUserTask:
-    case SemanticOperationKind.AwaitMonitoredUserTask: {
+    case SemanticOperationKind.AwaitMonitoredUserTask:
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask: {
       const host = requireUnique(open.filter((entry) =>
         entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
         entry.anchor.id.processInstanceId === timerId.processInstanceId &&
@@ -176,9 +191,9 @@ function boundaryTimerLifecycle(
         operationOwnedBy(program, operation, entry.owner)));
       return lifecycleDelta(
         [],
-        operation.kind === SemanticOperationKind.AwaitBoundedUserTask
-          ? [lifecycleEnd(host, FlowNodeOccurrenceTerminalKind.Cancelled)]
-          : [],
+        operation.kind === SemanticOperationKind.AwaitMonitoredUserTask
+          ? []
+          : [lifecycleEnd(host, FlowNodeOccurrenceTerminalKind.Cancelled)],
         [instantOccurrence(host.processId, timerId.elementId, host.owner)],
         commandId,
         transitionIndex,
@@ -205,6 +220,61 @@ function boundaryTimerLifecycle(
     default:
       return failCompleteness();
   }
+}
+
+/**
+ * The SMI operation whose generated wait this retained occurrence can be.
+ *
+ * The retained wait and the Program are the independent relation available at E2 completeness. The
+ * producer's Activity record and controller are deliberately absent here: using them would make the
+ * completeness relation repeat the producer's selection mechanism.
+ */
+function sequentialMultiInstanceOperationForWait(
+  program: SemanticProcessProgram,
+  wait: OpenOccurrence,
+): Extract<
+  SemanticOperation,
+  { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
+> | null {
+  const matches = program.operations.filter((operation): operation is Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
+  > => operation.kind ===
+      SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
+    operation.task.elementId === wait.elementId &&
+    wait.processId === requireProcessId(program, wait.owner) &&
+    operationOwnedBy(program, operation, wait.owner));
+  if (matches.length > 1) failCompleteness();
+  return matches[0] ?? null;
+}
+
+/**
+ * The optional next generated task in a non-final SMI completion.
+ *
+ * Completeness admits the two reviewed shapes. The independent batch fold/current-open equality
+ * decides which shape the committed successor state requires; this function neither reconstructs
+ * RuntimeState nor calls the open-set projection. A reused identity is not a successor.
+ */
+function optionalSequentialSuccessor(
+  supplied: UnnumberedFlowNodeOccurrenceDelta,
+  completed: OpenOccurrence,
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
+  >,
+): UnnumberedFlowNodeOccurrenceStart[] {
+  const matches = supplied.started.filter((start) =>
+    start.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+    !sameAnchor(start.anchor, completed.anchor) &&
+    start.anchor.id.processInstanceId === completed.owner.processInstanceId &&
+    start.anchor.id.elementId === operation.task.elementId &&
+    Number.isSafeInteger(start.anchor.id.activation) &&
+    start.anchor.id.activation > 0 &&
+    start.processId === completed.processId &&
+    start.elementId === operation.task.elementId &&
+    sameScope(start.owner, completed.owner));
+  if (matches.length > 1) failCompleteness();
+  return matches;
 }
 
 export function lifecycleDelta(

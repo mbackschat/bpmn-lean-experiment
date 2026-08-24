@@ -10,18 +10,26 @@ import { test } from "node:test";
 
 import {
   FlowNodeOccurrenceTerminalKind,
+  SemanticFlowNodeOccurrenceAnchorKind,
   SemanticOperationKind,
   SemanticTransitionKind,
+  applyInternalOperation,
   applyStimulusWithTrace,
   attachedTimersForBodyAnchor,
+  completeSequentialMultiInstanceIteration,
   foldFlowNodeOccurrenceLifecycleDelta,
   initialState,
+  interruptSequentialMultiInstance,
+  projectFlowNodeOccurrenceLifecycleDelta,
   requireCompleteFlowNodeOccurrenceLifecycles,
 } from "@bpmn-lean/semantic-core";
 import type {
   RetainedFlowNodeOccurrence,
+  RuntimeState,
+  SemanticOperation,
   SemanticProcessProgram,
   TracedCommandResult,
+  UnnumberedCommittedTransitionRecord,
   UnnumberedFlowNodeOccurrenceDelta,
 } from "@bpmn-lean/semantic-core";
 
@@ -40,6 +48,17 @@ import {
   fireDeadline,
   start as startBounded,
 } from "./bounded-task-fixture.ts";
+import {
+  completeIteration,
+  fireOuterTimer,
+  innerTaskId,
+  outerTimerId,
+  owner as sequentialOwner,
+  reviewProgram,
+  start as startSequential,
+  startEmpty as startSequentialEmpty,
+  startedState as sequentialStartedState,
+} from "./sequential-multi-instance-fixture.ts";
 
 test("rejects a state-difference substitute that omits Join, End, and scope-completion lifecycles from a valid E1 batch", () => {
   const started = applyStimulusWithTrace(
@@ -216,6 +235,337 @@ test("a retained host that lists no handler makes a correct deadline publication
     fired.flowNodeOccurrenceLifecycles,
   ));
 });
+
+test("admits exactly the generated inner occurrence on sequential Multi-Instance entry", () => {
+  for (const stimulus of [startSequential, startSequentialEmpty]) {
+    const { initiated, entered, initiate, entry } = enterSequential(stimulus);
+    const lifecycles = [
+      { started: [], ended: [] },
+      requireProjectedLifecycle(
+        sequentialStartedState(stimulus),
+        initiated,
+        { kind: "internal", operation: initiate, owner: sequentialOwner },
+        stimulus.commandId,
+        1,
+      ),
+      requireProjectedLifecycle(
+        initiated,
+        entered,
+        { kind: "internal", operation: entry, owner: sequentialOwner },
+        stimulus.commandId,
+        2,
+      ),
+    ] satisfies UnnumberedFlowNodeOccurrenceDelta[];
+    assert.doesNotThrow(() => requireCompleteFlowNodeOccurrenceLifecycles(
+      reviewProgram,
+      [],
+      stimulus.commandId,
+      [
+        externalRecord(stimulus),
+        internalRecord(initiate, sequentialOwner),
+        internalRecord(entry, sequentialOwner),
+      ],
+      lifecycles,
+    ));
+
+    if (stimulus === startSequential) {
+      const outerActivitySubstitution = structuredClone(lifecycles);
+      outerActivitySubstitution[2] = {
+        started: [{
+          anchor: {
+            kind: SemanticFlowNodeOccurrenceAnchorKind.CallActivity,
+            id: innerTaskId(0),
+          },
+          processId: reviewProgram.processId,
+          elementId: "Review",
+          owner: sequentialOwner,
+        }],
+        ended: [],
+      };
+      assertIncomplete(
+        reviewProgram,
+        [],
+        stimulus.commandId,
+        [
+          externalRecord(stimulus),
+          internalRecord(initiate, sequentialOwner),
+          internalRecord(entry, sequentialOwner),
+        ],
+        outerActivitySubstitution,
+      );
+    }
+  }
+});
+
+test("admits one completed inner occurrence and at most one distinct sequential successor", () => {
+  const first = enterSequential(startSequential).entered;
+  const nonFinal = completeSequential(first, 0);
+  const current = retainedInner(0);
+  const record = externalRecord(completeIteration(0, "reviewed alpha"));
+  assert.doesNotThrow(() => requireCompleteFlowNodeOccurrenceLifecycles(
+    reviewProgram,
+    [current],
+    "complete-review-0",
+    [record],
+    [nonFinal.delta],
+  ));
+
+  const mutations: UnnumberedFlowNodeOccurrenceDelta[] = [
+    { ...nonFinal.delta, ended: [] },
+    {
+      ...nonFinal.delta,
+      started: nonFinal.delta.started.map((start) => ({
+        ...start,
+        anchor: {
+          kind: SemanticFlowNodeOccurrenceAnchorKind.Wait,
+          id: innerTaskId(0),
+        },
+      })),
+    },
+    {
+      ...nonFinal.delta,
+      started: [
+        ...nonFinal.delta.started,
+        innerStart(2),
+      ],
+    },
+    {
+      ...nonFinal.delta,
+      started: nonFinal.delta.started.map((start) => ({
+        ...start,
+        processId: "Process_Substituted",
+      })),
+    },
+    {
+      ...nonFinal.delta,
+      started: nonFinal.delta.started.map((start) => ({
+        ...start,
+        elementId: "Review_Substituted",
+      })),
+    },
+    {
+      ...nonFinal.delta,
+      started: nonFinal.delta.started.map((start) => ({
+        ...start,
+        owner: { ...start.owner, activation: 2 },
+      })),
+    },
+  ];
+  for (const mutation of mutations) {
+    assertIncomplete(
+      reviewProgram,
+      [current],
+      "complete-review-0",
+      [record],
+      [mutation],
+    );
+  }
+
+  const second = completeSequential(nonFinal.after, 1);
+  const final = completeSequential(second.after, 2);
+  assert.deepEqual(final.delta.started, [], "final completion has no successor");
+  assert.doesNotThrow(() => requireCompleteFlowNodeOccurrenceLifecycles(
+    reviewProgram,
+    [retainedInner(2)],
+    "complete-review-2",
+    [externalRecord(completeIteration(2, "reviewed 2"))],
+    [final.delta],
+  ));
+});
+
+test("keeps sequential Multi-Instance deadline interruption exact", () => {
+  const first = enterSequential(startSequential).entered;
+  const nonFinal = completeSequential(first, 0);
+  const interrupted = projectSequentialInterruption(nonFinal.after);
+  const retained = retainedInner(1, [outerTimerId]);
+  const record = externalRecord(fireOuterTimer);
+  assert.doesNotThrow(() => requireCompleteFlowNodeOccurrenceLifecycles(
+    reviewProgram,
+    [retained],
+    fireOuterTimer.commandId,
+    [record],
+    [interrupted],
+  ));
+  assertIncomplete(
+    reviewProgram,
+    [retained],
+    fireOuterTimer.commandId,
+    [record],
+    [{
+      ...interrupted,
+      ended: interrupted.ended.map((end) =>
+        end.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait
+          ? { ...end, terminal: FlowNodeOccurrenceTerminalKind.Completed }
+          : end
+      ),
+    }],
+  );
+});
+
+function enterSequential(
+  stimulus: typeof startSequential,
+): Readonly<{
+  initiated: RuntimeState;
+  entered: RuntimeState;
+  initiate: SemanticOperation;
+  entry: SemanticOperation;
+}> {
+  const initiate = sequentialOperation(SemanticOperationKind.Initiate);
+  const entry = sequentialOperation(
+    SemanticOperationKind.AwaitSequentialMultiInstanceUserTask,
+  );
+  const initiated = applyInternalOperation(
+    reviewProgram,
+    initiate,
+    sequentialStartedState(stimulus),
+  );
+  assert.ok(initiated !== null);
+  const entered = applyInternalOperation(reviewProgram, entry, initiated);
+  assert.ok(entered !== null);
+  return { initiated, entered, initiate, entry };
+}
+
+function completeSequential(
+  before: RuntimeState,
+  counter: number,
+): Readonly<{ after: RuntimeState; delta: UnnumberedFlowNodeOccurrenceDelta }> {
+  const stimulus = completeIteration(counter, `reviewed ${counter}`);
+  const after = completeSequentialMultiInstanceIteration(
+    reviewProgram,
+    before,
+    stimulus,
+  );
+  assert.ok(after !== null);
+  return {
+    after,
+    delta: requireProjectedLifecycle(
+      before,
+      after,
+      { kind: "external", stimulus },
+      stimulus.commandId,
+      0,
+    ),
+  };
+}
+
+function projectSequentialInterruption(
+  before: RuntimeState,
+): UnnumberedFlowNodeOccurrenceDelta {
+  const after = interruptSequentialMultiInstance(
+    reviewProgram,
+    before,
+    fireOuterTimer,
+  );
+  assert.ok(after !== null);
+  return requireProjectedLifecycle(
+    before,
+    after,
+    { kind: "external", stimulus: fireOuterTimer },
+    fireOuterTimer.commandId,
+    0,
+  );
+}
+
+function requireProjectedLifecycle(
+  before: RuntimeState,
+  after: RuntimeState,
+  transition: Parameters<typeof projectFlowNodeOccurrenceLifecycleDelta>[3],
+  commandId: string,
+  transitionIndex: number,
+): UnnumberedFlowNodeOccurrenceDelta {
+  const delta = projectFlowNodeOccurrenceLifecycleDelta(
+    reviewProgram,
+    before,
+    after,
+    transition,
+    commandId,
+    transitionIndex,
+  );
+  assert.ok(delta !== null);
+  return delta;
+}
+
+function sequentialOperation(kind: SemanticOperationKind): SemanticOperation {
+  const operation = reviewProgram.operations.find((candidate) =>
+    candidate.kind === kind
+  );
+  assert.ok(operation !== undefined);
+  return operation;
+}
+
+function innerStart(counter: number) {
+  return {
+    anchor: {
+      kind: SemanticFlowNodeOccurrenceAnchorKind.Wait,
+      id: innerTaskId(counter),
+    },
+    processId: reviewProgram.processId,
+    elementId: "Review",
+    owner: sequentialOwner,
+  } as const;
+}
+
+function retainedInner(
+  counter: number,
+  attachedTimers: RetainedFlowNodeOccurrence["attachedTimers"] = [],
+): RetainedFlowNodeOccurrence {
+  return { ...innerStart(counter), attachedTimers };
+}
+
+function externalRecord(
+  stimulus: Extract<
+    UnnumberedCommittedTransitionRecord["transition"],
+    { kind: SemanticTransitionKind.ExternalStimulus }
+  >["stimulus"],
+): UnnumberedCommittedTransitionRecord {
+  return {
+    logicalTimeMs: 0,
+    transition: { kind: SemanticTransitionKind.ExternalStimulus, stimulus },
+    positionDelta: emptyPositionDelta(),
+  };
+}
+
+function internalRecord(
+  operation: SemanticOperation,
+  owner: RetainedFlowNodeOccurrence["owner"],
+): UnnumberedCommittedTransitionRecord {
+  return {
+    logicalTimeMs: 0,
+    transition: {
+      kind: SemanticTransitionKind.InternalOperation,
+      operationId: operation.id,
+      operationKind: operation.kind,
+      origin: operation.origin,
+      owner,
+    },
+    positionDelta: emptyPositionDelta(),
+  };
+}
+
+function emptyPositionDelta() {
+  return {
+    consumedTokens: [],
+    producedTokens: [],
+    enteredScopes: [],
+    exitedScopes: [],
+  };
+}
+
+function assertIncomplete(
+  program: SemanticProcessProgram,
+  retained: readonly RetainedFlowNodeOccurrence[],
+  commandId: string,
+  records: readonly UnnumberedCommittedTransitionRecord[],
+  lifecycles: readonly UnnumberedFlowNodeOccurrenceDelta[],
+): void {
+  assert.throws(() => requireCompleteFlowNodeOccurrenceLifecycles(
+    program,
+    retained,
+    commandId,
+    records,
+    lifecycles,
+  ), /complete lifecycle/u);
+}
 
 function requireAndFold(
   program: SemanticProcessProgram,

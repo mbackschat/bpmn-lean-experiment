@@ -161,6 +161,7 @@
             "awaitUserTask",
             "awaitBoundedUserTask",
             "awaitMonitoredUserTask",
+            "awaitSequentialMultiInstanceUserTask",
             "awaitMessage",
             "awaitTimer",
             "awaitEffect",

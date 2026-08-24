@@ -36,6 +36,7 @@ import type {
   ExecutionPublicationTransportValidationContext,
   ExecutionPublicationValidationContext,
 } from "./semantic-publication.js";
+import { isSequentialMultiInstanceProgress } from "./sequential-multi-instance-publication-validation.js";
 import { isCanonicalPublicationVariablePatch } from "./semantic-publication-variable-validation.js";
 
 export type ExecutionPublicationValidationAuthority =
@@ -269,7 +270,8 @@ function isCurrent(
   lastLogicalTime: number | undefined,
 ): value is CurrentCommittedExecution {
   if (!isRecord(value) || !hasOnlyKeys(value, ["revision", "state", "controlTokens", "scopes"]) ||
-    value.revision !== page.headRevision || !isState(value.state, page.processInstanceId) ||
+    value.revision !== page.headRevision ||
+    !isState(value.state, page.processInstanceId, program) ||
     !isTokenList(value.controlTokens, program) || !isScopeList(value.scopes, program, true) ||
     (lastLogicalTime !== undefined &&
       (value.state as StateObservation).logicalTimeMs !== lastLogicalTime)) {
@@ -282,12 +284,23 @@ function isCurrent(
       scopes.some(({ id }) => sameScope(id, owner)));
 }
 
-function isState(value: unknown, instanceId: unknown): value is StateObservation {
+function isState(
+  value: unknown,
+  instanceId: unknown,
+  program: SemanticProcessProgram | null,
+): value is StateObservation {
+  const hasMultiInstances = isRecord(value) &&
+    Object.hasOwn(value, "openMultiInstances");
+  const programDeclaresMultiInstances = program?.operations.some(({ kind }) =>
+    kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+  );
   if (!isRecord(value) || !hasOnlyKeys(value, [
     "kind", "instanceId", "status", "activeWaits", "openUserTasks",
     "openMessageSubscriptions", "openTimers", "openEffects", "openIncidents",
+    ...(hasMultiInstances ? ["openMultiInstances"] : []),
     "variables", "enabledInteractions", "logicalTimeMs",
   ]) || value.kind !== CanonicalObservationKind.State || value.instanceId !== instanceId ||
+    (program !== null && hasMultiInstances !== programDeclaresMultiInstances) ||
     !isSafe(value.logicalTimeMs, 0) ||
     ![ProcessStatus.Running, ProcessStatus.Completed, ProcessStatus.Cancelled]
       .includes(value.status as ProcessStatus) ||
@@ -301,13 +314,20 @@ function isState(value: unknown, instanceId: unknown): value is StateObservation
     !value.openEffects.every(isOpenEffect) || !canonical(value.openEffects, compareOpenOccurrence) ||
     !Array.isArray(value.openIncidents) || !value.openIncidents.every(isOpenIncident) ||
     !canonical(value.openIncidents, (a, b) => compareOpenOccurrence(a.effect, b.effect)) ||
+    (hasMultiInstances && !isSequentialMultiInstanceProgress(
+      value.openMultiInstances,
+      instanceId,
+      value.openUserTasks,
+    )) ||
     !isPatch(value.variables) || !isActiveWaits(value.activeWaits) ||
     !isEnabledInteractions(value.enabledInteractions, value)) {
     return false;
   }
   return value.status === ProcessStatus.Running || [
     value.openUserTasks, value.openMessageSubscriptions, value.openTimers,
-    value.openEffects, value.openIncidents, value.enabledInteractions, value.activeWaits,
+    value.openEffects, value.openIncidents,
+    ...(hasMultiInstances ? [value.openMultiInstances] : []),
+    value.enabledInteractions, value.activeWaits,
   ].every((items) => Array.isArray(items) && items.length === 0);
 }
 
