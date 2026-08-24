@@ -49,6 +49,26 @@ test("keeps the public v1 terminal receipt recursively free of host recovery fac
   assert.deepEqual(findForbiddenKeys(decoded.receipt), []);
 });
 
+test("accepts only terminal-empty sequential Multi-Instance progress", () => {
+  const receipt = terminalReceipt(ProcessStatus.Completed);
+  const withClosedMultiInstance = {
+    ...receipt,
+    finalState: { ...receipt.finalState, openMultiInstances: [] },
+  };
+
+  assert.deepEqual(
+    requireTerminalProcessReceipt(withClosedMultiInstance),
+    withClosedMultiInstance,
+  );
+  assert.throws(
+    () => requireTerminalProcessReceipt({
+      ...receipt,
+      finalState: { ...receipt.finalState, openMultiInstances: [{}] },
+    }),
+    /malformed terminal Process receipt/u,
+  );
+});
+
 test("rejects substituted receipt identity and duplicate recovery command IDs", () => {
   const receipt = terminalReceipt(ProcessStatus.Completed);
   const result = workflowResult(receipt);

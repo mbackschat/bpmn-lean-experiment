@@ -149,6 +149,35 @@ test("a resumable checkpoint is accepted unchanged", () => {
   );
 });
 
+test("the optional sequential Multi-Instance controller collection is structurally decoded", () => {
+  const beforeEntry = { ...resumable, sequentialMultiInstanceControllers: [] };
+
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationStateV1(beforeEntry, program, instanceId),
+    beforeEntry,
+  );
+});
+
+test("a malformed sequential Multi-Instance controller is refused before recovery", () => {
+  const forged = {
+    ...resumable,
+    sequentialMultiInstanceControllers: [{
+      id: {
+        processInstanceId: instanceId,
+        elementId: "UserTask_1",
+        activation: 1,
+      },
+      snapshot: ["one"],
+      outputSlots: [],
+    }],
+  };
+
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(forged, program, instanceId),
+    /Malformed committed RuntimeState continuation/u,
+  );
+});
+
 test("a continuation whose live deadline precedes its recovered time is refused", () => {
   // Recovering below a live deadline would let the next firing lower logical time, which is the
   // one monotonicity fact the state conjuncts cannot supply. The chain boundary is where it is

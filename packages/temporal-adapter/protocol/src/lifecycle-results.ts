@@ -92,6 +92,8 @@ function isProcessReceiptWithStatus(
   }
   const definition = value.definition;
   const finalState = value.finalState;
+  const hasMultiInstances = isRecord(finalState) &&
+    Object.hasOwn(finalState, "openMultiInstances");
   return (
     isRecord(definition) &&
     hasOnlyKeys(definition, [
@@ -121,6 +123,7 @@ function isProcessReceiptWithStatus(
       "openTimers",
       "openEffects",
       "openIncidents",
+      ...(hasMultiInstances ? ["openMultiInstances"] : []),
       "variables",
       "enabledInteractions",
       "logicalTimeMs",
@@ -140,6 +143,9 @@ function isProcessReceiptWithStatus(
     finalState.openEffects.length === 0 &&
     Array.isArray(finalState.openIncidents) &&
     finalState.openIncidents.length === 0 &&
+    (!hasMultiInstances ||
+      (Array.isArray(finalState.openMultiInstances) &&
+        finalState.openMultiInstances.length === 0)) &&
     isVariablePatch(finalState.variables) &&
     Array.isArray(finalState.enabledInteractions) &&
     finalState.enabledInteractions.length === 0 &&

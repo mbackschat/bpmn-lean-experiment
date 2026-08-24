@@ -251,16 +251,23 @@ export function workflowContinuationBudgetViolation(
 }
 
 function isRuntimeState(value: unknown): value is RuntimeState {
-  if (!isRecord(value) || !hasOnlyKeys(value, [
+  if (!isRecord(value)) return false;
+  const keys = [
     "control", "initiationPending", "scopeOccurrences", "controlTokens",
     "userTaskWaits", "messageWaits", "timerWaits", "effectWaits",
     "effectIncidents", "selectedBranchSets", "eventRaces",
-    "calledProcessOccurrences", "activityOccurrences", "variables",
+    "calledProcessOccurrences", "activityOccurrences",
+    ...(Object.hasOwn(value, "sequentialMultiInstanceControllers")
+      ? ["sequentialMultiInstanceControllers"]
+      : []),
+    "variables",
     "taskActivations", "messageActivations", "timerActivations",
     "eventRaceActivations", "callActivations", "effectActivations",
     "scopeActivations", "activityActivations",
     "endOccurrences", "logicalTimeMs",
-  ]) || !isRecord(value.control) || !hasOnlyKeys(value.control, ["kind", "instanceId"]) ||
+  ];
+  if (!hasOnlyKeys(value, keys) ||
+    !isRecord(value.control) || !hasOnlyKeys(value.control, ["kind", "instanceId"]) ||
     value.control.kind !== ControlStateKind.Running ||
     !isNonemptyString(value.control.instanceId) ||
     typeof value.initiationPending !== "boolean" ||
@@ -275,6 +282,8 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     !isList(value.eventRaces, isEventRace) ||
     !isList(value.calledProcessOccurrences, isCalledProcessOccurrence) ||
     !isList(value.activityOccurrences, isActivityOccurrence) ||
+    (Object.hasOwn(value, "sequentialMultiInstanceControllers") &&
+      !isList(value.sequentialMultiInstanceControllers, isSequentialMultiInstanceController)) ||
     !isScopedVariables(value.variables) ||
     !isList(value.taskActivations, isActivationCounter) ||
     !isList(value.messageActivations, isActivationCounter) ||
@@ -301,15 +310,26 @@ function isRuntimeState(value: unknown): value is RuntimeState {
 function isActivityOccurrence(value: unknown): boolean {
   return isRecord(value) &&
     hasOnlyKeys(value, ["id", "owner", "operationId", "body", "attachedTimers"]) &&
-    isRecord(value.id) &&
-    hasOnlyKeys(value.id, ["processInstanceId", "activityElementId", "activation"]) &&
-    isNonemptyString(value.id.processInstanceId) &&
-    isNonemptyString(value.id.activityElementId) &&
-    isSafeInteger(value.id.activation, 1) &&
+    isActivityOccurrenceId(value.id) &&
     isScopeId(value.owner) &&
     isNonemptyString(value.operationId) &&
     isActivityBody(value.body) &&
     isList(value.attachedTimers, isOccurrenceId);
+}
+
+function isSequentialMultiInstanceController(value: unknown): boolean {
+  return isRecord(value) && hasOnlyKeys(value, ["id", "snapshot", "outputSlots"]) &&
+    isActivityOccurrenceId(value.id) &&
+    isList(value.snapshot, isWireString) &&
+    isList(value.outputSlots, isWireString);
+}
+
+function isActivityOccurrenceId(value: unknown): boolean {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["processInstanceId", "activityElementId", "activation"]) &&
+    isNonemptyString(value.processInstanceId) &&
+    isNonemptyString(value.activityElementId) &&
+    isSafeInteger(value.activation, 1);
 }
 
 function isActivityBody(value: unknown): boolean {
