@@ -76,6 +76,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
       | .notStarted
       | .completed _ => none
   | .userTask _ _ (some _) => none
+  | .sequentialMultiInstanceUserTask .. => none
   | .intermediateCatchTimerEvent _ _ => none
   | .intermediateCatchMessageEvent _ _ => none
   | .receiveTask _ _ => none
@@ -145,6 +146,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
                 exact .userTask id name before instanceId controlEq enabled
               · simp [fireNode?, controlEq, enabled] at result
       | some metadata => simp [fireNode?] at result
+  | sequentialMultiInstanceUserTask id name input output normalOutputFlowId boundaryTimer =>
+      simp [fireNode?] at result
   | intermediateCatchTimerEvent id durationLiteral =>
       simp [fireNode?] at result
   | intermediateCatchMessageEvent id channel =>
