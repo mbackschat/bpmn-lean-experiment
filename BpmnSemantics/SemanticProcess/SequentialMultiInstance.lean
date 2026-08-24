@@ -3,7 +3,7 @@ import BpmnSemantics.SemanticProcess.RuntimeState
 /-! # Sequential Multi-Instance outer controller
 
 The derived quantities of one open outer controller, the record it binds to, and its canonical order.
-The account is [the sequential Multi-Instance proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md),
+The account is [the Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md),
 whose implemented representation stores the owning identity, the immutable snapshot, and the dense
 output slots and derives every other quantity.
 

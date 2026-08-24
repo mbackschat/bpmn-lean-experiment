@@ -5,7 +5,7 @@ import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 
 The quantified content of the four transitions: what every legal step of each rule preserves,
 publishes, and writes. The account is
-[the sequential Multi-Instance proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md),
+[the Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md),
 whose Lean lane names these as its minimum laws.
 
 Every law here is stated over a relation rather than over an evaluator, which is what makes it a

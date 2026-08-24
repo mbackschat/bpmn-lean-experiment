@@ -214,7 +214,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** CIB Seven `2.2.0` under `CIB-CFG-0001` deploys the schema-valid exact fixture, exposes three distinct generated User Task IDs in `alpha`, `beta`, `gamma` item order, keeps one unchanged outer Timer job across task turnover, completes a zero-item collection without a task or Timer, and routes exact Timer execution after the first completion to the escalation User Task while making the current review task stale.
 
-**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [Sequential Multi-Instance proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md#cib-seven-relationship-boundary).
+**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#cib-seven-relationship-boundary).
 
 **Fidelity boundary:** Task existence, generated task identity, item value, loop-variable values, Timer-job identity and due date, task staleness, boundary-route activation, and Process completion are observed through public CIB services. The probe supplies the collection under the literal `loopDataInputRef` identity because that is CIB's public Process-variable binding; this does not establish general BPMN Data Association execution or the project mediator.
 
@@ -248,7 +248,7 @@ The exact three-item probe observes `nrOfInstances = 3` at loop counters `0`, `1
 
 The project standards profile does not adopt that counter identity. It keeps normative generated-instance accounting in `numberOfInstances` and exposes the once-evaluated desired cardinality separately as project-owned `plannedInstanceCount`; neither CIB variable name nor value is semantic authority.
 
-**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), the pinned `SequentialMultiInstanceActivityBehavior`, and the [selected counter resolution](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md#normative-account-and-selected-resolutions).
+**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), the pinned `SequentialMultiInstanceActivityBehavior`, and the [selected counter resolution](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#normative-account-and-selected-resolutions).
 
 **Boundary:** This interpretation covers only the exact sequential collection-driven fixture under `CIB-CFG-0001`. It says nothing about parallel Multi-Instance, runtime modification, migration, completion conditions, compensation, or project public counter names.
 
@@ -264,7 +264,7 @@ The exact schema-valid fixture declares the scalar `outputDataItem`, collection 
 
 This remains a limitation rather than a confirmed deviation because the phase-zero probe is not retained answer-free producer evidence for a general conformance claim, and CIB exposes no standard User Task output-completion protocol distinct from its public variable API. The project standards profile independently requires exact indexed scalar-to-collection mediation and atomic final publication; it selects no CIB output-aggregation oracle.
 
-**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [project output rule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md#stable-semantic-rules).
+**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [project output rule](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#stable-semantic-rules).
 
 **Boundary:** The finding covers only this exact sequential User Task fixture and the five declared output identity/name candidates. It does not classify Camunda input/output extensions, delegates, expressions, Sub-Process data, another Activity body, or general CIB Data Association behavior.
 

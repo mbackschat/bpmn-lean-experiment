@@ -90,7 +90,7 @@ Not established:
 - **Non-reissue.** Absent still, narrowed to the issuing discipline as above.
 - **Preservation.** That every transition preserves the bound is unproved and stays in the open lane. Preservation of the uniqueness conjunct alone reaches ninety-one wait-collection assignment sites across fifteen semantic modules.
 - **The adapter's assumption.** Its durable deadline join needs non-reissue across a Continue-As-New boundary. This narrows what that rests on and discharges none of it.
-- **Sequential Multi-Instance registration.** [That capsule](../capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) conditions registration on the obligation being *stated* or its projection narrowed, and a narrowed absence is not a statement. Registration therefore needs either the issuing discipline discharged for the activity family's minting sites, which is bounded and is the natural follow-on, or the public projection narrowed. This proposal does not unblock it, and an earlier version implied that it did.
+- **Sequential Multi-Instance registration.** [That capsule](../capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) conditions registration on the obligation being *stated* or its projection narrowed, and a narrowed absence is not a statement. Registration therefore needs either the issuing discipline discharged for the activity family's minting sites, which is bounded and is the natural follow-on, or the public projection narrowed. This proposal does not unblock it, and an earlier version implied that it did.
 - **Any BPMN meaning.** No profile, operation kind, admission capability, public observation, or transition family changes.
 
 ## Consumers, which fix the family set

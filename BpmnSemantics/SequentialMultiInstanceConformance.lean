@@ -6,7 +6,7 @@ import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 The concrete run that makes the four transitions' *content* checked rather than merely defined: one
 three-item batch review entered, iterated twice, completed naturally, and separately interrupted after
 one accepted result. The account is
-[the sequential Multi-Instance proposal](docs/capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md).
+[the Sequential Multi-Instance specification](docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md).
 
 The quantified laws in [the laws owner](SemanticProcess/SequentialMultiInstanceLaws.lean) are all
 preservation facts, and every one of them is satisfied by a transition that does nothing. That is not a

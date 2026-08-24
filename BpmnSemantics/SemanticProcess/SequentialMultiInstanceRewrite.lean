@@ -7,7 +7,7 @@ import BpmnSemantics.SemanticProcess.WaitActivation
 
 What one admitted sequential Multi-Instance User Task is, which submitted values it admits, and what
 each of its four rules does to committed runtime state. The account is
-[the sequential Multi-Instance proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md).
+[the Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md).
 [The transition owner](SequentialMultiInstanceTransition.lean) states what a legal transition *is* and
 proves the evaluators stay inside it; this module is the vocabulary both halves read.
 

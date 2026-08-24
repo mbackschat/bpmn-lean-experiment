@@ -1,17 +1,16 @@
-# Sequential Multi-Instance User Task proposal
+# Sequential Multi-Instance User Task specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved-with-required-edits
+Implemented and evidence-closed. The exact implemented and absent boundary is maintained by [`implementation-status-delegation:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#sequential-multi-instance-user-task), and the governed review history is retained in the receipt below.
 
-## Question and current boundary
+## Implemented boundary
 
-The exact standards-only profile is implemented and execution-registered across source admission and lowering, Lean, the independently written TypeScript core, canonical public progress, E1/E2 publication, the differential pipeline, the production Temporal Workflow chain, and the retained whole-model corpus. The natural witness proves pre-arming rollover, one lifetime Timer, Worker replacement, accepted-result recovery, three ordered iterations, atomic output publication, terminal-receipt equality, production-bound comparison, and replay. The interrupted witness proves one completed iteration, the same lifetime Timer through turnover, a third Run only after Timer reduction, partial-output absence, stale-task refusal, escalation completion, publication equality, and replay. The additive Activity-family issuing discipline required by the public outer identity is independently checkpoint-approved. The reproducible closure cost is recorded. Closure review required an exact program-aware controller binding, the stated conditional finite-snapshot closure theorem, and alignment of the authoritative owners; those corrections are implemented, while their clean immutable gate, same-thread audit, and proposal graduation remain open.
+The exact standards-only profile is implemented and execution-registered across source admission and lowering, Lean, the independently written TypeScript core, canonical public progress, E1/E2 publication, the differential pipeline, the production Temporal Workflow chain, and the retained whole-model corpus. The natural witness proves pre-arming rollover, one lifetime Timer, Worker replacement, accepted-result recovery, three ordered iterations, atomic output publication, terminal-receipt equality, production-bound comparison, and replay. The interrupted witness proves one completed iteration, the same lifetime Timer through turnover, a third Run only after Timer reduction, partial-output absence, stale-task refusal, escalation completion, publication equality, and replay. The additive Activity-family issuing discipline required by the public outer identity is independently checkpoint-approved. Closure review and both correction audits are complete, and the corrected immutable target passed the complete clean gate.
 
-This proposal selects the first bounded `SEQUENTIAL-MULTI-INSTANCE` slice: one private executable Process reviews an ordered collection through one sequential Multi-Instance User Task, aggregates one string result per generated inner instance, and either completes normally or is interrupted by one exact `PT1S` Timer Boundary Event attached to the outer Multi-Instance Activity. The timer route reaches one ordinary escalation User Task so cancellation remains observable before Process completion.
+This specification defines the first bounded `SEQUENTIAL-MULTI-INSTANCE` slice: one private executable Process reviews an ordered collection through one sequential Multi-Instance User Task, aggregates one string result per generated inner instance, and either completes normally or is interrupted by one exact `PT1S` Timer Boundary Event attached to the outer Multi-Instance Activity. The timer route reaches one ordinary escalation User Task so cancellation remains observable before Process completion.
 
-The proposed standards-only profile ID is `bpmn-2.0.2-sequential-multi-instance-user-task-draft`. BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 own the Activity wrapper, once-evaluated instance plan, sequential generation, runtime counters, per-instance input and output items, collection aggregation, and completion. Clauses 10.5.5, 10.5.6, 13.3.2, and 13.5.3 plus Tables 10.91, 10.92, 10.101, and 10.122 own the exact interrupting Timer Boundary Event inherited from the reviewed [Activity boundary Timer account](ACTIVITY-BOUNDARY-TIMER-SPEC.md#normative-basis). Existing User Task identity and host mapping remain bounded by `CIB-AGR-0001` and `CIB-OP-0001`; phase-zero relations `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001` classify CIB Multi-Instance observations without selecting them as semantic authority.
+The standards-only profile ID is `bpmn-2.0.2-sequential-multi-instance-user-task-draft`. BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 own the Activity wrapper, once-evaluated instance plan, sequential generation, runtime counters, per-instance input and output items, collection aggregation, and completion. Clauses 10.5.5, 10.5.6, 13.3.2, and 13.5.3 plus Tables 10.91, 10.92, 10.101, and 10.122 own the exact interrupting Timer Boundary Event inherited from the reviewed [Activity boundary Timer account](ACTIVITY-BOUNDARY-TIMER-SPEC.md#normative-basis). Existing User Task identity and host mapping remain bounded by `CIB-AGR-0001` and `CIB-OP-0001`; phase-zero relations `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001` classify CIB Multi-Instance observations without selecting them as semantic authority.
 
 The implementation adds the selected transition family, checked-source shape, Semantic Process operation, runtime record, public observation, data-association slice, and Temporal refinement claim without broadening the exclusions below.
 
@@ -288,83 +287,13 @@ This is one additive pre-release profile, one additive optional public observati
 
 The implementation updates the profile catalog and artifact, source parser/projection, checked graph, Semantic Process contract and schema, Lean wire and evaluator boundary, TypeScript runtime and validators, canonical scenario schema, observation validators, E1/E2 projection, differential case catalog, Product 1 protocol/client/testkit consumers, Workflow continuation validation and capacity measurement, registered corpus, and documentation owners as one compatibility change. Product 2 gains only tolerant decoding and capability disclosure; it does not gain a new workflow or UI behavior in this capsule.
 
-Existing executable constraints include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [semantic closure documentation](../../scripts/semantic-closure-documentation.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [Workflow occurrence authority](../../scripts/workflow-occurrence-semantic-authority.test.ts), [Activity boundary Timer source evidence](../../packages/bpmn-source/test/activity-boundary-timer-source.test.ts), [Activity boundary Timer semantic evidence](../../packages/semantic-core/test/activity-boundary-timer.test.ts), [profile value-domain evidence](../../packages/semantic-core/test/semantic-profile-value-domain.test.ts), [Workflow Timer capacity](../../packages/temporal-adapter/workflow/test/workflow-timer-capacity.test.ts), and this proposal's [reviewability guard](../../scripts/document-reviewability.test.ts).
-
-### Owners this implementation grows
-
-| Owner | Current headroom before the 600-nonblank-line review target |
-|---|---:|
-| [public semantic contract](../../packages/semantic-core/src/contract.ts) | 228 |
-| [checked Process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 339 |
-| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 180 |
-| [runtime state contract](../../packages/semantic-core/src/semantic-process-state.ts) | 188 |
-| [canonical scenario projection](../../packages/semantic-core/src/scenario.ts) | 65 |
-| [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 537 |
-| [profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 388 |
-| [FlowNode occurrence lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 28 |
-| [FlowNode occurrence open set](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 27 |
-| [BPMN source compiler composition](../../packages/bpmn-source/src/compile.ts) | 196 |
-| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
-| [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
-| [runtime-state well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 52 |
-| [bounded deadline scheduler](../../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) | 269 |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 4 |
-| [Lean occurrence lifecycle](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 1 |
-| [Lean runtime-state Activity fixtures](../../BpmnSemantics/RuntimeStateActivityConformance.lean) | 474 |
-| [Lean User Task metadata fixtures](../../BpmnSemantics/UserTaskMetadataConformance.lean) | 242 |
-| [sequential Multi-Instance source owner](../../packages/bpmn-source/src/sequential-multi-instance-source.ts) | 10 |
-
-Owners this implementation **created**, listed because the recomputing guard measures rows that exist and cannot report rows nobody wrote:
-
-| Owner | Current headroom before the 600-nonblank-line review target |
-|---|---:|
-| [outer controller](../../packages/semantic-core/src/sequential-multi-instance-controller.ts) | 489 |
-| [exact controller binding](../../packages/semantic-core/src/sequential-multi-instance-binding.ts) | 433 |
-| [Multi-Instance transitions](../../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | 175 |
-| [Lean outer controller](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 468 |
-| [Lean definition facts and rewrites](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceRewrite.lean) | 309 |
-| [Lean transitions and bridges](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceTransition.lean) | 131 |
-| [Lean laws](../../BpmnSemantics/SemanticProcess/SequentialMultiInstanceLaws.lean) | 190 |
-| [Lean fixtures](../../BpmnSemantics/SequentialMultiInstanceConformance.lean) | 109 |
-| [progress projection](../../packages/semantic-core/src/sequential-multi-instance-observation.ts) | 462 |
-| [occurrence accounting](../../packages/semantic-core/src/flow-node-occurrence-sequential-multi-instance.ts) | 337 |
-| [ordinary User Task completion](../../packages/semantic-core/src/semantic-process-user-task-runtime.ts) | 542 |
-| [history measurement contract](../../packages/temporal-adapter/workflow/src/sequential-multi-instance-history-measurement.ts) | 495 |
-| [history-capacity owner](../../packages/temporal-adapter/workflow/src/sequential-multi-instance-history-capacity.ts) | 47 |
-| [history-capacity owner tests](../../packages/temporal-adapter/workflow/test/sequential-multi-instance-history-capacity.test.ts) | 166 |
-| [capacity source fixture](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-fixture.ts) | 215 |
-| [capacity fixture oracle](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-fixture.test.ts) | 556 |
-| [capacity publication wrapper](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-publication.ts) | 499 |
-| [capacity topology builders](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-topologies.ts) | 159 |
-| [capacity private Workflow](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-workflows.ts) | 174 |
-| [capacity real-service probe](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity.temporal-test.ts) | 185 |
-| [Lean runtime-position validity](../../BpmnSemantics/SemanticProcess/RuntimePositionValidity.lean) | 486 |
-| [Lean Program-binding conformance](../../BpmnSemantics/SequentialMultiInstanceProgramBindingConformance.lean) | 270 |
-| [profile observation selection](../../packages/semantic-core/src/semantic-profile-observations.ts) | 560 |
-| [command-data admission](../../packages/semantic-core/src/sequential-multi-instance-command-data-admission.ts) | 467 |
-| [command-data admission tests](../../packages/semantic-core/test/sequential-multi-instance-command-data-admission.test.ts) | 512 |
-| [observation-contract tests](../../packages/semantic-core/test/sequential-multi-instance-observation-contract.test.ts) | 378 |
-| [registration tests](../../packages/semantic-core/test/sequential-multi-instance-registration.test.ts) | 535 |
-| [differential case owner](../../packages/differential/test/sequential-multi-instance-pipeline-cases.ts) | 469 |
-| [differential case tests](../../packages/differential/test/sequential-multi-instance-pipeline-cases.test.ts) | 497 |
-| [ordered stimulus delivery](../../packages/temporal-adapter/testkit/src/ordered-stimulus-delivery.ts) | 464 |
-| [deadline schedule](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-deadline-temporal.test.ts) | 518 |
-| [deadline witness](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-deadline-witness.ts) | 419 |
-| [history evidence oracle](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-evidence.ts) | 148 |
-| [history evidence tests](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-evidence.test.ts) | 405 |
-| [production evidence](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-production-evidence.ts) | 444 |
-| [production-history topology](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-production-history-topology.ts) | 427 |
-| [live refinement](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-refinement.temporal-test.ts) | 67 |
-| [scenario value-contract owner](../../scripts/scenario-variable-value-contract.ts) | 362 |
-| [contract-artifact tests](../../scripts/sequential-multi-instance-contract-artifact.test.ts) | 448 |
-
-At proposal time the lowering owner had 43 lines of headroom, the occurrence lifecycle 44, the occurrence open set 42, and the canonical scenario projection 75, so the expected lowering, occurrence, and projection mechanisms could not fit cohesively in any of them. Their implementation must therefore create dedicated Multi-Instance owners and leave only bounded wiring in those existing files. The occurrence extraction has discharged that condition: the accounting mechanism lives in its own owner and the two occurrence files kept only a delegating arm each, which is why their rows above now measure lower rather than higher. The condition stops applying to a remaining mechanism only if the review target measurements change enough that its complete cohesive form fits while every owner remains below 600; every figure in these tables is recomputed by the reviewability guard rather than treated as permanent prose.
+Existing executable constraints include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [semantic closure documentation](../../scripts/semantic-closure-documentation.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [Workflow occurrence authority](../../scripts/workflow-occurrence-semantic-authority.test.ts), [Activity boundary Timer source evidence](../../packages/bpmn-source/test/activity-boundary-timer-source.test.ts), [Activity boundary Timer semantic evidence](../../packages/semantic-core/test/activity-boundary-timer.test.ts), [profile value-domain evidence](../../packages/semantic-core/test/semantic-profile-value-domain.test.ts), and [Workflow Timer capacity](../../packages/temporal-adapter/workflow/test/workflow-timer-capacity.test.ts).
 
 ## Epistemic closure and reopen conditions
 
 Established are the applicable BPMN clauses and conflicts, the exact bounded standards profile, selected zero-based/direct-mediator resolutions, distinct identity and data lifetimes, public progress contract, atomic aggregation, timer interruption, proved transition account, cross-target execution, and bounded Temporal refinement. Static CIB source and public-service evidence establish only the separately classified parser, lifecycle, counter, and missing-output facts stated above.
 
-The [closure-cost ledger](../CAPSULE-COST-LEDGER.md) records `f3802b7c..4897d639` as `+26163/-2281` nonblank code lines and `+1010/-138` documentation lines. The range deliberately retains the separately reviewed occurrence-ownership, body-turnover, runtime-identity, and issuing-discipline prerequisites that this capsule forced; no subtraction turns that composite lifecycle into a smaller local feature claim. Both additions exceed the nearest interrupting Activity boundary Timer comparator. The process correction is the adopted Alpha/Beta sequence: Alpha reuses this reviewed contract without another semantic-policy copy, and every remaining MUE family receives a separate vertical risk checkpoint before deepening, preventing another long composite prerequisite span from hiding cross-family risk.
+The [closure-cost ledger](../CAPSULE-COST-LEDGER.md) records `f3802b7c..d814cac4` as `+26860/-2289` nonblank code lines and `+1071/-153` documentation lines. The range deliberately retains the separately reviewed occurrence-ownership, body-turnover, runtime-identity, issuing-discipline, and closure-correction work this capsule forced; no subtraction turns that composite lifecycle into a smaller local feature claim. Both additions exceed the nearest interrupting Activity boundary Timer comparator. The process correction is the adopted Alpha/Beta sequence: Alpha reuses this reviewed contract without another semantic-policy copy, and every remaining MUE family receives a separate vertical risk checkpoint before deepening, preventing another long composite prerequisite span from hiding cross-family risk.
 
 The nearest unsupported claim is sequential Multi-Instance for another Activity, arbitrary collections or data associations, early completion, repeated outer activation, or CIB-compatible output aggregation. The principal common-mode risk is that source lowering, Lean, TypeScript, and Temporal all consume one mistaken scenario account; independent normative derivation, a separately authored checked graph oracle, CIB public-service observation, identifier substitutions, and seeded timer/output/order mutations constrain but do not eliminate that risk.
 
@@ -372,36 +301,10 @@ The nearest realistic counterexample completes the first item, silently resets t
 
 Reopen before admitting parallel generation, a different Activity body, loop cardinality, completion condition, partial Process output, non-direct mapping, expressions, another value type, repeated or nested controllers, more than one timer, a CIB Multi-Instance profile, a public output-slot projection, or a representation that cannot broaden active iteration cardinality without reinterpreting an already accepted model.
 
-## Review and implementation boundary
-
-Context-cold proposal review is required because this selects new BPMN meaning, data mediation, a checked graph and IL operation, runtime and public observation, proof boundary, and Temporal refinement claim. Owner approval is required after that review and before production implementation.
-
-A semantic-checkpoint review is required after the first complete executable source/Lean/core checkpoint because the profile changes admission, runtime state, public observation, and a transition family. Closure review remains required after Temporal, CIB classification, corpus, full-gate, reflection, and cost evidence. No combined checkpoint and closure is assumed.
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `70256503c94ee6d2f63be315912d8465894b35f3` | `fork-turns-none` | `approve-with-required-edits` | `a064dc8ba871c77a8d27817565e8b3a9f0c019bc` |
 | Semantic checkpoint | `ae8064faca30b32777ef668fd0ce0450ce892615` | `fork-turns-none` | `approve-with-required-edits` | `001b6171a345035e9dad4b7ee4c1e9d759275d91` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
-
-The proposal review used two correction-audit rounds. The first audited `3b8e0df838cd13f2b0142bb7b4887b528bd1e51f`; the second and final approved audit is recorded in the table.
-
-The closure reviewer inspected `4145bdfaaa057547bd2de02a8ce2d529005b0e11` and required no change to the selected BPMN account, public contract, exclusions, or evidence strategy. Its required corrections add the exact operation/record/owner/User Task/Timer program binding at semantic admission, projection, Lean, and Temporal scheduling; prove the capsule's stated conditional finite-snapshot closure theorem; repair the stale Lean conformance caller exposed by the complete gate; and align the IL, runtime/proof, Temporal lifecycle, platform, requirement-ledger, and capsule owners. The receipt stays `not-reached` until the same reviewer audits the immutable correction target, because an `approve-with-required-edits` verdict without its completed correction audit is not a closed review result.
-
-The same reviewer audited first correction target `0c991efa7fa6a08926a0e9a9cf193972396eb085` and found that controller-local forward resolution did not reject an empty controller collection beside an open Activity record or surplus same-operation task and Timer waits outside the record. The correction makes the binding bidirectional in both languages and at projection. The audit also found that the first liveness theorem carried close-or-decrease as an event field rather than deriving it from the actual target transition; the corrected target-indexed event and theorem derive that consequence. Two stale capsule sentences and the recomputed headroom rows are aligned in the same correction. This is the second and final correction-audit target for the closure stage.
-
-The first semantic-checkpoint review used two correction-audit rounds and moved to `approve` at the second. The first audited `4fd006c4b8eb2af97f8cb7bad41af26509f87b92`; the second approved audit was `991bf4834dc53b4dbb2ee5d955c770d8cf41ead8`. Four required findings were raised: the profile's output-side limits enforced in neither language, a locale-dependent second canonical order for published Process bindings, a counter identity that two structures could violate on a state every gate admits, and no TypeScript oracle for the entry-side bounds. The second round existed because correcting one derived count alone relocated the identity violation rather than removing it. One advisory is carried forward as its own change: withdrawing every attached Timer when a record is removed holds in two of four Activity families.
-
-The redesigned semantic-checkpoint review approved `e4555a818dfe97a72ce5323da52a13431a282f63` without findings. It confirmed that the natural schedule remains two Runs, the interruption schedule uses a third Run only after the original Timer callback is reduced, and the correction changes no public contract, exclusion, scope, implementation status, or registration claim.
-
-The next executable Red exposed an evidence-order cycle that the redesigned checkpoint had not tested: the unregistered profile fails both initial and continuation execution identity before either a direct-VM or live production witness can produce a Timer or History. Target `0660a79ea569e74ce9f361adb70c4b54d955977d` replaces that strategy with a private real-service capacity probe before registration and requires the later production histories to validate its bounds. Because this changes the evidence strategy, it invalidates the preceding approval and requires a new context-cold semantic-checkpoint review.
-
-The context-cold capacity-order review approved `0e2a47a2e6ebed32b55452252d3563dfccee595c` without findings. It confirmed that the private whole-topology probe breaks the admission cycle without becoming semantic authority, that later production comparison preserves the support stop condition, and that a jointly admissible sixteen-item collection can reach exactly 8,192 canonical bytes while separately reaching the 512-byte item bound.
-
-The first private-probe Red then stopped before Temporal startup at production publication validators that the implementation checklist above already requires. The exact SMI `StateObservation` includes `openMultiInstances`, but the protocol E1 validator still admitted only the pre-SMI key set; after diagnostic omission of that field, the E2 completeness relation rejected entry, turnover, and lifetime-Timer interruption through placeholder fail-closed arms recorded while the operation was source-only. Once those relations were corrected, the Program binding independently exposed the same stale source-only treatment at entry, successor turnover, nested-element membership, and boundary-Timer binding. Production E1 now validates the closed recursive progress/count/task contract and keeps field presence tied to a declaring program, while independent E2 completeness accepts only the exact inner occurrence shapes and leaves zero-versus-one successor selection to the batch fold and current-open equality. Program binding admits only the exact generated task and lifetime boundary Event under one unique declaring operation, excludes the synthetic outer/controller occurrence, and leaves ordinary User Task completion unable to create a successor. The production evaluator remains correctly unavailable before registration, and no fabricated committed checkpoint or support claim was added. This changes no selected account, public contract, exclusion, capacity strategy, or registration claim and does not invalidate the approved checkpoint.
-
-The next private-probe Red reached the Run-boundary payload and terminal envelope, where two closed protocol decoders still reflected the pre-SMI RuntimeState and StateObservation shapes. Continuation decoding now recognizes the optional `sequentialMultiInstanceControllers` collection, validates every controller recursively, and still sends its ownership, uniqueness, exhaustion, ordering, identity-bound, and stable-checkpoint obligations through the existing semantic gate. The terminal-receipt decoder now admits `openMultiInstances` only as an empty terminal collection; program-aware E1 validation still owns required presence and running progress. Existing profiles omit both optional keys and retain their exact bytes. These are required decoder upgrades from the reviewed migration rule rather than execution registration or a new semantic account.
-
-The corrected private probe reuses the exact pure None-Start and ordinary User Task successors from production admission, feeds committed facts through the production publication accumulators, constructs distinct natural and Timer-interrupted semantic closures, and executes a sixteenth escalation Update in the interrupted third Run. It requires exact content-bound Update identities and checkpoint order, rejects an Update after Timer reduction, includes closing Events and every co-resident result in the activation reserve, derives the final Event-envelope equation from the generic production constant, and replays every Run with the exact custom bundle. The second pinned-service run reproduced every deterministic retained fact but exposed service History-size drift, and a clean complete-gate repetition confirmed variations up to 84 bytes with unchanged topology, counts, payloads, families, identities, and replay. The corrected owner therefore treats raw service sizes as bounded observations, derives a deterministic whole-Run envelope, and closes the History Event vocabulary by including `WorkflowExecutionStarted` and requiring its sum to equal the final Event count. The same-thread audit approved immutable correction target `001b6171a345035e9dad4b7ee4c1e9d759275d91` without new findings after the focused owner gate and clean committed `test:pre-push:verify` both passed. The complete gate exited `0` in 208,320 ms with output SHA-256 `489c964ad7933cdfa8648ab469d468df571a50f1553d2fcc48fa3ce84614e744`, and its pipeline report recorded `dirty:false`; its warm timing is contended correctness evidence rather than a performance baseline.
+| Closure | `4145bdfaaa057547bd2de02a8ce2d529005b0e11` | `fork-turns-none` | `approve-with-required-edits` | `0c991efa7fa6a08926a0e9a9cf193972396eb085, 4f43aba06b3203cae83a8b326809ad3384ba439c` |

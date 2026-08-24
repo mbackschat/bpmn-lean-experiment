@@ -42,7 +42,7 @@ General Lean laws consuming `waitIdentitiesUnique` still assume it; the Activity
 
 ## Activity occurrence ownership
 
-One runtime record per Activity occurrence that owns runtime state beyond its body, replacing the activation-ordinal agreements three boundary-Timer families used to recover their pair. [The proposal](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) owns the account. It adds no BPMN capability, operation kind, profile, scenario, or public observation field.
+One runtime record per Activity occurrence that owns runtime state beyond its body, replacing the activation-ordinal agreements three boundary-Timer families used to recover their pair. [The specification](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) owns the account. It adds no BPMN capability, operation kind, profile, scenario, or public observation field.
 
 **Implemented.**
 
@@ -137,7 +137,7 @@ The [non-interrupting boundary Timer specification](capsules/NON-INTERRUPTING-BO
 
 ## Sequential Multi-Instance User Task
 
-The [Sequential Multi-Instance proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) is **implemented-awaiting-closure** for one exact collection-driven sequential User Task with direct String input/output mediation and one interrupting outer-lifetime `PT1S` Timer.
+The [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) is **implemented and evidence-closed** for one exact collection-driven sequential User Task with direct String input/output mediation and one interrupting outer-lifetime `PT1S` Timer.
 
 **Implemented.** Source admission and lowering preserve the complete data role graph; Lean and the independently written TypeScript core own one outer controller, immutable ordered snapshot, dense indexed outputs, four transition families, exact bounds, public progress, and generated-inner occurrence accounting. Program-aware well-formedness binds each controller forward to one exact operation, record owner, live User Task, and attached lifetime Timer, then checks the reverse operation-local census so no open record or surplus task or Timer wait can escape before command admission, continuation restore, projection, or scheduling. Program admission owns malformed operation-scope structure while no matching runtime artifact exists, and both missing and duplicate owners fail the runtime binding once the Activity is live. Lean proves finite-snapshot conditional closure from target-indexed actual transition events and derives their close-or-decrease effect without claiming human or host fairness. The registered natural and interrupted scenarios agree across Lean, the core, and Temporal. The production Workflow chain preserves one managed lifetime Timer across task turnover, permits only pre-arming rollover, replaces the Worker, recovers a retained result, publishes exact E1/E2 and terminal receipts, proves exact-16 fit with count-only exact-17 refusal, and replays every Run.
 

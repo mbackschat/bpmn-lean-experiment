@@ -5,7 +5,7 @@ import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 The four transitions of one sequential Multi-Instance User Task, each as a declarative relation and an
 executable evaluator, with a bridge proving every evaluator-produced transition is permitted by its
 relation. The account is
-[the sequential Multi-Instance proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md),
+[the Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md),
 rules `SMI-ENTER-01`, `SMI-ITERATE-01`, `SMI-COMPLETE-01`, and `SMI-CANCEL-01`. The arm carrying the
 definition facts, the two admitted-value lookups, and the five state rewrites the relations conclude
 with belong to [the rewrite owner](SequentialMultiInstanceRewrite.lean), including the reason the arm

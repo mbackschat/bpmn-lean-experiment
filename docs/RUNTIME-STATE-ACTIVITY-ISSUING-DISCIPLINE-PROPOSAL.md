@@ -7,11 +7,11 @@ Review: approved
 
 ## Question and current boundary
 
-The Activity-family implementation is checkpoint-approved. The cost-bound target `10c7494a0939792e42a6a775e0d8a6c3f68d72f8` contains the Lean and TypeScript pair rules, both Lean issuer-root laws, exact preservation/removal proofs, per-TypeScript-issuer evaluator pairs, three-state reissue negative, real activation-two rearm, and guarded production-writer census. The reviewer required one sustaining-guard correction, closed at `55169757f7e0b9e8865514686a2085054a935218`: TypeScript classification now parses the complete assigned expression and refuses to retain a removal classification for a mixed remove-and-issue rewrite. The exact correction-target verifier passed against a clean committed tree. Sequential Multi-Instance registration remains with its own Temporal, refinement, capacity, complete-gate, and closure obligations.
+The Activity-family implementation is checkpoint-approved. The cost-bound target `10c7494a0939792e42a6a775e0d8a6c3f68d72f8` contains the Lean and TypeScript pair rules, both Lean issuer-root laws, exact preservation/removal proofs, per-TypeScript-issuer evaluator pairs, three-state reissue negative, real activation-two rearm, and guarded production-writer census. The reviewer required one sustaining-guard correction, closed at `55169757f7e0b9e8865514686a2085054a935218`: TypeScript classification now parses the complete assigned expression and refuses to retain a removal classification for a mixed remove-and-issue rewrite. The exact correction-target verifier passed against a clean committed tree. The Sequential Multi-Instance specification now cites the discipline as its Activity-identity non-reissue premise; this proposal's own closure review and graduation remain separate.
 
 [The runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity) records identity non-reissue as an open two-state obligation. Its implemented `RSI-BOUND-01` slice proves that every live Activity occurrence activation is at or below the Activity element's recorded high-water mark, and `RSI-MONO-01` proves that the mark does not decrease across a committed transition. Neither rule constrains the activation chosen when a later transition adds an Activity occurrence that was absent from its predecessor, so both admit the three-state counterexample already retained by the invariant account: activation 1 is live under counter 1, then withdrawn under counter 1, then reintroduced as activation 1 under counter 1.
 
-Sequential Multi-Instance publishes the outer Activity occurrence identity and retains it across body turnover. [Its active proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md#public-contract) therefore blocks execution registration until the Activity family states and discharges the missing issuing discipline, or until the public projection is narrowed. This proposal selects the additive discipline. It does not narrow `ActivityOccurrenceId`, change any BPMN meaning, or register the Multi-Instance profile.
+Sequential Multi-Instance publishes the outer Activity occurrence identity and retains it across body turnover. Its [implemented specification](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#public-contract) cites the discharged Activity-family discipline rather than narrowing the public projection. This proposal owns that additive discipline. It does not narrow `ActivityOccurrenceId`, change any BPMN meaning, or own Multi-Instance profile registration.
 
 ## Selected rule
 
@@ -65,9 +65,9 @@ The two implementations intentionally share the rule and wire representation but
 
 ## Registration consequence
 
-Once the rule is implemented and its governed checkpoint is approved, the Activity-family non-reissue premise used by the public `OpenSequentialMultiInstance.id` projection is stated and discharged for every current Activity issuer, conditional on the guarded current-writer matrix remaining complete. Sequential Multi-Instance registration may then cite the stable invariant, the guarded writer matrix, the per-root Lean laws, the independent TypeScript regression oracle, and its own evaluator evidence. No projection narrowing or compatibility branch is introduced.
+The implemented rule and approved governed checkpoint discharge the Activity-family non-reissue premise used by the public `OpenSequentialMultiInstance.id` projection for every current Activity issuer, conditional on the guarded current-writer matrix remaining complete. Sequential Multi-Instance registration cites the stable invariant, the guarded writer matrix, the per-root Lean laws, the independent TypeScript regression oracle, and its own evaluator evidence. No projection narrowing or compatibility branch is introduced.
 
-This proposal does not itself register the profile. Registration still waits for the capsule's Temporal host class, refinement witnesses, measured capacity owner, complete gates, and closure review.
+This proposal does not itself register the profile. The [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) owns the completed registration, Temporal host class, refinement witnesses, measured capacity owner, complete gates, and closure review.
 
 ## Temporal hosting and refinement preflight
 
@@ -95,19 +95,19 @@ Excluded:
 - extending the rule to another counter family;
 - closing general quantified preservation of every runtime-state conjunct;
 - changing cross-family Activity wait withdrawal or scope-cancellation controller cleanup;
-- registering Sequential Multi-Instance before its remaining Temporal, refinement, capacity, and closure obligations pass.
+- moving Sequential Multi-Instance registration authority into this invariant proposal.
 
 ## Evidence and stage boundary
 
 The first Red is the three-state counterexample. It must be accepted by `runtimeStateIdentityBound`, accepted by the counter-monotonicity part of the pair relation, and rejected only by the new issuing rule. The second instance is not another hand-built reissue: after a real family withdraws activation 1 while retaining counter 1, its evaluator must issue activation 2 and pass. This distinguishes a correct rule from a patch that rejects all post-withdrawal arming.
 
-The first green checkpoint changes a two-state proof boundary and the classification of successor regressions, so it receives a governed semantic checkpoint review. It changes no public schema or observation. Closure remains with the active Sequential Multi-Instance capsule after Temporal and capacity evidence land.
+The first green checkpoint changed a two-state proof boundary and the classification of successor regressions, so it received the governed semantic-checkpoint review recorded below. It changed no public schema or observation. This proposal still requires its own closure review before graduation; the completed Sequential Multi-Instance closure establishes its use of the premise but does not substitute for this proposal's lifecycle.
 
 Focused implementation gates are the narrow Lean modules through [`./scripts/lake.sh`](../scripts/lake.sh), the semantic-core runtime-state and Activity-family tests, the preservation lane, the source-contract and import-boundary guards, and `git diff --check`. The root then runs the complete applicable semantic gate and the selected clean-HEAD pre-push entry point at the governed boundary. The exact Temporal pins remain unchanged.
 
 ## Same-change owners and reopen conditions
 
-Implementation changes the residual absence recorded by [the runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity), the non-reissue premise in [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), the registration blocker and evidence lanes in [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md), and the runtime/proof, semantic-family, and Temporal routed maps. Those owners must distinguish "Activity family discharged" from the still-open issuing disciplines of every other identity family.
+Implementation changes the residual absence recorded by [the runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity), the non-reissue premise in [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), the registration blocker and evidence lanes in [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md), and the runtime/proof, semantic-family, and Temporal routed maps. Those owners must distinguish "Activity family discharged" from the still-open issuing disciplines of every other identity family.
 
 Reopen this account if Activity counters cease to be per-element high-water marks, if an Activity identity can enter a committed successor through restore or import rather than a semantic transition, if a transition can issue several occurrences but cannot advance the post-state mark to cover all of them, if body turnover changes the outer Activity identity, if the public projection ceases to expose `ActivityOccurrenceId`, or if any production `activityOccurrences` writer is added or changes classification without updating the guarded writer matrix and its required evidence.
 
