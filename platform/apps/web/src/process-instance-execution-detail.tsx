@@ -12,6 +12,7 @@ import {
 
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import { LatestRequest } from "./latest-request.ts";
+import { MuePreviewAlphaProgress } from "./mue-preview-alpha-progress.tsx";
 import type { OperatorAuditApi } from "./operator-audit-api.ts";
 import { downloadExecutionPublication } from "./process-execution-api.ts";
 import type { ProcessExecutionApi } from "./process-execution-api.ts";
@@ -72,6 +73,34 @@ export class ProcessExecutionDetailLoader {
           kind: ProcessExecutionDetailLoadKind.Failed,
           message: errorMessage(cause),
           requested,
+        });
+      }
+    }
+  }
+
+  async refresh(
+    previous: Extract<ProcessExecutionDetailLoadState, { kind: "current" }>,
+    api: ProcessExecutionApi,
+    publish: PublishSelection,
+  ): Promise<void> {
+    const generation = this.#requests.begin();
+    try {
+      const publication = await api.getComplete(previous.instance);
+      if (!this.#requests.isCurrent(generation)) return;
+      if (publication.current.revision < previous.publication.current.revision) {
+        throw new TypeError("committed execution revision regressed during polling");
+      }
+      publish({
+        kind: ProcessExecutionDetailLoadKind.Current,
+        instance: previous.instance,
+        publication,
+      });
+    } catch (cause: unknown) {
+      if (this.#requests.isCurrent(generation)) {
+        publish({
+          kind: ProcessExecutionDetailLoadKind.Failed,
+          message: errorMessage(cause),
+          requested: previous.instance,
         });
       }
     }
@@ -299,6 +328,10 @@ function ExecutionOverview({
         <Fact label="Head revision" value={String(publication.headRevision)} />
         <Fact label="Current status" value={publication.current.state.status} />
       </dl>
+      <MuePreviewAlphaProgress
+        batches={publication.batches}
+        current={publication.current}
+      />
       <div className={styles.actions}>
         <Button isPending={busy} onPress={onDownload}>Download execution history</Button>
       </div>

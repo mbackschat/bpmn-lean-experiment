@@ -32,11 +32,56 @@ test("exact Process-instance selection opens only fresh execution detail and ret
   await expect(detail.getByRole("tablist", { name: "Process instance detail" }).getByRole("tab")).toHaveCount(4);
   await expect(detail).toContainText("Head revision");
   await expect(detail).toContainText("running");
+  await expect(detail.getByText("MUE Preview Alpha", { exact: true })).toHaveCount(0);
   await assertNoOverflow(page.locator("html"), "document");
   await assertNoOverflow(detail, "execution detail");
 
   await detail.getByRole("button", { name: "Back to Process instances" }).click();
   await expect(selection).toBeFocused();
+});
+
+test("Alpha shows only committed sequential Multi-Instance progress @responsive", async ({ page }) => {
+  await openExecutionDetail(page, ExecutionPublicationFixtureState.SequentialAlpha);
+  const preview = page.locator('[data-ui="mue-preview-alpha"]');
+  await expect(preview.getByText("MUE Preview Alpha", { exact: true })).toBeVisible();
+  await expect(preview.getByText("Observed in this browser session", { exact: true })).toBeVisible();
+  await expect(preview).toContainText("Planned");
+  await expect(preview).toContainText("3");
+  await expect(preview).toContainText("Completed");
+  await expect(preview).toContainText("1");
+  await expect(preview).toContainText("Active");
+  await expect(preview).toContainText("Pending");
+  await expect(preview).toContainText("invoice");
+  await expect(preview).toContainText("UserTask_Review / activation 1");
+  await expect(preview).toContainText("UserTask_Review / activation 2");
+  await assertNoOverflow(preview, "Alpha progress surface");
+});
+
+test("Alpha polling retains exact running and natural terminal samples @responsive", async ({ page }) => {
+  await openExecutionDetail(page, ExecutionPublicationFixtureState.SequentialNatural);
+  const preview = page.locator('[data-ui="mue-preview-alpha"]');
+  await expect(preview.getByText("No Multi-Instance controller is open", { exact: false })).toBeVisible();
+  await expect(preview.getByRole("list", { name: "Observed committed revisions" })).toContainText("Revision 5: running");
+  await expect(preview.getByRole("list", { name: "Observed committed revisions" })).toContainText("Revision 6: completed");
+  await expect(preview.getByText("DataObjectReference_OutputResults", { exact: true })).toBeVisible();
+  await expect(preview.getByText("accepted", { exact: true })).toBeVisible();
+  await expect(preview.getByText("flagged", { exact: true })).toBeVisible();
+  await expect(preview.getByText("archived", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Back to Process instances" }).click();
+  await processSelection(page).click();
+  await expect(preview.getByRole("list", { name: "Observed committed revisions" })).toContainText("Revision 6: completed");
+  await expect(preview.getByRole("list", { name: "Observed committed revisions" })).not.toContainText("Revision 5: running");
+});
+
+test("Alpha interruption keeps Timer, escalation, and output absence separate @responsive", async ({ page }) => {
+  await openExecutionDetail(page, ExecutionPublicationFixtureState.SequentialInterrupted);
+  const preview = page.locator('[data-ui="mue-preview-alpha"]');
+  await expect(preview.getByRole("list", { name: "Committed Timer commands" })).toContainText("fireTimer");
+  await expect(preview.getByRole("list", { name: "Committed Timer commands" })).toContainText("BoundaryTimer_Review / activation 1");
+  await expect(preview.getByRole("list", { name: "Published completion interactions" })).toContainText("UserTask_Escalation / activation 1");
+  await expect(preview.getByText("No output collection is present", { exact: false })).toBeVisible();
+  await expect(preview.getByText("This absence alone does not identify the route", { exact: false })).toBeVisible();
 });
 
 test("History preserves exact revision order, labels, and repeated occurrence identity @responsive", async ({ page }) => {

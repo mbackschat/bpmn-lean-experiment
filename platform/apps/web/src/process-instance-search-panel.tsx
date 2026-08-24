@@ -61,6 +61,19 @@ export function ProcessInstanceSearchPanel({
     if (!isActive) detailLoader.current.clear(executionApi, setDetail);
   }, [executionApi, isActive]);
 
+  useEffect(() => {
+    if (
+      !isActive ||
+      detail?.kind !== ProcessExecutionDetailLoadKind.Current ||
+      detail.publication.current.state.status !== "running" ||
+      !Object.hasOwn(detail.publication.current.state, "openMultiInstances")
+    ) return;
+    const timer = window.setTimeout(() => {
+      void detailLoader.current.refresh(detail, executionApi, setDetail);
+    }, 500);
+    return () => { window.clearTimeout(timer); };
+  }, [detail, executionApi, isActive]);
+
   useEffect(() => () => {
     detailLoader.current.invalidate(executionApi);
   }, [executionApi]);

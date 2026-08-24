@@ -3,12 +3,19 @@ import { createHash } from "node:crypto";
 import type { Page, Route } from "@playwright/test";
 
 import { installPublicApiFixtures } from "./fixtures.ts";
+import {
+  AlphaFixtureJourney,
+  muePreviewAlphaExecutionPage,
+} from "./mue-preview-alpha-fixtures.ts";
 
 export enum ExecutionPublicationFixtureState {
   Available = "available",
   Delayed = "delayed",
   Gap = "gap",
   MalformedExport = "malformedExport",
+  SequentialAlpha = "sequentialAlpha",
+  SequentialInterrupted = "sequentialInterrupted",
+  SequentialNatural = "sequentialNatural",
 }
 
 export type ExecutionPublicationFixtureCapture = Readonly<{
@@ -234,6 +241,18 @@ export async function installExecutionPublicationFixtures(
 ): Promise<ExecutionPublicationFixtureCapture> {
   await installPublicApiFixtures(page);
   const publicResponses: unknown[] = [];
+  let sequentialExecutionRequests = 0;
+
+  function alphaPage(journey: AlphaFixtureJourney): unknown {
+    return muePreviewAlphaExecutionPage({
+      batch,
+      current,
+      emptyDelta,
+      pageBody,
+      processInstanceId: publicationIdentity.processInstanceId,
+    }, journey, sequentialExecutionRequests);
+  }
+
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -243,6 +262,7 @@ export async function installExecutionPublicationFixtures(
     }
     const executionPath = `/api/v1/process-instances/${encodeURIComponent(instance.processInstanceId)}/execution`;
     if (request.method() === "GET" && path === executionPath) {
+      sequentialExecutionRequests += 1;
       if (state === ExecutionPublicationFixtureState.Delayed) await delay(500);
       if (state === ExecutionPublicationFixtureState.Gap) {
         return json(route, {
@@ -251,6 +271,15 @@ export async function installExecutionPublicationFixtures(
             message: "The committed execution publication is unavailable.",
           },
         }, publicResponses, 503);
+      }
+      if (state === ExecutionPublicationFixtureState.SequentialAlpha) {
+        return json(route, alphaPage(AlphaFixtureJourney.Running), publicResponses);
+      }
+      if (state === ExecutionPublicationFixtureState.SequentialNatural) {
+        return json(route, alphaPage(AlphaFixtureJourney.Natural), publicResponses);
+      }
+      if (state === ExecutionPublicationFixtureState.SequentialInterrupted) {
+        return json(route, alphaPage(AlphaFixtureJourney.Interrupted), publicResponses);
       }
       return json(route, pageBody, publicResponses);
     }
