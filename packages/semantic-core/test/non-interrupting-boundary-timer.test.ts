@@ -19,15 +19,20 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  RuntimeStateRegression,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  SemanticTransitionKind,
   StimulusKind,
   VariableValueKind,
   applyStimulus,
+  applyStimulusWithTrace,
   initialState,
   projectOpenUserTasks,
+  replayCommittedTransitions,
+  runtimeStateRegressions,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -45,6 +50,28 @@ function armed() {
   const started = applyStimulus(monitoredProgram, initialState, start);
   assert.equal(started.outcome, CommandOutcome.Committed);
   return started.state;
+}
+
+function armingPair() {
+  const traced = applyStimulusWithTrace(monitoredProgram, initialState, start);
+  const index = traced.committedTransitions.findIndex(({ transition }) =>
+    transition.kind === SemanticTransitionKind.InternalOperation &&
+    transition.operationKind === SemanticOperationKind.AwaitMonitoredUserTask
+  );
+  assert.ok(index > 0, "the start trace must contain monitored-task arming");
+  const before = replayCommittedTransitions(
+    monitoredProgram,
+    initialState,
+    traced.committedTransitions.slice(0, index),
+  );
+  const after = replayCommittedTransitions(
+    monitoredProgram,
+    initialState,
+    traced.committedTransitions.slice(0, index + 1),
+  );
+  assert.ok(before !== null);
+  assert.ok(after !== null);
+  return { before, after };
 }
 
 function completeTask(state: ReturnType<typeof armed>, elementId: string) {
@@ -78,6 +105,14 @@ test("start arms the monitored task and its deadline together at logical time ze
     },
   ]);
   assert.deepEqual(state.controlTokens, []);
+  const pair = armingPair();
+  assert.equal(
+    runtimeStateRegressions(pair.before, pair.after).includes(
+      RuntimeStateRegression.ActivityOccurrenceIssue,
+    ),
+    false,
+    "the monitored-task evaluator issues above the predecessor Activity mark",
+  );
 });
 
 test("firing spawns the handler branch and preserves its host exactly", () => {
@@ -93,6 +128,11 @@ test("firing spawns the handler branch and preserves its host exactly", () => {
     (candidate) => candidate.id.elementId === "MonitoredTask",
   );
   assert.equal(monitored, state.userTaskWaits[0]);
+  assert.deepEqual(
+    runtimeStateRegressions(state, spawned.state),
+    [],
+    "withdrawing the handler preserves the exact host Activity identity",
+  );
   assert.deepEqual(
     spawned.state.userTaskWaits.map(({ id }) => id.elementId).sort(),
     ["HandlerTask", "MonitoredTask"],

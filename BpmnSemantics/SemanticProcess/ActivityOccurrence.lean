@@ -28,6 +28,79 @@ def sameActivityOccurrence (left right : ActivityOccurrence) : Bool :=
     left.activityElementId == right.activityElementId &&
     left.activation == right.activation
 
+/-- Whether one successor Activity identity either already existed in the predecessor or was issued
+strictly above that Activity element's predecessor high-water mark. -/
+def activityIdentityAdmittedAfter (before : RuntimeState) (record : ActivityOccurrence) : Bool :=
+  before.activityOccurrences.any (sameActivityOccurrence · record) ||
+    decide (activityActivationCount before { value := record.activityElementId.value } <
+      record.activation)
+
+/-- `RSI-ISSUE-01`. Every Activity identity newly present in a committed successor is strictly above
+the predecessor high-water mark for its Activity element.
+
+The antecedent is identity equality over the committed pair. Body turnover therefore preserves an
+identity, removal issues nothing, and a future operation kind belongs without being enumerated here. -/
+def activityIdentityIssuingDiscipline (before after : RuntimeState) : Bool :=
+  after.activityOccurrences.all (activityIdentityAdmittedAfter before)
+
+theorem activityIdentityAdmittedAfter_of_mem {before : RuntimeState}
+    {record : ActivityOccurrence} (present : record ∈ before.activityOccurrences) :
+    activityIdentityAdmittedAfter before record = true := by
+  simp only [activityIdentityAdmittedAfter, Bool.or_eq_true, List.any_eq_true]
+  exact Or.inl ⟨record, present, by simp [sameActivityOccurrence]⟩
+
+/-- Exact predecessor identity witnesses discharge the issuing discipline independently of record
+contents. This is the preservation half used by body turnover. -/
+theorem activityIdentityIssuingDiscipline_of_identity_witness
+    (before after : RuntimeState)
+    (preserved : ∀ record ∈ after.activityOccurrences,
+      ∃ predecessor ∈ before.activityOccurrences,
+        sameActivityOccurrence predecessor record = true) :
+    activityIdentityIssuingDiscipline before after = true := by
+  simp only [activityIdentityIssuingDiscipline, List.all_eq_true]
+  intro record present
+  obtain ⟨predecessor, predecessorPresent, same⟩ := preserved record present
+  simp only [activityIdentityAdmittedAfter, Bool.or_eq_true, List.any_eq_true]
+  exact Or.inl ⟨predecessor, predecessorPresent, same⟩
+
+/-- Pure removal satisfies the issuing discipline because every successor record is itself an exact
+predecessor witness. -/
+theorem activityIdentityIssuingDiscipline_of_subset (before after : RuntimeState)
+    (subset : ∀ record ∈ after.activityOccurrences, record ∈ before.activityOccurrences) :
+    activityIdentityIssuingDiscipline before after = true := by
+  apply activityIdentityIssuingDiscipline_of_identity_witness
+  intro record present
+  exact ⟨record, subset record present, by simp [sameActivityOccurrence]⟩
+
+theorem all_insertActivityOccurrence (p : ActivityOccurrence → Bool)
+    (record : ActivityOccurrence) : ∀ records : List ActivityOccurrence,
+    (insertActivityOccurrence record records).all p = (p record && records.all p) := by
+  intro records
+  induction records with
+  | nil => simp [insertActivityOccurrence]
+  | cons current rest ih =>
+      unfold insertActivityOccurrence
+      by_cases h : activityOccurrenceBefore record current = true
+      · simp [h]
+      · simp only [Bool.not_eq_true] at h
+        simp [h, ih, Bool.and_left_comm]
+
+/-- A transition that inserts one occurrence above its predecessor counter satisfies the complete
+pair rule, independent of where canonical insertion places the new record. -/
+theorem activityIdentityIssuingDiscipline_insertActivityOccurrence
+    (state : RuntimeState) (record : ActivityOccurrence)
+    (fresh : activityActivationCount state { value := record.activityElementId.value } <
+      record.activation) :
+    activityIdentityIssuingDiscipline state
+      { state with
+        activityOccurrences := insertActivityOccurrence record state.activityOccurrences } = true := by
+  simp only [activityIdentityIssuingDiscipline, all_insertActivityOccurrence, Bool.and_eq_true,
+    List.all_eq_true]
+  constructor
+  · simp [activityIdentityAdmittedAfter, fresh]
+  · intro candidate present
+    exact activityIdentityAdmittedAfter_of_mem present
+
 /-- The task occurrence a record's body names, when its body is a task. -/
 def activityBodyTask? (record : ActivityOccurrence) : Option OccurrenceId :=
   match record.body with

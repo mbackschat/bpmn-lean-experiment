@@ -450,14 +450,15 @@ private def scopeCountFor (activations : List ScopeActivation) (scopeId : Defini
   (activations.find? fun activation => decide (activation.scopeId = scopeId)).map (·.count)
     |>.getD 0
 
-/-- `RSI-MONO-01` and `RSI-MONO-02`. Every activation counter family is a per-key high-water mark
-that never decreases across a committed transition, and `endOccurrences` never decreases.
+/-- `RSI-MONO-01`, `RSI-MONO-02`, and the Activity-family `RSI-ISSUE-01`. Every activation counter
+family is a per-key high-water mark that never decreases across a committed transition,
+`endOccurrences` never decreases, and every newly issued Activity identity is strictly above its
+predecessor Activity-element mark.
 
-`RSI-MONO-04` is deliberately **not** stated here. The single-state identity bound constrains live
-User Task, Timer, and Activity identities, but non-reissue additionally needs every issuing transition
-to number a newly issued identity strictly above its pre-state count. That discipline remains an
-explicit absence, and the adapter's assumption that a Timer or task identity stays retired once
-withdrawn rests on it rather than on this relation.
+The single-state identity bound and the Activity issuing discipline together close non-reissue only
+for `ActivityOccurrenceId`. User Task, Timer, Message, Effect, Event race, Call, and Scope issuing
+disciplines remain explicit absences; this relation does not generalize from the one discharged
+family.
 
 `logicalTimeMs` is deliberately absent. Every time-advancing arm takes its time from a fired
 deadline, so monotonic time holds only under the hypothesis that the fired deadline is at or after
@@ -484,7 +485,8 @@ def RuntimeStateMonotone (before after : RuntimeState) : Prop :=
     scopeCountFor after.scopeActivations scopeId) ∧
   (∀ taskId, taskCountFor before.activityActivations taskId ≤
     taskCountFor after.activityActivations taskId) ∧
-  before.endOccurrences ≤ after.endOccurrences
+  before.endOccurrences ≤ after.endOccurrences ∧
+  activityIdentityIssuingDiscipline before after = true
 
 /-- `RSI-MONO-03`. Logical time never decreases, under the named firing hypothesis.
 

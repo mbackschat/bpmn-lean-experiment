@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.ScopeCompletion
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Interrupting Sub-Process boundary Timer: arming
 
@@ -134,5 +135,15 @@ theorem armBoundedScope_records_one_occurrence (state : RuntimeState)
     (armScopeDeadline state owner childScopeId child boundaryTimer).activityOccurrences.length =
       state.activityOccurrences.length + 1 := by
   simp [armScopeDeadline, insertActivityOccurrence_length]
+
+/-- The bounded Sub-Process arming root issues its Activity occurrence strictly above the
+predecessor Activity-element high-water mark. -/
+theorem armScopeDeadline_issues_fresh_activity (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (childScopeId : DefinitionScopeId)
+    (child : ScopeOccurrenceId) (boundaryTimer : BoundaryTimerArm) :
+    activityIdentityIssuingDiscipline state
+      (armScopeDeadline state owner childScopeId child boundaryTimer) = true := by
+  apply activityIdentityIssuingDiscipline_insertActivityOccurrence
+  simp
 
 end BpmnSemantics.SemanticProcess

@@ -7,6 +7,8 @@ Review: approved
 
 ## Question and current boundary
 
+The additive Activity-family issuing discipline required by the public outer identity is implemented and awaiting its governed semantic-checkpoint verdict. Execution registration remains blocked by that verdict and by the Temporal host class, refinement witnesses, measured capacity owner, complete gates, and closure review below.
+
 This proposal selects the first bounded `SEQUENTIAL-MULTI-INSTANCE` slice: one private executable Process reviews an ordered collection through one sequential Multi-Instance User Task, aggregates one string result per generated inner instance, and either completes normally or is interrupted by one exact `PT1S` Timer Boundary Event attached to the outer Multi-Instance Activity. The timer route reaches one ordinary escalation User Task so cancellation remains observable before Process completion.
 
 The proposed standards-only profile ID is `bpmn-2.0.2-sequential-multi-instance-user-task-draft`. BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 own the Activity wrapper, once-evaluated instance plan, sequential generation, runtime counters, per-instance input and output items, collection aggregation, and completion. Clauses 10.5.5, 10.5.6, 13.3.2, and 13.5.3 plus Tables 10.91, 10.92, 10.101, and 10.122 own the exact interrupting Timer Boundary Event inherited from the reviewed [Activity boundary Timer account](ACTIVITY-BOUNDARY-TIMER-SPEC.md#normative-basis). Existing User Task identity and host mapping remain bounded by `CIB-AGR-0001` and `CIB-OP-0001`; phase-zero relations `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001` classify CIB Multi-Instance observations without selecting them as semantic authority.
@@ -149,7 +151,7 @@ type OpenSequentialMultiInstance = {
 };
 ```
 
-Projecting `ActivityOccurrenceId` publicly carries one obligation this capsule inherits rather than creates. `RSI-MONO-04`, non-reissue of an identity after removal, is still unstated, and the Activity occurrence account excludes it while its adapter join already depends on it. Once this controller's `id` is a public field, a reissued identity is visible to an external consumer as the same open controller, so the assumption acquires a consumer outside the host. Registering this profile for execution requires that obligation to be stated or the projection to be narrowed.
+Projecting `ActivityOccurrenceId` publicly carries one obligation this capsule inherits rather than creates. The additive [`RSI-ISSUE-01`](../RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity) implementation now combines the Activity identity bound, monotone Activity-element high-water mark, strict pairwise issuance, a guarded production-writer census, per-root Lean laws, and an independently structured TypeScript pair oracle. Subject to its governed checkpoint approval, this discharges Activity identity non-reissue without narrowing the public `id`. User Task, Timer, Message, Effect, Event race, Call, and Scope issuing disciplines remain outside that result.
 
 `activeIterations` is an array rather than a nullable singleton so a later parallel profile can broaden the cardinality without replacing the identity or observation concept. This profile validates exactly one active entry whenever an outer controller is open. The entry's `taskInput.name` is the exact scalar task DataInput ID and its String value is the snapshot item at `loopCounter`. `completionBindingName` is the exact scalar task DataOutput ID.
 
@@ -267,6 +269,7 @@ Answer-free scenario inputs cover zero items, three distinct items, duplicate it
 | CIB relationship | Public-service probe for `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001`; no CIB Multi-Instance semantic oracle |
 | Declarative meaning and laws | Lean relation, evaluator soundness, law proofs, and explicit non-law |
 | TypeScript realization | Independently written semantic-core implementation and exact trace comparison with Lean |
+| Public outer-identity non-reissue | Activity-family `RSI-ISSUE-01`, the current-writer census, both Lean issuer roots, exact predecessor proofs for preserving and removing writers, the independent TypeScript three-state regression oracle, all four TypeScript issuer pairs, and a real activation-two rearm |
 | Occurrence accounting | E2 start/end batches, open-set identity, and mutations that count the controller, reuse a task ID, or close by completion order |
 | Durable refinement | Product 1 start, Update recovery, one pre-arming forced Continue-As-New, no rollover while armed, one outer timer, coalesced fail-closed activation, Worker replacement, exact receipt, history exclusions, capacity proof, and replay of every Run |
 | Whole-model reach | One registered project-owned batch-review model, capability row, generated corpus map, and Product 2 About disclosure added atomically with support |
@@ -299,7 +302,7 @@ Existing executable constraints include [schema coverage](../../scripts/contract
 | [BPMN source compiler composition](../../packages/bpmn-source/src/compile.ts) | 196 |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
 | [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
-| [runtime-state well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 109 |
+| [runtime-state well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 96 |
 
 Owners this implementation **created**, listed because the recomputing guard measures rows that exist and cannot report rows nobody wrote:
 

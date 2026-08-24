@@ -16,10 +16,12 @@ import { test } from "node:test";
 
 import {
   ActivityBodyKind,
+  RuntimeStateRegression,
   SemanticOperationKind,
   VariableValueKind,
   applyInternalOperation,
   runtimeStateDefects,
+  runtimeStateRegressions,
   sequentialMultiInstanceControllerFor,
   type RuntimeState,
   type VariableBinding,
@@ -46,18 +48,23 @@ import {
  * refuses an unregistered profile; the fixture's `startedState` documents that boundary.
  */
 function entered(stimulus: { initialVariables: ReadonlyArray<VariableBinding> }): RuntimeState {
-  const initiated = applyInternalOperation(
+  const before = initiated(stimulus);
+  const state = applyInternalOperation(
+    reviewProgram,
+    operationOfKind(SemanticOperationKind.AwaitSequentialMultiInstanceUserTask),
+    before,
+  );
+  assert.ok(state !== null, "outer entry must apply");
+  return state;
+}
+
+function initiated(stimulus: { initialVariables: ReadonlyArray<VariableBinding> }): RuntimeState {
+  const state = applyInternalOperation(
     reviewProgram,
     operationOfKind(SemanticOperationKind.Initiate),
     startedState(stimulus),
   );
-  assert.ok(initiated !== null, "the initiation must apply");
-  const state = applyInternalOperation(
-    reviewProgram,
-    operationOfKind(SemanticOperationKind.AwaitSequentialMultiInstanceUserTask),
-    initiated,
-  );
-  assert.ok(state !== null, "outer entry must apply");
+  assert.ok(state !== null, "the initiation must apply");
   return state;
 }
 
@@ -70,7 +77,13 @@ function operationOfKind(kind: SemanticOperationKind) {
 }
 
 test("entry snapshots the collection once and generates only loop counter zero", () => {
-  const state = entered(start);
+  const before = initiated(start);
+  const state = applyInternalOperation(
+    reviewProgram,
+    operationOfKind(SemanticOperationKind.AwaitSequentialMultiInstanceUserTask),
+    before,
+  );
+  assert.ok(state !== null, "outer entry must apply");
 
   assert.deepEqual(
     state.userTaskWaits.map(({ id }) => id),
@@ -107,6 +120,13 @@ test("entry snapshots the collection once and generates only loop counter zero",
     "the output collection is not published before natural completion",
   );
   assert.deepEqual(runtimeStateDefects(reviewProgram, instanceId, state), []);
+  assert.equal(
+    runtimeStateRegressions(before, state).includes(
+      RuntimeStateRegression.ActivityOccurrenceIssue,
+    ),
+    false,
+    "the sequential Multi-Instance evaluator issues above the predecessor Activity mark",
+  );
 });
 
 test("a zero-item collection completes atomically, creating no task, timer, or controller", () => {

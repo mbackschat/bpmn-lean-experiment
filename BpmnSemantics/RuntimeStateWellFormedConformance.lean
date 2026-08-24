@@ -179,6 +179,46 @@ theorem rewound_counter_successor_breaks_monotonicity :
   -- Instantiated at the deadline's own element, which is the only key the perturbation lowers.
   exact absurd (monotone.2.2.1 ⟨"Deadline"⟩) (by decide +kernel)
 
+/-- `RSI-ISSUE-01` Red: activation one is live, withdrawn while its Activity high-water mark stays
+one, then reintroduced under that same mark.
+
+The middle state removes only the ownership record while retaining its Activity high-water mark; the
+final state restores the exact first state. Both still satisfy the one-state identity bound and no
+counter rewinds. Only the pairwise issuing discipline can distinguish the reintroduction from a
+preserved live identity. -/
+def withdrawnActivityIdentityState : RuntimeState :=
+  { armedState with activityOccurrences := [] }
+
+def reissuedActivityIdentityState : RuntimeState :=
+  armedState
+
+theorem reissued_activity_identity_siblings_remain_intact :
+    runtimeStateWellFormed program instanceId withdrawnActivityIdentityState = true ∧
+      runtimeStateWellFormed program instanceId reissuedActivityIdentityState = true ∧
+      withdrawnActivityIdentityState.activations = reissuedActivityIdentityState.activations ∧
+      withdrawnActivityIdentityState.messageActivations =
+        reissuedActivityIdentityState.messageActivations ∧
+      withdrawnActivityIdentityState.timerActivations =
+        reissuedActivityIdentityState.timerActivations ∧
+      withdrawnActivityIdentityState.effectActivations =
+        reissuedActivityIdentityState.effectActivations ∧
+      withdrawnActivityIdentityState.eventRaceActivations =
+        reissuedActivityIdentityState.eventRaceActivations ∧
+      withdrawnActivityIdentityState.callActivations =
+        reissuedActivityIdentityState.callActivations ∧
+      withdrawnActivityIdentityState.scopeActivations =
+        reissuedActivityIdentityState.scopeActivations ∧
+      withdrawnActivityIdentityState.activityActivations =
+        reissuedActivityIdentityState.activityActivations ∧
+      withdrawnActivityIdentityState.endOccurrences =
+        reissuedActivityIdentityState.endOccurrences := by
+  decide +kernel
+
+theorem exact_activity_identity_reissue_breaks_issuing_discipline :
+    activityIdentityIssuingDiscipline withdrawnActivityIdentityState
+        reissuedActivityIdentityState = false := by
+  decide +kernel
+
 /-- Violating `RSI-MONO-03`: a successor whose clock moves backwards while the firing hypothesis
 holds.
 
@@ -220,6 +260,6 @@ theorem rewound_clock_successor_keeps_counters_monotone :
     RuntimeStateMonotone armedState rewoundClockSuccessor :=
   ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _,
     fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _,
-    fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, Nat.le_refl _⟩
+    fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, Nat.le_refl _, by decide +kernel⟩
 
 end BpmnSemantics.RuntimeStateWellFormedConformance

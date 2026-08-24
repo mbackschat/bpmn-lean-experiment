@@ -18,8 +18,15 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  RuntimeStateRegression,
+  SemanticOperationKind,
+  SemanticTransitionKind,
+  applyInternalOperation,
   applyStimulus,
+  applyStimulusWithTrace,
   initialState,
+  replayCommittedTransitions,
+  runtimeStateRegressions,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -37,6 +44,28 @@ function armed() {
   const started = applyStimulus(boundedProgram, initialState, start);
   assert.equal(started.outcome, CommandOutcome.Committed);
   return started.state;
+}
+
+function armingPair() {
+  const traced = applyStimulusWithTrace(boundedProgram, initialState, start);
+  const index = traced.committedTransitions.findIndex(({ transition }) =>
+    transition.kind === SemanticTransitionKind.InternalOperation &&
+    transition.operationKind === SemanticOperationKind.AwaitBoundedUserTask
+  );
+  assert.ok(index > 0, "the start trace must contain bounded-task arming");
+  const before = replayCommittedTransitions(
+    boundedProgram,
+    initialState,
+    traced.committedTransitions.slice(0, index),
+  );
+  const after = replayCommittedTransitions(
+    boundedProgram,
+    initialState,
+    traced.committedTransitions.slice(0, index + 1),
+  );
+  assert.ok(before !== null);
+  assert.ok(after !== null);
+  return { before, after };
 }
 
 test("start arms the bounded task and its deadline together at logical time zero", () => {
@@ -57,6 +86,50 @@ test("start arms the bounded task and its deadline together at logical time zero
     },
   ]);
   assert.deepEqual(state.controlTokens, []);
+  const pair = armingPair();
+  assert.equal(
+    runtimeStateRegressions(pair.before, pair.after).includes(
+      RuntimeStateRegression.ActivityOccurrenceIssue,
+    ),
+    false,
+    "the bounded-task evaluator issues above the predecessor Activity mark",
+  );
+});
+
+test("a later bounded-task issue above the retained Activity mark is valid", () => {
+  const firstIssue = armed();
+  const withdrawal = applyStimulus(
+    boundedProgram,
+    firstIssue,
+    completeBoundedTask,
+  );
+  assert.equal(withdrawal.outcome, CommandOutcome.Committed);
+  assert.deepEqual(withdrawal.state.activityOccurrences, []);
+  assert.deepEqual(withdrawal.state.activityActivations, [
+    { elementId: "BoundedTask", count: 1 },
+  ]);
+
+  const operation = boundedProgram.operations.find(
+    (candidate) => candidate.kind === SemanticOperationKind.AwaitBoundedUserTask,
+  );
+  assert.ok(operation !== undefined);
+  const rearmable = {
+    ...withdrawal.state,
+    controlTokens: [{ placeId: operation.input, owner, multiplicity: 1 }],
+  };
+  const secondIssue = applyInternalOperation(boundedProgram, operation, rearmable);
+  assert.ok(secondIssue !== null, "the real bounded-task evaluator must re-arm the Activity");
+
+  assert.deepEqual(secondIssue.activityOccurrences.map(({ id }) => id.activation), [2]);
+  assert.deepEqual(secondIssue.activityActivations, [
+    { elementId: "BoundedTask", count: 2 },
+  ]);
+  assert.equal(
+    runtimeStateRegressions(rearmable, secondIssue).includes(
+      RuntimeStateRegression.ActivityOccurrenceIssue,
+    ),
+    false,
+  );
 });
 
 test("the Activity victory withdraws its own deadline and opens the normal route", () => {

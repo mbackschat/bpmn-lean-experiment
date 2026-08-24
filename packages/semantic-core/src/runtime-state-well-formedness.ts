@@ -72,6 +72,7 @@ export type RuntimeStateDefect =
  * because neither can be decided from one state: a rewound counter is a property of the pair. */
 export const RuntimeStateRegression = {
   ActivationCounter: "activationCounter",
+  ActivityOccurrenceIssue: "activityOccurrenceIssue",
   EndOccurrences: "endOccurrences",
 } as const;
 
@@ -429,13 +430,13 @@ export function isWellFormedRuntimeState(
 }
 
 /**
- * Every activation-counter or End-history regression from `before` to `after`.
+ * Every activation-counter, Activity-issuing, or End-history regression from `before` to `after`.
  *
  * Activation counters are per-key high-water marks and `endOccurrences` never decreases. A lower
- * value is a rewind, not evidence that `after` has already reissued a retired identity: reissue also
- * needs a later mint of that identity. This function therefore reports only monotonicity
- * regressions; the adapter's durable deadline join still relies on the separate issuing discipline
- * for non-reissue.
+ * value is a rewind. Independently, an Activity occurrence newly present in `after` must have an
+ * activation above its element's predecessor high-water mark. That pair criterion distinguishes a
+ * new issue from body turnover, which preserves the exact outer Activity identity, and from
+ * withdrawal, which adds no successor identity.
  */
 export function runtimeStateRegressions(
   before: RuntimeState,
@@ -459,6 +460,18 @@ export function runtimeStateRegressions(
   });
   if (rewound) {
     regressions.push(RuntimeStateRegression.ActivationCounter);
+  }
+  const invalidActivityIssue = after.activityOccurrences.some((record) => {
+    const alreadyLive = before.activityOccurrences.some((previous) =>
+      sameActivityOccurrence(previous.id, record.id)
+    );
+    const predecessorMark = before.activityActivations.find(
+      ({ elementId }) => elementId === record.id.activityElementId,
+    )?.count ?? 0;
+    return !alreadyLive && record.id.activation <= predecessorMark;
+  });
+  if (invalidActivityIssue) {
+    regressions.push(RuntimeStateRegression.ActivityOccurrenceIssue);
   }
   if (after.endOccurrences < before.endOccurrences) {
     regressions.push(RuntimeStateRegression.EndOccurrences);

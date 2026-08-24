@@ -21,6 +21,7 @@ import {
   initialState,
   replaceActivityBodyTask,
   runtimeStateDefects,
+  runtimeStateRegressions,
 } from "@bpmn-lean/semantic-core";
 import type { ActivityOccurrence, RuntimeState } from "@bpmn-lean/semantic-core";
 
@@ -91,6 +92,11 @@ test("replacement preserves the record's identity, owner, operation, and attache
     afterRecord.attachedTimers,
     record.attachedTimers,
     "AOO-TURNOVER-03: a handler armed before a replacement is the same handler after it",
+  );
+  assert.deepEqual(
+    runtimeStateRegressions(before, after),
+    [],
+    "preserving the exact outer identity is not a new Activity issue",
   );
 });
 

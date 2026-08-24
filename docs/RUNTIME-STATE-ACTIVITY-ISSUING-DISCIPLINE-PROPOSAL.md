@@ -2,10 +2,12 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved-with-required-edits
 
 ## Question and current boundary
+
+The first-green implementation is complete in the working increment: the Lean and TypeScript pair rules, both Lean issuer-root laws, exact preservation/removal proofs, per-TypeScript-issuer evaluator pairs, three-state reissue negative, real activation-two rearm, and guarded production-writer census are present. The immutable target, exact-target complete gate, and required semantic-checkpoint verdict are not yet recorded.
 
 [The runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity) records identity non-reissue as an open two-state obligation. Its implemented `RSI-BOUND-01` slice proves that every live Activity occurrence activation is at or below the Activity element's recorded high-water mark, and `RSI-MONO-01` proves that the mark does not decrease across a committed transition. Neither rule constrains the activation chosen when a later transition adds an Activity occurrence that was absent from its predecessor, so both admit the three-state counterexample already retained by the invariant account: activation 1 is live under counter 1, then withdrawn under counter 1, then reintroduced as activation 1 under counter 1.
 

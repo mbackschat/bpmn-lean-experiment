@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Wait activation
 
@@ -157,5 +157,16 @@ def activateEffect (state : RuntimeState) (instanceId : SemanticId)
       { elementId := effect.elementId, count := activation } ::
         state.effectActivations.filter fun value =>
           decide (value.elementId ≠ effect.elementId) }
+
+/-- The shared bounded and monitored User Task arming root issues its Activity occurrence strictly
+above the predecessor Activity-element high-water mark. Sequential Multi-Instance entry reuses this
+same root and therefore reuses this law. -/
+theorem activateBoundedUserTask_issues_fresh_activity (state : RuntimeState)
+    (instanceId : SemanticId) (owner : ScopeOccurrenceId) (input : ControlPlaceId)
+    (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm) :
+    activityIdentityIssuingDiscipline state
+      (activateBoundedUserTask state instanceId owner input task boundaryTimer) = true := by
+  apply activityIdentityIssuingDiscipline_insertActivityOccurrence
+  simp
 
 end BpmnSemantics.SemanticProcess

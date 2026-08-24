@@ -18,6 +18,12 @@ import {
   eventRaceStart,
   timerFiring,
 } from "./event-based-gateway-fixture.ts";
+import {
+  boundedProgram,
+  completeBoundedTask,
+  instanceId as boundedInstanceId,
+  start as boundedStart,
+} from "./bounded-task-fixture.ts";
 
 /**
  * Well-formedness of committed runtime state, and the malformed states the account refuses.
@@ -129,6 +135,42 @@ test("withdrawing a wait without touching its counter is not a regression", () =
   const withdrawn: RuntimeState = { ...armed, timerWaits: [], messageWaits: [], eventRaces: [] };
 
   assert.deepEqual(runtimeStateRegressions(armed, withdrawn), []);
+});
+
+test("an exact Activity identity cannot be reissued after a committed withdrawal", () => {
+  const firstIssue = applyStimulus(boundedProgram, initialState, boundedStart);
+  assert.equal(firstIssue.outcome, CommandOutcome.Committed);
+  const [firstRecord] = firstIssue.state.activityOccurrences;
+  const [firstTask] = firstIssue.state.userTaskWaits;
+  const [firstTimer] = firstIssue.state.timerWaits;
+  assert.ok(firstRecord !== undefined);
+  assert.ok(firstTask !== undefined);
+  assert.ok(firstTimer !== undefined);
+
+  const withdrawal = applyStimulus(
+    boundedProgram,
+    firstIssue.state,
+    completeBoundedTask,
+  );
+  assert.equal(withdrawal.outcome, CommandOutcome.Committed);
+  assert.deepEqual(withdrawal.state.activityOccurrences, []);
+  assert.deepEqual(withdrawal.state.activityActivations, [
+    { elementId: firstRecord.id.activityElementId, count: 1 },
+  ]);
+
+  const exactReissue: RuntimeState = {
+    ...withdrawal.state,
+    activityOccurrences: [firstRecord],
+    userTaskWaits: [firstTask, ...withdrawal.state.userTaskWaits],
+    timerWaits: [firstTimer],
+  };
+
+  assert.deepEqual(runtimeStateDefects(boundedProgram, boundedInstanceId, exactReissue), []);
+  assert.deepEqual(runtimeStateRegressions(firstIssue.state, withdrawal.state), []);
+  assert.deepEqual(
+    runtimeStateRegressions(withdrawal.state, exactReissue),
+    [RuntimeStateRegression.ActivityOccurrenceIssue],
+  );
 });
 
 test("a not-started state holding runtime work is refused", () => {

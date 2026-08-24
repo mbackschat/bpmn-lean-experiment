@@ -16,16 +16,21 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  RuntimeStateRegression,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  SemanticTransitionKind,
   StimulusKind,
   applyStimulus,
+  applyStimulusWithTrace,
   initialState,
   isWellFormedSemanticProcessProgram,
   projectOpenTimers,
   projectOpenUserTasks,
+  replayCommittedTransitions,
+  runtimeStateRegressions,
 } from "@bpmn-lean/semantic-core";
 import type { SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 
@@ -52,6 +57,28 @@ function armed() {
   const started = applyStimulus(boundedScopeProgram, initialState, start);
   assert.equal(started.outcome, CommandOutcome.Committed);
   return started.state;
+}
+
+function armingPair() {
+  const traced = applyStimulusWithTrace(boundedScopeProgram, initialState, start);
+  const index = traced.committedTransitions.findIndex(({ transition }) =>
+    transition.kind === SemanticTransitionKind.InternalOperation &&
+    transition.operationKind === SemanticOperationKind.EnterBoundedScope
+  );
+  assert.ok(index > 0, "the start trace must contain bounded-scope arming");
+  const before = replayCommittedTransitions(
+    boundedScopeProgram,
+    initialState,
+    traced.committedTransitions.slice(0, index),
+  );
+  const after = replayCommittedTransitions(
+    boundedScopeProgram,
+    initialState,
+    traced.committedTransitions.slice(0, index + 1),
+  );
+  assert.ok(before !== null);
+  assert.ok(after !== null);
+  return { before, after };
 }
 
 test("the hand-built fixture is a well-formed program", () => {
@@ -101,6 +128,14 @@ test("start arms the child scope, its entry, and the deadline together", () => {
     { id: childTaskId, owner: childOccurrence },
   ]);
   assert.deepEqual(state.controlTokens, []);
+  const pair = armingPair();
+  assert.equal(
+    runtimeStateRegressions(pair.before, pair.after).includes(
+      RuntimeStateRegression.ActivityOccurrenceIssue,
+    ),
+    false,
+    "the bounded-scope evaluator issues above the predecessor Activity mark",
+  );
 });
 
 /**
