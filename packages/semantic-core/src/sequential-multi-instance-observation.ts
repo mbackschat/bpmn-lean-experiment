@@ -8,9 +8,9 @@
  *
  * Presence is decided by the program rather than by the profile identity. A program declaring no
  * Multi-Instance Activity yields `undefined`, so its canonical observation bytes are unchanged, and a
- * program declaring one always yields an array, empty before outer entry and after either closing
- * route. That keeps the distinction structural and prevents registration state from becoming an
- * observation-shape rule.
+ * well-formed state for a program declaring one yields an array, empty before outer entry and after
+ * either closing route. A malformed binding yields `null`. That keeps the distinction structural and
+ * prevents registration state from becoming an observation-shape rule.
  */
 import { activityOccurrenceForTaskBody } from "./activity-occurrence.js";
 import { VariableValueKind } from "./contract.js";
@@ -30,7 +30,7 @@ import {
 } from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
 import {
-  sequentialMultiInstanceBindingForController,
+  sequentialMultiInstanceBindingsForState,
   type SequentialMultiInstanceBinding,
 } from "./sequential-multi-instance-binding.js";
 
@@ -72,7 +72,8 @@ function activeIterations(
 }
 
 /**
- * Stable Multi-Instance progress, or `undefined` when the program declares no such Activity.
+ * Stable Multi-Instance progress, `undefined` when the program declares no such Activity, or `null`
+ * when its runtime binding is malformed.
  *
  * A controller whose complete operation/record/body/Timer binding cannot be resolved is refused
  * rather than projected with invented definition facts. The input and output binding names are
@@ -87,48 +88,41 @@ function activeIterations(
 export function projectOpenMultiInstances(
   program: SemanticProcessProgram,
   state: RuntimeState,
-): ReadonlyArray<OpenSequentialMultiInstance> | undefined {
+): ReadonlyArray<OpenSequentialMultiInstance> | undefined | null {
   const operations = multiInstanceOperations(program);
   if (operations.length === 0) {
     return undefined;
   }
-  return (state.sequentialMultiInstanceControllers ?? []).flatMap(
-    (controller) => {
-      const binding = sequentialMultiInstanceBindingForController(
-        program,
-        state,
-        controller,
-      );
-      if (binding === undefined) {
-        throw new TypeError(
-          "Cannot publish a malformed sequential Multi-Instance controller binding",
-        );
-      }
+  const bindings = sequentialMultiInstanceBindingsForState(program, state);
+  if (bindings === undefined) {
+    return null;
+  }
+  return bindings.map(
+    (binding) => {
+      const { controller } = binding;
       const iterations = activeIterations(binding);
-      return [
-        {
-          id: controller.id,
-          mode: "sequential" as const,
-          plannedInstanceCount: controller.snapshot.length,
-          // Both normative identities are arithmetic over the three counts published beside them,
-          // because both derive generated the same way. Reading `pendingItemCount(controller)` here
-          // instead would derive generated twice, as completed plus active for the published field and
-          // as completed plus one inside the controller helper. The exact program binding now proves
-          // that the open controller has one active User Task, but deriving the published tuple from
-          // one root still prevents a future change from relocating disagreement between its fields.
-          pendingItemCount: Math.max(
-            0,
-            controller.snapshot.length -
-              (completedInstanceCount(controller) + iterations.length),
-          ),
-          numberOfInstances: completedInstanceCount(controller) +
-            iterations.length,
-          numberOfActiveInstances: iterations.length,
-          numberOfCompletedInstances: completedInstanceCount(controller),
-          numberOfTerminatedInstances: 0,
-          activeIterations: [...iterations],
-        },
-      ];
+      return {
+        id: controller.id,
+        mode: "sequential" as const,
+        plannedInstanceCount: controller.snapshot.length,
+        // Both normative identities are arithmetic over the three counts published beside them,
+        // because both derive generated the same way. Reading `pendingItemCount(controller)` here
+        // instead would derive generated twice, as completed plus active for the published field and
+        // as completed plus one inside the controller helper. The exact program binding now proves
+        // that the open controller has one active User Task, but deriving the published tuple from
+        // one root still prevents a future change from relocating disagreement between its fields.
+        pendingItemCount: Math.max(
+          0,
+          controller.snapshot.length -
+            (completedInstanceCount(controller) + iterations.length),
+        ),
+        numberOfInstances: completedInstanceCount(controller) +
+          iterations.length,
+        numberOfActiveInstances: iterations.length,
+        numberOfCompletedInstances: completedInstanceCount(controller),
+        numberOfTerminatedInstances: 0,
+        activeIterations: [...iterations],
+      };
     },
   );
 }

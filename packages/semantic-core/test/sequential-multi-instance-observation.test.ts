@@ -72,7 +72,10 @@ function entered(): RuntimeState {
 
 function progress(state: RuntimeState) {
   const projected = projectOpenMultiInstances(reviewProgram, state);
-  assert.ok(projected !== undefined, "this program declares a Multi-Instance Activity");
+  assert.ok(
+    projected !== undefined && projected !== null,
+    "this program declares one well-formed Multi-Instance Activity",
+  );
   return projected;
 }
 
@@ -209,8 +212,14 @@ test("a malformed child-scope-bodied controller is refused before public project
     ["sequentialMultiInstanceControllerBindingMismatch"],
     "semantic admission must reject the malformed program-to-controller binding",
   );
-  assert.throws(
-    () => projectOpenMultiInstances(reviewProgram, state),
-    /Cannot publish a malformed sequential Multi-Instance controller binding/u,
+  assert.equal(projectOpenMultiInstances(reviewProgram, state), null);
+});
+
+test("an open SMI record without its controller is refused before public projection", () => {
+  const malformed = { ...entered(), sequentialMultiInstanceControllers: [] };
+  assert.deepEqual(
+    runtimeStateDefects(reviewProgram, instanceId, malformed),
+    ["sequentialMultiInstanceControllerBindingMismatch"],
   );
+  assert.equal(projectOpenMultiInstances(reviewProgram, malformed), null);
 });

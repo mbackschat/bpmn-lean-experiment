@@ -35,8 +35,13 @@ theorem initialState_wellFormed (program : Program) (instanceId : SemanticId)
     waitDeclarationsValid, hiddenRecordDeclarationsValid, canonicalCollectionOrder, orderedBy,
     eventRaceAssociationsValid, effectIncidentAssociationsValid, runtimeStateIdentityBound,
     activityRecordsOwnLiveWork, attachedTimersUnambiguous, activityIdentitiesUnique,
-    controllersOwnLiveActivity, sequentialMultiInstanceControllerProgramBindingsValid,
+    controllersOwnLiveActivity, sequentialMultiInstanceProgramBindingsValid,
+    sequentialMultiInstanceControllerProgramBindingsValid,
+    sequentialMultiInstanceOperationBindingComplete,
     controllerIdentitiesUnique, controllersNotExhausted]
+  intro operation _
+  cases operation <;> simp
+  split <;> rfl
 
 /-- `RSI-OBL-02`. Every state the program start constructor admits is well-formed.
 
@@ -59,8 +64,13 @@ theorem runningProgramStartState_wellFormed (program : Program) (instanceId : Se
     waitDeclarationsValid, hiddenRecordDeclarationsValid, canonicalCollectionOrder, orderedBy,
     eventRaceAssociationsValid, effectIncidentAssociationsValid, runtimeStateIdentityBound,
     activityRecordsOwnLiveWork, attachedTimersUnambiguous, activityIdentitiesUnique,
-    controllersOwnLiveActivity, sequentialMultiInstanceControllerProgramBindingsValid,
+    controllersOwnLiveActivity, sequentialMultiInstanceProgramBindingsValid,
+    sequentialMultiInstanceControllerProgramBindingsValid,
+    sequentialMultiInstanceOperationBindingComplete,
     controllerIdentitiesUnique, controllersNotExhausted]
+  intro operation _
+  cases operation <;> simp
+  split <;> rfl
 
 /-- `RSI-OBL-02` for the Message start kind. -/
 theorem admitMessageStart_wellFormed (program : Program) (state : RuntimeState)

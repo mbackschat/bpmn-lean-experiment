@@ -33,7 +33,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     (unique : state.waits.filter (taskIdNamesWait body) = [wait])
     (soleBody : ∀ other ∈ state.activityOccurrences,
       sameActivityOccurrence other record = false → recordBodyNamesWait wait other = false)
-    (controllerBindingPreserved : sequentialMultiInstanceControllerProgramBindingsValid program
+    (controllerBindingPreserved : sequentialMultiInstanceProgramBindingsValid program
       (replacedState state record wait body) = true)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     runtimeStateWellFormed program instanceId (replacedState state record wait body) = true := by

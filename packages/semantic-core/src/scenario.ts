@@ -188,6 +188,9 @@ export function observeStableState(
     case ControlStateKind.Cancelled: {
       const cancellation = incidentCancellationEligibility(program, state, null);
       const multiInstances = projectOpenMultiInstances(program, state);
+      if (multiInstances === null) {
+        return null;
+      }
       return {
         kind: CanonicalObservationKind.State,
         instanceId: state.control.instanceId,

@@ -116,6 +116,84 @@ theorem controller_binding_rejects_a_different_declared_task :
     entered?.map (runtimeStateWellFormed renamedTaskProgram instanceId) = some false := by
   decide +kernel
 
+private def sequentialMultiInstanceOperationIds : List OperationId :=
+  program.operations.filterMap fun
+    | .awaitSequentialMultiInstanceUserTask id .. => some id
+    | _ => none
+
+def missingSequentialMultiInstanceOwnerProgram : Program :=
+  { program with
+    operationScopes := program.operationScopes.filter fun ownership =>
+      !sequentialMultiInstanceOperationIds.contains ownership.operationId }
+
+def duplicateSequentialMultiInstanceOwnerProgram : Program :=
+  { program with
+    operationScopes := program.operationScopes.flatMap fun ownership =>
+      if sequentialMultiInstanceOperationIds.contains ownership.operationId then
+        [ownership, ownership]
+      else [ownership] }
+
+/-- Definition admission owns malformed operation-scope structure while no matching runtime artifact
+exists, so neither the initial-state theorem nor public empty progress needs an ownership fact. -/
+theorem empty_runtime_does_not_duplicate_program_ownership_admission :
+    (sequentialMultiInstanceProgramBindingsValid missingSequentialMultiInstanceOwnerProgram
+        initialState,
+      sequentialMultiInstanceProgramBindingsValid duplicateSequentialMultiInstanceOwnerProgram
+        initialState) = (true, true) := by
+  decide +kernel
+
+/-- The missing and duplicate owner counterexamples separate that responsibility boundary: once the
+SMI Activity is live, both malformed definitions make its runtime binding invalid. -/
+theorem live_runtime_requires_exactly_one_operation_owner :
+    (entered?.map (sequentialMultiInstanceProgramBindingsValid
+        missingSequentialMultiInstanceOwnerProgram),
+      entered?.map (sequentialMultiInstanceProgramBindingsValid
+        duplicateSequentialMultiInstanceOwnerProgram)) = (some false, some false) := by
+  decide +kernel
+
+/-- The reverse half of the state binding: an open operation-owned Activity record cannot outlive the
+controller that carries its immutable snapshot and accumulated output slots. -/
+def enteredWithoutController? : Option RuntimeState :=
+  entered?.map fun state => { state with sequentialMultiInstanceControllers := [] }
+
+theorem controller_binding_rejects_an_open_record_without_its_controller :
+    enteredWithoutController?.map (runtimeStateWellFormed program instanceId) = some false := by
+  decide +kernel
+
+/-- A second operation-owned task wait outside the record is not another iteration. The exact profile
+has one active inner task, so advancing its high-water mark does not make the extra wait admissible. -/
+def enteredWithUnrecordedTaskWait? : Option RuntimeState := do
+  let state ← entered?
+  let wait ← state.waits.head?
+  pure
+    { state with
+      waits := state.waits ++ [{ wait with activation := wait.activation + 1 }]
+      activations := state.activations.map fun activation =>
+        if activation.taskId == wait.task.id then
+          { activation with count := activation.count + 1 }
+        else activation }
+
+theorem controller_binding_rejects_an_extra_operation_owned_task_wait :
+    enteredWithUnrecordedTaskWait?.map (runtimeStateWellFormed program instanceId) = some false := by
+  decide +kernel
+
+/-- A second operation-owned lifetime Timer outside the record is likewise surplus profile state. -/
+def enteredWithUnrecordedTimerWait? : Option RuntimeState := do
+  let state ← entered?
+  let wait ← state.timerWaits.head?
+  pure
+    { state with
+      timerWaits := state.timerWaits ++
+        [{ wait with activation := wait.activation + 1, deadlineMs := wait.deadlineMs + 1 }]
+      timerActivations := state.timerActivations.map fun activation =>
+        if activation.elementId == wait.elementId then
+          { activation with count := activation.count + 1 }
+        else activation }
+
+theorem controller_binding_rejects_an_extra_operation_owned_timer_wait :
+    enteredWithUnrecordedTimerWait?.map (runtimeStateWellFormed program instanceId) = some false := by
+  decide +kernel
+
 /-- `SMI-ENTER-01`, generating arm: one task, one deadline, one record, one controller, no output.
 
 Three identities from three counter families, all at ordinal one, which is the coincidence every join

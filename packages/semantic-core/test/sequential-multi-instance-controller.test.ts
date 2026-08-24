@@ -28,6 +28,7 @@ import {
   initialState,
   isGateAdmissibleRuntimeState,
   pendingItemCount,
+  projectOpenMultiInstances,
   RuntimeStateDefect,
   runtimeStateDefects,
   type RuntimeState,
@@ -143,6 +144,55 @@ test("the sequential Multi-Instance profile requires the controller property in 
   );
 });
 
+test("an empty runtime does not duplicate program-ownership admission", () => {
+  const operation = reviewProgram.operations.find(({ kind }) =>
+    kind === "awaitSequentialMultiInstanceUserTask"
+  );
+  assert.ok(operation !== undefined);
+  const ownership = reviewProgram.operationScopes.find(({ operationId }) =>
+    operationId === operation.id
+  );
+  assert.ok(ownership !== undefined);
+  const malformedPrograms = [
+    {
+      ...reviewProgram,
+      operationScopes: reviewProgram.operationScopes.filter(({ operationId }) =>
+        operationId !== operation.id
+      ),
+    },
+    {
+      ...reviewProgram,
+      operationScopes: reviewProgram.operationScopes.flatMap((candidate) =>
+        candidate.operationId === operation.id ? [candidate, ownership] : [candidate]
+      ),
+    },
+  ];
+  const empty = withControllers(initialState, []);
+  const live = armed();
+  for (const malformedProgram of malformedPrograms) {
+    assert.deepEqual(
+      runtimeStateDefects(malformedProgram, instanceId, empty),
+      [],
+      "program admission owns missing or duplicate operation scope until matching runtime state exists",
+    );
+    assert.deepEqual(
+      projectOpenMultiInstances(malformedProgram, empty),
+      [],
+      "an empty public projection does not need definition ownership facts",
+    );
+    assert.deepEqual(
+      runtimeStateDefects(malformedProgram, instanceId, live),
+      [RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch],
+      "the scope fact becomes load-bearing as soon as matching SMI runtime state exists",
+    );
+    assert.equal(
+      projectOpenMultiInstances(malformedProgram, live),
+      null,
+      "malformed definition-to-runtime binding has no public projection",
+    );
+  }
+});
+
 test("a controller naming no record of its identity is refused", () => {
   const before = armed();
   const controller = boundController(before);
@@ -153,6 +203,15 @@ test("a controller naming no record of its identity is refused", () => {
   assert.deepEqual(
     defects(withControllers(before, [orphan])),
     [RuntimeStateDefect.SequentialMultiInstanceControllerUnowned],
+  );
+});
+
+test("an open SMI record without its controller is refused", () => {
+  const before = armed();
+  assert.deepEqual(
+    defects(withControllers(before, [])),
+    [RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch],
+    "the reverse record-to-controller join must not pass vacuously",
   );
 });
 
@@ -202,6 +261,54 @@ test("a controller whose task wait carries metadata outside the SMI profile is r
         form: { fields: [{ key: "approved", type: "boolean" }] },
       },
     }],
+  };
+  assert.deepEqual(
+    defects(malformed),
+    [RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch],
+  );
+});
+
+test("an extra operation-owned task wait outside the Activity record is refused", () => {
+  const before = armed();
+  const [wait] = before.userTaskWaits;
+  assert.ok(wait !== undefined);
+  const malformed: RuntimeState = {
+    ...before,
+    taskActivations: before.taskActivations.map((counter) =>
+      counter.elementId === wait.id.elementId
+        ? { ...counter, count: counter.count + 1 }
+        : counter
+    ),
+    userTaskWaits: [
+      ...before.userTaskWaits,
+      { ...wait, id: { ...wait.id, activation: wait.id.activation + 1 } },
+    ],
+  };
+  assert.deepEqual(
+    defects(malformed),
+    [RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch],
+  );
+});
+
+test("an extra operation-owned Timer wait outside the Activity record is refused", () => {
+  const before = armed();
+  const [wait] = before.timerWaits;
+  assert.ok(wait !== undefined);
+  const malformed: RuntimeState = {
+    ...before,
+    timerActivations: before.timerActivations.map((counter) =>
+      counter.elementId === wait.id.elementId
+        ? { ...counter, count: counter.count + 1 }
+        : counter
+    ),
+    timerWaits: [
+      ...before.timerWaits,
+      {
+        ...wait,
+        id: { ...wait.id, activation: wait.id.activation + 1 },
+        deadlineMs: wait.deadlineMs + 1,
+      },
+    ],
   };
   assert.deepEqual(
     defects(malformed),

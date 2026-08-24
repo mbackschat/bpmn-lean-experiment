@@ -338,22 +338,12 @@ Timer removes the controller. A schedule that supplied an unrelated completion w
 controller cannot inhabit `closesOrDecreases` and therefore cannot discharge the hypothesis.
 -/
 
-/-- Whether a controller of the target identity is still open. -/
-def sequentialMultiInstanceControllerOpen (target : SequentialMultiInstanceController)
-    (state : RuntimeState) : Bool :=
-  state.sequentialMultiInstanceControllers.any
-    (sameSequentialMultiInstanceController target)
+/-- The finite snapshot measure remaining in one exact controller state. -/
+def sequentialMultiInstanceControllerRemainingCount
+    (controller : SequentialMultiInstanceController) : Nat :=
+  controller.snapshot.length - completedInstanceCount controller
 
-/-- The finite snapshot measure remaining for the controller of the target identity. -/
-def sequentialMultiInstanceRemainingCount (target : SequentialMultiInstanceController)
-    (state : RuntimeState) : Nat :=
-  match state.sequentialMultiInstanceControllers.find?
-      (sameSequentialMultiInstanceController target) with
-  | some controller => controller.snapshot.length - completedInstanceCount controller
-  | none => 0
-
-/-- One accepted semantic event of the exact SMI family. This says which event occurred; the target
-progress field below says it was progress for the controller whose liveness is being proved. -/
+/-- One accepted semantic event of the exact SMI family. -/
 inductive SequentialMultiInstanceAcceptedEvent (arm : SequentialMultiInstanceArm) :
     RuntimeState → RuntimeState → Prop where
   | iteration {body : OccurrenceId} {submitted : List VariableBinding} {before after : RuntimeState}
@@ -368,50 +358,111 @@ inductive SequentialMultiInstanceAcceptedEvent (arm : SequentialMultiInstanceArm
       (step : SequentialMultiInstanceInterruptionStep arm timer logicalTimeMs before after) :
       SequentialMultiInstanceAcceptedEvent arm before after
 
-/-- One accepted event either closes the target controller or strictly decreases its finite measure. -/
-structure SequentialMultiInstanceConditionalProgress (arm : SequentialMultiInstanceArm)
-    (target : SequentialMultiInstanceController) (before after : RuntimeState) : Prop where
-  accepted : SequentialMultiInstanceAcceptedEvent arm before after
-  closesOrDecreases :
-    sequentialMultiInstanceControllerOpen target after = false ∨
-      (sequentialMultiInstanceControllerOpen target after = true ∧
-        sequentialMultiInstanceRemainingCount target after <
-          sequentialMultiInstanceRemainingCount target before)
+/-- An accepted relation step indexed by the exact controller it advances or closes.
 
-/-- A nonempty finite trace of accepted target progress. -/
-inductive SequentialMultiInstanceConditionalTrace (arm : SequentialMultiInstanceArm)
-    (target : SequentialMultiInstanceController) : RuntimeState → RuntimeState → Prop where
-  | last {before after : RuntimeState}
-      (progress : SequentialMultiInstanceConditionalProgress arm target before after) :
+Each constructor contains the corresponding semantic relation with the target controller in the
+relation's concrete post-state. It stores no close-or-decrease conclusion. The iteration constructor
+also carries the relation's target-specific live, binding, and non-final premises so its measure effect
+can be proved rather than assumed. -/
+inductive SequentialMultiInstanceTargetAcceptedEvent (arm : SequentialMultiInstanceArm) :
+    SequentialMultiInstanceController → RuntimeState →
+      Option SequentialMultiInstanceController → RuntimeState → Prop where
+  | iteration {target : SequentialMultiInstanceController} {body : OccurrenceId}
+      {submitted : List VariableBinding} {before : RuntimeState} {record : ActivityOccurrence}
+      {wait : UserTaskWait} {binding : VariableBinding} {result : String}
+      (accepted : SequentialMultiInstanceIterationStep arm body submitted before
+        (iteratedState before record wait body target result))
+      (targetLive : target ∈ before.sequentialMultiInstanceControllers)
+      (targetBinds : controllerNamesActivityOccurrence target record = true)
+      (nonFinal : completedInstanceCount target + 1 < target.snapshot.length) :
+      SequentialMultiInstanceTargetAcceptedEvent arm target before
+        (some { target with outputSlots := target.outputSlots ++ [result] })
+        (iteratedState before record wait body target result)
+  | completion {target : SequentialMultiInstanceController} {body : OccurrenceId}
+      {submitted : List VariableBinding} {before : RuntimeState} {record : ActivityOccurrence}
+      {result : String}
+      (accepted : SequentialMultiInstanceCompletionStep arm body submitted before
+        (finalCompletionState arm before record body target (target.outputSlots ++ [result])))
+      (targetLive : target ∈ before.sequentialMultiInstanceControllers)
+      (targetBinds : controllerNamesActivityOccurrence target record = true) :
+      SequentialMultiInstanceTargetAcceptedEvent arm target before none
+        (finalCompletionState arm before record body target (target.outputSlots ++ [result]))
+  | interruption {target : SequentialMultiInstanceController} {timer : TimerOccurrenceId}
+      {logicalTimeMs : Nat} {before : RuntimeState} {record : ActivityOccurrence}
+      {deadline : TimerWait} {body : OccurrenceId}
+      (accepted : SequentialMultiInstanceInterruptionStep arm timer logicalTimeMs before
+        (interruptionState arm before record body deadline target))
+      (targetLive : target ∈ before.sequentialMultiInstanceControllers)
+      (targetBinds : controllerNamesActivityOccurrence target record = true) :
+      SequentialMultiInstanceTargetAcceptedEvent arm target before none
+        (interruptionState arm before record body deadline target)
+
+/-- Every target-indexed event is an event of the original semantic relation. -/
+theorem targetAcceptedEvent_isAccepted {arm : SequentialMultiInstanceArm}
+    {target : SequentialMultiInstanceController} {before after : RuntimeState}
+    {nextTarget : Option SequentialMultiInstanceController}
+    (event : SequentialMultiInstanceTargetAcceptedEvent arm target before nextTarget after) :
+    SequentialMultiInstanceAcceptedEvent arm before after := by
+  cases event with
+  | iteration accepted => exact .iteration accepted
+  | completion accepted => exact .completion accepted
+  | interruption accepted => exact .interruption accepted
+
+/-- The close-or-strict-decrease result follows from the target-indexed relation step. -/
+theorem targetAcceptedEvent_closesOrDecreases {arm : SequentialMultiInstanceArm}
+    {target : SequentialMultiInstanceController} {before after : RuntimeState}
+    {nextTarget : Option SequentialMultiInstanceController}
+    (event : SequentialMultiInstanceTargetAcceptedEvent arm target before nextTarget after) :
+    nextTarget = none ∨
+      ∃ updated, nextTarget = some updated ∧
+        sequentialMultiInstanceControllerRemainingCount updated <
+          sequentialMultiInstanceControllerRemainingCount target := by
+  cases event with
+  | iteration _ _ _ nonFinal =>
+      right
+      refine ⟨_, rfl, ?_⟩
+      simp only [sequentialMultiInstanceControllerRemainingCount, completedInstanceCount] at nonFinal ⊢
+      simp only [List.length_append, List.length_singleton] at nonFinal ⊢
+      omega
+  | completion => exact Or.inl rfl
+  | interruption => exact Or.inl rfl
+
+/-- A finite trace whose last accepted target event is natural completion or interruption. -/
+inductive SequentialMultiInstanceConditionalTrace (arm : SequentialMultiInstanceArm) :
+    SequentialMultiInstanceController → RuntimeState → RuntimeState → Prop where
+  | last {target : SequentialMultiInstanceController} {before after : RuntimeState}
+      (event : SequentialMultiInstanceTargetAcceptedEvent arm target before none after) :
       SequentialMultiInstanceConditionalTrace arm target before after
-  | more {before next after : RuntimeState}
-      (progress : SequentialMultiInstanceConditionalProgress arm target before next)
-      (rest : SequentialMultiInstanceConditionalTrace arm target next after) :
+  | more {target updated : SequentialMultiInstanceController}
+      {before next after : RuntimeState}
+      (event : SequentialMultiInstanceTargetAcceptedEvent arm target before (some updated) next)
+      (rest : SequentialMultiInstanceConditionalTrace arm updated next after) :
       SequentialMultiInstanceConditionalTrace arm target before after
 
 /-- The capsule's conditional liveness law.
 
-For a finite snapshot, if every state in which this controller remains open eventually receives an
-accepted completion for the target or its outer Timer, and that event has the family transition's
-close-or-decrease effect, then a finite accepted-event trace reaches a state in which the controller is
-closed. The hypothesis is deliberately conditional and carries no host or human fairness claim. -/
+For a finite snapshot, if every current target controller receives one target-indexed accepted inner
+completion or its outer Timer, then a finite relation trace ends in natural completion or interruption.
+Strict decrease is derived above from the non-final iteration relation; it is not part of this
+hypothesis. The hypothesis remains conditional and carries no host or human fairness claim. -/
 theorem finite_snapshot_conditional_progress_eventually_closes
-    (arm : SequentialMultiInstanceArm) (target : SequentialMultiInstanceController)
-    (eventuallyProgresses : ∀ current,
-      sequentialMultiInstanceControllerOpen target current = true →
-        ∃ next, SequentialMultiInstanceConditionalProgress arm target current next)
-    (initial : RuntimeState)
-    (initiallyOpen : sequentialMultiInstanceControllerOpen target initial = true) :
-    ∃ final,
-      SequentialMultiInstanceConditionalTrace arm target initial final ∧
-        sequentialMultiInstanceControllerOpen target final = false := by
-  obtain ⟨next, progress⟩ := eventuallyProgresses initial initiallyOpen
-  rcases progress.closesOrDecreases with closed | ⟨nextOpen, decreases⟩
-  · exact ⟨next, .last progress, closed⟩
-  · obtain ⟨final, rest, finalClosed⟩ :=
-      finite_snapshot_conditional_progress_eventually_closes arm target eventuallyProgresses next
-        nextOpen
-    exact ⟨final, .more progress rest, finalClosed⟩
-termination_by sequentialMultiInstanceRemainingCount target initial
+    (arm : SequentialMultiInstanceArm)
+    (eventuallyProgresses : ∀ target current,
+      ∃ nextTarget next,
+        SequentialMultiInstanceTargetAcceptedEvent arm target current nextTarget next)
+    (target : SequentialMultiInstanceController) (initial : RuntimeState) :
+    ∃ final, SequentialMultiInstanceConditionalTrace arm target initial final := by
+  obtain ⟨nextTarget, next, event⟩ := eventuallyProgresses target initial
+  have progress := targetAcceptedEvent_closesOrDecreases event
+  cases nextTarget with
+  | none => exact ⟨next, .last event⟩
+  | some updated =>
+      rcases progress with impossible | ⟨measured, equality, decreases⟩
+      · simp at impossible
+      · cases equality
+        obtain ⟨final, rest⟩ :=
+          finite_snapshot_conditional_progress_eventually_closes arm eventuallyProgresses updated next
+        exact ⟨final, .more event rest⟩
+termination_by sequentialMultiInstanceControllerRemainingCount target
 
 end BpmnSemantics.SemanticProcess

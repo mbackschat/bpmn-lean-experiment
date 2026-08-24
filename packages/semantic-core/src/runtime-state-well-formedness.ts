@@ -24,7 +24,7 @@ import {
   compareSequentialMultiInstanceControllers,
 } from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
-import { sequentialMultiInstanceBindingForController } from "./sequential-multi-instance-binding.js";
+import { sequentialMultiInstanceBindingsForState } from "./sequential-multi-instance-binding.js";
 import { compareCanonicalStrings } from "./wire.js";
 import { runtimeStateIdentityBound } from "./runtime-state-identity-bound.js";
 
@@ -383,25 +383,26 @@ function sequentialMultiInstanceDefects(
     defects.push(RuntimeStateDefect.SequentialMultiInstanceControllerUnowned);
   }
 
+  const duplicateControllers = controllers.some((controller, index) =>
+    controllers.some((other, otherIndex) =>
+      index !== otherIndex &&
+      sameActivityOccurrence(controller.id, other.id)
+    )
+  );
+
   const programDeclaresSequentialMultiInstance = program.operations.some(({ kind }) =>
     kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
   );
   if (
     everyControllerOwned &&
+    !duplicateControllers &&
     programDeclaresSequentialMultiInstance &&
-    !controllers.every((controller) =>
-      sequentialMultiInstanceBindingForController(program, state, controller) !== undefined
-    )
+    sequentialMultiInstanceBindingsForState(program, state) === undefined
   ) {
     defects.push(RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch);
   }
 
-  if (controllers.some((controller, index) =>
-    controllers.some((other, otherIndex) =>
-      index !== otherIndex &&
-      sameActivityOccurrence(controller.id, other.id)
-    )
-  )) {
+  if (duplicateControllers) {
     defects.push(RuntimeStateDefect.DuplicateSequentialMultiInstanceController);
   }
 

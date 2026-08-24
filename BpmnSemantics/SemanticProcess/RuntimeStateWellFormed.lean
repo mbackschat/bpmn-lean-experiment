@@ -252,8 +252,10 @@ SMI operation, its owning scope, the exact task body and wait, and the one attac
 
 private def operationOwningScope? (program : Program) (id : OperationId) :
     Option DefinitionScopeId :=
-  (program.operationScopes.find? fun ownership =>
-    decide (ownership.operationId = id)).map (·.scopeId)
+  match program.operationScopes.filter fun ownership =>
+      decide (ownership.operationId = id) with
+  | [ownership] => some ownership.scopeId
+  | _ => none
 
 /-- Every controller names exactly one live Activity occurrence record of its own identity.
 
@@ -304,6 +306,43 @@ def sequentialMultiInstanceControllerProgramBindingsValid (program : Program)
     (state : RuntimeState) : Bool :=
   state.sequentialMultiInstanceControllers.all
     (sequentialMultiInstanceControllerProgramBindingValid program state)
+
+/-- One SMI operation owns equal numbers of Activity records, controllers, inner task waits, and
+lifetime Timer waits. This is the reverse half of controller binding: it rejects an open record after
+its controller was dropped and any extra operation-owned wait outside the record-local pair.
+
+Program admission separately owns missing or duplicate operation-scope bindings. An operation with no
+matching live artifact therefore needs no scope fact here, while any matching record, controller,
+task wait, or Timer wait makes the unique owner load-bearing and is rejected without it. -/
+def sequentialMultiInstanceOperationBindingComplete (program : Program) (state : RuntimeState) :
+    SemanticOperation → Bool
+  | .awaitSequentialMultiInstanceUserTask id _ _ task _ _ boundaryTimer _ =>
+      let records := state.activityOccurrences.filter fun record =>
+        decide (record.activityElementId.value = task.id.value)
+      let controllers := state.sequentialMultiInstanceControllers.filter fun controller =>
+        decide (controller.activityElementId.value = task.id.value)
+      let operationWaits := state.waits.filter fun wait =>
+        decide (wait.task.id = task.id)
+      let operationTimers := state.timerWaits.filter fun wait =>
+        decide (wait.elementId.value = boundaryTimer.elementId.value)
+      match operationOwningScope? program id with
+      | some scopeId =>
+          let waits := operationWaits.filter fun wait =>
+            decide (wait.owner.definitionScopeId = scopeId)
+          let timers := operationTimers.filter fun wait =>
+            decide (wait.owner.definitionScopeId = scopeId)
+          records.length == controllers.length &&
+            records.length == waits.length &&
+            records.length == timers.length
+      | none =>
+          records.isEmpty && controllers.isEmpty && operationWaits.isEmpty &&
+            operationTimers.isEmpty
+  | _ => true
+
+/-- The complete bidirectional SMI program/state binding. -/
+def sequentialMultiInstanceProgramBindingsValid (program : Program) (state : RuntimeState) : Bool :=
+  sequentialMultiInstanceControllerProgramBindingsValid program state &&
+    program.operations.all (sequentialMultiInstanceOperationBindingComplete program state)
 
 /-- No two controllers share one Activity occurrence identity. -/
 def controllerIdentitiesUnique (state : RuntimeState) : Bool :=
@@ -476,7 +515,7 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     attachedTimersUnambiguous state &&
     activityIdentitiesUnique state &&
     controllersOwnLiveActivity state &&
-    sequentialMultiInstanceControllerProgramBindingsValid program state &&
+    sequentialMultiInstanceProgramBindingsValid program state &&
     controllerIdentitiesUnique state &&
     controllersNotExhausted state &&
     (match state.control with

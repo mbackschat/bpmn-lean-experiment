@@ -18,6 +18,7 @@ import type {
   AwaitSequentialMultiInstanceUserTaskOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   RuntimeState,
   SemanticTimerWait,
@@ -94,4 +95,82 @@ export function sequentialMultiInstanceBindingForController(
   }
 
   return { controller, operation, record, taskWait, timerWait };
+}
+
+/**
+ * Resolve the complete bidirectional SMI state binding, or refuse the state.
+ *
+ * Forward controller resolution is not enough: an empty controller array makes a universal check
+ * vacuously true, and record-local lookup cannot see a second operation-owned task or Timer outside
+ * the record. For each SMI operation, the record, resolved-controller, task-wait, and Timer-wait
+ * cardinalities must therefore agree exactly.
+ *
+ * Program admission separately owns missing or duplicate operation-scope bindings. When no matching
+ * runtime artifact exists, this resolver needs no scope fact and returns an empty binding. Once any
+ * matching record, controller, task wait, or Timer wait exists, the unique scope becomes load-bearing
+ * and its absence makes the runtime binding malformed.
+ */
+export function sequentialMultiInstanceBindingsForState(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): ReadonlyArray<SequentialMultiInstanceBinding> | undefined {
+  const controllers = state.sequentialMultiInstanceControllers ?? [];
+  const bindings: SequentialMultiInstanceBinding[] = [];
+  for (const controller of controllers) {
+    const binding = sequentialMultiInstanceBindingForController(program, state, controller);
+    if (binding === undefined) {
+      return undefined;
+    }
+    bindings.push(binding);
+  }
+
+  const operations = program.operations.filter(
+    (operation): operation is AwaitSequentialMultiInstanceUserTaskOperation =>
+      operation.kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask,
+  );
+  for (const operation of operations) {
+    const records = state.activityOccurrences.filter(({ operationId }) =>
+      operationId === operation.id
+    );
+    const operationBindings = bindings.filter(({ operation: candidate }) =>
+      candidate.id === operation.id
+    );
+    const operationTaskWaits = state.userTaskWaits.filter(({ id }) =>
+      id.elementId === operation.task.elementId
+    );
+    const operationTimerWaits = state.timerWaits.filter(({ id }) =>
+      id.elementId === operation.boundaryTimer.elementId
+    );
+    const ownerships = program.operationScopes.filter(({ operationId }) =>
+      operationId === operation.id
+    );
+    const [ownership] = ownerships;
+    if (ownerships.length !== 1 || ownership === undefined) {
+      if (
+        records.length !== 0 ||
+        operationBindings.length !== 0 ||
+        operationTaskWaits.length !== 0 ||
+        operationTimerWaits.length !== 0
+      ) {
+        return undefined;
+      }
+      continue;
+    }
+
+    const taskWaits = operationTaskWaits.filter(({ owner }) =>
+      owner.definitionScopeId === ownership.scopeId
+    );
+    const timerWaits = operationTimerWaits.filter(({ owner }) =>
+      owner.definitionScopeId === ownership.scopeId
+    );
+    if (
+      records.length !== operationBindings.length ||
+      taskWaits.length !== operationBindings.length ||
+      timerWaits.length !== operationBindings.length
+    ) {
+      return undefined;
+    }
+  }
+
+  return bindings;
 }
