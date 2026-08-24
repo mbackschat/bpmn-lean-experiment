@@ -7,7 +7,7 @@ Review: approved
 
 ## Question and current boundary
 
-The additive Activity-family issuing discipline required by the public outer identity is implemented and awaiting its governed semantic-checkpoint verdict. Execution registration remains blocked by that verdict and by the Temporal host class, refinement witnesses, measured capacity owner, complete gates, and closure review below.
+The additive Activity-family issuing discipline required by the public outer identity is implemented and independently checkpoint-approved under [its governed receipt](../RUNTIME-STATE-ACTIVITY-ISSUING-DISCIPLINE-PROPOSAL.md#independent-cold-review-receipt). Execution registration remains blocked by the Temporal host class, refinement witnesses, measured capacity owner, complete gates, and closure review below.
 
 This proposal selects the first bounded `SEQUENTIAL-MULTI-INSTANCE` slice: one private executable Process reviews an ordered collection through one sequential Multi-Instance User Task, aggregates one string result per generated inner instance, and either completes normally or is interrupted by one exact `PT1S` Timer Boundary Event attached to the outer Multi-Instance Activity. The timer route reaches one ordinary escalation User Task so cancellation remains observable before Process completion.
 

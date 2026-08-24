@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved-with-required-edits
+Lifecycle: implemented-awaiting-closure
+Review: approved
 
 ## Question and current boundary
 
-The first-green implementation is committed at `2b91e761`: the Lean and TypeScript pair rules, both Lean issuer-root laws, exact preservation/removal proofs, per-TypeScript-issuer evaluator pairs, three-state reissue negative, real activation-two rearm, and guarded production-writer census are present. The cost-bound immutable checkpoint target, exact-target complete gate, and required semantic-checkpoint verdict are not yet recorded.
+The Activity-family implementation is checkpoint-approved. The cost-bound target `10c7494a0939792e42a6a775e0d8a6c3f68d72f8` contains the Lean and TypeScript pair rules, both Lean issuer-root laws, exact preservation/removal proofs, per-TypeScript-issuer evaluator pairs, three-state reissue negative, real activation-two rearm, and guarded production-writer census. The reviewer required one sustaining-guard correction, closed at `55169757f7e0b9e8865514686a2085054a935218`: TypeScript classification now parses the complete assigned expression and refuses to retain a removal classification for a mixed remove-and-issue rewrite. The exact correction-target verifier passed against a clean committed tree. Sequential Multi-Instance registration remains with its own Temporal, refinement, capacity, complete-gate, and closure obligations.
 
 [The runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity) records identity non-reissue as an open two-state obligation. Its implemented `RSI-BOUND-01` slice proves that every live Activity occurrence activation is at or below the Activity element's recorded high-water mark, and `RSI-MONO-01` proves that the mark does not decrease across a committed transition. Neither rule constrains the activation chosen when a later transition adds an Activity occurrence that was absent from its predecessor, so both admit the three-state counterexample already retained by the invariant account: activation 1 is live under counter 1, then withdrawn under counter 1, then reintroduced as activation 1 under counter 1.
 
@@ -116,7 +116,7 @@ Reopen this account if Activity counters cease to be per-element high-water mark
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `c2412a07fd3f025fde3c147cb4756f07869eef69` | `fork-turns-none` | `approve-with-required-edits` | `c8e9d92efa9fdbf5c4dac726765ecd0ff0a36a95, 61038337445e0909946e31b4291a08a65766c1a6` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `10c7494a0939792e42a6a775e0d8a6c3f68d72f8` | `fork-turns-none` | `approve-with-required-edits` | `55169757f7e0b9e8865514686a2085054a935218` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-Cold proposal review is required because this selects a new two-state invariant, changes the proof boundary, and supplies a premise for a published runtime identity. The reviewer approved the selected rule after two bounded correction-audit rounds closed writer-census completeness, Activity-uniqueness attribution, and bounded-scope writer classification without changing the public contract, exclusions, or evidence strategy. The owner approved the additive discipline on 2026-08-24; implementation is authorized, but Sequential Multi-Instance registration remains blocked by the obligations named above.
+Cold proposal review was required because this selects a new two-state invariant, changes the proof boundary, and supplies a premise for a published runtime identity. The reviewer approved the selected rule after two bounded correction-audit rounds closed writer-census completeness, Activity-uniqueness attribution, and bounded-scope writer classification without changing the public contract, exclusions, or evidence strategy. The owner approved the additive discipline on 2026-08-24. The semantic-checkpoint review found the implementation correct for every current writer and required one sustaining-guard correction: the TypeScript removal classification had recognized a `.filter(` substring rather than the complete assigned expression. The same reviewer approved `55169757f7e0b9e8865514686a2085054a935218` after the seed proved a mixed filter-plus-issue rewrite is classified as an issuer, and the exact correction-target pre-push gate passed with output SHA-256 `55675c0bf010860b7f3642ef0eed4fe87917d691ab1620bd98de68c06d477c25`.

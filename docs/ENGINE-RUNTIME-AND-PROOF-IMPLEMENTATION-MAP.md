@@ -53,7 +53,7 @@ The first interchange composition registers `cibseven-2.2.0-user-task-process-da
 - separate checked-process admission, Semantic Process validation, cross-artifact binding, canonical lowering, and exact lowering-equality owners
 - separate kernel-decided conformance modules for admission/profile/binding/lowering and for runtime closure/evaluator facts, preserving the theorem surface while bounding each Lean compiler process independently
 - a separate `runtimeStateIdentityBound` owner over User Task, Timer, and Activity identities, composed into `runtimeStateWellFormed`, with one kernel-decided negative per implemented family and the existing exact-attribution fixtures split into independently memory-bounded Activity and remaining-state owners
-- Activity-only `RSI-ISSUE-01` in `RuntimeStateMonotone`, with issuer-root freshness, predecessor-identity preservation/removal proofs, and a three-state exact-reissue negative; checkpoint review is pending
+- Activity-only `RSI-ISSUE-01` in `RuntimeStateMonotone`, independently checkpoint-approved with issuer-root freshness, predecessor-identity preservation/removal proofs, and a three-state exact-reissue negative
 - generic scope-owned token, occurrence, wait, selected-branch, called-Process, and scoped-variable runtime with canonical public projection
 - declarative `OperationStep`/`ProgramStep` and `EffectCompletionStep`, executable transitions, and evaluator soundness at each closed capsule's declared proof boundary
 - independent decoding, lowering, execution traces, refusal or preservation facts, and non-laws for every closed family named in [the current boundary](#current-boundary); the three boundary-Timer proof boundaries remain explicit in their sections below
@@ -102,7 +102,7 @@ The first interchange composition registers `cibseven-2.2.0-user-task-process-da
 
 Two registered profiles select one internal standard-notation preservation capability without executing the retained material. The BPMN data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Integer and String-list values appear only at M6 User Task completion, and Product 1 owns no form semantics. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Its successor adds only the exact incident-gated hosting-root cancellation path; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
 
-The identity bound remains narrower than its general criterion: Message, Effect, Event race, Call, and ordinary Scope are absent, and called roots are excluded. Activity issuing is implemented over the guarded writer set with checkpoint review pending; every other family's issuing discipline and general transition preservation remain absent.
+The identity bound remains narrower than its general criterion: Message, Effect, Event race, Call, and ordinary Scope are absent, and called roots are excluded. Activity issuing is independently checkpoint-approved over the guarded writer set; every other family's issuing discipline and general transition preservation remain absent.
 
 The sequential Multi-Instance checked node, Semantic Process operation, runtime controller, four state transitions, public progress, and E2 occurrence accounting are implemented, and the profile is still not execution-registered.
 
