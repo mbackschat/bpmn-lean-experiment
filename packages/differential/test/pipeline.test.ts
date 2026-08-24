@@ -225,6 +225,8 @@ test(
         "expense-exception-review-approve",
         "expense-exception-review-request-changes",
         "expense-exception-review-abort",
+        "sequential-multi-instance-natural",
+        "sequential-multi-instance-interrupted",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);
