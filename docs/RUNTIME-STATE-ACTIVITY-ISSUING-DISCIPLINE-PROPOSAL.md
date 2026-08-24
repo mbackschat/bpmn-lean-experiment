@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: owner-approved
 Review: approved-with-required-edits
 
 ## Question and current boundary
@@ -117,4 +117,4 @@ Reopen this account if Activity counters cease to be per-element high-water mark
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-Cold proposal review is required because this selects a new two-state invariant, changes the proof boundary, and supplies a premise for a published runtime identity. The reviewer approved the selected rule after two bounded correction-audit rounds closed writer-census completeness, Activity-uniqueness attribution, and bounded-scope writer classification without changing the public contract, exclusions, or evidence strategy. No implementation is authorized before owner-approved lifecycle.
+Cold proposal review is required because this selects a new two-state invariant, changes the proof boundary, and supplies a premise for a published runtime identity. The reviewer approved the selected rule after two bounded correction-audit rounds closed writer-census completeness, Activity-uniqueness attribution, and bounded-scope writer classification without changing the public contract, exclusions, or evidence strategy. The owner approved the additive discipline on 2026-08-24; implementation is authorized, but Sequential Multi-Instance registration remains blocked by the obligations named above.

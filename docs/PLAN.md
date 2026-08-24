@@ -41,7 +41,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: record owner approval for the independently approved [Activity issuing-discipline proposal](RUNTIME-STATE-ACTIVITY-ISSUING-DISCIPLINE-PROPOSAL.md), then reproduce the three-state reissue Red and discharge the criterion at the shared Lean arming roots and every independent TypeScript Activity issuer without narrowing the published `ActivityOccurrenceId` contract.
+Next action: reproduce the [Activity issuing discipline](RUNTIME-STATE-ACTIVITY-ISSUING-DISCIPLINE-PROPOSAL.md)'s three-state reissue Red, then discharge the approved criterion at the shared Lean arming roots and every independent TypeScript Activity issuer, with a guarded production-writer census and without narrowing the published `ActivityOccurrenceId` contract.
 
 Registration still needs a governed account discharging the Activity-family issuing discipline. This is selected over narrowing `ActivityOccurrenceId` because it is additive, contract-preserving, and reusable.
 
