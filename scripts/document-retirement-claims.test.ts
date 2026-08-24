@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+import { readWorktreeSource } from "./worktree-source-read.ts";
 
 /**
  * A document that says a named construct is retired must not leave it declared.
@@ -40,10 +40,23 @@ const declarationPatterns = (identifier: string): ReadonlyArray<RegExp> => [
   new RegExp(`\\b(?:def|structure|inductive|abbrev)\\s+${identifier}\\b`),
 ];
 
-function trackedFiles(): ReadonlyArray<string> {
-  return execFileSync("git", ["ls-files", "-z"], { cwd: projectRoot, encoding: "utf8" })
+function worktreeFiles(): ReadonlyArray<string> {
+  return execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+    { cwd: projectRoot, encoding: "utf8" },
+  )
     .split("\0")
     .filter((entry) => entry.length > 0);
+}
+
+type MaintainedSource = Readonly<{ relativePath: string; source: string }>;
+
+function maintainedSources(files: ReadonlyArray<string>): ReadonlyArray<MaintainedSource> {
+  return files.flatMap((relativePath) => {
+    const source = readWorktreeSource(path.join(projectRoot, relativePath));
+    return source === null ? [] : [{ relativePath, source }];
+  });
 }
 
 const searchableExtensions = new Set([".ts", ".tsx", ".lean", ".md", ".java"]);
@@ -54,18 +67,14 @@ function searchable(relativePath: string): boolean {
     !relativePath.startsWith("adoption/");
 }
 
-function read(relativePath: string): string {
-  return readFileSync(path.join(projectRoot, relativePath), "utf8");
-}
-
 /** Every construct a maintained document claims is retired, with the document that claims it. */
-function retirementClaims(files: ReadonlyArray<string>): ReadonlyMap<string, string> {
+function retirementClaims(files: ReadonlyArray<MaintainedSource>): ReadonlyMap<string, string> {
   const claims = new Map<string, string>();
-  for (const relativePath of files.filter((entry) => path.extname(entry) === ".md")) {
+  for (const { relativePath, source } of files) {
+    if (path.extname(relativePath) !== ".md") continue;
     if (!searchable(relativePath)) continue;
-    const text = read(relativePath);
     for (const pattern of claimPatterns) {
-      for (const match of text.matchAll(pattern)) {
+      for (const match of source.matchAll(pattern)) {
         const identifier = match[1];
         if (identifier !== undefined) claims.set(identifier, relativePath);
       }
@@ -77,19 +86,21 @@ function retirementClaims(files: ReadonlyArray<string>): ReadonlyMap<string, str
 /** The files that still declare `identifier`, ignoring the sentence that retires it. */
 function survivingDeclarations(
   identifier: string,
-  files: ReadonlyArray<string>,
+  files: ReadonlyArray<MaintainedSource>,
 ): ReadonlyArray<string> {
   const patterns = declarationPatterns(identifier);
-  return files.filter((relativePath) =>
+  return files.flatMap(({ relativePath, source }) =>
     searchable(relativePath) &&
-    read(relativePath).split("\n").some((line) =>
-      patterns.some((pattern) => pattern.test(line))
-    )
+      source.split("\n").some((line) =>
+        patterns.some((pattern) => pattern.test(line))
+      )
+      ? [relativePath]
+      : []
   );
 }
 
 test("no maintained document retires a construct that is still declared", () => {
-  const files = trackedFiles();
+  const files = maintainedSources(worktreeFiles());
   const claims = retirementClaims(files);
   // A vacuous pass is the failure mode here: the guard is only worth its cost while at least one
   // claim exists to check, so an empty claim set is itself reported.
@@ -103,7 +114,10 @@ test("no maintained document retires a construct that is still declared", () => 
 
 test("the claim and declaration patterns each reject their seeded counterexample", () => {
   const retired = "MultiInstanceActivityInstanceId";
-  assert.ok(retirementClaims(trackedFiles()).has(retired), "the live claim is not parsed");
+  assert.ok(
+    retirementClaims(maintainedSources(worktreeFiles())).has(retired),
+    "the live claim is not parsed",
+  );
 
   for (const declaration of [
     `type ${retired} = {`,
@@ -126,4 +140,14 @@ test("the claim and declaration patterns each reject their seeded counterexample
       mention,
     );
   }
+});
+
+test("excludes a tracked path deleted from the worktree", () => {
+  assert.deepEqual(
+    maintainedSources([
+      "scripts/document-retirement-claims.test.ts",
+      ".document-retirement-deleted-probe.ts",
+    ]).map(({ relativePath }) => relativePath),
+    ["scripts/document-retirement-claims.test.ts"],
+  );
 });
