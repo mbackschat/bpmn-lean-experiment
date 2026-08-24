@@ -75,7 +75,7 @@ inductive SequentialMultiInstanceEntryStep :
       (owned : onlyTokenOwner? before arm.input = some owner)
       (running : before.control = .running instanceId)
       (soleBinding : before.variables.process.bindings.filter
-        (fun candidate => candidate.name == arm.data.inputDataObjectId) = [binding])
+        (fun candidate => candidate.name == arm.data.inputDataObjectReferenceId) = [binding])
       (collection : binding.value = .stringList [])
       (limits : withinSequentialMultiInstanceLimits arm [] = true) :
       SequentialMultiInstanceEntryStep arm before
@@ -86,7 +86,7 @@ inductive SequentialMultiInstanceEntryStep :
       (owned : onlyTokenOwner? before arm.input = some owner)
       (running : before.control = .running instanceId)
       (soleBinding : before.variables.process.bindings.filter
-        (fun candidate => candidate.name == arm.data.inputDataObjectId) = [binding])
+        (fun candidate => candidate.name == arm.data.inputDataObjectReferenceId) = [binding])
       (collection : binding.value = .stringList (first :: rest))
       (limits : withinSequentialMultiInstanceLimits arm (first :: rest) = true) :
       SequentialMultiInstanceEntryStep arm before
@@ -314,12 +314,12 @@ private theorem sequentialMultiInstanceControllerFor_sound
 private theorem admittedSnapshot_sound {arm : SequentialMultiInstanceArm} {state : RuntimeState}
     {items : List String} (found : admittedSnapshot? arm state = some items) :
     ∃ binding, state.variables.process.bindings.filter
-        (fun candidate => candidate.name == arm.data.inputDataObjectId) = [binding] ∧
+        (fun candidate => candidate.name == arm.data.inputDataObjectReferenceId) = [binding] ∧
       binding.value = .stringList items ∧
       withinSequentialMultiInstanceLimits arm items = true := by
   unfold admittedSnapshot? at found
   cases filtered : state.variables.process.bindings.filter
-      (fun candidate => candidate.name == arm.data.inputDataObjectId) with
+      (fun candidate => candidate.name == arm.data.inputDataObjectReferenceId) with
   | nil => simp [filtered] at found
   | cons binding rest =>
       cases rest with

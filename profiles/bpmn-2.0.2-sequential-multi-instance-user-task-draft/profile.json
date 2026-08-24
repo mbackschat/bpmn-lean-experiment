@@ -1,0 +1,98 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-bounded-sequential-multi-instance-user-task-with-one-outer-lifetime-timer",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.3.8",
+      "Clause 10.5.5",
+      "Clause 10.5.6",
+      "Clause 13.3.2",
+      "Clause 13.3.7",
+      "Clause 13.5.3",
+      "Table 10.29",
+      "Table 10.30",
+      "Table 10.91",
+      "Table 10.92",
+      "Table 10.101",
+      "Table 10.122"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "sequential-multi-instance-user-task",
+      "once-evaluated-ordered-string-list-input",
+      "process-start-ordered-string-list-data",
+      "one-active-inner-user-task",
+      "zero-based-instance-counter",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "user-task-string-completion-data",
+      "index-ordered-string-list-output-aggregation",
+      "atomic-final-output-publication",
+      "interrupting-timer-boundary-event",
+      "default-cancel-activity-true",
+      "literal-time-duration-pt1s",
+      "one-outer-lifetime-deadline",
+      "deadline-preservation-through-inner-turnover",
+      "deadline-interruption-discards-partial-output",
+      "bounded-multi-instance-progress-publication",
+      "maximum-sixteen-input-items",
+      "maximum-512-canonical-utf8-bytes-per-item",
+      "maximum-8192-canonical-utf8-bytes-per-collection",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "openMultiInstances",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-multi-instance-compatibility-claim",
+    "parallel-multi-instance",
+    "multi-instance-on-another-activity-type",
+    "loop-cardinality-expression",
+    "completion-condition",
+    "early-completion",
+    "partial-output-publication",
+    "non-direct-data-association",
+    "expression-evaluation",
+    "non-string-item-values",
+    "repeated-or-nested-multi-instance-controller",
+    "more-than-one-boundary-event",
+    "non-interrupting-boundary-event",
+    "boundary-trigger-types-other-than-timer",
+    "timer-date-cycle-and-other-durations",
+    "portable-winner-for-coalesced-completion-and-deadline",
+    "general-cancellation",
+    "compensation",
+    "transactions",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

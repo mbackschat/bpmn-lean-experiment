@@ -13,98 +13,39 @@ import {
   requireWorkflowChainEventHistoryMargin,
   workflowChainHistoryEventEnvelopeBytes,
 } from "./workflow-event-history-capacity.js";
+import {
+  SequentialMultiInstanceHistoryEventFamily,
+  SequentialMultiInstanceHistoryRunRole,
+  SequentialMultiInstanceHistoryTopology,
+} from "./sequential-multi-instance-history-measurement.js";
+import type {
+  SequentialMultiInstanceHistoryCheckpoint,
+  SequentialMultiInstanceHistoryEnvironment,
+  SequentialMultiInstanceHistoryEventFamilyCounts,
+  SequentialMultiInstanceHistoryFinalBoundary,
+  SequentialMultiInstanceHistoryMeasurement,
+  SequentialMultiInstanceMeasuredHistory,
+  SequentialMultiInstanceHistorySeparator,
+  SequentialMultiInstanceRunHistoryMeasurement,
+  SequentialMultiInstanceTopologyHistoryMeasurement,
+} from "./sequential-multi-instance-history-measurement.js";
 
-export enum SequentialMultiInstanceHistoryTopology {
-  Natural = "natural",
-  Interrupted = "interrupted",
-}
-
-export enum SequentialMultiInstanceHistoryRunRole {
-  PreArming = "preArming",
-  Armed = "armed",
-  Escalation = "escalation",
-}
-
-export enum SequentialMultiInstanceHistoryEventFamily {
-  WorkflowExecutionStarted = "workflowExecutionStarted",
-  WorkflowTask = "workflowTask",
-  UpdateAccepted = "updateAccepted",
-  UpdateCompleted = "updateCompleted",
-  TimerStarted = "timerStarted",
-  TimerCanceled = "timerCanceled",
-  TimerFired = "timerFired",
-  ContinuedAsNew = "continuedAsNew",
-  TerminalCompleted = "terminalCompleted",
-}
-
-export type SequentialMultiInstanceHistoryEnvironment = Readonly<{
-  temporalCliVersion: "v1.8.1";
-  temporalServerVersion: "1.31.2";
-  temporalSdkVersion: "1.21.0";
-}>;
-
-export type SequentialMultiInstanceHistorySeparator = Readonly<{
-  maximumItems: number;
-  maximumItemUtf8Bytes: number;
-  maximumCanonicalCollectionUtf8Bytes: number;
-  canonicalMaximumCollectionBytes: number;
-  equal508CollectionBytes: number;
-  equal512CollectionBytes: number;
-  exact16Admitted: boolean;
-  exact17Refused: boolean;
-}>;
-
-export type SequentialMultiInstanceHistoryEventFamilyCounts = Readonly<
-  Record<SequentialMultiInstanceHistoryEventFamily, number>
->;
-
-export type SequentialMultiInstanceHistoryCheckpoint = Readonly<{
-  label: string;
-  historyLength: number;
-  historySize: number;
-}>;
-
-/**
- * Temporal exposes `historyLength` and `historySize` before the closing command is committed.
- * Raw service sizes are observations. The deterministic upper envelope accounts for every Event,
- * the largest co-resident activation payload, and the separately recorded closing payload.
- */
-export type SequentialMultiInstanceHistoryFinalBoundary = Readonly<{
-  eventsNotIncludedAtCheckpoint: number;
-  canonicalPayloadBytes: number;
-  conservativeEnvelopeBytes: number;
-}>;
-
-export type SequentialMultiInstanceRunHistoryMeasurement = Readonly<{
-  runOrdinal: number;
-  role: SequentialMultiInstanceHistoryRunRole;
-  stableCheckpoints: readonly SequentialMultiInstanceHistoryCheckpoint[];
-  finalBoundary: SequentialMultiInstanceHistoryFinalBoundary;
-  finalEventCount: number;
-  conservativeFinalHistorySize: number;
-  largestActivationEvents: number;
-  largestActivationCanonicalPayloadBytes: number;
-  eventFamilies: SequentialMultiInstanceHistoryEventFamilyCounts;
-}>;
-
-export type SequentialMultiInstanceTopologyHistoryMeasurement = Readonly<{
-  topology: SequentialMultiInstanceHistoryTopology;
-  completedItemsBeforeTimerResolution: number;
-  terminalOutcome: CommandOutcome;
-  runs: readonly SequentialMultiInstanceRunHistoryMeasurement[];
-}>;
-
-export type SequentialMultiInstanceMeasuredHistory = Readonly<{
-  state: "measured";
-  environment: SequentialMultiInstanceHistoryEnvironment;
-  separator: SequentialMultiInstanceHistorySeparator;
-  natural: SequentialMultiInstanceTopologyHistoryMeasurement;
-  interrupted: SequentialMultiInstanceTopologyHistoryMeasurement;
-}>;
-
-export type SequentialMultiInstanceHistoryMeasurement =
-  | Readonly<{ state: "unmeasured" }>
-  | SequentialMultiInstanceMeasuredHistory;
+export {
+  SequentialMultiInstanceHistoryEventFamily,
+  SequentialMultiInstanceHistoryRunRole,
+  SequentialMultiInstanceHistoryTopology,
+} from "./sequential-multi-instance-history-measurement.js";
+export type {
+  SequentialMultiInstanceHistoryCheckpoint,
+  SequentialMultiInstanceHistoryEnvironment,
+  SequentialMultiInstanceHistoryEventFamilyCounts,
+  SequentialMultiInstanceHistoryFinalBoundary,
+  SequentialMultiInstanceHistoryMeasurement,
+  SequentialMultiInstanceHistorySeparator,
+  SequentialMultiInstanceMeasuredHistory,
+  SequentialMultiInstanceRunHistoryMeasurement,
+  SequentialMultiInstanceTopologyHistoryMeasurement,
+} from "./sequential-multi-instance-history-measurement.js";
 
 export type SequentialMultiInstanceHistoryCapacity = Readonly<{
   eventTrigger: number;
@@ -144,8 +85,8 @@ export const retainedSequentialMultiInstanceHistoryMeasurement:
       completedItemsBeforeTimerResolution: 16,
       terminalOutcome: CommandOutcome.Committed,
       runs: [
-        retainedRun(SequentialMultiInstanceHistoryTopology.Natural, SequentialMultiInstanceHistoryRunRole.PreArming, 1, [3, 3], [123_587, 123_587], [2, 123_548, 8_192], 5, 390_827, 5, 246_799, [1, 3, 0, 0, 0, 0, 0, 1, 0]),
-        retainedRun(SequentialMultiInstanceHistoryTopology.Natural, SequentialMultiInstanceHistoryRunRole.Armed, 2, [3, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 82], [124_066, 124_520, 126_584, 128_645, 130_706, 132_767, 134_828, 136_889, 138_950, 141_011, 143_072, 145_134, 147_198, 149_262, 151_326, 153_390, 155_454, 155_454], [5, 21_583, 20_480], 87, 501_483, 10, 123_548, [1, 51, 16, 16, 1, 1, 0, 0, 1]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Natural, SequentialMultiInstanceHistoryRunRole.PreArming, 1, [3, 3], [123_657, 123_657], [2, 123_620, 8_192], 5, 391_043, 5, 246_943, [1, 3, 0, 0, 0, 0, 0, 1, 0]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Natural, SequentialMultiInstanceHistoryRunRole.Armed, 2, [3, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 82], [124_134, 124_585, 126_644, 128_700, 130_756, 132_812, 134_868, 136_924, 138_980, 141_036, 143_092, 145_149, 147_208, 149_267, 151_326, 153_385, 155_444, 155_444], [5, 21_601, 20_480], 87, 501_573, 10, 123_620, [1, 51, 16, 16, 1, 1, 0, 0, 1]),
       ],
     },
     interrupted: {
@@ -153,9 +94,10 @@ export const retainedSequentialMultiInstanceHistoryMeasurement:
       completedItemsBeforeTimerResolution: 15,
       terminalOutcome: CommandOutcome.Committed,
       runs: [
-        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.PreArming, 1, [3, 3], [109_128, 109_128], [2, 109_087, 8_192], 5, 347_444, 5, 217_877, [1, 3, 0, 0, 0, 0, 0, 1, 0]),
-        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.Armed, 2, [3, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 83, 83], [109_605, 110_056, 112_115, 114_171, 116_227, 118_283, 120_339, 122_395, 124_451, 126_507, 128_563, 130_620, 132_679, 134_738, 136_797, 138_856, 141_073, 141_073], [2, 110_371, 8_192], 85, 568_902, 8, 110_371, [1, 51, 15, 15, 1, 0, 1, 1, 0]),
-        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.Escalation, 3, [3, 6, 6], [110_880, 111_296, 111_296], [4, 13_688, 16_384], 10, 165_019, 7, 110_371, [1, 6, 1, 1, 0, 0, 0, 0, 1]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.PreArming, 1, [3, 3], [109_338, 109_338], [2, 109_295, 8_192], 5, 348_068, 5, 218_293, [1, 3, 0, 0, 0, 0, 0, 1, 0]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.Armed, 2, [3, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 83, 83], [109_817, 110_271, 112_335, 114_396, 116_457, 118_518, 120_579, 122_640, 124_701, 126_762, 128_823, 130_885, 132_949, 135_013, 137_077, 139_141, 141_365, 141_365], [2, 110_579, 8_192], 85, 569_318, 8, 110_579, [1, 51, 15, 15, 1, 0, 1, 1, 0]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.StaleRefusal, 3, [3, 6, 6], [111_092, 111_510, 111_510], [4, 110_941, 16_384], 10, 263_784, 7, 111_883, [1, 6, 1, 1, 0, 0, 0, 1, 0]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.Escalation, 4, [3, 6, 6], [111_463, 111_881, 111_881], [4, 14_213, 16_384], 10, 166_114, 7, 110_941, [1, 6, 1, 1, 0, 0, 0, 0, 1]),
       ],
     },
   });
@@ -364,6 +306,7 @@ function requireTopology(
     : [
       SequentialMultiInstanceHistoryRunRole.PreArming,
       SequentialMultiInstanceHistoryRunRole.Armed,
+      SequentialMultiInstanceHistoryRunRole.StaleRefusal,
       SequentialMultiInstanceHistoryRunRole.Escalation,
     ];
   if (value.runs.length !== expectedRoles.length) {
@@ -391,7 +334,8 @@ function requireTopology(
   }
   requireFamilyArm(value.runs[0]!, preArmingFamilies);
   requireFamilyArm(value.runs[1]!, interruptedArmedFamilies);
-  requireFamilyArm(value.runs[2]!, escalationFamilies);
+  requireFamilyArm(value.runs[2]!, staleRefusalFamilies);
+  requireFamilyArm(value.runs[3]!, escalationFamilies);
 }
 
 function requireRun(
@@ -515,8 +459,10 @@ function checkpointLabels(
           "timer-fired",
           "before-interrupted-continue-as-new",
         ];
+    case SequentialMultiInstanceHistoryRunRole.StaleRefusal:
+      return ["run-open", "update-16", "before-stale-refusal-continue-as-new"];
     case SequentialMultiInstanceHistoryRunRole.Escalation:
-      return ["run-open", "update-16", "before-escalation-terminal"];
+      return ["run-open", "update-17", "before-escalation-terminal"];
   }
 }
 
@@ -561,6 +507,18 @@ const interruptedArmedFamilies: SequentialMultiInstanceHistoryEventFamilyCounts 
   timerStarted: 1,
   timerCanceled: 0,
   timerFired: 1,
+  continuedAsNew: 1,
+  terminalCompleted: 0,
+};
+
+const staleRefusalFamilies: SequentialMultiInstanceHistoryEventFamilyCounts = {
+  workflowExecutionStarted: 1,
+  workflowTask: 6,
+  updateAccepted: 1,
+  updateCompleted: 1,
+  timerStarted: 0,
+  timerCanceled: 0,
+  timerFired: 0,
   continuedAsNew: 1,
   terminalCompleted: 0,
 };

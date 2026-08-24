@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BASELINE_SCENARIO_OBSERVATIONS,
   CanonicalObservationKind,
   CheckedNodeKind,
   CommandOutcome,
   MessageChannelKind,
-  ObservationRequestKind,
   ScenarioDocumentKind,
   ScenarioStepKind,
   SemanticGraphPolicyKind,
@@ -425,7 +425,7 @@ test("strictly validates Timer Start stimulus identity and first-only sequencing
       sourceOverlay: null,
     },
     stimuli: [timerTrigger],
-    observations: Object.values(ObservationRequestKind),
+    observations: BASELINE_SCENARIO_OBSERVATIONS,
     provenance: {
       normativeRefs: [],
       cibRevision: "not-applicable",

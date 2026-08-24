@@ -9,8 +9,8 @@
  * Presence is decided by the program rather than by the profile identity. A program declaring no
  * Multi-Instance Activity yields `undefined`, so its canonical observation bytes are unchanged, and a
  * program declaring one always yields an array, empty before outer entry and after either closing
- * route. That makes the distinction structural instead of resting on a registration this profile does
- * not yet have.
+ * route. That keeps the distinction structural and prevents registration state from becoming an
+ * observation-shape rule.
  */
 import {
   activityBodyTask,

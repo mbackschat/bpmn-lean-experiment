@@ -1,5 +1,4 @@
 import {
-  ObservationRequestKind,
   ScenarioDocumentKind,
   StimulusKind,
 } from "./contract.js";
@@ -47,19 +46,7 @@ import {
   isSourceOverlayIdentityOrNull,
   sameSourceOverlayIdentity,
 } from "./source-overlay-identity.js";
-
-const supportedObservations = Object.freeze([
-  ObservationRequestKind.Deployment,
-  ObservationRequestKind.CommandResults,
-  ObservationRequestKind.ProcessStatus,
-  ObservationRequestKind.ActiveWaits,
-  ObservationRequestKind.OpenUserTasks,
-  ObservationRequestKind.OpenTimers,
-  ObservationRequestKind.OpenEffects,
-  ObservationRequestKind.Variables,
-  ObservationRequestKind.EnabledInteractions,
-  ObservationRequestKind.LogicalTime,
-]);
+import { scenarioObservationsForProfile } from "./semantic-profile-observations.js";
 
 export function supportsSemanticProcessScenario(
   scenario: Scenario,
@@ -263,9 +250,12 @@ function isSupportedScenario(value: unknown): value is Scenario {
   const observations = Array.isArray(value.observations)
     ? value.observations
     : undefined;
+  if (!isNonEmptyString(value.profile)) {
+    return false;
+  }
+  const expectedObservations = scenarioObservationsForProfile(value.profile);
   return (
     isNonEmptyString(value.id) &&
-    isNonEmptyString(value.profile) &&
     bpmn !== undefined &&
     hasOnlyKeys(bpmn, ["id", "relativePath", "sha256", "sourceOverlay"]) &&
     isNonEmptyString(bpmn.id) &&
@@ -290,9 +280,9 @@ function isSupportedScenario(value: unknown): value is Scenario {
           stimulus.kind === StimulusKind.CancelIncidentProcess,
       ) &&
     observations !== undefined &&
-    observations.length === supportedObservations.length &&
+    observations.length === expectedObservations.length &&
     observations.every(
-      (observation, index) => observation === supportedObservations[index],
+      (observation, index) => observation === expectedObservations[index],
     )
   );
 }

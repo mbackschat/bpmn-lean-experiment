@@ -42,10 +42,8 @@ import {
 } from "./sequential-multi-instance-fixture.ts";
 
 /**
- * The state after the initiation and the entry transition, which is what a committed start would run.
- *
- * Driven through `applyInternalOperation` rather than `applyStimulus` because command admission
- * refuses an unregistered profile; the fixture's `startedState` documents that boundary.
+ * The state after the initiation and entry transition. This focused fixture drives the internal
+ * dispatcher directly; registration tests independently cover the complete `applyStimulus` path.
  */
 function entered(stimulus: { initialVariables: ReadonlyArray<VariableBinding> }): RuntimeState {
   const before = initiated(stimulus);
@@ -116,7 +114,7 @@ test("entry snapshots the collection once and generates only loop counter zero",
 
   assert.deepEqual(
     state.variables.process.bindings.map(({ name }) => name),
-    [reviewData.input.dataObjectId],
+    [reviewData.input.dataObjectReferenceId],
     "the output collection is not published before natural completion",
   );
   assert.deepEqual(runtimeStateDefects(reviewProgram, instanceId, state), []);
@@ -142,7 +140,7 @@ test("a zero-item collection completes atomically, creating no task, timer, or c
   );
 
   const published = state.variables.process.bindings.find(({ name }) =>
-    name === reviewData.output.dataObjectId
+    name === reviewData.output.dataObjectReferenceId
   );
   assert.deepEqual(
     published?.value,

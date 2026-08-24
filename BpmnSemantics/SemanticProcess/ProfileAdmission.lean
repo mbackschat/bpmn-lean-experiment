@@ -41,6 +41,7 @@ private structure ShapeCardinalities where
   eventRaces : Nat := 0
   boundedUserTasks : Nat := 0
   monitoredUserTasks : Nat := 0
+  sequentialMultiInstanceUserTasks : Nat := 0
   boundedScopeEntries : Nat := 0
   errorEnds : Nat := 0
   terminateEnds : Nat := 0
@@ -73,6 +74,9 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with
           monitoredBoundaryTimers := counts.monitoredBoundaryTimers + 1 }
     | .userTask .. => { counts with userTasks := counts.userTasks + 1 }
+    | .sequentialMultiInstanceUserTask .. =>
+        { counts with sequentialMultiInstanceUserTasks :=
+            counts.sequentialMultiInstanceUserTasks + 1 }
     | .intermediateCatchTimerEvent .. =>
         { counts with timers := counts.timers + 1 }
     | .intermediateCatchMessageEvent .. =>
@@ -117,6 +121,9 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .returnProcess .. =>
         { counts with processReturns := counts.processReturns + 1 }
     | .awaitUserTask .. => { counts with userTasks := counts.userTasks + 1 }
+    | .awaitSequentialMultiInstanceUserTask .. =>
+        { counts with sequentialMultiInstanceUserTasks :=
+            counts.sequentialMultiInstanceUserTasks + 1 }
     | .awaitTimer .. => { counts with timers := counts.timers + 1 }
     | .awaitMessage .. => { counts with messages := counts.messages + 1 }
     | .awaitEventRace .. => { counts with eventRaces := counts.eventRaces + 1 }
@@ -161,8 +168,16 @@ def serviceTaskIncidentCheckpointProfileId : ProfileId :=
 def serviceTaskIncidentCancellationCheckpointProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-service-task-incident-cancellation-draft"⟩
 
+/-- Registered bounded Sequential Multi-Instance User Task profile identity. -/
+def sequentialMultiInstanceUserTaskProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-sequential-multi-instance-user-task-draft"⟩
+
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
-  if profile = "bpmn-2.0.2-message-start-event-draft" then
+  if profile = sequentialMultiInstanceUserTaskProfileId.value then
+    some (1,
+      { starts := 1, userTasks := 1, sequentialMultiInstanceUserTasks := 1,
+        ends := 2 })
+  else if profile = "bpmn-2.0.2-message-start-event-draft" then
     some (1, { messageStarts := 1, userTasks := 1, ends := 1 })
   else if profile = "bpmn-2.0.2-timer-start-event-draft" then
     some (1, { timerStarts := 1, userTasks := 1, ends := 1 })
@@ -253,7 +268,11 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else none
 
 private def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
-  if profile = "bpmn-2.0.2-message-start-event-draft" then
+  if profile = sequentialMultiInstanceUserTaskProfileId.value then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 1, sequentialMultiInstanceUserTasks := 1,
+        ends := 2 })
+  else if profile = "bpmn-2.0.2-message-start-event-draft" then
     some (1, withScopeCompletions 1
       { messageInitiates := 1, userTasks := 1, ends := 1 })
   else if profile = "bpmn-2.0.2-timer-start-event-draft" then
@@ -530,17 +549,32 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
     some .acyclic
   else none
 
+/-- The distinct checked Sequential Multi-Instance node belongs to exactly its registered profile. -/
+def checkedSequentialMultiInstanceProfileMatches (source : CheckedProcess) : Bool :=
+  source.nodes.any (fun
+    | .sequentialMultiInstanceUserTask .. => true
+    | _ => false) ==
+      decide (source.identity.semanticProfile = sequentialMultiInstanceUserTaskProfileId)
+
+/-- The distinct Sequential Multi-Instance operation belongs to exactly its registered profile. -/
+def programSequentialMultiInstanceProfileMatches (program : Program) : Bool :=
+  program.operations.any (fun
+    | .awaitSequentialMultiInstanceUserTask .. => true
+    | _ => false) ==
+      decide (program.identity.semanticProfile = sequentialMultiInstanceUserTaskProfileId)
+
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
-  match checkedShape? source.identity.semanticProfile.value with
-  | some (scopeCount, shape) =>
-      source.definitionScopes.length = scopeCount &&
-        nodeCardinalities source.nodes = shape &&
-        checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
-        checkedParallelTopologyValid source &&
-        structuredHumanWorkCheckedTopologyValid source &&
-        configuredTaskCheckedPayloadValid source
-  | none => false
+  checkedSequentialMultiInstanceProfileMatches source &&
+    match checkedShape? source.identity.semanticProfile.value with
+    | some (scopeCount, shape) =>
+        source.definitionScopes.length = scopeCount &&
+          nodeCardinalities source.nodes = shape &&
+          checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
+          checkedParallelTopologyValid source &&
+          structuredHumanWorkCheckedTopologyValid source &&
+          configuredTaskCheckedPayloadValid source
+    | none => false
 
 private def operationPayloadCapabilitiesValid (profile : String)
     (operations : List SemanticOperation) : Bool :=
@@ -580,16 +614,17 @@ private def operationPayloadCapabilitiesValid (profile : String)
 
 /-- Exact operation and definition-scope cardinalities selected by the profile. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
-  match programShape? program.identity.semanticProfile.value with
-  | some (scopeCount, shape) =>
-      program.definitionScopes.length = scopeCount &&
-        operationCardinalities program.operations = shape &&
-        programUserTaskMetadataValid program.identity.semanticProfile
-          program.operations &&
-        programParallelTopologyValid program &&
-        structuredHumanWorkProgramTopologyValid program &&
-        operationPayloadCapabilitiesValid
-          program.identity.semanticProfile.value program.operations
-  | none => false
+  programSequentialMultiInstanceProfileMatches program &&
+    match programShape? program.identity.semanticProfile.value with
+    | some (scopeCount, shape) =>
+        program.definitionScopes.length = scopeCount &&
+          operationCardinalities program.operations = shape &&
+          programUserTaskMetadataValid program.identity.semanticProfile
+            program.operations &&
+          programParallelTopologyValid program &&
+          structuredHumanWorkProgramTopologyValid program &&
+          operationPayloadCapabilitiesValid
+            program.identity.semanticProfile.value program.operations
+    | none => false
 
 end BpmnSemantics.SemanticProcess

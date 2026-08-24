@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BASELINE_SCENARIO_OBSERVATIONS,
   CommandOutcome,
   ControlStateKind,
-  ObservationRequestKind,
   ScenarioDocumentKind,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -94,7 +94,7 @@ test("projects selected User Tasks without exposing the hidden branch record", (
       sourceOverlay: null,
     },
     stimuli: [inclusiveStart([present("takeA"), present("takeB")])],
-    observations: Object.values(ObservationRequestKind),
+    observations: BASELINE_SCENARIO_OBSERVATIONS,
     provenance: {
       normativeRefs: ["BPMN 2.0.2 Table 13.3 WCP-7"],
       cibRevision: "not-applicable",

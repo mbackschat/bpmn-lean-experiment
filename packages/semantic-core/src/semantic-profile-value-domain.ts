@@ -20,6 +20,7 @@ type SemanticProfile =
 
 const emptyValueDomain: ReadonlyArray<VariableValueKind> = Object.freeze([]);
 const stringValueDomain = Object.freeze([VariableValueKind.String]);
+const stringListValueDomain = Object.freeze([VariableValueKind.StringList]);
 const stringNullValueDomain = Object.freeze([
   VariableValueKind.String,
   VariableValueKind.Null,
@@ -88,6 +89,14 @@ function profileValueDomain(
   surface: VariableWriteSurface,
 ): ReadonlyArray<VariableValueKind> | null {
   switch (semanticProfile) {
+    case SemanticProfileId.SequentialMultiInstanceUserTask:
+      // This table closes the kind-level surface. Command admission separately binds exact input
+      // and output names, cardinality, and the review-versus-escalation task-local domains.
+      return surfaceValueDomain(
+        surface,
+        stringListValueDomain,
+        stringValueDomain,
+      );
     case SemanticProfileId.MappedSuccessServiceTask:
       return surfaceValueDomain(
         surface,

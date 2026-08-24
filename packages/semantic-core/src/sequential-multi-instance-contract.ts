@@ -1,8 +1,9 @@
 import type { DeepReadonly } from "./deep-readonly.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 
-/** Reserved source/IL profile identity. It is not execution-registered until the runtime lands. */
+/** Registered profile identity shared by source, IL, runtime, and host admission. */
 export const SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID =
-  "bpmn-2.0.2-sequential-multi-instance-user-task-draft" as const;
+  SemanticProfileId.SequentialMultiInstanceUserTask;
 
 export type SequentialMultiInstanceInputDefinition = DeepReadonly<{
   collectionItemDefinitionId: string;

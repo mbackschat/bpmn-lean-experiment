@@ -37,6 +37,10 @@ private def flowSourceScopeId? (source : CheckedProcess)
             if route.boundaryEventId = flow.sourceId then
               checkedNodeScopeId? source id
             else none
+        | .sequentialMultiInstanceUserTask id _ _ _ _ boundaryTimer =>
+            if boundaryTimer.elementId = flow.sourceId then
+              checkedNodeScopeId? source id
+            else none
         | _ => none
 
 private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
@@ -217,6 +221,24 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
   | .userTask id _ _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .sequentialMultiInstanceUserTask id _ input output normalOutputFlowId boundaryTimer =>
+      let identities :=
+        [id.value, boundaryTimer.elementId.value,
+          input.collectionItemDefinitionId, input.scalarItemDefinitionId,
+          input.dataObjectId, input.dataObjectReferenceId, input.loopDataInputId,
+          input.inputDataItemId, input.taskDataInputId, input.collectionAssociationId,
+          input.itemAssociationId, output.dataObjectId, output.dataObjectReferenceId,
+          output.taskDataOutputId, output.outputDataItemId, output.loopDataOutputId,
+          output.itemAssociationId, output.collectionAssociationId]
+      boundaryTimer.durationLiteral = "PT1S" &&
+        incomingCount flows id = 1 && outgoingCount flows id = 1 &&
+        flows.any (fun flow => decide
+          (flow.id = normalOutputFlowId && flow.sourceId = id)) &&
+        flows.any (fun flow => decide
+          (flow.id = boundaryTimer.outputFlowId &&
+            flow.sourceId = boundaryTimer.elementId)) &&
+        identities.all nonempty && identities.eraseDups.length = identities.length &&
+        nonempty normalOutputFlowId.value && nonempty boundaryTimer.outputFlowId.value
   | .intermediateCatchTimerEvent id durationLiteral =>
       durationLiteral = "PT1S" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
@@ -318,6 +340,8 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
           source.nodes.any fun
             | .serviceTask _ _ _ _ (some route) =>
                 decide (route.boundaryEventId = flow.sourceId)
+            | .sequentialMultiInstanceUserTask _ _ _ _ _ boundaryTimer =>
+                decide (boundaryTimer.elementId = flow.sourceId)
             | _ => false) &&
         nodeExists source.nodes flow.targetId &&
         decide (flow.sourceId ≠ flow.targetId) &&

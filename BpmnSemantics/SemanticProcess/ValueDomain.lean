@@ -38,6 +38,7 @@ inductive ProcessDataIngress where
 private inductive ProcessDataValueDomain where
   | empty
   | stringOnly
+  | stringListOnly
   | stringNull
   | stringNullBoolean
   | structuredHumanWork
@@ -50,6 +51,9 @@ private inductive ProcessDataValueDomain where
     ProcessDataIngress → ProcessDataValueDomain
   | .processStart =>
       if profile.value =
+          "bpmn-2.0.2-sequential-multi-instance-user-task-draft" then
+        .stringListOnly
+      else if profile.value =
           "cibseven-2.2.0-service-task-incident-cancellation-draft" then
         .stringOnly
       else if profileIsOneOf profile
@@ -85,6 +89,7 @@ def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress)
   match profileValueDomain profile surface, value with
   | .empty, _ => false
   | .stringOnly, .string _ => true
+  | .stringListOnly, .stringList _ => true
   | .stringNull, .string _
   | .stringNull, .null => true
   | .stringNullBoolean, .string _

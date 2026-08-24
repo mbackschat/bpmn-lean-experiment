@@ -63,7 +63,9 @@ theorem mismatched_completion_preserves_all_scoped_variables
   exact task_identity_mismatch_is_rejected
     program exactWait ⟨"wrong-activation"⟩
       { exactTaskInstanceId with activation := 2 }
-      submittedValues 0 variables (Or.inr (Or.inr (by decide +kernel)))
+      submittedValues 0 variables
+      (by decide +kernel)
+      (Or.inr (Or.inr (by decide +kernel)))
 
 /-- Null completion data belongs to the Process-data composition, not to a structurally similar profile. -/
 theorem completion_value_domain_is_profile_closed :

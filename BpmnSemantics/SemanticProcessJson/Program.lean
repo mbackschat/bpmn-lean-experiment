@@ -109,6 +109,67 @@ private def decodeBoundaryTimerArm (json : Json) :
       output := ⟨← stringField json "output"⟩
       origin := ← decodeSequenceFlowOrigin (← field json "origin") }
 
+private def decodeSequentialMultiInstanceTask (json : Json) :
+    Except String SequentialMultiInstanceTaskDefinition := do
+  requireObjectShape json ["elementId", "name"]
+  pure
+    { id := ⟨← stringField json "elementId"⟩
+      name := ← decodeOptionalString (← field json "name") }
+
+private def decodeSequentialMultiInstanceInput (json : Json) :
+    Except String SequentialMultiInstanceInputDefinition := do
+  requireObjectShape json
+    ["collectionAssociationId", "collectionItemDefinitionId", "dataObjectId",
+      "dataObjectReferenceId", "inputDataItemId", "itemAssociationId",
+      "loopDataInputId", "scalarItemDefinitionId", "taskDataInputId"]
+  pure
+    { collectionItemDefinitionId := ← stringField json "collectionItemDefinitionId"
+      scalarItemDefinitionId := ← stringField json "scalarItemDefinitionId"
+      dataObjectId := ← stringField json "dataObjectId"
+      dataObjectReferenceId := ← stringField json "dataObjectReferenceId"
+      loopDataInputId := ← stringField json "loopDataInputId"
+      inputDataItemId := ← stringField json "inputDataItemId"
+      taskDataInputId := ← stringField json "taskDataInputId"
+      collectionAssociationId := ← stringField json "collectionAssociationId"
+      itemAssociationId := ← stringField json "itemAssociationId" }
+
+private def decodeSequentialMultiInstanceOutput (json : Json) :
+    Except String SequentialMultiInstanceOutputDefinition := do
+  requireObjectShape json
+    ["collectionAssociationId", "dataObjectId", "dataObjectReferenceId",
+      "itemAssociationId", "loopDataOutputId", "outputDataItemId",
+      "taskDataOutputId"]
+  pure
+    { dataObjectId := ← stringField json "dataObjectId"
+      dataObjectReferenceId := ← stringField json "dataObjectReferenceId"
+      taskDataOutputId := ← stringField json "taskDataOutputId"
+      outputDataItemId := ← stringField json "outputDataItemId"
+      loopDataOutputId := ← stringField json "loopDataOutputId"
+      itemAssociationId := ← stringField json "itemAssociationId"
+      collectionAssociationId := ← stringField json "collectionAssociationId" }
+
+private def decodeSequentialMultiInstanceData (json : Json) :
+    Except String SequentialMultiInstanceDataDefinition := do
+  requireObjectShape json ["input", "output"]
+  pure
+    { input := ← decodeSequentialMultiInstanceInput (← field json "input")
+      output := ← decodeSequentialMultiInstanceOutput (← field json "output") }
+
+private def decodeSequentialMultiInstanceLimits (json : Json) :
+    Except String SequentialMultiInstanceLimits := do
+  requireObjectShape json
+    ["maximumCanonicalCollectionUtf8Bytes", "maximumItemUtf8Bytes", "maximumItems"]
+  let limits : SequentialMultiInstanceLimits :=
+    { maximumItems := ← decodeSafeNat (← field json "maximumItems")
+      maximumItemUtf8Bytes := ← decodeSafeNat (← field json "maximumItemUtf8Bytes")
+      maximumCanonicalCollectionUtf8Bytes :=
+        ← decodeSafeNat (← field json "maximumCanonicalCollectionUtf8Bytes") }
+  if limits ≠
+      { maximumItems := 16, maximumItemUtf8Bytes := 512,
+        maximumCanonicalCollectionUtf8Bytes := 8192 } then
+    throw "Sequential Multi-Instance limits must equal the registered profile bounds"
+  pure limits
+
 private def decodeEffectDefinition (json : Json) :
     Except String EffectDefinition := do
   requireObjectShape json
@@ -292,6 +353,20 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "output"⟩
           (← decodeTaskDefinition (← field json "task")))
+  | "awaitSequentialMultiInstanceUserTask" =>
+      requireObjectShape json
+        ["boundaryTimer", "data", "id", "input", "kind", "limits", "normalOutput",
+          "origin", "task"]
+      pure
+        (.awaitSequentialMultiInstanceUserTask
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          (← decodeSequentialMultiInstanceTask (← field json "task"))
+          (← decodeSequentialMultiInstanceData (← field json "data"))
+          ⟨← stringField json "normalOutput"⟩
+          (← decodeBoundaryTimerArm (← field json "boundaryTimer"))
+          (← decodeSequentialMultiInstanceLimits (← field json "limits")))
   | "awaitTimer" =>
       requireObjectShape json
         ["id", "input", "kind", "origin", "output", "timer"]

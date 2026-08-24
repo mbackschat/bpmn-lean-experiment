@@ -128,6 +128,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.ServiceTaskEffect:
     case SemanticProfileId.ServiceTaskIncident:
     case SemanticProfileId.ServiceTaskIncidentCancellation:
+    case SemanticProfileId.SequentialMultiInstanceUserTask:
     case SemanticProfileId.SubProcessBoundaryTimer:
     case SemanticProfileId.SubProcessErrorPropagation:
     case SemanticProfileId.TerminateEnd:

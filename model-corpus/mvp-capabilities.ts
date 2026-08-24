@@ -124,6 +124,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
+    id: "sequentialMultiInstanceUserTask",
+    family: "Activities",
+    element: "Sequential Multi-Instance User Task",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One ordered String-list snapshot, one active generated task at a time, at most sixteen items, and atomic index-ordered String-list output.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "serviceTask",
     family: "Activities",
     element: "Service Task",
@@ -217,6 +225,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     element: "Interrupting Timer Boundary Event on User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
     restriction: "One exact PT1S deadline that withdraws its attached User Task.",
+    cibEvidence: notSelected,
+  },
+  {
+    id: "interruptingSequentialMultiInstanceBoundaryTimerEvent",
+    family: "Boundary Events",
+    element: "Interrupting Timer Boundary Event on sequential Multi-Instance User Task",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One exact PT1S outer-lifetime deadline preserved through task turnover; interruption withdraws the active task and publishes no partial output.",
     cibEvidence: notSelected,
   },
   {

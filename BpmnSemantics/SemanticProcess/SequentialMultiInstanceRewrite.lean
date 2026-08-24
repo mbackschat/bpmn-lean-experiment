@@ -11,13 +11,10 @@ each of its four rules does to committed runtime state. The account is
 [The transition owner](SequentialMultiInstanceTransition.lean) states what a legal transition *is* and
 proves the evaluators stay inside it; this module is the vocabulary both halves read.
 
-**The definition facts arrive as an argument, not as a committed program operation.** The Lean
-`SemanticOperation` union carries no `awaitSequentialMultiInstanceUserTask`, so `SequentialMultiInstanceArm`
-is passed explicitly where the bounded-task family reads its operation out of the `Program`. That is a
-real boundary rather than a convenience: nothing here or downstream states an admission rule, a
-dispatcher arm, or any fact about which programs may drive these transitions, and no `applyStimulus`
-path reaches them. Binding them to an operation is the lowering owner's change, and until it lands the
-definition side's retained evidence is the independently written core's.
+**The definition facts are projected from one committed program operation.** The operation retains
+the complete checked data-role graph, while `SequentialMultiInstanceArm.ofOperation?` selects only the
+three binding identities and control-flow facts the runtime transition reads. The Process bindings
+are the source `DataObjectReference` identities, never the underlying `DataObject` identities.
 
 **Entry reuses the bounded arming operation.** The non-empty arm is `activateBoundedUserTask` plus one
 controller, because the state the two families arm is the same state: one inner User Task occurrence,
@@ -49,27 +46,15 @@ transition consumer, and belong to the checked-source and IL boundary rather tha
 
 /-- The Process- and task-scope binding names one Multi-Instance Activity mediates through.
 
-`inputDataObjectId` names the Process binding the snapshot is copied from once, `taskDataOutputId` the
-sole binding an inner completion may submit, and `outputDataObjectId` the Process binding the final
+`inputDataObjectReferenceId` names the Process binding the snapshot is copied from once,
+`taskDataOutputId` the sole binding an inner completion may submit, and
+`outputDataObjectReferenceId` the Process binding the final
 aggregation publishes. All three are exact identities compared by equality, because this profile
 selects direct index mediation with no expression, coercion, or transformation. -/
 structure SequentialMultiInstanceData where
-  inputDataObjectId : String
+  inputDataObjectReferenceId : String
   taskDataOutputId : String
-  outputDataObjectId : String
-  deriving Repr, DecidableEq
-
-/-- The profile's inclusive collection bounds, carried by the definition and checked wherever a
-collection is given or grown.
-
-Runtime bounds rather than admission bounds: the definition admits the shape, and only execution sees
-the values a host supplied. Entry checks the snapshot it was handed and every inner completion checks
-the candidate output collection its result would produce, so exceeding any bound leaves the transition
-undefined and the command is refused rather than truncated or clamped. -/
-structure SequentialMultiInstanceLimits where
-  maximumItems : Nat
-  maximumItemUtf8Bytes : Nat
-  maximumCanonicalCollectionUtf8Bytes : Nat
+  outputDataObjectReferenceId : String
   deriving Repr, DecidableEq
 
 /-- One admitted sequential Multi-Instance Activity, as the four transitions read it. -/
@@ -82,6 +67,45 @@ structure SequentialMultiInstanceArm where
   data : SequentialMultiInstanceData
   limits : SequentialMultiInstanceLimits
   deriving Repr, DecidableEq
+
+/-- Project the exact runtime arm from the one committed operation that owns it. -/
+def SequentialMultiInstanceArm.ofOperation? : SemanticOperation →
+    Option SequentialMultiInstanceArm
+  | .awaitSequentialMultiInstanceUserTask _ _ input task data normalOutput boundaryTimer limits =>
+      some
+        { input
+          taskId := task.id
+          taskName := task.name
+          normalOutput
+          boundaryTimer
+          data :=
+            { inputDataObjectReferenceId := data.input.dataObjectReferenceId
+              taskDataOutputId := data.output.taskDataOutputId
+              outputDataObjectReferenceId := data.output.dataObjectReferenceId }
+          limits }
+  | _ => none
+
+/-- The unique committed sequential Multi-Instance operation declaring this inner task. -/
+def sequentialMultiInstanceOperationForTask? (program : Program)
+    (taskId : TaskDefinitionId) : Option SemanticOperation :=
+  match program.operations.filter fun
+      | operation@(.awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _) =>
+          decide (task.id = taskId) &&
+            (SequentialMultiInstanceArm.ofOperation? operation).isSome
+      | _ => false with
+  | [operation] => some operation
+  | _ => none
+
+/-- The unique committed sequential Multi-Instance operation declaring this lifetime deadline. -/
+def sequentialMultiInstanceOperationForTimer? (program : Program)
+    (elementId : NodeId) : Option SemanticOperation :=
+  match program.operations.filter fun
+      | operation@(.awaitSequentialMultiInstanceUserTask _ _ _ _ _ _ boundaryTimer _) =>
+          decide (boundaryTimer.elementId = elementId) &&
+            (SequentialMultiInstanceArm.ofOperation? operation).isSome
+      | _ => false with
+  | [operation] => some operation
+  | _ => none
 
 /-- The inner task as the shared bounded arming operation takes it.
 
@@ -137,7 +161,7 @@ def withinSequentialMultiInstanceLimits (arm : SequentialMultiInstanceArm)
 def admittedSnapshot? (arm : SequentialMultiInstanceArm) (state : RuntimeState) :
     Option (List String) :=
   match state.variables.process.bindings.filter fun candidate =>
-      candidate.name == arm.data.inputDataObjectId with
+      candidate.name == arm.data.inputDataObjectReferenceId with
   | [binding] =>
       match binding.value with
       | .stringList items =>
@@ -186,7 +210,7 @@ def publishProcessCollection (arm : SequentialMultiInstanceArm)
   { variables with
     process :=
       { bindings := mergeProcessVariableBindings variables.process.bindings
-          [{ name := arm.data.outputDataObjectId, value := .stringList items }] } }
+          [{ name := arm.data.outputDataObjectReferenceId, value := .stringList items }] } }
 
 /-- `SMI-ENTER-01`, empty arm: no inner instance, no deadline, no record, no controller.
 

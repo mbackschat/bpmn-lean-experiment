@@ -45,7 +45,7 @@ import {
   innerTaskId,
   instanceId,
   items,
-  orderSeparatingInputDataObjectId,
+  orderSeparatingInputDataObjectReferenceId,
   orderSeparatingProgram,
   outerActivityId,
   outerTimerId,
@@ -285,7 +285,7 @@ test("final completion withdraws every Timer the outer record lists", () => {
 /**
  * One canonical binding order for a Process publication, locked where the comparators disagree.
  *
- * The two DataObject identities here return opposite signs from a locale collation and from code point.
+ * The two DataObjectReference identities here return opposite signs from a locale collation and from code point.
  * A publication that sorted by locale would therefore order these bindings the other way, would order
  * them differently again on a host with a different ICU locale, and would disagree with every other
  * completion in this core and with Lean's `publishProcessCollection`. The asserted order is code point,
@@ -299,7 +299,10 @@ test("the published collection uses the core's one canonical binding order", () 
 
   assert.deepEqual(
     state.variables.process.bindings.map(({ name }) => name),
-    [orderSeparatingInputDataObjectId, reviewData.output.dataObjectId],
+    [
+      orderSeparatingInputDataObjectReferenceId,
+      reviewData.output.dataObjectReferenceId,
+    ],
     "code point order, the same order every other Process publication uses",
   );
   assert.deepEqual(

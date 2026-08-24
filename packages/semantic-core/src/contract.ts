@@ -236,6 +236,7 @@ export enum ObservationRequestKind {
   OpenUserTasks = "openUserTasks",
   OpenTimers = "openTimers",
   OpenEffects = "openEffects",
+  OpenMultiInstances = "openMultiInstances",
   Variables = "variables",
   EnabledInteractions = "enabledInteractions",
   LogicalTime = "logicalTime",

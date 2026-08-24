@@ -1,6 +1,9 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.EventBasedGateway
+import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.InclusiveGateway
+import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 
@@ -303,13 +306,16 @@ private def operationOwningScope? (program : Program) (id : OperationId) :
 
 A per-family declaring set is required rather than one matching operation kind, because composite
 arming operations declare waits of a family they are not named after: a Timer wait may be declared
-by `awaitTimer`, by either bounded-task family, by `enterBoundedScope`, or by `awaitEventRace`. A
+by `awaitTimer`, by either bounded-task family, by sequential Multi-Instance, by `enterBoundedScope`,
+or by `awaitEventRace`. A
 single-kind reading would reject reachable states from four shipped capsules. -/
 def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticOperation :=
   program.operations.filter fun
     | .awaitTimer _ _ _ _ timer => decide (timer.elementId = elementId)
     | .awaitBoundedUserTask _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitMonitoredUserTask _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
+    | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ _ boundaryTimer _ =>
+        decide (boundaryTimer.elementId = elementId)
     | .enterBoundedScope _ _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitEventRace _ _ _ _ timer => decide (timer.elementId = elementId)
     | _ => false
@@ -330,6 +336,8 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     | .awaitUserTask _ _ _ _ task => decide (task.id = taskId)
     | .awaitBoundedUserTask _ _ _ task _ => decide (task.id = taskId)
     | .awaitMonitoredUserTask _ _ _ task _ => decide (task.id = taskId)
+    | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
+        decide (task.id = taskId)
     | _ => false
 
 /-- The operations that may declare an effect wait for `elementId`. -/

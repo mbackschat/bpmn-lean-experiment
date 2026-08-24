@@ -103,6 +103,50 @@ inductive BoundaryInterruption where
   | nonInterrupting
   deriving DecidableEq, Repr, Inhabited
 
+/-- Exact checked and IL identities for the collection copied into one sequential Multi-Instance
+Activity and the scalar item mediated into each inner User Task. -/
+structure SequentialMultiInstanceInputDefinition where
+  collectionItemDefinitionId : String
+  scalarItemDefinitionId : String
+  dataObjectId : String
+  dataObjectReferenceId : String
+  loopDataInputId : String
+  inputDataItemId : String
+  taskDataInputId : String
+  collectionAssociationId : String
+  itemAssociationId : String
+  deriving Repr, DecidableEq
+
+/-- Exact checked and IL identities for each inner result and the final aggregated collection. -/
+structure SequentialMultiInstanceOutputDefinition where
+  dataObjectId : String
+  dataObjectReferenceId : String
+  taskDataOutputId : String
+  outputDataItemId : String
+  loopDataOutputId : String
+  itemAssociationId : String
+  collectionAssociationId : String
+  deriving Repr, DecidableEq
+
+structure SequentialMultiInstanceDataDefinition where
+  input : SequentialMultiInstanceInputDefinition
+  output : SequentialMultiInstanceOutputDefinition
+  deriving Repr, DecidableEq
+
+/-- The source-level boundary Timer carried inside the distinct checked Multi-Instance node. -/
+structure CheckedSequentialMultiInstanceBoundaryTimer where
+  elementId : NodeId
+  durationLiteral : String
+  outputFlowId : SequenceFlowId
+  deriving Repr, DecidableEq
+
+/-- Inclusive runtime collection bounds selected by the bounded profile. -/
+structure SequentialMultiInstanceLimits where
+  maximumItems : Nat
+  maximumItemUtf8Bytes : Nat
+  maximumCanonicalCollectionUtf8Bytes : Nat
+  deriving Repr, DecidableEq
+
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | messageStartEvent (id : NodeId) (channel : MessageChannel)
@@ -117,6 +161,13 @@ inductive CheckedNode where
       (durationLiteral : String) (outputFlowId : SequenceFlowId)
   | userTask (id : NodeId) (name : Option String)
       (metadata : Option UserTaskMetadata := none)
+  | sequentialMultiInstanceUserTask
+      (id : NodeId)
+      (name : Option String)
+      (input : SequentialMultiInstanceInputDefinition)
+      (output : SequentialMultiInstanceOutputDefinition)
+      (normalOutputFlowId : SequenceFlowId)
+      (boundaryTimer : CheckedSequentialMultiInstanceBoundaryTimer)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
   | receiveTask (id : NodeId) (channel : MessageChannel)
@@ -155,6 +206,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
   | .userTask id _ _
+  | .sequentialMultiInstanceUserTask id _ _ _ _ _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .receiveTask id _
@@ -228,6 +280,12 @@ structure UserTaskDefinition where
   id : TaskDefinitionId
   name : Option String
   metadata : Option UserTaskMetadata := none
+  deriving Repr, DecidableEq
+
+/-- The inner User Task fields carried by one sequential Multi-Instance operation. -/
+structure SequentialMultiInstanceTaskDefinition where
+  id : TaskDefinitionId
+  name : Option String
   deriving Repr, DecidableEq
 
 structure TimerDefinition where
@@ -368,6 +426,15 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (output : ControlPlaceId)
       (task : UserTaskDefinition)
+  | awaitSequentialMultiInstanceUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (task : SequentialMultiInstanceTaskDefinition)
+      (data : SequentialMultiInstanceDataDefinition)
+      (normalOutput : ControlPlaceId)
+      (boundaryTimer : BoundaryTimerArm)
+      (limits : SequentialMultiInstanceLimits)
   | awaitTimer
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -471,6 +538,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .invokeProcess id _ _ _ _ _ _
   | .returnProcess id _ _ _ _
   | .awaitUserTask id _ _ _ _
+  | .awaitSequentialMultiInstanceUserTask id _ _ _ _ _ _ _
   | .awaitTimer id _ _ _ _
   | .awaitMessage id _ _ _ _
   | .awaitEventRace id _ _ _ _

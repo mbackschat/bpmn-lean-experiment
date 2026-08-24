@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BASELINE_SCENARIO_OBSERVATIONS,
   CommandOutcome,
   ControlStateKind,
-  ObservationRequestKind,
   ScenarioDocumentKind,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -79,7 +79,7 @@ test("projects the two existing public wait surfaces without exposing the race r
       sourceOverlay: null,
     },
     stimuli: [eventRaceStart],
-    observations: Object.values(ObservationRequestKind),
+    observations: BASELINE_SCENARIO_OBSERVATIONS,
     provenance: {
       normativeRefs: ["BPMN 2.0.2 Clause 10.6.6"],
       cibRevision: "not-applicable",

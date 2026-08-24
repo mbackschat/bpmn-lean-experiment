@@ -92,7 +92,7 @@ test("the outer deadline cancels the active task and discards the partial output
   assert.deepEqual(after.sequentialMultiInstanceControllers, []);
   assert.equal(
     after.variables.process.bindings.some(({ name }) =>
-      name === reviewData.output.dataObjectId
+      name === reviewData.output.dataObjectReferenceId
     ),
     false,
     "interruption publishes no Process-scope output, not even the partial one",

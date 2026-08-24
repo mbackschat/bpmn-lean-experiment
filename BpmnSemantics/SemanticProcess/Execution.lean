@@ -173,6 +173,8 @@ theorem user_task_completion_with_same_successor_is_equal
     (ordinaryTask :
       isBoundedTaskDefinition program ⟨submittedTaskId.elementId.value⟩ = false ∧
         isMonitoredTaskDefinition program ⟨submittedTaskId.elementId.value⟩ = false)
+    (noSequentialMultiInstance : sequentialMultiInstanceOperationForTask? program
+      ⟨submittedTaskId.elementId.value⟩ = none)
     (ordinaryProgram : isCallActivityProgram program = false)
     (leftNoIncidents : leftState.effectIncidents = [])
     (rightNoIncidents : rightState.effectIncidents = [])
@@ -188,10 +190,11 @@ theorem user_task_completion_with_same_successor_is_equal
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) := by
   simp [applyStimulus, admitStimulus, dispatchStimulus, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
-    ordinaryTask.1, ordinaryTask.2, ordinaryProgram, valuesAdmitted,
+    ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance,
+    ordinaryProgram, valuesAdmitted,
     leftCompletion, rightCompletion]
 
-/-- Any mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
+/-- Any ordinary-family mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 theorem task_identity_mismatch_is_rejected
     (program : Program) (wait : UserTaskWait)
     (completionCommandId : SemanticId)
@@ -199,6 +202,8 @@ theorem task_identity_mismatch_is_rejected
     (submittedValues : List VariableBinding)
     (logicalTimeMs : Nat)
     (variables : ScopedVariables)
+    (noSequentialMultiInstance : sequentialMultiInstanceOperationForTask? program
+      ⟨submittedTaskId.elementId.value⟩ = none)
     (mismatch :
       submittedTaskId.processInstanceId ≠ wait.processInstanceId ∨
       submittedTaskId.elementId.value ≠ wait.task.id.value ∨
@@ -220,7 +225,7 @@ theorem task_identity_mismatch_is_rejected
       exact processMismatch exactMatch.1.1.symm
     simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
       completeBoundedUserTask?, completeMonitoredUserTask?,
-      singletonWaitingState, noMatch]
+      singletonWaitingState, noSequentialMultiInstance, noMatch]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedTaskId.processInstanceId ∧
@@ -231,7 +236,7 @@ theorem task_identity_mismatch_is_rejected
           (congrArg TaskDefinitionId.value exactMatch.1.2).symm
       simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
         completeBoundedUserTask?, completeMonitoredUserTask?,
-      singletonWaitingState, noMatch]
+        singletonWaitingState, noSequentialMultiInstance, noMatch]
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedTaskId.processInstanceId ∧
             wait.task.id = ⟨submittedTaskId.elementId.value⟩) ∧
@@ -240,14 +245,16 @@ theorem task_identity_mismatch_is_rejected
         exact activationMismatch exactMatch.2.symm
       simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
         completeBoundedUserTask?, completeMonitoredUserTask?,
-      singletonWaitingState, noMatch]
+        singletonWaitingState, noSequentialMultiInstance, noMatch]
 
-/-- Any mismatch in the full timer-occurrence identity or exact logical deadline rejects firing with exact state preservation. This one law covers both early and late firing. -/
+/-- Any generic timer-family mismatch in the full occurrence identity or exact logical deadline rejects firing with exact state preservation. This one law covers both early and late firing. -/
 theorem timer_identity_or_time_mismatch_is_rejected
     (program : Program) (wait : TimerWait)
     (fireCommandId : SemanticId)
     (submittedTimerId : TimerOccurrenceId) (submittedLogicalTimeMs : Nat)
     (currentLogicalTimeMs : Nat)
+    (noSequentialMultiInstance : sequentialMultiInstanceOperationForTimer? program
+      ⟨submittedTimerId.elementId.value⟩ = none)
     (mismatch :
       submittedTimerId.processInstanceId ≠ wait.processInstanceId ∨
       submittedTimerId.elementId.value ≠ wait.elementId.value ∨
@@ -268,7 +275,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
       intro exactMatch
       exact processMismatch exactMatch.1.1.symm
     simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
-      singletonTimerWaitingState, initialState, noMatch]
+      singletonTimerWaitingState, initialState, noSequentialMultiInstance, noMatch]
   · rcases remainingMismatch with elementMismatch | remainingMismatch
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedTimerId.processInstanceId ∧
@@ -277,7 +284,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
         intro exactMatch
         exact elementMismatch exactMatch.1.2.symm
       simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
-        singletonTimerWaitingState, initialState, noMatch]
+        singletonTimerWaitingState, initialState, noSequentialMultiInstance, noMatch]
     · rcases remainingMismatch with activationMismatch | timeMismatch
       · have noMatch : ¬ (
             (wait.processInstanceId = submittedTimerId.processInstanceId ∧
@@ -286,7 +293,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
           intro exactMatch
           exact activationMismatch exactMatch.2.symm
         simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
-          singletonTimerWaitingState, initialState, noMatch]
+          singletonTimerWaitingState, initialState, noSequentialMultiInstance, noMatch]
       · by_cases processMatches :
           wait.processInstanceId = submittedTimerId.processInstanceId
         · by_cases elementMatches :
@@ -305,6 +312,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
                   singletonTimerWaitingState, initialState,
                   processMatches, elementMatches,
                   activationMatches, timeMismatch, definitionFound,
+                  noSequentialMultiInstance,
                   interruptBoundedScope?, boundedScopeDeadlineWait?,
                   boundedScopeChildFor?]
             · have noMatch : ¬ (
@@ -316,7 +324,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
                 intro exactMatch
                 exact activationMatches exactMatch.2
               simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
-                singletonTimerWaitingState, initialState, noMatch]
+                singletonTimerWaitingState, initialState, noSequentialMultiInstance, noMatch]
           · have noMatch : ¬ (
                 (wait.processInstanceId =
                     submittedTimerId.processInstanceId ∧
@@ -326,7 +334,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
               intro exactMatch
               exact elementMatches exactMatch.1.2
             simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
-              singletonTimerWaitingState, initialState, noMatch]
+              singletonTimerWaitingState, initialState, noSequentialMultiInstance, noMatch]
         · have noMatch : ¬ (
               (wait.processInstanceId =
                   submittedTimerId.processInstanceId ∧
@@ -336,7 +344,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
             intro exactMatch
             exact processMatches exactMatch.1.1
           simp [applyStimulus, admitStimulus, dispatchStimulus, fireTimer,
-            singletonTimerWaitingState, initialState, noMatch]
+            singletonTimerWaitingState, initialState, noSequentialMultiInstance, noMatch]
 
 /-- Any mismatch in the full effect-occurrence identity rejects completion with exact state preservation. -/
 theorem effect_identity_mismatch_is_rejected

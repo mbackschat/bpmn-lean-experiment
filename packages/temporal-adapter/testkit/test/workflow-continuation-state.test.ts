@@ -1,12 +1,23 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+  BpmnCompilationStatus,
+  compileBpmnToSemanticProcess,
+} from "@bpmn-lean/bpmn-source";
+import {
+  CommandOutcome,
   ControlStateKind,
   SemanticOperationKind,
   SemanticOriginKind,
+  SemanticProfileId,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  StimulusKind,
+  VariableValueKind,
+  applyStimulus,
+  initialState,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { requireBpmnWorkflowContinuationStateV1 } from "@bpmn-lean/temporal-protocol";
@@ -149,12 +160,74 @@ test("a resumable checkpoint is accepted unchanged", () => {
   );
 });
 
-test("the optional sequential Multi-Instance controller collection is structurally decoded", () => {
+test("an old-profile continuation refuses a sequential Multi-Instance controller property", () => {
   const beforeEntry = { ...resumable, sequentialMultiInstanceControllers: [] };
 
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(beforeEntry, program, instanceId),
+    /RuntimeState is not one representable committed state/u,
+  );
+});
+
+test("the sequential Multi-Instance profile accepts its required controller collection", async () => {
+  const compilation = await compileBpmnToSemanticProcess({
+    bytes: await readFile(new URL(
+      "../../../bpmn-source/test/fixtures/sequential-multi-instance-user-task.bpmn",
+      import.meta.url,
+    )),
+    sourceId: "sequential-multi-instance-continuation-state",
+    expectedSha256: undefined,
+    sourceOverlay: null,
+    semanticProfile: SemanticProfileId.SequentialMultiInstanceUserTask,
+    limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+  });
+  assert.equal(compilation.status, BpmnCompilationStatus.Accepted);
+  if (compilation.status !== BpmnCompilationStatus.Accepted) {
+    throw new TypeError("Sequential Multi-Instance continuation fixture was rejected");
+  }
+  const sequentialOperation = compilation.semanticProcess.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask,
+  );
+  assert.ok(
+    sequentialOperation?.kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask,
+  );
+  const sequentialInstanceId = "Instance_SequentialMultiInstanceContinuation";
+  const started = applyStimulus(
+    compilation.semanticProcess,
+    { ...initialState, sequentialMultiInstanceControllers: [] },
+    {
+      kind: StimulusKind.StartProcess,
+      commandId: "start-sequential-multi-instance-continuation",
+      processId: compilation.semanticProcess.processId,
+      instanceId: sequentialInstanceId,
+      initialVariables: [{
+        name: sequentialOperation.data.input.dataObjectReferenceId,
+        value: { kind: VariableValueKind.StringList, value: ["contract"] },
+      }],
+    },
+  );
+  assert.equal(started.outcome, CommandOutcome.Committed);
+  assert.equal(started.state.sequentialMultiInstanceControllers?.length, 1);
   assert.deepEqual(
-    requireBpmnWorkflowContinuationStateV1(beforeEntry, program, instanceId),
-    beforeEntry,
+    requireBpmnWorkflowContinuationStateV1(
+      started.state,
+      compilation.semanticProcess,
+      sequentialInstanceId,
+    ),
+    started.state,
+  );
+
+  const {
+    sequentialMultiInstanceControllers: _controllers,
+    ...missingControllers
+  } = started.state;
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(
+      missingControllers,
+      compilation.semanticProcess,
+      sequentialInstanceId,
+    ),
+    /RuntimeState is not one resumable stable checkpoint/u,
   );
 });
 

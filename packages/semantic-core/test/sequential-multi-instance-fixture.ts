@@ -2,7 +2,7 @@
  * The sequential Multi-Instance User Task program, with the outer lifetime Timer.
  *
  * Hand-built to the shape `@bpmn-lean/bpmn-source` lowers, so consumers depend on no compiler. The
- * collection arrives as one Process-scope initial variable named by the input DataObject, which is the
+ * collection arrives as one Process-scope initial variable named by the input DataObjectReference, which is the
  * exact name the operation carries; nothing here reads a value by kind, because the output collection
  * is a second `StringList` and a kind-based lookup would become ambiguous the moment it is published.
  *
@@ -152,17 +152,17 @@ export const items = Object.freeze(["alpha", "beta", "gamma"]);
 /**
  * A `StartProcess` carrying `collection` as the sole Process binding.
  *
- * `dataObjectId` names the input DataObject that binding belongs to, which entry locates by exact
+ * `dataObjectReferenceId` names the input DataObjectReference that entry locates by exact
  * identity rather than by value kind. It varies only for {@link orderSeparatingProgram}.
  */
 export function startWithCollection(
   commandId: string,
   collection: ReadonlyArray<string>,
-  dataObjectId: string = reviewData.input.dataObjectId,
+  dataObjectReferenceId: string = reviewData.input.dataObjectReferenceId,
 ) {
   const initialVariables: ReadonlyArray<VariableBinding> = [
     {
-      name: dataObjectId,
+      name: dataObjectReferenceId,
       value: {
         kind: VariableValueKind.StringList,
         value: [...collection],
@@ -182,7 +182,7 @@ export const start = startWithCollection("start-review", items);
 export const startEmpty = startWithCollection("start-empty-review", []);
 
 /**
- * The input DataObject identity that separates the two plausible canonical binding orders.
+ * The input DataObjectReference identity that separates the two plausible canonical binding orders.
  *
  * Against the unchanged output identity `DataObject_OutputResults`, a locale collation places `_`
  * before `B` while code point places it after, so the two comparators return opposite signs for this
@@ -190,7 +190,8 @@ export const startEmpty = startWithCollection("start-empty-review", []);
  * program: any admitted model whose Process DataObject IDs differ across `_` or in case separates
  * them, and this is the smallest such pair.
  */
-export const orderSeparatingInputDataObjectId = "DataObjectB_InputItems";
+export const orderSeparatingInputDataObjectReferenceId =
+  "DataObjectReferenceB_InputItems";
 
 /** The review Process with that one input identity substituted, and nothing else changed. */
 export const orderSeparatingProgram: SemanticProcessProgram = {
@@ -204,7 +205,7 @@ export const orderSeparatingProgram: SemanticProcessProgram = {
           ...operation.data,
           input: {
             ...operation.data.input,
-            dataObjectId: orderSeparatingInputDataObjectId,
+            dataObjectReferenceId: orderSeparatingInputDataObjectReferenceId,
           },
         },
       }
@@ -215,21 +216,14 @@ export const orderSeparatingProgram: SemanticProcessProgram = {
 export const startOrderSeparating = startWithCollection(
   "start-order-separating",
   items,
-  orderSeparatingInputDataObjectId,
+  orderSeparatingInputDataObjectReferenceId,
 );
 
 /**
- * The state a committed `StartProcess` would leave, built directly.
- *
- * `applyStimulus` cannot reach these transitions yet and that is deliberate rather than a gap in this
- * fixture: command admission refuses any stimulus whose program names an unregistered profile, and
- * this profile stays unregistered until its capacity budget owner closes. Registering it early to
- * make a test green would flip the supported set, the capability table, the differential catalog, and
- * the corpus obligation all at once, which is the atomic change the capsule orders last.
- *
- * So the transitions are exercised from this state through `applyInternalOperation`, which is the
- * dispatcher a committed start would run, and end-to-end command evidence arrives with registration.
- * What this state asserts is only what `StartProcess` admission itself produces: a running control
+ * The state a committed `StartProcess` leaves, built directly so transition-focused tests can begin
+ * after command admission without coupling their oracle to the command dispatcher. End-to-end
+ * registration tests separately drive the same program through `applyStimulus`. This fixture asserts
+ * only what `StartProcess` admission itself produces: a running control
  * state, the root scope occurrence, its activation, the initiation still pending, and the initial
  * Process bindings.
  */
@@ -250,12 +244,12 @@ export function startedState(stimulus: { initialVariables: ReadonlyArray<Variabl
 /**
  * The published Process output collection, or `undefined` while it is still private.
  *
- * Keyed on the fixture's own output DataObject identity, which is why it belongs here rather than in one
+ * Keyed on the fixture's own output DataObjectReference identity, which is why it belongs here rather than in one
  * of the two files that read it.
  */
 export function outputBinding(state: RuntimeState): VariableBinding | undefined {
   return state.variables.process.bindings.find(({ name }) =>
-    name === reviewData.output.dataObjectId
+    name === reviewData.output.dataObjectReferenceId
   );
 }
 

@@ -122,6 +122,7 @@ private def decodeObservationKind (json : Json) :
   | "openUserTasks" => pure .openUserTasks
   | "openTimers" => pure .openTimers
   | "openEffects" => pure .openEffects
+  | "openMultiInstances" => pure .openMultiInstances
   | "variables" => pure .variables
   | "enabledInteractions" => pure .enabledInteractions
   | "logicalTime" => pure .logicalTime

@@ -47,3 +47,70 @@ test("distinguishes boundary variants by interruption and attached element", () 
   assert.ok(capabilities.includes("interruptingSubProcessBoundaryTimerEvent"));
   assert.ok(!capabilities.includes("interruptingUserTaskBoundaryTimerEvent"));
 });
+
+test("classifies only an explicitly sequential Multi-Instance User Task", () => {
+  const sequential = detectExecutableBpmnCapabilities(`
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:process id="Process_Sequential" isExecutable="true">
+        <bpmn:userTask id="Review">
+          <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+        </bpmn:userTask>
+      </bpmn:process>
+    </bpmn:definitions>
+  `);
+
+  assert.ok(sequential.includes("userTask"));
+  assert.ok(sequential.includes("sequentialMultiInstanceUserTask"));
+  assert.throws(
+    () => detectExecutableBpmnCapabilities(`
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+        <bpmn:process id="Process_Parallel" isExecutable="true">
+          <bpmn:userTask id="Review">
+            <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+          </bpmn:userTask>
+        </bpmn:process>
+      </bpmn:definitions>
+    `),
+    /unclassified executable BPMN parallel Multi-Instance User Task/u,
+  );
+});
+
+test("classifies the interrupting Timer by its sequential Multi-Instance host", () => {
+  const capabilities = detectExecutableBpmnCapabilities(`
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:process id="Process_Deadline" isExecutable="true">
+        <bpmn:userTask id="Review">
+          <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+        </bpmn:userTask>
+        <bpmn:boundaryEvent id="Deadline" attachedToRef="Review">
+          <bpmn:timerEventDefinition />
+        </bpmn:boundaryEvent>
+      </bpmn:process>
+    </bpmn:definitions>
+  `);
+
+  assert.ok(
+    capabilities.includes(
+      "interruptingSequentialMultiInstanceBoundaryTimerEvent",
+    ),
+  );
+  assert.ok(!capabilities.includes("interruptingUserTaskBoundaryTimerEvent"));
+  assert.throws(
+    () => detectExecutableBpmnCapabilities(`
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+        <bpmn:process id="Process_Reminder" isExecutable="true">
+          <bpmn:userTask id="Review">
+            <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+          </bpmn:userTask>
+          <bpmn:boundaryEvent
+            id="Reminder"
+            attachedToRef="Review"
+            cancelActivity="false">
+            <bpmn:timerEventDefinition />
+          </bpmn:boundaryEvent>
+        </bpmn:process>
+      </bpmn:definitions>
+    `),
+    /unclassified executable BPMN non-interrupting sequential Multi-Instance boundary Timer/u,
+  );
+});

@@ -60,6 +60,8 @@ export const RuntimeStateDefect = {
   ActivityOccurrenceBodyAbsent: "activityOccurrenceBodyAbsent",
   UnownedAttachedWait: "unownedAttachedWait",
   DuplicateActivityOccurrence: "duplicateActivityOccurrence",
+  SequentialMultiInstanceControllerProfileMismatch:
+    "sequentialMultiInstanceControllerProfileMismatch",
   SequentialMultiInstanceControllerUnowned: "sequentialMultiInstanceControllerUnowned",
   DuplicateSequentialMultiInstanceController: "duplicateSequentialMultiInstanceController",
   SequentialMultiInstanceExhausted: "sequentialMultiInstanceExhausted",
@@ -192,6 +194,20 @@ export function runtimeStateDefects(
 ): ReadonlyArray<RuntimeStateDefect> {
   const defects: RuntimeStateDefect[] = [];
 
+  const programRequiresSequentialMultiInstanceControllers = program.operations.some(
+    ({ kind }) => kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask,
+  );
+  const stateHasSequentialMultiInstanceControllers =
+    state.sequentialMultiInstanceControllers !== undefined;
+  if (
+    programRequiresSequentialMultiInstanceControllers !==
+      stateHasSequentialMultiInstanceControllers
+  ) {
+    defects.push(
+      RuntimeStateDefect.SequentialMultiInstanceControllerProfileMismatch,
+    );
+  }
+
   if (state.control.kind === ControlStateKind.NotStarted) {
     const started =
       state.initiationPending ||
@@ -206,7 +222,9 @@ export function runtimeStateDefects(
       state.eventRaces.length > 0 ||
       state.calledProcessOccurrences.length > 0 ||
       state.activityOccurrences.length > 0;
-    return started ? [RuntimeStateDefect.NotStartedWithWork] : [];
+    return started
+      ? [...defects, RuntimeStateDefect.NotStartedWithWork]
+      : defects;
   }
 
   if (state.control.instanceId !== expectedInstanceId) {
@@ -508,6 +526,10 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.ActivityOccurrenceBodyAbsent,
   RuntimeStateDefect.UnownedAttachedWait,
   RuntimeStateDefect.DuplicateActivityOccurrence,
+  // Presence is decidable from the supplied program and one state, unlike the wait-declaration
+  // classes excluded above. Gating it prevents both a profile-owned collection disappearing across
+  // a Run and the optional field changing every older profile's canonical state shape.
+  RuntimeStateDefect.SequentialMultiInstanceControllerProfileMismatch,
   // The controller classes join for the same reason: each is decidable from one state without the
   // called definitions, and a continuation that carried an unowned or exhausted controller across a
   // Run would otherwise be admitted by every boundary.

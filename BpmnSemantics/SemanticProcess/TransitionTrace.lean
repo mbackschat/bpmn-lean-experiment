@@ -19,6 +19,7 @@ inductive SemanticOperationKind where
   | invokeProcess
   | returnProcess
   | awaitUserTask
+  | awaitSequentialMultiInstanceUserTask
   | awaitTimer
   | awaitMessage
   | awaitEventRace
@@ -46,6 +47,7 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .invokeProcess .. => .invokeProcess
   | .returnProcess .. => .returnProcess
   | .awaitUserTask .. => .awaitUserTask
+  | .awaitSequentialMultiInstanceUserTask .. => .awaitSequentialMultiInstanceUserTask
   | .awaitTimer .. => .awaitTimer
   | .awaitMessage .. => .awaitMessage
   | .awaitEventRace .. => .awaitEventRace
@@ -72,6 +74,7 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .invokeProcess _ origin _ _ _ _ _
   | .returnProcess _ origin _ _ _
   | .awaitUserTask _ origin _ _ _
+  | .awaitSequentialMultiInstanceUserTask _ origin _ _ _ _ _ _
   | .awaitTimer _ origin _ _ _
   | .awaitMessage _ origin _ _ _
   | .awaitEventRace _ origin _ _ _

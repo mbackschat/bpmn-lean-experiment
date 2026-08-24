@@ -88,6 +88,32 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         UserTaskMetadata.optionWellFormed task.metadata &&
         placeExists places input &&
         placeExists places output
+  | .awaitSequentialMultiInstanceUserTask id origin input task data normalOutput
+      boundaryTimer limits =>
+      let identities :=
+        [task.id.value, boundaryTimer.elementId.value,
+          data.input.collectionItemDefinitionId, data.input.scalarItemDefinitionId,
+          data.input.dataObjectId, data.input.dataObjectReferenceId,
+          data.input.loopDataInputId, data.input.inputDataItemId,
+          data.input.taskDataInputId, data.input.collectionAssociationId,
+          data.input.itemAssociationId, data.output.dataObjectId,
+          data.output.dataObjectReferenceId, data.output.taskDataOutputId,
+          data.output.outputDataItemId, data.output.loopDataOutputId,
+          data.output.itemAssociationId, data.output.collectionAssociationId]
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        identities.all nonempty &&
+        identities.eraseDups.length = identities.length &&
+        origin.elementId.value = task.id.value &&
+        boundaryTimer.durationMs = 1000 &&
+        limits =
+          { maximumItems := 16, maximumItemUtf8Bytes := 512,
+            maximumCanonicalCollectionUtf8Bytes := 8192 } &&
+        decide (input ≠ normalOutput ∧ input ≠ boundaryTimer.output ∧
+          normalOutput ≠ boundaryTimer.output) &&
+        places.any (fun place => decide
+          (place.id = boundaryTimer.output ∧ place.origin = boundaryTimer.origin)) &&
+        placeExists places input && placeExists places normalOutput
   | .awaitTimer id origin input output timer =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

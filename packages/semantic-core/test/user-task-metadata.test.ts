@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 
 import {
+  BASELINE_SCENARIO_OBSERVATIONS,
   CheckedNodeKind,
   CommandOutcome,
-  ObservationRequestKind,
   ScenarioDocumentKind,
   SemanticGraphPolicyKind,
   SemanticOperationKind,
@@ -62,7 +62,7 @@ const metadataScenario = {
     sourceOverlay: null,
   },
   stimuli: [],
-  observations: Object.values(ObservationRequestKind),
+  observations: BASELINE_SCENARIO_OBSERVATIONS,
   provenance: {
     normativeRefs: [],
     cibRevision: "834a9874760de8a0107f7c1b32806e37f17fb017",

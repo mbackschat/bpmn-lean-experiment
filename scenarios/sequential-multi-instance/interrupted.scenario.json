@@ -1,0 +1,106 @@
+{
+  "kind": "scenario",
+  "id": "sequential-multi-instance-interrupted",
+  "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+  "bpmn": {
+    "id": "sequential-multi-instance-review",
+    "relativePath": "scenarios/sequential-multi-instance/process.bpmn",
+    "sha256": "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-sequential-review-interrupted",
+      "processId": "Process_SequentialMultiInstanceReview",
+      "instanceId": "SequentialMultiInstance_Interrupted",
+      "initialVariables": [
+        {
+          "name": "DataObjectReference_InputItems",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "contract",
+              "invoice",
+              "receipt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-before-interruption",
+      "taskId": {
+        "processInstanceId": "SequentialMultiInstance_Interrupted",
+        "elementId": "UserTask_Review",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "DataOutput_CurrentResult",
+          "value": {
+            "kind": "string",
+            "value": "accepted"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "fireTimer",
+      "commandId": "fire-timer-sha256:210f43869288fe9ebcfb6d589f63beeb08404fa9ca380557c7c322ee2a54a65a",
+      "timerId": {
+        "processInstanceId": "SequentialMultiInstance_Interrupted",
+        "elementId": "BoundaryTimer_Review",
+        "activation": 1
+      },
+      "logicalTimeMs": 1000
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-stale-second-review",
+      "taskId": {
+        "processInstanceId": "SequentialMultiInstance_Interrupted",
+        "elementId": "UserTask_Review",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "DataOutput_CurrentResult",
+          "value": {
+            "kind": "string",
+            "value": "must-not-publish"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "openMultiInstances",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.8",
+      "BPMN 2.0.2 Clause 13.3.7",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SequentialMultiInstanceActivityBehavior.java"
+    ]
+  }
+}

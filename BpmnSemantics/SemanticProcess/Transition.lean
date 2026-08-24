@@ -12,6 +12,7 @@ import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.ScopeCancellation
+import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 
 /-! # Semantic Process internal transitions
 
@@ -166,6 +167,17 @@ inductive OperationStep (program : Program) :
   | awaitUserTask (id origin input output task) (before after : RuntimeState)
       (transition : awaitUserTaskState? before input output task = some after) :
       OperationStep program (.awaitUserTask id origin input output task) before after
+  | awaitSequentialMultiInstanceUserTask
+      (id origin input task data normalOutput boundaryTimer limits)
+      (before after : RuntimeState)
+      (arm : SequentialMultiInstanceArm)
+      (projects : SequentialMultiInstanceArm.ofOperation?
+        (.awaitSequentialMultiInstanceUserTask id origin input task data normalOutput
+          boundaryTimer limits) = some arm)
+      (transition : SequentialMultiInstanceEntryStep arm before after) :
+      OperationStep program
+        (.awaitSequentialMultiInstanceUserTask id origin input task data normalOutput
+          boundaryTimer limits) before after
   | awaitTimer (id origin input output timer) (before after : RuntimeState)
       (transition : awaitTimerState? before input output timer = some after) :
       OperationStep program (.awaitTimer id origin input output timer) before after
@@ -264,6 +276,9 @@ def fire? (program : Program) (operation : SemanticOperation)
         callerOutput
   | .awaitUserTask _ _ input output task =>
       awaitUserTaskState? state input output task
+  | operation@(.awaitSequentialMultiInstanceUserTask ..) => do
+      let arm ← SequentialMultiInstanceArm.ofOperation? operation
+      enterSequentialMultiInstance? arm state
   | .awaitTimer _ _ input output timer =>
       awaitTimerState? state input output timer
   | .awaitMessage _ _ input output message =>
@@ -295,7 +310,7 @@ def fire? (program : Program) (operation : SemanticOperation)
       completeBoundedScope? program state scopeId parentOutput
 
 /-- Dispatcher and constructor-selection check: `fire?` routes every operation kind to the state
-transformation its relation arm names, and the twenty-four-way match is exhaustive.
+transformation its relation arm names, and the constructor match is exhaustive.
 
 This is worth having and it is not evidence about BPMN meaning. It fails if an operation kind is
 routed to the wrong transformation or added without a matching arm; it cannot fail because a
@@ -320,6 +335,22 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
     | exact .returnProcess _ _ _ _ _ before after
         (returnProcessState_sound _ _ _ _ _ _ _ result)
     | exact .awaitUserTask _ _ _ _ _ before after result
+    | rename_i id origin input task data normalOutput boundaryTimer limits
+      let arm : SequentialMultiInstanceArm :=
+        { input
+          taskId := task.id
+          taskName := task.name
+          normalOutput
+          boundaryTimer
+          data :=
+            { inputDataObjectReferenceId := data.input.dataObjectReferenceId
+              taskDataOutputId := data.output.taskDataOutputId
+              outputDataObjectReferenceId := data.output.dataObjectReferenceId }
+          limits }
+      exact OperationStep.awaitSequentialMultiInstanceUserTask
+        id origin input task data normalOutput boundaryTimer limits before after arm rfl
+        (enterSequentialMultiInstance_sound arm before after
+          (by simpa [fire?, SequentialMultiInstanceArm.ofOperation?, arm] using result))
     | exact .awaitTimer _ _ _ _ _ before after result
     | exact .awaitMessage _ _ _ _ _ before after result
     | exact OperationStep.awaitEventRace _ _ _ _ _ before after

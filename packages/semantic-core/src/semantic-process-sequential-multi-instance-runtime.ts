@@ -44,62 +44,10 @@ import {
   compareSequentialMultiInstanceControllers,
   sequentialMultiInstanceControllerFor,
 } from "./sequential-multi-instance-controller.js";
-import { utf8ByteLength } from "./wire.js";
-
-/**
- * The collection this entry snapshots, or `undefined` when the definition's input is not a usable one.
- *
- * Located by the exact DataObject identity the operation carries, never by value kind: the output
- * collection is a second `StringList` in the same scope, so a kind-based lookup would be ambiguous
- * from the first natural completion onward and would silently pick the wrong binding.
- */
-function inputCollection(
-  operation: AwaitSequentialMultiInstanceUserTaskOperation,
-  bindings: ReadonlyArray<VariableBinding>,
-): ReadonlyArray<string> | undefined {
-  const matches = bindings.filter(({ name }) =>
-    name === operation.data.input.dataObjectId
-  );
-  const [binding] = matches;
-  if (matches.length !== 1 || binding === undefined) {
-    return undefined;
-  }
-  return binding.value.kind === VariableValueKind.StringList
-    ? binding.value.value
-    : undefined;
-}
-
-/**
- * Whether a collection fits the profile's declared bounds.
- *
- * Both boundaries that see a runtime collection measure it here: entry, with the input collection the
- * host supplied, and inner completion, with the candidate output collection that completion would
- * store. The bounds cannot be decided at admission, which admits the shape rather than the values.
- * Exceeding any of them leaves the transition undefined, so the command is refused rather than
- * truncated.
- *
- * A candidate output collection re-measures the cardinality bound and the already accepted items
- * instead of skipping them. Both hold by construction there, since the candidate is at most the
- * snapshot entry already bounded; what the call decides on that side is the submitted result's own size
- * and the candidate collection's canonical size. One owner for the measure is what keeps the two sides
- * from drifting into two byte counts that agree only by luck.
- *
- * The canonical byte bound is measured over `JSON.stringify` of the array, which is already canonical
- * for a list of strings: there are no object keys to order, and the wire encoder produces the same
- * bytes for the same items in the same order. That measure is escape-aware, so a string of characters
- * JSON escapes counts twice toward the collection bound.
- */
-function withinLimits(
-  operation: AwaitSequentialMultiInstanceUserTaskOperation,
-  collection: ReadonlyArray<string>,
-): boolean {
-  const { maximumItems, maximumItemUtf8Bytes, maximumCanonicalCollectionUtf8Bytes } =
-    operation.limits;
-  return collection.length <= maximumItems &&
-    collection.every((item) => utf8ByteLength(item) <= maximumItemUtf8Bytes) &&
-    utf8ByteLength(JSON.stringify(collection)) <=
-      maximumCanonicalCollectionUtf8Bytes;
-}
+import {
+  admittedSequentialMultiInstanceInputCollection,
+  admittedSequentialMultiInstanceIterationResult,
+} from "./sequential-multi-instance-command-data-admission.js";
 
 /**
  * The exact ordered output collection, published once and never before natural completion.
@@ -145,8 +93,11 @@ export function enterSequentialMultiInstanceUserTask(
   if (state.control.kind !== ControlStateKind.Running) {
     return null;
   }
-  const collection = inputCollection(operation, state.variables.process.bindings);
-  if (collection === undefined || !withinLimits(operation, collection)) {
+  const collection = admittedSequentialMultiInstanceInputCollection(
+    operation,
+    state.variables.process.bindings,
+  );
+  if (collection === undefined) {
     return null;
   }
   const consumed = removeToken(state.controlTokens, operation.input, owner);
@@ -163,7 +114,7 @@ export function enterSequentialMultiInstanceUserTask(
         process: {
           bindings: publishedCollection(
             state.variables.process.bindings,
-            operation.data.output.dataObjectId,
+            operation.data.output.dataObjectReferenceId,
             [],
           ),
         },
@@ -249,27 +200,6 @@ export function enterSequentialMultiInstanceUserTask(
 }
 
 /**
- * The exact scalar result this profile accepts, or `undefined`.
- *
- * One binding, named by the task's own DataOutput, carrying a String. Anything else leaves the
- * transition undefined rather than partially applied: an accepted completion writes one output slot,
- * so a submission this account cannot place in a slot must not commit.
- */
-function acceptedResult(
-  operation: AwaitSequentialMultiInstanceUserTaskOperation,
-  submitted: ReadonlyArray<VariableBinding>,
-): string | undefined {
-  const [binding] = submitted;
-  if (submitted.length !== 1 || binding === undefined) {
-    return undefined;
-  }
-  return binding.name === operation.data.output.taskDataOutputId &&
-      binding.value.kind === VariableValueKind.String
-    ? binding.value.value
-    : undefined;
-}
-
-/**
  * `SMI-ITERATE-01` and `SMI-COMPLETE-01`, which are one transition with two arms.
  *
  * They are one function because the deciding fact is the same read: whether this completion filled
@@ -309,17 +239,18 @@ export function completeSequentialMultiInstanceIteration(
     state.sequentialMultiInstanceControllers ?? [],
     record.id,
   );
-  const result = acceptedResult(operation, stimulus.submittedValues);
-  if (controller === undefined || result === undefined) {
+  if (controller === undefined) {
+    return null;
+  }
+  const result = admittedSequentialMultiInstanceIterationResult(
+    operation,
+    controller.outputSlots,
+    stimulus.submittedValues,
+  );
+  if (result === undefined) {
     return null;
   }
   const outputSlots = [...controller.outputSlots, result];
-  // Measured before either arm, because the result that crosses the collection bound is the final one
-  // and a check placed on the non-final arm alone would never see it. Refusing here commits nothing:
-  // no slot is stored, no body is replaced, and no collection is published.
-  if (!withinLimits(operation, outputSlots)) {
-    return null;
-  }
   const others = (state.sequentialMultiInstanceControllers ?? []).filter(
     (candidate) => candidate !== controller,
   );
@@ -364,7 +295,7 @@ export function completeSequentialMultiInstanceIteration(
       process: {
         bindings: publishedCollection(
           state.variables.process.bindings,
-          operation.data.output.dataObjectId,
+          operation.data.output.dataObjectReferenceId,
           outputSlots,
         ),
       },

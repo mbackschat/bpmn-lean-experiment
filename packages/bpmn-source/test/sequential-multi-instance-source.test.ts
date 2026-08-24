@@ -8,9 +8,13 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  CommandOutcome,
   SemanticOperationKind,
+  SemanticProfileId,
   StimulusKind,
   VariableValueKind,
+  applyStimulus,
+  initialState,
   isWellFormedSemanticProcessProgram,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
@@ -19,8 +23,8 @@ import type {
   SemanticOperation,
 } from "@bpmn-lean/semantic-core";
 
-const profile = "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
-const userTaskProfile = "cibseven-2.2.0-user-task-process-data-draft";
+const profile = SemanticProfileId.SequentialMultiInstanceUserTask;
+const userTaskProfile = SemanticProfileId.UserTask;
 
 // `Array.prototype.find` narrows nothing about its result, so the loop-specific `limits` field stays
 // unreachable without an explicit predicate over the operation union.
@@ -40,7 +44,10 @@ const ordinaryUserTaskSource = await readFile(
   "utf8",
 );
 
-function compile(bytes: Uint8Array | string, semanticProfile = profile) {
+function compile(
+  bytes: Uint8Array | string,
+  semanticProfile: string = profile,
+) {
   return compileBpmnToSemanticProcess({
     bytes: typeof bytes === "string" ? new TextEncoder().encode(bytes) : bytes,
     sourceId: "sequential-multi-instance-source-test",
@@ -58,29 +65,65 @@ test("admits the exact sequential Multi-Instance source as one closed checked no
   if (result.status !== BpmnCompilationStatus.Accepted) {
     return;
   }
-  assert.equal(isWellFormedSemanticProcessProgram(result.semanticProcess), true);
-  assert.equal(
-    supportsSemanticProcessExecution(
-      {
-        kind: StimulusKind.StartProcess,
-        commandId: "start-before-runtime-support",
-        processId: result.semanticProcess.processId,
-        instanceId: "ProcessInstance_SequentialMultiInstanceReview",
-        initialVariables: [
-          {
-            name: "DataObjectReference_InputItems",
-            value: {
-              kind: VariableValueKind.StringList,
-              value: ["contract", "invoice", "receipt"],
-            },
-          },
-        ],
-      },
-      result.semanticProcess,
+  assert.deepEqual(
+    result.checkedProcess.sequenceFlowScopes.map(({ sequenceFlowId }) =>
+      sequenceFlowId
     ),
-    false,
-    "source/IL representation must remain execution-inadmissible until the reviewed runtime exists",
+    result.checkedProcess.sequenceFlows.map(({ id }) => id),
   );
+  assert.equal(isWellFormedSemanticProcessProgram(result.semanticProcess), true);
+  const start = {
+    kind: StimulusKind.StartProcess,
+    commandId: "start-sequential-review",
+    processId: result.semanticProcess.processId,
+    instanceId: "ProcessInstance_SequentialMultiInstanceReview",
+    initialVariables: [
+      {
+        name: "DataObjectReference_InputItems",
+        value: {
+          kind: VariableValueKind.StringList,
+          value: ["contract", "invoice", "receipt"],
+        },
+      },
+    ],
+  } as const;
+  assert.equal(
+    supportsSemanticProcessExecution(start, result.semanticProcess),
+    true,
+  );
+  let command = applyStimulus(result.semanticProcess, initialState, start);
+  assert.equal(command.outcome, CommandOutcome.Committed);
+  assert.deepEqual(command.state.userTaskWaits.map(({ id }) => id), [{
+    processInstanceId: start.instanceId,
+    elementId: "UserTask_Review",
+    activation: 1,
+  }]);
+  for (const [index, submitted] of ["accepted", "flagged", "archived"].entries()) {
+    command = applyStimulus(result.semanticProcess, command.state, {
+      kind: StimulusKind.CompleteUserTaskInstance,
+      commandId: `complete-review-${String(index + 1)}`,
+      taskId: {
+        processInstanceId: start.instanceId,
+        elementId: "UserTask_Review",
+        activation: index + 1,
+      },
+      submittedValues: [{
+        name: "DataOutput_CurrentResult",
+        value: { kind: VariableValueKind.String, value: submitted },
+      }],
+    });
+    assert.equal(command.outcome, CommandOutcome.Committed);
+  }
+  assert.deepEqual(command.state.variables.process.bindings, [
+    ...start.initialVariables,
+    {
+      name: "DataObjectReference_OutputResults",
+      value: {
+        kind: VariableValueKind.StringList,
+        value: ["accepted", "flagged", "archived"],
+      },
+    },
+  ]);
   const checked = result.checkedProcess.nodes.find(
     ({ kind }) => kind === "sequentialMultiInstanceUserTask",
   );
@@ -233,7 +276,7 @@ test("rejects surplus loop material and same-typed reference or association subs
   }
 });
 
-test("separates the new loop construct from the already admitted ordinary User Task control", async () => {
+test("separates the new loop construct from every previously registered profile", async () => {
   const closingTag = "    </bpmn:userTask>";
   const loop = [
     "      <bpmn:multiInstanceLoopCharacteristics",
@@ -246,12 +289,20 @@ test("separates the new loop construct from the already admitted ordinary User T
   );
   assert.notEqual(withLoop, ordinaryUserTaskSource);
 
-  const rejected = await compile(withLoop, userTaskProfile);
   const admitted = await compile(
     withLoop.replace(`${loop}\n`, ""),
     userTaskProfile,
   );
 
-  assert.equal(rejected.status, BpmnCompilationStatus.Rejected);
   assert.equal(admitted.status, BpmnCompilationStatus.Accepted);
+  for (const oldProfileId of Object.values(SemanticProfileId).filter(
+    (profileId) => profileId !== profile,
+  )) {
+    const rejected = await compile(withLoop, oldProfileId);
+    assert.equal(
+      rejected.status,
+      BpmnCompilationStatus.Rejected,
+      `${oldProfileId} must not admit sequential Multi-Instance source`,
+    );
+  }
 });

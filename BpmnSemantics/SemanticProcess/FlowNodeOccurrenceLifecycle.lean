@@ -135,6 +135,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .enterBoundedScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
+  | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _
   | .awaitEventRace _ _ input _ _
@@ -389,6 +390,19 @@ private def taskForBoundaryTimer? (operations : List (ControlPlaceId × BoundedT
 private def waitEnd (id : OccurrenceId) (terminal : FlowNodeOccurrenceTerminalKind) :
     UnnumberedFlowNodeOccurrenceEnd := { anchor := .wait id, terminal }
 
+private def sequentialMultiInstanceCompletionDelta? (program : Program) (before : RuntimeState) (taskId : OccurrenceId) : Option UnnumberedFlowNodeOccurrenceDelta := do
+  let operation ← sequentialMultiInstanceOperationForTask? program ⟨taskId.elementId.value⟩
+  let arm ← SequentialMultiInstanceArm.ofOperation? operation
+  let record ← activityOccurrenceForTask? before.activityOccurrences taskId
+  let controller ← sequentialMultiInstanceControllerFor? before.sequentialMultiInstanceControllers record
+  let current ← before.waits.find? (taskIdNamesWait taskId)
+  let started ← if completedInstanceCount controller + 1 < controller.snapshot.length then do
+      let identity ← candidateOperationFlowNodeIdentity? program operation current.owner current.owner ⟨arm.taskId.value⟩
+      pure [{ anchor := .wait (occurrenceId current.processInstanceId ⟨arm.taskId.value⟩
+        (current.activation + 1)), processId := identity.processId, elementId := identity.elementId, owner := identity.owner }]
+    else pure []
+  pure (canonicalFlowNodeOccurrenceDelta started [waitEnd taskId .completed])
+
 /-- The exact interrupting Sub-Process Boundary branch and the root whose open subtree it removes. -/
 def interruptingBoundaryCancellationDelta? (program : Program) (before : RuntimeState)
     (commandId : SemanticId) (transitionIndex : Nat) (timer : TimerWait)
@@ -448,10 +462,14 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
   match stimulus with
   | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => some (canonicalFlowNodeOccurrenceDelta [] [])
   | .completeUserTaskInstance _ taskId _ =>
-      if before.waits.any fun wait => decide (wait.processInstanceId = taskId.processInstanceId &&
-          wait.task.id.value = taskId.elementId.value && wait.activation = taskId.activation) then
-        some (canonicalFlowNodeOccurrenceDelta [] [waitEnd taskId .completed])
-      else none
+      match sequentialMultiInstanceOperationForTask? program ⟨taskId.elementId.value⟩ with
+      | some _ => sequentialMultiInstanceCompletionDelta? program before taskId
+      | none =>
+          if before.waits.any fun wait => decide
+              (wait.processInstanceId = taskId.processInstanceId &&
+                wait.task.id.value = taskId.elementId.value && wait.activation = taskId.activation) then
+            some (canonicalFlowNodeOccurrenceDelta [] [waitEnd taskId .completed])
+          else none
   | .deliverMessage _ subscriptionId _ =>
       if !(before.messageWaits.any fun wait => decide (wait.processInstanceId = subscriptionId.processInstanceId &&
           wait.elementId.value = subscriptionId.elementId.value && wait.activation = subscriptionId.activation)) then none
@@ -468,18 +486,25 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
           [waitEnd race.timerOccurrenceId .completed, waitEnd race.messageSubscriptionId .cancelled])
       | none =>
           let identity ← candidateFlowNodeIdentity? program timer.owner timer.elementId
-          match taskForBoundaryTimer? (boundedTaskOperations program) before timer with
-          | some task => pure (instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex [identity]
-              [waitEnd (occurrenceId task.processInstanceId ⟨task.task.id.value⟩ task.activation) .cancelled])
+          match sequentialMultiInstanceOperationForTimer? program timer.elementId with
+          | some _ => do
+              let record ← activityOccurrenceForTimer? before.activityOccurrences timerId
+              let body ← activityBodyTask? record
+              let _ ← before.waits.find? (taskIdNamesWait body)
+              pure (instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex [identity] [waitEnd body .cancelled])
           | none =>
-              if isMonitoredBoundaryTimerDefinition program timer.elementId then
-                pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity])
-              else match boundedScopeDefinitionFor? program timer with
-                | some definition => do
-                    let branch ← interruptingBoundaryCancellationDelta? program before
-                      commandId transitionIndex timer definition
-                    pure branch.2
-                | none => pure (canonicalFlowNodeOccurrenceDelta [] [waitEnd timerId .completed])
+              match taskForBoundaryTimer? (boundedTaskOperations program) before timer with
+              | some task => pure (instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex [identity]
+                  [waitEnd (occurrenceId task.processInstanceId ⟨task.task.id.value⟩ task.activation) .cancelled])
+              | none =>
+                  if isMonitoredBoundaryTimerDefinition program timer.elementId then
+                    pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity])
+                  else match boundedScopeDefinitionFor? program timer with
+                    | some definition => do
+                        let branch ← interruptingBoundaryCancellationDelta? program before
+                          commandId transitionIndex timer definition
+                        pure branch.2
+                    | none => pure (canonicalFlowNodeOccurrenceDelta [] [waitEnd timerId .completed])
   | .completeEffect _ effectId result => do
       let wait ← before.effectWaits.find? (effectOccurrenceMatches effectId)
       match result with
@@ -574,6 +599,14 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
         | [wait] => some wait
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateUserTaskStart? program operation owner wait] [])
+  | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
+      let activation := activationForTask before task.id + 1
+      match after.waits.filter fun wait => decide (wait.owner = owner && wait.task.id = task.id &&
+          wait.activation = activation) with
+      | [wait] => pure (canonicalFlowNodeOccurrenceDelta
+          [← candidateUserTaskStart? program operation owner wait] [])
+      | [] => pure (canonicalFlowNodeOccurrenceDelta [] [])
+      | _ => none
   | .awaitEffect _ _ _ _ effect _ =>
       let activation := activationForNode (before.effectActivations.map fun value => (value.elementId, value.count)) effect.elementId + 1
       let wait ← match after.effectWaits.filter fun wait => decide

@@ -50,6 +50,8 @@ const parallelUserTaskMetadataProfileId =
   "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft";
 const processDataPreservedNotationProfileId =
   "cibseven-2.2.0-user-task-process-data-preserved-notation-draft";
+const sequentialMultiInstanceProfileId =
+  "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -398,6 +400,55 @@ test("registers parallel User Task metadata with two existing User Task interact
           }],
         },
       ],
+      effectHandlers: [],
+    },
+  );
+});
+
+test("registers sequential Multi-Instance with its exact reference input and ordered task completions", async () => {
+  assert.equal(registeredProfiles.includes(sequentialMultiInstanceProfileId), true);
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) =>
+        path.basename(file) === "sequential-multi-instance-user-task.json"
+      )
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  assert.deepEqual(
+    {
+      source: config.bpmn.file,
+      semanticProfile: config.bpmn.semanticProfile,
+      process: config.process,
+      interactions: config.interactions,
+      effectHandlers: config.effectHandlers,
+    },
+    {
+      source: path.join(
+        projectRoot,
+        "scenarios/sequential-multi-instance/process.bpmn",
+      ),
+      semanticProfile: sequentialMultiInstanceProfileId,
+      process: {
+        instanceId: "MvpExample_sequential_multi_instance_1",
+        initialVariables: [{
+          name: "DataObjectReference_InputItems",
+          value: {
+            kind: "stringList",
+            value: ["contract", "invoice", "receipt"],
+          },
+        }],
+      },
+      interactions: ["accepted", "flagged", "archived"].map((value) => ({
+        kind: "completeUserTaskInstance",
+        elementId: "UserTask_Review",
+        delayMs: 1,
+        inputVariableNames: [],
+        submittedValues: [{
+          name: "DataOutput_CurrentResult",
+          value: { kind: "string", value },
+        }],
+      })),
       effectHandlers: [],
     },
   );

@@ -75,6 +75,9 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
       | .awaitMonitoredUserTask _ _ _ task _ =>
           task.id = wait.task.id && task.name = wait.task.name && task.output = wait.output &&
             wait.task.metadata.isNone && wait.metadata.isNone
+      | .awaitSequentialMultiInstanceUserTask _ _ _ task _ normalOutput _ _ =>
+          task.id = wait.task.id && task.name = wait.task.name && normalOutput = wait.output &&
+            wait.task.metadata.isNone && wait.metadata.isNone
       | _ => false).length = 1
 
 private def messageWaitId (wait : MessageWait) : OccurrenceId :=
@@ -112,6 +115,13 @@ private def boundaryTimerOperationMatches (program : Program) (state : RuntimeSt
         (state.waits.filter fun host => decide
           (host.owner = wait.owner && host.task.id = task.id &&
             host.activation = wait.activation)).length = 1
+  | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundary _ =>
+      boundary.elementId = wait.elementId && boundary.output = wait.output &&
+        (state.activityOccurrences.filter fun record =>
+          record.owner = wait.owner && recordAttaches record (timerWaitId wait) &&
+            match activityBodyTask? record with
+            | some body => body.elementId.value = task.id.value
+            | none => false).length = 1
   | .enterBoundedScope _ _ _ _ childScopeId boundary =>
       boundary.elementId = wait.elementId && boundary.output = wait.output &&
         (state.scopeOccurrences.filter fun child => decide
@@ -137,7 +147,8 @@ private def timerWaitValid (program : Program) (state : RuntimeState)
             state.eventRaces.any fun race =>
               race.owner = wait.owner && race.id.elementId.value = origin.elementId.value &&
                 race.timerOccurrenceId = timerWaitId wait
-      | .awaitBoundedUserTask .. | .awaitMonitoredUserTask .. | .enterBoundedScope .. =>
+      | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
+      | .awaitSequentialMultiInstanceUserTask .. | .enterBoundedScope .. =>
           boundaryTimerOperationMatches program state wait operation
       | _ => false).length = 1
 

@@ -211,7 +211,7 @@ theorem completion_publishes_the_ordered_collection {arm : SequentialMultiInstan
     ∃ controller ∈ before.sequentialMultiInstanceControllers, ∃ result : String,
       after.variables.process.bindings =
         mergeProcessVariableBindings before.variables.process.bindings
-          [{ name := arm.data.outputDataObjectId
+          [{ name := arm.data.outputDataObjectReferenceId
              value := .stringList (controller.outputSlots ++ [result]) }] := by
   cases step with
   | publishes _ _ controller _ _ result _ _ _ _ _ controllerLive =>
@@ -232,7 +232,7 @@ theorem completion_publishes_a_collection_within_the_profile_bounds
     ∃ items, withinSequentialMultiInstanceLimits arm items = true ∧
       after.variables.process.bindings =
         mergeProcessVariableBindings before.variables.process.bindings
-          [{ name := arm.data.outputDataObjectId, value := .stringList items }] := by
+          [{ name := arm.data.outputDataObjectReferenceId, value := .stringList items }] := by
   cases step with
   | publishes _ _ controller _ _ result _ _ _ _ _ _ _ _ _ _ _ candidateFits =>
       exact ⟨controller.outputSlots ++ [result], candidateFits, rfl⟩
@@ -312,12 +312,12 @@ theorem entry_publishes_an_empty_collection_or_snapshots_without_publishing
     (after.sequentialMultiInstanceControllers = before.sequentialMultiInstanceControllers ∧
         after.variables.process.bindings =
           mergeProcessVariableBindings before.variables.process.bindings
-            [{ name := arm.data.outputDataObjectId, value := .stringList [] }]) ∨
+            [{ name := arm.data.outputDataObjectReferenceId, value := .stringList [] }]) ∨
       (∃ controller binding,
         after.sequentialMultiInstanceControllers =
             controller :: before.sequentialMultiInstanceControllers ∧
           before.variables.process.bindings.filter
-              (fun candidate => candidate.name == arm.data.inputDataObjectId) = [binding] ∧
+              (fun candidate => candidate.name == arm.data.inputDataObjectReferenceId) = [binding] ∧
           binding.value = .stringList controller.snapshot ∧
           controller.snapshot ≠ [] ∧ controller.outputSlots = [] ∧
           after.variables = before.variables) := by

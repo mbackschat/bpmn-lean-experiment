@@ -22,7 +22,7 @@ For every currently selected profile, source and program admission require:
 
 The reusable program capability names kinds and cardinalities, not complete node IDs, Sequence Flow IDs, or one full model path. The Timer/User Task and Message/User Task composition profiles therefore permit both finite acyclic linear orders selected by graph facts and their exact operation multisets; production code contains no whole-topology predicate for either profile. The configured Task profile is deliberately narrower at checked-source admission: its capsule selects one arbitrary-ID Start-to-configured-to-User-to-End topology and exact descriptor while its lowered `awaitEffect` program continues through the reusable structural graph and operation-cardinality validators. This source restriction does not become the general meaning of Task or `awaitEffect`.
 
-The closest unsupported claim is arbitrary serial composition. Admission does not infer an unbounded grammar, repeated Timer mechanisms, cycles beyond the exact registered resumption-bounded User Task profile, Standard Loop Characteristics, Multi-Instance, arbitrary graph cardinalities, or general BPMN Process Execution Conformance.
+The closest unsupported claim is arbitrary serial composition. Admission does not infer an unbounded grammar, repeated Timer mechanisms, cycles beyond the exact registered resumption-bounded User Task profile, Standard Loop Characteristics, sequential Multi-Instance beyond the exact registered User Task slice, parallel Multi-Instance, arbitrary graph cardinalities, or general BPMN Process Execution Conformance.
 
 ## Current profile capabilities
 
@@ -43,6 +43,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN structured Inclusive Gateway (`bpmn-2.0.2-inclusive-gateway-selected-branches-draft`) | 1 | one `initiate`, one `selectMany`, three `awaitUserTask`, one `synchronizeSelected`, one `reachNoneEnd`, one `completeScope` |
 | BPMN resumption-bounded User Task cycle (`bpmn-2.0.2-user-task-cycle-draft`) | 1 | one `initiate`, one three-input `mergeExclusive`, one `awaitUserTask`, one `choose`, one `reachNoneEnd`, one `completeScope` |
 | BPMN interrupting Activity boundary Timer (`bpmn-2.0.2-activity-boundary-timer-draft`) | 1 | one `initiate`, one `awaitBoundedUserTask`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
+| BPMN sequential Multi-Instance User Task (`bpmn-2.0.2-sequential-multi-instance-user-task-draft`) | 1 | one `initiate`, one `awaitSequentialMultiInstanceUserTask`, one `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | BPMN non-interrupting boundary Timer (`bpmn-2.0.2-non-interrupting-boundary-timer-draft`) | 1 | one `initiate`, one `awaitMonitoredUserTask`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | BPMN Event-Based Gateway Message/Timer race (`bpmn-2.0.2-event-based-gateway-message-timer-draft`) | 1 | one `initiate`, one `awaitEventRace`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | BPMN Timer/User Task composition (`bpmn-2.0.2-timer-user-task-composition-draft`) | 1 | one `initiate`, one `awaitTimer`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |

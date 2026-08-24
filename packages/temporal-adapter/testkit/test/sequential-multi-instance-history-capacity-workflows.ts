@@ -174,6 +174,22 @@ export async function sequentialMultiInstanceHistoryCapacityProbe(
       currentActivationResultCanonicalPayloadBytes,
     }, 2);
   }
+  if (input.runOrdinal === 4) {
+    if (input.topology !== SequentialMultiInstanceCapacityProbeTopology.Interrupted) {
+      throw ApplicationFailure.nonRetryable(
+        "Natural SMI capacity topology cannot open Run 4",
+        "SmiCapacityProbeTopologyInvalid",
+      );
+    }
+    await condition(() => acceptedUpdates === 17);
+    capture("before-escalation-terminal");
+    return terminalResult(input, checkpoints, {
+      largestActivationEvents,
+      largestActivationCanonicalPayloadBytes,
+      currentActivationCanonicalPayloadBytes,
+      currentActivationResultCanonicalPayloadBytes,
+    });
+  }
   if (input.runOrdinal === 3) {
     if (input.topology !== SequentialMultiInstanceCapacityProbeTopology.Interrupted) {
       throw ApplicationFailure.nonRetryable(
@@ -182,13 +198,13 @@ export async function sequentialMultiInstanceHistoryCapacityProbe(
       );
     }
     await condition(() => acceptedUpdates === 16);
-    capture("before-escalation-terminal");
-    return terminalResult(input, checkpoints, {
+    capture("before-stale-refusal-continue-as-new");
+    return await continueWithMeasuredRun(input, checkpoints, {
       largestActivationEvents,
       largestActivationCanonicalPayloadBytes,
       currentActivationCanonicalPayloadBytes,
       currentActivationResultCanonicalPayloadBytes,
-    });
+    }, 4);
   }
   if (input.runOrdinal !== 2) {
     throw ApplicationFailure.nonRetryable(
@@ -254,7 +270,7 @@ async function continueWithMeasuredRun(
   input: SequentialMultiInstanceCapacityProbeInput,
   checkpoints: readonly SequentialMultiInstanceCapacityProbeCheckpoint[],
   maxima: ActivationMaxima,
-  successorRunOrdinal: 2 | 3,
+  successorRunOrdinal: 2 | 3 | 4,
 ): Promise<never> {
   const baseRun = {
     runOrdinal: input.runOrdinal,
@@ -362,7 +378,7 @@ function requireInput(input: SequentialMultiInstanceCapacityProbeInput): void {
       input.topology !== SequentialMultiInstanceCapacityProbeTopology.Interrupted) ||
     !Number.isSafeInteger(input.runOrdinal) ||
     input.runOrdinal < 1 ||
-    input.runOrdinal > 3 ||
+    input.runOrdinal > 4 ||
     input.priorRuns.length !== input.runOrdinal - 1
   ) {
     throw ApplicationFailure.nonRetryable(
@@ -398,10 +414,17 @@ function requireUpdate(
 function firstExpectedUpdateIndex(
   input: SequentialMultiInstanceCapacityProbeInput,
 ): number {
-  return input.topology === SequentialMultiInstanceCapacityProbeTopology.Interrupted &&
-      input.runOrdinal === 3
-    ? 15
-    : 0;
+  if (input.topology !== SequentialMultiInstanceCapacityProbeTopology.Interrupted) {
+    return 0;
+  }
+  switch (input.runOrdinal) {
+    case 3:
+      return 15;
+    case 4:
+      return 16;
+    default:
+      return 0;
+  }
 }
 
 function finalExpectedUpdateIndex(
@@ -416,5 +439,13 @@ function finalExpectedUpdateIndex(
   ) {
     return 15;
   }
-  return 16;
+  if (
+    input.topology === SequentialMultiInstanceCapacityProbeTopology.Interrupted &&
+    input.runOrdinal === 3
+  ) {
+    return 16;
+  }
+  return input.topology === SequentialMultiInstanceCapacityProbeTopology.Interrupted
+    ? 17
+    : 16;
 }

@@ -152,7 +152,8 @@ export function compileSequentialMultiInstanceCheckedProcess(
     originElementId: ids.process,
   }];
   const nodeScopes = nodes.map(({ id }) => ({ nodeId: id, scopeId }));
-  const sequenceFlowScopes = sequenceFlows.map(({ id }) => ({
+  const flows = [...sequenceFlows].sort(compareIds);
+  const sequenceFlowScopes = flows.map(({ id }) => ({
     sequenceFlowId: id,
     scopeId,
   }));
@@ -162,7 +163,7 @@ export function compileSequentialMultiInstanceCheckedProcess(
     nodeScopes,
     sequenceFlowScopes,
     nodes,
-    flows: [...sequenceFlows].sort(compareIds),
+    flows,
   };
   if (!isAdmittedCheckedProcess(
     graph,

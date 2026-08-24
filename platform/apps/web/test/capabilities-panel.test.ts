@@ -49,6 +49,13 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.match(html, /Not a conformance claim/u);
   assert.match(html, /Timer Start Event/u);
   assert.match(html, /no recurrence or calendar form/iu);
+  assert.match(html, /Sequential Multi-Instance User Task/u);
+  assert.match(html, /atomic index-ordered String-list output/iu);
+  assert.match(
+    html,
+    /Interrupting Timer Boundary Event on sequential Multi-Instance User Task/u,
+  );
+  assert.match(html, /publishes no partial output/iu);
   assert.match(html, /No CIB target selected/u);
-  assert.equal(html.match(/data-capability-id=/gu)?.length, 25);
+  assert.equal(html.match(/data-capability-id=/gu)?.length, 27);
 });

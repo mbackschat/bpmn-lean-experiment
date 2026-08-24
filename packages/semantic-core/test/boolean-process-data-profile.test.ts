@@ -6,10 +6,10 @@ import { fileURLToPath } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 
 import {
+  BASELINE_SCENARIO_OBSERVATIONS,
   CommandOutcome,
   EffectExecutionResultKind,
   MappingExpressionKind,
-  ObservationRequestKind,
   ScenarioDocumentKind,
   SemanticGraphPolicyKind,
   SemanticOriginKind,
@@ -96,6 +96,7 @@ function completeBoolean(value: boolean): CompleteUserTaskInstanceStimulus {
 test("registers the Boolean profile with the exact sequential User Task shape", () => {
   assert.deepEqual(Object.values(SemanticProfileId), [
     "bpmn-2.0.2-activity-boundary-timer-draft",
+    "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
     "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
     "bpmn-2.0.2-called-process-call-activity-draft",
     "cibseven-2.0.0-mapped-success-service-task-draft",
@@ -143,7 +144,7 @@ test("applies the same profile value domain at scenario deployment", () => {
     profile: booleanProfile,
     bpmn: scenarioIdentity.bpmn,
     stimuli: [booleanStart, completeBoolean(true)],
-    observations: Object.values(ObservationRequestKind),
+    observations: BASELINE_SCENARIO_OBSERVATIONS,
     provenance: {
       normativeRefs: ["BPMN 2.0.2 §10.3.1"],
       cibRevision: "834a9874760de8a0107f7c1b32806e37f17fb017",

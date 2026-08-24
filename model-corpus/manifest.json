@@ -898,6 +898,82 @@
       }
     },
     {
+      "id": "ordered-batch-document-review",
+      "title": "Review an ordered batch of documents",
+      "businessPurpose": "Review each document in an ordered batch and publish the complete ordered result only after every review finishes.",
+      "cloneFamily": "sequential-batch-review",
+      "constructs": [
+        "boundaryEvent",
+        "dataObject",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "sequentialMultiInstance",
+        "orderedCollectionData",
+        "userTaskWait",
+        "userTaskCompletion",
+        "interruptingBoundaryTimer"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/sequential-multi-instance/process.bpmn",
+        "sha256": "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+        "scenarioRelativePath": "scenarios/sequential-multi-instance/natural.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "sequential-multi-instance-natural",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Sequential batch progress and ordered output are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "deadline-escalated-batch-review",
+      "title": "Escalate a batch review at its shared deadline",
+      "businessPurpose": "Escalate an unfinished batch when its outer deadline expires without publishing a partial review result.",
+      "cloneFamily": "sequential-batch-review",
+      "constructs": [
+        "boundaryEvent",
+        "dataObject",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "sequentialMultiInstance",
+        "orderedCollectionData",
+        "userTaskWait",
+        "userTaskCompletion",
+        "interruptingBoundaryTimer"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/sequential-multi-instance/process.bpmn",
+        "sha256": "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+        "scenarioRelativePath": "scenarios/sequential-multi-instance/interrupted.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "sequential-multi-instance-interrupted",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Batch interruption, stale-task refusal, and escalation are not yet one production browser journey."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

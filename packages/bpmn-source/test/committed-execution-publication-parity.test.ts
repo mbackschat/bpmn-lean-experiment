@@ -280,10 +280,8 @@ async function runLeanPublicationEmitter(): Promise<PublicationParityEvidence> {
   const result = await execFileAsync(
     "./scripts/lake.sh",
     [
-      "env",
-      "lean",
-      "--run",
-      "BpmnSemantics/CommittedExecutionPublicationJsonMain.lean",
+      "exe",
+      "emitCommittedExecutionPublication",
     ],
     {
       cwd: projectRoot,

@@ -56,6 +56,11 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
         timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
+  | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundaryTimer _ =>
+      { tasks := [{ id := task.id, name := task.name }]
+        timers :=
+          [{ elementId := boundaryTimer.elementId
+             durationMs := boundaryTimer.durationMs }] }
   -- The deadline only. The bounded child's own task wait belongs to the child scope's `awaitUserTask`,
   -- so publishing it here would expose one task occurrence twice.
   | .enterBoundedScope _ _ _ _ _ boundaryTimer =>
@@ -218,6 +223,66 @@ private def openEffects (program : Program) (state : RuntimeState) :
           descriptor := wait.descriptor
           arguments := wait.arguments }
 
+private structure SequentialMultiInstanceObservationDefinition where
+  taskId : TaskDefinitionId
+  taskInputName : String
+  completionBindingName : String
+
+private def sequentialMultiInstanceObservationDefinitions (program : Program) :
+    List SequentialMultiInstanceObservationDefinition :=
+  program.operations.filterMap fun
+    | .awaitSequentialMultiInstanceUserTask _ _ _ task data _ _ _ =>
+        some
+          { taskId := task.id
+            taskInputName := data.input.taskDataInputId
+            completionBindingName := data.output.taskDataOutputId }
+    | _ => none
+
+private def openSequentialMultiInstanceIterations
+    (definition : SequentialMultiInstanceObservationDefinition)
+    (state : RuntimeState) (controller : SequentialMultiInstanceController) :
+    List OpenSequentialMultiInstanceIteration :=
+  match state.activityOccurrences.filter
+      (controllerNamesActivityOccurrence controller) with
+  | [record] =>
+      match activityBodyTask? record, activeSnapshotItem controller with
+      | some taskId, some item =>
+          [{ loopCounter := completedInstanceCount controller
+             taskId
+             taskInput :=
+               { name := definition.taskInputName
+                 value := .string item }
+             completionBindingName := definition.completionBindingName }]
+      | _, _ => []
+  | _ => []
+
+private def openSequentialMultiInstances (program : Program) (state : RuntimeState) :
+    Option (List OpenSequentialMultiInstance) :=
+  let definitions := sequentialMultiInstanceObservationDefinitions program
+  if definitions.isEmpty then none
+  else
+    some <| state.sequentialMultiInstanceControllers.flatMap fun controller =>
+      match definitions.find? fun definition =>
+          decide (definition.taskId.value = controller.activityElementId.value) with
+      | none => []
+      | some definition =>
+          let activeIterations :=
+            openSequentialMultiInstanceIterations definition state controller
+          let completed := completedInstanceCount controller
+          let active := activeIterations.length
+          let generated := completed + active
+          [{ id :=
+               { processInstanceId := controller.processInstanceId
+                 activityElementId := ⟨controller.activityElementId.value⟩
+                 activation := controller.activation }
+             plannedInstanceCount := controller.snapshot.length
+             pendingItemCount := controller.snapshot.length - generated
+             numberOfInstances := generated
+             numberOfActiveInstances := active
+             numberOfCompletedInstances := completed
+             numberOfTerminatedInstances := 0
+             activeIterations }]
+
 private def openIncidents (program : Program) (state : RuntimeState) :
     List OpenEffectIncident :=
   (effectDefinitions program).flatMap fun effect =>
@@ -259,6 +324,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
             openTimers := openTimers program state
             openEffects := openEffects program state
             openIncidents := incidents
+            openMultiInstances := openSequentialMultiInstances program state
             variables := state.variables.process.bindings
             enabledInteractions :=
               tasks.map (fun task => .completeUserTaskInstance task.id) ++
@@ -276,6 +342,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openTimers := []
           openEffects := []
           openIncidents := []
+          openMultiInstances := openSequentialMultiInstances program state
           variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
@@ -289,6 +356,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openTimers := []
           openEffects := []
           openIncidents := []
+          openMultiInstances := openSequentialMultiInstances program state
           variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
@@ -346,15 +414,20 @@ private def executeStimuli (closureLimit : Nat) (program : Program) :
         | .unsupported =>
             terminalExecution program .unsupported result.state observation
 
-private def requiredObservations : List ObservationKind :=
-  [ .deployment
+private def requiredObservations (program : Program) : List ObservationKind :=
+  let baseline :=
+    [ .deployment
   , .commandResults
   , .processStatus
   , .activeWaits
   , .openUserTasks
   , .openTimers
-  , .openEffects
-  , .variables
+  , .openEffects ]
+  let multiInstance :=
+    if (sequentialMultiInstanceObservationDefinitions program).isEmpty then []
+    else [.openMultiInstances]
+  baseline ++ multiInstance ++
+  [ .variables
   , .enabledInteractions
   , .logicalTime ]
 
@@ -389,7 +462,7 @@ def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
         scenario.bpmn.id = program.identity.sourceId &&
         scenario.bpmn.sha256 = program.identity.sourceSha256 &&
         scenario.bpmn.sourceOverlay = program.identity.sourceOverlay &&
-        scenario.observations = requiredObservations)
+        scenario.observations = requiredObservations program)
 
 /-- Run an admitted scenario with a caller-supplied bounded-closure harness limit. Failed support admission returns the unsupported deployment result without executing a stimulus. -/
 def runScenarioWithClosureLimit (closureLimit : Nat) (program : Program)

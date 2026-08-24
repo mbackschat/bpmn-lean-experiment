@@ -31,6 +31,13 @@ export function detectExecutableBpmnCapabilities(
   }
   const elements = flattenElements(scan.roots);
   const namesById = localNamesById(elements);
+  const elementsById = new Map(
+    elements.flatMap((element) =>
+      element.attributes.id === undefined
+        ? []
+        : [[element.attributes.id, element] as const]
+    ),
+  );
   const capabilities = new Set<MvpBpmnCapabilityId>();
 
   for (const element of elements) {
@@ -48,8 +55,7 @@ export function detectExecutableBpmnCapabilities(
         addEndCapability(element, capabilities);
         break;
       case "userTask":
-        rejectLoopVariant(element);
-        capabilities.add("userTask");
+        addUserTaskCapability(element, capabilities);
         break;
       case "serviceTask":
         rejectLoopVariant(element);
@@ -90,13 +96,38 @@ export function detectExecutableBpmnCapabilities(
         addIntermediateCatchCapability(element, capabilities);
         break;
       case "boundaryEvent":
-        addBoundaryCapability(element, namesById, capabilities);
+        addBoundaryCapability(
+          element,
+          namesById,
+          elementsById,
+          capabilities,
+        );
         break;
       default:
         rejectUnknownExecutableElement(element);
     }
   }
   return Object.freeze([...capabilities].sort());
+}
+
+function addUserTaskCapability(
+  task: XmlElement,
+  capabilities: Set<MvpBpmnCapabilityId>,
+): void {
+  capabilities.add("userTask");
+  if (hasDirectChild(task, "standardLoopCharacteristics")) {
+    throw new TypeError("unclassified executable BPMN loop variant on userTask");
+  }
+  const multiInstance = task.children.find(
+    ({ name }) => name === "multiInstanceLoopCharacteristics",
+  );
+  if (multiInstance === undefined) {
+    return;
+  }
+  if (multiInstance.attributes.isSequential !== "true") {
+    throw new TypeError("unclassified executable BPMN parallel Multi-Instance User Task");
+  }
+  capabilities.add("sequentialMultiInstanceUserTask");
 }
 
 function addStartCapability(
@@ -161,13 +192,28 @@ function addIntermediateCatchCapability(
 function addBoundaryCapability(
   event: XmlElement,
   namesById: ReadonlyMap<string, string>,
+  elementsById: ReadonlyMap<string, XmlElement>,
   capabilities: Set<MvpBpmnCapabilityId>,
 ): void {
-  const attachedTo = namesById.get(event.attributes.attachedToRef ?? "") ?? "unknown";
+  const attachedToId = event.attributes.attachedToRef ?? "";
+  const attachedTo = namesById.get(attachedToId) ?? "unknown";
+  const attachedElement = elementsById.get(attachedToId);
   const definition = eventDefinition(event);
   if (definition === "timerEventDefinition") {
     const interrupting = event.attributes.cancelActivity !== "false";
     if (attachedTo === "userTask") {
+      if (
+        attachedElement !== undefined &&
+        hasDirectChild(attachedElement, "multiInstanceLoopCharacteristics")
+      ) {
+        if (!interrupting) {
+          throw new TypeError(
+            "unclassified executable BPMN non-interrupting sequential Multi-Instance boundary Timer",
+          );
+        }
+        capabilities.add("interruptingSequentialMultiInstanceBoundaryTimerEvent");
+        return;
+      }
       capabilities.add(interrupting
         ? "interruptingUserTaskBoundaryTimerEvent"
         : "nonInterruptingUserTaskBoundaryTimerEvent");

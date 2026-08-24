@@ -10,6 +10,7 @@ import {
   SemanticTransitionKind,
   StimulusKind,
   VariableValueKind,
+  advanceScenario,
   applyInternalOperationStep,
   completeOrdinaryUserTask,
   completeSequentialMultiInstanceIteration,
@@ -108,6 +109,12 @@ export function buildInterruptedCapacityTopology(
   }>,
 ): SequentialMultiInstanceCapacityProbeTopologyFixture {
   const build = completeIterations(context, context.collection.length - 1, []);
+  const staleTask = build.state.userTaskWaits[0];
+  assert.ok(
+    build.state.userTaskWaits.length === 1 &&
+      staleTask?.id.elementId === "UserTask_Review",
+    "interrupted SMI topology lost its final review task",
+  );
   const timer = build.state.timerWaits[0];
   assert.ok(
     build.state.timerWaits.length === 1 && timer !== undefined,
@@ -127,6 +134,36 @@ export function buildInterruptedCapacityTopology(
   );
   appendTopologyCommand(context, build, firing, interrupted, escalation.steps, 1_016);
 
+  const staleCompletion: CompleteUserTaskInstanceStimulus = {
+    kind: StimulusKind.CompleteUserTaskInstance,
+    commandId: "complete-smi-history-capacity-15",
+    taskId: staleTask.id,
+    submittedValues: [{
+      name: context.operation.data.output.taskDataOutputId,
+      value: {
+        kind: VariableValueKind.String,
+        value: context.collection.at(-1) ?? "",
+      },
+    }],
+  };
+  canonicalStimulusEncoding(staleCompletion);
+  const rejected = advanceScenario(context.program, build.state, staleCompletion);
+  assert.equal(rejected.kind, ScenarioStepKind.Terminal);
+  assert.deepEqual(rejected.state, build.state);
+  appendRejectedTopologyCommand(
+    context,
+    build,
+    staleCompletion,
+    rejected,
+    1_017,
+  );
+  recordRecoverableUpdate(
+    build,
+    staleCompletion,
+    15,
+    CommandOutcome.Rejected,
+  );
+
   const task = build.state.userTaskWaits[0];
   assert.ok(
     build.state.userTaskWaits.length === 1 &&
@@ -135,7 +172,7 @@ export function buildInterruptedCapacityTopology(
   );
   const completion: CompleteUserTaskInstanceStimulus = {
     kind: StimulusKind.CompleteUserTaskInstance,
-    commandId: "complete-smi-history-capacity-15",
+    commandId: "complete-smi-history-capacity-16",
     taskId: task.id,
     submittedValues: [],
   };
@@ -151,8 +188,8 @@ export function buildInterruptedCapacityTopology(
     completed,
     [context.interruptedEnd, context.completedScope],
   );
-  appendTopologyCommand(context, build, completion, completed, closure.steps, 1_017);
-  recordRecoverableUpdate(build, completion, 15);
+  appendTopologyCommand(context, build, completion, completed, closure.steps, 1_018);
+  recordRecoverableUpdate(build, completion, 16, CommandOutcome.Committed);
   return closeTopology(context, build);
 }
 
@@ -285,7 +322,12 @@ function completeIterations(
       closure.steps,
       1_001 + counter,
     );
-    recordRecoverableUpdate(build, stimulus, counter);
+    recordRecoverableUpdate(
+      build,
+      stimulus,
+      counter,
+      CommandOutcome.Committed,
+    );
   }
   return build;
 }
@@ -317,10 +359,33 @@ function appendTopologyCommand(
   build.state = facts.state;
 }
 
+function appendRejectedTopologyCommand(
+  context: SequentialMultiInstanceCapacityTopologyContext,
+  build: MutableTopology,
+  stimulus: Stimulus,
+  facts: Extract<
+    ReturnType<typeof advanceScenario>,
+    { kind: ScenarioStepKind.Terminal }
+  >,
+  committedAtEpochMs: number,
+): void {
+  build.publication = appendCapacityPublication(
+    context.program,
+    build.publication,
+    stimulus,
+    facts,
+    committedAtEpochMs,
+  );
+  publicationPages(context.program, context.processInstanceId, build.publication);
+  build.observations.push(...facts.observations);
+  build.state = facts.state;
+}
+
 function recordRecoverableUpdate(
   build: MutableTopology,
   stimulus: CompleteUserTaskInstanceStimulus,
   index: number,
+  outcome: CommandOutcome,
 ): void {
   const preflight = build.recovery.preflight(stimulus);
   assert.equal(preflight.kind, WorkflowCommandRecoveryPreflightKind.Admitted);
@@ -329,7 +394,7 @@ function recordRecoverableUpdate(
   }
   const recorded = build.recovery.record(
     preflight.admission,
-    CommandOutcome.Committed,
+    outcome,
   );
   requireWorkflowChainRecoveryEntry(recorded.entry);
   build.updates.push(stimulus);

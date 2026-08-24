@@ -16,6 +16,7 @@ import type {
   BpmnCompilationResult,
 } from "@bpmn-lean/bpmn-source";
 import {
+  CanonicalObservationKind,
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -321,10 +322,19 @@ export function runCoreTargets(
   const started = performance.now();
   return {
     results: new Map(
-      contexts.map(({ scenario, semanticProcess }) => [
-        scenario.id,
-        runScenario(scenario, semanticProcess),
-      ] as const),
+      contexts.map(({ scenario, semanticProcess }) => {
+        const result = runScenario(scenario, semanticProcess);
+        const consumedStimuli = result.trace.filter(({ kind }) =>
+          kind === CanonicalObservationKind.Command
+        ).length;
+        if (consumedStimuli !== scenario.stimuli.length) {
+          throw new Error(
+            `Scenario ${scenario.id} did not consume every declared stimulus: ` +
+              `${String(consumedStimuli)} of ${String(scenario.stimuli.length)}`,
+          );
+        }
+        return [scenario.id, result] as const;
+      }),
     ),
     totalMs: elapsedMs(started),
   };

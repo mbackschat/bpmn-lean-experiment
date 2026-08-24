@@ -71,6 +71,15 @@ export async function deliverCompletions(
         duplicateFirstCompletion,
         assertWorkerHealthy,
       );
+    case TemporalCompletionDelivery.OrderedWithClosedReceipt:
+      return deliverOrderedCompletionsWithClosedReceipt(
+        client,
+        handle,
+        processInstanceId,
+        completions,
+        duplicateFirstCompletion,
+        assertWorkerHealthy,
+      );
     case TemporalCompletionDelivery.PostTerminal:
       return deliverPostTerminalCompletion(
         client,
@@ -99,6 +108,59 @@ export async function deliverCompletions(
     default:
       return assertNever(options.completionDelivery);
   }
+}
+
+async function deliverOrderedCompletionsWithClosedReceipt(
+  client: WorkflowClient,
+  handle: WorkflowHandle<BpmnProcessWorkflow>,
+  processInstanceId: string,
+  completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
+  duplicateFirstCompletion: boolean,
+  assertWorkerHealthy: () => void,
+): Promise<CompletionDeliveryEvidence> {
+  const finalCompletion = completions.at(-1);
+  if (finalCompletion === undefined) {
+    throw new TypeError(
+      "Closed-receipt probing requires one semantic completion",
+    );
+  }
+  const delivered = await deliverOrderedCompletions(
+    client,
+    handle,
+    processInstanceId,
+    completions,
+    duplicateFirstCompletion,
+    assertWorkerHealthy,
+  );
+  const completedReceipt = requireCompletedProcessReceipt(
+    (await withDeadline(
+      readTestProcessTerminalResult(handle),
+      workflowResultDeadlineMs,
+      "Workflow terminal result before closed-receipt probe",
+    )).receipt,
+  );
+  const postTerminalResult = await submitUserTaskCompletionAtWorkflowId(
+    client,
+    handle.workflowId,
+    processInstanceId,
+    {
+      ...finalCompletion,
+      commandId: `${finalCompletion.commandId}-after-close`,
+    },
+  );
+  if (
+    postTerminalResult.kind !== ProcessCommandResultKind.ProcessClosed ||
+    !isDeepStrictEqual(postTerminalResult.receipt, completedReceipt)
+  ) {
+    throw new Error(
+      `Closed-receipt probe after ${finalCompletion.commandId} did not resolve against the completed Process receipt`,
+    );
+  }
+  return {
+    ...delivered,
+    postTerminalResult,
+    completedReceipt,
+  };
 }
 
 async function deliverOrderedCompletions(

@@ -76,6 +76,7 @@ export function validateExecutionOptions(
 ): void {
   switch (options.executionSchedule) {
     case TemporalExecutionSchedule.Normal:
+    case TemporalExecutionSchedule.StimulusOrder:
     case TemporalExecutionSchedule.DuplicateFirstCompletion:
     case TemporalExecutionSchedule.WorkerDownAtTimerDue:
     case TemporalExecutionSchedule.WorkerDownAtEffectPending:
@@ -91,6 +92,8 @@ export function validateExecutionOptions(
         options.executionSchedule !==
           TemporalExecutionSchedule.Normal &&
         options.executionSchedule !==
+          TemporalExecutionSchedule.StimulusOrder &&
+        options.executionSchedule !==
           TemporalExecutionSchedule.WorkerDownAtTimerDue
       )
     ) {
@@ -105,6 +108,10 @@ export function validateExecutionOptions(
     throw new TypeError(
       "Worker-down-at-due scheduling requires one timer stimulus",
     );
+  } else if (
+    options.executionSchedule === TemporalExecutionSchedule.StimulusOrder
+  ) {
+    throw new TypeError("Stimulus-order scheduling requires one timer stimulus");
   }
   if (
     options.executionSchedule ===
@@ -118,6 +125,16 @@ export function validateExecutionOptions(
   }
   switch (options.completionDelivery) {
     case TemporalCompletionDelivery.Ordered:
+      break;
+    case TemporalCompletionDelivery.OrderedWithClosedReceipt:
+      if (
+        requireCompletionStimuli(scenario).length === 0 ||
+        options.executionSchedule !== TemporalExecutionSchedule.Normal
+      ) {
+        throw new TypeError(
+          "Ordered closed-receipt probing requires at least one semantic completion under the normal schedule",
+        );
+      }
       break;
     case TemporalCompletionDelivery.LifecycleRace: {
       const completions = requireCompletionStimuli(scenario);
@@ -425,6 +442,23 @@ export function completedState(
       observation.kind === CanonicalObservationKind.State &&
       observation.status === ProcessStatus.Completed,
   );
+}
+
+/** Whether a Timer delivery schedule itself establishes a terminal Workflow boundary. */
+export function requiresImmediateTimerTerminalResult(
+  executionSchedule: TemporalExecutionSchedule,
+): boolean {
+  switch (executionSchedule) {
+    case TemporalExecutionSchedule.StimulusOrder:
+      return false;
+    case TemporalExecutionSchedule.Normal:
+    case TemporalExecutionSchedule.DuplicateFirstCompletion:
+    case TemporalExecutionSchedule.WorkerDownAtTimerDue:
+    case TemporalExecutionSchedule.WorkerDownAtEffectPending:
+      return true;
+    default:
+      return assertNever(executionSchedule);
+  }
 }
 
 export function openTimersInTrace(

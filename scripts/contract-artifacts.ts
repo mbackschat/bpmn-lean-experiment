@@ -58,8 +58,13 @@ export type {
 
 import {
   parseStrictJson,
-  requireUnicodeScalarString,
 } from "./strict-json.ts";
+import {
+  verifyScenarioVariableValueContract,
+} from "./scenario-variable-value-contract.ts";
+export {
+  verifyScenarioVariableValueContract,
+} from "./scenario-variable-value-contract.ts";
 
 const schemaBaseId = "https://bpmn-lean.local/schemas";
 const scenarioSchemaId = `${schemaBaseId}/scenario.schema.json`;
@@ -382,79 +387,6 @@ function verifyScenarioSourceBinding(
     throw new Error(
       "scenario must contain exactly one Process start stimulus",
     );
-  }
-}
-
-export function verifyScenarioVariableValueContract(
-  scenario: Pick<Scenario, "profile" | "stimuli">,
-): void {
-  const structuredProfile =
-    "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
-  for (const stimulus of scenario.stimuli as ReadonlyArray<Readonly<Record<string, unknown>>>) {
-    const patch = variablePatch(stimulus);
-    if (patch === undefined) continue;
-    for (const binding of patch.bindings) {
-      if (binding === null || typeof binding !== "object") continue;
-      const value = (binding as { readonly value?: unknown }).value;
-      if (value !== null && typeof value === "object") {
-        const tagged = value as { readonly kind?: unknown; readonly value?: unknown };
-        if (tagged.kind === "integer" || tagged.kind === "stringList") {
-          if (scenario.profile !== structuredProfile || patch.surface !== "completion") {
-            throw new TypeError(
-              "integer and stringList are only admitted for structured Human Work completion",
-            );
-          }
-          verifyStructuredValue(tagged);
-        }
-        requireByteCeiling(tagged, 16_384, "tagged value");
-      }
-      requireByteCeiling(binding, 20_480, "binding");
-    }
-    requireByteCeiling(patch.bindings, 65_536, "patch");
-  }
-}
-
-function variablePatch(stimulus: Readonly<Record<string, unknown>>) {
-  switch (stimulus.kind) {
-    case "startProcess":
-      return { surface: "start", bindings: stimulus.initialVariables as ReadonlyArray<unknown> } as const;
-    case "completeUserTaskInstance":
-      return { surface: "completion", bindings: stimulus.submittedValues as ReadonlyArray<unknown> } as const;
-    case "completeEffect":
-      return {
-        surface: "effect",
-        bindings: (stimulus.result as { readonly localPatch: ReadonlyArray<unknown> }).localPatch,
-      } as const;
-    default:
-      return undefined;
-  }
-}
-
-function verifyStructuredValue(
-  tagged: Readonly<{ kind?: unknown; value?: unknown }>,
-): void {
-  if (tagged.kind === "integer") {
-    if (Object.is(tagged.value, -0)) throw new TypeError("integer rejects negative zero");
-    if (!Number.isSafeInteger(tagged.value) || Number(tagged.value) < 0) {
-      throw new TypeError("integer must be a non-negative safe integer");
-    }
-    return;
-  }
-  if (!Array.isArray(tagged.value) || tagged.value.length > 32) {
-    throw new TypeError("stringList has at most 32 members");
-  }
-  for (const member of tagged.value) {
-    if (typeof member !== "string") throw new TypeError("stringList members must be strings");
-    requireUnicodeScalarString(member, "stringList member");
-    if (Buffer.byteLength(member, "utf8") > 1_024) {
-      throw new TypeError("stringList member exceeds 1024 UTF-8 bytes");
-    }
-  }
-}
-
-function requireByteCeiling(value: unknown, maximum: number, label: string): void {
-  if (Buffer.byteLength(JSON.stringify(value), "utf8") > maximum) {
-    throw new TypeError(`${label} exceeds ${maximum} UTF-8 bytes`);
   }
 }
 

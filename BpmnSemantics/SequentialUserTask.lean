@@ -121,7 +121,9 @@ theorem wrong_activation_is_rejected
     program exactWait ⟨"wrong-activation"⟩
       { exactTaskInstanceId with activation := submittedActivation }
       submittedValues
-      0 afterStartState.variables (Or.inr (Or.inr mismatch))
+      0 afterStartState.variables
+      (by rfl)
+      (Or.inr (Or.inr mismatch))
 
 theorem element_id_alone_is_insufficient :
     let wrongTaskId := { exactTaskInstanceId with activation := 2 }

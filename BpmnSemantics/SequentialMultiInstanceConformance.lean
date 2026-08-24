@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
-import BpmnSemantics.ActivityBoundaryTimerConformance
+import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 
 /-! # Sequential Multi-Instance fixtures
 
@@ -14,27 +14,18 @@ defect in the laws, which say what they say, but it means none of them witnesses
 task and a deadline, that turnover advances the body while the deadline stands still, or that final
 aggregation publishes anything at all. This module supplies that half, and the refusals beside it.
 
-**The program is borrowed, and that boundary is exact.** The Lean `SemanticOperation` union carries no
-`awaitSequentialMultiInstanceUserTask`, so these fixtures drive the transitions with an explicit arm
-whose control-flow half is read out of the interrupting boundary-Timer capsule's own committed
-operation. That is what lets the post-states be checked against the whole reviewed
-`runtimeStateWellFormed` rather than against a hand-copied subset of its conjuncts: the three
-program-agreement conjuncts read element identity, ownership scope, and declared control places, and
-those coincide because the arm *is* that operation's. What the borrowed program does not establish is
-that a Multi-Instance operation would declare the same facts, and it cannot: no such operation exists
-in this language yet. Every fact below is therefore a fact about the transitions and the runtime-state
-invariant, and none is evidence about lowering or admission.
-
-No registered profile reaches any of these states, because no dispatcher arm drives these transitions.
-The positive facts establish that the states they produce are ones the reviewed invariant admits, so
-each refusal below is attributable to its own perturbation rather than to the shape being rejected
-outright.
+The checked fixture below preserves the complete data-role graph and lowers to the distinct
+`awaitSequentialMultiInstanceUserTask` operation. Its runtime arm is projected from that operation,
+so input and publication use the Process `DataObjectReference` identities while inner completion uses
+the User Task `DataOutput` identity. The positive transition facts therefore exercise the same
+operation, selected profile, structural invariant, and dispatcher that production execution uses.
 -/
 
 namespace BpmnSemantics.SequentialMultiInstanceConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
+open BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 
 /-! ## Instance-search budget
 
@@ -58,83 +49,6 @@ rather than a fixture edit, and nothing is spent by a budget that is not reached
 -/
 
 set_option synthInstance.maxSize 2000
-
-/-- The admitted boundary-Timer program, reused so the arm cannot drift from a declared position. -/
-def program : Program := ActivityBoundaryTimerConformance.program
-
-def instanceId : SemanticId := ActivityBoundaryTimerConformance.instanceId
-
-/-- The three binding names this batch-review slice mediates through. -/
-def batchData : SequentialMultiInstanceData :=
-  { inputDataObjectId := "DataObject_Batch"
-    taskDataOutputId := "DataOutput_ReviewResult"
-    outputDataObjectId := "DataObject_Reviewed" }
-
-/-- The profile's own inclusive bounds. Pinned as a fixture value so the byte refusals below, which
-use deliberately tight bounds to stay cheap to reduce, cannot be mistaken for the profile's. -/
-def profileLimits : SequentialMultiInstanceLimits :=
-  { maximumItems := 16
-    maximumItemUtf8Bytes := 512
-    maximumCanonicalCollectionUtf8Bytes := 8192 }
-
-/-- The arm, with its control-flow half taken from the program's committed bounded-task operation.
-
-Resolved through the operation the program actually carries rather than a hand-written literal, so the
-input place, the task identity, the normal route, and the whole boundary Timer arm are the admitted
-ones. -/
-def arm? : Option SequentialMultiInstanceArm :=
-  match boundedTaskOperations program with
-  | [(input, task, boundaryTimer)] =>
-      some
-        { input
-          taskId := task.id
-          taskName := task.name
-          normalOutput := task.output
-          boundaryTimer
-          data := batchData
-          limits := profileLimits }
-  | _ => none
-
-theorem arm_is_the_declared_activity_and_its_boundary_deadline :
-    arm?.map (fun arm =>
-      (arm.input.value, arm.taskId.value, arm.normalOutput.value,
-        arm.boundaryTimer.elementId.value, arm.boundaryTimer.durationMs,
-        arm.boundaryTimer.output.value, arm.limits)) =
-      some ("place:Flow_Start", "BoundedTask", "place:Flow_Normal", "Deadline", 1000,
-        "place:Flow_Boundary", profileLimits) := by
-  decide +kernel
-
-/-- A started Process holding one collection and one token on the Activity's input place.
-
-Hand-placed rather than reached by `applyStimulus`, because the borrowed program's own start arms its
-bounded task instead of this Activity. It is the state initiation leaves behind: the root occurrence
-live, the pending flag consumed, and one owned token on the incoming Sequence Flow's place. -/
-def preEntryWith (items : List String) : Option RuntimeState := do
-  let arm ← arm?
-  let started ← runningProgramStartState? program instanceId
-    [{ name := arm.data.inputDataObjectId, value := .stringList items }]
-  let owner ← rootScopeOccurrence? started
-  pure
-    { started with
-      initiationPending := false
-      tokens := [{ placeId := arm.input, owner }] }
-
-def batch : List String := ["Invoice_1", "Invoice_2", "Invoice_3"]
-
-def preEntry? : Option RuntimeState := preEntryWith batch
-
-theorem pre_entry_state_is_well_formed_and_publishes_no_output :
-    preEntry?.map (fun state =>
-      (runtimeStateWellFormed program instanceId state,
-        state.variables.process.bindings.map (·.name),
-        state.tokens.map (·.placeId.value))) =
-      some (true, ["DataObject_Batch"], ["place:Flow_Start"]) := by
-  decide +kernel
-
-def entered? : Option RuntimeState := do
-  let arm ← arm?
-  let state ← preEntry?
-  enterSequentialMultiInstance? arm state
 
 /-- One accepted result submitted against whatever inner task the state currently carries.
 
@@ -188,8 +102,9 @@ theorem entry_arms_one_inner_task_one_lifetime_deadline_and_one_controller :
           (controller.snapshot, controller.outputSlots),
         state.tokens.map (·.placeId.value),
         state.variables.process.bindings.map (·.name))) =
-      some ([("BoundedTask", 1)], [("Deadline", 1, 1000)], [1],
-        [(["Invoice_1", "Invoice_2", "Invoice_3"], [])], [], ["DataObject_Batch"]) := by
+      some ([("UserTask_Review", 1)], [("BoundaryTimer_Review", 1, 1000)], [1],
+        [(["Invoice_1", "Invoice_2", "Invoice_3"], [])], [],
+          ["DataObjectReference_InputItems"]) := by
   decide +kernel
 
 /-- `SMI-ITERATE-01` twice: the body advances, the deadline does not, and slots fill in index order.
@@ -206,8 +121,9 @@ theorem iteration_advances_the_body_and_stands_the_deadline_still :
         state.activityOccurrences.map (·.activation),
         state.sequentialMultiInstanceControllers.map (·.outputSlots),
         state.variables.process.bindings.map (·.name))) =
-      [some ([2], [(1, 1000)], [1], [["Reviewed_1"]], ["DataObject_Batch"]),
-        some ([3], [(1, 1000)], [1], [["Reviewed_1", "Reviewed_2"]], ["DataObject_Batch"])] := by
+      [some ([2], [(1, 1000)], [1], [["Reviewed_1"]], ["DataObjectReference_InputItems"]),
+        some ([3], [(1, 1000)], [1], [["Reviewed_1", "Reviewed_2"]],
+          ["DataObjectReference_InputItems"])] := by
   decide +kernel
 
 /-- `SMI-COMPLETE-01`: the exact ordered collection, published once, and the repetition closed.
@@ -223,11 +139,11 @@ theorem final_completion_publishes_the_exact_ordered_collection_and_closes :
         state.sequentialMultiInstanceControllers.length,
         state.tokens.map (·.placeId.value))) =
       some
-        ([{ name := "DataObject_Batch"
+        ([{ name := "DataObjectReference_InputItems"
             value := .stringList ["Invoice_1", "Invoice_2", "Invoice_3"] },
-          { name := "DataObject_Reviewed"
+          { name := "DataObjectReference_OutputResults"
             value := .stringList ["Reviewed_1", "Reviewed_2", "Reviewed_3"] }],
-          0, 0, 0, 0, ["place:Flow_Normal"]) := by
+          0, 0, 0, 0, ["place:Flow_Review_Completed"]) := by
   decide +kernel
 
 /-- `SMI-CANCEL-01` after one accepted result: nothing published, only the boundary route enabled.
@@ -242,9 +158,9 @@ theorem interruption_discards_partial_results_and_publishes_nothing :
         state.sequentialMultiInstanceControllers.length,
         state.tokens.map (·.placeId.value), state.logicalTimeMs)) =
       some
-        ([{ name := "DataObject_Batch"
+        ([{ name := "DataObjectReference_InputItems"
             value := .stringList ["Invoice_1", "Invoice_2", "Invoice_3"] }],
-          0, 0, 0, 0, ["place:Flow_Boundary"], 1000) := by
+          0, 0, 0, 0, ["place:Flow_Timer_Escalation"], 1000) := by
   decide +kernel
 
 /-- The entered state with a second live deadline listed by the same Activity occurrence record.
@@ -291,7 +207,7 @@ theorem interruption_withdraws_both_deadlines_the_record_listed :
           interrupted.activityOccurrences.length,
           interrupted.sequentialMultiInstanceControllers.length,
           interrupted.tokens.map (·.placeId.value), interrupted.logicalTimeMs)) =
-      some ([1000, 2000], 0, 0, 0, 0, ["place:Flow_Boundary"], 1000) := by
+      some ([1000, 2000], 0, 0, 0, 0, ["place:Flow_Timer_Escalation"], 1000) := by
   decide +kernel
 
 /-- `SMI-ENTER-01`, empty arm: no inner instance, no deadline, and the empty collection published.
@@ -310,9 +226,9 @@ theorem empty_collection_completes_atomically_and_publishes_an_empty_collection 
         state.waits.length, state.timerWaits.length, state.activityOccurrences.length,
         state.sequentialMultiInstanceControllers.length,
         state.tokens.map (·.placeId.value), state.variables.process.bindings)) =
-      some (true, 0, 0, 0, 0, ["place:Flow_Normal"],
-        [{ name := "DataObject_Batch", value := .stringList [] },
-          { name := "DataObject_Reviewed", value := .stringList [] }]) := by
+      some (true, 0, 0, 0, 0, ["place:Flow_Review_Completed"],
+        [{ name := "DataObjectReference_InputItems", value := .stringList [] },
+          { name := "DataObjectReference_OutputResults", value := .stringList [] }]) := by
   decide +kernel
 
 /-! ## The refusals
@@ -322,6 +238,26 @@ so a refusal is attributable to its own perturbation. Every one of them commits 
 answers `none`, and the caller's committed state is what it was.
 -/
 
+/-- Replacing the Process input reference by its backing DataObject makes the exact source-bound
+entry fail. The runtime may not infer one identity from the other. -/
+theorem a_runtime_arm_that_looks_up_the_backing_input_object_is_refused :
+    (do
+      let operation ← sequentialMultiInstanceOperationForTask?
+        dataObjectInputProgram ⟨"UserTask_Review"⟩
+      let arm ← SequentialMultiInstanceArm.ofOperation? operation
+      let state ← preEntry?
+      enterSequentialMultiInstance? arm state) = none := by
+  decide +kernel
+
+/-- The exact profile admits Process-start `StringList`, not a scalar String. -/
+theorem a_scalar_process_start_binding_is_refused :
+    (applyStimulus scenarioClosureLimit program initialState
+      (.startProcess ⟨"wrong-start-value-kind"⟩
+        ⟨"Process_SequentialMultiInstanceReview"⟩ instanceId
+        [{ name := "DataObjectReference_InputItems", value := .string "Invoice_1" }])).outcome =
+      .rejected := by
+  decide +kernel
+
 /-- A result named by the wrong binding is refused, even for the right task at the right time. -/
 theorem a_result_under_the_wrong_output_binding_name_is_refused :
     (do
@@ -330,7 +266,7 @@ theorem a_result_under_the_wrong_output_binding_name_is_refused :
       let record ← state.activityOccurrences.head?
       let body ← activityBodyTask? record
       completeSequentialMultiInstanceInnerTask? arm state body
-        [{ name := arm.data.inputDataObjectId, value := .string "Reviewed_1" }]) = none := by
+        [{ name := arm.data.inputDataObjectReferenceId, value := .string "Reviewed_1" }]) = none := by
   decide +kernel
 
 /-- A result carrying a collection where the profile admits one String is refused. -/

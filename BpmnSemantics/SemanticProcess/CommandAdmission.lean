@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.IncidentCancellation
 import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.WaitCompletion
 
@@ -35,15 +36,40 @@ def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
       programProfileCapabilitiesValid program &&
       effectIncidentAssociationsValid state)
 
+private def sequentialMultiInstanceProgramAdmitted (program : Program) : Bool :=
+  program.identity.semanticProfile = sequentialMultiInstanceUserTaskProfileId &&
+    programWellFormed program && programProfileCapabilitiesValid program
+
+/-- The exact task-local Process-start patch for the sequential Multi-Instance profile.
+
+The reusable profile table decides value kinds, but it cannot decide the binding identity and
+cardinality carried by one operation. This check therefore selects the sole reviewed arm and admits
+exactly its input DataObjectReference, one String-list value, and the arm's complete bounds before
+the start state is created. -/
+private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
+    (bindings : List VariableBinding) : Bool :=
+  match program.operations.filterMap SequentialMultiInstanceArm.ofOperation?, bindings with
+  | [arm], [binding] =>
+      binding.name == arm.data.inputDataObjectReferenceId &&
+        match binding.value with
+        | .stringList items => withinSequentialMultiInstanceLimits arm items
+        | _ => false
+  | _, _ => false
+
 def dispatchStimulus (program : Program) (state : RuntimeState) :
     Stimulus → ExternalAdmission
   | .startProcess _ processId instanceId initialVariables =>
       match state.control with
       | .notStarted =>
+          let bindingsAdmitted :=
+            if sequentialMultiInstanceProgramAdmitted program then
+              sequentialMultiInstanceStartBindingsAdmitted program initialVariables
+            else
+              processDataBindingsAdmitted program.identity.semanticProfile
+                .processStart initialVariables
           if ordinaryStartMatchesProgram program &&
               program.processId.value = processId.value &&
-              processDataBindingsAdmitted program.identity.semanticProfile
-                .processStart initialVariables &&
+              bindingsAdmitted &&
               (!isCallActivityProgram program || initialVariables.isEmpty) then
             match runningProgramStartState? program instanceId initialVariables with
             | some started => { outcome := .committed, state := started }
@@ -65,7 +91,20 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
   | .completeUserTaskInstance _ taskId submittedValues =>
       match state.control with
       | .running instanceId =>
-          if isBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
+          if let some operation := sequentialMultiInstanceOperationForTask? program
+              ⟨taskId.elementId.value⟩ then
+            match SequentialMultiInstanceArm.ofOperation? operation with
+            | some arm =>
+                match completeSequentialMultiInstanceInnerTask? arm state taskId submittedValues with
+                | some successor =>
+                    if sequentialMultiInstanceProgramAdmitted program &&
+                        taskId.processInstanceId = instanceId then
+                      { outcome := .committed, state := successor }
+                    else
+                      { outcome := .rejected, state }
+                | none => { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
+          else if isBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
             match completeBoundedUserTask? program state taskId.processInstanceId
                 ⟨taskId.elementId.value⟩ taskId.activation with
             | some successor =>
@@ -125,13 +164,27 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
   | .fireTimer _ timerId logicalTimeMs =>
       match state.control with
       | .running instanceId =>
-          match fireTimer program state timerId logicalTimeMs with
-          | some successor =>
-              if timerId.processInstanceId = instanceId then
-                { outcome := .committed, state := successor }
-              else
-                { outcome := .rejected, state }
-          | none => { outcome := .rejected, state }
+          if let some operation := sequentialMultiInstanceOperationForTimer? program
+              ⟨timerId.elementId.value⟩ then
+            match SequentialMultiInstanceArm.ofOperation? operation with
+            | some arm =>
+                match interruptSequentialMultiInstance? arm state timerId logicalTimeMs with
+                | some successor =>
+                    if sequentialMultiInstanceProgramAdmitted program &&
+                        timerId.processInstanceId = instanceId then
+                      { outcome := .committed, state := successor }
+                    else
+                      { outcome := .rejected, state }
+                | none => { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
+          else
+            match fireTimer program state timerId logicalTimeMs with
+            | some successor =>
+                if timerId.processInstanceId = instanceId then
+                  { outcome := .committed, state := successor }
+                else
+                  { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _
       | .cancelled _ => { outcome := .rejected, state }

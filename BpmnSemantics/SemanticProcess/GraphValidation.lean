@@ -111,6 +111,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterBoundedScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
+  | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _
   | .awaitEventRace _ _ input _ _
@@ -136,6 +137,8 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitMessage _ _ _ output _
   | .synchronize _ _ _ output
   | .mergeExclusive _ _ _ output => [output]
+  | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ normalOutput boundaryTimer _ =>
+      [normalOutput, boundaryTimer.output]
   | .awaitEventRace _ _ _ message timer => [message.output, timer.output]
   -- The monitored family declares the same two outputs, though it can produce both within one run
   -- rather than one of them.
@@ -295,6 +298,7 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .enterScope _ _ _ _ childScopeId
   | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
+  | .awaitSequentialMultiInstanceUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitEffect .. | .duplicate ..
@@ -367,6 +371,7 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
 /-- Closed Semantic Process resumption family, decided independently from the checked-source cut. -/
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitUserTask .. => true
+  | .awaitSequentialMultiInstanceUserTask .. => true
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
   | .invokeProcess .. | .returnProcess .. | .awaitTimer ..
   | .awaitMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..

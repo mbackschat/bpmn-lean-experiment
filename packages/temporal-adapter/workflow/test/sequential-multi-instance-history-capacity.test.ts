@@ -32,9 +32,9 @@ test("retains pinned deterministic capacity facts below every boundary", () => {
     activationEventReserve,
     activationByteReserve,
     maximumMeasuredRunEvents: 87,
-    maximumMeasuredRunBytes: 568_902,
+    maximumMeasuredRunBytes: 569_318,
     maximumMeasuredActivationEvents: 10,
-    maximumMeasuredActivationPayloadBytes: 246_799,
+    maximumMeasuredActivationPayloadBytes: 246_943,
     maximumInterruptedCompletedItems: 15,
   });
 });
@@ -326,7 +326,18 @@ function measuredFixture(): SequentialMultiInstanceMeasuredHistory {
           continuedAsNew: 1,
           terminalCompleted: 0,
         }),
-        run(3, SequentialMultiInstanceHistoryRunRole.Escalation, {
+        run(3, SequentialMultiInstanceHistoryRunRole.StaleRefusal, {
+          workflowExecutionStarted: 1,
+          workflowTask: 6,
+          updateAccepted: 1,
+          updateCompleted: 1,
+          timerStarted: 0,
+          timerCanceled: 0,
+          timerFired: 0,
+          continuedAsNew: 1,
+          terminalCompleted: 0,
+        }),
+        run(4, SequentialMultiInstanceHistoryRunRole.Escalation, {
           workflowExecutionStarted: 1,
           workflowTask: 6,
           updateAccepted: 1,
@@ -415,8 +426,10 @@ function checkpointLabels(
           "timer-fired",
           "before-interrupted-continue-as-new",
         ];
+    case SequentialMultiInstanceHistoryRunRole.StaleRefusal:
+      return ["run-open", "update-16", "before-stale-refusal-continue-as-new"];
     case SequentialMultiInstanceHistoryRunRole.Escalation:
-      return ["run-open", "update-16", "before-escalation-terminal"];
+      return ["run-open", "update-17", "before-escalation-terminal"];
   }
 }
 

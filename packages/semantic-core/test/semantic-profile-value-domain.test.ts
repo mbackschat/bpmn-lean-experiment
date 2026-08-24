@@ -83,6 +83,16 @@ const stringNullBoolean = [
 ] as const;
 
 const expectedCapabilities = new Map<string, ProfileCapabilities>([
+  [SemanticProfileId.SequentialMultiInstanceUserTask, {
+    processStart: capability(
+      [VariableValueKind.StringList],
+      "process-start-ordered-string-list-data",
+    ),
+    userTaskCompletion: capability(
+      [VariableValueKind.String],
+      "user-task-string-completion-data",
+    ),
+  }],
   [SemanticProfileId.MappedSuccessServiceTask, {
     effectCompletion: capability(
       [VariableValueKind.String],

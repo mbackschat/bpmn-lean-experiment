@@ -113,12 +113,12 @@ test("measures the complete natural and maximally interrupted SMI host topologie
     };
 
     requireSequentialMultiInstanceHistoryCapacity(measurement);
+    console.log(
+      `SMI_HISTORY_MEASUREMENT=${canonicalWorkflowChainJson(measurement)}`,
+    );
     assert.deepEqual(
       deterministicCapacityFacts(measurement),
       deterministicCapacityFacts(retainedSequentialMultiInstanceHistoryMeasurement),
-    );
-    console.log(
-      `SMI_HISTORY_MEASUREMENT=${canonicalWorkflowChainJson(measurement)}`,
     );
     requireSequentialMultiInstanceHistoryCapacity();
   } finally {
@@ -170,9 +170,14 @@ async function measureTopology(
   }
   if (topology === SequentialMultiInstanceCapacityProbeTopology.Interrupted) {
     await waitForReadiness(environment, workflowId, 3);
-    const escalation = topologyFixture.updates[15];
+    const stale = topologyFixture.updates[15];
+    assert.ok(stale !== undefined);
+    await executeCapacityUpdate(environment, workflowId, topology, stale, 15,
+      topologyFixture.staticPayload.terminal.entries);
+    await waitForReadiness(environment, workflowId, 4);
+    const escalation = topologyFixture.updates[16];
     assert.ok(escalation !== undefined);
-    await executeCapacityUpdate(environment, workflowId, topology, escalation, 15,
+    await executeCapacityUpdate(environment, workflowId, topology, escalation, 16,
       topologyFixture.staticPayload.terminal.entries);
   }
   const result = await withDeadline(
@@ -185,7 +190,7 @@ async function measureTopology(
 
   const chain = await workflowChainRuns(environment, workflowId);
   assert.equal(chain.length, topology ===
-    SequentialMultiInstanceCapacityProbeTopology.Natural ? 2 : 3);
+    SequentialMultiInstanceCapacityProbeTopology.Natural ? 2 : 4);
   assert.equal(result.runs.length, chain.length);
   const runs: SequentialMultiInstanceRunHistoryMeasurement[] = [];
   for (const [index, run] of chain.entries()) {
@@ -305,7 +310,9 @@ function updatesForRun(
       ? updates
       : updates.slice(0, 15);
   }
-  return updates.slice(15, 16);
+  return runOrdinal === 3
+    ? updates.slice(15, 16)
+    : updates.slice(16, 17);
 }
 
 function assertAcceptedUpdateIds(
@@ -349,6 +356,11 @@ function runRole(
     case 3:
       if (topology !== SequentialMultiInstanceCapacityProbeTopology.Interrupted) {
         throw new TypeError("natural SMI capacity topology has an unexpected Run 3");
+      }
+      return SequentialMultiInstanceHistoryRunRole.StaleRefusal;
+    case 4:
+      if (topology !== SequentialMultiInstanceCapacityProbeTopology.Interrupted) {
+        throw new TypeError("natural SMI capacity topology has an unexpected Run 4");
       }
       return SequentialMultiInstanceHistoryRunRole.Escalation;
     default:

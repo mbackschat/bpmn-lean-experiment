@@ -94,6 +94,35 @@ private def variableBindingJson (binding : VariableBinding) : Json :=
     [ ("name", toJson binding.name)
     , ("value", encodeVariableValue binding.value) ]
 
+private def activityOccurrenceIdJson (id : ActivityOccurrenceId) : Json :=
+  Json.mkObj
+    [ ("processInstanceId", toJson id.processInstanceId.value)
+    , ("activityElementId", toJson id.activityElementId.value)
+    , ("activation", toJson id.activation) ]
+
+private def openSequentialMultiInstanceIterationJson
+    (iteration : OpenSequentialMultiInstanceIteration) : Json :=
+  Json.mkObj
+    [ ("loopCounter", toJson iteration.loopCounter)
+    , ("taskId", occurrenceIdJson iteration.taskId)
+    , ("taskInput", variableBindingJson iteration.taskInput)
+    , ("completionBindingName", toJson iteration.completionBindingName) ]
+
+private def openSequentialMultiInstanceJson
+    (multiInstance : OpenSequentialMultiInstance) : Json :=
+  Json.mkObj
+    [ ("id", activityOccurrenceIdJson multiInstance.id)
+    , ("mode", toJson "sequential")
+    , ("plannedInstanceCount", toJson multiInstance.plannedInstanceCount)
+    , ("pendingItemCount", toJson multiInstance.pendingItemCount)
+    , ("numberOfInstances", toJson multiInstance.numberOfInstances)
+    , ("numberOfActiveInstances", toJson multiInstance.numberOfActiveInstances)
+    , ("numberOfCompletedInstances", toJson multiInstance.numberOfCompletedInstances)
+    , ("numberOfTerminatedInstances", toJson multiInstance.numberOfTerminatedInstances)
+    , ("activeIterations",
+        jsonArray
+          (multiInstance.activeIterations.map openSequentialMultiInstanceIterationJson)) ]
+
 private def effectExecutionResultJson : EffectExecutionResult → Json
   | .success localPatch =>
       Json.mkObj
@@ -145,7 +174,7 @@ def enabledInteractionJson : EnabledInteraction → Json
         , ("incidentId", effectIncidentIdJson incidentId) ]
 
 def stateObservationJson (state : StateObservation) : Json :=
-  Json.mkObj
+  let beforeMultiInstance :=
     [ ("kind", toJson "state")
     , ("instanceId", toJson state.instanceId.value)
     , ("status", processStatusJson state.status)
@@ -157,8 +186,14 @@ def stateObservationJson (state : StateObservation) : Json :=
     , ("openTimers", jsonArray (state.openTimers.map openTimerJson))
     , ("openEffects", jsonArray (state.openEffects.map openEffectJson))
     , ("openIncidents",
-        jsonArray (state.openIncidents.map openEffectIncidentJson))
-    , ("variables", jsonArray (state.variables.map variableBindingJson))
+        jsonArray (state.openIncidents.map openEffectIncidentJson)) ]
+  let multiInstance := match state.openMultiInstances with
+    | none => []
+    | some openMultiInstances =>
+        [("openMultiInstances",
+          jsonArray (openMultiInstances.map openSequentialMultiInstanceJson))]
+  Json.mkObj <| beforeMultiInstance ++ multiInstance ++
+    [ ("variables", jsonArray (state.variables.map variableBindingJson))
     , ("enabledInteractions",
         jsonArray (state.enabledInteractions.map enabledInteractionJson))
     , ("logicalTimeMs", toJson state.logicalTimeMs) ]
@@ -269,6 +304,7 @@ private def observationKindJson : ObservationKind → Json
   | .openUserTasks => toJson "openUserTasks"
   | .openTimers => toJson "openTimers"
   | .openEffects => toJson "openEffects"
+  | .openMultiInstances => toJson "openMultiInstances"
   | .variables => toJson "variables"
   | .enabledInteractions => toJson "enabledInteractions"
   | .logicalTime => toJson "logicalTime"

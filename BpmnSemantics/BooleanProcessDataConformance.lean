@@ -139,6 +139,7 @@ theorem boolean_completion_with_wrong_occurrence_preserves_state :
     checkpointProgram SequentialUserTask.exactWait ⟨"wrong-activation"⟩
       { SequentialUserTask.exactTaskInstanceId with activation := 2 }
       [submittedBinding (.boolean true)] 0 waitingState.variables
+      (by decide +kernel)
       (Or.inr (Or.inr (by decide +kernel)))
 
 def mappedOutput : List VariableMapping :=

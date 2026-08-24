@@ -22,3 +22,7 @@ root = "BpmnSemantics.Experiments.CheckedSourceRelationMain"
 [[lean_exe]]
 name = "emitSemanticProcessResults"
 root = "BpmnSemantics.SemanticProcessJsonMain"
+
+[[lean_exe]]
+name = "emitCommittedExecutionPublication"
+root = "BpmnSemantics.CommittedExecutionPublicationJsonMain"

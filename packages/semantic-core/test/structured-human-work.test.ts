@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BASELINE_SCENARIO_OBSERVATIONS,
   CommandOutcome,
   ControlStateKind,
   EffectExecutionResultKind,
-  ObservationRequestKind,
   ScenarioDocumentKind,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -339,7 +339,7 @@ test("keeps new values closed to Process Start, effects, old profiles, and condi
         localPatch: [integer],
       },
     }],
-    observations: Object.values(ObservationRequestKind),
+    observations: BASELINE_SCENARIO_OBSERVATIONS,
     provenance: { normativeRefs: [], cibRevision: "", cibRefs: [] },
   };
   assert.equal(supportsSemanticProcessScenario(effectScenario, program), false);

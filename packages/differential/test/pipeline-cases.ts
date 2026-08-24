@@ -87,6 +87,9 @@ import {
   serviceTaskIncidentCancellationPipelineCases,
 } from "./service-task-incident-cancellation-pipeline-cases.ts";
 import {
+  sequentialMultiInstancePipelineCases,
+} from "./sequential-multi-instance-pipeline-cases.ts";
+import {
   mutateOpenTaskActivation,
   runningObservation,
 } from "./user-task-pipeline-mutation.ts";
@@ -567,4 +570,5 @@ export const pipelineCases = Object.freeze([
   ...userTaskMetadataPipelineCases,
   ...parallelUserTaskMetadataPipelineCases,
   ...structuredHumanWorkPipelineCases,
+  ...sequentialMultiInstancePipelineCases,
 ]);

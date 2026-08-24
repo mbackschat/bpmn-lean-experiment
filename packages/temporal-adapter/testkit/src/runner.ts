@@ -38,6 +38,7 @@ import type {
 import {
   deliverCompletions,
 } from "./completion-delivery.js";
+import { deliverStimuliInOrder } from "./ordered-stimulus-delivery.js";
 import { readTestProcessTerminalResult } from "./private-process-handle.js";
 import {
   EffectProbeActivityRegistry,
@@ -66,6 +67,7 @@ import {
   requireOptionalEffectExecution,
   requireOptionalTimerStimulus,
   requireStartStimulus,
+  requiresImmediateTimerTerminalResult,
   scenarioResultFromTrace,
   validateExecutionOptions,
 } from "./runner-support.js";
@@ -336,14 +338,26 @@ export class TemporalScenarioRunner {
       }
       await this.workerHost.restartDuringEffect(handle, effectProbeStore);
     }
-    const delivery = await deliverCompletions(
-      this.environment.client.workflow,
-      handle,
-      start.instanceId,
-      completions,
-      options,
-      () => this.workerHost.assertHealthy(),
-    );
+    const delivery = options.executionSchedule ===
+        TemporalExecutionSchedule.StimulusOrder
+      ? await deliverStimuliInOrder(
+        this.environment.client.workflow,
+        handle,
+        start.instanceId,
+        scenario,
+        options,
+        () => this.workerHost.assertHealthy(),
+        (workflowHandle, minimumLength) =>
+          this.waitForTrace(workflowHandle, minimumLength),
+      )
+      : await deliverCompletions(
+        this.environment.client.workflow,
+        handle,
+        start.instanceId,
+        completions,
+        options,
+        () => this.workerHost.assertHealthy(),
+      );
     const {
       completedReceipt,
       ...interaction
@@ -357,13 +371,15 @@ export class TemporalScenarioRunner {
       ) {
         await this.workerHost.restartAfterTimerDue(handle, timerStimulus);
       }
-      timerReceipt = requireCompletedProcessReceipt(
-        (await withDeadline(
-          readTestProcessTerminalResult(handle),
-          workflowResultDeadlineMs,
-          "timer Workflow terminal result",
-        )).receipt,
-      );
+      if (requiresImmediateTimerTerminalResult(options.executionSchedule)) {
+        timerReceipt = requireCompletedProcessReceipt(
+          (await withDeadline(
+            readTestProcessTerminalResult(handle),
+            workflowResultDeadlineMs,
+            "timer Workflow terminal result",
+          )).receipt,
+        );
+      }
     }
     let effectReceipt: CompletedProcessReceipt | undefined;
     if (options.effectExecutionSchedule !== null) {

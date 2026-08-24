@@ -12,6 +12,15 @@ export function requiredProgramShape(
   semanticProfile: string,
 ): RequiredProgramShape | undefined {
   switch (semanticProfile) {
+    case SemanticProfileId.SequentialMultiInstanceUserTask:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitSequentialMultiInstanceUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.TimerStart:
       return rootProgram([
         SemanticOperationKind.InitiateTimer,

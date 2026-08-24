@@ -50,7 +50,7 @@ export const warmBudgetPerCaseMs = 1_300;
  * `warmBudgetPerCaseMs` and the registered case count, so catalog growth fails there rather than
  * silently outrunning this number.
  */
-export const defaultWarmBudgetMs = 68_000;
+export const defaultWarmBudgetMs = 72_000;
 
 /**
  * Load per core above which a timing figure is not a comparable measurement.

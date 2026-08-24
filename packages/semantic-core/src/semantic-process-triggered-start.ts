@@ -77,6 +77,10 @@ export function admitProcessStart(
   };
   return {
     ...state,
+    ...(program.identity.semanticProfile ===
+        SemanticProfileId.SequentialMultiInstanceUserTask
+      ? { sequentialMultiInstanceControllers: [] }
+      : {}),
     control: {
       kind: ControlStateKind.Running,
       instanceId: stimulus.instanceId,

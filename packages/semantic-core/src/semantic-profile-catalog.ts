@@ -2,6 +2,8 @@
 export const SemanticProfileId = Object.freeze({
   ActivityBoundaryTimer:
     "bpmn-2.0.2-activity-boundary-timer-draft",
+  SequentialMultiInstanceUserTask:
+    "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
   MappedBoundaryErrorServiceTask:
     "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
   CalledProcessCallActivity:

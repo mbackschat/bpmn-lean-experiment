@@ -13,6 +13,34 @@
     "observations",
     "provenance"
   ],
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "profile"
+        ],
+        "properties": {
+          "profile": {
+            "const": "bpmn-2.0.2-sequential-multi-instance-user-task-draft"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "observations": {
+            "$ref": "#/$defs/sequentialMultiInstanceObservationRequests"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "observations": {
+            "$ref": "#/$defs/baselineObservationRequests"
+          }
+        }
+      }
+    }
+  ],
   "properties": {
     "kind": {
       "const": "scenario"
@@ -71,6 +99,17 @@
       "minItems": 1
     },
     "observations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    }
+  },
+  "$defs": {
+    "baselineObservationRequests": {
       "const": [
         "deployment",
         "commandResults",
@@ -84,14 +123,34 @@
         "logicalTime"
       ]
     },
-    "provenance": {
-      "$ref": "#/$defs/provenance"
-    }
-  },
-  "$defs": {
+    "sequentialMultiInstanceObservationRequests": {
+      "const": [
+        "deployment",
+        "commandResults",
+        "processStatus",
+        "activeWaits",
+        "openUserTasks",
+        "openTimers",
+        "openEffects",
+        "openMultiInstances",
+        "variables",
+        "enabledInteractions",
+        "logicalTime"
+      ]
+    },
     "nonEmptyString": {
       "type": "string",
       "minLength": 1
+    },
+    "nonnegativeSafeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "positiveSafeInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
     },
     "userTaskMetadataIdentity": {
       "type": "string",
@@ -431,6 +490,26 @@
         }
       }
     },
+    "activityOccurrenceId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processInstanceId",
+        "activityElementId",
+        "activation"
+      ],
+      "properties": {
+        "processInstanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "activityElementId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "activation": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        }
+      }
+    },
     "userTaskInstanceId": {
       "$ref": "#/$defs/occurrenceId"
     },
@@ -749,6 +828,77 @@
         },
         "value": {
           "$ref": "#/$defs/variableValue"
+        }
+      }
+    },
+    "openSequentialMultiInstanceIteration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loopCounter",
+        "taskId",
+        "taskInput",
+        "completionBindingName"
+      ],
+      "properties": {
+        "loopCounter": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "taskId": {
+          "$ref": "#/$defs/userTaskInstanceId"
+        },
+        "taskInput": {
+          "$ref": "#/$defs/variableBinding"
+        },
+        "completionBindingName": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "openSequentialMultiInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "mode",
+        "plannedInstanceCount",
+        "pendingItemCount",
+        "numberOfInstances",
+        "numberOfActiveInstances",
+        "numberOfCompletedInstances",
+        "numberOfTerminatedInstances",
+        "activeIterations"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/activityOccurrenceId"
+        },
+        "mode": {
+          "const": "sequential"
+        },
+        "plannedInstanceCount": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "pendingItemCount": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfActiveInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfCompletedInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfTerminatedInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "activeIterations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openSequentialMultiInstanceIteration"
+          }
         }
       }
     },
@@ -1161,6 +1311,12 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/openEffectIncident"
+          }
+        },
+        "openMultiInstances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openSequentialMultiInstance"
           }
         },
         "variables": {

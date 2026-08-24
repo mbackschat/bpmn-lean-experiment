@@ -70,6 +70,10 @@ import {
 import {
   profileAllowsStimulusValueDomain,
 } from "./semantic-profile-value-domain.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  sequentialMultiInstanceStimulusDataAdmitted,
+} from "./sequential-multi-instance-command-data-admission.js";
 import {
   addToken,
   ControlStateKind,
@@ -106,9 +110,20 @@ function admissibleCommittedState(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): boolean {
-  return state.control.kind === ControlStateKind.NotStarted
-    ? isGateAdmissibleRuntimeState(program, "", state)
-    : isGateAdmissibleRuntimeState(program, state.control.instanceId, state);
+  const gateState =
+    program.identity.semanticProfile ===
+        SemanticProfileId.SequentialMultiInstanceUserTask &&
+      state.control.kind === ControlStateKind.NotStarted &&
+      state.sequentialMultiInstanceControllers === undefined
+      ? { ...state, sequentialMultiInstanceControllers: [] }
+      : state;
+  return gateState.control.kind === ControlStateKind.NotStarted
+    ? isGateAdmissibleRuntimeState(program, "", gateState)
+    : isGateAdmissibleRuntimeState(
+      program,
+      gateState.control.instanceId,
+      gateState,
+    );
 }
 
 export function admit(
@@ -119,6 +134,7 @@ export function admit(
   if (
     !incidentStateAllowsDispatch(program, state) ||
     !admissibleCommittedState(program, state) ||
+    !sequentialMultiInstanceStimulusDataAdmitted(program, stimulus) ||
     !profileAllowsStimulusValueDomain(
       program.identity.semanticProfile,
       stimulus,

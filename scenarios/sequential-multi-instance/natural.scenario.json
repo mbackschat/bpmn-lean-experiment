@@ -1,0 +1,112 @@
+{
+  "kind": "scenario",
+  "id": "sequential-multi-instance-natural",
+  "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+  "bpmn": {
+    "id": "sequential-multi-instance-review",
+    "relativePath": "scenarios/sequential-multi-instance/process.bpmn",
+    "sha256": "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-sequential-review-natural",
+      "processId": "Process_SequentialMultiInstanceReview",
+      "instanceId": "SequentialMultiInstance_Natural",
+      "initialVariables": [
+        {
+          "name": "DataObjectReference_InputItems",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "contract",
+              "invoice",
+              "receipt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-contract",
+      "taskId": {
+        "processInstanceId": "SequentialMultiInstance_Natural",
+        "elementId": "UserTask_Review",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "DataOutput_CurrentResult",
+          "value": {
+            "kind": "string",
+            "value": "accepted"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-invoice",
+      "taskId": {
+        "processInstanceId": "SequentialMultiInstance_Natural",
+        "elementId": "UserTask_Review",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "DataOutput_CurrentResult",
+          "value": {
+            "kind": "string",
+            "value": "flagged"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-receipt",
+      "taskId": {
+        "processInstanceId": "SequentialMultiInstance_Natural",
+        "elementId": "UserTask_Review",
+        "activation": 3
+      },
+      "submittedValues": [
+        {
+          "name": "DataOutput_CurrentResult",
+          "value": {
+            "kind": "string",
+            "value": "archived"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "openMultiInstances",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.8",
+      "BPMN 2.0.2 Clause 13.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SequentialMultiInstanceActivityBehavior.java"
+    ]
+  }
+}

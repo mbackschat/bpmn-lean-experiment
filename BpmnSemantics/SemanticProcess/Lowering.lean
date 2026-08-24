@@ -321,6 +321,22 @@ private def lowerNode (source : CheckedProcess) :
             (firstPlace (incomingPlaces source id))
             (firstPlace (outgoingPlaces source id))
             { id := ⟨id.value⟩, name, metadata }, scopeId)
+  | .sequentialMultiInstanceUserTask id name input output normalOutputFlowId boundaryTimer =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.awaitSequentialMultiInstanceUserTask
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        { id := ⟨id.value⟩, name }
+        { input, output }
+        (flowControlPlaceId normalOutputFlowId)
+        { elementId := boundaryTimer.elementId
+          durationMs := normalizeTimerDuration boundaryTimer.durationLiteral
+          output := flowControlPlaceId boundaryTimer.outputFlowId
+          origin := { elementId := boundaryTimer.outputFlowId } }
+        { maximumItems := 16
+          maximumItemUtf8Bytes := 512
+          maximumCanonicalCollectionUtf8Bytes := 8192 }, scopeId)
   | .intermediateCatchTimerEvent id durationLiteral =>
       if configuredByEventGateway source id then none
       else

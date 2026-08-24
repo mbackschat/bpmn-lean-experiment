@@ -166,15 +166,12 @@ export type RuntimeState = DeepReadonly<{
   /**
    * The outer controllers of open sequential Multi-Instance Activity occurrences.
    *
-   * Optional so that every state and continuation payload under a profile with no Multi-Instance
-   * Activity keeps the exact shape it had. That is an encoding fact, not a semantic one: absence and
-   * emptiness are the same state to the well-formedness predicate and to every transition, which is
-   * why the Lean account carries a plain list defaulting to empty rather than an option.
-   *
-   * The capsule additionally requires presence under the sequential Multi-Instance profile, including
-   * as an empty array before outer entry and after either closing route, so that the profile has no
-   * ambiguous missing-controller state. That requirement is cross-profile validation and lands with
-   * the profile's execution registration; it is **not** enforced today.
+   * Optional at the shared type boundary so every state and continuation payload under a program
+   * with no sequential Multi-Instance operation keeps its exact historical shape. Runtime-state
+   * validation makes that encoding program-specific: such programs require absence, while a program
+   * declaring the sequential Multi-Instance operation requires presence, including an empty array
+   * before outer entry and after either closing route. The Lean account carries a plain list because
+   * it has no cross-profile wire-shape distinction to preserve.
    */
   sequentialMultiInstanceControllers?: SequentialMultiInstanceController[];
   variables: ScopedVariables;

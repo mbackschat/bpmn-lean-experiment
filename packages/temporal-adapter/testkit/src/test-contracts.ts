@@ -35,6 +35,7 @@ export type TemporalTimeSkippingRunnerOptions = DeepReadonly<{
 
 export enum TemporalCompletionDelivery {
   Ordered = "ordered",
+  OrderedWithClosedReceipt = "orderedWithClosedReceipt",
   PostTerminal = "postTerminal",
   LifecycleRace = "lifecycleRace",
   Concurrent = "concurrent",
@@ -42,6 +43,7 @@ export enum TemporalCompletionDelivery {
 
 export enum TemporalExecutionSchedule {
   Normal = "normal",
+  StimulusOrder = "stimulusOrder",
   DuplicateFirstCompletion = "duplicateFirstCompletion",
   WorkerDownAtTimerDue = "workerDownAtTimerDue",
   WorkerDownAtEffectPending = "workerDownAtEffectPending",

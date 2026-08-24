@@ -12,10 +12,10 @@
  * a child-scope-bodied record, is therefore covered where it is observable, in the progress
  * projection's own file, rather than as a refusal here.
  *
- * Every negative perturbs the *same* admitted base state, so a refusal is attributable to the one
- * field it changed. The base state is the monitored-task arming, which produces exactly one Activity
- * occurrence record with a User Task body and one attached Timer, which is the shape the outer
- * Multi-Instance Activity has.
+ * Every controller-invariant negative perturbs the *same* admitted sequential Multi-Instance base
+ * state, so a refusal is attributable to the one field it changed. Cross-profile presence has its
+ * own separators because it is decided from the program and the property shape, before any
+ * controller is inspected.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -27,6 +27,7 @@ import {
   compareActivityOccurrences,
   compareSequentialMultiInstanceControllers,
   initialState,
+  isGateAdmissibleRuntimeState,
   pendingItemCount,
   RuntimeStateDefect,
   runtimeStateDefects,
@@ -36,19 +37,34 @@ import {
 } from "@bpmn-lean/semantic-core";
 
 import {
-  instanceId,
+  instanceId as monitoredInstanceId,
   monitoredProgram,
-  start,
+  start as monitoredStart,
 } from "./monitored-task-fixture.ts";
+import {
+  instanceId,
+  reviewProgram,
+  start,
+} from "./sequential-multi-instance-fixture.ts";
 
 function armed(): RuntimeState {
-  const started = applyStimulus(monitoredProgram, initialState, start);
+  const started = applyStimulus(
+    reviewProgram,
+    { ...initialState, sequentialMultiInstanceControllers: [] },
+    start,
+  );
   assert.equal(started.outcome, CommandOutcome.Committed);
   return started.state;
 }
 
 function defects(state: RuntimeState): ReadonlyArray<string> {
-  return runtimeStateDefects(monitoredProgram, instanceId, state);
+  return runtimeStateDefects(reviewProgram, instanceId, state);
+}
+
+function monitoredArmed(): RuntimeState {
+  const started = applyStimulus(monitoredProgram, initialState, monitoredStart);
+  assert.equal(started.outcome, CommandOutcome.Committed);
+  return started.state;
 }
 
 /** The controller the base state's own record would own, with one item still to generate. */
@@ -65,13 +81,66 @@ function withControllers(
   return { ...state, sequentialMultiInstanceControllers: [...controllers] };
 }
 
-test("an absent controller collection and a bound controller are both admitted", () => {
-  const before = armed();
-  assert.deepEqual(defects(before), [], "the base state must be admitted");
+test("a profile without sequential Multi-Instance requires the controller property to be absent", () => {
+  const before = monitoredArmed();
   assert.deepEqual(
-    defects(withControllers(before, [boundController(before)])),
+    runtimeStateDefects(monitoredProgram, monitoredInstanceId, before),
     [],
-    "a controller bound to a live record with an item left must be admitted",
+    "the old-profile state without the property must stay admitted",
+  );
+  assert.equal(
+    Object.hasOwn(initialState, "sequentialMultiInstanceControllers"),
+    false,
+    "the profile-neutral initial state must keep its canonical property-free shape",
+  );
+  assert.deepEqual(
+    runtimeStateDefects(
+      monitoredProgram,
+      monitoredInstanceId,
+      withControllers(before, [boundController(before)]),
+    ),
+    [RuntimeStateDefect.SequentialMultiInstanceControllerProfileMismatch],
+    "even an otherwise valid bound controller must be refused under the old profile",
+  );
+  assert.deepEqual(
+    runtimeStateDefects(
+      monitoredProgram,
+      monitoredInstanceId,
+      withControllers(before, []),
+    ),
+    [RuntimeStateDefect.SequentialMultiInstanceControllerProfileMismatch],
+    "presence itself must be refused even when the collection is empty",
+  );
+});
+
+test("the sequential Multi-Instance profile requires the controller property in every state", () => {
+  assert.deepEqual(
+    runtimeStateDefects(reviewProgram, instanceId, initialState),
+    [RuntimeStateDefect.SequentialMultiInstanceControllerProfileMismatch],
+    "NotStarted cannot mask a missing profile-owned collection",
+  );
+  assert.equal(
+    isGateAdmissibleRuntimeState(reviewProgram, instanceId, initialState),
+    false,
+    "the fail-closed command gate must reject the profile mismatch",
+  );
+  assert.deepEqual(
+    runtimeStateDefects(
+      reviewProgram,
+      instanceId,
+      withControllers(initialState, []),
+    ),
+    [],
+    "an explicitly empty NotStarted collection is the canonical SMI shape",
+  );
+
+  const before = armed();
+  assert.deepEqual(defects(before), [], "the valid running SMI state must be admitted");
+  const { sequentialMultiInstanceControllers: _controllers, ...missing } = before;
+  assert.deepEqual(
+    defects(missing),
+    [RuntimeStateDefect.SequentialMultiInstanceControllerProfileMismatch],
+    "a running SMI state cannot lose its required collection",
   );
 });
 

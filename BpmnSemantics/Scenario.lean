@@ -207,6 +207,33 @@ structure OpenEffect where
   arguments : List VariableBinding
   deriving Repr, DecidableEq
 
+/-- Stable semantic identity of one open outer Activity occurrence. -/
+structure ActivityOccurrenceId where
+  processInstanceId : SemanticId
+  activityElementId : SemanticId
+  activation : Nat
+  deriving Repr, DecidableEq
+
+/-- One active inner iteration of an open sequential Multi-Instance Activity. -/
+structure OpenSequentialMultiInstanceIteration where
+  loopCounter : Nat
+  taskId : UserTaskInstanceId
+  taskInput : VariableBinding
+  completionBindingName : String
+  deriving Repr, DecidableEq
+
+/-- Public progress of one open sequential Multi-Instance Activity. -/
+structure OpenSequentialMultiInstance where
+  id : ActivityOccurrenceId
+  plannedInstanceCount : Nat
+  pendingItemCount : Nat
+  numberOfInstances : Nat
+  numberOfActiveInstances : Nat
+  numberOfCompletedInstances : Nat
+  numberOfTerminatedInstances : Nat
+  activeIterations : List OpenSequentialMultiInstanceIteration
+  deriving Repr, DecidableEq
+
 /-- Public incident kind admitted by the configured failed-effect overlay. -/
 inductive EffectIncidentKind where
   | effectExecutionFailed
@@ -229,6 +256,7 @@ structure StateObservation where
   openTimers : List OpenTimer
   openEffects : List OpenEffect
   openIncidents : List OpenEffectIncident := []
+  openMultiInstances : Option (List OpenSequentialMultiInstance) := none
   variables : List VariableBinding
   enabledInteractions : List EnabledInteraction
   logicalTimeMs : Nat
@@ -250,6 +278,7 @@ inductive ObservationKind where
   | openUserTasks
   | openTimers
   | openEffects
+  | openMultiInstances
   | variables
   | enabledInteractions
   | logicalTime

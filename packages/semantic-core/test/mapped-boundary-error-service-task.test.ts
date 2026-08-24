@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BASELINE_SCENARIO_OBSERVATIONS,
   CommandOutcome,
   EffectExecutionResultKind,
   MappingExpressionKind,
-  ObservationRequestKind,
   ScenarioDocumentKind,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -182,7 +182,7 @@ const scenario = {
       submittedValues: [],
     },
   ],
-  observations: Object.values(ObservationRequestKind),
+  observations: BASELINE_SCENARIO_OBSERVATIONS,
   provenance: {
     normativeRefs: ["BPMN 2.0.2 §13.5.3"],
     cibRevision: "57ed69550f1c9c2619b9711d8877418bb084a371",

@@ -86,6 +86,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 - exact Message Start agreement across Lean, the core, and Temporal with CIB absent, plus Interface Operation, instance-identity, and Signal-With-Start discriminators
 - exact Timer Start agreement across Lean, the core, and Temporal with CIB absent, plus Start Event/instance-identity, stored-action, direct-start, and returned-execution-identity discriminators
 - three exact Terminate End schedules across Lean, the core, and Temporal with CIB absent, plus source, checked-to-IL, regional-cancellation, stale-command, and supplied-instance mutation discriminators
+- exact natural and interrupted sequential Multi-Instance schedules across Lean, the core, and Temporal with CIB semantic execution absent, plus source-role, limit, binding, occurrence, stale-task, output, managed-deadline, continuation, production-capacity, and replay discriminators
 - one exact configured Task schedule across Lean, the core, and Temporal with CIB absent, plus binding-drift and premature-User-Task-exposure mutation discriminators
 - one exact Boolean User Task completion schedule across CIB, Lean, the core, and Temporal, plus Boolean-to-string mutation and live outside-core/stringification discriminators
 - one exact User Task assignment/form metadata schedule across CIB, Lean, the core, and Temporal, plus candidate, field-key, field-type, source-derived-projection, live source field-type, and live Query-omission discriminators

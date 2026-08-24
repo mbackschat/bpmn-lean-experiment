@@ -1,0 +1,82 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/sequential-multi-instance/process.bpmn",
+    "sourceId": "sequential-multi-instance-review",
+    "semanticProfile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_sequential_multi_instance_1",
+    "initialVariables": [
+      {
+        "name": "DataObjectReference_InputItems",
+        "value": {
+          "kind": "stringList",
+          "value": [
+            "contract",
+            "invoice",
+            "receipt"
+          ]
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Review",
+      "delayMs": 1,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "DataOutput_CurrentResult",
+          "value": {
+            "kind": "string",
+            "value": "accepted"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Review",
+      "delayMs": 1,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "DataOutput_CurrentResult",
+          "value": {
+            "kind": "string",
+            "value": "flagged"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Review",
+      "delayMs": 1,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "DataOutput_CurrentResult",
+          "value": {
+            "kind": "string",
+            "value": "archived"
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

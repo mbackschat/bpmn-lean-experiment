@@ -81,8 +81,8 @@ test("the pathology ceiling carries headroom over the slowest measured hardware"
   );
   // This file stays build-free because `test:infrastructure` runs before any package is built, so
   // the catalog-tied half of this contract lives with the catalog in the differential package.
-  assert.ok(defaultWarmBudgetMs >= 52 * warmBudgetPerCaseMs);
-  assert.ok(defaultWarmBudgetMs < 52 * warmBudgetPerCaseMs * 2);
+  assert.ok(defaultWarmBudgetMs >= 54 * warmBudgetPerCaseMs);
+  assert.ok(defaultWarmBudgetMs < 54 * warmBudgetPerCaseMs * 2);
 });
 
 /**

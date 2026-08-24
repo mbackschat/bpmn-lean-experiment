@@ -142,7 +142,7 @@ Promise<SequentialMultiInstanceCapacityProbeFixture> {
     processId: program.processId,
     instanceId,
     initialVariables: [{
-      name: operation.data.input.dataObjectId,
+      name: operation.data.input.dataObjectReferenceId,
       value: { kind: VariableValueKind.StringList, value: collection },
     }],
   };
@@ -245,7 +245,7 @@ function separator(
   const exact17Start = {
     ...start,
     initialVariables: [{
-      name: operation.data.input.dataObjectId,
+      name: operation.data.input.dataObjectReferenceId,
       value: { kind: VariableValueKind.StringList, value: exact17 },
     }],
   } as const;
@@ -256,6 +256,10 @@ function separator(
     exact17Admitted,
     [initiate],
   ).state;
+  assert.deepEqual(
+    exact17Initiated.variables.process.bindings,
+    exact17Start.initialVariables,
+  );
   const exact17Before = structuredClone(exact17Initiated);
   const exact17Refused = applyInternalOperationStep(
     program,

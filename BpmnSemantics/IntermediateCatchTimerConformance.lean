@@ -156,7 +156,8 @@ theorem early_timer_firing_is_rejected :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } :=
   timer_identity_or_time_mismatch_is_rejected
-    program timerWait fireCommandId timerId 999 0 (by decide +kernel)
+    program timerWait fireCommandId timerId 999 0
+      (by decide +kernel) (by decide +kernel)
 
 /-- The admitted timer does not permit early firing; exact deadline equality is semantically material rather than a host-scheduler convenience. -/
 theorem early_timer_firing_is_not_permitted :
@@ -174,6 +175,7 @@ theorem late_timer_firing_is_rejected :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } :=
   timer_identity_or_time_mismatch_is_rejected
-    program timerWait fireCommandId timerId 1001 0 (by decide +kernel)
+    program timerWait fireCommandId timerId 1001 0
+      (by decide +kernel) (by decide +kernel)
 
 end BpmnSemantics.IntermediateCatchTimerConformance

@@ -29,7 +29,7 @@ export type CapacityPublicationState = CommandPublicationState;
 
 export type CapacityCommandFacts = Extract<
   ScenarioStep,
-  { kind: ScenarioStepKind.Committed }
+  { kind: ScenarioStepKind.Committed | ScenarioStepKind.Terminal }
 >;
 
 export function emptyCapacityPublication(

@@ -74,6 +74,49 @@ def decodeCheckedUserTask (json : Json) : Except String CheckedNode := do
       (← decodeOptionalString (← field json "name"))
       metadata)
 
+private def decodeSequentialMultiInstanceInput (json : Json) :
+    Except String SequentialMultiInstanceInputDefinition := do
+  requireObjectShape json
+    ["collectionAssociationId", "collectionItemDefinitionId", "dataObjectId",
+      "dataObjectReferenceId", "inputDataItemId", "itemAssociationId",
+      "loopDataInputId", "scalarItemDefinitionId", "taskDataInputId"]
+  pure
+    { collectionItemDefinitionId := ← stringField json "collectionItemDefinitionId"
+      scalarItemDefinitionId := ← stringField json "scalarItemDefinitionId"
+      dataObjectId := ← stringField json "dataObjectId"
+      dataObjectReferenceId := ← stringField json "dataObjectReferenceId"
+      loopDataInputId := ← stringField json "loopDataInputId"
+      inputDataItemId := ← stringField json "inputDataItemId"
+      taskDataInputId := ← stringField json "taskDataInputId"
+      collectionAssociationId := ← stringField json "collectionAssociationId"
+      itemAssociationId := ← stringField json "itemAssociationId" }
+
+private def decodeSequentialMultiInstanceOutput (json : Json) :
+    Except String SequentialMultiInstanceOutputDefinition := do
+  requireObjectShape json
+    ["collectionAssociationId", "dataObjectId", "dataObjectReferenceId",
+      "itemAssociationId", "loopDataOutputId", "outputDataItemId",
+      "taskDataOutputId"]
+  pure
+    { dataObjectId := ← stringField json "dataObjectId"
+      dataObjectReferenceId := ← stringField json "dataObjectReferenceId"
+      taskDataOutputId := ← stringField json "taskDataOutputId"
+      outputDataItemId := ← stringField json "outputDataItemId"
+      loopDataOutputId := ← stringField json "loopDataOutputId"
+      itemAssociationId := ← stringField json "itemAssociationId"
+      collectionAssociationId := ← stringField json "collectionAssociationId" }
+
+private def decodeCheckedSequentialMultiInstanceBoundaryTimer (json : Json) :
+    Except String CheckedSequentialMultiInstanceBoundaryTimer := do
+  requireObjectShape json ["durationLiteral", "elementId", "outputFlowId"]
+  let durationLiteral ← stringField json "durationLiteral"
+  if durationLiteral ≠ "PT1S" then
+    throw "Sequential Multi-Instance boundary Timer requires exact PT1S duration"
+  pure
+    { elementId := ⟨← stringField json "elementId"⟩
+      durationLiteral
+      outputFlowId := ⟨← stringField json "outputFlowId"⟩ }
+
 private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   let kind ← stringField json "kind"
   match kind with
@@ -130,6 +173,19 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ⟨← stringField json "outputFlowId"⟩)
   | "userTask" =>
       decodeCheckedUserTask json
+  | "sequentialMultiInstanceUserTask" =>
+      requireObjectShape json
+        ["boundaryTimer", "id", "input", "kind", "name", "normalOutputFlowId",
+          "output"]
+      pure
+        (.sequentialMultiInstanceUserTask
+          ⟨← stringField json "id"⟩
+          (← decodeOptionalString (← field json "name"))
+          (← decodeSequentialMultiInstanceInput (← field json "input"))
+          (← decodeSequentialMultiInstanceOutput (← field json "output"))
+          ⟨← stringField json "normalOutputFlowId"⟩
+          (← decodeCheckedSequentialMultiInstanceBoundaryTimer
+            (← field json "boundaryTimer")))
   | "intermediateCatchTimerEvent" =>
       requireObjectShape json ["durationLiteral", "id", "kind"]
       pure

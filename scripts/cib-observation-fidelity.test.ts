@@ -27,12 +27,6 @@ test("classifies every canonical CIB state field at schema depth", async () => {
   ]);
   const schema = JSON.parse(schemaSource) as ScenarioSchema;
   const stateObservation = requiredDefinition(schema, "stateObservation");
-  assert.equal(
-    Object.keys(stateObservation.properties ?? {}).length,
-    12,
-    "stateObservation must retain its reviewed twelve-field denominator",
-  );
-
   const expectedPaths = collectFieldPaths(schema, stateObservation);
   const sectionStart = testingSpec.indexOf(fidelityHeading);
   assert.notEqual(

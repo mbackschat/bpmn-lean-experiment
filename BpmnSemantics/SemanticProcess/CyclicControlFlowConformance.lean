@@ -553,6 +553,7 @@ theorem earlier_activation_refusal_preserves_complete_state
         activation := submitted }
       [{ name := "route", value := .string "repeat" }] 0
       (cyclicVariables route)
+      (by rfl)
       (Or.inr (Or.inr (Nat.ne_of_lt earlier))))
 
 theorem wrong_process_element_and_future_activation_preserve_complete_state :

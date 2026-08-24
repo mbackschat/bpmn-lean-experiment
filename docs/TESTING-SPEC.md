@@ -364,7 +364,7 @@ The owner-approved local feedback target for the complete two-release CIB gate i
 
 ## Canonical CIB observation fidelity
 
-This table classifies the complete current field denominator of `scenario.schema.json#/$defs/stateObservation`: twelve top-level fields plus every nested occurrence, wait, Message subscription, timer, effect, incident, interaction, and variable field. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components. Incident projection consumes the retained public job plus its exact public `failedJob` incident partner; semantic occurrence, descriptor, arguments, and literal generation remain profile decisions rather than CIB semantic identity. Rule-level fidelity remains in the owning CIB-backed capsules rather than this canonical field table.
+This table classifies every current top-level and recursively reachable field of `scenario.schema.json#/$defs/stateObservation`, whether required or optional. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components. Incident projection consumes the retained public job plus its exact public `failedJob` incident partner; semantic occurrence, descriptor, arguments, and literal generation remain profile decisions rather than CIB semantic identity. The standards-only sequential Multi-Instance profile owns `openMultiInstances`, so every path below that optional field is deliberately `not-claimed` by CIB fidelity. Rule-level fidelity remains in the owning CIB-backed capsules rather than this canonical field table.
 
 | Canonical field path | Fidelity | Exact basis |
 |---|---|---|
@@ -441,6 +441,30 @@ This table classifies the complete current field denominator of `scenario.schema
 | `openIncidents[].effect.arguments[].value` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
 | `openIncidents[].effect.arguments[].value.kind` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
 | `openIncidents[].effect.arguments[].value.value` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
+| `openMultiInstances` | `not-claimed` | Standards-only sequential Multi-Instance progress is absent from every selected CIB profile |
+| `openMultiInstances[].id` | `not-claimed` | Project-owned outer Activity occurrence identity |
+| `openMultiInstances[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `openMultiInstances[].id.activityElementId` | `not-claimed` | Project-owned outer Activity element identity |
+| `openMultiInstances[].id.activation` | `not-claimed` | Project-owned Activity occurrence activation |
+| `openMultiInstances[].mode` | `not-claimed` | Standards profile selects the literal `sequential` mode |
+| `openMultiInstances[].plannedInstanceCount` | `not-claimed` | Derived from the private immutable snapshot under the standards profile |
+| `openMultiInstances[].pendingItemCount` | `not-claimed` | Derived from the snapshot and completed slots under the standards profile |
+| `openMultiInstances[].numberOfInstances` | `not-claimed` | Standards-profile arithmetic over active, completed, and terminated counts |
+| `openMultiInstances[].numberOfActiveInstances` | `not-claimed` | Derived from the project-owned Activity occurrence body |
+| `openMultiInstances[].numberOfCompletedInstances` | `not-claimed` | Derived from project-owned dense output slots |
+| `openMultiInstances[].numberOfTerminatedInstances` | `not-claimed` | The bounded standards profile projects zero while the controller remains open |
+| `openMultiInstances[].activeIterations` | `not-claimed` | Project-owned active iteration projection |
+| `openMultiInstances[].activeIterations[].loopCounter` | `not-claimed` | Zero-based project-owned snapshot position |
+| `openMultiInstances[].activeIterations[].taskId` | `not-claimed` | Project-owned inner User Task occurrence identity |
+| `openMultiInstances[].activeIterations[].taskId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `openMultiInstances[].activeIterations[].taskId.elementId` | `not-claimed` | Standards-profile inner User Task identity |
+| `openMultiInstances[].activeIterations[].taskId.activation` | `not-claimed` | Project-owned inner task activation |
+| `openMultiInstances[].activeIterations[].taskInput` | `not-claimed` | Project-owned scalar projection of one private snapshot item |
+| `openMultiInstances[].activeIterations[].taskInput.name` | `not-claimed` | Exact standards-profile task DataInput identity |
+| `openMultiInstances[].activeIterations[].taskInput.value` | `not-claimed` | Exact standards-profile scalar task input value |
+| `openMultiInstances[].activeIterations[].taskInput.value.kind` | `not-claimed` | Standards profile selects the literal `string` kind |
+| `openMultiInstances[].activeIterations[].taskInput.value.value` | `not-claimed` | Project-owned snapshot item value |
+| `openMultiInstances[].activeIterations[].completionBindingName` | `not-claimed` | Exact standards-profile task DataOutput identity |
 | `variables` | `adapter-derived` | Canonical type projection and Unicode name sort over retained Process-variable runtime/history rows selected only by names from already committed start or completion commands |
 | `variables[].name` | `engine-observed` | Historic Process-variable name within the adapter-selected committed-name boundary |
 | `variables[].value` | `adapter-derived` | Raw host `String`, `Boolean`, or `null` projected into the canonical discriminated value |

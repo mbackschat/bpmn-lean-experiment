@@ -134,3 +134,11 @@ The [non-interrupting boundary Timer specification](capsules/NON-INTERRUPTING-BO
 **Absent in Lean soundness.** `BoundedScopeVictoryStep` is **not** wired into the global `ProgramStep` soundness; only `BoundedScopeArmingStep` is. The relation-level logical-time law is a joint bound over both arms rather than a law separating them.
 
 **Absent in evidence.** CIB observation is not selected. Off-deadline and stale-child witnesses remain outside the registered schedules because no Temporal target can present them without replacing committed deadline derivation or racing task disappearance; Lean and the focused core test carry those refusals.
+
+## Sequential Multi-Instance User Task
+
+The [Sequential Multi-Instance proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) is **implemented-awaiting-closure** for one exact collection-driven sequential User Task with direct String input/output mediation and one interrupting outer-lifetime `PT1S` Timer.
+
+**Implemented.** Source admission and lowering preserve the complete data role graph; Lean and the independently written TypeScript core own one outer controller, immutable ordered snapshot, dense indexed outputs, four transition families, exact bounds, public progress, and generated-inner occurrence accounting. The registered natural and interrupted scenarios agree across Lean, the core, and Temporal. The production Workflow chain preserves one managed lifetime Timer across task turnover, permits only pre-arming rollover, replaces the Worker, recovers a retained result, publishes exact E1/E2 and terminal receipts, proves exact-16 fit with count-only exact-17 refusal, and replays every Run.
+
+**Absent.** Another Activity body, loop cardinality, completion conditions, partial output, non-direct mapping, expressions, another value type, repeated or nested controllers, parallel generation, another Boundary Event or Timer form, a CIB Multi-Instance semantic profile, quantified preservation of every well-formedness conjunct, and a JSON-escape-aware Lean byte measure remain outside this slice.
