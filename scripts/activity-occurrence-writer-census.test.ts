@@ -29,6 +29,7 @@ type WriterSite = Readonly<{
   relativePath: string;
   owner: string;
   source: string;
+  typeScriptExpression: ReadonlyArray<string> | undefined;
 }>;
 
 type Evidence = Readonly<{
@@ -320,6 +321,33 @@ function typeScriptObjectWriterLines(source: string): ReadonlySet<number> {
   return writerLines;
 }
 
+function typeScriptActivityOccurrenceExpression(source: string): ReadonlyArray<string> | undefined {
+  const tokens = typeScriptTokens(source);
+  for (let index = 0; index < tokens.length; index += 1) {
+    if (tokens[index]?.value !== "activityOccurrences") continue;
+    const previous = tokens[index - 1]?.value;
+    const next = tokens[index + 1]?.value;
+    const objectProperty = (previous === undefined || previous === "{" || previous === ",") && next === ":";
+    const directAssignment = previous === "." && next === "=";
+    if (!objectProperty && !directAssignment) continue;
+    const expression: string[] = [];
+    const delimiters: string[] = [];
+    for (let cursor = index + 2; cursor < tokens.length; cursor += 1) {
+      const value = tokens[cursor]?.value;
+      if (value === undefined) break;
+      if (delimiters.length === 0 && (value === "," || value === ";" || value === "}")) break;
+      expression.push(value);
+      if (value === "(" || value === "[" || value === "{") {
+        delimiters.push(value);
+      } else if (value === ")" || value === "]" || value === "}") {
+        delimiters.pop();
+      }
+    }
+    return expression;
+  }
+  return undefined;
+}
+
 function writerSitesFromSource(
   relativePath: string,
   language: SourceLanguage,
@@ -352,6 +380,9 @@ function writerSitesFromSource(
       relativePath,
       owner: declaration.owner,
       source: lines.slice(index, index + 6).join("\n"),
+      typeScriptExpression: language === SourceLanguage.TypeScript
+        ? typeScriptActivityOccurrenceExpression(lines.slice(index).join("\n"))
+        : undefined,
     });
   }
   return sites;
@@ -379,24 +410,80 @@ function unclassifiedWriterKeys(
   return census.map(({ key }) => key).filter((key) => !records.has(key));
 }
 
-function writerShape(classification: WriterClassification, language: SourceLanguage): RegExp {
+function typeScriptMethodPipeline(expression: ReadonlyArray<string>): ReadonlyArray<string> | undefined {
+  const identifier = /^[A-Za-z_$][\w$]*$/u;
+  if (!identifier.test(expression[0] ?? "")) return undefined;
+  const methods: string[] = [];
+  let index = 1;
+  while (index < expression.length) {
+    if (expression[index] !== "." || !identifier.test(expression[index + 1] ?? "")) return undefined;
+    const member = expression[index + 1] ?? "";
+    if (expression[index + 2] !== "(") {
+      index += 2;
+      continue;
+    }
+    let depth = 0;
+    let closingIndex: number | undefined;
+    for (let cursor = index + 2; cursor < expression.length; cursor += 1) {
+      if (expression[cursor] === "(") depth += 1;
+      if (expression[cursor] === ")") depth -= 1;
+      if (depth === 0) {
+        closingIndex = cursor;
+        break;
+      }
+    }
+    if (closingIndex === undefined) return undefined;
+    methods.push(member);
+    index = closingIndex + 1;
+  }
+  return methods;
+}
+
+function isPureTypeScriptCollectionTransform(expression: ReadonlyArray<string>, transform: string): boolean {
+  const pipeline = typeScriptMethodPipeline(expression);
+  return pipeline?.[0] === transform && pipeline.slice(1).every((method) => method === "sort");
+}
+
+function isTypeScriptIssuingArray(expression: ReadonlyArray<string>): boolean {
+  if (expression[0] !== "[") return false;
+  let depth = 0;
+  let closingIndex: number | undefined;
+  for (let index = 0; index < expression.length; index += 1) {
+    if (expression[index] === "[") depth += 1;
+    if (expression[index] === "]") depth -= 1;
+    if (depth === 0) {
+      closingIndex = index;
+      break;
+    }
+  }
+  if (closingIndex === undefined || closingIndex === 1) return false;
+  const pipeline = typeScriptMethodPipeline(["array", ...expression.slice(closingIndex + 1)]);
+  return pipeline?.every((method) => method === "sort") === true;
+}
+
+function writerMatchesClassification(site: WriterSite, classification: WriterClassification): boolean {
+  if (site.language === SourceLanguage.TypeScript) {
+    const expression = site.typeScriptExpression ?? [];
+    switch (classification) {
+      case WriterClassification.Initializer:
+        return expression.length === 2 && expression[0] === "[" && expression[1] === "]";
+      case WriterClassification.Issuer:
+        return isTypeScriptIssuingArray(expression);
+      case WriterClassification.IdentityPreserving:
+        return isPureTypeScriptCollectionTransform(expression, "map");
+      case WriterClassification.IdentityRemoving:
+        return isPureTypeScriptCollectionTransform(expression, "filter");
+    }
+  }
   switch (classification) {
     case WriterClassification.Initializer:
-      return language === SourceLanguage.Lean
-        ? /activityOccurrences\s*:=\s*\[\]/su
-        : /activityOccurrences\s*:\s*\[\]/su;
+      return /activityOccurrences\s*:=\s*\[\]/su.test(site.source);
     case WriterClassification.Issuer:
-      return language === SourceLanguage.Lean
-        ? /activityOccurrences\s*:=\s*insertActivityOccurrence/su
-        : /activityOccurrences\s*:\s*\[/su;
+      return /activityOccurrences\s*:=\s*insertActivityOccurrence/su.test(site.source);
     case WriterClassification.IdentityPreserving:
-      return language === SourceLanguage.Lean
-        ? /activityOccurrences\s*:=\s*replaceBodyIn/su
-        : /activityOccurrences\s*:.*\.map\(/su;
+      return /activityOccurrences\s*:=\s*replaceBodyIn/su.test(site.source);
     case WriterClassification.IdentityRemoving:
-      return language === SourceLanguage.Lean
-        ? /activityOccurrences\s*:=.*(?:\.filter|filter\s|retainedByRegion)/su
-        : /activityOccurrences\s*:.*\.filter\(/su;
+      return /activityOccurrences\s*:=.*(?:\.filter|filter\s|retainedByRegion)/su.test(site.source);
   }
 }
 
@@ -414,7 +501,7 @@ test("every classification still matches the writer shape and required evidence"
   for (const site of currentWriterCensus()) {
     const record = writerRecords.get(site.key);
     assert.ok(record, site.key);
-    assert.match(site.source, writerShape(record.classification, site.language), site.key);
+    assert.equal(writerMatchesClassification(site, record.classification), true, site.key);
     const needsEvidence = record.classification === WriterClassification.Issuer ||
       record.classification === WriterClassification.IdentityPreserving ||
       (site.language === SourceLanguage.Lean &&
@@ -437,6 +524,25 @@ test("an added production writer is unclassified until its evidence record lands
   assert.ok(first !== undefined, "writer census is unexpectedly empty");
   const seeded: WriterSite = { ...first, key: `${first.relativePath}#seededWriter@1` };
   assert.deepEqual(unclassifiedWriterKeys([...census, seeded], writerRecords), [seeded.key]);
+});
+
+test("an identity-removing classification rejects a mixed remove-and-issue rewrite", () => {
+  const mixedSource = [
+    "activityOccurrences: [",
+    "  ...state.activityOccurrences.filter((candidate) => candidate.id !== removed.id),",
+    "  issued,",
+    "]",
+  ].join("\n");
+  const mixedRewrite: WriterSite = {
+    key: "seeded.ts#mixedRewrite@1",
+    language: SourceLanguage.TypeScript,
+    relativePath: "seeded.ts",
+    owner: "mixedRewrite",
+    source: mixedSource,
+    typeScriptExpression: typeScriptActivityOccurrenceExpression(mixedSource),
+  };
+  assert.equal(writerMatchesClassification(mixedRewrite, WriterClassification.IdentityRemoving), false);
+  assert.equal(writerMatchesClassification(mixedRewrite, WriterClassification.Issuer), true);
 });
 
 test("the census parser sees independent writer forms without treating declarations as writers", () => {
