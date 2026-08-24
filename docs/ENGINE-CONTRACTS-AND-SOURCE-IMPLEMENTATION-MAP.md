@@ -114,7 +114,7 @@ This section owns a cross-cutting admission rule that no single capsule owns, be
 ### Wire contracts
 
 - Parallel legacy schemas, migration readers, compatibility switches, general assertion language
-- negative, fractional, unsafe, nested, heterogeneous, or other values; integer/list use outside M6 completion
+- negative, fractional, unsafe, nested, heterogeneous, or other values; integer use outside M6 completion; String-list use outside M6 completion and the exact profile-gated sequential Multi-Instance Process-start binding
 - wider or decimal numeric domain
 - identifier normalization or locale-sensitive ordering
 

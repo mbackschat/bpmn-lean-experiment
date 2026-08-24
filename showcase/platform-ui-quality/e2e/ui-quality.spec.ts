@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { mvpCapabilityCatalog } from "../../../model-corpus/mvp-capabilities.ts";
+
 import {
   assertOwnedActionsFit,
   horizontalOverflowFindings,
@@ -116,7 +118,12 @@ test("About exposes the versioned capability boundary without overflow @responsi
   const table = page.getByRole("table", {
     name: "Executable BPMN element and semantic-variant overview",
   });
-  await expect(table.locator("tbody tr")).toHaveCount(25);
+  await expect(table.locator("tbody tr")).toHaveCount(
+    mvpCapabilityCatalog.capabilities.length,
+  );
+  expect(await table.locator("tbody tr").evaluateAll((rows) =>
+    rows.map((row) => row.getAttribute("data-capability-id"))
+  )).toEqual(mvpCapabilityCatalog.capabilities.map(({ id }) => id));
   const timerStart = table.locator('[data-capability-id="timerStartEvent"]');
   await expect(timerStart).toContainText("Timer Start Event");
   await expect(timerStart).toContainText("no recurrence or calendar form");

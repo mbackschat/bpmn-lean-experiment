@@ -9,6 +9,7 @@ import {
   executionPublicationIdentityForPublicProcessInstance,
   executionPublicationStateAcceptedKeys,
   ExecutionPublicationResultKind,
+  SemanticOperationKind,
 } from "@bpmn-lean/platform-contracts";
 
 import {
@@ -66,6 +67,23 @@ test("keeps the strict state-key decoder synchronized with the producer schema",
     [...executionPublicationStateAcceptedKeys].toSorted(),
   );
   assert.equal(producer.required.includes("openMultiInstances"), false);
+});
+
+test("keeps the internal-operation decoder synchronized with the producer schema", async () => {
+  const schema = JSON.parse(await readFile(
+    new URL("../../../contracts/schemas/semantic-publication.schema.json", import.meta.url),
+    "utf8",
+  )) as {
+    $defs: {
+      internalTransition: {
+        properties: { operationKind: { enum: string[] } };
+      };
+    };
+  };
+  assert.deepEqual(
+    schema.$defs.internalTransition.properties.operationKind.enum.toSorted(),
+    Object.values(SemanticOperationKind).toSorted(),
+  );
 });
 
 test("rejects recursive Multi-Instance identity, shape, and binding drift", () => {
@@ -466,10 +484,42 @@ function sequentialMultiInstancePublicationPage(): MutableSequentialPage {
   const page = executionPublicationPage();
   const controller = sequentialMultiInstanceController();
   const taskId = controller.activeIterations[0]!.taskId;
+  const owner = page.current!.scopes[0]!.id;
+  const token = {
+    sequenceFlowId: "Flow_Review",
+    owner,
+    multiplicity: 1,
+  };
+  const awaitIteration = {
+    revision: 2,
+    logicalTimeMs: 0,
+    transition: {
+      kind: "internalOperation",
+      operationId: "await-sequential-review",
+      operationKind: "awaitSequentialMultiInstanceUserTask",
+      origin: { kind: "bpmnElement", elementId: taskId.elementId },
+      owner,
+    },
+    positionDelta: {
+      consumedTokens: [],
+      producedTokens: [token],
+      enteredScopes: [],
+      exitedScopes: [],
+    },
+  };
   return {
     ...page,
+    pageThroughRevision: 2,
+    headRevision: 2,
+    batches: [{
+      ...page.batches[0]!,
+      throughRevision: 2,
+      transitions: [page.batches[0]!.transitions[0]!, awaitIteration],
+    }],
     current: {
       ...page.current!,
+      revision: 2,
+      controlTokens: [token],
       state: {
         ...page.current!.state,
         activeWaits: [{ elementId: taskId.elementId, kind: "userTask", multiplicity: 1 }],

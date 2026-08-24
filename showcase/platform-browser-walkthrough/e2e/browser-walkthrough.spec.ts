@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
+import { mvpCapabilityCatalog } from "../../../model-corpus/mvp-capabilities.ts";
+
 import {
   screenshotCatalog,
   screenshotTargetDirectory,
@@ -38,7 +40,12 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   const capabilityTable = page.getByRole("table", {
     name: "Executable BPMN element and semantic-variant overview",
   });
-  await expect(capabilityTable.locator("tbody tr")).toHaveCount(25);
+  await expect(capabilityTable.locator("tbody tr")).toHaveCount(
+    mvpCapabilityCatalog.capabilities.length,
+  );
+  expect(await capabilityTable.locator("tbody tr").evaluateAll((rows) =>
+    rows.map((row) => row.getAttribute("data-capability-id"))
+  )).toEqual(mvpCapabilityCatalog.capabilities.map(({ id }) => id));
   await capture(page, "01-about-capability-boundary.png", capabilityBoundary, captured);
 
   await navigate(page, "Definitions");

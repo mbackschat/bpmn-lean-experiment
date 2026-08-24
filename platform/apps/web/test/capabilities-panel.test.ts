@@ -7,6 +7,8 @@ import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { build } from "vite";
 
+import { mvpCapabilityCatalog } from "../../../../model-corpus/mvp-capabilities.ts";
+
 const dependencies = ["react/jsx-runtime", "react"] as const;
 const built = await build({
   configFile: false,
@@ -57,5 +59,8 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   );
   assert.match(html, /publishes no partial output/iu);
   assert.match(html, /No CIB target selected/u);
-  assert.equal(html.match(/data-capability-id=/gu)?.length, 27);
+  assert.deepEqual(
+    [...html.matchAll(/data-capability-id="([^"]+)"/gu)].map((match) => match[1]),
+    mvpCapabilityCatalog.capabilities.map(({ id }) => id),
+  );
 });

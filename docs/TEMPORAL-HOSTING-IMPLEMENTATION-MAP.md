@@ -82,7 +82,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - production history baseline
 - general Worker versioning
 - expression evaluation beyond pure Simple Boolean v1
-- integer or String-list values outside exact M6 User Task completion, nested or heterogeneous values, or general effect faults/Error propagation beyond the direct-parent internal slice
+- integer values outside exact M6 User Task completion, String-list values outside M6 completion and the exact profile-gated sequential Multi-Instance Process-start binding, nested or heterogeneous values, or general effect faults/Error propagation beyond the direct-parent internal slice
 - Activity heartbeats
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule

@@ -47,6 +47,9 @@ import {
   sameSourceOverlayIdentity,
 } from "./source-overlay-identity.js";
 import { scenarioObservationsForProfile } from "./semantic-profile-observations.js";
+import {
+  sequentialMultiInstanceStimulusDataAdmitted,
+} from "./sequential-multi-instance-command-data-admission.js";
 
 export function supportsSemanticProcessScenario(
   scenario: Scenario,
@@ -91,6 +94,7 @@ export function supportsSemanticProcessExecution(
       program.definitionScopes.length,
     ) &&
     profileAllowsStimulusValueDomain(program.identity.semanticProfile, start) &&
+    sequentialMultiInstanceStimulusDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
   );
 }

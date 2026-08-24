@@ -100,7 +100,7 @@ The first interchange composition registers `cibseven-2.2.0-user-task-process-da
 
 ## Explicitly absent
 
-Two registered profiles select one internal standard-notation preservation capability without executing the retained material. The BPMN data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Integer and String-list values appear only at M6 User Task completion, and Product 1 owns no form semantics. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Its successor adds only the exact incident-gated hosting-root cancellation path; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
+Two profiles preserve one internal standard-notation capability without execution. The BPMN data family is rejected. Only the bounded User Task cycle is cyclic. Only M6 User Task completion admits integers. String-list values are confined to M6 completion and exact profile-gated sequential Multi-Instance start/output; Product 1 owns no form semantics. The closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one literal-generation-1 incident and exact retry. Its successor adds exact incident-gated hosting-root cancellation only; it excludes general BPMN/operator or native Temporal cancellation, compensation, other incident generation, and Product 2 action state.
 
 The identity bound remains narrower than its general criterion: Message, Effect, Event race, Call, and ordinary Scope are absent, and called roots are excluded. Activity issuing is independently checkpoint-approved over the guarded writer set; every other family's issuing discipline and general transition preservation remain absent.
 
@@ -149,7 +149,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 
 ### TypeScript semantic core
 
-- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, integer/list execution outside exact M6 User Task completion, nested or heterogeneous values, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
+- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, integer execution outside exact M6 User Task completion, String-list execution outside M6 completion and the exact sequential Multi-Instance Process-start/terminal-output slice, nested or heterogeneous values, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
 
 ### BPMN conformance
 
