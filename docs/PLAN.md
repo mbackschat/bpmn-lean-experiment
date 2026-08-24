@@ -41,7 +41,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: commit the complete first-green [Activity issuing discipline](RUNTIME-STATE-ACTIVITY-ISSUING-DISCIPLINE-PROPOSAL.md) target after its focused and complete applicable gates, generate its review packet mechanically, and open the required context-cold semantic-checkpoint review against that immutable commit while the exact-target complete gate runs concurrently.
+Next action: generate the cost-bound [Activity issuing discipline](RUNTIME-STATE-ACTIVITY-ISSUING-DISCIPLINE-PROPOSAL.md) checkpoint packet mechanically and open the required context-cold semantic-checkpoint review against that immutable commit while the exact-target complete gate runs concurrently.
 
 The Activity-family issuing account is selected and implemented rather than narrowing `ActivityOccurrenceId`; registration still waits for its governed checkpoint approval and the capsule's Temporal host class, refinement witnesses, measured capacity owner, complete gates, and closure review.
 
