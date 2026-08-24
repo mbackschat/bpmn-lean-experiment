@@ -53,6 +53,12 @@ export const bpmnBoundedScopeSchedulerUnavailableFailureType =
  */
 export const bpmnMonitoredActivitySchedulerUnavailableFailureType =
   "BpmnMonitoredActivitySchedulerUnavailable";
+/**
+ * Distinct because one outer lifetime deadline survives a sequence of inner task occurrences.
+ * Reusing the bounded-Activity identity would hide the turnover invariant this scheduler adds.
+ */
+export const bpmnSequentialMultiInstanceSchedulerUnavailableFailureType =
+  "BpmnSequentialMultiInstanceSchedulerUnavailable";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 export const processTerminalReceiptFormatV1 =
   "bpmn-lean.process-terminal-receipt.v1" as const;
@@ -89,14 +95,12 @@ export enum TemporalHostAdmissionFailureCode {
    */
   MonitoredActivitySchedulerUnavailable = "monitoredActivitySchedulerUnavailable",
   /**
-   * Not a missing scheduler: a missing semantics.
+   * Distinct from the single-body bounded-Activity scheduler.
    *
-   * The other codes report an operation the host cannot schedule in the offered composition. This one
-   * reports an operation no host can run at all, because the contract admits its shape before its
-   * runtime transition exists. It is reported separately so an operator is not told to simplify a
-   * composition that would still be unrunnable alone.
+   * The outer Activity and Timer identity stay fixed while the inner User Task identity turns over.
+   * A separate code makes loss of that lifetime join independently diagnosable.
    */
-  UnsupportedOperationSemantics = "unsupportedOperationSemantics",
+  SequentialMultiInstanceSchedulerUnavailable = "sequentialMultiInstanceSchedulerUnavailable",
 }
 
 export type TemporalHostAdmissionFailure = DeepReadonly<{

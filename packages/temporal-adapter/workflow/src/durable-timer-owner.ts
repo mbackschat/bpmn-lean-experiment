@@ -38,6 +38,8 @@ export type DurableTimerHost = Readonly<{
 }>;
 
 export type DurableTimerOwner = Readonly<{
+  /** Whether this Run currently owns a native Timer that cannot cross Continue-As-New. */
+  hasArmedTimer: () => boolean;
   /** Arms this identity, or accepts it as already armed. Refuses a different live identity. */
   ensureArmed: (timer: DurableTimer) => void;
   /**
@@ -56,6 +58,8 @@ export function createDurableTimerOwner({
   let armed: ArmedTimer | undefined;
 
   return {
+    hasArmedTimer: () => armed !== undefined,
+
     ensureArmed(timer) {
       const key = durableTimerKey(timer);
       if (armed !== undefined) {

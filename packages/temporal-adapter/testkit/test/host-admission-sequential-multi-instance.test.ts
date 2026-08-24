@@ -13,17 +13,10 @@ import {
   assessTemporalHostCapability,
 } from "@bpmn-lean/temporal-testkit";
 
-/**
- * Host refusal of an operation the contract admits before its runtime exists.
- *
- * The oracle is the reserved sequential Multi-Instance profile, which is deliberately not
- * execution-registered: its source and IL lanes compile, and no evaluator commits it. The host must
- * refuse it as unrunnable rather than classify it as passive, because the admission tail admits every
- * program that claims no managed scheduler, so a passive classification would silently admit it.
- */
+/** Admission boundary for the reviewed sequential Multi-Instance managed deadline class. */
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 
-test("refuses a program carrying an operation with no reviewed runtime transition", async () => {
+test("admits one isolated sequential Multi-Instance lifetime deadline", async () => {
   const compilation = await compileBpmnToSemanticProcess({
     bytes: await readFile(
       new URL(
@@ -52,11 +45,27 @@ test("refuses a program carrying an operation with no reviewed runtime transitio
   assert.equal(reserved.length, 1);
 
   assert.deepEqual(assessTemporalHostCapability(program), {
-    kind: TemporalHostCapabilityResultKind.Rejected,
-    failure: {
-      code: TemporalHostAdmissionFailureCode.UnsupportedOperationSemantics,
-      evidence:
-        `Operation ${reserved[0]?.id} of kind awaitSequentialMultiInstanceUserTask has no reviewed runtime transition, so no Temporal host can run it.`,
-    },
+    kind: TemporalHostCapabilityResultKind.Admitted,
   });
+
+  const operation = reserved[0];
+  assert.ok(operation !== undefined);
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      operations: [
+        ...program.operations,
+        { ...operation, id: `${operation.id}:second` },
+      ],
+    }),
+    {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode
+          .SequentialMultiInstanceSchedulerUnavailable,
+        evidence:
+          "The Temporal host admits only one isolated sequential Multi-Instance User Task with one exact PT1S outer-lifetime boundary Timer.",
+      },
+    },
+  );
 });

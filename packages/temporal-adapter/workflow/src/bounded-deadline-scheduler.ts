@@ -7,10 +7,8 @@
  * decides membership — the non-interrupting family faces the same undefined order, between spawning
  * a branch and withdrawing the deadline. What differs per family is which committed state counts as
  * one pair and which identity the refusal carries, and both live in the descriptors below. Those
- * identities stay distinct on purpose: a bounded Activity loses one task completion, a bounded scope
- * loses a whole child region reaching quiescence, and a monitored Activity loses a handler branch
- * that never starts, so a shared identity would report an unavailable scheduler without saying which
- * semantic outcome is unreachable. Activation-tagged batching and durable deadline ownership are the
+ * identities stay distinct on purpose: each descriptor reports which semantic outcome its unavailable
+ * scheduler would make unreachable. Activation-tagged batching and durable deadline ownership are the
  * shared mechanisms and keep their own owners.
  */
 import { StimulusKind } from "@bpmn-lean/semantic-core";
@@ -29,6 +27,8 @@ import {
   isBoundaryTimerDefinition,
   isBoundedScopeDeadlineDefinition,
   isMonitoredBoundaryTimerDefinition,
+  isSequentialMultiInstanceBoundaryDefinition,
+  sequentialMultiInstanceControllerFor,
 } from "@bpmn-lean/semantic-core";
 import type { ActivityOccurrence } from "@bpmn-lean/semantic-core";
 import { ApplicationFailure } from "@temporalio/workflow";
@@ -41,6 +41,7 @@ import {
   bpmnBoundedActivitySchedulerUnavailableFailureType,
   bpmnBoundedScopeSchedulerUnavailableFailureType,
   bpmnMonitoredActivitySchedulerUnavailableFailureType,
+  bpmnSequentialMultiInstanceSchedulerUnavailableFailureType,
 } from "@bpmn-lean/temporal-protocol";
 import { createDurableTimerOwner } from "./durable-timer-owner.js";
 import type { DurableTimer } from "./durable-timer-owner.js";
@@ -72,6 +73,8 @@ export type BoundedDeadlineFamily = Readonly<{
   invariantMessage: string;
   replacedRefusal: string;
   identityChangedRefusal: string;
+  /** Extra committed join that only this family owns, beyond the shared Activity/body/Timer record. */
+  pairIsValid?: (state: RuntimeState, record: ActivityOccurrence) => boolean;
 }>;
 
 export const boundedActivityDeadlineFamily: BoundedDeadlineFamily = Object
@@ -126,7 +129,30 @@ export const monitoredActivityDeadlineFamily: BoundedDeadlineFamily = Object
       "Committed monitored Activity changed its durable deadline identity",
   });
 
+/** One outer lifetime deadline that remains armed while the inner task body turns over. */
+export const sequentialMultiInstanceDeadlineFamily: BoundedDeadlineFamily =
+  Object.freeze({
+    ownsDeadline: isSequentialMultiInstanceBoundaryDefinition,
+    schedulerUnavailableFailureType:
+      bpmnSequentialMultiInstanceSchedulerUnavailableFailureType,
+    sharedActivationMessage:
+      "Sequential Multi-Instance completion and its outer lifetime deadline shared one Workflow activation with no defined winner",
+    invariantMessage:
+      "Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT1S outer-lifetime boundary deadline",
+    replacedRefusal:
+      "Sequential Multi-Instance Activity attempted to replace its live outer deadline",
+    identityChangedRefusal:
+      "Committed sequential Multi-Instance Activity changed its outer deadline identity",
+    pairIsValid: (state, record) =>
+      sequentialMultiInstanceControllerFor(
+        state.sequentialMultiInstanceControllers ?? [],
+        record.id,
+      ) !== undefined,
+  });
+
 export type BoundedDeadlineScheduler = Readonly<{
+  /** True only after this Run has emitted the family's native Timer command. */
+  hasArmedDeadline: () => boolean;
   /** True when this family owns the state's committed deadline, so one scheduler can be selected. */
   ownsCommittedDeadline: (state: RuntimeState) => boolean;
   /**
@@ -142,6 +168,21 @@ export type BoundedDeadlineScheduler = Readonly<{
   waitForReadiness: (state: RuntimeState) => Promise<ReadonlyArray<Stimulus>>;
   reconcileCommittedState: (state: RuntimeState) => void;
 }>;
+
+/** One scheduler instance for every managed boundary-deadline family. */
+export function createBoundedDeadlineSchedulers(
+  semanticProcess: SemanticProcessProgram,
+  waitForTimer: (durationMs: number) => Promise<void>,
+): ReadonlyArray<BoundedDeadlineScheduler> {
+  return [
+    boundedActivityDeadlineFamily,
+    boundedScopeDeadlineFamily,
+    monitoredActivityDeadlineFamily,
+    sequentialMultiInstanceDeadlineFamily,
+  ].map((family) =>
+    createBoundedDeadlineScheduler(semanticProcess, waitForTimer, family)
+  );
+}
 
 export function createBoundedDeadlineScheduler(
   semanticProcess: SemanticProcessProgram,
@@ -164,6 +205,8 @@ export function createBoundedDeadlineScheduler(
   });
 
   return {
+    hasArmedDeadline: deadline.hasArmedTimer,
+
     ownsCommittedDeadline(state) {
       return managedDeadline(semanticProcess, state, family) !== undefined;
     },
@@ -265,9 +308,13 @@ function requireManagedDeadline(
 ): DurableTimer {
   const pair = managedPair(semanticProcess, state, family);
   const bodyLive = pair === undefined ? false : bodyIsLive(pair.record, state);
+  const familyPairValid = pair === undefined
+    ? false
+    : family.pairIsValid?.(state, pair.record) ?? true;
   if (
     pair === undefined ||
     !bodyLive ||
+    !familyPairValid ||
     pair.deadline.remainingMs !== 1_000
   ) {
     throw hostInvariantFailure(family.invariantMessage);

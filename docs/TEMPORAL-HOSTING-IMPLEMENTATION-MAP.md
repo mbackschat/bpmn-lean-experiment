@@ -22,6 +22,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - durable hosting for every closed family named in [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary), keeping embedded and called Process work inside one Workflow rather than assigning BPMN meaning to Child Workflows
 - passive `mergeExclusive` host admission; the finite cycle witness reuses User Task Update, survives replacement, recovers one result, refuses a stale occurrence, takes both back-edges and the default exit, observes no rollover suggestion, and replays without a new host mechanism
 - family-parameterized boundary-deadline scheduling with distinct typed shared-activation refusals, plus the managed Event-Based Gateway race and passive Message subscription class
+- an execution-unregistered sequential Multi-Instance managed-deadline class with its own typed refusal, exact isolated admission, controller/Activity/body/Timer join, stable semantic deadline identity through inner-task turnover, zero-item absence, and a chain-level prohibition on Continue-As-New while any managed boundary-deadline Timer is armed; live Worker, rollover, interruption, recovery, history, capacity, and replay evidence remains open
 - Worker replacement, accepted-result recovery, exact Query and history assertions, replay, cleanup, and a separately bundled semantic or host-bypass mutation for each distinct mechanism
 - stop-the-world Workflow deployment admission: SHA-256 identities bind exact executable bundle bytes and fleet-visible Worker identities; the gate orders Product 1 ingress fencing, graceful old-Worker stop, empty authoritative poller inventory, candidate replay, candidate-only Workflow and Activity pollers, and ingress reopen; every failure stays fenced, a started bad candidate is stopped, and no old bundle is restarted automatically
 - deployment compatibility evidence: the candidate replays both a retained two-argument legacy history and all three v1 Runs before polling; the old bundle fails the closed v1 Run on the `bpmn-workflow-chain-v1` marker; mixed old/new or incomplete poller inventories are refused; the legacy open User Task then resumes under the candidate and reaches the exact semantic-core terminal state without changing public Product 1, BPMN, or CIB facts
@@ -83,7 +84,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - timer forms/races/cancellation beyond the exact capsule
 - post-retention publication reconstruction or archive
 - timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload, key-based or global correlation, modeled throw, Message Flow, and other Message Event loci beyond the direct payload-free catch
-- multi-instance, migration, and Workflow-chain policies beyond the approved bounded Continue-As-New contract
+- complete Multi-Instance hosting, live refinement, measured armed-Run capacity, execution registration, migration, and Workflow-chain policies beyond the approved bounded Continue-As-New contract
 - immutable profile or production Event History compatibility
 - task inbox
 

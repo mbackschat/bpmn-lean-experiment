@@ -27,7 +27,6 @@ import {
 } from "@temporalio/workflow";
 
 import {
-  bpmnBoundedActivitySchedulerUnavailableFailureType,
   bpmnMessageDeliveryResultQueryName,
   bpmnOpenUserTasksQueryName,
   bpmnWorkflowChainPatchId,
@@ -58,10 +57,7 @@ import {
   ActivationDrain,
 } from "./activation-tagged-readiness.js";
 import {
-  boundedActivityDeadlineFamily,
-  boundedScopeDeadlineFamily,
-  createBoundedDeadlineScheduler,
-  monitoredActivityDeadlineFamily,
+  createBoundedDeadlineSchedulers,
 } from "./bounded-deadline-scheduler.js";
 import {
   createEventRaceReadinessScheduler,
@@ -118,6 +114,7 @@ import {
   initializeWorkflowRunRetention,
   preflightWorkflowRunRetentionCandidate,
 } from "./workflow-run-retention.js";
+import { workflowRolloverPermitted } from "./workflow-rollover-safety.js";
 import type {
   WorkflowRunRetentionPreflight,
 } from "./workflow-run-retention.js";
@@ -219,26 +216,10 @@ export async function runBpmnProcessWithHostEffects(
     waitForTimer,
     eventRaceActivationDrain,
   );
-  // One scheduler per boundary-deadline host kind. Each owns only the deadlines its own family
-  // defines, so at most one ever claims a given committed state and none can schedule another
-  // family's pair under the wrong refusal identity.
-  const boundedDeadlineSchedulers = [
-    createBoundedDeadlineScheduler(
-      semanticProcess,
-      waitForTimer,
-      boundedActivityDeadlineFamily,
-    ),
-    createBoundedDeadlineScheduler(
-      semanticProcess,
-      waitForTimer,
-      boundedScopeDeadlineFamily,
-    ),
-    createBoundedDeadlineScheduler(
-      semanticProcess,
-      waitForTimer,
-      monitoredActivityDeadlineFamily,
-    ),
-  ] as const;
+  const boundedDeadlineSchedulers = createBoundedDeadlineSchedulers(
+    semanticProcess,
+    waitForTimer,
+  );
   const boundedDeadlineSchedulerFor = (candidate: RuntimeState) =>
     boundedDeadlineSchedulers.find((scheduler) =>
       scheduler.ownsCommittedDeadline(candidate)
@@ -499,14 +480,17 @@ export async function runBpmnProcessWithHostEffects(
 
     if (
       workflowChain !== null &&
-      (
+      workflowRolloverPermitted(
         workflowChainFence === WorkflowChainFenceState.Rollover ||
-        workflowChain.commandCapacity.rolloverRequested() ||
-        runRetention?.rolloverRequested === true ||
-        workflowChainRolloverTriggered(
-          workflowChain,
-          runRetention !== null && runRetention.traceEntries > 0,
-        )
+          workflowChain.commandCapacity.rolloverRequested() ||
+          runRetention?.rolloverRequested === true ||
+          workflowChainRolloverTriggered(
+            workflowChain,
+            runRetention !== null && runRetention.traceEntries > 0,
+          ),
+        boundedDeadlineSchedulers.some((scheduler) =>
+          scheduler.hasArmedDeadline()
+        ),
       )
     ) {
       workflowChainFence = WorkflowChainFenceState.Rollover;
@@ -551,7 +535,12 @@ export async function runBpmnProcessWithHostEffects(
       reserveStimulus,
       () =>
         workflowChain?.capacity.hasPendingFailure() === true ||
-        workflowChain?.commandCapacity.rolloverRequested() === true,
+        workflowRolloverPermitted(
+          workflowChain?.commandCapacity.rolloverRequested() === true,
+          boundedDeadlineSchedulers.some((scheduler) =>
+            scheduler.hasArmedDeadline()
+          ),
+        ),
     );
     if (readinessAction === HostReadinessAction.RecheckMainLoop) {
       continue;

@@ -10,6 +10,7 @@ export * from "./workflow-chain-continuation.js";
 export * from "./workflow-event-history-capacity.js";
 export * from "./workflow-semantic-candidate.js";
 export * from "./workflow-run-retention.js";
+export * from "./workflow-rollover-safety.js";
 export * from "./workflow-timer-capacity.js";
 export * from "./durable-timer-owner.js";
 export * from "./event-race-readiness-scheduler.js";
