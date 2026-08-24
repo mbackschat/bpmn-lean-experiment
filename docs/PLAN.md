@@ -43,7 +43,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: cold-review corrected immutable semantic-checkpoint target `e4555a81`, which preserves the selected rollover rule and records the interruption schedule's required third Run after Timer-callback reduction. After approval, implement the [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) smallest live refinement witnesses for pre-arming Continue-As-New, ordered turnover, zero-item completion, interruption, stable outer-deadline identity, Update recovery, Worker replacement, and replay, then measure those histories and bind the capacity owner before execution registration.
+Next action: implement the [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) smallest live refinement witnesses for pre-arming Continue-As-New, ordered turnover, zero-item completion, interruption across the approved three-Run schedule, stable outer-deadline identity, Update recovery, Worker replacement, and replay, then measure those histories and bind the capacity owner before execution registration.
 
 The Activity-family issuing account is selected and checkpoint-approved rather than narrowing `ActivityOccurrenceId`; registration still requires the capsule's live refinement witnesses, measured capacity owner, complete gates, and closure review.
 
