@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved-with-required-edits
 
 ## Question and current boundary
 
@@ -26,7 +26,7 @@ for every record in after.activityOccurrences:
       activityActivationCount(before, record.activityElementId) < record.activation
 ```
 
-The antecedent is a criterion over the committed pair, not a list of operation kinds. A transition issues an Activity identity exactly when the identity exists after the transition and did not exist before it. A body replacement that preserves the outer identity is not an issue. A removal is not an issue. A duplicate insertion of an identity already live is handled by `RSI-UNIQ-02`, while reintroduction after an intervening committed withdrawal is an issue and is refused by this rule.
+The antecedent is a criterion over the committed pair, not a list of operation kinds. A transition issues an Activity identity exactly when the identity exists after the transition and did not exist before it. A body replacement that preserves the outer identity is not an issue. A removal is not an issue. A duplicate insertion of an identity already live is handled by `AOO-ID-01`, implemented by the Activity identity-uniqueness predicates `activityIdentitiesUnique` in Lean and `DuplicateActivityOccurrence` in TypeScript, while reintroduction after an intervening committed withdrawal is an issue and is refused by this rule.
 
 The conclusion is deliberately `preCount < activation`, not `activation = preCount + 1`. Every current issuer uses the exact successor value, but the weaker strict inequality is the non-reissue obligation and remains compatible with a future transition that atomically issues several distinct occurrences for one Activity element and advances the post-state high-water mark to their maximum. `RSI-BOUND-01` separately requires every resulting live activation to be at or below that post-state mark, and `RSI-MONO-01` separately prevents the mark from decreasing.
 
@@ -38,29 +38,32 @@ This argument is family-local. It establishes non-reissue for `ActivityOccurrenc
 
 ## Current issuer audit
 
-The audit is criterion-driven: inspect every production assignment to `activityOccurrences`, then classify the assignment by whether it can leave an identity in the successor that was absent from the predecessor. The current roots are:
+The audit is criterion-driven: inspect every production assignment to `activityOccurrences`, then classify the assignment by whether it can leave an identity in the successor that was absent from the predecessor. The maintained current-writer matrix is:
 
-| Root mechanism | Lean realization | TypeScript realization | Issue behavior |
+| Writer classification | Lean realization | TypeScript realization | Required evidence |
 |---|---|---|---|
-| bounded and monitored User Task arming | [`activateBoundedUserTask`](../BpmnSemantics/SemanticProcess/WaitActivation.lean) | bounded and monitored task runtime arming | mints `preCount + 1` and writes the same value to `activityActivations` atomically |
-| bounded Sub-Process arming | [`armScopeDeadline`](../BpmnSemantics/SemanticProcess/BoundedScopeArming.lean) | bounded-scope runtime arming | mints `preCount + 1` and writes the same value to `activityActivations` atomically |
-| sequential Multi-Instance entry | reuses `activateBoundedUserTask` | sequential Multi-Instance runtime entry | mints `preCount + 1` and writes the same value to `activityActivations` atomically |
+| empty initialization | [`RuntimeState.initialState`](../BpmnSemantics/SemanticProcess/RuntimeState.lean) | [`initialState`](../packages/semantic-core/src/semantic-process-state.ts) | the writer-census guard classifies both as non-issuers because they have no predecessor and contain no Activity occurrence |
+| bounded and monitored User Task arming | [`activateBoundedUserTask`](../BpmnSemantics/SemanticProcess/WaitActivation.lean) | [`semantic-process-bounded-task-runtime.ts`](../packages/semantic-core/src/semantic-process-bounded-task-runtime.ts) and [`semantic-process-monitored-task-runtime.ts`](../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | one shared Lean root law and one evaluator-produced pair-oracle witness for each independent TypeScript implementation |
+| bounded Sub-Process arming | [`armScopeDeadline`](../BpmnSemantics/SemanticProcess/BoundedScopeArming.lean) | [`semantic-process-bounded-scope-runtime.ts`](../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | one Lean root law and one evaluator-produced TypeScript pair-oracle witness |
+| sequential Multi-Instance entry | reuses `activateBoundedUserTask` | [`semantic-process-sequential-multi-instance-runtime.ts`](../packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts) | reuse of the shared Lean root law and one evaluator-produced TypeScript pair-oracle witness |
+| identity-preserving rewrite | [`ActivityBodyTurnover.lean`](../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean) and the bounded-scope rewrites in [`BoundedScope.lean`](../BpmnSemantics/SemanticProcess/BoundedScope.lean) | [`activity-body-turnover.ts`](../packages/semantic-core/src/activity-body-turnover.ts) and the monitored-task identity-preserving rewrite | pair laws and focused pair-oracle witnesses that pass without advancing the Activity counter |
+| identity-removing rewrite | sequential Multi-Instance withdrawal, bounded-scope interruption, and [`ScopeCancellation.lean`](../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | the sequential Multi-Instance, bounded-task, monitored-task, bounded-scope, call, and scope-cancellation runtimes | pair laws and focused pair-oracle witnesses showing that removal alone creates no successor identity |
 
-The remaining production writers map, replace, filter, or regionally withdraw records. [Activity body turnover](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#lean-assurance-lane) replaces the body while preserving the exact outer Activity identity and counter. Completion, interruption, called-instance removal, and regional cancellation remove records. None creates a successor identity absent from its predecessor.
+The matrix is guarded as a classification of the production writer census, not maintained by trusting this prose list. [Activity body turnover](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#lean-assurance-lane) replaces the body while preserving the exact outer Activity identity and counter. Completion, interruption, called-instance removal, and regional cancellation remove records. None creates a successor identity absent from its predecessor.
 
-This table is evidence about the current implementation, not the membership definition. A new writer belongs to the rule automatically when it meets the pairwise criterion, even if it introduces a new operation kind or shares none of the current helper functions.
+This table is evidence about the current implementation, not the membership definition. A new writer belongs to the semantic rule whenever it meets the pairwise criterion, even if it introduces a new operation kind or shares none of the current helper functions. Evidence discovery is separate: every new production writer must update the executable writer census, receive an issuer, initializer, identity-preserving, or identity-removing classification, and supply the evidence required by that classification before the Activity-family discharge remains valid.
 
 ## Lean and TypeScript contract
 
 Lean adds one named decidable pair predicate for `RSI-ISSUE-01` beside the two-state runtime relations. `RuntimeStateMonotone` incorporates that predicate so a caller cannot claim the complete Layer 3 relation while omitting the issuing discipline. The Lean lane proves the shared arming root and bounded-scope root satisfy the rule, proves record-preserving and record-removing rewrites satisfy it without advancing the Activity counter, and retains one kernel-decided three-state reissue witness that passes the identity bound and counter monotonicity but fails the issuing discipline.
 
-The independently structured TypeScript account adds a distinct `RuntimeStateRegression` arm for an Activity issue at or below the predecessor counter. `runtimeStateRegressions` evaluates the pairwise criterion directly rather than dispatching on operation kinds. The preservation lane continues to enumerate evaluator-produced successors and must report no regression. A focused negative constructs the same three committed states without copying a Lean result, and a second positive reaches a later valid issue through an actual Activity arming evaluator after withdrawal.
+The independently structured TypeScript account adds a distinct `RuntimeStateRegression` arm for an Activity issue at or below the predecessor counter. `runtimeStateRegressions` evaluates the pairwise criterion directly rather than dispatching on operation kinds. Each current TypeScript issuer implementation feeds an evaluator-produced successor pair through that oracle; the existing finite preservation lane remains supplementary evidence and is not claimed to discover unvisited writers. A focused negative constructs the same three committed states without copying a Lean result, and a second positive reaches a later valid issue through an actual Activity arming evaluator after withdrawal.
 
-The two implementations intentionally share the rule and wire representation but not an implementation algorithm. The common-mode risk is a shared mistaken definition of "newly issued". The separating cases are therefore structural: body turnover preserves the identity and must pass without a counter advance; withdrawal followed by exact reintroduction must fail; withdrawal followed by a higher activation from an evaluator must pass; and adding a future issuer without updating an operation enumeration cannot escape because neither oracle enumerates operations.
+The two implementations intentionally share the rule and wire representation but not an implementation algorithm. The common-mode risks are a shared mistaken definition of "newly issued" and a writer that neither evidence lane exercises. The separating cases are therefore structural: body turnover preserves the identity and must pass without a counter advance; withdrawal followed by exact reintroduction must fail; withdrawal followed by a higher activation from an evaluator must pass; and the executable writer-census guard must fail when a production writer is added without a classification and its required evidence.
 
 ## Registration consequence
 
-Once the rule is implemented and its governed checkpoint is approved, the Activity-family non-reissue premise used by the public `OpenSequentialMultiInstance.id` projection is stated and discharged for every current Activity issuer. Sequential Multi-Instance registration may then cite the stable invariant, the per-root Lean laws, the independent TypeScript regression oracle, and its own evaluator evidence. No projection narrowing or compatibility branch is introduced.
+Once the rule is implemented and its governed checkpoint is approved, the Activity-family non-reissue premise used by the public `OpenSequentialMultiInstance.id` projection is stated and discharged for every current Activity issuer, conditional on the guarded current-writer matrix remaining complete. Sequential Multi-Instance registration may then cite the stable invariant, the guarded writer matrix, the per-root Lean laws, the independent TypeScript regression oracle, and its own evaluator evidence. No projection narrowing or compatibility branch is introduced.
 
 This proposal does not itself register the profile. Registration still waits for the capsule's Temporal host class, refinement witnesses, measured capacity owner, complete gates, and closure review.
 
@@ -78,7 +81,8 @@ Required:
 - one independent TypeScript pair oracle and a distinct regression classification;
 - the three-state reissue negative, the identity-preserving turnover positive, and a later valid evaluator issue;
 - per-root Lean discharge for the current Activity issuers, with shared roots proved once and reused by their consumers;
-- preservation-lane coverage that fails if any evaluator creates an Activity identity at or below the predecessor counter;
+- an executable production-writer census that fails on every unclassified `activityOccurrences` writer and records the evidence class for both initializers, both Lean issuer roots, every independent TypeScript issuer, and the identity-preserving and identity-removing writers;
+- evaluator-produced pair-oracle coverage for every current TypeScript issuer implementation, with the finite preservation lane retained as supplementary rather than exhaustive evidence;
 - stable-owner, routed-map, capsule, cost, and PLAN updates in the same change as the implementation claim they change.
 
 Excluded:
@@ -103,7 +107,7 @@ Focused implementation gates are the narrow Lean modules through [`./scripts/lak
 
 Implementation changes the residual absence recorded by [the runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-3-monotonicity), the non-reissue premise in [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), the registration blocker and evidence lanes in [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md), and the runtime/proof, semantic-family, and Temporal routed maps. Those owners must distinguish "Activity family discharged" from the still-open issuing disciplines of every other identity family.
 
-Reopen this account if Activity counters cease to be per-element high-water marks, if an Activity identity can enter a committed successor through restore or import rather than a semantic transition, if a transition can issue several occurrences but cannot advance the post-state mark to cover all of them, if body turnover changes the outer Activity identity, or if the public projection ceases to expose `ActivityOccurrenceId`.
+Reopen this account if Activity counters cease to be per-element high-water marks, if an Activity identity can enter a committed successor through restore or import rather than a semantic transition, if a transition can issue several occurrences but cannot advance the post-state mark to cover all of them, if body turnover changes the outer Activity identity, if the public projection ceases to expose `ActivityOccurrenceId`, or if any production `activityOccurrences` writer is added or changes classification without updating the guarded writer matrix and its required evidence.
 
 ## Independent cold-review receipt
 
