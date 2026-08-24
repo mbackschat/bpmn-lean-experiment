@@ -113,8 +113,8 @@ Reopen this account if Activity counters cease to be per-element high-water mark
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `c2412a07` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `c2412a07fd3f025fde3c147cb4756f07869eef69` | `fork-turns-none` | `approve-with-required-edits` | `c8e9d92efa9fdbf5c4dac726765ecd0ff0a36a95, 61038337445e0909946e31b4291a08a65766c1a6` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-Cold proposal review is required because this selects a new two-state invariant, changes the proof boundary, and supplies a premise for a published runtime identity. No implementation is authorized before an approved proposal review and owner-approved lifecycle.
+Cold proposal review is required because this selects a new two-state invariant, changes the proof boundary, and supplies a premise for a published runtime identity. The reviewer approved the selected rule after two bounded correction-audit rounds closed writer-census completeness, Activity-uniqueness attribution, and bounded-scope writer classification without changing the public contract, exclusions, or evidence strategy. No implementation is authorized before owner-approved lifecycle.
