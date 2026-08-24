@@ -343,7 +343,7 @@ A semantic-checkpoint review is required after the first complete executable sou
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `70256503c94ee6d2f63be315912d8465894b35f3` | `fork-turns-none` | `approve-with-required-edits` | `a064dc8ba871c77a8d27817565e8b3a9f0c019bc` |
-| Semantic checkpoint | `0e2a47a2e6ebed32b55452252d3563dfccee595c` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `0e2a47a2e6ebed32b55452252d3563dfccee595c` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The proposal review used two correction-audit rounds. The first audited `3b8e0df838cd13f2b0142bb7b4887b528bd1e51f`; the second and final approved audit is recorded in the table.
@@ -353,3 +353,5 @@ The first semantic-checkpoint review used two correction-audit rounds and moved 
 The redesigned semantic-checkpoint review approved `e4555a818dfe97a72ce5323da52a13431a282f63` without findings. It confirmed that the natural schedule remains two Runs, the interruption schedule uses a third Run only after the original Timer callback is reduced, and the correction changes no public contract, exclusion, scope, implementation status, or registration claim.
 
 The next executable Red exposed an evidence-order cycle that the redesigned checkpoint had not tested: the unregistered profile fails both initial and continuation execution identity before either a direct-VM or live production witness can produce a Timer or History. Target `0660a79ea569e74ce9f361adb70c4b54d955977d` replaces that strategy with a private real-service capacity probe before registration and requires the later production histories to validate its bounds. Because this changes the evidence strategy, it invalidates the preceding approval and requires a new context-cold semantic-checkpoint review.
+
+The context-cold capacity-order review approved `0e2a47a2e6ebed32b55452252d3563dfccee595c` without findings. It confirmed that the private whole-topology probe breaks the admission cycle without becoming semantic authority, that later production comparison preserves the support stop condition, and that a jointly admissible sixteen-item collection can reach exactly 8,192 canonical bytes while separately reaching the 512-byte item bound.
