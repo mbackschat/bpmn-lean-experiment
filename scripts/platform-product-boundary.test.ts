@@ -386,6 +386,10 @@ test("allows only named showcase evidence owners to fetch history", () => {
         source: "await handle.fetchHistory();",
       },
       {
+        path: "showcase/mue-preview-alpha/test/temporal-evidence.ts",
+        source: "await handle.fetchHistory();",
+      },
+      {
         path: "showcase/m4-incident-operations/src/showcase-runtime.ts",
         source: "await handle.fetchHistory();",
       },

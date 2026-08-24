@@ -18,6 +18,7 @@ on:
       - "showcase/m2-process-instance-search/**"
       - "showcase/m3-human-work/**"
       - "showcase/m4-incident-operations/**"
+      - "showcase/mue-preview-alpha/**"
   push:
     branches:
       - main
@@ -37,6 +38,7 @@ on:
       - "showcase/m2-process-instance-search/**"
       - "showcase/m3-human-work/**"
       - "showcase/m4-incident-operations/**"
+      - "showcase/mue-preview-alpha/**"
   workflow_dispatch:
 
 permissions:

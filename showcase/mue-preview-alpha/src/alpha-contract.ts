@@ -1,0 +1,9 @@
+export const reviewElementId = "UserTask_Review";
+export const escalationElementId = "UserTask_Escalation";
+export const lifetimeTimerElementId = "BoundaryTimer_Review";
+export const completionBindingName = "DataOutput_CurrentResult";
+export const currentItemBindingName = "DataInput_CurrentItem";
+export const inputBindingName = "DataObjectReference_InputItems";
+export const outputBindingName = "DataObjectReference_OutputResults";
+export const exactInputItems = ["contract", "invoice", "receipt"] as const;
+export const exactNaturalResults = ["accepted", "flagged", "archived"] as const;

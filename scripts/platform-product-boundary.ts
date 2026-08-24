@@ -324,6 +324,7 @@ const approvedTemporalHistoryEvidencePaths = new Set([
   "showcase/m2-process-instance-search/test/m2-process-instance-search.test.ts",
   "showcase/m3-human-work/test/m3-human-work.test.ts",
   "showcase/m4-incident-operations/test/temporal-evidence.ts",
+  "showcase/mue-preview-alpha/test/temporal-evidence.ts",
 ]);
 
 function isApprovedTemporalHistoryEvidence(relativePath: string, apiName: string): boolean {

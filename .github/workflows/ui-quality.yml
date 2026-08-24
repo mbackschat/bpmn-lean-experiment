@@ -35,7 +35,7 @@ on:
         default: false
         type: boolean
       release_acceptance:
-        description: Run the real M1 through M4 Product 2 browser acceptance lanes
+        description: Run the real M1 through M4 and MUE Preview Alpha browser acceptance lanes
         required: false
         default: false
         type: boolean
@@ -94,7 +94,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || (inputs.regenerate_baselines != true && inputs.release_acceptance != true)
         run: ./scripts/pnpm.sh run test:pre-push:ui
 
-      - name: Verify Product 2 M1 through M4 release acceptance
+      - name: Verify Product 2 M1 through M4 and MUE Preview Alpha release acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.release_acceptance == true && inputs.regenerate_baselines != true
         run: ./scripts/pnpm.sh run test:release:product2
 
@@ -121,3 +121,5 @@ jobs:
           path: |
             showcase/platform-ui-quality/playwright-report/
             showcase/platform-ui-quality/test-results/
+            showcase/mue-preview-alpha/playwright-report/
+            showcase/mue-preview-alpha/test-results/

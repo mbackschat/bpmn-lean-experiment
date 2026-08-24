@@ -68,6 +68,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(showcaseWorkflow, /showcase\/m2-process-instance-search\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m3-human-work\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m4-incident-operations\/\*\*/u);
+  assert.match(showcaseWorkflow, /showcase\/mue-preview-alpha\/\*\*/u);
   for (const workflow of [platformWorkflow, postgresqlWorkflow, showcaseWorkflow, uiWorkflow]) {
     assert.match(workflow, /^\s*- "package\.json"$/mu);
     assert.match(workflow, /^\s*- "pnpm-lock\.yaml"$/mu);
@@ -107,6 +108,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.equal(root["test:platform-operations-checkpoint"], "pnpm build:platform-checkpoint && pnpm test:platform-operations-checkpoint:built");
   assert.equal(root["build:showcase-types"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-testkit... --if-present run build");
   assert.equal(root["build:showcase-runtime"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-testkit... --filter @bpmn-lean/platform-ui-kit... --if-present run build");
+  assert.equal(root["build:showcase-mue-preview-alpha"], "pnpm build:release-product2");
   assert.equal(root["build:release-product2"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-testkit... --filter @bpmn-lean/platform-web... --if-present run build");
   assert.doesNotMatch(root["build:showcase-types"] ?? "", /platform-web/u);
   assert.doesNotMatch(root["build:showcase-runtime"] ?? "", /platform-web/u);
@@ -118,11 +120,13 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
     "test:showcase:m2-process-instance-search",
     "test:showcase:m3-human-work",
     "test:showcase:m4-incident-operations",
+    "test:showcase:mue-preview-alpha",
   ]) {
     assert.match(root[name] ?? "", /^pnpm build:release-product2 && pnpm test:showcase:[^ ]+:built$/u);
     assert.equal(matches(root[name] ?? "", /\bbuild:/gu), 1, `${name} must prepare the union Product 2 graph once`);
   }
-  assert.equal(root["test:release:product2"], "pnpm build:release-product2 && pnpm test:showcase:m1:built && pnpm test:showcase:m2:built && pnpm test:showcase:m3-human-work:built && pnpm test:showcase:m4-incident-operations:built && pnpm test:ui-quality:built");
+  assert.equal(root["test:release:mue-preview-alpha"], "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built");
+  assert.equal(root["test:release:product2"], "pnpm build:release-product2 && pnpm test:showcase:m1:built && pnpm test:showcase:m2:built && pnpm test:showcase:m3-human-work:built && pnpm test:showcase:m4-incident-operations:built && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built");
   assert.equal(matches(root["test:release:product2"] ?? "", /\bbuild:/gu), 1);
   const prebuiltShowcaseCommands = new Map([
     ["test:showcase:m1:built", 1],
@@ -131,6 +135,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
     ["test:showcase:m2-process-instance-search:built", 1],
     ["test:showcase:m3-human-work:built", 1],
     ["test:showcase:m4-incident-operations:built", 1],
+    ["test:showcase:mue-preview-alpha:built", 1],
   ]);
   for (const [name, expectedPrebuiltUses] of prebuiltShowcaseCommands) {
     assert.equal(matches(root[name] ?? "", /PLAYWRIGHT_PREBUILT_WEB=true/gu), expectedPrebuiltUses, `${name} must reuse the prepared production web build`);
@@ -144,6 +149,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
     "test:showcase:m2:built",
     "test:showcase:m3-human-work:built",
     "test:showcase:m4-incident-operations:built",
+    "test:showcase:mue-preview-alpha:built",
     "test:ui-quality:built",
   ]) {
     assert.doesNotMatch(root[name] ?? "", /(?:^|\s)(?:pnpm\s+)?(?:run\s+)?build(?::|\s)/u, `${name} must reuse prepared artifacts`);
@@ -173,6 +179,7 @@ test("serves every real-host showcase from the production web build", async () =
     "showcase/m2-process-instance-search/playwright.config.ts",
     "showcase/m3-human-work/playwright.config.ts",
     "showcase/m4-incident-operations/playwright.config.ts",
+    "showcase/mue-preview-alpha/playwright.config.ts",
   ];
   const configs = await Promise.all(configPaths.map(async (configPath) => [configPath, await read(configPath)] as const));
   const nonProductionConfigs = configs.flatMap(([configPath, source]) => {
