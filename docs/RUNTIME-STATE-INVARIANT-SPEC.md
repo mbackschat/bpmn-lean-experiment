@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented and independently closure-reviewed for the existing executable program-indexed predicate over `RuntimeState`, with the additive `RSI-BOUND-01` implementation independently semantic-checkpoint reviewed and awaiting closure review, and quantified Lean preservation declared a deliberately open lane by owner decision.** The predicate, its initialization theorems, its per-conjunct negatives, the independently written TypeScript validator on the fail-closed command path, and the Workflow-continuation witnesses are implemented. Preservation across the registered transition arms is not. The Activity body-turnover preservation law is the first consumer to derive its wait-key freshness premise from well-formedness rather than assume it.
+**Implemented and independently closure-reviewed for the existing executable program-indexed predicate over `RuntimeState` and for the additive `RSI-BOUND-01` amendment, with quantified Lean preservation declared a deliberately open lane by owner decision.** The predicate, its initialization theorems, its per-conjunct negatives, the independently written TypeScript validator on the fail-closed command path, and the Workflow-continuation witnesses are implemented. Preservation across the registered transition arms is not. The Activity body-turnover preservation law is the first consumer to derive its wait-key freshness premise from well-formedness rather than assume it.
 
 This adds no BPMN capability, operation kind, runtime field, public observation field, profile, or scenario. No admitted model, accepted transition, or canonical projection changes.
 
@@ -59,7 +59,22 @@ Two monotonicity facts are separate relations rather than conjuncts, because whe
 
 **`RSI-ORDER-01` membership criterion.** A collection is listed when every one of its add sites canonically inserts, and excluded when its add sites disagree. `scopeOccurrences` is excluded because Call Activity inserts canonically while `enterScope` prepends. `variables` is excluded because `process.bindings` is merged canonically at User Task completion but takes submitted order at Process start, and `activities` is appended. The criterion decides whether a future collection joins the conjunct; a census does not, and this paragraph was written as a count and was wrong three times before it was written as a criterion.
 
-**`RSI-BOUND-01` membership criterion.** A counter family belongs when every site that writes one of its live-member collections leaves the member's activation at or below its key's count in that site's post-state and no site lowers the count. The implemented subset follows current consumers rather than pretending the remaining branches were checked: User Task, Timer, and Activity are executable; Message, Effect, Event race, Call, and ordinary Scope remain open. The full criterion, the called-root exclusion, and the indirect identities are owned by the [identity-bound proposal](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md#the-proposed-rule).
+**`RSI-BOUND-01` membership criterion.** A counter family belongs when every site that writes one of its live-member collections leaves the member's activation at or below its key's count in that site's post-state and no site lowers the count. Minting sites satisfy the first condition by numbering from the counter and writing the advanced count in the same transition. Restore, retry, and reinsert sites satisfy it by preserving an activation that already satisfied the inequality. A family with any writer that leaves a live member above its key's post-state count is excluded.
+
+| Family | Counter | Live members | Current contract |
+|---|---|---|---|
+| User Task | `activations` / `taskActivations` | `waits` / `userTaskWaits` | implemented |
+| Message | `messageActivations` | `messageWaits` | open |
+| Timer | `timerActivations` | `timerWaits` | implemented |
+| Effect | `effectActivations` | `effectWaits`, each incident-retained wait, and each `variables.activities` owner | open |
+| Event race | `eventRaceActivations` | `eventRaces` | open |
+| Call | `callActivations` | `calledProcessOccurrences` | open |
+| Activity | `activityActivations` | `activityOccurrences` | implemented |
+| Scope | `scopeActivations` | `scopeOccurrences` | open, with called roots excluded from the general account |
+
+**Called-root exclusion.** The Scope account excludes exactly a parentless occurrence that is the called root of one live called-process record, rather than excluding the whole Scope family. `invokeProcess` mints that root at activation 1 and writes `callActivations` without writing `scopeActivations`; hosting-root initialization and `enterScope` do write the matching Scope count. Lean separately pins a called root to activation 1, while the TypeScript aggregate does not decide called-process associations, so this contract claims no cross-language called-root constraint beyond the exclusion.
+
+**Indirect reach and current gaps.** Association predicates transfer an implemented family bound to a sequential Multi-Instance controller through its unique live Activity record, to an event race's Timer arm, and to an Activity record's body or attached Timer when the associated identity belongs to an implemented family. A child-scope body naming a called root remains excluded. A called record's `calledRoot`, an Event race's Message arm and race record, and a `variables.activities` Effect owner remain unbounded by the current executable three-family subset. Reopen this rule when a family's write discipline changes, a consumer needs an open family, the issuing discipline is discharged for any family, or `invokeProcess` gains a `scopeActivations` write for an independent reason.
 
 **Per-family declaring sets for `RSI-BIND-04`.** A Timer wait may be declared by `awaitTimer`, `awaitBoundedUserTask`, `awaitMonitoredUserTask`, `enterBoundedScope`, or `awaitEventRace`. A Message wait by `awaitMessage` or `awaitEventRace`. A User Task wait by `awaitUserTask`, `awaitBoundedUserTask`, or `awaitMonitoredUserTask`. An effect wait by `awaitEffect`. Composite arming operations declare waits of families they are not named after, so a single-kind reading rejects reachable states.
 
@@ -127,6 +142,8 @@ Nearest unsupported claim: quantified preservation. No Lean theorem would go red
 Common-mode risk: one author wrote the predicate, its negatives, and this document. The pre-existing conjunct negatives fail without their named conjunct while sibling conjuncts remain intact. For the narrowed identity bound, each implemented family instead has a direct counter-field-removal negative for the family-specific conjunct and aggregate refusal; this protection does not extend to the five family branches that remain absent.
 
 ## Independent cold-review receipt
+
+The additive identity-bound amendment carried its own governed proposal, semantic-checkpoint, and guarded warm-closure reviews. Their receipt stays with [the archived amendment](archived/RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md#independent-cold-review-receipt) rather than being merged with this specification's original review history.
 
 The proposal stage used two correction rounds, which is the applicable bound. Round one closed nine required findings and raised three; round two closed those three and approved, leaving one advisory that this document applies rather than defers.
 
