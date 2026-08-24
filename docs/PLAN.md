@@ -43,7 +43,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: cold-review corrected immutable semantic-checkpoint target `6dae4269`, which replaces the impossible live-witness-before-registration ordering with a private real-service host-capacity probe and binds that probe to the worst jointly admissible sixteen-item workload. After approval, measure that probe and close the pure capacity owner, then atomically add execution registration and the [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) direct-VM and live refinement witnesses, including the approved three-Run interruption schedule, production-bound comparison, recovery, Worker replacement, and replay.
+Next action: cold-review corrected immutable semantic-checkpoint target `0e2a47a2`, which replaces the impossible live-witness-before-registration ordering with a private real-service host-capacity probe and binds that probe to the worst jointly admissible sixteen-item workload. After approval, measure that probe and close the pure capacity owner, then atomically add execution registration and the [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) direct-VM and live refinement witnesses, including the approved three-Run interruption schedule, production-bound comparison, recovery, Worker replacement, and replay.
 
 The Activity-family issuing account is selected and checkpoint-approved rather than narrowing `ActivityOccurrenceId`; registration still requires the capsule's live refinement witnesses, measured capacity owner, complete gates, and closure review.
 
