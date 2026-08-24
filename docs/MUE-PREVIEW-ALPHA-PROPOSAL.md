@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Product question and current boundary
@@ -111,6 +111,14 @@ Focused gates are the engine API, engine gateway, platform contracts, Definition
 Implementation updates the exact boundaries owned by the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary), [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md), [architecture](ARCHITECTURE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [testing specification](TESTING-SPEC.md), showcase registry, web source map, and [PLAN](PLAN.md). The Sequential Multi-Instance specification changes only if implementation evidence or its already-owned Product 2 consumer statement changes; its semantic rules do not move here.
 
 Reopen this proposal if Product 1 changes the start variable domain, `openMultiInstances` shape or presence rule, direct-start recovery protocol, current-state publication boundary, User Task command identity, boundary deadline scheduling, or if Alpha requires a durable snapshot history, a production automated actor, metadata-free Work visibility, or a private API.
+
+## Implemented closure boundary
+
+Implementation commit `40c740ae` contains the production-backed showcase package and the root release graph. The exact retained source digest is unit-bound, both browser branches enter through Definitions and Operations, the actor uses only public current state and published interaction identity, and the acceptance owner reads Event History only after both instances terminate to verify exact Update and Timer facts and replay every actual Workflow Run. The natural route publishes `accepted`, `flagged`, `archived` in order; the interrupting route publishes the committed Timer command and escalation interaction and no aggregate output. The production build, six focused package tests, one live two-branch Chromium journey, replay of every observed Run, and 83 fixed-fixture UI-quality tests passed in the complete Alpha release gate. Infrastructure passed 416 of 416 tests when run with the loopback permission its port-allocation guard requires. Exact Temporal CLI 1.8.1, Server 1.31.2, SDK/testing 1.21.0, and UI 2.50.1 remain unchanged.
+
+The implementation adds no durable progress history, interactive metadata-free Work task, private control API, mock semantic response, additional semantic profile, broader Multi-Instance variant, or MUE-complete claim. Browser-session samples remain explicitly transient, and the other seven MUE content IDs remain open.
+
+The reproducible implementation range is `d814cac4..40c740ae`: `+4182/-168` nonblank code lines and `+181/-168` nonblank documentation lines, with elapsed time unknown. The nearest same-layer comparator is Product 2 incident operations at `+13373/-543` code and `+97/-54` documentation. Code additions fell by 9,191 because Alpha reuses the closed Sequential Multi-Instance, confirmed-start, execution-publication, Operations, UI-kit, Workflow-chain, and replay mechanisms. Documentation additions rose by 84 because this delivery selected a new cross-product command and observation consumer and therefore paid proposal and semantic-checkpoint review before its showcase lane. The process weight removed before Beta is repeating that product-level proposal across seven breadth slices: each slice stays with its named semantic or hosting owner and opens a capsule only for a new proposition, while one later Beta integration owner carries the coherent catalog and Product 2 journey.
 
 ## Independent cold-review receipt
 

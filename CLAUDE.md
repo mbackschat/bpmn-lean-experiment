@@ -495,6 +495,18 @@ Complete Product 2 M4 release acceptance, composing the real-host gate with the 
 ./scripts/pnpm.sh run test:release:m4
 ```
 
+Required MUE Preview Alpha exact natural/interrupted Sequential Multi-Instance, real Temporal, replay, and production-browser gate:
+
+```sh
+./scripts/pnpm.sh run test:showcase:mue-preview-alpha
+```
+
+Complete MUE Preview Alpha release acceptance, composing the production-backed showcase with the isolated deterministic UI-quality lane:
+
+```sh
+./scripts/pnpm.sh run test:release:mue-preview-alpha
+```
+
 Product 2 fixed-fixture responsive, focus, reduced-motion, and interaction gate at the supported 1280-pixel and 1600-pixel desktop widths:
 
 ```sh
