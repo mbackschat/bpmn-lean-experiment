@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: implementation-in-progress
-Review: approved-with-required-edits
+Review: approved
 
 ## Product question and current boundary
 
@@ -117,7 +117,7 @@ Reopen this proposal if Product 1 changes the start variable domain, `openMultiI
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `40eda701` | `fork-turns-none` | `approve-with-required-edits` | `bd9b37f9` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `c26a24295eaa482113c2a7f1a74fd3a7e4e37733` | `fork-turns-none` | `approve-with-required-edits` | `ac9f3535007c66c14697b5a5e5a4b3e57a963cc2` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-Cold proposal review is required because Alpha adds Product 2 transport for an existing semantic command and accepts and presents a newly published runtime observation. No implementation starts before the proposal is independently approved and the lifecycle becomes `owner-approved`.
+Cold proposal review was required because Alpha adds Product 2 transport for an existing semantic command and accepts and presents a newly published runtime observation. The semantic-checkpoint reviewer required the platform operation-kind census, equivalence between pre-host and initial runtime start-data admission, exact String-list map exceptions, and capability-identity UI assertions. The same reviewer approved correction target `ac9f3535007c66c14697b5a5e5a4b3e57a963cc2` after the original adversarial probes inverted and the clean Product 1, platform, showcase, and 77-test UI gates passed with output SHA-256 values `f270ee1053ab683d0436dd319f13e10a330ce6193b8e54d98947b57c626a91b3`, `f9cc2aa514550a3eb78048f3899bea57f87ac44b0a352cea006cb874ea4c3267`, `f1c9b61fb93b8c77a45f1bb88e14aad4dd8969f529f025d90171673a1a983254`, and `ed29d00b6cc936a4377245bce2ebd611568f3ac2b3b63508150ae255ec355eea` respectively. UI and showcase implementation may proceed without broadening the reviewed contract.

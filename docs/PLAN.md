@@ -44,7 +44,7 @@ After Alpha, the MUE content IDs run breadth-first to their first independently 
 
 Active work ID: `MUE-PREVIEW-ALPHA`.
 
-Next action: commit the implemented strict start-data and progress-consumer checkpoint in the [MUE Preview Alpha proposal](MUE-PREVIEW-ALPHA-PROPOSAL.md), run every path-selected gate against that clean immutable target, and obtain the mandatory cold semantic-checkpoint review before opening the UI and showcase lane.
+Next action: implement the [MUE Preview Alpha proposal](MUE-PREVIEW-ALPHA-PROPOSAL.md) Operations progress surface and production-backed two-branch automated actor/browser showcase over the checkpoint-approved start and publication contracts, then complete the proposal's closure evidence and governed review.
 
 Separate open changes: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
 
