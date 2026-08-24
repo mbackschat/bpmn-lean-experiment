@@ -47,6 +47,19 @@ The ladder is intentionally cumulative but not predictive. `v0.2 MUE` is the cur
 
 A closed engine-maturity label is recorded by one annotated Git tag named `engine/v<major>.<minor>` whose annotation is `Engine v<major>.<minor>: <name>`. The component-first Git ref namespace groups engine milestones while keeping them distinct from repository release tags. The tag is an immutable evidence-snapshot pointer, not a release tag or SemVer assignment. Create it only after the owner explicitly closes that maturity boundary, and never move it to absorb later work. Historical repository tags such as `MVP`, `M1` through `M6`, and `v0.1.0-preview` retain their original targets and meanings; the engine-maturity ladder neither renames nor rewrites them.
 
+### MUE delivery checkpoints
+
+The current MUE programme uses three non-release delivery checkpoints before the Engine `v0.2` maturity boundary. They expose useful progress without changing, removing, deferring, or closing a MUE content obligation. Each checkpoint requires a clean, committed, completely verified head and one immutable annotated `phase/<kebab-case>` tag under the [project tag policy](../CLAUDE.md#project-tags). A checkpoint tag is an evidence snapshot, not a package version, compatibility promise, conformance claim, or substitute for a governed semantic review.
+
+| Checkpoint | Exit boundary | Annotated tag |
+|---|---|---|
+| MUE Preview Alpha | One polished production-browser and real-Temporal vertical slice is closure-reviewed, release-gated, and demonstrable with curated examples while every unimplemented MUE limit remains explicit. | `phase/mue-preview-alpha` |
+| MUE Preview Beta | Every MUE content ID remaining after Alpha has one separately reviewed risk-bearing vertical checkpoint, and those checkpoints are integrated into one coherent Product 2 preview with open limits disclosed. Breadth evidence does not close the underlying content IDs. | `phase/mue-preview-beta` |
+| MUE Release Candidate | All MUE content IDs in the owner-selected boundary are fully implemented, governed closure is complete, and the feature surface is frozen. Only cross-family stabilization, final evidence reconciliation, and release qualification may remain. | `phase/mue-release-candidate` |
+| Minimum Useful Engine | Every MUE semantic, durability, evidence, integration, and release-acceptance obligation is closed by explicit owner decision. | `engine/v0.2` with annotation `Engine v0.2: Minimum Useful Engine` |
+
+Alpha, Beta, and Release Candidate tags never move when later checkpoints close. A repository SemVer release remains a separate decision and uses the `vMAJOR.MINOR.PATCH[-prerelease]` namespace only when the committed root package version matches.
+
 ### One repository for products 1 and 2
 
 Products 1 and 2 share this repository. A change to a published observation ripples through the checked graph, the Lean account, the semantic core, the adapter, the schemas, and then the platform's read models and surfaces, and [the pre-release evolution policy](#pre-release-evolution-policy) requires that such a change replace every producer, consumer, fixture, schema, and test **atomically**. Two repositories would make that impossible for the engine-to-platform contract: it would need either lockstep releases or a version-tolerant reader, and the second is exactly what that policy forbids before an immutable baseline exists. Sharing one tree is therefore the option consistent with the project's own rules, not a shortcut around them.
