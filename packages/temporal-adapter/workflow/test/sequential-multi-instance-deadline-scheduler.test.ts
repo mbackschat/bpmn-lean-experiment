@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  ActivityBodyKind,
   SemanticOperationKind,
   applyInternalOperation,
   completeSequentialMultiInstanceIteration,
@@ -107,4 +108,35 @@ test("refuses a lifetime deadline detached from its exact outer controller", () 
       /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT1S outer-lifetime boundary deadline/u,
     );
   }
+});
+
+test("refuses a controller whose live body belongs to another Activity family", () => {
+  const entered = enter(start.initialVariables);
+  const [record] = entered.activityOccurrences;
+  assert.ok(record !== undefined);
+  const malformed: RuntimeState = {
+    ...entered,
+    activityOccurrences: [{
+      ...record,
+      body: { kind: ActivityBodyKind.ChildScope, scope: record.owner },
+    }],
+  };
+  assert.throws(
+    () => scheduler().reconcileCommittedState(malformed),
+    /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT1S outer-lifetime boundary deadline/u,
+  );
+});
+
+test("refuses a controller whose record names another program operation", () => {
+  const entered = enter(start.initialVariables);
+  const [record] = entered.activityOccurrences;
+  assert.ok(record !== undefined);
+  const malformed: RuntimeState = {
+    ...entered,
+    activityOccurrences: [{ ...record, operationId: "operation:another-family" }],
+  };
+  assert.throws(
+    () => scheduler().reconcileCommittedState(malformed),
+    /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT1S outer-lifetime boundary deadline/u,
+  );
 });

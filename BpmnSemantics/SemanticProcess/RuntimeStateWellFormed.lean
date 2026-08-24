@@ -239,16 +239,21 @@ theorem activityOccurrenceForTaskWait_unique (state : RuntimeState) (wait : User
 
 /-! ## Sequential Multi-Instance controller binding
 
-Three conjuncts, none of which checks a number. The representation stores no counter, so the equations
+Four conjuncts, none of which checks a number. The representation stores no counter, so the equations
 relating planned, generated, active, completed, terminated, and pending hold structurally and no state
 can violate them; `pendingItemCount_add_generatedInstanceCount` is that fact rather than a conjunct.
 What a state can get wrong is the binding to the record owning the body, the number of controllers per
 Activity occurrence, and whether an open controller still has an item left to generate.
 
-Body kind is deliberately absent. `activityRecordsOwnLiveWork` already requires exactly one live body,
-and restricting that body to a User Task is this profile's admission, so checking it here would assert
-a profile fact inside a profile-independent predicate.
+The fourth conjunct is program-aware because a controller is profile-owned state: a live body from
+another Activity family cannot execute the operation the controller claims to resume. It resolves one
+SMI operation, its owning scope, the exact task body and wait, and the one attached lifetime Timer.
 -/
+
+private def operationOwningScope? (program : Program) (id : OperationId) :
+    Option DefinitionScopeId :=
+  (program.operationScopes.find? fun ownership =>
+    decide (ownership.operationId = id)).map (·.scopeId)
 
 /-- Every controller names exactly one live Activity occurrence record of its own identity.
 
@@ -257,6 +262,48 @@ active iteration's task ambiguous while every lookup keyed on it degraded to `no
 def controllersOwnLiveActivity (state : RuntimeState) : Bool :=
   state.sequentialMultiInstanceControllers.all fun controller =>
     (state.activityOccurrences.filter (controllerNamesActivityOccurrence controller)).length = 1
+
+/-- One controller is bound to the exact program operation, Activity body, wait, and lifetime Timer
+that make it executable. This is stronger than the generic live-body invariant: a live child scope is
+valid Activity state for another family, but is not an active iteration of a sequential User Task. -/
+def sequentialMultiInstanceControllerProgramBindingValid (program : Program)
+    (state : RuntimeState) (controller : SequentialMultiInstanceController) : Bool :=
+  match state.activityOccurrences.filter (controllerNamesActivityOccurrence controller) with
+  | [record] =>
+      match program.operations.filter fun
+        | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
+            decide (task.id.value = controller.activityElementId.value)
+        | _ => false with
+      | [.awaitSequentialMultiInstanceUserTask id _ _ task _ normalOutput
+          boundaryTimer _] =>
+          operationOwningScope? program id == some record.owner.definitionScopeId &&
+            record.owner.processInstanceId == record.processInstanceId &&
+            match activityBodyTask? record with
+            | some body =>
+                body.processInstanceId == record.processInstanceId &&
+                  body.elementId.value == task.id.value &&
+                  match state.waits.filter (taskIdNamesWait body), record.attachedTimers with
+                  | [wait], [timerId] =>
+                      wait.owner == record.owner && wait.task.id == task.id &&
+                        wait.task.name == task.name && wait.metadata == none &&
+                        wait.output == normalOutput &&
+                        timerId.processInstanceId == record.processInstanceId &&
+                        timerId.elementId.value == boundaryTimer.elementId.value &&
+                        match state.timerWaits.filter (timerIdNamesWait timerId) with
+                        | [timerWait] =>
+                            timerWait.owner == record.owner &&
+                              timerWait.output == boundaryTimer.output
+                        | _ => false
+                  | _, _ => false
+            | none => false
+      | _ => false
+  | _ => false
+
+/-- Every open controller satisfies the exact program-to-runtime binding. -/
+def sequentialMultiInstanceControllerProgramBindingsValid (program : Program)
+    (state : RuntimeState) : Bool :=
+  state.sequentialMultiInstanceControllers.all
+    (sequentialMultiInstanceControllerProgramBindingValid program state)
 
 /-- No two controllers share one Activity occurrence identity. -/
 def controllerIdentitiesUnique (state : RuntimeState) : Bool :=
@@ -296,11 +343,6 @@ def canonicalCollectionOrder (state : RuntimeState) : Bool :=
       state.sequentialMultiInstanceControllers
 
 /-! ## Layer 2: program agreement -/
-
-private def operationOwningScope? (program : Program) (id : OperationId) :
-    Option DefinitionScopeId :=
-  (program.operationScopes.find? fun ownership =>
-    decide (ownership.operationId = id)).map (·.scopeId)
 
 /-- The operations that may declare a Timer wait for `elementId`.
 
@@ -434,6 +476,7 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     attachedTimersUnambiguous state &&
     activityIdentitiesUnique state &&
     controllersOwnLiveActivity state &&
+    sequentialMultiInstanceControllerProgramBindingsValid program state &&
     controllerIdentitiesUnique state &&
     controllersNotExhausted state &&
     (match state.control with

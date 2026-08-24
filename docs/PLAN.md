@@ -45,7 +45,7 @@ After Alpha, the MUE content IDs run breadth-first to their first independently 
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: commit the [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) cost-bound closure content, freeze that immutable target, run its complete clean gate and independent cold closure review, then graduate it and activate `MUE-PREVIEW-ALPHA`.
+Next action: commit the [Sequential Multi-Instance](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) closure-review corrections, freeze that immutable target, run its complete clean gate and same-thread correction audit, then graduate it and activate `MUE-PREVIEW-ALPHA`.
 
 Separate open changes: cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
 

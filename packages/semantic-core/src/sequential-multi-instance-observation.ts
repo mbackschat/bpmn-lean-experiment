@@ -12,10 +12,7 @@
  * route. That keeps the distinction structural and prevents registration state from becoming an
  * observation-shape rule.
  */
-import {
-  activityBodyTask,
-  activityOccurrenceForTaskBody,
-} from "./activity-occurrence.js";
+import { activityOccurrenceForTaskBody } from "./activity-occurrence.js";
 import { VariableValueKind } from "./contract.js";
 import type {
   OpenSequentialMultiInstance,
@@ -32,6 +29,10 @@ import {
   completedInstanceCount,
 } from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
+import {
+  sequentialMultiInstanceBindingForController,
+  type SequentialMultiInstanceBinding,
+} from "./sequential-multi-instance-binding.js";
 
 function multiInstanceOperations(
   program: SemanticProcessProgram,
@@ -51,29 +52,21 @@ function multiInstanceOperations(
  * counter and the snapshot item that counter selects.
  */
 function activeIterations(
-  operation: AwaitSequentialMultiInstanceUserTaskOperation,
-  state: RuntimeState,
-  controller: SequentialMultiInstanceController,
+  binding: SequentialMultiInstanceBinding,
 ): ReadonlyArray<OpenSequentialMultiInstanceIteration> {
-  const record = state.activityOccurrences.find((candidate) =>
-    candidate.id.processInstanceId === controller.id.processInstanceId &&
-    candidate.id.activityElementId === controller.id.activityElementId &&
-    candidate.id.activation === controller.id.activation
-  );
-  const taskId = record === undefined ? undefined : activityBodyTask(record);
-  const item = activeSnapshotItem(controller);
-  if (taskId === undefined || item === undefined) {
+  const item = activeSnapshotItem(binding.controller);
+  if (item === undefined) {
     return [];
   }
   return [
     {
-      loopCounter: completedInstanceCount(controller),
-      taskId,
+      loopCounter: completedInstanceCount(binding.controller),
+      taskId: binding.taskWait.id,
       taskInput: {
-        name: operation.data.input.taskDataInputId,
+        name: binding.operation.data.input.taskDataInputId,
         value: { kind: VariableValueKind.String, value: item },
       },
-      completionBindingName: operation.data.output.taskDataOutputId,
+      completionBindingName: binding.operation.data.output.taskDataOutputId,
     },
   ];
 }
@@ -81,17 +74,15 @@ function activeIterations(
 /**
  * Stable Multi-Instance progress, or `undefined` when the program declares no such Activity.
  *
- * A controller whose operation cannot be resolved is skipped rather than projected with invented
- * definition facts: the input and output binding names are definition-owned, so there is no honest
- * projection of an iteration whose operation is missing, and the well-formedness conjuncts already
- * refuse a controller with no record.
+ * A controller whose complete operation/record/body/Timer binding cannot be resolved is refused
+ * rather than projected with invented definition facts. The input and output binding names are
+ * definition-owned, so there is no honest projection of a malformed controller.
  *
  * `numberOfInstances` is the sum of the two counts published beside it rather than a third reading of
  * the controller. Completed comes from the controller's slots and active from the Activity occurrence
- * record's body, so a generated count derived from the controller alone can contradict both: a record
- * whose body is not a User Task yields no active iteration while the controller still shows filled
- * slots, and body kind is deliberately not a well-formedness conjunct in either language. Summing is
- * what makes Table 10.30's identity arithmetic rather than an agreement between two structures.
+ * record's exact bound User Task body. The program-aware well-formedness conjunct guarantees that
+ * this is one active iteration, while summing still makes Table 10.30's identity arithmetic rather
+ * than an agreement between two independently stored counters.
  */
 export function projectOpenMultiInstances(
   program: SemanticProcessProgram,
@@ -103,13 +94,17 @@ export function projectOpenMultiInstances(
   }
   return (state.sequentialMultiInstanceControllers ?? []).flatMap(
     (controller) => {
-      const operation = operations.find((candidate) =>
-        candidate.task.elementId === controller.id.activityElementId
+      const binding = sequentialMultiInstanceBindingForController(
+        program,
+        state,
+        controller,
       );
-      if (operation === undefined) {
-        return [];
+      if (binding === undefined) {
+        throw new TypeError(
+          "Cannot publish a malformed sequential Multi-Instance controller binding",
+        );
       }
-      const iterations = activeIterations(operation, state, controller);
+      const iterations = activeIterations(binding);
       return [
         {
           id: controller.id,
@@ -118,10 +113,9 @@ export function projectOpenMultiInstances(
           // Both normative identities are arithmetic over the three counts published beside them,
           // because both derive generated the same way. Reading `pendingItemCount(controller)` here
           // instead would derive generated twice, as completed plus active for the published field and
-          // as completed plus one inside the controller helper, and those disagree on exactly the state
-          // that made the first identity fail: a controller bound to a record whose body is not a Task
-          // has no active instance, which no conjunct refuses. The controller helper stays as it is,
-          // because it is the controller-only representation fact Lean's counter law shares.
+          // as completed plus one inside the controller helper. The exact program binding now proves
+          // that the open controller has one active User Task, but deriving the published tuple from
+          // one root still prevents a future change from relocating disagreement between its fields.
           pendingItemCount: Math.max(
             0,
             controller.snapshot.length -

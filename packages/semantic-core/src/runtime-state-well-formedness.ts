@@ -24,6 +24,7 @@ import {
   compareSequentialMultiInstanceControllers,
 } from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
+import { sequentialMultiInstanceBindingForController } from "./sequential-multi-instance-binding.js";
 import { compareCanonicalStrings } from "./wire.js";
 import { runtimeStateIdentityBound } from "./runtime-state-identity-bound.js";
 
@@ -63,6 +64,8 @@ export const RuntimeStateDefect = {
   SequentialMultiInstanceControllerProfileMismatch:
     "sequentialMultiInstanceControllerProfileMismatch",
   SequentialMultiInstanceControllerUnowned: "sequentialMultiInstanceControllerUnowned",
+  SequentialMultiInstanceControllerBindingMismatch:
+    "sequentialMultiInstanceControllerBindingMismatch",
   DuplicateSequentialMultiInstanceController: "duplicateSequentialMultiInstanceController",
   SequentialMultiInstanceExhausted: "sequentialMultiInstanceExhausted",
 } as const;
@@ -305,7 +308,7 @@ export function runtimeStateDefects(
   }
 
   defects.push(...activityOwnershipDefects(state));
-  defects.push(...sequentialMultiInstanceDefects(state));
+  defects.push(...sequentialMultiInstanceDefects(program, state));
 
   const ordered =
     isSorted(state.activityOccurrences, compareActivityOccurrences) &&
@@ -355,11 +358,14 @@ export function runtimeStateDefects(
  * that transition exists to prevent. An empty snapshot fails the same test, which is correct: a
  * zero-item collection completes atomically at entry and creates no controller at all.
  *
- * Body kind is deliberately not checked here. The record's own `AOO-BODY-01` conjunct already
- * requires exactly one live body, and this profile's admission is what restricts that body to a User
- * Task; a second check would assert a profile fact inside a profile-independent predicate.
+ * The program-aware binding is required even though the record's own `AOO-BODY-01` conjunct already
+ * requires one live body. A live child scope is valid for another Activity family, but it cannot be
+ * the iteration body of the sequential User Task operation that owns this profile-specific state.
+ * The binding therefore resolves the exact operation, record owner, User Task wait, and one attached
+ * lifetime Timer before admission.
  */
 function sequentialMultiInstanceDefects(
+  program: SemanticProcessProgram,
   state: RuntimeState,
 ): ReadonlyArray<RuntimeStateDefect> {
   const controllers = state.sequentialMultiInstanceControllers;
@@ -372,14 +378,30 @@ function sequentialMultiInstanceDefects(
     state.activityOccurrences.filter((record) =>
       sameActivityOccurrence(record.id, controller.id)
     ).length === 1;
-  if (!controllers.every(owned)) {
+  const everyControllerOwned = controllers.every(owned);
+  if (!everyControllerOwned) {
     defects.push(RuntimeStateDefect.SequentialMultiInstanceControllerUnowned);
   }
 
-  const identities = controllers.map(({ id }) =>
-    `${id.processInstanceId}\u0000${id.activityElementId}\u0000${id.activation}`
+  const programDeclaresSequentialMultiInstance = program.operations.some(({ kind }) =>
+    kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
   );
-  if (new Set(identities).size !== identities.length) {
+  if (
+    everyControllerOwned &&
+    programDeclaresSequentialMultiInstance &&
+    !controllers.every((controller) =>
+      sequentialMultiInstanceBindingForController(program, state, controller) !== undefined
+    )
+  ) {
+    defects.push(RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch);
+  }
+
+  if (controllers.some((controller, index) =>
+    controllers.some((other, otherIndex) =>
+      index !== otherIndex &&
+      sameActivityOccurrence(controller.id, other.id)
+    )
+  )) {
     defects.push(RuntimeStateDefect.DuplicateSequentialMultiInstanceController);
   }
 
@@ -428,10 +450,11 @@ function activityOwnershipDefects(
     defects.push(RuntimeStateDefect.UnownedAttachedWait);
   }
 
-  const identities = state.activityOccurrences.map(({ id }) =>
-    `${id.processInstanceId}\u0000${id.activityElementId}\u0000${id.activation}`
-  );
-  if (new Set(identities).size !== identities.length) {
+  if (state.activityOccurrences.some((record, index) =>
+    state.activityOccurrences.some((other, otherIndex) =>
+      index !== otherIndex && sameActivityOccurrence(record.id, other.id)
+    )
+  )) {
     defects.push(RuntimeStateDefect.DuplicateActivityOccurrence);
   }
 
@@ -534,6 +557,7 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   // called definitions, and a continuation that carried an unowned or exhausted controller across a
   // Run would otherwise be admitted by every boundary.
   RuntimeStateDefect.SequentialMultiInstanceControllerUnowned,
+  RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch,
   RuntimeStateDefect.DuplicateSequentialMultiInstanceController,
   RuntimeStateDefect.SequentialMultiInstanceExhausted,
 ]);

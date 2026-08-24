@@ -1,5 +1,6 @@
 import BpmnSemantics.ActivityBoundaryTimerConformance
 import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 
 /-! # Runtime-state Activity and controller negative fixtures
 
@@ -75,21 +76,20 @@ theorem disagreeing_activity_counter_is_admitted :
     runtimeStateWellFormed program instanceId disagreeingActivityCounterState = true := by
   decide +kernel
 
-private def controllerOn (record : ActivityOccurrence)
-    (outputSlots : List String) : SequentialMultiInstanceController :=
-  { processInstanceId := record.processInstanceId
-    activityElementId := record.activityElementId
-    activation := record.activation
-    snapshot := ["Invoice_1", "Invoice_2"]
-    outputSlots }
+def controllerProgram : Program :=
+  SequentialMultiInstanceProgramBindingConformance.program
+
+def controllerInstanceId : SemanticId :=
+  SequentialMultiInstanceProgramBindingConformance.instanceId
 
 def openControllerState : RuntimeState :=
-  { armedState with
-    sequentialMultiInstanceControllers :=
-      armedState.activityOccurrences.map (controllerOn · []) }
+  match SequentialMultiInstanceProgramBindingConformance.entered? with
+  | some state => state
+  | none => initialState
 
 theorem open_controller_state_is_well_formed :
-    runtimeStateWellFormed program instanceId openControllerState = true := by decide +kernel
+    runtimeStateWellFormed controllerProgram controllerInstanceId openControllerState = true := by
+  decide +kernel
 
 /-- `C1`: a controller whose identity names no Activity occurrence record. -/
 def unownedControllerState : RuntimeState :=
@@ -99,7 +99,8 @@ def unownedControllerState : RuntimeState :=
         { controller with activation := controller.activation + 1 } }
 
 theorem unowned_controller_is_refused :
-    runtimeStateWellFormed program instanceId unownedControllerState = false := by decide +kernel
+    runtimeStateWellFormed controllerProgram controllerInstanceId unownedControllerState = false := by
+  decide +kernel
 
 theorem unowned_controller_fails_binding_with_siblings_intact :
     controllersOwnLiveActivity unownedControllerState = false ∧
@@ -117,7 +118,8 @@ def duplicateControllerState : RuntimeState :=
         openControllerState.sequentialMultiInstanceControllers }
 
 theorem duplicate_controller_is_refused :
-    runtimeStateWellFormed program instanceId duplicateControllerState = false := by decide +kernel
+    runtimeStateWellFormed controllerProgram controllerInstanceId duplicateControllerState = false := by
+  decide +kernel
 
 theorem duplicate_controller_fails_uniqueness_with_binding_intact :
     controllerIdentitiesUnique duplicateControllerState = false ∧
@@ -127,12 +129,14 @@ theorem duplicate_controller_fails_uniqueness_with_binding_intact :
 
 /-- `C3`: an open controller whose slots already cover its whole snapshot. -/
 def exhaustedControllerState : RuntimeState :=
-  { armedState with
+  { openControllerState with
     sequentialMultiInstanceControllers :=
-      armedState.activityOccurrences.map (controllerOn · ["Reviewed_1", "Reviewed_2"]) }
+      openControllerState.sequentialMultiInstanceControllers.map fun controller =>
+        { controller with outputSlots := controller.snapshot } }
 
 theorem exhausted_controller_is_refused :
-    runtimeStateWellFormed program instanceId exhaustedControllerState = false := by decide +kernel
+    runtimeStateWellFormed controllerProgram controllerInstanceId exhaustedControllerState = false := by
+  decide +kernel
 
 theorem exhausted_controller_fails_remaining_work_with_binding_intact :
     controllersNotExhausted exhaustedControllerState = false ∧
@@ -147,7 +151,7 @@ def emptySnapshotControllerState : RuntimeState :=
         { controller with snapshot := [] } }
 
 theorem empty_snapshot_controller_is_refused :
-    runtimeStateWellFormed program instanceId emptySnapshotControllerState = false := by
+    runtimeStateWellFormed controllerProgram controllerInstanceId emptySnapshotControllerState = false := by
   decide +kernel
 
 theorem empty_snapshot_controller_fails_remaining_work_with_binding_intact :

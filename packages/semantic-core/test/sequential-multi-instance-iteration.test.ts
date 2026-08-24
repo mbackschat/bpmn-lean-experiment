@@ -15,18 +15,17 @@
  * one. The host's remaining-time check is what separates those two, which makes it evidence the
  * adapter owns rather than evidence this file can supply.
  *
- * This file also owns one rule that is not about iteration, for both closing routes: removing an
- * Activity occurrence record leaves no wait that record named still live. Final completion and timer
- * interruption instantiate one proposition, so their two negatives sit side by side here rather than
- * each being filed under the transition that happens to trigger it; the interruption file holds the
- * routing and staleness cases instead. The profile's byte and cardinality bounds live in the limits
- * file, which measures them at entry and at completion together.
+ * This file also locks the exact one-Timer program binding at both closing routes. A corrupted record
+ * with a second lifetime Timer is refused before either completion or interruption can normalize it.
+ * The interruption file holds the routing and staleness cases instead. The profile's byte and
+ * cardinality bounds live in the limits file, which measures them at entry and completion together.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
   ActivityBodyKind,
+  RuntimeStateDefect,
   SemanticOperationKind,
   VariableValueKind,
   applyInternalOperation,
@@ -230,7 +229,7 @@ test("a wrong output binding name and a stale task are both refused", () => {
 });
 
 /**
- * The same admitted record with a second live Timer attached to it.
+ * The exact-profile record corrupted with a second live Timer attached to it.
  *
  * The appended occurrence shares the element and takes the next activation, so the collections stay in
  * canonical order without a comparator: both are keyed on Process instance, element, then activation.
@@ -256,19 +255,16 @@ function withSecondAttachedTimer(state: RuntimeState): RuntimeState {
 }
 
 /**
- * Final completion withdraws every Timer its record lists, not the first one.
+ * The gate refuses a second lifetime Timer, while low-level final cleanup remains total over the list.
  *
- * `attachedTimersUnambiguous` admits a record listing two live Timer occurrences, so a head-only
- * withdrawal leaves a deadline whose Activity occurrence no longer exists, and its owner record is the
- * only thing that identified it. Lean's `finalCompletionState` filters on the whole list, which makes
- * this the state where the two accounts would otherwise disagree while both invariants accept it.
+ * Direct transition helpers deliberately assume an admitted pre-state. Exercising one on this rejected
+ * state preserves the stronger family-level cleanup property without making the shape profile-valid.
  */
-test("final completion withdraws every Timer the outer record lists", () => {
+test("final cleanup withdraws every Timer after the gate identifies a malformed binding", () => {
   const before = withSecondAttachedTimer(entered());
   assert.deepEqual(
     runtimeStateDefects(reviewProgram, instanceId, before),
-    [],
-    "a record listing two live Timers is an admitted shape",
+    [RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch],
   );
 
   let state = complete(before, 0, "reviewed alpha");
@@ -311,21 +307,12 @@ test("the published collection uses the core's one canonical binding order", () 
   );
 });
 
-/**
- * Interruption withdraws every Timer its record lists, for the same reason final completion does.
- *
- * One proposition covers both closing routes: removing an Activity occurrence record must leave no wait
- * that record named still live. The fired deadline is one of those waits rather than a separate case,
- * so the filter runs over the whole list and the profile's Timer cardinality never enters it. A
- * conjunct forbidding the second attached Timer would instead put a profile fact inside the
- * profile-independent predicate, which is the objection both languages already accepted for body kind.
- */
-test("interruption withdraws every Timer the outer record lists", () => {
+/** The gate refuses the same malformed binding, while low-level interruption removes the full list. */
+test("interruption cleanup withdraws every Timer after the gate identifies a malformed binding", () => {
   const before = withSecondAttachedTimer(entered());
   assert.deepEqual(
     runtimeStateDefects(reviewProgram, instanceId, before),
-    [],
-    "a record listing two live Timers is an admitted shape",
+    [RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch],
   );
 
   const after = interruptSequentialMultiInstance(

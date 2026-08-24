@@ -88,6 +88,34 @@ theorem every_state_of_the_run_is_well_formed :
       [some true, some true, some true, some true, some true] := by
   decide +kernel
 
+/-- The shared live-body invariant is not enough for an SMI controller: its body must be the exact
+User Task declared by the bound operation. A live child scope belongs to another Activity family and
+must be refused before evaluation or projection. -/
+def enteredWithChildScopeBody? : Option RuntimeState := do
+  let state ← entered?
+  let record ← state.activityOccurrences.head?
+  pure { state with activityOccurrences := [{ record with body := .childScope record.owner }] }
+
+theorem child_scope_body_is_not_a_valid_sequential_multi_instance_binding :
+    enteredWithChildScopeBody?.map (runtimeStateWellFormed program instanceId) = some false := by
+  decide +kernel
+
+/-- The state alone is not the whole invariant. Changing the declared task name while retaining the
+same runtime wait leaves every occurrence identity live and uniquely declared, but breaks the exact
+program-to-controller binding. -/
+def renamedTaskProgram : Program :=
+  { program with
+    operations := program.operations.map fun
+      | .awaitSequentialMultiInstanceUserTask id origin input task data normalOutput boundaryTimer
+          limits =>
+          .awaitSequentialMultiInstanceUserTask id origin input
+            { task with name := some "Different task" } data normalOutput boundaryTimer limits
+      | operation => operation }
+
+theorem controller_binding_rejects_a_different_declared_task :
+    entered?.map (runtimeStateWellFormed renamedTaskProgram instanceId) = some false := by
+  decide +kernel
+
 /-- `SMI-ENTER-01`, generating arm: one task, one deadline, one record, one controller, no output.
 
 Three identities from three counter families, all at ordinal one, which is the coincidence every join

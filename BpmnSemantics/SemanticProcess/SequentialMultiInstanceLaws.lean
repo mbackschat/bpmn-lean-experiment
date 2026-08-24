@@ -31,8 +31,9 @@ The counters are not restated here. `generatedInstanceCount_eq_active_add_comple
 carries them, by preserving every controller's snapshot and therefore every planned count.
 
 Scope boundary: laws over the four relations. It defines no transition, no rewrite, and no evaluator,
-and it claims neither completeness nor determinism. The capsule's nearest checked non-law is
-unconditional liveness, and nothing here bears on it.
+and it claims neither completeness nor determinism. The conditional closure theorem at the end needs
+an accepted target completion or the outer Timer at every open state. It claims no human-completion
+fairness, Timer-delivery fairness, or unconditional liveness.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -327,5 +328,90 @@ theorem entry_publishes_an_empty_collection_or_snapshots_without_publishing
       exact Or.inr ⟨enteredController arm before instanceId (first :: rest), binding, rfl,
         soleBinding, by simpa [enteredController] using collection,
         by simp [enteredController], rfl, rfl⟩
+
+/-! ## Conditional finite-snapshot closure
+
+The progress assumption is explicit because the semantic core cannot make a human complete a task or
+make a host deliver a Timer. Once either accepted event arrives, the finite snapshot is the termination
+measure: an iteration strictly decreases its remaining-item count, while final completion or the outer
+Timer removes the controller. A schedule that supplied an unrelated completion without moving this
+controller cannot inhabit `closesOrDecreases` and therefore cannot discharge the hypothesis.
+-/
+
+/-- Whether a controller of the target identity is still open. -/
+def sequentialMultiInstanceControllerOpen (target : SequentialMultiInstanceController)
+    (state : RuntimeState) : Bool :=
+  state.sequentialMultiInstanceControllers.any
+    (sameSequentialMultiInstanceController target)
+
+/-- The finite snapshot measure remaining for the controller of the target identity. -/
+def sequentialMultiInstanceRemainingCount (target : SequentialMultiInstanceController)
+    (state : RuntimeState) : Nat :=
+  match state.sequentialMultiInstanceControllers.find?
+      (sameSequentialMultiInstanceController target) with
+  | some controller => controller.snapshot.length - completedInstanceCount controller
+  | none => 0
+
+/-- One accepted semantic event of the exact SMI family. This says which event occurred; the target
+progress field below says it was progress for the controller whose liveness is being proved. -/
+inductive SequentialMultiInstanceAcceptedEvent (arm : SequentialMultiInstanceArm) :
+    RuntimeState → RuntimeState → Prop where
+  | iteration {body : OccurrenceId} {submitted : List VariableBinding} {before after : RuntimeState}
+      (step : SequentialMultiInstanceIterationStep arm body submitted before after) :
+      SequentialMultiInstanceAcceptedEvent arm before after
+  | completion {body : OccurrenceId} {submitted : List VariableBinding}
+      {before after : RuntimeState}
+      (step : SequentialMultiInstanceCompletionStep arm body submitted before after) :
+      SequentialMultiInstanceAcceptedEvent arm before after
+  | interruption {timer : TimerOccurrenceId} {logicalTimeMs : Nat}
+      {before after : RuntimeState}
+      (step : SequentialMultiInstanceInterruptionStep arm timer logicalTimeMs before after) :
+      SequentialMultiInstanceAcceptedEvent arm before after
+
+/-- One accepted event either closes the target controller or strictly decreases its finite measure. -/
+structure SequentialMultiInstanceConditionalProgress (arm : SequentialMultiInstanceArm)
+    (target : SequentialMultiInstanceController) (before after : RuntimeState) : Prop where
+  accepted : SequentialMultiInstanceAcceptedEvent arm before after
+  closesOrDecreases :
+    sequentialMultiInstanceControllerOpen target after = false ∨
+      (sequentialMultiInstanceControllerOpen target after = true ∧
+        sequentialMultiInstanceRemainingCount target after <
+          sequentialMultiInstanceRemainingCount target before)
+
+/-- A nonempty finite trace of accepted target progress. -/
+inductive SequentialMultiInstanceConditionalTrace (arm : SequentialMultiInstanceArm)
+    (target : SequentialMultiInstanceController) : RuntimeState → RuntimeState → Prop where
+  | last {before after : RuntimeState}
+      (progress : SequentialMultiInstanceConditionalProgress arm target before after) :
+      SequentialMultiInstanceConditionalTrace arm target before after
+  | more {before next after : RuntimeState}
+      (progress : SequentialMultiInstanceConditionalProgress arm target before next)
+      (rest : SequentialMultiInstanceConditionalTrace arm target next after) :
+      SequentialMultiInstanceConditionalTrace arm target before after
+
+/-- The capsule's conditional liveness law.
+
+For a finite snapshot, if every state in which this controller remains open eventually receives an
+accepted completion for the target or its outer Timer, and that event has the family transition's
+close-or-decrease effect, then a finite accepted-event trace reaches a state in which the controller is
+closed. The hypothesis is deliberately conditional and carries no host or human fairness claim. -/
+theorem finite_snapshot_conditional_progress_eventually_closes
+    (arm : SequentialMultiInstanceArm) (target : SequentialMultiInstanceController)
+    (eventuallyProgresses : ∀ current,
+      sequentialMultiInstanceControllerOpen target current = true →
+        ∃ next, SequentialMultiInstanceConditionalProgress arm target current next)
+    (initial : RuntimeState)
+    (initiallyOpen : sequentialMultiInstanceControllerOpen target initial = true) :
+    ∃ final,
+      SequentialMultiInstanceConditionalTrace arm target initial final ∧
+        sequentialMultiInstanceControllerOpen target final = false := by
+  obtain ⟨next, progress⟩ := eventuallyProgresses initial initiallyOpen
+  rcases progress.closesOrDecreases with closed | ⟨nextOpen, decreases⟩
+  · exact ⟨next, .last progress, closed⟩
+  · obtain ⟨final, rest, finalClosed⟩ :=
+      finite_snapshot_conditional_progress_eventually_closes arm target eventuallyProgresses next
+        nextOpen
+    exact ⟨final, .more progress rest, finalClosed⟩
+termination_by sequentialMultiInstanceRemainingCount target initial
 
 end BpmnSemantics.SemanticProcess

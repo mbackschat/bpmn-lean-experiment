@@ -28,6 +28,7 @@ import {
   isBoundedScopeDeadlineDefinition,
   isMonitoredBoundaryTimerDefinition,
   isSequentialMultiInstanceBoundaryDefinition,
+  sequentialMultiInstanceBindingForController,
   sequentialMultiInstanceControllerFor,
 } from "@bpmn-lean/semantic-core";
 import type { ActivityOccurrence } from "@bpmn-lean/semantic-core";
@@ -74,7 +75,11 @@ export type BoundedDeadlineFamily = Readonly<{
   replacedRefusal: string;
   identityChangedRefusal: string;
   /** Extra committed join that only this family owns, beyond the shared Activity/body/Timer record. */
-  pairIsValid?: (state: RuntimeState, record: ActivityOccurrence) => boolean;
+  pairIsValid?: (
+    semanticProcess: SemanticProcessProgram,
+    state: RuntimeState,
+    record: ActivityOccurrence,
+  ) => boolean;
 }>;
 
 export const boundedActivityDeadlineFamily: BoundedDeadlineFamily = Object
@@ -143,11 +148,18 @@ export const sequentialMultiInstanceDeadlineFamily: BoundedDeadlineFamily =
       "Sequential Multi-Instance Activity attempted to replace its live outer deadline",
     identityChangedRefusal:
       "Committed sequential Multi-Instance Activity changed its outer deadline identity",
-    pairIsValid: (state, record) =>
-      sequentialMultiInstanceControllerFor(
+    pairIsValid: (semanticProcess, state, record) => {
+      const controller = sequentialMultiInstanceControllerFor(
         state.sequentialMultiInstanceControllers ?? [],
         record.id,
-      ) !== undefined,
+      );
+      return controller !== undefined &&
+        sequentialMultiInstanceBindingForController(
+          semanticProcess,
+          state,
+          controller,
+        )?.record === record;
+    },
   });
 
 export type BoundedDeadlineScheduler = Readonly<{
@@ -310,7 +322,7 @@ function requireManagedDeadline(
   const bodyLive = pair === undefined ? false : bodyIsLive(pair.record, state);
   const familyPairValid = pair === undefined
     ? false
-    : family.pairIsValid?.(state, pair.record) ?? true;
+    : family.pairIsValid?.(semanticProcess, state, pair.record) ?? true;
   if (
     pair === undefined ||
     !bodyLive ||

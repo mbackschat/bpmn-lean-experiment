@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, the evidence-closed resumption-bounded cyclic-control-flow specification, the evidence-closed Message Start Event specification, the registered Timer Start Event capability, the registered Terminate End capability, the registered configured Task capability, and the closure-reviewed E2 User Task metadata capability. The configured Task retains a distinct checked constructor and lowers to the existing neutral effect operation. E2 adds only optional passive task metadata to the ordinary User Task path.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, the exact collection-driven sequential Multi-Instance User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, the evidence-closed resumption-bounded cyclic-control-flow specification, the evidence-closed Message Start Event specification, the registered Timer Start Event capability, the registered Terminate End capability, the registered configured Task capability, and the closure-reviewed E2 User Task metadata capability. The configured Task retains a distinct checked constructor and lowers to the existing neutral effect operation. E2 adds only optional passive task metadata to the ordinary User Task path.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, one exact top-level Message Start Event, one exact top-level `PT1S` Timer Start Event in its registered profile, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact versioned configured Task extension under its registered profile, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, one identity-only Terminate End under its registered profile, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, one exact top-level Message Start Event, one exact top-level `PT1S` Timer Start Event in its registered profile, User Task, one exact collection-driven sequential Multi-Instance User Task with direct String input/output mediation and one interrupting outer-lifetime `PT1S` Timer, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact versioned configured Task extension under its registered profile, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, one identity-only Terminate End under its registered profile, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -207,6 +207,19 @@ type CheckedNode = DeepReadonly<
       id: string;
       name: string | null;
       metadata?: UserTaskMetadata;
+    }
+  | {
+      kind: "sequentialMultiInstanceUserTask";
+      id: string;
+      name: string | null;
+      input: SequentialMultiInstanceDataDefinition["input"];
+      output: SequentialMultiInstanceDataDefinition["output"];
+      normalOutputFlowId: string;
+      boundaryTimer: {
+        elementId: string;
+        durationLiteral: "PT1S";
+        outputFlowId: string;
+      };
     }
   | {
       kind: "intermediateCatchTimerEvent";
@@ -474,6 +487,18 @@ type SemanticOperation = DeepReadonly<
       };
     })
   | (OperationBase & {
+      kind: "awaitSequentialMultiInstanceUserTask";
+      input: string;
+      task: {
+        elementId: string;
+        name: string | null;
+      };
+      data: SequentialMultiInstanceDataDefinition;
+      normalOutput: string;
+      boundaryTimer: BoundaryTimerArm;
+      limits: SequentialMultiInstanceLimits;
+    })
+  | (OperationBase & {
       kind: "awaitTimer";
       input: string;
       output: string;
@@ -586,6 +611,8 @@ Event-Based Gateway execution adds a hidden `eventRaces` collection and monotoni
 
 Called-Process execution adds a hidden `calledProcessOccurrences` collection and monotonic `callActivations`. Each record links one caller scope occurrence and Call Activity occurrence to one distinct parentless called root, exact called Process definition, and immutable `returnProcess` identity. The called semantic instance ID is the capsule-owned UTF-8-byte-length-prefixed encoding; wait occurrence IDs derive from their owner rather than top-level control identity. A live record blocks caller quiescence, a nonquiescent called root blocks return, and interruption removes the complete called-instance subtree even though its root has no runtime parent. The record and definition forest never enter canonical public observation. The complete bounded account belongs to the [Call Activity specification](capsules/CALL-ACTIVITY-SPEC.md).
 
+Sequential Multi-Instance execution adds the profile-gated `sequentialMultiInstanceControllers` collection beside Activity occurrence ownership. A controller stores only its outer `ActivityOccurrenceId`, immutable ordered String snapshot, and dense indexed output slots. Planned, generated, active, completed, terminated, pending, and loop-counter values are derived rather than independently stored. Program-aware well-formedness binds each controller to one exact `awaitSequentialMultiInstanceUserTask` operation, that operation's unique scope owner, one owner-matching Activity record, its exact live User Task wait, and its one exact attached lifetime Timer. A child-scope body, wrong operation, wrong owner, wrong task definition, second Timer, or substituted Timer route is invalid before command admission, continuation restore, public projection, or host scheduling. The controller collection is required, including as empty, only when the Program declares the operation and is absent under every older profile. The complete bounded account belongs to the [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md).
+
 Lean and TypeScript may use different internal runtime representations. They must implement the same reviewed transition account and canonical observation contract; sharing an IL does not require sharing evaluator algorithms or runtime data structures.
 
 Temporal state remains an adapter realization related to semantic state through refinement. Workflow tasks, Activity attempts, Event History records, Run IDs, and transport retries do not enter the Semantic Process program or semantic state.
@@ -604,6 +631,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | ordinary embedded Sub-Process | `enterScope` with the child definition scope and child entry place |
 | exact in-document called-Process Call Activity | caller-owned `invokeProcess` with the distinct called root and called entry, plus called-owned `returnProcess` to the caller output |
 | User Task | `awaitUserTask`; the selected E2 profile copies exact optional passive metadata into `task.metadata` |
+| exact collection-driven sequential Multi-Instance User Task with one interrupting outer-lifetime `PT1S` Timer | `awaitSequentialMultiInstanceUserTask` with the complete direct data role graph, exact task definition, normal output, boundary Timer arm, and fixed profile limits |
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
 | exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
 | exact payload-free direct-Message Receive Task | `awaitMessage` with Receive Task identity and the resolved direct Message arm; no Interface or Operation is synthesized |
@@ -661,6 +689,14 @@ An accepted `triggerTimerStart` stimulus must match the program Process and Time
 `awaitUserTask` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token and creates one semantic task occurrence bound to the task definition and occurrence identity. When the operation carries selected E2 metadata, the wait and public open-task observation copy that exact value; metadata is physically absent when the operation omits it.
 
 An accepted completion for that occurrence removes the wait and adds one token to the output control place. Metadata is passive and does not participate in occurrence matching, value admission, or transition choice. A completion for an unknown, stale, duplicate, or otherwise ineligible occurrence follows the capsule-owned command outcome rules, preserves the complete wait including metadata, and does not invent control-flow progress.
+
+### Sequential Multi-Instance User Task
+
+`awaitSequentialMultiInstanceUserTask` is enabled by one owner-matching input token and exact profile-admitted Process input. Entry snapshots the ordered String collection once, mints one outer Activity identity and one lifetime Timer, and for a nonempty snapshot creates only loop-counter zero's User Task. An empty snapshot publishes the empty Process output atomically and takes only the normal route without creating a stable controller or Timer wait.
+
+Each accepted nonfinal task completion closes the exact active User Task, writes its String result to the dense slot at the current zero-based loop counter, and atomically turns over the Activity body to the next fresh User Task while preserving the outer Activity and Timer identities and deadline. Final completion writes the last slot, publishes the complete index-ordered String collection once, removes the controller and Timer, and takes only the normal route. Exact Timer firing cancels the active task, removes the controller and partial slots without Process output, and takes only the boundary route. Wrong, stale, cross-operation, cross-owner, malformed, or over-limit task and Timer inputs preserve the complete committed state.
+
+Public `openMultiInstances` progress is computed only from a program-well-formed controller binding and the exact active User Task. It never projects the snapshot or partial slots. E2 counts generated inner User Tasks and the Boundary Event, never the synthetic controller. The complete transition, observation, data, schedule, and liveness boundary belongs to the [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md).
 
 ### Relative timer wait
 
@@ -769,6 +805,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every ordinary single-occurrence operation payload element identifier matches its BPMN origin;
 - every `awaitEventRace` has one existing input, two distinct existing outputs, distinct nonempty Message and Timer catch identities, distinct nonempty configuration-flow origins absent from the control-place origin set, one complete `operationMessage` channel, and exact Timer duration `1000`; its Gateway origin is distinct from both catches;
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
+- every `awaitSequentialMultiInstanceUserTask` has one existing input, one exact task origin and definition, the closed direct input/output role graph, one distinct existing normal output, one distinct exact-duration `1000` boundary Timer output with complete Sequence Flow origin, the fixed `16`/`512`/`8192` limits, one unique operation-scope owner, and the registered profile's exact operation/control-place cardinality;
 - every admitted `awaitMessage` has a Message-wait element matching its BPMN origin and exactly one closed channel arm: `operationMessage` requires nonempty Interface, Interface Operation, and Message identities, while `directMessage` requires only a nonempty Message identity and forbids Interface fields;
 - every admitted `awaitEffect` has a profile-permitted descriptor and the exact mapping pair for that descriptor;
 - mapping targets are nonempty and unique, literal inputs remain exact strings, and local-variable outputs refer only to the admitted result-local name;
@@ -862,6 +899,7 @@ The maintained implementation supports exactly:
 
 - one profile-selected Process Start Event: one exact top-level operation-addressed Message Start Event in the registered Message Start profile, one exact top-level `PT1S` Timer Start Event in the registered Timer Start profile, and one none Start Event in every other registered profile;
 - one or more User Tasks permitted by the two approved capsules;
+- one exact collection-driven sequential Multi-Instance User Task with direct String input/output mediation, fixed limits, one active inner task, one interrupting outer-lifetime `PT1S` Timer, and exact normal and interrupted routes under its registered profile;
 - one exact `PT1S` Intermediate Catch Timer Event under its single-token linear capsule;
 - one finite acyclic linear composition containing exactly one exact `PT1S` Intermediate Catch Timer Event and one User Task under the profile-parameterized admission specification;
 - one directly addressed payload-free Intermediate Catch Message Event plus one User Task in either finite acyclic linear order under the profile-parameterized admission specification;
@@ -879,7 +917,7 @@ The maintained implementation supports exactly:
 - one one-level embedded Sub-Process with two independent child User Tasks, one child Error End Event, one child None End Event, one exact matching interrupting boundary Error in the parent, one outer recovery User Task, and a structurally present but unreachable normal continuation;
 - one registered one-level embedded Sub-Process with two parallel child User Tasks, one child Terminate End Event, one child None End Event, one outer User Task, selected-occurrence-retaining regional cancellation, and ordinary parent continuation;
 - none End Events permitted by the capsules;
-- `initiate`, `initiateMessage`, `initiateTimer`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `awaitEventRace`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `terminateScope`, `reachNoneEnd`, and `completeScope`;
+- `initiate`, `initiateMessage`, `initiateTimer`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitSequentialMultiInstanceUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `awaitEventRace`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `terminateScope`, `reachNoneEnd`, and `completeScope`;
 - definition-scope ownership and occurrence identity plus token multiplicity per Sequence Flow and scope occurrence;
 - semantic task, Message-subscription, timer, and effect occurrence identity, hidden occurrence-owned Inclusive selected-branch and Event-Based Gateway race records, registered-profile Boolean Process data on exact User Task completion, closed string-or-null Activity-local data for the exact mapping slices, logical time, and command closure;
 - exact optional passive User Task assignment/form metadata under the registered E2 profile, preserved from checked source through `awaitUserTask`, the committed wait, and public open-task observation without changing completion;
@@ -897,7 +935,7 @@ The following remain unsupported:
 - other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, boundary Events beyond the exact Task-attached and Sub-Process-attached Error slices, catch-all or unmatched Errors, handler search beyond one direct parent, Error payloads, Intermediate Throw Errors, signals as BPMN semantics, escalation, cancellation Events, compensation, and Terminate End outside the exact registered topology and generic root-capable checked/IL representation;
 - arbitrary Sub-Process nesting, Call Activities outside the exact two-Process empty-data normal-return slice, external/deployed called definitions, Global Tasks, recursion, repeated/concurrent calls, transactions, event Sub-Processes, and exceptional scope cancellation or event propagation beyond the exact direct-parent Error slice;
 - converging or mixed data-based Exclusive Gateways outside the exact identity-only cycle merge, missing-default or non-binary Exclusive routing, Inclusive Gateways outside the exact paired structured region, general Inclusive reachability, complex gateways, and Event-Based Gateways outside the exact non-instantiating Message/`PT1S` Timer profile;
-- cycles outside the exact root-scope User Task profile, concurrent Exclusive Multi-Merge execution, Standard Loop Characteristics, multi-instance activities, condition consumers beyond the admitted Exclusive and Inclusive Gateway profiles, general expressions, Boolean data outside the registered exact User Task completion profile, every other value kind beyond string/null, general variables or scopes, and mappings beyond one literal-string input plus one simple Activity-local-variable output per mapped Service Task;
+- cycles outside the exact root-scope User Task profile, concurrent Exclusive Multi-Merge execution, Standard Loop Characteristics, parallel Multi-Instance, sequential Multi-Instance beyond the exact registered User Task/data/Timer slice, condition consumers beyond the admitted Exclusive and Inclusive Gateway profiles, general expressions, Boolean data outside the registered exact User Task completion profile, every other value kind beyond string/null, general variables or scopes, and mappings beyond one literal-string input plus one simple Activity-local-variable output per mapped Service Task;
 - XPath, JUEL, FEEL, script parsing or evaluation, conditional-evaluation receipts, and every expression runtime beyond Simple Boolean v1;
 - host-side external-effect execution and effect mechanisms beyond the approved success and typed boundary-error capsules;
 - generated TypeScript as semantic authority;
@@ -909,14 +947,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, Message Start, Timer Start, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, registered configured Task, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, bounded Call Activity, and registered Terminate End exact-source fixtures lower deterministically;
+- sequential, sequential Multi-Instance, Message Start, Timer Start, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, registered configured Task, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, bounded Call Activity, and registered Terminate End exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, exact-target Message Start admission/initiation/refusal/observation, exact-target Timer Start admission/initiation/refusal/observation/closure, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, configured Task descriptor/closure/refusal/continuation, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, bounded called-Process invocation/return, and registered containing-scope termination separating witnesses;
+- the independent TypeScript evaluator passes sequential, exact sequential Multi-Instance entry/iteration/completion/interruption/binding/refusal/observation, exact-target Message Start admission/initiation/refusal/observation, exact-target Timer Start admission/initiation/refusal/observation/closure, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, configured Task descriptor/closure/refusal/continuation, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, bounded called-Process invocation/return, and registered containing-scope termination separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

@@ -183,7 +183,7 @@ test("a program with no Multi-Instance Activity omits the key entirely", () => {
   );
 });
 
-/** The same state with the outer record's body replaced by a child scope. */
+/** The same state with the outer record's body replaced by a live child scope. */
 function withChildScopeBody(state: RuntimeState): RuntimeState {
   const [record] = state.activityOccurrences;
   assert.ok(record !== undefined);
@@ -196,17 +196,7 @@ function withChildScopeBody(state: RuntimeState): RuntimeState {
   };
 }
 
-/**
- * The state that separates an arithmetic identity from an agreement between two structures.
- *
- * Body kind is deliberately not a well-formedness conjunct in either language, and the command gate
- * refuses only the three controller classes, so a controller bound to a child-scope-bodied record
- * reaches the projection. The completed count comes from the controller and the active count from that
- * record's body, so a generated count read off the controller can contradict both of the numbers
- * published beside it. Deriving generated as their sum is what makes Table 10.30's identity hold by
- * arithmetic instead of by the two structures happening to agree.
- */
-test("Table 10.30's identity holds where the record carries no Task body", () => {
+test("a malformed child-scope-bodied controller is refused before public projection", () => {
   const completed = completeSequentialMultiInstanceIteration(
     reviewProgram,
     entered(),
@@ -216,27 +206,11 @@ test("Table 10.30's identity holds where the record carries no Task body", () =>
   const state = withChildScopeBody(completed);
   assert.deepEqual(
     runtimeStateDefects(reviewProgram, instanceId, state),
-    [],
-    "body kind is not a conjunct, so this state is admitted before evaluation",
+    ["sequentialMultiInstanceControllerBindingMismatch"],
+    "semantic admission must reject the malformed program-to-controller binding",
   );
-
-  const [open] = progress(state);
-  assert.ok(open !== undefined);
-  assert.equal(open.numberOfActiveInstances, 0, "no Task body, so no active iteration");
-  assert.equal(open.numberOfCompletedInstances, 1);
-  assert.equal(
-    open.numberOfInstances,
-    open.numberOfActiveInstances + open.numberOfCompletedInstances +
-      open.numberOfTerminatedInstances,
-    "generated is the sum of the counts published beside it",
+  assert.throws(
+    () => projectOpenMultiInstances(reviewProgram, state),
+    /Cannot publish a malformed sequential Multi-Instance controller binding/u,
   );
-  // The second identity is the one a per-field correction breaks: publishing generated as completed
-  // plus active while pending still derives it as completed plus one satisfies the identity above and
-  // violates this one on the same state, so both belong in one test.
-  assert.equal(
-    open.plannedInstanceCount,
-    open.pendingItemCount + open.numberOfInstances,
-    "planned is pending plus generated over the same published counts",
-  );
-  assert.deepEqual(open.activeIterations, []);
 });

@@ -6,11 +6,10 @@
  * left to generate. Each state below is unreachable by construction, so a class an admitted transition
  * could produce would be a defect in the transition rather than a case for this file.
  *
- * Body kind is deliberately not among those invariants, in either language: the record's own body
- * conjunct already requires exactly one live body, and restricting that body to a User Task is a
- * profile fact rather than a state-decidable one. The state that omission admits, a controller bound to
- * a child-scope-bodied record, is therefore covered where it is observable, in the progress
- * projection's own file, rather than as a refusal here.
+ * The program-aware binding is the load-bearing conjunct: an open controller names the exact SMI
+ * operation, its Activity occurrence record, that record's active User Task wait, and its one lifetime
+ * Timer. A different live Activity body is not a weaker progress state. It is an unreachable state
+ * that cannot execute the operation the controller claims to own.
  *
  * Every controller-invariant negative perturbs the *same* admitted sequential Multi-Instance base
  * state, so a refusal is attributable to the one field it changed. Cross-profile presence has its
@@ -154,6 +153,59 @@ test("a controller naming no record of its identity is refused", () => {
   assert.deepEqual(
     defects(withControllers(before, [orphan])),
     [RuntimeStateDefect.SequentialMultiInstanceControllerUnowned],
+  );
+});
+
+test("a controller bound to a live child-scope body is refused", () => {
+  const before = armed();
+  const [record] = before.activityOccurrences;
+  assert.ok(record !== undefined);
+  const malformed: RuntimeState = {
+    ...before,
+    activityOccurrences: [{
+      ...record,
+      body: { kind: ActivityBodyKind.ChildScope, scope: record.owner },
+    }],
+  };
+  assert.deepEqual(
+    defects(malformed),
+    ["sequentialMultiInstanceControllerBindingMismatch"],
+    "a live body of another operation family cannot satisfy the SMI controller binding",
+  );
+  assert.equal(isGateAdmissibleRuntimeState(reviewProgram, instanceId, malformed), false);
+});
+
+test("a controller whose record names another operation is refused", () => {
+  const before = armed();
+  const [record] = before.activityOccurrences;
+  assert.ok(record !== undefined);
+  const malformed: RuntimeState = {
+    ...before,
+    activityOccurrences: [{ ...record, operationId: "operation:another-family" }],
+  };
+  assert.deepEqual(
+    defects(malformed),
+    ["sequentialMultiInstanceControllerBindingMismatch"],
+  );
+});
+
+test("a controller whose task wait carries metadata outside the SMI profile is refused", () => {
+  const before = armed();
+  const [wait] = before.userTaskWaits;
+  assert.ok(wait !== undefined);
+  const malformed: RuntimeState = {
+    ...before,
+    userTaskWaits: [{
+      ...wait,
+      metadata: {
+        assignment: { candidates: [{ kind: "group", id: "reviewers" }] },
+        form: { fields: [{ key: "approved", type: "boolean" }] },
+      },
+    }],
+  };
+  assert.deepEqual(
+    defects(malformed),
+    [RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch],
   );
 });
 
