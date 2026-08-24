@@ -114,24 +114,24 @@ Owners this implementation grows, with headroom before the 600-nonblank review t
 
 | Owner | Current headroom |
 |---|---:|
-| [Lean invariant predicate](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 173 |
-| [Lean identity-bound owner](../BpmnSemantics/SemanticProcess/RuntimeStateIdentityBound.lean) | 509 |
+| [Lean invariant predicate](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 172 |
+| [Lean identity-bound owner](../BpmnSemantics/SemanticProcess/RuntimeStateIdentityBound.lean) | 508 |
 | [Lean remaining-state fixtures](../BpmnSemantics/RuntimeStateWellFormedConformance.lean) | 422 |
 | [Lean Activity fixtures](../BpmnSemantics/RuntimeStateActivityConformance.lean) | 477 |
-| [Lean identity-bound fixtures](../BpmnSemantics/RuntimeStateIdentityBoundConformance.lean) | 571 |
+| [Lean identity-bound fixtures](../BpmnSemantics/RuntimeStateIdentityBoundConformance.lean) | 563 |
 | [TypeScript invariant](../packages/semantic-core/src/runtime-state-well-formedness.ts) | 109 |
 | [TypeScript identity-bound owner](../packages/semantic-core/src/runtime-state-identity-bound.ts) | 569 |
 | [runtime state contract](../packages/semantic-core/src/semantic-process-state.ts) | 185 |
 
 The bound is one cohesive responsibility across eight families and gets its own owner on each side for that reason, not for a size reason. The TypeScript aggregate was the only existing owner close enough to the reviewability ceiling to force separation on size alone, while the Lean aggregate had room. Each existing aggregate gains one conjunct reference.
 
-Executable constraints that already bind this work: [the runtime-state invariant guard](../packages/semantic-core/test/runtime-state-well-formedness.test.ts), [the preservation lane](../packages/semantic-core/test/runtime-state-preservation.test.ts), [the collection-removal completeness guard](../scripts/runtime-collection-removal-completeness.test.ts), [the Lean import boundaries guard](../scripts/lean-import-boundaries.test.ts), [the source-hygiene gate](../scripts/source-hygiene.test.ts), and [the reviewability guard](../scripts/document-reviewability.test.ts), which recomputes every headroom figure above. [The Lean source-contracts ratchet](../scripts/lean-source-contracts.test.ts) records `native_decide` sites and modules only, so a new module carrying `decide +kernel` negatives is admissible without a registry edit.
+Executable constraints that already bind this work: [the runtime-state invariant guard](../packages/semantic-core/test/runtime-state-well-formedness.test.ts), [the preservation lane](../packages/semantic-core/test/runtime-state-preservation.test.ts), [the collection-removal completeness guard](../scripts/runtime-collection-removal-completeness.test.ts), [the Lean import boundaries guard](../scripts/lean-import-boundaries.test.ts), [the source-hygiene gate](../scripts/source-hygiene.test.ts), and [the reviewability guard](../scripts/document-reviewability.test.ts), which enforces the owner ceiling. [The Lean source-contracts ratchet](../scripts/lean-source-contracts.test.ts) records `native_decide` sites and modules only, so a new module carrying `decide +kernel` negatives is admissible without a registry edit.
 
 ## Same-change owners the amendment breaks
 
 An earlier version of this proposal named one changed evidence claim. The implementation must preserve every exact-attribution fixture the new conjunct would otherwise make fail for a second reason, and it finds prose owners by the criterion below rather than by a retained count.
 
-The kernel-decided negatives in [the invariant fixtures](../BpmnSemantics/RuntimeStateWellFormedConformance.lean) leave a live member at activation 1 while its counter key is gone or renamed, so the new conjunct refuses each of them in addition to the conjunct it was written for. `unorderedActivationsState` replaces `activations` wholesale and drops `BoundedTask`'s count. `undeclaredTimerElementState` renames the live timer element, so `timerActivations` holds no key for it. `undeclaredEventRaceState` renames the race element. `ambiguousAttachedTimerState` adds a record at `BoundedTask_Other`, for which `activityActivations` holds no key.
+The kernel-decided negatives in [the invariant fixtures](../BpmnSemantics/RuntimeStateWellFormedConformance.lean) leave a live member at activation 1 while its counter key is gone or renamed, so the new conjunct refuses the User Task, Timer, and Activity-dependent cases in addition to the conjunct each was written for. `unorderedActivationsState` replaces `activations` wholesale and drops `BoundedTask`'s count. `undeclaredTimerElementState` renames the live timer element, so `timerActivations` holds no key for it. `ambiguousAttachedTimerState` adds a record at `BoundedTask_Other`, for which `activityActivations` holds no key. `undeclaredEventRaceState` is unaffected and unchanged because Event race remains outside the implemented predicate.
 
 Each fixture's siblings-intact theorem stays true, because none of them names the new conjunct. What breaks is the module's stated contract: its docstring says each state "perturbs a single field of a state its own conjunct can apply to" and that the pairing makes a refusal "attributable to the named conjunct rather than to something the aggregate already caught". That contract is the module's whole reason for existing, and the docstring records that it was earned by a fixture which had been refused by the wrong predicate.
 

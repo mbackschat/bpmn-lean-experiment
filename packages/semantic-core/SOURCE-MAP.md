@@ -30,6 +30,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-triggered-start.ts](src/semantic-process-triggered-start.ts) | Shared triggered-start occurrence and token mechanics |
 | [semantic-process-message-start.ts](src/semantic-process-message-start.ts) | Message-start admission and initiation |
 | [semantic-process-timer-start.ts](src/semantic-process-timer-start.ts) | Timer-start admission and initiation |
+| [runtime-state-identity-bound.ts](src/runtime-state-identity-bound.ts) | User Task, Timer, and Activity live-identity bounds against matching activation counters |
+| [runtime-state-well-formedness.ts](src/runtime-state-well-formedness.ts) | Aggregate runtime-state invariant validation, monotone-regression detection, and the gated defect set |
 | [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, stimulus admission, operation dispatch, closure, and `applyStimulus` |
 | [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts and trace replay validation |
 | [flow-node-occurrence-candidates.ts](src/flow-node-occurrence-candidates.ts) | Program-selected element and Process resolution for occurrence owners |
