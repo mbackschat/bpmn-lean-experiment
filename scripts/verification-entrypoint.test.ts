@@ -238,13 +238,14 @@ test("the runtime-import guard reaches helper and URL wrapped build paths", () =
   );
 });
 
-test("managed-sandbox guidance preauthorizes every Temporal server gate", async () => {
+test("managed-sandbox guidance preauthorizes every loopback-listener gate", async () => {
   const contributorGuide = await readFile(contributorGuidePath, "utf8");
   const testingSpec = await readFile(testingSpecPath, "utf8");
   for (const source of [contributorGuide, testingSpec]) {
     assert.match(source, /managed sandbox/i);
     assert.match(source, /before (?:the )?first attempt/i);
     assert.match(source, /`\.\/scripts\/verify\.sh`/);
+    assert.match(source, /`\.\/scripts\/pnpm\.sh run test:infrastructure`/);
     assert.match(source, /`\.\/scripts\/pnpm\.sh run test:temporal`/);
     assert.match(source, /`\.\/scripts\/pnpm\.sh run test:pipeline`/);
   }
