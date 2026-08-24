@@ -118,6 +118,7 @@ private def correspondenceOperationSupported : SemanticOperation → Bool
   | .reachNoneEnd .. | .completeScope .. => true
   | .initiateMessage .. | .initiateTimer .. | .enterScope ..
   | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+  | .awaitSequentialMultiInstanceUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask .. | .awaitEffect ..
   | .mergeExclusive .. | .choose .. | .selectMany ..
