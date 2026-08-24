@@ -52,11 +52,12 @@ Before pushing a change that also affects Product 2 platform packages or showcas
 
 The optional screenshot is reviewed in the digest-pinned `mcr.microsoft.com/playwright:v1.62.1-noble` container declared by [the Product 2 UI-quality workflow](../../.github/workflows/ui-quality.yml). Start that workflow manually with `regenerate_baselines` enabled to run the one explicit screenshot with Playwright's `--update-snapshots` option. The workflow uploads one candidate without modifying the repository. Review it before copying it into a normal pull request. Ordinary local and CI commands neither compare nor update pixels.
 
-M3 and M4 release acceptance each compose their real Temporal-backed showcase with this deterministic UI-quality lane:
+Each registered release acceptance composes its real Temporal-backed showcase with this deterministic UI-quality lane. The current Human Work, Incident Operations, and MUE Preview Alpha entry points are:
 
 ```sh
 ./scripts/pnpm.sh run test:release:m3
 ./scripts/pnpm.sh run test:release:m4
+./scripts/pnpm.sh run test:release:mue-preview-alpha
 ```
 
 This lane is intentionally absent from `scripts/verify.sh` and Product 1 feedback loops. A UI-quality failure does not slow or redefine semantic work, and semantic verification does not need a browser. The [three-level verification policy](../../docs/TESTING-SPEC.md#three-level-verification-policy) defines focused commit checks, exact pre-push workflow checks, and milestone/tag gates.

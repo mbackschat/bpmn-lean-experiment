@@ -125,7 +125,6 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
     assert.match(root[name] ?? "", /^pnpm build:release-product2 && pnpm test:showcase:[^ ]+:built$/u);
     assert.equal(matches(root[name] ?? "", /\bbuild:/gu), 1, `${name} must prepare the union Product 2 graph once`);
   }
-  assert.equal(root["test:release:mue-preview-alpha"], "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built");
   assert.equal(root["test:release:product2"], "pnpm build:release-product2 && pnpm test:showcase:m1:built && pnpm test:showcase:m2:built && pnpm test:showcase:m3-human-work:built && pnpm test:showcase:m4-incident-operations:built && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built");
   assert.equal(matches(root["test:release:product2"] ?? "", /\bbuild:/gu), 1);
   const prebuiltShowcaseCommands = new Map([
@@ -190,6 +189,32 @@ test("serves every real-host showcase from the production web build", async () =
   });
 
   assert.deepEqual(nonProductionConfigs, []);
+});
+
+test("keeps MUE Preview Alpha acceptance owners aligned with the executable release graph", async () => {
+  const [rootSource, architecture, webSourceMap, uiQualityGuide, contributorGuide, uiResearch] = await Promise.all([
+    read("package.json"),
+    read("docs/ARCHITECTURE.md"),
+    read("platform/apps/web/SOURCE-MAP.md"),
+    read("showcase/platform-ui-quality/README.md"),
+    read("docs/CONTRIBUTOR-SETUP-GUIDE.md"),
+    read("docs/research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md"),
+  ]);
+  const root = scripts(rootSource);
+
+  assert.equal(
+    root["test:release:mue-preview-alpha"],
+    "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built",
+  );
+  assert.match(architecture, /registered real-host showcase and preview acceptance packages/u);
+  assert.match(architecture, /test:release:mue-preview-alpha/u);
+  assert.doesNotMatch(architecture, /currently extending through `showcase\/m4-incident-operations\/`/u);
+  assert.doesNotMatch(architecture, /M1, M2, M3, and M4 acceptance floors/u);
+  assert.match(webSourceMap, /mue-preview-alpha-start\.ts/u);
+  assert.match(uiQualityGuide, /test:release:mue-preview-alpha/u);
+  assert.match(contributorGuide, /test:showcase:mue-preview-alpha/u);
+  assert.match(contributorGuide, /test:release:mue-preview-alpha/u);
+  assert.match(uiResearch, /without waiting on intermediate browser polling/u);
 });
 
 function scripts(source: string): Readonly<Record<string, string>> {
