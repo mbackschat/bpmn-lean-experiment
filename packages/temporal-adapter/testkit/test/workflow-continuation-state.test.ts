@@ -52,6 +52,7 @@ const program = {
   operationScopes: [
     { operationId: "Operation_Start", scopeId },
     { operationId: "Operation_Timer", scopeId },
+    { operationId: "Operation_UserTask", scopeId },
     { operationId: "Operation_End", scopeId },
   ],
   controlPlaceScopes: [
@@ -78,6 +79,14 @@ const program = {
       timer: { elementId: "TimerCatch_1", durationMs: 1000 },
     },
     {
+      id: "Operation_UserTask",
+      kind: SemanticOperationKind.AwaitUserTask,
+      origin: { kind: SemanticOriginKind.BpmnElement, elementId: "UserTask_1" },
+      input: "Place_Flow_Armed",
+      output: "Place_Flow_Fired",
+      task: { elementId: "UserTask_1", name: "Approve" },
+    },
+    {
       id: "Operation_End",
       kind: SemanticOperationKind.ReachNoneEnd,
       origin: { kind: SemanticOriginKind.BpmnElement, elementId: "EndEvent_1" },
@@ -96,6 +105,13 @@ const timerWait = {
   id: { processInstanceId: instanceId, elementId: "TimerCatch_1", activation: 1 },
   owner,
   deadlineMs: 1000,
+  output: "Place_Flow_Fired",
+} as const;
+
+const userTaskWait = {
+  id: { processInstanceId: instanceId, elementId: "UserTask_1", activation: 1 },
+  owner,
+  name: "Approve",
   output: "Place_Flow_Fired",
 } as const;
 
@@ -141,6 +157,26 @@ test("a continuation whose live deadline precedes its recovered time is refused"
 
   assert.throws(
     () => requireBpmnWorkflowContinuationStateV1(rewound, program, instanceId),
+    /RuntimeState is not one representable committed state/u,
+  );
+});
+
+test("a carried User Task identity above its absent counter is refused", () => {
+  const control = {
+    ...resumable,
+    userTaskWaits: [userTaskWait],
+    timerWaits: [],
+    taskActivations: [{ elementId: "UserTask_1", count: 1 }],
+    timerActivations: [],
+  } as const satisfies RuntimeState;
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationStateV1(control, program, instanceId),
+    control,
+  );
+
+  const withoutIssuedCounter = { ...control, taskActivations: [] };
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(withoutIssuedCounter, program, instanceId),
     /RuntimeState is not one representable committed state/u,
   );
 });

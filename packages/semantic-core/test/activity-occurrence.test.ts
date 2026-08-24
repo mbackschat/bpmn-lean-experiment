@@ -111,6 +111,17 @@ test("a region removal that leaves its attached deadline behind is refused", () 
  */
 const unconsultedElementId = "Unrelated_Activity";
 
+function unconsultedControl(): RuntimeState {
+  const state = armedState();
+  return {
+    ...state,
+    activityActivations: [
+      ...state.activityActivations,
+      { elementId: unconsultedElementId, count: 1 },
+    ],
+  };
+}
+
 function withUnconsultedRecords(
   state: RuntimeState,
   build: (template: ActivityOccurrence) => ReadonlyArray<ActivityOccurrence>,
@@ -128,7 +139,7 @@ function withUnconsultedRecords(
 }
 
 test("the fail-closed command gate refuses an unconsulted record, one class at a time", () => {
-  const control = armedState();
+  const control = unconsultedControl();
   assert.equal(
     applyStimulus(boundedScopeProgram, control, completeChildTask).outcome,
     CommandOutcome.Committed,
@@ -182,7 +193,7 @@ test("the fail-closed command gate refuses an unconsulted record, one class at a
  * is covered by the predicate negative above and by the gated set it shares with the other two.
  */
 test("the ambiguity class is gated but has no transition-independent witness here", () => {
-  const control = armedState();
+  const control = unconsultedControl();
   assert.equal(control.timerWaits.length, 1, "the premise of the absence is one live Timer wait");
   const ambiguous = withUnconsultedRecords(control, (template) => [{
     ...template,
@@ -236,6 +247,10 @@ test("two records claiming one attached deadline are refused as ambiguous", () =
 
   const ambiguous: RuntimeState = {
     ...state,
+    activityActivations: [
+      ...state.activityActivations,
+      { elementId: "Activity_Other", count: record.id.activation },
+    ],
     activityOccurrences: [
       record,
       // A second Activity of a different element claiming the same deadline. Nothing else changes, so

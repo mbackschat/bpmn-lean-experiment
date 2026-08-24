@@ -52,6 +52,7 @@ The first interchange composition registers `cibseven-2.2.0-user-task-process-da
 - executable JSON edge-case and Unicode scalar-order locks
 - separate checked-process admission, Semantic Process validation, cross-artifact binding, canonical lowering, and exact lowering-equality owners
 - separate kernel-decided conformance modules for admission/profile/binding/lowering and for runtime closure/evaluator facts, preserving the theorem surface while bounding each Lean compiler process independently
+- a separate `runtimeStateIdentityBound` owner over User Task, Timer, and Activity identities, composed into `runtimeStateWellFormed`, with one kernel-decided negative per implemented family and the existing exact-attribution fixtures split into independently memory-bounded Activity and remaining-state owners
 - generic scope-owned token, occurrence, wait, selected-branch, called-Process, and scoped-variable runtime with canonical public projection
 - declarative `OperationStep`/`ProgramStep` and `EffectCompletionStep`, executable transitions, and evaluator soundness at each closed capsule's declared proof boundary
 - independent decoding, lowering, execution traces, refusal or preservation facts, and non-laws for every closed family named in [the current boundary](#current-boundary); the three boundary-Timer proof boundaries remain explicit in their sections below
@@ -74,6 +75,7 @@ The first interchange composition registers `cibseven-2.2.0-user-task-process-da
 - topology-independent structural validation plus exact profile definition-scope and operation-kind cardinality
 - pure exhaustive execution of the closed Semantic Process operation union, with operation-ID-stable internal closure independent of program collection order
 - explicit scope-occurrence ownership over token multiplicity, child and called instances, selected branches, and canonical task, Message, timer, effect, and variable projections
+- an independently structured `runtimeStateIdentityBound` over User Task, Timer, and Activity identities, reported as the gated `LiveIdentityAboveCounter` defect and exercised by command-admission and Workflow-continuation refusals
 - independent evaluation, exact refusal, hidden-state non-projection, and bounded closure for every closed family named in [the current boundary](#current-boundary), including both data mappings and both Error routes
 - registered cyclic-control-flow admission and execution with one shared frozen graph policy, a reusable nonempty Exclusive Merge contract, profile-local exact-three restriction, owner-preserving unique-offer execution, and zero/multiple-offer evaluator incompleteness kept distinct from the declarative relation
 - registered Message Start admission and execution with a distinct exact-target stimulus, one fresh root occurrence, generic canonical nonempty outgoing-token production, profile-local exact-one output, and no subscription or payload
@@ -97,6 +99,8 @@ The first interchange composition registers `cibseven-2.2.0-user-task-process-da
 ## Explicitly absent
 
 Two registered profiles select one internal standard-notation preservation capability without executing the retained material. The BPMN data family remains rejected. All registered profiles except the bounded User Task cycle remain acyclic. Integer and String-list values appear only at M6 User Task completion, and Product 1 owns no form semantics. The independently closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one registered literal-generation-1 incident and one exact retry. Its successor adds only the exact incident-gated hosting-root cancellation path; it does not add general BPMN or operator cancellation, native Temporal cancellation, compensation, another incident generation, or Product 2 action state.
+
+The runtime-state identity bound is narrower than its general criterion. Message, Effect, Event race, Call, and ordinary Scope branches remain absent, called roots remain excluded, and no result establishes the per-arm issuing discipline or general non-reissue. General preservation across registered transitions remains deliberately open; the body-turnover User Task proof is one local discharge, not that general result.
 
 The sequential Multi-Instance checked node, Semantic Process operation, runtime controller, four state transitions, public progress, and E2 occurrence accounting are implemented, and the profile is still not execution-registered.
 

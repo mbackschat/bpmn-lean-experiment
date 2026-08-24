@@ -344,10 +344,13 @@ def addTokens (tokens : List ControlToken) (places : List ControlPlaceId)
     (owner : ScopeOccurrenceId) : List ControlToken :=
   places.foldr (fun place current => addToken current place owner) tokens
 
-def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
-    Nat :=
-  (state.activations.find? fun activation =>
-    decide (activation.taskId = taskId)).map (·.count) |>.getD 0
+def taskActivationCount : List TaskActivation → TaskDefinitionId → Nat
+  | [], _ => 0
+  | activation :: rest, taskId =>
+      if activation.taskId = taskId then activation.count else taskActivationCount rest taskId
+
+def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) : Nat :=
+  taskActivationCount state.activations taskId
 
 /-- The Activity-element activation high-water mark, or zero when the element is absent.
 
@@ -356,8 +359,7 @@ different things: how many times an Activity was activated, against how many occ
 produced. They agree under every registered profile and nothing reads the agreement. -/
 def activityActivationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
     Nat :=
-  (state.activityActivations.find? fun activation =>
-    decide (activation.taskId = taskId)).map (·.count) |>.getD 0
+  taskActivationCount state.activityActivations taskId
 
 /-- Canonical insertion for the task activation family, ordered by element identifier.
 

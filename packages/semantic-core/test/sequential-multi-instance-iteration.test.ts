@@ -243,6 +243,11 @@ function withSecondAttachedTimer(state: RuntimeState): RuntimeState {
   return {
     ...state,
     timerWaits: [...state.timerWaits, { ...deadline, id: second }],
+    timerActivations: state.timerActivations.map((counter) =>
+      counter.elementId === second.elementId
+        ? { ...counter, count: second.activation }
+        : counter
+    ),
     activityOccurrences: [{
       ...record,
       attachedTimers: [...record.attachedTimers, second],

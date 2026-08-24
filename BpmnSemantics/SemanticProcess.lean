@@ -30,6 +30,7 @@ import BpmnSemantics.SemanticProcess.CommandAdmission
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import BpmnSemantics.SemanticProcess.ActivityBodyTurnoverPreservation
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
 import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.Execution

@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.InclusiveGateway
+import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 
 /-! # Runtime-state well-formedness
@@ -9,9 +10,10 @@ This module owns `runtimeStateWellFormed`, the executable predicate deciding whi
 values the semantic account admits, and `RuntimeStateMonotone`, the separate two-state relation for
 facts that belong to a transition rather than to a state.
 
-The two have different types on purpose. A high-water or non-reissue fact cannot be decided from one
-state without inventing a history field, so encoding it as a state conjunct would either be
-unprovable or force a representation change.
+The two have different types on purpose. Whether a counter decreased or an identity was reissued
+cannot be decided from one state without inventing a history field. The single-state predicate does
+decide the narrower fact that every live User Task, Timer, and Activity activation is at or below its
+key's recorded count; that bound is not a transition history.
 
 The predicate is indexed by the expected semantic instance identity as well as by the program,
 because reading that identity out of the state under check would make the check self-consistent and
@@ -414,6 +416,7 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     effectIncidentAssociationsValid state &&
     waitOwnersLive state &&
     waitIdentitiesUnique state &&
+    runtimeStateIdentityBound state &&
     waitDeclarationsValid program instanceId state &&
     hiddenRecordDeclarationsValid program state &&
     canonicalCollectionOrder state &&
@@ -448,11 +451,11 @@ private def scopeCountFor (activations : List ScopeActivation) (scopeId : Defini
 /-- `RSI-MONO-01` and `RSI-MONO-02`. Every activation counter family is a per-key high-water mark
 that never decreases across a committed transition, and `endOccurrences` never decreases.
 
-`RSI-MONO-04` is deliberately **not** stated here. Non-reissue needs the further fact that a newly
-issued identity is numbered strictly above its key's recorded count, which is a property of the
-issuing transition rather than of the counter pair; asserting it in this relation would make it an
-unstated premise of every use. It remains an explicit absence, and the adapter's assumption that a
-Timer or task identity stays retired once withdrawn rests on it rather than on this relation.
+`RSI-MONO-04` is deliberately **not** stated here. The single-state identity bound constrains live
+User Task, Timer, and Activity identities, but non-reissue additionally needs every issuing transition
+to number a newly issued identity strictly above its pre-state count. That discipline remains an
+explicit absence, and the adapter's assumption that a Timer or task identity stays retired once
+withdrawn rests on it rather than on this relation.
 
 `logicalTimeMs` is deliberately absent. Every time-advancing arm takes its time from a fired
 deadline, so monotonic time holds only under the hypothesis that the fired deadline is at or after

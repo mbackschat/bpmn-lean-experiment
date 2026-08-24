@@ -9,8 +9,8 @@ through `AOO-TURNOVER-04`.
 
 The operation is whole-state by requirement rather than convenience. Between withdrawing the outgoing
 body and arming the incoming one there is a state whose record names a wait that is not live, which
-`activityRecordsOwnLiveWork` rejects; exposing that intermediate would make the preservation law below
-vacuous on its own hypothesis, since no well-formed pre-state would reach it.
+`activityRecordsOwnLiveWork` rejects; exposing that intermediate would make the composed preservation
+law vacuous on its own hypothesis, since no well-formed pre-state would reach it.
 
 No registered profile admits a construct that drives this. It is the representation a later repetition
 capsule defines transitions over, and it is introduced here because approving it is what makes the
@@ -274,6 +274,49 @@ theorem waitOwnersLive_replacedState (state : RuntimeState) (record : ActivityOc
       _ state.activityOccurrences (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)]
     exact records
 
+/-- The replacement advances the new task body's own counter and leaves the Timer and Activity
+counter families unchanged, so it preserves the implemented `RSI-BOUND-01` branches. -/
+theorem runtimeStateIdentityBound_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
+    (holds : runtimeStateIdentityBound state = true) :
+    runtimeStateIdentityBound (replacedState state record wait body) = true := by
+  simp only [runtimeStateIdentityBound, Bool.and_eq_true] at holds ⊢
+  obtain ⟨⟨tasks, timers⟩, activities⟩ := holds
+  refine ⟨⟨?_, ?_⟩, ?_⟩
+  · simp only [replacedState]
+    rw [all_insertUserTaskWait]
+    simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
+    refine ⟨?_, ?_⟩
+    · change activationCount state wait.task.id + 1 ≤
+        activationCount ({ state with activations := (setActivationCount state.activations
+          wait.task.id (activationCount state wait.task.id + 1)) }) wait.task.id
+      rw [activationCount_setActivationCount_self]
+      exact Nat.le_refl _
+    · intro candidate mem
+      have prior := List.all_eq_true.mp tasks candidate (List.mem_filter.mp mem).1
+      simp only [decide_eq_true_eq] at prior
+      change candidate.activation ≤
+        activationCount ({ state with activations := (setActivationCount state.activations
+          wait.task.id (activationCount state wait.task.id + 1)) }) candidate.task.id
+      by_cases sameTask : candidate.task.id = wait.task.id
+      · rw [sameTask] at prior
+        rw [sameTask, activationCount_setActivationCount_self]
+        exact Nat.le_trans prior (Nat.le_succ _)
+      · rw [activationCount_setActivationCount_other _ _ _ _ sameTask]
+        exact prior
+  · change (state.timerWaits.all fun candidate =>
+      decide (candidate.activation ≤ timerActivationCount state candidate.elementId)) = true
+    exact timers
+  · simp only [replacedState, activityActivationCount]
+    simp only [List.all_eq_true, decide_eq_true_eq] at activities ⊢
+    intro candidate mem
+    obtain ⟨original, memOriginal, rebuilt⟩ := List.mem_map.mp mem
+    have prior := activities original memOriginal
+    simp only [activityActivationCount] at prior
+    rw [← rebuilt]
+    by_cases same : sameActivityOccurrence original record = true <;>
+      simpa [replaceBodyIn, same] using prior
+
 /-- `RSI-ORDER-01`: every canonically ordered collection stays ordered.
 
 Four of the seven collections are untouched. The wait list is filtered and then inserted into, which is
@@ -324,12 +367,11 @@ theorem waitDeclarationsValid_replacedState (program : Program) (instanceId : Se
   · exact waits candidate
       (List.mem_filter.mpr ⟨(List.mem_filter.mp memFiltered).1, samePid⟩)
 
-/-- `RSI-UNIQ-02` under the freshness hypothesis this transition cannot discharge on its own.
+/-- `RSI-UNIQ-02` under an explicit freshness premise.
 
-The hypothesis is stated rather than derived because no conjunct of `runtimeStateWellFormed` bounds a
-live wait's activation by its counter. The arming step establishes it by construction, minting from
-the pre-state counter; the residual gap is exactly `RSI-MONO-04`, which no relation in this account
-states. Declaring the law without it would assert something the account does not enforce. -/
+This lemma assumes only the uniqueness conjunct, so it cannot project the identity bound itself. The
+whole-state theorem in `ActivityBodyTurnoverPreservation` holds that conjunct and derives this premise
+before calling it. -/
 theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : ActivityOccurrence)
     (wait : UserTaskWait) (body : OccurrenceId)
     (fresh : ∀ candidate ∈ state.waits,
@@ -546,92 +588,5 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
       by_cases h : sameActivityOccurrence other record = true <;> simp [h]
     rw [frameEq.1, frameEq.2]
     exact priorHolds.2
-
-/-! ## The preservation law
-
-The second of the two results this capsule declares. Fifteen conjuncts, six of them definitional,
-under two hypotheses neither of which `runtimeStateWellFormed` supplies.
--/
-
-/-- `AOO-TURNOVER-02`: the whole-state replacement carries a well-formed state to a well-formed state.
-
-Two hypotheses are stated rather than derived, and both are genuine gaps rather than bookkeeping.
-
-`fresh` says the armed key names no live wait. No conjunct bounds a live wait's activation by its
-counter, so this cannot be recovered from `wellFormed`; the arming step establishes it by construction
-because it mints from the pre-state counter, and the residual gap is exactly `RSI-MONO-04`.
-
-`soleBody` says no *other* record names the wait being withdrawn. Nothing refuses two records naming
-one body, so a well-formed pre-state can hold a second claimant whose body this transition removes.
-The parent account carries the same premise explicitly for its body-side lookup determinism, and it
-reappears here as a transition obligation. Discharging either would be a change to the account, not to
-this proof.
-
-The intermediate state is never exposed, which is why the law can be stated at all: a decomposition
-into withdraw-then-arm would pass through a state that `activityRecordsOwnLiveWork` rejects, and the
-law would then be vacuous on its own hypothesis. -/
-theorem replacedState_preserves_wellFormed (program : Program) (instanceId : SemanticId)
-    (state : RuntimeState) (record : ActivityOccurrence) (wait : UserTaskWait)
-    (body : OccurrenceId)
-    (unique : state.waits.filter (taskIdNamesWait body) = [wait])
-    (fresh : ∀ candidate ∈ state.waits,
-      userTaskWaitKeyMatches (turnoverWait state wait) candidate = false)
-    (soleBody : ∀ other ∈ state.activityOccurrences,
-      sameActivityOccurrence other record = false → recordBodyNamesWait wait other = false)
-    (wellFormed : runtimeStateWellFormed program instanceId state = true) :
-    runtimeStateWellFormed program instanceId (replacedState state record wait body) = true := by
-  have waitInFilter : wait ∈ state.waits.filter (taskIdNamesWait body) := by
-    rw [unique]; simp
-  have waitMem : wait ∈ state.waits := (List.mem_filter.mp waitInFilter).1
-  simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩, declarations⟩,
-    hidden⟩, order⟩, bodies⟩, attached⟩, unique'⟩, owned⟩, controllerIds⟩, notExhausted⟩,
-    lifecycle⟩ := wellFormed
-  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · rw [runtimePositionValid_replacedState]; exact position
-  · rw [eventRaceAssociationsValid_replacedState]; exact races
-  · rw [effectIncidentAssociationsValid_replacedState]; exact incidents
-  · exact waitOwnersLive_replacedState state record wait body waitMem owners
-  · exact waitIdentitiesUnique_replacedState state record wait body fresh identities
-  · exact waitDeclarationsValid_replacedState program instanceId state record wait body waitMem
-      declarations
-  · rw [hiddenRecordDeclarationsValid_replacedState]; exact hidden
-  · exact canonicalCollectionOrder_replacedState state record wait body order
-  · exact activityRecordsOwnLiveWork_replacedState state record wait body unique
-      fresh soleBody bodies
-  · rw [attachedTimersUnambiguous_replacedState]; exact attached
-  · rw [activityIdentitiesUnique_replacedState]; exact unique'
-  · rw [controllersOwnLiveActivity_replacedState]; exact owned
-  · rw [controllerIdentitiesUnique_replacedState]; exact controllerIds
-  · rw [controllersNotExhausted_replacedState]; exact notExhausted
-  · -- The lifecycle clause. A live wait exists, so the pre-state cannot have been `notStarted`, and
-    -- the control field itself is untouched.
-    have sameControl : (replacedState state record wait body).control = state.control := rfl
-    rw [sameControl]
-    cases hc : state.control with
-    | notStarted =>
-      exfalso
-      rw [hc] at lifecycle
-      simp only [notStartedStateEmpty, Bool.and_eq_true, List.isEmpty_iff] at lifecycle
-      exact List.ne_nil_of_mem waitMem lifecycle.1.1.1.1.1.1.1.1.1
-    | running _ => rfl
-    | completed _ => rfl
-    | cancelled _ => rfl
-
-/-- The resolver answers with the state rewrite exactly when the state holds a record naming a unique
-live body.
-
-Stated so the preservation law above applies to the operation a caller actually invokes, rather than
-to the rewrite it delegates to. The membership hypothesis is the guard's, not the law's: `replacedState`
-is well-formedness-preserving without it, and refusing an unheld record keeps the operation's domain
-identical to the independently written core's. -/
-theorem replaceActivityBodyTask_eq_replacedState (state : RuntimeState)
-    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
-    (bodyOfRecord : activityBodyTask? record = some body)
-    (held : state.activityOccurrences.any (fun candidate => sameActivityOccurrence candidate record)
-      = true)
-    (unique : state.waits.filter (taskIdNamesWait body) = [wait]) :
-    replaceActivityBodyTask state record = some (replacedState state record wait body) := by
-  simp [replaceActivityBodyTask, bodyOfRecord, held, unique]
 
 end BpmnSemantics.SemanticProcess

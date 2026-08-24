@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved-with-required-edits
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and current boundary
 
@@ -84,7 +84,7 @@ The bound qualifies on the set's own stated criterion, which is that a class is 
 
 ## What this establishes and what it does not
 
-Established, if implemented: `RSI-BOUND-01` holds of every state the predicate admits, in both languages, and the turnover preservation law loses a hypothesis it currently cannot discharge.
+Established at the implementation checkpoint: the narrowed `RSI-BOUND-01` holds for every User Task, Timer, and Activity identity in every state the predicate admits, in both languages, and the turnover preservation law no longer carries an external wait-key freshness hypothesis.
 
 Not established:
 
@@ -104,7 +104,7 @@ Three negatives against eight stated families leave five family branches of the 
 
 Every conjunct added to `runtimeStateWellFormed` is re-reduced by every kernel-decided fixture, and every new fixture re-reduces every conjunct, so cost grows multiplicatively. [The thread-pin rationale](../CLAUDE.md#verification) records the only durable measurements this repository has for that effect.
 
-The obligation on implementation is to build one narrow fixture module before and after the conjunct under the bound described in [the contributor setup guide](CONTRIBUTOR-SETUP-GUIDE.md#memory-bounded-lean-measurements), and to record both figures where cost lives, in [the capsule cost ledger](CAPSULE-COST-LEDGER.md). The measurement decides only whether the five consumer-free families land now or are recorded as narrower than stated. It does not decide *which* families, because the criterion and the consumers already do.
+The implementation built one narrow fixture module before and after the conjunct under the bound described in [the contributor setup guide](CONTRIBUTOR-SETUP-GUIDE.md#memory-bounded-lean-measurements), and records both figures in [the capsule cost ledger](CAPSULE-COST-LEDGER.md). The pre-existing aggregate fixture owner exhausted the 3 GiB bound before the rule was added; the post-change split owners pass independently but remain close to that maximum. The result selects the consumer-bound narrowing, not a different family set: User Task, Timer, and Activity land now, while the five consumer-free families remain explicitly absent.
 
 ## Versioning consequences
 
@@ -114,12 +114,16 @@ Owners this implementation grows, with headroom before the 600-nonblank review t
 
 | Owner | Current headroom |
 |---|---:|
-| [Lean invariant predicate](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 175 |
-| [Lean invariant fixtures](../BpmnSemantics/RuntimeStateWellFormedConformance.lean) | 287 |
-| [TypeScript invariant](../packages/semantic-core/src/runtime-state-well-formedness.ts) | 117 |
+| [Lean invariant predicate](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 173 |
+| [Lean identity-bound owner](../BpmnSemantics/SemanticProcess/RuntimeStateIdentityBound.lean) | 509 |
+| [Lean remaining-state fixtures](../BpmnSemantics/RuntimeStateWellFormedConformance.lean) | 422 |
+| [Lean Activity fixtures](../BpmnSemantics/RuntimeStateActivityConformance.lean) | 477 |
+| [Lean identity-bound fixtures](../BpmnSemantics/RuntimeStateIdentityBoundConformance.lean) | 571 |
+| [TypeScript invariant](../packages/semantic-core/src/runtime-state-well-formedness.ts) | 109 |
+| [TypeScript identity-bound owner](../packages/semantic-core/src/runtime-state-identity-bound.ts) | 569 |
 | [runtime state contract](../packages/semantic-core/src/semantic-process-state.ts) | 185 |
 
-The bound is one cohesive responsibility across eight families and gets its own owner on each side for that reason, not for a size reason: only the TypeScript predicate at 117 lines would be written under a squeeze, while the Lean predicate has room. Each existing predicate gains one conjunct reference.
+The bound is one cohesive responsibility across eight families and gets its own owner on each side for that reason, not for a size reason. The TypeScript aggregate was the only existing owner close enough to the reviewability ceiling to force separation on size alone, while the Lean aggregate had room. Each existing aggregate gains one conjunct reference.
 
 Executable constraints that already bind this work: [the runtime-state invariant guard](../packages/semantic-core/test/runtime-state-well-formedness.test.ts), [the preservation lane](../packages/semantic-core/test/runtime-state-preservation.test.ts), [the collection-removal completeness guard](../scripts/runtime-collection-removal-completeness.test.ts), [the Lean import boundaries guard](../scripts/lean-import-boundaries.test.ts), [the source-hygiene gate](../scripts/source-hygiene.test.ts), and [the reviewability guard](../scripts/document-reviewability.test.ts), which recomputes every headroom figure above. [The Lean source-contracts ratchet](../scripts/lean-source-contracts.test.ts) records `native_decide` sites and modules only, so a new module carrying `decide +kernel` negatives is admissible without a registry edit.
 
@@ -135,17 +139,29 @@ The implementation therefore repairs each listed fixture rather than weakening t
 
 The TypeScript exact-attribution fixtures have the same obligation. [`withUnconsultedRecords`](../packages/semantic-core/test/activity-occurrence.test.ts) appends a synthetic Activity record whose key is absent from `activityActivations`; the implementation first gives the committing control the matching unrelated counter entry, so each case still differs from that control only in `activityOccurrences` and reports exactly its named defect. [`withSecondAttachedTimer`](../packages/semantic-core/test/sequential-multi-instance-iteration.test.ts) adds Timer activation 2 while leaving that Timer key's count at 1; the helper advances the synthetic matching counter so both tests continue to establish that a record listing two live Timers is admitted.
 
-`rewoundCounterSuccessor` needs no repair. It withdraws its wait and Activity record before the rewind, so it stays admitted and its theorem stays green. Its docstring's claim that no predicate over one state can refuse such a rewind stops being true in general and must be narrowed to the withdrawn case, and the evidence-lane row for `RSI-MONO-01` should record that the amendment absorbs part of that relation's discriminating power. The TypeScript [`runtimeStateRegressions`](../packages/semantic-core/src/runtime-state-well-formedness.ts) docstring also needs correction: lowering a counter is a rewind, while reissue requires a later mint of the retired identity and does not follow from the two states that function compares.
+`rewoundCounterSuccessor` needed no fixture repair. It withdraws its wait and Activity record before the rewind, so it stays admitted and its theorem stays green. Its docstring is narrowed to that withdrawn case, and the evidence-lane row for `RSI-MONO-01` records that the amendment absorbs part of that relation's discriminating power. The TypeScript [`runtimeStateRegressions`](../packages/semantic-core/src/runtime-state-well-formedness.ts) docstring likewise distinguishes a two-state counter rewind from reissue, which requires a later mint of the retired identity.
 
-The remaining same-change owners are decided by a criterion, not by this list. Every maintained statement asserting that no conjunct of `runtimeStateWellFormed` bounds a live wait's activation by its counter, or that `RSI-MONO-04` is the residual gap for wait-key freshness, is true today and false on implementation. Searching the repository for that assertion currently yields these, and the implementation re-runs the search rather than trusting the extension:
+The remaining same-change owners were decided by a criterion, not by this list. Before implementation, every maintained statement asserting that no conjunct of `runtimeStateWellFormed` bounds a live wait's activation by its counter, or that `RSI-MONO-04` is the residual gap for wait-key freshness, would become false. The search identified the following owners, and the implementation corrected each in the same change:
 
-- [`RuntimeStateWellFormed.lean`](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean)'s module docstring, where the two rule types are distinguished, needs the same carve-out this proposal makes;
-- [the invariant's Contract paragraph](RUNTIME-STATE-INVARIANT-SPEC.md#contract) and its `RSI-MONO-04` row;
-- [the Activity occurrence specification](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md)'s preservation bullet and its Lean assurance-lane bullet, both of which say nothing bounds a live wait's activation by its counter;
-- [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md)'s measured reason for the open preservation lane;
-- the docstrings of `waitIdentitiesUnique_replacedState` and `replacedState_preserves_wellFormed` in [`ActivityBodyTurnover.lean`](../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean), which name `RSI-MONO-04` as the residual gap.
+- [`RuntimeStateWellFormed.lean`](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean)'s module docstring now distinguishes the single-state bound from transition history;
+- [the invariant's Contract paragraph](RUNTIME-STATE-INVARIANT-SPEC.md#contract) and its `RSI-MONO-04` row now preserve the issuing-discipline gap;
+- [the Activity occurrence specification](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md)'s preservation and assurance-lane account now records locally derived freshness without claiming general preservation;
+- [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md) now records the local discharge beside the measured reason for the open preservation lane;
+- the docstrings of `waitIdentitiesUnique_replacedState` in [`ActivityBodyTurnover.lean`](../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean) and `replacedState_preserves_wellFormed` in [its extracted preservation owner](../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) now distinguish the locally derived freshness fact from the still-open `RSI-MONO-04` issuing discipline.
 
-Two further statements are stale now rather than on implementation, because they describe this proposal rather than the implementation. [The documentation registry](README.md)'s row for this document said the bound would make non-reissue a derivation instead of an absence, which is the rejected target's thesis. [The plan](PLAN.md) said registration was blocked on this amendment alone and that stating it discharges an unstated adapter assumption; both were corrected in `551c8f4a`, before this review target was read.
+Two further statements were stale before implementation because they described a rejected version of this proposal. [The documentation registry](README.md)'s row for this document said the bound would make non-reissue a derivation instead of an absence, which was corrected before owner approval. [The plan](PLAN.md) said registration was blocked on this amendment alone and that stating it discharges an unstated adapter assumption; both were corrected in `551c8f4a`, before the approved review target was read.
+
+## Implementation checkpoint
+
+The implementation follows the cost-selected three-family boundary exactly. [`runtimeStateIdentityBound`](../BpmnSemantics/SemanticProcess/RuntimeStateIdentityBound.lean) and its independently structured [TypeScript counterpart](../packages/semantic-core/src/runtime-state-identity-bound.ts) treat an absent counter as zero and compare live User Task, Timer, and Activity activations with their matching counters. The aggregate Lean predicate composes the new conjunct, and the TypeScript validator reports `LiveIdentityAboveCounter` and includes it in `GATED_DEFECTS`.
+
+The separating evidence has one negative per implemented family in both targets. The Lean negatives are isolated in [`RuntimeStateIdentityBoundConformance.lean`](../BpmnSemantics/RuntimeStateIdentityBoundConformance.lean); the TypeScript test removes only the matching counter from an otherwise admitted User Task, Timer, or Activity state and observes the named defect and command refusal. Existing exact-attribution fixtures were repaired rather than weakened, and the original Lean fixture owner was split into [Activity](../BpmnSemantics/RuntimeStateActivityConformance.lean) and [remaining-state](../BpmnSemantics/RuntimeStateWellFormedConformance.lean) owners so each compiler process stays independently memory-bounded.
+
+The body-turnover composition now derives wait-key freshness from the User Task bound and `turnoverWait`'s next-count definition inside [`replacedState_preserves_wellFormed`](../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean). The conjunct-specific transition laws stay in [the mechanism owner](../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean), which keeps both owners below the reviewability ceiling.
+
+The fail-closed continuation boundary has a direct recovery-path witness. A declared resumable User Task checkpoint is accepted with counter 1, and the same checkpoint is refused after only that counter entry is removed. This observes the new gated defect at the host recovery seam instead of inferring it from the semantic-core command path.
+
+Nothing in this checkpoint implements Message, Effect, Event race, Call, or ordinary Scope branches, changes the called-root exclusion, establishes general preservation, states the issuing discipline, derives non-reissue, registers sequential Multi-Instance execution, or changes BPMN meaning, a profile, a wire shape, a public observation, or a Temporal primitive.
 
 ## Epistemic closure and reopen conditions
 

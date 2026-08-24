@@ -25,6 +25,7 @@ import {
 } from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
 import { compareCanonicalStrings } from "./wire.js";
+import { runtimeStateIdentityBound } from "./runtime-state-identity-bound.js";
 
 /**
  * Which committed runtime states this account admits, and how a successor may contradict its
@@ -52,6 +53,7 @@ export const RuntimeStateDefect = {
   NotStartedWithWork: "notStartedWithWork",
   DanglingWaitOwner: "danglingWaitOwner",
   DuplicateWaitIdentity: "duplicateWaitIdentity",
+  LiveIdentityAboveCounter: "liveIdentityAboveCounter",
   UndeclaredWaitIdentity: "undeclaredWaitIdentity",
   UndeclaredHiddenRecord: "undeclaredHiddenRecord",
   UnorderedCollection: "unorderedCollection",
@@ -233,6 +235,10 @@ export function runtimeStateDefects(
     sharesAnOccurrenceKey(state.effectWaits);
   if (duplicated) {
     defects.push(RuntimeStateDefect.DuplicateWaitIdentity);
+  }
+
+  if (!runtimeStateIdentityBound(state)) {
+    defects.push(RuntimeStateDefect.LiveIdentityAboveCounter);
   }
 
   const declared = declaredElementIds(program);
@@ -480,6 +486,7 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.NotStartedWithWork,
   RuntimeStateDefect.DanglingWaitOwner,
   RuntimeStateDefect.DuplicateWaitIdentity,
+  RuntimeStateDefect.LiveIdentityAboveCounter,
   RuntimeStateDefect.UnorderedCollection,
   // All three are decidable from one state without the called definitions, which is what the gate
   // excludes program-agreement classes for. Leaving them out meant no boundary refused a record whose

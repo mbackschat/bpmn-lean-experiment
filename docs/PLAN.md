@@ -16,6 +16,8 @@ The MUE acceleration procedure is classified non-material under [the negative ca
 
 For the current MUE programme, the owner authorizes pushes at the triggers in [the three-level verification policy](TESTING-SPEC.md#three-level-verification-policy) after every selected pre-push entry point passes. This authorizes neither pushing an unverified target nor bypassing a required review or gate.
 
+The owner-approved [runtime-state identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) is implemented at its semantic checkpoint. Cost selected the proposal's consumer-bound subset: User Task, Timer, and Activity identities are bounded in Lean and TypeScript, the defect gates command and continuation admission, and body turnover derives its wait-key freshness premise from well-formedness. Message, Effect, Event race, Call, ordinary Scope, the called-root exclusion, general preservation, the issuing discipline, non-reissue, and Multi-Instance execution registration remain unchanged and open.
+
 ## Ordered work
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
@@ -39,11 +41,11 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: implement the owner-approved [identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) in Lean and TypeScript under its exact family criterion, called-root exclusion, enforcement boundary, and same-change obligations. Begin with a separating Red for a live counter-minted occurrence above its post-state count, then discharge the two body-turnover freshness uses from well-formedness without claiming non-reissue.
+Next action: generate the immutable [identity-bound checkpoint](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) packet, spawn a `fork-turns-none` cold reviewer without overrides, and run the complete gate concurrently against that commit. Pause repository writes until both finish. Correct required findings, then close without widening beyond User Task, Timer, and Activity or claiming non-reissue.
 
-Registration needs more than that amendment. [The capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) conditions it on the obligation being stated, and the bound narrows that absence rather than stating it. The selected direction is to discharge the issuing discipline for the activity family's minting sites rather than narrow the public `ActivityOccurrenceId` projection, because that change is additive, preserves the reviewed public contract, and can be reused across counter families. Its exact semantic account still requires governed proposal review before implementation or registration.
+Registration still needs a governed account discharging the Activity-family issuing discipline. This is selected over narrowing `ActivityOccurrenceId` because it is additive, contract-preserving, and reusable.
 
-Also open, each as its own change: withdrawing every wait a removed Activity occurrence record named, which holds in two of four Activity families and belongs in [the Activity occurrence specification](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md); [scope cancellation](../packages/semantic-core/src/semantic-process-scope-cancellation.ts) removing a region's Activity records but not the Multi-Instance controllers that must own one; the absent Temporal host class, refinement witnesses, and capacity owner; PostgreSQL migration evidence needing a database.
+Separate open changes: cross-family Activity wait withdrawal, scope-cancellation controller cleanup, Temporal hosting/refinement/capacity, and PostgreSQL migration evidence.
 
 Oracle: every evaluator-produced transition is permitted by its relation, iteration preserves the outer deadline and its counters, interruption publishes nothing, and both count identities are arithmetic over one published sum.
 

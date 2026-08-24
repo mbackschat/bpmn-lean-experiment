@@ -194,6 +194,7 @@ test("publishes Retry then Cancel for an eligible transitive called tree", () =>
       deadlineMs: 42,
       output: "place:called-timer-output",
     }],
+    timerActivations: [{ elementId: "Called_Timer", count: 1 }],
     calledProcessOccurrences: [{
       id: {
         processInstanceId,
