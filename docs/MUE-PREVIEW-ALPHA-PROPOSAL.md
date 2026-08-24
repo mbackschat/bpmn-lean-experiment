@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved-with-required-edits
 
 ## Product question and current boundary
 
@@ -114,7 +114,7 @@ Reopen this proposal if Product 1 changes the start variable domain, `openMultiI
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `40eda701` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `40eda701` | `fork-turns-none` | `approve-with-required-edits` | `bd9b37f9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
