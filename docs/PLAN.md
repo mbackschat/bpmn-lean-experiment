@@ -39,9 +39,9 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Active work ID: `SEQUENTIAL-MULTI-INSTANCE`.
 
-Next action: obtain owner approval for [the identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md). If approved, record its `owner-approved` lifecycle before opening implementation lanes; nothing may be implemented before that status change.
+Next action: implement the owner-approved [identity bound](RUNTIME-STATE-IDENTITY-BOUND-PROPOSAL.md) in Lean and TypeScript under its exact family criterion, called-root exclusion, enforcement boundary, and same-change obligations. Begin with a separating Red for a live counter-minted occurrence above its post-state count, then discharge the two body-turnover freshness uses from well-formedness without claiming non-reissue.
 
-Registration needs more than that amendment. [The capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) conditions it on the obligation being stated, and the bound narrows that absence rather than stating it. Registration needs either the issuing discipline discharged for the activity family's minting sites, or the public `ActivityOccurrenceId` projection narrowed. That choice is unmade.
+Registration needs more than that amendment. [The capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-PROPOSAL.md) conditions it on the obligation being stated, and the bound narrows that absence rather than stating it. The selected direction is to discharge the issuing discipline for the activity family's minting sites rather than narrow the public `ActivityOccurrenceId` projection, because that change is additive, preserves the reviewed public contract, and can be reused across counter families. Its exact semantic account still requires governed proposal review before implementation or registration.
 
 Also open, each as its own change: withdrawing every wait a removed Activity occurrence record named, which holds in two of four Activity families and belongs in [the Activity occurrence specification](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md); [scope cancellation](../packages/semantic-core/src/semantic-process-scope-cancellation.ts) removing a region's Activity records but not the Multi-Instance controllers that must own one; the absent Temporal host class, refinement witnesses, and capacity owner; PostgreSQL migration evidence needing a database.
 

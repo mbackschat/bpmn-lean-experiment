@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: owner-approved
 Review: approved-with-required-edits
 
 ## Question and current boundary
