@@ -43,7 +43,7 @@ After Alpha, the MUE content IDs run breadth-first to their first independently 
 
 Active work ID: `INTERNAL-COMMUTATION`.
 
-Next action: commit and cold-review the corrected [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md). Implementation exposed that program/runtime well-formedness alone does not prove unique wait declaration or actual flow-node lifecycle projectability, and that the public wait anchor is untagged across wait families. The corrected proposal must be independently approved and owner-approved before implementation resumes; all code lanes remain paused at a safe boundary.
+Next action: resume Red/Green implementation of the owner-approved [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md). Begin with the called-owner Message occurrence, out-of-checkpoint composite declarer, and pre-existing incident-anchor Reds, then implement the complete declarer and open-anchor censuses before completing the generic Lean state and downstream publication proofs.
 
 Separate open changes: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
 

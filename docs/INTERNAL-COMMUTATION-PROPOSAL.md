@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Decision question and boundary
 
@@ -154,6 +154,6 @@ Reopen before adding an atom domain, admitting another operation family, widenin
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `95ee893fc7efef561d579c9c2ecd164eccae1187` | `fork-turns-none` | `approve-with-required-edits` | `e65fa4fbd2b4303794398061d94c0602e54a4714` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
