@@ -36,6 +36,7 @@ verify_runtime() {
 }
 
 verify_pipeline() {
+  ./scripts/pnpm.sh run test:committed-execution-publication-parity:built
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check
 }

@@ -99,6 +99,17 @@ function bareLeanCommandFindings(
   );
 }
 
+function ordinaryPackageTestLeanInvocationFindings(
+  surfaces: ReadonlyArray<CommandSurface>,
+): ReadonlyArray<string> {
+  return surfaces
+    .filter(({ relativePath }) =>
+      /^packages\/[^/]+\/test\/.*\.test\.ts$/u.test(relativePath)
+    )
+    .filter(({ source }) => source.includes("./scripts/lake.sh"))
+    .map(({ relativePath }) => relativePath);
+}
+
 const projectBuildOutputPath =
   /(?:packages\/[\w-]+\/dist\/|@bpmn-lean\/[\w-]+\/dist\/|(?:\.\.?\/)+dist\/)/u;
 
@@ -204,6 +215,55 @@ test("script tests dynamically load no project package build output", async () =
     generatedOutputRuntimeImportFindings(surfaces),
     [],
     "script test gates run before package builds on a clean checkout; move compiler-derived witnesses into the package gate that owns the build",
+  );
+});
+
+test("ordinary package tests do not self-build Lean", async () => {
+  const relativePaths = worktreePaths().filter((relativePath) =>
+    /^packages\/[^/]+\/test\/.*\.test\.ts$/u.test(relativePath)
+  );
+  const surfaces = await Promise.all(relativePaths.map(async (relativePath) => ({
+    relativePath,
+    source: await readFile(relativePath, "utf8"),
+  })));
+
+  assert.deepEqual(
+    ordinaryPackageTestLeanInvocationFindings(surfaces),
+    [],
+    "cross-target Lean oracles belong in the post-restore integration lane, not a cold runtime package gate",
+  );
+});
+
+test("the ordinary-package Lean guard reaches a second package", () => {
+  assert.deepEqual(
+    ordinaryPackageTestLeanInvocationFindings([
+      {
+        relativePath: "packages/example/test/another-parity.test.ts",
+        source: "execFile('./scripts/lake.sh', ['exe', 'anotherEmitter']);",
+      },
+      {
+        relativePath: "packages/example/test/another-parity.integration-test.ts",
+        source: "execFile('./scripts/lake.sh', ['exe', 'anotherEmitter']);",
+      },
+    ]),
+    ["packages/example/test/another-parity.test.ts"],
+  );
+});
+
+test("committed-publication parity runs in the restored-output integration lane", async () => {
+  const [manifest, verifyScript] = await Promise.all([
+    readFile(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
+    readFile(verifyScriptPath, "utf8"),
+  ]);
+  assert.match(
+    manifest,
+    /"test:committed-execution-publication-parity:built": "node --test --test-concurrency=1 packages\/bpmn-source\/test\/committed-execution-publication-parity\.integration-test\.ts"/u,
+  );
+  assert.equal(
+    verifyScript.split("\n").filter((line) =>
+      line.trim() === "./scripts/pnpm.sh run test:committed-execution-publication-parity:built"
+    ).length,
+    1,
   );
 });
 

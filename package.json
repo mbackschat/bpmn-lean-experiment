@@ -156,6 +156,7 @@
     "test:semantic-core:built": "tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
     "test:bpmn-source": "pnpm build:bpmn-source && pnpm test:bpmn-source:built",
     "test:bpmn-source:built": "node scripts/check-bpmn-semantic-process-metamodel.ts && node --test --test-concurrency=1 packages/bpmn-source/test/*.test.ts",
+    "test:committed-execution-publication-parity:built": "node --test --test-concurrency=1 packages/bpmn-source/test/committed-execution-publication-parity.integration-test.ts",
     "test:semantic": "./scripts/lake.sh test && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
     "test:temporal": "pnpm build:temporal-adapter && pnpm test:temporal:built",
     "test:temporal:built": "pnpm test:temporal:built:components && pnpm test:temporal:built:concurrent && pnpm test:temporal:built:hosted && pnpm test:temporal:built:hosted-serial",
