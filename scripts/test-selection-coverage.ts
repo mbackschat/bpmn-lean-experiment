@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-const testFilePattern = /\.(?:test|platform-test|temporal-test)\.ts$/u;
+const testFilePattern = /\.(?:test|platform-test|temporal-test|temporal-serial-test)\.ts$/u;
 
 /**
  * TypeScript path tokens inside a command string, glob metacharacters included.

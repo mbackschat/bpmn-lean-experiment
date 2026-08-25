@@ -36,4 +36,11 @@ test("the runnable set excludes frozen legacy evidence and still covers the repo
     true,
     "this guard must be inside the set it enforces",
   );
+  assert.equal(
+    runnable.includes(
+      "packages/temporal-adapter/testkit/test/workflow-chain-recovery-capacity.temporal-serial-test.ts",
+    ),
+    true,
+    "serialized live-service tests must remain inside the runnable set",
+  );
 });

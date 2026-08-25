@@ -107,9 +107,14 @@ test("reports a guard whatever supported test suffix its name carries", () => {
       path: "packages/temporal-adapter/testkit/test/hosted.temporal-test.ts",
       text: 'const root = read("package.json");',
     },
+    {
+      path: "packages/temporal-adapter/testkit/test/capacity.temporal-serial-test.ts",
+      text: 'const root = read("package.json");',
+    },
   ]);
 
   assert.deepEqual(bindings.map(({ kind, path: file }) => ({ kind, path: file })), [
+    { kind: BindingKind.Guard, path: "packages/temporal-adapter/testkit/test/capacity.temporal-serial-test.ts" },
     { kind: BindingKind.Guard, path: "packages/temporal-adapter/testkit/test/hosted.temporal-test.ts" },
     { kind: BindingKind.Guard, path: "scripts/ordinary.test.ts" },
     { kind: BindingKind.Guard, path: "scripts/product-two.platform-test.ts" },

@@ -83,12 +83,12 @@ export function searchTerms(target: string): ReadonlyArray<string> {
 /**
  * Every executable-guard filename suffix this repository uses.
  *
- * All three are matched because a guard's suffix records which lane runs it, never whether it
+ * Every suffix is matched because a guard's suffix records which lane runs it, never whether it
  * constrains a change. Recognising only `.test.ts` hid seventeen guards, and one of them pins the
  * exact text of the root commands, so a change to those commands could be planned without ever
  * being told about it.
  */
-const guardSuffixPattern = /\.(?:test|platform-test|temporal-test)\.ts$/u;
+const guardSuffixPattern = /\.(?:test|platform-test|temporal-test|temporal-serial-test)\.ts$/u;
 
 function corpusKind(candidate: string): BindingKind | null {
   if (guardSuffixPattern.test(candidate)) {
