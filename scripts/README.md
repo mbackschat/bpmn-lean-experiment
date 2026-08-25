@@ -21,6 +21,7 @@ The report names the required implementation detail maps, guards, this registry,
 | Discover change constraints | [`what-binds.ts`](what-binds.ts) | Report required implementation detail maps, executable guards, directory registries, and source-owner headroom before planning an edit; unknown implementation paths fail closed. |
 | Preserve long-command evidence | [`run-with-receipt.sh`](run-with-receipt.sh) | Capture output and the real exit status atomically when the testing specification requires a retained receipt. |
 | Start PostgreSQL 18 work | [`with-postgresql-18.sh`](with-postgresql-18.sh) | Run an explicit Product 2 PostgreSQL command with the repository-owned local service boundary. |
+| Prepare or inspect the live demo | [`live-demo.ts`](live-demo.ts) | Use `demo:prepare` for one fresh demo-only Compose project, `demo:status` to recheck its public origin, and `demo:stop` to stop it without deleting its demo-only volumes. |
 
 ## External sources, corpora, and comparison
 
