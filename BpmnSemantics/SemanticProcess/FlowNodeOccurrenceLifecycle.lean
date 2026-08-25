@@ -21,16 +21,16 @@ def stimulusCommandId : Stimulus → SemanticId
   | .retryIncident commandId ..
   | .cancelIncidentProcess commandId .. => commandId
 
-private def scalarBefore (left right : String) : Bool := left < right
+def scalarBefore (left right : String) : Bool := left < right
 
-private def occurrenceBefore (left right : OccurrenceId) : Bool :=
+def occurrenceBefore (left right : OccurrenceId) : Bool :=
   if left.processInstanceId ≠ right.processInstanceId then
     scalarBefore left.processInstanceId.value right.processInstanceId.value
   else if left.elementId ≠ right.elementId then
     scalarBefore left.elementId.value right.elementId.value
   else left.activation < right.activation
 
-private def scopeBefore (left right : ScopeOccurrenceId) : Bool :=
+def scopeBefore (left right : ScopeOccurrenceId) : Bool :=
   if left.processInstanceId ≠ right.processInstanceId then
     scalarBefore left.processInstanceId.value right.processInstanceId.value
   else if left.definitionScopeId ≠ right.definitionScopeId then
@@ -38,8 +38,7 @@ private def scopeBefore (left right : ScopeOccurrenceId) : Bool :=
   else left.activation < right.activation
 
 /-- Total anchor order: wait, scope, Call Activity, transition, then every scalar identity field. -/
-def flowNodeOccurrenceAnchorBefore
-    (left right : SemanticFlowNodeOccurrenceAnchor) : Bool :=
+def flowNodeOccurrenceAnchorBefore (left right : SemanticFlowNodeOccurrenceAnchor) : Bool :=
   match left, right with
   | .wait left, .wait right => occurrenceBefore left right
   | .wait _, _ => true
@@ -49,63 +48,68 @@ def flowNodeOccurrenceAnchorBefore
   | .callActivity left, .callActivity right => occurrenceBefore left right
   | .callActivity _, .transition .. => true
   | .callActivity _, _ => false
-  | .transition leftCommand leftTransition leftLocal,
-      .transition rightCommand rightTransition rightLocal =>
+  | .transition leftCommand leftTransition leftLocal, .transition rightCommand rightTransition rightLocal =>
       if leftCommand ≠ rightCommand then
         scalarBefore leftCommand.value rightCommand.value
       else if leftTransition ≠ rightTransition then leftTransition < rightTransition
       else leftLocal < rightLocal
   | .transition .., _ => false
 
-private def startBefore (left right : UnnumberedFlowNodeOccurrenceStart) : Bool :=
+def startBefore (left right : UnnumberedFlowNodeOccurrenceStart) : Bool :=
   if left.anchor ≠ right.anchor then flowNodeOccurrenceAnchorBefore left.anchor right.anchor
   else if left.processId ≠ right.processId then scalarBefore left.processId.value right.processId.value
   else if left.elementId ≠ right.elementId then scalarBefore left.elementId.value right.elementId.value
   else scopeBefore left.owner right.owner
 
-private def insertBy (before : α → α → Bool) (value : α) : List α → List α
+def insertBy (before : α → α → Bool) (value : α) : List α → List α
   | [] => [value]
   | head :: tail =>
       if before value head then value :: head :: tail
       else head :: insertBy before value tail
 
-private def sortBy (before : α → α → Bool) : List α → List α
+def sortBy (before : α → α → Bool) : List α → List α
   | [] => []
   | head :: tail => insertBy before head (sortBy before tail)
 
-private theorem mem_insertBy (before : α → α → Bool) (value inserted : α)
-    (values : List α) :
-    value ∈ insertBy before inserted values ↔ value = inserted ∨ value ∈ values := by
+private theorem mem_insertBy (before : α → α → Bool) (value inserted : α) (values : List α) : value ∈ insertBy before inserted values ↔ value = inserted ∨ value ∈ values := by
   induction values with
   | nil => simp [insertBy]
   | cons head tail ih =>
       simp only [insertBy]
       split <;> simp_all [or_left_comm]
 
-private theorem mem_sortBy (before : α → α → Bool) (value : α)
-    (values : List α) : value ∈ sortBy before values ↔ value ∈ values := by
+private theorem mem_sortBy (before : α → α → Bool) (value : α) (values : List α) : value ∈ sortBy before values ↔ value ∈ values := by
   induction values with
   | nil => simp [sortBy]
   | cons head tail ih => simp [sortBy, mem_insertBy, ih]
 
-def sortFlowNodeOccurrenceStarts :
-    List UnnumberedFlowNodeOccurrenceStart → List UnnumberedFlowNodeOccurrenceStart :=
-  sortBy startBefore
+private theorem insertBy_perm (before : α → α → Bool) (value : α) : ∀ values, (insertBy before value values).Perm (value :: values) := by
+  intro values
+  induction values with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [insertBy]
+      split
+      · exact List.Perm.refl _
+      · exact (List.Perm.cons head ih).trans (List.Perm.swap value head tail)
 
-theorem mem_sortFlowNodeOccurrenceStarts (value : UnnumberedFlowNodeOccurrenceStart)
-    (values : List UnnumberedFlowNodeOccurrenceStart) :
-    value ∈ sortFlowNodeOccurrenceStarts values ↔ value ∈ values := by
+private theorem sortBy_perm (before : α → α → Bool) : ∀ values, (sortBy before values).Perm values := by
+  intro values
+  induction values with
+  | nil => rfl
+  | cons head tail ih => exact (insertBy_perm before head (sortBy before tail)).trans (List.Perm.cons head ih)
+
+def sortFlowNodeOccurrenceStarts : List UnnumberedFlowNodeOccurrenceStart → List UnnumberedFlowNodeOccurrenceStart := sortBy startBefore
+
+theorem mem_sortFlowNodeOccurrenceStarts (value : UnnumberedFlowNodeOccurrenceStart) (values : List UnnumberedFlowNodeOccurrenceStart) : value ∈ sortFlowNodeOccurrenceStarts values ↔ value ∈ values := by
   exact mem_sortBy startBefore value values
 
-def sortFlowNodeOccurrenceEnds :
-    List UnnumberedFlowNodeOccurrenceEnd → List UnnumberedFlowNodeOccurrenceEnd :=
-  sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor)
+theorem sortFlowNodeOccurrenceStarts_perm (values : List UnnumberedFlowNodeOccurrenceStart) : (sortFlowNodeOccurrenceStarts values).Perm values := sortBy_perm startBefore values
 
-theorem mem_sortFlowNodeOccurrenceEnds (value : UnnumberedFlowNodeOccurrenceEnd)
-    (values : List UnnumberedFlowNodeOccurrenceEnd) :
-    value ∈ sortFlowNodeOccurrenceEnds values ↔ value ∈ values := by
-  exact mem_sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor)
-    value values
+def sortFlowNodeOccurrenceEnds : List UnnumberedFlowNodeOccurrenceEnd → List UnnumberedFlowNodeOccurrenceEnd := sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor)
+
+theorem mem_sortFlowNodeOccurrenceEnds (value : UnnumberedFlowNodeOccurrenceEnd) (values : List UnnumberedFlowNodeOccurrenceEnd) : value ∈ sortFlowNodeOccurrenceEnds values ↔ value ∈ values := by
+  exact mem_sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor) value values
 
 private def uniqueReturnOwner? (state : RuntimeState) (id : OperationId)
     (origin : BpmnElementOrigin) : Option ScopeOccurrenceId :=
@@ -157,12 +161,12 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .returnProcess id origin _ _ _ => uniqueReturnOwner? state id origin
   | .completeScope _ _ scopeId _ => uniqueCompletingScopeOwner? state scopeId
 
-private def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
+def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
   | .notStarted => none
 
-private def processIdForOwner? (program : Program) (state : RuntimeState)
+def processIdForOwner? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) : Option ProcessId := do
   let hosting ← hostingInstanceId? state
   if !flowNodeOccurrenceOwnerLiveUnique state owner then none
@@ -177,7 +181,7 @@ private def occurrenceId (processInstanceId : SemanticId) (elementId : NodeId)
     (activation : Nat) : OccurrenceId :=
   { processInstanceId, elementId := ⟨elementId.value⟩, activation }
 
-private def waitStart? (program : Program) (state : RuntimeState)
+def waitStart? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (elementId : NodeId) (activation : Nat) :
     Option OpenSemanticFlowNodeOccurrence := do
   let processId ← processIdForOwner? program state owner
@@ -187,7 +191,7 @@ private def waitStart? (program : Program) (state : RuntimeState)
       elementId
       owner }
 
-private def scopeStart? (program : Program) (state : RuntimeState)
+def scopeStart? (program : Program) (state : RuntimeState)
     (occurrence : RuntimeScopeOccurrence) : Option OpenSemanticFlowNodeOccurrence := do
   let owner ← occurrence.parent
   let processId ← processIdForOwner? program state owner
@@ -201,7 +205,7 @@ private def scopeStart? (program : Program) (state : RuntimeState)
       elementId := definition.originElementId
       owner }
 
-private def callStart? (program : Program) (state : RuntimeState)
+def callStart? (program : Program) (state : RuntimeState)
     (record : CalledProcessOccurrence) : Option OpenSemanticFlowNodeOccurrence := do
   let processId ← processIdForOwner? program state record.caller
   pure
@@ -210,7 +214,7 @@ private def callStart? (program : Program) (state : RuntimeState)
       elementId := ⟨record.id.elementId.value⟩
       owner := record.caller }
 
-private def projectWaits? (program : Program) (state : RuntimeState) :
+def projectWaits? (program : Program) (state : RuntimeState) :
     Option (List OpenSemanticFlowNodeOccurrence) := do
   let tasks ← state.waits.mapM fun wait =>
     waitStart? program state wait.owner ⟨wait.task.id.value⟩ wait.activation
@@ -333,10 +337,10 @@ private def completedEnd (anchor : SemanticFlowNodeOccurrenceAnchor) :
 private def cancelledEnd (anchor : SemanticFlowNodeOccurrenceAnchor) :
     UnnumberedFlowNodeOccurrenceEnd := { anchor, terminal := .cancelled }
 
-private def activationForTask (state : RuntimeState) (id : TaskDefinitionId) : Nat :=
+def activationForTask (state : RuntimeState) (id : TaskDefinitionId) : Nat :=
   (state.activations.find? fun activation => decide (activation.taskId = id)).map (·.count) |>.getD 0
 
-private def activationForNode (values : List (NodeId × Nat)) (id : NodeId) : Nat :=
+def activationForNode (values : List (NodeId × Nat)) (id : NodeId) : Nat :=
   (values.find? fun value => decide (value.1 = id)).map (·.2) |>.getD 0
 
 /-- One transition-local completed unit plus independently selected long-lived terminals. -/

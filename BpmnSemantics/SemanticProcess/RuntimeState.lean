@@ -317,6 +317,34 @@ def removeToken : List ControlToken → ControlPlaceId → ScopeOccurrenceId →
       if token.placeId = place && token.owner = owner then rest
       else token :: removeToken rest place owner
 
+theorem removeToken_commutes (tokens : List ControlToken)
+    (leftPlace rightPlace : ControlPlaceId)
+    (leftOwner rightOwner : ScopeOccurrenceId) :
+    removeToken (removeToken tokens leftPlace leftOwner) rightPlace rightOwner =
+      removeToken (removeToken tokens rightPlace rightOwner) leftPlace leftOwner := by
+  induction tokens with
+  | nil => rfl
+  | cons token rest ih =>
+      by_cases left : token.placeId = leftPlace ∧ token.owner = leftOwner
+      · by_cases right : token.placeId = rightPlace ∧ token.owner = rightOwner
+        · have samePlace : leftPlace = rightPlace := left.1.symm.trans right.1
+          have sameOwner : leftOwner = rightOwner := left.2.symm.trans right.2
+          subst rightPlace
+          subst rightOwner
+          simp [removeToken, left]
+        · have different : ¬(leftPlace = rightPlace ∧ leftOwner = rightOwner) := by
+            intro same
+            apply right
+            exact ⟨left.1.trans same.1, left.2.trans same.2⟩
+          simp [removeToken, left, different]
+      · by_cases right : token.placeId = rightPlace ∧ token.owner = rightOwner
+        · have different : ¬(rightPlace = leftPlace ∧ rightOwner = leftOwner) := by
+            intro same
+            apply left
+            exact ⟨right.1.trans same.1, right.2.trans same.2⟩
+          simp [removeToken, right, different]
+        · simp [removeToken, left, right, ih]
+
 def addToken (tokens : List ControlToken) (place : ControlPlaceId)
     (owner : ScopeOccurrenceId) : List ControlToken :=
   { placeId := place, owner } :: tokens
@@ -390,13 +418,80 @@ def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
     left.task.id.value < right.task.id.value
   else left.activation < right.activation
 
-def insertUserTaskWait (wait : UserTaskWait) :
-    List UserTaskWait → List UserTaskWait
+def canonicalInsertBy (before : α → α → Bool) (value : α) : List α → List α
+  | [] => [value]
+  | current :: rest =>
+      if before value current then value :: current :: rest
+      else current :: canonicalInsertBy before value rest
+
+def insertUserTaskWait (wait : UserTaskWait) : List UserTaskWait → List UserTaskWait
   | [] => [wait]
   | current :: rest =>
-      if userTaskWaitBefore wait current then
-        wait :: current :: rest
+      if userTaskWaitBefore wait current then wait :: current :: rest
       else current :: insertUserTaskWait wait rest
+
+def scopeOwnerBefore (left right : ScopeOccurrenceId) : Bool :=
+  if left.processInstanceId.value ≠ right.processInstanceId.value then
+    left.processInstanceId.value < right.processInstanceId.value
+  else if left.definitionScopeId.value ≠ right.definitionScopeId.value then
+    left.definitionScopeId.value < right.definitionScopeId.value
+  else
+    left.activation < right.activation
+
+def waitOccurrenceBefore (leftInstance rightInstance : SemanticId)
+    (leftOwner rightOwner : ScopeOccurrenceId) (leftElement rightElement : NodeId)
+    (leftActivation rightActivation : Nat) : Bool :=
+  if leftInstance.value ≠ rightInstance.value then
+    leftInstance.value < rightInstance.value
+  else if leftOwner ≠ rightOwner then
+    scopeOwnerBefore leftOwner rightOwner
+  else if leftElement.value ≠ rightElement.value then
+    leftElement.value < rightElement.value
+  else
+    leftActivation < rightActivation
+
+def messageWaitBefore (left right : MessageWait) : Bool :=
+  waitOccurrenceBefore left.processInstanceId right.processInstanceId
+    left.owner right.owner left.elementId right.elementId left.activation right.activation
+
+def timerWaitBefore (left right : TimerWait) : Bool :=
+  waitOccurrenceBefore left.processInstanceId right.processInstanceId
+    left.owner right.owner left.elementId right.elementId left.activation right.activation
+
+def effectWaitBefore (left right : EffectWait) : Bool :=
+  waitOccurrenceBefore left.processInstanceId right.processInstanceId
+    left.owner right.owner left.elementId right.elementId left.activation right.activation
+
+def insertMessageWait (wait : MessageWait) (waits : List MessageWait) :
+  List MessageWait :=
+  canonicalInsertBy messageWaitBefore wait waits
+
+def insertTimerWait (wait : TimerWait) (waits : List TimerWait) : List TimerWait :=
+  canonicalInsertBy timerWaitBefore wait waits
+
+def insertEffectWait (wait : EffectWait) (waits : List EffectWait) : List EffectWait :=
+  canonicalInsertBy effectWaitBefore wait waits
+
+private theorem canonicalInsertBy_length (before : α → α → Bool) (value : α)
+    (values : List α) :
+    (canonicalInsertBy before value values).length = values.length + 1 := by
+  induction values with
+  | nil => rfl
+  | cons current rest ih =>
+      simp only [canonicalInsertBy]
+      split <;> simp_all
+
+theorem insertMessageWait_length (wait : MessageWait) (waits : List MessageWait) :
+    (insertMessageWait wait waits).length = waits.length + 1 :=
+  canonicalInsertBy_length messageWaitBefore wait waits
+
+theorem insertTimerWait_length (wait : TimerWait) (waits : List TimerWait) :
+    (insertTimerWait wait waits).length = waits.length + 1 :=
+  canonicalInsertBy_length timerWaitBefore wait waits
+
+theorem insertEffectWait_length (wait : EffectWait) (waits : List EffectWait) :
+    (insertEffectWait wait waits).length = waits.length + 1 :=
+  canonicalInsertBy_length effectWaitBefore wait waits
 
 /-- Canonical order for the task activation family: by element identifier.
 
@@ -405,6 +500,30 @@ spelling of this order; an inlined lambda in the conjunct and a named comparator
 two canonical orders that happen to agree. -/
 def activationBefore (left right : TaskActivation) : Bool :=
   decide (left.taskId.value < right.taskId.value)
+
+def messageActivationBefore (left right : MessageActivation) : Bool :=
+  decide (left.elementId.value < right.elementId.value)
+
+def timerActivationBefore (left right : TimerActivation) : Bool :=
+  decide (left.elementId.value < right.elementId.value)
+
+def effectActivationBefore (left right : EffectActivation) : Bool :=
+  decide (left.elementId.value < right.elementId.value)
+
+def setMessageActivationCount (activations : List MessageActivation)
+    (elementId : NodeId) (count : Nat) : List MessageActivation :=
+  canonicalInsertBy messageActivationBefore { elementId, count }
+    (activations.filter fun activation => decide (activation.elementId ≠ elementId))
+
+def setTimerActivationCount (activations : List TimerActivation)
+    (elementId : NodeId) (count : Nat) : List TimerActivation :=
+  canonicalInsertBy timerActivationBefore { elementId, count }
+    (activations.filter fun activation => decide (activation.elementId ≠ elementId))
+
+def setEffectActivationCount (activations : List EffectActivation)
+    (elementId : NodeId) (count : Nat) : List EffectActivation :=
+  canonicalInsertBy effectActivationBefore { elementId, count }
+    (activations.filter fun activation => decide (activation.elementId ≠ elementId))
 
 /-- Canonical order: Process instance, then Activity element, then activation. -/
 def activityOccurrenceBefore (left right : ActivityOccurrence) : Bool :=

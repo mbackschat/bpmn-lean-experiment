@@ -49,6 +49,130 @@ def effectIncidentAssociationsValid (state : RuntimeState) : Bool :=
   | [incident] => effectIncidentAssociationValid state incident
   | _ => false
 
+/-- Incident association validity is framed by the runtime fields its owner predicate reads. -/
+theorem effectIncidentAssociationsValid_frame (before after : RuntimeState)
+    (controlFrame : after.control = before.control)
+    (scopesFrame : after.scopeOccurrences = before.scopeOccurrences)
+    (waitsFrame : after.effectWaits = before.effectWaits)
+    (activitiesFrame : after.variables.activities = before.variables.activities)
+    (incidentsFrame : after.effectIncidents = before.effectIncidents) :
+    effectIncidentAssociationsValid after = effectIncidentAssociationsValid before := by
+  simp [effectIncidentAssociationsValid, effectIncidentAssociationValid,
+    effectWaitOwnerAssociationValid, controlFrame, scopesFrame, waitsFrame,
+    activitiesFrame, incidentsFrame]
+
+theorem filter_insertActivityVariableScope_of_rejected
+    (predicate : ActivityVariableScope → Bool) (inserted : ActivityVariableScope)
+    (rejected : predicate inserted = false) : ∀ values : List ActivityVariableScope,
+    (insertActivityVariableScope inserted values).filter predicate = values.filter predicate := by
+  intro values
+  induction values with
+  | nil => simp [insertActivityVariableScope, rejected]
+  | cons current rest ih =>
+      simp only [insertActivityVariableScope]
+      split
+      · simp [rejected]
+      · simp only [List.filter_cons, ih]
+
+theorem filter_insertActivityVariableScope_eq_singleton
+    (predicate : ActivityVariableScope → Bool) (inserted : ActivityVariableScope)
+    (accepted : predicate inserted = true)
+    (rejected : ∀ value ∈ values, predicate value = false) :
+    (insertActivityVariableScope inserted values).filter predicate = [inserted] := by
+  induction values with
+  | nil => simp [insertActivityVariableScope, accepted]
+  | cons current rest ih =>
+      simp only [insertActivityVariableScope]
+      have currentRejected := rejected current (by simp)
+      have restRejected : ∀ value ∈ rest, predicate value = false := by
+        intro value member
+        exact rejected value (by simp [member])
+      have restEmpty : rest.filter predicate = [] := List.filter_eq_nil_iff.mpr (by
+        intro value member acceptedValue
+        rw [restRejected value member] at acceptedValue
+        contradiction)
+      split
+      · simp [accepted, currentRejected, restEmpty]
+      · simp [currentRejected, ih restRejected]
+
+theorem all_insertActivityVariableScope (predicate : ActivityVariableScope → Bool)
+    (inserted : ActivityVariableScope) : ∀ values : List ActivityVariableScope,
+    (insertActivityVariableScope inserted values).all predicate =
+      (predicate inserted && values.all predicate) := by
+  intro values
+  induction values with
+  | nil => simp [insertActivityVariableScope]
+  | cons current rest ih =>
+      simp only [insertActivityVariableScope]
+      split <;> simp_all [Bool.and_left_comm]
+
+/-- Adding a fresh ordinary effect occurrence preserves the existing incident association. -/
+theorem effectIncidentAssociationsValid_insertEffectFrame (state : RuntimeState)
+    (inserted : EffectWait) (bindings : List VariableBinding)
+    (fresh : ∀ incident ∈ state.effectIncidents,
+      effectWaitOccurrenceId inserted ≠ effectWaitOccurrenceId incident.wait)
+    (valid : effectIncidentAssociationsValid state = true) :
+    effectIncidentAssociationsValid
+      { state with
+        effectWaits := insertEffectWait inserted state.effectWaits
+        variables := addActivityVariableScope state.variables
+          (effectWaitOccurrenceId inserted) bindings } = true := by
+  have anyFrame (predicate : EffectWait → Bool) (rejected : predicate inserted = false) :
+      (insertEffectWait inserted state.effectWaits).any predicate =
+        state.effectWaits.any predicate := by
+    have canonicalFrame : ∀ values : List EffectWait,
+        (canonicalInsertBy effectWaitBefore inserted values).any predicate =
+          values.any predicate := by
+      intro values
+      induction values with
+      | nil => simp [canonicalInsertBy, rejected]
+      | cons current rest ih =>
+          simp only [canonicalInsertBy]
+          split <;> simp [rejected, ih]
+    exact canonicalFrame state.effectWaits
+  have activityFrame (predicate : ActivityVariableScope → Bool)
+      (rejected : predicate { owner := effectWaitOccurrenceId inserted, bindings } = false) :
+      (insertActivityVariableScope
+          { owner := effectWaitOccurrenceId inserted, bindings }
+          state.variables.activities).filter predicate =
+        state.variables.activities.filter predicate :=
+    filter_insertActivityVariableScope_of_rejected predicate _ rejected _
+  simp only [effectIncidentAssociationsValid] at valid ⊢
+  cases incidentsEq : state.effectIncidents with
+  | nil => simp
+  | cons incident rest =>
+      cases rest with
+      | cons next tail => simp_all
+      | nil =>
+          have different := fresh incident (by simp [incidentsEq])
+          simp only [incidentsEq] at valid ⊢
+          have identity : incident.id.effectId = effectWaitOccurrenceId incident.wait := by
+            simp only [effectIncidentAssociationValid, Bool.and_eq_true,
+              decide_eq_true_eq] at valid
+            exact valid.1.1.1.1.2
+          have waitRejected : effectOccurrenceMatches incident.id.effectId inserted = false := by
+            apply Bool.eq_false_iff.mpr
+            intro matched
+            apply different
+            simp only [effectOccurrenceMatches, decide_eq_true_eq] at matched
+            cases inserted
+            cases incident.id.effectId
+            cases incident.wait
+            simp_all [effectWaitOccurrenceId]
+          have activityRejected : activityScopeMatches incident.id.effectId
+              { owner := effectWaitOccurrenceId inserted, bindings } = false := by
+            apply Bool.eq_false_iff.mpr
+            intro matched
+            apply different
+            simp only [activityScopeMatches, decide_eq_true_eq] at matched
+            cases inserted
+            cases incident.id.effectId
+            cases incident.wait
+            simp_all [effectWaitOccurrenceId]
+          simpa [effectIncidentAssociationValid, effectWaitOwnerAssociationValid,
+            addActivityVariableScope, anyFrame, activityFrame, waitRejected,
+            activityRejected] using valid
+
 /-- A live wait may enter incident state only when its occurrence and Activity-local scope are unique and no incident is already open. -/
 def effectWaitReadyForIncident (state : RuntimeState) (effectId : EffectOccurrenceId)
     (wait : EffectWait) : Bool :=
@@ -129,8 +253,8 @@ inductive EffectIncidentRetryStep :
       EffectIncidentRetryStep state incidentId
         { state with
           effectIncidents := state.effectIncidents.erase incident
-          effectWaits :=
-            { incident.wait with incidentAlreadyRetried := true } ::
+          effectWaits := insertEffectWait
+            { incident.wait with incidentAlreadyRetried := true }
               state.effectWaits }
 
 /-- Retry one exact generation-one incident, restoring its complete effect wait with the one-retry marker set. -/
@@ -144,8 +268,8 @@ def retryEffectIncident (state : RuntimeState)
         some
           { state with
             effectIncidents := state.effectIncidents.erase incident
-            effectWaits :=
-              { incident.wait with incidentAlreadyRetried := true } ::
+            effectWaits := insertEffectWait
+              { incident.wait with incidentAlreadyRetried := true }
                 state.effectWaits }
 
 /-- Every successful executable retry is permitted by the separately stated retry relation. -/

@@ -44,7 +44,7 @@ export function createMessageWait(
       ...state.messageWaits,
       {
         id: {
-          processInstanceId: state.control.instanceId,
+          processInstanceId: owner.processInstanceId,
           elementId: operation.message.elementId,
           activation,
         },

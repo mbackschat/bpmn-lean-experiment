@@ -33,6 +33,8 @@ import BpmnSemantics.SequentialMultiInstanceConformance
 import BpmnSemantics.RuntimeStateWellFormedConformance
 import BpmnSemantics.SubProcessBoundaryTimerConformance
 import BpmnSemantics.NonInterruptingBoundaryTimerConformance
+import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import BpmnSemantics.InternalCommutationConformance
 
 /-! Root of the BPMN semantic contract library.
 

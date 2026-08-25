@@ -576,8 +576,8 @@ function richIncidentState(incident: RuntimeState): RuntimeState {
     variables: {
       process: incident.variables.process,
       activities: [
-        ...incident.variables.activities,
         { owner: rootEffectId, bindings: [] },
+        ...incident.variables.activities,
         { owner: calledEffectId, bindings: [] },
       ],
     },

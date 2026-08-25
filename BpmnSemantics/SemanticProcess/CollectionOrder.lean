@@ -225,6 +225,24 @@ the key-factoring group and are about neither insertion nor filtering: they are 
 into a preservation law.
 -/
 
+theorem mem_canonicalInsertBy [DecidableEq α] (before : α → α → Bool)
+    (inserted value : α) (values : List α) :
+    value ∈ canonicalInsertBy before inserted values ↔ value = inserted ∨ value ∈ values := by
+  induction values with
+  | nil => simp [canonicalInsertBy]
+  | cons current rest ih =>
+      simp only [canonicalInsertBy]
+      split <;> simp_all [or_left_comm]
+
+theorem all_canonicalInsertBy (before : α → α → Bool) (p : α → Bool)
+    (inserted : α) (values : List α) :
+    (canonicalInsertBy before inserted values).all p = (p inserted && values.all p) := by
+  induction values with
+  | nil => simp [canonicalInsertBy]
+  | cons current rest ih =>
+      simp only [canonicalInsertBy]
+      split <;> simp_all [Bool.and_left_comm]
+
 /-- Insertion puts either the new wait or the old head first, which is what the adjacent-pair check
 needs in order to know what the new first pair is. -/
 private theorem insertUserTaskWait_head (wait current : UserTaskWait)
@@ -448,6 +466,177 @@ theorem countP_insertUserTaskWait (p : UserTaskWait → Bool) (wait : UserTaskWa
     · simp only [Bool.not_eq_true] at h
       simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, List.countP_cons, ih]
       cases hp : p wait <;> cases hq : p current <;> simp <;> omega
+
+/-- Mapping a canonical insertion succeeds by inserting exactly the mapped value, up to order. -/
+theorem mapM_canonicalInsertBy_some (before : α → α → Bool) (f : α → Option β)
+    (value : α) (mappedValue : β) (values : List α) (mapped : List β)
+    (valueMapped : f value = some mappedValue) (valuesMapped : values.mapM f = some mapped) :
+    ∃ inserted, (canonicalInsertBy before value values).mapM f = some inserted ∧
+      inserted.Perm (mappedValue :: mapped) := by
+  induction values generalizing mapped with
+  | nil =>
+      simp at valuesMapped
+      subst mapped
+      exact ⟨[mappedValue], by simp [canonicalInsertBy, valueMapped]⟩
+  | cons current rest ih =>
+      cases currentMapped : f current with
+      | none => simp [currentMapped] at valuesMapped
+      | some currentResult =>
+          cases restMapped : rest.mapM f with
+          | none => simp [currentMapped, restMapped] at valuesMapped
+          | some restResult =>
+              simp [currentMapped, restMapped] at valuesMapped
+              subst mapped
+              simp only [canonicalInsertBy]
+              split
+              · exact ⟨mappedValue :: currentResult :: restResult,
+                  by simp [valueMapped, currentMapped, restMapped]⟩
+              · obtain ⟨inserted, insertedMapped, perm⟩ := ih restResult restMapped
+                exact ⟨currentResult :: inserted, by simp [currentMapped, insertedMapped],
+                  (List.Perm.cons currentResult perm).trans
+                    (List.Perm.swap mappedValue currentResult restResult)⟩
+
+/-- Filtering a canonical insertion keeps exactly the inserted matching value, up to order. -/
+theorem filter_canonicalInsertBy_perm (before : α → α → Bool) (p : α → Bool)
+    (value : α) (values : List α) (kept : p value = true) :
+    (canonicalInsertBy before value values).filter p |>.Perm (value :: values.filter p) := by
+  induction values with
+  | nil => simp [canonicalInsertBy, kept]
+  | cons current rest ih =>
+      simp only [canonicalInsertBy]
+      split
+      · simp [kept]
+      · by_cases currentKept : p current = true
+        · simp only [List.filter_cons, currentKept, if_true]
+          exact (List.Perm.cons current ih).trans (List.Perm.swap value current _)
+        · simp [currentKept, ih]
+
+/-- Filtering a canonical insertion changes the count only when the inserted value is kept. -/
+theorem length_filter_canonicalInsertBy (before : α → α → Bool) (p : α → Bool)
+    (value : α) : ∀ values : List α,
+    ((canonicalInsertBy before value values).filter p).length =
+      (if p value then 1 else 0) + (values.filter p).length := by
+  intro values
+  by_cases kept : p value = true
+  · have lengthEq := (filter_canonicalInsertBy_perm before p value values kept).length_eq
+    simpa [kept, Nat.add_comm] using lengthEq
+  · have rejected : p value = false := by cases valueEq : p value <;> simp_all
+    induction values with
+    | nil => simp [canonicalInsertBy, rejected]
+    | cons current rest ih =>
+        simp only [canonicalInsertBy]
+        split
+        · simp [rejected]
+        · cases currentEq : p current <;> simp [rejected, currentEq, ih]
+
+theorem filter_canonicalInsertBy_rejected (before : α → α → Bool) (p : α → Bool)
+    (value : α) (values : List α) (rejected : p value = false) :
+    (canonicalInsertBy before value values).filter p = values.filter p := by
+  induction values with
+  | nil => simp [canonicalInsertBy, rejected]
+  | cons current rest ih =>
+      simp only [canonicalInsertBy]
+      split <;> cases currentEq : p current <;> simp [rejected, currentEq, ih]
+
+theorem insertUserTaskWait_eq_canonicalInsertBy (wait : UserTaskWait) (waits : List UserTaskWait) :
+    insertUserTaskWait wait waits = canonicalInsertBy userTaskWaitBefore wait waits := by
+  induction waits with
+  | nil => rfl
+  | cons current rest ih =>
+      simp only [insertUserTaskWait, canonicalInsertBy]
+      split <;> simp_all
+
+theorem length_filter_insertUserTaskWait (p : UserTaskWait → Bool) (value : UserTaskWait)
+    (values : List UserTaskWait) : ((insertUserTaskWait value values).filter p).length =
+      (if p value then 1 else 0) + (values.filter p).length := by
+  rw [insertUserTaskWait_eq_canonicalInsertBy]
+  exact length_filter_canonicalInsertBy userTaskWaitBefore p value values
+
+theorem length_filter_insertMessageWait (p : MessageWait → Bool) (value : MessageWait)
+    (values : List MessageWait) : ((insertMessageWait value values).filter p).length =
+      (if p value then 1 else 0) + (values.filter p).length :=
+  length_filter_canonicalInsertBy messageWaitBefore p value values
+
+theorem length_filter_insertTimerWait (p : TimerWait → Bool) (value : TimerWait)
+    (values : List TimerWait) : ((insertTimerWait value values).filter p).length =
+      (if p value then 1 else 0) + (values.filter p).length :=
+  length_filter_canonicalInsertBy timerWaitBefore p value values
+
+theorem length_filter_insertEffectWait (p : EffectWait → Bool) (value : EffectWait)
+    (values : List EffectWait) : ((insertEffectWait value values).filter p).length =
+      (if p value then 1 else 0) + (values.filter p).length :=
+  length_filter_canonicalInsertBy effectWaitBefore p value values
+
+/-- A successful monadic list map transfers across an input permutation. -/
+theorem mapM_some_of_perm (f : α → Option β) (left right : List α)
+    (permutation : left.Perm right)
+    (mapped : List β) (rightMapped : right.mapM f = some mapped) :
+    ∃ result, left.mapM f = some result ∧ result.Perm mapped := by
+  induction permutation generalizing mapped with
+  | nil => simp at rightMapped; subst mapped; exact ⟨[], by simp⟩
+  | cons value permutation ih =>
+      cases valueMapped : f value with
+      | none => simp [valueMapped] at rightMapped
+      | some mappedValue =>
+          simp only [List.mapM_cons, valueMapped] at rightMapped
+          obtain ⟨mappedHead, headMapped, mappedTail⟩ :=
+            Option.bind_eq_some_iff.mp rightMapped
+          simp at headMapped
+          subst mappedHead
+          obtain ⟨mappedRest, restMapped, mappedEq⟩ :=
+            Option.bind_eq_some_iff.mp mappedTail
+          simp at mappedEq
+          subst mapped
+          obtain ⟨result, resultMapped, resultPerm⟩ := ih mappedRest restMapped
+          exact ⟨mappedValue :: result, by simp [valueMapped, resultMapped],
+            List.Perm.cons mappedValue resultPerm⟩
+  | swap left right rest =>
+      cases leftMapped : f left with
+      | none => simp [leftMapped] at rightMapped
+      | some mappedLeft =>
+          cases rightValueMapped : f right with
+          | none => simp [leftMapped, rightValueMapped] at rightMapped
+          | some mappedRight =>
+              cases restMapped : rest.mapM f with
+              | none => simp [leftMapped, rightValueMapped, restMapped] at rightMapped
+              | some mappedRest =>
+                  simp [leftMapped, rightValueMapped, restMapped] at rightMapped
+                  subst mapped
+                  exact ⟨mappedRight :: mappedLeft :: mappedRest,
+                    by simp [leftMapped, rightValueMapped, restMapped], List.Perm.swap _ _ _⟩
+  | trans leftMiddle middleRight ihLeft ihRight =>
+      obtain ⟨middleMapped, middleEq, middlePerm⟩ := ihRight mapped rightMapped
+      obtain ⟨result, resultEq, resultPerm⟩ := ihLeft middleMapped middleEq
+      exact ⟨result, resultEq, resultPerm.trans middlePerm⟩
+
+/-- Filtering and mapping a canonical insertion adds its mapped value, up to order. -/
+theorem filter_mapM_canonicalInsertBy_some (before : α → α → Bool) (p : α → Bool)
+    (f : α → Option β) (value : α) (mappedValue : β) (values : List α)
+    (mapped : List β) (kept : p value = true) (valueMapped : f value = some mappedValue)
+    (valuesMapped : (values.filter p).mapM f = some mapped) :
+    ∃ result, ((canonicalInsertBy before value values).filter p).mapM f = some result ∧
+      result.Perm (mappedValue :: mapped) := by
+  have inputPerm := filter_canonicalInsertBy_perm before p value values kept
+  have insertedMapped : (value :: values.filter p).mapM f = some (mappedValue :: mapped) := by
+    simp [valueMapped, valuesMapped]
+  exact mapM_some_of_perm f _ _ inputPerm (mappedValue :: mapped) insertedMapped
+
+/-- Pointwise equality frames a monadic list projection. -/
+theorem mapM_eq_of_pointwise (values : List α) (left right : α → Option β)
+    (frame : ∀ value, left value = right value) : values.mapM left = values.mapM right := by
+  induction values with
+  | nil => rfl
+  | cons value rest ih => simp [frame value, ih]
+
+/-- A permutation inserting one component can move that insertion before an unchanged prefix. -/
+theorem append_component_insert_perm (front afterComponent beforeComponent suffix : List α)
+    (value : α) (component : afterComponent.Perm (value :: beforeComponent)) :
+    (front ++ (afterComponent ++ suffix)).Perm
+      (value :: (front ++ (beforeComponent ++ suffix))) := by
+  induction front with
+  | nil => simpa using component.append (List.Perm.refl suffix)
+  | cons current rest ih =>
+      simpa using (List.Perm.cons current ih).trans (List.Perm.swap value current _)
 
 /-- A positive count names an element that satisfies the predicate. -/
 theorem countP_pos_exists {α : Type} (p : α → Bool) (values : List α)

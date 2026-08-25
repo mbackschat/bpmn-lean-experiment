@@ -135,29 +135,25 @@ def armEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
           some
             { state with
               tokens := removeToken state.tokens input owner
-              messageWaits :=
+              messageWaits := insertMessageWait
                 { processInstanceId := instanceId
                   owner
                   elementId := message.elementId
                   activation := messageActivation
                   channel := message.channel
-                  output := message.output } :: state.messageWaits
-              timerWaits :=
+                  output := message.output } state.messageWaits
+              timerWaits := insertTimerWait
                 { processInstanceId := instanceId
                   owner
                   elementId := timer.elementId
                   activation := timerActivation
                   deadlineMs := state.logicalTimeMs + timer.durationMs
-                  output := timer.output } :: state.timerWaits
+                  output := timer.output } state.timerWaits
               eventRaces := insertEventRaceCanonical race state.eventRaces
-              messageActivations :=
-                { elementId := message.elementId, count := messageActivation } ::
-                  state.messageActivations.filter fun value =>
-                    decide (value.elementId ≠ message.elementId)
-              timerActivations :=
-                { elementId := timer.elementId, count := timerActivation } ::
-                  state.timerActivations.filter fun value =>
-                    decide (value.elementId ≠ timer.elementId)
+              messageActivations := setMessageActivationCount
+                state.messageActivations message.elementId messageActivation
+              timerActivations := setTimerActivationCount state.timerActivations
+                timer.elementId timerActivation
               eventRaceActivations :=
                 { elementId := origin.elementId, count := raceActivation } ::
                   state.eventRaceActivations.filter fun value =>
@@ -183,20 +179,20 @@ inductive EventRaceArmingStep : RuntimeState → BpmnElementOrigin →
       EventRaceArmingStep before origin input message timer
         { before with
           tokens := removeToken before.tokens input owner
-          messageWaits :=
+          messageWaits := insertMessageWait
             { processInstanceId := instanceId
               owner
               elementId := message.elementId
               activation := messageActivation
               channel := message.channel
-              output := message.output } :: before.messageWaits
-          timerWaits :=
+              output := message.output } before.messageWaits
+          timerWaits := insertTimerWait
             { processInstanceId := instanceId
               owner
               elementId := timer.elementId
               activation := timerActivation
               deadlineMs := before.logicalTimeMs + timer.durationMs
-              output := timer.output } :: before.timerWaits
+              output := timer.output } before.timerWaits
           eventRaces := insertEventRaceCanonical
             { id :=
                 { processInstanceId := instanceId
@@ -212,14 +208,10 @@ inductive EventRaceArmingStep : RuntimeState → BpmnElementOrigin →
                   elementId := ⟨timer.elementId.value⟩
                   activation := timerActivation } }
             before.eventRaces
-          messageActivations :=
-            { elementId := message.elementId, count := messageActivation } ::
-              before.messageActivations.filter fun value =>
-                decide (value.elementId ≠ message.elementId)
-          timerActivations :=
-            { elementId := timer.elementId, count := timerActivation } ::
-              before.timerActivations.filter fun value =>
-                decide (value.elementId ≠ timer.elementId)
+          messageActivations := setMessageActivationCount
+            before.messageActivations message.elementId messageActivation
+          timerActivations := setTimerActivationCount before.timerActivations
+            timer.elementId timerActivation
           eventRaceActivations :=
             { elementId := origin.elementId, count := raceActivation } ::
               before.eventRaceActivations.filter fun value =>

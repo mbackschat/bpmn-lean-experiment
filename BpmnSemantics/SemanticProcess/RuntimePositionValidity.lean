@@ -131,4 +131,96 @@ def runtimePositionValid (program : Program) (expectedInstanceId : SemanticId)
   programWellFormed program && programProjectionBindingsValid program &&
     lifecyclePositionValid program expectedInstanceId state
 
+private theorem all_removeToken (tokens : List ControlToken) (place : ControlPlaceId)
+    (owner : ScopeOccurrenceId) (predicate : ControlToken → Bool)
+    (holds : tokens.all predicate = true) :
+    (removeToken tokens place owner).all predicate = true := by
+  induction tokens with
+  | nil => rfl
+  | cons token rest ih =>
+      simp only [List.all_cons, Bool.and_eq_true] at holds
+      simp only [removeToken]
+      split
+      · exact holds.2
+      · simp [holds.1, ih holds.2]
+
+/-- Removing one selected token preserves the runtime position when every other read is framed. -/
+theorem runtimePositionValid_removeToken_frame (program : Program) (expectedInstanceId : SemanticId)
+    (before after : RuntimeState) (input : ControlPlaceId) (owner : ScopeOccurrenceId)
+    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (_selected : onlyTokenOwner? before input = some owner)
+    (controlFrame : after.control = before.control)
+    (scopesFrame : after.scopeOccurrences = before.scopeOccurrences)
+    (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences)
+    (tokensFrame : after.tokens = removeToken before.tokens input owner) :
+    runtimePositionValid program expectedInstanceId after = true := by
+  have exactLiveFrame (id : ScopeOccurrenceId) :
+      exactLiveOccurrence after id = exactLiveOccurrence before id := by
+    simp [exactLiveOccurrence, scopesFrame]
+  have scopeValidFrame (instanceId : SemanticId) (occurrence : RuntimeScopeOccurrence) :
+      scopeOccurrenceValid program instanceId after occurrence =
+        scopeOccurrenceValid program instanceId before occurrence := by
+    simp [scopeOccurrenceValid, runtimeParentValid, rootAssociationValid,
+      calledRootBindingValid, exactLiveOccurrence, scopesFrame, callsFrame]
+  have tokenValidFrame (token : ControlToken) :
+      tokenBindingValid program after token = tokenBindingValid program before token := by
+    simp [tokenBindingValid, exactLiveOccurrence, scopesFrame]
+  have rootsFrame (instanceId : SemanticId) :
+      hostingRootCount program instanceId after = hostingRootCount program instanceId before := by
+    simp [hostingRootCount, scopesFrame]
+  have associationsFrame :
+      calledProcessAssociationsValid after = calledProcessAssociationsValid before := by
+    exact calledProcessAssociationsValid_frame before after controlFrame scopesFrame callsFrame
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid ⊢
+  refine ⟨valid.1, ?_⟩
+  unfold lifecyclePositionValid at valid ⊢
+  rw [controlFrame]
+  cases controlEq : before.control with
+  | notStarted =>
+      simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
+      exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
+  | completed instanceId =>
+      simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
+      exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
+  | cancelled instanceId =>
+      simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
+      exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
+  | running instanceId =>
+      simp only [controlEq, runningPositionValid, Bool.and_eq_true] at valid ⊢
+      obtain ⟨⟨⟨⟨identity, roots⟩, associations⟩, scopes⟩, tokens⟩ := valid.2
+      refine ⟨⟨⟨⟨identity, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+      · rw [rootsFrame]
+        exact roots
+      · rw [associationsFrame]
+        exact associations
+      · simp only [List.all_eq_true] at scopes ⊢
+        intro occurrence member
+        rw [scopesFrame] at member
+        have prior := scopes occurrence member
+        simpa [exactLiveFrame, scopeValidFrame] using prior
+      · rw [tokensFrame]
+        apply all_removeToken
+        rw [List.all_eq_true] at tokens ⊢
+        intro token member
+        rw [tokenValidFrame]
+        exact tokens token member
+
+/-- Every token in a valid runtime position resolves to one projection-unique control place. -/
+theorem runtimePositionValid_token_uniqueControlPlace (program : Program)
+    (expectedInstanceId : SemanticId) (state : RuntimeState) (token : ControlToken)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (member : token ∈ state.tokens) :
+    ∃ place, uniqueControlPlace? program token.placeId = some place := by
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid
+  unfold lifecyclePositionValid at valid
+  cases controlEq : state.control with
+  | notStarted => simp [controlEq] at valid; simp_all
+  | completed instanceId => simp [controlEq] at valid; simp_all
+  | cancelled instanceId => simp [controlEq] at valid; simp_all
+  | running instanceId =>
+      simp only [controlEq, runningPositionValid, Bool.and_eq_true] at valid
+      have tokenValid := List.all_eq_true.mp valid.2.2 token member
+      unfold tokenBindingValid at tokenValid
+      split at tokenValid <;> simp_all
+
 end BpmnSemantics.SemanticProcess

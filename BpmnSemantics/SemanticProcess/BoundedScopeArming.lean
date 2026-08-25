@@ -47,13 +47,13 @@ def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
   -- arming would re-mint the same identity.
   let activityActivation := activityActivationCount state { value := childScopeId.value } + 1
   { state with
-    timerWaits :=
+    timerWaits := insertTimerWait
       { processInstanceId := owner.processInstanceId
         owner
         elementId := boundaryTimer.elementId
         activation
         deadlineMs := state.logicalTimeMs + boundaryTimer.durationMs
-        output := boundaryTimer.output } :: state.timerWaits
+        output := boundaryTimer.output } state.timerWaits
     activityOccurrences := insertActivityOccurrence
       { processInstanceId := owner.processInstanceId
         activityElementId := { value := childScopeId.value }
@@ -65,10 +65,8 @@ def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
       { taskId := { value := childScopeId.value }, count := activityActivation } ::
         state.activityActivations.filter fun value =>
           decide (value.taskId ≠ { value := childScopeId.value })
-    timerActivations :=
-      { elementId := boundaryTimer.elementId, count := activation } ::
-        state.timerActivations.filter fun value =>
-          decide (value.elementId ≠ boundaryTimer.elementId) }
+    timerActivations := setTimerActivationCount state.timerActivations
+      boundaryTimer.elementId activation }
 
 /-- Atomically creates the child scope occurrence, its entry token, and the deadline. None of the three exists without the others, so this refuses rather than producing a partial arm. -/
 def armBoundedScopeState? (state : RuntimeState) (input childEntry : ControlPlaceId)
@@ -126,7 +124,7 @@ theorem armBoundedScope_adds_one_deadline (state : RuntimeState)
     (child : ScopeOccurrenceId) (boundaryTimer : BoundaryTimerArm) :
     (armScopeDeadline state owner childScopeId child boundaryTimer).timerWaits.length =
       state.timerWaits.length + 1 := by
-  simp [armScopeDeadline]
+  simp [armScopeDeadline, insertTimerWait_length]
 
 /-- Arming records exactly one Activity occurrence beside that deadline, so neither exists alone. -/
 theorem armBoundedScope_records_one_occurrence (state : RuntimeState)

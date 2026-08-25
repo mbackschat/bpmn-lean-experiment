@@ -264,13 +264,13 @@ private def operationRespectsScopes (program : Program)
           placesOwnedBy program
             (operationInputs operation ++ operationOutputs operation) owner
 
-private def scopeEdges (program : Program) :
+def scopeEdges (program : Program) :
     List (GraphEdge DefinitionScopeId) :=
   program.definitionScopes.filterMap fun scope =>
     scope.parentScopeId.map fun parent =>
       { source := parent, target := scope.id }
 
-private def scopeForestWellFormed (program : Program) : Bool :=
+def scopeForestWellFormed (program : Program) : Bool :=
   let ids := program.definitionScopes.map (·.id)
   let edges := scopeEdges program
   !(program.definitionScopes.filter (·.parentScopeId.isNone)).isEmpty &&
@@ -489,5 +489,24 @@ def programGraphWellFormed (program : Program) : Bool :=
             programGraphPolicyValid program edges fuel
       | none => false
   | _ => false
+
+/-- Whole-Program graph admission includes the definition-scope forest check. -/
+theorem programGraphWellFormed_scopeForest (program : Program)
+    (valid : programGraphWellFormed program = true) :
+    scopeForestWellFormed program = true := by
+  unfold programGraphWellFormed at valid
+  generalize startsEq : initiateIds program.operations = starts at valid
+  cases starts with
+  | nil => simp at valid
+  | cons start rest =>
+      cases rest with
+      | cons other tail => simp at valid
+      | nil =>
+          generalize rootEq : rootScope? program = root at valid
+          cases root with
+          | none => simp at valid
+          | some root =>
+              simp only [Bool.and_eq_true] at valid
+              grind
 
 end BpmnSemantics.SemanticProcess

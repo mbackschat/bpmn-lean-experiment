@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.InternalCommutation
 
 /-! # Committed semantic transition traces
 
@@ -129,6 +130,19 @@ def internalTransitionRecord? (program : Program) (state : RuntimeState)
         origin := selected.origin
         owner }
 
+/-- Reconstruct the record without exposing the private exact-ID selector. -/
+theorem internalTransitionRecord_of_selection (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (owner : ScopeOccurrenceId)
+    (selected : program.operations.filter
+      (fun candidate => decide (candidate.id = operation.id)) = [operation])
+    (ownerSelected : selectedOperationOwner? state operation = some owner) :
+    internalTransitionRecord? program state operation = some
+      { operationId := operation.id, operationKind := operation.kind,
+        origin := operation.origin, owner } := by
+  unfold internalTransitionRecord? uniqueOperation?
+  rw [selected]
+  simp [ownerSelected]
+
 /-- Replay one internal record after checking all metadata against one unique Program operation. -/
 def replayInternalTransition? (program : Program) (state : RuntimeState)
     (record : InternalTransitionRecord) : Option RuntimeState := do
@@ -215,10 +229,11 @@ def replayCommittedTransitions (program : Program) (initial : RuntimeState) :
 
 private def enabledTransitions (program : Program) (state : RuntimeState) :
     List (SemanticOperation × RuntimeState) :=
-  program.operations.filterMap fun operation =>
-    match fire? program operation state with
-    | none => none
-    | some successor => some (operation, successor)
+  canonicalEnabledInternalTransitions <|
+    program.operations.filterMap fun operation =>
+      match fire? program operation state with
+      | none => none
+      | some successor => some (operation, successor)
 
 /-- Number of enabled internal operations, exposed for targeted admission-preservation checks. -/
 def enabledInternalOperationCount (program : Program) (state : RuntimeState) : Nat :=
@@ -236,12 +251,6 @@ def stableStateResumable (state : RuntimeState) : Bool :=
           !state.effectIncidents.isEmpty)
   | .completed _ | .cancelled _ => true
 
-private def independentParallelTaskChoices : List (SemanticOperation × RuntimeState) → Bool
-  | [ (.awaitUserTask _ _ inputA outputA taskA, _)
-    , (.awaitUserTask _ _ inputB outputB taskB, _) ] =>
-      decide (inputA ≠ inputB ∧ outputA ≠ outputB ∧ taskA.id ≠ taskB.id)
-  | _ => false
-
 private structure ClosureTraceResult where
   state : RuntimeState
   hitBound : Bool
@@ -257,6 +266,80 @@ private def prependLifecycle (head : Option UnnumberedFlowNodeOccurrenceDelta)
     (tail : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
     Option (List UnnumberedFlowNodeOccurrenceDelta) := do
   pure ((← head) :: (← tail))
+
+structure InternalPublicationPair where
+  footprint : InternalTransitionFootprint
+  record : InternalTransitionRecord
+  lifecycle : UnnumberedFlowNodeOccurrenceDelta
+
+def publicationPairBefore (left right : InternalPublicationPair) : Bool :=
+  if left.footprint.operationId ≠ right.footprint.operationId then
+    left.footprint.operationId.value < right.footprint.operationId.value
+  else if left.footprint.kind ≠ right.footprint.kind then
+    match left.footprint.kind, right.footprint.kind with
+    | .userTask, _ => true
+    | .message, .timer | .message, .effect => true
+    | .timer, .effect => true
+    | _, _ => false
+  else
+    let leftOccurrence := left.footprint.occurrence
+    let rightOccurrence := right.footprint.occurrence
+    if leftOccurrence.processInstanceId ≠ rightOccurrence.processInstanceId then
+      leftOccurrence.processInstanceId.value < rightOccurrence.processInstanceId.value
+    else if leftOccurrence.elementId ≠ rightOccurrence.elementId then
+      leftOccurrence.elementId.value < rightOccurrence.elementId.value
+    else
+      leftOccurrence.activation < rightOccurrence.activation
+
+private def canonicalPublicationPair :
+    InternalPublicationPair → List InternalPublicationPair → List InternalPublicationPair
+  | pair, [] => [pair]
+  | pair, current :: rest =>
+      if publicationPairBefore pair current then pair :: current :: rest
+      else current :: canonicalPublicationPair pair rest
+
+def canonicalPublicationPairs :
+    List InternalPublicationPair → List InternalPublicationPair
+  | [] => []
+  | pair :: rest => canonicalPublicationPair pair (canonicalPublicationPairs rest)
+
+def internalPublicationPair? (program : Program) (footprintState before after : RuntimeState)
+    (operation : SemanticOperation) (commandId : SemanticId) : Option InternalPublicationPair := do
+  let footprint ← internalTransitionFootprint? program footprintState operation
+  let record ← internalTransitionRecord? program before operation
+  -- Supported arming lifecycles carry occurrence anchors, not transition-index anchors. Index zero
+  -- therefore keeps the pair unnumbered until its canonical batch position is assigned.
+  let lifecycle ← flowNodeOccurrenceDeltaForOperation? program before after operation commandId 0
+  pure { footprint, record, lifecycle }
+
+/-- A returned pair is the actual accepted record and lifecycle for the same operation step. -/
+theorem internalPublicationPair_defined (program : Program)
+    (footprintState before after : RuntimeState) (operation : SemanticOperation)
+    (commandId : SemanticId) (pair : InternalPublicationPair)
+    (defined : internalPublicationPair? program footprintState before after operation commandId =
+      some pair) :
+    internalTransitionFootprint? program footprintState operation = some pair.footprint ∧
+      internalTransitionRecord? program before operation = some pair.record ∧
+      flowNodeOccurrenceDeltaForOperation? program before after operation commandId 0 =
+        some pair.lifecycle := by
+  simp only [internalPublicationPair?] at defined
+  obtain ⟨footprint, footprintEq, defined⟩ := Option.bind_eq_some_iff.mp defined
+  obtain ⟨record, recordEq, defined⟩ := Option.bind_eq_some_iff.mp defined
+  obtain ⟨lifecycle, lifecycleEq, resultEq⟩ := Option.bind_eq_some_iff.mp defined
+  cases resultEq
+  exact ⟨footprintEq, recordEq, lifecycleEq⟩
+
+private def prependPublicationPairs (heads : Option (List InternalPublicationPair))
+    (records : Option (List InternalTransitionRecord))
+    (lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
+    Option (List InternalTransitionRecord) ×
+      Option (List UnnumberedFlowNodeOccurrenceDelta) :=
+  match heads, records, lifecycles with
+  | some pairs, some records, some lifecycles =>
+      let ordered := canonicalPublicationPairs pairs
+      (some (ordered.map (·.record) ++ records),
+        some (ordered.map (·.lifecycle) ++ lifecycles))
+  | _, _, _ => (none, none)
 
 /-- Execute bounded closure while retaining the selected operation and dynamic owner at each step. -/
 private def closeSupportedTraced :
@@ -285,15 +368,35 @@ private def closeSupportedTraced :
                 commandId transitionIndex) closed.lifecycles }
       | first :: second :: remaining =>
           let transitions := first :: second :: remaining
-          if independentParallelTaskChoices transitions then
-            let closed := closeSupportedTraced fuel program commandId
-              (transitionIndex + 1) first.2
-            { closed with
-              records := prependRecord (internalTransitionRecord? program state first.1)
-                closed.records
-              lifecycles := prependLifecycle
-                (flowNodeOccurrenceDeltaForOperation? program state first.2 first.1
-                  commandId transitionIndex) closed.lifecycles }
+          if internalOperationPairIndependent? program state
+              (transitions.map (·.1)) then
+            match fuel with
+            | 0 =>
+                let closed := closeSupportedTraced 0 program commandId
+                  (transitionIndex + 1) first.2
+                { closed with
+                  records := prependRecord (internalTransitionRecord? program state first.1)
+                    closed.records
+                  lifecycles := prependLifecycle
+                    (flowNodeOccurrenceDeltaForOperation? program state first.2 first.1
+                      commandId transitionIndex) closed.lifecycles }
+            | pairFuel + 1 =>
+                match fire? program second.1 first.2 with
+                | none =>
+                    { state, hitBound := false, ambiguousChoice := true,
+                      records := none, lifecycles := none }
+                | some pairState =>
+                    let closed := closeSupportedTraced pairFuel program commandId
+                      (transitionIndex + 2) pairState
+                    let publications := do
+                      let firstPair ← internalPublicationPair? program state state first.2
+                        first.1 commandId
+                      let secondPair ← internalPublicationPair? program state first.2 pairState
+                        second.1 commandId
+                      pure [firstPair, secondPair]
+                    let paired := prependPublicationPairs publications closed.records
+                      closed.lifecycles
+                    { closed with records := paired.1, lifecycles := paired.2 }
           else
             { state, hitBound := false, ambiguousChoice := true,
               records := none, lifecycles := none }

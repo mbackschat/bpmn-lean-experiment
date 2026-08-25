@@ -59,12 +59,31 @@ def activityScopeMatches (owner : EffectOccurrenceId)
       scope.owner.elementId.value = owner.elementId.value &&
       scope.owner.activation = owner.activation)
 
+/-- Canonical order for complete effect-occurrence ownership. -/
+def activityVariableScopeBefore (left right : ActivityVariableScope) : Bool :=
+  if left.owner.processInstanceId.value ≠ right.owner.processInstanceId.value then
+    left.owner.processInstanceId.value < right.owner.processInstanceId.value
+  else if left.owner.elementId.value ≠ right.owner.elementId.value then
+    left.owner.elementId.value < right.owner.elementId.value
+  else
+    left.owner.activation < right.owner.activation
+
+def insertActivityVariableScope (scope : ActivityVariableScope) :
+    List ActivityVariableScope → List ActivityVariableScope
+  | [] => [scope]
+  | current :: rest =>
+      if activityVariableScopeBefore scope current then
+        scope :: current :: rest
+      else
+        current :: insertActivityVariableScope scope rest
+
 /-- Add the input-mapping scope for one newly activated effect occurrence. Reachable runtime states supply a fresh complete owner. -/
 def addActivityVariableScope (variables : ScopedVariables)
     (owner : EffectOccurrenceId)
     (bindings : List VariableBinding) : ScopedVariables :=
   { variables with
-    activities := variables.activities ++ [{ owner, bindings }] }
+    activities := insertActivityVariableScope { owner, bindings }
+      variables.activities }
 
 def evaluateInputMappings : List VariableMapping →
     Option (List VariableBinding)

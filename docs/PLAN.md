@@ -18,6 +18,8 @@ For the current MUE programme, the owner authorizes pushes at the triggers in [t
 
 The [runtime-state identity bound](RUNTIME-STATE-INVARIANT-SPEC.md#layer-1-lifecycle-and-structure) and Activity-family issuing discipline supply the published outer-identity premises. User Task, Timer, and Activity identities are bounded; Message, Effect, Event race, Call, ordinary Scope, general preservation, and issuing disciplines outside Activity remain open without weakening this slice.
 
+The owner-approved [internal commutation checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md) is implemented for exact pairs of ordinary User Task, Message, Timer, and effect arming operations. The Lean lane proves preserved runtime invariants, open-occurrence projectability, opposite-arm enabledness, raw-state equality, and canonical actual publication; the independently structured TypeScript lane applies the same sufficient footprint equation and retains its both-order oracle outside production selection. Unsupported, colliding, malformed, and differently sized frontiers remain ambiguous. This is the first `INTERNAL-COMMUTATION` Beta breadth checkpoint and does not close that MUE content ID.
+
 ## Ordered work
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
@@ -43,7 +45,7 @@ After Alpha, the MUE content IDs run breadth-first to their first independently 
 
 Active work ID: `INTERNAL-COMMUTATION`.
 
-Next action: resume Red/Green implementation of the owner-approved [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md). Begin with the called-owner Message occurrence, out-of-checkpoint composite declarer, and pre-existing incident-anchor Reds, then implement the complete declarer and open-anchor censuses before completing the generic Lean state and downstream publication proofs.
+Next action: commit the focused-green [internal-commutation implementation](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) as the immutable semantic-checkpoint target, generate its review packet mechanically, and spawn a `fork-turns-none` cold reviewer while the complete target gate runs. An approval records the checkpoint receipt and reproducible cost row before `PARALLEL-MULTI-INSTANCE` becomes active; a required finding keeps `INTERNAL-COMMUTATION` active and returns only the named correction to the same reviewer.
 
 Separate open changes: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
 

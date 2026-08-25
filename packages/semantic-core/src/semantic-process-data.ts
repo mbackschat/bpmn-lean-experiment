@@ -15,6 +15,7 @@ import {
 import type {
   ScopedVariables,
 } from "./semantic-process-state.js";
+import { compareActivityVariableScopes } from "./runtime-state-collection-ordering.js";
 
 export function evaluateInputMappings(
   mappings: ReadonlyArray<VariableMapping>,
@@ -57,7 +58,7 @@ export function addActivityVariableScope(
     activities: [
       ...variables.activities,
       { owner, bindings: [...bindings] },
-    ],
+    ].sort(compareActivityVariableScopes),
   };
 }
 

@@ -109,6 +109,65 @@ def calledProcessAssociationsValid (state : RuntimeState) : Bool :=
               reachable.contains record.calledRoot.processInstanceId
       | _ => false
 
+/-- Call-association validity depends only on runtime control, scope occurrences, and call records. -/
+theorem calledProcessAssociationsValid_frame (before after : RuntimeState)
+    (controlFrame : after.control = before.control)
+    (scopesFrame : after.scopeOccurrences = before.scopeOccurrences)
+    (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences) :
+    calledProcessAssociationsValid after = calledProcessAssociationsValid before := by
+  cases before
+  cases after
+  simp_all [calledProcessAssociationsValid, rootInstanceId?]
+
+/-- Valid Call records that mint the same called Process identity have the same Call anchor. -/
+theorem calledProcessAssociationsValid_called_instance_injective (state : RuntimeState)
+    (left right : CalledProcessOccurrence)
+    (running : state.control = .running instanceId)
+    (valid : calledProcessAssociationsValid state = true)
+    (leftMember : left ∈ state.calledProcessOccurrences)
+    (rightMember : right ∈ state.calledProcessOccurrences)
+    (sameCalledInstance : left.calledRoot.processInstanceId =
+    right.calledRoot.processInstanceId) :
+  left.id = right.id := by
+  unfold calledProcessAssociationsValid at valid
+  simp only [rootInstanceId?, running] at valid
+  generalize rootsEq : (state.scopeOccurrences.filter fun occurrence =>
+    decide (occurrence.parent.isNone &&
+      occurrence.id.processInstanceId = instanceId)) = roots at valid
+  cases roots with
+  | nil => simp at valid
+  | cons root rest => cases rest with
+    | cons other tail => simp at valid
+    | nil =>
+        simp only [Bool.and_eq_true, List.all_eq_true] at valid
+        have leftValid := valid.1.1 left leftMember
+        have rightValid := valid.1.1 right rightMember
+        have leftIdProcess : left.id.processInstanceId = left.caller.processInstanceId :=
+          of_decide_eq_true leftValid.1.1.1.1.1.1.1.1
+        have rightIdProcess : right.id.processInstanceId = right.caller.processInstanceId :=
+          of_decide_eq_true rightValid.1.1.1.1.1.1.1.1
+        have leftDerived : left.calledRoot.processInstanceId =
+            deriveCalledProcessInstanceId left.caller.processInstanceId
+              ⟨left.id.elementId.value⟩ left.id.activation :=
+          of_decide_eq_true leftValid.1.1.1.1.1.2
+        have rightDerived : right.calledRoot.processInstanceId =
+            deriveCalledProcessInstanceId right.caller.processInstanceId
+              ⟨right.id.elementId.value⟩ right.id.activation :=
+          of_decide_eq_true rightValid.1.1.1.1.1.2
+        have tuple := calledProcessIdentityTuple_injective
+          left.caller.processInstanceId right.caller.processInstanceId
+          ⟨left.id.elementId.value⟩ ⟨right.id.elementId.value⟩
+          left.id.activation right.id.activation
+          (leftDerived.symm.trans (sameCalledInstance.trans rightDerived))
+        generalize leftIdentityEq : left.id = leftIdentity at leftIdProcess tuple ⊢
+        generalize rightIdentityEq : right.id = rightIdentity at rightIdProcess tuple ⊢
+        cases leftIdentity
+        cases rightIdentity
+        simp only [OccurrenceId.mk.injEq]
+        exact ⟨leftIdProcess.trans (tuple.1.trans rightIdProcess.symm),
+          congrArg (fun id : NodeId => (⟨id.value⟩ : SemanticId)) tuple.2.1,
+          tuple.2.2⟩
+
 private def removeCalledProcessTree (state : RuntimeState)
     (record : CalledProcessOccurrence) : RuntimeState :=
   let removed := processInstanceClosureWithin state.calledProcessOccurrences

@@ -17,6 +17,36 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+private theorem strictlySortedStrings_head_lt (head : String) (tail : List String)
+    (sorted : strictlySortedStrings (head :: tail) = true) :
+    ∀ value ∈ tail, head < value := by
+  induction tail generalizing head with
+  | nil => simp
+  | cons next rest ih =>
+      simp only [strictlySortedStrings, Bool.and_eq_true, decide_eq_true_eq] at sorted
+      intro value member
+      rcases List.mem_cons.mp member with rfl | member
+      · exact sorted.1
+      · exact String.lt_trans sorted.1 (ih next sorted.2 value member)
+
+/-- Strictly sorted semantic identifiers are duplicate-free. -/
+theorem strictlySortedStrings_nodup (values : List String)
+    (sorted : strictlySortedStrings values = true) : values.Nodup := by
+  induction values with
+  | nil => simp
+  | cons head tail ih =>
+      apply List.nodup_cons.mpr
+      refine ⟨?_, ?_⟩
+      · intro member
+        have impossible := strictlySortedStrings_head_lt head tail sorted head member
+        exact String.lt_asymm impossible impossible
+      · cases tail with
+        | nil => simp
+        | cons next rest =>
+            simp only [strictlySortedStrings, Bool.and_eq_true,
+              decide_eq_true_eq] at sorted
+            exact ih sorted.2
+
 private def placeExists (places : List ControlPlace) (id : ControlPlaceId) : Bool :=
   places.any fun place => decide (place.id = id)
 
@@ -343,5 +373,45 @@ def programWellFormed (program : Program) : Bool :=
     callOperationsPaired program &&
     (program.operations.filter isInitiate).length = 1 &&
     programGraphWellFormed program
+
+/-- Every structurally admitted Program has an acyclic, parent-complete definition-scope forest. -/
+theorem programWellFormed_scopeForest (program : Program)
+    (valid : programWellFormed program = true) :
+    scopeForestWellFormed program = true := by
+  simp only [programWellFormed, Bool.and_eq_true] at valid
+  exact programGraphWellFormed_scopeForest program valid.2
+
+private theorem operationWellFormed_of_programWellFormed (program : Program)
+    (operation : SemanticOperation) (valid : programWellFormed program = true)
+    (member : operation ∈ program.operations) :
+    operationWellFormed program program.controlPlaces operation = true := by
+  simp only [programWellFormed, Bool.and_eq_true] at valid
+  exact List.all_eq_true.mp valid.1.1.1.1.2 operation member
+
+/-- Every admitted Effect operation uses one BPMN element identity for its origin and definition. -/
+theorem programWellFormed_awaitEffect_elements_align (program : Program)
+    (valid : programWellFormed program = true)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (member : .awaitEffect id origin input output effect route ∈ program.operations) :
+    origin.elementId = effect.elementId := by
+  have operationValid := operationWellFormed_of_programWellFormed program _ valid member
+  simp only [operationWellFormed, Bool.and_eq_true, decide_eq_true_eq] at operationValid
+  exact operationValid.1.1.1.1.2
+
+/-- Every admitted ordinary internal wait operation names a nonempty waited element. -/
+theorem programWellFormed_internalArm_element_nonempty (program : Program)
+    (operation : SemanticOperation) (valid : programWellFormed program = true)
+    (member : operation ∈ program.operations) :
+    (match operation with
+    | .awaitUserTask _ _ _ _ task => !task.id.value.isEmpty
+    | .awaitMessage _ _ _ _ message => !message.elementId.value.isEmpty
+    | .awaitTimer _ _ _ _ timer => !timer.elementId.value.isEmpty
+    | .awaitEffect _ _ _ _ effect _ => !effect.elementId.value.isEmpty
+    | _ => true) = true := by
+  cases operation <;> try rfl
+  all_goals
+    have operationValid := operationWellFormed_of_programWellFormed program _ valid member
+    simp_all [operationWellFormed, nonempty]
 
 end BpmnSemantics.SemanticProcess

@@ -41,10 +41,10 @@ structure PublicControlPositionDelta where
 def emptyPublicControlPosition : PublicControlPosition :=
   { controlTokens := [], scopes := [] }
 
-private def sameTokenPosition (left right : PublicControlTokenPosition) : Bool :=
+def sameTokenPosition (left right : PublicControlTokenPosition) : Bool :=
   decide (left.sequenceFlowId = right.sequenceFlowId && left.owner = right.owner)
 
-private def tokenPositionBefore (left right : PublicControlTokenPosition) : Bool :=
+def tokenPositionBefore (left right : PublicControlTokenPosition) : Bool :=
   if left.sequenceFlowId.value ≠ right.sequenceFlowId.value then
     left.sequenceFlowId.value < right.sequenceFlowId.value
   else if left.owner.processInstanceId.value ≠ right.owner.processInstanceId.value then
@@ -53,7 +53,93 @@ private def tokenPositionBefore (left right : PublicControlTokenPosition) : Bool
     left.owner.definitionScopeId.value < right.owner.definitionScopeId.value
   else left.owner.activation < right.owner.activation
 
-private def insertTokenPosition (position : PublicControlTokenPosition) :
+private theorem sequenceFlowId_eq_of_value_eq (left right : SequenceFlowId)
+    (equal : left.value = right.value) : left = right := by cases left; cases right; congr
+
+private theorem semanticId_eq_of_value_eq (left right : SemanticId)
+    (equal : left.value = right.value) : left = right := by cases left; cases right; congr
+
+private theorem definitionScopeId_eq_of_value_eq (left right : DefinitionScopeId)
+    (equal : left.value = right.value) : left = right := by cases left; cases right; congr
+
+private theorem scopeOccurrenceId_eq_of_fields (left right : ScopeOccurrenceId)
+    (process : left.processInstanceId.value = right.processInstanceId.value)
+    (scope : left.definitionScopeId.value = right.definitionScopeId.value)
+    (activation : left.activation = right.activation) : left = right := by
+  cases left; cases right
+  simp only [ScopeOccurrenceId.mk.injEq]
+  exact ⟨semanticId_eq_of_value_eq _ _ process, definitionScopeId_eq_of_value_eq _ _ scope,
+    activation⟩
+
+private theorem tokenPositionBefore_chain (left right : PublicControlTokenPosition) :
+    tokenPositionBefore left right =
+      armingLexStep left.sequenceFlowId.value right.sequenceFlowId.value
+        (armingLexStep left.owner.processInstanceId.value right.owner.processInstanceId.value
+          (armingLexStep left.owner.definitionScopeId.value right.owner.definitionScopeId.value
+            (decide (left.owner.activation < right.owner.activation)))) := rfl
+
+theorem tokenPositionBefore_asymm (left right : PublicControlTokenPosition) :
+    tokenPositionBefore left right = true → tokenPositionBefore right left = false := by
+  rw [tokenPositionBefore_chain, tokenPositionBefore_chain]
+  apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
+  apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
+  apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
+  simp only [decide_eq_true_eq, decide_eq_false_iff_not]
+  exact Nat.lt_asymm
+
+theorem tokenPositionBefore_trans (left middle right : PublicControlTokenPosition) :
+    tokenPositionBefore left middle = true → tokenPositionBefore middle right = true →
+      tokenPositionBefore left right = true := by
+  rw [tokenPositionBefore_chain, tokenPositionBefore_chain, tokenPositionBefore_chain]
+  apply armingLexStep_trans (fun _ _ => String.lt_asymm) (fun _ _ _ => String.lt_trans)
+  apply armingLexStep_trans (fun _ _ => String.lt_asymm) (fun _ _ _ => String.lt_trans)
+  apply armingLexStep_trans (fun _ _ => String.lt_asymm) (fun _ _ _ => String.lt_trans)
+  simp only [decide_eq_true_eq]
+  exact Nat.lt_trans
+
+private theorem tokenPositionBefore_comparable (left right : PublicControlTokenPosition)
+    (different : left.sequenceFlowId ≠ right.sequenceFlowId ∨ left.owner ≠ right.owner) :
+    tokenPositionBefore left right = true ∨ tokenPositionBefore right left = true := by
+  have stringTotal (a b : String) : a ≠ b → a < b ∨ b < a := by
+    intro different
+    by_cases before : a < b
+    · exact Or.inl before
+    · exact Or.inr (Std.lt_of_le_of_ne (by simpa using before) (Ne.symm different))
+  have natTotal (a b : Nat) : a ≠ b → a < b ∨ b < a := by omega
+  by_cases flowSame : left.sequenceFlowId.value = right.sequenceFlowId.value
+  · by_cases processSame : left.owner.processInstanceId.value = right.owner.processInstanceId.value
+    · by_cases scopeSame : left.owner.definitionScopeId.value = right.owner.definitionScopeId.value
+      · have activationDifferent : left.owner.activation ≠ right.owner.activation := by
+          intro activationSame
+          have flowIdSame := sequenceFlowId_eq_of_value_eq _ _ flowSame
+          have ownerSame := scopeOccurrenceId_eq_of_fields _ _ processSame scopeSame activationSame
+          rcases different with flowDifferent | ownerDifferent
+          · exact flowDifferent flowIdSame
+          · exact ownerDifferent ownerSame
+        rcases natTotal _ _ activationDifferent with before | after
+        · exact Or.inl (by simp [tokenPositionBefore, flowSame, processSame, scopeSame, before])
+        · exact Or.inr (by simp [tokenPositionBefore, flowSame.symm, processSame.symm,
+            scopeSame.symm, after])
+      · rcases stringTotal _ _ scopeSame with before | after
+        · exact Or.inl (by simp [tokenPositionBefore, flowSame, processSame, scopeSame, before])
+        · exact Or.inr (by simp [tokenPositionBefore, flowSame.symm, processSame.symm,
+            Ne.symm scopeSame, after])
+    · rcases stringTotal _ _ processSame with before | after
+      · exact Or.inl (by simp [tokenPositionBefore, flowSame, processSame, before])
+      · exact Or.inr (by simp [tokenPositionBefore, flowSame.symm, Ne.symm processSame, after])
+  · rcases stringTotal _ _ flowSame with before | after
+    · exact Or.inl (by simp [tokenPositionBefore, flowSame, before])
+    · exact Or.inr (by simp [tokenPositionBefore, Ne.symm flowSame, after])
+
+def tokenPositionKey (position : PublicControlTokenPosition) :
+    SequenceFlowId × ScopeOccurrenceId :=
+  (position.sequenceFlowId, position.owner)
+
+theorem sameTokenPosition_iff_key_eq (left right : PublicControlTokenPosition) :
+    sameTokenPosition left right = true ↔ tokenPositionKey left = tokenPositionKey right := by
+  simp [sameTokenPosition, tokenPositionKey]
+
+def insertTokenPosition (position : PublicControlTokenPosition) :
     List PublicControlTokenPosition → List PublicControlTokenPosition
   | [] => [position]
   | current :: rest =>
@@ -61,6 +147,93 @@ private def insertTokenPosition (position : PublicControlTokenPosition) :
         { current with multiplicity := current.multiplicity + position.multiplicity } :: rest
       else if tokenPositionBefore position current then position :: current :: rest
       else current :: insertTokenPosition position rest
+
+theorem tokenPositionKey_mem_insert (key : SequenceFlowId × ScopeOccurrenceId)
+    (position : PublicControlTokenPosition) (positions : List PublicControlTokenPosition) :
+    key ∈ (insertTokenPosition position positions).map tokenPositionKey ↔
+      key = tokenPositionKey position ∨ key ∈ positions.map tokenPositionKey := by
+  induction positions with
+  | nil => simp [insertTokenPosition]
+  | cons current rest ih =>
+      by_cases same : sameTokenPosition position current = true
+      · have keyEq := (sameTokenPosition_iff_key_eq position current).mp same
+        simp only [insertTokenPosition, same, if_pos, List.map_cons, List.mem_cons]
+        simp only [tokenPositionKey] at keyEq ⊢
+        rw [keyEq]
+        simp
+      · by_cases before : tokenPositionBefore position current = true
+        · simp [insertTokenPosition, same, before]
+        · simp [insertTokenPosition, same, before, ih, or_left_comm]
+
+theorem tokenPositionBefore_key_congr (left left' right right' : PublicControlTokenPosition)
+    (leftKey : tokenPositionKey left = tokenPositionKey left')
+    (rightKey : tokenPositionKey right = tokenPositionKey right') :
+    tokenPositionBefore left right = tokenPositionBefore left' right' := by
+  cases left; cases left'; cases right; cases right'
+  simp only [tokenPositionKey, Prod.mk.injEq] at leftKey rightKey
+  simp_all [tokenPositionBefore]
+
+theorem tokenPositionBefore_comparable_of_key_ne
+    (left right : PublicControlTokenPosition)
+    (different : tokenPositionKey left ≠ tokenPositionKey right) :
+    tokenPositionBefore left right = true ∨ tokenPositionBefore right left = true := by
+  apply tokenPositionBefore_comparable
+  by_cases flowDifferent : left.sequenceFlowId ≠ right.sequenceFlowId
+  · exact Or.inl flowDifferent
+  · exact Or.inr (by
+      intro ownerSame
+      apply different
+      have flowSame : left.sequenceFlowId = right.sequenceFlowId := by
+        by_cases same : left.sequenceFlowId = right.sequenceFlowId
+        · exact same
+        · exact False.elim (flowDifferent same)
+      apply Prod.ext
+      · exact flowSame
+      · exact ownerSame)
+
+def tokenPositionsStrict : List PublicControlTokenPosition → Prop
+  | [] => True
+  | current :: rest =>
+      (∀ candidate ∈ rest, tokenPositionBefore current candidate = true) ∧
+        tokenPositionsStrict rest
+
+theorem tokenPositionsStrict_insert (position : PublicControlTokenPosition) :
+    ∀ positions, tokenPositionsStrict positions →
+      tokenPositionsStrict (insertTokenPosition position positions) := by
+  intro positions
+  induction positions with
+  | nil => simp [tokenPositionsStrict, insertTokenPosition]
+  | cons current rest ih =>
+      intro strict
+      obtain ⟨currentBefore, restStrict⟩ := strict
+      by_cases same : sameTokenPosition position current = true
+      · simp only [insertTokenPosition, same, if_pos, tokenPositionsStrict]
+        exact ⟨by
+          intro candidate member
+          simpa [tokenPositionBefore] using currentBefore candidate member, restStrict⟩
+      · by_cases before : tokenPositionBefore position current = true
+        · simp only [insertTokenPosition, same, before, if_true]
+          exact ⟨by
+            intro candidate member
+            rcases List.mem_cons.mp member with rfl | member
+            · exact before
+            · exact tokenPositionBefore_trans position current candidate before
+                (currentBefore candidate member), ⟨currentBefore, restStrict⟩⟩
+        · simp only [insertTokenPosition, same, before]
+          refine ⟨?_, ih restStrict⟩
+          intro candidate member
+          have keyMember := (tokenPositionKey_mem_insert (tokenPositionKey candidate)
+            position rest).mp (List.mem_map.mpr ⟨candidate, member, rfl⟩)
+          rcases keyMember with candidateKey | existingKey
+          · have keyDifferent : tokenPositionKey position ≠ tokenPositionKey current := by
+              exact fun equal => same ((sameTokenPosition_iff_key_eq position current).mpr equal)
+            have currentBeforePosition :=
+              (tokenPositionBefore_comparable_of_key_ne position current keyDifferent).resolve_left before
+            exact Eq.trans (tokenPositionBefore_key_congr current current candidate position rfl
+              candidateKey) currentBeforePosition
+          · obtain ⟨existing, existingMember, existingKey⟩ := List.mem_map.mp existingKey
+            exact Eq.trans (tokenPositionBefore_key_congr current current candidate existing rfl
+              existingKey.symm) (currentBefore existing existingMember)
 
 private def scopePositionBefore (left right : PublicScopePosition) : Bool :=
   if left.id.processInstanceId.value ≠ right.id.processInstanceId.value then
@@ -77,12 +250,12 @@ private def insertScopePosition? (position : PublicScopePosition) :
       else if scopePositionBefore position current then some (position :: current :: rest)
       else do pure (current :: (← insertScopePosition? position rest))
 
-private def tokenOrigin (program : Program) (token : ControlToken) : SequenceFlowId :=
+def tokenOrigin (program : Program) (token : ControlToken) : SequenceFlowId :=
   match uniqueControlPlace? program token.placeId with
   | some place => place.origin.elementId
   | none => ⟨""⟩
 
-private def projectTokens (program : Program) :
+def projectTokens (program : Program) :
     List ControlToken → List PublicControlTokenPosition
   | [] => []
   | token :: rest =>
@@ -91,6 +264,28 @@ private def projectTokens (program : Program) :
           owner := token.owner
           multiplicity := 1 }
         (projectTokens program rest)
+
+theorem projectTokens_strict (program : Program) (tokens : List ControlToken) :
+    tokenPositionsStrict (projectTokens program tokens) := by
+  induction tokens with
+  | nil => trivial
+  | cons token rest ih => exact tokenPositionsStrict_insert _ _ ih
+
+private theorem tokenPositionsStrict_keys_nodup (positions : List PublicControlTokenPosition)
+    (strict : tokenPositionsStrict positions) : (positions.map tokenPositionKey).Nodup := by
+  induction positions with
+  | nil => simp
+  | cons current rest ih =>
+      obtain ⟨currentBefore, restStrict⟩ := strict
+      simp only [List.map_cons, List.nodup_cons]
+      refine ⟨?_, ih restStrict⟩
+      intro member
+      obtain ⟨candidate, candidateMember, candidateKey⟩ := List.mem_map.mp member
+      have before := currentBefore candidate candidateMember
+      rw [tokenPositionBefore_key_congr current current candidate current rfl candidateKey] at before
+      have after := tokenPositionBefore_asymm current current before
+      rw [after] at before
+      contradiction
 
 private def scopeOrigin (program : Program)
     (occurrence : RuntimeScopeOccurrence) : NodeId :=
@@ -105,7 +300,7 @@ private def insertProjectedScopePosition (position : PublicScopePosition) :
       if scopePositionBefore position current then position :: current :: rest
       else current :: insertProjectedScopePosition position rest
 
-private def projectScopes (program : Program) :
+def projectScopes (program : Program) :
     List RuntimeScopeOccurrence → List PublicScopePosition
   | [] => []
   | occurrence :: rest =>
@@ -141,19 +336,40 @@ theorem projectControlPosition_total (program : Program) (expectedInstanceId : S
   refine ⟨position, ?_⟩
   simp [projectControlPosition?, validity, position]
 
-private def tokenMultiplicityAt (positions : List PublicControlTokenPosition)
+def tokenMultiplicityAt (positions : List PublicControlTokenPosition)
     (target : PublicControlTokenPosition) : Nat :=
   match positions.find? (sameTokenPosition target) with
   | some position => position.multiplicity
   | none => 0
 
-private def tokenDifference (left right : List PublicControlTokenPosition) :
+theorem tokenMultiplicityAt_of_mem (positions : List PublicControlTokenPosition)
+    (position : PublicControlTokenPosition) (strict : tokenPositionsStrict positions)
+    (member : position ∈ positions) :
+    tokenMultiplicityAt positions position = position.multiplicity := by
+  have nodup := tokenPositionsStrict_keys_nodup positions strict
+  induction positions with
+  | nil => simp at member
+  | cons current rest ih =>
+      simp only [List.map_cons, List.nodup_cons] at nodup
+      rcases List.mem_cons.mp member with rfl | member
+      · simp [tokenMultiplicityAt, sameTokenPosition]
+      · have different : sameTokenPosition position current = false := by
+          apply Bool.eq_false_iff.mpr
+          intro same
+          apply nodup.1
+          have keyEq := (sameTokenPosition_iff_key_eq position current).mp same
+          rw [← keyEq]
+          exact List.mem_map.mpr ⟨position, member, rfl⟩
+        simp only [tokenMultiplicityAt, List.find?_cons, different]
+        exact ih strict.2 member nodup.2
+
+def tokenDifference (left right : List PublicControlTokenPosition) :
     List PublicControlTokenPosition :=
   left.filterMap fun position =>
     let multiplicity := position.multiplicity - tokenMultiplicityAt right position
     if multiplicity = 0 then none else some { position with multiplicity }
 
-private def scopeDifference (left right : List PublicScopePosition) :
+def scopeDifference (left right : List PublicScopePosition) :
     List PublicScopePosition :=
   left.filter fun position => !(right.any fun candidate => candidate == position)
 

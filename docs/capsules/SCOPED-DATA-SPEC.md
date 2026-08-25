@@ -57,7 +57,7 @@ type ScopedVariables = DeepReadonly<{
 
 `RuntimeState.processVariables` is removed and replaced by `RuntimeState.variables: ScopedVariables`. The Lean runtime makes the same replacement with distinct `ProcessVariableScope`, `ActivityVariableScope`, and `ScopedVariables` structures.
 
-Activity scopes retain deterministic activation order and are selected only by the complete occurrence tuple. Duplicate owners are invalid. Bindings within each scope retain the existing canonical variable-name order and duplicate-name refusal.
+Activity scopes retain canonical complete occurrence-identity order by Process instance ID, element ID, and numeric activation, and are selected only by that complete occurrence tuple. Duplicate owners are invalid. Bindings within each scope retain the existing canonical variable-name order and duplicate-name refusal.
 
 An effect wait retains its immutable public arguments because they are part of committed effect intent, transport identity, and `openEffects`. Its owned Activity-local scope is the private evaluation environment. Activation creates both from the same evaluated input mapping. Completion reads the private scope, merges the validated patch transiently, evaluates the program-owned output mapping, writes Process scope, and removes the private scope in one semantic transition.
 
@@ -109,7 +109,7 @@ The two-occurrence discriminator constructs distinct complete owners with the sa
 This representation replacement triggers the targeted preservation gate even though it admits no new source.
 
 - Closure bound: the capsule adds no semantic transition. An executable focused guard establishes the exact mapped-effect start closure length and proves it remains below `semanticProcessClosureLimit`, currently 8.
-- Multiple-enabledness: internal-operation enabledness does not inspect scoped data. An executable guard compares enabled/disabled results for states that differ only in scoped data. The capsule creates no newly reachable multiple-enabled state and makes no selector choice.
+- Multiple-enabledness: internal-operation enabledness does not inspect scoped data. An executable guard compares enabled/disabled results for states that differ only in scoped data. The internal-commutation checkpoint additionally treats one Activity-variable scope as an occurrence-owned state atom and rejects overlapping writes before successor selection. The capsule creates no newly reachable multiple-enabled state and makes no selector choice.
 - Lowering: checked graph and Semantic Process program equality are unchanged because scoped data is runtime-only.
 - Observation: exact scenario traces remain unchanged, and the local non-observability witness separates the replacement from a public-scope leak.
 

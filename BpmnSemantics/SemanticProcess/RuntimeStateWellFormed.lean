@@ -167,6 +167,20 @@ def attachedTimersUnambiguous (state : RuntimeState) : Bool :=
     (state.activityOccurrences.filter fun record =>
       anyTimerIdNamesWait record.attachedTimers wait).length ≤ 1
 
+theorem activityRecordsOwnLiveWork_frame (before after : RuntimeState)
+    (scopes : after.scopeOccurrences = before.scopeOccurrences)
+    (tasks : after.waits = before.waits) (timers : after.timerWaits = before.timerWaits)
+    (records : after.activityOccurrences = before.activityOccurrences) :
+    activityRecordsOwnLiveWork after = activityRecordsOwnLiveWork before := by
+  simp [activityRecordsOwnLiveWork, activityBodyLive, exactLiveOccurrence,
+    scopes, tasks, timers, records]
+
+theorem attachedTimersUnambiguous_frame (before after : RuntimeState)
+    (timers : after.timerWaits = before.timerWaits)
+    (records : after.activityOccurrences = before.activityOccurrences) :
+    attachedTimersUnambiguous after = attachedTimersUnambiguous before := by
+  simp [attachedTimersUnambiguous, timers, records]
+
 /-- `AOO-ID-01`. The Activity occurrence triple appears at most once. -/
 def activityIdentitiesUnique (state : RuntimeState) : Bool :=
   state.activityOccurrences.all
@@ -250,7 +264,7 @@ another Activity family cannot execute the operation the controller claims to re
 SMI operation, its owning scope, the exact task body and wait, and the one attached lifetime Timer.
 -/
 
-private def operationOwningScope? (program : Program) (id : OperationId) :
+def operationOwningScope? (program : Program) (id : OperationId) :
     Option DefinitionScopeId :=
   match program.operationScopes.filter fun ownership =>
       decide (ownership.operationId = id) with
@@ -344,6 +358,41 @@ def sequentialMultiInstanceProgramBindingsValid (program : Program) (state : Run
   sequentialMultiInstanceControllerProgramBindingsValid program state &&
     program.operations.all (sequentialMultiInstanceOperationBindingComplete program state)
 
+theorem sequentialMultiInstanceProgramBindingsValid_frame (program : Program)
+    (before after : RuntimeState) (tasks : after.waits = before.waits)
+    (timers : after.timerWaits = before.timerWaits)
+    (records : after.activityOccurrences = before.activityOccurrences)
+    (controllers : after.sequentialMultiInstanceControllers =
+      before.sequentialMultiInstanceControllers) :
+    sequentialMultiInstanceProgramBindingsValid program after =
+      sequentialMultiInstanceProgramBindingsValid program before := by
+  have allFrame {α : Type} (values : List α) (left right : α → Bool)
+      (pointwise : ∀ value ∈ values, left value = right value) :
+      values.all left = values.all right := by
+    induction values with
+    | nil => rfl
+    | cons value rest ih =>
+        simp [pointwise value (by simp), ih (fun current member =>
+          pointwise current (by simp [member]))]
+  simp only [sequentialMultiInstanceProgramBindingsValid,
+    sequentialMultiInstanceControllerProgramBindingsValid, controllers]
+  have controllerFrame : before.sequentialMultiInstanceControllers.all
+      (sequentialMultiInstanceControllerProgramBindingValid program after) =
+      before.sequentialMultiInstanceControllers.all
+        (sequentialMultiInstanceControllerProgramBindingValid program before) := by
+    apply allFrame
+    intro controller _
+    simp [sequentialMultiInstanceControllerProgramBindingValid, tasks, timers, records]
+  have operationFrame : program.operations.all
+      (sequentialMultiInstanceOperationBindingComplete program after) =
+      program.operations.all
+        (sequentialMultiInstanceOperationBindingComplete program before) := by
+    apply allFrame
+    intro operation _
+    cases operation <;> simp [sequentialMultiInstanceOperationBindingComplete,
+      tasks, timers, records, controllers]
+  rw [controllerFrame, operationFrame]
+
 /-- No two controllers share one Activity occurrence identity. -/
 def controllerIdentitiesUnique (state : RuntimeState) : Bool :=
   state.sequentialMultiInstanceControllers.all
@@ -374,6 +423,13 @@ list here would be a state one target refuses and the other accepts. -/
 def canonicalCollectionOrder (state : RuntimeState) : Bool :=
   orderedBy userTaskWaitBefore state.waits &&
     orderedBy activationBefore state.activations &&
+    orderedBy messageWaitBefore state.messageWaits &&
+    orderedBy timerWaitBefore state.timerWaits &&
+    orderedBy effectWaitBefore state.effectWaits &&
+    orderedBy messageActivationBefore state.messageActivations &&
+    orderedBy timerActivationBefore state.timerActivations &&
+    orderedBy effectActivationBefore state.effectActivations &&
+    orderedBy activityVariableScopeBefore state.variables.activities &&
     orderedBy selectionBefore state.selectedBranchSets &&
     orderedBy eventRaceBefore state.eventRaces &&
     orderedBy callRecordBefore state.calledProcessOccurrences &&
@@ -427,7 +483,7 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .awaitEffect _ origin _ _ _ _ => decide (origin.elementId = elementId)
     | _ => false
 
-private def declaredByExactlyOneOwnedOperation (program : Program)
+def declaredByExactlyOneOwnedOperation (program : Program)
     (declarers : List SemanticOperation) (owner : ScopeOccurrenceId) : Bool :=
   match declarers with
   | [operation] =>
@@ -521,6 +577,13 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     (match state.control with
      | .notStarted => notStartedStateEmpty state
      | _ => true)
+
+theorem runtimeStateWellFormed_canonicalCollectionOrder (program : Program)
+    (instanceId : SemanticId) (state : RuntimeState)
+    (wellFormed : runtimeStateWellFormed program instanceId state = true) :
+    canonicalCollectionOrder state = true := by
+  simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
+  exact wellFormed.1.1.1.1.1.1.1.1.2
 
 /-! ## Layer 3: monotonicity -/
 

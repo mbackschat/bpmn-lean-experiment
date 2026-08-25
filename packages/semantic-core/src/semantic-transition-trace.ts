@@ -11,6 +11,14 @@ import type {
   UnnumberedFlowNodeOccurrenceDelta,
 } from "./flow-node-occurrence-lifecycle.js";
 import {
+  compareInternalTransitionPublicationSortKeys,
+  deriveInternalTransitionFootprint,
+  internalOperationPairIsIndependent,
+} from "./internal-transition-footprint.js";
+import type {
+  InternalTransitionPublicationSortKey,
+} from "./internal-transition-footprint.js";
+import {
   projectControlPositionDelta,
   projectCurrentControlPositions,
 } from "./control-position-projection.js";
@@ -32,6 +40,7 @@ import {
   isStableStateResumable,
 } from "./semantic-process-runtime.js";
 import type {
+  AppliedInternalOperationStep,
   CommandResult,
 } from "./semantic-process-runtime.js";
 import {
@@ -144,32 +153,85 @@ export function applyStimulusWithTrace(
   lifecycles.push(externalLifecycle);
 
   let before = evaluation.admittedState;
-  for (const step of evaluation.selectedInternalSteps) {
-    if (step.owner === null) {
+  for (
+    let stepIndex = 0;
+    stepIndex < evaluation.selectedInternalSteps.length;
+  ) {
+    const step = evaluation.selectedInternalSteps[stepIndex];
+    if (step === undefined) {
       return noTrace(result);
     }
-    const transition = {
-      kind: SemanticTransitionKind.InternalOperation,
-      operationId: step.operation.id,
-      operationKind: step.operation.kind,
-      origin: step.operation.origin,
-      owner: step.owner,
-    } as const;
-    const record = transitionRecord(program, before, step.successor, transition);
-    const lifecycle = projectFlowNodeOccurrenceLifecycleDelta(
-      program,
-      before,
-      step.successor,
-      { kind: "internal", operation: step.operation, owner: step.owner },
-      stimulus.commandId,
-      records.length,
-    );
-    if (record === null || lifecycle === null) {
+    const next = evaluation.selectedInternalSteps[stepIndex + 1];
+    if (
+      next !== undefined &&
+      internalOperationPairIsIndependent(program, before, [step, next])
+    ) {
+      const leftFootprint = deriveInternalTransitionFootprint(
+        program,
+        before,
+        step,
+      );
+      const rightFootprint = deriveInternalTransitionFootprint(
+        program,
+        before,
+        next,
+      );
+      if (leftFootprint === null || rightFootprint === null) {
+        return noTrace(result);
+      }
+      const leftUnit = internalPublicationUnit(
+        program,
+        before,
+        step,
+        leftFootprint.publicationSortKey,
+      );
+      const rightUnit = internalPublicationUnit(
+        program,
+        step.successor,
+        next,
+        rightFootprint.publicationSortKey,
+      );
+      if (leftUnit === null || rightUnit === null) {
+        return noTrace(result);
+      }
+      const units = [
+        { ...leftUnit, sortKey: leftFootprint.publicationSortKey },
+        { ...rightUnit, sortKey: rightFootprint.publicationSortKey },
+      ].sort((left, right) =>
+        compareInternalTransitionPublicationSortKeys(
+          left.sortKey,
+          right.sortKey,
+        )
+      );
+      if (
+        !appendInternalPublicationUnits(
+          stimulus.commandId,
+          records,
+          lifecycles,
+          units,
+        )
+      ) {
+        return noTrace(result);
+      }
+      before = next.successor;
+      stepIndex += 2;
+      continue;
+    }
+
+    const unit = internalPublicationUnit(program, before, step, null);
+    if (
+      unit === null ||
+      !appendInternalPublicationUnits(
+        stimulus.commandId,
+        records,
+        lifecycles,
+        [unit],
+      )
+    ) {
       return noTrace(result);
     }
-    records.push(record);
-    lifecycles.push(lifecycle);
     before = step.successor;
+    stepIndex += 1;
   }
   return sameJson(before, result.state)
     ? {
@@ -179,6 +241,71 @@ export function applyStimulusWithTrace(
         currentPositions,
       }
     : noTrace(result);
+}
+
+type InternalPublicationUnit = Readonly<{
+  record: UnnumberedCommittedTransitionRecord;
+  lifecycleAt: (
+    commandId: string,
+    transitionIndex: number,
+  ) => UnnumberedFlowNodeOccurrenceDelta | null;
+  sortKey: InternalTransitionPublicationSortKey | null;
+}>;
+
+function internalPublicationUnit(
+  program: SemanticProcessProgram,
+  before: RuntimeState,
+  step: AppliedInternalOperationStep,
+  sortKey: InternalTransitionPublicationSortKey | null,
+): InternalPublicationUnit | null {
+  const owner = step.owner;
+  if (owner === null) {
+    return null;
+  }
+  const transition = {
+    kind: SemanticTransitionKind.InternalOperation,
+    operationId: step.operation.id,
+    operationKind: step.operation.kind,
+    origin: step.operation.origin,
+    owner,
+  } as const;
+  const record = transitionRecord(program, before, step.successor, transition);
+  return record === null
+    ? null
+    : {
+        record,
+        lifecycleAt: (commandId, transitionIndex) =>
+          projectFlowNodeOccurrenceLifecycleDelta(
+            program,
+            before,
+            step.successor,
+            {
+              kind: "internal",
+              operation: step.operation,
+              owner,
+            },
+            commandId,
+            transitionIndex,
+          ),
+        sortKey,
+      };
+}
+
+function appendInternalPublicationUnits(
+  commandId: string,
+  records: UnnumberedCommittedTransitionRecord[],
+  lifecycles: UnnumberedFlowNodeOccurrenceDelta[],
+  units: ReadonlyArray<InternalPublicationUnit>,
+): boolean {
+  for (const unit of units) {
+    const lifecycle = unit.lifecycleAt(commandId, records.length);
+    if (lifecycle === null) {
+      return false;
+    }
+    records.push(unit.record);
+    lifecycles.push(lifecycle);
+  }
+  return true;
 }
 
 function transitionRecord(

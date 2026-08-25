@@ -24,6 +24,10 @@ import {
   instanceId as boundedInstanceId,
   start as boundedStart,
 } from "./bounded-task-fixture.ts";
+import {
+  configuredTaskProgram,
+  startFor,
+} from "./flow-node-occurrence-lifecycle-fixture.ts";
 
 /**
  * Well-formedness of committed runtime state, and the malformed states the account refuses.
@@ -206,4 +210,83 @@ test("the empty state still accepts the start it accepted before", () => {
   const accepted = applyStimulus(eventRaceProgram, initialState, eventRaceStart);
 
   assert.notEqual(accepted.outcome, CommandOutcome.Rejected);
+});
+
+test("every commutation-affected collection requires canonical storage order", () => {
+  const effectInstanceId = "effect-order-instance";
+  const effectArmed = applyStimulus(
+    configuredTaskProgram,
+    initialState,
+    startFor(configuredTaskProgram, effectInstanceId),
+  ).state;
+  const [messageWait] = armed.messageWaits;
+  const [timerWait] = armed.timerWaits;
+  const [effectWait] = effectArmed.effectWaits;
+  const [effectScope] = effectArmed.variables.activities;
+  assert.ok(messageWait !== undefined);
+  assert.ok(timerWait !== undefined);
+  assert.ok(effectWait !== undefined);
+  assert.ok(effectScope !== undefined);
+
+  const nextMessage = { ...messageWait, id: { ...messageWait.id, activation: 2 } };
+  const nextTimer = { ...timerWait, id: { ...timerWait.id, activation: 2 } };
+  const nextEffect = { ...effectWait, id: { ...effectWait.id, activation: 2 } };
+  const nextEffectScope = {
+    ...effectScope,
+    owner: { ...effectScope.owner, activation: 2 },
+  };
+  const counterInversion = [
+    { elementId: "z-counter", count: 1 },
+    { elementId: "a-counter", count: 1 },
+  ];
+  const cases = [
+    ["Message waits", eventRaceProgram, instanceId(), {
+      ...armed,
+      messageWaits: [nextMessage, messageWait],
+      messageActivations: [{ elementId: messageWait.id.elementId, count: 2 }],
+    }],
+    ["Timer waits", eventRaceProgram, instanceId(), {
+      ...armed,
+      timerWaits: [nextTimer, timerWait],
+      timerActivations: [{ elementId: timerWait.id.elementId, count: 2 }],
+    }],
+    ["effect waits", configuredTaskProgram, effectInstanceId, {
+      ...effectArmed,
+      effectWaits: [nextEffect, effectWait],
+      effectActivations: [{ elementId: effectWait.id.elementId, count: 2 }],
+      variables: {
+        ...effectArmed.variables,
+        activities: [effectScope, nextEffectScope],
+      },
+    }],
+    ["Message counters", eventRaceProgram, instanceId(), {
+      ...armed,
+      messageActivations: counterInversion,
+    }],
+    ["Timer counters", eventRaceProgram, instanceId(), {
+      ...armed,
+      timerActivations: counterInversion,
+    }],
+    ["effect counters", configuredTaskProgram, effectInstanceId, {
+      ...effectArmed,
+      effectActivations: counterInversion,
+    }],
+    ["Activity-variable scopes", configuredTaskProgram, effectInstanceId, {
+      ...effectArmed,
+      effectWaits: [effectWait, nextEffect],
+      effectActivations: [{ elementId: effectWait.id.elementId, count: 2 }],
+      variables: {
+        ...effectArmed.variables,
+        activities: [nextEffectScope, effectScope],
+      },
+    }],
+  ] as const;
+
+  for (const [name, program, expectedInstanceId, state] of cases) {
+    assert.ok(
+      runtimeStateDefects(program, expectedInstanceId, state)
+        .includes(RuntimeStateDefect.UnorderedCollection),
+      `${name} must be rejected when storage order is noncanonical`,
+    );
+  }
 });

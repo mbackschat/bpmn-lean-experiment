@@ -65,6 +65,7 @@ Lean and TypeScript are separately authored realizations of the same reviewed ac
 - **Interpreter, not code generator.** One generic evaluator executes immutable Semantic Process data. Generated TypeScript is not an authority for a model's meaning.
 - **Exact source and profile identity.** Admission binds the original BPMN bytes, digest, selected profile, and resulting checked representations. A different source or profile is a different definition.
 - **Bounded, honest claims.** A profile states exactly which structure and behavior are admitted. Unsupported BPMN is rejected or preserved as declared, never silently approximated.
+- **Explicit scheduling, not collection order.** Multiple enabled internal operations advance together only under an exact reviewed non-interference criterion; otherwise the evaluator reports ambiguity instead of treating Program order as BPMN meaning.
 - **CIB is classified evidence.** CIB Seven is used only where a profile names the relationship and observation boundary. Standards-only profiles do not invent a CIB comparison.
 - **Durability is below semantics.** Temporal hosts commands and recovery; the pure core decides BPMN-visible outcomes.
 - **The platform stays downstream.** Product 2 may enrich human and operational workflows, but forms, claims, audit, and persistence do not leak into the BPMN core.
@@ -203,10 +204,10 @@ These publication statistics are refreshed by the maintainer with `./scripts/pnp
 <!-- publication-statistics:lean-declarations:start -->
 | Metric | Count |
 |---|---:|
-| Public theorem declarations | 815 |
-| Supporting lemma declarations | 93 |
-| All declaration commands | 2,974 |
-| Proof declarations / all declaration commands | 30.5% |
+| Public theorem declarations | 1,225 |
+| Supporting lemma declarations | 247 |
+| All declaration commands | 3,920 |
+| Proof declarations / all declaration commands | 37.6% |
 
 Supporting lemmas count `private theorem` and every explicit `lemma` command, matching the repository convention. All declaration commands count `theorem`, `lemma`, `def`, `abbrev`, `opaque`, `axiom`, `constant`, `inductive`, `structure`, `class`, and `instance` after masking Lean comments and literals.
 <!-- publication-statistics:lean-declarations:end -->
@@ -216,9 +217,9 @@ Supporting lemmas count `private theorem` and every explicit `lemma` command, ma
 <!-- publication-statistics:language-footprint:start -->
 | Language | Files | Code | Comments | Blanks |
 |---|---:|---:|---:|---:|
-| Java | 83 | 11,167 | 243 | 1,103 |
-| TypeScript | 1,083 | 202,759 | 5,292 | 13,784 |
-| Lean | 136 | 28,795 | 1,699 | 3,468 |
+| Java | 84 | 11,402 | 247 | 1,138 |
+| TypeScript | 1,450 | 282,498 | 7,713 | 18,791 |
+| Lean | 178 | 41,404 | 3,656 | 4,640 |
 <!-- publication-statistics:language-footprint:end -->
 
 ## Repository guide

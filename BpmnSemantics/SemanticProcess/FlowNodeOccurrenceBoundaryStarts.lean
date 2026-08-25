@@ -66,13 +66,13 @@ private def exactOperationOwner? (program : Program) (operation : SemanticOperat
     | [binding] => some binding.scopeId
     | _ => none
 
-private def definitionScope? (program : Program) (scopeId : DefinitionScopeId) :
+def definitionScope? (program : Program) (scopeId : DefinitionScopeId) :
     Option DefinitionScope :=
   match program.definitionScopes.filter fun scope => decide (scope.id = scopeId) with
   | [scope] => some scope
   | _ => none
 
-private def processIdForDefinitionScopeWithFuel? (program : Program) :
+def processIdForDefinitionScopeWithFuel? (program : Program) :
     Nat → DefinitionScopeId → Option ProcessId
   | 0, _ => none
   | fuel + 1, scopeId => do
@@ -125,6 +125,31 @@ private def candidateWaitStart? (program : Program) (operation : SemanticOperati
         processId
         elementId
         owner }
+
+/-- Exact candidate wait start from the public immutable-selection and identity facts. -/
+theorem candidateWaitStart_of_exact_selection (program : Program)
+    (operation : SemanticOperation) (owner : ScopeOccurrenceId)
+    (processInstanceId : SemanticId) (elementId : NodeId) (activation : Nat)
+    (processId : ProcessId) (binding : OperationScopeOwnership)
+    (operationSelection : program.operations.filter (fun candidate =>
+      decide (candidate.id = operation.id)) = [operation])
+    (scopeSelection : program.operationScopes.filter (fun candidate =>
+      decide (candidate.operationId = operation.id)) = [binding])
+    (scopeMatches : binding.scopeId = owner.definitionScopeId)
+    (processSelection : candidateProcessIdForDefinitionScope?
+      program owner.definitionScopeId = some processId)
+    (ownerMatches : processInstanceId = owner.processInstanceId)
+    (positive : activation ≠ 0) :
+    candidateWaitStart? program operation owner processInstanceId elementId activation =
+      some
+        { anchor := .wait
+            { processInstanceId, elementId := ⟨elementId.value⟩, activation }
+          processId
+          elementId
+          owner } := by
+  simp [candidateWaitStart?, processIdForSelectedOperation?, exactOperationOwner?,
+    candidateOccurrenceId, operationSelection, scopeSelection, scopeMatches,
+    processSelection, ownerMatches, positive]
 
 /-- Candidate User Task start from the exact wait created by the selected operation. -/
 def candidateUserTaskStart? (program : Program) (operation : SemanticOperation)

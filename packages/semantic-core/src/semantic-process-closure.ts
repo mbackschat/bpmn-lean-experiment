@@ -1,4 +1,3 @@
-import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation } from "./semantic-process-contract.js";
 
 type ExecutableInternalStep<State> = Readonly<{
@@ -25,21 +24,44 @@ export function closeSupportedInternalOperations<
   initialState: State,
   limit: number,
   enabledOperations: (state: State) => ReadonlyArray<Step>,
+  pairIsIndependent: (
+    state: State,
+    enabled: ReadonlyArray<Step>,
+  ) => boolean,
 ): SupportedClosureResult<State, Step> {
   let state = initialState;
   const steps: Step[] = [];
-  for (let stepCount = 0; stepCount < limit; stepCount += 1) {
+  while (steps.length < limit) {
     const enabled = enabledOperations(state);
     if (enabled.length === 0) {
       return closed(state, steps);
     }
-    if (enabled.length > 1 && !isIndependentParallelTaskPair(enabled)) {
-      return {
-        state,
-        hitBound: false,
-        ambiguousInternalChoice: true,
-        steps,
-      };
+    if (enabled.length > 1) {
+      if (!pairIsIndependent(state, enabled)) {
+        return ambiguous(state, steps);
+      }
+      const first = enabled[0];
+      const expectedSecond = enabled[1];
+      if (first === undefined || expectedSecond === undefined) {
+        return ambiguous(state, steps);
+      }
+      if (limit - steps.length === 1) {
+        steps.push(first);
+        state = first.successor;
+        continue;
+      }
+      const afterFirst = enabledOperations(first.successor);
+      const second = afterFirst[0];
+      if (
+        afterFirst.length !== 1 ||
+        second === undefined ||
+        second.operation.id !== expectedSecond.operation.id
+      ) {
+        return ambiguous(state, steps);
+      }
+      steps.push(first, second);
+      state = second.successor;
+      continue;
     }
     const selected = enabled[0];
     if (selected === undefined) {
@@ -56,23 +78,16 @@ export function closeSupportedInternalOperations<
   };
 }
 
-function isIndependentParallelTaskPair<State>(
-  enabled: ReadonlyArray<ExecutableInternalStep<State>>,
-): boolean {
-  if (enabled.length !== 2) {
-    return false;
-  }
-  const left = enabled[0]?.operation;
-  const right = enabled[1]?.operation;
-  if (
-    left?.kind !== SemanticOperationKind.AwaitUserTask ||
-    right?.kind !== SemanticOperationKind.AwaitUserTask
-  ) {
-    return false;
-  }
-  return left.input !== right.input &&
-    left.output !== right.output &&
-    left.task.elementId !== right.task.elementId;
+function ambiguous<State, Step>(
+  state: State,
+  steps: ReadonlyArray<Step>,
+): SupportedClosureResult<State, Step> {
+  return {
+    state,
+    hitBound: false,
+    ambiguousInternalChoice: true,
+    steps,
+  };
 }
 
 function closed<State, Step>(

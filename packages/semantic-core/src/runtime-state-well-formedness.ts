@@ -11,8 +11,11 @@ import {
 } from "./activity-occurrence.js";
 import {
   compareCalledProcessOccurrences,
+  compareEffectWaits,
   compareEventRaces,
+  compareMessageWaits,
   compareSelectedBranchSets,
+  compareTimerWaits,
   compareUserTaskWaits,
   ControlStateKind,
   sameOccurrence,
@@ -27,6 +30,7 @@ import type { SequentialMultiInstanceController } from "./sequential-multi-insta
 import { sequentialMultiInstanceBindingsForState } from "./sequential-multi-instance-binding.js";
 import { compareCanonicalStrings } from "./wire.js";
 import { runtimeStateIdentityBound } from "./runtime-state-identity-bound.js";
+import { compareActivityVariableScopes } from "./runtime-state-collection-ordering.js";
 
 /**
  * Which committed runtime states this account admits, and how a successor may contradict its
@@ -310,9 +314,19 @@ export function runtimeStateDefects(
   defects.push(...activityOwnershipDefects(state));
   defects.push(...sequentialMultiInstanceDefects(program, state));
 
+  const affectedActivationCounters = [
+    state.taskActivations,
+    state.messageActivations,
+    state.timerActivations,
+    state.effectActivations,
+  ];
   const ordered =
     isSorted(state.activityOccurrences, compareActivityOccurrences) &&
     isSorted(state.userTaskWaits, compareUserTaskWaits) &&
+    isSorted(state.messageWaits, compareMessageWaits) &&
+    isSorted(state.timerWaits, compareTimerWaits) &&
+    isSorted(state.effectWaits, compareEffectWaits) &&
+    isSorted(state.variables.activities, compareActivityVariableScopes) &&
     isSorted(state.selectedBranchSets, compareSelectedBranchSets) &&
     isSorted(state.eventRaces, compareEventRaces) &&
     isSorted(state.calledProcessOccurrences, compareCalledProcessOccurrences) &&
@@ -320,8 +334,10 @@ export function runtimeStateDefects(
       state.sequentialMultiInstanceControllers ?? [],
       compareSequentialMultiInstanceControllers,
     ) &&
-    isSorted(state.taskActivations, (left, right) =>
-      compareCanonicalStrings(left.elementId, right.elementId),
+    affectedActivationCounters.every((counters) =>
+      isSorted(counters, (left, right) =>
+        compareCanonicalStrings(left.elementId, right.elementId),
+      )
     );
   if (!ordered) {
     defects.push(RuntimeStateDefect.UnorderedCollection);

@@ -319,16 +319,21 @@ theorem runtimeStateIdentityBound_replacedState (state : RuntimeState)
 
 /-- `RSI-ORDER-01`: every canonically ordered collection stays ordered.
 
-Four of the seven collections are untouched. The wait list is filtered and then inserted into, which is
-exactly the pair of lemmas the order theory supplies; the counter list is the same shape; and the
-record list is rewritten by a map whose comparator reads only framed fields. -/
+Every collection other than the User Task waits, task counters, and Activity records is untouched.
+The wait list is filtered and then inserted into, which is exactly the pair of lemmas the order theory
+supplies; the counter list is the same shape; and the record list is rewritten by a map whose
+comparator reads only framed fields. -/
 theorem canonicalCollectionOrder_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
     (holds : canonicalCollectionOrder state = true) :
     canonicalCollectionOrder (replacedState state record wait body) = true := by
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at holds ⊢
-  obtain ⟨⟨⟨⟨⟨⟨waits, activations⟩, selections⟩, races⟩, calls⟩, records⟩, controllers⟩ := holds
-  refine ⟨⟨⟨⟨⟨⟨?_, ?_⟩, selections⟩, races⟩, calls⟩, ?_⟩, ?_⟩
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨waits, activations⟩, messages⟩, timers⟩, effects⟩,
+      messageActivations⟩, timerActivations⟩, effectActivations⟩, activityScopes⟩,
+      selections⟩, races⟩, calls⟩, records⟩, controllers⟩ := holds
+  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, messages⟩, timers⟩, effects⟩,
+      messageActivations⟩, timerActivations⟩, effectActivations⟩, activityScopes⟩,
+      selections⟩, races⟩, calls⟩, ?_⟩, controllers⟩
   · exact orderedBy_insertUserTaskWait _ _
       (orderedBy_filter userTaskWaitBefore_compose _ _ waits)
   · exact orderedBy_insertTaskActivation _ _
@@ -346,7 +351,6 @@ theorem canonicalCollectionOrder_replacedState (state : RuntimeState)
       (fun _ _ => rfl) _ state.activityOccurrences
       (replaceBodyIn_map_of_frame _ (fun _ _ => rfl) _ _ _)]
     exact records
-  · exact controllers
 
 /-- `RSI-BIND-*` for waits: the incoming wait has the outgoing one's definition and owner, so it is
 declared by exactly the operation that declared its predecessor. -/
