@@ -62,6 +62,7 @@
     "evaluation:stop": "docker compose down --remove-orphans",
     "evaluation:reset": "docker compose down --volumes --remove-orphans",
     "demo:prepare": "node scripts/live-demo.ts prepare",
+    "demo:start": "node scripts/live-demo.ts start",
     "demo:status": "node scripts/live-demo.ts status",
     "demo:stop": "node scripts/live-demo.ts stop",
     "demo:mue-preview-alpha": "pnpm build:release-product2 && env MUE_ALPHA_DEMO_PAUSE_MS=3500 PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test --headed",

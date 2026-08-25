@@ -1,5 +1,11 @@
 name: bpmn-lean-evaluation
 
+x-project-build: &project-build
+  context: .
+  labels:
+    org.opencontainers.image.revision: ${BPMN_EVALUATION_SOURCE_REVISION:-unbound}
+    io.bpmn-lean.evaluation.source-tree-sha256: ${BPMN_EVALUATION_SOURCE_TREE_SHA256:-unbound}
+
 services:
   postgresql:
     image: postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382
@@ -39,7 +45,7 @@ services:
   platform-migrate:
     image: bpmn-lean/evaluation-platform-migrate:local
     build:
-      context: .
+      <<: *project-build
       target: platform-migrate
     environment:
       PLATFORM_POSTGRESQL_MIGRATION_URL: postgresql://bpmn_migration:bpmn-migration-evaluation@postgresql:5432/bpmn_platform
@@ -51,7 +57,7 @@ services:
   bpmn-worker:
     image: bpmn-lean/evaluation-bpmn-worker:local
     build:
-      context: .
+      <<: *project-build
       target: bpmn-worker
     environment:
       BPMN_TEMPORAL_ADDRESS: temporal:7233
@@ -72,7 +78,7 @@ services:
   platform-api:
     image: bpmn-lean/evaluation-platform-api:local
     build:
-      context: .
+      <<: *project-build
       target: platform-api
     environment:
       PLATFORM_FAKE_ACTOR_GROUPS_JSON: '["reviewers","operators"]'
@@ -107,7 +113,7 @@ services:
   platform-recovery-worker:
     image: bpmn-lean/evaluation-platform-recovery-worker:local
     build:
-      context: .
+      <<: *project-build
       target: platform-recovery-worker
     environment:
       PLATFORM_POSTGRESQL_RUNTIME_URL: postgresql://bpmn_runtime:bpmn-runtime-evaluation@postgresql:5432/bpmn_platform

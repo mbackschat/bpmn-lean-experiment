@@ -5,21 +5,38 @@ import test from "node:test";
 import {
   inspectLiveDemo,
   prepareLiveDemo,
+  startLiveDemo,
   stopLiveDemo,
 } from "./live-demo.ts";
 import type {
+  LiveDemoBuildIdentity,
   LiveDemoCommandInvocation,
+  LiveDemoImageProvenance,
   LiveDemoSession,
 } from "./live-demo.ts";
+
+const buildIdentity: LiveDemoBuildIdentity = Object.freeze({
+  revision: "0123456789abcdef0123456789abcdef01234567",
+  sourceTreeSha256: "89abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567",
+});
 
 const session: LiveDemoSession = Object.freeze({
   kind: "bpmnLeanLiveDemoSession",
   origin: "http://127.0.0.1:38121",
   port: 38121,
   projectName: "bpmn-lean-live-demo",
+  sourceRevision: buildIdentity.revision,
+  sourceTreeSha256: buildIdentity.sourceTreeSha256,
 });
 
-test("publishes the three demo lifecycle commands through the script registry", async () => {
+const applicationImages = Object.freeze([
+  "bpmn-lean/evaluation-platform-migrate:local",
+  "bpmn-lean/evaluation-bpmn-worker:local",
+  "bpmn-lean/evaluation-platform-api:local",
+  "bpmn-lean/evaluation-platform-recovery-worker:local",
+]);
+
+test("publishes the four demo lifecycle commands through the script registry", async () => {
   const [manifestSource, registry] = await Promise.all([
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("./README.md", import.meta.url), "utf8"),
@@ -29,6 +46,7 @@ test("publishes the three demo lifecycle commands through the script registry", 
   }>;
 
   assert.equal(manifest.scripts?.["demo:prepare"], "node scripts/live-demo.ts prepare");
+  assert.equal(manifest.scripts?.["demo:start"], "node scripts/live-demo.ts start");
   assert.equal(manifest.scripts?.["demo:status"], "node scripts/live-demo.ts status");
   assert.equal(manifest.scripts?.["demo:stop"], "node scripts/live-demo.ts stop");
   assert.match(registry, /\[`live-demo\.ts`\]\(live-demo\.ts\)/u);
@@ -42,6 +60,8 @@ test("prepares one fresh isolated evaluation stack and reports exact public demo
 
   const prepared = await prepareLiveDemo({
     allocatePort: async () => session.port,
+    resolveBuildIdentity: async () => buildIdentity,
+    readImageProvenance: matchingImageProvenance,
     verifyFixtures: async () => {},
     run: async (invocation) => { commands.push(invocation); },
     probe: async (origin) => { probes.push(origin); },
@@ -66,7 +86,10 @@ test("prepares one fresh isolated evaluation stack and reports exact public demo
   for (const invocation of commands) {
     assert.equal(invocation.environment.BPMN_EVALUATION_ORIGIN, session.origin);
     assert.equal(invocation.environment.BPMN_EVALUATION_PORT, String(session.port));
+    assert.equal(invocation.environment.BPMN_EVALUATION_SOURCE_REVISION, buildIdentity.revision);
+    assert.equal(invocation.environment.BPMN_EVALUATION_SOURCE_TREE_SHA256, buildIdentity.sourceTreeSha256);
   }
+  assert.equal(output.some((line) => line.includes("mode=prepared-online")), true);
   assert.equal(output.some((line) => line.includes("scenarios/expense-exception-review/process.bpmn")), true);
   assert.equal(output.some((line) => line.includes("scenarios/service-task-effect/process.bpmn")), true);
   assert.equal(output.some((line) => line.includes("demo:mue-headline")), true);
@@ -79,6 +102,8 @@ test("removes a partial isolated stack when public readiness fails", async () =>
 
   await assert.rejects(prepareLiveDemo({
     allocatePort: async () => session.port,
+    resolveBuildIdentity: async () => buildIdentity,
+    readImageProvenance: matchingImageProvenance,
     verifyFixtures: async () => {},
     run: async (invocation) => { commands.push(invocation); },
     probe: async () => { throw failure; },
@@ -94,6 +119,66 @@ test("removes a partial isolated stack when public readiness fails", async () =>
     "down",
     "--volumes",
     "--remove-orphans",
+  ]);
+});
+
+test("starts only commit-bound cached images without build or pull", async () => {
+  const commands: LiveDemoCommandInvocation[] = [];
+  const output: string[] = [];
+
+  const started = await startLiveDemo({
+    allocatePort: async () => session.port,
+    resolveBuildIdentity: async () => buildIdentity,
+    readImageProvenance: matchingImageProvenance,
+    verifyFixtures: async () => {},
+    run: async (invocation) => { commands.push(invocation); },
+    probe: async () => {},
+    writeSession: async () => {},
+    writeLine: (line) => { output.push(line); },
+  });
+
+  assert.deepEqual(started, session);
+  assert.deepEqual(commands.map(({ command, args }) => ({ command, args })), [
+    { command: "docker", args: ["info", "--format", "{{.ServerVersion}}"] },
+    {
+      command: "docker",
+      args: ["compose", "--project-name", session.projectName, "down", "--remove-orphans"],
+    },
+    {
+      command: "docker",
+      args: [
+        "compose",
+        "--project-name",
+        session.projectName,
+        "up",
+        "--no-build",
+        "--pull",
+        "never",
+        "--wait",
+      ],
+    },
+  ]);
+  assert.equal(output.some((line) => line.includes("mode=started-offline")), true);
+});
+
+test("refuses a stale cached image before changing the Compose project", async () => {
+  const commands: LiveDemoCommandInvocation[] = [];
+
+  await assert.rejects(startLiveDemo({
+    allocatePort: async () => session.port,
+    resolveBuildIdentity: async () => buildIdentity,
+    readImageProvenance: async (image) => ({
+      image,
+      sourceRevision: "ffffffffffffffffffffffffffffffffffffffff",
+      sourceTreeSha256: buildIdentity.sourceTreeSha256,
+    }),
+    verifyFixtures: async () => {},
+    run: async (invocation) => { commands.push(invocation); },
+    writeLine: () => {},
+  }), /does not match current committed source/u);
+
+  assert.deepEqual(commands.map(({ args }) => args), [
+    ["info", "--format", "{{.ServerVersion}}"],
   ]);
 });
 
@@ -120,3 +205,12 @@ test("inspects and stops only the recorded demo project", async () => {
   assert.equal(commands[1]?.args.includes("--volumes"), false);
   assert.equal(removed, true);
 });
+
+async function matchingImageProvenance(image: string): Promise<LiveDemoImageProvenance> {
+  assert.equal(applicationImages.includes(image), true);
+  return {
+    image,
+    sourceRevision: buildIdentity.revision,
+    sourceTreeSha256: buildIdentity.sourceTreeSha256,
+  };
+}

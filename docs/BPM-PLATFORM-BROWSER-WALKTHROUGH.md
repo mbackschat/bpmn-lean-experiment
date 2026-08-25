@@ -40,6 +40,17 @@ Prepare a fresh isolated Product 2 distribution before the audience arrives:
 ./scripts/pnpm.sh run demo:status
 ```
 
+`demo:prepare` is deliberately the online preparation boundary. It requires a clean committed worktree, rebuilds the four project images from that exact source, labels them with the full commit and a SHA-256 over the complete tracked source tree, and may contact Docker Hub and the pnpm registry when local caches are incomplete or need metadata. Run it before the presentation, not in front of the audience.
+
+After a successful preparation, show-time execution needs no image build or pull. If Docker or the demo project was stopped, restart from the matching local images and preserved demo volumes with:
+
+```sh
+./scripts/pnpm.sh run demo:start
+./scripts/pnpm.sh run demo:status
+```
+
+`demo:start` checks every project image against the current clean committed source before changing the Compose project, then uses `--no-build --pull never`. It fails rather than starting a stale or unbound image. Missing base, PostgreSQL, Temporal, or project images therefore remain a preparation failure instead of triggering an audience-time download.
+
 Keep the printed `LIVE_DEMO_READY` origin open in Chromium. Then present these acts:
 
 1. **Honest breadth, about 45 seconds.** Open **About**. Show that the evidence-backed summary equals the complete canonical table and point out **Not a conformance claim**. Explain that each row is bound to an exact reviewed profile rather than inferred from a product screen.
@@ -62,7 +73,7 @@ If the headline browser cannot start, continue from the retained [capability bou
 
 ## Prerequisites and lifecycle
 
-Install the frozen workspace dependencies and ensure Docker with Compose v2 is available. Reading and performing the walkthrough does not require Lean, Java, the CIB Seven checkout, Playwright, or a host PostgreSQL or Temporal installation.
+Install the frozen workspace dependencies and ensure Docker with Compose v2 is available. Reading and performing the walkthrough does not require Lean, Java, the CIB Seven checkout, Playwright, or a host PostgreSQL or Temporal installation. The ordinary evaluation commands below may build or pull; the seven-minute run of show uses the commit-bound `demo:prepare` and `demo:start` lifecycle above.
 
 Start the complete evaluation distribution:
 
@@ -215,6 +226,7 @@ Screenshot refresh is not part of ordinary commit CI and performs no pixel compa
 ## Troubleshooting
 
 - **The public origin does not become healthy:** run `docker compose ps` and `docker compose logs`. Check that port 3000 is free.
+- **`demo:start` refuses a cached image:** the current clean commit does not match the image labels, or a required local image is missing. Run `demo:prepare` while registry access is available; do not bypass the refusal with an unverified manual start.
 - **A task or incident has not appeared yet:** use the visible refresh or tab controls. Shared reads fail closed when their bounded projection is not current; background workers repair it without request-time fleet fan-out.
 - **A displayed version differs from this guide:** the evaluation volumes contain prior data. Continue with the selected exact version or deliberately reset the evaluation volumes.
 - **The form is unavailable:** structured Work requires exact catalog identity and engine-published task identity to match. Missing, corrupt, or mismatched data fails closed without changing the task.

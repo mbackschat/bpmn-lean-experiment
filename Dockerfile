@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 ARG NODE_IMAGE=node:24.18.0-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
 
@@ -9,7 +9,7 @@ WORKDIR /workspace
 RUN corepack enable && corepack prepare pnpm@11.20.0 --activate
 COPY . .
 RUN --mount=type=cache,id=bpmn-lean-pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --prefer-offline
 RUN pnpm \
     --filter @bpmn-lean/platform-server... \
     --filter @bpmn-lean/platform-recovery-worker... \

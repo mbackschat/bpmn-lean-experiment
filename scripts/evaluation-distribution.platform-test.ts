@@ -93,6 +93,11 @@ test("runtime images contain only deployed production closures", async () => {
     assert.doesNotMatch(stage, /(?:testkit|showcase|BpmnSemantics|runners\/cibseven|docs\/research)/u);
   }
   assert.match(dockerfile, /--config\.inject-workspace-packages=true/u);
+  assert.match(
+    dockerfile,
+    /^# syntax=docker\/dockerfile:1\.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e$/mu,
+  );
+  assert.match(dockerfile, /pnpm install --frozen-lockfile --prefer-offline/u);
   assert.doesNotMatch(dockerfile, /deploy .*--legacy/u);
   for (const ignored of [
     "BpmnSemantics",
@@ -106,6 +111,27 @@ test("runtime images contain only deployed production closures", async () => {
     "**/dist",
   ]) {
     assert.match(dockerignore, new RegExp(`^${escapeRegex(ignored)}$`, "mu"));
+  }
+});
+
+test("project images carry fail-closed demo source provenance", async () => {
+  const compose = await readFile(composePath, "utf8");
+
+  assert.match(
+    compose,
+    /org\.opencontainers\.image\.revision: \$\{BPMN_EVALUATION_SOURCE_REVISION:-unbound\}/u,
+  );
+  assert.match(
+    compose,
+    /io\.bpmn-lean\.evaluation\.source-tree-sha256: \$\{BPMN_EVALUATION_SOURCE_TREE_SHA256:-unbound\}/u,
+  );
+  for (const service of [
+    "platform-migrate",
+    "bpmn-worker",
+    "platform-api",
+    "platform-recovery-worker",
+  ]) {
+    assert.match(serviceBlock(compose, service), /<<: \*project-build/u);
   }
 });
 
