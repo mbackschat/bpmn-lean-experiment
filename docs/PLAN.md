@@ -43,10 +43,10 @@ After Alpha, the MUE content IDs run breadth-first to their first independently 
 
 Active work ID: `INTERNAL-COMMUTATION`.
 
-Next action: start red/green implementation of the [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md) with the abstract write/read predicate oracle, the transition-grounded shared-effect write/write refusal, and the independent mixed-wait both-order witness before changing production selection.
+Next action: commit and cold-review the corrected [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md). Implementation exposed that program/runtime well-formedness alone does not prove unique wait declaration or actual flow-node lifecycle projectability, and that the public wait anchor is untagged across wait families. The corrected proposal must be independently approved and owner-approved before implementation resumes; all code lanes remain paused at a safe boundary.
 
 Separate open changes: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
 
-Oracle: one two-enabled internal schedule satisfies the selected footprint predicate and both execution orders produce the same canonical state and publication, while one realistic overlapping schedule fails the predicate and remains an explicit semantic choice.
+Oracle: one two-enabled internal schedule satisfies the selected footprint predicate and both execution orders produce the same canonical state and defined actual publication, while same-family duplicate declaration, cross-family untagged wait-anchor collision, and one realistic overlapping schedule each fail the predicate before successor selection.
 
 Stop if the proposed rule hides observable nondeterminism, treats canonical sorting as proof of commutation, or presents a sufficient profile rule as necessary or as general BPMN scheduler meaning.
