@@ -53,7 +53,7 @@ PostgreSQL and Temporal state survive an ordinary stop. If you previously used t
 
 ## 1. Inspect the honest capability boundary
 
-Open **About**. Confirm that **Coverage boundary** says **Not a conformance claim** and that the table contains 25 executable element or semantic-variant rows. Compare a standards-only row with a row carrying classified CIB Seven evidence.
+Open **About**. Confirm that **Coverage boundary** says **Not a conformance claim** and that the evidence-backed-variant summary equals the complete set of rows in the canonical executable element and semantic-variant table. Compare a standards-only row with a row carrying classified CIB Seven evidence.
 
 The table reports exact variants rather than a percentage. BPMN requirement coverage, selected CIB compatibility, and platform functionality remain separate denominators.
 
