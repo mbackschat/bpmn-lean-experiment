@@ -155,5 +155,7 @@ Reopen before adding an atom domain, admitting another operation family, widenin
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `95ee893fc7efef561d579c9c2ecd164eccae1187` | `fork-turns-none` | `approve-with-required-edits` | `e65fa4fbd2b4303794398061d94c0602e54a4714` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `f4b09ba48054a2c059f06b92b3b4d2b4675a6117` | `fork-turns-none` | `approve-with-required-edits` | `a34df385863d706f36785282201703604720013f` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The context-cold checkpoint reviewer required one documentation correction separating unsupported, differently sized, or colliding frontiers from unavailable pre-state or intermediate open projection. The same reviewer approved correction target `a34df385863d706f36785282201703604720013f` with no remaining findings. The full `INTERNAL-COMMUTATION` MUE obligation remains open, so this receipt closes only the first Beta breadth checkpoint.
