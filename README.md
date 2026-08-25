@@ -16,9 +16,21 @@ BPMN 2.0.2, CIB Seven, and Temporal answer different questions:
 
 A direct BPMN-to-Temporal translation can accidentally turn Workflow handlers, retries, Event History, or SDK scheduling into process semantics. This project instead keeps the evaluator pure and explicit, then proves that the host preserves the public result. The platform is downstream again: it may present, authorize, store, and operate published facts, but it may not reconstruct missing BPMN facts from Temporal or its own database.
 
+<p align="center">
+  <a href="docs/assets/project-infographics/why-lean-helps.png"><img src="docs/assets/project-infographics/why-lean-helps.png" alt="Why Lean helps build a BPMN engine: exact BPMN XML is admitted and lowered to the Semantic Process IL, interpreted in Lean, independently transcribed in TypeScript, durably hosted by Temporal, and checked through separate evidence lanes." width="560"></a>
+</p>
+
+The exact copy, source owners, snapshot boundary, and regeneration prompt live in the [project infographics guide](docs/PROJECT-INFOGRAPHICS-GUIDE.md#infographic-1-why-lean-helps-build-a-bpmn-engine).
+
 ## Current implementation
 
 Read [PLAN.md](docs/PLAN.md) for current execution order, root [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) for implementation routing, the [`implementation-status-owner:BPM-PLATFORM`](docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) for Product 2 status, and the [executable model corpus](model-corpus/README.md) for retained whole-model coverage. These agent-facing owners carry volatile status; this human-facing README does not duplicate it.
+
+<p align="center">
+  <a href="docs/assets/project-infographics/product-2-vision.png"><img src="docs/assets/project-infographics/product-2-vision.png" alt="Product 2 vision and progress snapshot: implemented definition management, starts, discovery, Human Work, operations, history, metrics, durable execution, bounded shared runtime, and explicitly planned production and identity capabilities." width="560"></a>
+</p>
+
+This is a commit-stamped publication snapshot rather than a live status owner. Its exact inputs and refresh procedure are recorded in the [project infographics guide](docs/PROJECT-INFOGRAPHICS-GUIDE.md#infographic-3-product-2-vision-and-progress).
 
 ## Architecture at a glance
 
@@ -59,6 +71,12 @@ The components deliberately have different jobs:
 | BPM platform | Owns deployment, identity, work, forms, operations, projections, audit, and the browser UI | Consumes only narrowed public engine entry points |
 
 Lean and TypeScript are separately authored realizations of the same reviewed account. They are independent enough to expose transcription defects, but they are not two votes that get to choose different BPMN meanings. The complete evidence pipeline also checks source lowering, selected CIB compatibility, Temporal refinement, recovery, and replay because agreement between two evaluators alone would not cover those boundaries.
+
+<p align="center">
+  <a href="docs/assets/project-infographics/correctness-stack.png"><img src="docs/assets/project-infographics/correctness-stack.png" alt="The project's correctness stack: BPMN authority, reviewed profile and CIB classification, checked source and lowering, Lean formal semantics, the independent TypeScript core, differential and mutation evidence, and durable Product evidence." width="560"></a>
+</p>
+
+Each layer answers a different question, and no layer silently inherits another layer's claim. The maintained copy and regeneration inputs are in the [project infographics guide](docs/PROJECT-INFOGRAPHICS-GUIDE.md#infographic-2-the-projects-correctness-stack).
 
 ## Key decisions
 
@@ -113,6 +131,14 @@ const observation = observeStableState(compilation.semanticProcess, started.stat
 ```
 
 `applyStimulus` is pure: equal admitted programs, states, stimuli, and closure limits produce equal results. The Temporal Workflow calls this same incremental boundary and durably retains its command/result protocol; it does not replace it with generated Workflow control flow.
+
+### How BPMN executes across the distributed system
+
+<p align="center">
+  <a href="docs/assets/project-infographics/bpmn-execution-on-temporal.png"><img src="docs/assets/project-infographics/bpmn-execution-on-temporal.png" alt="How BPMN executes across the distributed system: Product 2 stores exact BPMN in PostgreSQL and compiles it to the Semantic Process IL, the Temporal service schedules and persists Workflow work, and the BPMN Worker runs the pure TypeScript interpreter inside the Temporal Workflow sandbox." width="560"></a>
+</p>
+
+The Product 2 API compiles and starts exact source, PostgreSQL stores source and platform projections, the Temporal service schedules and persists durable work, and the separate BPMN Worker executes the Workflow bundle containing the Semantic Process IL, RuntimeState, and pure interpreter. The exact copy, deployment qualifications, architectural sources, and regeneration prompt are maintained in the [project infographics guide](docs/PROJECT-INFOGRAPHICS-GUIDE.md#infographic-4-how-bpmn-executes-across-temporal).
 
 ### Through the browser lifecycle
 
