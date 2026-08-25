@@ -10,6 +10,11 @@ import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contract
 
 import { MuePreviewAlphaShowcaseRuntime } from "../src/showcase-runtime.ts";
 import {
+  AlphaDemoLandmark,
+  alphaDemoLandmarkLabel,
+  readAlphaDemoPauseMs,
+} from "../src/audience-pacing.ts";
+import {
   exactNaturalResults,
   processId,
   semanticProfile,
@@ -20,6 +25,7 @@ const modelPath = fileURLToPath(new URL(
   import.meta.url,
 ));
 let runtime: MuePreviewAlphaShowcaseRuntime;
+const audiencePauseMs = readAlphaDemoPauseMs(process.env);
 
 test.beforeAll(async () => {
   runtime = await MuePreviewAlphaShowcaseRuntime.create();
@@ -46,6 +52,7 @@ test("shows both exact Alpha branches through the production browser and replays
   await expect(
     naturalPreview.getByRole("list").last().getByRole("listitem"),
   ).toHaveText([...exactNaturalResults]);
+  await pauseAtAudienceLandmark(page, AlphaDemoLandmark.NaturalCompleted);
   await runtime.stopWorker();
 
   await navigate(page, "Definitions");
@@ -68,6 +75,7 @@ test("shows both exact Alpha branches through the production browser and replays
     await expect(interruptedPreview.getByRole("list", {
       name: "Published completion interactions",
     })).toContainText("UserTask_Escalation / activation 1");
+    await pauseAtAudienceLandmark(page, AlphaDemoLandmark.InterruptionReady);
   } finally {
     escalationRelease.resolve();
   }
@@ -76,6 +84,7 @@ test("shows both exact Alpha branches through the production browser and replays
   await expect(interruptedPreview).toContainText(
     "No output collection is present in this committed terminal state.",
   );
+  await pauseAtAudienceLandmark(page, AlphaDemoLandmark.InterruptedCompleted);
 
   await page.setViewportSize({ width: 1_280, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -158,6 +167,16 @@ async function openInitialExecution(
 
 function preview(page: Page) {
   return page.locator('[data-ui="mue-preview-alpha"]');
+}
+
+async function pauseAtAudienceLandmark(
+  page: Page,
+  landmark: AlphaDemoLandmark,
+): Promise<void> {
+  if (audiencePauseMs === 0) return;
+  const label = alphaDemoLandmarkLabel(landmark);
+  process.stdout.write(`ALPHA_DEMO_LANDMARK ${landmark} label=${label}\n`);
+  await page.waitForTimeout(audiencePauseMs);
 }
 
 async function navigate(
