@@ -84,7 +84,15 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
     manifest.scripts?.["test:pre-push:showcase"],
     "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types",
   );
-  assert.match(verifyWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:verify/u);
+  assert.equal(
+    verifyWorkflow.match(/run: node scripts\/clean-committed-head\.ts/gu)?.length,
+    3,
+    "every hosted Product 1 slice must bind itself to the exact checkout",
+  );
+  assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean/u);
+  assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh runtime/u);
+  assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh pipeline/u);
+  assert.doesNotMatch(verifyWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:verify/u);
   assert.match(platformWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:platform/u);
   assert.match(postgresqlWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:platform-postgresql/u);
   assert.match(showcaseWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:showcase/u);

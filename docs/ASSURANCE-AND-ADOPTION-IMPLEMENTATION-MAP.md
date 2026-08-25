@@ -40,7 +40,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 - one exact-two internal-commutation assurance checkpoint with independently implemented closed footprint vocabularies, kernel-decided Lean invariant, enabledness, raw-state, and actual-publication proofs, TypeScript both-order adversarial evidence outside the production classifier, and explicit refusal of unsupported, colliding, or differently sized frontiers
 - responsibility-owned Lean semantics, Temporal lifecycle, differential pipeline, contract verification, and CIB runner collaborators
 - focused and full gates
-- routine GitHub Actions verification on Ubuntu only, with an executable guard that permits standard GitHub-hosted macOS solely for an explicitly manual clean-machine or Apple Silicon smoke job, unchanged warm feedback reporting, a wider hosted pathology ceiling, and derived test-process deadlines
+- routine GitHub Actions verification on Ubuntu only, with independent same-checkout Lean and runtime stages followed by one exact-output integration pipeline, one stable union verdict, an executable guard that permits standard GitHub-hosted macOS solely for an explicitly manual clean-machine or Apple Silicon smoke job, unchanged warm feedback reporting, a wider hosted pathology ceiling, and derived test-process deadlines
 
 ### A12 Workflows downstream adoption
 

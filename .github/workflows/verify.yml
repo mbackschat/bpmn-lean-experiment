@@ -77,8 +77,8 @@ jobs:
           fi
           git diff --name-only "$base" "$GITHUB_SHA" | node scripts/ci-change-selection.ts >> "$GITHUB_OUTPUT"
 
-  verify:
-    name: verify
+  verify_lean:
+    name: verify Lean
     needs: changes
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
@@ -99,16 +99,70 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve pinned Node version
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          printf 'node=%s\n' "$required_node_version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+
+      - name: Set up Lean
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          use-mathlib-cache: false
+
+      - name: Cache Lean build output
+        # lean-action only restores `.lake`; it registers no save step because
+        # verify.sh owns the build. Without this, every run rebuilds Lean from
+        # scratch, which measured 79s of a 213s Ubuntu run. The key is the exact
+        # Lean source state, so an unchanged tree hits and a changed tree falls
+        # back to the newest prefix match for an incremental rebuild. The
+        # scheduled run skips the cache to keep one from-scratch build a week.
+        if: env.LEAN_CACHE == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'BpmnSemantics/**/*.lean') }}
+          restore-keys: |
+            lake-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Require clean committed HEAD
+        run: node scripts/clean-committed-head.ts
+
+      - name: Verify Lean
+        run: ./scripts/verify.sh lean
+
+      - name: Stage Lean output for the integration lane
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: verify-lean-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  verify_runtime:
+    name: verify runtime
+    needs: changes
+    if: needs.changes.outputs.product1 == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
       - name: Set up libxml2 tools
-        # Verification validates BPMN XML with xmllint, which the Ubuntu image
-        # does not provide before libxml2-utils is installed.
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --yes libxml2-utils
 
       - name: Resolve pinned toolchain versions
-        # package.json owns both pins, so CI reads them through the same script the
-        # wrapper and doctor use instead of restating versions a bump would miss.
         id: pins
         run: |
           eval "$(./scripts/pinned-toolchain.sh)"
@@ -145,21 +199,9 @@ jobs:
           use-mathlib-cache: false
 
       - name: Resolve the external source root
-        # The scripts default this to repository sibling `../oss`, but
-        # actions/cache rejects a glob containing a `..` segment and reports it
-        # only as a post-job warning, so a relative path leaves a green run that
-        # cached nothing. Exporting the resolved absolute root keeps the sibling
-        # layout and gives the cache and every provisioning script one value.
         run: printf 'BPMN_EXTERNAL_ROOT=%s\n' "$(cd "$GITHUB_WORKSPACE/.." && pwd)/oss" >> "$GITHUB_ENV"
 
       - name: Cache the pinned OMG corpus
-        # Every run otherwise downloads all 15 official files from omg.org, on
-        # both platforms, to let the default gate read two of them. That staked
-        # each build on a third-party server: on 2026-08-06 a run died fetching
-        # an archive no default-lane gate opens. A restored corpus weakens
-        # nothing, because setup-external-sources.sh verifies an existing tree
-        # against the tracked manifest instead of fetching it. The key is the
-        # manifest itself, so changing the official set misses and refetches.
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.BPMN_EXTERNAL_ROOT }}/omg-bpmn-2.0.2
@@ -168,31 +210,109 @@ jobs:
       - name: Provision pinned external inputs
         run: ./scripts/setup-external-sources.sh verify
 
-      - name: Cache Lean build output
-        # lean-action only restores `.lake`; it registers no save step because
-        # verify.sh owns the build. Without this, every run rebuilds Lean from
-        # scratch, which measured 79s of a 213s Ubuntu run. The key is the exact
-        # Lean source state, so an unchanged tree hits and a changed tree falls
-        # back to the newest prefix match for an incremental rebuild. The
-        # scheduled run skips the cache to keep one from-scratch build a week.
-        if: env.LEAN_CACHE == 'true'
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Require clean committed HEAD
+        run: node scripts/clean-committed-head.ts
+
+      - name: Verify runtime
+        env:
+          CI: "true"
+        run: ./scripts/verify.sh runtime
+
+      - name: Stage runtime output for the integration lane
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: .lake
-          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'BpmnSemantics/**/*.lean') }}
-          restore-keys: |
-            lake-${{ runner.os }}-${{ runner.arch }}-
+          path: |
+            packages/*/dist
+            packages/temporal-adapter/*/dist
+            runners/cibseven/target
+            .cache/temporal-cli
+            .cache/temporal-test-server
+          key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  verify_pipeline:
+    name: verify integration pipeline
+    needs:
+      - changes
+      - verify_lean
+      - verify_runtime
+    if: needs.changes.outputs.product1 == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve pinned toolchain versions
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          {
+            printf 'node=%s\n' "$required_node_version"
+            printf 'pnpm=%s\n' "$required_pnpm_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: ${{ steps.pins.outputs.pnpm }}
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+          cache: pnpm
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: runners/cibseven/pom.xml
+
+      - name: Set up Lean
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          use-mathlib-cache: false
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify
+      - name: Restore Lean output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: verify-lean-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Restore runtime output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            packages/*/dist
+            packages/temporal-adapter/*/dist
+            runners/cibseven/target
+            .cache/temporal-cli
+            .cache/temporal-test-server
+          key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Require clean committed HEAD
+        run: node scripts/clean-committed-head.ts
+
+      - name: Verify integration pipeline
         env:
           CI: "true"
-          # The hosted aggregate ceiling must outlive the longest nested CIB
-          # deadline plus reporting cleanup. Per-lane deadlines detect hangs.
           BPMN_PIPELINE_WARM_BUDGET_MS: "130000"
-        run: ./scripts/pnpm.sh run test:pre-push:verify
+        run: ./scripts/verify.sh pipeline
 
   # One stable check name for branch protection. `always()` is required:
   # without it a failed verification leaves this job skipped, and a skipped
@@ -201,7 +321,9 @@ jobs:
     name: verify-complete
     needs:
       - changes
-      - verify
+      - verify_lean
+      - verify_runtime
+      - verify_pipeline
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -209,5 +331,11 @@ jobs:
       - name: Require selected verification to have succeeded
         run: |
           echo "Product 1 selected: ${{ needs.changes.outputs.product1 }}"
-          echo "verification result: ${{ needs.verify.result }}"
-          test "${{ needs.changes.outputs.product1 }}" = "false" || test "${{ needs.verify.result }}" = "success"
+          echo "Lean verification result: ${{ needs.verify_lean.result }}"
+          echo "runtime verification result: ${{ needs.verify_runtime.result }}"
+          echo "integration verification result: ${{ needs.verify_pipeline.result }}"
+          test "${{ needs.changes.outputs.product1 }}" = "false" || {
+            test "${{ needs.verify_lean.result }}" = "success"
+            test "${{ needs.verify_runtime.result }}" = "success"
+            test "${{ needs.verify_pipeline.result }}" = "success"
+          }
