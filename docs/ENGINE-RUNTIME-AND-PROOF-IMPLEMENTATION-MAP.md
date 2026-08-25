@@ -18,7 +18,7 @@ The [sequential metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METAD
 
 The first interchange composition reuses the sequential User Task Process-data account while source admission retains standard notation. Lean/core results and live Temporal replacement, history, and replay agree. It adds no runtime field, IL operation, transition, observation, or CIB interpretation.
 
-`INTERNAL-COMMUTATION` replaces the two-User-Task exception with an independent footprint rule for ordinary User Task, Message, Timer, and effect pairs. Lean proves intermediate invariants, projectability, opposite enabledness, state commutation, and canonical publication. TypeScript independently derives closed atom domains and keeps its both-order oracle outside production. Other, larger, colliding, or unprojectable frontiers remain ambiguous; it adds no source/profile/host capability.
+`INTERNAL-COMMUTATION` replaces the User-Task exception with a footprint rule for User Task, Message, Timer, and effect pairs. Lean proves invariants, projectability, opposite enabledness, commutation, and canonical publication. TypeScript derives closed atom domains; its both-order oracle is test-only. Unsupported, differently sized, or colliding frontiers remain ambiguous. Pre-state/intermediate open-projection failure preserves closure without publication. No source/profile/host capability is added.
 
 ## Implemented
 
