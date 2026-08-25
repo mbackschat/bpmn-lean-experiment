@@ -15,23 +15,50 @@ import {
   metadataProfile,
   structuredHumanWorkProfile,
 } from "../test/fixture.ts";
+import {
+  HeadlineDemoLandmark,
+  headlineDemoLandmarkLabel,
+  readHeadlineDemoConfig,
+} from "../src/headline-demo.ts";
 
 const apiOrigin = requireApiOrigin();
 const modelPath = fileURLToPath(new URL(
   "../../../scenarios/expense-exception-review/process.bpmn",
   import.meta.url,
 ));
+const headlineDemo = readHeadlineDemoConfig(process.env);
 
 test.describe.configure({ retries: 0 });
 
 for (const viewport of [{ width: 1280, height: 800 }, { width: 1600, height: 900 }]) {
   test(`expense exception structured Human Work completes every action at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    const completionCapture: CompletionCapture = { poisonNext: true, accepted: null };
+    const completionCapture: CompletionCapture = {
+      poisonNext: !headlineDemo.enabled,
+      accepted: null,
+    };
     await interceptFirstValidCompletion(page, completionCapture);
     await page.goto("/", { timeout: 10_000 });
 
+    if (headlineDemo.enabled) {
+      await navigate(page, "About");
+      const capabilityTable = page.getByRole("table", {
+        name: "Executable BPMN element and semantic-variant overview",
+      });
+      await expect(page.getByRole("complementary", {
+        name: "Coverage boundary",
+      })).toContainText("Not a conformance claim");
+      const variantCount = await capabilityTable.locator("tbody tr").count();
+      expect(variantCount).toBeGreaterThan(0);
+      await expect(page.getByText("Evidence-backed variants", { exact: true })
+        .locator("..")).toContainText(String(variantCount));
+      await presentHeadlineLandmark(page, HeadlineDemoLandmark.CapabilityBreadth);
+    }
+
     await deployRetainedDefinition(page);
+    if (headlineDemo.enabled) {
+      await presentHeadlineLandmark(page, HeadlineDemoLandmark.ProcessDiagram);
+    }
     const token = `${viewport.width}_${Date.now()}_${process.pid}`;
     const control = await deployLowerPriorityControl(token);
     const processIds: string[] = [];
@@ -65,8 +92,8 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1600, height: 900
       await expect(tasks).toContainText("Worklist priority80");
       await taskTabs.getByRole("tab", { name: "Form", exact: true }).click();
 
-      await completeStructuredForm(tasks, action, viewport.width);
-      if (action === "Approve") {
+      await completeStructuredForm(page, tasks, action, viewport.width);
+      if (action === "Approve" && !headlineDemo.enabled) {
         await expect(tasks.getByRole("alert")).toContainText("The form contains an unknown field.");
         await expect(tasks.getByRole("alert")).toBeFocused();
         expect((await readWorkAudit(apiOrigin, {
@@ -80,6 +107,9 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1600, height: 900
         await proveCanonicalRetryAndConflict(completionCapture);
       }
       await proveTerminalHistory(page, processInstanceId);
+      if (headlineDemo.enabled && action === "Abort") {
+        await presentHeadlineLandmark(page, HeadlineDemoLandmark.CommittedEvidence);
+      }
       await proveExactAudit(processInstanceId);
     }
 
@@ -124,6 +154,7 @@ async function startRetainedDefinition(page: import("@playwright/test").Page): P
 }
 
 async function completeStructuredForm(
+  page: import("@playwright/test").Page,
   tasks: import("@playwright/test").Locator,
   action: ResolutionAction,
   viewportWidth: number,
@@ -155,7 +186,30 @@ async function completeStructuredForm(
   } else {
     await expect(tasks.getByLabel("Resolution reason")).toHaveCount(0);
   }
+  if (headlineDemo.enabled) {
+    await presentHeadlineLandmark(page, formLandmark(action));
+  }
   await tasks.getByRole("button", { name: action, exact: true }).click();
+}
+
+function formLandmark(action: ResolutionAction): HeadlineDemoLandmark {
+  switch (action) {
+    case "Approve":
+      return HeadlineDemoLandmark.ApproveForm;
+    case "Request changes":
+      return HeadlineDemoLandmark.RequestChangesForm;
+    case "Abort":
+      return HeadlineDemoLandmark.AbortForm;
+  }
+}
+
+async function presentHeadlineLandmark(
+  page: import("@playwright/test").Page,
+  landmark: HeadlineDemoLandmark,
+): Promise<void> {
+  const label = headlineDemoLandmarkLabel(landmark);
+  process.stdout.write(`MUE_HEADLINE_LANDMARK ${landmark} label=${label}\n`);
+  await page.waitForTimeout(headlineDemo.pauseMs);
 }
 
 type CompletionCapture = {
@@ -289,7 +343,7 @@ function taskRow(
 
 async function navigate(
   page: import("@playwright/test").Page,
-  workspace: "Definitions" | "Operations" | "Work",
+  workspace: "About" | "Definitions" | "Operations" | "Work",
 ): Promise<void> {
   const button = page.getByRole("navigation", { name: "Primary navigation" })
     .getByRole("button", { name: workspace, exact: true });
