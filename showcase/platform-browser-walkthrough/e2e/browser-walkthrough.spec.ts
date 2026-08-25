@@ -50,6 +50,8 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
 
   await navigate(page, "Definitions");
   await deployDefinition(page, expenseBpmnPath, expenseProfile, expenseProcessId, "1");
+  await page.getByText("Add BPMN definition", { exact: true }).click();
+  await expect(page.getByLabel("BPMN XML file")).toBeHidden();
   const expenseDiagram = page.getByRole("region", {
     name: `Complete diagram workspace for ${expenseProcessId}, version 1`,
   });
