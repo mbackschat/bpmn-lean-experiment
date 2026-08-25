@@ -1,3 +1,4 @@
+import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { expect, test } from "@playwright/test";
@@ -11,7 +12,9 @@ import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contract
 import { MuePreviewAlphaShowcaseRuntime } from "../src/showcase-runtime.ts";
 import {
   AlphaDemoLandmark,
+  alphaDemoFallbackFrame,
   alphaDemoLandmarkLabel,
+  readAlphaDemoCaptureEnabled,
   readAlphaDemoPauseMs,
 } from "../src/audience-pacing.ts";
 import {
@@ -26,6 +29,11 @@ const modelPath = fileURLToPath(new URL(
 ));
 let runtime: MuePreviewAlphaShowcaseRuntime;
 const audiencePauseMs = readAlphaDemoPauseMs(process.env);
+const captureFallbackFrames = readAlphaDemoCaptureEnabled(process.env);
+const fallbackCaptureDirectory = fileURLToPath(new URL(
+  "../../../docs/assets/mue-preview-alpha-demo/",
+  import.meta.url,
+));
 
 test.beforeAll(async () => {
   runtime = await MuePreviewAlphaShowcaseRuntime.create();
@@ -52,7 +60,7 @@ test("shows both exact Alpha branches through the production browser and replays
   await expect(
     naturalPreview.getByRole("list").last().getByRole("listitem"),
   ).toHaveText([...exactNaturalResults]);
-  await pauseAtAudienceLandmark(page, AlphaDemoLandmark.NaturalCompleted);
+  await presentAudienceLandmark(page, AlphaDemoLandmark.NaturalCompleted);
   await runtime.stopWorker();
 
   await navigate(page, "Definitions");
@@ -75,7 +83,7 @@ test("shows both exact Alpha branches through the production browser and replays
     await expect(interruptedPreview.getByRole("list", {
       name: "Published completion interactions",
     })).toContainText("UserTask_Escalation / activation 1");
-    await pauseAtAudienceLandmark(page, AlphaDemoLandmark.InterruptionReady);
+    await presentAudienceLandmark(page, AlphaDemoLandmark.InterruptionReady);
   } finally {
     escalationRelease.resolve();
   }
@@ -84,7 +92,7 @@ test("shows both exact Alpha branches through the production browser and replays
   await expect(interruptedPreview).toContainText(
     "No output collection is present in this committed terminal state.",
   );
-  await pauseAtAudienceLandmark(page, AlphaDemoLandmark.InterruptedCompleted);
+  await presentAudienceLandmark(page, AlphaDemoLandmark.InterruptedCompleted);
 
   await page.setViewportSize({ width: 1_280, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -169,10 +177,22 @@ function preview(page: Page) {
   return page.locator('[data-ui="mue-preview-alpha"]');
 }
 
-async function pauseAtAudienceLandmark(
+async function presentAudienceLandmark(
   page: Page,
   landmark: AlphaDemoLandmark,
 ): Promise<void> {
+  if (captureFallbackFrames) {
+    const frame = alphaDemoFallbackFrame(landmark);
+    await mkdir(fallbackCaptureDirectory, { recursive: true });
+    await preview(page).evaluate((element) => {
+      element.scrollIntoView({ block: "start" });
+    });
+    await page.screenshot({
+      animations: "disabled",
+      path: `${fallbackCaptureDirectory}${frame.filename}`,
+    });
+    process.stdout.write(`ALPHA_DEMO_CAPTURE ${frame.filename}\n`);
+  }
   if (audiencePauseMs === 0) return;
   const label = alphaDemoLandmarkLabel(landmark);
   process.stdout.write(`ALPHA_DEMO_LANDMARK ${landmark} label=${label}\n`);

@@ -65,6 +65,7 @@
     "demo:status": "node scripts/live-demo.ts status",
     "demo:stop": "node scripts/live-demo.ts stop",
     "demo:mue-preview-alpha": "pnpm build:release-product2 && env MUE_ALPHA_DEMO_PAUSE_MS=3500 PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test --headed",
+    "demo:mue-preview-alpha:capture": "pnpm build:release-product2 && env MUE_ALPHA_DEMO_CAPTURE=true PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test",
     "walkthrough:screenshots:refresh": "node scripts/refresh-browser-walkthrough-screenshots.ts",
     "platform:serve": "pnpm build:platform-server && node platform/apps/server/dist/main.js",
     "platform:recover": "pnpm build:platform-recovery-worker && node platform/apps/recovery-worker/dist/main.js",
