@@ -29,7 +29,7 @@ jobs:
   evaluation-distribution:
     name: Build and smoke-test evaluation distribution
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -100,15 +100,107 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish immutable evaluation images
+      - name: Set up QEMU for multi-platform images
+        if: github.event_name == 'push' || inputs.publish_images == true
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        if: github.event_name == 'push' || inputs.publish_images == true
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Publish immutable multi-platform evaluation images and bundle
         if: github.event_name == 'push' || inputs.publish_images == true
         run: |
+          set -euo pipefail
           image_prefix="ghcr.io/${GITHUB_REPOSITORY,,}"
-          image_tag="${GITHUB_REF_NAME}"
+          image_tag="sha-$GITHUB_SHA"
+          source_tree_sha256="$(git ls-tree -r --full-tree -z HEAD | sha256sum | cut -d ' ' -f 1)"
+          bundle_root=".artifacts/mue-preview-alpha-demo"
+          environment_file="$bundle_root/deploy/evaluation/published-images.env"
+          mkdir -p \
+            "$bundle_root/deploy/evaluation/postgresql" \
+            "$bundle_root/docs/assets" \
+            "$bundle_root/scenarios" \
+            .artifacts/build-metadata
+          cp compose.yaml "$bundle_root/compose.yaml"
+          cp deploy/evaluation/demo deploy/evaluation/published-images.compose.yaml "$bundle_root/deploy/evaluation/"
+          cp deploy/evaluation/postgresql/001_roles.sql "$bundle_root/deploy/evaluation/postgresql/"
+          cp docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md "$bundle_root/docs/"
+          cp -R docs/assets/bpm-platform-browser-walkthrough docs/assets/mue-preview-alpha-demo "$bundle_root/docs/assets/"
+          cp -R scenarios/expense-exception-review scenarios/service-task-effect scenarios/sequential-multi-instance "$bundle_root/scenarios/"
+          chmod +x "$bundle_root/deploy/evaluation/demo"
+          {
+            printf 'BPMN_EVALUATION_SOURCE_REVISION=%s\n' "$GITHUB_SHA"
+            printf 'BPMN_EVALUATION_SOURCE_TREE_SHA256=%s\n' "$source_tree_sha256"
+            printf 'BPMN_EVALUATION_ORIGIN=http://127.0.0.1:3000\n'
+            printf 'BPMN_EVALUATION_PORT=3000\n'
+            printf 'BPMN_EVALUATION_PROJECTION_MAX_AGE_MS=30000\n'
+            printf 'BPMN_EVALUATION_PROJECTION_REFRESH_AFTER_MS=5000\n'
+          } > "$environment_file"
+
           for target in platform-api platform-recovery-worker platform-migrate bpmn-worker; do
-            docker buildx build \
-              --target "$target" \
-              --tag "$image_prefix/evaluation-$target:$image_tag" \
-              --push \
-              .
+            image="$image_prefix/evaluation-$target"
+            metadata_file=".artifacts/build-metadata/$target.json"
+            metadata_digest=""
+            if ! docker buildx imagetools inspect "$image:$image_tag" >/dev/null 2>&1; then
+              docker buildx build \
+                --platform linux/amd64,linux/arm64 \
+                --target "$target" \
+                --tag "$image:sha-$GITHUB_SHA" \
+                --build-arg "BPMN_EVALUATION_SOURCE_REVISION=$GITHUB_SHA" \
+                --build-arg "BPMN_EVALUATION_SOURCE_TREE_SHA256=$source_tree_sha256" \
+                --cache-from type=gha,scope=evaluation-distribution \
+                --cache-to type=gha,mode=max,scope=evaluation-distribution \
+                --provenance=mode=max \
+                --sbom=true \
+                --metadata-file "$metadata_file" \
+                --push \
+                .
+              metadata_digest="$(jq -er '."containerimage.digest"' "$metadata_file")"
+            fi
+            manifest_json="$(docker buildx imagetools inspect "$image:$image_tag" --format '{{json .Manifest}}')"
+            printf '%s\n' "$manifest_json" | jq -e '.manifests | any(.platform.os == "linux" and .platform.architecture == "amd64")' >/dev/null
+            printf '%s\n' "$manifest_json" | jq -e '.manifests | any(.platform.os == "linux" and .platform.architecture == "arm64")' >/dev/null
+            digest="$(printf '%s\n' "$manifest_json" | jq -er '.digest')"
+            if [ -n "$metadata_digest" ] && [ "$metadata_digest" != "$digest" ]; then
+              printf 'Published digest differs from BuildKit metadata for %s\n' "$image" >&2
+              exit 1
+            fi
+            case "$target" in
+              platform-api) image_variable=BPMN_EVALUATION_PLATFORM_API_IMAGE ;;
+              platform-recovery-worker) image_variable=BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE ;;
+              platform-migrate) image_variable=BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE ;;
+              bpmn-worker) image_variable=BPMN_EVALUATION_BPMN_WORKER_IMAGE ;;
+              *) exit 1 ;;
+            esac
+            printf '%s=%s@%s\n' "$image_variable" "$image" "$digest" >> "$environment_file"
           done
+
+      - name: Prove anonymous zero-build startup from exact published digests
+        if: github.event_name == 'push' || inputs.publish_images == true
+        run: |
+          docker logout ghcr.io
+          .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo prepare
+          curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:3000/api/v1/definitions >/dev/null
+
+      - name: Show published service state after failure
+        if: failure() && (github.event_name == 'push' || inputs.publish_images == true)
+        run: |
+          .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo status
+          docker compose --project-name bpmn-lean-mue-preview-alpha --env-file .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.env -f .artifacts/mue-preview-alpha-demo/compose.yaml -f .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.compose.yaml logs --no-color
+
+      - name: Stop the published evaluation distribution
+        if: always() && (github.event_name == 'push' || inputs.publish_images == true)
+        run: .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo stop
+
+      - name: Upload zero-build MUE Preview Alpha bundle
+        if: github.event_name == 'push' || inputs.publish_images == true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mue-preview-alpha-demo-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: .artifacts/mue-preview-alpha-demo/

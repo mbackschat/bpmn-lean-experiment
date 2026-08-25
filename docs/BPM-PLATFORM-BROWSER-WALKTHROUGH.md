@@ -33,14 +33,38 @@ The browser talks only to the public Product 2 HTTP API. The API reaches the Tem
 
 Use this run of show when presenting the project rather than evaluating each workflow manually. It combines one credible business Process with the canonical breadth view and the separate Multi-Instance proof, without implying that every reviewed semantic variant belongs to one executable profile.
 
-Prepare a fresh isolated Product 2 distribution before the audience arrives:
+### Zero-build demo machine
+
+The recommended demo-machine path is the `mue-preview-alpha-demo-<commit>` artifact from a successful manual [Evaluation distribution workflow](../.github/workflows/evaluation-distribution.yml) run with image publication enabled. The artifact contains the Compose topology, exact database-role initialization, this guide and fallback images, the three retained demonstration models, and an environment file that pins all four project images to their published OCI index digests. Each index contains `linux/amd64` and `linux/arm64`, carries the source commit and complete tracked-source-tree digest, and is published with BuildKit provenance and an SBOM. PostgreSQL and Temporal retain their separately pinned upstream digests.
+
+Download and unpack that artifact on a compatible Docker host. No repository checkout, Node, pnpm, compiler, or image build is used there. While online, prepare and prove one fresh isolated stack with:
+
+```sh
+./deploy/evaluation/demo prepare
+./deploy/evaluation/demo status
+```
+
+`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, and starts Compose with `--no-build`. The publishing workflow logs out of GHCR and executes this same command before offering the artifact, which proves anonymous pull and exact published-image startup rather than merely proving a separately built local image.
+
+After preparation, show-time restart performs no build, registry request, or pull:
+
+```sh
+./deploy/evaluation/demo start
+./deploy/evaluation/demo status
+```
+
+Keep the printed `LIVE_DEMO_READY` origin open in Chromium. `./deploy/evaluation/demo stop` stops only this demo project and retains its volumes. Transfer and unpack a previously proven artifact before entering an offline venue; do not substitute tags or edit its generated image environment.
+
+### Presenter checkout alternative
+
+Contributors may instead prepare the exact checked-out source before the audience arrives:
 
 ```sh
 ./scripts/pnpm.sh run demo:prepare
 ./scripts/pnpm.sh run demo:status
 ```
 
-`demo:prepare` is deliberately the online preparation boundary. It requires a clean committed worktree, rebuilds the four project images from that exact source, labels them with the full commit and a SHA-256 over the complete tracked source tree, and may contact Docker Hub and the pnpm registry when local caches are incomplete or need metadata. Run it before the presentation, not in front of the audience.
+This source path is deliberately an online authoring boundary. It requires a clean committed worktree, rebuilds the four project images from that exact source, labels them with the full commit and a SHA-256 over the complete tracked source tree, and may contact Docker Hub and the pnpm registry when local caches are incomplete or need metadata. It is not the zero-build demo-machine path.
 
 After a successful preparation, show-time execution needs no image build or pull. If Docker or the demo project was stopped, restart from the matching local images and preserved demo volumes with:
 
@@ -49,16 +73,16 @@ After a successful preparation, show-time execution needs no image build or pull
 ./scripts/pnpm.sh run demo:status
 ```
 
-`demo:start` checks every project image against the current clean committed source before changing the Compose project, then uses `--no-build --pull never`. It fails rather than starting a stale or unbound image. Missing base, PostgreSQL, Temporal, or project images therefore remain a preparation failure instead of triggering an audience-time download.
+`demo:start` checks every local project image against the current clean committed source before changing the Compose project, then uses `--no-build --pull never`. It fails rather than starting a stale or unbound image. Missing base, PostgreSQL, Temporal, or project images therefore remain a preparation failure instead of triggering an audience-time download.
 
-Keep the printed `LIVE_DEMO_READY` origin open in Chromium. Then present these acts:
+Then present these acts:
 
 1. **Honest breadth, about 45 seconds.** Open **About**. Show that the evidence-backed summary equals the complete canonical table and point out **Not a conformance claim**. Explain that each row is bound to an exact reviewed profile rather than inferred from a product screen.
 2. **Real-world headline, about three minutes.** Run `./scripts/pnpm.sh run demo:mue-headline`. The headed Chromium journey deploys the retained expense-exception Process, shows its BPMN diagram, and pauses at useful forms for **Approve**, **Request changes**, and **Abort** before finishing on committed semantic History. The forms cover text, date, decimal, choice, multi-choice, boolean, conditional required input, and destructive-action confirmation.
 3. **Engine Alpha proof, about two minutes.** Run `./scripts/pnpm.sh run demo:mue-preview-alpha`. The headed journey shows natural Sequential Multi-Instance completion and an interrupting Timer Boundary Event over the same mechanism, ending on the committed aggregate in both cases.
 4. **Close on evidence, about one minute.** Return to the prepared Product 2 origin and use the detailed walkthrough below to show an exact definition version, engine-published History, a terminal Diagram, or incident operations according to the audience's interest.
 
-The headline and Alpha commands each start their own exact ephemeral Temporal-backed witness so that presenter pacing cannot mutate ordinary evidence. The prepared distribution remains available for free navigation and recovery if either headed command exits.
+The headline and Alpha commands are author-side headed rehearsals and each starts its own exact ephemeral Temporal-backed witness so that presenter pacing cannot mutate ordinary evidence. They require the prepared presenter checkout and its frozen development dependencies; they are not embedded in the Docker-only artifact. The published distribution supplies the same real Product 2 and Temporal topology for manual audience navigation, retained-model upload, and recovery without compiling on the demo machine.
 
 ### Claims and non-claims
 
@@ -73,7 +97,7 @@ If the headline browser cannot start, continue from the retained [capability bou
 
 ## Prerequisites and lifecycle
 
-Install the frozen workspace dependencies and ensure Docker with Compose v2 is available. Reading and performing the walkthrough does not require Lean, Java, the CIB Seven checkout, Playwright, or a host PostgreSQL or Temporal installation. The ordinary evaluation commands below may build or pull; the seven-minute run of show uses the commit-bound `demo:prepare` and `demo:start` lifecycle above.
+The published-bundle path requires Docker with Compose `2.24.4` or later and a browser only; that minimum is the first release supporting the `!reset` override that mechanically removes every build declaration. The source-checkout path additionally requires the frozen workspace dependencies. Neither path needs Lean, Java, the CIB Seven checkout, or host PostgreSQL or Temporal installations; only the author-side headed rehearsal needs Playwright. The ordinary evaluation commands below are contributor-oriented and may build or pull.
 
 Start the complete evaluation distribution:
 

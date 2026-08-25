@@ -26,7 +26,12 @@ RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/temporal-ru
 RUN cp -R platform/apps/web/dist /out/platform-web
 
 FROM ${NODE_IMAGE} AS runtime-base
+ARG BPMN_EVALUATION_SOURCE_REVISION=unbound
+ARG BPMN_EVALUATION_SOURCE_TREE_SHA256=unbound
 ENV NODE_ENV=production
+LABEL org.opencontainers.image.source="https://github.com/mbackschat/bpmn-lean-experiment"
+LABEL org.opencontainers.image.revision="${BPMN_EVALUATION_SOURCE_REVISION}"
+LABEL io.bpmn-lean.evaluation.source-tree-sha256="${BPMN_EVALUATION_SOURCE_TREE_SHA256}"
 USER node
 
 FROM runtime-base AS platform-api

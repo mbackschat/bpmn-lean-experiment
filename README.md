@@ -192,13 +192,21 @@ The examples expect `localhost:7233`, Namespace `default`, and a fresh semantic 
 
 ### Use the BPM platform in a browser
 
-Start the complete evaluation distribution with one command:
+For a demo machine, use the zero-build `mue-preview-alpha-demo-<commit>` artifact produced by the manual **Evaluation distribution** workflow. After unpacking it, one command pulls exact `linux/amd64` or `linux/arm64` image digests, verifies their source provenance, and starts the real PostgreSQL, Temporal, Product 1 Worker, and Product 2 stack without Git, Node, pnpm, or a local image build:
+
+```sh
+./deploy/evaluation/demo prepare
+```
+
+Open the printed `LIVE_DEMO_READY` origin. The [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-demo-machine) is the single owner for bundle acquisition, offline restart, the seven-minute presentation, examples, fallback visuals, and exact non-claims.
+
+Contributors working from source can instead start the complete evaluation distribution with:
 
 ```sh
 ./scripts/pnpm.sh run evaluation:start
 ```
 
-Open [http://localhost:3000](http://localhost:3000), then follow the screenshot-backed, text-first [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) for definition deployment, structured task completion, incident recovery, Process inspection, and hands-on exercises. The Compose path builds the exact PostgreSQL 18 shared platform, Temporal development service, Product 1 BPMN Worker, Product 2 API/web application, and Product 2 recovery Worker. PostgreSQL and Temporal state survive ordinary stops in named Docker volumes.
+Open [http://localhost:3000](http://localhost:3000). This source path may build locally; PostgreSQL and Temporal state survive ordinary stops in named Docker volumes.
 
 ```sh
 ./scripts/pnpm.sh run evaluation:stop

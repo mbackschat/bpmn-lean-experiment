@@ -1,0 +1,16 @@
+services:
+  platform-migrate:
+    image: ${BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE:?published demo bundle is missing the migration image}
+    build: !reset null
+
+  bpmn-worker:
+    image: ${BPMN_EVALUATION_BPMN_WORKER_IMAGE:?published demo bundle is missing the BPMN Worker image}
+    build: !reset null
+
+  platform-api:
+    image: ${BPMN_EVALUATION_PLATFORM_API_IMAGE:?published demo bundle is missing the platform API image}
+    build: !reset null
+
+  platform-recovery-worker:
+    image: ${BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE:?published demo bundle is missing the recovery Worker image}
+    build: !reset null

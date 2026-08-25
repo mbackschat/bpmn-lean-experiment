@@ -9,6 +9,14 @@ const workflowPath = new URL(
   "../.github/workflows/evaluation-distribution.yml",
   import.meta.url,
 );
+const publishedComposePath = new URL(
+  "../deploy/evaluation/published-images.compose.yaml",
+  import.meta.url,
+);
+const publishedLauncherPath = new URL(
+  "../deploy/evaluation/demo",
+  import.meta.url,
+);
 const postgresqlRolesPath = new URL(
   "../deploy/evaluation/postgresql/001_roles.sql",
   import.meta.url,
@@ -115,7 +123,10 @@ test("runtime images contain only deployed production closures", async () => {
 });
 
 test("project images carry fail-closed demo source provenance", async () => {
-  const compose = await readFile(composePath, "utf8");
+  const [compose, dockerfile] = await Promise.all([
+    readFile(composePath, "utf8"),
+    readFile(dockerfilePath, "utf8"),
+  ]);
 
   assert.match(
     compose,
@@ -133,6 +144,57 @@ test("project images carry fail-closed demo source provenance", async () => {
   ]) {
     assert.match(serviceBlock(compose, service), /<<: \*project-build/u);
   }
+  assert.match(
+    dockerfile,
+    /org\.opencontainers\.image\.source="https:\/\/github\.com\/mbackschat\/bpmn-lean-experiment"/u,
+  );
+  assert.match(
+    dockerfile,
+    /org\.opencontainers\.image\.revision="\$\{BPMN_EVALUATION_SOURCE_REVISION\}"/u,
+  );
+  assert.match(
+    dockerfile,
+    /io\.bpmn-lean\.evaluation\.source-tree-sha256="\$\{BPMN_EVALUATION_SOURCE_TREE_SHA256\}"/u,
+  );
+});
+
+test("published demo bundle replaces every project build with one exact image", async () => {
+  const compose = await readFile(publishedComposePath, "utf8");
+  const imageVariables = new Map([
+    ["platform-migrate", "BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE"],
+    ["bpmn-worker", "BPMN_EVALUATION_BPMN_WORKER_IMAGE"],
+    ["platform-api", "BPMN_EVALUATION_PLATFORM_API_IMAGE"],
+    ["platform-recovery-worker", "BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE"],
+  ]);
+
+  for (const [service, variable] of imageVariables) {
+    const block = serviceBlock(compose, service);
+    assert.match(
+      block,
+      new RegExp(
+        `${escapeRegex(`image: \${${variable}:?`)}[^}]+${escapeRegex("}")}`,
+        "u",
+      ),
+    );
+    assert.match(block, /build: !reset null/u);
+  }
+  assert.doesNotMatch(compose, /:local/u);
+});
+
+test("published demo launcher needs Docker but can never build", async () => {
+  const launcher = await readFile(publishedLauncherPath, "utf8");
+
+  assert.match(launcher, /^#!\/bin\/sh$/mu);
+  assert.match(launcher, /docker compose/u);
+  assert.match(launcher, /--no-build/u);
+  assert.match(launcher, /--pull never/u);
+  assert.match(launcher, /prepare\)/u);
+  assert.match(launcher, /start\)/u);
+  assert.match(launcher, /status\)/u);
+  assert.match(launcher, /stop\)/u);
+  assert.match(launcher, /@sha256:\[0-9a-f\]\{64\}/u);
+  assert.doesNotMatch(launcher, /^\. "\$environment_file"$/mu);
+  assert.doesNotMatch(launcher, /(?:pnpm|npm|node|git|docker (?:compose )?build)/u);
 });
 
 test("evaluation workflow is manual or tagged and never routine", async () => {
@@ -153,6 +215,36 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
     workflow,
     /path: docs\/assets\/bpm-platform-browser-walkthrough\//u,
   );
+  assert.match(
+    workflow,
+    /uses: docker\/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3/u,
+  );
+  assert.match(
+    workflow,
+    /uses: docker\/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3/u,
+  );
+  assert.match(workflow, /--platform linux\/amd64,linux\/arm64/u);
+  assert.match(workflow, /--tag "\$image:sha-\$GITHUB_SHA"/u);
+  assert.match(workflow, /--provenance=mode=max/u);
+  assert.match(workflow, /--sbom=true/u);
+  assert.match(workflow, /--metadata-file "\$metadata_file"/u);
+  assert.match(workflow, /containerimage\.digest/u);
+  assert.match(
+    workflow,
+    /imagetools inspect "\$image:\$image_tag" --format '\{\{json \.Manifest\}\}'/u,
+  );
+  assert.match(workflow, /jq -er '\.digest'/u);
+  assert.doesNotMatch(workflow, /imagetools inspect[^\n]+--raw[^\n]+sha256sum/u);
+  assert.match(workflow, /published-images\.env/u);
+  assert.match(workflow, /published-images\.compose\.yaml/u);
+  assert.match(workflow, /cp docs\/BPM-PLATFORM-BROWSER-WALKTHROUGH\.md/u);
+  assert.match(workflow, /scenarios\/expense-exception-review/u);
+  assert.match(workflow, /docs\/assets\/mue-preview-alpha-demo/u);
+  assert.match(
+    workflow,
+    /\.artifacts\/mue-preview-alpha-demo\/deploy\/evaluation\/demo prepare/u,
+  );
+  assert.match(workflow, /name: mue-preview-alpha-demo-\$\{\{ github\.sha \}\}/u);
 });
 
 test("migration and runtime database credentials stay separate", async () => {

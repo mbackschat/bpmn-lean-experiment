@@ -1,0 +1,130 @@
+#!/bin/sh
+set -eu
+
+script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+bundle_root=$(CDPATH= cd -- "$script_directory/../.." && pwd)
+environment_file=${BPMN_EVALUATION_BUNDLE_ENV:-"$script_directory/published-images.env"}
+project_name=${BPMN_EVALUATION_PROJECT_NAME:-bpmn-lean-mue-preview-alpha}
+
+if [ ! -f "$environment_file" ]; then
+  printf 'Published demo environment is missing: %s\n' "$environment_file" >&2
+  exit 1
+fi
+
+read_assignment() {
+  assignment_name=$1
+  assignment_count=$(grep -c "^${assignment_name}=" "$environment_file" || true)
+  if [ "$assignment_count" -ne 1 ]; then
+    printf 'Published demo environment needs exactly one %s assignment\n' "$assignment_name" >&2
+    exit 1
+  fi
+  sed -n "s/^${assignment_name}=//p" "$environment_file"
+}
+
+BPMN_EVALUATION_SOURCE_REVISION=$(read_assignment BPMN_EVALUATION_SOURCE_REVISION)
+BPMN_EVALUATION_SOURCE_TREE_SHA256=$(read_assignment BPMN_EVALUATION_SOURCE_TREE_SHA256)
+BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE=$(read_assignment BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE)
+BPMN_EVALUATION_BPMN_WORKER_IMAGE=$(read_assignment BPMN_EVALUATION_BPMN_WORKER_IMAGE)
+BPMN_EVALUATION_PLATFORM_API_IMAGE=$(read_assignment BPMN_EVALUATION_PLATFORM_API_IMAGE)
+BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE=$(read_assignment BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE)
+export \
+  BPMN_EVALUATION_SOURCE_REVISION \
+  BPMN_EVALUATION_SOURCE_TREE_SHA256 \
+  BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE \
+  BPMN_EVALUATION_BPMN_WORKER_IMAGE \
+  BPMN_EVALUATION_PLATFORM_API_IMAGE \
+  BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE
+
+: "${BPMN_EVALUATION_SOURCE_REVISION:?published demo source revision is missing}"
+: "${BPMN_EVALUATION_SOURCE_TREE_SHA256:?published demo source-tree digest is missing}"
+: "${BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE:?published migration image is missing}"
+: "${BPMN_EVALUATION_BPMN_WORKER_IMAGE:?published BPMN Worker image is missing}"
+: "${BPMN_EVALUATION_PLATFORM_API_IMAGE:?published platform API image is missing}"
+: "${BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE:?published recovery Worker image is missing}"
+
+if ! printf '%s\n' "$BPMN_EVALUATION_SOURCE_REVISION" | grep -Eq '^[0-9a-f]{40}$'; then
+  printf 'Published demo source revision is malformed\n' >&2
+  exit 1
+fi
+if ! printf '%s\n' "$BPMN_EVALUATION_SOURCE_TREE_SHA256" | grep -Eq '^[0-9a-f]{64}$'; then
+  printf 'Published demo source-tree digest is malformed\n' >&2
+  exit 1
+fi
+
+verify_image_reference() {
+  image=$1
+  target=$2
+  if ! printf '%s\n' "$image" | grep -Eq "^ghcr\\.io/mbackschat/bpmn-lean-experiment/evaluation-${target}@sha256:[0-9a-f]{64}$"; then
+    printf 'Published demo image is not the expected exact GHCR digest: %s\n' "$image" >&2
+    exit 1
+  fi
+}
+
+verify_image_reference "$BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE" platform-migrate
+verify_image_reference "$BPMN_EVALUATION_BPMN_WORKER_IMAGE" bpmn-worker
+verify_image_reference "$BPMN_EVALUATION_PLATFORM_API_IMAGE" platform-api
+verify_image_reference "$BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE" platform-recovery-worker
+
+compose() {
+  docker compose \
+    --project-name "$project_name" \
+    --env-file "$environment_file" \
+    -f "$bundle_root/compose.yaml" \
+    -f "$script_directory/published-images.compose.yaml" \
+    "$@"
+}
+
+verify_image() {
+  image=$1
+  revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")
+  source_tree_sha256=$(docker image inspect --format '{{ index .Config.Labels "io.bpmn-lean.evaluation.source-tree-sha256" }}' "$image")
+  if [ "$revision" != "$BPMN_EVALUATION_SOURCE_REVISION" ] || [ "$source_tree_sha256" != "$BPMN_EVALUATION_SOURCE_TREE_SHA256" ]; then
+    printf 'Published demo image provenance mismatch: %s\n' "$image" >&2
+    exit 1
+  fi
+}
+
+verify_project_images() {
+  verify_image "$BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE"
+  verify_image "$BPMN_EVALUATION_BPMN_WORKER_IMAGE"
+  verify_image "$BPMN_EVALUATION_PLATFORM_API_IMAGE"
+  verify_image "$BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE"
+}
+
+report_ready() {
+  origin=$(read_assignment BPMN_EVALUATION_ORIGIN)
+  compose ps
+  printf 'LIVE_DEMO_READY origin=%s\n' "$origin"
+  printf 'LIVE_DEMO_MODE mode=published-images revision=%s sourceTreeSha256=%s\n' \
+    "$BPMN_EVALUATION_SOURCE_REVISION" \
+    "$BPMN_EVALUATION_SOURCE_TREE_SHA256"
+}
+
+command=${1:-}
+case "$command" in
+  prepare)
+    docker info >/dev/null
+    compose down --volumes --remove-orphans
+    compose pull
+    verify_project_images
+    compose up --no-build --pull never --wait
+    report_ready
+    ;;
+  start)
+    docker info >/dev/null
+    verify_project_images
+    compose down --remove-orphans
+    compose up --no-build --pull never --wait
+    report_ready
+    ;;
+  status)
+    compose ps
+    ;;
+  stop)
+    compose down --remove-orphans
+    ;;
+  *)
+    printf 'usage: %s prepare|start|status|stop\n' "$0" >&2
+    exit 64
+    ;;
+esac
