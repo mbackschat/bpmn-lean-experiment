@@ -18,6 +18,7 @@ import {
 import {
   HeadlineDemoLandmark,
   headlineDemoLandmarkLabel,
+  headlineDemoTimeoutMs,
   readHeadlineDemoConfig,
 } from "../src/headline-demo.ts";
 
@@ -28,7 +29,10 @@ const modelPath = fileURLToPath(new URL(
 ));
 const headlineDemo = readHeadlineDemoConfig(process.env);
 
-test.describe.configure({ retries: 0 });
+test.describe.configure({
+  retries: 0,
+  timeout: headlineDemoTimeoutMs(headlineDemo),
+});
 
 for (const viewport of [{ width: 1280, height: 800 }, { width: 1600, height: 900 }]) {
   test(`expense exception structured Human Work completes every action at ${viewport.width}px`, async ({ page }) => {

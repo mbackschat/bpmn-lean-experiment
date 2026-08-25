@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   HeadlineDemoLandmark,
   headlineDemoLandmarkLabel,
+  headlineDemoTimeoutMs,
   readHeadlineDemoConfig,
 } from "../src/headline-demo.ts";
 
@@ -47,4 +48,9 @@ test("names every presenter-visible real-world landmark", () => {
       "Committed semantic History and Work audit",
     ],
   );
+});
+
+test("adds every presenter pause to the ordinary journey deadline", () => {
+  assert.equal(headlineDemoTimeoutMs({ enabled: false, pauseMs: 0 }), 30_000);
+  assert.equal(headlineDemoTimeoutMs({ enabled: true, pauseMs: 3_500 }), 51_000);
 });

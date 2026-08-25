@@ -1,4 +1,5 @@
 const maximumHeadlinePauseMs = 10_000;
+const ordinaryHeadlineJourneyTimeoutMs = 30_000;
 
 export const HeadlineDemoLandmark = Object.freeze({
   CapabilityBreadth: "capability-breadth",
@@ -15,6 +16,11 @@ export type HeadlineDemoConfig = Readonly<{
   enabled: boolean;
   pauseMs: number;
 }>;
+
+export function headlineDemoTimeoutMs(config: HeadlineDemoConfig): number {
+  return ordinaryHeadlineJourneyTimeoutMs +
+    Object.keys(HeadlineDemoLandmark).length * config.pauseMs;
+}
 
 export function readHeadlineDemoConfig(
   environment: Readonly<Record<string, string | undefined>>,
