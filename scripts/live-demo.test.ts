@@ -69,6 +69,7 @@ test("prepares one fresh isolated evaluation stack and reports exact public demo
   }
   assert.equal(output.some((line) => line.includes("scenarios/expense-exception-review/process.bpmn")), true);
   assert.equal(output.some((line) => line.includes("scenarios/service-task-effect/process.bpmn")), true);
+  assert.equal(output.some((line) => line.includes("demo:mue-headline")), true);
   assert.equal(output.some((line) => line.includes("demo:mue-preview-alpha")), true);
 });
 

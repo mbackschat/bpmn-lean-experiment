@@ -29,6 +29,37 @@ flowchart LR
 
 The browser talks only to the public Product 2 HTTP API. The API reaches the Temporal-hosted engine through the narrowed engine gateway, while PostgreSQL-backed recovery workers refresh projections outside request handling.
 
+## Seven-minute MUE Preview Alpha live demo
+
+Use this run of show when presenting the project rather than evaluating each workflow manually. It combines one credible business Process with the canonical breadth view and the separate Multi-Instance proof, without implying that every reviewed semantic variant belongs to one executable profile.
+
+Prepare a fresh isolated Product 2 distribution before the audience arrives:
+
+```sh
+./scripts/pnpm.sh run demo:prepare
+./scripts/pnpm.sh run demo:status
+```
+
+Keep the printed `LIVE_DEMO_READY` origin open in Chromium. Then present these acts:
+
+1. **Honest breadth, about 45 seconds.** Open **About**. Show that the evidence-backed summary equals the complete canonical table and point out **Not a conformance claim**. Explain that each row is bound to an exact reviewed profile rather than inferred from a product screen.
+2. **Real-world headline, about three minutes.** Run `./scripts/pnpm.sh run demo:mue-headline`. The headed Chromium journey deploys the retained expense-exception Process, shows its BPMN diagram, and pauses at useful forms for **Approve**, **Request changes**, and **Abort** before finishing on committed semantic History. The forms cover text, date, decimal, choice, multi-choice, boolean, conditional required input, and destructive-action confirmation.
+3. **Engine Alpha proof, about two minutes.** Run `./scripts/pnpm.sh run demo:mue-preview-alpha`. The headed journey shows natural Sequential Multi-Instance completion and an interrupting Timer Boundary Event over the same mechanism, ending on the committed aggregate in both cases.
+4. **Close on evidence, about one minute.** Return to the prepared Product 2 origin and use the detailed walkthrough below to show an exact definition version, engine-published History, a terminal Diagram, or incident operations according to the audience's interest.
+
+The headline and Alpha commands each start their own exact ephemeral Temporal-backed witness so that presenter pacing cannot mutate ordinary evidence. The prepared distribution remains available for free navigation and recovery if either headed command exits.
+
+### Claims and non-claims
+
+- This is **MUE Preview Alpha**, not completion of the current MUE programme.
+- The canonical About table demonstrates executable breadth across exact profiles. The expense-exception model demonstrates a coherent real-world Process. Neither is a single all-elements profile.
+- Product 2 forms, claims, priorities, and work audit are platform behavior bound to engine-published task identity. They do not add BPMN meaning.
+- The demo makes no BPMN conformance, production capacity, high-availability, or benchmark claim.
+
+### Presenter fallback
+
+If the headline browser cannot start, continue from the retained [capability boundary](assets/bpm-platform-browser-walkthrough/01-about-capability-boundary.png), [expense Process diagram](assets/bpm-platform-browser-walkthrough/02-expense-definition-diagram.png), [structured approval form](assets/bpm-platform-browser-walkthrough/04-expense-structured-form.png), and [committed semantic History](assets/bpm-platform-browser-walkthrough/05-completed-process-history.png). If the Alpha witness cannot start, use its retained [natural completion](assets/mue-preview-alpha-demo/01-natural-completion.png), [Timer interruption](assets/mue-preview-alpha-demo/02-timer-interruption.png), and [interrupted completion](assets/mue-preview-alpha-demo/03-interrupted-completion.png) frames. These are fallback illustrations, not substitutes for the executable gates.
+
 ## Prerequisites and lifecycle
 
 Install the frozen workspace dependencies and ensure Docker with Compose v2 is available. Reading and performing the walkthrough does not require Lean, Java, the CIB Seven checkout, Playwright, or a host PostgreSQL or Temporal installation.
