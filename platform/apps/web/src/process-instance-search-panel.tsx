@@ -23,6 +23,7 @@ import styles from "./process-instance-search-panel.module.css";
 
 export type ProcessInstanceSearchPanelProps = Readonly<{
   api: ProcessInstanceSearchApi;
+  audienceMode?: boolean;
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   executionApi: ProcessExecutionApi;
   operatorAuditApi: OperatorAuditApi;
@@ -32,6 +33,7 @@ export type ProcessInstanceSearchPanelProps = Readonly<{
 /** Global search surface for confirmed Product 2 starts and their public identity only. */
 export function ProcessInstanceSearchPanel({
   api,
+  audienceMode = false,
   definitionApi,
   executionApi,
   operatorAuditApi,
@@ -56,6 +58,25 @@ export function ProcessInstanceSearchPanel({
   const returnFocusKey = useRef<string | null>(null);
   const restoreFocus = useRef(false);
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
+  const audienceLoaded = useRef(false);
+
+  useEffect(() => {
+    if (!audienceMode || !isActive || audienceLoaded.current) return;
+    audienceLoaded.current = true;
+    const request = { limit: 2, processId: "Process_SequentialMultiInstanceReview" } as const;
+    setBusy("search");
+    setError(null);
+    void api.search(request).then((page) => {
+      setInstances(page.instances);
+      setActiveRequest(request);
+      setNextCursor(page.nextCursor);
+      setSearched(true);
+    }).catch((cause: unknown) => {
+      setError(errorMessage(cause));
+    }).finally(() => {
+      setBusy(null);
+    });
+  }, [api, audienceMode, isActive]);
 
   useEffect(() => {
     if (!isActive) detailLoader.current.clear(executionApi, setDetail);
@@ -160,13 +181,15 @@ export function ProcessInstanceSearchPanel({
     >
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Global Process-instance search</p>
-          <h2 id="process-instance-search-heading">Confirmed Product 2 starts</h2>
-          <p>Search only the exact public identity recorded after a confirmed start.</p>
+          <p className={styles.eyebrow}>{audienceMode ? "Prepared demonstration" : "Global Process-instance search"}</p>
+          <h2 id="process-instance-search-heading">{audienceMode ? "Batch-review outcomes" : "Confirmed Product 2 starts"}</h2>
+          <p>{audienceMode
+            ? "Open either exact public instance to compare natural completion with lifetime-deadline interruption."
+            : "Search only the exact public identity recorded after a confirmed start."}</p>
         </div>
       </div>
 
-      <form
+      {audienceMode ? null : <form
         className={styles.form}
         onSubmit={(event) => { void search(event); }}
       >
@@ -214,14 +237,17 @@ export function ProcessInstanceSearchPanel({
         <Button type="submit" isPending={busy !== null}>
           {busy === "search" ? "Searching…" : "Search"}
         </Button>
-      </form>
+      </form>}
 
       {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       {searched && instances.length === 0 ? (
-        <p className={styles.empty}>No confirmed starts match these exact filters.</p>
+        <p className={styles.empty}>{audienceMode
+          ? "The prepared batch-review instances are not available. Run the deterministic demo preparation again."
+          : "No confirmed starts match these exact filters."}</p>
       ) : (
         <ProcessInstanceSearchTable
           instances={instances}
+          audienceMode={audienceMode}
           onOpen={(instance, row) => {
             returnFocusKey.current = instance.processInstanceId;
             rowRefs.current.set(instance.processInstanceId, row);
@@ -249,15 +275,53 @@ export function ProcessInstanceSearchPanel({
 
 export function ProcessInstanceSearchTable({
   instances,
+  audienceMode = false,
   onOpen = () => undefined,
   registerRow = () => undefined,
 }: Readonly<{
   instances: ReadonlyArray<PublicProcessInstanceIdentity>;
+  audienceMode?: boolean;
   onOpen?: (instance: PublicProcessInstanceIdentity, row: HTMLButtonElement) => void;
   registerRow?: (processInstanceId: string, row: HTMLButtonElement | null) => void;
 }>) {
   if (instances.length === 0) {
     return null;
+  }
+  if (audienceMode) {
+    return (
+      <div className={styles.results}>
+        <table aria-label="Prepared batch-review instances">
+          <thead>
+            <tr>
+              <th scope="col">Business scenario</th>
+              <th scope="col">Exact source</th>
+              <th scope="col">Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {instances.map((instance) => (
+              <tr key={instance.processInstanceId}>
+                <th scope="row">{audienceScenarioLabel(instance.definition.source.id)}</th>
+                <td><code>{instance.definition.source.id}</code></td>
+                <td>
+                  <Button
+                    variant={ButtonVariant.Secondary}
+                    ref={(row) => { registerRow(instance.processInstanceId, row); }}
+                    onPress={(event) => {
+                      const row = event.target;
+                      if (row instanceof HTMLButtonElement) onOpen(instance, row);
+                    }}
+                    aria-label={`Open evidence ${audienceScenarioLabel(instance.definition.source.id)}`}
+                  >
+                    Open evidence
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   }
   return (
     <div className={styles.results}>
@@ -301,6 +365,17 @@ export function ProcessInstanceSearchTable({
       </table>
     </div>
   );
+}
+
+function audienceScenarioLabel(sourceId: string): string {
+  switch (sourceId) {
+    case "demo-purchase-order-review.bpmn":
+      return "Purchase-order review";
+    case "demo-deadline-escalation.bpmn":
+      return "Deadline escalation";
+    default:
+      return sourceId;
+  }
 }
 
 /** Builds exact optional filters with the panel's fixed two-row pagination witness. */

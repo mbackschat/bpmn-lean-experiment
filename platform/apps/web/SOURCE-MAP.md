@@ -4,7 +4,7 @@ This contributor map points from Product 2 surfaces to their main source owners.
 
 | Surface | Main source owners | Contract owner |
 |---|---|---|
-| Application shell, navigation, and loading boundaries | `app.tsx`, `app-shell.tsx`, `deferred-definition-workspace.tsx`, `deferred-operations-workspace.tsx`, `web-bundle-boundaries.test.ts` | [UI design specification](../../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md) and [architecture](../../../docs/ARCHITECTURE.md#user-interface) |
+| Application shell, navigation, loading boundaries, and optional audience guidance | `app.tsx`, `app-shell.tsx`, `audience-mode.ts`, `audience-demo-panel.tsx`, `operations-navigation.ts`, `deferred-definition-workspace.tsx`, `deferred-operations-workspace.tsx`, `web-bundle-boundaries.test.ts` | [UI design specification](../../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md) and [architecture](../../../docs/ARCHITECTURE.md#user-interface) |
 | Definitions and exact-version start | `definitions-api.ts`, `definition-workspace.tsx`, `deferred-definition-workspace.tsx`, `exact-definition.ts`, `mue-preview-alpha-start.ts` | [Platform proposal](../../../docs/BPM-PLATFORM-PROPOSAL.md) and [MUE Preview Alpha specification](../../../docs/MUE-PREVIEW-ALPHA-SPEC.md) |
 | Diagram presentation and download | `definition-diagram.tsx`, `bpmn-viewer-contract.ts`, `bpmn-viewer.ts`, `bpmn-js-factory.ts`, `definition-presentation-api.ts` | [Diagram presentation decision](../../../docs/BPMN-DIAGRAM-PRESENTATION-DECISION.md) |
 | Human Work | `work-inbox-panel.tsx`, `work-task-detail-workspace.tsx`, `work-completion-operation.ts`, `work-tasks-api.ts` | [Human-work specification](../../../docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md) |

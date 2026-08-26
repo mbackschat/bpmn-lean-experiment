@@ -17,6 +17,7 @@ export type AppShellProps = Readonly<{
   activeWorkspace: AppWorkspace;
   about: ReactNode;
   definitions: ReactNode;
+  guide?: ReactNode;
   onNavigate: (workspace: AppWorkspace) => void;
   operations: ReactNode;
   work: ReactNode;
@@ -53,6 +54,7 @@ export function AppShell({
   activeWorkspace,
   about,
   definitions,
+  guide,
   onNavigate,
   operations,
   work,
@@ -92,6 +94,7 @@ export function AppShell({
         <p className={styles.identity}>Signed in as <strong>demo-user</strong></p>
       </aside>
       <main className={styles.content}>
+        {guide}
         <header className={styles.header}>
           <h1 ref={pageHeading} tabIndex={-1}>{active.heading}</h1>
           <p>{active.summary}</p>

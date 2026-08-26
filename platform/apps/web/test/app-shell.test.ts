@@ -37,6 +37,7 @@ const module = await import(
     activeWorkspace: string;
     about: ReactNode;
     definitions: ReactNode;
+    guide?: ReactNode;
     onNavigate: (workspace: string) => void;
     operations: ReactNode;
     work: ReactNode;
@@ -55,6 +56,7 @@ test("uses a persistent primary navigation and renders only the selected workspa
     activeWorkspace: AppWorkspace.Work,
     about: createElement("p", null, "about-content"),
     definitions: createElement("p", null, "definitions-content"),
+    guide: createElement("p", null, "audience-guide"),
     onNavigate: () => undefined,
     operations: createElement("p", null, "operations-content"),
     work: createElement("p", null, "work-content"),
@@ -68,6 +70,7 @@ test("uses a persistent primary navigation and renders only the selected workspa
   assert.match(html, /aria-current="page"[^>]*>Work</u);
   assert.match(html, /<h1 tabindex="-1">Work<\/h1>/u);
   assert.match(html, /work-content/u);
+  assert.match(html, /audience-guide/u);
   assert.doesNotMatch(html, /about-content|definitions-content|operations-content/u);
 });
 
@@ -76,6 +79,7 @@ test("gives Definitions the full content workspace rather than a catalog sidebar
     activeWorkspace: AppWorkspace.Definitions,
     about: createElement("p", null, "about-content"),
     definitions: createElement("p", null, "definitions-content"),
+    guide: null,
     onNavigate: () => undefined,
     operations: createElement("p", null, "operations-content"),
     work: createElement("p", null, "work-content"),
@@ -85,6 +89,7 @@ test("gives Definitions the full content workspace rather than a catalog sidebar
   assert.match(html, /<h1 tabindex="-1">Definitions<\/h1>/u);
   assert.match(html, /definitions-content/u);
   assert.doesNotMatch(html, /about-content|work-content|operations-content/u);
+  assert.doesNotMatch(html, /audience-guide/u);
   assert.doesNotMatch(html, /<aside[^>]*Definitions/u);
 });
 

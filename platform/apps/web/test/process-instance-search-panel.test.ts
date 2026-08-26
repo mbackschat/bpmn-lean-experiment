@@ -54,6 +54,7 @@ const panelModule = await import(
   ProcessInstanceSearchPanel: ComponentType<ProcessInstanceSearchPanelProps>;
   ProcessInstanceSearchTable: ComponentType<Readonly<{
     instances: ReadonlyArray<PublicProcessInstanceIdentity>;
+    audienceMode?: boolean;
     onOpen?: (instance: PublicProcessInstanceIdentity, row: HTMLButtonElement) => void;
     registerRow?: (processInstanceId: string, row: HTMLButtonElement | null) => void;
   }>>;
@@ -193,4 +194,38 @@ test("makes each exact public identity an instance-detail selection", () => {
 
   assert.match(html, /View details instance-42/u);
   assert.match(html, /<button/u);
+});
+
+test("presents demo instances by exact source identity without technical setup columns", () => {
+  const natural = {
+    ...instance,
+    processInstanceId: "demo-natural",
+    definition: {
+      ...instance.definition,
+      source: {
+        ...instance.definition.source,
+        id: "demo-purchase-order-review.bpmn",
+      },
+    },
+  };
+  const deadline = {
+    ...instance,
+    processInstanceId: "demo-deadline",
+    definition: {
+      ...instance.definition,
+      source: {
+        ...instance.definition.source,
+        id: "demo-deadline-escalation.bpmn",
+      },
+    },
+  };
+  const html = renderToStaticMarkup(createElement(ProcessInstanceSearchTable, {
+    instances: [natural, deadline],
+    audienceMode: true,
+  }));
+
+  assert.match(html, /Purchase-order review/u);
+  assert.match(html, /Deadline escalation/u);
+  assert.match(html, /Open evidence/u);
+  assert.doesNotMatch(html, /Semantic profile|Source digest|Process-instance ID/u);
 });
