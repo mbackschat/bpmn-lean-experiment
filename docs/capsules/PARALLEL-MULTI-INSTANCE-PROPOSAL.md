@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Question and bounded outcome
 
-The owner approval recorded at `095ee3f7` was reopened on 2026-08-26 before implementation because the first Lean lane found closed-sum production consumers omitted from the reviewed owner inventory. This reopen changes neither the selected semantic account nor the public contract; it restores independent proposal review over the complete implementation selection before any semantic code changes.
+The owner approval recorded at `095ee3f7` was reopened on 2026-08-26 before implementation because the first Lean lane found closed-sum production consumers omitted from the reviewed owner inventory. This reopen changed neither the selected semantic account nor the public contract. The fresh review returned `approve-with-required-edits`; correction audit `175cb04a3f002c71d0241fd66de07adaf7cab078` closed all findings, so the existing owner approval is restored for this corrected implementation selection.
 
 What is the smallest forward-compatible parallel Multi-Instance User Task account that adds genuine concurrent instance generation, deterministic collection aggregation, completion-condition cancellation, and durable hosting without reinterpreting the implemented sequential profile?
 
@@ -271,6 +271,6 @@ The superseded proposal review targeted `c5ad6f3074ebe48134c67672923c654b95beb14
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `dc21b7ce67fbaaef80a1682a15f05ce4d673a32f` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `dc21b7ce67fbaaef80a1682a15f05ce4d673a32f` | `fork-turns-none` | `approve-with-required-edits` | `175cb04a3f002c71d0241fd66de07adaf7cab078` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

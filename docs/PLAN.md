@@ -47,7 +47,7 @@ After the time-bounded live-demo delivery, the MUE content IDs resume breadth-fi
 
 Active work ID: `PARALLEL-MULTI-INSTANCE`.
 
-Next action: audit the required inventory corrections on the reopened [Parallel Multi-Instance User Task proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md). If approved, restore owner approval, close the separately implemented controller-cleanup prerequisite across regional and called-process removal plus its optional-field guard, then begin the first green semantic checkpoint from separating source, TypeScript, and Lean Reds without changing the reviewed account.
+Next action: close the separately implemented controller-cleanup prerequisite across regional and called-process removal plus its optional-field guard, then begin the [owner-approved Parallel Multi-Instance User Task implementation](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) from separating source, TypeScript, and Lean Reds without changing the reviewed account.
 
 Separate open changes after this prerequisite: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, and PostgreSQL migration evidence.
 
