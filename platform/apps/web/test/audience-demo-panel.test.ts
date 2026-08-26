@@ -51,6 +51,7 @@ test("presents the verified seven-minute story as four existing-product destinat
   assert.match(html, /Expense exception/u);
   assert.match(html, /Deadline behavior/u);
   assert.match(html, /Incident recovery/u);
+  assert.match(html, /retry-safe recovery after an uncertain response/u);
   assert.match(html, /Correctness stack/u);
   assert.match(html, /aria-current="step"/u);
   assert.equal((html.match(/data-audience-step=/gu) ?? []).length, 4);

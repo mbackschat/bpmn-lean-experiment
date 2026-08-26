@@ -34,7 +34,7 @@ const steps: ReadonlyArray<Readonly<{
   number: "03",
   label: "Incident recovery",
   duration: "2 min",
-  summary: "Show one retryable failure and one safely cancellable root Process through current public incidents.",
+  summary: "Show retry-safe recovery after an uncertain response, then safely cancel a different root Process.",
 }, {
   id: AudienceDemoStep.Correctness,
   number: "04",

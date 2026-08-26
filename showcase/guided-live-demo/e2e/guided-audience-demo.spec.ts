@@ -100,6 +100,11 @@ async function resolveIncidents(page: Page): Promise<void> {
     .getByRole("tab", { name: "Overview", exact: true }).click();
   await page.locator('[data-ui="incident-overview"]')
     .getByRole("button", { name: "Retry", exact: true }).click();
+  const indeterminate = page.getByRole("status").filter({
+    hasText: "Retry outcome is indeterminate. Submit the exact action again.",
+  });
+  await expect(indeterminate).toBeFocused();
+  await page.getByRole("button", { name: "Submit Retry again", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Retry action" })).toBeVisible();
   await expect(table.getByRole("row")).toHaveCount(2);
 
