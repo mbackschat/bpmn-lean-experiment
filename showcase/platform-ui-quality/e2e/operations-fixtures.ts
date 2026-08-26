@@ -85,6 +85,7 @@ export async function installOperationsApiFixtures(
   await installPublicApiFixtures(page);
   const actions: CapturedIncidentAction[] = [];
   const actionAttempts = new Map<string, number>();
+  const committedProjectionLagReads = new Map<string, number>();
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -93,6 +94,7 @@ export async function installOperationsApiFixtures(
       return fulfillIncidentCollection(
         route,
         options.incidents ?? FixtureIncidentCollectionState.Normal,
+        committedProjectionLagReads,
       );
     }
     if (request.method() === "GET" && path.startsWith("/api/v1/incidents/")) {
@@ -106,12 +108,14 @@ export async function installOperationsApiFixtures(
       actions.push({ body, url: request.url() });
       const attempt = (actionAttempts.get(path) ?? 0) + 1;
       actionAttempts.set(path, attempt);
-      return fulfillIncidentAction(
+      const committed = await fulfillIncidentAction(
         route,
         body,
         options.actions ?? FixtureIncidentActionState.Stable,
         attempt,
       );
+      if (committed) committedProjectionLagReads.set(incidentActionKey(body), 2);
+      return;
     }
     if (request.method() === "GET" && path === "/api/v1/incident-audit") {
       return fulfillIncidentAudit(
@@ -187,10 +191,20 @@ function incident(
 async function fulfillIncidentCollection(
   route: Route,
   state: FixtureIncidentCollectionState,
+  committedProjectionLagReads: Map<string, number>,
 ): Promise<void> {
   switch (state) {
     case FixtureIncidentCollectionState.Normal:
-      return json(route, { incidents: [primaryIncident, secondaryIncident] });
+      return json(route, {
+        incidents: [primaryIncident, secondaryIncident].filter((incident) => {
+          const key = publicIncidentKey(incident);
+          const remainingLagReads = committedProjectionLagReads.get(key);
+          if (remainingLagReads === undefined) return true;
+          if (remainingLagReads === 0) return false;
+          committedProjectionLagReads.set(key, remainingLagReads - 1);
+          return true;
+        }),
+      });
     case FixtureIncidentCollectionState.Empty:
       return json(route, { incidents: [] });
     case FixtureIncidentCollectionState.Loading:
@@ -211,7 +225,7 @@ async function fulfillIncidentAction(
   body: string,
   state: FixtureIncidentActionState,
   attempt: number,
-): Promise<void> {
+): Promise<boolean> {
   const request = JSON.parse(body) as Readonly<{
     kind: "cancelIncidentProcess" | "retryIncident";
   }>;
@@ -219,45 +233,80 @@ async function fulfillIncidentAction(
     new URL(route.request().url()).pathname.slice("/api/v1/incident-actions/".length),
   );
   if (request.kind === "cancelIncidentProcess") {
-    return json(route, {
+    await json(route, {
       state: "rejected",
       actionId,
       interaction: request,
       engineResult: { kind: "processClosed", status: "cancelled" },
     });
+    return false;
   }
   switch (state) {
     case FixtureIncidentActionState.Stable:
-      return json(route, {
+      await json(route, {
         state: "committed",
         actionId,
         interaction: request,
       });
+      return true;
     case FixtureIncidentActionState.Pending:
       await delay(500);
-      return json(route, {
+      await json(route, {
         state: "committed",
         actionId,
         interaction: request,
       });
+      return true;
     case FixtureIncidentActionState.RetryResponseLoss:
       switch (attempt) {
         case 1:
-          return route.abort("connectionfailed");
+          await route.abort("connectionfailed");
+          return false;
         case 2:
-          return json(route, {
+          await json(route, {
             state: "indeterminate",
             actionId,
             interaction: request,
           }, 202);
+          return false;
         default:
-          return json(route, {
+          await json(route, {
             state: "committed",
             actionId,
             interaction: request,
           });
+          return true;
       }
   }
+}
+
+function incidentActionKey(body: string): string {
+  const request = JSON.parse(body) as Readonly<{
+    incidentId: Readonly<{
+      effectId: Readonly<{
+        activation: number;
+        elementId: string;
+        processInstanceId: string;
+      }>;
+      generation: number;
+    }>;
+  }>;
+  return [
+    request.incidentId.effectId.processInstanceId,
+    request.incidentId.effectId.elementId,
+    request.incidentId.effectId.activation,
+    request.incidentId.generation,
+  ].join("\u0000");
+}
+
+function publicIncidentKey(candidate: typeof primaryIncident | typeof secondaryIncident): string {
+  const id = candidate.incident.id;
+  return [
+    id.effectId.processInstanceId,
+    id.effectId.elementId,
+    id.effectId.activation,
+    id.generation,
+  ].join("\u0000");
 }
 
 async function fulfillIncidentAudit(

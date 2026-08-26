@@ -9,7 +9,9 @@ import {
 } from "./incident-detail-load.tsx";
 import type { IncidentDetailSelection } from "./incident-detail-load.tsx";
 import { LatestRequest } from "./latest-request.ts";
-import { IncidentCollection, incidentKey } from "./incident-collection.tsx";
+import { IncidentCollection } from "./incident-collection.tsx";
+import { readIncidentCollectionAfterCommit } from "./incident-collection-convergence.ts";
+import { incidentKey } from "./incident-identity.ts";
 import type { IncidentOperationsApi } from "./incident-operations-api.ts";
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import styles from "./incidents-panel.module.css";
@@ -37,12 +39,22 @@ export function IncidentsPanel({
   const restoreCollectionFocus = useRef<Readonly<{ rowKey: string | null }> | null>(null);
   const rowRefs = useRef(new Map<string, RefObject<HTMLButtonElement | null>>());
 
-  const loadCollection = useCallback(async (focusHeading = false) => {
+  const loadCollection = useCallback(async (
+    focusHeading = false,
+    committedIncident?: PublicIncident,
+  ) => {
     const generation = requests.current.begin();
     setLoading(true);
     setError(null);
     try {
-      const snapshot = await api.listIncidents();
+      const snapshot = committedIncident === undefined
+        ? await api.listIncidents()
+        : await readIncidentCollectionAfterCommit({
+          committedIncident,
+          deadlineMs: 15_000,
+          pollingDelayMs: 250,
+          read: async () => await api.listIncidents(),
+        });
       if (!requests.current.isCurrent(generation)) return;
       setIncidents(snapshot.incidents);
       if (focusHeading) queueFocus(heading.current);
@@ -87,10 +99,10 @@ export function IncidentsPanel({
     detailLoader.current.clear(setDetailSelection);
   }
 
-  async function committed(message: string): Promise<void> {
+  async function committed(message: string, incident: PublicIncident): Promise<void> {
     setAnnouncement(message);
     detailLoader.current.clear(setDetailSelection);
-    await loadCollection(true);
+    await loadCollection(true, incident);
   }
 
   if (detailSelection !== null) {
@@ -100,7 +112,7 @@ export function IncidentsPanel({
         definitionApi={definitionApi}
         state={detailSelection}
         onBack={backToCollection}
-        onCommitted={(message) => { void committed(message); }}
+        onCommitted={(message, incident) => { void committed(message, incident); }}
         onRetry={(incident) => { void openIncident(incident); }}
       />
     );

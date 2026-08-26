@@ -32,7 +32,7 @@ export type IncidentDetailWorkspaceProps = Readonly<{
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   incident: PublicIncident;
   onBack: () => void;
-  onCommitted: (announcement: string) => void;
+  onCommitted: (announcement: string, incident: PublicIncident) => void;
 }>;
 
 type ActionNotice = Readonly<{
@@ -106,6 +106,7 @@ export function IncidentDetailWorkspace({
         setRetainedKind(null);
         onCommitted(
           `${interactionLabelFromKind(result.interaction.kind)} action ${result.actionId} committed for incident ${incidentIdentityLabel(current)}.`,
+          current,
         );
         return;
       case "indeterminate":

@@ -72,7 +72,7 @@ export type IncidentDetailLoadBoundaryProps = Readonly<{
   api: IncidentOperationsApi;
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   onBack: () => void;
-  onCommitted: (announcement: string) => void;
+  onCommitted: (announcement: string, incident: PublicIncident) => void;
   onRetry: (incident: PublicIncident) => void;
   state: IncidentDetailSelection;
 }>;

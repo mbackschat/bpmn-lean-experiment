@@ -11,6 +11,7 @@ import {
 } from "@bpmn-lean/platform-ui-kit";
 import type { DataTableColumn } from "@bpmn-lean/platform-ui-kit";
 
+import { incidentKey } from "./incident-identity.ts";
 import styles from "./incident-collection.module.css";
 
 export type IncidentCollectionProps = Readonly<{
@@ -91,17 +92,6 @@ export function InteractionLabels({
       ))}
     </span>
   );
-}
-
-export function incidentKey(incident: PublicIncident): string {
-  const { effectId } = incident.incident.id;
-  return JSON.stringify([
-    incident.hostingInstance.processInstanceId,
-    effectId.processInstanceId,
-    effectId.elementId,
-    effectId.activation,
-    incident.incident.id.generation,
-  ]);
 }
 
 export function incidentSelectionName(incident: PublicIncident): string {
