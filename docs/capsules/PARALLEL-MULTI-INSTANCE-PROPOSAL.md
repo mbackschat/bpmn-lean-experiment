@@ -11,7 +11,7 @@ What is the smallest forward-compatible parallel Multi-Instance User Task accoun
 
 This proposal selects one standards-only profile. One private executable Process enters one collection-driven parallel Multi-Instance User Task, atomically generates all bounded inner User Task occurrences, and attaches one interrupting exact-`PT1S` Timer Boundary Event to the outer Activity. The normal route reaches one None End; the Timer route reaches one ordinary escalation User Task and then one None End.
 
-The same profile admits `completionPolicy="all"` and `completionPolicy="first"` as exact Process-start string bindings. Its BPMN `completionCondition` is Simple Boolean v1 `stringEquals(completionPolicy,"first")`. The `all` schedule completes every inner task and publishes the complete output collection. The `first` schedule closes after the first accepted completion, terminates the remaining inner instances, and publishes no Process output collection.
+The same profile admits `completionPolicy="all"` and `completionPolicy="first"` as exact Process-start string bindings. Its BPMN `completionCondition` is Simple Boolean v1 `stringEquals(completionPolicy,"first")`. The `all` schedule completes every inner task and publishes the complete output collection. The `first` schedule closes after the first accepted completion and terminates any remaining inner instances. It publishes no Process output collection while any result slot is incomplete; the one-item case publishes its complete one-item output because no slot remains incomplete.
 
 The reviewed requirement ID is `BPMN-PARALLEL-MULTI-INSTANCE-01`. It remains `unsupported` while this proposal is unimplemented. The broad `BPMN-MECH-LOOP-01` family remains `unsupported` after this bounded slice closes.
 
@@ -19,7 +19,7 @@ The reviewed requirement ID is `BPMN-PARALLEL-MULTI-INSTANCE-01`. It remains `un
 
 BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 own the Multi-Instance wrapper, once-evaluated instance plan, parallel generation, runtime counters, per-instance input and output items, completion-condition evaluation, remaining-instance cancellation, aggregation, and outer completion. Clauses 10.5.5, 10.5.6, 13.3.2, and 13.5.3 plus Tables 10.91, 10.92, 10.101, and 10.122 own the exact interrupting Timer Boundary Event.
 
-The normative CMOF and XSD declare `MultiInstanceLoopCharacteristics.isSequential` with default `false`, `behavior` with default `All`, and the exact `loopDataInputRef`, `loopDataOutputRef`, `inputDataItem`, `outputDataItem`, and `completionCondition` fields. This profile requires explicit lowercase `isSequential="false"`, explicit lowercase `behavior="all"`, and an exact nonempty completion condition. It does not interpret omission as profile admission.
+The normative CMOF and XSD declare `MultiInstanceLoopCharacteristics.isSequential` with default `false`, `behavior` with default `All`, and the exact `loopDataInputRef`, `loopDataOutputRef`, `inputDataItem`, `outputDataItem`, and `completionCondition` fields. This profile requires explicit lowercase `isSequential="false"`, exact case-sensitive `behavior="All"`, and an exact nonempty completion condition. It does not interpret omission as profile admission, and lowercase `behavior="all"` is schema-invalid and rejected.
 
 BPMN requires collection cardinality to be evaluated once and parallel instances to be generated together. It evaluates `completionCondition` after each inner completion. A true result completes the outer Activity and cancels every remaining inner instance. The standard cautions that the output collection should not be accessible until all items are written.
 
@@ -30,6 +30,7 @@ This profile resolves the underspecified collection mechanics as follows:
 - place each accepted scalar result in its exact index slot, regardless of completion order;
 - publish the complete Process output collection atomically only after every slot is filled;
 - publish no Process output collection when the completion condition or Timer closes the outer Activity before every slot is filled;
+- publish the complete collection when the completion condition becomes true on the transition that fills the final slot, including the one-item `first` case;
 - treat empty input as immediate normal completion with an empty output collection and no stable controller, task, or Timer wait.
 
 The direct no-partial-output rule reconciles early completion with the standard's collection-accessibility caution. It does not claim that every BPMN implementation must suppress partial output. A future profile selecting a different output contract requires a new reviewed account and profile identity.
@@ -38,11 +39,11 @@ OMG issues [BPMN21-391](https://issues.omg.org/issues/BPMN21-391) and [BPMN21-40
 
 ## Required, optional, and excluded
 
-**Required:** one private executable Process; one collection-driven parallel Multi-Instance User Task; the exact data-association graph inherited from the sequential profile; explicit Simple Boolean v1 at `Definitions.expressionLanguage`; exact `completionPolicy` start binding; explicit parallel and All attributes; one exact completion condition; one interrupting exact-`PT1S` outer Timer; one normal End; and one Timer-route escalation User Task plus End.
+**Required:** one private executable Process; one collection-driven parallel Multi-Instance User Task; the exact data-association graph inherited from the sequential profile; explicit Simple Boolean v1 at `Definitions.expressionLanguage`; exact `completionPolicy` start binding; explicit `isSequential="false"` and `behavior="All"`; one exact completion condition; one interrupting exact-`PT1S` outer Timer; one normal End; and one Timer-route escalation User Task plus End.
 
 **Optional:** zero through sixteen input items within the existing per-item and canonical collection byte bounds; arbitrary completion order expressed by the order of accepted exact task-completion stimuli; Worker replacement; one pre-arming Continue-As-New boundary if the new capacity owner proves it safe; and either admitted completion-policy value.
 
-**Excluded:** sequential generation; another Activity type; cardinality expressions; arbitrary collections, mappings, transformations, or assignments; output publication on incomplete closure; `behavior="complex"`; `ComplexBehaviorDefinition`; completion policies beyond exact `all` and `first`; expression languages beyond Simple Boolean v1; multiple or non-interrupting boundary Events; repetition; nested or repeated Multi-Instance; compensation; Transactions; CIB Multi-Instance compatibility; host-priority semantics; Product 2 UI work; and general BPMN Process Execution Conformance.
+**Excluded:** sequential generation; another Activity type; cardinality expressions; arbitrary collections, mappings, transformations, or assignments; output publication on incomplete closure; any `behavior` value except exact `All`; `ComplexBehaviorDefinition`; completion policies beyond exact `all` and `first`; expression languages beyond Simple Boolean v1; multiple or non-interrupting boundary Events; repetition; nested or repeated Multi-Instance; compensation; Transactions; CIB Multi-Instance compatibility; host-priority semantics; Product 2 UI work; and general BPMN Process Execution Conformance.
 
 ## Exact admitted source and profile contract
 
@@ -54,9 +55,9 @@ The new source projection belongs in a new parallel-specific owner rather than g
 
 ## Public contract
 
-The public observation keeps existing Process bindings, open User Task occurrences, Activity occurrences, attached Timer wait, E1 committed transitions, and E2 FlowNode occurrences. It adds one optional profile-gated parallel Multi-Instance progress record while the controller is open. Old profiles omit the field byte-for-byte.
+The public observation keeps existing Process bindings, open User Task occurrences, Activity occurrences, attached Timer wait, E1 committed transitions, and E2 FlowNode occurrences. It reuses `StateObservation.openMultiInstances` as the single optional Multi-Instance observation field and broadens that field's entry union from `OpenSequentialMultiInstance` to `OpenSequentialMultiInstance | OpenParallelMultiInstance`. The new arm has exact discriminator `mode: "parallel"`. A program declaring either admitted Multi-Instance operation emits the field in every state, including an empty array before entry and after either closing route. Programs declaring neither operation continue to omit the field, so existing profile bytes and every sequential entry remain unchanged.
 
-The progress record contains outer Activity identity, planned count, generated count, active count, completed count, terminated count, and the ordered list of active inner task identities with their loop counters. It publishes neither the immutable input snapshot nor incomplete result slots.
+`OpenParallelMultiInstance` retains the existing count fields and `activeIterations` shape. Every active iteration contains its `loopCounter`, `taskId`, exact scalar `taskInput`, and exact `completionBindingName`; parallel cardinality changes only the number of entries. The record publishes neither the immutable input snapshot nor incomplete result slots.
 
 At every stable open state:
 
@@ -72,7 +73,7 @@ numberOfTerminatedInstances = 0
 
 Early completion and Timer interruption are atomic closure transitions. No stable post-cancellation controller exists, so terminated siblings are transition facts rather than a retained open-state progress record. E2 closure evidence must nevertheless identify each live inner task as terminated rather than completed.
 
-Normal completion publishes `reviewOutputs` in input-index order. Completion-condition and Timer closure leave that Process binding absent. Duplicate item values preserve multiplicity and distinct index identity. Public order never exposes host callback order as BPMN meaning.
+Closure publishes `reviewOutputs` in input-index order exactly when every planned result slot is filled. A completion condition that closes with at least one incomplete slot and every Timer closure leave that Process binding absent. Duplicate item values preserve multiplicity and distinct index identity. Public order never exposes host callback order as BPMN meaning.
 
 ## Checked source, Semantic Process IL, and runtime state
 
@@ -86,7 +87,7 @@ Program-indexed well-formedness equates the controller's pending task identities
 
 Parallel entry snapshots the collection, mints every child identity atomically, advances the User Task activation counter to the final high-water mark, and leaves one stable outer Activity and Timer. The issuing proof must establish pairwise freshness and uniqueness for the complete batch. It may reuse the Activity issuing discipline but may not claim the still-open general non-reissue theorem for every runtime identity family.
 
-An accepted task completion replaces exactly one pending slot, removes exactly that task wait and body member, and evaluates the completion condition against committed Process bindings. False with remaining slots preserves the controller and Timer. False on the final slot publishes the complete ordered output and closes normally. True closes immediately, withdraws all sibling waits and the Timer, and publishes no output.
+An accepted task completion replaces exactly one pending slot, removes exactly that task wait and body member, and evaluates the completion condition against committed Process bindings. The transition then derives whether every slot is filled. If every slot is filled, it publishes the complete ordered output and closes normally, whether the condition is false or true. Otherwise false preserves the controller and Timer, while true closes immediately, withdraws every remaining sibling wait and the Timer, and publishes no output.
 
 Timer firing withdraws the controller, every remaining child task, the outer Activity, and the Timer, then routes only the escalation flow. Stale task or Timer identity, wrong outer activation, completed-slot reuse, binding substitution, and any incomplete ownership join refuse without state mutation.
 
@@ -96,7 +97,7 @@ Timer firing withdraws the controller, every remaining child task, the outer Act
 - `PMI-PROGRESS-01`: stable open progress is derived from the exact indexed slot partition and complete live-identity join.
 - `PMI-COMPLETE-01`: a false completion condition commits one exact indexed result and preserves all remaining siblings and the lifetime Timer.
 - `PMI-FINISH-01`: filling the final slot publishes the complete index-ordered output collection atomically and follows normal control.
-- `PMI-EARLY-01`: a true completion condition terminates every remaining sibling, withdraws the lifetime Timer, follows normal control, and publishes no output collection.
+- `PMI-EARLY-01`: a true completion condition with at least one incomplete sibling terminates every remaining sibling, withdraws the lifetime Timer, follows normal control, and publishes no output collection; if no sibling remains, `PMI-FINISH-01` publishes the complete collection.
 - `PMI-TIMER-01`: the exact outer Timer terminates every remaining sibling and follows only the boundary route with no output collection.
 - `PMI-REFUSE-01`: identity, ownership, slot-state, expression-context, or binding mismatch produces no committed change.
 - `PMI-ORDER-01`: all-complete outcomes are invariant under permutations of distinct accepted child-completion stimuli, while first-complete outcome selection follows explicit accepted stimulus order.
@@ -107,7 +108,7 @@ The Lean lane is **proved** for the bounded transition family. It defines the pa
 
 Required theorems cover entry well-formedness; task-identity freshness and pairwise uniqueness; progress accounting; exact-slot preservation; all-complete commutation for two distinct pending tasks; index-ordered final aggregation; early-completion sibling withdrawal and output absence; Timer regional withdrawal and output absence; stale/duplicate refusal; evaluator soundness for every new relation arm; and preservation of the applicable runtime-state invariant.
 
-The non-law is that `completionPolicy="first"` commutes to the same semantic outcome under reordered distinct completions. It does not: accepted stimulus order selects the only retained completed task before atomic closure. No proof may promote host scheduling to a priority rule.
+The bounded runtime-state successors for `completionPolicy="first"` may be equal after atomic controller removal, so no state-inequality theorem is claimed. The checked non-law is over the exact committed command and E1/E2 publication trace: completing A before B records A completed and B terminated, while completing B before A records B completed and A terminated. No proof may promote host scheduling to a priority rule.
 
 If these proofs do not fit below the applicable source-owner bound, split modules by responsibility. Do not compress the account or create a line-count exception. The first build of any module adding kernel-decided fixtures remains with the root under the repository memory bound.
 
@@ -123,15 +124,17 @@ Durable ingress remains Process Start plus the content-bound User Task completio
 
 The semantic schedule is the durable order in which accepted complete stimuli enter that FIFO queue. Callers choose neither physical arrival order nor host priority. Replay reproduces the accepted order. Under `all`, completing A then B or B then A reaches the same ordered output. Under `first`, the first reduced completion closes the Process; a later queued completion becomes a semantic stale refusal, while a request arriving after terminal fencing receives the existing transport `processClosed` outcome.
 
+A completion Update and the outer Timer callback that become ready in one Workflow activation have no portable winner. The adapter fails closed with distinct nonretryable identity `BpmnParallelMultiInstanceSchedulerUnavailable` before either stimulus reaches the semantic core, advances neither semantic arm, and durably resolves the accepted in-flight Update rather than stranding its caller. This reuses the reviewed activation-tag and drain-barrier mechanism but independently retains the direct-VM `doUpdate` plus timer-fire premise, the pinned `hasSignals` source lock, and the real-service accepted-Update resolution witness. Separate-activation task-first and Timer-first inputs remain ordinary explicit semantic schedules. Multiple completion Updates without a coalesced Timer retain the accepted FIFO order above.
+
 The host readiness descriptor joins one outer Activity, one controller, every pending child task and body member, and one Timer. It rejects missing, duplicate, extra, reordered, or substituted associations before scheduling. The existing managed deadline owner arms the outer Timer once from committed entry time. Task completion does not cancel or recreate it. Final or early completion cancels it; Timer firing removes every remaining child before exposing the escalation wait.
 
 The complete controller, snapshot, slots, counters, task identities, Timer identity, deadline, Process bindings, profile, and program identity are committed semantic state. A continuation that drops, duplicates, reorders, or substitutes any fact is invalid before Workflow evaluation.
 
-The existing sixteen-item, 512-byte item, and 8,192-byte canonical collection limits are candidate admission limits, not a capacity conclusion. Before profile registration, a private Temporal testkit probe must run the real production serializers and maximal parallel activation topology. Its independently measured Event, history-envelope, and activation-payload bounds must fit the project limits with the existing reserves. Exact sixteen fit and seventeen refusal must be proved without state mutation on refusal.
+The existing sixteen-item, 512-byte item, and 8,192-byte canonical collection limits are candidate admission limits, not a capacity conclusion. Before profile registration, a private Temporal testkit probe must run the real production serializers and maximal parallel activation topology. Its independently measured Event, history-envelope, and activation-payload bounds must fit the project limits with the existing reserves. The selected limit `N` is the largest independently measured safe count at most sixteen. Exact `N` fit and `N + 1` refusal must be proved without state mutation on refusal; exact sixteen fit and seventeen refusal are the special case where `N = 16`.
 
-The executable refinement witnesses cover zero items; three items completed out of index order under `all`; first completion under `first`; Timer interruption with multiple active children; task-first and Timer-first schedules; coalesced readiness; Worker replacement; accepted-result recovery; any permitted pre-arming Continue-As-New; terminal receipt equality; complete E1/E2 publication; and replay of every Run.
+The executable refinement witnesses cover zero items; one item under `first`; three items completed out of index order under `all`; first completion under `first`; Timer interruption with multiple active children; task-first and Timer-first schedules; coalesced readiness with the selected typed failure and durable Update resolution; Worker replacement; accepted-result recovery; any permitted pre-arming Continue-As-New; terminal receipt equality; complete E1/E2 publication; and replay of every Run.
 
-If the maximal parallel state does not fit, the profile limit is lowered to the largest independently measured safe count before registration. The representation is unchanged, so that bounded admission correction does not narrow already accepted model meaning because no profile has yet been published.
+Capacity evidence covers natural completion, Timer interruption, and the largest one-transition early-completion E1/E2 cancellation batch at `N`. If the sixteen-item parallel state does not fit, the profile limit is lowered to the selected `N` before registration. The representation is unchanged, so that bounded admission correction does not narrow already accepted model meaning because no profile has yet been published.
 
 Temporal Event History, Workflow ID, Run ID, Update protocol details, and Continue-As-New boundaries remain hosting evidence only. Public progress, output, cancellation, and completion must be derived from committed semantic state.
 
@@ -141,7 +144,7 @@ The first Red is an exact parallel source rejected by current admission. Removin
 
 Independent evidence includes normative and machine-readable source derivation; separately authored checked-graph expectations; Lean relations, laws, non-law, and evaluator soundness; an independently written TypeScript reducer; answer-free differential scenarios; E1/E2 occurrence publication; Temporal component, live-service, capacity, mutation, recovery, and replay evidence; and one credible project-owned whole model registered atomically with the supported profile.
 
-Required mutations reverse completion order, aggregate by completion order, expose a partial output, retain a sibling after early completion, retain a sibling after Timer firing, reuse one child identity, mint a duplicate batch identity, advance the counter by only one, substitute the outer activation, reset the lifetime deadline, arm one Timer per child, drop a controller at continuation, accept a completed slot twice, or let host iteration order choose a semantic winner.
+Required mutations use schema-invalid lowercase `behavior="all"`, reverse completion order, aggregate by completion order, suppress the complete one-item `first` output, expose a partial output, change existing sequential observation bytes, drop an active iteration's task input or completion binding, retain a sibling after early completion, retain a sibling after Timer firing, reuse one child identity, mint a duplicate batch identity, advance the counter by only one, substitute the outer activation, reset the lifetime deadline, arm one Timer per child, drop a controller at continuation, accept a completed slot twice, advance either arm during coalesced readiness, reuse another scheduler-failure identity, strand the accepted coalesced Update, or let host iteration order choose a semantic winner.
 
 ## Versioning consequences
 
@@ -155,13 +158,30 @@ Headroom is measured in nonblank lines before the 600-line review target. Parall
 
 | Owner | Current headroom |
 |---|---:|
+| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 361 |
+| [Checked-graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 260 |
+| [Semantic Process lowering router](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
+| [Checked Process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 339 |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 180 |
+| [Public observation contract](../../packages/semantic-core/src/contract.ts) | 228 |
+| [Semantic profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 537 |
+| [Semantic profile observations](../../packages/semantic-core/src/semantic-profile-observations.ts) | 560 |
 | [Activity occurrence owner](../../packages/semantic-core/src/activity-occurrence.ts) | 406 |
 | [TypeScript runtime-state owner](../../packages/semantic-core/src/semantic-process-state.ts) | 188 |
+| [Semantic runtime composition root](../../packages/semantic-core/src/semantic-process-runtime.ts) | 24 |
+| [Runtime well-formedness composition root](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 36 |
 | [Lean Activity occurrence owner](../../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean) | 294 |
 | [Lean runtime-state owner](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 56 |
 | [Lean contract owner](../../BpmnSemantics/SemanticProcessContract.lean) | 56 |
+| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 385 |
+| [Temporal protocol contract](../../packages/temporal-adapter/protocol/src/contracts.ts) | 387 |
+| [Managed deadline scheduler](../../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) | 269 |
+| [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
 | [Workflow composition root](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 32 |
+
+The near-target source-lowering, semantic-runtime, runtime-well-formedness, and Workflow-composition owners gain only exhaustive dispatch and delegation. Parallel source lowering, runtime transitions, well-formedness, and Workflow host execution move into new responsibility-owned modules before those roots cross the review target. Lean additions split by contract, controller, transition, and law responsibility rather than compressing existing owners or claiming a line-count exception.
+
+Concrete wire owners are [checked Process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), [scenario schema](../../contracts/schemas/scenario.schema.json), and [semantic publication schema](../../contracts/schemas/semantic-publication.schema.json). Material existing oracles that grow or receive parallel-specific siblings are [source admission](../../packages/bpmn-source/test/sequential-multi-instance-source.test.ts), [public observation wire](../../packages/semantic-core/test/sequential-multi-instance-observation-contract.test.ts), [protocol validation](../../packages/temporal-adapter/protocol/test/sequential-multi-instance-publication-validation.test.ts), [deadline premise](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-deadline-witness.ts), [capacity topology](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-topologies.ts), [schema artifacts](../../scripts/contract-artifacts.test.ts), and [schema coverage](../../scripts/contract-schema-coverage.test.ts).
 
 ## Epistemic closure and reopen conditions
 
@@ -177,6 +197,6 @@ Reopen before changing the Activity body, collection/value type, data associatio
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `c5ad6f3074ebe48134c67672923c654b95beb146` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
