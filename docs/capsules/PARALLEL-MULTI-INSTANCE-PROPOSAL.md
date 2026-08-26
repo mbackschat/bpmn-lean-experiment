@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved
+Lifecycle: draft
+Review: pending
 
 ## Question and bounded outcome
 
-Owner-approved on 2026-08-26 after the independent cold proposal review returned `approve-with-required-edits` and the same reviewer closed all findings across three owner-authorized correction audits. Approval authorizes exactly the bounded account recorded here and no broader Multi-Instance or CIB claim.
+The owner approval recorded at `095ee3f7` was reopened on 2026-08-26 before implementation because the first Lean lane found closed-sum production consumers omitted from the reviewed owner inventory. This reopen changes neither the selected semantic account nor the public contract; it restores independent proposal review over the complete implementation selection before any semantic code changes.
 
 What is the smallest forward-compatible parallel Multi-Instance User Task account that adds genuine concurrent instance generation, deterministic collection aggregation, completion-condition cancellation, and durable hosting without reinterpreting the implemented sequential profile?
 
@@ -162,6 +162,7 @@ Headroom is measured in nonblank lines before the 600-line review target. Parall
 |---|---:|
 | [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 361 |
 | [Source preservation capability](../../packages/bpmn-source/src/preservation-capability.ts) | 462 |
+| [Checked Process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 40 |
 | [Checked-graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 260 |
 | [Semantic Process lowering router](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
 | [Checked Process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 339 |
@@ -175,6 +176,7 @@ Headroom is measured in nonblank lines before the 600-line review target. Parall
 | [Semantic profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 388 |
 | [Activity occurrence owner](../../packages/semantic-core/src/activity-occurrence.ts) | 406 |
 | [TypeScript runtime-state owner](../../packages/semantic-core/src/semantic-process-state.ts) | 188 |
+| [Runtime-state identity bound](../../packages/semantic-core/src/runtime-state-identity-bound.ts) | 569 |
 | [Command admission root](../../packages/semantic-core/src/semantic-command-admission.ts) | 277 |
 | [Program admission root](../../packages/semantic-core/src/semantic-process-admission.ts) | 248 |
 | [Program graph admission root](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 67 |
@@ -190,22 +192,65 @@ Headroom is measured in nonblank lines before the 600-line review target. Parall
 | [Flow-node open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 27 |
 | [Flow-node publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts) | 154 |
 | [External flow-node publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 67 |
+| [Semantic-core public exports](../../packages/semantic-core/src/index.ts) | 531 |
 | [Lean Activity occurrence owner](../../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean) | 294 |
 | [Lean runtime-state owner](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 56 |
 | [Lean contract owner](../../BpmnSemantics/SemanticProcessContract.lean) | 56 |
+| [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 322 |
+| [Lean checked-graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 459 |
+| [Lean checked Process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 258 |
+| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 50 |
+| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 4 |
+| [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 202 |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 139 |
+| [Lean checked Process JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 286 |
+| [Lean program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 72 |
+| [Lean publication JSON](../../BpmnSemantics/SemanticProcessJson/Publication.lean) | 433 |
+| [Lean transition root](../../BpmnSemantics/SemanticProcess/Transition.lean) | 207 |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 355 |
+| [Lean execution laws](../../BpmnSemantics/SemanticProcess/Execution.lean) | 213 |
+| [Lean boundary-start projection](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean) | 334 |
+| [Lean wait-program validity](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceWaitProgramValidity.lean) | 62 |
+| [Lean flow-node lifecycle](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 0 |
+| [Lean transition trace](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 51 |
+| [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 159 |
+| [Lean JSON composition root](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 137 |
+| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 24 |
+| [Lean well-formedness initialization](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 509 |
+| [Lean scope cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 458 |
+| [Lean sequential Multi-Instance compatibility](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 468 |
+| [Lean Activity body turnover](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean) | 61 |
+| [Lean Activity turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 501 |
+| [Lean commutation state frames](../../BpmnSemantics/SemanticProcess/InternalCommutationStateFrames.lean) | 30 |
+| [Lean commutation runtime preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 37 |
+| [Lean commutation open projection](../../BpmnSemantics/SemanticProcess/InternalCommutationOpenProjection.lean) | 0 |
+| [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 289 |
+| [Lean semantic umbrella](../../BpmnSemantics/SemanticProcess.lean) | 560 |
+| [Lean conformance umbrella](../../BpmnSemantics/ConformanceMain.lean) | 575 |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 385 |
 | [Temporal protocol contract](../../packages/temporal-adapter/protocol/src/contracts.ts) | 387 |
-| [Temporal lifecycle results](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 313 |
 | [Flow-node publication program validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts) | 254 |
 | [Semantic publication validation](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 12 |
 | [Workflow continuation contract](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 120 |
 | [Managed deadline scheduler](../../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) | 269 |
-| [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
-| [Workflow composition root](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 32 |
+| [Platform execution-publication contract](../../platform/contracts/src/execution-publications.ts) | 196 |
+| [Platform Multi-Instance decoder](../../platform/contracts/src/execution-publication-multi-instance-decoder.ts) | 346 |
+| [Platform semantic-value decoder](../../platform/contracts/src/execution-publication-semantic-value-decoders.ts) | 36 |
+| [Alpha progress renderer](../../platform/apps/web/src/mue-preview-alpha-progress.tsx) | 361 |
 
-This inventory is the union of existing non-family-specific production roots reached by the sequential Multi-Instance operation, `openMultiInstances`, and the inherited managed deadline, plus the additional public scenario and lifecycle-result consumers. Existing sequential-specific owners remain byte-identical; parallel-specific behavior uses new sibling modules. Before any root with at most 67 lines of measured headroom grows, its family logic moves behind a responsibility-owned helper and the root retains only its exhaustive discriminator, dispatch, and join. This condition currently covers source lowering, scenario projection, program graph admission, semantic runtime, runtime well-formedness, flow-node lifecycle, flow-node open-set, external publication completeness, semantic publication validation, and Workflow composition. Lean additions split by contract, controller, transition, and law responsibility rather than compressing existing owners or claiming a line-count exception. A newly discovered production producer or consumer not listed here is a proposal-reopen condition before that path changes.
+The membership criterion is every maintained production path that exhaustively discriminates over an added checked-node, operation, profile, `ActivityBody`, controller-field, observation-union, operation-kind, host-family, or copied publication-contract variant, plus every path that must enforce a new identity, ownership, withdrawal, preservation, or publication invariant. The table satisfies that criterion across TypeScript, Lean, Temporal, and Product 2. It deliberately excludes generic consumers whose existing abstractions accept the new family without a branch. A newly discovered production path satisfying this criterion is a proposal-reopen condition before that path changes.
 
-Concrete wire owners are [checked Process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), [scenario schema](../../contracts/schemas/scenario.schema.json), and [semantic publication schema](../../contracts/schemas/semantic-publication.schema.json). Material existing oracles that grow or receive parallel-specific siblings are [source admission](../../packages/bpmn-source/test/sequential-multi-instance-source.test.ts), [acyclic graph policy](../../packages/semantic-core/test/cyclic-control-flow.test.ts), [public observation wire](../../packages/semantic-core/test/sequential-multi-instance-observation-contract.test.ts), [flow-node publication completeness](../../packages/semantic-core/test/flow-node-occurrence-publication-completeness.test.ts), [protocol validation](../../packages/temporal-adapter/protocol/test/sequential-multi-instance-publication-validation.test.ts), [continuation state](../../packages/temporal-adapter/testkit/test/workflow-continuation-state.test.ts), [deadline premise](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-deadline-witness.ts), [capacity topology](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-topologies.ts), [Activity writer census](../../scripts/activity-occurrence-writer-census.test.ts), [runtime collection removal](../../scripts/runtime-collection-removal-completeness.test.ts), [schema artifacts](../../scripts/contract-artifacts.test.ts), and [schema coverage](../../scripts/contract-schema-coverage.test.ts).
+The planned new production owners are `packages/bpmn-source/src/parallel-multi-instance-source.ts`, `packages/bpmn-source/src/parallel-multi-instance-lowering.ts`, `packages/semantic-core/src/parallel-multi-instance-contract.ts`, `parallel-multi-instance-controller.ts`, `parallel-multi-instance-binding.ts`, `parallel-multi-instance-profile.ts`, `parallel-multi-instance-admission.ts`, `parallel-multi-instance-command-data-admission.ts`, `parallel-multi-instance-runtime-well-formedness.ts`, `parallel-multi-instance-identity-bound.ts`, `semantic-process-parallel-multi-instance-runtime.ts`, `parallel-multi-instance-observation.ts`, `multi-instance-observation.ts`, `flow-node-occurrence-parallel-multi-instance-lifecycle.ts`, `flow-node-occurrence-parallel-multi-instance-open-set.ts`, `flow-node-occurrence-parallel-multi-instance-publication.ts`, `packages/temporal-adapter/protocol/src/parallel-multi-instance-publication-validation.ts`, `packages/temporal-adapter/workflow/src/parallel-multi-instance-history-capacity.ts`, and `packages/temporal-adapter/workflow/src/parallel-multi-instance-history-measurement.ts`. The Lean responsibility owners are `ParallelMultiInstanceContract.lean`, `ParallelMultiInstanceController.lean`, `ParallelMultiInstanceTransition.lean`, `ParallelMultiInstanceRuntimeWellFormedness.lean`, `ParallelMultiInstanceFlowNodeOccurrence.lean`, `ParallelMultiInstancePreservation.lean`, `ParallelMultiInstanceJson.lean`, and `ParallelMultiInstanceLaws.lean` under `BpmnSemantics/SemanticProcess/`, plus `BpmnSemantics/ParallelMultiInstanceConformance.lean`. Listing authorizes a responsibility split but does not require an empty or redundant module; an unlisted new production owner is added to this inventory and reviewed before its first edit.
+
+Before any root with at most 67 lines of measured headroom grows, family logic moves behind one of those responsibility owners and the root retains only its exhaustive discriminator, dispatch, and join. This condition covers checked Process admission, source lowering, scenario projection, program graph admission, semantic runtime, runtime well-formedness, flow-node lifecycle, flow-node open-set, external publication completeness, semantic publication validation, the platform semantic-value decoder, and the named Lean roots. `SequentialMultiInstance.lean` receives only the required exhaustive `ActivityBody` compatibility arm; the other sequential family modules stay byte-identical. No line-count exception or compressed proof account is permitted.
+
+The existing production roots that remain generic are `packages/bpmn-source/src/compile.ts`, `checked-element-projection.ts`, `checked-process-compiler.ts`, `root-definition-selection.ts`, `preserved-element-classification.ts`, and `index.ts`; `packages/engine-api/src/definition-capabilities.ts`; `packages/semantic-core/src/semantic-process-profile.ts`, `semantic-transition-trace.ts`, `flow-node-occurrence-retained-pairing.ts`, `activity-body-turnover.ts`, and `semantic-process-scope-cancellation.ts`; every sequential Multi-Instance TypeScript family owner; `packages/temporal-adapter/protocol/src/lifecycle-results.ts` and `semantic-publication-canonical-json.ts`; and `packages/temporal-adapter/workflow/src/workflow-host-readiness.ts`, `workflow-implementation.ts`, and `workflow-command-ingress.ts`. The scheduler registry makes the three Workflow roots consume the new family without a new branch. In Lean, `InternalCommutationCore.lean`, `InternalCommutation.lean`, `InternalCommutationProjection.lean`, `InternalCommutationTransitionRecord.lean`, `ControlPositionDeltaProofs.lean`, the generic FlowNode validity proof roots, the exact-pattern sequential transition/law modules, `ScopeCompletion.lean`, `RuntimeStateIdentityBound.lean`, `BoundedScope.lean`, `SemanticProcessJson/Scenario.lean`, and `SemanticProcessJson.lean` remain generic. The approved graph has one atomic parallel entry operation, so internal commutation stays fail-closed for any future competing composite entry and no footprint arm is added here.
+
+Concrete wire owners are [checked Process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), [scenario schema](../../contracts/schemas/scenario.schema.json), and [semantic publication schema](../../contracts/schemas/semantic-publication.schema.json). `semantic-profile.schema.json`, `canonical-result.schema.json`, and `flow-node-occurrence-publication.schema.json` remain generic through their existing strings or references. The additive profile owns `profiles/bpmn-2.0.2-parallel-multi-instance-user-task-draft/profile.json` and its sibling `README.md`.
+
+Product 2 compatibility maintenance broadens its copied publication contract and strict decoder to accept the new discriminated union, while the existing Alpha progress component explicitly selects only `mode === "sequential"`. This prevents a valid engine publication from being rejected or mislabeled without adding a parallel Product 2 UI, changing platform authorization, or broadening the capsule's product scope.
+
+Material existing oracles that grow or receive parallel-specific siblings are [source admission](../../packages/bpmn-source/test/sequential-multi-instance-source.test.ts), [acyclic graph policy](../../packages/semantic-core/test/cyclic-control-flow.test.ts), [public observation wire](../../packages/semantic-core/test/sequential-multi-instance-observation-contract.test.ts), [flow-node publication completeness](../../packages/semantic-core/test/flow-node-occurrence-publication-completeness.test.ts), [protocol validation](../../packages/temporal-adapter/protocol/test/sequential-multi-instance-publication-validation.test.ts), [continuation state](../../packages/temporal-adapter/testkit/test/workflow-continuation-state.test.ts), [deadline premise](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-deadline-witness.ts), [capacity topology](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-topologies.ts), [Activity writer census](../../scripts/activity-occurrence-writer-census.test.ts), [runtime collection removal](../../scripts/runtime-collection-removal-completeness.test.ts), [schema artifacts](../../scripts/contract-artifacts.test.ts), and [schema coverage](../../scripts/contract-schema-coverage.test.ts). This oracle list names anchors rather than claiming exhaustiveness; each implementation lane still starts from the smallest separating Red for its owned invariant.
 
 ## Epistemic closure and reopen conditions
 
@@ -219,8 +264,10 @@ Reopen before changing the Activity body, collection/value type, data associatio
 
 ## Independent cold-review receipt
 
+The superseded proposal review targeted `c5ad6f3074ebe48134c67672923c654b95beb146` with `fork-turns-none`, returned `approve-with-required-edits`, and closed corrections at `a7e3fdbfa324d88eeebc3aaec0ade5727e7e4f15`, `0bc117308e28a24dcc1a30144543395fed9f6af9`, and `0642759e7a563c546eb85af8cb7d6b836ab11546` under owner-authorized third-audit continuity. That approval is historical evidence for the unchanged semantic account, not authorization to implement the corrected production selection.
+
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `c5ad6f3074ebe48134c67672923c654b95beb146` | `fork-turns-none` | `approve-with-required-edits` | `a7e3fdbfa324d88eeebc3aaec0ade5727e7e4f15, 0bc117308e28a24dcc1a30144543395fed9f6af9, 0642759e7a563c546eb85af8cb7d6b836ab11546, owner-authorized` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
