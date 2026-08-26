@@ -255,6 +255,26 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
     workflow,
     /\.artifacts\/guided-live-demo\/deploy\/evaluation\/demo prepare/u,
   );
+  assert.match(
+    workflow,
+    /--filter @bpmn-lean\/showcase-guided-live-demo exec playwright install --with-deps chromium/u,
+  );
+  assert.match(
+    workflow,
+    /BPMN_EVALUATION_ORIGIN: http:\/\/127\.0\.0\.1:3000/u,
+  );
+  const publishedPrepare = workflow.indexOf(
+    ".artifacts/guided-live-demo/deploy/evaluation/demo prepare",
+  );
+  const guidedJourney = workflow.indexOf(
+    "--filter @bpmn-lean/showcase-guided-live-demo run test:e2e:built",
+  );
+  const presenterReset = workflow.indexOf(
+    ".artifacts/guided-live-demo/deploy/evaluation/demo reset",
+  );
+  assert.ok(publishedPrepare >= 0);
+  assert.ok(guidedJourney > publishedPrepare);
+  assert.ok(presenterReset > guidedJourney);
   assert.match(workflow, /name: guided-live-demo-\$\{\{ github\.sha \}\}/u);
 });
 

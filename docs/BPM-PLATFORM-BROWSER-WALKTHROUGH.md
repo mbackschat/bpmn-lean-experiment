@@ -46,7 +46,7 @@ While online, prepare and prove one fresh isolated stack:
 ./deploy/evaluation/demo status
 ```
 
-`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, starts Compose with `--no-build`, and seeds five exact scenarios through public Product 1 and Product 2 interfaces. The publishing workflow logs out of GHCR and executes this same command before offering the artifact, which proves anonymous pull and exact published-image startup rather than merely proving a separately built local image.
+`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, starts Compose with `--no-build`, and seeds five exact scenarios through public Product 1 and Product 2 interfaces. Before offering the artifact, the publishing workflow logs out of GHCR, executes this same command, completes the full audience journey in headless Chromium, and resets the presenter state. That proves anonymous pull, exact published-image startup, the real browser path, and repeatable preparation rather than merely proving a separately built local image.
 
 After preparation, show-time restart performs no build, registry request, or pull:
 

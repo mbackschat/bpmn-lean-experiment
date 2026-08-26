@@ -42,7 +42,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 - responsibility-owned Lean semantics, Temporal lifecycle, differential pipeline, contract verification, and CIB runner collaborators
 - focused and full gates
 - routine GitHub Actions verification on Ubuntu only, with independent same-checkout Lean and runtime stages followed by one restored-output integration pipeline that owns cross-target committed-publication parity, one stable union verdict, an executable guard that keeps Lean self-builds out of ordinary package tests and permits standard GitHub-hosted macOS solely for an explicitly manual clean-machine or Apple Silicon smoke job, unchanged warm feedback reporting, a wider hosted pathology ceiling, and derived test-process deadlines
-- a non-routine Linux evaluation publisher that refuses to overwrite commit-addressed GHCR tags, emits five source-labelled multi-platform OCI indexes with BuildKit provenance and SBOMs, derives their exact index digests into one no-build guided-demo artifact, logs out of the registry, and anonymously smoke-tests the seeded artifact before upload
+- a non-routine Linux evaluation publisher that refuses to overwrite commit-addressed GHCR tags, emits five source-labelled multi-platform OCI indexes with BuildKit provenance and SBOMs, derives their exact index digests into one no-build guided-demo artifact, logs out of the registry, completes the full seeded audience journey in headless Chromium against the anonymous exact-digest stack, and resets presenter state before upload
 
 ### A12 Workflows downstream adoption
 

@@ -53,7 +53,7 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
       - name: Resolve pinned toolchain versions
-        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true || inputs.publish_images == true
         id: pins
         run: |
           eval "$(./scripts/pinned-toolchain.sh)"
@@ -63,25 +63,29 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up pnpm
-        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true || inputs.publish_images == true
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: ${{ steps.pins.outputs.pnpm }}
 
       - name: Set up Node
-        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true || inputs.publish_images == true
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ steps.pins.outputs.node }}
           cache: pnpm
 
       - name: Install workspace dependencies
-        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true || inputs.publish_images == true
         run: pnpm install --frozen-lockfile
 
-      - name: Install screenshot Chromium
-        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
-        run: ./scripts/pnpm.sh --filter @bpmn-lean/showcase-platform-browser-walkthrough exec playwright install --with-deps chromium
+      - name: Install browser Chromium
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true || inputs.publish_images == true
+        run: ./scripts/pnpm.sh --filter @bpmn-lean/showcase-guided-live-demo exec playwright install --with-deps chromium
+
+      - name: Build guided audience acceptance
+        if: github.event_name == 'push' || inputs.publish_images == true
+        run: ./scripts/pnpm.sh run build:showcase-guided-live-demo
 
       - name: Refresh browser walkthrough screenshots
         if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
@@ -188,6 +192,16 @@ jobs:
           .artifacts/guided-live-demo/deploy/evaluation/demo prepare
           curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:3000/api/v1/definitions >/dev/null
+
+      - name: Prove complete guided audience journey against published images
+        if: github.event_name == 'push' || inputs.publish_images == true
+        run: ./scripts/pnpm.sh --filter @bpmn-lean/showcase-guided-live-demo run test:e2e:built
+        env:
+          BPMN_EVALUATION_ORIGIN: http://127.0.0.1:3000
+
+      - name: Restore published presenter state
+        if: github.event_name == 'push' || inputs.publish_images == true
+        run: .artifacts/guided-live-demo/deploy/evaluation/demo reset
 
       - name: Show published service state after failure
         if: failure() && (github.event_name == 'push' || inputs.publish_images == true)
