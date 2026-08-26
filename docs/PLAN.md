@@ -47,7 +47,7 @@ After the time-bounded live-demo delivery, the MUE content IDs resume breadth-fi
 
 Active work ID: `PARALLEL-MULTI-INSTANCE`.
 
-Next action: open a proposal-stage account for bounded Parallel Multi-Instance over the implemented [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md), Activity occurrence, and internal-commutation foundations. Resolve the applicable [`BPMN-MECH-LOOP-01`](BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map) account, complete its Temporal hosting and refinement preflight, and obtain an independent cold proposal review before owner approval or implementation.
+Next action: obtain an independent cold proposal review of the bounded [Parallel Multi-Instance User Task proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) and its `BPMN-PARALLEL-MULTI-INSTANCE-01` ledger row before owner approval or implementation. The proposal selects atomic concurrent child generation, index-ordered complete aggregation, no Process output on early or Timer closure, explicit accepted-stimulus ordering, and a fresh pre-registration Temporal capacity bound.
 
 Separate open changes: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
 
