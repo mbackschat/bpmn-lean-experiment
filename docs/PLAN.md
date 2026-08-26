@@ -47,9 +47,9 @@ After the time-bounded live-demo delivery, the MUE content IDs resume breadth-fi
 
 Active work ID: `PARALLEL-MULTI-INSTANCE`.
 
-Next action: close the separately implemented controller-cleanup prerequisite across regional and called-process removal plus its optional-field guard, then begin the [owner-approved Parallel Multi-Instance User Task implementation](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) from separating source, TypeScript, and Lean Reds without changing the reviewed account.
+Next action: begin the [owner-approved Parallel Multi-Instance User Task implementation](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) from the separating source, TypeScript, and Lean Reds, then take the first cross-target green implementation checkpoint through its governed review without changing the reviewed account. The controller-cleanup prerequisite is closed at `b6547b23876bbe8ec0092a16260a42f2ada16226`.
 
-Separate open changes after this prerequisite: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, and PostgreSQL migration evidence.
+Separate open changes outside the active item: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, and PostgreSQL migration evidence.
 
 Oracle: a fresh reviewer can derive every mandatory production edit from the inventory criterion, verify that generic consumers need no branch, and confirm that the semantic account, public contract, exclusions, and evidence strategy remain unchanged. Implementation then separates concurrent child ownership from the outer Activity and distinguishes completion/cancellation races, duplicate children, lost aggregation, Worker replacement, retry, and replay.
 

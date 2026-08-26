@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved-with-required-edits
 
 ## Question and bounded outcome
@@ -157,6 +157,8 @@ Executable constraints include [source hygiene](../../scripts/source-hygiene.tes
 ### Required controller-cleanup prerequisite
 
 Before Parallel Multi-Instance implementation, a separate correction must make existing sequential controller withdrawal complete in [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts), [TypeScript called-process removal](../../packages/semantic-core/src/semantic-process-call-runtime.ts), [Lean scope cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean), and [Lean Call Activity removal](../../BpmnSemantics/SemanticProcess/CallActivity.lean), and must correct the optional-field census in [runtime collection removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts). This prerequisite closes the already-open controller-cleanup change without adding parallel behavior. After it closes, those four runtime owners remain generic no-edit consumers for this capsule.
+
+The prerequisite is closed at correction target `b6547b23876bbe8ec0092a16260a42f2ada16226`. Its context-cold combined checkpoint/closure review targeted `818301ff9b75b881bbd8f35b9fa2c8a33c4440d7` with `fork-turns-none`, returned `approve-with-required-edits`, and the same reviewer approved the correction with no remaining finding. The exact correction target passed `test:pre-push:verify` with `dirty:false`, 54 cases, 65 replay histories, and zero failures. This receipt closes only the controller-cleanup prerequisite; the Parallel Multi-Instance semantic checkpoint and closure rows below remain unreached.
 
 ### Owners this implementation grows
 
