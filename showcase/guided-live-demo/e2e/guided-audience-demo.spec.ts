@@ -98,14 +98,14 @@ async function resolveIncidents(page: Page): Promise<void> {
   await inspectIncidentDiagram(page);
   await page.getByRole("tablist", { name: "Incident detail" })
     .getByRole("tab", { name: "Overview", exact: true }).click();
-  await page.locator('[data-ui="incident-overview"]')
-    .getByRole("button", { name: "Retry", exact: true }).click();
-  const indeterminate = page.getByRole("status").filter({
-    hasText: "Retry outcome is indeterminate. Submit the exact action again.",
-  });
-  await expect(indeterminate).toBeFocused();
-  await page.getByRole("button", { name: "Submit Retry again", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Retry action" })).toBeVisible();
+  await submitUntilCommitted(
+    page,
+    page.locator('[data-ui="incident-overview"]')
+      .getByRole("button", { name: "Retry", exact: true }),
+    "Submit Retry again",
+    "Retry outcome is indeterminate. Submit the exact action again.",
+    "Retry action",
+  );
   await expect(table.getByRole("row")).toHaveCount(2);
 
   const cancelRow = table.getByRole("row").filter({ hasText: "Cancel Process" });
@@ -115,10 +115,54 @@ async function resolveIncidents(page: Page): Promise<void> {
     .getByRole("button", { name: "Cancel Process", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Cancel root Process?" });
   await expect(dialog).toContainText("Already committed data is preserved.");
-  await dialog.getByRole("button", { name: "Cancel root Process", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Cancel Process action" }))
-    .toBeVisible();
+  await submitUntilCommitted(
+    page,
+    dialog.getByRole("button", { name: "Cancel root Process", exact: true }),
+    "Submit Cancel Process again",
+    "Cancel Process outcome is indeterminate. Submit the exact action again.",
+    "Cancel Process action",
+  );
   await expect(page.getByText("No current incidents.", { exact: true })).toBeVisible();
+}
+
+async function submitUntilCommitted(
+  page: Page,
+  initialTrigger: Locator,
+  retainedLabel: string,
+  indeterminateMessage: string,
+  committedMessage: string,
+): Promise<void> {
+  const initial = await clickIncidentAction(page, initialTrigger);
+  expect(initial.status()).toBe(202);
+  const indeterminate = page.getByRole("status").filter({ hasText: indeterminateMessage });
+  await expect(indeterminate).toBeFocused();
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const retained = page.getByRole("button", { name: retainedLabel, exact: true });
+    await expect(retained).toBeVisible();
+    const response = await clickIncidentAction(page, retained);
+    switch (response.status()) {
+      case 200:
+        await expect(page.getByRole("status").filter({ hasText: committedMessage }))
+          .toBeVisible();
+        return;
+      case 202:
+        await expect(indeterminate).toBeFocused();
+        break;
+      default:
+        throw new Error(`Incident action returned unexpected HTTP ${response.status()}`);
+    }
+  }
+  throw new Error(`Incident action did not commit after three exact resubmissions`);
+}
+
+async function clickIncidentAction(page: Page, trigger: Locator) {
+  const response = page.waitForResponse((candidate) =>
+    candidate.request().method() === "PUT" &&
+    new URL(candidate.url()).pathname.startsWith("/api/v1/incident-actions/")
+  );
+  await trigger.click();
+  return await response;
 }
 
 async function inspectCorrectnessStack(page: Page): Promise<void> {
