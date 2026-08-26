@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
+import { awaitTerminalIncidentAction } from "../src/indeterminate-action.js";
+
 test("delivers the complete seven-minute audience journey through the real stack", async ({ page }) => {
   const browserErrors: string[] = [];
   page.on("console", (message) => {
@@ -137,23 +139,22 @@ async function submitUntilCommitted(
   const indeterminate = page.getByRole("status").filter({ hasText: indeterminateMessage });
   await expect(indeterminate).toBeFocused();
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const retained = page.getByRole("button", { name: retainedLabel, exact: true });
-    await expect(retained).toBeVisible();
-    const response = await clickIncidentAction(page, retained);
-    switch (response.status()) {
-      case 200:
-        await expect(page.getByRole("status").filter({ hasText: committedMessage }))
-          .toBeVisible();
-        return;
-      case 202:
+  await awaitTerminalIncidentAction({
+    action: committedMessage,
+    deadlineMs: 10_000,
+    pollingDelayMs: 250,
+    submit: async () => {
+      const retained = page.getByRole("button", { name: retainedLabel, exact: true });
+      await expect(retained).toBeVisible();
+      const response = await clickIncidentAction(page, retained);
+      if (response.status() === 202) {
         await expect(indeterminate).toBeFocused();
-        break;
-      default:
-        throw new Error(`Incident action returned unexpected HTTP ${response.status()}`);
-    }
-  }
-  throw new Error(`Incident action did not commit after three exact resubmissions`);
+      }
+      return response.status();
+    },
+  });
+  await expect(page.getByRole("status").filter({ hasText: committedMessage }))
+    .toBeVisible();
 }
 
 async function clickIncidentAction(page: Page, trigger: Locator) {
