@@ -110,7 +110,10 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.equal(matches(postgresqlRunner, /packageName: "@bpmn-lean\//gu), 10);
   assert.equal(matches(postgresqlRunner, /"test:postgresql:built"/gu), 1);
   assert.match(postgresqlRunner, /platformPostgresqlSuiteTimeoutMs = 60_000/u);
-  assert.equal(root["test:pre-push:showcase"], "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types");
+  assert.equal(
+    root["test:pre-push:showcase"],
+    "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types && pnpm test:showcase:guided-live-demo",
+  );
   assert.equal(root["test:pre-push:ui"], "pnpm check:clean-head && pnpm test:feedback-policy && pnpm build:platform-web && pnpm test:platform-web:built && pnpm test:ui-quality:built");
   assert.equal(root["test:platform-web"], "pnpm build:platform-web && pnpm test:platform-web:built");
   assert.equal(root["test:platform-web:built"], "pnpm --filter @bpmn-lean/platform-ui-kit test:built && pnpm --filter @bpmn-lean/platform-web test:built");
