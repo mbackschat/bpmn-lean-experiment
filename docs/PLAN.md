@@ -47,9 +47,9 @@ After the time-bounded live-demo delivery, the MUE content IDs resume breadth-fi
 
 Active work ID: `PARALLEL-MULTI-INSTANCE`.
 
-Next action: independently cold-review the reopened [Parallel Multi-Instance User Task proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) after its first implementation lane exposed omitted closed-sum production consumers before any semantic code changed. The corrected selection now covers every maintained production path that discriminates over the added checked node, operation, profile, Activity body, controller, observation, operation kind, host family, or copied publication contract, plus every new identity, withdrawal, preservation, and publication invariant. If approved, restore owner approval and begin the first green semantic checkpoint from separating source, TypeScript, and Lean Reds without changing the reviewed account.
+Next action: audit the required inventory corrections on the reopened [Parallel Multi-Instance User Task proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md). If approved, restore owner approval, close the separately implemented controller-cleanup prerequisite across regional and called-process removal plus its optional-field guard, then begin the first green semantic checkpoint from separating source, TypeScript, and Lean Reds without changing the reviewed account.
 
-Separate open changes: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
+Separate open changes after this prerequisite: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, and PostgreSQL migration evidence.
 
 Oracle: a fresh reviewer can derive every mandatory production edit from the inventory criterion, verify that generic consumers need no branch, and confirm that the semantic account, public contract, exclusions, and evidence strategy remain unchanged. Implementation then separates concurrent child ownership from the outer Activity and distinguishes completion/cancellation races, duplicate children, lost aggregation, Worker replacement, retry, and replay.
 
