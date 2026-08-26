@@ -2,10 +2,12 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and bounded outcome
+
+Owner-approved on 2026-08-26 after the independent cold proposal review returned `approve-with-required-edits` and the same reviewer closed all findings across three owner-authorized correction audits. Approval authorizes exactly the bounded account recorded here and no broader Multi-Instance or CIB claim.
 
 What is the smallest forward-compatible parallel Multi-Instance User Task account that adds genuine concurrent instance generation, deterministic collection aggregation, completion-condition cancellation, and durable hosting without reinterpreting the implemented sequential profile?
 
@@ -219,6 +221,6 @@ Reopen before changing the Activity body, collection/value type, data associatio
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `c5ad6f3074ebe48134c67672923c654b95beb146` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `c5ad6f3074ebe48134c67672923c654b95beb146` | `fork-turns-none` | `approve-with-required-edits` | `a7e3fdbfa324d88eeebc3aaec0ade5727e7e4f15, 0bc117308e28a24dcc1a30144543395fed9f6af9, 0642759e7a563c546eb85af8cb7d6b836ab11546, owner-authorized` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

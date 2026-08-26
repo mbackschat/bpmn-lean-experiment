@@ -47,7 +47,7 @@ After the time-bounded live-demo delivery, the MUE content IDs resume breadth-fi
 
 Active work ID: `PARALLEL-MULTI-INSTANCE`.
 
-Next action: obtain an independent cold proposal review of the bounded [Parallel Multi-Instance User Task proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) and its `BPMN-PARALLEL-MULTI-INSTANCE-01` ledger row before owner approval or implementation. The proposal selects atomic concurrent child generation, index-ordered complete aggregation, no Process output on early or Timer closure, explicit accepted-stimulus ordering, and a fresh pre-registration Temporal capacity bound.
+Next action: implement the owner-approved [Parallel Multi-Instance User Task proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) through its first green semantic checkpoint. Begin with separating source and semantic-core Red oracles for atomic bounded child generation, index-ordered complete aggregation, early and Timer closure without partial Process output, and fail-closed coalesced completion-versus-Timer scheduling; then carry the exact account through Lean and Temporal without broadening `BPMN-PARALLEL-MULTI-INSTANCE-01`.
 
 Separate open changes: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, scope-cancellation controller cleanup, and PostgreSQL migration evidence.
 
