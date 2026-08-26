@@ -1,5 +1,10 @@
 import type {
+  RecoveryInfrastructureFailure,
   RecoveryLoopRun,
+} from "@bpmn-lean/platform-recovery-runtime";
+import {
+  RecoveryInfrastructureOperation,
+  summarizeRecoveryInfrastructureFailure,
 } from "@bpmn-lean/platform-recovery-runtime";
 
 import type {
@@ -21,11 +26,19 @@ export type CloseableOwner = Readonly<{ close(): void | Promise<void> }>;
 
 export class RecoveryWorkerInfrastructureError extends Error {
   readonly family: RecoveryWorkerFamily;
+  readonly failure: RecoveryInfrastructureFailure;
 
-  constructor(family: RecoveryWorkerFamily) {
+  constructor(
+    family: RecoveryWorkerFamily,
+    failure: RecoveryInfrastructureFailure = {
+      operation: RecoveryInfrastructureOperation.Loop,
+      errorName: "UnknownError",
+    },
+  ) {
     super(`recovery-worker family ${family} reported an infrastructure failure`);
     this.name = "RecoveryWorkerInfrastructureError";
     this.family = family;
+    this.failure = failure;
   }
 }
 
@@ -71,14 +84,28 @@ export class RecoveryWorkerRuntime {
         await loop.runUntilAborted(this.#controller.signal, async (run) => {
           await this.#report({ family: loop.family, run: { ...run } });
           if (run.errors > 0) {
-            throw new RecoveryWorkerInfrastructureError(loop.family);
+            throw new RecoveryWorkerInfrastructureError(
+              loop.family,
+              run.firstFailure ?? {
+                operation: RecoveryInfrastructureOperation.Loop,
+                errorName: "UnknownError",
+              },
+            );
           }
         });
         if (!this.#controller.signal.aborted) {
           throw new RecoveryWorkerInfrastructureError(loop.family);
         }
       } catch (error: unknown) {
-        firstFailure ??= error;
+        firstFailure ??= error instanceof RecoveryWorkerInfrastructureError
+          ? error
+          : new RecoveryWorkerInfrastructureError(
+              loop.family,
+              summarizeRecoveryInfrastructureFailure(
+                RecoveryInfrastructureOperation.Loop,
+                error,
+              ),
+            );
         this.#controller.abort();
       }
     });
@@ -105,6 +132,24 @@ export class RecoveryWorkerRuntime {
     }
     if (firstFailure !== undefined) throw firstFailure;
   }
+}
+
+/** Produces a credential-safe fatal record for process supervision and hosted evidence. */
+export function serializeRecoveryWorkerFailure(error: unknown): string {
+  if (error instanceof RecoveryWorkerInfrastructureError) {
+    return JSON.stringify({
+      event: "recovery-worker.fatal",
+      family: error.family,
+      ...error.failure,
+    });
+  }
+  return JSON.stringify({
+    event: "recovery-worker.fatal",
+    ...summarizeRecoveryInfrastructureFailure(
+      RecoveryInfrastructureOperation.Loop,
+      error,
+    ),
+  });
 }
 
 /** Emits bounded domain counters only, never exception text or credentials. */

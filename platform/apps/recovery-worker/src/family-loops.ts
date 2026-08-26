@@ -8,10 +8,12 @@ import type {
 } from "@bpmn-lean/platform-operate";
 import {
   decodeOperateRecoveryCandidateKey,
+  PostgresqlOperateRecoveryFenceError,
   PostgresqlOperateRecoveryStepKind,
 } from "@bpmn-lean/platform-operate";
 import {
   LeaseMutationResult,
+  RecoveryApplyConflictError,
   RecoveryHandlerOutcomeKind,
   RecoveryLoop,
 } from "@bpmn-lean/platform-recovery-runtime";
@@ -171,7 +173,19 @@ export function mapOperateRecoveryStep(
 ): RecoveryHandlerOutcome {
   switch (result.kind) {
     case PostgresqlOperateRecoveryStepKind.Complete:
-      return { kind: RecoveryHandlerOutcomeKind.Complete, apply: result.apply };
+      return {
+        kind: RecoveryHandlerOutcomeKind.Complete,
+        apply: async (session) => {
+          try {
+            await result.apply(session);
+          } catch (error: unknown) {
+            if (error instanceof PostgresqlOperateRecoveryFenceError) {
+              throw new RecoveryApplyConflictError();
+            }
+            throw error;
+          }
+        },
+      };
     case PostgresqlOperateRecoveryStepKind.Retry:
       return { kind: RecoveryHandlerOutcomeKind.Retry };
     case PostgresqlOperateRecoveryStepKind.Fail:

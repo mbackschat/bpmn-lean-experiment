@@ -22,6 +22,9 @@ import {
 import {
   LeaseMutationResult,
   PostgresqlRecoveryLeaseStore,
+  RecoveryApplyConflictError,
+  RecoveryHandlerOutcomeKind,
+  RecoveryLoop,
 } from "@bpmn-lean/platform-recovery-runtime";
 import type {
   RecoveryLease,
@@ -189,6 +192,57 @@ if (baseUrl === undefined) {
       }),
       LeaseMutationResult.Applied,
     );
+    assert.equal(await witnessCount(firstRuntime), 1);
+  });
+
+  test("a stale completion image rolls back its domain writes and is prepared again", async () => {
+    await reset(firstRuntime);
+    const key = Uint8Array.of(2, 0, 3);
+    let preparations = 0;
+    const loop = new RecoveryLoop(
+      new PostgresqlRecoveryLeaseStore(firstRuntime),
+      {
+        family: "completion-conflict",
+        workerId: new TextEncoder().encode("conflict-worker"),
+        batchSize: 1,
+        leaseDurationMs: 1_000,
+        itemDeadlineMs: 500,
+        retryDelayMs: 0,
+        concurrency: 1,
+        pollingDelayMs: 10,
+        createLeaseToken: randomUUID,
+        listCandidateKeys: async () => [key],
+        handle: async () => {
+          preparations += 1;
+          return {
+            kind: RecoveryHandlerOutcomeKind.Complete,
+            apply: async (session) => {
+              await insertWitness(session, `attempt-${preparations}`);
+              if (preparations === 1) throw new RecoveryApplyConflictError();
+            },
+          };
+        },
+      },
+    );
+
+    assert.deepEqual(await loop.runOnce(), {
+      claimed: 1,
+      completed: 0,
+      retried: 1,
+      permanentlyFailed: 0,
+      leaseLost: 0,
+      errors: 0,
+    });
+    assert.equal(await witnessCount(firstRuntime), 0);
+    assert.deepEqual(await loop.runOnce(), {
+      claimed: 1,
+      completed: 1,
+      retried: 0,
+      permanentlyFailed: 0,
+      leaseLost: 0,
+      errors: 0,
+    });
+    assert.equal(preparations, 2);
     assert.equal(await witnessCount(firstRuntime), 1);
   });
 

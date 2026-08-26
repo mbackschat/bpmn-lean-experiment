@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   LeaseMutationResult,
+  RecoveryApplyConflictError,
   RecoveryHandlerOutcomeKind,
 } from "@bpmn-lean/platform-recovery-runtime";
 import {
@@ -10,6 +11,9 @@ import {
   PostgresqlDefinitionsRecoveryStepKind,
 } from "@bpmn-lean/platform-definitions";
 
+import {
+  PostgresqlOperateRecoveryFenceError,
+} from "@bpmn-lean/platform-operate";
 import {
   createRecoveryLoops,
   handleDefinitionsRecoveryStep,
@@ -143,6 +147,25 @@ test("closed domain failure evidence is deterministic bounded data and handler i
     ),
     (error: unknown) => error === infrastructure,
   );
+});
+
+test("both Operate projection families map stale prepared images to a generic completion conflict", async () => {
+  for (const family of [
+    RecoveryWorkerFamily.OperateCommittedExecution,
+    RecoveryWorkerFamily.OperateFlowNodeOccurrence,
+  ]) {
+    const mapped = mapOperateRecoveryStep({
+      kind: "complete",
+      apply: async () => { throw new PostgresqlOperateRecoveryFenceError(); },
+    });
+    assert.equal(mapped.kind, RecoveryHandlerOutcomeKind.Complete, family);
+    if (mapped.kind !== RecoveryHandlerOutcomeKind.Complete) continue;
+    await assert.rejects(
+      mapped.apply({ query: async () => ({ rows: [], rowCount: 0 }) }),
+      RecoveryApplyConflictError,
+      family,
+    );
+  }
 });
 
 function binding(family: string) {

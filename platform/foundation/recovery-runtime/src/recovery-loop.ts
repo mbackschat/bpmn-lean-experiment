@@ -2,11 +2,14 @@ import { setTimeout as wait } from "node:timers/promises";
 
 import {
   LeaseMutationResult,
+  RecoveryApplyConflictError,
   RecoveryHandlerOutcomeKind,
+  RecoveryInfrastructureOperation,
   recoveryBounds,
 } from "./recovery-contracts.js";
 import type {
   RecoveryHandlerOutcome,
+  RecoveryInfrastructureFailure,
   RecoveryLease,
   RecoveryLeaseStore,
   RecoveryLoopOptions,
@@ -28,6 +31,7 @@ type MutableRun = {
   permanentlyFailed: number;
   leaseLost: number;
   errors: number;
+  firstFailure?: RecoveryInfrastructureFailure;
 };
 
 /**
@@ -125,36 +129,52 @@ export class RecoveryLoop {
       return;
     }
 
-    try {
-      switch (outcome.kind) {
-        case RecoveryHandlerOutcomeKind.Complete:
+    switch (outcome.kind) {
+      case RecoveryHandlerOutcomeKind.Complete:
+        try {
           recordMutation(
             await this.#store.complete(fencedLease, outcome.apply),
             run,
             "completed",
           );
-          return;
-        case RecoveryHandlerOutcomeKind.Retry:
-          await this.#applyRetry(
-            fencedLease,
-            outcome.retryDelayMs ?? this.#options.retryDelayMs,
-            run,
-          );
-          return;
-        case RecoveryHandlerOutcomeKind.Fail: {
-          const failure = snapshotFailure(outcome);
+        } catch (error: unknown) {
+          if (error instanceof RecoveryApplyConflictError) {
+            await this.#applyRetry(
+              fencedLease,
+              this.#options.retryDelayMs,
+              run,
+            );
+          } else {
+            recordFailure(run, RecoveryInfrastructureOperation.Complete, error);
+          }
+        }
+        return;
+      case RecoveryHandlerOutcomeKind.Retry:
+        await this.#applyRetry(
+          fencedLease,
+          outcome.retryDelayMs ?? this.#options.retryDelayMs,
+          run,
+        );
+        return;
+      case RecoveryHandlerOutcomeKind.Fail: {
+        const failure = snapshotFailure(outcome);
+        try {
           recordMutation(
             await this.#store.fail(fencedLease, failure),
             run,
             "permanentlyFailed",
           );
-          return;
+        } catch (error: unknown) {
+          recordFailure(run, RecoveryInfrastructureOperation.Fail, error);
         }
-        default:
-          throw new TypeError("recovery handler returned an unknown outcome kind");
+        return;
       }
-    } catch {
-      run.errors += 1;
+      default:
+        recordFailure(
+          run,
+          RecoveryInfrastructureOperation.Loop,
+          new TypeError("recovery handler returned an unknown outcome kind"),
+        );
     }
   }
 
@@ -174,10 +194,61 @@ export class RecoveryLoop {
         run,
         "retried",
       );
-    } catch {
-      run.errors += 1;
+    } catch (error: unknown) {
+      recordFailure(run, RecoveryInfrastructureOperation.Retry, error);
     }
   }
+}
+
+/** Retains bounded structural diagnostics and never exception messages or database detail. */
+export function summarizeRecoveryInfrastructureFailure(
+  operation: RecoveryInfrastructureOperation,
+  error: unknown,
+): RecoveryInfrastructureFailure {
+  const details = safeErrorDetails(error);
+  return {
+    operation,
+    errorName: details.errorName,
+    ...(details.errorCode === undefined ? {} : { errorCode: details.errorCode }),
+  };
+}
+
+function recordFailure(
+  run: MutableRun,
+  operation: RecoveryInfrastructureOperation,
+  error: unknown,
+): void {
+  run.errors += 1;
+  run.firstFailure ??= summarizeRecoveryInfrastructureFailure(operation, error);
+}
+
+function safeErrorDetails(error: unknown): Readonly<{
+  errorName: string;
+  errorCode?: string;
+}> {
+  let current: unknown = error;
+  const visited = new Set<unknown>();
+  let errorName = "UnknownError";
+  for (let depth = 0; depth < 5 && current !== null && typeof current === "object"; depth += 1) {
+    if (visited.has(current)) break;
+    visited.add(current);
+    const candidate = current as { name?: unknown; code?: unknown; cause?: unknown };
+    if (errorName === "UnknownError" && isSafeDiagnosticAtom(candidate.name, 128)) {
+      errorName = candidate.name;
+    }
+    if (isSafeDiagnosticAtom(candidate.code, 16)) {
+      return { errorName, errorCode: candidate.code };
+    }
+    current = candidate.cause;
+  }
+  return { errorName };
+}
+
+function isSafeDiagnosticAtom(value: unknown, maximumLength: number): value is string {
+  return typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= maximumLength &&
+    /^[A-Za-z0-9_.-]+$/u.test(value);
 }
 
 function validateLoopOptions(options: RecoveryLoopOptions): void {

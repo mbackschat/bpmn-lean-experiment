@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   RecoveryWorkerInfrastructureError,
   RecoveryWorkerRuntime,
+  serializeRecoveryWorkerFailure,
 } from "../dist/runtime.js";
 import { recoveryWorkerFamilies } from "../dist/family-loops.js";
 
@@ -35,6 +36,28 @@ test("an observed loop error aborts every sibling and fails the run", async () =
   );
   await assert.rejects(runtime.run(), RecoveryWorkerInfrastructureError);
   assert.equal(settled.length, 10);
+});
+
+test("fatal reports retain the family and safe error shape without exception text", () => {
+  const failure = new RecoveryWorkerInfrastructureError(
+    "operate.committed-execution",
+    {
+      operation: "complete",
+      errorName: "Error",
+      errorCode: "55P03",
+    },
+  );
+
+  assert.equal(
+    serializeRecoveryWorkerFailure(failure),
+    '{"event":"recovery-worker.fatal","family":"operate.committed-execution","operation":"complete","errorName":"Error","errorCode":"55P03"}',
+  );
+  assert.equal(
+    serializeRecoveryWorkerFailure(
+      new Error("postgresql://user:secret@example.invalid/private"),
+    ),
+    '{"event":"recovery-worker.fatal","operation":"loop","errorName":"Error"}',
+  );
 });
 
 test("permanent domain failures are reported without aborting siblings", async () => {

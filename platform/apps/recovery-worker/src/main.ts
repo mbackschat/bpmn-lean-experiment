@@ -2,6 +2,7 @@
 
 import { createRecoveryWorker } from "./composition.js";
 import { readRecoveryWorkerConfig } from "./config.js";
+import { serializeRecoveryWorkerFailure } from "./runtime.js";
 
 async function main(): Promise<void> {
   const runtime = await createRecoveryWorker(readRecoveryWorkerConfig());
@@ -22,7 +23,7 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch(() => {
-  process.stderr.write("recovery-worker failed\n");
+void main().catch((error: unknown) => {
+  process.stderr.write(`${serializeRecoveryWorkerFailure(error)}\n`);
   process.exitCode = 1;
 });

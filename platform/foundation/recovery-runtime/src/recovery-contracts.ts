@@ -124,6 +124,20 @@ export type RecoveryLoopRun = Readonly<{
   permanentlyFailed: number;
   leaseLost: number;
   errors: number;
+  firstFailure?: RecoveryInfrastructureFailure;
+}>;
+
+export enum RecoveryInfrastructureOperation {
+  Complete = "complete",
+  Retry = "retry",
+  Fail = "fail",
+  Loop = "loop",
+}
+
+export type RecoveryInfrastructureFailure = Readonly<{
+  operation: RecoveryInfrastructureOperation;
+  errorName: string;
+  errorCode?: string;
 }>;
 
 export type RecoveryLoopObserver = (
@@ -144,5 +158,13 @@ export class RecoveryLeaseIntegrityError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "RecoveryLeaseIntegrityError";
+  }
+}
+
+/** Signals that a prepared completion image is stale and must be prepared again. */
+export class RecoveryApplyConflictError extends Error {
+  constructor() {
+    super("recovery completion image changed before commit");
+    this.name = "RecoveryApplyConflictError";
   }
 }

@@ -5,6 +5,7 @@ import { test } from "node:test";
 import {
   LeaseMutationResult,
   PostgresqlRecoveryLeaseStore,
+  RecoveryApplyConflictError,
   RecoveryHandlerOutcomeKind,
   RecoveryLoop,
 } from "../dist/index.js";
@@ -220,6 +221,58 @@ test("a timed-out handler retries while unrelated work completes", async () => {
   assert.equal(result.completed, 1);
   assert.equal(result.retried, 1);
   assert.equal(result.errors, 0);
+});
+
+test("a completion-image conflict rolls back and retries without becoming infrastructure failure", async () => {
+  const store = new FakeLeaseStore([lease(1)]);
+  const loop = new RecoveryLoop(
+    store,
+    loopOptions({
+      handle: async () => ({
+        kind: RecoveryHandlerOutcomeKind.Complete,
+        apply: async () => { throw new RecoveryApplyConflictError(); },
+      }),
+    }),
+  );
+
+  assert.deepEqual(await loop.runOnce(), {
+    claimed: 1,
+    completed: 0,
+    retried: 1,
+    permanentlyFailed: 0,
+    leaseLost: 0,
+    errors: 0,
+  });
+});
+
+test("an unexpected settlement failure retains only its safe class and SQLSTATE", async () => {
+  const store = new FakeLeaseStore([lease(1)]);
+  const failure = Object.assign(new Error("contains private database detail"), {
+    code: "55P03",
+  });
+  const loop = new RecoveryLoop(
+    store,
+    loopOptions({
+      handle: async () => ({
+        kind: RecoveryHandlerOutcomeKind.Complete,
+        apply: async () => { throw failure; },
+      }),
+    }),
+  );
+
+  assert.deepEqual(await loop.runOnce(), {
+    claimed: 1,
+    completed: 0,
+    retried: 0,
+    permanentlyFailed: 0,
+    leaseLost: 0,
+    errors: 1,
+    firstFailure: {
+      operation: "complete",
+      errorName: "Error",
+      errorCode: "55P03",
+    },
+  });
 });
 
 test("reports every polling result before sleeping or starting another batch", async () => {
