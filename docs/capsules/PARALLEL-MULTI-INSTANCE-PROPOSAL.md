@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and bounded outcome
 
 The owner approval recorded at `095ee3f7` was first reopened on 2026-08-26 before implementation because the first Lean lane found closed-sum production consumers omitted from the reviewed owner inventory. Review target `dc21b7ce67fbaaef80a1682a15f05ce4d673a32f` returned `approve-with-required-edits`, correction audit `175cb04a3f002c71d0241fd66de07adaf7cab078` closed all findings, and implementation began under the corrected selection.
 
-Implementation is paused for a second inventory review after integration exposed two facts the reviewed selection got wrong. First, the parallel source reader needs a separate responsibility owner to keep both source owners below the 600-nonblank-line review target without modifying the closed sequential owners. Second, TypeScript and Lean scope cancellation and Call Activity return must withdraw a matching parallel controller by the same removed Activity or called-instance criterion that already withdraws its record and waits. The source split was applied while correcting the size-bound violation before its owner-inventory consequence was recognized; it remains uncommitted and gains no authorization from that edit. Neither correction changes the selected semantic account, public contract, exclusions, or evidence strategy. The new source owner and the four withdrawal branches remain blocked until this corrected selection passes a fresh independent proposal review.
+Implementation paused for a second inventory review after integration exposed two facts the reviewed selection got wrong. First, the parallel source reader needs a separate responsibility owner to keep both source owners below the 600-nonblank-line review target without modifying the closed sequential owners. Second, TypeScript and Lean scope cancellation and Call Activity return must withdraw a matching parallel controller by the same removed Activity or called-instance criterion that already withdraws its record and waits. The source split was applied while correcting the size-bound violation before its owner-inventory consequence was recognized and gained no authorization from that edit. Neither correction changes the selected semantic account, public contract, exclusions, or evidence strategy. The second cold review and same-thread audit approved this corrected selection, authorizing the new source owner and the four withdrawal branches under the lifecycle above.
 
 What is the smallest forward-compatible parallel Multi-Instance User Task account that adds genuine concurrent instance generation, deterministic collection aggregation, completion-condition cancellation, and durable hosting without reinterpreting the implemented sequential profile?
 
@@ -279,6 +279,6 @@ The superseded proposal reviews targeted `c5ad6f3074ebe48134c67672923c654b95beb1
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `e31500916cb5af3752c3a6ec35a1bd59381f5048` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `e31500916cb5af3752c3a6ec35a1bd59381f5048` | `fork-turns-none` | `approve-with-required-edits` | `6275ed87398f3cdc55e8633ab0d77ddd638cc946` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
