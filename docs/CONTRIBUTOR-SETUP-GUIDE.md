@@ -49,9 +49,11 @@ The explicit evaluation path requires Docker Engine with Compose v2. It does not
 ./scripts/pnpm.sh run evaluation:start
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The first start builds the four project runtime images and may take several minutes; later starts reuse Docker layers and the named `postgresql-data` and `temporal-data` volumes. Stop containers without deleting state through `./scripts/pnpm.sh run evaluation:stop`. Use `./scripts/pnpm.sh run evaluation:reset` only to remove both named evaluation volumes and return to an empty platform. The exact roles and passwords in `compose.yaml` are local evaluation credentials, not production defaults.
+Open [http://localhost:3000](http://localhost:3000). The first start builds the five project runtime images and may take several minutes; later starts reuse Docker layers and the named `postgresql-data` and `temporal-data` volumes. Stop containers without deleting state through `./scripts/pnpm.sh run evaluation:stop`. Use `./scripts/pnpm.sh run evaluation:reset` only to remove both named evaluation volumes and return to an empty platform. The exact roles and passwords in `compose.yaml` are local evaluation credentials, not production defaults.
 
 The Compose topology runs PostgreSQL 18.4, the Temporal development service, the separate migration application, one persistent Product 1 BPMN Worker, the shared Product 2 API serving the built web bundle, and the Product 2 recovery Worker. It exposes only port 3000. It is neither a production Temporal deployment nor evidence of throughput or capacity.
+
+The zero-build demo-machine distribution is documented only in the [browser walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-demo-machine). Use the `guided-live-demo-candidate-<commit>-<attempt>` artifact only when its matching **Accept exact published candidate twice** job passed; candidate retention before acceptance makes a failed acceptance resumable without publishing or building the same images again.
 
 The maintained [browser walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) is text-first and needs no screenshot tooling. A maintainer who intentionally refreshes its images additionally installs the screenshot project's pinned Chromium revision, then runs one isolated capture command:
 

@@ -8,12 +8,16 @@ const baseURL = decodeOrigin(
 
 export default defineConfig({
   testDir: "./e2e",
+  outputDir: process.env.BPMN_PLAYWRIGHT_OUTPUT_DIR ?? "test-results",
   fullyParallel: false,
   forbidOnly: process.env.CI === "true",
   retries: 0,
   reporter: [
     ["line"],
-    ["html", { open: "never", outputFolder: "playwright-report" }],
+    ["html", {
+      open: "never",
+      outputFolder: process.env.BPMN_PLAYWRIGHT_REPORT_DIR ?? "playwright-report",
+    }],
   ],
   workers: 1,
   timeout: 90_000,

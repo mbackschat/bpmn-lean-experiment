@@ -21,6 +21,19 @@ const postgresqlRolesPath = new URL(
   "../deploy/evaluation/postgresql/001_roles.sql",
   import.meta.url,
 );
+const bakePath = new URL("../deploy/evaluation/docker-bake.hcl", import.meta.url);
+const bundleBuilderPath = new URL(
+  "../deploy/evaluation/prepare-published-bundle.sh",
+  import.meta.url,
+);
+const diagnosticsPath = new URL(
+  "../deploy/evaluation/collect-diagnostics.sh",
+  import.meta.url,
+);
+const stabilityPath = new URL(
+  "../deploy/evaluation/verify-runtime-stability.sh",
+  import.meta.url,
+);
 
 test("evaluation distribution has the closed healthy topology", async () => {
   const compose = await readFile(composePath, "utf8");
@@ -233,23 +246,8 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
     workflow,
     /uses: docker\/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3/u,
   );
-  assert.match(workflow, /--platform linux\/amd64,linux\/arm64/u);
-  assert.match(workflow, /--tag "\$image:sha-\$GITHUB_SHA"/u);
-  assert.match(workflow, /--provenance=mode=max/u);
-  assert.match(workflow, /--sbom=true/u);
-  assert.match(workflow, /--metadata-file "\$metadata_file"/u);
   assert.match(workflow, /containerimage\.digest/u);
-  assert.match(
-    workflow,
-    /imagetools inspect "\$image:\$image_tag" --format '\{\{json \.Manifest\}\}'/u,
-  );
-  assert.match(workflow, /jq -er '\.digest'/u);
   assert.doesNotMatch(workflow, /imagetools inspect[^\n]+--raw[^\n]+sha256sum/u);
-  assert.match(workflow, /published-images\.env/u);
-  assert.match(workflow, /published-images\.compose\.yaml/u);
-  assert.match(workflow, /cp docs\/BPM-PLATFORM-BROWSER-WALKTHROUGH\.md/u);
-  assert.match(workflow, /scenarios\/expense-exception-review/u);
-  assert.match(workflow, /docs\/assets\/mue-preview-alpha-demo/u);
   assert.match(workflow, /guided-demo-seed/u);
   assert.match(
     workflow,
@@ -275,7 +273,64 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
   assert.ok(publishedPrepare >= 0);
   assert.ok(guidedJourney > publishedPrepare);
   assert.ok(presenterReset > guidedJourney);
-  assert.match(workflow, /name: guided-live-demo-\$\{\{ github\.sha \}\}/u);
+  assert.match(workflow, /name: guided-live-demo-acceptance-/u);
+});
+
+test("published candidate creation and acceptance are independently recoverable", async () => {
+  const [workflow, bake, bundleBuilder, diagnostics, stability] = await Promise.all([
+    readFile(workflowPath, "utf8"),
+    readFile(bakePath, "utf8"),
+    readFile(bundleBuilderPath, "utf8"),
+    readFile(diagnosticsPath, "utf8"),
+    readFile(stabilityPath, "utf8"),
+  ]);
+
+  assert.match(workflow, /^  published-candidate:$/mu);
+  assert.match(workflow, /^  accept-published-candidate:$/mu);
+  assert.match(workflow, /needs: published-candidate/u);
+  assert.match(workflow, /^      published_revision:$/mu);
+  assert.match(workflow, /docker buildx bake/u);
+  assert.doesNotMatch(workflow, /docker buildx build/u);
+  assert.match(
+    workflow,
+    /actions\/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8\.0\.1/u,
+  );
+  assert.match(workflow, /retention-days: 30/u);
+  assert.match(workflow, /name: Collect acceptance diagnostics\n\s+if: always\(\)/u);
+  assert.match(workflow, /name: Upload acceptance diagnostics\n\s+if: always\(\)/u);
+  assert.match(
+    workflow,
+    /BPMN_PLAYWRIGHT_OUTPUT_DIR: \$\{\{ github\.workspace \}\}\/\.artifacts\/acceptance\/playwright\/journey-1\/test-results/u,
+  );
+  assert.match(
+    workflow,
+    /BPMN_PLAYWRIGHT_OUTPUT_DIR: \$\{\{ github\.workspace \}\}\/\.artifacts\/acceptance\/playwright\/journey-2\/test-results/u,
+  );
+  assert.match(workflow, /verify-runtime-stability\.sh/u);
+  assert.match(workflow, /printf 'artifact=guided-live-demo-candidate-%s-%s/u);
+
+  for (const target of [
+    "platform-api",
+    "platform-recovery-worker",
+    "platform-migrate",
+    "bpmn-worker",
+    "guided-demo-seed",
+  ]) {
+    assert.match(bake, new RegExp(`target "${target}"`, "u"));
+  }
+  assert.match(bake, /platforms = \["linux\/amd64", "linux\/arm64"\]/u);
+  assert.match(bake, /type=provenance,mode=max/u);
+  assert.match(bake, /type=sbom/u);
+  assert.match(bundleBuilder, /imagetools inspect/u);
+  assert.doesNotMatch(bundleBuilder, /imagetools inspect[^\n]+--(?:format|raw)/u);
+  assert.match(bundleBuilder, /\$1 == "Digest:"/u);
+  assert.match(bundleBuilder, /published-images\.env/u);
+  assert.match(bundleBuilder, /actual_revision=\$\(git -C "\$source_root" rev-parse HEAD\)/u);
+  assert.match(bundleBuilder, /status --porcelain --untracked-files=all/u);
+  assert.match(diagnostics, /logs --no-color --timestamps/u);
+  assert.match(diagnostics, /RestartCount/u);
+  assert.match(stability, /platform-recovery-worker/u);
+  assert.match(stability, /RestartCount/u);
 });
 
 test("migration and runtime database credentials stay separate", async () => {

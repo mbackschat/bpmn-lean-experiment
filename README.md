@@ -192,7 +192,7 @@ The examples expect `localhost:7233`, Namespace `default`, and a fresh semantic 
 
 ### Use the BPM platform in a browser
 
-For a demo machine, use the zero-build `guided-live-demo-<commit>` artifact produced by the **Evaluation distribution** workflow. It runs through Docker Compose v2 on Docker Engine or Rancher Desktop in `dockerd (moby)` mode. After unpacking it, one command pulls exact `linux/amd64` or `linux/arm64` image digests, verifies their source provenance, starts the real PostgreSQL, Temporal, Product 1 Worker, and Product 2 stack, and seeds the guided audience state without Git, Node, pnpm, or a local image build:
+For a demo machine, use the zero-build `guided-live-demo-candidate-<commit>-<attempt>` artifact from an **Evaluation distribution** workflow run whose **Accept exact published candidate twice** job passed. Candidate assembly and acceptance are separate so a browser or runtime failure cannot discard successfully published images or force an identical rebuild. Acceptance pulls the exact public `linux/amd64` or `linux/arm64` image digests anonymously, runs the complete audience journey twice with a reset between runs, and requires every long-running service to remain running with zero restarts. The bundle runs through Docker Compose v2 on Docker Engine or Rancher Desktop in `dockerd (moby)` mode. After unpacking it, one command verifies source provenance, starts the real PostgreSQL, Temporal, Product 1 Worker, and Product 2 stack, and seeds the guided audience state without Git, Node, pnpm, or a local image build:
 
 ```sh
 ./deploy/evaluation/demo prepare
