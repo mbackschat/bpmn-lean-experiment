@@ -215,6 +215,8 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.Duplicate:

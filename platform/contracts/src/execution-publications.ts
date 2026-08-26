@@ -219,6 +219,7 @@ export const SemanticOperationKind = {
   AwaitBoundedUserTask: "awaitBoundedUserTask",
   AwaitMonitoredUserTask: "awaitMonitoredUserTask",
   AwaitSequentialMultiInstanceUserTask: "awaitSequentialMultiInstanceUserTask",
+  AwaitParallelMultiInstanceUserTask: "awaitParallelMultiInstanceUserTask",
   AwaitMessage: "awaitMessage",
   AwaitTimer: "awaitTimer",
   AwaitEffect: "awaitEffect",
@@ -356,6 +357,25 @@ export type OpenSequentialMultiInstance = DeepReadonly<{
   activeIterations: OpenSequentialMultiInstanceIteration[];
 }>;
 
+export type OpenParallelMultiInstanceIteration =
+  OpenSequentialMultiInstanceIteration;
+
+export type OpenParallelMultiInstance = DeepReadonly<{
+  id: ActivityOccurrenceId;
+  mode: "parallel";
+  plannedInstanceCount: number;
+  pendingItemCount: 0;
+  numberOfInstances: number;
+  numberOfActiveInstances: number;
+  numberOfCompletedInstances: number;
+  numberOfTerminatedInstances: 0;
+  activeIterations: OpenParallelMultiInstanceIteration[];
+}>;
+
+export type OpenMultiInstance =
+  | OpenSequentialMultiInstance
+  | OpenParallelMultiInstance;
+
 export type EnabledInteraction = DeepReadonly<
   | { kind: typeof StimulusKind.CompleteUserTaskInstance; taskId: OccurrenceId }
   | {
@@ -388,7 +408,7 @@ export type StateObservation = DeepReadonly<{
   openTimers: OpenTimer[];
   openEffects: OpenEffect[];
   openIncidents: OpenEffectIncident[];
-  openMultiInstances?: OpenSequentialMultiInstance[];
+  openMultiInstances?: OpenMultiInstance[];
   variables: VariableBinding[];
   enabledInteractions: EnabledInteraction[];
   logicalTimeMs: number;

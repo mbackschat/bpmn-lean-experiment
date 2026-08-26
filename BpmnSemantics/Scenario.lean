@@ -234,6 +234,29 @@ structure OpenSequentialMultiInstance where
   activeIterations : List OpenSequentialMultiInstanceIteration
   deriving Repr, DecidableEq
 
+structure OpenParallelMultiInstanceIteration where
+  loopCounter : Nat
+  taskId : UserTaskInstanceId
+  taskInput : VariableBinding
+  completionBindingName : String
+  deriving Repr, DecidableEq
+
+structure OpenParallelMultiInstance where
+  id : ActivityOccurrenceId
+  plannedInstanceCount : Nat
+  pendingItemCount : Nat
+  numberOfInstances : Nat
+  numberOfActiveInstances : Nat
+  numberOfCompletedInstances : Nat
+  numberOfTerminatedInstances : Nat
+  activeIterations : List OpenParallelMultiInstanceIteration
+  deriving Repr, DecidableEq
+
+inductive OpenMultiInstance where
+  | sequential (value : OpenSequentialMultiInstance)
+  | parallel (value : OpenParallelMultiInstance)
+  deriving Repr, DecidableEq
+
 /-- Public incident kind admitted by the configured failed-effect overlay. -/
 inductive EffectIncidentKind where
   | effectExecutionFailed
@@ -256,7 +279,7 @@ structure StateObservation where
   openTimers : List OpenTimer
   openEffects : List OpenEffect
   openIncidents : List OpenEffectIncident := []
-  openMultiInstances : Option (List OpenSequentialMultiInstance) := none
+  openMultiInstances : Option (List OpenMultiInstance) := none
   variables : List VariableBinding
   enabledInteractions : List EnabledInteraction
   logicalTimeMs : Nat

@@ -284,6 +284,11 @@ test("interrupting a caller removes its separately parentless called Process sub
     false,
     "the public interruption route preserves the optional field's historical absence",
   );
+  assert.equal(
+    Object.hasOwn(interrupted, "parallelMultiInstanceControllers"),
+    false,
+    "the public interruption route preserves the parallel field's historical absence",
+  );
 
   const directCalledRoot = started.state.calledProcessOccurrences[0]?.calledRoot;
   assert.ok(directCalledRoot !== undefined);
@@ -309,6 +314,24 @@ test("interrupting a caller removes its separately parentless called Process sub
     },
     snapshot: ["retained"],
     outputSlots: [],
+  };
+  const withdrawnParallelController = {
+    id: {
+      processInstanceId: nestedCalledRoot.processInstanceId,
+      activityElementId: "Called_Parallel_Activity",
+      activation: 1,
+    },
+    snapshot: ["withdrawn"],
+    slots: [],
+  };
+  const unrelatedParallelController = {
+    id: {
+      processInstanceId: instanceId,
+      activityElementId: "Caller_Parallel_Activity",
+      activation: 1,
+    },
+    snapshot: ["retained"],
+    slots: [],
   };
   const withControllers: RuntimeState = {
     ...withoutControllers,
@@ -339,11 +362,16 @@ test("interrupting a caller removes its separately parentless called Process sub
       withdrawnController,
       unrelatedController,
     ],
+    parallelMultiInstanceControllers: [
+      withdrawnParallelController,
+      unrelatedParallelController,
+    ],
   };
 
   const after = applyInternalOperation(program, errorOperation, withControllers);
   assert.ok(after !== null, "the public ThrowError evaluator must interrupt the caller");
   assert.deepEqual(after.sequentialMultiInstanceControllers, [unrelatedController]);
+  assert.deepEqual(after.parallelMultiInstanceControllers, [unrelatedParallelController]);
   assert.equal(
     after.scopeOccurrences.some(({ id }) =>
       id.processInstanceId === expectedCalledInstanceId ||

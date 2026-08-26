@@ -35,13 +35,13 @@ test("binds every retained and external model to exact local evidence", async ()
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 33);
-  assert.equal(report.retainedModels, 26);
+  assert.equal(report.models.length, 36);
+  assert.equal(report.retainedModels, 29);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 26);
+  assert.equal(report.acceptedModels, 29);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 3);
-  assert.equal(report.mvpCapabilities.length, 27);
+  assert.equal(report.mvpCapabilities.length, 29);
   assert.deepEqual(report.uncoveredMvpCapabilities, []);
   assert.equal(report.models[0]?.product2, "journeyBacked");
   assert.deepEqual(
@@ -74,6 +74,9 @@ test("binds every retained and external model to exact local evidence", async ()
       "mapped-boundary-error-service-task-caught",
       "sequential-multi-instance-natural",
       "sequential-multi-instance-interrupted",
+      "parallel-multi-instance-all",
+      "parallel-multi-instance-first",
+      "parallel-multi-instance-interrupted",
     ],
   );
 });

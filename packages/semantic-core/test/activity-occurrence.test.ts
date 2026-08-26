@@ -255,6 +255,16 @@ test("the ThrowError route removes only controllers whose exact Activity records
     snapshot: ["retained"],
     outputSlots: [],
   };
+  const withdrawnParallelController = {
+    id: record.id,
+    snapshot: ["withdrawn"],
+    slots: [],
+  };
+  const unrelatedParallelController = {
+    id: { ...record.id, activityElementId: "Unrelated_Parallel_Activity" },
+    snapshot: ["retained"],
+    slots: [],
+  };
   const errorOperation = {
     id: "operation:Synthetic_Error_End",
     kind: SemanticOperationKind.ThrowError,
@@ -292,6 +302,10 @@ test("the ThrowError route removes only controllers whose exact Activity records
       withdrawnController,
       unrelatedController,
     ],
+    parallelMultiInstanceControllers: [
+      withdrawnParallelController,
+      unrelatedParallelController,
+    ],
   };
 
   const after = applyInternalOperation(
@@ -301,6 +315,7 @@ test("the ThrowError route removes only controllers whose exact Activity records
   );
   assert.ok(after !== null, "the public ThrowError evaluator must select the child region");
   assert.deepEqual(after.sequentialMultiInstanceControllers, [unrelatedController]);
+  assert.deepEqual(after.parallelMultiInstanceControllers, [unrelatedParallelController]);
   assert.equal(
     after.activityOccurrences.some((candidate) => candidate === record),
     false,
@@ -342,6 +357,11 @@ test("the ThrowError route removes only controllers whose exact Activity records
     Object.hasOwn(absentAfter, "sequentialMultiInstanceControllers"),
     false,
     "regional cleanup must preserve the optional field's historical absence",
+  );
+  assert.equal(
+    Object.hasOwn(absentAfter, "parallelMultiInstanceControllers"),
+    false,
+    "regional cleanup must preserve the parallel field's historical absence",
   );
 });
 

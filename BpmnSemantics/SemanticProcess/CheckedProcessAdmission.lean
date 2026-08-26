@@ -41,6 +41,10 @@ private def flowSourceScopeId? (source : CheckedProcess)
             if boundaryTimer.elementId = flow.sourceId then
               checkedNodeScopeId? source id
             else none
+        | .parallelMultiInstanceUserTask id _ _ _ _ _ boundaryTimer =>
+            if boundaryTimer.elementId = flow.sourceId then
+              checkedNodeScopeId? source id
+            else none
         | _ => none
 
 private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
@@ -239,6 +243,8 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
             flow.sourceId = boundaryTimer.elementId)) &&
         identities.all nonempty && identities.eraseDups.length = identities.length &&
         nonempty normalOutputFlowId.value && nonempty boundaryTimer.outputFlowId.value
+  | node@(.parallelMultiInstanceUserTask ..) =>
+      parallelMultiInstanceCheckedNodeWellFormed flows node
   | .intermediateCatchTimerEvent id durationLiteral =>
       durationLiteral = "PT1S" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
@@ -341,6 +347,8 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
             | .serviceTask _ _ _ _ (some route) =>
                 decide (route.boundaryEventId = flow.sourceId)
             | .sequentialMultiInstanceUserTask _ _ _ _ _ boundaryTimer =>
+                decide (boundaryTimer.elementId = flow.sourceId)
+            | .parallelMultiInstanceUserTask _ _ _ _ _ _ boundaryTimer =>
                 decide (boundaryTimer.elementId = flow.sourceId)
             | _ => false) &&
         nodeExists source.nodes flow.targetId &&

@@ -80,6 +80,9 @@ export function admitProcessStart(
     ...(program.identity.semanticProfile ===
         SemanticProfileId.SequentialMultiInstanceUserTask
       ? { sequentialMultiInstanceControllers: [] }
+      : program.identity.semanticProfile ===
+          SemanticProfileId.ParallelMultiInstanceUserTask
+      ? { parallelMultiInstanceControllers: [] }
       : {}),
     control: {
       kind: ControlStateKind.Running,

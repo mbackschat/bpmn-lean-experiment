@@ -61,6 +61,12 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
         timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
+  | .awaitParallelMultiInstanceUserTask _ _ _ taskId taskName _ _ boundaryTimer _ _ =>
+      { tasks := [{ id := taskId, name := taskName }]
+        timers :=
+          [{ elementId := boundaryTimer.elementId
+             durationMs := boundaryTimer.durationMs }] }
+  | .completeParallelMultiInstanceUserTask .. => {}
   -- The deadline only. The bounded child's own task wait belongs to the child scope's `awaitUserTask`,
   -- so publishing it here would expose one task occurrence twice.
   | .enterBoundedScope _ _ _ _ _ boundaryTimer =>
@@ -257,11 +263,9 @@ private def openSequentialMultiInstanceIterations
   | _ => []
 
 private def openSequentialMultiInstances (program : Program) (state : RuntimeState) :
-    Option (List OpenSequentialMultiInstance) :=
+    List OpenSequentialMultiInstance :=
   let definitions := sequentialMultiInstanceObservationDefinitions program
-  if definitions.isEmpty then none
-  else
-    some <| state.sequentialMultiInstanceControllers.flatMap fun controller =>
+  state.sequentialMultiInstanceControllers.flatMap fun controller =>
       match definitions.find? fun definition =>
           decide (definition.taskId.value = controller.activityElementId.value) with
       | none => []
@@ -282,6 +286,61 @@ private def openSequentialMultiInstances (program : Program) (state : RuntimeSta
              numberOfCompletedInstances := completed
              numberOfTerminatedInstances := 0
              activeIterations }]
+
+private structure ParallelMultiInstanceObservationDefinition where
+  taskId : TaskDefinitionId
+  taskInputName : String
+  completionBindingName : String
+
+private def parallelMultiInstanceObservationDefinitions (program : Program) :
+    List ParallelMultiInstanceObservationDefinition :=
+  program.operations.filterMap fun
+    | .awaitParallelMultiInstanceUserTask _ _ _ taskId _ data _ _ _ _ =>
+        some
+          { taskId
+            taskInputName := data.input.taskDataInputId
+            completionBindingName := data.output.taskDataOutputId }
+    | _ => none
+
+private def openParallelMultiInstanceIterations
+    (definition : ParallelMultiInstanceObservationDefinition)
+    (controller : ParallelMultiInstanceController) : List OpenParallelMultiInstanceIteration :=
+  indexedParallelMultiInstanceSlots controller |>.filterMap fun indexed =>
+    match indexed.2, controller.snapshot[indexed.1]? with
+    | .pending taskId, some item =>
+        some
+          { loopCounter := indexed.1
+            taskId
+            taskInput := { name := definition.taskInputName, value := .string item }
+            completionBindingName := definition.completionBindingName }
+    | _, _ => none
+
+private def openParallelMultiInstances (program : Program) (state : RuntimeState) :
+    List OpenParallelMultiInstance :=
+  let definitions := parallelMultiInstanceObservationDefinitions program
+  state.parallelMultiInstanceControllers.flatMap fun controller =>
+    match definitions.find? fun definition =>
+        definition.taskId.value == controller.id.activityElementId.value with
+    | none => []
+    | some definition =>
+        let activeIterations := openParallelMultiInstanceIterations definition controller
+        [{ id := controller.id
+           plannedInstanceCount := parallelPlannedInstanceCount controller
+           pendingItemCount := 0
+           numberOfInstances := parallelGeneratedInstanceCount controller
+           numberOfActiveInstances := parallelActiveInstanceCount controller
+           numberOfCompletedInstances := parallelCompletedInstanceCount controller
+           numberOfTerminatedInstances := 0
+           activeIterations }]
+
+private def openMultiInstances (program : Program) (state : RuntimeState) :
+    Option (List OpenMultiInstance) :=
+  let sequentialDefinitions := sequentialMultiInstanceObservationDefinitions program
+  let parallelDefinitions := parallelMultiInstanceObservationDefinitions program
+  if sequentialDefinitions.isEmpty && parallelDefinitions.isEmpty then none
+  else some
+    ((openSequentialMultiInstances program state).map .sequential ++
+      (openParallelMultiInstances program state).map .parallel)
 
 private def openIncidents (program : Program) (state : RuntimeState) :
     List OpenEffectIncident :=
@@ -324,7 +383,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
             openTimers := openTimers program state
             openEffects := openEffects program state
             openIncidents := incidents
-            openMultiInstances := openSequentialMultiInstances program state
+            openMultiInstances := openMultiInstances program state
             variables := state.variables.process.bindings
             enabledInteractions :=
               tasks.map (fun task => .completeUserTaskInstance task.id) ++
@@ -342,7 +401,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openTimers := []
           openEffects := []
           openIncidents := []
-          openMultiInstances := openSequentialMultiInstances program state
+          openMultiInstances := openMultiInstances program state
           variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
@@ -356,7 +415,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openTimers := []
           openEffects := []
           openIncidents := []
-          openMultiInstances := openSequentialMultiInstances program state
+          openMultiInstances := openMultiInstances program state
           variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
@@ -424,7 +483,8 @@ private def requiredObservations (program : Program) : List ObservationKind :=
   , .openTimers
   , .openEffects ]
   let multiInstance :=
-    if (sequentialMultiInstanceObservationDefinitions program).isEmpty then []
+    if (sequentialMultiInstanceObservationDefinitions program).isEmpty &&
+        (parallelMultiInstanceObservationDefinitions program).isEmpty then []
     else [.openMultiInstances]
   baseline ++ multiInstance ++
   [ .variables

@@ -25,6 +25,9 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
       | .awaitSequentialMultiInstanceUserTask _ _ _ task _ normalOutput _ _ =>
           task.id = wait.task.id && task.name = wait.task.name && normalOutput = wait.output &&
             wait.task.metadata.isNone && wait.metadata.isNone
+      | .awaitParallelMultiInstanceUserTask _ _ _ taskId taskName _ normalOutput _ _ _ =>
+          taskId = wait.task.id && taskName = wait.task.name && normalOutput = wait.output &&
+            wait.task.metadata.isNone && wait.metadata.isNone
       | _ => false).length = 1
 
 private def messageWaitId (wait : MessageWait) : OccurrenceId :=
@@ -68,6 +71,13 @@ private def boundaryTimerOperationMatches (program : Program) (state : RuntimeSt
           record.owner = wait.owner && recordAttaches record (timerWaitId wait) &&
             match activityBodyTask? record with
             | some body => body.elementId.value = task.id.value
+            | none => false).length = 1
+  | .awaitParallelMultiInstanceUserTask _ _ _ taskId _ _ _ boundary _ _ =>
+      boundary.elementId = wait.elementId && boundary.output = wait.output &&
+        (state.activityOccurrences.filter fun record =>
+          record.owner = wait.owner && recordAttaches record (timerWaitId wait) &&
+            match activityBodyParallelTasks? record with
+            | some children => children.all fun child => child.elementId.value = taskId.value
             | none => false).length = 1
   | .enterBoundedScope _ _ _ _ childScopeId boundary =>
       boundary.elementId = wait.elementId && boundary.output = wait.output &&
@@ -149,7 +159,8 @@ private def timerWaitValid (program : Program) (state : RuntimeState)
               race.owner = wait.owner && race.id.elementId.value = origin.elementId.value &&
                 race.timerOccurrenceId = timerWaitId wait
       | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
-      | .awaitSequentialMultiInstanceUserTask .. | .enterBoundedScope .. =>
+      | .awaitSequentialMultiInstanceUserTask ..
+      | .awaitParallelMultiInstanceUserTask .. | .enterBoundedScope .. =>
           boundaryTimerOperationMatches program state wait operation
       | _ => false).length = 1
 
@@ -268,6 +279,15 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : 
                 intro same
                 apply familyMember
                 simp [userTaskWaitDeclarers, member, same]
+              simp [different]
+          | awaitParallelMultiInstanceUserTask candidateId candidateOrigin candidateInput
+              candidateTaskId candidateTaskName data normalOutput boundary condition limits =>
+              have different : candidateTaskId ≠ wait.task.id := by
+                intro same
+                apply familyMember
+                unfold userTaskWaitDeclarers
+                rw [List.mem_filter]
+                exact ⟨member, by simp [same]⟩
               simp [different]
           | _ => simp
       _ = 1 := by
@@ -416,7 +436,8 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
                   race.id.elementId.value = candidateOrigin.elementId.value &&
                   race.timerOccurrenceId = timerWaitId wait
         | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
-        | .awaitSequentialMultiInstanceUserTask .. | .enterBoundedScope .. =>
+        | .awaitSequentialMultiInstanceUserTask ..
+        | .awaitParallelMultiInstanceUserTask .. | .enterBoundedScope .. =>
             boundaryTimerOperationMatches program state wait operation
         | _ => false).length = 1 := by
     calc
@@ -450,7 +471,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
               have different : boundary.elementId ≠ wait.elementId := by
                 intro same
                 apply familyMember
-                simp [timerWaitDeclarers, member, same]
+                unfold timerWaitDeclarers
+                rw [List.mem_filter]
+                exact ⟨member, by simp [same]⟩
               simp [boundaryTimerOperationMatches, different]
           | awaitMonitoredUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
               have different : boundary.elementId ≠ wait.elementId := by
@@ -460,6 +483,13 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
               simp [boundaryTimerOperationMatches, different]
           | awaitSequentialMultiInstanceUserTask candidateId candidateOrigin candidateInput
               candidateTask data output boundary limits =>
+              have different : boundary.elementId ≠ wait.elementId := by
+                intro same
+                apply familyMember
+                simp [timerWaitDeclarers, member, same]
+              simp [boundaryTimerOperationMatches, different]
+          | awaitParallelMultiInstanceUserTask candidateId candidateOrigin candidateInput
+              candidateTaskId candidateTaskName data output boundary condition limits =>
               have different : boundary.elementId ≠ wait.elementId := by
                 intro same
                 apply familyMember

@@ -12,6 +12,7 @@ import type {
   VariableValue,
 } from "@bpmn-lean/platform-contracts";
 
+import { isMuePreviewAlphaProfile } from "./mue-preview-alpha-start.ts";
 import styles from "./mue-preview-alpha-progress.module.css";
 
 const terminalOutputName = "DataObjectReference_OutputResults";
@@ -19,15 +20,18 @@ const terminalOutputName = "DataObjectReference_OutputResults";
 export type MuePreviewAlphaProgressProps = Readonly<{
   batches: readonly CommittedTransitionBatch[];
   current: CurrentCommittedExecution;
+  semanticProfile: string;
 }>;
 
 /** Presents only exact committed Sequential Multi-Instance facts and ephemeral browser samples. */
 export function MuePreviewAlphaProgress({
   batches,
   current,
+  semanticProfile,
 }: MuePreviewAlphaProgressProps) {
   const [samples, setSamples] = useState<readonly CurrentCommittedExecution[]>([]);
-  const isAlphaState = Object.hasOwn(current.state, "openMultiInstances");
+  const isAlphaState = isMuePreviewAlphaProfile(semanticProfile) &&
+    Object.hasOwn(current.state, "openMultiInstances");
 
   useEffect(() => {
     if (!isAlphaState) return;
@@ -38,7 +42,10 @@ export function MuePreviewAlphaProgress({
   }, [current, isAlphaState]);
 
   if (!isAlphaState) return null;
-  const controllers = current.state.openMultiInstances ?? [];
+  const controllers = (current.state.openMultiInstances ?? []).filter(
+    (controller): controller is OpenSequentialMultiInstance =>
+      controller.mode === "sequential",
+  );
   const firedTimers = committedTimerFirings(batches);
   const terminalOutput = current.state.variables.find(
     ({ name }) => name === terminalOutputName,

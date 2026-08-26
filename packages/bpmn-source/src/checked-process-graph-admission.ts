@@ -150,6 +150,7 @@ function hasSelectedArity(
     case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.UserTask:
     case CheckedNodeKind.SequentialMultiInstanceUserTask:
+    case CheckedNodeKind.ParallelMultiInstanceUserTask:
     case CheckedNodeKind.IntermediateCatchTimerEvent:
     case CheckedNodeKind.IntermediateCatchMessageEvent:
     case CheckedNodeKind.ReceiveTask:
@@ -256,14 +257,23 @@ function embeddedBoundaryHostForFlow(
   flow: CheckedSequenceFlow,
 ): Extract<
   CheckedNode,
-  { kind: CheckedNodeKind.SequentialMultiInstanceUserTask }
+  {
+    kind:
+      | CheckedNodeKind.SequentialMultiInstanceUserTask
+      | CheckedNodeKind.ParallelMultiInstanceUserTask;
+  }
 > | undefined {
   return nodes.find(
     (node): node is Extract<
       CheckedNode,
-      { kind: CheckedNodeKind.SequentialMultiInstanceUserTask }
+      {
+        kind:
+          | CheckedNodeKind.SequentialMultiInstanceUserTask
+          | CheckedNodeKind.ParallelMultiInstanceUserTask;
+      }
     > =>
-      node.kind === CheckedNodeKind.SequentialMultiInstanceUserTask &&
+      (node.kind === CheckedNodeKind.SequentialMultiInstanceUserTask ||
+        node.kind === CheckedNodeKind.ParallelMultiInstanceUserTask) &&
       node.boundaryTimer.elementId === flow.sourceId &&
       node.boundaryTimer.outputFlowId === flow.id,
   );

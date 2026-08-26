@@ -18,6 +18,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .timerBoundaryEvent id _ _ _ _
   | .userTask id _ _
   | .sequentialMultiInstanceUserTask id _ _ _ _ _
+  | .parallelMultiInstanceUserTask id _ _ _ _ _ _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .receiveTask id _
@@ -42,6 +43,8 @@ private def normalizedFlowSource (nodes : List CheckedNode)
       | .serviceTask id _ _ _ (some route) =>
           if route.boundaryEventId = sourceId then some id else none
       | .sequentialMultiInstanceUserTask id _ _ _ _ boundaryTimer =>
+          if boundaryTimer.elementId = sourceId then some id else none
+      | .parallelMultiInstanceUserTask id _ _ _ _ _ boundaryTimer =>
           if boundaryTimer.elementId = sourceId then some id else none
       | _ => none).getD sourceId
 
@@ -80,6 +83,7 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .userTask .. | .intermediateCatchTimerEvent ..
   | .sequentialMultiInstanceUserTask ..
+  | .parallelMultiInstanceUserTask ..
   | .intermediateCatchMessageEvent .. | .receiveTask .. | .configuredTask ..
   | .serviceTask ..
   | .parallelGateway .. | .exclusiveGateway ..
@@ -109,6 +113,7 @@ private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
 def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .userTask .. => true
   | .sequentialMultiInstanceUserTask .. => true
+  | .parallelMultiInstanceUserTask .. => true
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .boundaryErrorEvent .. | .timerBoundaryEvent ..
   | .intermediateCatchTimerEvent .. | .intermediateCatchMessageEvent ..

@@ -234,6 +234,7 @@ type DispatchFixture = Readonly<{
   sourceId: string;
   semanticProfile: string;
   find: string;
+  prepare?: (source: string) => string;
 }>;
 
 const dispatchFixtures = {
@@ -294,6 +295,40 @@ const dispatchFixtures = {
     semanticProfile: SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
     find: '<bpmn:startEvent id="StartEvent_Review"',
   },
+  parallelMultiInstanceUserTask: {
+    path: "the parallel Multi-Instance reader",
+    source: new URL(
+      "./fixtures/sequential-multi-instance-user-task.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "parallel-multi-instance-review",
+    semanticProfile: SemanticProfileId.ParallelMultiInstanceUserTask,
+    find: '<bpmn:startEvent id="StartEvent_Review"',
+    prepare: (source) => source
+      .replace(
+        "Definitions_SequentialMultiInstanceReview",
+        "Definitions_ParallelMultiInstanceReview",
+      )
+      .replace(
+        'targetNamespace="https://bpmn-lean.org/scenarios/sequential-multi-instance-review">',
+        [
+          'targetNamespace="https://bpmn-lean.org/scenarios/parallel-multi-instance-review"',
+          '  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">',
+        ].join("\n"),
+      )
+      .replace(
+        "Process_SequentialMultiInstanceReview",
+        "Process_ParallelMultiInstanceReview",
+      )
+      .replace('isSequential="true"', 'isSequential="false"')
+      .replace(
+        "      </bpmn:multiInstanceLoopCharacteristics>",
+        [
+          '        <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">stringEquals(completionPolicy,"first")</bpmn:completionCondition>',
+          "      </bpmn:multiInstanceLoopCharacteristics>",
+        ].join("\n"),
+      ),
+  },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 
 test("applies foreign-attribute admission through every registered compilation dispatch", async () => {
@@ -319,7 +354,8 @@ test("applies foreign-attribute admission through every registered compilation d
     const id = dispatch.id;
     assert.ok(typeof id === "string" && id in dispatchFixtures);
     const fixture = dispatchFixtures[id as CompilationDispatchId];
-    const admitted = await readFile(fixture.source, "utf8");
+    const source = await readFile(fixture.source, "utf8");
+    const admitted = "prepare" in fixture ? fixture.prepare(source) : source;
     assert.ok(admitted.includes(fixture.find), `the source no longer contains ${fixture.find}`);
     const withNamespace = admitted.includes(camundaNamespaceDeclaration)
       ? admitted

@@ -123,6 +123,7 @@ theorem wrong_activation_is_rejected
       submittedValues
       0 afterStartState.variables
       (by rfl)
+      (by rfl)
       (Or.inr (Or.inr mismatch))
 
 theorem element_id_alone_is_insufficient :

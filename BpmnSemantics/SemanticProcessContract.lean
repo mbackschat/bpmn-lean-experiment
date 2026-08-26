@@ -168,6 +168,14 @@ inductive CheckedNode where
       (output : SequentialMultiInstanceOutputDefinition)
       (normalOutputFlowId : SequenceFlowId)
       (boundaryTimer : CheckedSequentialMultiInstanceBoundaryTimer)
+  | parallelMultiInstanceUserTask
+      (id : NodeId)
+      (name : Option String)
+      (input : SequentialMultiInstanceInputDefinition)
+      (output : SequentialMultiInstanceOutputDefinition)
+      (completionCondition : CheckedCondition)
+      (normalOutputFlowId : SequenceFlowId)
+      (boundaryTimer : CheckedSequentialMultiInstanceBoundaryTimer)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
   | receiveTask (id : NodeId) (channel : MessageChannel)
@@ -207,6 +215,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .timerBoundaryEvent id _ _ _ _
   | .userTask id _ _
   | .sequentialMultiInstanceUserTask id _ _ _ _ _
+  | .parallelMultiInstanceUserTask id _ _ _ _ _ _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .receiveTask id _
@@ -435,6 +444,28 @@ inductive SemanticOperation where
       (normalOutput : ControlPlaceId)
       (boundaryTimer : BoundaryTimerArm)
       (limits : SequentialMultiInstanceLimits)
+  /-- Atomic entry for the bounded parallel Multi-Instance User Task profile. The shared data and
+  limits carriers retain the exact collection vocabulary already reviewed for Multi-Instance; the
+  distinct constructor and direct task fields give parallel execution its own closed operation arm. -/
+  | awaitParallelMultiInstanceUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (taskId : TaskDefinitionId)
+      (taskName : Option String)
+      (data : SequentialMultiInstanceDataDefinition)
+      (normalOutput : ControlPlaceId)
+      (boundaryTimer : BoundaryTimerArm)
+      (completionCondition : SimpleBooleanExpression)
+      (limits : SequentialMultiInstanceLimits)
+  /-- Command-addressed child completion paired to one parallel entry operation. It is external and
+  therefore has no control input: the submitted child identity selects the runtime transition. -/
+  | completeParallelMultiInstanceUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (entryOperationId : OperationId)
+      (taskElementId : TaskDefinitionId)
+      (normalOutput : ControlPlaceId)
   | awaitTimer
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -539,6 +570,8 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .returnProcess id _ _ _ _
   | .awaitUserTask id _ _ _ _
   | .awaitSequentialMultiInstanceUserTask id _ _ _ _ _ _ _
+  | .awaitParallelMultiInstanceUserTask id _ _ _ _ _ _ _ _ _
+  | .completeParallelMultiInstanceUserTask id _ _ _ _
   | .awaitTimer id _ _ _ _
   | .awaitMessage id _ _ _ _
   | .awaitEventRace id _ _ _ _

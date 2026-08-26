@@ -3,9 +3,17 @@ export * from "./activity-body-turnover.js";
 export * from "./flow-node-occurrence-retained-pairing.js";
 export * from "./activity-occurrence.js";
 export * from "./sequential-multi-instance-controller.js";
+export * from "./parallel-multi-instance-controller.js";
 export * from "./sequential-multi-instance-binding.js";
+export * from "./parallel-multi-instance-binding.js";
 export * from "./semantic-process-sequential-multi-instance-runtime.js";
-export * from "./sequential-multi-instance-observation.js";
+export * from "./semantic-process-parallel-multi-instance-runtime.js";
+export {
+  isActiveMultiInstanceIteration,
+  projectOpenMultiInstances as projectOpenSequentialMultiInstances,
+} from "./sequential-multi-instance-observation.js";
+export * from "./parallel-multi-instance-observation.js";
+export * from "./multi-instance-observation.js";
 export * from "./call-activity-admission.js";
 export * from "./control-position-projection.js";
 export { deriveCalledProcessInstanceId } from "./semantic-process-call-runtime.js";
@@ -62,7 +70,9 @@ export * from "./simple-boolean-expression.js";
 export * from "./source-overlay-identity.js";
 export * from "./scenario.js";
 export * from "./sequential-multi-instance-contract.js";
+export * from "./parallel-multi-instance-contract.js";
 export * from "./sequential-multi-instance-admission.js";
+export * from "./parallel-multi-instance-admission.js";
 export * from "./stimulus.js";
 export * from "./wire.js";
 export * from "./user-task-metadata.js";

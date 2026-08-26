@@ -42,6 +42,9 @@ import { lowerConfiguredTask } from "./configured-task-lowering.js";
 import {
   lowerSequentialMultiInstanceUserTask,
 } from "./sequential-multi-instance-lowering.js";
+import {
+  lowerParallelMultiInstanceUserTaskOperations,
+} from "./parallel-multi-instance-lowering.js";
 
 type ScopedOperation = Readonly<{
   operation: SemanticOperation;
@@ -193,6 +196,10 @@ function lowerNode(
     }
     case CheckedNodeKind.SequentialMultiInstanceUserTask:
       return scoped(lowerSequentialMultiInstanceUserTask(node, source));
+    case CheckedNodeKind.ParallelMultiInstanceUserTask:
+      return lowerParallelMultiInstanceUserTaskOperations(node, source).map(
+        (operation) => ({ operation, scopeId }),
+      );
     case CheckedNodeKind.IntermediateCatchTimerEvent:
       if (isEventRaceCatch(source, node.id)) {
         return [];

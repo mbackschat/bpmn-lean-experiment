@@ -16,3 +16,8 @@ export function controlPlaceId(flowId: string): string {
 export function operationId(elementId: string): string {
   return `operation:${elementId}`;
 }
+
+/** The external child-completion operation paired to one parallel Multi-Instance entry. */
+export function parallelCompletionOperationId(elementId: string): string {
+  return `${operationId(elementId)}:complete`;
+}

@@ -92,7 +92,7 @@ test("rejects recursive Multi-Instance identity, shape, and binding drift", () =
   rejectSequentialState((state) => state.openMultiInstances[0]!.id.processInstanceId = "other-instance", /identity/u);
   rejectSequentialState((state) => state.openMultiInstances[0]!.id.activityElementId = "OtherTask", /exact open task/u);
   rejectSequentialState((state) => state.openMultiInstances[0]!.id.activation = 0, /positive safe integer/u);
-  rejectSequentialState((state) => state.openMultiInstances[0]!.mode = "parallel", /mode/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.mode = "future", /mode/u);
   rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations[0]!.taskId.processInstanceId = "other-instance", /exact open task/u);
   rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations[0]!.taskId.elementId = "OtherTask", /exact open task/u);
   rejectSequentialState((state) => state.openUserTasks = [], /exact open task/u);
@@ -107,10 +107,10 @@ test("rejects invalid Multi-Instance counts and active-iteration cardinality", (
   rejectSequentialState((state) => state.openMultiInstances[0]!.plannedInstanceCount = 4, /count identities/u);
   rejectSequentialState((state) => state.openMultiInstances[0]!.numberOfCompletedInstances = Number.MAX_SAFE_INTEGER + 1, /safe integer/u);
   rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations[0]!.loopCounter = 1, /completed count/u);
-  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations = [], /exactly one/u);
+  rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations = [], /active iteration count/u);
   rejectSequentialState((state) => state.openMultiInstances[0]!.activeIterations.push(
     structuredClone(state.openMultiInstances[0]!.activeIterations[0]!),
-  ), /exactly one/u);
+  ), /active iteration count/u);
 });
 
 test("requires canonical controllers and globally unique active iteration tasks", () => {

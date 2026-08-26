@@ -40,8 +40,15 @@ import {
   sequentialMultiInstanceIterationOccurrences,
 } from "./flow-node-occurrence-sequential-multi-instance.js";
 import {
+  parallelMultiInstanceCompletionOccurrences,
+  parallelMultiInstanceInterruptionOccurrences,
+} from "./flow-node-occurrence-parallel-multi-instance-lifecycle.js";
+import {
   isSequentialMultiInstanceTaskDefinition,
 } from "./semantic-process-sequential-multi-instance-runtime.js";
+import {
+  isParallelMultiInstanceTaskDefinition,
+} from "./semantic-process-parallel-multi-instance-runtime.js";
 
 export enum FlowNodeOccurrenceTerminalKind {
   Completed = "completed",
@@ -194,11 +201,20 @@ function externalLifecycle(
     case StimulusKind.RetryIncident:
       return pieces();
     case StimulusKind.CompleteUserTaskInstance: {
-      if (!isSequentialMultiInstanceTaskDefinition(program, stimulus.taskId)) {
-        return completed(stimulus.taskId);
+      if (isParallelMultiInstanceTaskDefinition(program, stimulus.taskId)) {
+        const change = parallelMultiInstanceCompletionOccurrences(
+          program,
+          before,
+          after,
+          stimulus,
+        );
+        return change === null ? null : pieces(change.started, change.ended);
       }
-      const iteration = sequentialMultiInstanceIterationOccurrences(program, before, after, stimulus);
-      return iteration === null ? null : pieces(iteration.started, iteration.ended);
+      if (isSequentialMultiInstanceTaskDefinition(program, stimulus.taskId)) {
+        const iteration = sequentialMultiInstanceIterationOccurrences(program, before, after, stimulus);
+        return iteration === null ? null : pieces(iteration.started, iteration.ended);
+      }
+      return completed(stimulus.taskId);
     }
     case StimulusKind.DeliverMessage: {
       const race = only(before.eventRaces.filter(({ messageSubscriptionId }) => sameOccurrence(messageSubscriptionId, stimulus.subscriptionId)));
@@ -235,6 +251,10 @@ function externalLifecycle(
           return "hostId" in boundary ? pieces([], [], [instant]) : null;
         case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask: {
           const cancelled = sequentialMultiInstanceInterruptionOccurrences(boundary);
+          return cancelled === null ? null : pieces([], cancelled.ended, [instant]);
+        }
+        case SemanticOperationKind.AwaitParallelMultiInstanceUserTask: {
+          const cancelled = parallelMultiInstanceInterruptionOccurrences(boundary);
           return cancelled === null ? null : pieces([], cancelled.ended, [instant]);
         }
         case SemanticOperationKind.EnterBoundedScope:
@@ -298,12 +318,15 @@ function internalLifecycle(
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return null;
     case SemanticOperationKind.AwaitEventRace: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       const gateway = instant();

@@ -65,6 +65,7 @@ function operationDeclaresWait(
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
       return (family === InternalOccurrenceKind.UserTask &&
           operation.task.elementId === elementId) ||
         (family === InternalOccurrenceKind.Timer &&
@@ -83,6 +84,7 @@ function operationDeclaresWait(
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.MergeExclusive:

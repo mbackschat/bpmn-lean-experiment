@@ -13,6 +13,7 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 - [BPMN 2.0.2 Intermediate Catch Message draft](bpmn-2.0.2-intermediate-catch-message-draft/README.md)
 - [BPMN 2.0.2 Message Start Event draft](bpmn-2.0.2-message-start-event-draft/README.md)
 - [BPMN 2.0.2 non-interrupting boundary Timer draft](bpmn-2.0.2-non-interrupting-boundary-timer-draft/README.md)
+- [BPMN 2.0.2 parallel Multi-Instance User Task draft](bpmn-2.0.2-parallel-multi-instance-user-task-draft/README.md)
 - [BPMN 2.0.2 sequential Multi-Instance User Task draft](bpmn-2.0.2-sequential-multi-instance-user-task-draft/README.md)
 - [BPMN 2.0.2 Simple Boolean Exclusive Gateway draft](bpmn-2.0.2-simple-boolean-exclusive-gateway-draft/README.md)
 - [BPMN 2.0.2 Sub-Process boundary Timer draft](bpmn-2.0.2-subprocess-boundary-timer-draft/README.md)

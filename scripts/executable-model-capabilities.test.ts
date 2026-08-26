@@ -48,7 +48,7 @@ test("distinguishes boundary variants by interruption and attached element", () 
   assert.ok(!capabilities.includes("interruptingUserTaskBoundaryTimerEvent"));
 });
 
-test("classifies only an explicitly sequential Multi-Instance User Task", () => {
+test("classifies only an explicitly declared Multi-Instance User Task mode", () => {
   const sequential = detectExecutableBpmnCapabilities(`
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
       <bpmn:process id="Process_Sequential" isExecutable="true">
@@ -61,18 +61,18 @@ test("classifies only an explicitly sequential Multi-Instance User Task", () => 
 
   assert.ok(sequential.includes("userTask"));
   assert.ok(sequential.includes("sequentialMultiInstanceUserTask"));
-  assert.throws(
-    () => detectExecutableBpmnCapabilities(`
-      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
-        <bpmn:process id="Process_Parallel" isExecutable="true">
-          <bpmn:userTask id="Review">
-            <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
-          </bpmn:userTask>
-        </bpmn:process>
-      </bpmn:definitions>
-    `),
-    /unclassified executable BPMN parallel Multi-Instance User Task/u,
-  );
+  const parallel = detectExecutableBpmnCapabilities(`
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:process id="Process_Parallel" isExecutable="true">
+        <bpmn:userTask id="Review">
+          <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+        </bpmn:userTask>
+      </bpmn:process>
+    </bpmn:definitions>
+  `);
+  assert.ok(parallel.includes("userTask"));
+  assert.ok(parallel.includes("parallelMultiInstanceUserTask"));
+  assert.ok(!parallel.includes("sequentialMultiInstanceUserTask"));
 });
 
 test("classifies the interrupting Timer by its sequential Multi-Instance host", () => {

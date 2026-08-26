@@ -9,6 +9,7 @@ import {
   ObservationRequestKind,
   ScenarioDocumentKind,
   SEQUENTIAL_MULTI_INSTANCE_SCENARIO_OBSERVATIONS,
+  scenarioObservationsForProfile,
   supportsSemanticProcessScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -23,6 +24,9 @@ import {
   reviewProgram,
   start,
 } from "./sequential-multi-instance-fixture.ts";
+import {
+  parallelStart,
+} from "./parallel-multi-instance-fixture.ts";
 
 const oldScenario = {
   kind: ScenarioDocumentKind.Scenario,
@@ -62,6 +66,13 @@ const sequentialMultiInstanceScenario = {
   },
 } as const satisfies Scenario;
 
+const parallelMultiInstanceScenario = {
+  ...sequentialMultiInstanceScenario,
+  id: "parallel-multi-instance-observation-contract",
+  profile: "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+  stimuli: [parallelStart],
+} as const satisfies Scenario;
+
 test("selects the exact observation catalog from the scenario profile", () => {
   assert.equal(
     ObservationRequestKind.OpenMultiInstances,
@@ -84,6 +95,10 @@ test("selects the exact observation catalog from the scenario profile", () => {
     ),
     false,
   );
+  assert.deepEqual(
+    scenarioObservationsForProfile(parallelMultiInstanceScenario.profile),
+    SEQUENTIAL_MULTI_INSTANCE_SCENARIO_OBSERVATIONS,
+  );
   assert.equal(
     supportsSemanticProcessScenario(oldScenario, eventRaceProgram),
     true,
@@ -105,6 +120,10 @@ test("the retained profile and scenarios request the Multi-Instance projection",
     "../../../profiles/bpmn-2.0.2-sequential-multi-instance-user-task-draft/profile.json",
     "../../../scenarios/sequential-multi-instance/natural.scenario.json",
     "../../../scenarios/sequential-multi-instance/interrupted.scenario.json",
+    "../../../profiles/bpmn-2.0.2-parallel-multi-instance-user-task-draft/profile.json",
+    "../../../scenarios/parallel-multi-instance/all.scenario.json",
+    "../../../scenarios/parallel-multi-instance/first.scenario.json",
+    "../../../scenarios/parallel-multi-instance/interrupted.scenario.json",
   ]) {
     const artifact = JSON.parse(
       await readFile(new URL(relativePath, import.meta.url), "utf8"),
@@ -127,6 +146,18 @@ test("the scenario schema binds observation requests to the selected profile", a
   assert.equal(
     validate({
       ...sequentialMultiInstanceScenario,
+      observations: BASELINE_SCENARIO_OBSERVATIONS,
+    }),
+    false,
+  );
+  assert.equal(
+    validate(parallelMultiInstanceScenario),
+    true,
+    JSON.stringify(validate.errors),
+  );
+  assert.equal(
+    validate({
+      ...parallelMultiInstanceScenario,
       observations: BASELINE_SCENARIO_OBSERVATIONS,
     }),
     false,

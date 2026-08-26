@@ -183,6 +183,15 @@ function internalDelta(
         operation.task.elementId,
         owner,
       ));
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+      return lifecycleDelta(parallelWaitStarts(
+        supplied,
+        processId,
+        operation.task.elementId,
+        owner,
+      ));
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return failCompleteness();
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
       return lifecycleDelta([
@@ -309,6 +318,30 @@ function optionalWaitStart(
 ): UnnumberedFlowNodeOccurrenceStart[] {
   const starts = matchingWaitStarts(supplied, processId, elementId, owner);
   if (starts.length > 1) failCompleteness();
+  return starts;
+}
+
+/** Every inner wait from one atomic parallel entry, in minted activation order. */
+function parallelWaitStarts(
+  supplied: UnnumberedFlowNodeOccurrenceDelta,
+  processId: string,
+  elementId: string,
+  owner: ScopeOccurrenceId,
+): UnnumberedFlowNodeOccurrenceStart[] {
+  const starts = matchingWaitStarts(supplied, processId, elementId, owner);
+  const activations = starts.map((start) =>
+    start.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait
+      ? start.anchor.id.activation
+      : 0
+  );
+  if (
+    starts.length !== supplied.started.length ||
+    activations.some((activation, index) =>
+      index > 0 && activation <= (activations[index - 1] ?? 0)
+    )
+  ) {
+    failCompleteness();
+  }
   return starts;
 }
 

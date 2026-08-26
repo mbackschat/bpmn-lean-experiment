@@ -169,24 +169,10 @@ theorem prepared_arm_preserves_runtime_and_open_projection_exact
             rw [calledProcessAssociationsValid_frame state after controlFrame scopeStateFrame
               callStateFrame]
             exact beforeValidities.2.1
-          have afterParts := wellAfter
-          simp only [runtimeStateWellFormed, Bool.and_eq_true] at afterParts
-          obtain ⟨h16, _⟩ := afterParts
-          obtain ⟨h15, _⟩ := h16
-          obtain ⟨h14, _⟩ := h15
-          obtain ⟨h13, _⟩ := h14
-          obtain ⟨h12, _⟩ := h13
-          obtain ⟨h11, _⟩ := h12
-          obtain ⟨h10, _⟩ := h11
-          obtain ⟨h9, _⟩ := h10
-          obtain ⟨h8, _⟩ := h9
-          obtain ⟨h7, _⟩ := h8
-          obtain ⟨h6, _⟩ := h7
-          obtain ⟨h5, _⟩ := h6
-          obtain ⟨h4, _⟩ := h5
-          obtain ⟨h3, _⟩ := h4
-          obtain ⟨h2, incidentsAfter⟩ := h3
-          obtain ⟨_, racesAfter⟩ := h2
+          have associationValidities := runtimeStateWellFormed_associationValidities program
+            expectedInstanceId after wellAfter
+          have racesAfter := associationValidities.1
+          have incidentsAfter := associationValidities.2
           let newOccurrence : OccurrenceId :=
             { processInstanceId := patch.owner.processInstanceId
               elementId := ⟨patch.write.elementId.value⟩
@@ -200,7 +186,11 @@ theorem prepared_arm_preserves_runtime_and_open_projection_exact
           have openAfter := one_wait_insert_open_projection_exact program state
             after newStart current running afterRunning projectedEq waitInsertion scopesFrame
             callsFrame newAnchor freshWaits
-            programAdmitted occurrencesAfter racesAfter callsAfter incidentsAfter
+            (programValid := programAdmitted)
+            (occurrencesValid := occurrencesAfter)
+            (racesValid := racesAfter)
+            (callsValid := callsAfter)
+            (incidentsValid := incidentsAfter)
           exact ⟨current, newStart, openAfter.choose, rfl, rfl, openAfter.choose_spec.1,
             openAfter.choose_spec.2, wellAfter,
             prepareInternalArm_applies program state operation patch prepared⟩

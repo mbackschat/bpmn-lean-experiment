@@ -109,8 +109,11 @@ function internalOperationStarts(
       return sameScope(owner, transitionOwner) &&
         operation.task.elementId === value.elementId;
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
       return sameScope(owner, transitionOwner) &&
         operation.task.elementId === value.elementId;
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return false;
     case SemanticOperationKind.AwaitMessage:
       return sameScope(owner, transitionOwner) &&
         operation.message.elementId === value.elementId;
@@ -175,7 +178,7 @@ function externalStimulusStarts(
       if (stimulus.taskId.processInstanceId !== owner.processInstanceId) {
         return false;
       }
-      const operation = uniqueSequentialMultiInstanceOperationForTask(
+      const operation = uniqueMultiInstanceOperationForTask(
         program,
         stimulus.taskId.elementId,
         owner.definitionScopeId,
@@ -188,19 +191,28 @@ function externalStimulusStarts(
   }
 }
 
-function uniqueSequentialMultiInstanceOperationForTask(
+function uniqueMultiInstanceOperationForTask(
   program: SemanticProcessProgram,
   taskElementId: string,
   ownerScopeId: string,
 ): Extract<
   SemanticOperation,
-  { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
+  {
+    kind:
+      | SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+      | SemanticOperationKind.AwaitParallelMultiInstanceUserTask;
+  }
 > | null {
   const matches = program.operations.filter((operation): operation is Extract<
     SemanticOperation,
-    { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
-  > => operation.kind ===
-      SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
+    {
+      kind:
+        | SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+        | SemanticOperationKind.AwaitParallelMultiInstanceUserTask;
+    }
+  > => (operation.kind ===
+      SemanticOperationKind.AwaitSequentialMultiInstanceUserTask ||
+      operation.kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask) &&
     operation.task.elementId === taskElementId &&
     operationOwnsScope(operation, ownerScopeId, program));
   return matches.length === 1 ? matches[0] ?? null : null;
@@ -233,6 +245,7 @@ function boundaryTimerElement(
     case SemanticOperationKind.EnterBoundedScope:
       return operation.boundaryTimer.elementId;
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
       return operation.boundaryTimer.elementId;
     default:
       return null;
@@ -307,10 +320,13 @@ function operationPublishesNestedElement(
     // Only generated inner tasks and the lifetime boundary Event are BPMN flow-node occurrences;
     // the operation origin must not create a second synthetic outer/controller occurrence.
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
       return directlyOwned && (
         operation.task.elementId === elementId ||
         operation.boundaryTimer.elementId === elementId
       );
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return false;
     case SemanticOperationKind.EnterBoundedScope:
       return directlyOwned && operation.boundaryTimer.elementId === elementId;
     case SemanticOperationKind.AwaitMessage:

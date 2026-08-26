@@ -974,6 +974,124 @@
       }
     },
     {
+      "id": "parallel-risk-review-all",
+      "title": "Complete every parallel risk assessment",
+      "businessPurpose": "Assess security, privacy, and financial risk concurrently, then publish the complete result in the original assessment order.",
+      "cloneFamily": "parallel-risk-review",
+      "constructs": [
+        "boundaryEvent",
+        "dataObject",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelMultiInstance",
+        "orderedCollectionData",
+        "completionCondition",
+        "userTaskWait",
+        "userTaskCompletion",
+        "interruptingBoundaryTimer"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/parallel-multi-instance/process.bpmn",
+        "sha256": "7daa0091981c095e916ed246b487157593dec3f328a20ea03d4a3995f0617286",
+        "scenarioRelativePath": "scenarios/parallel-multi-instance/all.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "parallel-multi-instance-all",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Parallel Multi-Instance progress and ordered output are not yet one production browser journey."
+      }
+    },
+    {
+      "id": "parallel-risk-review-first",
+      "title": "Stop a parallel review at the first material risk",
+      "businessPurpose": "Stop concurrent screening after the first material risk is accepted and terminate every remaining assessment without publishing partial results.",
+      "cloneFamily": "parallel-risk-review",
+      "constructs": [
+        "boundaryEvent",
+        "dataObject",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelMultiInstance",
+        "orderedCollectionData",
+        "completionCondition",
+        "earlyCompletion",
+        "userTaskWait",
+        "userTaskCompletion",
+        "interruptingBoundaryTimer"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/parallel-multi-instance/process.bpmn",
+        "sha256": "7daa0091981c095e916ed246b487157593dec3f328a20ea03d4a3995f0617286",
+        "scenarioRelativePath": "scenarios/parallel-multi-instance/first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "parallel-multi-instance-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "First-complete sibling termination is not yet one production browser journey."
+      }
+    },
+    {
+      "id": "deadline-escalated-parallel-risk-review",
+      "title": "Escalate a parallel risk review at its shared deadline",
+      "businessPurpose": "Escalate an incomplete concurrent risk assessment when its shared outer deadline expires without publishing a partial result.",
+      "cloneFamily": "parallel-risk-review",
+      "constructs": [
+        "boundaryEvent",
+        "dataObject",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelMultiInstance",
+        "orderedCollectionData",
+        "completionCondition",
+        "userTaskWait",
+        "userTaskCompletion",
+        "interruptingBoundaryTimer"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/parallel-multi-instance/process.bpmn",
+        "sha256": "7daa0091981c095e916ed246b487157593dec3f328a20ea03d4a3995f0617286",
+        "scenarioRelativePath": "scenarios/parallel-multi-instance/interrupted.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "parallel-multi-instance-interrupted",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Parallel interruption, stale-task refusal, and escalation are not yet one production browser journey."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

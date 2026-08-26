@@ -87,6 +87,30 @@ private def calledController : SequentialMultiInstanceController :=
     snapshot := ["called"]
     outputSlots := [] }
 
+private def cancelledParallelController : ParallelMultiInstanceController :=
+  { id :=
+      { processInstanceId := instanceId
+        activityElementId := ⟨cancelledActivity.activityElementId.value⟩
+        activation := cancelledActivity.activation }
+    snapshot := ["cancelled"]
+    slots := [] }
+
+private def unrelatedParallelController : ParallelMultiInstanceController :=
+  { id :=
+      { processInstanceId := instanceId
+        activityElementId := ⟨unrelatedActivity.activityElementId.value⟩
+        activation := unrelatedActivity.activation }
+    snapshot := ["unrelated"]
+    slots := [] }
+
+private def calledParallelController : ParallelMultiInstanceController :=
+  { id :=
+      { processInstanceId := calledInstanceId
+        activityElementId := ⟨"CalledParallelMultiInstance"⟩
+        activation := 1 }
+    snapshot := ["called"]
+    slots := [] }
+
 /-- Parent work is present so global cancellation is observably wrong for nested termination. -/
 def nestedCounterexampleState : RuntimeState :=
   { initialState with
@@ -190,15 +214,18 @@ private def controllerCancellationState : RuntimeState :=
     activityOccurrences := [cancelledActivity, unrelatedActivity]
     sequentialMultiInstanceControllers :=
       [cancelledController, calledController, unrelatedController]
+    parallelMultiInstanceControllers :=
+      [cancelledParallelController, calledParallelController, unrelatedParallelController]
     activityActivations := [{ taskId := ⟨"HistoryActivity"⟩, count := 8 }] }
 
-/-- Regional cancellation withdraws the controller bound to the withdrawn Activity identity and the
-called-instance controller even though it has no Activity record, retains the unrelated pair, and
-frames every monotonic counter, Process data, and logical time. -/
+/-- Regional cancellation withdraws each controller bound to the withdrawn Activity identity and each
+called-instance controller even though it has no Activity record, retains the unrelated controllers,
+and frames every monotonic counter, Process data, and logical time. -/
 theorem regional_cancellation_withdraws_exact_controller :
     let cancelled := cancelScopeSubtree controllerCancellationState childOwner .retain
     cancelled.activityOccurrences = [unrelatedActivity] ∧
       cancelled.sequentialMultiInstanceControllers = [unrelatedController] ∧
+      cancelled.parallelMultiInstanceControllers = [unrelatedParallelController] ∧
       siblingWait ∉ cancelled.waits ∧
       cancelled.activations = controllerCancellationState.activations ∧
       cancelled.messageActivations = controllerCancellationState.messageActivations ∧

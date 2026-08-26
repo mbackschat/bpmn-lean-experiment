@@ -13,6 +13,7 @@ import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 
 /-! # Semantic Process internal transitions
 
@@ -178,6 +179,15 @@ inductive OperationStep (program : Program) :
       OperationStep program
         (.awaitSequentialMultiInstanceUserTask id origin input task data normalOutput
           boundaryTimer limits) before after
+  | awaitParallelMultiInstanceUserTask
+      (id origin input taskId taskName data normalOutput boundaryTimer completionCondition limits)
+      (before after : RuntimeState)
+      (transition : enterSharedParallelMultiInstance?
+        { id, origin, input, taskId, taskName, data, normalOutput, boundaryTimer,
+          completionCondition, limits } before = some after) :
+      OperationStep program
+        (.awaitParallelMultiInstanceUserTask id origin input taskId taskName data normalOutput
+          boundaryTimer completionCondition limits) before after
   | awaitTimer (id origin input output timer) (before after : RuntimeState)
       (transition : awaitTimerState? before input output timer = some after) :
       OperationStep program (.awaitTimer id origin input output timer) before after
@@ -279,6 +289,10 @@ def fire? (program : Program) (operation : SemanticOperation)
   | operation@(.awaitSequentialMultiInstanceUserTask ..) => do
       let arm ← SequentialMultiInstanceArm.ofOperation? operation
       enterSequentialMultiInstance? arm state
+  | operation@(.awaitParallelMultiInstanceUserTask ..) => do
+      let arm ← ParallelMultiInstanceArm.ofOperation? operation
+      enterSharedParallelMultiInstance? arm state
+  | .completeParallelMultiInstanceUserTask .. => none
   | .awaitTimer _ _ input output timer =>
       awaitTimerState? state input output timer
   | .awaitMessage _ _ input output message =>
@@ -351,6 +365,12 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
         id origin input task data normalOutput boundaryTimer limits before after arm rfl
         (enterSequentialMultiInstance_sound arm before after
           (by simpa [fire?, SequentialMultiInstanceArm.ofOperation?, arm] using result))
+    | rename_i id origin input taskId taskName data normalOutput boundaryTimer completionCondition limits
+      exact OperationStep.awaitParallelMultiInstanceUserTask
+        id origin input taskId taskName data normalOutput boundaryTimer completionCondition limits
+        before after (by simpa [fire?, ParallelMultiInstanceArm.ofOperation?] using result)
+    | case completeParallelMultiInstanceUserTask =>
+        exact False.elim (by simp [fire?] at result)
     | exact .awaitTimer _ _ _ _ _ before after result
     | exact .awaitMessage _ _ _ _ _ before after result
     | exact OperationStep.awaitEventRace _ _ _ _ _ before after

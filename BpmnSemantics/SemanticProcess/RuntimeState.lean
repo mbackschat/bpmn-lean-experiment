@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.Data
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
 
 /-! # Semantic Process runtime state
 
@@ -133,6 +134,7 @@ structure CalledProcessOccurrence where
 non-interrupting families stay distinct operation kinds and nothing here records which. -/
 inductive ActivityBody where
   | userTask (task : OccurrenceId)
+  | parallelUserTasks (first : OccurrenceId) (rest : List OccurrenceId)
   | childScope (scope : ScopeOccurrenceId)
   deriving Repr, DecidableEq
 
@@ -214,6 +216,7 @@ structure RuntimeState where
   optional only so continuation payloads under other profiles keep their byte shape, and no predicate
   or transition in either language distinguishes a missing collection from an empty one. -/
   sequentialMultiInstanceControllers : List SequentialMultiInstanceController := []
+  parallelMultiInstanceControllers : List ParallelMultiInstanceController := []
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
@@ -242,6 +245,7 @@ def initialState : RuntimeState :=
     calledProcessOccurrences := []
     activityOccurrences := []
     sequentialMultiInstanceControllers := []
+    parallelMultiInstanceControllers := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []

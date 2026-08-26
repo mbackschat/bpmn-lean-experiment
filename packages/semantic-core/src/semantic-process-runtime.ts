@@ -52,6 +52,9 @@ import {
   enterSequentialMultiInstanceUserTask,
 } from "./semantic-process-sequential-multi-instance-runtime.js";
 import {
+  enterParallelMultiInstanceUserTask,
+} from "./semantic-process-parallel-multi-instance-runtime.js";
+import {
   addToken,
   ControlStateKind,
   ownedTokenMultiplicity,
@@ -303,6 +306,16 @@ function applyInternalOperationState(
         captureOwner,
       );
     }
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask: {
+      const multiInstanceOwner = onlyTokenOwner(state, operation.input);
+      return applyOwnedOperation(
+        multiInstanceOwner,
+        (owner) => enterParallelMultiInstanceUserTask(operation, state, owner),
+        captureOwner,
+      );
+    }
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return null;
     case SemanticOperationKind.AwaitMessage: {
       const messageOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(

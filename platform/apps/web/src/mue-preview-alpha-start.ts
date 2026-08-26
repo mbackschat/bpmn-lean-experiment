@@ -5,7 +5,8 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 const alphaProcessId = "Process_SequentialMultiInstanceReview";
-const alphaSemanticProfile = "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
+export const muePreviewAlphaSemanticProfile =
+  "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
 const alphaSourceSha256 = "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4";
 
 export type MuePreviewAlphaStart = Readonly<{
@@ -19,7 +20,7 @@ export function resolveMuePreviewAlphaStart(
 ): MuePreviewAlphaStart | null {
   if (
     definition.processId !== alphaProcessId ||
-    definition.semanticProfile !== alphaSemanticProfile ||
+    !isMuePreviewAlphaProfile(definition.semanticProfile) ||
     definition.source.sha256 !== alphaSourceSha256
   ) {
     return null;
@@ -36,4 +37,8 @@ export function resolveMuePreviewAlphaStart(
       }],
     },
   };
+}
+
+export function isMuePreviewAlphaProfile(semanticProfile: string): boolean {
+  return semanticProfile === muePreviewAlphaSemanticProfile;
 }

@@ -4,6 +4,8 @@ const structuredHumanWorkProfile =
   "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
 const sequentialMultiInstanceProfile =
   "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
+const parallelMultiInstanceProfile =
+  "bpmn-2.0.2-parallel-multi-instance-user-task-draft";
 
 export type ScenarioVariableValueContractInput = Readonly<{
   profile: string;
@@ -17,6 +19,9 @@ export function verifyScenarioVariableValueContract(
   for (const stimulus of scenario.stimuli) {
     if (scenario.profile === sequentialMultiInstanceProfile) {
       verifySequentialMultiInstanceStimulus(stimulus);
+    }
+    if (scenario.profile === parallelMultiInstanceProfile) {
+      verifyParallelMultiInstanceStimulus(stimulus);
     }
     const patch = variablePatch(stimulus);
     if (patch === undefined) continue;
@@ -34,6 +39,78 @@ export function verifyScenarioVariableValueContract(
       requireByteCeiling(binding, 20_480, "binding");
     }
     requireByteCeiling(patch.bindings, 65_536, "patch");
+  }
+}
+
+function verifyParallelMultiInstanceStimulus(
+  stimulus: Readonly<Record<string, unknown>>,
+): void {
+  switch (stimulus.kind) {
+    case "startProcess": {
+      const bindings = stimulus.initialVariables;
+      if (!Array.isArray(bindings) || bindings.length !== 2) {
+        throw new TypeError(
+          "parallel Multi-Instance Process start requires exactly the input collection and completion policy bindings",
+        );
+      }
+      requireExactBinding(
+        [bindings[0]],
+        "DataObjectReference_InputItems",
+        "stringList",
+        "parallel Multi-Instance Process start requires DataObjectReference_InputItems first",
+      );
+      requireExactBinding(
+        [bindings[1]],
+        "completionPolicy",
+        "string",
+        "parallel Multi-Instance Process start requires completionPolicy second",
+      );
+      const policy = bindings[1] as {
+        readonly value?: { readonly value?: unknown };
+      };
+      if (policy.value?.value !== "all" && policy.value?.value !== "first") {
+        throw new TypeError(
+          "parallel Multi-Instance completionPolicy must be all or first",
+        );
+      }
+      return;
+    }
+    case "completeUserTaskInstance": {
+      const taskId = stimulus.taskId;
+      const elementId = taskId !== null && typeof taskId === "object"
+        ? (taskId as { readonly elementId?: unknown }).elementId
+        : undefined;
+      if (elementId === "UserTask_Review") {
+        requireExactBinding(
+          stimulus.submittedValues,
+          "DataOutput_CurrentResult",
+          "string",
+          "parallel Multi-Instance review completion requires exactly one DataOutput_CurrentResult string binding",
+        );
+      } else if (
+        !Array.isArray(stimulus.submittedValues) ||
+        stimulus.submittedValues.length !== 0
+      ) {
+        throw new TypeError(
+          "parallel Multi-Instance non-review User Task completion requires an empty patch",
+        );
+      }
+      return;
+    }
+    case "completeEffect": {
+      const result = stimulus.result;
+      const patch = result !== null && typeof result === "object"
+        ? (result as { readonly localPatch?: unknown }).localPatch
+        : undefined;
+      if (!Array.isArray(patch) || patch.length !== 0) {
+        throw new TypeError(
+          "parallel Multi-Instance effect completion requires an empty patch",
+        );
+      }
+      return;
+    }
+    default:
+      return;
   }
 }
 
@@ -142,14 +219,15 @@ function verifyProfileValue(
         return;
       }
       if (
-        profile === sequentialMultiInstanceProfile &&
+        (profile === sequentialMultiInstanceProfile ||
+          profile === parallelMultiInstanceProfile) &&
         surface === "start"
       ) {
         verifySequentialMultiInstanceInput(tagged);
         return;
       }
       throw new TypeError(
-        "stringList is only admitted for structured Human Work completion or sequential Multi-Instance Process start",
+        "stringList is only admitted for structured Human Work completion or Multi-Instance Process start",
       );
     default:
       return;

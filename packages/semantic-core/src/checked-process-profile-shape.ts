@@ -147,6 +147,14 @@ export function requiredCheckedProcessShape(
         end,
         end,
       ]);
+    case SemanticProfileId.ParallelMultiInstanceUserTask:
+      return rootChecked([
+        start,
+        CheckedNodeKind.ParallelMultiInstanceUserTask,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+      ]);
     case SemanticProfileId.NonInterruptingBoundaryTimer:
       return rootChecked([
         start,

@@ -183,7 +183,7 @@ test("an unconstrained path reports no binding rather than a nearest guess", () 
 // Historical miss: the module a plan named as a change site had five lines of headroom, and the
 // ceiling surfaced only after editing began.
 test("measures remaining headroom for a hand-written source owner", () => {
-  const source = `${"const x = 1;\n".repeat(595)}\n\n`;
+  const source = `${"const x = 1;\n".repeat(795)}\n\n`;
   for (const target of [
     "packages/semantic-core/src/runtime.ts",
     "platform/apps/web/src/runtime.tsx",
@@ -191,7 +191,7 @@ test("measures remaining headroom for a hand-written source owner", () => {
   ]) {
     assert.deepEqual(
       ownerMeasurement(target, source),
-      { path: target, lines: 595 },
+      { path: target, lines: 795 },
     );
   }
 });
@@ -205,7 +205,7 @@ test("the report names the owner ceiling and every binding with its total", () =
   assert.deepEqual(
     reportLines({
       target: "packages/semantic-core/src/runtime.ts",
-      owner: { path: "packages/semantic-core/src/runtime.ts", lines: 595 },
+      owner: { path: "packages/semantic-core/src/runtime.ts", lines: 795 },
       bindings: [
         {
           kind: BindingKind.Guard,
@@ -221,7 +221,7 @@ test("the report names the owner ceiling and every binding with its total", () =
     }),
     [
       "TARGET packages/semantic-core/src/runtime.ts",
-      "OWNER packages/semantic-core/src/runtime.ts 595/600 nonblank, 5 lines before the review target",
+      "OWNER packages/semantic-core/src/runtime.ts 795/800 nonblank, 5 lines before the review target",
       'GUARD packages/semantic-core/test/runtime.test.ts (matched "runtime.ts")',
       'REGISTRY packages/semantic-core/README.md (matched "packages/semantic-core")',
       "BINDINGS 1 guard, 1 registry",

@@ -106,12 +106,14 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiateMessage ..
   | .initiateTimer ..
   | .returnProcess ..
+  | .completeParallelMultiInstanceUserTask ..
   | .completeScope .. => []
   | .enterScope _ _ input _ _
   | .enterBoundedScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
+  | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _
   | .awaitEventRace _ _ input _ _
@@ -139,6 +141,9 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .mergeExclusive _ _ _ output => [output]
   | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ normalOutput boundaryTimer _ =>
       [normalOutput, boundaryTimer.output]
+  | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ boundaryTimer _ _ =>
+      [boundaryTimer.output]
+  | .completeParallelMultiInstanceUserTask _ _ _ _ normalOutput => [normalOutput]
   | .awaitEventRace _ _ _ message timer => [message.output, timer.output]
   -- The monitored family declares the same two outputs, though it can produce both within one run
   -- rather than one of them.
@@ -299,6 +304,8 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
   | .awaitSequentialMultiInstanceUserTask ..
+  | .awaitParallelMultiInstanceUserTask ..
+  | .completeParallelMultiInstanceUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitEffect .. | .duplicate ..
@@ -363,8 +370,15 @@ private def completionEdges (program : Program) : List (GraphEdge OperationId) :
         else none
     | _ => none
 
+private def parallelMultiInstanceCompletionEdges (program : Program) :
+    List (GraphEdge OperationId) :=
+  program.operations.filterMap fun
+    | .completeParallelMultiInstanceUserTask id _ entryOperationId _ _ =>
+        some { source := entryOperationId, target := id }
+    | _ => none
+
 private def programEdges (program : Program) : List (GraphEdge OperationId) :=
-  placeEdges program ++ completionEdges program ++
+  placeEdges program ++ completionEdges program ++ parallelMultiInstanceCompletionEdges program ++
     (callCompletionPairs program).map fun pair =>
       { source := pair.1, target := pair.2 }
 
@@ -372,8 +386,9 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitUserTask .. => true
   | .awaitSequentialMultiInstanceUserTask .. => true
+  | .awaitParallelMultiInstanceUserTask .. => true
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
-  | .invokeProcess .. | .returnProcess .. | .awaitTimer ..
+  | .invokeProcess .. | .returnProcess .. | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
   | .awaitMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..
   | .awaitMonitoredUserTask .. | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
@@ -465,6 +480,15 @@ private def boundedScopeEntryOriginsOwnTheirScopes (program : Program) : Bool :=
         | none => false
     | _ => true
 
+private def parallelMultiInstancePairsShareScope (program : Program) : Bool :=
+  program.operations.all fun entry =>
+    match ParallelMultiInstanceArm.ofOperation? entry with
+    | none => true
+    | some _ =>
+        match parallelMultiInstanceCompletionForEntry? program.operations entry with
+        | some completion => operationScope? program completion.id = operationScope? program entry.id
+        | none => false
+
 /-- Standalone graph backstop for decoded programs, independent of lowering equality. -/
 def programGraphWellFormed (program : Program) : Bool :=
   let operationIds := program.operations.map (·.id)
@@ -479,6 +503,7 @@ def programGraphWellFormed (program : Program) : Bool :=
           operationScope? program start = some entryRoot &&
             scopeForestWellFormed program &&
             scopedOwnershipComplete program entryRoot &&
+            parallelMultiInstancePairsShareScope program &&
             boundedScopeEntryOriginsOwnTheirScopes program &&
             oneCompletionStrategyPerScope program entryRoot &&
             program.controlPlaces.all (fun place =>

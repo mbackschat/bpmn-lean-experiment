@@ -6,6 +6,7 @@ import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 
 /-! # Runtime-state well-formedness
 
@@ -75,6 +76,7 @@ def notStartedStateEmpty (state : RuntimeState) : Bool :=
     state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
     state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
     state.calledProcessOccurrences.isEmpty && state.activityOccurrences.isEmpty &&
+    state.parallelMultiInstanceControllers.isEmpty &&
     !state.initiationPending
 
 /-- `RSI-OWN-01`. Every wait, hidden record, and incident-retained wait names exactly one live scope
@@ -146,6 +148,12 @@ def activityBodyLive (state : RuntimeState) (record : ActivityOccurrence) : Bool
         decide (wait.processInstanceId = task.processInstanceId) &&
           decide (wait.task.id.value = task.elementId.value) &&
           decide (wait.activation = task.activation)).length = 1
+  | .parallelUserTasks first rest =>
+      (first :: rest).all fun task =>
+        (state.waits.filter fun wait =>
+          decide (wait.processInstanceId = task.processInstanceId) &&
+            decide (wait.task.id.value = task.elementId.value) &&
+            decide (wait.activation = task.activation)).length = 1
   | .childScope scope => exactLiveOccurrence state scope
 
 /-- `AOO-BODY-01` and `AOO-OWN-01`. Every record has exactly one live body, and every Timer it lists
@@ -263,13 +271,6 @@ The fourth conjunct is program-aware because a controller is profile-owned state
 another Activity family cannot execute the operation the controller claims to resume. It resolves one
 SMI operation, its owning scope, the exact task body and wait, and the one attached lifetime Timer.
 -/
-
-def operationOwningScope? (program : Program) (id : OperationId) :
-    Option DefinitionScopeId :=
-  match program.operationScopes.filter fun ownership =>
-      decide (ownership.operationId = id) with
-  | [ownership] => some ownership.scopeId
-  | _ => none
 
 /-- Every controller names exactly one live Activity occurrence record of its own identity.
 
@@ -435,7 +436,8 @@ def canonicalCollectionOrder (state : RuntimeState) : Bool :=
     orderedBy callRecordBefore state.calledProcessOccurrences &&
     orderedBy activityOccurrenceBefore state.activityOccurrences &&
     orderedBy sequentialMultiInstanceControllerBefore
-      state.sequentialMultiInstanceControllers
+      state.sequentialMultiInstanceControllers &&
+    parallelMultiInstanceControllersOrdered state.parallelMultiInstanceControllers
 
 /-! ## Layer 2: program agreement -/
 
@@ -452,6 +454,8 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .awaitBoundedUserTask _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitMonitoredUserTask _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ _ boundaryTimer _ =>
+        decide (boundaryTimer.elementId = elementId)
+    | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ boundaryTimer _ _ =>
         decide (boundaryTimer.elementId = elementId)
     | .enterBoundedScope _ _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitEventRace _ _ _ _ timer => decide (timer.elementId = elementId)
@@ -475,6 +479,8 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     | .awaitMonitoredUserTask _ _ _ task _ => decide (task.id = taskId)
     | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
         decide (task.id = taskId)
+    | .awaitParallelMultiInstanceUserTask _ _ _ candidateTaskId _ _ _ _ _ _ =>
+        decide (candidateTaskId = taskId)
     | _ => false
 
 /-- The operations that may declare an effect wait for `elementId`. -/
@@ -572,6 +578,7 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     activityIdentitiesUnique state &&
     controllersOwnLiveActivity state &&
     sequentialMultiInstanceProgramBindingsValid program state &&
+    parallelMultiInstanceProgramBindingsValid program state &&
     controllerIdentitiesUnique state &&
     controllersNotExhausted state &&
     (match state.control with
@@ -583,7 +590,17 @@ theorem runtimeStateWellFormed_canonicalCollectionOrder (program : Program)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     canonicalCollectionOrder state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  exact wellFormed.1.1.1.1.1.1.1.1.2
+  exact wellFormed.1.1.1.1.1.1.1.1.1.2
+
+/-- Association facts exposed by the composite runtime invariant. Consumers use this named
+projection instead of depending on the ordinal position of either conjunct. -/
+theorem runtimeStateWellFormed_associationValidities (program : Program)
+    (instanceId : SemanticId) (state : RuntimeState)
+    (wellFormed : runtimeStateWellFormed program instanceId state = true) :
+    eventRaceAssociationsValid state = true ∧ effectIncidentAssociationsValid state = true := by
+  simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
+  have associations := wellFormed.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1
+  exact ⟨associations.1.2, associations.2⟩
 
 /-! ## Layer 3: monotonicity -/
 

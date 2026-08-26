@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ParallelMultiInstanceReview"
+  targetNamespace="https://bpmn-lean.org/scenarios/parallel-multi-instance-review"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:itemDefinition
+    id="ItemDefinition_String"
+    itemKind="Information"
+    structureRef="xsd:string"
+    isCollection="false" />
+  <bpmn:itemDefinition
+    id="ItemDefinition_StringList"
+    itemKind="Information"
+    isCollection="true" />
+  <bpmn:process id="Process_ParallelMultiInstanceReview" isExecutable="true">
+    <bpmn:dataObject
+      id="DataObject_InputItems"
+      itemSubjectRef="ItemDefinition_StringList"
+      isCollection="true" />
+    <bpmn:dataObjectReference
+      id="DataObjectReference_InputItems"
+      dataObjectRef="DataObject_InputItems" />
+    <bpmn:dataObject
+      id="DataObject_OutputResults"
+      itemSubjectRef="ItemDefinition_StringList"
+      isCollection="true" />
+    <bpmn:dataObjectReference
+      id="DataObjectReference_OutputResults"
+      dataObjectRef="DataObject_OutputResults" />
+
+    <bpmn:startEvent id="StartEvent_Review">
+      <bpmn:outgoing>Flow_Start_Review</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Start_Review"
+      sourceRef="StartEvent_Review"
+      targetRef="UserTask_Review" />
+
+    <bpmn:userTask id="UserTask_Review" name="Review item">
+      <bpmn:incoming>Flow_Start_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Completed</bpmn:outgoing>
+      <bpmn:ioSpecification id="IoSpecification_Review">
+        <bpmn:dataInput
+          id="DataInput_Items"
+          itemSubjectRef="ItemDefinition_StringList"
+          isCollection="true" />
+        <bpmn:dataInput
+          id="DataInput_CurrentItem"
+          itemSubjectRef="ItemDefinition_String"
+          isCollection="false" />
+        <bpmn:dataOutput
+          id="DataOutput_CurrentResult"
+          itemSubjectRef="ItemDefinition_String"
+          isCollection="false" />
+        <bpmn:dataOutput
+          id="DataOutput_Results"
+          itemSubjectRef="ItemDefinition_StringList"
+          isCollection="true" />
+        <bpmn:inputSet id="InputSet_Review">
+          <bpmn:dataInputRefs>DataInput_Items</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>DataInput_CurrentItem</bpmn:dataInputRefs>
+          <bpmn:outputSetRefs>OutputSet_Review</bpmn:outputSetRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_Review">
+          <bpmn:dataOutputRefs>DataOutput_CurrentResult</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>DataOutput_Results</bpmn:dataOutputRefs>
+          <bpmn:inputSetRefs>InputSet_Review</bpmn:inputSetRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Items">
+        <bpmn:sourceRef>DataObjectReference_InputItems</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Items</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_CurrentItem">
+        <bpmn:sourceRef>InputDataItem_CurrentItem</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_CurrentItem</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_CurrentResult">
+        <bpmn:sourceRef>DataOutput_CurrentResult</bpmn:sourceRef>
+        <bpmn:targetRef>OutputDataItem_CurrentResult</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Results">
+        <bpmn:sourceRef>DataOutput_Results</bpmn:sourceRef>
+        <bpmn:targetRef>DataObjectReference_OutputResults</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" behavior="All">
+        <bpmn:loopDataInputRef>DataInput_Items</bpmn:loopDataInputRef>
+        <bpmn:loopDataOutputRef>DataOutput_Results</bpmn:loopDataOutputRef>
+        <bpmn:inputDataItem
+          id="InputDataItem_CurrentItem"
+          itemSubjectRef="ItemDefinition_String"
+          isCollection="false" />
+        <bpmn:outputDataItem
+          id="OutputDataItem_CurrentResult"
+          itemSubjectRef="ItemDefinition_String"
+          isCollection="false" />
+        <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">stringEquals(completionPolicy,"first")</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow
+      id="Flow_Review_Completed"
+      sourceRef="UserTask_Review"
+      targetRef="EndEvent_Completed" />
+    <bpmn:endEvent id="EndEvent_Completed">
+      <bpmn:incoming>Flow_Review_Completed</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:boundaryEvent
+      id="BoundaryTimer_Review"
+      attachedToRef="UserTask_Review">
+      <bpmn:outgoing>Flow_Timer_Escalation</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_Review">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Timer_Escalation"
+      sourceRef="BoundaryTimer_Review"
+      targetRef="UserTask_Escalation" />
+    <bpmn:userTask id="UserTask_Escalation" name="Handle interrupted review">
+      <bpmn:incoming>Flow_Timer_Escalation</bpmn:incoming>
+      <bpmn:outgoing>Flow_Escalation_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow
+      id="Flow_Escalation_End"
+      sourceRef="UserTask_Escalation"
+      targetRef="EndEvent_Interrupted" />
+    <bpmn:endEvent id="EndEvent_Interrupted">
+      <bpmn:incoming>Flow_Escalation_End</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

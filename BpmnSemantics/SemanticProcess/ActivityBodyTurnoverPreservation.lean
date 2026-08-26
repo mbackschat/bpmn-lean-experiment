@@ -13,16 +13,15 @@ open BpmnSemantics
 
 /-- `AOO-TURNOVER-02`: the whole-state replacement carries a well-formed state to a well-formed state.
 
-`soleBody` says no *other* record names the wait being withdrawn. Nothing refuses two records naming
-one body, so a well-formed pre-state can hold a second claimant whose body this transition removes.
-The parent account carries the same premise explicitly for its body-side lookup determinism, and it
-reappears here as a transition obligation. Freshness needs no premise here: the identity-bound
-conjunct and the definition of the next task activation derive it.
+`soleBody` says no *other* singular or parallel body names the wait being withdrawn. A well-formed
+pre-state can otherwise hold a second claimant whose body this transition removes. The parent account
+carries the same premise explicitly for its body-side lookup determinism, and it reappears here as a
+transition obligation. Freshness needs no premise here: the identity-bound conjunct and the definition
+of the next task activation derive it.
 
-`controllerBindingPreserved` is deliberately profile-owned. Generic body turnover cannot infer which
-operation a controller means, while the SMI operation knows that its replacement keeps the same task
-definition, owner, normal output, and outer Timer. Making that cross-family fact explicit avoids
-weakening the program-aware runtime invariant into a body-blind one merely to preserve this theorem.
+The two controller-binding premises are deliberately profile-owned. Generic body turnover cannot
+infer which operation a controller means. Making those cross-family facts explicit avoids weakening
+either program-aware runtime invariant into a body-blind one merely to preserve this theorem.
 
 The intermediate state is never exposed, which is why the law can be stated at all: a decomposition
 into withdraw-then-arm would pass through a state that `activityRecordsOwnLiveWork` rejects, and the
@@ -32,8 +31,10 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     (body : OccurrenceId)
     (unique : state.waits.filter (taskIdNamesWait body) = [wait])
     (soleBody : ∀ other ∈ state.activityOccurrences,
-      sameActivityOccurrence other record = false → recordBodyNamesWait wait other = false)
+      sameActivityOccurrence other record = false → recordBodyExcludesWait wait other = true)
     (controllerBindingPreserved : sequentialMultiInstanceProgramBindingsValid program
+      (replacedState state record wait body) = true)
+    (parallelBindingPreserved : parallelMultiInstanceProgramBindingsValid program
       (replacedState state record wait body) = true)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     runtimeStateWellFormed program instanceId (replacedState state record wait body) = true := by
@@ -41,9 +42,9 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     rw [unique]; simp
   have waitMem : wait ∈ state.waits := (List.mem_filter.mp waitInFilter).1
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
     bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, unique'⟩, owned⟩,
-    _bindings⟩, controllerIds⟩, notExhausted⟩, lifecycle⟩ := wellFormed
+    _bindings⟩, _parallelBindings⟩, controllerIds⟩, notExhausted⟩, lifecycle⟩ := wellFormed
   have fresh : ∀ candidate ∈ state.waits,
       userTaskWaitKeyMatches (turnoverWait state wait) candidate = false := by
     intro candidate mem
@@ -58,7 +59,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       omega
     · simp only [Bool.not_eq_true] at keyed
       exact keyed
-  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · rw [runtimePositionValid_replacedState]; exact position
   · rw [eventRaceAssociationsValid_replacedState]; exact races
   · rw [effectIncidentAssociationsValid_replacedState]; exact incidents
@@ -75,6 +76,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   · rw [activityIdentitiesUnique_replacedState]; exact unique'
   · rw [controllersOwnLiveActivity_replacedState]; exact owned
   · exact controllerBindingPreserved
+  · exact parallelBindingPreserved
   · rw [controllerIdentitiesUnique_replacedState]; exact controllerIds
   · rw [controllersNotExhausted_replacedState]; exact notExhausted
   · -- The lifecycle clause. A live wait exists, so the pre-state cannot have been `notStarted`, and

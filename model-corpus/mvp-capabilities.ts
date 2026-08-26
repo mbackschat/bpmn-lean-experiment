@@ -132,6 +132,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notSelected,
   },
   {
+    id: "parallelMultiInstanceUserTask",
+    family: "Activities",
+    element: "Parallel Multi-Instance User Task",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One ordered String-list snapshot, at most sixteen concurrent generated tasks, exact all-or-first completion policy, atomic index-ordered output only when every slot is filled, and no partial output on early closure.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "serviceTask",
     family: "Activities",
     element: "Service Task",
@@ -233,6 +241,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     element: "Interrupting Timer Boundary Event on sequential Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
     restriction: "One exact PT1S outer-lifetime deadline preserved through task turnover; interruption withdraws the active task and publishes no partial output.",
+    cibEvidence: notSelected,
+  },
+  {
+    id: "interruptingParallelMultiInstanceBoundaryTimerEvent",
+    family: "Boundary Events",
+    element: "Interrupting Timer Boundary Event on parallel Multi-Instance User Task",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One exact PT1S outer-lifetime deadline preserved across concurrent progress; interruption terminates every remaining task and publishes no partial output.",
     cibEvidence: notSelected,
   },
   {

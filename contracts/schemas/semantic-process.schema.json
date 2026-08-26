@@ -761,6 +761,81 @@
         }
       }
     },
+    "parallelMultiInstanceCompletionCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "variable",
+        "value"
+      ],
+      "properties": {
+        "kind": { "const": "stringEquals" },
+        "variable": { "const": "completionPolicy" },
+        "value": { "const": "first" }
+      }
+    },
+    "awaitParallelMultiInstanceUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "task",
+        "data",
+        "completionCondition",
+        "normalOutput",
+        "boundaryTimer",
+        "limits"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonemptyString" },
+        "kind": { "const": "awaitParallelMultiInstanceUserTask" },
+        "origin": { "$ref": "#/$defs/bpmnElementOrigin" },
+        "input": { "$ref": "#/$defs/nonemptyString" },
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "elementId",
+            "name"
+          ],
+          "properties": {
+            "elementId": { "$ref": "#/$defs/nonemptyString" },
+            "name": { "type": ["string", "null"] }
+          }
+        },
+        "data": { "$ref": "#/$defs/sequentialMultiInstanceDataDefinition" },
+        "completionCondition": {
+          "$ref": "#/$defs/parallelMultiInstanceCompletionCondition"
+        },
+        "normalOutput": { "$ref": "#/$defs/nonemptyString" },
+        "boundaryTimer": { "$ref": "#/$defs/boundaryTimerArm" },
+        "limits": { "$ref": "#/$defs/sequentialMultiInstanceLimits" }
+      }
+    },
+    "completeParallelMultiInstanceUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "entryOperationId",
+        "taskElementId",
+        "normalOutput"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonemptyString" },
+        "kind": { "const": "completeParallelMultiInstanceUserTask" },
+        "origin": { "$ref": "#/$defs/bpmnElementOrigin" },
+        "entryOperationId": { "$ref": "#/$defs/nonemptyString" },
+        "taskElementId": { "$ref": "#/$defs/nonemptyString" },
+        "normalOutput": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
     "timerDefinition": {
       "type": "object",
       "additionalProperties": false,
@@ -1665,6 +1740,12 @@
         },
         {
           "$ref": "#/$defs/awaitSequentialMultiInstanceUserTask"
+        },
+        {
+          "$ref": "#/$defs/awaitParallelMultiInstanceUserTask"
+        },
+        {
+          "$ref": "#/$defs/completeParallelMultiInstanceUserTask"
         },
         {
           "$ref": "#/$defs/awaitTimer"

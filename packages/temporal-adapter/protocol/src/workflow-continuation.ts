@@ -260,6 +260,9 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     ...(Object.hasOwn(value, "sequentialMultiInstanceControllers")
       ? ["sequentialMultiInstanceControllers"]
       : []),
+    ...(Object.hasOwn(value, "parallelMultiInstanceControllers")
+      ? ["parallelMultiInstanceControllers"]
+      : []),
     "variables",
     "taskActivations", "messageActivations", "timerActivations",
     "eventRaceActivations", "callActivations", "effectActivations",
@@ -284,6 +287,8 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     !isList(value.activityOccurrences, isActivityOccurrence) ||
     (Object.hasOwn(value, "sequentialMultiInstanceControllers") &&
       !isList(value.sequentialMultiInstanceControllers, isSequentialMultiInstanceController)) ||
+    (Object.hasOwn(value, "parallelMultiInstanceControllers") &&
+      !isList(value.parallelMultiInstanceControllers, isParallelMultiInstanceController)) ||
     !isScopedVariables(value.variables) ||
     !isList(value.taskActivations, isActivationCounter) ||
     !isList(value.messageActivations, isActivationCounter) ||
@@ -324,6 +329,26 @@ function isSequentialMultiInstanceController(value: unknown): boolean {
     isList(value.outputSlots, isWireString);
 }
 
+function isParallelMultiInstanceController(value: unknown): boolean {
+  return isRecord(value) && hasOnlyKeys(value, ["id", "snapshot", "slots"]) &&
+    isActivityOccurrenceId(value.id) && isList(value.snapshot, isWireString) &&
+    isList(value.slots, isParallelMultiInstanceSlot);
+}
+
+function isParallelMultiInstanceSlot(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  switch (value.kind) {
+    case "pending":
+      return hasOnlyKeys(value, ["kind", "taskId"]) &&
+        isOccurrenceId(value.taskId);
+    case "completed":
+      return hasOnlyKeys(value, ["kind", "taskId", "result"]) &&
+        isOccurrenceId(value.taskId) && isWireString(value.result);
+    default:
+      return false;
+  }
+}
+
 function isActivityOccurrenceId(value: unknown): boolean {
   return isRecord(value) &&
     hasOnlyKeys(value, ["processInstanceId", "activityElementId", "activation"]) &&
@@ -337,6 +362,9 @@ function isActivityBody(value: unknown): boolean {
   switch (value.kind) {
     case ActivityBodyKind.UserTask:
       return hasOnlyKeys(value, ["kind", "task"]) && isOccurrenceId(value.task);
+    case ActivityBodyKind.ParallelUserTasks:
+      return hasOnlyKeys(value, ["kind", "tasks"]) &&
+        isList(value.tasks, isOccurrenceId) && value.tasks.length > 0;
     case ActivityBodyKind.ChildScope:
       return hasOnlyKeys(value, ["kind", "scope"]) && isScopeId(value.scope);
     default:

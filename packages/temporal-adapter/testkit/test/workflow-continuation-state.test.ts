@@ -231,6 +231,78 @@ test("the sequential Multi-Instance profile accepts its required controller coll
   );
 });
 
+test("the parallel Multi-Instance profile retains its complete indexed controller", async () => {
+  const sequentialSource = await readFile(new URL(
+    "../../../bpmn-source/test/fixtures/sequential-multi-instance-user-task.bpmn",
+    import.meta.url,
+  ), "utf8");
+  const parallelSource = sequentialSource
+    .replace(
+      "Definitions_SequentialMultiInstanceReview",
+      "Definitions_ParallelMultiInstanceReview",
+    )
+    .replace(
+      'targetNamespace="https://bpmn-lean.org/scenarios/sequential-multi-instance-review">',
+      [
+        'targetNamespace="https://bpmn-lean.org/scenarios/parallel-multi-instance-review"',
+        '  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">',
+      ].join("\n"),
+    )
+    .replace(
+      "Process_SequentialMultiInstanceReview",
+      "Process_ParallelMultiInstanceReview",
+    )
+    .replace('isSequential="true"', 'isSequential="false"')
+    .replace(
+      "      </bpmn:multiInstanceLoopCharacteristics>",
+      [
+        '        <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">stringEquals(completionPolicy,"first")</bpmn:completionCondition>',
+        "      </bpmn:multiInstanceLoopCharacteristics>",
+      ].join("\n"),
+    );
+  const compilation = await compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(parallelSource),
+    sourceId: "parallel-multi-instance-continuation-state",
+    expectedSha256: undefined,
+    sourceOverlay: null,
+    semanticProfile: SemanticProfileId.ParallelMultiInstanceUserTask,
+    limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+  });
+  assert.equal(compilation.status, BpmnCompilationStatus.Accepted);
+  if (compilation.status !== BpmnCompilationStatus.Accepted) {
+    throw new TypeError("Parallel Multi-Instance continuation fixture was rejected");
+  }
+  const operation = compilation.semanticProcess.operations.find(({ kind }) =>
+    kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask
+  );
+  assert.ok(operation?.kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask);
+  const parallelInstanceId = "Instance_ParallelMultiInstanceContinuation";
+  const started = applyStimulus(
+    compilation.semanticProcess,
+    { ...initialState, parallelMultiInstanceControllers: [] },
+    {
+      kind: StimulusKind.StartProcess,
+      commandId: "start-parallel-multi-instance-continuation",
+      processId: compilation.semanticProcess.processId,
+      instanceId: parallelInstanceId,
+      initialVariables: [{
+        name: operation.data.input.dataObjectReferenceId,
+        value: { kind: VariableValueKind.StringList, value: ["a", "b", "c"] },
+      }, {
+        name: "completionPolicy",
+        value: { kind: VariableValueKind.String, value: "all" },
+      }],
+    },
+  );
+  assert.equal(started.outcome, CommandOutcome.Committed);
+  assert.equal(started.state.parallelMultiInstanceControllers?.length, 1);
+  assert.deepEqual(requireBpmnWorkflowContinuationStateV1(
+    started.state,
+    compilation.semanticProcess,
+    parallelInstanceId,
+  ), started.state);
+});
+
 test("a malformed sequential Multi-Instance controller is refused before recovery", () => {
   const forged = {
     ...resumable,

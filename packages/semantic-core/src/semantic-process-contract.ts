@@ -16,6 +16,11 @@ import type {
   SequentialMultiInstanceDataDefinition,
   SequentialMultiInstanceLimits,
 } from "./sequential-multi-instance-contract.js";
+import type {
+  ParallelMultiInstanceCompletionCondition,
+  ParallelMultiInstanceDataDefinition,
+  ParallelMultiInstanceLimits,
+} from "./parallel-multi-instance-contract.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
   DefinitionScope,
@@ -44,6 +49,8 @@ export enum SemanticOperationKind {
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
   AwaitSequentialMultiInstanceUserTask = "awaitSequentialMultiInstanceUserTask",
+  AwaitParallelMultiInstanceUserTask = "awaitParallelMultiInstanceUserTask",
+  CompleteParallelMultiInstanceUserTask = "completeParallelMultiInstanceUserTask",
   AwaitBoundedUserTask = "awaitBoundedUserTask",
   AwaitMonitoredUserTask = "awaitMonitoredUserTask",
   AwaitMessage = "awaitMessage",
@@ -285,6 +292,30 @@ export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
     limits: SequentialMultiInstanceLimits;
   }>;
 
+export type AwaitParallelMultiInstanceUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitParallelMultiInstanceUserTask;
+    input: string;
+    task: {
+      elementId: string;
+      name: string | null;
+    };
+    data: ParallelMultiInstanceDataDefinition;
+    completionCondition: ParallelMultiInstanceCompletionCondition;
+    normalOutput: string;
+    boundaryTimer: BoundaryTimerArm;
+    limits: ParallelMultiInstanceLimits;
+  }>;
+
+/** The command-addressed child-completion half paired to one parallel entry operation. */
+export type CompleteParallelMultiInstanceUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.CompleteParallelMultiInstanceUserTask;
+    entryOperationId: string;
+    taskElementId: string;
+    normalOutput: string;
+  }>;
+
 /**
  * One embedded Sub-Process occurrence that owns an interrupting boundary Timer deadline.
  *
@@ -373,6 +404,8 @@ export type SemanticOperation =
   | AwaitBoundedUserTaskOperation
   | AwaitMonitoredUserTaskOperation
   | AwaitSequentialMultiInstanceUserTaskOperation
+  | AwaitParallelMultiInstanceUserTaskOperation
+  | CompleteParallelMultiInstanceUserTaskOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.AwaitMessage;

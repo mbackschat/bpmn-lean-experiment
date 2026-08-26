@@ -1,4 +1,4 @@
-/** Strict recursive decoder for Product 1's sequential Multi-Instance progress projection. */
+/** Strict recursive decoder for Product 1's closed Multi-Instance progress projection. */
 import {
   readOwn,
   requireExactKeys,
@@ -17,10 +17,10 @@ import type {
 type OpenTask = Readonly<{ id: OccurrenceId }>;
 type DecodedController = Readonly<{
   id: ActivityOccurrenceId;
-  taskId: OccurrenceId;
+  taskIds: OccurrenceId[];
 }>;
 
-export function requireOpenSequentialMultiInstances(
+export function requireOpenMultiInstances(
   value: unknown,
   tasks: ReadonlyArray<OpenTask>,
   processInstanceId: string,
@@ -54,13 +54,11 @@ function requireController(
     "activeIterations",
   ]);
   const id = requireActivityOccurrenceId(readOwn(value, "id"), `${label}.id`);
-  if (
-    id.processInstanceId !== processInstanceId ||
-    readOwn(value, "mode") !== "sequential"
-  ) {
-    throw new TypeError(`${label} identity or mode is invalid`);
+  if (id.processInstanceId !== processInstanceId) {
+    throw new TypeError(`${label} identity is invalid`);
   }
-  const completed = requireControllerCounts(value, label);
+  const mode = requireMode(readOwn(value, "mode"), label);
+  const counts = requireControllerCounts(value, mode, label);
   const iterations = requireDenseArray(
     readOwn(value, "activeIterations"),
     (iteration, iterationLabel) => requireIteration(
@@ -68,44 +66,84 @@ function requireController(
       tasks,
       processInstanceId,
       id,
-      completed,
       iterationLabel,
     ),
     `${label}.activeIterations`,
   );
-  if (iterations.length !== 1) {
-    throw new TypeError(`${label} must contain exactly one active iteration`);
+  if (iterations.length !== counts.active) {
+    throw new TypeError(`${label} active iteration count is invalid`);
   }
-  return { id, taskId: iterations[0]! };
+  switch (mode) {
+    case "sequential":
+      if (iterations[0]!.loopCounter !== counts.completed) {
+        throw new TypeError(`${label}.activeIterations[0].loopCounter does not equal completed count`);
+      }
+      break;
+    case "parallel":
+      requireParallelLoopCounters(iterations, counts.planned, label);
+      break;
+  }
+  return { id, taskIds: iterations.map(({ taskId }) => taskId) };
 }
 
-function requireControllerCounts(value: object, label: string): number {
+type MultiInstanceMode = "sequential" | "parallel";
+
+type ControllerCounts = Readonly<{
+  planned: number;
+  active: number;
+  completed: number;
+}>;
+
+function requireMode(value: unknown, label: string): MultiInstanceMode {
+  switch (value) {
+    case "sequential":
+    case "parallel":
+      return value;
+    default:
+      throw new TypeError(`${label}.mode is invalid`);
+  }
+}
+
+function requireControllerCounts(
+  value: object,
+  mode: MultiInstanceMode,
+  label: string,
+): ControllerCounts {
   const planned = requireCount(value, "plannedInstanceCount", label);
   const pending = requireCount(value, "pendingItemCount", label);
   const total = requireCount(value, "numberOfInstances", label);
   const active = requireCount(value, "numberOfActiveInstances", label);
   const completed = requireCount(value, "numberOfCompletedInstances", label);
   const terminated = requireCount(value, "numberOfTerminatedInstances", label);
-  if (
-    active !== 1 ||
-    terminated !== 0 ||
-    total !== active + completed + terminated ||
-    planned !== pending + total ||
-    total > planned
-  ) {
-    throw new TypeError(`${label} count identities are invalid`);
+  const commonInvalid = active < 1 || terminated !== 0 ||
+    total !== active + completed + terminated || total > planned;
+  switch (mode) {
+    case "sequential":
+      if (commonInvalid || active !== 1 || planned !== pending + total) {
+        throw new TypeError(`${label} count identities are invalid`);
+      }
+      break;
+    case "parallel":
+      if (commonInvalid || pending !== 0 || planned !== total) {
+        throw new TypeError(`${label} count identities are invalid`);
+      }
+      break;
   }
-  return completed;
+  return { planned, active, completed };
 }
+
+type DecodedIteration = Readonly<{
+  loopCounter: number;
+  taskId: OccurrenceId;
+}>;
 
 function requireIteration(
   value: unknown,
   tasks: ReadonlyArray<OpenTask>,
   processInstanceId: string,
   controllerId: ActivityOccurrenceId,
-  completed: number,
   label: string,
-): OccurrenceId {
+): DecodedIteration {
   requireObject(value, label);
   requireExactKeys(value, label, [
     "loopCounter",
@@ -113,12 +151,10 @@ function requireIteration(
     "taskInput",
     "completionBindingName",
   ]);
-  if (requireNonnegativeSafeInteger(
+  const loopCounter = requireNonnegativeSafeInteger(
     readOwn(value, "loopCounter"),
     `${label}.loopCounter`,
-  ) !== completed) {
-    throw new TypeError(`${label}.loopCounter does not equal completed count`);
-  }
+  );
   const taskId = requireOccurrenceId(readOwn(value, "taskId"), `${label}.taskId`);
   if (
     taskId.processInstanceId !== processInstanceId ||
@@ -132,7 +168,20 @@ function requireIteration(
     readOwn(value, "completionBindingName"),
     `${label}.completionBindingName`,
   );
-  return taskId;
+  return { loopCounter, taskId };
+}
+
+function requireParallelLoopCounters(
+  iterations: DecodedIteration[],
+  planned: number,
+  label: string,
+): void {
+  if (iterations.some(({ loopCounter }, index) =>
+    loopCounter >= planned ||
+    (index > 0 && iterations[index - 1]!.loopCounter >= loopCounter)
+  )) {
+    throw new TypeError(`${label} parallel loop counters must be unique, in range, and ascending`);
+  }
 }
 
 function requireIterationInput(value: unknown, label: string): void {
@@ -227,10 +276,9 @@ function requireCanonicalControllers(controllers: DecodedController[]): void {
 }
 
 function requireUniqueActiveTasks(controllers: DecodedController[]): void {
-  if (controllers.some((controller, index) =>
-    controllers.slice(index + 1).some((other) =>
-      sameOccurrence(controller.taskId, other.taskId)
-    )
+  const taskIds = controllers.flatMap(({ taskIds: active }) => active);
+  if (taskIds.some((taskId, index) =>
+    taskIds.slice(index + 1).some((other) => sameOccurrence(taskId, other))
   )) {
     throw new TypeError("openMultiInstances contains duplicate active task identities");
   }

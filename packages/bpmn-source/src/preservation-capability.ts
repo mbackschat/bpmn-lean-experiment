@@ -124,6 +124,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.MessageStart:
     case SemanticProfileId.NonInterruptingBoundaryTimer:
     case SemanticProfileId.ParallelForkJoin:
+    case SemanticProfileId.ParallelMultiInstanceUserTask:
     case SemanticProfileId.ParallelUserTaskAssignmentFormMetadata:
     case SemanticProfileId.ServiceTaskEffect:
     case SemanticProfileId.ServiceTaskIncident:

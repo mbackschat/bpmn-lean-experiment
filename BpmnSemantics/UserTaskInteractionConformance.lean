@@ -173,6 +173,7 @@ theorem wrong_process_instance_is_rejected :
       { exactTaskId with processInstanceId := ⟨"Other_Instance"⟩ }
       submittedValues 0 afterStartState.variables
       (by decide +kernel)
+      (by decide +kernel)
       (by simp [exactTaskId, exactWait])
 
 theorem element_identity_without_activation_is_insufficient :

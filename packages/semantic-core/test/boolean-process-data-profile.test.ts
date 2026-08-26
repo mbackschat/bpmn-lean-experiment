@@ -97,6 +97,7 @@ test("registers the Boolean profile with the exact sequential User Task shape", 
   assert.deepEqual(Object.values(SemanticProfileId), [
     "bpmn-2.0.2-activity-boundary-timer-draft",
     "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+    "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
     "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
     "bpmn-2.0.2-called-process-call-activity-draft",
     "cibseven-2.0.0-mapped-success-service-task-draft",

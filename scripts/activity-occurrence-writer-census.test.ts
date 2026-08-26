@@ -71,6 +71,27 @@ const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem armScopeDeadline_issues_fresh_activity", "activityIdentityIssuingDiscipline state"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#closeSharedParallelRegion@1", {
+    classification: WriterClassification.IdentityRemoving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
+      markers: ["theorem closeSharedParallelRegion_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#completeSharedParallelMultiInstance?@1", {
+    classification: WriterClassification.IdentityPreserving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
+      markers: ["theorem replaceParallelRecordBody_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#enterSharedParallelMultiInstance?@1", {
+    classification: WriterClassification.Issuer,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
+      markers: ["theorem enterSharedParallelMultiInstance_issues_fresh_activity"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/RuntimeState.lean#initialState@1", {
     classification: WriterClassification.Initializer,
   }],
@@ -147,6 +168,29 @@ const writerRecords = new Map<string, WriterRecord>([
     evidence: {
       relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
       markers: ["runtimeStateRegressions(state, spawned.state)", "preserves the exact host Activity identity"],
+    },
+  }],
+  ["packages/semantic-core/src/semantic-process-parallel-multi-instance-runtime.ts#closeParallelMultiInstance@1", {
+    classification: WriterClassification.IdentityRemoving,
+  }],
+  ["packages/semantic-core/src/semantic-process-parallel-multi-instance-runtime.ts#completeParallelMultiInstanceChild@1", {
+    classification: WriterClassification.IdentityPreserving,
+    evidence: {
+      relativePath: "packages/semantic-core/test/parallel-multi-instance-entry.test.ts",
+      markers: [
+        "runtimeStateRegressions(entered.state, third.state)",
+        "parallel child turnover preserves the exact outer identity",
+      ],
+    },
+  }],
+  ["packages/semantic-core/src/semantic-process-parallel-multi-instance-runtime.ts#enterParallelMultiInstanceUserTask@1", {
+    classification: WriterClassification.Issuer,
+    evidence: {
+      relativePath: "packages/semantic-core/test/parallel-multi-instance-entry.test.ts",
+      markers: [
+        "runtimeStateRegressions(before, entered.state)",
+        "RuntimeStateRegression.ActivityOccurrenceIssue",
+      ],
     },
   }],
   ["packages/semantic-core/src/semantic-process-scope-cancellation.ts#removeScopeOccurrenceRegion@1", {
@@ -481,9 +525,9 @@ function writerMatchesClassification(site: WriterSite, classification: WriterCla
     case WriterClassification.Issuer:
       return /activityOccurrences\s*:=\s*insertActivityOccurrence/su.test(site.source);
     case WriterClassification.IdentityPreserving:
-      return /activityOccurrences\s*:=\s*replaceBodyIn/su.test(site.source);
+      return /activityOccurrences\s*:=\s*(?:replaceBodyIn|replaceParallelRecordBody)/su.test(site.source);
     case WriterClassification.IdentityRemoving:
-      return /activityOccurrences\s*:=.*(?:\.filter|filter\s|retainedByRegion)/su.test(site.source);
+      return /activityOccurrences\s*:=.*(?:\.filter|filter\s|retainedByRegion|removeParallelRecord)/su.test(site.source);
   }
 }
 

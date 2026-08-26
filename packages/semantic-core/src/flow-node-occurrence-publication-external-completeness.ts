@@ -24,6 +24,10 @@ import type {
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
 import type { UnnumberedCommittedTransitionRecord } from "./semantic-transition-trace.js";
 import { compareCanonicalStrings } from "./wire.js";
+import {
+  parallelMultiInstanceBoundaryHosts,
+  parallelMultiInstanceCompletionEnds,
+} from "./flow-node-occurrence-parallel-multi-instance-publication.js";
 
 /**
  * One open flow-node occurrence as this relation sees it.
@@ -69,19 +73,26 @@ export function expectedExternalLifecycle(
       return lifecycleDelta();
     case StimulusKind.CompleteUserTaskInstance: {
       const completed = requireWait(open, stimulus.taskId);
-      const operation = sequentialMultiInstanceOperationForWait(
+      const operation = multiInstanceOperationForWait(
         program,
         completed,
       );
-      return operation === null
-        ? lifecycleDelta([], [lifecycleEnd(
-            completed,
-            FlowNodeOccurrenceTerminalKind.Completed,
-          )])
-        : lifecycleDelta(
+      if (operation === null) {
+        return lifecycleDelta([], [lifecycleEnd(
+          completed,
+          FlowNodeOccurrenceTerminalKind.Completed,
+        )]);
+      }
+      return operation.kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+        ? lifecycleDelta(
             optionalSequentialSuccessor(supplied, completed, operation),
             [lifecycleEnd(completed, FlowNodeOccurrenceTerminalKind.Completed)],
-          );
+          )
+        : lifecycleDelta([], requireParallelCompletionEnds(
+            open,
+            supplied,
+            completed,
+          ));
     }
     case StimulusKind.DeliverMessage: {
       const message = requireWait(open, stimulus.subscriptionId);
@@ -175,6 +186,8 @@ function boundaryTimerLifecycle(
       operation.kind === SemanticOperationKind.AwaitMonitoredUserTask ||
       operation.kind ===
         SemanticOperationKind.AwaitSequentialMultiInstanceUserTask ||
+      operation.kind ===
+        SemanticOperationKind.AwaitParallelMultiInstanceUserTask ||
       operation.kind === SemanticOperationKind.EnterBoundedScope) &&
     operation.boundaryTimer.elementId === timerId.elementId);
   if (operations.length !== 1) failCompleteness();
@@ -194,6 +207,26 @@ function boundaryTimerLifecycle(
         operation.kind === SemanticOperationKind.AwaitMonitoredUserTask
           ? []
           : [lifecycleEnd(host, FlowNodeOccurrenceTerminalKind.Cancelled)],
+        [instantOccurrence(host.processId, timerId.elementId, host.owner)],
+        commandId,
+        transitionIndex,
+      );
+    }
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask: {
+      const hosts = parallelMultiInstanceBoundaryHosts(
+        program,
+        open,
+        operation,
+        timerId,
+      );
+      if (hosts === null) failCompleteness();
+      const host = hosts[0]!;
+      return lifecycleDelta(
+        [],
+        hosts.map((entry) => lifecycleEnd(
+          entry,
+          FlowNodeOccurrenceTerminalKind.Cancelled,
+        )),
         [instantOccurrence(host.processId, timerId.elementId, host.owner)],
         commandId,
         transitionIndex,
@@ -222,30 +255,41 @@ function boundaryTimerLifecycle(
   }
 }
 
-/**
- * The SMI operation whose generated wait this retained occurrence can be.
- *
- * The retained wait and the Program are the independent relation available at E2 completeness. The
- * producer's Activity record and controller are deliberately absent here: using them would make the
- * completeness relation repeat the producer's selection mechanism.
- */
-function sequentialMultiInstanceOperationForWait(
+/** Finds the MI operation from the retained wait and Program, independently of private controllers. */
+function multiInstanceOperationForWait(
   program: SemanticProcessProgram,
   wait: OpenOccurrence,
 ): Extract<
   SemanticOperation,
-  { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
+  {
+    kind:
+      | SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+      | SemanticOperationKind.AwaitParallelMultiInstanceUserTask;
+  }
 > | null {
   const matches = program.operations.filter((operation): operation is Extract<
     SemanticOperation,
-    { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
-  > => operation.kind ===
-      SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
+    {
+      kind:
+        | SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+        | SemanticOperationKind.AwaitParallelMultiInstanceUserTask;
+    }
+  > => (operation.kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask ||
+      operation.kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask) &&
     operation.task.elementId === wait.elementId &&
     wait.processId === requireProcessId(program, wait.owner) &&
     operationOwnedBy(program, operation, wait.owner));
   if (matches.length > 1) failCompleteness();
   return matches[0] ?? null;
+}
+
+function requireParallelCompletionEnds(
+  open: readonly OpenOccurrence[],
+  supplied: UnnumberedFlowNodeOccurrenceDelta,
+  completed: OpenOccurrence,
+): UnnumberedFlowNodeOccurrenceEnd[] {
+  const ends = parallelMultiInstanceCompletionEnds(open, supplied, completed);
+  return ends ?? failCompleteness();
 }
 
 /**

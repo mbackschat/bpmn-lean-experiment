@@ -73,6 +73,12 @@ export function isWellFormedSemanticProcessGraph(
   )) {
     return false;
   }
+  if (!parallelMultiInstanceOperationsArePaired(
+    graph.operations,
+    operationScope,
+  )) {
+    return false;
+  }
 
   const producers = new Map<string, string[]>();
   const consumers = new Map<string, string[]>();
@@ -153,6 +159,7 @@ export function isWellFormedSemanticProcessGraph(
     ...placeEdges,
     ...completionEdges,
     ...callCompletionEdges(graph.operations, operationScope),
+    ...parallelMultiInstanceCompletionEdges(graph.operations),
   ];
   const operationIds = graph.operations.map(({ id }) => id);
   const reached = reachableFrom([start.id], edges);
@@ -443,6 +450,7 @@ function operationInputs(
     case SemanticOperationKind.InitiateMessage:
     case SemanticOperationKind.InitiateTimer:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
     case SemanticOperationKind.ReturnProcess:
       return [];
     case SemanticOperationKind.EnterScope:
@@ -450,6 +458,7 @@ function operationInputs(
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitMessage:
@@ -489,6 +498,10 @@ function operationOutputs(
       return [operation.message.output, operation.timer.output];
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return [operation.normalOutput, operation.boundaryTimer.output];
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+      return [operation.boundaryTimer.output];
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return [operation.normalOutput];
     // Both arms are token-carrying control places: the boundary Sequence Flow receives a token when
     // the deadline wins, unlike an Event-Based Gateway's configuration flows. The monitored family
     // declares the same two outputs, though it can produce both within one run rather than one.
@@ -534,6 +547,44 @@ function operationOutputs(
     case SemanticOperationKind.CompleteScope:
       return operation.parentOutput === null ? [] : [operation.parentOutput];
   }
+}
+
+function parallelMultiInstanceOperationsArePaired(
+  operations: ReadonlyArray<SemanticOperation>,
+  operationScope: ReadonlyMap<string, string>,
+): boolean {
+  const entries = operations.filter(
+    (operation): operation is Extract<
+      SemanticOperation,
+      { kind: SemanticOperationKind.AwaitParallelMultiInstanceUserTask }
+    > => operation.kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask,
+  );
+  const completions = operations.filter(
+    (operation): operation is Extract<
+      SemanticOperation,
+      { kind: SemanticOperationKind.CompleteParallelMultiInstanceUserTask }
+    > => operation.kind === SemanticOperationKind.CompleteParallelMultiInstanceUserTask,
+  );
+  return entries.length === completions.length && entries.every((entry) => {
+    const matches = completions.filter((completion) =>
+      completion.entryOperationId === entry.id &&
+      completion.origin.elementId === entry.origin.elementId &&
+      completion.taskElementId === entry.task.elementId &&
+      completion.normalOutput === entry.normalOutput &&
+      operationScope.get(completion.id) === operationScope.get(entry.id)
+    );
+    return matches.length === 1;
+  });
+}
+
+function parallelMultiInstanceCompletionEdges(
+  operations: ReadonlyArray<SemanticOperation>,
+): ReadonlyArray<OperationEdge> {
+  return operations.flatMap((operation) =>
+    operation.kind === SemanticOperationKind.CompleteParallelMultiInstanceUserTask
+      ? [{ source: operation.entryOperationId, target: operation.id }]
+      : []
+  );
 }
 
 function operationsOfKind<K extends SemanticOperationKind>(

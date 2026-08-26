@@ -36,7 +36,7 @@ import type {
   ExecutionPublicationTransportValidationContext,
   ExecutionPublicationValidationContext,
 } from "./semantic-publication.js";
-import { isSequentialMultiInstanceProgress } from "./sequential-multi-instance-publication-validation.js";
+import { isMultiInstanceProgress } from "./parallel-multi-instance-publication-validation.js";
 import { isCanonicalPublicationVariablePatch } from "./semantic-publication-variable-validation.js";
 
 export type ExecutionPublicationValidationAuthority =
@@ -292,7 +292,8 @@ function isState(
   const hasMultiInstances = isRecord(value) &&
     Object.hasOwn(value, "openMultiInstances");
   const programDeclaresMultiInstances = program?.operations.some(({ kind }) =>
-    kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
+    kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask ||
+    kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask
   );
   if (!isRecord(value) || !hasOnlyKeys(value, [
     "kind", "instanceId", "status", "activeWaits", "openUserTasks",
@@ -314,10 +315,11 @@ function isState(
     !value.openEffects.every(isOpenEffect) || !canonical(value.openEffects, compareOpenOccurrence) ||
     !Array.isArray(value.openIncidents) || !value.openIncidents.every(isOpenIncident) ||
     !canonical(value.openIncidents, (a, b) => compareOpenOccurrence(a.effect, b.effect)) ||
-    (hasMultiInstances && !isSequentialMultiInstanceProgress(
+    (hasMultiInstances && !isMultiInstanceProgress(
       value.openMultiInstances,
       instanceId,
       value.openUserTasks,
+      program,
     )) ||
     !isPatch(value.variables) || !isActiveWaits(value.activeWaits) ||
     !isEnabledInteractions(value.enabledInteractions, value)) {

@@ -8,7 +8,7 @@ Before changing a file under this directory, run:
 node scripts/what-binds.ts scripts/<target>
 ```
 
-The report names the required implementation detail maps, guards, this registry, and the 600-line owner headroom that constrain the target. Stable gate definitions and command bounds remain in [TESTING-SPEC.md](../docs/TESTING-SPEC.md); this README only routes tasks to their existing entry points.
+The report names the required implementation detail maps, guards, this registry, and the 800-line owner headroom that constrain the target. Stable gate definitions and command bounds remain in [TESTING-SPEC.md](../docs/TESTING-SPEC.md); this README only routes tasks to their existing entry points.
 
 ## Everyday repository work
 

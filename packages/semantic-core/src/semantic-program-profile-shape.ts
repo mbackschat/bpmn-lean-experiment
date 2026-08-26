@@ -21,6 +21,16 @@ export function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
+    case SemanticProfileId.ParallelMultiInstanceUserTask:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitParallelMultiInstanceUserTask,
+        SemanticOperationKind.CompleteParallelMultiInstanceUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.TimerStart:
       return rootProgram([
         SemanticOperationKind.InitiateTimer,

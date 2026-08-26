@@ -91,6 +91,7 @@ const HostOperationClass = {
   BoundedScopeWait: "boundedScopeWait",
   MonitoredActivityWait: "monitoredActivityWait",
   SequentialMultiInstanceActivityWait: "sequentialMultiInstanceActivityWait",
+  ParallelMultiInstanceActivityWait: "parallelMultiInstanceActivityWait",
 } as const;
 
 type HostOperationClass =
@@ -168,6 +169,19 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
         "The Temporal host admits only one isolated sequential Multi-Instance User Task with one exact PT1S outer-lifetime boundary Timer.",
     },
   },
+  {
+    operationClass: HostOperationClass.ParallelMultiInstanceActivityWait,
+    isAdmissibleIsolatedForm: (operation) =>
+      operation.kind ===
+        SemanticOperationKind.AwaitParallelMultiInstanceUserTask &&
+      operation.boundaryTimer.durationMs === 1_000,
+    failure: {
+      code: TemporalHostAdmissionFailureCode
+        .ParallelMultiInstanceSchedulerUnavailable,
+      evidence:
+        "The Temporal host admits only one isolated parallel Multi-Instance User Task with one exact PT1S outer-lifetime boundary Timer.",
+    },
+  },
 ];
 
 function classifyHostOperation(
@@ -211,6 +225,10 @@ function classifyHostOperation(
       return HostOperationClass.Passive;
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return HostOperationClass.SequentialMultiInstanceActivityWait;
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+      return HostOperationClass.ParallelMultiInstanceActivityWait;
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return HostOperationClass.Passive;
     default:
       return assertNever(kind);
   }

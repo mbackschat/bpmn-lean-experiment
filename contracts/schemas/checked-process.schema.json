@@ -759,6 +759,60 @@
           "required": [
             "kind",
             "id",
+            "name",
+            "input",
+            "output",
+            "completionCondition",
+            "normalOutputFlowId",
+            "boundaryTimer"
+          ],
+          "properties": {
+            "kind": {
+              "const": "parallelMultiInstanceUserTask"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "input": {
+              "$ref": "#/$defs/sequentialMultiInstanceInputDefinition"
+            },
+            "output": {
+              "$ref": "#/$defs/sequentialMultiInstanceOutputDefinition"
+            },
+            "completionCondition": {
+              "$ref": "#/$defs/condition"
+            },
+            "normalOutputFlowId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "boundaryTimer": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "elementId",
+                "durationLiteral",
+                "outputFlowId"
+              ],
+              "properties": {
+                "elementId": { "$ref": "#/$defs/nonemptyString" },
+                "durationLiteral": { "const": "PT1S" },
+                "outputFlowId": { "$ref": "#/$defs/nonemptyString" }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "durationLiteral"
           ],
           "properties": {

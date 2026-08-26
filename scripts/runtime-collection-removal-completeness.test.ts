@@ -170,7 +170,8 @@ test("every live runtime collection is filtered by the called-instance removal",
   const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
   assert.ok(fields.has("activityOccurrences"), "RuntimeState fields were not parsed");
   assert.ok(
-    fields.has("sequentialMultiInstanceControllers"),
+    fields.has("sequentialMultiInstanceControllers") &&
+      fields.has("parallelMultiInstanceControllers"),
     "optional RuntimeState fields were not parsed",
   );
   const filtered = topLevelKeys(returnedLiteral(calledOwner, calledRemoval));
@@ -214,7 +215,7 @@ test("dropping one filtered collection from either route is reported", () => {
   }
 });
 
-test("renaming the optional controller filter is reported independently in both routes", () => {
+test("renaming either optional controller filter is reported independently in both routes", () => {
   const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
   const noDelegation: ReadonlySet<string> = new Set();
   for (const [relativePath, signature, delegated] of [
@@ -222,12 +223,17 @@ test("renaming the optional controller filter is reported independently in both 
     [regionOwner, regionRemoval, regionDelegatedFields],
   ] as const) {
     const literal = returnedLiteral(relativePath, signature);
-    const mutated = renamedField(literal, "sequentialMultiInstanceControllers");
-    assert.notEqual(mutated, literal, `seeded mutation matched nothing in ${relativePath}`);
-    assert.deepEqual(
-      unfiltered(fields, topLevelKeys(mutated), delegated),
-      ["sequentialMultiInstanceControllers"],
-      relativePath,
-    );
+    for (const field of [
+      "sequentialMultiInstanceControllers",
+      "parallelMultiInstanceControllers",
+    ] as const) {
+      const mutated = renamedField(literal, field);
+      assert.notEqual(mutated, literal, `seeded mutation matched no ${field} in ${relativePath}`);
+      assert.deepEqual(
+        unfiltered(fields, topLevelKeys(mutated), delegated),
+        [field],
+        `${relativePath}: ${field}`,
+      );
+    }
   }
 });

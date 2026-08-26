@@ -18,7 +18,11 @@ theorem canonicalCollectionOrder_internalArmingOrders (state : RuntimeState)
       orderedBy effectActivationBefore state.effectActivations = true ∧
       orderedBy activityVariableScopeBefore state.variables.activities = true := by
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at canonical
-  exact ⟨canonical.1.1.1.1.1.1.1.1.1.1.1.1.2, canonical.1.1.1.1.1.1.1.1.2, canonical.1.1.1.1.1.1.1.2, canonical.1.1.1.1.1.1.2, canonical.1.1.1.1.1.2⟩
+  exact ⟨canonical.1.1.1.1.1.1.1.1.1.1.1.1.1.2,
+    canonical.1.1.1.1.1.1.1.1.1.2,
+    canonical.1.1.1.1.1.1.1.1.2,
+    canonical.1.1.1.1.1.1.1.2,
+    canonical.1.1.1.1.1.1.2⟩
 
 def runningStateInstance? (state : RuntimeState) : Option SemanticId := match state.control with
   | .running instanceId => some instanceId
@@ -573,6 +577,29 @@ theorem sole_timer_declarer_excludes_smi (program : Program)
   rw [declarer] at candidateMember
   simp at candidateMember
 
+theorem sole_timer_declarer_excludes_parallel (program : Program)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (timer : TimerDefinition)
+    (declarer : timerWaitDeclarers program timer.elementId =
+      [.awaitTimer id origin input output timer]) :
+    ∀ operation ∈ program.operations,
+      match operation with
+      | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ boundaryTimer _ _ =>
+          boundaryTimer.elementId ≠ timer.elementId
+      | _ => True := by
+  intro operation member
+  cases operation <;> try trivial
+  rename_i candidateId candidateOrigin candidateInput candidateTaskId candidateName
+    candidateData candidateOutput candidateTimer candidateCompletion candidateLimits
+  intro same
+  have candidateMember : SemanticOperation.awaitParallelMultiInstanceUserTask
+      candidateId candidateOrigin candidateInput candidateTaskId candidateName candidateData
+        candidateOutput candidateTimer candidateCompletion candidateLimits ∈
+          timerWaitDeclarers program timer.elementId := by
+    simp [timerWaitDeclarers, member, same]
+  rw [declarer] at candidateMember
+  simp at candidateMember
+
 theorem prepared_timer_excludes_smi (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch) (inserted : TimerWait)
     (prepared : prepareInternalArm? program state operation = some patch)
@@ -599,6 +626,34 @@ theorem prepared_timer_excludes_smi (program : Program) (state : RuntimeState)
       simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
         InternalArmingWrite.elementId] using unique.1.1
     exact sole_timer_declarer_excludes_smi program id origin input output timer declarer
+  all_goals simp_all
+
+theorem prepared_timer_excludes_parallel (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (patch : InternalArmingPatch) (inserted : TimerWait)
+    (prepared : prepareInternalArm? program state operation = some patch)
+    (writeEq : patch.write = .timer inserted) :
+    ∀ candidate ∈ program.operations,
+      match candidate with
+      | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ boundaryTimer _ _ =>
+          boundaryTimer.elementId ≠ inserted.elementId
+      | _ => True := by
+  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  all_goals
+    obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+    split at prepared <;> try simp at prepared
+  all_goals
+    obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+    cases controlEq : state.control <;> simp_all
+  all_goals
+    obtain ⟨unique, absent, available, patchEq⟩ := prepared
+  case awaitTimer.isFalse.running =>
+    rename_i id origin input output timer instanceId selection
+    cases writeEq
+    have declarer : timerWaitDeclarers program timer.elementId =
+        [.awaitTimer id origin input output timer] := by
+      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
+        InternalArmingWrite.elementId] using unique.1.1
+    exact sole_timer_declarer_excludes_parallel program id origin input output timer declarer
   all_goals simp_all
 
 

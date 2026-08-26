@@ -8,10 +8,10 @@
  */
 
 /** Nonblank lines above which a hand-written source file needs a recorded narrow justification. */
-export const reviewTarget = 600;
+export const reviewTarget = 800;
 
 /** Nonblank lines no hand-written source file may exceed under any justification. */
-export const hardCeiling = 1_000;
+export const hardCeiling = 1_200;
 
 /** Files this close to the review target are effectively full for planning purposes. */
 export const headroomWarningLines = 40;

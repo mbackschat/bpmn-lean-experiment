@@ -44,11 +44,16 @@ export type ActivityOccurrenceId = DeepReadonly<{
 /** The runtime shape an Activity occurrence's body takes. A new arm, never a flag. */
 export enum ActivityBodyKind {
   UserTask = "userTask",
+  ParallelUserTasks = "parallelUserTasks",
   ChildScope = "childScope",
 }
 
 export type ActivityBody =
   | DeepReadonly<{ kind: ActivityBodyKind.UserTask; task: UserTaskInstanceId }>
+  | DeepReadonly<{
+      kind: ActivityBodyKind.ParallelUserTasks;
+      tasks: [UserTaskInstanceId, ...UserTaskInstanceId[]];
+    }>
   | DeepReadonly<{ kind: ActivityBodyKind.ChildScope; scope: ScopeOccurrenceId }>;
 
 /**
@@ -104,6 +109,12 @@ function bodyNames(body: ActivityBody, occurrence: OccurrenceId): boolean {
       return body.task.processInstanceId === occurrence.processInstanceId &&
         body.task.elementId === occurrence.elementId &&
         body.task.activation === occurrence.activation;
+    case ActivityBodyKind.ParallelUserTasks:
+      return body.tasks.some((task) =>
+        task.processInstanceId === occurrence.processInstanceId &&
+        task.elementId === occurrence.elementId &&
+        task.activation === occurrence.activation
+      );
     case ActivityBodyKind.ChildScope:
       return false;
   }
@@ -161,6 +172,15 @@ export function activityBodyTask(
   record: ActivityOccurrence,
 ): UserTaskInstanceId | undefined {
   return record.body.kind === ActivityBodyKind.UserTask ? record.body.task : undefined;
+}
+
+/** The cardinality-explicit parallel body tasks, or `undefined` for every existing body arm. */
+export function activityBodyParallelTasks(
+  record: ActivityOccurrence,
+): ReadonlyArray<UserTaskInstanceId> | undefined {
+  return record.body.kind === ActivityBodyKind.ParallelUserTasks
+    ? record.body.tasks
+    : undefined;
 }
 
 /** The child scope occurrence a record's body names, or `undefined` when its body is a task. */

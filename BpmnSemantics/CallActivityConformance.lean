@@ -247,11 +247,37 @@ private def unrelatedController : SequentialMultiInstanceController :=
     snapshot := ["unrelated"]
     outputSlots := [] }
 
+private def calledParallelController : ParallelMultiInstanceController :=
+  { id :=
+      { processInstanceId := calledInstanceId
+        activityElementId := ⟨"CalledParallelMultiInstance"⟩
+        activation := 1 }
+    snapshot := ["called"]
+    slots := [] }
+
+private def callerParallelController : ParallelMultiInstanceController :=
+  { id :=
+      { processInstanceId := callerInstanceId
+        activityElementId := ⟨"CallerParallelMultiInstance"⟩
+        activation := 1 }
+    snapshot := ["caller"]
+    slots := [] }
+
+private def unrelatedParallelController : ParallelMultiInstanceController :=
+  { id :=
+      { processInstanceId := unrelatedInstanceId
+        activityElementId := ⟨"UnrelatedParallelMultiInstance"⟩
+        activation := 1 }
+    snapshot := ["unrelated"]
+    slots := [] }
+
 private def controllerReturnReadyState : RuntimeState :=
   { calledWaiting.state with
     waits := []
     sequentialMultiInstanceControllers :=
       [calledController, callerController, unrelatedController]
+    parallelMultiInstanceControllers :=
+      [calledParallelController, callerParallelController, unrelatedParallelController]
     activityActivations := [{ taskId := ⟨"HistoryActivity"⟩, count := 8 }] }
 
 private def controllerReturnResult? : Option RuntimeState :=
@@ -259,14 +285,16 @@ private def controllerReturnResult? : Option RuntimeState :=
     ⟨"operation:return-process:B_Call"⟩ { elementId := ⟨"B_Call"⟩ }
     calledProcessId calledScopeId ⟨"place:F2_CallCallerTask"⟩
 
-/-- Called return withdraws the controller owned by its called-instance closure, retains caller and
-unrelated pairs, and frames every monotonic counter, Process data, and logical time. -/
+/-- Called return withdraws each controller owned by its called-instance closure, retains caller and
+unrelated controllers, and frames every monotonic counter, Process data, and logical time. -/
 theorem called_return_withdraws_exact_controller :
     controllerReturnResult?.isSome = true ∧
       (controllerReturnResult?.getD initialState).activityOccurrences =
         controllerReturnReadyState.activityOccurrences ∧
       (controllerReturnResult?.getD initialState).sequentialMultiInstanceControllers =
         [callerController, unrelatedController] ∧
+      (controllerReturnResult?.getD initialState).parallelMultiInstanceControllers =
+        [callerParallelController, unrelatedParallelController] ∧
       (controllerReturnResult?.getD initialState).activations =
         controllerReturnReadyState.activations ∧
       (controllerReturnResult?.getD initialState).messageActivations =

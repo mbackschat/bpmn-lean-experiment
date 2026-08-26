@@ -12,6 +12,9 @@ import type { UserTaskMetadata } from "./user-task-metadata.js";
 import type {
   SequentialMultiInstanceDataDefinition,
 } from "./sequential-multi-instance-contract.js";
+import type {
+  ParallelMultiInstanceDataDefinition,
+} from "./parallel-multi-instance-contract.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
   DefinitionScope,
@@ -35,6 +38,7 @@ export enum CheckedNodeKind {
   TimerBoundaryEvent = "timerBoundaryEvent",
   UserTask = "userTask",
   SequentialMultiInstanceUserTask = "sequentialMultiInstanceUserTask",
+  ParallelMultiInstanceUserTask = "parallelMultiInstanceUserTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
   ReceiveTask = "receiveTask",
@@ -168,6 +172,20 @@ export type CheckedNode =
       name: string | null;
       input: SequentialMultiInstanceDataDefinition["input"];
       output: SequentialMultiInstanceDataDefinition["output"];
+      normalOutputFlowId: string;
+      boundaryTimer: {
+        elementId: string;
+        durationLiteral: "PT1S";
+        outputFlowId: string;
+      };
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.ParallelMultiInstanceUserTask;
+      id: string;
+      name: string | null;
+      input: ParallelMultiInstanceDataDefinition["input"];
+      output: ParallelMultiInstanceDataDefinition["output"];
+      completionCondition: CheckedCondition;
       normalOutputFlowId: string;
       boundaryTimer: {
         elementId: string;

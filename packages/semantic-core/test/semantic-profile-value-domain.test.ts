@@ -93,6 +93,17 @@ const expectedCapabilities = new Map<string, ProfileCapabilities>([
       "user-task-string-completion-data",
     ),
   }],
+  [SemanticProfileId.ParallelMultiInstanceUserTask, {
+    processStart: capability(
+      [VariableValueKind.String, VariableValueKind.StringList],
+      "process-start-string-variable",
+      "process-start-ordered-string-list-data",
+    ),
+    userTaskCompletion: capability(
+      [VariableValueKind.String],
+      "user-task-string-completion-data",
+    ),
+  }],
   [SemanticProfileId.MappedSuccessServiceTask, {
     effectCompletion: capability(
       [VariableValueKind.String],

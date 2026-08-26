@@ -16,6 +16,7 @@ import type {
 import type { BpmnErrorRoute } from "./semantic-process-contract.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
+import type { ParallelMultiInstanceController } from "./parallel-multi-instance-controller.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
 import { compareCanonicalStrings } from "./wire.js";
 
@@ -174,6 +175,8 @@ export type RuntimeState = DeepReadonly<{
    * it has no cross-profile wire-shape distinction to preserve.
    */
   sequentialMultiInstanceControllers?: SequentialMultiInstanceController[];
+  /** Present exactly for programs declaring the parallel Multi-Instance operation. */
+  parallelMultiInstanceControllers?: ParallelMultiInstanceController[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   messageActivations: ActivationCounter[];

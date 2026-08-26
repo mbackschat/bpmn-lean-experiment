@@ -21,14 +21,17 @@
         ],
         "properties": {
           "profile": {
-            "const": "bpmn-2.0.2-sequential-multi-instance-user-task-draft"
+            "enum": [
+              "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+              "bpmn-2.0.2-parallel-multi-instance-user-task-draft"
+            ]
           }
         }
       },
       "then": {
         "properties": {
           "observations": {
-            "$ref": "#/$defs/sequentialMultiInstanceObservationRequests"
+            "$ref": "#/$defs/multiInstanceObservationRequests"
           }
         }
       },
@@ -123,7 +126,7 @@
         "logicalTime"
       ]
     },
-    "sequentialMultiInstanceObservationRequests": {
+    "multiInstanceObservationRequests": {
       "const": [
         "deployment",
         "commandResults",
@@ -902,6 +905,53 @@
         }
       }
     },
+    "openParallelMultiInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "mode",
+        "plannedInstanceCount",
+        "pendingItemCount",
+        "numberOfInstances",
+        "numberOfActiveInstances",
+        "numberOfCompletedInstances",
+        "numberOfTerminatedInstances",
+        "activeIterations"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/activityOccurrenceId"
+        },
+        "mode": {
+          "const": "parallel"
+        },
+        "plannedInstanceCount": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "pendingItemCount": {
+          "const": 0
+        },
+        "numberOfInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfActiveInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfCompletedInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfTerminatedInstances": {
+          "const": 0
+        },
+        "activeIterations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openSequentialMultiInstanceIteration"
+          }
+        }
+      }
+    },
     "effectExecutionResult": {
       "oneOf": [
         {
@@ -1316,7 +1366,14 @@
         "openMultiInstances": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/openSequentialMultiInstance"
+            "oneOf": [
+              {
+                "$ref": "#/$defs/openSequentialMultiInstance"
+              },
+              {
+                "$ref": "#/$defs/openParallelMultiInstance"
+              }
+            ]
           }
         },
         "variables": {

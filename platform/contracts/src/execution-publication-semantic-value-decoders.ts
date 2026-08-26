@@ -28,7 +28,7 @@ import type {
   StateObservation,
 } from "./execution-publications.js";
 import { requirePublicationVariableValue } from "./execution-publication-variable-value-decoder.js";
-import { requireOpenSequentialMultiInstances } from "./execution-publication-multi-instance-decoder.js";
+import { requireOpenMultiInstances } from "./execution-publication-multi-instance-decoder.js";
 
 const lowercaseSha256 = /^[0-9a-f]{64}$/u;
 
@@ -213,7 +213,7 @@ export function requirePublicationState(
   const incidents = requireArray(readOwn(value, "openIncidents"), requireOpenIncident, "openIncidents");
   requireCanonical(incidents, (a, b) => compareOccurrence(a.effect.id, b.effect.id), "openIncidents");
   const multiInstances = hasMultiInstances
-    ? requireOpenSequentialMultiInstances(
+    ? requireOpenMultiInstances(
       readOwn(value, "openMultiInstances"),
       tasks,
       instanceId,

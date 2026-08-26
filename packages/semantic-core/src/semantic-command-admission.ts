@@ -59,6 +59,12 @@ import {
   spawnFromMonitoredUserTask,
 } from "./semantic-process-monitored-task-runtime.js";
 import {
+  completeParallelMultiInstanceChild,
+  interruptParallelMultiInstance,
+  isParallelMultiInstanceBoundaryDefinition,
+  isParallelMultiInstanceTaskDefinition,
+} from "./semantic-process-parallel-multi-instance-runtime.js";
+import {
   completeSequentialMultiInstanceIteration,
   interruptSequentialMultiInstance,
   isSequentialMultiInstanceBoundaryDefinition,
@@ -71,6 +77,9 @@ import {
   profileAllowsStimulusValueDomain,
 } from "./semantic-profile-value-domain.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  parallelMultiInstanceStimulusDataAdmitted,
+} from "./parallel-multi-instance-command-data-admission.js";
 import {
   sequentialMultiInstanceStimulusDataAdmitted,
 } from "./sequential-multi-instance-command-data-admission.js";
@@ -116,6 +125,11 @@ function admissibleCommittedState(
       state.control.kind === ControlStateKind.NotStarted &&
       state.sequentialMultiInstanceControllers === undefined
       ? { ...state, sequentialMultiInstanceControllers: [] }
+      : program.identity.semanticProfile ===
+          SemanticProfileId.ParallelMultiInstanceUserTask &&
+          state.control.kind === ControlStateKind.NotStarted &&
+          state.parallelMultiInstanceControllers === undefined
+      ? { ...state, parallelMultiInstanceControllers: [] }
       : state;
   return gateState.control.kind === ControlStateKind.NotStarted
     ? isGateAdmissibleRuntimeState(program, "", gateState)
@@ -135,6 +149,7 @@ export function admit(
     !incidentStateAllowsDispatch(program, state) ||
     !admissibleCommittedState(program, state) ||
     !sequentialMultiInstanceStimulusDataAdmitted(program, stimulus) ||
+    !parallelMultiInstanceStimulusDataAdmitted(program, stimulus) ||
     !profileAllowsStimulusValueDomain(
       program.identity.semanticProfile,
       stimulus,
@@ -184,6 +199,16 @@ export function admit(
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
       }
+      if (isParallelMultiInstanceTaskDefinition(program, stimulus.taskId)) {
+        const next = completeParallelMultiInstanceChild(
+          program,
+          state,
+          stimulus,
+        );
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       const next = completeOrdinaryUserTask(program, state, stimulus);
       return next === null
         ? { outcome: CommandOutcome.Rejected, state }
@@ -218,6 +243,12 @@ export function admit(
       }
       if (isSequentialMultiInstanceBoundaryDefinition(program, stimulus.timerId)) {
         const next = interruptSequentialMultiInstance(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
+      if (isParallelMultiInstanceBoundaryDefinition(program, stimulus.timerId)) {
+        const next = interruptParallelMultiInstance(program, state, stimulus);
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };

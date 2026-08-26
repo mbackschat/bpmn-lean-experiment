@@ -44,6 +44,10 @@ private def operationKindJson : SemanticOperationKind → Json
   | .awaitUserTask => toJson "awaitUserTask"
   | .awaitSequentialMultiInstanceUserTask =>
       toJson "awaitSequentialMultiInstanceUserTask"
+  | .awaitParallelMultiInstanceUserTask =>
+      toJson "awaitParallelMultiInstanceUserTask"
+  | .completeParallelMultiInstanceUserTask =>
+      toJson "completeParallelMultiInstanceUserTask"
   | .awaitTimer => toJson "awaitTimer"
   | .awaitMessage => toJson "awaitMessage"
   | .awaitEventRace => toJson "awaitEventRace"

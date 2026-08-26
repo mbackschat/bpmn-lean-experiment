@@ -192,6 +192,9 @@ private def removeCalledProcessTree (state : RuntimeState)
     sequentialMultiInstanceControllers :=
       state.sequentialMultiInstanceControllers.filter fun controller =>
         !removed.contains controller.processInstanceId
+    parallelMultiInstanceControllers :=
+      state.parallelMultiInstanceControllers.filter fun controller =>
+        !removed.contains controller.id.processInstanceId
     variables :=
       { state.variables with
         activities := state.variables.activities.filter fun activity =>

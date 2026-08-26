@@ -99,6 +99,7 @@ def activeInstanceCount (state : RuntimeState)
   | [record] =>
       match record.body with
       | .userTask _ => 1
+      | .parallelUserTasks .. => 0
       | .childScope _ => 0
   | _ => 0
 

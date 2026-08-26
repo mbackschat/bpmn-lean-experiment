@@ -303,6 +303,14 @@ function removeCalledProcessTree(
             ({ id }) => !removedInstanceIds.has(id.processInstanceId),
           ),
       }),
+    ...(state.parallelMultiInstanceControllers === undefined
+      ? {}
+      : {
+        parallelMultiInstanceControllers:
+          state.parallelMultiInstanceControllers.filter(
+            ({ id }) => !removedInstanceIds.has(id.processInstanceId),
+          ),
+      }),
     controlTokens: state.controlTokens.filter(({ owner }) => !removedOwner(owner)),
     userTaskWaits: state.userTaskWaits.filter(({ owner }) => !removedOwner(owner)),
     messageWaits: state.messageWaits.filter(({ owner }) => !removedOwner(owner)),

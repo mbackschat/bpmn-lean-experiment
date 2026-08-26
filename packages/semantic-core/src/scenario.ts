@@ -23,7 +23,7 @@ import type {
   Stimulus,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
-import { projectOpenMultiInstances } from "./sequential-multi-instance-observation.js";
+import { projectOpenMultiInstances } from "./multi-instance-observation.js";
 import {
   supportsSemanticProcessExecution,
   supportsSemanticProcessScenario,

@@ -27,6 +27,16 @@ import {
   compareSequentialMultiInstanceControllers,
 } from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
+import {
+  compareParallelMultiInstanceControllers,
+} from "./parallel-multi-instance-controller.js";
+import {
+  parallelMultiInstanceStateDefectCodes,
+} from "./parallel-multi-instance-state-validation.js";
+import {
+  RuntimeStateDefect,
+} from "./runtime-state-defect.js";
+export { RuntimeStateDefect };
 import { sequentialMultiInstanceBindingsForState } from "./sequential-multi-instance-binding.js";
 import { compareCanonicalStrings } from "./wire.js";
 import { runtimeStateIdentityBound } from "./runtime-state-identity-bound.js";
@@ -53,30 +63,6 @@ import { compareActivityVariableScopes } from "./runtime-state-collection-orderi
  * result, and `admit` returns its ordinary refusal outcome rather than a diagnosis. The names exist
  * so a fixture can assert *which* class rejected a state instead of only that something did.
  */
-export const RuntimeStateDefect = {
-  ForeignInstance: "foreignInstance",
-  NotStartedWithWork: "notStartedWithWork",
-  DanglingWaitOwner: "danglingWaitOwner",
-  DuplicateWaitIdentity: "duplicateWaitIdentity",
-  LiveIdentityAboveCounter: "liveIdentityAboveCounter",
-  UndeclaredWaitIdentity: "undeclaredWaitIdentity",
-  UndeclaredHiddenRecord: "undeclaredHiddenRecord",
-  UnorderedCollection: "unorderedCollection",
-  ActivityOccurrenceBodyAbsent: "activityOccurrenceBodyAbsent",
-  UnownedAttachedWait: "unownedAttachedWait",
-  DuplicateActivityOccurrence: "duplicateActivityOccurrence",
-  SequentialMultiInstanceControllerProfileMismatch:
-    "sequentialMultiInstanceControllerProfileMismatch",
-  SequentialMultiInstanceControllerUnowned: "sequentialMultiInstanceControllerUnowned",
-  SequentialMultiInstanceControllerBindingMismatch:
-    "sequentialMultiInstanceControllerBindingMismatch",
-  DuplicateSequentialMultiInstanceController: "duplicateSequentialMultiInstanceController",
-  SequentialMultiInstanceExhausted: "sequentialMultiInstanceExhausted",
-} as const;
-
-export type RuntimeStateDefect =
-  (typeof RuntimeStateDefect)[keyof typeof RuntimeStateDefect];
-
 /** The ways a successor may contradict its predecessor. Separate from {@link RuntimeStateDefect}
  * because neither can be decided from one state: a rewound counter is a property of the pair. */
 export const RuntimeStateRegression = {
@@ -130,6 +116,7 @@ function declaredElementIds(
       // family for *every* iteration: each generated inner instance reuses this one element ID with
       // its own activation, so one declaration covers the whole repetition.
       case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+      case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
         userTask.add(operation.task.elementId);
         timer.add(operation.boundaryTimer.elementId);
         break;
@@ -214,6 +201,17 @@ export function runtimeStateDefects(
       RuntimeStateDefect.SequentialMultiInstanceControllerProfileMismatch,
     );
   }
+  const programRequiresParallelMultiInstanceControllers = program.operations.some(
+    ({ kind }) => kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask,
+  );
+  const stateHasParallelMultiInstanceControllers =
+    state.parallelMultiInstanceControllers !== undefined;
+  if (
+    programRequiresParallelMultiInstanceControllers !==
+      stateHasParallelMultiInstanceControllers
+  ) {
+    defects.push(RuntimeStateDefect.ParallelMultiInstanceControllerProfileMismatch);
+  }
 
   if (state.control.kind === ControlStateKind.NotStarted) {
     const started =
@@ -228,7 +226,9 @@ export function runtimeStateDefects(
       state.selectedBranchSets.length > 0 ||
       state.eventRaces.length > 0 ||
       state.calledProcessOccurrences.length > 0 ||
-      state.activityOccurrences.length > 0;
+      state.activityOccurrences.length > 0 ||
+      (state.sequentialMultiInstanceControllers?.length ?? 0) > 0 ||
+      (state.parallelMultiInstanceControllers?.length ?? 0) > 0;
     return started
       ? [...defects, RuntimeStateDefect.NotStartedWithWork]
       : defects;
@@ -313,6 +313,7 @@ export function runtimeStateDefects(
 
   defects.push(...activityOwnershipDefects(state));
   defects.push(...sequentialMultiInstanceDefects(program, state));
+  defects.push(...parallelMultiInstanceStateDefectCodes(program, state));
 
   const affectedActivationCounters = [
     state.taskActivations,
@@ -333,6 +334,10 @@ export function runtimeStateDefects(
     isSorted(
       state.sequentialMultiInstanceControllers ?? [],
       compareSequentialMultiInstanceControllers,
+    ) &&
+    isSorted(
+      state.parallelMultiInstanceControllers ?? [],
+      compareParallelMultiInstanceControllers,
     ) &&
     affectedActivationCounters.every((counters) =>
       isSorted(counters, (left, right) =>
@@ -441,6 +446,10 @@ function activityOwnershipDefects(
       case ActivityBodyKind.UserTask:
         return state.userTaskWaits
           .filter(({ id }) => sameOccurrence(id, body.task)).length === 1;
+      case ActivityBodyKind.ParallelUserTasks:
+        return body.tasks.every((task) =>
+          state.userTaskWaits.filter(({ id }) => sameOccurrence(id, task)).length === 1
+        );
       case ActivityBodyKind.ChildScope:
         return state.scopeOccurrences
           .filter(({ id }) => sameScopeOccurrence(id, body.scope)).length === 1;
@@ -577,6 +586,11 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.SequentialMultiInstanceControllerBindingMismatch,
   RuntimeStateDefect.DuplicateSequentialMultiInstanceController,
   RuntimeStateDefect.SequentialMultiInstanceExhausted,
+  RuntimeStateDefect.ParallelMultiInstanceControllerProfileMismatch,
+  RuntimeStateDefect.ParallelMultiInstanceControllerUnowned,
+  RuntimeStateDefect.ParallelMultiInstanceControllerBindingMismatch,
+  RuntimeStateDefect.DuplicateParallelMultiInstanceController,
+  RuntimeStateDefect.ParallelMultiInstanceExhausted,
 ]);
 
 /**

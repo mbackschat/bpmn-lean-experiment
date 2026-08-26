@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.IncidentCancellation
 import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.WaitCompletion
 
@@ -40,6 +41,24 @@ private def sequentialMultiInstanceProgramAdmitted (program : Program) : Bool :=
   program.identity.semanticProfile = sequentialMultiInstanceUserTaskProfileId &&
     programWellFormed program && programProfileCapabilitiesValid program
 
+private def parallelMultiInstanceProgramAdmitted (program : Program) : Bool :=
+  program.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId &&
+    programWellFormed program && programProfileCapabilitiesValid program
+
+private def parallelMultiInstanceStartBindingsAdmitted (program : Program)
+    (bindings : List VariableBinding) : Bool :=
+  match program.operations.filterMap ParallelMultiInstanceArm.ofOperation?, bindings with
+  | [arm], [input, policy] =>
+      input.name == arm.data.input.dataObjectReferenceId &&
+        (match input.value with
+        | .stringList items => withinParallelMultiInstanceLimits arm items
+        | _ => false) &&
+        policy.name == "completionPolicy" &&
+        match policy.value with
+        | .string value => value = "all" || value = "first"
+        | _ => false
+  | _, _ => false
+
 /-- The exact task-local Process-start patch for the sequential Multi-Instance profile.
 
 The reusable profile table decides value kinds, but it cannot decide the binding identity and
@@ -62,7 +81,9 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
       match state.control with
       | .notStarted =>
           let bindingsAdmitted :=
-            if sequentialMultiInstanceProgramAdmitted program then
+            if parallelMultiInstanceProgramAdmitted program then
+              parallelMultiInstanceStartBindingsAdmitted program initialVariables
+            else if sequentialMultiInstanceProgramAdmitted program then
               sequentialMultiInstanceStartBindingsAdmitted program initialVariables
             else
               processDataBindingsAdmitted program.identity.semanticProfile
@@ -91,8 +112,20 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
   | .completeUserTaskInstance _ taskId submittedValues =>
       match state.control with
       | .running instanceId =>
-          if let some operation := sequentialMultiInstanceOperationForTask? program
-              ⟨taskId.elementId.value⟩ then
+          if let some operation := parallelMultiInstanceEntryForTask? program
+              ({ value := taskId.elementId.value } : TaskDefinitionId) then
+            match ParallelMultiInstanceArm.ofOperation? operation with
+            | some arm =>
+                match completeSharedParallelMultiInstance? arm state taskId submittedValues with
+                | some successor =>
+                    if parallelMultiInstanceProgramAdmitted program &&
+                        taskId.processInstanceId = instanceId then
+                      { outcome := .committed, state := successor }
+                    else { outcome := .rejected, state }
+                | none => { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
+          else if let some operation := sequentialMultiInstanceOperationForTask? program
+              ({ value := taskId.elementId.value } : TaskDefinitionId) then
             match SequentialMultiInstanceArm.ofOperation? operation with
             | some arm =>
                 match completeSequentialMultiInstanceInnerTask? arm state taskId submittedValues with
@@ -164,8 +197,20 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
   | .fireTimer _ timerId logicalTimeMs =>
       match state.control with
       | .running instanceId =>
-          if let some operation := sequentialMultiInstanceOperationForTimer? program
-              ⟨timerId.elementId.value⟩ then
+          if let some operation := parallelMultiInstanceEntryForTimer? program
+              ({ value := timerId.elementId.value } : NodeId) then
+            match ParallelMultiInstanceArm.ofOperation? operation with
+            | some arm =>
+                match interruptSharedParallelMultiInstance? arm state timerId logicalTimeMs with
+                | some successor =>
+                    if parallelMultiInstanceProgramAdmitted program &&
+                        timerId.processInstanceId = instanceId then
+                      { outcome := .committed, state := successor }
+                    else { outcome := .rejected, state }
+                | none => { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
+          else if let some operation := sequentialMultiInstanceOperationForTimer? program
+              ({ value := timerId.elementId.value } : NodeId) then
             match SequentialMultiInstanceArm.ofOperation? operation with
             | some arm =>
                 match interruptSequentialMultiInstance? arm state timerId logicalTimeMs with

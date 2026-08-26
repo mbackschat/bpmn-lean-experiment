@@ -43,6 +43,10 @@ import {
 import {
   isWellFormedAwaitSequentialMultiInstanceUserTaskOperation,
 } from "./sequential-multi-instance-admission.js";
+import {
+  isWellFormedCompleteParallelMultiInstanceUserTaskOperation,
+  isWellFormedAwaitParallelMultiInstanceUserTaskOperation,
+} from "./parallel-multi-instance-admission.js";
 
 /** Validates one operation independently of profile topology and graph reachability. */
 export function isWellFormedSemanticOperation(
@@ -125,6 +129,17 @@ export function isWellFormedSemanticOperation(
         value,
         placeIds,
         placeOrigins,
+      );
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+      return isWellFormedAwaitParallelMultiInstanceUserTaskOperation(
+        value,
+        placeIds,
+        placeOrigins,
+      );
+    case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return isWellFormedCompleteParallelMultiInstanceUserTaskOperation(
+        value,
+        placeIds,
       );
     case SemanticOperationKind.AwaitTimer:
       return (

@@ -356,6 +356,26 @@ export type OpenSequentialMultiInstance = DeepReadonly<{
   activeIterations: OpenSequentialMultiInstanceIteration[];
 }>;
 
+export type OpenParallelMultiInstanceIteration =
+  OpenSequentialMultiInstanceIteration;
+
+/** Stable progress for one parallel Multi-Instance Activity with index-owned live children. */
+export type OpenParallelMultiInstance = DeepReadonly<{
+  id: ActivityOccurrenceId;
+  mode: "parallel";
+  plannedInstanceCount: number;
+  pendingItemCount: 0;
+  numberOfInstances: number;
+  numberOfActiveInstances: number;
+  numberOfCompletedInstances: number;
+  numberOfTerminatedInstances: 0;
+  activeIterations: OpenParallelMultiInstanceIteration[];
+}>;
+
+export type OpenMultiInstance =
+  | OpenSequentialMultiInstance
+  | OpenParallelMultiInstance;
+
 export type StateObservation = DeepReadonly<{
   kind: CanonicalObservationKind.State;
   instanceId: string;
@@ -378,7 +398,7 @@ export type StateObservation = DeepReadonly<{
    * A consumer must validate it recursively and must never infer Multi-Instance state from
    * `openUserTasks`, `openTimers`, occurrence history, or a difference between two states.
    */
-  openMultiInstances?: OpenSequentialMultiInstance[];
+  openMultiInstances?: OpenMultiInstance[];
   variables: VariableBinding[];
   enabledInteractions: EnabledInteraction[];
   logicalTimeMs: number;

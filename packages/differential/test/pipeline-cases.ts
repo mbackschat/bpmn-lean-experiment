@@ -90,6 +90,9 @@ import {
   sequentialMultiInstancePipelineCases,
 } from "./sequential-multi-instance-pipeline-cases.ts";
 import {
+  parallelMultiInstancePipelineCases,
+} from "./parallel-multi-instance-pipeline-cases.ts";
+import {
   mutateOpenTaskActivation,
   runningObservation,
 } from "./user-task-pipeline-mutation.ts";
@@ -571,4 +574,5 @@ export const pipelineCases = Object.freeze([
   ...parallelUserTaskMetadataPipelineCases,
   ...structuredHumanWorkPipelineCases,
   ...sequentialMultiInstancePipelineCases,
+  ...parallelMultiInstancePipelineCases,
 ]);

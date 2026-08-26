@@ -123,6 +123,33 @@ private def openSequentialMultiInstanceJson
         jsonArray
           (multiInstance.activeIterations.map openSequentialMultiInstanceIterationJson)) ]
 
+private def openParallelMultiInstanceIterationJson
+    (iteration : OpenParallelMultiInstanceIteration) : Json :=
+  Json.mkObj
+    [ ("loopCounter", toJson iteration.loopCounter)
+    , ("taskId", occurrenceIdJson iteration.taskId)
+    , ("taskInput", variableBindingJson iteration.taskInput)
+    , ("completionBindingName", toJson iteration.completionBindingName) ]
+
+private def openParallelMultiInstanceJson
+    (multiInstance : OpenParallelMultiInstance) : Json :=
+  Json.mkObj
+    [ ("id", activityOccurrenceIdJson multiInstance.id)
+    , ("mode", toJson "parallel")
+    , ("plannedInstanceCount", toJson multiInstance.plannedInstanceCount)
+    , ("pendingItemCount", toJson multiInstance.pendingItemCount)
+    , ("numberOfInstances", toJson multiInstance.numberOfInstances)
+    , ("numberOfActiveInstances", toJson multiInstance.numberOfActiveInstances)
+    , ("numberOfCompletedInstances", toJson multiInstance.numberOfCompletedInstances)
+    , ("numberOfTerminatedInstances", toJson multiInstance.numberOfTerminatedInstances)
+    , ("activeIterations",
+        jsonArray
+          (multiInstance.activeIterations.map openParallelMultiInstanceIterationJson)) ]
+
+private def openMultiInstanceJson : OpenMultiInstance → Json
+  | .sequential value => openSequentialMultiInstanceJson value
+  | .parallel value => openParallelMultiInstanceJson value
+
 private def effectExecutionResultJson : EffectExecutionResult → Json
   | .success localPatch =>
       Json.mkObj
@@ -191,7 +218,7 @@ def stateObservationJson (state : StateObservation) : Json :=
     | none => []
     | some openMultiInstances =>
         [("openMultiInstances",
-          jsonArray (openMultiInstances.map openSequentialMultiInstanceJson))]
+          jsonArray (openMultiInstances.map openMultiInstanceJson))]
   Json.mkObj <| beforeMultiInstance ++ multiInstance ++
     [ ("variables", jsonArray (state.variables.map variableBindingJson))
     , ("enabledInteractions",

@@ -59,6 +59,9 @@ export const bpmnMonitoredActivitySchedulerUnavailableFailureType =
  */
 export const bpmnSequentialMultiInstanceSchedulerUnavailableFailureType =
   "BpmnSequentialMultiInstanceSchedulerUnavailable";
+/** Distinct because one activation owns several concurrent inner task identities. */
+export const bpmnParallelMultiInstanceSchedulerUnavailableFailureType =
+  "BpmnParallelMultiInstanceSchedulerUnavailable";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 export const processTerminalReceiptFormatV1 =
   "bpmn-lean.process-terminal-receipt.v1" as const;
@@ -101,6 +104,7 @@ export enum TemporalHostAdmissionFailureCode {
    * A separate code makes loss of that lifetime join independently diagnosable.
    */
   SequentialMultiInstanceSchedulerUnavailable = "sequentialMultiInstanceSchedulerUnavailable",
+  ParallelMultiInstanceSchedulerUnavailable = "parallelMultiInstanceSchedulerUnavailable",
 }
 
 export type TemporalHostAdmissionFailure = DeepReadonly<{

@@ -47,6 +47,10 @@ import {
   sequentialMultiInstanceBoundaryTimerBinding,
   sequentialMultiInstanceTaskWaitMatches,
 } from "./flow-node-occurrence-sequential-multi-instance.js";
+import {
+  parallelMultiInstanceBoundaryTimerBinding,
+  parallelMultiInstanceTaskWaitMatches,
+} from "./flow-node-occurrence-parallel-multi-instance-open-set.js";
 
 const WaitAnchorKind = "wait" as SemanticFlowNodeOccurrenceAnchorKind.Wait;
 const ScopeAnchorKind = "scope" as SemanticFlowNodeOccurrenceAnchorKind.Scope;
@@ -77,6 +81,13 @@ export type BoundaryTimerBinding =
         { kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask }
       >;
       activeTask: OccurrenceId;
+    }
+  | {
+      operation: Extract<
+        SemanticOperation,
+        { kind: SemanticOperationKind.AwaitParallelMultiInstanceUserTask }
+      >;
+      activeTasks: ReadonlyArray<OccurrenceId>;
     };
 
 /** Projects every exact long-lived flow-node occurrence or fails closed. */
@@ -163,6 +174,14 @@ export function resolveBoundaryTimerBinding(
     }
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return sequentialMultiInstanceBoundaryTimerBinding(state, record, operation, wait);
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+      return parallelMultiInstanceBoundaryTimerBinding(
+        program,
+        state,
+        record,
+        operation,
+        wait,
+      );
     case SemanticOperationKind.EnterBoundedScope: {
       const body = activityBodyScope(record);
       const child = body === undefined ? undefined
@@ -325,6 +344,13 @@ function waitMatchesUserTask(
           wait.metadata === undefined;
       case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
         return sequentialMultiInstanceTaskWaitMatches(state, operation, wait);
+      case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+        return parallelMultiInstanceTaskWaitMatches(
+          program,
+          state,
+          operation,
+          wait,
+        );
       default:
         return false;
     }

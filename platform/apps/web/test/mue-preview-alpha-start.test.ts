@@ -4,6 +4,8 @@ import { test } from "node:test";
 import type { DeployedDefinitionVersion } from "@bpmn-lean/platform-contracts";
 
 import {
+  isMuePreviewAlphaProfile,
+  muePreviewAlphaSemanticProfile,
   resolveMuePreviewAlphaStart,
 } from "../src/mue-preview-alpha-start.ts";
 
@@ -51,4 +53,12 @@ test("does not infer the Alpha preset from exact content admitted under another 
     ...exactDefinition,
     semanticProfile: "different-profile",
   }), null);
+});
+
+test("exposes one exact profile predicate for every Alpha-only surface", () => {
+  assert.equal(isMuePreviewAlphaProfile(muePreviewAlphaSemanticProfile), true);
+  assert.equal(
+    isMuePreviewAlphaProfile("bpmn-2.0.2-parallel-multi-instance-user-task-draft"),
+    false,
+  );
 });

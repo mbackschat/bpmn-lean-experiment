@@ -36,6 +36,7 @@ export function scenarioObservationsForProfile(
 ): ReadonlyArray<ObservationRequestKind> {
   switch (profile) {
     case SemanticProfileId.SequentialMultiInstanceUserTask:
+    case SemanticProfileId.ParallelMultiInstanceUserTask:
       return SEQUENTIAL_MULTI_INSTANCE_SCENARIO_OBSERVATIONS;
     default:
       return BASELINE_SCENARIO_OBSERVATIONS;

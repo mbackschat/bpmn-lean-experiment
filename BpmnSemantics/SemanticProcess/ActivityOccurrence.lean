@@ -22,6 +22,11 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+def operationOwningScope? (program : Program) (id : OperationId) : Option DefinitionScopeId :=
+  match program.operationScopes.filter fun ownership => decide (ownership.operationId = id) with
+  | [ownership] => some ownership.scopeId
+  | _ => none
+
 /-- Identity equality for the Activity occurrence triple. -/
 def sameActivityOccurrence (left right : ActivityOccurrence) : Bool :=
   left.processInstanceId == right.processInstanceId &&
@@ -105,12 +110,20 @@ theorem activityIdentityIssuingDiscipline_insertActivityOccurrence
 def activityBodyTask? (record : ActivityOccurrence) : Option OccurrenceId :=
   match record.body with
   | .userTask task => some task
+  | .parallelUserTasks .. => none
   | .childScope _ => none
+
+/-- The canonical nonempty child list of a parallel Activity body. -/
+def activityBodyParallelTasks? (record : ActivityOccurrence) : Option (List OccurrenceId) :=
+  match record.body with
+  | .parallelUserTasks first rest => some (first :: rest)
+  | .userTask _ | .childScope _ => none
 
 /-- The child scope occurrence a record's body names, when its body is a child scope. -/
 def activityBodyScope? (record : ActivityOccurrence) : Option ScopeOccurrenceId :=
   match record.body with
   | .userTask _ => none
+  | .parallelUserTasks .. => none
   | .childScope scope => some scope
 
 /-- Whether a record lists one exact Timer occurrence among the handlers attached to it. -/
@@ -281,6 +294,7 @@ def recordInRegion (cancelled : ScopeOccurrenceId → Bool) (record : ActivityOc
   cancelled record.owner ||
     match record.body with
     | .userTask _ => false
+    | .parallelUserTasks .. => false
     | .childScope scope => cancelled scope
 
 /-- The records and attached Timer occurrences a region withdraws. -/

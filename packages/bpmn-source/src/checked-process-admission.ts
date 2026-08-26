@@ -405,6 +405,7 @@ function hasSelectedExpressionLanguage(
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
+    case SemanticProfileId.ParallelMultiInstanceUserTask:
     case SemanticProfileId.UserTaskCycle:
     case SemanticProfileId.StructuredHumanWork:
       return expressionLanguage === SimpleBooleanExpressionLanguage;

@@ -22,12 +22,17 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   activityBodyScope,
+  activityBodyParallelTasks,
   activityBodyTaskWait,
   attachedTimerWaits,
   isBoundaryTimerDefinition,
   isBoundedScopeDeadlineDefinition,
   isMonitoredBoundaryTimerDefinition,
+  isParallelMultiInstanceBoundaryDefinition,
   isSequentialMultiInstanceBoundaryDefinition,
+  parallelMultiInstanceBindingForController,
+  parallelMultiInstanceControllerFor,
+  sameOccurrenceId,
   sequentialMultiInstanceBindingForController,
   sequentialMultiInstanceControllerFor,
 } from "@bpmn-lean/semantic-core";
@@ -42,6 +47,7 @@ import {
   bpmnBoundedActivitySchedulerUnavailableFailureType,
   bpmnBoundedScopeSchedulerUnavailableFailureType,
   bpmnMonitoredActivitySchedulerUnavailableFailureType,
+  bpmnParallelMultiInstanceSchedulerUnavailableFailureType,
   bpmnSequentialMultiInstanceSchedulerUnavailableFailureType,
 } from "@bpmn-lean/temporal-protocol";
 import { createDurableTimerOwner } from "./durable-timer-owner.js";
@@ -162,6 +168,34 @@ export const sequentialMultiInstanceDeadlineFamily: BoundedDeadlineFamily =
     },
   });
 
+/** One outer lifetime deadline joined to the complete active parallel child set. */
+export const parallelMultiInstanceDeadlineFamily: BoundedDeadlineFamily =
+  Object.freeze({
+    ownsDeadline: isParallelMultiInstanceBoundaryDefinition,
+    schedulerUnavailableFailureType:
+      bpmnParallelMultiInstanceSchedulerUnavailableFailureType,
+    sharedActivationMessage:
+      "Parallel Multi-Instance completion and its outer lifetime deadline shared one Workflow activation with no defined winner",
+    invariantMessage:
+      "Managed parallel Multi-Instance Activity is not one controller, its complete active task set, and one exact PT1S outer-lifetime boundary deadline",
+    replacedRefusal:
+      "Parallel Multi-Instance Activity attempted to replace its live outer deadline",
+    identityChangedRefusal:
+      "Committed parallel Multi-Instance Activity changed its outer deadline identity",
+    pairIsValid: (semanticProcess, state, record) => {
+      const controller = parallelMultiInstanceControllerFor(
+        state.parallelMultiInstanceControllers ?? [],
+        record.id,
+      );
+      return controller !== undefined &&
+        parallelMultiInstanceBindingForController(
+          semanticProcess,
+          state,
+          controller,
+        )?.record === record;
+    },
+  });
+
 export type BoundedDeadlineScheduler = Readonly<{
   /** True only after this Run has emitted the family's native Timer command. */
   hasArmedDeadline: () => boolean;
@@ -191,6 +225,7 @@ export function createBoundedDeadlineSchedulers(
     boundedScopeDeadlineFamily,
     monitoredActivityDeadlineFamily,
     sequentialMultiInstanceDeadlineFamily,
+    parallelMultiInstanceDeadlineFamily,
   ].map((family) =>
     createBoundedDeadlineScheduler(semanticProcess, waitForTimer, family)
   );
@@ -339,6 +374,12 @@ function bodyIsLive(record: ActivityOccurrence, state: RuntimeState): boolean {
   const task = activityBodyTaskWait(record, state.userTaskWaits);
   if (task !== undefined) {
     return task.id.processInstanceId === record.id.processInstanceId;
+  }
+  const parallelTasks = activityBodyParallelTasks(record);
+  if (parallelTasks !== undefined) {
+    return parallelTasks.length > 0 && parallelTasks.every((taskId) =>
+      state.userTaskWaits.filter(({ id }) => sameOccurrenceId(id, taskId)).length === 1
+    );
   }
   const scope = activityBodyScope(record);
   return scope !== undefined &&

@@ -38,6 +38,11 @@ const leanUmbrellaModules = [
   "BpmnSemantics/SemanticProcessJson.lean",
 ] as const;
 
+test("the source-hygiene thresholds match the owner-approved limits", () => {
+  assert.equal(reviewTarget, 800);
+  assert.equal(hardCeiling, 1_200);
+});
+
 function worktreeSourceFiles(): string[] {
   const paths = execFileSync(
     "git",

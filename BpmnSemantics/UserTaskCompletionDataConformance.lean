@@ -65,6 +65,7 @@ theorem mismatched_completion_preserves_all_scoped_variables
       { exactTaskInstanceId with activation := 2 }
       submittedValues 0 variables
       (by decide +kernel)
+      (by decide +kernel)
       (Or.inr (Or.inr (by decide +kernel)))
 
 /-- Null completion data belongs to the Process-data composition, not to a structurally similar profile. -/

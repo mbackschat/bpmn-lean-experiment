@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.LoweringIdentity
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLowering
 import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
 import BpmnSemantics.SemanticProcess.TimerStartLowering
 import BpmnSemantics.SemanticProcess.TerminateEndLowering
@@ -337,6 +338,17 @@ private def lowerNode (source : CheckedProcess) :
         { maximumItems := 16
           maximumItemUtf8Bytes := 512
           maximumCanonicalCollectionUtf8Bytes := 8192 }, scopeId)
+  | .parallelMultiInstanceUserTask id name input output completionCondition normalOutputFlowId
+      boundaryTimer =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (lowerParallelMultiInstanceEntry id name
+        (firstPlace (incomingPlaces source id)) { input, output }
+        (flowControlPlaceId normalOutputFlowId)
+        { elementId := boundaryTimer.elementId
+          durationMs := normalizeTimerDuration boundaryTimer.durationLiteral
+          output := flowControlPlaceId boundaryTimer.outputFlowId
+          origin := { elementId := boundaryTimer.outputFlowId } }
+        ((parseSimpleBooleanExpression completionCondition.body).getD (.literal false)), scopeId)
   | .intermediateCatchTimerEvent id durationLiteral =>
       if configuredByEventGateway source id then none
       else
@@ -531,10 +543,19 @@ private def sortScopedOperations :
   | operation :: rest =>
       insertScopedOperation operation (sortScopedOperations rest)
 
+private def lowerParallelMultiInstanceCompletion? (source : CheckedProcess) :
+    CheckedNode → Option (SemanticOperation × DefinitionScopeId)
+  | .parallelMultiInstanceUserTask id _ _ _ _ normalOutputFlowId _ => do
+      let scopeId ← checkedNodeScopeId? source id
+      pure (lowerParallelMultiInstanceCompletion id
+        (flowControlPlaceId normalOutputFlowId), scopeId)
+  | _ => none
+
 /-- Canonical lowering over the current checked graph. Meaning is claimed only under `checkedWellFormed`. -/
 def lowerCheckedProcess (source : CheckedProcess) : Program :=
   let scopedOperations := sortScopedOperations
     (source.nodes.filterMap (lowerNode source) ++
+      source.nodes.filterMap (lowerParallelMultiInstanceCompletion? source) ++
       source.definitionScopes.filterMap (lowerScopeCompletion source))
   { identity :=
       { compiler := .bpmnSourceSemanticProcess

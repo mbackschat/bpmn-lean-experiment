@@ -21,6 +21,10 @@ type SemanticProfile =
 const emptyValueDomain: ReadonlyArray<VariableValueKind> = Object.freeze([]);
 const stringValueDomain = Object.freeze([VariableValueKind.String]);
 const stringListValueDomain = Object.freeze([VariableValueKind.StringList]);
+const parallelMultiInstanceStartValueDomain = Object.freeze([
+  VariableValueKind.String,
+  VariableValueKind.StringList,
+]);
 const stringNullValueDomain = Object.freeze([
   VariableValueKind.String,
   VariableValueKind.Null,
@@ -95,6 +99,12 @@ function profileValueDomain(
       return surfaceValueDomain(
         surface,
         stringListValueDomain,
+        stringValueDomain,
+      );
+    case SemanticProfileId.ParallelMultiInstanceUserTask:
+      return surfaceValueDomain(
+        surface,
+        parallelMultiInstanceStartValueDomain,
         stringValueDomain,
       );
     case SemanticProfileId.MappedSuccessServiceTask:

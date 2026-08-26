@@ -144,6 +144,9 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         places.any (fun place => decide
           (place.id = boundaryTimer.output ∧ place.origin = boundaryTimer.origin)) &&
         placeExists places input && placeExists places normalOutput
+  | operation@(.awaitParallelMultiInstanceUserTask ..)
+  | operation@(.completeParallelMultiInstanceUserTask ..) =>
+      parallelMultiInstanceOperationWellFormed places operation
   | .awaitTimer id origin input output timer =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

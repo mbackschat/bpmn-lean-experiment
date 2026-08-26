@@ -124,10 +124,18 @@ function addUserTaskCapability(
   if (multiInstance === undefined) {
     return;
   }
-  if (multiInstance.attributes.isSequential !== "true") {
-    throw new TypeError("unclassified executable BPMN parallel Multi-Instance User Task");
+  switch (multiInstance.attributes.isSequential) {
+    case "true":
+      capabilities.add("sequentialMultiInstanceUserTask");
+      return;
+    case "false":
+      capabilities.add("parallelMultiInstanceUserTask");
+      return;
+    default:
+      throw new TypeError(
+        "unclassified executable BPMN Multi-Instance User Task sequential mode",
+      );
   }
-  capabilities.add("sequentialMultiInstanceUserTask");
 }
 
 function addStartCapability(
@@ -211,8 +219,25 @@ function addBoundaryCapability(
             "unclassified executable BPMN non-interrupting sequential Multi-Instance boundary Timer",
           );
         }
-        capabilities.add("interruptingSequentialMultiInstanceBoundaryTimerEvent");
-        return;
+        const loop = attachedElement.children.find(
+          ({ name }) => name === "multiInstanceLoopCharacteristics",
+        );
+        switch (loop?.attributes.isSequential) {
+          case "true":
+            capabilities.add(
+              "interruptingSequentialMultiInstanceBoundaryTimerEvent",
+            );
+            return;
+          case "false":
+            capabilities.add(
+              "interruptingParallelMultiInstanceBoundaryTimerEvent",
+            );
+            return;
+          default:
+            throw new TypeError(
+              "unclassified executable BPMN Multi-Instance boundary Timer sequential mode",
+            );
+        }
       }
       capabilities.add(interrupting
         ? "interruptingUserTaskBoundaryTimerEvent"

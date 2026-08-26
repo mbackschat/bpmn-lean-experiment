@@ -175,6 +175,12 @@ def candidateUserTaskStart? (program : Program) (operation : SemanticOperation)
         else
           candidateWaitStart? program operation owner wait.processInstanceId
             (⟨wait.task.id.value⟩ : NodeId) wait.activation
+    | .awaitParallelMultiInstanceUserTask _ _ _ taskId taskName _ normalOutput _ _ _ =>
+        if wait.task.id ≠ taskId || wait.task.name ≠ taskName ||
+            wait.output ≠ normalOutput || wait.task.metadata.isSome || wait.metadata.isSome then none
+        else
+          candidateWaitStart? program operation owner wait.processInstanceId
+            (⟨wait.task.id.value⟩ : NodeId) wait.activation
     | _ => none
 
 /-- Candidate Timer Catch start from the exact wait created by the selected operation. -/
