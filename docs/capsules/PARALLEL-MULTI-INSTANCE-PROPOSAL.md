@@ -159,29 +159,50 @@ Headroom is measured in nonblank lines before the 600-line review target. Parall
 | Owner | Current headroom |
 |---|---:|
 | [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 361 |
+| [Source preservation capability](../../packages/bpmn-source/src/preservation-capability.ts) | 462 |
 | [Checked-graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 260 |
 | [Semantic Process lowering router](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 43 |
 | [Checked Process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 339 |
+| [Checked Process profile shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 345 |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 180 |
+| [Semantic program profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 333 |
 | [Public observation contract](../../packages/semantic-core/src/contract.ts) | 228 |
+| [Scenario projection root](../../packages/semantic-core/src/scenario.ts) | 65 |
 | [Semantic profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 537 |
 | [Semantic profile observations](../../packages/semantic-core/src/semantic-profile-observations.ts) | 560 |
+| [Semantic profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 388 |
 | [Activity occurrence owner](../../packages/semantic-core/src/activity-occurrence.ts) | 406 |
 | [TypeScript runtime-state owner](../../packages/semantic-core/src/semantic-process-state.ts) | 188 |
+| [Command admission root](../../packages/semantic-core/src/semantic-command-admission.ts) | 277 |
+| [Program admission root](../../packages/semantic-core/src/semantic-process-admission.ts) | 248 |
+| [Program graph admission root](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 67 |
+| [Operation admission root](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 115 |
+| [Triggered-start root](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 431 |
 | [Semantic runtime composition root](../../packages/semantic-core/src/semantic-process-runtime.ts) | 24 |
 | [Runtime well-formedness composition root](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 36 |
+| [Internal transition footprint](../../packages/semantic-core/src/internal-transition-footprint.ts) | 174 |
+| [Internal wait census](../../packages/semantic-core/src/internal-transition-wait-census.ts) | 501 |
+| [Flow-node boundary-start projection](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts) | 369 |
+| [Flow-node lifecycle projection](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 28 |
+| [Flow-node open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 27 |
+| [Flow-node publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts) | 154 |
+| [External flow-node publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 67 |
 | [Lean Activity occurrence owner](../../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean) | 294 |
 | [Lean runtime-state owner](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 56 |
 | [Lean contract owner](../../BpmnSemantics/SemanticProcessContract.lean) | 56 |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 385 |
 | [Temporal protocol contract](../../packages/temporal-adapter/protocol/src/contracts.ts) | 387 |
+| [Temporal lifecycle results](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 313 |
+| [Flow-node publication program validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts) | 254 |
+| [Semantic publication validation](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 12 |
+| [Workflow continuation contract](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 120 |
 | [Managed deadline scheduler](../../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) | 269 |
 | [Workflow host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 351 |
 | [Workflow composition root](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 32 |
 
-The near-target source-lowering, semantic-runtime, runtime-well-formedness, and Workflow-composition owners gain only exhaustive dispatch and delegation. Parallel source lowering, runtime transitions, well-formedness, and Workflow host execution move into new responsibility-owned modules before those roots cross the review target. Lean additions split by contract, controller, transition, and law responsibility rather than compressing existing owners or claiming a line-count exception.
+This inventory is the union of existing non-family-specific production roots reached by the sequential Multi-Instance operation, `openMultiInstances`, and the inherited managed deadline, plus the additional public scenario and lifecycle-result consumers. Existing sequential-specific owners remain byte-identical; parallel-specific behavior uses new sibling modules. Before any root with at most 67 lines of measured headroom grows, its family logic moves behind a responsibility-owned helper and the root retains only its exhaustive discriminator, dispatch, and join. This condition currently covers source lowering, scenario projection, program graph admission, semantic runtime, runtime well-formedness, flow-node lifecycle, flow-node open-set, external publication completeness, semantic publication validation, and Workflow composition. Lean additions split by contract, controller, transition, and law responsibility rather than compressing existing owners or claiming a line-count exception. A newly discovered production producer or consumer not listed here is a proposal-reopen condition before that path changes.
 
-Concrete wire owners are [checked Process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), [scenario schema](../../contracts/schemas/scenario.schema.json), and [semantic publication schema](../../contracts/schemas/semantic-publication.schema.json). Material existing oracles that grow or receive parallel-specific siblings are [source admission](../../packages/bpmn-source/test/sequential-multi-instance-source.test.ts), [public observation wire](../../packages/semantic-core/test/sequential-multi-instance-observation-contract.test.ts), [protocol validation](../../packages/temporal-adapter/protocol/test/sequential-multi-instance-publication-validation.test.ts), [deadline premise](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-deadline-witness.ts), [capacity topology](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-topologies.ts), [schema artifacts](../../scripts/contract-artifacts.test.ts), and [schema coverage](../../scripts/contract-schema-coverage.test.ts).
+Concrete wire owners are [checked Process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), [scenario schema](../../contracts/schemas/scenario.schema.json), and [semantic publication schema](../../contracts/schemas/semantic-publication.schema.json). Material existing oracles that grow or receive parallel-specific siblings are [source admission](../../packages/bpmn-source/test/sequential-multi-instance-source.test.ts), [public observation wire](../../packages/semantic-core/test/sequential-multi-instance-observation-contract.test.ts), [flow-node publication completeness](../../packages/semantic-core/test/flow-node-occurrence-publication-completeness.test.ts), [protocol validation](../../packages/temporal-adapter/protocol/test/sequential-multi-instance-publication-validation.test.ts), [continuation state](../../packages/temporal-adapter/testkit/test/workflow-continuation-state.test.ts), [deadline premise](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-deadline-witness.ts), [capacity topology](../../packages/temporal-adapter/testkit/test/sequential-multi-instance-history-capacity-topologies.ts), [Activity writer census](../../scripts/activity-occurrence-writer-census.test.ts), [runtime collection removal](../../scripts/runtime-collection-removal-completeness.test.ts), [schema artifacts](../../scripts/contract-artifacts.test.ts), and [schema coverage](../../scripts/contract-schema-coverage.test.ts).
 
 ## Epistemic closure and reopen conditions
 
