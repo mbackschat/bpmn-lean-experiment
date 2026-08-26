@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 
 /-! # Scope-subtree cancellation
 
@@ -87,7 +88,8 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
   -- A handler attached to an Activity is owned by the scope *holding* that Activity, so an
   -- owner-only rule leaves a bounded Sub-Process deadline alive after its child region is gone. The
   -- records name what each Activity owns, and the withdrawn ones carry their attached waits out.
-  let withdrawnTimers := attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)
+  let withdrawnActivities := withdrawnByRegion cancelled state.activityOccurrences
+  let withdrawnTimers := attachedTimersOf withdrawnActivities
   { state with
     tokens := state.tokens.filter fun token => !cancelled token.owner
     scopeOccurrences := state.scopeOccurrences.filter
@@ -97,6 +99,9 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     timerWaits := state.timerWaits.filter fun wait =>
       !cancelled wait.owner && !anyTimerIdNamesWait withdrawnTimers wait
     activityOccurrences := retainedByRegion cancelled state.activityOccurrences
+    sequentialMultiInstanceControllers :=
+      state.sequentialMultiInstanceControllers.filter fun controller =>
+        !(withdrawnActivities.any (controllerNamesActivityOccurrence controller))
     effectWaits := state.effectWaits.filter fun wait => !cancelled wait.owner
     effectIncidents :=
       state.effectIncidents.filter fun incident => !cancelled incident.wait.owner

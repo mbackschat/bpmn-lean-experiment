@@ -44,6 +44,42 @@ private def siblingWait : UserTaskWait :=
     activation := 1
     output := ⟨"place:SiblingToEnd"⟩ }
 
+private def cancelledActivity : ActivityOccurrence :=
+  { processInstanceId := instanceId
+    activityElementId := ⟨"ChildSequentialMultiInstance"⟩
+    activation := 1
+    owner := childOwner
+    body := .userTask
+      { processInstanceId := instanceId
+        elementId := ⟨"Sibling"⟩
+        activation := 1 }
+    attachedTimers := [] }
+
+private def unrelatedActivity : ActivityOccurrence :=
+  { processInstanceId := instanceId
+    activityElementId := ⟨"RootSequentialMultiInstance"⟩
+    activation := 1
+    owner := rootOwner
+    body := .userTask
+      { processInstanceId := instanceId
+        elementId := ⟨"Outer"⟩
+        activation := 1 }
+    attachedTimers := [] }
+
+private def cancelledController : SequentialMultiInstanceController :=
+  { processInstanceId := instanceId
+    activityElementId := cancelledActivity.activityElementId
+    activation := cancelledActivity.activation
+    snapshot := ["cancelled"]
+    outputSlots := [] }
+
+private def unrelatedController : SequentialMultiInstanceController :=
+  { processInstanceId := instanceId
+    activityElementId := unrelatedActivity.activityElementId
+    activation := unrelatedActivity.activation
+    snapshot := ["unrelated"]
+    outputSlots := [] }
+
 /-- Parent work is present so global cancellation is observably wrong for nested termination. -/
 def nestedCounterexampleState : RuntimeState :=
   { initialState with
@@ -140,6 +176,31 @@ theorem incomplete_regional_cancellation_leaves_sibling_live :
     siblingWait ∈
       (reachNoneEndToken nestedCounterexampleState childOwner
         ⟨"place:Flow_TriggerTerminate"⟩).waits := by
+  decide +kernel
+
+private def controllerCancellationState : RuntimeState :=
+  { nestedCounterexampleState with
+    activityOccurrences := [cancelledActivity, unrelatedActivity]
+    sequentialMultiInstanceControllers := [cancelledController, unrelatedController]
+    activityActivations := [{ taskId := ⟨"HistoryActivity"⟩, count := 8 }] }
+
+/-- Regional cancellation withdraws the controller bound to the withdrawn Activity identity, retains
+the unrelated pair, and frames every monotonic counter, Process data, and logical time. -/
+theorem regional_cancellation_withdraws_exact_controller :
+    let cancelled := cancelScopeSubtree controllerCancellationState childOwner .retain
+    cancelled.activityOccurrences = [unrelatedActivity] ∧
+      cancelled.sequentialMultiInstanceControllers = [unrelatedController] ∧
+      siblingWait ∉ cancelled.waits ∧
+      cancelled.activations = controllerCancellationState.activations ∧
+      cancelled.messageActivations = controllerCancellationState.messageActivations ∧
+      cancelled.timerActivations = controllerCancellationState.timerActivations ∧
+      cancelled.effectActivations = controllerCancellationState.effectActivations ∧
+      cancelled.scopeActivations = controllerCancellationState.scopeActivations ∧
+      cancelled.eventRaceActivations = controllerCancellationState.eventRaceActivations ∧
+      cancelled.callActivations = controllerCancellationState.callActivations ∧
+      cancelled.activityActivations = controllerCancellationState.activityActivations ∧
+      cancelled.variables.process = controllerCancellationState.variables.process ∧
+      cancelled.logicalTimeMs = controllerCancellationState.logicalTimeMs := by
   decide +kernel
 
 /-- The selected no-output operation must target the exact child scope occurrence. -/

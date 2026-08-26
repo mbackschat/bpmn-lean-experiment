@@ -11,7 +11,10 @@
 import {
   removeCalledProcessSubtreesForCallers,
 } from "./semantic-process-call-runtime.js";
-import { ActivityBodyKind } from "./activity-occurrence.js";
+import {
+  ActivityBodyKind,
+  sameActivityOccurrence,
+} from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
 import {
   sameOccurrence,
@@ -101,6 +104,16 @@ function removeScopeOccurrenceRegion(
     activityOccurrences: withoutCalledProcesses.activityOccurrences.filter((record) =>
       !withdrawnRecords.includes(record)
     ),
+    ...(withoutCalledProcesses.sequentialMultiInstanceControllers === undefined
+      ? {}
+      : {
+        sequentialMultiInstanceControllers:
+          withoutCalledProcesses.sequentialMultiInstanceControllers.filter(
+            (controller) => !withdrawnRecords.some((record) =>
+              sameActivityOccurrence(record.id, controller.id)
+            ),
+          ),
+      }),
     effectWaits: withoutCalledProcesses.effectWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),

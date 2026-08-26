@@ -19,6 +19,9 @@ import { test } from "node:test";
 import {
   ActivityBodyKind,
   CommandOutcome,
+  SemanticOperationKind,
+  SemanticOriginKind,
+  applyInternalOperation,
   applyStimulus,
   initialState,
   runtimeStateDefects,
@@ -230,6 +233,116 @@ test("removing the region together with its attached deadline stays admitted", (
   };
 
   assert.deepEqual(defects(withdrawn), []);
+});
+
+test("the ThrowError route removes only controllers whose exact Activity records are withdrawn", () => {
+  const before = armedState();
+  const child = before.scopeOccurrences.find(({ parent }) => parent !== null);
+  const record = before.activityOccurrences.find(({ body }) =>
+    body.kind === ActivityBodyKind.ChildScope &&
+    child !== undefined &&
+    body.scope.definitionScopeId === child.id.definitionScopeId
+  );
+  assert.ok(child !== undefined && record !== undefined);
+
+  const withdrawnController = {
+    id: record.id,
+    snapshot: ["withdrawn"],
+    outputSlots: [],
+  };
+  const unrelatedController = {
+    id: { ...record.id, activityElementId: "Unrelated_Activity" },
+    snapshot: ["retained"],
+    outputSlots: [],
+  };
+  const errorOperation = {
+    id: "operation:Synthetic_Error_End",
+    kind: SemanticOperationKind.ThrowError,
+    origin: {
+      kind: SemanticOriginKind.BpmnElement,
+      elementId: "Synthetic_Error_End",
+    },
+    input: "place:Synthetic_Error_Input",
+    error: {
+      errorDefinitionId: "Synthetic_Error_Definition",
+      errorElementId: "Synthetic_Error",
+      code: "E",
+    },
+    handler: {
+      attachedScopeId: child.id.definitionScopeId,
+      code: "E",
+      output: "place:Synthetic_Handled",
+      origin: {
+        kind: SemanticOriginKind.BpmnElement,
+        boundaryEventId: "Synthetic_Boundary_Error",
+        errorDefinitionId: "Synthetic_Error_Definition",
+        errorElementId: "Synthetic_Error",
+        sequenceFlowId: "Synthetic_Handled",
+      },
+    },
+  } as const;
+  const withControllers: RuntimeState = {
+    ...before,
+    controlTokens: [{
+      placeId: errorOperation.input,
+      owner: child.id,
+      multiplicity: 1,
+    }],
+    sequentialMultiInstanceControllers: [
+      withdrawnController,
+      unrelatedController,
+    ],
+  };
+
+  const after = applyInternalOperation(
+    boundedScopeProgram,
+    errorOperation,
+    withControllers,
+  );
+  assert.ok(after !== null, "the public ThrowError evaluator must select the child region");
+  assert.deepEqual(after.sequentialMultiInstanceControllers, [unrelatedController]);
+  assert.equal(
+    after.activityOccurrences.some((candidate) => candidate === record),
+    false,
+    "the controller leaves with its exact withdrawn Activity record",
+  );
+  assert.deepEqual(after.variables.process, withControllers.variables.process);
+  assert.equal(after.logicalTimeMs, withControllers.logicalTimeMs);
+  for (const field of [
+    "endOccurrences",
+    "taskActivations",
+    "messageActivations",
+    "timerActivations",
+    "eventRaceActivations",
+    "callActivations",
+    "effectActivations",
+    "scopeActivations",
+    "activityActivations",
+  ] as const) {
+    assert.deepEqual(after[field], withControllers[field], field);
+  }
+
+  const absentBefore = armedState();
+  const absentChild = absentBefore.scopeOccurrences.find(({ parent }) => parent !== null);
+  assert.ok(absentChild !== undefined);
+  const absentAfter = applyInternalOperation(
+    boundedScopeProgram,
+    errorOperation,
+    {
+      ...absentBefore,
+      controlTokens: [{
+        placeId: errorOperation.input,
+        owner: absentChild.id,
+        multiplicity: 1,
+      }],
+    },
+  );
+  assert.ok(absentAfter !== null);
+  assert.equal(
+    Object.hasOwn(absentAfter, "sequentialMultiInstanceControllers"),
+    false,
+    "regional cleanup must preserve the optional field's historical absence",
+  );
 });
 
 /**

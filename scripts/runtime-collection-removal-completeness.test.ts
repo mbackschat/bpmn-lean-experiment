@@ -98,14 +98,31 @@ function depthDelta(line: string): number {
   return delta;
 }
 
-/** The keys a span assigns or declares at its own depth, ignoring nested literals. */
+/**
+ * The keys a span assigns or declares at its own depth.
+ *
+ * A direct conditional spread is also top-level ownership. Removal routes use that form for optional
+ * collections because assigning `undefined` would add a property and change the historical wire
+ * shape. Keys nested under an ordinary property or callback remain excluded.
+ */
 function topLevelKeys(span: string): ReadonlySet<string> {
   const keys = new Set<string>();
   let depth = 0;
+  let optionalSpread = false;
   for (const line of span.split("\n")) {
-    const key = depth === 0 ? /^\s{2,4}(\w+):/.exec(line) : null;
+    if (
+      depth === 0 &&
+      /^\s{2,4}\.\.\.\(/.test(line) &&
+      line.includes("=== undefined")
+    ) {
+      optionalSpread = true;
+    }
+    const key = depth === 0 || (optionalSpread && depth === 2)
+      ? /^\s{2,10}(\w+)\??:/.exec(line)
+      : null;
     if (key?.[1] !== undefined) keys.add(key[1]);
     depth += depthDelta(line);
+    if (depth === 0) optionalSpread = false;
   }
   return keys;
 }
@@ -135,6 +152,14 @@ function withoutField(span: string, field: string): string {
   return kept.join("\n");
 }
 
+/** Renames one assigned key without changing its value, including inside an optional direct spread. */
+function renamedField(span: string, field: string): string {
+  return span.replace(
+    new RegExp(`^(\\s{2,10})${field}:`, "m"),
+    `$1omitted${field[0]?.toUpperCase()}${field.slice(1)}:`,
+  );
+}
+
 function unfiltered(fields: ReadonlySet<string>, ...covered: ReadonlySet<string>[]): string[] {
   return [...fields].filter((field) =>
     !unfilteredFields.has(field) && !covered.some((keys) => keys.has(field))
@@ -144,6 +169,10 @@ function unfiltered(fields: ReadonlySet<string>, ...covered: ReadonlySet<string>
 test("every live runtime collection is filtered by the called-instance removal", () => {
   const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
   assert.ok(fields.has("activityOccurrences"), "RuntimeState fields were not parsed");
+  assert.ok(
+    fields.has("sequentialMultiInstanceControllers"),
+    "optional RuntimeState fields were not parsed",
+  );
   const filtered = topLevelKeys(returnedLiteral(calledOwner, calledRemoval));
   assert.deepEqual(unfiltered(fields, filtered), []);
 });
@@ -180,6 +209,24 @@ test("dropping one filtered collection from either route is reported", () => {
     assert.deepEqual(
       unfiltered(fields, topLevelKeys(mutated), delegated),
       ["activityOccurrences"],
+      relativePath,
+    );
+  }
+});
+
+test("renaming the optional controller filter is reported independently in both routes", () => {
+  const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
+  const noDelegation: ReadonlySet<string> = new Set();
+  for (const [relativePath, signature, delegated] of [
+    [calledOwner, calledRemoval, noDelegation],
+    [regionOwner, regionRemoval, regionDelegatedFields],
+  ] as const) {
+    const literal = returnedLiteral(relativePath, signature);
+    const mutated = renamedField(literal, "sequentialMultiInstanceControllers");
+    assert.notEqual(mutated, literal, `seeded mutation matched nothing in ${relativePath}`);
+    assert.deepEqual(
+      unfiltered(fields, topLevelKeys(mutated), delegated),
+      ["sequentialMultiInstanceControllers"],
       relativePath,
     );
   }

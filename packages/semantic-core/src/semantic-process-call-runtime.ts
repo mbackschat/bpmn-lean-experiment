@@ -295,6 +295,14 @@ function removeCalledProcessTree(
     activityOccurrences: state.activityOccurrences.filter(
       ({ owner }) => !removedOwner(owner),
     ),
+    ...(state.sequentialMultiInstanceControllers === undefined
+      ? {}
+      : {
+        sequentialMultiInstanceControllers:
+          state.sequentialMultiInstanceControllers.filter(
+            ({ id }) => !removedInstanceIds.has(id.processInstanceId),
+          ),
+      }),
     controlTokens: state.controlTokens.filter(({ owner }) => !removedOwner(owner)),
     userTaskWaits: state.userTaskWaits.filter(({ owner }) => !removedOwner(owner)),
     messageWaits: state.messageWaits.filter(({ owner }) => !removedOwner(owner)),

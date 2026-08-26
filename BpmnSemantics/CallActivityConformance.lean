@@ -224,6 +224,71 @@ private def returnOperation : SemanticOperation :=
     { elementId := ⟨"B_Call"⟩ } calledProcessId calledScopeId
     ⟨"place:F2_CallCallerTask"⟩
 
+private def unrelatedInstanceId : SemanticId := ⟨"UnrelatedInstance"⟩
+
+private def calledController : SequentialMultiInstanceController :=
+  { processInstanceId := calledInstanceId
+    activityElementId := ⟨"CalledSequentialMultiInstance"⟩
+    activation := 1
+    snapshot := ["called"]
+    outputSlots := [] }
+
+private def callerController : SequentialMultiInstanceController :=
+  { processInstanceId := callerInstanceId
+    activityElementId := ⟨"CallerSequentialMultiInstance"⟩
+    activation := 1
+    snapshot := ["caller"]
+    outputSlots := [] }
+
+private def unrelatedController : SequentialMultiInstanceController :=
+  { processInstanceId := unrelatedInstanceId
+    activityElementId := ⟨"UnrelatedSequentialMultiInstance"⟩
+    activation := 1
+    snapshot := ["unrelated"]
+    outputSlots := [] }
+
+private def controllerReturnReadyState : RuntimeState :=
+  { calledWaiting.state with
+    waits := []
+    sequentialMultiInstanceControllers :=
+      [calledController, callerController, unrelatedController]
+    activityActivations := [{ taskId := ⟨"HistoryActivity"⟩, count := 8 }] }
+
+private def controllerReturnResult? : Option RuntimeState :=
+  returnProcessState? controllerReturnReadyState
+    ⟨"operation:return-process:B_Call"⟩ { elementId := ⟨"B_Call"⟩ }
+    calledProcessId calledScopeId ⟨"place:F2_CallCallerTask"⟩
+
+/-- Called return withdraws the controller owned by its called-instance closure, retains caller and
+unrelated pairs, and frames every monotonic counter, Process data, and logical time. -/
+theorem called_return_withdraws_exact_controller :
+    controllerReturnResult?.isSome = true ∧
+      (controllerReturnResult?.getD initialState).activityOccurrences =
+        controllerReturnReadyState.activityOccurrences ∧
+      (controllerReturnResult?.getD initialState).sequentialMultiInstanceControllers =
+        [callerController, unrelatedController] ∧
+      (controllerReturnResult?.getD initialState).activations =
+        controllerReturnReadyState.activations ∧
+      (controllerReturnResult?.getD initialState).messageActivations =
+        controllerReturnReadyState.messageActivations ∧
+      (controllerReturnResult?.getD initialState).timerActivations =
+        controllerReturnReadyState.timerActivations ∧
+      (controllerReturnResult?.getD initialState).effectActivations =
+        controllerReturnReadyState.effectActivations ∧
+      (controllerReturnResult?.getD initialState).scopeActivations =
+        controllerReturnReadyState.scopeActivations ∧
+      (controllerReturnResult?.getD initialState).eventRaceActivations =
+        controllerReturnReadyState.eventRaceActivations ∧
+      (controllerReturnResult?.getD initialState).callActivations =
+        controllerReturnReadyState.callActivations ∧
+      (controllerReturnResult?.getD initialState).activityActivations =
+        controllerReturnReadyState.activityActivations ∧
+      (controllerReturnResult?.getD initialState).variables.process =
+        controllerReturnReadyState.variables.process ∧
+      (controllerReturnResult?.getD initialState).logicalTimeMs =
+        controllerReturnReadyState.logicalTimeMs := by
+  decide +kernel
+
 private def duplicateIdentityRecordState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
   | [record] =>

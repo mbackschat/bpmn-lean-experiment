@@ -250,7 +250,7 @@ test("interrupting a caller removes its separately parentless called Process sub
       },
     },
   } as const;
-  const synthetic: RuntimeState = {
+  const withoutControllers: RuntimeState = {
     ...started.state,
     scopeOccurrences: [
       { id: host, parent: null },
@@ -265,7 +265,11 @@ test("interrupting a caller removes its separately parentless called Process sub
     }],
   };
 
-  const interrupted = applyInternalOperation(program, errorOperation, synthetic);
+  const interrupted = applyInternalOperation(
+    program,
+    errorOperation,
+    withoutControllers,
+  );
   assert.ok(interrupted !== null);
   assert.deepEqual(interrupted.calledProcessOccurrences, []);
   assert.deepEqual(interrupted.userTaskWaits, []);
@@ -275,6 +279,94 @@ test("interrupting a caller removes its separately parentless called Process sub
     owner: host,
     multiplicity: 1,
   }]);
+  assert.equal(
+    Object.hasOwn(interrupted, "sequentialMultiInstanceControllers"),
+    false,
+    "the public interruption route preserves the optional field's historical absence",
+  );
+
+  const directCalledRoot = started.state.calledProcessOccurrences[0]?.calledRoot;
+  assert.ok(directCalledRoot !== undefined);
+  const nestedCalledRoot = {
+    processInstanceId: "Nested_Called_Instance",
+    definitionScopeId: "scope:Nested_Called_Process",
+    activation: 1,
+  };
+  const withdrawnController = {
+    id: {
+      processInstanceId: nestedCalledRoot.processInstanceId,
+      activityElementId: "Called_Sequential_Activity",
+      activation: 1,
+    },
+    snapshot: ["withdrawn"],
+    outputSlots: [],
+  };
+  const unrelatedController = {
+    id: {
+      processInstanceId: instanceId,
+      activityElementId: "Caller_Sequential_Activity",
+      activation: 1,
+    },
+    snapshot: ["retained"],
+    outputSlots: [],
+  };
+  const withControllers: RuntimeState = {
+    ...withoutControllers,
+    scopeOccurrences: [
+      ...withoutControllers.scopeOccurrences,
+      { id: nestedCalledRoot, parent: null },
+    ],
+    calledProcessOccurrences: [
+      ...withoutControllers.calledProcessOccurrences,
+      {
+        id: {
+          processInstanceId: directCalledRoot.processInstanceId,
+          elementId: "Nested_Call",
+          activation: 1,
+        },
+        caller: directCalledRoot,
+        calledProcessId: "Nested_Called_Process",
+        calledRoot: nestedCalledRoot,
+        returnOperationId: "operation:return-process:Nested_Call",
+      },
+    ],
+    // The removed called Process deliberately has no live record or wait. The association and root
+    // still identify its closure, so leaving its controller behind would create an ownerless entry.
+    activityOccurrences: [],
+    userTaskWaits: [],
+    logicalTimeMs: 73,
+    sequentialMultiInstanceControllers: [
+      withdrawnController,
+      unrelatedController,
+    ],
+  };
+
+  const after = applyInternalOperation(program, errorOperation, withControllers);
+  assert.ok(after !== null, "the public ThrowError evaluator must interrupt the caller");
+  assert.deepEqual(after.sequentialMultiInstanceControllers, [unrelatedController]);
+  assert.equal(
+    after.scopeOccurrences.some(({ id }) =>
+      id.processInstanceId === expectedCalledInstanceId ||
+      id.processInstanceId === nestedCalledRoot.processInstanceId
+    ),
+    false,
+    "the direct and nested called roots are both in the removed closure",
+  );
+  assert.deepEqual(after.variables.process, withControllers.variables.process);
+  assert.equal(after.logicalTimeMs, withControllers.logicalTimeMs);
+  for (const field of [
+    "endOccurrences",
+    "taskActivations",
+    "messageActivations",
+    "timerActivations",
+    "eventRaceActivations",
+    "callActivations",
+    "effectActivations",
+    "scopeActivations",
+    "activityActivations",
+  ] as const) {
+    assert.deepEqual(after[field], withControllers[field], field);
+  }
 });
 
 function openTaskIds(state: RuntimeState): ReadonlyArray<string> {
