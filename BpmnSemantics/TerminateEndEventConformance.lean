@@ -80,6 +80,13 @@ private def unrelatedController : SequentialMultiInstanceController :=
     snapshot := ["unrelated"]
     outputSlots := [] }
 
+private def calledController : SequentialMultiInstanceController :=
+  { processInstanceId := calledInstanceId
+    activityElementId := ⟨"CalledSequentialMultiInstance"⟩
+    activation := 1
+    snapshot := ["called"]
+    outputSlots := [] }
+
 /-- Parent work is present so global cancellation is observably wrong for nested termination. -/
 def nestedCounterexampleState : RuntimeState :=
   { initialState with
@@ -181,11 +188,13 @@ theorem incomplete_regional_cancellation_leaves_sibling_live :
 private def controllerCancellationState : RuntimeState :=
   { nestedCounterexampleState with
     activityOccurrences := [cancelledActivity, unrelatedActivity]
-    sequentialMultiInstanceControllers := [cancelledController, unrelatedController]
+    sequentialMultiInstanceControllers :=
+      [cancelledController, calledController, unrelatedController]
     activityActivations := [{ taskId := ⟨"HistoryActivity"⟩, count := 8 }] }
 
-/-- Regional cancellation withdraws the controller bound to the withdrawn Activity identity, retains
-the unrelated pair, and frames every monotonic counter, Process data, and logical time. -/
+/-- Regional cancellation withdraws the controller bound to the withdrawn Activity identity and the
+called-instance controller even though it has no Activity record, retains the unrelated pair, and
+frames every monotonic counter, Process data, and logical time. -/
 theorem regional_cancellation_withdraws_exact_controller :
     let cancelled := cancelScopeSubtree controllerCancellationState childOwner .retain
     cancelled.activityOccurrences = [unrelatedActivity] ∧
