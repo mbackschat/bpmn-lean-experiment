@@ -2,32 +2,76 @@ import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { awaitTerminalIncidentAction } from "../src/indeterminate-action.js";
+import { HttpFailureJournal } from "../src/http-failure-journal.js";
 
-test("delivers the complete seven-minute audience journey through the real stack", async ({ page }) => {
+test("delivers the complete seven-minute audience journey through the real stack", async ({ page }, testInfo) => {
   const browserErrors: string[] = [];
+  const httpFailures = new HttpFailureJournal();
+  const pendingResponseBodies = new Set<Promise<void>>();
   page.on("console", (message) => {
     if (message.type() === "error") browserErrors.push(message.text());
   });
-  await page.setViewportSize({ width: 1_600, height: 900 });
-  await page.goto("/?audience=demo");
+  page.on("requestfailed", (request) => {
+    httpFailures.recordRequestFailure({
+      method: request.method(),
+      url: request.url(),
+      ...(request.failure()?.errorText === undefined
+        ? {}
+        : { errorText: request.failure()!.errorText }),
+    });
+  });
+  page.on("response", (response) => {
+    if (response.status() < 500) return;
+    const pending = response.text()
+      .then((body) => httpFailures.recordResponse({
+        method: response.request().method(),
+        url: response.url(),
+        status: response.status(),
+        body,
+      }))
+      .catch(() => httpFailures.recordResponse({
+        method: response.request().method(),
+        url: response.url(),
+        status: response.status(),
+      }))
+      .finally(() => pendingResponseBodies.delete(pending));
+    pendingResponseBodies.add(pending);
+  });
 
-  await expect(page.getByRole("heading", {
-    name: "Seven-minute verified walkthrough",
-  })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Audience walkthrough" })
-    .getByRole("listitem")).toHaveCount(4);
-  await expect(page.getByLabel("BPMN XML file")).toHaveCount(0);
-  await expect(page.getByLabel("Semantic profile ID")).toHaveCount(0);
+  try {
+    await page.setViewportSize({ width: 1_600, height: 900 });
+    await page.goto("/?audience=demo");
 
-  await completeExpenseException(page);
-  await inspectDeadlineEvidence(page);
-  await resolveIncidents(page);
-  await inspectCorrectnessStack(page);
+    await expect(page.getByRole("heading", {
+      name: "Seven-minute verified walkthrough",
+    })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Audience walkthrough" })
+      .getByRole("listitem")).toHaveCount(4);
+    await expect(page.getByLabel("BPMN XML file")).toHaveCount(0);
+    await expect(page.getByLabel("Semantic profile ID")).toHaveCount(0);
 
-  await expectNoHorizontalOverflow(page, 1_600);
-  await expectNoHorizontalOverflow(page, 1_280);
-  expect(browserErrors).toEqual([]);
+    await completeExpenseException(page);
+    await inspectDeadlineEvidence(page);
+    await resolveIncidents(page);
+    await inspectCorrectnessStack(page);
+
+    await expectNoHorizontalOverflow(page, 1_600);
+    await expectNoHorizontalOverflow(page, 1_280);
+    await settleResponseBodies(pendingResponseBodies);
+    expect(httpFailures.snapshot()).toEqual([]);
+    expect(browserErrors).toEqual([]);
+  } finally {
+    await settleResponseBodies(pendingResponseBodies);
+    await testInfo.attach("http-failure-journal", {
+      body: Buffer.from(JSON.stringify(httpFailures.snapshot(), null, 2)),
+      contentType: "application/json",
+    });
+  }
 });
+
+async function settleResponseBodies(pending: ReadonlySet<Promise<void>>): Promise<void> {
+  await Promise.allSettled([...pending]);
+}
 
 async function completeExpenseException(page: Page): Promise<void> {
   const tasks = page.getByRole("region", { name: "Tasks" });
