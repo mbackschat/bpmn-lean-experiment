@@ -192,13 +192,13 @@ The examples expect `localhost:7233`, Namespace `default`, and a fresh semantic 
 
 ### Use the BPM platform in a browser
 
-For a demo machine, use the zero-build `mue-preview-alpha-demo-<commit>` artifact produced by the manual **Evaluation distribution** workflow. After unpacking it, one command pulls exact `linux/amd64` or `linux/arm64` image digests, verifies their source provenance, and starts the real PostgreSQL, Temporal, Product 1 Worker, and Product 2 stack without Git, Node, pnpm, or a local image build:
+For a demo machine, use the zero-build `guided-live-demo-<commit>` artifact produced by the **Evaluation distribution** workflow. It runs through Docker Compose v2 on Docker Engine or Rancher Desktop in `dockerd (moby)` mode. After unpacking it, one command pulls exact `linux/amd64` or `linux/arm64` image digests, verifies their source provenance, starts the real PostgreSQL, Temporal, Product 1 Worker, and Product 2 stack, and seeds the guided audience state without Git, Node, pnpm, or a local image build:
 
 ```sh
 ./deploy/evaluation/demo prepare
 ```
 
-Open the printed `LIVE_DEMO_READY` origin. The [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-demo-machine) is the single owner for bundle acquisition, offline restart, the seven-minute presentation, examples, fallback visuals, and exact non-claims.
+Open the printed `LIVE_DEMO_AUDIENCE` URL. The [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-demo-machine) is the single owner for Rancher Desktop setup, bundle acquisition, offline restart, the seven-minute presentation, examples, fallback visuals, and exact non-claims.
 
 Contributors working from source can instead start the complete evaluation distribution with:
 
@@ -238,10 +238,10 @@ These publication statistics are refreshed by the maintainer with `./scripts/pnp
 <!-- publication-statistics:lean-declarations:start -->
 | Metric | Count |
 |---|---:|
-| Public theorem declarations | 1,225 |
+| Public theorem declarations | 1,227 |
 | Supporting lemma declarations | 247 |
-| All declaration commands | 3,920 |
-| Proof declarations / all declaration commands | 37.6% |
+| All declaration commands | 3,934 |
+| Proof declarations / all declaration commands | 37.5% |
 
 Supporting lemmas count `private theorem` and every explicit `lemma` command, matching the repository convention. All declaration commands count `theorem`, `lemma`, `def`, `abbrev`, `opaque`, `axiom`, `constant`, `inductive`, `structure`, `class`, and `instance` after masking Lean comments and literals.
 <!-- publication-statistics:lean-declarations:end -->
@@ -252,8 +252,8 @@ Supporting lemmas count `private theorem` and every explicit `lemma` command, ma
 | Language | Files | Code | Comments | Blanks |
 |---|---:|---:|---:|---:|
 | Java | 84 | 11,402 | 247 | 1,138 |
-| TypeScript | 1,450 | 282,498 | 7,713 | 18,791 |
-| Lean | 178 | 41,404 | 3,656 | 4,640 |
+| TypeScript | 1,471 | 285,494 | 7,743 | 19,008 |
+| Lean | 178 | 41,529 | 3,661 | 4,654 |
 <!-- publication-statistics:language-footprint:end -->
 
 ## Repository guide

@@ -29,22 +29,24 @@ flowchart LR
 
 The browser talks only to the public Product 2 HTTP API. The API reaches the Temporal-hosted engine through the narrowed engine gateway, while PostgreSQL-backed recovery workers refresh projections outside request handling.
 
-## Seven-minute MUE Preview Alpha live demo
+## Seven-minute guided MUE preview
 
-Use this run of show when presenting the project rather than evaluating each workflow manually. It combines one credible business Process with the canonical breadth view and the separate Multi-Instance proof, without implying that every reviewed semantic variant belongs to one executable profile.
+Use this run of show when presenting the project rather than configuring each workflow manually. The optional audience mode composes only existing reviewed capabilities. It hides deployment controls and technical identifiers from the presenter path, but changes no BPMN meaning, authorization rule, evidence denominator, or ordinary Product 2 screen.
 
 ### Zero-build demo machine
 
-The recommended demo-machine path is the `mue-preview-alpha-demo-<commit>` artifact from a successful manual [Evaluation distribution workflow](../.github/workflows/evaluation-distribution.yml) run with image publication enabled. The artifact contains the Compose topology, exact database-role initialization, this guide and fallback images, the three retained demonstration models, and an environment file that pins all four project images to their published OCI index digests. Each index contains `linux/amd64` and `linux/arm64`, carries the source commit and complete tracked-source-tree digest, and is published with BuildKit provenance and an SBOM. PostgreSQL and Temporal retain their separately pinned upstream digests.
+The recommended demo-machine path is the `guided-live-demo-<commit>` artifact from a successful [Evaluation distribution workflow](../.github/workflows/evaluation-distribution.yml) run with image publication enabled. The artifact contains the Compose topology, exact database-role initialization, this guide and fallback images, the retained demonstration models, and an environment file that pins all five project images to their published OCI index digests. Each index contains `linux/amd64` and `linux/arm64`, carries the source commit and complete tracked-source-tree digest, and is published with BuildKit provenance and an SBOM. PostgreSQL and Temporal retain their separately pinned upstream digests.
 
-Download and unpack that artifact on a compatible Docker host. No repository checkout, Node, pnpm, compiler, or image build is used there. While online, prepare and prove one fresh isolated stack with:
+Download and unpack that artifact on a host with Docker Compose `2.24.4` or later. Docker Engine and Docker Desktop work directly. On Rancher Desktop, select [**Preferences > Container Engine > dockerd (moby)**](https://docs.rancherdesktop.io/ui/preferences/container-engine/general/), which exposes the Docker API and Docker CLI used by the launcher, then confirm `docker compose version` meets the minimum. Rancher Desktop's `containerd`/`nerdctl` mode is not the supported launcher contract. No repository checkout, Node, pnpm, compiler, or image build is used on the demo machine.
+
+While online, prepare and prove one fresh isolated stack:
 
 ```sh
 ./deploy/evaluation/demo prepare
 ./deploy/evaluation/demo status
 ```
 
-`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, and starts Compose with `--no-build`. The publishing workflow logs out of GHCR and executes this same command before offering the artifact, which proves anonymous pull and exact published-image startup rather than merely proving a separately built local image.
+`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, starts Compose with `--no-build`, and seeds five exact scenarios through public Product 1 and Product 2 interfaces. The publishing workflow logs out of GHCR and executes this same command before offering the artifact, which proves anonymous pull and exact published-image startup rather than merely proving a separately built local image.
 
 After preparation, show-time restart performs no build, registry request, or pull:
 
@@ -53,7 +55,11 @@ After preparation, show-time restart performs no build, registry request, or pul
 ./deploy/evaluation/demo status
 ```
 
-Keep the printed `LIVE_DEMO_READY` origin open in Chromium. `./deploy/evaluation/demo stop` stops only this demo project and retains its volumes. Transfer and unpack a previously proven artifact before entering an offline venue; do not substitute tags or edit its generated image environment.
+Open the printed `LIVE_DEMO_AUDIENCE` URL in Chromium. `./deploy/evaluation/demo stop` stops only this demo project and retains its volumes. Transfer and prepare a proven artifact before entering an offline venue; do not substitute tags or edit its generated image environment. After a rehearsal or completed presentation, restore the exact initial audience state without a build, pull, or registry request:
+
+```sh
+./deploy/evaluation/demo reset
+```
 
 ### Presenter checkout alternative
 
@@ -64,7 +70,7 @@ Contributors may instead prepare the exact checked-out source before the audienc
 ./scripts/pnpm.sh run demo:status
 ```
 
-This source path is deliberately an online authoring boundary. It requires a clean committed worktree, rebuilds the four project images from that exact source, labels them with the full commit and a SHA-256 over the complete tracked source tree, and may contact Docker Hub and the pnpm registry when local caches are incomplete or need metadata. It is not the zero-build demo-machine path.
+This source path is deliberately an online authoring boundary. It requires a clean committed worktree, rebuilds the five project images from that exact source, labels them with the full commit and a SHA-256 over the complete tracked source tree, and may contact Docker Hub and the pnpm registry when local caches are incomplete or need metadata. It is not the zero-build demo-machine path.
 
 After a successful preparation, show-time execution needs no image build or pull. If Docker or the demo project was stopped, restart from the matching local images and preserved demo volumes with:
 
@@ -75,29 +81,29 @@ After a successful preparation, show-time execution needs no image build or pull
 
 `demo:start` checks every local project image against the current clean committed source before changing the Compose project, then uses `--no-build --pull never`. It fails rather than starting a stale or unbound image. Missing base, PostgreSQL, Temporal, or project images therefore remain a preparation failure instead of triggering an audience-time download.
 
-Then present these acts:
+Then use the four numbered controls in **Seven-minute verified walkthrough**:
 
-1. **Honest breadth, about 45 seconds.** Open **About**. Show that the evidence-backed summary equals the complete canonical table and point out **Not a conformance claim**. Explain that each row is bound to an exact reviewed profile rather than inferred from a product screen.
-2. **Real-world headline, about three minutes.** Run `./scripts/pnpm.sh run demo:mue-headline`. The headed Chromium journey deploys the retained expense-exception Process, shows its BPMN diagram, and pauses at useful forms for **Approve**, **Request changes**, and **Abort** before finishing on committed semantic History. The forms cover text, date, decimal, choice, multi-choice, boolean, conditional required input, and destructive-action confirmation.
-3. **Engine Alpha proof, about two minutes.** Run `./scripts/pnpm.sh run demo:mue-preview-alpha`. The headed journey shows natural Sequential Multi-Instance completion and an interrupting Timer Boundary Event over the same mechanism, ending on the committed aggregate in both cases.
-4. **Close on evidence, about one minute.** Return to the prepared Product 2 origin and use the detailed walkthrough below to show an exact definition version, engine-published History, a terminal Diagram, or incident operations according to the audience's interest.
+1. **Expense exception, about two minutes 30 seconds.** Claim **Review exception**, inspect its BPMN Diagram, complete the realistic typed form with request reference, date, amount, cost center, and risk flags, then approve it. The pre-seeded presenter path requires no BPMN upload or semantic-profile entry.
+2. **Deadline behavior, about one minute 45 seconds.** Open the naturally completed purchase-order batch and show its ordered `accepted`, `flagged`, `archived` aggregate. Then open the deadline-escalated batch, show its committed Timer command, absent partial aggregate, and terminal Diagram.
+3. **Incident recovery, about one minute 45 seconds.** Open the retry-only Service Task incident, show its Diagram, and retry its retained content-bound action until the public response confirms commitment. Open the separately cancellable incident, explain the safe root scope, and confirm cancellation. An indeterminate response is demonstrated as retry-safe recovery, not presented as failure.
+4. **Correctness stack, about one minute.** Show the distinct Lean reference, independently written TypeScript core, Temporal durability, and PostgreSQL projection roles. Close on the exact executable capability table and **Not a conformance claim** boundary.
 
-The headline and Alpha commands are author-side headed rehearsals and each starts its own exact ephemeral Temporal-backed witness so that presenter pacing cannot mutate ordinary evidence. They require the prepared presenter checkout and its frozen development dependencies; they are not embedded in the Docker-only artifact. The published distribution supplies the same real Product 2 and Temporal topology for manual audience navigation, retained-model upload, and recovery without compiling on the demo machine.
+Audience mode is an optional query-controlled presentation layer. Opening the ordinary origin without `?audience=demo` retains the normal Work, Definitions, Operations, and About shell.
 
 ### Claims and non-claims
 
-- This is **MUE Preview Alpha**, not completion of the current MUE programme.
+- This is a guided MUE preview, not completion of the current MUE programme.
 - The canonical About table demonstrates executable breadth across exact profiles. The expense-exception model demonstrates a coherent real-world Process. Neither is a single all-elements profile.
 - Product 2 forms, claims, priorities, and work audit are platform behavior bound to engine-published task identity. They do not add BPMN meaning.
 - The demo makes no BPMN conformance, production capacity, high-availability, or benchmark claim.
 
 ### Presenter fallback
 
-If the headline browser cannot start, continue from the retained [capability boundary](assets/bpm-platform-browser-walkthrough/01-about-capability-boundary.png), [expense Process diagram](assets/bpm-platform-browser-walkthrough/02-expense-definition-diagram.png), [structured approval form](assets/bpm-platform-browser-walkthrough/04-expense-structured-form.png), and [committed semantic History](assets/bpm-platform-browser-walkthrough/05-completed-process-history.png). If the Alpha witness cannot start, use its retained [natural completion](assets/mue-preview-alpha-demo/01-natural-completion.png), [Timer interruption](assets/mue-preview-alpha-demo/02-timer-interruption.png), and [interrupted completion](assets/mue-preview-alpha-demo/03-interrupted-completion.png) frames. These are fallback illustrations, not substitutes for the executable gates.
+If the browser cannot start, continue from the retained [capability boundary](assets/bpm-platform-browser-walkthrough/01-about-capability-boundary.png), [expense Process diagram](assets/bpm-platform-browser-walkthrough/02-expense-definition-diagram.png), [structured approval form](assets/bpm-platform-browser-walkthrough/04-expense-structured-form.png), [committed semantic History](assets/bpm-platform-browser-walkthrough/05-completed-process-history.png), [natural Multi-Instance completion](assets/mue-preview-alpha-demo/01-natural-completion.png), and [Timer interruption](assets/mue-preview-alpha-demo/02-timer-interruption.png) frames. These are fallback illustrations, not substitutes for the executable gates.
 
 ## Prerequisites and lifecycle
 
-The published-bundle path requires Docker with Compose `2.24.4` or later and a browser only; that minimum is the first release supporting the `!reset` override that mechanically removes every build declaration. The source-checkout path additionally requires the frozen workspace dependencies. Neither path needs Lean, Java, the CIB Seven checkout, or host PostgreSQL or Temporal installations; only the author-side headed rehearsal needs Playwright. The ordinary evaluation commands below are contributor-oriented and may build or pull.
+The published-bundle path requires a Docker-compatible runtime with Compose `2.24.4` or later and a browser only; that minimum is the first release supporting the `!reset` override that mechanically removes every build declaration. Rancher Desktop must use `dockerd (moby)` mode. The source-checkout path additionally requires the frozen workspace dependencies. Neither path needs Lean, Java, the CIB Seven checkout, or host PostgreSQL or Temporal installations. The ordinary evaluation commands below are contributor-oriented and may build or pull.
 
 Start the complete evaluation distribution:
 
