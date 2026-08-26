@@ -82,7 +82,7 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
   );
   assert.equal(
     manifest.scripts?.["test:pre-push:showcase"],
-    "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types",
+    "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types && pnpm test:showcase:guided-live-demo",
   );
   assert.equal(
     verifyWorkflow.match(/run: node scripts\/clean-committed-head\.ts/gu)?.length,

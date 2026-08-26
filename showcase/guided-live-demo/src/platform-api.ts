@@ -1,13 +1,19 @@
 import {
   DefinitionDeployStatus,
   ProcessInstanceStartStatus,
+  SemanticTransitionKind,
+  StimulusKind,
+  VariableValueKind,
   decodeDefinitionDeployResult,
+  decodeExecutionPublicationPage,
   decodeProcessInstanceSearchPage,
   decodeProcessInstanceStartResult,
   decodePublicIncidentSnapshot,
   decodeWorkTaskSnapshot,
   definitionVersionStartPath,
   definitionsCollectionPath,
+  executionPublicationIdentityForPublicProcessInstance,
+  executionPublicationPath,
   incidentsPath,
   processInstancesPath,
   workTasksPath,
@@ -19,10 +25,12 @@ import type {
 import { setTimeout as delay } from "node:timers/promises";
 
 import { isAudienceStateReady } from "./audience-readiness.ts";
+import type { AudienceExecutionEvidence } from "./audience-readiness.ts";
 import type {
   GuidedDemoPreparationPort,
   PreparedDemoScenario,
 } from "./demo-preparation.ts";
+import { DemoScenario } from "./demo-plan.ts";
 import type { DemoPlanEntry } from "./demo-plan.ts";
 
 const requestDeadlineMs = 10_000;
@@ -99,18 +107,28 @@ export class GuidedDemoPlatformApi implements Pick<
   async waitForAudienceState(
     prepared: ReadonlyArray<PreparedDemoScenario>,
   ): Promise<void> {
+    const natural = requirePreparedInstance(prepared, DemoScenario.PurchaseOrderReview);
+    const deadline = requirePreparedInstance(prepared, DemoScenario.DeadlineEscalation);
     let lastFailure: unknown;
     for (let attempt = 0; attempt < publicStateAttempts; attempt += 1) {
       try {
-        const [work, incidents, batch] = await Promise.all([
+        const [work, incidents, batch, naturalExecution, deadlineExecution] = await Promise.all([
           this.#get(workTasksPath(), decodeWorkTaskSnapshot),
           this.#get(incidentsPath(), decodePublicIncidentSnapshot),
           this.#get(processInstancesPath({
             processId: "Process_SequentialMultiInstanceReview",
             limit: 2,
           }), decodeProcessInstanceSearchPage),
+          this.#executionEvidence(natural),
+          this.#executionEvidence(deadline),
         ]);
-        if (isAudienceStateReady(prepared, work, incidents, batch)) return;
+        if (isAudienceStateReady(
+          prepared,
+          work,
+          incidents,
+          batch,
+          [naturalExecution, deadlineExecution],
+        )) return;
         lastFailure = new Error("public snapshots are valid but incomplete");
       } catch (failure: unknown) {
         lastFailure = failure;
@@ -128,6 +146,50 @@ export class GuidedDemoPlatformApi implements Pick<
     requireStatus(response, 200);
     return decode(response.json);
   }
+
+  async #executionEvidence(
+    instance: PublicProcessInstanceIdentity,
+  ): Promise<AudienceExecutionEvidence> {
+    const identity = executionPublicationIdentityForPublicProcessInstance(instance);
+    const request = { ...identity, afterRevision: 0, limit: 100 } as const;
+    const response = await requestJson(new URL(executionPublicationPath(request), this.#origin), {
+      headers: { accept: "application/json" },
+    });
+    requireStatus(response, 200);
+    const page = decodeExecutionPublicationPage(response.json, request);
+    if (page.current === null) {
+      throw new Error(`Demo execution ${instance.processInstanceId} exceeds one readiness page`);
+    }
+    const output = page.current.state.variables.find(({ name }) =>
+      name === "DataObjectReference_OutputResults"
+    );
+    let terminalOutput: ReadonlyArray<string> | null = null;
+    if (output !== undefined) {
+      if (output.value.kind !== VariableValueKind.StringList) {
+        throw new Error(`Demo execution ${instance.processInstanceId} has a non-list terminal output`);
+      }
+      terminalOutput = output.value.value;
+    }
+    return {
+      processInstanceId: instance.processInstanceId,
+      status: page.current.state.status,
+      terminalOutput,
+      timerFirings: page.batches.reduce((count, batch) => count +
+        batch.transitions.filter(({ transition }) =>
+          transition.kind === SemanticTransitionKind.ExternalStimulus &&
+          transition.stimulus.kind === StimulusKind.FireTimer
+        ).length, 0),
+    };
+  }
+}
+
+function requirePreparedInstance(
+  prepared: ReadonlyArray<PreparedDemoScenario>,
+  scenario: DemoScenario,
+): PublicProcessInstanceIdentity {
+  const instance = prepared.find((candidate) => candidate.scenario === scenario)?.instance;
+  if (instance === undefined) throw new Error(`Prepared demo omitted ${scenario}`);
+  return instance;
 }
 
 async function requestJson(

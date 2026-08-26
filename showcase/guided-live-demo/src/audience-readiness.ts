@@ -1,4 +1,5 @@
 import type {
+  CurrentCommittedExecution,
   ProcessInstanceSearchPage,
   PublicIncident,
   PublicIncidentSnapshot,
@@ -8,12 +9,20 @@ import type {
 import type { PreparedDemoScenario } from "./demo-preparation.ts";
 import { DemoScenario } from "./demo-plan.ts";
 
+export type AudienceExecutionEvidence = Readonly<{
+  processInstanceId: string;
+  status: CurrentCommittedExecution["state"]["status"];
+  terminalOutput: ReadonlyArray<string> | null;
+  timerFirings: number;
+}>;
+
 /** Checks only Product 2 public state that the presenter path consumes. */
 export function isAudienceStateReady(
   prepared: ReadonlyArray<PreparedDemoScenario>,
   work: WorkTaskSnapshot,
   incidents: PublicIncidentSnapshot,
   batch: ProcessInstanceSearchPage,
+  executions: ReadonlyArray<AudienceExecutionEvidence>,
 ): boolean {
   const expense = findPrepared(prepared, DemoScenario.ExpenseException);
   const natural = findPrepared(prepared, DemoScenario.PurchaseOrderReview);
@@ -54,15 +63,21 @@ export function isAudienceStateReady(
   if (batch.instances.length !== 2 || batch.nextCursor !== null) {
     return false;
   }
-  return hasBatchInstance(
+  if (!hasBatchInstance(
     batch,
     natural.processInstanceId,
     "demo-purchase-order-review.bpmn",
-  ) && hasBatchInstance(
+  ) || !hasBatchInstance(
     batch,
     deadline.processInstanceId,
     "demo-deadline-escalation.bpmn",
-  );
+  )) {
+    return false;
+  }
+  return executions.length === 2 && hasNaturalEvidence(
+    executions,
+    natural.processInstanceId,
+  ) && hasDeadlineEvidence(executions, deadline.processInstanceId);
 }
 
 function findPrepared(
@@ -101,6 +116,31 @@ function hasBatchInstance(
     instance.definition.processId === "Process_SequentialMultiInstanceReview" &&
     instance.definition.source.id === sourceId
   );
+}
+
+function hasNaturalEvidence(
+  executions: ReadonlyArray<AudienceExecutionEvidence>,
+  processInstanceId: string,
+): boolean {
+  const evidence = executions.find((candidate) =>
+    candidate.processInstanceId === processInstanceId
+  );
+  return evidence?.status === "completed" && evidence.timerFirings === 0 &&
+    evidence.terminalOutput !== null && sameStrings(
+      evidence.terminalOutput,
+      ["accepted", "flagged", "archived"],
+    );
+}
+
+function hasDeadlineEvidence(
+  executions: ReadonlyArray<AudienceExecutionEvidence>,
+  processInstanceId: string,
+): boolean {
+  const evidence = executions.find((candidate) =>
+    candidate.processInstanceId === processInstanceId
+  );
+  return evidence?.status === "completed" && evidence.timerFirings === 1 &&
+    evidence.terminalOutput === null;
 }
 
 function sameStrings(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {

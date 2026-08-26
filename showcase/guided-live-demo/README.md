@@ -12,4 +12,6 @@ The prepared audience state contains:
 
 Run `./scripts/pnpm.sh run demo:prepare` from a clean committed checkout to rebuild the isolated Docker stack and seed fresh state. Run `./scripts/pnpm.sh run demo:reset` to recreate the same audience state later from matching cached images without building or pulling. The launcher prints the exact `?audience=demo` URL after public readiness succeeds.
 
+After preparation, run `./scripts/pnpm.sh --filter @bpmn-lean/showcase-guided-live-demo run test:e2e:built` to exercise the complete presenter path in headless Chromium. This browser acceptance mutates the prepared task and incidents, so run `demo:reset` before the next presentation.
+
 The seed actor is a demonstration client, not a semantic authority. It introduces no BPMN behavior, uses no private platform store, and reports readiness only from the same public Product 2 projections the browser consumes.

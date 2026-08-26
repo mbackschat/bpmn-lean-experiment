@@ -150,7 +150,7 @@
     "test:pre-push:verify": "pnpm check:clean-head && ./scripts/verify.sh",
     "test:pre-push:platform": "pnpm check:clean-head && pnpm test:platform-operations-checkpoint",
     "test:pre-push:platform-postgresql": "pnpm check:clean-head && pnpm test:platform-postgresql",
-    "test:pre-push:showcase": "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types",
+    "test:pre-push:showcase": "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types && pnpm test:showcase:guided-live-demo",
     "test:pre-push:ui": "pnpm check:clean-head && pnpm test:feedback-policy && pnpm build:platform-web && pnpm test:platform-web:built && pnpm test:ui-quality:built",
     "test:ui-quality:built": "env PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:functional",
     "test:platform-engine-gateway": "pnpm build:platform-engine-gateway && pnpm test:platform-engine-gateway:built",

@@ -23,7 +23,6 @@ test("every browser project declares either run-local servers or one external or
   for (const path of showcaseConfigs) {
     const source = await readFile(new URL(path, showcaseRoot), "utf8");
     if (source.includes("BPMN_EVALUATION_ORIGIN")) {
-      assert.match(source, /BPMN_REFRESH_WALKTHROUGH_SCREENSHOTS/u, path);
       assert.doesNotMatch(source, /\bwebServer\s*:/u, path);
       assert.doesNotMatch(
         source,

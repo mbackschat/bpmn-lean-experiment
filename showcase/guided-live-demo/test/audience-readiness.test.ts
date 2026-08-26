@@ -9,6 +9,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import { isAudienceStateReady } from "../src/audience-readiness.ts";
+import type { AudienceExecutionEvidence } from "../src/audience-readiness.ts";
 import type { PreparedDemoScenario } from "../src/demo-preparation.ts";
 import { DemoScenario } from "../src/demo-plan.ts";
 
@@ -42,14 +43,30 @@ test("accepts only the complete public presenter state", () => {
     instances: [deadline, natural],
     nextCursor: null,
   } satisfies ProcessInstanceSearchPage;
+  const executions = [{
+    processInstanceId: natural.processInstanceId,
+    status: "completed",
+    timerFirings: 0,
+    terminalOutput: ["accepted", "flagged", "archived"],
+  }, {
+    processInstanceId: deadline.processInstanceId,
+    status: "completed",
+    timerFirings: 1,
+    terminalOutput: null,
+  }] satisfies ReadonlyArray<AudienceExecutionEvidence>;
 
-  assert.equal(isAudienceStateReady(prepared, work, incidents, batch), true);
-  assert.equal(isAudienceStateReady(prepared, { tasks: [] }, incidents, batch), false);
-  assert.equal(isAudienceStateReady(prepared, work, { incidents: [incidents.incidents[0]!] }, batch), false);
+  assert.equal(isAudienceStateReady(prepared, work, incidents, batch, executions), true);
+  assert.equal(isAudienceStateReady(prepared, { tasks: [] }, incidents, batch, executions), false);
+  assert.equal(isAudienceStateReady(prepared, work, { incidents: [incidents.incidents[0]!] }, batch, executions), false);
   assert.equal(isAudienceStateReady(prepared, work, incidents, {
     instances: [natural],
     nextCursor: null,
-  }), false);
+  }, executions), false);
+  assert.equal(isAudienceStateReady(prepared, work, incidents, batch, [executions[0]!]), false);
+  assert.equal(isAudienceStateReady(prepared, work, incidents, batch, [{
+    ...executions[1]!,
+    timerFirings: 0,
+  }, executions[0]!]), false);
 });
 
 function preparedScenarios(): ReadonlyArray<PreparedDemoScenario> {
