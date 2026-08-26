@@ -4,7 +4,7 @@ set -eu
 script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 bundle_root=$(CDPATH= cd -- "$script_directory/../.." && pwd)
 environment_file=${BPMN_EVALUATION_BUNDLE_ENV:-"$script_directory/published-images.env"}
-project_name=${BPMN_EVALUATION_PROJECT_NAME:-bpmn-lean-mue-preview-alpha}
+project_name=${BPMN_EVALUATION_PROJECT_NAME:-bpmn-lean-guided-demo}
 
 if [ ! -f "$environment_file" ]; then
   printf 'Published demo environment is missing: %s\n' "$environment_file" >&2
@@ -27,13 +27,15 @@ BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE=$(read_assignment BPMN_EVALUATION_PLATFOR
 BPMN_EVALUATION_BPMN_WORKER_IMAGE=$(read_assignment BPMN_EVALUATION_BPMN_WORKER_IMAGE)
 BPMN_EVALUATION_PLATFORM_API_IMAGE=$(read_assignment BPMN_EVALUATION_PLATFORM_API_IMAGE)
 BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE=$(read_assignment BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE)
+BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE=$(read_assignment BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE)
 export \
   BPMN_EVALUATION_SOURCE_REVISION \
   BPMN_EVALUATION_SOURCE_TREE_SHA256 \
   BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE \
   BPMN_EVALUATION_BPMN_WORKER_IMAGE \
   BPMN_EVALUATION_PLATFORM_API_IMAGE \
-  BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE
+  BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE \
+  BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE
 
 : "${BPMN_EVALUATION_SOURCE_REVISION:?published demo source revision is missing}"
 : "${BPMN_EVALUATION_SOURCE_TREE_SHA256:?published demo source-tree digest is missing}"
@@ -41,6 +43,7 @@ export \
 : "${BPMN_EVALUATION_BPMN_WORKER_IMAGE:?published BPMN Worker image is missing}"
 : "${BPMN_EVALUATION_PLATFORM_API_IMAGE:?published platform API image is missing}"
 : "${BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE:?published recovery Worker image is missing}"
+: "${BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE:?published guided demo seed image is missing}"
 
 if ! printf '%s\n' "$BPMN_EVALUATION_SOURCE_REVISION" | grep -Eq '^[0-9a-f]{40}$'; then
   printf 'Published demo source revision is malformed\n' >&2
@@ -64,6 +67,7 @@ verify_image_reference "$BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE" platform-migrat
 verify_image_reference "$BPMN_EVALUATION_BPMN_WORKER_IMAGE" bpmn-worker
 verify_image_reference "$BPMN_EVALUATION_PLATFORM_API_IMAGE" platform-api
 verify_image_reference "$BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE" platform-recovery-worker
+verify_image_reference "$BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE" guided-demo-seed
 
 compose() {
   docker compose \
@@ -89,12 +93,18 @@ verify_project_images() {
   verify_image "$BPMN_EVALUATION_BPMN_WORKER_IMAGE"
   verify_image "$BPMN_EVALUATION_PLATFORM_API_IMAGE"
   verify_image "$BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE"
+  verify_image "$BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE"
+}
+
+seed_demo() {
+  compose --profile demo run --rm --no-deps --pull never guided-demo-seed
 }
 
 report_ready() {
   origin=$(read_assignment BPMN_EVALUATION_ORIGIN)
   compose ps
   printf 'LIVE_DEMO_READY origin=%s\n' "$origin"
+  printf 'LIVE_DEMO_AUDIENCE url=%s/?audience=demo\n' "$origin"
   printf 'LIVE_DEMO_MODE mode=published-images revision=%s sourceTreeSha256=%s\n' \
     "$BPMN_EVALUATION_SOURCE_REVISION" \
     "$BPMN_EVALUATION_SOURCE_TREE_SHA256"
@@ -105,9 +115,18 @@ case "$command" in
   prepare)
     docker info >/dev/null
     compose down --volumes --remove-orphans
-    compose pull
+    compose --profile demo pull
     verify_project_images
     compose up --no-build --pull never --wait
+    seed_demo
+    report_ready
+    ;;
+  reset)
+    docker info >/dev/null
+    verify_project_images
+    compose down --volumes --remove-orphans
+    compose up --no-build --pull never --wait
+    seed_demo
     report_ready
     ;;
   start)
@@ -124,7 +143,7 @@ case "$command" in
     compose down --remove-orphans
     ;;
   *)
-    printf 'usage: %s prepare|start|status|stop\n' "$0" >&2
+    printf 'usage: %s prepare|reset|start|status|stop\n' "$0" >&2
     exit 64
     ;;
 esac

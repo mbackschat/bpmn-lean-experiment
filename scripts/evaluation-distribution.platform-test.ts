@@ -32,6 +32,7 @@ test("evaluation distribution has the closed healthy topology", async () => {
     "bpmn-worker",
     "platform-api",
     "platform-recovery-worker",
+    "guided-demo-seed",
   ]) {
     assert.match(compose, new RegExp(`^  ${service}:$`, "mu"));
   }
@@ -81,6 +82,8 @@ test("evaluation distribution has the closed healthy topology", async () => {
     /PLATFORM_PROJECTION_MAX_AGE_MS/u,
   );
   assert.doesNotMatch(serviceBlock(compose, "temporal"), /^\s+ports:/mu);
+  assert.match(serviceBlock(compose, "guided-demo-seed"), /profiles: \["demo"\]/u);
+  assert.match(serviceBlock(compose, "guided-demo-seed"), /GUIDED_DEMO_PLATFORM_ORIGIN: http:\/\/platform-api:3000/u);
 });
 
 test("runtime images contain only deployed production closures", async () => {
@@ -100,6 +103,10 @@ test("runtime images contain only deployed production closures", async () => {
     assert.doesNotMatch(stage, /^COPY\s+\.\s/u);
     assert.doesNotMatch(stage, /(?:testkit|showcase|BpmnSemantics|runners\/cibseven|docs\/research)/u);
   }
+  const seedStage = runtimeStage(dockerfile, "guided-demo-seed");
+  assert.match(seedStage, /COPY --from=packager/u);
+  assert.match(seedStage, /\/app\/scenarios/u);
+  assert.doesNotMatch(seedStage, /^COPY\s+\.\s/u);
   assert.match(dockerfile, /--config\.inject-workspace-packages=true/u);
   assert.match(
     dockerfile,
@@ -141,6 +148,7 @@ test("project images carry fail-closed demo source provenance", async () => {
     "bpmn-worker",
     "platform-api",
     "platform-recovery-worker",
+    "guided-demo-seed",
   ]) {
     assert.match(serviceBlock(compose, service), /<<: \*project-build/u);
   }
@@ -165,6 +173,7 @@ test("published demo bundle replaces every project build with one exact image", 
     ["bpmn-worker", "BPMN_EVALUATION_BPMN_WORKER_IMAGE"],
     ["platform-api", "BPMN_EVALUATION_PLATFORM_API_IMAGE"],
     ["platform-recovery-worker", "BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE"],
+    ["guided-demo-seed", "BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE"],
   ]);
 
   for (const [service, variable] of imageVariables) {
@@ -189,6 +198,7 @@ test("published demo launcher needs Docker but can never build", async () => {
   assert.match(launcher, /--no-build/u);
   assert.match(launcher, /--pull never/u);
   assert.match(launcher, /prepare\)/u);
+  assert.match(launcher, /reset\)/u);
   assert.match(launcher, /start\)/u);
   assert.match(launcher, /status\)/u);
   assert.match(launcher, /stop\)/u);
@@ -240,11 +250,12 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
   assert.match(workflow, /cp docs\/BPM-PLATFORM-BROWSER-WALKTHROUGH\.md/u);
   assert.match(workflow, /scenarios\/expense-exception-review/u);
   assert.match(workflow, /docs\/assets\/mue-preview-alpha-demo/u);
+  assert.match(workflow, /guided-demo-seed/u);
   assert.match(
     workflow,
-    /\.artifacts\/mue-preview-alpha-demo\/deploy\/evaluation\/demo prepare/u,
+    /\.artifacts\/guided-live-demo\/deploy\/evaluation\/demo prepare/u,
   );
-  assert.match(workflow, /name: mue-preview-alpha-demo-\$\{\{ github\.sha \}\}/u);
+  assert.match(workflow, /name: guided-live-demo-\$\{\{ github\.sha \}\}/u);
 });
 
 test("migration and runtime database credentials stay separate", async () => {

@@ -137,6 +137,28 @@ services:
       retries: 30
     restart: unless-stopped
 
+  guided-demo-seed:
+    image: bpmn-lean/evaluation-guided-demo-seed:local
+    build:
+      <<: *project-build
+      target: guided-demo-seed
+    profiles: ["demo"]
+    environment:
+      BPMN_TEMPORAL_ADDRESS: temporal:7233
+      BPMN_TEMPORAL_NAMESPACE: default
+      GUIDED_DEMO_PLATFORM_ORIGIN: http://platform-api:3000
+      GUIDED_DEMO_SCENARIO_ROOT: /app/scenarios
+    depends_on:
+      bpmn-worker:
+        condition: service_healthy
+      platform-api:
+        condition: service_healthy
+      platform-recovery-worker:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   postgresql-data:
   temporal-data:

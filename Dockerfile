@@ -16,6 +16,7 @@ RUN pnpm \
     --filter @bpmn-lean/platform-postgresql-migrate... \
     --filter @bpmn-lean/platform-web... \
     --filter @bpmn-lean/temporal-runner... \
+    --filter @bpmn-lean/showcase-guided-live-demo... \
     --if-present run build
 
 FROM builder AS packager
@@ -23,6 +24,7 @@ RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/platform-se
 RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/platform-recovery-worker deploy --prod /out/platform-recovery-worker
 RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/platform-postgresql-migrate deploy --prod /out/platform-migrate
 RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/temporal-runner deploy --prod /out/bpmn-worker
+RUN pnpm --config.inject-workspace-packages=true --filter @bpmn-lean/showcase-guided-live-demo deploy --prod /out/guided-demo-seed
 RUN cp -R platform/apps/web/dist /out/platform-web
 
 FROM ${NODE_IMAGE} AS runtime-base
@@ -54,3 +56,11 @@ FROM runtime-base AS bpmn-worker
 WORKDIR /app/bpmn-worker
 COPY --from=packager --chown=node:node /out/bpmn-worker/ ./
 CMD ["node", "dist/evaluation-worker-main.js"]
+
+FROM runtime-base AS guided-demo-seed
+WORKDIR /app/guided-demo-seed
+COPY --from=packager --chown=node:node /out/guided-demo-seed/ ./
+COPY --from=builder --chown=node:node /workspace/scenarios/expense-exception-review/process.bpmn /app/scenarios/expense-exception-review/process.bpmn
+COPY --from=builder --chown=node:node /workspace/scenarios/sequential-multi-instance/process.bpmn /app/scenarios/sequential-multi-instance/process.bpmn
+COPY --from=builder --chown=node:node /workspace/scenarios/service-task-effect/process.bpmn /app/scenarios/service-task-effect/process.bpmn
+CMD ["node", "dist/seed-main.js"]

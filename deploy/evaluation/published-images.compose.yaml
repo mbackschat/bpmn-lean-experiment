@@ -14,3 +14,7 @@ services:
   platform-recovery-worker:
     image: ${BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE:?published demo bundle is missing the recovery Worker image}
     build: !reset null
+
+  guided-demo-seed:
+    image: ${BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE:?published demo bundle is missing the guided demo seed image}
+    build: !reset null

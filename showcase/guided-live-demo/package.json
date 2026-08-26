@@ -1,0 +1,24 @@
+{
+  "name": "@bpmn-lean/showcase-guided-live-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "type-test": "tsc -p tsconfig.json",
+    "test:built": "pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts",
+    "test": "pnpm run test:built",
+    "test:e2e:built": "playwright test"
+  },
+  "dependencies": {
+    "@bpmn-lean/platform-contracts": "workspace:*",
+    "@bpmn-lean/semantic-core": "workspace:*",
+    "@bpmn-lean/temporal-client": "workspace:*",
+    "@bpmn-lean/temporal-runner": "workspace:*",
+    "@temporalio/client": "1.21.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

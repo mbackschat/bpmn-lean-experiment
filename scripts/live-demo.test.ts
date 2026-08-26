@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   inspectLiveDemo,
   prepareLiveDemo,
+  resetLiveDemo,
   startLiveDemo,
   stopLiveDemo,
 } from "./live-demo.ts";
@@ -34,9 +35,10 @@ const applicationImages = Object.freeze([
   "bpmn-lean/evaluation-bpmn-worker:local",
   "bpmn-lean/evaluation-platform-api:local",
   "bpmn-lean/evaluation-platform-recovery-worker:local",
+  "bpmn-lean/evaluation-guided-demo-seed:local",
 ]);
 
-test("publishes the four demo lifecycle commands through the script registry", async () => {
+test("publishes the five demo lifecycle commands through the script registry", async () => {
   const [manifestSource, registry] = await Promise.all([
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("./README.md", import.meta.url), "utf8"),
@@ -46,6 +48,7 @@ test("publishes the four demo lifecycle commands through the script registry", a
   }>;
 
   assert.equal(manifest.scripts?.["demo:prepare"], "node scripts/live-demo.ts prepare");
+  assert.equal(manifest.scripts?.["demo:reset"], "node scripts/live-demo.ts reset");
   assert.equal(manifest.scripts?.["demo:start"], "node scripts/live-demo.ts start");
   assert.equal(manifest.scripts?.["demo:status"], "node scripts/live-demo.ts status");
   assert.equal(manifest.scripts?.["demo:stop"], "node scripts/live-demo.ts stop");
@@ -82,6 +85,21 @@ test("prepares one fresh isolated evaluation stack and reports exact public demo
       command: "docker",
       args: ["compose", "--project-name", session.projectName, "up", "--build", "--wait"],
     },
+    {
+      command: "docker",
+      args: [
+        "compose",
+        "--project-name",
+        session.projectName,
+        "--profile",
+        "demo",
+        "run",
+        "--rm",
+        "--build",
+        "--no-deps",
+        "guided-demo-seed",
+      ],
+    },
   ]);
   for (const invocation of commands) {
     assert.equal(invocation.environment.BPMN_EVALUATION_ORIGIN, session.origin);
@@ -92,8 +110,7 @@ test("prepares one fresh isolated evaluation stack and reports exact public demo
   assert.equal(output.some((line) => line.includes("mode=prepared-online")), true);
   assert.equal(output.some((line) => line.includes("scenarios/expense-exception-review/process.bpmn")), true);
   assert.equal(output.some((line) => line.includes("scenarios/service-task-effect/process.bpmn")), true);
-  assert.equal(output.some((line) => line.includes("demo:mue-headline")), true);
-  assert.equal(output.some((line) => line.includes("demo:mue-preview-alpha")), true);
+  assert.equal(output.some((line) => line.includes("?audience=demo")), true);
 });
 
 test("removes a partial isolated stack when public readiness fails", async () => {
@@ -111,7 +128,7 @@ test("removes a partial isolated stack when public readiness fails", async () =>
     writeLine: () => {},
   }), failure);
 
-  assert.equal(commands.length, 4);
+  assert.equal(commands.length, 5);
   assert.deepEqual(commands.at(-1)?.args, [
     "compose",
     "--project-name",
@@ -120,6 +137,61 @@ test("removes a partial isolated stack when public readiness fails", async () =>
     "--volumes",
     "--remove-orphans",
   ]);
+});
+
+test("resets cached images to one freshly seeded offline audience state", async () => {
+  const commands: LiveDemoCommandInvocation[] = [];
+  const output: string[] = [];
+
+  const reset = await resetLiveDemo({
+    allocatePort: async () => session.port,
+    resolveBuildIdentity: async () => buildIdentity,
+    readImageProvenance: matchingImageProvenance,
+    verifyFixtures: async () => {},
+    run: async (invocation) => { commands.push(invocation); },
+    probe: async () => {},
+    writeSession: async () => {},
+    writeLine: (line) => { output.push(line); },
+  });
+
+  assert.deepEqual(reset, session);
+  assert.deepEqual(commands.map(({ command, args }) => ({ command, args })), [
+    { command: "docker", args: ["info", "--format", "{{.ServerVersion}}"] },
+    {
+      command: "docker",
+      args: ["compose", "--project-name", session.projectName, "down", "--volumes", "--remove-orphans"],
+    },
+    {
+      command: "docker",
+      args: [
+        "compose",
+        "--project-name",
+        session.projectName,
+        "up",
+        "--no-build",
+        "--pull",
+        "never",
+        "--wait",
+      ],
+    },
+    {
+      command: "docker",
+      args: [
+        "compose",
+        "--project-name",
+        session.projectName,
+        "--profile",
+        "demo",
+        "run",
+        "--rm",
+        "--no-deps",
+        "--pull",
+        "never",
+        "guided-demo-seed",
+      ],
+    },
+  ]);
+  assert.equal(output.some((line) => line.includes("mode=reset-offline")), true);
 });
 
 test("starts only commit-bound cached images without build or pull", async () => {

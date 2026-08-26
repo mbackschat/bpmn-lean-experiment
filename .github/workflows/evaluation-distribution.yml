@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_images:
-        description: Publish the four evaluation images to GHCR
+        description: Publish the five evaluation images to GHCR
         required: false
         type: boolean
         default: false
@@ -35,7 +35,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build and start the evaluation distribution
-        run: docker compose up --build --wait
+        run: |
+          docker compose up --build --wait
+          docker compose --profile demo run --rm --build --no-deps guided-demo-seed
 
       - name: Verify the public application origin
         run: |
@@ -117,7 +119,7 @@ jobs:
           image_prefix="ghcr.io/${GITHUB_REPOSITORY,,}"
           image_tag="sha-$GITHUB_SHA"
           source_tree_sha256="$(git ls-tree -r --full-tree -z HEAD | sha256sum | cut -d ' ' -f 1)"
-          bundle_root=".artifacts/mue-preview-alpha-demo"
+          bundle_root=".artifacts/guided-live-demo"
           environment_file="$bundle_root/deploy/evaluation/published-images.env"
           mkdir -p \
             "$bundle_root/deploy/evaluation/postgresql" \
@@ -140,7 +142,7 @@ jobs:
             printf 'BPMN_EVALUATION_PROJECTION_REFRESH_AFTER_MS=5000\n'
           } > "$environment_file"
 
-          for target in platform-api platform-recovery-worker platform-migrate bpmn-worker; do
+          for target in platform-api platform-recovery-worker platform-migrate bpmn-worker guided-demo-seed; do
             image="$image_prefix/evaluation-$target"
             metadata_file=".artifacts/build-metadata/$target.json"
             metadata_digest=""
@@ -173,6 +175,7 @@ jobs:
               platform-recovery-worker) image_variable=BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE ;;
               platform-migrate) image_variable=BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE ;;
               bpmn-worker) image_variable=BPMN_EVALUATION_BPMN_WORKER_IMAGE ;;
+              guided-demo-seed) image_variable=BPMN_EVALUATION_GUIDED_DEMO_SEED_IMAGE ;;
               *) exit 1 ;;
             esac
             printf '%s=%s@%s\n' "$image_variable" "$image" "$digest" >> "$environment_file"
@@ -182,25 +185,25 @@ jobs:
         if: github.event_name == 'push' || inputs.publish_images == true
         run: |
           docker logout ghcr.io
-          .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo prepare
+          .artifacts/guided-live-demo/deploy/evaluation/demo prepare
           curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:3000/api/v1/definitions >/dev/null
 
       - name: Show published service state after failure
         if: failure() && (github.event_name == 'push' || inputs.publish_images == true)
         run: |
-          .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo status
-          docker compose --project-name bpmn-lean-mue-preview-alpha --env-file .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.env -f .artifacts/mue-preview-alpha-demo/compose.yaml -f .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.compose.yaml logs --no-color
+          .artifacts/guided-live-demo/deploy/evaluation/demo status
+          docker compose --project-name bpmn-lean-guided-demo --env-file .artifacts/guided-live-demo/deploy/evaluation/published-images.env -f .artifacts/guided-live-demo/compose.yaml -f .artifacts/guided-live-demo/deploy/evaluation/published-images.compose.yaml logs --no-color
 
       - name: Stop the published evaluation distribution
         if: always() && (github.event_name == 'push' || inputs.publish_images == true)
-        run: .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo stop
+        run: .artifacts/guided-live-demo/deploy/evaluation/demo stop
 
-      - name: Upload zero-build MUE Preview Alpha bundle
+      - name: Upload zero-build guided live demo bundle
         if: github.event_name == 'push' || inputs.publish_images == true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: mue-preview-alpha-demo-${{ github.sha }}
+          name: guided-live-demo-${{ github.sha }}
           if-no-files-found: error
           retention-days: 30
-          path: .artifacts/mue-preview-alpha-demo/
+          path: .artifacts/guided-live-demo/

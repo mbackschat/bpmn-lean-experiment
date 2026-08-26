@@ -432,6 +432,28 @@ importers:
         specifier: 7.3.6
         version: 7.3.6(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0)
 
+  showcase/guided-live-demo:
+    dependencies:
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../platform/contracts
+      '@bpmn-lean/semantic-core':
+        specifier: workspace:*
+        version: link:../../packages/semantic-core
+      '@bpmn-lean/temporal-client':
+        specifier: workspace:*
+        version: link:../../packages/temporal-adapter/client
+      '@bpmn-lean/temporal-runner':
+        specifier: workspace:*
+        version: link:../../packages/temporal-adapter/runner
+      '@temporalio/client':
+        specifier: 1.21.0
+        version: 1.21.0
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.62.1
+        version: 1.62.1
+
   showcase/m1-definition-deployment:
     devDependencies:
       '@bpmn-lean/platform-server':

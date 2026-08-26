@@ -18,5 +18,11 @@ BpmnSemantics
 adoption
 runners
 showcase
+!showcase/guided-live-demo
+!showcase/guided-live-demo/package.json
+!showcase/guided-live-demo/tsconfig.json
+!showcase/guided-live-demo/tsconfig.build.json
+!showcase/guided-live-demo/src
+!showcase/guided-live-demo/src/**
 docs/research
 docs/reference

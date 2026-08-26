@@ -23,6 +23,7 @@ const demoApplicationImages = Object.freeze([
   "bpmn-lean/evaluation-bpmn-worker:local",
   "bpmn-lean/evaluation-platform-api:local",
   "bpmn-lean/evaluation-platform-recovery-worker:local",
+  "bpmn-lean/evaluation-guided-demo-seed:local",
 ]);
 const demoFixturePaths = Object.freeze([
   "scenarios/expense-exception-review/process.bpmn",
@@ -105,7 +106,49 @@ export async function prepareLiveDemo(
     cleanupFailureMessage: "Live-demo preparation and cleanup both failed",
     mode: "prepared-online",
     afterStart: async () => {
+      await runGuidedDemoSeed(run, environment, composePrefix, true);
       await verifyDemoImageProvenance(buildIdentity, environment, options);
+    },
+    options,
+    run,
+    writeLine,
+  });
+}
+
+/** Recreates demo-only data from matching cached images, then runs the deterministic seed offline. */
+export async function resetLiveDemo(
+  options: LiveDemoOptions = {},
+): Promise<LiveDemoSession> {
+  const run = options.run ?? runCommand;
+  const writeLine = options.writeLine ?? writeOutputLine;
+  const buildIdentity = await (
+    options.resolveBuildIdentity ?? resolveLiveDemoBuildIdentity
+  )();
+  const port = await (options.allocatePort ?? allocatePlaywrightLoopbackPort)();
+  const session = liveDemoSession(port, buildIdentity);
+  const environment = liveDemoEnvironment(session);
+  const composePrefix = ["compose", "--project-name", session.projectName] as const;
+  await (options.verifyFixtures ?? verifyDemoFixtures)();
+  await run({
+    command: "docker",
+    args: ["info", "--format", "{{.ServerVersion}}"],
+    environment,
+  });
+  await verifyDemoImageProvenance(buildIdentity, environment, options);
+  await run({
+    command: "docker",
+    args: [...composePrefix, "down", "--volumes", "--remove-orphans"],
+    environment,
+  });
+  return startAndPublishLiveDemo({
+    session,
+    environment,
+    upArgs: [...composePrefix, "up", "--no-build", "--pull", "never", "--wait"],
+    cleanupArgs: [...composePrefix, "down", "--volumes", "--remove-orphans"],
+    cleanupFailureMessage: "Offline live-demo reset and cleanup both failed",
+    mode: "reset-offline",
+    afterStart: async () => {
+      await runGuidedDemoSeed(run, environment, composePrefix, false);
     },
     options,
     run,
@@ -164,7 +207,7 @@ type StartAndPublishLiveDemoOptions = Readonly<{
   cleanupArgs: readonly string[];
   cleanupFailureMessage: string;
   environment: NodeJS.ProcessEnv;
-  mode: "prepared-online" | "started-offline";
+  mode: "prepared-online" | "reset-offline" | "started-offline";
   options: LiveDemoOptions;
   run: (invocation: LiveDemoCommandInvocation) => Promise<void>;
   session: LiveDemoSession;
@@ -444,15 +487,38 @@ async function removeLiveDemoSession(): Promise<void> {
 
 function reportPreparedDemo(
   session: LiveDemoSession,
-  mode: "prepared-online" | "started-offline",
+  mode: "prepared-online" | "reset-offline" | "started-offline",
   writeLine: (line: string) => void,
 ): void {
   writeLine(`LIVE_DEMO_READY origin=${session.origin}`);
   writeLine(`LIVE_DEMO_MODE mode=${mode} revision=${session.sourceRevision} sourceTreeSha256=${session.sourceTreeSha256}`);
   writeLine("LIVE_DEMO_SCENARIO structured-human-work file=scenarios/expense-exception-review/process.bpmn profile=bpmn-2.0.2-bpmn-lean-structured-human-work-draft");
   writeLine("LIVE_DEMO_SCENARIO incident-operations file=scenarios/service-task-effect/process.bpmn profiles=cibseven-2.2.0-service-task-incident-draft,cibseven-2.2.0-service-task-incident-cancellation-draft");
-  writeLine("LIVE_DEMO_HEADLINE command=./scripts/pnpm.sh run demo:mue-headline");
-  writeLine("LIVE_DEMO_ALPHA command=./scripts/pnpm.sh run demo:mue-preview-alpha");
+  writeLine("LIVE_DEMO_SCENARIO batch-review file=scenarios/sequential-multi-instance/process.bpmn profile=bpmn-2.0.2-sequential-multi-instance-user-task-draft");
+  writeLine(`LIVE_DEMO_AUDIENCE url=${session.origin}/?audience=demo`);
+}
+
+async function runGuidedDemoSeed(
+  run: (invocation: LiveDemoCommandInvocation) => Promise<void>,
+  environment: NodeJS.ProcessEnv,
+  composePrefix: readonly string[],
+  build: boolean,
+): Promise<void> {
+  await run({
+    command: "docker",
+    args: [
+      ...composePrefix,
+      "--profile",
+      "demo",
+      "run",
+      "--rm",
+      ...(build ? ["--build"] : []),
+      "--no-deps",
+      ...(build ? [] : ["--pull", "never"]),
+      "guided-demo-seed",
+    ],
+    environment,
+  });
 }
 
 async function captureCommand(
@@ -499,6 +565,9 @@ async function main(command: string | undefined): Promise<void> {
     case "start":
       await startLiveDemo();
       return;
+    case "reset":
+      await resetLiveDemo();
+      return;
     case "status":
       await inspectLiveDemo();
       return;
@@ -506,7 +575,7 @@ async function main(command: string | undefined): Promise<void> {
       await stopLiveDemo();
       return;
     default:
-      throw new TypeError("usage: node scripts/live-demo.ts prepare|start|status|stop");
+      throw new TypeError("usage: node scripts/live-demo.ts prepare|reset|start|status|stop");
   }
 }
 
