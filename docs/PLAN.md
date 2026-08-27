@@ -49,7 +49,7 @@ Active work ID: `PARALLEL-MULTI-INSTANCE`.
 
 Next action: implement the owner-approved [Parallel Multi-Instance User Task proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md). Integrate the new source-reader owner and the TypeScript and Lean scope-cancellation and Call Activity branches, with route-specific stranded-controller witnesses and the independent optional-field mutation oracle. Resolve the known Lean well-formedness proof drift, complete each cross-target lane, and take the first green implementation checkpoint through governed review.
 
-Separate open changes outside the active item: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and the sequential Multi-Instance ownership-preservation increment, whose corrections are reviewed and closed but which awaits an owner decision on whether it is material and therefore on where its review record belongs.
+Separate open changes outside the active item: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence.
 
 Oracle: source admission, Lean, the TypeScript core, E1/E2 publication, Temporal capacity and replay, and Product 2 contract compatibility agree for zero, natural, early-completion, and Timer-interrupted schedules. The four removal routes strand no controller. Completion order preserves index aggregation, `first` cancels siblings without partial output, stale identities refuse without mutation, and host retries create no semantic child.
 
