@@ -55,7 +55,7 @@ function assertRefusedWithoutMutation(
   valid: RuntimeState,
   malformed: RuntimeState,
   stimulus: Stimulus,
-  expectedDefects: ReadonlyArray<string>,
+  expectedDefects: ReadonlyArray<RuntimeStateDefect>,
 ): void {
   assert.equal(applyStimulus(parallelProgram, valid, stimulus).outcome, CommandOutcome.Committed);
   const defects = runtimeStateDefects(parallelProgram, instanceId, malformed);
@@ -186,7 +186,7 @@ test("controller bindings reject malformed child, Activity, and Timer joins with
   const cases: ReadonlyArray<Readonly<{
     label: string;
     state: RuntimeState;
-    defects: ReadonlyArray<string>;
+    defects: ReadonlyArray<RuntimeStateDefect>;
   }>> = [
     {
       label: "missing child wait",
