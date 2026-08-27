@@ -92,6 +92,20 @@ const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem enterSharedParallelMultiInstance_issues_fresh_activity"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#SharedParallelMultiInstanceCompletionStep@1", {
+    classification: WriterClassification.IdentityPreserving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
+      markers: ["theorem replaceParallelRecordBody_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#SharedParallelMultiInstanceEntryStep@1", {
+    classification: WriterClassification.Issuer,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
+      markers: ["theorem enterSharedParallelMultiInstance_issues_fresh_activity"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/RuntimeState.lean#initialState@1", {
     classification: WriterClassification.Initializer,
   }],

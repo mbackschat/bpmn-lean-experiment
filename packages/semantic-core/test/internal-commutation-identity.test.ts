@@ -139,7 +139,7 @@ test("called Message arming uses the selected owner's semantic instance", () => 
   });
 });
 
-test("an ordinary User Task conflicts with a composite declarer of the same wait", () => {
+test("Program admission and the local footprint defense reject a composite declarer collision", () => {
   const ordinary = boundedProgram.operations.find((operation) =>
     operation.kind === SemanticOperationKind.AwaitUserTask &&
     operation.task.elementId === "NormalTask"
@@ -156,7 +156,7 @@ test("an ordinary User Task conflicts with a composite declarer of the same wait
       operation.id === collidingOrdinary.id ? collidingOrdinary : operation
     ),
   };
-  assert.equal(isWellFormedSemanticProcessProgram(program), true);
+  assert.equal(isWellFormedSemanticProcessProgram(program), false);
   const state = {
     ...initialState,
     control: {

@@ -50,6 +50,7 @@ import { scenarioObservationsForProfile } from "./semantic-profile-observations.
 import {
   sequentialMultiInstanceStimulusDataAdmitted,
 } from "./sequential-multi-instance-command-data-admission.js";
+import { programWaitDeclarersAreUnique } from "./internal-transition-wait-census.js";
 
 export function supportsSemanticProcessScenario(
   scenario: Scenario,
@@ -206,6 +207,7 @@ export function isWellFormedSemanticProcessProgram(
     checkedOperations.push(operation);
   }
   return inclusiveOperationsArePaired(checkedOperations) &&
+    programWaitDeclarersAreUnique(checkedOperations) &&
     isWellFormedSemanticProcessGraph({
       semanticProfile: identity.semanticProfile,
       processId: value.processId,

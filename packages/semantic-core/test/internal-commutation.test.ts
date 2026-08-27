@@ -177,7 +177,7 @@ test("footprints derive from the exact pre-state and never from a candidate succ
   );
 });
 
-test("a selected arm is refused when another operation declares its wait identity", () => {
+test("Program admission and the local footprint defense reject duplicate wait declarers", () => {
   const duplicateOperations = parallelProgram.operations.map((operation) =>
     operation.kind === SemanticOperationKind.AwaitUserTask &&
       operation.task.elementId === "UserTask_B"
@@ -193,7 +193,7 @@ test("a selected arm is refused when another operation declares its wait identit
     operations: duplicateOperations,
   };
 
-  assert.equal(isWellFormedSemanticProcessProgram(duplicateProgram), true);
+  assert.equal(isWellFormedSemanticProcessProgram(duplicateProgram), false);
   const beforeParallelTasks = applyStimulus(
     parallelProgram,
     initialState,

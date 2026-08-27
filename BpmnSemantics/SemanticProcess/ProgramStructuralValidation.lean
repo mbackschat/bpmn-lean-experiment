@@ -108,7 +108,23 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
       [messageWaitDeclarationKey message.elementId,
         timerWaitDeclarationKey timer.elementId]
   | .awaitEffect _ origin _ _ _ _ => [effectWaitDeclarationKey origin.elementId]
-  | _ => []
+  | .initiate ..
+  | .initiateMessage ..
+  | .initiateTimer ..
+  | .enterScope ..
+  | .invokeProcess ..
+  | .returnProcess ..
+  | .completeParallelMultiInstanceUserTask ..
+  | .duplicate ..
+  | .synchronize ..
+  | .mergeExclusive ..
+  | .choose ..
+  | .selectMany ..
+  | .synchronizeSelected ..
+  | .throwError ..
+  | .reachNoneEnd ..
+  | .terminateScope ..
+  | .completeScope .. => []
 
 def operationDeclaresWaitKey (operation : SemanticOperation)
     (key : WaitDeclarationKey) : Bool :=

@@ -459,7 +459,26 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
         decide (boundaryTimer.elementId = elementId)
     | .enterBoundedScope _ _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitEventRace _ _ _ _ timer => decide (timer.elementId = elementId)
-    | _ => false
+    | .initiate ..
+    | .initiateMessage ..
+    | .initiateTimer ..
+    | .enterScope ..
+    | .invokeProcess ..
+    | .returnProcess ..
+    | .awaitUserTask ..
+    | .completeParallelMultiInstanceUserTask ..
+    | .awaitMessage ..
+    | .awaitEffect ..
+    | .duplicate ..
+    | .synchronize ..
+    | .mergeExclusive ..
+    | .choose ..
+    | .selectMany ..
+    | .synchronizeSelected ..
+    | .throwError ..
+    | .reachNoneEnd ..
+    | .terminateScope ..
+    | .completeScope .. => false
 
 /-- The operations that may declare a Message wait for `elementId`. The Event-Based Gateway profile
 carries no separate `awaitMessage` operation for its configured catch, so `awaitEventRace` is a
@@ -468,7 +487,31 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
   program.operations.filter fun
     | .awaitMessage _ _ _ _ message => decide (message.elementId = elementId)
     | .awaitEventRace _ _ _ message _ => decide (message.elementId = elementId)
-    | _ => false
+    | .initiate ..
+    | .initiateMessage ..
+    | .initiateTimer ..
+    | .enterScope ..
+    | .enterBoundedScope ..
+    | .invokeProcess ..
+    | .returnProcess ..
+    | .awaitUserTask ..
+    | .awaitSequentialMultiInstanceUserTask ..
+    | .awaitParallelMultiInstanceUserTask ..
+    | .completeParallelMultiInstanceUserTask ..
+    | .awaitTimer ..
+    | .awaitBoundedUserTask ..
+    | .awaitMonitoredUserTask ..
+    | .awaitEffect ..
+    | .duplicate ..
+    | .synchronize ..
+    | .mergeExclusive ..
+    | .choose ..
+    | .selectMany ..
+    | .synchronizeSelected ..
+    | .throwError ..
+    | .reachNoneEnd ..
+    | .terminateScope ..
+    | .completeScope .. => false
 
 /-- The operations that may declare a User Task wait for `taskId`. -/
 def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
@@ -481,13 +524,59 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
         decide (task.id = taskId)
     | .awaitParallelMultiInstanceUserTask _ _ _ candidateTaskId _ _ _ _ _ _ =>
         decide (candidateTaskId = taskId)
-    | _ => false
+    | .initiate ..
+    | .initiateMessage ..
+    | .initiateTimer ..
+    | .enterScope ..
+    | .enterBoundedScope ..
+    | .invokeProcess ..
+    | .returnProcess ..
+    | .completeParallelMultiInstanceUserTask ..
+    | .awaitTimer ..
+    | .awaitMessage ..
+    | .awaitEventRace ..
+    | .awaitEffect ..
+    | .duplicate ..
+    | .synchronize ..
+    | .mergeExclusive ..
+    | .choose ..
+    | .selectMany ..
+    | .synchronizeSelected ..
+    | .throwError ..
+    | .reachNoneEnd ..
+    | .terminateScope ..
+    | .completeScope .. => false
 
 /-- The operations that may declare an effect wait for `elementId`. -/
 def effectWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticOperation :=
   program.operations.filter fun
     | .awaitEffect _ origin _ _ _ _ => decide (origin.elementId = elementId)
-    | _ => false
+    | .initiate ..
+    | .initiateMessage ..
+    | .initiateTimer ..
+    | .enterScope ..
+    | .enterBoundedScope ..
+    | .invokeProcess ..
+    | .returnProcess ..
+    | .awaitUserTask ..
+    | .awaitSequentialMultiInstanceUserTask ..
+    | .awaitParallelMultiInstanceUserTask ..
+    | .completeParallelMultiInstanceUserTask ..
+    | .awaitTimer ..
+    | .awaitMessage ..
+    | .awaitEventRace ..
+    | .awaitBoundedUserTask ..
+    | .awaitMonitoredUserTask ..
+    | .duplicate ..
+    | .synchronize ..
+    | .mergeExclusive ..
+    | .choose ..
+    | .selectMany ..
+    | .synchronizeSelected ..
+    | .throwError ..
+    | .reachNoneEnd ..
+    | .terminateScope ..
+    | .completeScope .. => false
 
 private theorem nodeId_eq_iff_value_eq (left right : NodeId) :
     left = right ↔ left.value = right.value := by

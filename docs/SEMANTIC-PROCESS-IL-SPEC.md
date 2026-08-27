@@ -797,6 +797,7 @@ For an admitted pair, firing either operation preserves the other operation's en
 `WellFormedProgram` must establish at least:
 
 - process, definition-scope, operation, and control-place identifiers are nonempty and unique in their domains;
+- every family-tagged wait element identity has exactly one declaring operation across the complete Program. User Task declarers are `awaitUserTask`, `awaitBoundedUserTask`, `awaitMonitoredUserTask`, `awaitSequentialMultiInstanceUserTask`, and `awaitParallelMultiInstanceUserTask`; Message declarers are `awaitMessage` and `awaitEventRace`; Timer declarers are `awaitTimer`, both bounded User Task operations, both Multi-Instance entry operations, `enterBoundedScope`, and `awaitEventRace`; the sole effect declarer is `awaitEffect`. The same element text remains admissible across different wait families;
 - definition scopes form one canonical acyclic forest with exactly one entry root selected by `processId`; every node, Sequence Flow, operation, and control place has exactly one existing owner; every non-root scope is owned by exactly one `embeddedSubProcess`/`enterScope` pair; and every additional parentless root belongs to one exact `invokeProcess`/`returnProcess` pair;
 - every referenced control place exists;
 - every source origin required by the current profile is present and nonempty;

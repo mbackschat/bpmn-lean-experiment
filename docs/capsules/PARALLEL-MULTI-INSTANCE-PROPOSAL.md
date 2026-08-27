@@ -89,6 +89,8 @@ Runtime state adds optional `parallelMultiInstanceControllers`. A controller own
 
 Program-indexed well-formedness equates the controller's pending task identities, the Activity body's live child identities, the runtime User Task waits, and the single attached Timer. Completed slots are not live waits. Missing, duplicate, extra, reordered, or cross-controller identities fail before semantic evaluation or Workflow scheduling.
 
+Standalone Semantic Process Program admission preserves checked-source node uniqueness as an exhaustive family-tagged wait-declaration invariant. The parallel entry declares its User Task and lifetime Timer identities, and no second operation may declare either identity in the same family even when no wait is live. Equal identifier text remains admissible across different wait families. Lean and the independently structured TypeScript Program validator enforce the same contract, while their separate runtime declarer censuses remain bound to it by executable equality or admission witnesses.
+
 Parallel entry snapshots the collection, mints every child identity atomically, advances the User Task activation counter to the final high-water mark, and leaves one stable outer Activity and Timer. The issuing proof must establish pairwise freshness and uniqueness for the complete batch. It may reuse the Activity issuing discipline but may not claim the still-open general non-reissue theorem for every runtime identity family.
 
 An accepted task completion replaces exactly one pending slot, removes exactly that task wait and body member, and evaluates the completion condition against committed Process bindings. The transition then derives whether every slot is filled. If every slot is filled, it publishes the complete ordered output and closes normally, whether the condition is false or true. Otherwise false preserves the controller and Timer, while true closes immediately, withdraws every remaining sibling wait and the Timer, and publishes no output.
@@ -188,7 +190,7 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [TypeScript called-process removal](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 435 |
 | [Runtime-state identity bound](../../packages/semantic-core/src/runtime-state-identity-bound.ts) | 769 |
 | [Command admission root](../../packages/semantic-core/src/semantic-command-admission.ts) | 446 |
-| [Program admission root](../../packages/semantic-core/src/semantic-process-admission.ts) | 448 |
+| [Program admission root](../../packages/semantic-core/src/semantic-process-admission.ts) | 446 |
 | [Program graph admission root](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 218 |
 | [Program graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 724 |
 | [Operation admission root](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 300 |
@@ -196,7 +198,7 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Semantic runtime composition root](../../packages/semantic-core/src/semantic-process-runtime.ts) | 211 |
 | [Runtime well-formedness composition root](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 220 |
 | [Internal transition footprint](../../packages/semantic-core/src/internal-transition-footprint.ts) | 372 |
-| [Internal wait census](../../packages/semantic-core/src/internal-transition-wait-census.ts) | 699 |
+| [Internal wait census](../../packages/semantic-core/src/internal-transition-wait-census.ts) | 654 |
 | [Flow-node boundary-start projection](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts) | 563 |
 | [Flow-node lifecycle projection](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 205 |
 | [Flow-node open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 201 |
@@ -211,8 +213,8 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Lean checked Process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 450 |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 230 |
 | [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 209 |
-| [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 399 |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 316 |
+| [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 270 |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 71 |
 | [Lean checked Process JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 467 |
 | [Lean program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 237 |
 | [Lean publication JSON](../../BpmnSemantics/SemanticProcessJson/Publication.lean) | 629 |
@@ -225,7 +227,7 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Lean transition trace](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 245 |
 | [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 304 |
 | [Lean JSON composition root](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 313 |
-| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 207 |
+| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 54 |
 | [Lean well-formedness initialization](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 709 |
 | [Lean scope cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 646 |
 | [Lean Call Activity removal](../../BpmnSemantics/SemanticProcess/CallActivity.lean) | 258 |
@@ -234,7 +236,7 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Lean Activity turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 699 |
 | [Lean commutation state frames](../../BpmnSemantics/SemanticProcess/InternalCommutationStateFrames.lean) | 177 |
 | [Lean commutation runtime preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 52 |
-| [Lean commutation open projection](../../BpmnSemantics/SemanticProcess/InternalCommutationOpenProjection.lean) | 210 |
+| [Lean commutation open projection](../../BpmnSemantics/SemanticProcess/InternalCommutationOpenProjection.lean) | 211 |
 | [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 488 |
 | [Lean semantic umbrella](../../BpmnSemantics/SemanticProcess.lean) | 759 |
 | [Lean conformance umbrella](../../BpmnSemantics/ConformanceMain.lean) | 775 |

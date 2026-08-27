@@ -27,6 +27,8 @@ import {
   rootScopedProgram,
   rootScopeOccurrence,
 } from "./root-scope-fixture.ts";
+import { parallelProgram } from "./parallel-multi-instance-fixture.ts";
+import { reviewProgram } from "./sequential-multi-instance-fixture.ts";
 
 const compositionProfile =
   "bpmn-2.0.2-timer-user-task-composition-draft";
@@ -190,6 +192,65 @@ test("rejects a dangling control place independently of profile capability", () 
 
   assert.equal(isWellFormedSemanticProcessProgram(malformed), false);
   assert.equal(supportsSemanticProcessExecution(start, malformed), false);
+});
+
+test("rejects same-family wait declarer collisions without forbidding cross-family identifiers", () => {
+  const admittedParallelProgram: SemanticProcessProgram = {
+    ...parallelProgram,
+    operationScopes: [...parallelProgram.operationScopes].sort((left, right) =>
+      left.operationId < right.operationId ? -1 : left.operationId > right.operationId ? 1 : 0
+    ),
+    operations: [...parallelProgram.operations].sort((left, right) =>
+      left.id < right.id ? -1 : left.id > right.id ? 1 : 0
+    ),
+  };
+  const withReusedMiTaskId = (
+    candidate: SemanticProcessProgram,
+  ): SemanticProcessProgram => ({
+    ...candidate,
+    operations: candidate.operations.map((operation) =>
+      operation.kind === SemanticOperationKind.AwaitUserTask
+        ? {
+          ...operation,
+          origin: { ...operation.origin, elementId: "Review" },
+          task: { ...operation.task, elementId: "Review" },
+        }
+        : operation
+    ),
+  });
+  const withCrossFamilyReuse: SemanticProcessProgram = {
+    ...program,
+    operations: program.operations.map((operation) => {
+      switch (operation.kind) {
+        case SemanticOperationKind.AwaitUserTask:
+          return {
+            ...operation,
+            origin: { ...operation.origin, elementId: "Shared_Wait_Id" },
+            task: { ...operation.task, elementId: "Shared_Wait_Id" },
+          };
+        case SemanticOperationKind.AwaitTimer:
+          return {
+            ...operation,
+            origin: { ...operation.origin, elementId: "Shared_Wait_Id" },
+            timer: { ...operation.timer, elementId: "Shared_Wait_Id" },
+          };
+        default:
+          return operation;
+      }
+    }),
+  };
+
+  assert.equal(isWellFormedSemanticProcessProgram(reviewProgram), true);
+  assert.equal(isWellFormedSemanticProcessProgram(admittedParallelProgram), true);
+  assert.equal(
+    isWellFormedSemanticProcessProgram(withReusedMiTaskId(reviewProgram)),
+    false,
+  );
+  assert.equal(
+    isWellFormedSemanticProcessProgram(withReusedMiTaskId(admittedParallelProgram)),
+    false,
+  );
+  assert.equal(isWellFormedSemanticProcessProgram(withCrossFamilyReuse), true);
 });
 
 test("keeps closure bounded, single-enabled, and resumable at every new stable state", () => {

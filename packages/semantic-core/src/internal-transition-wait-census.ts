@@ -16,6 +16,24 @@ export enum InternalOccurrenceKind {
   UserTask = "userTask",
 }
 
+type WaitDeclaration = Readonly<{
+  family: InternalOccurrenceKind;
+  elementId: string;
+}>;
+
+/** Requires every family-tagged wait identity in the Program to have one declaring operation. */
+export function programWaitDeclarersAreUnique(
+  operations: ReadonlyArray<SemanticOperation>,
+): boolean {
+  return operations.every((operation) =>
+    operationWaitDeclarations(operation).every(({ family, elementId }) =>
+      operations.filter((candidate) =>
+        operationDeclaresWait(candidate, family, elementId)
+      ).length === 1
+    )
+  );
+}
+
 /** Requires the selected operation to be the sole declarer across ordinary and composite families. */
 export function operationIsUniqueWaitDeclarer(
   program: SemanticProcessProgram,
@@ -49,35 +67,65 @@ function operationDeclaresWait(
   family: InternalOccurrenceKind,
   elementId: string,
 ): boolean {
+  return operationWaitDeclarations(operation).some((declaration) =>
+    declaration.family === family && declaration.elementId === elementId
+  );
+}
+
+function operationWaitDeclarations(
+  operation: SemanticOperation,
+): ReadonlyArray<WaitDeclaration> {
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask:
-      return family === InternalOccurrenceKind.UserTask &&
-        operation.task.elementId === elementId;
+      return [{
+        family: InternalOccurrenceKind.UserTask,
+        elementId: operation.task.elementId,
+      }];
     case SemanticOperationKind.AwaitMessage:
-      return family === InternalOccurrenceKind.Message &&
-        operation.message.elementId === elementId;
+      return [{
+        family: InternalOccurrenceKind.Message,
+        elementId: operation.message.elementId,
+      }];
     case SemanticOperationKind.AwaitTimer:
-      return family === InternalOccurrenceKind.Timer &&
-        operation.timer.elementId === elementId;
+      return [{
+        family: InternalOccurrenceKind.Timer,
+        elementId: operation.timer.elementId,
+      }];
     case SemanticOperationKind.AwaitEffect:
-      return family === InternalOccurrenceKind.Effect &&
-        operation.effect.elementId === elementId;
+      return [{
+        family: InternalOccurrenceKind.Effect,
+        elementId: operation.effect.elementId,
+      }];
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
-      return (family === InternalOccurrenceKind.UserTask &&
-          operation.task.elementId === elementId) ||
-        (family === InternalOccurrenceKind.Timer &&
-          operation.boundaryTimer.elementId === elementId);
+      return [
+        {
+          family: InternalOccurrenceKind.UserTask,
+          elementId: operation.task.elementId,
+        },
+        {
+          family: InternalOccurrenceKind.Timer,
+          elementId: operation.boundaryTimer.elementId,
+        },
+      ];
     case SemanticOperationKind.EnterBoundedScope:
-      return family === InternalOccurrenceKind.Timer &&
-        operation.boundaryTimer.elementId === elementId;
+      return [{
+        family: InternalOccurrenceKind.Timer,
+        elementId: operation.boundaryTimer.elementId,
+      }];
     case SemanticOperationKind.AwaitEventRace:
-      return (family === InternalOccurrenceKind.Message &&
-          operation.message.elementId === elementId) ||
-        (family === InternalOccurrenceKind.Timer &&
-          operation.timer.elementId === elementId);
+      return [
+        {
+          family: InternalOccurrenceKind.Message,
+          elementId: operation.message.elementId,
+        },
+        {
+          family: InternalOccurrenceKind.Timer,
+          elementId: operation.timer.elementId,
+        },
+      ];
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.InitiateMessage:
     case SemanticOperationKind.InitiateTimer:
@@ -95,7 +143,7 @@ function operationDeclaresWait(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
-      return false;
+      return [];
     default:
       return assertNever(operation);
   }

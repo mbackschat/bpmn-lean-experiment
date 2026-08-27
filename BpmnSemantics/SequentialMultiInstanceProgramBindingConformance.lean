@@ -87,6 +87,18 @@ def profileLimits : SequentialMultiInstanceLimits :=
     maximumItemUtf8Bytes := 512
     maximumCanonicalCollectionUtf8Bytes := 8192 }
 
+private def ordinaryTaskWithSequentialTaskIdentity : SemanticOperation :=
+  .awaitUserTask ⟨"operation:Ordinary_Review"⟩ { elementId := ⟨"UserTask_Review"⟩ }
+    ⟨"place:Ordinary_Input"⟩ ⟨"place:Ordinary_Output"⟩
+    { id := ⟨"UserTask_Review"⟩, name := some "Ordinary review" }
+
+/-- Standalone Program admission rejects an ordinary User Task that collides with the sequential
+Multi-Instance entry's User Task declaration. -/
+theorem sequential_multi_instance_same_task_declarer_is_rejected :
+    programWaitDeclarersUnique (ordinaryTaskWithSequentialTaskIdentity :: program.operations) =
+      false := by
+  decide +kernel
+
 def arm? : Option SequentialMultiInstanceArm :=
   match program.operations.filterMap SequentialMultiInstanceArm.ofOperation? with
   | [arm] => some arm

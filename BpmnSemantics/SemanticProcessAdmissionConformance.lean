@@ -57,6 +57,21 @@ theorem parallel_program_is_well_formed :
 theorem timer_user_task_program_is_well_formed :
     programWellFormed timerUserTaskCompositionProgram = true := by decide +kernel
 
+private def sharedIdentityUserTask : SemanticOperation :=
+  .awaitUserTask ⟨"operation:Shared_User"⟩ { elementId := ⟨"Shared_Wait"⟩ }
+    ⟨"place:User_Input"⟩ ⟨"place:User_Output"⟩
+    { id := ⟨"Shared_Wait"⟩, name := none }
+
+private def sharedIdentityTimer : SemanticOperation :=
+  .awaitTimer ⟨"operation:Shared_Timer"⟩ { elementId := ⟨"Shared_Wait"⟩ }
+    ⟨"place:Timer_Input"⟩ ⟨"place:Timer_Output"⟩
+    { elementId := ⟨"Shared_Wait"⟩, durationMs := 1000 }
+
+/-- Family tagging admits the same element text across distinct runtime wait families. -/
+theorem cross_family_wait_identifier_reuse_is_admitted :
+    programWaitDeclarersUnique [sharedIdentityUserTask, sharedIdentityTimer] = true := by
+  decide +kernel
+
 theorem timer_user_task_profile_capabilities_are_valid :
     programProfileCapabilitiesValid timerUserTaskCompositionProgram = true := by
   decide +kernel

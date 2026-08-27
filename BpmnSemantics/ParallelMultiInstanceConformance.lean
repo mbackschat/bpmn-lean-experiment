@@ -70,6 +70,17 @@ def completionForAnotherOutput : SemanticOperation :=
   .completeParallelMultiInstanceUserTask ⟨"operation:UserTask_Review:complete"⟩ operationOrigin
     ⟨"operation:UserTask_Review"⟩ ⟨"UserTask_Review"⟩ ⟨"place:Other"⟩
 
+private def ordinaryTaskWithParallelTaskIdentity : SemanticOperation :=
+  .awaitUserTask ⟨"operation:Ordinary_Review"⟩ operationOrigin
+    ⟨"place:Ordinary_Input"⟩ ⟨"place:Ordinary_Output"⟩
+    { id := ⟨"UserTask_Review"⟩, name := some "Ordinary review" }
+
+/-- Standalone Program admission rejects an ordinary User Task that collides with the parallel
+Multi-Instance entry's User Task declaration. -/
+theorem parallel_multi_instance_same_task_declarer_is_rejected :
+    programWaitDeclarersUnique [entryOperation, ordinaryTaskWithParallelTaskIdentity] = false := by
+  decide +kernel
+
 theorem exact_completion_pair_is_unique_and_substitution_fails_closed :
     parallelMultiInstanceOperationsPair entryOperation completionOperation = true ∧
     parallelMultiInstanceOperationsPair entryOperation completionForAnotherEntry = false ∧
