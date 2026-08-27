@@ -5,7 +5,7 @@
 Lifecycle: archived
 Review: approved-with-required-edits
 
-Retired unimplemented. The volume question this document was written to answer is answered, and that measurement is why it is archived rather than deleted. Neither surviving rule was built: `LAS-CITE-01` because a standing citation guard risks manufacturing citations rather than evidence, and `LAS-DEFAULT-01` because costing it showed the condition field is part of the Semantic Process IL contract, so removing the default is a cross-language change rather than the small one its rationale assumed. The one finding that was acted on came from reading the theorems `LAS-CITE-01` would have triaged, not from the rule: sequential Multi-Instance was maintaining an invariant it had only ever assumed, and that is now proved and recorded in its own capsule.
+Retired unimplemented. The volume question this document was written to answer is answered, and that measurement is why it is archived rather than deleted. Neither surviving rule was built: `LAS-CITE-01` because a standing citation guard risks manufacturing citations rather than evidence, and `LAS-DEFAULT-01` because costing it showed the condition field is part of the Semantic Process IL contract, so removing the default is a cross-language change rather than the small one its rationale assumed. The one finding that was acted on came from reading the theorems `LAS-CITE-01` would have triaged, not from the rule: sequential Multi-Instance was maintaining an invariant it had only ever assumed, and that is now proved and recorded in its own capsule. A later per-module cost measurement, recorded below, refuted the skew prediction that would have driven a deletion pass and refuted its redundancy premise as well, leaving a headroom problem in its place; that section also corrects a verification result reported green in session that had in fact failed.
 
 ## Question and current boundary
 
@@ -36,6 +36,30 @@ Measured against commit `d01701dc`, over the 183 Lean files under `BpmnSemantics
 | `#print axioms` commands | 0 |
 | `set_option warningAsError` occurrences | 0 |
 | `sorry` occurrences | 0 |
+
+## Later per-module measurement, and what it refuted
+
+The baseline above counts the corpus. It does not price it, and the difference turned out to matter. A follow-up measurement priced every conformance module individually at commit `d878f38e`, using the memory-bounded method in [the contributor setup guide](../CONTRIBUTOR-SETUP-GUIDE.md#memory-bounded-lean-measurements) and the same audit image as the ledger row above: image `sha256:4df22c7a1ec8`, Lean `4.31.0` commit `68218e876d2a38b1985b8590fff244a83c321783`, `LEAN_NUM_THREADS=1`, `--cpus=1`, `--memory=3g`, `--memory-swap=3g`, a warm dependency closure with only the measured target's own artifacts removed. All 51 engine-tree conformance modules exited 0. Total cold-target rebuild time was 637 seconds.
+
+| Peak resident memory across 51 modules | MiB |
+|---|---|
+| Minimum | 489 |
+| First quartile | 989 |
+| Median | 1,881 |
+| Third quartile | 2,436 |
+| Maximum (`MessageStartConformance`) | 3,335 |
+
+**The measurement refutes the prediction that motivated it.** The expectation was a severely skewed distribution in which a short expensive tail carried the cost and only that tail was worth reading. There is no such tail. The median module costs 1.9 GB, 14 of 51 sit above 75% of the bound, 8 above 90%, and the five most expensive account for 25% of rebuild time, close to their share by count.
+
+Cost is also decoupled from theorem count, which removes the other half of any count-driven triage. `MessageStartConformance` is 30 theorems at 3,335 MiB and 28 s; `CyclicControlFlowConformance` is 62 theorems at 1,909 MiB and 9 s. `SemanticProcessJsonConformance`, which owns 18 of the corpus's 20 `native_decide` sites, is the cheapest module measured at 644 MiB and under a second, so those sites are the corpus's cheap lane rather than its expensive one. `RuntimeStateWellFormedConformance` completes at 2,991 MiB where it previously exited 137, so the owner split recorded in [the cost ledger](../CAPSULE-COST-LEDGER.md) achieved what it was for.
+
+**An independent lane refuted the central premise of the deletion argument.** The argument assumed that a conformance fixture restating a registered scenario's outcome is redundant with the differential harness, which would cover the same fact at no kernel cost. It does not. The harness is answer-free for 32 of its 57 cases by explicit design, and for every non-CIB case the reference target is Lean itself, so it establishes agreement rather than correctness and pins no absolute proposition a theorem could duplicate. Its compared object is narrower still: `{outcome, trace}` over the public projection, never internal state, ambiguity signalling, or closure step bounds. Exactly one theorem of 792 is genuinely covered, `IntermediateCatchTimerConformance.exact_deadline_scenario_trace_is_exact`, and only because retained CIB evidence supplies an external answer for that scenario. Only 19 of 51 modules embed a registered scenario's hash at all; 448 of 661 kernel sites live in modules bound to no registered model.
+
+A second lane classified all 816 declarations across the 53 files matching `*Conformance.lean`, of which 792 are in the engine tree and 24 in the two files under `adoption/`. The largest category is not concrete fixture outcomes but negative witnesses, at 286, against 284 concrete results, 211 structural facts, and 35 decoder locks. Negative witnesses, structural facts, and decoder locks were never removal candidates, so 65% of the corpus was outside the argument before it began.
+
+**What the measurement does establish is a headroom problem rather than a waste problem.** Eight modules sit within 10% of the 3 GiB bound and three report above it, cost tracks the size of the state being reduced rather than the number of theorems, and the corpus grows with every capsule. The next capsule adding two fixtures to a near-cap module is the next `exit 137`. That argues for recording per-module cost and ratcheting it, and against an audit-and-delete pass whose candidate set the measurement showed to be one theorem.
+
+One caveat is not resolved. Three modules report `ru_maxrss` above the cgroup ceiling without being killed. Docker Desktop on macOS runs a Linux virtual machine, and GNU `time`'s resident-set accounting does not align exactly with cgroup charging because file-backed pages are reclaimable. The 51 figures are comparable with each other; comparing their absolute values against the `exit 137` row in the cost ledger is approximate, and settling it requires a Linux host with native cgroups.
 
 ## Selected rules
 
