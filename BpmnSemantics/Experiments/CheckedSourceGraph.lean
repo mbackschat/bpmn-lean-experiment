@@ -53,6 +53,7 @@ def nodeArityValid (source : CheckedProcess) :
         (outgoingFlows source id).length = 1
   | .userTask _ _ (some _) => false
   | .sequentialMultiInstanceUserTask .. => false
+  | .parallelMultiInstanceUserTask .. => false
   | .configuredTask .. => false
   | .embeddedSubProcess _ _
   | .callActivity _ _
