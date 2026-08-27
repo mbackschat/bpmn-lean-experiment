@@ -16,7 +16,9 @@ import {
   planGateTokenFindings,
   planReviewOwnerPaths,
   planReviewRestatementFindings,
+  perFileSourceMapTrees,
   routeImplementationPath,
+  unclaimedSourceOwners,
 } from "./document-control-plane.ts";
 import {
   ReviewStage,
@@ -317,4 +319,41 @@ test("keeps the root README navigational and the startup route explicit", async 
     "detail map",
     "concrete target paths",
   ]) assert.match(contributorGuide, new RegExp(phrase, "iu"));
+});
+
+test("a per-file source map reports the source files no row claims", () => {
+  const sourceMap = [
+    "| Source owner | Responsibility |",
+    "|---|---|",
+    "| [scenario.ts](src/scenario.ts) | Stable observation and scenario evaluation |",
+    "| [stimulus.ts](src/stimulus.ts) | Stimulus validation |",
+  ].join("\n");
+
+  assert.deepEqual(
+    unclaimedSourceOwners(sourceMap, [
+      "src/scenario.ts",
+      "src/parallel-multi-instance-controller.ts",
+      "src/stimulus.ts",
+    ]),
+    ["src/parallel-multi-instance-controller.ts"],
+  );
+  assert.deepEqual(unclaimedSourceOwners(sourceMap, ["src/scenario.ts", "src/stimulus.ts"]), []);
+});
+
+test("the live corpus keeps every per-file source map complete", async () => {
+  for (const tree of perFileSourceMapTrees) {
+    const sourceMap = await readFile(path.join(projectRoot, tree, "SOURCE-MAP.md"), "utf8");
+    const tracked = execFileSync("git", ["ls-files", `${tree}/src`], { cwd: projectRoot })
+      .toString()
+      .split("\n")
+      .filter((file) => file.endsWith(".ts") && !file.endsWith(".test.ts"))
+      .map((file) => path.relative(tree, file));
+
+    assert.ok(tracked.length > 0, `${tree} has no tracked sources`);
+    assert.deepEqual(
+      unclaimedSourceOwners(sourceMap, tracked),
+      [],
+      `${tree}/SOURCE-MAP.md assigns no responsibility to these tracked sources`,
+    );
+  }
 });

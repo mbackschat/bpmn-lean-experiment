@@ -154,6 +154,26 @@ test("reports both the tree guard and the registry a new artifact family must re
   ]);
 });
 
+test("reports the source map that claims a package's source files", () => {
+  const bindings = bindingsFor(
+    "packages/semantic-core/src/parallel-multi-instance-controller.ts",
+    [
+      {
+        path: "packages/semantic-core/SOURCE-MAP.md",
+        text: "This contributor map assigns source-file responsibilities.",
+      },
+    ],
+  );
+
+  assert.deepEqual(bindings, [
+    {
+      kind: BindingKind.Registry,
+      path: "packages/semantic-core/SOURCE-MAP.md",
+      matchedTerm: "packages/semantic-core",
+    },
+  ]);
+});
+
 test("prefers the most specific matching term for each binding", () => {
   const bindings = bindingsFor("packages/semantic-core/src/runtime.ts", [
     {

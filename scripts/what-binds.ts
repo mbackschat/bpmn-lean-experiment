@@ -94,9 +94,12 @@ function corpusKind(candidate: string): BindingKind | null {
   if (guardSuffixPattern.test(candidate)) {
     return BindingKind.Guard;
   }
-  // Only registries, never every document mentioning the tree: a README carries the same-change
-  // obligation, while ordinary prose mentioning a directory places no requirement on the change.
-  return path.basename(candidate) === "README.md" ? BindingKind.Registry : null;
+  // Only registries, never every document mentioning the tree: a README and a source map each carry
+  // the same-change obligation, while ordinary prose mentioning a directory places no requirement on
+  // the change. A source map assigns ownership member by member, so a tree that gains a source file
+  // and leaves its map alone has silently dropped that file from the index that exists to claim it.
+  const registryNames = new Set(["README.md", "SOURCE-MAP.md"]);
+  return registryNames.has(path.basename(candidate)) ? BindingKind.Registry : null;
 }
 
 /**

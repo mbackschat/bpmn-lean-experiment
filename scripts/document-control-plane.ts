@@ -372,3 +372,32 @@ export function assertTrackedPathRoutes(paths: ReadonlyArray<string>): void {
     for (const route of routes) assert.ok(allAreaIds.includes(route), `${file} has unknown route ${route}`);
   }
 }
+
+/**
+ * Package trees whose source map assigns one responsibility row per source file.
+ *
+ * Registered rather than derived because the maps do not share one contract. This tree's map
+ * assigns a responsibility to each file, so an unlisted file is a gap; the Product 2 web map
+ * deliberately names each surface's *main* owners, and the adapter, definitions, and runner maps
+ * claim whole directories or file families, so completeness there would either force those maps to
+ * abandon their stated contract or pass without constraining anything. An agent may not register a
+ * tree here to describe existing drift, or unregister one to make a failing gate green.
+ */
+export const perFileSourceMapTrees: ReadonlyArray<string> = Object.freeze(["packages/semantic-core"]);
+
+/**
+ * Source files that no responsibility row of a per-file source map claims.
+ *
+ * `sourceFiles` are map-relative, matching the row link targets. The obligation runs with the tree,
+ * not the prose: a map stays silent when its package grows, so only comparing rows against the
+ * tracked tree can separate a complete index from one that stopped being extended.
+ */
+export function unclaimedSourceOwners(
+  sourceMap: string,
+  sourceFiles: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  const claimed = new Set(
+    [...sourceMap.matchAll(/\]\((src\/[A-Za-z0-9./_-]+)\)/g)].map((match) => match[1]),
+  );
+  return sourceFiles.filter((file) => !claimed.has(file));
+}
