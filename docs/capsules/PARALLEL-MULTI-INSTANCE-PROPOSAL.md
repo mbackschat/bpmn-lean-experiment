@@ -235,7 +235,7 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Lean commutation state frames](../../BpmnSemantics/SemanticProcess/InternalCommutationStateFrames.lean) | 177 |
 | [Lean commutation runtime preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 52 |
 | [Lean commutation open projection](../../BpmnSemantics/SemanticProcess/InternalCommutationOpenProjection.lean) | 210 |
-| [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 489 |
+| [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 488 |
 | [Lean semantic umbrella](../../BpmnSemantics/SemanticProcess.lean) | 760 |
 | [Lean conformance umbrella](../../BpmnSemantics/ConformanceMain.lean) | 775 |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 567 |
