@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
 
 ## Question and bounded outcome
@@ -162,7 +162,7 @@ Executable constraints include [source hygiene](../../scripts/source-hygiene.tes
 
 Before Parallel Multi-Instance implementation, a separate correction must make existing sequential controller withdrawal complete in [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts), [TypeScript called-process removal](../../packages/semantic-core/src/semantic-process-call-runtime.ts), [Lean scope cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean), and [Lean Call Activity removal](../../BpmnSemantics/SemanticProcess/CallActivity.lean), and must correct the optional-field census in [runtime collection removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts). This prerequisite closes the already-open sequential controller-cleanup change without adding parallel behavior. All four runtime owners discriminate over the controller representation and require parallel withdrawal branches using the same removed Activity or called-instance criterion as their existing sequential branches. Each route and language has a separating witness that rejects a stranded parallel controller after its Activity region or called Process instance has been removed, and the optional-field mutation oracle independently detects either omitted TypeScript filter.
 
-The prerequisite is closed at correction target `b6547b23876bbe8ec0092a16260a42f2ada16226`. Its context-cold combined checkpoint/closure review targeted `818301ff9b75b881bbd8f35b9fa2c8a33c4440d7` with `fork-turns-none`, returned `approve-with-required-edits`, and the same reviewer approved the correction with no remaining finding. The exact correction target passed `test:pre-push:verify` with `dirty:false`, 54 cases, 65 replay histories, and zero failures. This receipt closes only the controller-cleanup prerequisite; the Parallel Multi-Instance semantic checkpoint and closure rows below remain unreached.
+The prerequisite is closed at correction target `b6547b23876bbe8ec0092a16260a42f2ada16226`. Its context-cold combined checkpoint/closure review targeted `818301ff9b75b881bbd8f35b9fa2c8a33c4440d7` with `fork-turns-none`, returned `approve-with-required-edits`, and the same reviewer approved the correction with no remaining finding. The exact correction target passed `test:pre-push:verify` with `dirty:false`, 54 cases, 65 replay histories, and zero failures. This receipt closes only the controller-cleanup prerequisite; the Parallel Multi-Instance semantic checkpoint is recorded below and closure remains unreached.
 
 ### Owners this implementation grows
 
@@ -282,5 +282,5 @@ The superseded proposal reviews targeted `c5ad6f3074ebe48134c67672923c654b95beb1
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `e31500916cb5af3752c3a6ec35a1bd59381f5048` | `fork-turns-none` | `approve-with-required-edits` | `6275ed87398f3cdc55e8633ab0d77ddd638cc946` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `aed177b2b5a5c343db7ddf7acca7cf65de5f241f` | `fork-turns-none` | `approve-with-required-edits` | `8e9767cfb4684eb6ccf42b240b3237becc9c1601` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
