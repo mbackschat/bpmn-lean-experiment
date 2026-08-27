@@ -54,6 +54,7 @@ The report names the required implementation detail maps, guards, this registry,
 | Create or push project tags | [`project-tags.ts`](project-tags.ts) | Use `tag:create` and `tag:push` so tag identity and preconditions stay centralized. |
 | Refresh browser walkthrough screenshots | [`refresh-browser-walkthrough-screenshots.ts`](refresh-browser-walkthrough-screenshots.ts) | Use `walkthrough:screenshots:refresh` for the controlled documentation-capture project. |
 | Update normative labels | [`update-bpmn-normative-labels.ts`](update-bpmn-normative-labels.ts) | Maintainer-only regeneration after a reviewed normative-source change. |
+| Record per-module Lean cost | [`lean-module-cost.ts`](lean-module-cost.ts) | Add, rename, or remove a conformance module's measured peak-resident-memory row here in the same change as the module. [`lean-module-cost.test.ts`](lean-module-cost.test.ts) derives the tracked set from Git, ratchets each recorded peak against its measurement commit, and requires every module at or above 90% of the measured bound to be disclosed explicitly. |
 
 ## Libraries and tests
 
