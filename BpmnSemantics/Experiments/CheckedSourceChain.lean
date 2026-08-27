@@ -181,6 +181,9 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
         | sequentialMultiInstanceUserTask id name input output normalOutputFlowId
             boundaryTimer =>
             simp [parseFrom, nodeResult] at result
+        | parallelMultiInstanceUserTask id name input output completionCondition normalOutputFlowId
+            boundaryTimer =>
+            simp [parseFrom, nodeResult] at result
         | intermediateCatchTimerEvent id duration =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | intermediateCatchMessageEvent id channel =>

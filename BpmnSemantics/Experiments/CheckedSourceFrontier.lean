@@ -239,6 +239,9 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | sequentialMultiInstanceUserTask id name input output normalOutputFlowId
       boundaryTimer =>
       simp [nodeArityValid] at candidateArity
+  | parallelMultiInstanceUserTask id name input output completionCondition normalOutputFlowId
+      boundaryTimer =>
+      simp [nodeArityValid] at candidateArity
   | noneEndEvent id =>
       simp only [nodeArityValid, Bool.and_eq_true, decide_eq_true_eq] at candidateArity
       have disabled := firstIncomingDisabled source state id noToken candidateArity.1

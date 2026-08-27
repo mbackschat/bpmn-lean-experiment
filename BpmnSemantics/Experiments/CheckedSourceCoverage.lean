@@ -58,6 +58,8 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
             | some metadata => simp [parseFrom, nodeResult] at result
         | sequentialMultiInstanceUserTask _ _ _ _ _ _ =>
             simp [parseFrom, nodeResult] at result
+        | parallelMultiInstanceUserTask _ _ _ _ _ _ _ =>
+            simp [parseFrom, nodeResult] at result
         | intermediateCatchTimerEvent _ _
         | serviceTask _ _ _ _ _ =>
             simp only [parseFrom, nodeResult] at result
