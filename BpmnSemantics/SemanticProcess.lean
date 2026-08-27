@@ -32,6 +32,7 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnoverPreservation
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
+import BpmnSemantics.SemanticProcess.SequentialMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.ControlPosition

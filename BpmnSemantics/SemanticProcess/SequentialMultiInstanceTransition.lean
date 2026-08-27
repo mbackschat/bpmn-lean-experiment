@@ -298,7 +298,7 @@ private theorem activityOccurrenceForTimer_sound {records : List ActivityOccurre
   · exact absurd found (by simp)
 
 /-- A controller answered for a record is in the state and names that record. -/
-private theorem sequentialMultiInstanceControllerFor_sound
+theorem sequentialMultiInstanceControllerFor_sound
     {controllers : List SequentialMultiInstanceController} {record : ActivityOccurrence}
     {controller : SequentialMultiInstanceController}
     (found : sequentialMultiInstanceControllerFor? controllers record = some controller) :

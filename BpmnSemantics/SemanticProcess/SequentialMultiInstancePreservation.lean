@@ -278,4 +278,91 @@ theorem interruptionState_preserves_controllersOwnLiveActivity
       state.activityOccurrences target record targetNames
       (by simpa [controllersOwnLiveActivity] using wellFormed)
 
+
+/-! ## Transition-level preservation
+
+The rewrite results above are lifted to the three evaluators, which is the form the capsule's law
+needs: what must maintain the invariant is a committed transition, not a state constructor an
+evaluator may or may not reach. -/
+
+/-- `SMI-ENTER-01`. The identity bound is required only by the nonempty arm, and is stated for the
+whole evaluator because the arm taken is not visible in its result. -/
+theorem enterSequentialMultiInstance_preserves_controllersOwnLiveActivity
+    (arm : SequentialMultiInstanceArm) (before after : RuntimeState)
+    (bounded : runtimeStateIdentityBound before = true)
+    (wellFormed : controllersOwnLiveActivity before = true)
+    (success : enterSequentialMultiInstance? arm before = some after) :
+    controllersOwnLiveActivity after = true := by
+  unfold enterSequentialMultiInstance? at success
+  split at success
+  next =>
+      obtain ⟨owner, _, afterOwner⟩ := Option.bind_eq_some_iff.mp success
+      obtain ⟨items, _, produced⟩ := Option.bind_eq_some_iff.mp afterOwner
+      cases items with
+      | nil =>
+          simp only [Option.some.injEq] at produced
+          subst produced
+          exact emptyCollectionEntryState_preserves_controllersOwnLiveActivity arm before owner
+            wellFormed
+      | cons first rest =>
+          simp only [Option.some.injEq] at produced
+          subst produced
+          exact firstIterationEntryState_preserves_controllersOwnLiveActivity arm before _
+            owner (first :: rest) bounded wellFormed
+  next => cases success
+
+/-- `SMI-ITERATE-01` and `SMI-COMPLETE-01`, which are one evaluator with two arms. -/
+theorem completeSequentialMultiInstanceInnerTask_preserves_controllersOwnLiveActivity
+    (arm : SequentialMultiInstanceArm) (before after : RuntimeState) (body : OccurrenceId)
+    (submitted : List VariableBinding)
+    (wellFormed : controllersOwnLiveActivity before = true)
+    (success : completeSequentialMultiInstanceInnerTask? arm before body submitted = some after) :
+    controllersOwnLiveActivity after = true := by
+  unfold completeSequentialMultiInstanceInnerTask? at success
+  split at success
+  next =>
+      obtain ⟨record, _, afterRecord⟩ := Option.bind_eq_some_iff.mp success
+      obtain ⟨controller, found, afterController⟩ := Option.bind_eq_some_iff.mp afterRecord
+      obtain ⟨result, _, produced⟩ := Option.bind_eq_some_iff.mp afterController
+      have named := (sequentialMultiInstanceControllerFor_sound found).2
+      split at produced
+      · split at produced
+        · split at produced
+          · simp only [Option.some.injEq] at produced
+            subst produced
+            exact iteratedState_preserves_controllersOwnLiveActivity before record _ body
+              controller result wellFormed
+          · simp only [Option.some.injEq] at produced
+            subst produced
+            exact finalCompletionState_preserves_controllersOwnLiveActivity arm before record body
+              controller _ named wellFormed
+        · simp at produced
+      · simp at produced
+  next => cases success
+
+/-- `SMI-CANCEL-01`. -/
+theorem interruptSequentialMultiInstance_preserves_controllersOwnLiveActivity
+    (arm : SequentialMultiInstanceArm) (before after : RuntimeState) (timer : TimerOccurrenceId)
+    (logicalTimeMs : Nat)
+    (wellFormed : controllersOwnLiveActivity before = true)
+    (success : interruptSequentialMultiInstance? arm before timer logicalTimeMs = some after) :
+    controllersOwnLiveActivity after = true := by
+  unfold interruptSequentialMultiInstance? at success
+  split at success
+  next =>
+      obtain ⟨deadline, _, afterDeadline⟩ := Option.bind_eq_some_iff.mp success
+      obtain ⟨record, _, afterRecord⟩ := Option.bind_eq_some_iff.mp afterDeadline
+      obtain ⟨body, _, afterBody⟩ := Option.bind_eq_some_iff.mp afterRecord
+      obtain ⟨controller, found, produced⟩ := Option.bind_eq_some_iff.mp afterBody
+      have named := (sequentialMultiInstanceControllerFor_sound found).2
+      split at produced
+      · split at produced
+        · simp only [Option.some.injEq] at produced
+          subst produced
+          exact interruptionState_preserves_controllersOwnLiveActivity arm before record body
+            deadline controller named wellFormed
+        · simp at produced
+      · simp at produced
+  next => cases success
+
 end BpmnSemantics.SemanticProcess
