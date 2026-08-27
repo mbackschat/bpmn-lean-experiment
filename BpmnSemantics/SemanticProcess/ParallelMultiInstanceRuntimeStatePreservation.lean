@@ -4,9 +4,10 @@ import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 
 /-! # Parallel Multi-Instance shared runtime-state preservation
 
-This downstream owner lifts the family-local parallel Multi-Instance transition account to the complete
-shared `RuntimeState` invariant. The upstream preservation owner remains responsible for evaluator
-soundness, admitted-Program account extraction, and exact-state refusal.
+This downstream owner provides reusable shared-state insertion and exclusion facts plus the complete
+empty-entry preservation case. Separate Entry and Closing owners complete nonempty and closing
+preservation. The upstream owner retains evaluator soundness, admitted-Program account extraction,
+and exact-state refusal.
 -/
 
 namespace BpmnSemantics.SemanticProcess
