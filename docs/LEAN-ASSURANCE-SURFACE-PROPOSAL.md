@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved-with-required-edits
 
 ## Question and current boundary
 
@@ -85,6 +85,6 @@ Reopen if `LAS-DEFAULT-01` finds a default that is genuinely reachable rather th
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `833520c514ea3606de469343f266cbd937ac137e` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `833520c514ea3606de469343f266cbd937ac137e` | `fork-turns-none` | `approve-with-required-edits` | `7180e2bc7ccde605c20e2b520db45aa29b0cef24, 3141878a7d8a459b62529221a8eacd6369d93da6` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
