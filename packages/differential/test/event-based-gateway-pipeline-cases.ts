@@ -84,7 +84,7 @@ function selectWrongMessageWinner(result: MutableScenarioResult): void {
 }
 
 function eventRaceCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   injectMutation: PipelineCase["injectMutation"],
   expectedInjectedDisagreement: ObservationValueDisagreement,

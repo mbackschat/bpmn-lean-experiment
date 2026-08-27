@@ -260,7 +260,7 @@ function mutateBoundaryErrorProcessVariable(
 }
 
 function interactionCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   evidenceFile: string,
   options: InteractionCaseOptions = {},
@@ -299,7 +299,7 @@ function interactionCase(
 }
 
 function parallelCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   evidenceFile: string,
   options: ParallelCaseOptions = {},

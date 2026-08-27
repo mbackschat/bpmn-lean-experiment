@@ -97,7 +97,7 @@ function omitRemainingTaskAfterFirstCompletion(
 }
 
 function inclusiveGatewayCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   injectMutation: PipelineCase["injectMutation"],
   expectedInjectedDisagreement: ObservationValueDisagreement,

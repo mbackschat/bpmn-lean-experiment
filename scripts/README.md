@@ -20,6 +20,7 @@ The report names the required implementation detail maps, guards, this registry,
 | Run a focused Lean command | [`lake.sh`](lake.sh) | Root-integrator-only Lean wrapper with the repository lock, fixed environment, and target checks. |
 | Discover change constraints | [`what-binds.ts`](what-binds.ts) | Report required implementation detail maps, executable guards, directory registries, and source-owner headroom before planning an edit; unknown implementation paths fail closed. |
 | Preserve long-command evidence | [`run-with-receipt.sh`](run-with-receipt.sh) | Capture output and the real exit status atomically when the testing specification requires a retained receipt. |
+| Assert a long-command verdict | [`assert-command-receipt.ts`](assert-command-receipt.ts) | Accept one completed receipt as green only when its exact durable exit status is zero. |
 | Start PostgreSQL 18 work | [`with-postgresql-18.sh`](with-postgresql-18.sh) | Run an explicit Product 2 PostgreSQL command with the repository-owned local service boundary. |
 | Prepare, restart, or inspect the live demo | [`live-demo.ts`](live-demo.ts) | Use online `demo:prepare` for one fresh clean-commit-bound Compose build. Use `demo:start` to restart only matching cached images with building and pulling disabled, `demo:status` to recheck its public origin, and `demo:stop` to stop it without deleting its demo-only volumes. |
 

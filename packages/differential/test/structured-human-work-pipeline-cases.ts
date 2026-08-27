@@ -70,7 +70,7 @@ function mutateAbortResolution(result: MutableScenarioResult): void {
 }
 
 function structuredCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   injectMutation: PipelineCase["injectMutation"],
   path: string,

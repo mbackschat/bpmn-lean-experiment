@@ -26,6 +26,8 @@ import type {
   TemporalScenarioExecution,
 } from "@bpmn-lean/temporal-testkit";
 
+import type { PipelineCaseId } from "./pipeline-case-id-registry.ts";
+
 export const TemporalCaseRelation = Object.freeze({
   ExactSemantic: "exactSemantic",
   ExactSemanticWithClosedReceipt: "exactSemanticWithClosedReceipt",
@@ -99,8 +101,8 @@ export type CibPipelineConfiguration = DeepReadonly<{
   effectExecutionSchedule: CibEffectExecutionSchedule;
 }>;
 
-export type PipelineCase = DeepReadonly<{
-  id: string;
+export type PipelineCase<Id extends string = PipelineCaseId> = DeepReadonly<{
+  id: Id;
   scenarioRelativePath: string;
   bpmnRelativePath: string;
   workflowIdPrefix: string;

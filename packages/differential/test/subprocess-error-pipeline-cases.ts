@@ -86,7 +86,7 @@ function eraseRecoveryAfterStaleRefusal(result: MutableScenarioResult): void {
 }
 
 function subprocessErrorCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   evidenceFile: string,
   injectMutation: PipelineCase["injectMutation"],

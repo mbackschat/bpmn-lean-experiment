@@ -99,7 +99,7 @@ function routeDeadlineToTheNormalFollowOn(
 }
 
 function boundaryDeadlineCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   injectMutation: PipelineCase["injectMutation"],
   expectedInjectedDisagreement: ObservationValueDisagreement,

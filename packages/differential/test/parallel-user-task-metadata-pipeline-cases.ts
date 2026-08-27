@@ -61,7 +61,7 @@ function disagreement(
 }
 
 function combinedCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   evidenceFile: string,
   injectMutation: PipelineCase["injectMutation"],

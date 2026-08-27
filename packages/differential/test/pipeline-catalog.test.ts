@@ -53,6 +53,7 @@ import {
 import {
   pipelineCases,
 } from "./pipeline-cases.ts";
+import { pipelineCaseIdRegistry } from "./pipeline-case-id-registry.ts";
 import {
   mutableClone,
 } from "./pipeline-target-support.ts";
@@ -66,6 +67,23 @@ import {
   PipelineReplaySelection,
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
+import type { PipelineCase } from "./pipeline-types.ts";
+
+const unregisteredPipelineCaseId = "unregistered-pipeline-case";
+// @ts-expect-error The registry must reject a case before the expensive pipeline can start.
+const rejectedPipelineCaseId: PipelineCase["id"] = unregisteredPipelineCaseId;
+
+test("binds the complete ordered pipeline inventory before target execution", () => {
+  assert.deepEqual(
+    pipelineCases.map(({ id }) => id),
+    pipelineCaseIdRegistry,
+  );
+  assert.equal(
+    pipelineCaseIdRegistry.includes(unregisteredPipelineCaseId as never),
+    false,
+  );
+  assert.equal(rejectedPipelineCaseId, unregisteredPipelineCaseId);
+});
 
 const timerStartScenarioRelativePath =
   "scenarios/timer-start-event/scenario.json";
@@ -530,7 +548,7 @@ test("rejects an omitted, duplicated, or unprotected Event race catalog entry", 
       verifyPipelineRegistration(
         artifactCases,
         normativeArtifactCases,
-        [...pipelineCases, { ...messageCase, id: `${messageCase.id}-duplicate` }],
+        [...pipelineCases, messageCase],
       ),
     /pipeline scenarios contains duplicates.*message-wins/u,
   );

@@ -175,7 +175,7 @@ Before launch:
 
 During execution, stream combined standard output and error to the user and a durable log, resume the existing session after a yield, and do not start a replacement process merely to obtain more output. Do not poll only for activity; wait for meaningful output or completion while continuing the normal user-update cadence.
 
-On completion, capture the command's pipeline status immediately and write the numeric exit status to an exit-status receipt only after the command and log capture have completed. A present receipt is the authoritative result. Retain the log until the result has been reported or incorporated into required review evidence.
+On completion, capture the command's pipeline status immediately and write the numeric exit status to an exit-status receipt only after the command and log capture have completed. A present receipt is the authoritative result. Retain the log until the result has been reported or incorporated into required review evidence. A green claim requires a separate `node scripts/assert-command-receipt.ts <absolute-receipt-directory>` invocation to exit zero and print `COMMAND_RECEIPT_VERDICT=success`; a task notification, outer shell or tool-wrapper status, and filtered log search do not establish the command verdict. Missing or malformed evidence is invalid rather than green or red.
 
 After compaction or a lost tool response, resume by session ID first. If that session is unavailable, inspect the receipt, the durable log, and the operating-system process state. An absent receipt means only that completion was not recorded: the command may still be running or may have been interrupted. Never rerun a command merely because transient output was lost or unavailable. Rerun only after confirming that no prior process remains active and that its outcome cannot be recovered; report that evidence gap explicitly.
 
@@ -193,7 +193,7 @@ Then run the exact command through the wrapper in the same shell:
   env CI=true ./scripts/pnpm.sh run test:pre-push:verify
 ```
 
-When an execution tool uses a new shell for each invocation, copy the printed absolute receipt path into the wrapper invocation instead of relying on the shell variable to survive. Use the actual project command in place of the example. `command.txt` records the working directory and shell-escaped command, `output.log` retains combined output, and `exit-status` appears only after authoritative completion. Exit `125` means the command result could not be retained reliably because log capture failed.
+When an execution tool uses a new shell for each invocation, copy the printed absolute receipt path into the wrapper invocation instead of relying on the shell variable to survive. Use the actual project command in place of the example. `command.txt` records the working directory and shell-escaped command, `output.log` retains combined output, and `exit-status` appears only after authoritative completion. The runner prints `COMMAND_RECEIPT_COMPLETE` only after that atomic publication; it is a completion marker, while the separate receipt assertion is the verdict. Exit `125` means the command result could not be retained reliably because log capture failed.
 
 ## Direct TypeScript harnesses
 

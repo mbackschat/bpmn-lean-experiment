@@ -101,7 +101,7 @@ function retainWithdrawnDeadline(result: MutableScenarioResult): void {
 }
 
 function monitoredDeadlineCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   injectMutation: PipelineCase["injectMutation"],
   expectedInjectedDisagreement: ObservationValueDisagreement,

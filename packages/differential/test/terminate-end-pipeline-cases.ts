@@ -79,7 +79,7 @@ function eraseOuterAfterStaleRefusal(result: MutableScenarioResult): void {
 }
 
 function terminateEndCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   injectMutation: PipelineCase["injectMutation"],
   expectedInjectedDisagreement: ObservationValueDisagreement,

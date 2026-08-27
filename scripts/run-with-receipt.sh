@@ -55,4 +55,5 @@ fi
 # Receipt absence deliberately means that no authoritative completion was published.
 printf '%s\n' "$command_exit" > "$status_path.tmp" || exit 125
 mv "$status_path.tmp" "$status_path" || exit 125
+printf 'COMMAND_RECEIPT_COMPLETE=%s exitStatus=%s\n' "$receipt_root" "$command_exit"
 exit "$command_exit"

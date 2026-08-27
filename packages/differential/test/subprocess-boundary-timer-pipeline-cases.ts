@@ -98,7 +98,7 @@ function retainCancelledChildRegion(result: MutableScenarioResult): void {
 }
 
 function boundedScopeDeadlineCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   injectMutation: PipelineCase["injectMutation"],
   expectedInjectedDisagreement: ObservationValueDisagreement,

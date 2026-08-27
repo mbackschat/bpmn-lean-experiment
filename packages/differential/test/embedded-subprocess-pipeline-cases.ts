@@ -52,7 +52,7 @@ function mutatePrematureScopeExit(result: MutableScenarioResult): void {
 }
 
 function embeddedSubProcessCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
   evidenceFile: string,
   remainingChildElementId: "UserTask_ChildA" | "UserTask_ChildB",
