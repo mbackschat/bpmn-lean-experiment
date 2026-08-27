@@ -157,6 +157,17 @@ function requiredAt<Value>(
   return value;
 }
 
+function requiredLast<Value>(
+  values: ReadonlyArray<Value>,
+  label: string,
+): Value {
+  const value = values.at(-1);
+  if (value === undefined) {
+    throw new Error(`${label} is empty`);
+  }
+  return value;
+}
+
 function requireStateObservation(
   observation: CanonicalObservation,
 ): StateObservation {
@@ -206,11 +217,7 @@ test(
         caseReport.scenario.id ===
           "service-task-effect-incident-root-cancellation";
       const expectedWaitState = requireStateObservation(
-        requiredAt(
-          caseEvidence.expectedWaitTrace,
-          isServiceTaskIncident || isServiceTaskIncidentCancellation ? 4 : 2,
-          "expected wait trace",
-        ),
+        requiredLast(caseEvidence.expectedWaitTrace, "expected wait trace"),
       );
       const hasCib = pipelineCase.cib !== null;
       assert.equal(

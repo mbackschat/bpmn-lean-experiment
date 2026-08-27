@@ -53,6 +53,12 @@ private def decodeCheckedCondition : Json →
           { language := ← stringField json "language"
             body := ← stringField json "body" })
 
+private def decodeRequiredCheckedCondition (json : Json) :
+    Except String CheckedCondition := do
+  match ← decodeCheckedCondition json with
+  | some condition => pure condition
+  | none => throw "checked condition must be present"
+
 /-- Rejects any lexeme outside the closed disposition, so an unknown value never defaults into one. -/
 private def decodeBoundaryInterruption (value : String) :
     Except String BoundaryInterruption :=
@@ -183,6 +189,20 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← decodeOptionalString (← field json "name"))
           (← decodeSequentialMultiInstanceInput (← field json "input"))
           (← decodeSequentialMultiInstanceOutput (← field json "output"))
+          ⟨← stringField json "normalOutputFlowId"⟩
+          (← decodeCheckedSequentialMultiInstanceBoundaryTimer
+            (← field json "boundaryTimer")))
+  | "parallelMultiInstanceUserTask" =>
+      requireObjectShape json
+        ["boundaryTimer", "completionCondition", "id", "input", "kind", "name",
+          "normalOutputFlowId", "output"]
+      pure
+        (.parallelMultiInstanceUserTask
+          ⟨← stringField json "id"⟩
+          (← decodeOptionalString (← field json "name"))
+          (← decodeSequentialMultiInstanceInput (← field json "input"))
+          (← decodeSequentialMultiInstanceOutput (← field json "output"))
+          (← decodeRequiredCheckedCondition (← field json "completionCondition"))
           ⟨← stringField json "normalOutputFlowId"⟩
           (← decodeCheckedSequentialMultiInstanceBoundaryTimer
             (← field json "boundaryTimer")))

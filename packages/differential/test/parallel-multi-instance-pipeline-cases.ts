@@ -121,7 +121,7 @@ const firstCase = {
   bpmnRelativePath: "scenarios/parallel-multi-instance/process.bpmn",
   workflowIdPrefix: "parallel-multi-instance-first",
   cib: null,
-  expectedWaitTraceLength: 1,
+  expectedWaitTraceLength: 3,
   completionDelivery: TemporalCompletionDelivery.OrderedWithClosedReceipt,
   temporalRelation: TemporalCaseRelation.ExactSemanticWithClosedReceipt,
   executionSchedule: TemporalExecutionSchedule.Normal,

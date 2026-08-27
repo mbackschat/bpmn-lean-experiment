@@ -246,6 +246,13 @@ private def decodeSimpleBooleanExpression (json : Json) :
           (← stringField json "value"))
   | kind => throw s!"unsupported Simple Boolean expression {kind}"
 
+private def decodeParallelMultiInstanceCompletionCondition (json : Json) :
+    Except String SimpleBooleanExpression := do
+  let condition ← decodeSimpleBooleanExpression json
+  if condition ≠ .stringEquals "completionPolicy" "first" then
+    throw "Parallel Multi-Instance requires the exact reviewed completion condition"
+  pure condition
+
 private def decodeConditionalCandidate (json : Json) :
     Except String ConditionalCandidate := do
   requireObjectShape json ["condition", "origin", "output"]
@@ -367,6 +374,35 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "normalOutput"⟩
           (← decodeBoundaryTimerArm (← field json "boundaryTimer"))
           (← decodeSequentialMultiInstanceLimits (← field json "limits")))
+  | "awaitParallelMultiInstanceUserTask" =>
+      requireObjectShape json
+        ["boundaryTimer", "completionCondition", "data", "id", "input", "kind",
+          "limits", "normalOutput", "origin", "task"]
+      let task ← decodeSequentialMultiInstanceTask (← field json "task")
+      pure
+        (.awaitParallelMultiInstanceUserTask
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          task.id
+          task.name
+          (← decodeSequentialMultiInstanceData (← field json "data"))
+          ⟨← stringField json "normalOutput"⟩
+          (← decodeBoundaryTimerArm (← field json "boundaryTimer"))
+          (← decodeParallelMultiInstanceCompletionCondition
+            (← field json "completionCondition"))
+          (← decodeSequentialMultiInstanceLimits (← field json "limits")))
+  | "completeParallelMultiInstanceUserTask" =>
+      requireObjectShape json
+        ["entryOperationId", "id", "kind", "normalOutput", "origin",
+          "taskElementId"]
+      pure
+        (.completeParallelMultiInstanceUserTask
+          id
+          origin
+          ⟨← stringField json "entryOperationId"⟩
+          ⟨← stringField json "taskElementId"⟩
+          ⟨← stringField json "normalOutput"⟩)
   | "awaitTimer" =>
       requireObjectShape json
         ["id", "input", "kind", "origin", "output", "timer"]

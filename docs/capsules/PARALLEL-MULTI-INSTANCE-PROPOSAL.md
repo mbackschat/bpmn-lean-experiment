@@ -213,8 +213,8 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 209 |
 | [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 399 |
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 316 |
-| [Lean checked Process JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 486 |
-| [Lean program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 272 |
+| [Lean checked Process JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 467 |
+| [Lean program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 237 |
 | [Lean publication JSON](../../BpmnSemantics/SemanticProcessJson/Publication.lean) | 629 |
 | [Lean transition root](../../BpmnSemantics/SemanticProcess/Transition.lean) | 387 |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 512 |

@@ -85,6 +85,21 @@ test("binds the complete ordered pipeline inventory before target execution", ()
   assert.equal(rejectedPipelineCaseId, unregisteredPipelineCaseId);
 });
 
+test("every registered wait prefix ends at a canonical state", async () => {
+  const contexts = await loadAndCompileCases(pipelineCases);
+  const results = runCoreTargets(contexts).results;
+
+  for (const context of contexts) {
+    const result = results.get(context.scenario.id);
+    assert.ok(result !== undefined);
+    assert.equal(
+      result.trace[context.pipelineCase.expectedWaitTraceLength - 1]?.kind,
+      CanonicalObservationKind.State,
+      `${context.pipelineCase.id} expectedWaitTraceLength must include its stable wait state`,
+    );
+  }
+});
+
 const timerStartScenarioRelativePath =
   "scenarios/timer-start-event/scenario.json";
 const configuredTaskScenarioRelativePath =

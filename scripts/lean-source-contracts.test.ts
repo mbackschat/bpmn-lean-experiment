@@ -517,6 +517,93 @@ function declarationBody(source: string, declaration: string): string {
   return [lines[start], ...(end < 0 ? rest : rest.slice(0, end))].join("\n");
 }
 
+function inductiveConstructors(source: string, inductive: string): string[] {
+  const lines = analyzeLeanSource(source).code.split(/\r?\n/u);
+  const start = lines.findIndex((line) =>
+    new RegExp(`^inductive\\s+${inductive}(?=\\s|$)`, "u").test(line)
+  );
+  if (start < 0) {
+    throw new Error(`${inductive} is absent; the guard must be retargeted`);
+  }
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((line) =>
+    /^(?:@\[|\/-|private\s+)?(?:def|theorem|structure|inductive|abbrev|end)\b/u
+      .test(line)
+  );
+  const body = end < 0 ? rest : rest.slice(0, end);
+  return body.flatMap((line) => {
+    const match = /^\s*\|\s+([A-Za-z][A-Za-z0-9_']*)\b/u.exec(line);
+    return match?.[1] === undefined ? [] : [match[1]];
+  });
+}
+
+const checkedNodeWireKindAliases = new Map<string, string>([
+  ["inclusiveGatewayDiverging", "inclusiveGateway"],
+  ["inclusiveGatewayConverging", "inclusiveGateway"],
+]);
+
+test("checked-node wire decoding covers every semantic variant", () => {
+  const contract = readFileSync(
+    fileURLToPath(new URL("../BpmnSemantics/SemanticProcessContract.lean", import.meta.url)),
+    "utf8",
+  );
+  const decoder = readFileSync(
+    fileURLToPath(
+      new URL("../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean", import.meta.url),
+    ),
+    "utf8",
+  );
+  const expectedWireKinds = new Set(
+    inductiveConstructors(contract, "CheckedNode").map(
+      (constructor) => checkedNodeWireKindAliases.get(constructor) ?? constructor,
+    ),
+  );
+  const decodedWireKinds = new Set(
+    declarationBody(decoder, "decodeCheckedNode")
+      .split(/\r?\n/u)
+      .flatMap((line) => {
+        const match = /^  \| "([^"]+)" =>/u.exec(line);
+        return match?.[1] === undefined ? [] : [match[1]];
+      }),
+  );
+
+  assert.deepEqual(
+    [...decodedWireKinds].sort(compareCanonicalStrings),
+    [...expectedWireKinds].sort(compareCanonicalStrings),
+    "every CheckedNode constructor must have an exact checked-process wire decoder arm",
+  );
+});
+
+test("Semantic-operation wire decoding covers every semantic variant", () => {
+  const contract = readFileSync(
+    fileURLToPath(new URL("../BpmnSemantics/SemanticProcessContract.lean", import.meta.url)),
+    "utf8",
+  );
+  const decoder = readFileSync(
+    fileURLToPath(
+      new URL("../BpmnSemantics/SemanticProcessJson/Program.lean", import.meta.url),
+    ),
+    "utf8",
+  );
+  const expectedWireKinds = new Set(
+    inductiveConstructors(contract, "SemanticOperation"),
+  );
+  const decodedWireKinds = new Set(
+    declarationBody(decoder, "decodeOperation")
+      .split(/\r?\n/u)
+      .flatMap((line) => {
+        const match = /^  \| "([^"]+)" =>/u.exec(line);
+        return match?.[1] === undefined ? [] : [match[1]];
+      }),
+  );
+
+  assert.deepEqual(
+    [...decodedWireKinds].sort(compareCanonicalStrings),
+    [...expectedWireKinds].sort(compareCanonicalStrings),
+    "every SemanticOperation constructor must have an exact Program wire decoder arm",
+  );
+});
+
 test("public-projection and graph-edge inventories match every variant explicitly", () => {
   for (const { path: relativePath, declaration } of exhaustiveVariantInventories) {
     const source = readFileSync(
