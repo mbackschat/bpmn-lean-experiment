@@ -44,7 +44,8 @@ def checkedParallelMultiInstanceProfileMatches (source : CheckedProcess) : Bool 
   let selected := source.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId
   declares == decide selected && if selected then nodes.length = 1 else true
 
-private def exactParallelEntry : SemanticOperation → Bool
+/-- Exact entry payload admitted by the selected parallel Multi-Instance profile. -/
+def parallelMultiInstanceExactEntry : SemanticOperation → Bool
   | .awaitParallelMultiInstanceUserTask _ origin _ taskId _ _ _ boundaryTimer condition limits =>
       origin.elementId.value = taskId.value &&
         condition = .stringEquals "completionPolicy" "first" &&
@@ -55,11 +56,25 @@ private def exactParallelEntry : SemanticOperation → Bool
             maximumCanonicalCollectionUtf8Bytes := 8192 }
   | _ => false
 
+/-- The distinct completion-operation census paired with the exact entry census. -/
+def parallelMultiInstanceCompletionOperation : SemanticOperation → Bool
+  | .completeParallelMultiInstanceUserTask .. => true
+  | _ => false
+
+theorem parallelMultiInstanceCompletionOperation_projects (operation : SemanticOperation) :
+    parallelMultiInstanceCompletionOperation operation =
+      (ParallelMultiInstanceCompletionArm.ofOperation? operation).isSome := by
+  cases operation <;> rfl
+
+theorem parallelMultiInstanceExactEntry_projects (operation : SemanticOperation)
+    (exact : parallelMultiInstanceExactEntry operation = true) :
+    (ParallelMultiInstanceArm.ofOperation? operation).isSome = true := by
+  cases operation <;> simp_all [parallelMultiInstanceExactEntry,
+    ParallelMultiInstanceArm.ofOperation?]
+
 def programParallelMultiInstanceProfileMatches (program : Program) : Bool :=
-  let entries := program.operations.filter exactParallelEntry
-  let completions := program.operations.filter fun
-    | .completeParallelMultiInstanceUserTask .. => true
-    | _ => false
+  let entries := program.operations.filter parallelMultiInstanceExactEntry
+  let completions := program.operations.filter parallelMultiInstanceCompletionOperation
   let declares := program.operations.any fun
     | .awaitParallelMultiInstanceUserTask ..
     | .completeParallelMultiInstanceUserTask .. => true
@@ -72,11 +87,63 @@ def programParallelMultiInstanceProfileMatches (program : Program) : Bool :=
       | _, _ => false
     else true
 
+/-- A selected valid profile exposes exactly one exact entry and its one paired completion. -/
+theorem programParallelMultiInstanceProfile_pair_census (program : Program)
+    (profile : program.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId)
+    (valid : programParallelMultiInstanceProfileMatches program = true) :
+    ∃ entry completion,
+      program.operations.filter parallelMultiInstanceExactEntry = [entry] ∧
+      program.operations.filter parallelMultiInstanceCompletionOperation = [completion] ∧
+      parallelMultiInstanceOperationsPair entry completion = true ∧
+      parallelMultiInstanceCompletionForEntry? program.operations entry = some completion := by
+  simp only [programParallelMultiInstanceProfileMatches, profile, decide_true, if_true,
+    Bool.and_eq_true] at valid
+  have pairMatch := valid.2
+  generalize entriesEq : program.operations.filter parallelMultiInstanceExactEntry = entries
+    at pairMatch
+  generalize completionsEq : program.operations.filter parallelMultiInstanceCompletionOperation =
+    completions at pairMatch
+  cases entries with
+  | nil => simp at pairMatch
+  | cons entry rest =>
+      cases rest with
+      | cons next tail => simp at pairMatch
+      | nil =>
+          cases completions with
+          | nil => simp at pairMatch
+          | cons completion rest =>
+              cases rest with
+              | cons next tail => simp at pairMatch
+              | nil =>
+                  have pairFilter : program.operations.filter
+                      (parallelMultiInstanceOperationsPair entry) =
+                      (program.operations.filter parallelMultiInstanceCompletionOperation).filter
+                        (parallelMultiInstanceOperationsPair entry) := by
+                    induction program.operations with
+                    | nil => rfl
+                    | cons operation rest ih =>
+                        by_cases pair :
+                            parallelMultiInstanceOperationsPair entry operation = true
+                        · have completionOperation :
+                              parallelMultiInstanceCompletionOperation operation = true := by
+                            rw [parallelMultiInstanceCompletionOperation_projects]
+                            unfold parallelMultiInstanceOperationsPair at pair
+                            cases entryProjection : ParallelMultiInstanceArm.ofOperation? entry <;>
+                              cases completionProjection :
+                                ParallelMultiInstanceCompletionArm.ofOperation? operation <;>
+                              simp_all
+                          simp [pair, completionOperation, ih]
+                        · simp [pair, ih]
+                  refine ⟨entry, completion, rfl, rfl, pairMatch, ?_⟩
+                  unfold parallelMultiInstanceCompletionForEntry?
+                  rw [pairFilter, completionsEq]
+                  simp [pairMatch]
+
 def parallelMultiInstanceOperationWellFormed (places : List ControlPlace) :
     SemanticOperation → Bool
   | operation@(.awaitParallelMultiInstanceUserTask id origin input _ _ data normalOutput
       boundaryTimer _ _) =>
-      exactParallelEntry operation &&
+      parallelMultiInstanceExactEntry operation &&
         let identities :=
           [id.value, origin.elementId.value, boundaryTimer.elementId.value,
             data.input.collectionItemDefinitionId, data.input.scalarItemDefinitionId,

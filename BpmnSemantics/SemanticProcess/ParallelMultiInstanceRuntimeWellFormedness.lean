@@ -168,6 +168,63 @@ def parallelMultiInstanceProgramBindingsValid (program : Program) (state : Runti
                   (fun count controller =>
                     count + (pendingParallelTaskIds controller.slots).length) 0
 
+/-- Under an exact one-arm program census, absence of that arm's controller excludes every parallel
+controller from a state admitted by the bidirectional program binding. -/
+theorem parallelControllers_absent_of_unique_entry (program : Program)
+    (arm : ParallelMultiInstanceArm) (state : RuntimeState)
+    (uniqueEntry : program.operations.filterMap ParallelMultiInstanceArm.ofOperation? = [arm])
+    (bindings : parallelMultiInstanceProgramBindingsValid program state = true)
+    (absent : state.parallelMultiInstanceControllers.any (fun controller =>
+      controller.id.activityElementId.value == arm.taskId.value) = false) :
+    state.parallelMultiInstanceControllers = [] := by
+  apply List.eq_nil_iff_forall_not_mem.mpr
+  intro controller member
+  simp only [parallelMultiInstanceProgramBindingsValid, Bool.and_eq_true,
+    List.all_eq_true] at bindings
+  have bound := bindings.1.1.1 controller member
+  unfold parallelControllerProgramBindingValid parallelRecordForController? at bound
+  generalize recordsEq : state.activityOccurrences.filter (fun record =>
+    parallelControllerNamesIdentity controller record.processInstanceId
+      ⟨record.activityElementId.value⟩ record.activation) = records at bound
+  cases records with
+  | nil => simp at bound
+  | cons record rest =>
+      cases rest with
+      | cons next tail => simp at bound
+      | nil =>
+          generalize operationsEq : program.operations.filter (fun operation =>
+            match ParallelMultiInstanceArm.ofOperation? operation with
+            | some candidate => candidate.taskId.value == controller.id.activityElementId.value
+            | none => false) = operations at bound
+          cases operations with
+          | nil => simp at bound
+          | cons entry rest =>
+              cases rest with
+              | cons next tail => simp at bound
+              | nil =>
+                  have filtered : entry ∈ program.operations.filter (fun operation =>
+                      match ParallelMultiInstanceArm.ofOperation? operation with
+                      | some candidate =>
+                          candidate.taskId.value == controller.id.activityElementId.value
+                      | none => false) := by rw [operationsEq]; simp
+                  obtain ⟨entryMember, taskMatch⟩ := List.mem_filter.mp filtered
+                  cases projects : ParallelMultiInstanceArm.ofOperation? entry with
+                  | none => simp [projects] at taskMatch
+                  | some candidate =>
+                      have candidateMember : candidate ∈
+                          program.operations.filterMap ParallelMultiInstanceArm.ofOperation? :=
+                        List.mem_filterMap.mpr ⟨entry, entryMember, projects⟩
+                      rw [uniqueEntry] at candidateMember
+                      have candidateEq : candidate = arm := by simpa using candidateMember
+                      subst candidate
+                      simp only [projects, beq_iff_eq] at taskMatch
+                      have selected : state.parallelMultiInstanceControllers.any (fun current =>
+                          current.id.activityElementId.value == arm.taskId.value) = true := by
+                        rw [List.any_eq_true]
+                        exact ⟨controller, member, by simp [taskMatch]⟩
+                      rw [absent] at selected
+                      contradiction
+
 private theorem pendingParallelTaskIds_have_slot_task_element
     (arm : ParallelMultiInstanceArm) (state : ParallelMultiInstanceRuntimeState)
     (slots : List ParallelMultiInstanceSlot)

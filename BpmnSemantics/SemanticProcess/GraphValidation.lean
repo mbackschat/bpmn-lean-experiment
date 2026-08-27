@@ -169,6 +169,23 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .initiateMessage _ _ _ outputs => outputs
   | .initiateTimer _ _ _ outputs => outputs
 
+/-- All token-carrying ports read or produced by one operation. -/
+def operationControlPlaces (operation : SemanticOperation) : List ControlPlaceId :=
+  operationInputs operation ++ operationOutputs operation
+
+/-- Whether every token-carrying port of an operation belongs to its operation scope.
+
+The excluded constructors deliberately cross a definition-scope boundary for at least one port.
+-/
+def operationControlPlacesShareOwner : SemanticOperation → Bool
+  | .enterScope ..
+  | .enterBoundedScope ..
+  | .invokeProcess ..
+  | .returnProcess ..
+  | .completeScope ..
+  | .throwError .. => false
+  | _ => true
+
 private def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
@@ -514,6 +531,241 @@ def programGraphWellFormed (program : Program) : Bool :=
             programGraphPolicyValid program edges fuel
       | none => false
   | _ => false
+
+private theorem filter_eq_singleton_of_key_nodup [DecidableEq β]
+    (values : List α) (key : α → β) (value : α)
+    (nodup : (values.map key).Nodup) (member : value ∈ values) :
+    values.filter (fun candidate => decide (key candidate = key value)) = [value] := by
+  induction values with
+  | nil => simp at member
+  | cons head tail ih =>
+      obtain ⟨headFresh, tailNodup⟩ := List.nodup_cons.mp nodup
+      rcases List.mem_cons.mp member with rfl | member
+      · have rejected : tail.filter (fun candidate => decide (key candidate = key value)) = [] :=
+          List.filter_eq_nil_iff.mpr fun candidate candidateMember same => by
+            apply headFresh
+            simp only [decide_eq_true_eq] at same
+            exact List.mem_map.mpr ⟨candidate, candidateMember, same⟩
+        simp [rejected]
+      · have different : key head ≠ key value := by
+          intro same
+          apply headFresh
+          exact List.mem_map.mpr ⟨value, member, same.symm⟩
+        simp [different, ih tailNodup member]
+
+private theorem find?_eq_some_of_filter_eq_singleton (values : List α) (predicate : α → Bool)
+    (value : α) (singleton : values.filter predicate = [value]) :
+    values.find? predicate = some value := by
+  induction values with
+  | nil => simp at singleton
+  | cons head tail ih =>
+      simp only [List.filter_cons] at singleton
+      cases accepted : predicate head
+      · simp [accepted] at singleton ⊢
+        exact ih singleton
+      · simp [accepted] at singleton ⊢
+        exact singleton.1
+
+/-- A graph-admitted same-scope operation binds each of its token ports to the same unique static
+scope as the operation itself. Key uniqueness is supplied by the structural validator, while this
+theorem owns the graph-to-scope consequence. -/
+theorem programGraphWellFormed_operationControlPlaceScope (program : Program)
+    (operation : SemanticOperation) (place : ControlPlaceId)
+    (graphValid : programGraphWellFormed program = true)
+    (operationIdsUnique : (program.operations.map (fun candidate => candidate.id)).Nodup)
+    (placeIdsUnique : (program.controlPlaces.map (fun candidate => candidate.id)).Nodup)
+    (operationMember : operation ∈ program.operations)
+    (sameScope : operationControlPlacesShareOwner operation = true)
+    (placeMember : place ∈ operationControlPlaces operation) :
+    ∃ owner declared,
+      program.operationScopes.filter (fun ownership =>
+        decide (ownership.operationId = operation.id)) =
+          [{ operationId := operation.id, scopeId := owner }] ∧
+      program.controlPlaceScopes.filter (fun ownership =>
+        decide (ownership.controlPlaceId = place)) =
+          [{ controlPlaceId := place, scopeId := owner }] ∧
+      program.controlPlaces.filter (fun candidate => decide (candidate.id = place)) =
+        [declared] := by
+  unfold programGraphWellFormed at graphValid
+  generalize startsEq : initiateIds program.operations = starts at graphValid
+  cases starts with
+  | nil => simp at graphValid
+  | cons start rest =>
+      cases rest with
+      | cons next tail => simp at graphValid
+      | nil =>
+          generalize rootEq : rootScope? program = root at graphValid
+          cases root with
+          | none => simp at graphValid
+          | some root =>
+              simp only [Bool.and_eq_true] at graphValid
+              have ownershipComplete : scopedOwnershipComplete program root = true := by grind
+              simp only [scopedOwnershipComplete, Bool.and_eq_true] at ownershipComplete
+              have operationScopesMap := ownershipComplete.1.1
+              have placeScopesMap := ownershipComplete.1.2
+              simp only [decide_eq_true_eq] at operationScopesMap placeScopesMap
+              have respects := List.all_eq_true.mp ownershipComplete.2 operation operationMember
+              unfold operationRespectsScopes at respects
+              generalize operationOwnerEq : operationScope? program operation.id = operationOwner
+                at respects
+              cases operationOwner with
+              | none => simp at respects
+              | some owner =>
+                  have portOwned : placeScope? program place = some owner := by
+                    cases operation <;>
+                      simp_all [operationControlPlacesShareOwner, operationControlPlaces,
+                        operationInputs, operationOutputs, placesOwnedBy] <;> grind
+                  unfold operationScope? at operationOwnerEq
+                  generalize operationFoundEq : program.operationScopes.find? (fun ownership =>
+                    decide (ownership.operationId = operation.id)) = operationFound
+                      at operationOwnerEq
+                  cases operationFound with
+                  | none => simp at operationOwnerEq
+                  | some operationBinding =>
+                      simp only [Option.map_some, Option.some.injEq] at operationOwnerEq
+                      subst owner
+                      have operationBindingMember := List.mem_of_find?_eq_some operationFoundEq
+                      have operationBindingKey : operationBinding.operationId = operation.id := by
+                        simpa only [decide_eq_true_eq] using List.find?_some operationFoundEq
+                      unfold placeScope? at portOwned
+                      generalize placeFoundEq : program.controlPlaceScopes.find? (fun ownership =>
+                        decide (ownership.controlPlaceId = place)) = placeFound at portOwned
+                      cases placeFound with
+                      | none => simp at portOwned
+                      | some placeBinding =>
+                          simp only [Option.map_some, Option.some.injEq] at portOwned
+                          have placeBindingMember := List.mem_of_find?_eq_some placeFoundEq
+                          have placeBindingKey : placeBinding.controlPlaceId = place := by
+                            simpa only [decide_eq_true_eq] using List.find?_some placeFoundEq
+                          have operationScopeKeys :
+                              (program.operationScopes.map (fun binding => binding.operationId)).Nodup := by
+                            rw [operationScopesMap]
+                            exact operationIdsUnique
+                          have placeScopeKeys :
+                              (program.controlPlaceScopes.map (fun binding => binding.controlPlaceId)).Nodup := by
+                            rw [placeScopesMap]
+                            exact placeIdsUnique
+                          have placeIdMember : place ∈ program.controlPlaces.map (fun value => value.id) := by
+                            rw [← placeScopesMap]
+                            exact List.mem_map.mpr ⟨placeBinding, placeBindingMember,
+                              placeBindingKey⟩
+                          obtain ⟨declared, declaredMember, declaredId⟩ :=
+                            List.mem_map.mp placeIdMember
+                          rcases operationBinding with ⟨operationId, operationScope⟩
+                          simp only at operationBindingKey portOwned ⊢
+                          subst operationId
+                          rcases placeBinding with ⟨placeId, placeScope⟩
+                          simp only at placeBindingKey portOwned ⊢
+                          subst placeId
+                          subst placeScope
+                          refine ⟨operationScope, declared, ?_, ?_, ?_⟩
+                          · simpa using
+                              filter_eq_singleton_of_key_nodup program.operationScopes
+                                (fun binding => binding.operationId)
+                                { operationId := operation.id, scopeId := operationScope }
+                                operationScopeKeys operationBindingMember
+                          · simpa using
+                              filter_eq_singleton_of_key_nodup program.controlPlaceScopes
+                                (fun binding => binding.controlPlaceId)
+                                { controlPlaceId := place, scopeId := operationScope }
+                                placeScopeKeys placeBindingMember
+                          · simpa [declaredId] using
+                              filter_eq_singleton_of_key_nodup program.controlPlaces
+                                (fun value => value.id) declared placeIdsUnique declaredMember
+
+/-- A graph-admitted parallel entry and its selected completion share one operation scope; their
+same-scope token ports therefore share that exact singleton static owner. -/
+theorem programGraphWellFormed_pairedOperationControlPlaceScopes (program : Program)
+    (entry completion : SemanticOperation) (arm : ParallelMultiInstanceArm)
+    (graphValid : programGraphWellFormed program = true)
+    (operationIdsUnique : (program.operations.map (fun candidate => candidate.id)).Nodup)
+    (placeIdsUnique : (program.controlPlaces.map (fun candidate => candidate.id)).Nodup)
+    (entryMember : entry ∈ program.operations) (completionMember : completion ∈ program.operations)
+    (projects : ParallelMultiInstanceArm.ofOperation? entry = some arm)
+    (pairValid : parallelMultiInstanceOperationsPair entry completion = true)
+    (paired : parallelMultiInstanceCompletionForEntry? program.operations entry = some completion) :
+    ∃ owner inputDeclared timerDeclared normalDeclared,
+      program.operationScopes.filter (fun ownership =>
+        decide (ownership.operationId = entry.id)) =
+          [{ operationId := entry.id, scopeId := owner }] ∧
+      program.operationScopes.filter (fun ownership =>
+        decide (ownership.operationId = completion.id)) =
+          [{ operationId := completion.id, scopeId := owner }] ∧
+      program.controlPlaceScopes.filter (fun ownership =>
+        decide (ownership.controlPlaceId = arm.input)) =
+          [{ controlPlaceId := arm.input, scopeId := owner }] ∧
+      program.controlPlaceScopes.filter (fun ownership =>
+        decide (ownership.controlPlaceId = arm.boundaryTimer.output)) =
+          [{ controlPlaceId := arm.boundaryTimer.output, scopeId := owner }] ∧
+      program.controlPlaceScopes.filter (fun ownership =>
+        decide (ownership.controlPlaceId = arm.normalOutput)) =
+          [{ controlPlaceId := arm.normalOutput, scopeId := owner }] ∧
+      program.controlPlaces.filter (fun candidate =>
+        decide (candidate.id = arm.input)) = [inputDeclared] ∧
+      program.controlPlaces.filter (fun candidate =>
+        decide (candidate.id = arm.boundaryTimer.output)) =
+        [timerDeclared] ∧
+      program.controlPlaces.filter (fun candidate => decide (candidate.id = arm.normalOutput)) =
+        [normalDeclared] := by
+  have entrySameScope : operationControlPlacesShareOwner entry = true := by
+    cases entry <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
+      operationControlPlacesShareOwner]
+  have entryPlaceMember : arm.boundaryTimer.output ∈ operationControlPlaces entry := by
+    cases entry <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
+    rw [← projects]
+    simp [operationControlPlaces, operationInputs, operationOutputs]
+  have inputPlaceMember : arm.input ∈ operationControlPlaces entry := by
+    cases entry <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
+    rw [← projects]
+    simp [operationControlPlaces, operationInputs, operationOutputs]
+  have completionSameScope : operationControlPlacesShareOwner completion = true := by
+    cases entry <;> cases completion <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
+      ParallelMultiInstanceCompletionArm.ofOperation?, parallelMultiInstanceOperationsPair,
+      operationControlPlacesShareOwner]
+  have completionPlaceMember : arm.normalOutput ∈ operationControlPlaces completion := by
+    cases entry <;> cases completion <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
+      ParallelMultiInstanceCompletionArm.ofOperation?, parallelMultiInstanceOperationsPair,
+      operationControlPlaces, operationInputs, operationOutputs]
+  obtain ⟨inputOwner, inputDeclared, inputEntryScope, inputPlaceScope, inputPlaceDeclaration⟩ :=
+    programGraphWellFormed_operationControlPlaceScope program entry arm.input graphValid
+      operationIdsUnique placeIdsUnique entryMember entrySameScope inputPlaceMember
+  obtain ⟨entryOwner, timerDeclared, entryScope, entryPlaceScope, entryPlaceDeclaration⟩ :=
+    programGraphWellFormed_operationControlPlaceScope program entry arm.boundaryTimer.output graphValid
+      operationIdsUnique placeIdsUnique entryMember entrySameScope entryPlaceMember
+  obtain ⟨completionOwner, normalDeclared, completionScope, completionPlaceScope,
+      completionPlaceDeclaration⟩ :=
+    programGraphWellFormed_operationControlPlaceScope program completion arm.normalOutput graphValid
+      operationIdsUnique placeIdsUnique completionMember completionSameScope completionPlaceMember
+  unfold programGraphWellFormed at graphValid
+  generalize startsEq : initiateIds program.operations = starts at graphValid
+  cases starts with
+  | nil => simp at graphValid
+  | cons start rest =>
+      cases rest with
+      | cons next tail => simp at graphValid
+      | nil =>
+          generalize rootEq : rootScope? program = root at graphValid
+          cases root with
+          | none => simp at graphValid
+          | some root =>
+              simp only [Bool.and_eq_true] at graphValid
+              have pairScopes : parallelMultiInstancePairsShareScope program = true := by grind
+              simp only [parallelMultiInstancePairsShareScope, List.all_eq_true] at pairScopes
+              have sameOwner := pairScopes entry entryMember
+              simp [projects, paired] at sameOwner
+              unfold operationScope? at sameOwner
+              rw [find?_eq_some_of_filter_eq_singleton _ _ _ entryScope,
+                find?_eq_some_of_filter_eq_singleton _ _ _ completionScope] at sameOwner
+              simp only [Option.map_some, Option.some.injEq] at sameOwner
+              have ownerEq : completionOwner = entryOwner := by simpa [projects] using sameOwner
+              subst completionOwner
+              have inputOwnerEq : inputOwner = entryOwner := by
+                rw [inputEntryScope] at entryScope
+                simpa using entryScope
+              subst inputOwner
+              exact ⟨entryOwner, inputDeclared, timerDeclared, normalDeclared, entryScope,
+                completionScope, inputPlaceScope, entryPlaceScope, completionPlaceScope,
+                inputPlaceDeclaration, entryPlaceDeclaration, completionPlaceDeclaration⟩
 
 /-- Whole-Program graph admission includes the definition-scope forest check. -/
 theorem programGraphWellFormed_scopeForest (program : Program)

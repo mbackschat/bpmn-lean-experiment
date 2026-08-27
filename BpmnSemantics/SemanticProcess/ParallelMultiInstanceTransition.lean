@@ -239,27 +239,27 @@ private def parallelChildWait (arm : ParallelMultiInstanceArm) (owner : ScopeOcc
     output := arm.normalOutput
     metadata := none }
 
-private def insertParallelChildWaits (arm : ParallelMultiInstanceArm) (owner : ScopeOccurrenceId) :
+def insertParallelChildWaits (arm : ParallelMultiInstanceArm) (owner : ScopeOccurrenceId) :
     List ParallelMultiInstanceSlot → List UserTaskWait → List UserTaskWait
   | [], waits => waits
   | slot :: rest, waits =>
       insertParallelChildWaits arm owner rest
         (insertUserTaskWait (parallelChildWait arm owner slot.taskId) waits)
 
-private def parallelTaskIdsFromWaits (waits : List UserTaskWait) : List UserTaskInstanceId :=
+def parallelTaskIdsFromWaits (waits : List UserTaskWait) : List UserTaskInstanceId :=
   waits.map fun wait =>
     { processInstanceId := wait.processInstanceId
       elementId := ⟨wait.task.id.value⟩
       activation := wait.activation }
 
-private def removeParallelChildWaits (waits : List UserTaskWait)
+def removeParallelChildWaits (waits : List UserTaskWait)
     (taskIds : List UserTaskInstanceId) : List UserTaskWait :=
   waits.filter fun wait => !(taskIds.contains
     { processInstanceId := wait.processInstanceId
       elementId := ⟨wait.task.id.value⟩
       activation := wait.activation })
 
-private def parallelRegionValid (arm : ParallelMultiInstanceArm) (state : RuntimeState)
+def parallelRegionValid (arm : ParallelMultiInstanceArm) (state : RuntimeState)
     (controller : ParallelMultiInstanceController) (record : ActivityOccurrence) : Bool :=
   let pending := pendingParallelTaskIds controller.slots
   let regionWaits := state.waits.filter fun wait =>
@@ -292,7 +292,7 @@ private def parallelRegionValid (arm : ParallelMultiInstanceArm) (state : Runtim
         timerIdNamesWait timer wait && wait.output == arm.boundaryTimer.output
     | _, _ => false
 
-private def replaceParallelRecordBody (records : List ActivityOccurrence)
+def replaceParallelRecordBody (records : List ActivityOccurrence)
     (record : ActivityOccurrence) (pending : List UserTaskInstanceId) : List ActivityOccurrence :=
   match pending with
   | [] => records
@@ -302,7 +302,7 @@ private def replaceParallelRecordBody (records : List ActivityOccurrence)
           { candidate with body := .parallelUserTasks first rest }
         else candidate
 
-private def removeParallelRecord (records : List ActivityOccurrence)
+def removeParallelRecord (records : List ActivityOccurrence)
     (record : ActivityOccurrence) : List ActivityOccurrence :=
   records.filter fun candidate => !sameActivityOccurrence candidate record
 
@@ -340,20 +340,28 @@ private theorem removeParallelRecord_subset (records : List ActivityOccurrence)
   intro successor present
   exact (List.mem_filter.mp present).1
 
-private def removeParallelController (controllers : List ParallelMultiInstanceController)
+def removeParallelController (controllers : List ParallelMultiInstanceController)
     (controller : ParallelMultiInstanceController) : List ParallelMultiInstanceController :=
   controllers.filter fun candidate => candidate.id != controller.id
 
-private def removeParallelTimer (waits : List TimerWait) (timerId : TimerOccurrenceId) :
+def removeParallelTimer (waits : List TimerWait) (timerId : TimerOccurrenceId) :
     List TimerWait :=
   waits.filter fun wait => !timerIdNamesWait timerId wait
 
-private def publishSharedParallelResults (state : RuntimeState) (arm : ParallelMultiInstanceArm)
+def publishSharedParallelResults (state : RuntimeState) (arm : ParallelMultiInstanceArm)
     (results : List String) : ScopedVariables :=
   { state.variables with
     process :=
       { bindings := mergeProcessVariableBindings state.variables.process.bindings
           [{ name := arm.data.output.dataObjectReferenceId, value := .stringList results }] } }
+
+def admittedSharedParallelSnapshot? (arm : ParallelMultiInstanceArm)
+    (state : RuntimeState) : Option (List String) :=
+  match state.variables.process.bindings.filter fun binding =>
+      binding.name == arm.data.input.dataObjectReferenceId with
+  | [{ value := .stringList items, .. }] =>
+      if withinParallelMultiInstanceLimits arm items then some items else none
+  | _ => none
 
 def enterSharedParallelMultiInstance? (arm : ParallelMultiInstanceArm)
     (state : RuntimeState) : Option RuntimeState := do
@@ -367,11 +375,7 @@ def enterSharedParallelMultiInstance? (arm : ParallelMultiInstanceArm)
       record.activityElementId.value == arm.taskId.value then none
   if state.waits.any fun wait => wait.task.id == arm.taskId then none
   if state.timerWaits.any fun wait => wait.elementId == arm.boundaryTimer.elementId then none
-  let snapshot ← match state.variables.process.bindings.filter fun binding =>
-      binding.name == arm.data.input.dataObjectReferenceId with
-    | [{ value := .stringList items, .. }] =>
-        if withinParallelMultiInstanceLimits arm items then some items else none
-    | _ => none
+  let snapshot ← admittedSharedParallelSnapshot? arm state
   if !(parallelOutputAbsent arm
       { processInstanceId := instanceId
         processBindings := state.variables.process.bindings }) then none
@@ -442,7 +446,7 @@ private theorem enterSharedParallelMultiInstance_issues_fresh_activity (state : 
   apply activityIdentityIssuingDiscipline_insertActivityOccurrence
   exact Nat.lt_succ_self _
 
-private def closeSharedParallelRegion (state : RuntimeState)
+def closeSharedParallelRegion (state : RuntimeState)
     (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
     (output : ControlPlaceId) (variables : ScopedVariables) : RuntimeState :=
   { state with
@@ -519,5 +523,177 @@ def interruptSharedParallelMultiInstance? (arm : ParallelMultiInstanceArm)
   pure
     { closeSharedParallelRegion state controller record arm.boundaryTimer.output state.variables with
       logicalTimeMs }
+
+/-! ## Shared declarative steps
+
+These relations expose the checked preconditions and exact rewrite of the shared evaluators without
+using a post-state validator as a premise. They are intentionally separate from the family-local
+relations above because their carrier is the complete production `RuntimeState`.
+-/
+
+inductive SharedParallelMultiInstanceEntryStep (arm : ParallelMultiInstanceArm) :
+    RuntimeState → RuntimeState → Prop where
+  | empty (before after : RuntimeState) (instanceId : SemanticId) (owner : ScopeOccurrenceId)
+      (running : before.control = .running instanceId)
+      (tokenOwner : onlyTokenOwner? before arm.input = some owner)
+      (controllerAbsent : before.parallelMultiInstanceControllers.any (fun controller =>
+        controller.id.activityElementId.value == arm.taskId.value) = false)
+      (recordAbsent : before.activityOccurrences.any (fun record =>
+        record.activityElementId.value == arm.taskId.value) = false)
+      (taskWaitAbsent : before.waits.any (fun wait => wait.task.id == arm.taskId) = false)
+      (timerWaitAbsent : before.timerWaits.any (fun wait =>
+        wait.elementId == arm.boundaryTimer.elementId) = false)
+      (snapshot : admittedSharedParallelSnapshot? arm before = some [])
+      (outputAbsent : parallelOutputAbsent arm
+        { processInstanceId := instanceId
+          processBindings := before.variables.process.bindings } = true)
+      (rewrite : after =
+        { before with
+          tokens := addToken (removeToken before.tokens arm.input owner) arm.normalOutput owner
+          variables := publishSharedParallelResults before arm [] }) :
+      SharedParallelMultiInstanceEntryStep arm before after
+  | nonempty (before after : RuntimeState) (instanceId : SemanticId) (owner : ScopeOccurrenceId)
+      (firstItem : String) (restItems : List String)
+      (running : before.control = .running instanceId)
+      (tokenOwner : onlyTokenOwner? before arm.input = some owner)
+      (controllerAbsent : before.parallelMultiInstanceControllers.any (fun controller =>
+        controller.id.activityElementId.value == arm.taskId.value) = false)
+      (recordAbsent : before.activityOccurrences.any (fun record =>
+        record.activityElementId.value == arm.taskId.value) = false)
+      (taskWaitAbsent : before.waits.any (fun wait => wait.task.id == arm.taskId) = false)
+      (timerWaitAbsent : before.timerWaits.any (fun wait =>
+        wait.elementId == arm.boundaryTimer.elementId) = false)
+      (snapshot : admittedSharedParallelSnapshot? arm before = some (firstItem :: restItems))
+      (outputAbsent : parallelOutputAbsent arm
+        { processInstanceId := instanceId
+          processBindings := before.variables.process.bindings } = true)
+      (firstTask : UserTaskInstanceId) (restTasks : List UserTaskInstanceId)
+      (pending : pendingParallelTaskIds
+        (pendingParallelSlots instanceId arm.taskId (activationCount before arm.taskId)
+          (firstItem :: restItems)) = firstTask :: restTasks)
+      (rewrite : after =
+        let taskHighWater := activationCount before arm.taskId
+        let activityActivation := activityActivationCount before arm.taskId + 1
+        let timerActivation := timerActivationCount before arm.boundaryTimer.elementId + 1
+        let controller : ParallelMultiInstanceController :=
+          { id :=
+              { processInstanceId := instanceId
+                activityElementId := ⟨arm.taskId.value⟩
+                activation := activityActivation }
+            snapshot := firstItem :: restItems
+            slots := pendingParallelSlots instanceId arm.taskId taskHighWater
+              (firstItem :: restItems) }
+        let timerId : TimerOccurrenceId :=
+          { processInstanceId := instanceId
+            elementId := ⟨arm.boundaryTimer.elementId.value⟩
+            activation := timerActivation }
+        { before with
+          tokens := removeToken before.tokens arm.input owner
+          waits := insertParallelChildWaits arm owner controller.slots before.waits
+          timerWaits := insertTimerWait
+            { processInstanceId := instanceId
+              owner
+              elementId := arm.boundaryTimer.elementId
+              activation := timerActivation
+              deadlineMs := before.logicalTimeMs + arm.boundaryTimer.durationMs
+              output := arm.boundaryTimer.output } before.timerWaits
+          activityOccurrences := insertActivityOccurrence
+            { processInstanceId := instanceId
+              activityElementId := ⟨arm.taskId.value⟩
+              activation := activityActivation
+              owner
+              body := .parallelUserTasks firstTask restTasks
+              attachedTimers := [timerId] } before.activityOccurrences
+          parallelMultiInstanceControllers := insertParallelMultiInstanceController controller
+            before.parallelMultiInstanceControllers
+          activations := setActivationCount before.activations arm.taskId
+            (taskHighWater + (firstItem :: restItems).length)
+          timerActivations := setTimerActivationCount before.timerActivations
+            arm.boundaryTimer.elementId timerActivation
+          activityActivations := setActivationCount before.activityActivations arm.taskId
+            activityActivation }) :
+      SharedParallelMultiInstanceEntryStep arm before after
+
+inductive SharedParallelMultiInstanceCompletionStep (arm : ParallelMultiInstanceArm)
+    (taskId : UserTaskInstanceId) (submitted : List VariableBinding) :
+    RuntimeState → RuntimeState → Prop where
+  | final (before after : RuntimeState) (instanceId : SemanticId)
+      (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
+      (result : String) (conditionValue : Bool) (results : List String)
+      (running : before.control = .running instanceId)
+      (sameInstance : taskId.processInstanceId = instanceId)
+      (selectedController : parallelControllerForTask? arm before taskId = some controller)
+      (selectedRecord : parallelControllerRecord? before controller = some record)
+      (regionValid : parallelRegionValid arm before controller record = true)
+      (accepted : acceptedParallelResult? arm submitted = some result)
+      (condition : evaluateSimpleBooleanExpression arm.completionCondition
+        before.variables.process.bindings = some conditionValue)
+      (completed : completedParallelResults?
+        (replacePendingParallelSlot controller.slots taskId result) = some results)
+      (withinLimits : withinParallelMultiInstanceLimits arm results = true)
+      (rewrite : after = closeSharedParallelRegion before controller record arm.normalOutput
+        (publishSharedParallelResults before arm results)) :
+      SharedParallelMultiInstanceCompletionStep arm taskId submitted before after
+  | early (before after : RuntimeState) (instanceId : SemanticId)
+      (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
+      (result : String)
+      (running : before.control = .running instanceId)
+      (sameInstance : taskId.processInstanceId = instanceId)
+      (selectedController : parallelControllerForTask? arm before taskId = some controller)
+      (selectedRecord : parallelControllerRecord? before controller = some record)
+      (regionValid : parallelRegionValid arm before controller record = true)
+      (accepted : acceptedParallelResult? arm submitted = some result)
+      (condition : evaluateSimpleBooleanExpression arm.completionCondition
+        before.variables.process.bindings = some true)
+      (incomplete : completedParallelResults?
+        (replacePendingParallelSlot controller.slots taskId result) = none)
+      (rewrite : after = closeSharedParallelRegion before controller record arm.normalOutput
+        before.variables) :
+      SharedParallelMultiInstanceCompletionStep arm taskId submitted before after
+  | progresses (before after : RuntimeState) (instanceId : SemanticId)
+      (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
+      (result : String) (firstPending : UserTaskInstanceId)
+      (restPending : List UserTaskInstanceId)
+      (running : before.control = .running instanceId)
+      (sameInstance : taskId.processInstanceId = instanceId)
+      (selectedController : parallelControllerForTask? arm before taskId = some controller)
+      (selectedRecord : parallelControllerRecord? before controller = some record)
+      (regionValid : parallelRegionValid arm before controller record = true)
+      (accepted : acceptedParallelResult? arm submitted = some result)
+      (condition : evaluateSimpleBooleanExpression arm.completionCondition
+        before.variables.process.bindings = some false)
+      (incomplete : completedParallelResults?
+        (replacePendingParallelSlot controller.slots taskId result) = none)
+      (pending : pendingParallelTaskIds
+        (replacePendingParallelSlot controller.slots taskId result) = firstPending :: restPending)
+      (rewrite : after =
+        { before with
+          waits := removeParallelChildWaits before.waits [taskId]
+          activityOccurrences := replaceParallelRecordBody before.activityOccurrences record
+            (firstPending :: restPending)
+          parallelMultiInstanceControllers := insertParallelMultiInstanceController
+            { controller with
+              slots := replacePendingParallelSlot controller.slots taskId result }
+            (removeParallelController before.parallelMultiInstanceControllers controller) }) :
+      SharedParallelMultiInstanceCompletionStep arm taskId submitted before after
+
+inductive SharedParallelMultiInstanceTimerStep (arm : ParallelMultiInstanceArm)
+    (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) :
+    RuntimeState → RuntimeState → Prop where
+  | interrupts (before after : RuntimeState) (instanceId : SemanticId)
+      (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
+      (deadline : TimerWait)
+      (running : before.control = .running instanceId)
+      (sameInstance : timerId.processInstanceId = instanceId)
+      (selectedController : parallelControllerForTimer? arm before timerId = some controller)
+      (selectedRecord : parallelControllerRecord? before controller = some record)
+      (regionValid : parallelRegionValid arm before controller record = true)
+      (selectedDeadline : before.timerWaits.filter (timerIdNamesWait timerId) = [deadline])
+      (due : logicalTimeMs = deadline.deadlineMs)
+      (rewrite : after =
+        { closeSharedParallelRegion before controller record arm.boundaryTimer.output
+            before.variables with
+          logicalTimeMs }) :
+      SharedParallelMultiInstanceTimerStep arm timerId logicalTimeMs before after
 
 end BpmnSemantics.SemanticProcess
