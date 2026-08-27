@@ -298,8 +298,8 @@ private theorem programWellFormed_parallel_projection_exact (program : Program)
     (member : operation ∈ program.operations)
     (projects : (ParallelMultiInstanceArm.ofOperation? operation).isSome = true) :
     parallelMultiInstanceExactEntry operation = true := by
-  simp only [programWellFormed, Bool.and_eq_true] at valid
-  have operationValid := List.all_eq_true.mp valid.1.1.1.1.2 operation member
+  have operationValid := List.all_eq_true.mp (programWellFormed_operations program valid)
+    operation member
   cases operation <;> simp_all only [ParallelMultiInstanceArm.ofOperation?,
     parallelMultiInstanceExactEntry, Option.isSome_some, Option.isSome_none, Bool.false_eq_true]
   case awaitParallelMultiInstanceUserTask id origin input taskId taskName data normalOutput
@@ -397,9 +397,10 @@ private theorem sharedParallelProgramAccount_of_admission (program : Program)
     admittedSharedParallelEntryAccount program arm entryOperation profile structural capabilities
       entryMember projects
   have structuralWhole := structural
-  simp only [programWellFormed, Bool.and_eq_true] at structural
-  have operationValuesNodup := strictlySortedStrings_nodup _ structural.1.1.1.1.1.1.2
-  have placeValuesNodup := strictlySortedStrings_nodup _ structural.1.1.1.1.1.1.1.2
+  have operationValuesNodup := strictlySortedStrings_nodup _
+    (programWellFormed_operationIdsSorted program structural)
+  have placeValuesNodup := strictlySortedStrings_nodup _
+    (programWellFormed_controlPlaceIdsSorted program structural)
   have operationIdsUnique : (program.operations.map (fun operation => operation.id)).Nodup :=
     nodup_of_value_nodup _ (fun operationId => operationId.value) (by
       rw [List.map_map]
@@ -415,7 +416,8 @@ private theorem sharedParallelProgramAccount_of_admission (program : Program)
   obtain ⟨ownerScope, inputDeclared, timerDeclared, normalDeclared, entryScope, _, inputOwner,
       timerOwner, normalOwner, inputDeclaration, timerDeclaration, normalDeclaration⟩ :=
     programGraphWellFormed_pairedOperationControlPlaceScopes program entryOperation
-      completionOperation arm structural.2 operationIdsUnique placeIdsUnique entryMember
+      completionOperation arm (programWellFormed_graph program structural) operationIdsUnique
+      placeIdsUnique entryMember
       completionMember projects paired completionLookup
   have entryOwner : operationOwningScope? program arm.id = some ownerScope := by
     unfold operationOwningScope?

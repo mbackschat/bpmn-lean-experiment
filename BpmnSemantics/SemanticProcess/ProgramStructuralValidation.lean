@@ -58,6 +58,69 @@ private def placeHasOrigin (places : List ControlPlace)
 private def sortedDistinctPlaceIds (ids : List ControlPlaceId) : Bool :=
   strictlySortedStrings (ids.map fun id => id.value)
 
+/-- Runtime wait families whose element identities must resolve to one declaring operation. -/
+inductive WaitDeclarationFamily where
+  | userTask
+  | message
+  | timer
+  | effect
+  deriving Repr, DecidableEq
+
+/-- A family-tagged BPMN element identity used by Program admission to preserve declarer
+uniqueness across lowering. The family tag deliberately permits different wait kinds to reuse the
+same BPMN identifier while preventing two operations from declaring the same runtime wait. -/
+structure WaitDeclarationKey where
+  family : WaitDeclarationFamily
+  elementId : String
+  deriving Repr, DecidableEq
+
+def userTaskWaitDeclarationKey (taskId : TaskDefinitionId) : WaitDeclarationKey :=
+  { family := .userTask, elementId := taskId.value }
+
+def messageWaitDeclarationKey (elementId : NodeId) : WaitDeclarationKey :=
+  { family := .message, elementId := elementId.value }
+
+def timerWaitDeclarationKey (elementId : NodeId) : WaitDeclarationKey :=
+  { family := .timer, elementId := elementId.value }
+
+def effectWaitDeclarationKey (elementId : NodeId) : WaitDeclarationKey :=
+  { family := .effect, elementId := elementId.value }
+
+/-- Every runtime wait identity one operation may declare. Multi-surface operations contribute one
+key per family because runtime well-formedness validates each wait family independently. -/
+def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
+  | .awaitUserTask _ _ _ _ task => [userTaskWaitDeclarationKey task.id]
+  | .awaitBoundedUserTask _ _ _ task boundaryTimer
+  | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
+      [userTaskWaitDeclarationKey task.id,
+        timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundaryTimer _ =>
+      [userTaskWaitDeclarationKey task.id,
+        timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitParallelMultiInstanceUserTask _ _ _ taskId _ _ _ boundaryTimer _ _ =>
+      [userTaskWaitDeclarationKey taskId,
+        timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitMessage _ _ _ _ message => [messageWaitDeclarationKey message.elementId]
+  | .awaitTimer _ _ _ _ timer => [timerWaitDeclarationKey timer.elementId]
+  | .enterBoundedScope _ _ _ _ _ boundaryTimer =>
+      [timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitEventRace _ _ _ message timer =>
+      [messageWaitDeclarationKey message.elementId,
+        timerWaitDeclarationKey timer.elementId]
+  | .awaitEffect _ origin _ _ _ _ => [effectWaitDeclarationKey origin.elementId]
+  | _ => []
+
+def operationDeclaresWaitKey (operation : SemanticOperation)
+    (key : WaitDeclarationKey) : Bool :=
+  (operationWaitDeclarationKeys operation).contains key
+
+/-- Every wait identity declared by the Program resolves to exactly one operation. This preserves
+the checked-source global node-identity invariant at the standalone Program admission boundary. -/
+def programWaitDeclarersUnique (operations : List SemanticOperation) : Bool :=
+  operations.all fun operation =>
+    (operationWaitDeclarationKeys operation).all fun key =>
+      decide ((operations.filter fun candidate => operationDeclaresWaitKey candidate key).length = 1)
+
 private def wellFormedBpmnErrorRoute (places : List ControlPlace)
     (route : Option BpmnErrorRoute) : Bool :=
   match route with
@@ -375,21 +438,86 @@ def programWellFormed (program : Program) : Bool :=
     inclusiveOperationsPaired program.operations &&
     callOperationsPaired program &&
     (program.operations.filter isInitiate).length = 1 &&
-    programGraphWellFormed program
+    programGraphWellFormed program &&
+    programWaitDeclarersUnique program.operations
+
+/-- Structural admission keeps control-place identifiers in canonical duplicate-free order. -/
+theorem programWellFormed_controlPlaceIdsSorted (program : Program)
+    (valid : programWellFormed program = true) :
+    strictlySortedStrings (program.controlPlaces.map fun place => place.id.value) = true := by
+  simp only [programWellFormed, Bool.and_eq_true] at valid
+  grind
+
+/-- Structural admission keeps operation identifiers in canonical duplicate-free order. -/
+theorem programWellFormed_operationIdsSorted (program : Program)
+    (valid : programWellFormed program = true) :
+    strictlySortedStrings (program.operations.map fun operation => operation.id.value) = true := by
+  simp only [programWellFormed, Bool.and_eq_true] at valid
+  grind
+
+/-- Structural admission validates every operation against the complete Program context. -/
+theorem programWellFormed_operations (program : Program)
+    (valid : programWellFormed program = true) :
+    program.operations.all (operationWellFormed program program.controlPlaces) = true := by
+  simp only [programWellFormed, Bool.and_eq_true] at valid
+  grind
+
+/-- Structural admission includes the complete graph invariant. -/
+theorem programWellFormed_graph (program : Program) (valid : programWellFormed program = true) :
+    programGraphWellFormed program = true := by
+  simp only [programWellFormed, Bool.and_eq_true] at valid
+  grind
+
+/-- Structural admission resolves every declared wait key to its one declaring operation. -/
+theorem programWellFormed_waitDeclarer (program : Program) (operation : SemanticOperation)
+    (key : WaitDeclarationKey) (valid : programWellFormed program = true)
+    (member : operation ∈ program.operations)
+    (declares : operationDeclaresWaitKey operation key = true) :
+    program.operations.filter (fun candidate => operationDeclaresWaitKey candidate key) =
+      [operation] := by
+  simp only [programWellFormed, Bool.and_eq_true] at valid
+  have unique := List.all_eq_true.mp (by grind : programWaitDeclarersUnique program.operations = true)
+    operation member
+  simp only [List.all_eq_true] at unique
+  have keyMember : key ∈ operationWaitDeclarationKeys operation := by
+    simpa [operationDeclaresWaitKey] using declares
+  have lengthOne := unique key keyMember
+  simp only [decide_eq_true_eq] at lengthOne
+  obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp lengthOne
+  have operationFiltered : operation ∈
+      program.operations.filter (fun candidate => operationDeclaresWaitKey candidate key) :=
+    List.mem_filter.mpr ⟨member, declares⟩
+  rw [singleton] at operationFiltered
+  have operationEq : operation = sole := by simpa using operationFiltered
+  simpa [operationEq] using singleton
+
+/-- Two distinct operations cannot declare the same family-tagged runtime wait in an admitted
+Program. This is the class-level rejection theorem for ordinary, bounded, Sequential MI, Parallel
+MI, Event Race, and Effect declarer collisions. -/
+theorem programWellFormed_rejects_waitDeclarerCollision (program : Program)
+    (left right : SemanticOperation) (key : WaitDeclarationKey)
+    (leftMember : left ∈ program.operations) (rightMember : right ∈ program.operations)
+    (different : left ≠ right) (leftDeclares : operationDeclaresWaitKey left key = true)
+    (rightDeclares : operationDeclaresWaitKey right key = true) :
+    programWellFormed program = false := by
+  apply Bool.eq_false_iff.mpr
+  intro valid
+  have leftOnly := programWellFormed_waitDeclarer program left key valid leftMember leftDeclares
+  have rightOnly := programWellFormed_waitDeclarer program right key valid rightMember rightDeclares
+  rw [leftOnly] at rightOnly
+  exact different (by simpa using rightOnly)
 
 /-- Every structurally admitted Program has an acyclic, parent-complete definition-scope forest. -/
 theorem programWellFormed_scopeForest (program : Program)
     (valid : programWellFormed program = true) :
     scopeForestWellFormed program = true := by
-  simp only [programWellFormed, Bool.and_eq_true] at valid
-  exact programGraphWellFormed_scopeForest program valid.2
+  exact programGraphWellFormed_scopeForest program (programWellFormed_graph program valid)
 
 private theorem operationWellFormed_of_programWellFormed (program : Program)
     (operation : SemanticOperation) (valid : programWellFormed program = true)
     (member : operation ∈ program.operations) :
     operationWellFormed program program.controlPlaces operation = true := by
-  simp only [programWellFormed, Bool.and_eq_true] at valid
-  exact List.all_eq_true.mp valid.1.1.1.1.2 operation member
+  exact List.all_eq_true.mp (programWellFormed_operations program valid) operation member
 
 /-- Every admitted Effect operation uses one BPMN element identity for its origin and definition. -/
 theorem programWellFormed_awaitEffect_elements_align (program : Program)

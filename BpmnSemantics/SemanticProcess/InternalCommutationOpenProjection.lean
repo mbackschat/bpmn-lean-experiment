@@ -382,8 +382,7 @@ private theorem exactProgramSelection_parts (program : Program)
         | cons other tail => simp at selected
   have idsSorted : strictlySortedStrings
       (program.operations.map fun candidate => candidate.id.value) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at programValid
-    exact programValid.1.1.1.1.1.1.2
+    exact programWellFormed_operationIdsSorted program programValid
   have idsNodup := strictlySortedStrings_nodup _ idsSorted
   have operationSelection : program.operations.filter
       (fun candidate => decide (candidate.id = operation.id)) = [operation] :=

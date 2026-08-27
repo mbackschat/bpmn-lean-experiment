@@ -57,8 +57,7 @@ theorem internalTransitionRecord_prepared (program : Program) (state : RuntimeSt
         | cons other tail => simp at selection
   have idsSorted : strictlySortedStrings
       (program.operations.map fun candidate => candidate.id.value) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at programAdmitted
-    exact programAdmitted.1.1.1.1.1.1.2
+    exact programWellFormed_operationIdsSorted program programAdmitted
   have idsNodup := strictlySortedStrings_nodup _ idsSorted
   have selectedById : program.operations.filter
       (fun candidate => decide (candidate.id = patch.operation.id)) = [patch.operation] :=
