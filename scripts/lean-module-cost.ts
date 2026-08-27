@@ -27,6 +27,7 @@ export type LeanModuleCostRow = DeepReadonly<{
   module: string;
   peakResidentKib: number;
   elapsedSeconds: number;
+  measuredAtCommit?: string;
 }>;
 
 export type LeanModuleCostProvenance = DeepReadonly<{
@@ -52,8 +53,13 @@ export type LeanModuleCostRecord = DeepReadonly<{
 
 /** The subset of a record the ratchet compares against, and all it needs. */
 export type LeanModuleCostBaseline = DeepReadonly<{
+  measurements: readonly (readonly [string, number, string])[];
+}>;
+
+export type LeanModuleMeasurementSourceMismatch = DeepReadonly<{
+  module: string;
   measuredAtCommit: string;
-  peakResidentKib: readonly (readonly [string, number])[];
+  reason: string;
 }>;
 
 export const leanModuleCostViolationKinds = {
@@ -61,7 +67,8 @@ export const leanModuleCostViolationKinds = {
   duplicateRow: "duplicate-row",
   missingRow: "missing-row",
   unknownRow: "unknown-row",
-  raisedWithoutRemeasurement: "raised-without-remeasurement",
+  changedWithoutRemeasurement: "changed-without-remeasurement",
+  measurementSourceMismatch: "measurement-source-mismatch",
   undisclosedNearCap: "undisclosed-near-cap",
   staleNearCapDisclosure: "stale-near-cap-disclosure",
 } as const;
@@ -72,11 +79,17 @@ export type LeanModuleCostViolation = DeepReadonly<
   | { kind: "missing-row"; module: string }
   | { kind: "unknown-row"; module: string }
   | {
-      kind: "raised-without-remeasurement";
+      kind: "changed-without-remeasurement";
       module: string;
       baselineKib: number;
       recordedKib: number;
       measuredAtCommit: string;
+    }
+  | {
+      kind: "measurement-source-mismatch";
+      module: string;
+      measuredAtCommit: string;
+      reason: string;
     }
   | { kind: "undisclosed-near-cap"; module: string; recordedKib: number; thresholdKib: number }
   | { kind: "stale-near-cap-disclosure"; module: string; thresholdKib: number }
@@ -171,7 +184,12 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance", peakResidentKib: 831764, elapsedSeconds: 3.6 },
     { module: "BpmnSemantics.SemanticProcess.CyclicControlFlowStepCompletenessConformance", peakResidentKib: 808416, elapsedSeconds: 3.3 },
     { module: "BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformance", peakResidentKib: 772200, elapsedSeconds: 1.4 },
-    { module: "BpmnSemantics.SemanticProcessJsonConformance", peakResidentKib: 659200, elapsedSeconds: 1.0 },
+    {
+      module: "BpmnSemantics.SemanticProcessJsonConformance",
+      peakResidentKib: 673176,
+      elapsedSeconds: 0.6,
+      measuredAtCommit: "8361c2db",
+    },
     { module: "BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance", peakResidentKib: 646452, elapsedSeconds: 0.7 },
     { module: "BpmnSemantics.ActivityIssuingDisciplineConformance", peakResidentKib: 614068, elapsedSeconds: 0.8 },
     { module: "BpmnSemantics.Conformance", peakResidentKib: 508576, elapsedSeconds: 0.3 },
@@ -179,10 +197,19 @@ export const leanModuleCostRecord = {
   ],
 } as const satisfies LeanModuleCostRecord;
 
+export function measurementCommitFor(
+  record: LeanModuleCostRecord,
+  row: LeanModuleCostRow,
+): string {
+  return row.measuredAtCommit ?? record.provenance.measuredAtCommit;
+}
+
 export function leanModuleCostBaseline(record: LeanModuleCostRecord): LeanModuleCostBaseline {
   return {
-    measuredAtCommit: record.provenance.measuredAtCommit,
-    peakResidentKib: record.rows.map((row) => [row.module, row.peakResidentKib] as const),
+    measurements: record.rows.map(
+      (row) =>
+        [row.module, row.peakResidentKib, measurementCommitFor(record, row)] as const,
+    ),
   };
 }
 
@@ -259,35 +286,55 @@ function completenessViolations(
 }
 
 /**
- * Rejects a recorded figure raised above its baseline under the same
+ * Rejects any recorded figure changed from its baseline under the same
  * measurement commit.
  *
- * Only an upward move is a violation. A lowered figure understates cost and
- * cannot manufacture the headroom that precedes an `exit 137`, which is the
- * hazard this ratchet exists to catch.
+ * A lowered figure can hide a near-cap module just as an inflated figure can
+ * misstate its cost. Either direction therefore requires a new immutable
+ * measurement target.
  */
 function ratchetViolations(
   record: LeanModuleCostRecord,
   baseline: LeanModuleCostBaseline | null,
 ): LeanModuleCostViolation[] {
-  if (baseline === null || baseline.measuredAtCommit !== record.provenance.measuredAtCommit) {
+  if (baseline === null) {
     return [];
   }
-  const baselineKib = new Map(baseline.peakResidentKib.map(([module, kib]) => [module, kib]));
+  const baselineMeasurements = new Map(
+    baseline.measurements.map(([module, kib, measuredAtCommit]) => [
+      module,
+      { kib, measuredAtCommit },
+    ]),
+  );
   const violations: LeanModuleCostViolation[] = [];
   for (const row of record.rows) {
-    const previous = baselineKib.get(row.module);
-    if (previous !== undefined && row.peakResidentKib > previous) {
+    const previous = baselineMeasurements.get(row.module);
+    const measuredAtCommit = measurementCommitFor(record, row);
+    if (
+      previous !== undefined &&
+      previous.measuredAtCommit === measuredAtCommit &&
+      row.peakResidentKib !== previous.kib
+    ) {
       violations.push({
-        kind: "raised-without-remeasurement",
+        kind: "changed-without-remeasurement",
         module: row.module,
-        baselineKib: previous,
+        baselineKib: previous.kib,
         recordedKib: row.peakResidentKib,
-        measuredAtCommit: record.provenance.measuredAtCommit,
+        measuredAtCommit,
       });
     }
   }
   return violations;
+}
+
+function measurementSourceViolations(
+  mismatches: readonly LeanModuleMeasurementSourceMismatch[],
+): LeanModuleCostViolation[] {
+  return [...mismatches]
+    .sort((left, right) =>
+      left.module < right.module ? -1 : left.module > right.module ? 1 : 0,
+    )
+    .map((mismatch) => ({ kind: "measurement-source-mismatch" as const, ...mismatch }));
 }
 
 function disclosureViolations(record: LeanModuleCostRecord): LeanModuleCostViolation[] {
@@ -322,11 +369,13 @@ export function leanModuleCostViolations(
     record: LeanModuleCostRecord;
     baseline: LeanModuleCostBaseline | null;
     trackedModules: readonly string[];
+    measurementSourceMismatches: readonly LeanModuleMeasurementSourceMismatch[];
   }>,
 ): LeanModuleCostViolation[] {
   return [
     ...provenanceViolations(comparison.record.provenance),
     ...completenessViolations(comparison.record, comparison.trackedModules),
+    ...measurementSourceViolations(comparison.measurementSourceMismatches),
     ...ratchetViolations(comparison.record, comparison.baseline),
     ...disclosureViolations(comparison.record),
   ];
@@ -342,8 +391,10 @@ export function formatLeanModuleCostViolation(violation: LeanModuleCostViolation
       return `${violation.module} is a tracked conformance module with no recorded row`;
     case "unknown-row":
       return `${violation.module} has a recorded row but is not a tracked conformance module`;
-    case "raised-without-remeasurement":
-      return `${violation.module} was raised from ${violation.baselineKib} to ${violation.recordedKib} KiB while provenance still records measuredAtCommit ${violation.measuredAtCommit}`;
+    case "changed-without-remeasurement":
+      return `${violation.module} changed from ${violation.baselineKib} to ${violation.recordedKib} KiB while its measurement target remains ${violation.measuredAtCommit}`;
+    case "measurement-source-mismatch":
+      return `${violation.module} does not match measurement target ${violation.measuredAtCommit}: ${violation.reason}`;
     case "undisclosed-near-cap":
       return `${violation.module} at ${violation.recordedKib} KiB is at or above the ${violation.thresholdKib} KiB near-cap threshold and is absent from nearCapModules`;
     case "stale-near-cap-disclosure":

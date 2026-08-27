@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -12,10 +12,12 @@ import {
   leanModuleCostBaseline,
   leanModuleCostRecord,
   leanModuleCostViolations,
+  measurementCommitFor,
   nearCapThresholdKib,
   type LeanModuleCostBaseline,
   type LeanModuleCostRecord,
   type LeanModuleCostViolation,
+  type LeanModuleMeasurementSourceMismatch,
 } from "./lean-module-cost.ts";
 
 const recordPath = "scripts/lean-module-cost.ts";
@@ -63,7 +65,8 @@ function narrowBaseline(loaded: unknown): LeanModuleCostBaseline {
   ) {
     throw new TypeError(`${recordPath} at HEAD carries no readable cost baseline`);
   }
-  const peakResidentKib = previous.rows.map((row: unknown): readonly [string, number] => {
+  const defaultMeasuredAtCommit = previous.provenance.measuredAtCommit;
+  const measurements = previous.rows.map((row: unknown): readonly [string, number, string] => {
     if (
       row === null ||
       typeof row !== "object" ||
@@ -74,9 +77,41 @@ function narrowBaseline(loaded: unknown): LeanModuleCostBaseline {
     ) {
       throw new TypeError(`${recordPath} at HEAD carries an unreadable row`);
     }
-    return [row.module, row.peakResidentKib];
+    const measuredAtCommit =
+      "measuredAtCommit" in row && typeof row.measuredAtCommit === "string"
+        ? row.measuredAtCommit
+        : defaultMeasuredAtCommit;
+    return [row.module, row.peakResidentKib, measuredAtCommit];
   });
-  return { measuredAtCommit: previous.provenance.measuredAtCommit, peakResidentKib };
+  return { measurements };
+}
+
+function moduleSourcePath(module: string): string {
+  return `${module.replaceAll(".", "/")}.lean`;
+}
+
+function measurementSourceMismatches(
+  record: LeanModuleCostRecord,
+): LeanModuleMeasurementSourceMismatch[] {
+  return record.rows.flatMap((row) => {
+    const sourcePath = moduleSourcePath(row.module);
+    if (!existsSync(sourcePath)) {
+      return [];
+    }
+    const measuredAtCommit = measurementCommitFor(record, row);
+    let measuredSource: string;
+    try {
+      measuredSource = execFileSync("git", ["show", `${measuredAtCommit}:${sourcePath}`], {
+        encoding: "utf8",
+        maxBuffer: 8 * 1024 * 1024,
+      });
+    } catch {
+      return [{ module: row.module, measuredAtCommit, reason: "source is unavailable" }];
+    }
+    return measuredSource === readFileSync(sourcePath, "utf8")
+      ? []
+      : [{ module: row.module, measuredAtCommit, reason: "source bytes changed" }];
+  });
 }
 
 /**
@@ -133,6 +168,7 @@ test("every tracked conformance module has exactly one recorded, ratcheted, disc
         record: leanModuleCostRecord,
         baseline: await committedBaseline(),
         trackedModules: trackedConformanceModules(),
+        measurementSourceMismatches: measurementSourceMismatches(leanModuleCostRecord),
       }),
     ),
     [],
@@ -153,6 +189,7 @@ test("a conformance module with no recorded row fails completeness", () => {
         record: leanModuleCostRecord,
         baseline: selfBaseline,
         trackedModules: [...recordedModules, "BpmnSemantics.NewlyAddedConformance"],
+        measurementSourceMismatches: [],
       }),
     ),
     ["BpmnSemantics.NewlyAddedConformance is a tracked conformance module with no recorded row"],
@@ -168,6 +205,7 @@ test("a recorded row for a module that no longer exists fails completeness", () 
         trackedModules: recordedModules.filter(
           (module) => module !== "BpmnSemantics.ReceiveTaskConformance",
         ),
+        measurementSourceMismatches: [],
       }),
     ),
     [
@@ -176,7 +214,7 @@ test("a recorded row for a module that no longer exists fails completeness", () 
   );
 });
 
-test("a recorded peak raised under an unchanged measurement commit fails the ratchet", () => {
+test("a recorded peak changed under an unchanged measurement commit fails the ratchet", () => {
   const raised = withRows((row) =>
     row.module === "BpmnSemantics.MessageStartConformance"
       ? { ...row, peakResidentKib: row.peakResidentKib + 1 }
@@ -188,19 +226,70 @@ test("a recorded peak raised under an unchanged measurement commit fails the rat
         record: raised,
         baseline: selfBaseline,
         trackedModules: recordedModules,
+        measurementSourceMismatches: [],
       }),
     ),
     [
-      "BpmnSemantics.MessageStartConformance was raised from 3414952 to 3414953 KiB while provenance still records measuredAtCommit d878f38e",
+      "BpmnSemantics.MessageStartConformance changed from 3414952 to 3414953 KiB while its measurement target remains d878f38e",
     ],
   );
   assert.deepEqual(
     leanModuleCostViolations({
       record: raised,
-      baseline: { ...selfBaseline, measuredAtCommit: "0bfccf53" },
+      baseline: {
+        measurements: selfBaseline.measurements.map(([module, kib, commit]) =>
+          module === "BpmnSemantics.MessageStartConformance"
+            ? [module, kib, "0bfccf53"]
+            : [module, kib, commit],
+        ),
+      },
       trackedModules: recordedModules,
+      measurementSourceMismatches: [],
     }),
     [],
+  );
+});
+
+test("lowering a recorded peak without a new measurement target also fails the ratchet", () => {
+  const lowered = withRows((row) =>
+    row.module === "BpmnSemantics.MessageStartConformance"
+      ? { ...row, peakResidentKib: row.peakResidentKib - 1 }
+      : row,
+  );
+  assert.deepEqual(
+    messages(
+      leanModuleCostViolations({
+        record: lowered,
+        baseline: selfBaseline,
+        trackedModules: recordedModules,
+        measurementSourceMismatches: [],
+      }),
+    ),
+    [
+      "BpmnSemantics.MessageStartConformance changed from 3414952 to 3414951 KiB while its measurement target remains d878f38e",
+    ],
+  );
+});
+
+test("a source changed after its measurement target fails source binding", () => {
+  assert.deepEqual(
+    messages(
+      leanModuleCostViolations({
+        record: leanModuleCostRecord,
+        baseline: selfBaseline,
+        trackedModules: recordedModules,
+        measurementSourceMismatches: [
+          {
+            module: "BpmnSemantics.SemanticProcessJsonConformance",
+            measuredAtCommit: "d878f38e",
+            reason: "source bytes changed",
+          },
+        ],
+      }),
+    ),
+    [
+      "BpmnSemantics.SemanticProcessJsonConformance does not match measurement target d878f38e: source bytes changed",
+    ],
   );
 });
 
@@ -215,8 +304,15 @@ test("a module crossing the near-cap threshold fails an unchanged disclosure", (
     messages(
       leanModuleCostViolations({
         record: remeasured,
-        baseline: { ...selfBaseline, measuredAtCommit: "0bfccf53" },
+        baseline: {
+          measurements: selfBaseline.measurements.map(([module, kib, commit]) =>
+            module === "BpmnSemantics.SemanticProcessAdmissionConformance"
+              ? [module, kib, "0bfccf53"]
+              : [module, kib, commit],
+          ),
+        },
         trackedModules: recordedModules,
+        measurementSourceMismatches: [],
       }),
     ),
     [
@@ -235,6 +331,7 @@ test("an empty provenance field fails completeness of the measurement account", 
         },
         baseline: selfBaseline,
         trackedModules: recordedModules,
+        measurementSourceMismatches: [],
       }),
     ),
     ["provenance field containerImageId is empty"],
