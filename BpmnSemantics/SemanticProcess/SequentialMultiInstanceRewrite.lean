@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 import BpmnSemantics.SemanticProcess.WaitActivation
@@ -124,23 +125,14 @@ lookup would silently pick the wrong binding from the first natural completion o
 
 /-- Bytes one item contributes to a canonical JSON array, its framing quotes included. -/
 def jsonArrayItemUtf8Bytes (item : String) : Nat :=
-  item.utf8ByteSize + 2
+  canonicalJsonStringUtf8Bytes item
 
 /-- Canonical byte size of the collection, as its JSON array encoding.
 
-Exact for every collection whose items contain no `"`, no `\`, and no character below `U+0020`, and an
-undercount otherwise, because JSON escaping expands exactly those and this measure does not model it.
-The escape-aware measure is what the independently written core computes, and it is deliberately not
-written here: reaching a `String`'s characters decodes its byte array, which the kernel does not
-reduce, so a faithful model would make every decided fixture in this family unreducible, while an
-unfaithful one hidden behind the same name would be worse. The residual disagreement is one class, an
-escape-bearing collection near the byte bound that this side admits and the core refuses, and it is
-recorded as an open cross-target lane rather than claimed as agreement. -/
-def canonicalCollectionUtf8Bytes : List String → Nat
-  | [] => 2
-  | first :: rest =>
-      rest.foldl (fun total item => total + jsonArrayItemUtf8Bytes item + 1)
-        (jsonArrayItemUtf8Bytes first) + 2
+This public family name delegates to the shared escape-aware measure, keeping existing callers stable
+while sequential and parallel Multi-Instance use one algorithm. -/
+def canonicalCollectionUtf8Bytes (items : List String) : Nat :=
+  canonicalJsonStringCollectionUtf8Bytes items
 
 /-- Whether a collection fits every profile bound. Item count is tested first, so a refusal for count
 alone never pays for the byte measures.

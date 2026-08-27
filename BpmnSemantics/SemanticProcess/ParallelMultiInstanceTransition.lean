@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
@@ -19,13 +20,10 @@ namespace BpmnSemantics.SemanticProcess
 open BpmnSemantics
 
 def parallelJsonArrayItemUtf8Bytes (item : String) : Nat :=
-  item.utf8ByteSize + 2
+  canonicalJsonStringUtf8Bytes item
 
-def parallelCanonicalCollectionUtf8Bytes : List String → Nat
-  | [] => 2
-  | first :: rest =>
-      rest.foldl (fun total item => total + parallelJsonArrayItemUtf8Bytes item + 1)
-        (parallelJsonArrayItemUtf8Bytes first) + 2
+def parallelCanonicalCollectionUtf8Bytes (items : List String) : Nat :=
+  canonicalJsonStringCollectionUtf8Bytes items
 
 def withinParallelMultiInstanceLimits (arm : ParallelMultiInstanceArm)
     (items : List String) : Bool :=

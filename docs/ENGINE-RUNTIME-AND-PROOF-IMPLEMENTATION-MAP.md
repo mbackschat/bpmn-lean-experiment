@@ -119,7 +119,8 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 - the public outer `ActivityOccurrenceId` is unchanged, and its Activity non-reissue premise is implemented
 - the Temporal host class owns the exact isolated managed operation, joins its Activity record to one controller, active body, and attached lifetime Timer, preserves that semantic Timer identity through turnover, and blocks Continue-As-New while any managed boundary-deadline Timer is armed
 - natural and interrupted direct-VM and live production witnesses prove exact registration, pre-arming rollover, one lifetime Timer, Worker replacement, accepted-result recovery, stale-task refusal, final ordered output or interrupted output absence, E1/E2 occurrence accounting, terminal receipt equality, capacity comparison, and replay of every Run
-- **absent:** quantified four-arm well-formedness preservation and a JSON-escape-aware Lean byte measure. One decided preservation instance and Lean's known undercount remain open cross-target lanes rather than evidence of agreement
+- Lean and TypeScript now share exact escape-aware Multi-Instance collection bounds, with small entry and final refusal witnesses
+- **absent:** quantified four-arm well-formedness preservation; its decided instance is not general
 - two listed mutations were measured and narrowed. A per-iteration deadline reset is separable only when it mints a fresh Timer occurrence, because no logical time elapses across an iteration boundary; index-versus-completion aggregation order is not separable at all under a profile with one active instance, and a slot defect is the retained oracle in its place
 
 ### Runtime scoped data

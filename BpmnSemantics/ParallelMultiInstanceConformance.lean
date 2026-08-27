@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Parallel Multi-Instance conformance
 
@@ -123,11 +124,15 @@ theorem third_slot_completion_preserves_index_and_derived_counts :
 def arm? : Option ParallelMultiInstanceArm :=
   ParallelMultiInstanceArm.ofOperation? entryOperation
 
-def preEntryWith (completionPolicy : String) : ParallelMultiInstanceRuntimeState :=
+def preEntryItemsWith (items : List String)
+    (completionPolicy : String) : ParallelMultiInstanceRuntimeState :=
   emptyParallelMultiInstanceRuntimeState ⟨"ParallelMultiInstance_Foundation"⟩
     [ { name := "DataObjectReference_InputItems"
-        value := .stringList ["Invoice_1", "Invoice_2", "Invoice_3"] }
+        value := .stringList items }
     , { name := "completionPolicy", value := .string completionPolicy } ]
+
+def preEntryWith (completionPolicy : String) : ParallelMultiInstanceRuntimeState :=
+  preEntryItemsWith ["Invoice_1", "Invoice_2", "Invoice_3"] completionPolicy
 
 def enteredWith (completionPolicy : String) : Option ParallelMultiInstanceRuntimeState := do
   let arm ← arm?
@@ -252,6 +257,33 @@ theorem stale_duplicate_and_wrong_owner_refuse :
 /-- Equal first-policy terminal states do not erase the command-addressed lifecycle distinction. -/
 theorem first_policy_order_is_a_trace_non_law :
     afterThirdFirst? = afterFirstFirst? ∧ thirdFirstDelta? ≠ firstFirstDelta? := by
+  decide +kernel
+
+private def escapeClassCollection : List String :=
+  ["\"", "\\", "\u0008", "\u0001"]
+
+private def escapeClassResult : String :=
+  "\"\\\u0008\u0001"
+
+/-- Parallel entry uses the shared canonical JSON measure and counts quote, backslash, named-control,
+and other-control expansion at the tightened seventeen-byte boundary. -/
+theorem every_escape_class_is_counted_at_parallel_entry :
+    (do
+      let arm ← arm?
+      enterParallelMultiInstance?
+        { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 17 } }
+        (preEntryItemsWith escapeClassCollection "all")) = none := by
+  decide +kernel
+
+/-- Parallel natural completion counts the same four escape classes at its final publication
+boundary. The obsolete raw candidate is thirty-four bytes and exact JSON is forty-two. -/
+theorem every_escape_class_is_counted_at_the_final_parallel_candidate_boundary :
+    (do
+      let arm ← arm?
+      let state ← afterFirstAll?
+      completeParallelMultiInstance?
+        { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 34 } }
+        state (taskId 2) (submittedResult escapeClassResult)) = none := by
   decide +kernel
 
 end BpmnSemantics.ParallelMultiInstanceConformance

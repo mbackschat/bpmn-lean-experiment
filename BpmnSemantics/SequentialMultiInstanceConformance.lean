@@ -471,22 +471,25 @@ private def maximalOutputCollection (result : String) : List String :=
 /-- Sixteen results at the profile's own item bound cross its canonical collection bound.
 
 The case the output-side bound exists for, at the profile's declared numbers rather than at the
-tightened ones the refusals below use. Stated over an arbitrary maximal result so it needs no
-five-hundred-and-twelve-byte literal, which every decided fixture in this module would otherwise
-reduce: sixteen items are exactly `maximumItems`, each is exactly `maximumItemUtf8Bytes`, and their
-canonical array measures 8241 against a declared 8192. Entry admits such a snapshot, every submitted
-result is individually admissible, and the collection is over the bound only once the last slot is
-filled, which is why an entry-side or item-only measure cannot refuse it. -/
+tightened ones the refusals below use. Stated over an arbitrary maximal escape-free result so it needs
+no five-hundred-and-twelve-byte literal: sixteen items are exactly `maximumItems`, each is exactly
+`maximumItemUtf8Bytes`, and their canonical array measures 8241 against a declared 8192. Entry admits
+such a snapshot, every submitted result is individually admissible, and the collection is over the
+bound only once the last slot is filled, which is why an entry-side or item-only measure cannot refuse
+it. -/
 theorem sixteen_results_at_the_item_byte_bound_cross_the_canonical_collection_bound
-    (result : String) (maximal : result.utf8ByteSize = profileLimits.maximumItemUtf8Bytes) :
-    (maximalOutputCollection result).length = profileLimits.maximumItems ∧
+    (result : String) (maximal : result.utf8ByteSize = profileLimits.maximumItemUtf8Bytes)
+    (canonical : canonicalJsonStringUtf8Bytes result =
+      profileLimits.maximumItemUtf8Bytes + 2) :
+    result.utf8ByteSize = profileLimits.maximumItemUtf8Bytes ∧
+      (maximalOutputCollection result).length = profileLimits.maximumItems ∧
       canonicalCollectionUtf8Bytes (maximalOutputCollection result) = 8241 ∧
       profileLimits.maximumCanonicalCollectionUtf8Bytes <
         canonicalCollectionUtf8Bytes (maximalOutputCollection result) := by
-  simp only [profileLimits] at maximal
-  refine ⟨rfl, ?_, ?_⟩ <;>
-    simp only [maximalOutputCollection, canonicalCollectionUtf8Bytes, jsonArrayItemUtf8Bytes,
-      List.foldl_cons, List.foldl_nil, profileLimits] <;>
+  refine ⟨maximal, rfl, ?_, ?_⟩ <;>
+    simp only [maximalOutputCollection, canonicalCollectionUtf8Bytes,
+      canonicalJsonStringCollectionUtf8Bytes, canonical, List.foldl_cons, List.foldl_nil,
+      profileLimits] <;>
     omega
 
 /-- `SMI-REFUSE-01`, non-final arm: a result whose candidate output collection crosses the canonical
@@ -565,6 +568,66 @@ theorem the_canonical_collection_measure_counts_its_json_array_encoding :
     (canonicalCollectionUtf8Bytes [], canonicalCollectionUtf8Bytes ["a"],
         canonicalCollectionUtf8Bytes ["a", "b"], canonicalCollectionUtf8Bytes batch) =
       (2, 5, 9, 37) := by
+  decide +kernel
+
+/-! ## Canonical JSON escape accounting
+
+These fixtures separate raw UTF-8 size from the bytes JavaScript `JSON.stringify` emits. The profile
+keeps its raw per-item bound, while its collection bound measures the complete escaped JSON array.
+-/
+
+/-- Quotes, backslashes, named controls, other controls, and ordinary non-ASCII scalars take their
+exact canonical JSON byte sizes, framing quotes included. -/
+theorem the_shared_json_measure_accounts_for_every_escape_class :
+    (canonicalJsonStringUtf8Bytes "\"", canonicalJsonStringUtf8Bytes "\\",
+        canonicalJsonStringUtf8Bytes "\u0008", canonicalJsonStringUtf8Bytes "\u000c",
+        canonicalJsonStringUtf8Bytes "\n", canonicalJsonStringUtf8Bytes "\r",
+        canonicalJsonStringUtf8Bytes "\t", canonicalJsonStringUtf8Bytes "\u0001",
+        canonicalJsonStringUtf8Bytes "é") =
+      (4, 4, 4, 4, 4, 4, 4, 8, 4) := by
+  decide +kernel
+
+/-- Pure arithmetic for the full-profile quote-expansion counterexample. No fixture constructs the
+eight-thousand-character collection: sixteen 508-byte quote strings are inside the item limit and
+measure 8177 under the obsolete raw formula, while exact JSON escaping measures 16305. -/
+theorem quote_expansion_separates_the_raw_and_canonical_collection_bounds :
+    508 ≤ profileLimits.maximumItemUtf8Bytes ∧
+      16 = profileLimits.maximumItems ∧
+      16 * (508 + 2) + 15 + 2 = 8177 ∧
+      8177 ≤ profileLimits.maximumCanonicalCollectionUtf8Bytes ∧
+      16 * (2 * 508 + 2) + 15 + 2 = 16305 ∧
+      profileLimits.maximumCanonicalCollectionUtf8Bytes < 16305 := by
+  decide +kernel
+
+private def escapeClassCollection : List String :=
+  ["\"", "\\", "\u0008", "\u0001"]
+
+/-- Entry refuses a small collection that the obsolete raw measure puts at seventeen bytes while
+exact quote, backslash, named-control, and other-control escaping puts it at twenty-five. -/
+theorem every_escape_class_is_counted_at_entry :
+    (do
+      let arm ← arm?
+      let state ← preEntryWith escapeClassCollection
+      enterSequentialMultiInstance?
+        { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 17 } }
+        state) = none := by
+  decide +kernel
+
+private def escapeClassResult : String :=
+  "\"\\\u0008\u0001"
+
+/-- The same four escape classes gate the final candidate before publication. Its obsolete raw
+measure is thirty-four bytes and its exact JSON measure is forty-two. -/
+theorem every_escape_class_is_counted_at_the_final_candidate_boundary :
+    (do
+      let arm ← arm?
+      let state ← afterSecondResult?
+      let record ← state.activityOccurrences.head?
+      let body ← activityBodyTask? record
+      completeSequentialMultiInstanceInnerTask?
+        { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 34 } }
+        state body
+        [{ name := arm.data.taskDataOutputId, value := .string escapeClassResult }]) = none := by
   decide +kernel
 
 end BpmnSemantics.SequentialMultiInstanceConformance
