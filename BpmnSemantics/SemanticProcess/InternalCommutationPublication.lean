@@ -83,7 +83,8 @@ private theorem runtimeStateWellFormed_position (program : Program) (instanceId 
   obtain ⟨h4, _⟩ := h5
   obtain ⟨h3, _⟩ := h4
   obtain ⟨h2, _⟩ := h3
-  exact h2.1
+  obtain ⟨h1, _⟩ := h2
+  exact h1.1
 
 private theorem acceptedInternalPublicationPair_prepared (program : Program)
     (expectedInstanceId commandId : SemanticId) (footprintState before : RuntimeState)
