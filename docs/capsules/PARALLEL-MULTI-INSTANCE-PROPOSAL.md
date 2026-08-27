@@ -291,10 +291,10 @@ Reopen before changing the Activity body, collection/value type, data associatio
 
 ## Independent cold-review receipt
 
-The superseded proposal reviews targeted `c5ad6f3074ebe48134c67672923c654b95beb146` and `dc21b7ce67fbaaef80a1682a15f05ce4d673a32f`. Their approvals remain historical evidence for the unchanged semantic account, not authorization for the newly corrected production selection. The first green semantic checkpoint targeted `aed177b2b5a5c343db7ddf7acca7cf65de5f241f`, and correction audit `8e9767cfb4684eb6ccf42b240b3237becc9c1601` closed its required findings. The later proof-boundary reopening targeted `3396e891da26331ab1dc40098bb450d8ac2113b2` and received approval with no required findings after its exact clean-commit pre-push verifier passed.
+The superseded proposal reviews targeted `c5ad6f3074ebe48134c67672923c654b95beb146` and `dc21b7ce67fbaaef80a1682a15f05ce4d673a32f`. Their approvals remain historical evidence for the unchanged semantic account, not authorization for the newly corrected production selection. The first green semantic checkpoint targeted `aed177b2b5a5c343db7ddf7acca7cf65de5f241f`, and correction audit `8e9767cfb4684eb6ccf42b240b3237becc9c1601` closed its required findings. The first proof-boundary reopening targeted `3396e891da26331ab1dc40098bb450d8ac2113b2` and received approval with no required findings. The line-bounded Entry and Closing split then targeted `85f0977e449921bff3081d980fde71a5d860df9c`; correction audit `d76969773a1c25243844f919791866590777185d` narrowed the reusable base module's header and closed the review's sole required finding.
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `e31500916cb5af3752c3a6ec35a1bd59381f5048` | `fork-turns-none` | `approve-with-required-edits` | `6275ed87398f3cdc55e8633ab0d77ddd638cc946` |
-| Semantic checkpoint | `3396e891da26331ab1dc40098bb450d8ac2113b2` | `fork-turns-none` | `approve` | `not-required` |
+| Semantic checkpoint | `85f0977e449921bff3081d980fde71a5d860df9c` | `fork-turns-none` | `approve-with-required-edits` | `d76969773a1c25243844f919791866590777185d` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
