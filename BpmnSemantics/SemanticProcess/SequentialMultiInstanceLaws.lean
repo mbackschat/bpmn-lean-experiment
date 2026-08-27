@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import BpmnSemantics.SemanticProcess.SequentialMultiInstancePreservation
 
 /-! # Sequential Multi-Instance laws
 
