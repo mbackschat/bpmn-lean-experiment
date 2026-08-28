@@ -7,6 +7,7 @@ export enum InternalTransitionStateAtomKind {
   ControlToken = "controlToken",
   EndCount = "endCount",
   EndIncrement = "endIncrement",
+  EventRaceAssociation = "eventRaceAssociation",
   InitiationPending = "initiationPending",
   LogicalTime = "logicalTime",
   OccurrenceRegion = "occurrenceRegion",

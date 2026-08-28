@@ -21,8 +21,10 @@ import {
 import type { InternalOccurrenceRegion } from "./internal-transition-region.js";
 import type {
   CalledProcessOccurrence,
+  EventRace,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
+import { sameOccurrence } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export function canonicalUniqueStateAtoms(
@@ -108,6 +110,8 @@ function stateAtomParts(
       return [atom.kind, ...internalOccurrenceParts(atom.occurrence)];
     case InternalTransitionStateAtomKind.CallAssociation:
       return [atom.kind, ...callAssociationParts(atom.record)];
+    case InternalTransitionStateAtomKind.EventRaceAssociation:
+      return [atom.kind, ...eventRaceAssociationParts(atom.record)];
     case InternalTransitionStateAtomKind.OccurrenceRegion:
       return [
         atom.kind,
@@ -161,6 +165,20 @@ function stateAtomsConflict(
   ) {
     return true;
   }
+  if (
+    left.kind === InternalTransitionStateAtomKind.EventRaceAssociation &&
+    right.kind === InternalTransitionStateAtomKind.EventRaceAssociation
+  ) {
+    return sameOccurrence(left.record.id, right.record.id) ||
+      sameOccurrence(
+        left.record.messageSubscriptionId,
+        right.record.messageSubscriptionId,
+      ) ||
+      sameOccurrence(
+        left.record.timerOccurrenceId,
+        right.record.timerOccurrenceId,
+      );
+  }
   if (compareStateAtoms(left, right) === 0) {
     return true;
   }
@@ -182,6 +200,8 @@ function occurrenceRegionConflictsWithAtom(
       return internalOccurrenceRegionOwnsActivity(region, atom.record);
     case InternalTransitionStateAtomKind.CallAssociation:
       return internalOccurrenceRegionOwnsCall(region, atom.record);
+    case InternalTransitionStateAtomKind.EventRaceAssociation:
+      return internalOccurrenceRegionContains(region, atom.record.owner);
     case InternalTransitionStateAtomKind.ScopeParent:
       return internalOccurrenceRegionContains(region, atom.occurrence) ||
         (atom.parent !== null &&
@@ -332,6 +352,17 @@ function callAssociationParts(
     record.calledProcessId,
     ...scopeParts(record.calledRoot),
     record.returnOperationId,
+  ];
+}
+
+function eventRaceAssociationParts(
+  record: EventRace,
+): ReadonlyArray<string | number> {
+  return [
+    ...occurrenceParts(record.id),
+    ...scopeParts(record.owner),
+    ...occurrenceParts(record.messageSubscriptionId),
+    ...occurrenceParts(record.timerOccurrenceId),
   ];
 }
 

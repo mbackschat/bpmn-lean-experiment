@@ -13,8 +13,10 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  sameMessageChannel,
-} from "./message-channel.js";
+  candidateProcessId,
+  operationIsSelectedFromProgram,
+} from "./flow-node-occurrence-candidates.js";
+import { sameMessageChannel } from "./message-channel.js";
 import {
   addToken,
   compareEventRaces,
@@ -33,12 +35,53 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 
+export type SelectedEventRaceArming = Readonly<{
+  race: EventRace;
+  messageWait: RuntimeState["messageWaits"][number];
+  timerWait: RuntimeState["timerWaits"][number];
+}>;
+
 /** Atomically replaces one Gateway token with both waits and their ownership record. */
 export function armEventRace(
   operation: AwaitEventRaceOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState | null {
+  const selected = selectEventRaceArming(operation, state, owner);
+  if (selected === null) {
+    return null;
+  }
+  const { messageWait, race, timerWait } = selected;
+  return {
+    ...state,
+    controlTokens: removeToken(state.controlTokens, operation.input, owner),
+    messageWaits: [...state.messageWaits, messageWait].sort(compareMessageWaits),
+    timerWaits: [...state.timerWaits, timerWait].sort(compareTimerWaits),
+    eventRaces: [...state.eventRaces, race].sort(compareEventRaces),
+    messageActivations: setActivationCount(
+      state.messageActivations,
+      operation.message.elementId,
+      messageWait.id.activation,
+    ),
+    timerActivations: setActivationCount(
+      state.timerActivations,
+      operation.timer.elementId,
+      timerWait.id.activation,
+    ),
+    eventRaceActivations: setActivationCount(
+      state.eventRaceActivations,
+      operation.origin.elementId,
+      race.id.activation,
+    ),
+  };
+}
+
+/** Selects the complete race record and both waits without applying their state change. */
+export function selectEventRaceArming(
+  operation: AwaitEventRaceOperation,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+): SelectedEventRaceArming | null {
   if (state.control.kind !== ControlStateKind.Running) {
     return null;
   }
@@ -59,18 +102,18 @@ export function armEventRace(
     throw new RangeError("Timer deadline exceeds the safe integer boundary");
   }
   const messageSubscriptionId = {
-    processInstanceId: state.control.instanceId,
+    processInstanceId: owner.processInstanceId,
     elementId: operation.message.elementId,
     activation: messageActivation,
   };
   const timerOccurrenceId = {
-    processInstanceId: state.control.instanceId,
+    processInstanceId: owner.processInstanceId,
     elementId: operation.timer.elementId,
     activation: timerActivation,
   };
   const race: EventRace = {
     id: {
-      processInstanceId: state.control.instanceId,
+      processInstanceId: owner.processInstanceId,
       elementId: operation.origin.elementId,
       activation: raceActivation,
     },
@@ -79,42 +122,19 @@ export function armEventRace(
     timerOccurrenceId,
   };
   return {
-    ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input, owner),
-    messageWaits: [
-      ...state.messageWaits,
-      {
-        id: messageSubscriptionId,
-        owner,
-        channel: operation.message.channel,
-        output: operation.message.output,
-      },
-    ].sort(compareMessageWaits),
-    timerWaits: [
-      ...state.timerWaits,
-      {
-        id: timerOccurrenceId,
-        owner,
-        deadlineMs,
-        output: operation.timer.output,
-      },
-    ].sort(compareTimerWaits),
-    eventRaces: [...state.eventRaces, race].sort(compareEventRaces),
-    messageActivations: setActivationCount(
-      state.messageActivations,
-      operation.message.elementId,
-      messageActivation,
-    ),
-    timerActivations: setActivationCount(
-      state.timerActivations,
-      operation.timer.elementId,
-      timerActivation,
-    ),
-    eventRaceActivations: setActivationCount(
-      state.eventRaceActivations,
-      operation.origin.elementId,
-      raceActivation,
-    ),
+    race,
+    messageWait: {
+      id: messageSubscriptionId,
+      owner,
+      channel: operation.message.channel,
+      output: operation.message.output,
+    },
+    timerWait: {
+      id: timerOccurrenceId,
+      owner,
+      deadlineMs,
+      output: operation.timer.output,
+    },
   };
 }
 
@@ -247,12 +267,13 @@ function exactEventRaceBinding(
   const timer = only(state.timerWaits.filter((wait) => raceOwnsTimer(race, wait)));
   if (
     definition === undefined ||
+    !operationIsSelectedFromProgram(program, definition, race.owner) ||
     message === undefined ||
     timer === undefined ||
-    race.id.processInstanceId !== state.control.instanceId ||
-    race.owner.processInstanceId !== state.control.instanceId ||
-    race.messageSubscriptionId.processInstanceId !== state.control.instanceId ||
-    race.timerOccurrenceId.processInstanceId !== state.control.instanceId ||
+    candidateProcessId(program, state, race.owner) === null ||
+    race.id.processInstanceId !== race.owner.processInstanceId ||
+    race.messageSubscriptionId.processInstanceId !== race.owner.processInstanceId ||
+    race.timerOccurrenceId.processInstanceId !== race.owner.processInstanceId ||
     definition.message.elementId !== race.messageSubscriptionId.elementId ||
     definition.timer.elementId !== race.timerOccurrenceId.elementId ||
     message.output !== definition.message.output ||

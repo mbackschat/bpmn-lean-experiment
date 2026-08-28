@@ -35,6 +35,7 @@ import type {
 import { ControlStateKind, sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
 import type {
   CalledProcessOccurrence,
+  EventRace,
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
@@ -77,6 +78,10 @@ export type InternalTransitionStateAtom = Readonly<
     }
   | { kind: InternalTransitionStateAtomKind.EndCount }
   | { kind: InternalTransitionStateAtomKind.EndIncrement }
+  | {
+      kind: InternalTransitionStateAtomKind.EventRaceAssociation;
+      record: EventRace;
+    }
   | { kind: InternalTransitionStateAtomKind.InitiationPending }
   | { kind: InternalTransitionStateAtomKind.LogicalTime }
   | {
