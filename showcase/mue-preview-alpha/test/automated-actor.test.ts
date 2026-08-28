@@ -147,6 +147,34 @@ test("refuses a result bound to the wrong current business item", async () => {
   assert.equal(submissions, 0);
 });
 
+test("refuses a Parallel Multi-Instance controller at the Alpha boundary", async () => {
+  const processInstanceId = "Instance_Parallel";
+  const valid = alphaReviewState(processInstanceId, 1);
+  const controller = valid.openMultiInstances![0]!;
+  const wrong: StateObservation = {
+    ...valid,
+    openMultiInstances: [{
+      ...controller,
+      mode: "parallel",
+      pendingItemCount: 0,
+      numberOfInstances: controller.plannedInstanceCount,
+      numberOfActiveInstances:
+        controller.plannedInstanceCount - controller.numberOfCompletedInstances,
+      numberOfTerminatedInstances: 0,
+    }],
+  };
+  let submissions = 0;
+
+  await assert.rejects(
+    new MuePreviewAlphaActor(async () => undefined).runNatural(
+      publicInstance(processInstanceId),
+      staticPort(wrong, () => { submissions += 1; }),
+    ),
+    /non-Sequential Multi-Instance controller/u,
+  );
+  assert.equal(submissions, 0);
+});
+
 test("refuses escalation without the committed Timer state", async () => {
   const processInstanceId = "Instance_EarlyEscalation";
   const wrong: StateObservation = {

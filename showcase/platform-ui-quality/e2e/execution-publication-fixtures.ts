@@ -63,6 +63,35 @@ const publicationIdentity = {
   processInstanceId: instance.processInstanceId,
 } as const;
 
+const alphaDefinition = {
+  ...definition,
+  processId: "Process_SequentialMultiInstanceReview",
+  version: 1,
+  source: {
+    ...definition.source,
+    id: "sequential-multi-instance-review.bpmn",
+    sha256: "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+    byteLength: 5_681,
+  },
+  semanticProfile: "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+} as const;
+
+const alphaInstance = {
+  processInstanceId: executionPublicationLabels.processInstanceId,
+  definition: alphaDefinition,
+} as const;
+
+const alphaPublicationIdentity = {
+  definition: {
+    ...publicationIdentity.definition,
+    semanticProfile: alphaDefinition.semanticProfile,
+    sourceId: alphaDefinition.source.id,
+    sourceSha256: alphaDefinition.source.sha256,
+  },
+  processId: alphaDefinition.processId,
+  processInstanceId: alphaInstance.processInstanceId,
+} as const;
+
 const rootScope = scope("Scope_Process", 1);
 const repeatedScopeOne = scope("Scope_Repeated", 1);
 const repeatedScopeTwo = scope("Scope_Repeated", 2);
@@ -173,6 +202,26 @@ const batch = {
   }],
 } as const;
 
+const alphaBatch = {
+  ...batch,
+  transitions: batch.transitions.map((record) => {
+    if (
+      record.transition.kind !== "externalStimulus" ||
+      record.transition.stimulus.kind !== "startProcess"
+    ) return record;
+    return {
+      ...record,
+      transition: {
+        ...record.transition,
+        stimulus: {
+          ...record.transition.stimulus,
+          processId: alphaDefinition.processId,
+        },
+      },
+    };
+  }),
+} as const;
+
 const current = {
   revision: 5,
   state: {
@@ -227,6 +276,12 @@ const pageBody = {
   current,
 } as const;
 
+const alphaPageBody = {
+  ...pageBody,
+  ...alphaPublicationIdentity,
+  batches: [alphaBatch],
+} as const;
+
 const exportBody = {
   format: "bpmn-lean.execution-publication.v1",
   ...publicationIdentity,
@@ -242,14 +297,15 @@ export async function installExecutionPublicationFixtures(
   await installPublicApiFixtures(page);
   const publicResponses: unknown[] = [];
   let sequentialExecutionRequests = 0;
+  const selectedInstance = isAlphaFixtureState(state) ? alphaInstance : instance;
 
   function alphaPage(journey: AlphaFixtureJourney): unknown {
     return muePreviewAlphaExecutionPage({
-      batch,
+      batch: alphaBatch,
       current,
       emptyDelta,
-      pageBody,
-      processInstanceId: publicationIdentity.processInstanceId,
+      pageBody: alphaPageBody,
+      processInstanceId: alphaPublicationIdentity.processInstanceId,
     }, journey, sequentialExecutionRequests);
   }
 
@@ -258,7 +314,7 @@ export async function installExecutionPublicationFixtures(
     const url = new URL(request.url());
     const path = url.pathname;
     if (request.method() === "GET" && path === "/api/v1/process-instances") {
-      return json(route, { instances: [instance], nextCursor: null }, publicResponses);
+      return json(route, { instances: [selectedInstance], nextCursor: null }, publicResponses);
     }
     const executionPath = `/api/v1/process-instances/${encodeURIComponent(instance.processInstanceId)}/execution`;
     if (request.method() === "GET" && path === executionPath) {
@@ -334,6 +390,20 @@ export async function installExecutionPublicationFixtures(
     return route.fallback();
   });
   return { publicResponses };
+}
+
+function isAlphaFixtureState(state: ExecutionPublicationFixtureState): boolean {
+  switch (state) {
+    case ExecutionPublicationFixtureState.SequentialAlpha:
+    case ExecutionPublicationFixtureState.SequentialInterrupted:
+    case ExecutionPublicationFixtureState.SequentialNatural:
+      return true;
+    case ExecutionPublicationFixtureState.Available:
+    case ExecutionPublicationFixtureState.Delayed:
+    case ExecutionPublicationFixtureState.Gap:
+    case ExecutionPublicationFixtureState.MalformedExport:
+      return false;
+  }
 }
 
 export function executionPublicationExportBytes(): Uint8Array {

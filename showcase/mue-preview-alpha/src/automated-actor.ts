@@ -194,7 +194,11 @@ function requireRunningAlphaState(
 ): void {
   const controllers = state.openMultiInstances ?? [];
   if (controllers.length === 1) {
-    const loopCounter = requireExactController(processInstanceId, controllers[0]!, state);
+    const controller = controllers[0]!;
+    if (controller.mode !== "sequential") {
+      throw new Error("Alpha publication contains a non-Sequential Multi-Instance controller");
+    }
+    const loopCounter = requireExactController(processInstanceId, controller, state);
     if (journey === AlphaJourney.Interrupted && loopCounter > 1) {
       throw new Error("Interrupted Alpha advanced beyond the Timer-risk checkpoint");
     }

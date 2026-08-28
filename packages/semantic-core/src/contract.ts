@@ -387,7 +387,7 @@ export type StateObservation = DeepReadonly<{
   openEffects: OpenEffect[];
   openIncidents: OpenEffectIncident[];
   /**
-   * Present exactly when the current program declares a sequential Multi-Instance Activity.
+   * Present exactly when the current program declares a supported Multi-Instance Activity.
    *
    * Presence is a *program* property, not a profile-registration one, which is what keeps every
    * existing profile's canonical observation bytes unchanged: a program with no such Activity omits the
