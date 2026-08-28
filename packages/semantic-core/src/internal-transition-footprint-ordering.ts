@@ -13,6 +13,9 @@ import {
   InternalTransitionStateAtomKind,
 } from "./internal-transition-footprint-vocabulary.js";
 import {
+  activityAssociationsConflict,
+} from "./internal-transition-activity-association.js";
+import {
   internalOccurrenceRegionContains,
   internalOccurrenceRegionOwnsActivity,
   internalOccurrenceRegionOwnsCall,
@@ -164,6 +167,12 @@ function stateAtomsConflict(
       right.kind === InternalTransitionStateAtomKind.EndIncrement)
   ) {
     return true;
+  }
+  if (
+    left.kind === InternalTransitionStateAtomKind.ActivityAssociation &&
+    right.kind === InternalTransitionStateAtomKind.ActivityAssociation
+  ) {
+    return activityAssociationsConflict(left.record, right.record);
   }
   if (
     left.kind === InternalTransitionStateAtomKind.EventRaceAssociation &&

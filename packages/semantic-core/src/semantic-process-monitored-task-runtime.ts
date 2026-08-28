@@ -21,7 +21,6 @@ import {
   ActivityBodyKind,
   activityOccurrenceForAttachedTimer,
   activityOccurrenceForTaskBody,
-  compareActivityOccurrences,
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
@@ -32,13 +31,8 @@ import type {
 } from "./semantic-process-contract.js";
 import {
   addToken,
-  compareTimerWaits,
-  compareUserTaskWaits,
   ControlStateKind,
-  nextActivation,
-  removeToken,
   sameOccurrence,
-  setActivationCount,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -46,6 +40,7 @@ import type {
   SemanticTimerWait,
   SemanticUserTaskWait,
 } from "./semantic-process-state.js";
+import { armActivityWithBoundaryTimer } from "./semantic-process-activity-arming.js";
 import { StimulusKind } from "./contract.js";
 import type {
   CompleteUserTaskInstanceStimulus,
@@ -74,76 +69,7 @@ export function armMonitoredUserTask(
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState | null {
-  if (state.control.kind !== ControlStateKind.Running) {
-    return null;
-  }
-  const taskActivation = nextActivation(
-    state.taskActivations,
-    operation.task.elementId,
-  );
-  const timerActivation = nextActivation(
-    state.timerActivations,
-    operation.boundaryTimer.elementId,
-  );
-  const deadlineMs = state.logicalTimeMs + operation.boundaryTimer.durationMs;
-  if (!Number.isSafeInteger(deadlineMs)) {
-    throw new RangeError("Timer deadline exceeds the safe integer boundary");
-  }
-  const activityActivation = nextActivation(
-    state.activityActivations,
-    operation.task.elementId,
-  );
-  const taskId = {
-    processInstanceId: owner.processInstanceId,
-    elementId: operation.task.elementId,
-    activation: taskActivation,
-  } as const;
-  const timerId = {
-    processInstanceId: owner.processInstanceId,
-    elementId: operation.boundaryTimer.elementId,
-    activation: timerActivation,
-  } as const;
-  return {
-    ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input, owner),
-    activityOccurrences: [
-      ...state.activityOccurrences,
-      {
-        id: {
-          processInstanceId: owner.processInstanceId,
-          activityElementId: operation.task.elementId,
-          activation: activityActivation,
-        },
-        owner,
-        operationId: operation.id,
-        body: { kind: ActivityBodyKind.UserTask, task: taskId } as const,
-        attachedTimers: [timerId],
-      },
-    ].sort(compareActivityOccurrences),
-    activityActivations: setActivationCount(
-      state.activityActivations,
-      operation.task.elementId,
-      activityActivation,
-    ),
-    userTaskWaits: [
-      ...state.userTaskWaits,
-      { id: taskId, owner, name: operation.task.name, output: operation.task.output },
-    ].sort(compareUserTaskWaits),
-    timerWaits: [
-      ...state.timerWaits,
-      { id: timerId, owner, deadlineMs, output: operation.boundaryTimer.output },
-    ].sort(compareTimerWaits),
-    taskActivations: setActivationCount(
-      state.taskActivations,
-      operation.task.elementId,
-      taskActivation,
-    ),
-    timerActivations: setActivationCount(
-      state.timerActivations,
-      operation.boundaryTimer.elementId,
-      timerActivation,
-    ),
-  };
+  return armActivityWithBoundaryTimer(operation, state, owner);
 }
 
 /**

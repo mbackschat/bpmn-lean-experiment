@@ -220,7 +220,7 @@ const writerRecords = new Map<string, WriterRecord>([
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
   }],
-  ["packages/semantic-core/src/semantic-process-bounded-task-runtime.ts#armBoundedUserTask@1", {
+  ["packages/semantic-core/src/semantic-process-activity-arming.ts#armActivityWithBoundaryTimer@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
@@ -239,18 +239,6 @@ const writerRecords = new Map<string, WriterRecord>([
   ["packages/semantic-core/src/semantic-process-call-runtime.ts#removeCalledProcessTree@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
-  }],
-  ["packages/semantic-core/src/semantic-process-monitored-task-runtime.ts#armMonitoredUserTask@1", {
-    classification: WriterClassification.Issuer,
-    claimPreservation: ClaimPreservation.DisjointInsertion,
-    evidence: {
-      relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
-      markers: ["runtimeStateRegressions(pair.before, pair.after)", "RuntimeStateRegression.ActivityOccurrenceIssue"],
-    },
-    claimEvidence: {
-      relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
-      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "monitored User Task arming inserts a disjoint Activity body claim"],
-    },
   }],
   ["packages/semantic-core/src/semantic-process-monitored-task-runtime.ts#completeMonitoredUserTask@1", {
     classification: WriterClassification.IdentityRemoving,

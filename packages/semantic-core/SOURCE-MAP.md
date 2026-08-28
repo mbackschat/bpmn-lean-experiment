@@ -42,6 +42,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-wait-runtime.ts](src/semantic-process-wait-runtime.ts) | Construction of User Task, Timer, and Effect waits |
 | [bounded-wait-admission.ts](src/bounded-wait-admission.ts) | Well-formedness of the three boundary-deadline operations and their shared deadline arm |
 | [semantic-process-user-task-runtime.ts](src/semantic-process-user-task-runtime.ts) | The ordinary non-specialized User Task completion arm |
+| [semantic-process-activity-arming.ts](src/semantic-process-activity-arming.ts) | Shared exact Activity record, User Task wait, and attached Timer arming for both boundary-task families |
 | [semantic-process-bounded-task-runtime.ts](src/semantic-process-bounded-task-runtime.ts) | A User Task occurrence owning an interrupting boundary Timer |
 | [semantic-process-monitored-task-runtime.ts](src/semantic-process-monitored-task-runtime.ts) | A User Task occurrence owning a non-interrupting boundary Timer |
 | [event-race-admission.ts](src/event-race-admission.ts) | Well-formedness of the event-race await operation |
@@ -64,6 +65,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [runtime-state-collection-ordering.ts](src/runtime-state-collection-ordering.ts) | Internal canonical ordering for commutation-affected RuntimeState collections |
 | [internal-commutation-census.ts](src/internal-commutation-census.ts) | Exhaustive operation-family and cross-language RuntimeState atom-domain classification without enabling a transition |
 | [internal-transition-alternative.ts](src/internal-transition-alternative.ts) | Exact operation and Exclusive Gateway merge-input alternative keys with canonical discriminator-first ordering |
+| [internal-transition-activity-association.ts](src/internal-transition-activity-association.ts) | Private conflict predicate over Activity identity, body-member ownership, and attached-Timer ownership |
+| [internal-transition-activity-arming-preparation.ts](src/internal-transition-activity-arming-preparation.ts) | Exact boundary-task Activity, body wait, attached Timer, activation, public-anchor, association, and token footprint without applying the transition |
 | [internal-transition-end-preparation.ts](src/internal-transition-end-preparation.ts) | Exact ordinary None End token and commutative End-increment state footprint without applying the transition |
 | [internal-transition-error-preparation.ts](src/internal-transition-error-preparation.ts) | Exact Error-interruption region, throwing token, and parent-handler-output state footprint without applying the transition |
 | [internal-transition-event-race-preparation.ts](src/internal-transition-event-race-preparation.ts) | Exact Event-Based Gateway race, paired waits, activations, public anchors, association, and token footprint without applying the transition |
