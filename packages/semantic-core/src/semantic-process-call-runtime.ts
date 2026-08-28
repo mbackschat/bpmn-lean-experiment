@@ -37,6 +37,49 @@ export function invokeCalledProcess(
   state: RuntimeState,
   caller: ScopeOccurrenceId,
 ): RuntimeState | null {
+  const selected = selectCalledProcessInvocation(operation, state, caller);
+  if (selected === null) {
+    return null;
+  }
+  const record = selected.record;
+  return {
+    ...state,
+    controlTokens: addToken(
+      removeToken(state.controlTokens, operation.input, caller),
+      operation.calledEntry,
+      record.calledRoot,
+    ),
+    scopeOccurrences: [
+      ...state.scopeOccurrences,
+      { id: record.calledRoot, parent: null },
+    ].sort(({ id: left }, { id: right }) =>
+      compareScopeOccurrenceIds(left, right)
+    ),
+    calledProcessOccurrences: [
+      ...state.calledProcessOccurrences,
+      record,
+    ].sort(compareCalledProcessOccurrences),
+    callActivations: setActivationCount(
+      state.callActivations,
+      operation.origin.elementId,
+      record.id.activation,
+    ),
+  };
+}
+
+export type SelectedCalledProcessInvocation = Readonly<{
+  record: CalledProcessOccurrence;
+}>;
+
+/** Selects the exact fresh called root and association without applying them. */
+export function selectCalledProcessInvocation(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.InvokeProcess }
+  >,
+  state: RuntimeState,
+  caller: ScopeOccurrenceId,
+): SelectedCalledProcessInvocation | null {
   if (
     state.control.kind !== ControlStateKind.Running ||
     !calledProcessAssociationsAreValid(state) ||
@@ -98,29 +141,7 @@ export function invokeCalledProcess(
     return null;
   }
 
-  return {
-    ...state,
-    controlTokens: addToken(
-      removeToken(state.controlTokens, operation.input, caller),
-      operation.calledEntry,
-      calledRoot,
-    ),
-    scopeOccurrences: [
-      ...state.scopeOccurrences,
-      { id: calledRoot, parent: null },
-    ].sort(({ id: left }, { id: right }) =>
-      compareScopeOccurrenceIds(left, right)
-    ),
-    calledProcessOccurrences: [
-      ...state.calledProcessOccurrences,
-      record,
-    ].sort(compareCalledProcessOccurrences),
-    callActivations: setActivationCount(
-      state.callActivations,
-      operation.origin.elementId,
-      activation,
-    ),
-  };
+  return { record };
 }
 
 export function returnCalledProcess(

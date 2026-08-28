@@ -10,8 +10,12 @@ import { sameOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 
 export enum InternalOccurrenceKind {
+  Activity = "activity",
+  Call = "call",
   Effect = "effect",
+  EventRace = "eventRace",
   Message = "message",
+  Scope = "scope",
   Timer = "timer",
   UserTask = "userTask",
 }

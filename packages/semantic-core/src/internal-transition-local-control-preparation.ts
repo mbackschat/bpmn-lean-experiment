@@ -11,6 +11,7 @@ import type {
 import { canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
 import type { InternalTransitionStateFootprint } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
+import { affectedTokenBucketsAreExact } from "./internal-transition-token-preparation.js";
 import { selectConditionalBranch } from "./semantic-process-control-flow-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
@@ -294,32 +295,4 @@ function prepareTokenTransformation(
       branchResult,
       footprint: { reads, writes },
     };
-}
-
-function affectedTokenBucketsAreExact(
-  state: RuntimeState,
-  owner: ScopeOccurrenceId,
-  inputs: ReadonlyArray<string>,
-  outputs: ReadonlyArray<string>,
-): boolean {
-  return inputs.every((placeId) =>
-    tokenBucketCountIsExact(state, owner, placeId, true)
-  ) && outputs.every((placeId) =>
-    tokenBucketCountIsExact(state, owner, placeId, false)
-  );
-}
-
-function tokenBucketCountIsExact(
-  state: RuntimeState,
-  owner: ScopeOccurrenceId,
-  placeId: string,
-  required: boolean,
-): boolean {
-  const matches = state.controlTokens.filter((token) =>
-    token.placeId === placeId && sameScopeOccurrence(token.owner, owner)
-  );
-  return (required ? matches.length === 1 : matches.length <= 1) &&
-    matches.every(({ multiplicity }) =>
-      Number.isSafeInteger(multiplicity) && multiplicity > 0
-    );
 }

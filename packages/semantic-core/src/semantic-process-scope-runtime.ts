@@ -68,6 +68,41 @@ export function enterChildScope(
   parent: ScopeOccurrenceId,
   entry: ChildScopeEntry,
 ): RuntimeState | null {
+  const selected = selectChildScopeEntry(state, entry);
+  if (selected === null) {
+    return null;
+  }
+  const child = selected.child;
+  return {
+    ...state,
+    controlTokens: addToken(
+      removeToken(state.controlTokens, entry.input, parent),
+      entry.childEntry,
+      child,
+    ),
+    scopeOccurrences: [
+      ...state.scopeOccurrences,
+      { id: child, parent },
+    ].sort(({ id: left }, { id: right }) =>
+      compareScopeOccurrenceIds(left, right)
+    ),
+    scopeActivations: setActivationCount(
+      state.scopeActivations,
+      entry.childScopeId,
+      child.activation,
+    ),
+  };
+}
+
+export type SelectedChildScopeEntry = Readonly<{
+  child: ScopeOccurrenceId;
+}>;
+
+/** Selects the fresh child identity without applying token or scope insertion. */
+export function selectChildScopeEntry(
+  state: RuntimeState,
+  entry: ChildScopeEntry,
+): SelectedChildScopeEntry | null {
   if (
     state.control.kind !== ControlStateKind.Running ||
     state.scopeOccurrences.some(
@@ -85,25 +120,7 @@ export function enterChildScope(
     definitionScopeId: entry.childScopeId,
     activation,
   };
-  return {
-    ...state,
-    controlTokens: addToken(
-      removeToken(state.controlTokens, entry.input, parent),
-      entry.childEntry,
-      child,
-    ),
-    scopeOccurrences: [
-      ...state.scopeOccurrences,
-      { id: child, parent },
-    ].sort(({ id: left }, { id: right }) =>
-      compareScopeOccurrenceIds(left, right)
-    ),
-    scopeActivations: setActivationCount(
-      state.scopeActivations,
-      entry.childScopeId,
-      activation,
-    ),
-  };
+  return { child };
 }
 
 export function completeScope(
