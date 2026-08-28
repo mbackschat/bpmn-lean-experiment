@@ -48,7 +48,7 @@ After the time-bounded live-demo delivery, the remaining MUE content IDs resume 
 
 Active work ID: `INTERNAL-COMMUTATION`.
 
-Next action: obtain owner approval for the independently approved [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md) before changing its lifecycle or beginning production implementation.
+Next action: begin the owner-approved [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md) final implementation with the three-arm ordinary User Task Red and the closed Semantic Process scheduling-mode contract, keep the implemented exact-pair checkpoint byte-identical, and stop at the first green semantic checkpoint for context-cold review before any Temporal adapter or downstream lane continues.
 
 Separate open changes outside the active item: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence.
 
