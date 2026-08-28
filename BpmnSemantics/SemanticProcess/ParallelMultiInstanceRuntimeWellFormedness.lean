@@ -211,6 +211,142 @@ theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
   · rw [controllers] at operationCompleteness
     exact List.all_eq_true.mp operationCompleteness
 
+private theorem pendingParallelTaskIds_sublist_parallelSlotTaskIds
+    (slots : List ParallelMultiInstanceSlot) :
+    List.Sublist (pendingParallelTaskIds slots) (parallelSlotTaskIds slots) := by
+  induction slots with
+  | nil => simp [pendingParallelTaskIds, parallelSlotTaskIds]
+  | cons slot rest ih =>
+      cases slot with
+      | pending taskId =>
+          simpa [pendingParallelTaskIds, parallelSlotTaskIds, ParallelMultiInstanceSlot.taskId]
+            using ih.cons_cons taskId
+      | completed taskId result =>
+          simpa [pendingParallelTaskIds, parallelSlotTaskIds, ParallelMultiInstanceSlot.taskId]
+            using ih.cons taskId
+
+private theorem nodup_subset_of_nodup_subset_length_eq [BEq α] [LawfulBEq α]
+    {left right : List α} (leftNodup : left.Nodup) (rightNodup : right.Nodup)
+    (included : left ⊆ right) (sameLength : left.length = right.length) :
+    right ⊆ left := by
+  induction left generalizing right with
+  | nil =>
+      have rightEmpty : right = [] := List.eq_nil_of_length_eq_zero (by simpa using sameLength.symm)
+      simp [rightEmpty]
+  | cons head tail ih =>
+      obtain ⟨headFresh, tailNodup⟩ := List.nodup_cons.mp leftNodup
+      have headMember : head ∈ right := included (by simp)
+      have tailIncluded : tail ⊆ right.erase head := by
+        intro candidate candidateMember
+        rw [rightNodup.mem_erase_iff]
+        exact ⟨fun same => headFresh (same ▸ candidateMember), included (by simp [candidateMember])⟩
+      have erasedLength : tail.length = (right.erase head).length := by
+        rw [List.length_erase_of_mem headMember]
+        simp only [List.length_cons] at sameLength
+        omega
+      have erasedIncluded := ih tailNodup (rightNodup.erase head) tailIncluded erasedLength
+      intro candidate candidateMember
+      by_cases same : candidate = head
+      · simp [same]
+      · exact List.mem_cons_of_mem head
+          (erasedIncluded ((rightNodup.mem_erase_iff).mpr ⟨same, candidateMember⟩))
+
+/-- Eliminate the private controller binding validator into the exact Program operation, Activity
+record, and child wait that bind one chosen pending parallel task. -/
+theorem parallelMultiInstanceProgramBindingsValid_controller_witness
+    (program : Program) (state : RuntimeState)
+    (controller : ParallelMultiInstanceController) (taskId : UserTaskInstanceId)
+    (valid : parallelMultiInstanceProgramBindingsValid program state = true)
+    (controllerMember : controller ∈ state.parallelMultiInstanceControllers)
+    (pendingMember : taskId ∈ pendingParallelTaskIds controller.slots) :
+    ∃ entry arm record wait,
+      entry ∈ program.operations ∧
+      ParallelMultiInstanceArm.ofOperation? entry = some arm ∧
+      arm.taskId.value = controller.id.activityElementId.value ∧
+      operationOwningScope? program entry.id = some record.owner.definitionScopeId ∧
+      record ∈ state.activityOccurrences ∧
+      parallelControllerNamesIdentity controller record.processInstanceId
+        ⟨record.activityElementId.value⟩ record.activation = true ∧
+      activityBodyParallelTasks? record = some (pendingParallelTaskIds controller.slots) ∧
+      wait ∈ state.waits ∧
+      (⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ : UserTaskInstanceId) =
+        taskId ∧
+      wait.owner = record.owner ∧ wait.task.id = arm.taskId := by
+  simp only [parallelMultiInstanceProgramBindingsValid, Bool.and_eq_true,
+    List.all_eq_true] at valid
+  have bound := valid.1.1.1 controller controllerMember
+  unfold parallelControllerProgramBindingValid parallelRecordForController? at bound
+  generalize recordsEq : state.activityOccurrences.filter (fun record =>
+    parallelControllerNamesIdentity controller record.processInstanceId
+      ⟨record.activityElementId.value⟩ record.activation) = records at bound
+  cases records with
+  | nil => simp at bound
+  | cons record remainingRecords =>
+      cases remainingRecords with
+      | cons next tail => simp at bound
+      | nil =>
+          have filteredRecord : record ∈ state.activityOccurrences.filter (fun candidate =>
+              parallelControllerNamesIdentity controller candidate.processInstanceId
+                ⟨candidate.activityElementId.value⟩ candidate.activation) := by
+            rw [recordsEq]
+            simp
+          obtain ⟨recordMember, recordIdentity⟩ := List.mem_filter.mp filteredRecord
+          generalize operationsEq : program.operations.filter (fun operation =>
+            match ParallelMultiInstanceArm.ofOperation? operation with
+            | some arm => arm.taskId.value == controller.id.activityElementId.value
+            | none => false) = operations at bound
+          cases operations with
+          | nil => simp at bound
+          | cons entry remainingOperations =>
+              cases remainingOperations with
+              | cons next tail => simp at bound
+              | nil =>
+                  have filteredEntry : entry ∈ program.operations.filter (fun operation =>
+                      match ParallelMultiInstanceArm.ofOperation? operation with
+                      | some arm => arm.taskId.value == controller.id.activityElementId.value
+                      | none => false) := by
+                    rw [operationsEq]
+                    simp
+                  obtain ⟨entryMember, taskIdentity⟩ := List.mem_filter.mp filteredEntry
+                  cases projects : ParallelMultiInstanceArm.ofOperation? entry with
+                  | none => simp [projects] at bound
+                  | some arm =>
+                      simp only [projects, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq,
+                        List.all_eq_true] at bound taskIdentity
+                      obtain ⟨⟨⟨⟨⟨ownerScope, runtimeValid⟩, body⟩, waitLength⟩,
+                        waitIdsNodup⟩, waitBindings⟩ := bound
+                      simp only [parallelMultiInstanceRuntimeWellFormed, Bool.and_eq_true,
+                        decide_eq_true_eq, List.all_eq_true] at runtimeValid
+                      have slotIdsNodup :
+                          (parallelSlotTaskIds controller.slots).Nodup :=
+                        runtimeValid.1.1.1.1.1.2
+                      have pendingNodup : (pendingParallelTaskIds controller.slots).Nodup :=
+                        (pendingParallelTaskIds_sublist_parallelSlotTaskIds controller.slots).nodup
+                          slotIdsNodup
+                      let waits := state.waits.filter fun wait =>
+                        (pendingParallelTaskIds controller.slots).contains (parallelWaitTaskId wait)
+                      have waitIdsIncluded : waits.map parallelWaitTaskId ⊆
+                          pendingParallelTaskIds controller.slots := by
+                        intro candidate candidateMember
+                        obtain ⟨wait, waitMember, rfl⟩ := List.mem_map.mp candidateMember
+                        simpa [List.contains_eq_mem] using (List.mem_filter.mp waitMember).2
+                      have waitIdsLength : (waits.map parallelWaitTaskId).length =
+                          (pendingParallelTaskIds controller.slots).length := by
+                        simpa [waits] using waitLength
+                      have pendingIncluded : pendingParallelTaskIds controller.slots ⊆
+                          waits.map parallelWaitTaskId :=
+                        nodup_subset_of_nodup_subset_length_eq waitIdsNodup pendingNodup
+                          waitIdsIncluded waitIdsLength
+                      obtain ⟨wait, waitMember, waitId⟩ :=
+                        List.mem_map.mp (pendingIncluded pendingMember)
+                      obtain ⟨rawWaitMember, _⟩ := List.mem_filter.mp waitMember
+                      obtain ⟨⟨⟨⟨waitOwner, waitTask⟩, _⟩, _⟩, _⟩ :=
+                        (waitBindings wait waitMember).1
+                      refine ⟨entry, arm, record, wait, entryMember, projects, taskIdentity,
+                        ownerScope, recordMember, recordIdentity, body, rawWaitMember, ?_,
+                        waitOwner, waitTask⟩
+                      simpa only [parallelWaitTaskId] using waitId
+
 /-- Under an exact one-arm program census, absence of that arm's controller excludes every parallel
 controller from a state admitted by the bidirectional program binding. -/
 theorem parallelControllers_absent_of_unique_entry (program : Program)
