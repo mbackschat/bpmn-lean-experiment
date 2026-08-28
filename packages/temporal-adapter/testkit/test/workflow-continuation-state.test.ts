@@ -310,6 +310,19 @@ test("the parallel Multi-Instance profile retains its complete indexed controlle
     compilation.semanticProcess,
     parallelInstanceId,
   ), started.state);
+
+  const {
+    parallelMultiInstanceControllers: _controllers,
+    ...missingControllers
+  } = started.state;
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(
+      missingControllers,
+      compilation.semanticProcess,
+      parallelInstanceId,
+    ),
+    /RuntimeState is not one resumable stable checkpoint/u,
+  );
 });
 
 test("a malformed sequential Multi-Instance controller is refused before recovery", () => {
