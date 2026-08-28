@@ -2,6 +2,7 @@ import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   addToken,
+  compareScopeOccurrenceIds,
   ControlStateKind,
   removeToken,
   sameScopeOccurrence,
@@ -13,7 +14,6 @@ import type {
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
-import { compareCanonicalStrings } from "./wire.js";
 
 export function onlyTokenOwner(
   state: RuntimeState,
@@ -95,7 +95,9 @@ export function enterChildScope(
     scopeOccurrences: [
       ...state.scopeOccurrences,
       { id: child, parent },
-    ].sort(compareScopeOccurrenceRecords),
+    ].sort(({ id: left }, { id: right }) =>
+      compareScopeOccurrenceIds(left, right)
+    ),
     scopeActivations: setActivationCount(
       state.scopeActivations,
       entry.childScopeId,
@@ -172,22 +174,4 @@ export function isScopeOccurrenceQuiescent(
     !state.scopeOccurrences.some(({ parent }) =>
       parent !== null && owned(parent)
     );
-}
-
-function compareScopeOccurrenceRecords(
-  left: RuntimeScopeOccurrence,
-  right: RuntimeScopeOccurrence,
-): number {
-  const instanceOrder = compareCanonicalStrings(
-    left.id.processInstanceId,
-    right.id.processInstanceId,
-  );
-  if (instanceOrder !== 0) {
-    return instanceOrder;
-  }
-  const scopeOrder = compareCanonicalStrings(
-    left.id.definitionScopeId,
-    right.id.definitionScopeId,
-  );
-  return scopeOrder !== 0 ? scopeOrder : left.id.activation - right.id.activation;
 }

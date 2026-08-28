@@ -6,6 +6,7 @@ import {
 import {
   addToken,
   compareCalledProcessOccurrences,
+  compareScopeOccurrenceIds,
   ControlStateKind,
   ownedTokenMultiplicity,
   removeToken,
@@ -18,7 +19,6 @@ import type {
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
-import { compareCanonicalStrings } from "./wire.js";
 
 /** Encodes the caller, Call Activity, and activation with decimal UTF-8 byte lengths. */
 export function deriveCalledProcessInstanceId(
@@ -108,7 +108,9 @@ export function invokeCalledProcess(
     scopeOccurrences: [
       ...state.scopeOccurrences,
       { id: calledRoot, parent: null },
-    ].sort(compareScopeOccurrenceRecords),
+    ].sort(({ id: left }, { id: right }) =>
+      compareScopeOccurrenceIds(left, right)
+    ),
     calledProcessOccurrences: [
       ...state.calledProcessOccurrences,
       record,
@@ -355,24 +357,4 @@ function utf8ByteLength(value: string): number {
       : 4;
   }
   return length;
-}
-
-function compareScopeOccurrenceRecords(
-  left: RuntimeState["scopeOccurrences"][number],
-  right: RuntimeState["scopeOccurrences"][number],
-): number {
-  const instanceOrder = compareCanonicalStrings(
-    left.id.processInstanceId,
-    right.id.processInstanceId,
-  );
-  if (instanceOrder !== 0) {
-    return instanceOrder;
-  }
-  const scopeOrder = compareCanonicalStrings(
-    left.id.definitionScopeId,
-    right.id.definitionScopeId,
-  );
-  return scopeOrder !== 0
-    ? scopeOrder
-    : left.id.activation - right.id.activation;
 }

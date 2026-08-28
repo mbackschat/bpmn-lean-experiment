@@ -363,14 +363,14 @@ export function compareEventRaces(left: EventRace, right: EventRace): number {
   const idOrder = compareOccurrences(left.id, right.id);
   return idOrder !== 0
     ? idOrder
-    : compareScopeOccurrences(left.owner, right.owner);
+    : compareScopeOccurrenceIds(left.owner, right.owner);
 }
 
 export function compareCalledProcessOccurrences(
   left: CalledProcessOccurrence,
   right: CalledProcessOccurrence,
 ): number {
-  const callerOrder = compareScopeOccurrences(left.caller, right.caller);
+  const callerOrder = compareScopeOccurrenceIds(left.caller, right.caller);
   return callerOrder !== 0
     ? callerOrder
     : compareOccurrences(left.id, right.id);
@@ -418,10 +418,10 @@ function compareTokenPlaces(
   const placeOrder = compareCanonicalStrings(left.placeId, right.placeId);
   return placeOrder !== 0
     ? placeOrder
-    : compareScopeOccurrences(left.owner, right.owner);
+    : compareScopeOccurrenceIds(left.owner, right.owner);
 }
 
-function compareScopeOccurrences(
+export function compareScopeOccurrenceIds(
   left: ScopeOccurrenceId,
   right: ScopeOccurrenceId,
 ): number {
