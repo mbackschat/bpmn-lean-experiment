@@ -48,7 +48,7 @@ After the time-bounded live-demo delivery, the remaining MUE content IDs resume 
 
 Active work ID: `INTERNAL-COMMUTATION`.
 
-Next action: generate the cold proposal-review packet for the [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) at immutable target `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6`, review the complete operation-family census, arbitrary-batch criterion, region-conflict account, and typed observable-choice input, and obtain a new isolated verdict before broadening production semantics.
+Next action: send the immutable commit containing all corrections required by the [cold proposal review](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) at target `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6` to the same reviewer thread for the bounded correction audit before owner approval or production implementation.
 
 Separate open changes outside the active item: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence.
 
