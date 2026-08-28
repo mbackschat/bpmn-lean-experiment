@@ -18,7 +18,10 @@ import {
   reachNoneEnd,
   synchronize,
 } from "./semantic-process-control-flow-runtime.js";
-import { mergeExclusive } from "./semantic-process-cyclic-control-flow-runtime.js";
+import {
+  mergeExclusive,
+  selectUniqueExclusiveMergeInput,
+} from "./semantic-process-cyclic-control-flow-runtime.js";
 import {
   armBoundedScope,
   completeScopeWithdrawingDeadline,
@@ -382,7 +385,8 @@ function applyInternalOperationState(
       );
     }
     case SemanticOperationKind.MergeExclusive: {
-      const owner = mergeExclusiveOwner(operation.inputs, state);
+      const owner = selectUniqueExclusiveMergeInput(operation, state)
+        ?.alternative.owner;
       return applyOwnedOperation(
         owner,
         () => mergeExclusive(operation, state),
@@ -481,18 +485,6 @@ function returnProcessOwner(
     record.id.elementId === operation.origin.elementId
   );
   return records.length === 1 ? records[0]?.calledRoot : undefined;
-}
-
-function mergeExclusiveOwner(
-  inputs: ReadonlyArray<string>,
-  state: RuntimeState,
-): ScopeOccurrenceId | undefined {
-  const offered = state.controlTokens.filter((token) =>
-    inputs.includes(token.placeId) && token.multiplicity > 0
-  );
-  return offered.reduce((total, token) => total + token.multiplicity, 0) === 1
-    ? offered[0]?.owner
-    : undefined;
 }
 
 function synchronizeSelectedOwner(
