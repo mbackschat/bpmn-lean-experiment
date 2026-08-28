@@ -130,6 +130,34 @@ export function returnCalledProcess(
   >,
   state: RuntimeState,
 ): RuntimeState | null {
+  const selected = selectReturnCalledProcess(operation, state);
+  if (selected === null) {
+    return null;
+  }
+  const cleaned = removeCalledProcessTree(state, selected.record);
+  return {
+    ...cleaned,
+    controlTokens: addToken(
+      cleaned.controlTokens,
+      operation.callerOutput,
+      selected.record.caller,
+    ),
+  };
+}
+
+export type SelectedReturnCalledProcess = Readonly<{
+  record: CalledProcessOccurrence;
+  root: RuntimeState["scopeOccurrences"][number];
+}>;
+
+/** Selects the exact enabled Call return without applying its removal or caller continuation. */
+export function selectReturnCalledProcess(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.ReturnProcess }
+  >,
+  state: RuntimeState,
+): SelectedReturnCalledProcess | null {
   if (
     state.control.kind !== ControlStateKind.Running ||
     !calledProcessAssociationsAreValid(state)
@@ -172,16 +200,7 @@ export function returnCalledProcess(
   ) {
     return null;
   }
-
-  const cleaned = removeCalledProcessTree(state, record);
-  return {
-    ...cleaned,
-    controlTokens: addToken(
-      cleaned.controlTokens,
-      operation.callerOutput,
-      record.caller,
-    ),
-  };
+  return { record, root };
 }
 
 export function calledProcessAssociationsAreValid(state: RuntimeState): boolean {

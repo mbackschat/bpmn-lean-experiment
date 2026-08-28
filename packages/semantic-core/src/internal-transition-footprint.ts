@@ -136,6 +136,11 @@ export type InternalTransitionFootprint = Readonly<{
   publicationSortKey: InternalTransitionPublicationSortKey;
 }>;
 
+export type InternalTransitionStateFootprint = Readonly<{
+  reads: ReadonlyArray<InternalTransitionStateAtom>;
+  writes: ReadonlyArray<InternalTransitionStateAtom>;
+}>;
+
 export type InternalTransitionCandidate = Readonly<{
   operation: SemanticOperation;
   owner: ScopeOccurrenceId | null;
@@ -263,11 +268,18 @@ export function internalTransitionFootprintsAreIndependent(
   left: InternalTransitionFootprint,
   right: InternalTransitionFootprint,
 ): boolean {
+  return internalTransitionStateFootprintsAreIndependent(left, right) &&
+    publicationSetsAreDisjoint(left.publications, right.publications);
+}
+
+export function internalTransitionStateFootprintsAreIndependent(
+  left: InternalTransitionStateFootprint,
+  right: InternalTransitionStateFootprint,
+): boolean {
   return stateSetsAreDisjoint(left.writes, right.reads) &&
     stateSetsAreDisjoint(left.writes, right.writes) &&
     stateSetsAreDisjoint(right.writes, left.reads) &&
-    stateSetsAreDisjoint(right.writes, left.writes) &&
-    publicationSetsAreDisjoint(left.publications, right.publications);
+    stateSetsAreDisjoint(right.writes, left.writes);
 }
 
 /** Classifies only the complete exact-two enabled frontier. */
