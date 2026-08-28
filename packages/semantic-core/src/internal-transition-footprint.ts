@@ -231,7 +231,6 @@ export function deriveInternalTransitionFootprint(
         operation.task.elementId,
         state.taskActivations,
         state.userTaskWaits.map(({ id }) => id),
-        [],
       );
     case SemanticOperationKind.AwaitMessage:
       return waitFootprint(
@@ -244,7 +243,6 @@ export function deriveInternalTransitionFootprint(
         operation.message.elementId,
         state.messageActivations,
         state.messageWaits.map(({ id }) => id),
-        [],
       );
     case SemanticOperationKind.AwaitTimer:
       return waitFootprint(
@@ -257,7 +255,6 @@ export function deriveInternalTransitionFootprint(
         operation.timer.elementId,
         state.timerActivations,
         state.timerWaits.map(({ id }) => id),
-        [{ kind: InternalTransitionStateAtomKind.LogicalTime }],
       );
     case SemanticOperationKind.AwaitEffect: {
       const inputNames: string[] = [];
@@ -282,7 +279,6 @@ export function deriveInternalTransitionFootprint(
         operation.effect.elementId,
         state.effectActivations,
         state.effectWaits.map(({ id }) => id),
-        [],
         owner.processInstanceId,
         inputNames,
       );
@@ -402,7 +398,6 @@ function waitFootprint(
   elementId: string,
   counters: ReadonlyArray<Readonly<{ elementId: string; count: number }>>,
   waits: ReadonlyArray<OccurrenceId>,
-  additionalReads: ReadonlyArray<InternalTransitionStateAtom>,
   processInstanceId: string = owner.processInstanceId,
   activityVariableNames: ReadonlyArray<string> = [],
 ): InternalTransitionFootprint | null {
@@ -500,7 +495,7 @@ function waitFootprint(
     activationAtom,
     wait,
     openWaitAnchor,
-    ...additionalReads,
+    { kind: InternalTransitionStateAtomKind.LogicalTime },
     ...(occurrenceKind === InternalOccurrenceKind.Effect ? [activityScope] : []),
   ]);
   const writes = canonicalUniqueStateAtoms([

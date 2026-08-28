@@ -100,11 +100,11 @@ test("the mixed frontier carries every reviewed atom and publication fact", () =
 
   assert.deepEqual(
     requireFootprint(program, frontier, task),
-    expectedArmingFootprint(task, InternalOccurrenceKind.UserTask, "Task", "Flow_TaskInput", false),
+    expectedArmingFootprint(task, InternalOccurrenceKind.UserTask, "Task", "Flow_TaskInput"),
   );
   assert.deepEqual(
     requireFootprint(program, frontier, timer),
-    expectedArmingFootprint(timer, InternalOccurrenceKind.Timer, "Timer", "Flow_TimerInput", true),
+    expectedArmingFootprint(timer, InternalOccurrenceKind.Timer, "Timer", "Flow_TimerInput"),
   );
 
   const singleEffectProgram = {
@@ -504,7 +504,6 @@ function expectedArmingFootprint(
   occurrenceKind: InternalOccurrenceKind,
   elementId: string,
   sequenceFlowId: string,
-  readsLogicalTime: boolean,
 ): InternalTransitionFootprint {
   const selectedOwner = candidate.owner;
   if (selectedOwner === null || frontier.control.kind !== "running") {
@@ -552,9 +551,7 @@ function expectedArmingFootprint(
   const reads = [
     activation,
     controlToken,
-    ...(readsLogicalTime
-      ? [{ kind: InternalTransitionStateAtomKind.LogicalTime } as const]
-      : []),
+    { kind: InternalTransitionStateAtomKind.LogicalTime } as const,
     openWaitAnchor,
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
