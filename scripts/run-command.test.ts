@@ -9,41 +9,73 @@ import test from "node:test";
 
 import { CommandTimeoutError, runCommand } from "./run-command.ts";
 
+async function waitForPathBefore(
+  targetPath: string,
+  boundary: Promise<unknown>,
+  boundaryMessage: string,
+): Promise<void> {
+  const boundaryFailure = boundary.then(() => {
+    throw new Error(boundaryMessage);
+  });
+  for (;;) {
+    try {
+      await access(targetPath);
+      return;
+    } catch (error) {
+      if (
+        !(error instanceof Error && "code" in error && error.code === "ENOENT")
+      ) {
+        throw error;
+      }
+    }
+    await Promise.race([delay(25), boundaryFailure]);
+  }
+}
+
 test(
   "terminates a timed-out process group before descendants can escape",
-  { timeout: 2_000 },
+  { timeout: 6_000 },
   async () => {
     const directory = await mkdtemp(
       path.join(tmpdir(), "bpmn-run-command-test-"),
     );
+    const readyPath = path.join(directory, "ready");
     const markerPath = path.join(directory, "escaped-child");
     const childSource = [
       'const { writeFileSync } = require("node:fs");',
-      `setTimeout(() => writeFileSync(${JSON.stringify(markerPath)}, "escaped"), 500);`,
+      `setTimeout(() => writeFileSync(${JSON.stringify(markerPath)}, "escaped"), 3000);`,
     ].join("");
     const parentSource = [
       'const { spawn } = require("node:child_process");',
+      'const { writeFileSync } = require("node:fs");',
       `spawn(process.execPath, ["-e", ${JSON.stringify(childSource)}], { stdio: "ignore" });`,
+      `writeFileSync(${JSON.stringify(readyPath)}, "ready");`,
       'process.on("SIGTERM", () => {});',
-      "setTimeout(() => process.exit(0), 800);",
+      "setTimeout(() => process.exit(0), 5_000);",
     ].join("");
 
     try {
-      await assert.rejects(
+      const rejected = assert.rejects(
         runCommand(process.execPath, ["-e", parentSource], {
           cwd: directory,
           env: process.env,
-          timeoutMs: 200,
+          timeoutMs: 2_500,
           terminationGraceMs: 50,
         }),
         (error: unknown) => {
           assert.ok(error instanceof CommandTimeoutError);
-          assert.equal(error.timeoutMs, 200);
-          assert.match(error.message, /exceeded 200ms/u);
+          assert.equal(error.timeoutMs, 2_500);
+          assert.match(error.message, /exceeded 2500ms/u);
           return true;
         },
       );
-      await delay(700);
+      await waitForPathBefore(
+        readyPath,
+        rejected,
+        "command timed out before establishing its descendant process",
+      );
+      await rejected;
+      await delay(1_000);
       await assert.rejects(access(markerPath), { code: "ENOENT" });
     } finally {
       await rm(directory, { recursive: true, force: true });
@@ -88,19 +120,19 @@ test(
       ["--input-type=module", "-e", controllerSource],
       { cwd: directory, stdio: "ignore" },
     );
+    const controllerClosed = new Promise<void>((resolve, reject) => {
+      controller.once("error", reject);
+      controller.once("close", resolve);
+    });
 
     try {
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        try {
-          await access(readyPath);
-          break;
-        } catch {
-          await delay(25);
-        }
-      }
-      await access(readyPath);
+      await waitForPathBefore(
+        readyPath,
+        controllerClosed,
+        "controller exited before establishing its process group",
+      );
       controller.kill("SIGTERM");
-      await new Promise<void>((resolve) => controller.once("close", resolve));
+      await controllerClosed;
       await delay(700);
       await assert.rejects(access(markerPath), { code: "ENOENT" });
     } finally {
