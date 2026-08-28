@@ -160,6 +160,12 @@ function withRows(
 
 const recordedModules = leanModuleCostRecord.rows.map((row) => row.module);
 const selfBaseline = leanModuleCostBaseline(leanModuleCostRecord);
+const messageStartMeasurement = selfBaseline.measurements.find(
+  ([module]) => module === "BpmnSemantics.MessageStartConformance",
+);
+if (messageStartMeasurement === undefined) {
+  throw new Error("the Message Start measurement row is missing");
+}
 
 test("every tracked conformance module has exactly one recorded, ratcheted, disclosed row", async () => {
   assert.deepEqual(
@@ -230,7 +236,7 @@ test("a recorded peak changed under an unchanged measurement commit fails the ra
       }),
     ),
     [
-      "BpmnSemantics.MessageStartConformance changed from 3414952 to 3414953 KiB while its measurement target remains d878f38e",
+      `BpmnSemantics.MessageStartConformance changed from ${messageStartMeasurement[1]} to ${messageStartMeasurement[1] + 1} KiB while its measurement target remains ${messageStartMeasurement[2]}`,
     ],
   );
   assert.deepEqual(
@@ -266,7 +272,7 @@ test("lowering a recorded peak without a new measurement target also fails the r
       }),
     ),
     [
-      "BpmnSemantics.MessageStartConformance changed from 3414952 to 3414951 KiB while its measurement target remains d878f38e",
+      `BpmnSemantics.MessageStartConformance changed from ${messageStartMeasurement[1]} to ${messageStartMeasurement[1] - 1} KiB while its measurement target remains ${messageStartMeasurement[2]}`,
     ],
   );
 });
