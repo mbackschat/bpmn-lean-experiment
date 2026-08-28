@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Decision question and boundary
 
@@ -144,7 +144,7 @@ Focused proposal verification is the documentation control plane, link and map r
 
 ## Same-change owners and reopen conditions
 
-While this proposal is pending, [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) and [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) must continue to state that body-claim uniqueness is absent. The [Parallel Multi-Instance proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) records that its unconditional closing-preservation theorem is blocked by that admitted alias and names this proposal as the selected supporting account. [PLAN.md](PLAN.md) keeps `PARALLEL-MULTI-INSTANCE` as the sole active work ID and routes the proposal review as that item's exact next action.
+While this proposal is unimplemented, [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) and [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) must continue to state that body-claim uniqueness is absent. The [Parallel Multi-Instance proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) records that its unconditional closing-preservation theorem is blocked by that admitted alias and names this proposal as the selected supporting account. [PLAN.md](PLAN.md) keeps `PARALLEL-MULTI-INSTANCE` as the sole active work ID and routes implementation as that item's exact next action.
 
 Implementation changes the runtime/proof map, semantic-family map, Activity occurrence ownership specification, Parallel Multi-Instance proof account, TypeScript defect inventory, guarded writer census, the stale continuation-decoder comment describing the body union, and PLAN evidence. The stable `AOO-CLAIM-01` rule graduates into the Activity occurrence specification only after closure approval; this proposal does not become a second permanent authority for the same invariant.
 
@@ -154,6 +154,6 @@ Reopen before adding another Activity body arm, allowing one body occurrence to 
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `9bc675a82a69e30f591c842243ef6648b9fd87d1` | `fork-turns-none` | `approve-with-required-edits` | `2d39af67b280f3af38ff0beb4ecc045df368e2b5` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
