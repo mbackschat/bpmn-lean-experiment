@@ -50,6 +50,11 @@ inductive CompilerId where
   | bpmnSourceSemanticProcess
   deriving Repr, DecidableEq
 
+inductive InternalSchedulingMode where
+  | rejectObservableChoice
+  | requireChoiceSchedule
+  deriving Repr, DecidableEq
+
 inductive GatewayDirection where
   | diverging
   | converging
@@ -601,6 +606,7 @@ structure ControlPlaceScopeOwnership where
 
 structure Program where
   identity : ProgramIdentity
+  internalSchedulingMode : InternalSchedulingMode
   processId : ProcessId
   definitionScopes : List DefinitionScope
   operationScopes : List OperationScopeOwnership

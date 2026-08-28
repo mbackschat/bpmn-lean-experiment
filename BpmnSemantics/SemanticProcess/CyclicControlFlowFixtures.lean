@@ -110,6 +110,7 @@ def cyclicProgram : Program :=
         semanticProfile := cyclicCheckedProcess.identity.semanticProfile
         sourceId := cyclicCheckedProcess.identity.sourceId
         sourceSha256 := cyclicCheckedProcess.identity.sourceSha256 }
+    internalSchedulingMode := .rejectObservableChoice
     processId := cyclicProcessId
     definitionScopes := cyclicCheckedProcess.definitionScopes
     operationScopes := cyclicOperations.map fun operation =>

@@ -7,6 +7,7 @@
  * its own.
  */
 import {
+  InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
@@ -48,6 +49,7 @@ export const boundedScopeProgram = {
     sourceSha256:
       "dc2875fb0c24deeab9d8f180fa4adf44652a504778f3dda187ac19839e60016e",
   },
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   processId,
   definitionScopes: [
     { id: rootScopeId, parentScopeId: null, originElementId: processId },

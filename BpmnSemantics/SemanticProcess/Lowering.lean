@@ -563,6 +563,7 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
         sourceId := source.identity.sourceId
         sourceOverlay := source.identity.sourceOverlay
         sourceSha256 := source.identity.sourceSha256 }
+    internalSchedulingMode := .rejectObservableChoice
     processId := source.processId
     definitionScopes := source.definitionScopes
     operationScopes := scopedOperations.map fun operation =>

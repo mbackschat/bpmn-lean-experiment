@@ -8,6 +8,7 @@ import type {
   Stimulus,
 } from "./contract.js";
 import {
+  InternalSchedulingMode,
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
@@ -126,6 +127,7 @@ export function isWellFormedSemanticProcessProgram(
     !hasOnlyKeys(value, [
       "kind",
       "identity",
+      "internalSchedulingMode",
       "processId",
       "definitionScopes",
       "operationScopes",
@@ -144,6 +146,7 @@ export function isWellFormedSemanticProcessProgram(
     ]) ||
     identity.compiler !==
       SemanticProcessCompilerId.BpmnSourceSemanticProcess ||
+    !isInternalSchedulingMode(value.internalSchedulingMode) ||
     !isNonEmptyString(identity.semanticProfile) ||
     !isNonEmptyString(identity.sourceId) ||
     !isSha256(identity.sourceSha256) ||
@@ -227,6 +230,18 @@ function isWellFormedDefinitionScope(
     isNonEmptyString(value.id) &&
     (value.parentScopeId === null || isNonEmptyString(value.parentScopeId)) &&
     isNonEmptyString(value.originElementId);
+}
+
+function isInternalSchedulingMode(
+  value: unknown,
+): value is InternalSchedulingMode {
+  switch (value) {
+    case InternalSchedulingMode.RejectObservableChoice:
+    case InternalSchedulingMode.RequireChoiceSchedule:
+      return true;
+    default:
+      return false;
+  }
 }
 
 function isWellFormedOperationScopeOwnership(

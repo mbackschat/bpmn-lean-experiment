@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   ActivityBodyKind,
+  InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
@@ -42,6 +43,7 @@ const instanceId = "instance-1";
 
 const boundedProgram = {
   kind: SemanticProcessKind.SemanticProcess,
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-bounded-activity-deadline-draft",

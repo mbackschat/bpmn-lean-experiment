@@ -10,11 +10,13 @@ import {
   SemanticOperationKind,
   SemanticProcessCompilerId,
   compileBpmnToSemanticProcess,
+  lowerCheckedProcess,
 } from "@bpmn-lean/bpmn-source";
 import type {
   CheckedNode,
   SemanticOperation,
 } from "@bpmn-lean/semantic-core";
+import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 import { verifyDefinitionArtifacts } from "../../../scripts/contract-artifacts.ts";
 import {
   compileSemanticProcessFixture,
@@ -101,6 +103,30 @@ test("emits the canonical checked graph and Semantic Process for the sequential 
     result.semanticProcess.controlPlaces.map(({ id }) => id),
     ["place:Flow_StartToTask", "place:Flow_TaskToEnd"],
   );
+});
+
+test("every registered profile lowers with observable internal choice rejected", async () => {
+  const result = await compileFixture(
+    "../../../scenarios/user-task-discovery-completion/process.bpmn",
+    "internal-scheduling-mode-profile-census",
+    SemanticProfileId.UserTask,
+  );
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  for (const semanticProfile of Object.values(SemanticProfileId)) {
+    const program = lowerCheckedProcess({
+      ...result.checkedProcess,
+      identity: {
+        ...result.checkedProcess.identity,
+        semanticProfile,
+      },
+    });
+    assert.equal(
+      (program as unknown as Record<string, unknown>).internalSchedulingMode,
+      "rejectObservableChoice",
+      semanticProfile,
+    );
+  }
 });
 
 test("lowers the balanced parallel source through duplicate and synchronize", async () => {

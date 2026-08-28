@@ -340,6 +340,7 @@ private def mixedWaitProjectionProgram : Program :=
         semanticProfile := ⟨"projection-order-test"⟩
         sourceId := ⟨"projection-order-test"⟩
         sourceSha256 := "projection-order-test" }
+    internalSchedulingMode := .rejectObservableChoice
     processId := ⟨"Process_ProjectionOrder"⟩
     definitionScopes := []
     operationScopes := []

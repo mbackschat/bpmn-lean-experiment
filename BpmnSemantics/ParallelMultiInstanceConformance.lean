@@ -301,6 +301,7 @@ def program : Program :=
         sourceId := ⟨"parallel-multi-instance-first-trace"⟩
         sourceSha256 :=
           "99f6c947d5836d44bb83503f0657e943ecf405c3d298688f12e1c5eaeb98c81e" }
+    internalSchedulingMode := .rejectObservableChoice
     processId
     definitionScopes :=
       [{ id := rootScopeId

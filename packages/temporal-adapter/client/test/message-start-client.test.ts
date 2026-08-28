@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  InternalSchedulingMode,
   MessageChannelKind,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -390,6 +391,7 @@ const operationIds = [
 ] as const;
 const program: SemanticProcessProgram = {
   kind: SemanticProcessKind.SemanticProcess,
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-message-start-event-draft",

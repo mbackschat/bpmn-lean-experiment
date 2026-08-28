@@ -427,6 +427,32 @@ test("accepts the canonical checked-process and Semantic Process contract shapes
   }
 });
 
+test("requires one closed internal scheduling mode in definition artifacts", async () => {
+  const scheduled = parallelDefinitionArtifacts();
+  scheduled.semanticProcess.internalSchedulingMode =
+    "requireChoiceSchedule" as SemanticProcessProgram["internalSchedulingMode"];
+  assert.equal(
+    await verifyDefinitionArtifacts(projectRoot, scheduled),
+    scheduled,
+  );
+
+  const missing = parallelDefinitionArtifacts();
+  delete (missing.semanticProcess as unknown as Record<string, unknown>)
+    .internalSchedulingMode;
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, missing),
+    /semantic process schema validation failed/u,
+  );
+
+  const unknown = parallelDefinitionArtifacts();
+  (unknown.semanticProcess as unknown as Record<string, unknown>)
+    .internalSchedulingMode = "unknown";
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, unknown),
+    /semantic process schema validation failed/u,
+  );
+});
+
 test("rejects checked and Semantic Process references outside their definition domains", async () => {
   const checkedMutation = parallelDefinitionArtifacts();
   requiredAt(

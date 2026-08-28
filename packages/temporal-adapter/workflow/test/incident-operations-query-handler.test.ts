@@ -6,6 +6,7 @@ import {
   ControlStateKind,
   EffectOperation,
   EffectProtocol,
+  InternalSchedulingMode,
   ProcessStatus,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -261,6 +262,7 @@ function incidentProgram(semanticProfile: string): SemanticProcessProgram {
   }] as const;
   return {
     kind: SemanticProcessKind.SemanticProcess,
+    internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
     identity: {
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
       semanticProfile,

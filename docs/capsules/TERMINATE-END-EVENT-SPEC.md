@@ -284,7 +284,7 @@ Excluded:
 
 ## Preservation obligation and common-mode risks
 
-Every source/profile/scenario registration present in immutable pre-M2 baseline `7529150bf3a83de7e36734cf8d401924a0811b7d` retains exact source bytes, profile bytes, admission result, checked graph, lowered program, scenario projection, and registry origin. The cyclic-control-flow preservation fixture remains read-only. Terminate End is additive.
+Every source/profile/scenario registration present in immutable pre-M2 baseline `7529150bf3a83de7e36734cf8d401924a0811b7d` retains exact source bytes, profile bytes, admission result, checked graph, lowered program, scenario projection, and registry origin, subject only to the Program-wide required-field projection rule owned by the [cyclic-control-flow preservation obligation](CYCLIC-CONTROL-FLOW-SPEC.md#preservation-obligation-and-common-mode-risks). The cyclic-control-flow preservation fixture remains read-only. Terminate End is additive.
 
 Primary common-mode risks are:
 

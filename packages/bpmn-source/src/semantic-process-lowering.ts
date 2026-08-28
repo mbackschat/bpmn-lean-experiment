@@ -2,6 +2,7 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
+  InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
@@ -68,6 +69,7 @@ export function lowerCheckedProcess(
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
       ...source.identity,
     },
+    internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
     processId: source.processId,
     definitionScopes: source.definitionScopes,
     operationScopes: scopedOperations

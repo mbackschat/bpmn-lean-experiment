@@ -318,6 +318,21 @@ def internalPublicationPair? (program : Program) (footprintState before after : 
   let lifecycle ← flowNodeOccurrenceDeltaForOperation? program before after operation commandId 0
   pure { footprint, record, lifecycle }
 
+private structure InternalBatchResult where
+  state : RuntimeState
+  publications : List InternalPublicationPair
+
+private def fireInternalBatch? (program : Program) (footprintState : RuntimeState)
+    (commandId : SemanticId) :
+    RuntimeState → List SemanticOperation → Option InternalBatchResult
+  | state, [] => some { state, publications := [] }
+  | state, operation :: rest => do
+      let successor ← fire? program operation state
+      let publication ← internalPublicationPair? program footprintState state successor
+        operation commandId
+      let tail ← fireInternalBatch? program footprintState commandId successor rest
+      pure { state := tail.state, publications := publication :: tail.publications }
+
 /-- A returned pair is the actual accepted record and lifecycle for the same operation step. -/
 theorem internalPublicationPair_defined (program : Program)
     (footprintState before after : RuntimeState) (operation : SemanticOperation)
@@ -374,38 +389,29 @@ private def closeSupportedTraced :
                 commandId transitionIndex) closed.lifecycles }
       | first :: second :: remaining =>
           let transitions := first :: second :: remaining
-          if internalOperationPairIndependent? program state
-              (transitions.map (·.1)) then
-            match fuel with
-            | 0 =>
-                let closed := closeSupportedTraced 0 program commandId
-                  (transitionIndex + 1) first.2
-                { closed with
-                  records := prependRecord (internalTransitionRecord? program state first.1)
-                    closed.records
-                  lifecycles := prependLifecycle
-                    (flowNodeOccurrenceDeltaForOperation? program state first.2 first.1
-                      commandId transitionIndex) closed.lifecycles }
-            | pairFuel + 1 =>
-                match fire? program second.1 first.2 with
-                | none =>
-                    { state, hitBound := false, ambiguousChoice := true,
-                      records := none, lifecycles := none }
-                | some pairState =>
-                    let closed := closeSupportedTraced pairFuel program commandId
-                      (transitionIndex + 2) pairState
-                    let publications := do
-                      let firstPair ← internalPublicationPair? program state state first.2
-                        first.1 commandId
-                      let secondPair ← internalPublicationPair? program state first.2 pairState
-                        second.1 commandId
-                      pure [firstPair, secondPair]
-                    let paired := prependPublicationPairs publications closed.records
-                      closed.lifecycles
-                    { closed with records := paired.1, lifecycles := paired.2 }
+          let operations := transitions.map (·.1)
+          if internalOperationFrontierPairwiseIndependent? program state operations then
+            if operations.length > fuel + 1 then
+              { state, hitBound := true, ambiguousChoice := false,
+                records := none, lifecycles := none }
+            else
+              match fireInternalBatch? program state commandId state operations with
+              | none =>
+                  { state, hitBound := false, ambiguousChoice := true,
+                    records := none, lifecycles := none }
+              | some batch =>
+                  let closed := closeSupportedTraced (fuel - (remaining.length + 1))
+                    program commandId (transitionIndex + operations.length) batch.state
+                  let paired := prependPublicationPairs (some batch.publications)
+                    closed.records closed.lifecycles
+                  { closed with records := paired.1, lifecycles := paired.2 }
           else
             { state, hitBound := false, ambiguousChoice := true,
               records := none, lifecycles := none }
+termination_by fuel => fuel
+decreasing_by
+  all_goals apply Nat.lt_succ_of_le
+  all_goals first | exact Nat.le_refl _ | exact Nat.sub_le _ _
 
 /-- Semantic command outcome and candidate state, with closure failures kept separate. -/
 structure StimulusResult where

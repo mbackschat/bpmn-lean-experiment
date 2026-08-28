@@ -1,4 +1,5 @@
 import {
+  InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
@@ -16,6 +17,7 @@ export const processStartFixture = {
 
 export const processProgramFixture = {
   kind: SemanticProcessKind.SemanticProcess,
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "cibseven-2.2.0-user-task-process-data-draft",

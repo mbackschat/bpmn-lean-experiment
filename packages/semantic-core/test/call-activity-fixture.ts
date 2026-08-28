@@ -1,4 +1,5 @@
 import {
+  InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
@@ -21,6 +22,7 @@ export const expectedCalledInstanceId = "call:11:Caller:😀:7:Call:é:1";
 
 export const callActivityProgram = {
   kind: SemanticProcessKind.SemanticProcess,
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-called-process-call-activity-draft",

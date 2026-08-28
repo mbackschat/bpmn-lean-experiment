@@ -13,7 +13,7 @@ import type {
 import {
   compareInternalTransitionPublicationSortKeys,
   deriveInternalTransitionFootprint,
-  internalOperationPairIsIndependent,
+  internalOperationFrontierIsPairwiseIndependent,
 } from "./internal-transition-footprint.js";
 import type {
   InternalTransitionPublicationSortKey,
@@ -153,85 +153,61 @@ export function applyStimulusWithTrace(
   lifecycles.push(externalLifecycle);
 
   let before = evaluation.admittedState;
-  for (
-    let stepIndex = 0;
-    stepIndex < evaluation.selectedInternalSteps.length;
-  ) {
-    const step = evaluation.selectedInternalSteps[stepIndex];
-    if (step === undefined) {
+  for (const batch of evaluation.selectedInternalBatches) {
+    const batchStart = before;
+    if (
+      batch.length === 0 ||
+      (batch.length > 1 &&
+        !internalOperationFrontierIsPairwiseIndependent(
+          program,
+          batchStart,
+          batch,
+        ))
+    ) {
       return noTrace(result);
     }
-    const next = evaluation.selectedInternalSteps[stepIndex + 1];
-    if (
-      next !== undefined &&
-      internalOperationPairIsIndependent(program, before, [step, next])
-    ) {
-      const leftFootprint = deriveInternalTransitionFootprint(
+
+    const units: InternalPublicationUnit[] = [];
+    for (const step of batch) {
+      const footprint = batch.length === 1
+        ? null
+        : deriveInternalTransitionFootprint(program, batchStart, step);
+      if (batch.length > 1 && footprint === null) {
+        return noTrace(result);
+      }
+      const unit = internalPublicationUnit(
         program,
         before,
         step,
+        footprint?.publicationSortKey ?? null,
       );
-      const rightFootprint = deriveInternalTransitionFootprint(
-        program,
-        before,
-        next,
-      );
-      if (leftFootprint === null || rightFootprint === null) {
+      if (unit === null) {
         return noTrace(result);
       }
-      const leftUnit = internalPublicationUnit(
-        program,
-        before,
-        step,
-        leftFootprint.publicationSortKey,
-      );
-      const rightUnit = internalPublicationUnit(
-        program,
-        step.successor,
-        next,
-        rightFootprint.publicationSortKey,
-      );
-      if (leftUnit === null || rightUnit === null) {
+      units.push(unit);
+      before = step.successor;
+    }
+    if (batch.length > 1) {
+      if (!units.every(hasInternalPublicationSortKey)) {
         return noTrace(result);
       }
-      const units = [
-        { ...leftUnit, sortKey: leftFootprint.publicationSortKey },
-        { ...rightUnit, sortKey: rightFootprint.publicationSortKey },
-      ].sort((left, right) =>
+      units.sort((left, right) =>
         compareInternalTransitionPublicationSortKeys(
           left.sortKey,
           right.sortKey,
         )
       );
-      if (
-        !appendInternalPublicationUnits(
-          stimulus.commandId,
-          records,
-          lifecycles,
-          units,
-        )
-      ) {
-        return noTrace(result);
-      }
-      before = next.successor;
-      stepIndex += 2;
-      continue;
     }
-
-    const unit = internalPublicationUnit(program, before, step, null);
     if (
-      unit === null ||
       !appendInternalPublicationUnits(
         stimulus.commandId,
         records,
         lifecycles,
-        [unit],
+        units,
       )
     ) {
       return noTrace(result);
     }
-    before = step.successor;
-    stepIndex += 1;
   }
   return sameJson(before, result.state)
     ? {
@@ -251,6 +227,16 @@ type InternalPublicationUnit = Readonly<{
   ) => UnnumberedFlowNodeOccurrenceDelta | null;
   sortKey: InternalTransitionPublicationSortKey | null;
 }>;
+
+type SortableInternalPublicationUnit = InternalPublicationUnit & Readonly<{
+  sortKey: InternalTransitionPublicationSortKey;
+}>;
+
+function hasInternalPublicationSortKey(
+  unit: InternalPublicationUnit,
+): unit is SortableInternalPublicationUnit {
+  return unit.sortKey !== null;
+}
 
 function internalPublicationUnit(
   program: SemanticProcessProgram,

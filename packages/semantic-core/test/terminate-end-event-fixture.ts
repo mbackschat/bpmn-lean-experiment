@@ -1,6 +1,7 @@
 import {
   CheckedNodeKind,
   GatewayDirection,
+  InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProfileId,
@@ -57,6 +58,7 @@ export const terminateProgram = {
     sourceSha256:
       "0b049156bee51883710a875edc0cbb54cd2afc9fa45989afca4a0fdfd5ab3a23",
   },
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   processId: terminateProcessId,
   definitionScopes: [
     {

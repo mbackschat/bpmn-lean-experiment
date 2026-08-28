@@ -417,10 +417,8 @@ test("zero and one remaining step preserve bound precedence", () => {
   const one = closeFrontier(program, frontier, 1);
   assert.equal(one.hitBound, true);
   assert.equal(one.ambiguousInternalChoice, false);
-  assert.deepEqual(
-    one.steps.map(({ operation }) => operation.id),
-    ["operation:Task"],
-  );
+  assert.deepEqual(one.state, frontier);
+  assert.deepEqual(one.steps, []);
 });
 
 test("a footprint-approved pair rolls back when its second step disappears", () => {

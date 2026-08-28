@@ -1,4 +1,5 @@
 import {
+  InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
@@ -89,6 +90,7 @@ const operations: SemanticOperation[] = [{
 
 export const publicationProgram: SemanticProcessProgram = {
   kind: SemanticProcessKind.SemanticProcess,
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "parallel-fork-join-draft",
@@ -177,6 +179,7 @@ const timedOperations: SemanticOperation[] = [{
 
 export const timedPublicationProgram: SemanticProcessProgram = {
   kind: SemanticProcessKind.SemanticProcess,
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-timer-user-task-composition-draft",

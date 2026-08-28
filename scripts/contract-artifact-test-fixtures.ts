@@ -15,6 +15,7 @@ import type {
   ControlPlace,
   SemanticOperation,
   SemanticOperationKind,
+  SemanticProcessProgram,
   StateObservation,
   Stimulus,
   CheckedNodeKind,
@@ -221,6 +222,8 @@ export function parallelDefinitionArtifacts(): MutableDefinitionArtifacts {
         compiler: "bpmn-source-semantic-process",
         ...identity,
       },
+      internalSchedulingMode:
+        "rejectObservableChoice" as SemanticProcessProgram["internalSchedulingMode"],
       processId: "Process_ParallelUserTasks",
       ...semanticRootScope(
         "Process_ParallelUserTasks",
@@ -336,6 +339,8 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
         compiler: "bpmn-source-semantic-process",
         ...identity,
       },
+      internalSchedulingMode:
+        "rejectObservableChoice" as SemanticProcessProgram["internalSchedulingMode"],
       processId: "Process_ServiceTaskEffectProbe",
       ...semanticRootScope(
         "Process_ServiceTaskEffectProbe",

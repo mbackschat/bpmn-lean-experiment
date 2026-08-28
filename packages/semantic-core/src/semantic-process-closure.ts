@@ -10,6 +10,7 @@ export type SupportedClosureResult<State, Step> = Readonly<{
   hitBound: boolean;
   ambiguousInternalChoice: boolean;
   steps: ReadonlyArray<Step>;
+  batches: ReadonlyArray<ReadonlyArray<Step>>;
 }>;
 
 /**
@@ -24,50 +25,49 @@ export function closeSupportedInternalOperations<
   initialState: State,
   limit: number,
   enabledOperations: (state: State) => ReadonlyArray<Step>,
-  pairIsIndependent: (
+  frontierIsPairwiseIndependent: (
     state: State,
     enabled: ReadonlyArray<Step>,
   ) => boolean,
 ): SupportedClosureResult<State, Step> {
   let state = initialState;
   const steps: Step[] = [];
+  const batches: Step[][] = [];
   while (steps.length < limit) {
     const enabled = enabledOperations(state);
     if (enabled.length === 0) {
-      return closed(state, steps);
+      return closed(state, steps, batches);
     }
     if (enabled.length > 1) {
-      if (!pairIsIndependent(state, enabled)) {
-        return ambiguous(state, steps);
+      if (!frontierIsPairwiseIndependent(state, enabled)) {
+        return ambiguous(state, steps, batches);
       }
-      const first = enabled[0];
-      const expectedSecond = enabled[1];
-      if (first === undefined || expectedSecond === undefined) {
-        return ambiguous(state, steps);
+      if (enabled.length > limit - steps.length) {
+        return bounded(state, steps, batches);
       }
-      if (limit - steps.length === 1) {
-        steps.push(first);
-        state = first.successor;
-        continue;
+
+      const batchStart = state;
+      const batch: Step[] = [];
+      for (const expected of enabled) {
+        const selected = enabledOperations(state).find(({ operation }) =>
+          operation.id === expected.operation.id
+        );
+        if (selected === undefined) {
+          return ambiguous(batchStart, steps, batches);
+        }
+        batch.push(selected);
+        state = selected.successor;
       }
-      const afterFirst = enabledOperations(first.successor);
-      const second = afterFirst[0];
-      if (
-        afterFirst.length !== 1 ||
-        second === undefined ||
-        second.operation.id !== expectedSecond.operation.id
-      ) {
-        return ambiguous(state, steps);
-      }
-      steps.push(first, second);
-      state = second.successor;
+      steps.push(...batch);
+      batches.push(batch);
       continue;
     }
     const selected = enabled[0];
     if (selected === undefined) {
-      return closed(state, steps);
+      return closed(state, steps, batches);
     }
     steps.push(selected);
+    batches.push([selected]);
     state = selected.successor;
   }
   return {
@@ -75,29 +75,48 @@ export function closeSupportedInternalOperations<
     hitBound: enabledOperations(state).length > 0,
     ambiguousInternalChoice: false,
     steps,
+    batches,
   };
 }
 
 function ambiguous<State, Step>(
   state: State,
   steps: ReadonlyArray<Step>,
+  batches: ReadonlyArray<ReadonlyArray<Step>>,
 ): SupportedClosureResult<State, Step> {
   return {
     state,
     hitBound: false,
     ambiguousInternalChoice: true,
     steps,
+    batches,
   };
 }
 
 function closed<State, Step>(
   state: State,
   steps: ReadonlyArray<Step>,
+  batches: ReadonlyArray<ReadonlyArray<Step>>,
 ): SupportedClosureResult<State, Step> {
   return {
     state,
     hitBound: false,
     ambiguousInternalChoice: false,
     steps,
+    batches,
+  };
+}
+
+function bounded<State, Step>(
+  state: State,
+  steps: ReadonlyArray<Step>,
+  batches: ReadonlyArray<ReadonlyArray<Step>>,
+): SupportedClosureResult<State, Step> {
+  return {
+    state,
+    hitBound: true,
+    ambiguousInternalChoice: false,
+    steps,
+    batches,
   };
 }

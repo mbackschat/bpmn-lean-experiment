@@ -153,6 +153,28 @@ def internalOperationPairIndependent? (program : Program) (state : RuntimeState)
         | _, _ => false
   | _ => false
 
+private def internalOperationIndependentFrom? (program : Program)
+    (state : RuntimeState) (left : SemanticOperation) :
+    List SemanticOperation → Bool
+  | [] => true
+  | right :: rest =>
+      internalOperationPairIndependent? program state [left, right] &&
+        internalOperationIndependentFrom? program state left rest
+
+private def internalOperationPairsIndependent? (program : Program)
+    (state : RuntimeState) : List SemanticOperation → Bool
+  | [] => true
+  | left :: rest =>
+      internalOperationIndependentFrom? program state left rest &&
+        internalOperationPairsIndependent? program state rest
+
+/-- A complete finite frontier is independent exactly when it has at least two members and every unordered pair passes the exact pre-state footprint classifier. -/
+def internalOperationFrontierPairwiseIndependent? (program : Program)
+    (state : RuntimeState) : List SemanticOperation → Bool
+  | operations@(_ :: _ :: _) =>
+      internalOperationPairsIndependent? program state operations
+  | _ => false
+
 private def operationBefore (left right : SemanticOperation) : Bool := left.id.value < right.id.value
 
 def canonicalInternalOperations (operations : List SemanticOperation) : List SemanticOperation := sortBy operationBefore operations

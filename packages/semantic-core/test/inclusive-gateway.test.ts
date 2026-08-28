@@ -71,7 +71,7 @@ test("selects every true Inclusive branch and uses default only for the empty su
   }
 });
 
-test("requires four both-true start steps and reports bound-three exhaustion", () => {
+test("refuses a two-arm batch when only one closure step remains", () => {
   const start = inclusiveStart([present("takeA"), present("takeB")]);
   const exact = applyStimulus(inclusiveProgram, initialState, start, 4);
   const short = applyStimulus(inclusiveProgram, initialState, start, 3);
@@ -79,7 +79,7 @@ test("requires four both-true start steps and reports bound-three exhaustion", (
   assert.equal(exact.internalStepBoundExceeded, false);
   assert.deepEqual(expectedTasks(exact.state), ["Task_A", "Task_B"]);
   assert.equal(short.internalStepBoundExceeded, true);
-  assert.deepEqual(expectedTasks(short.state), ["Task_A"]);
+  assert.deepEqual(expectedTasks(short.state), []);
 });
 
 test("projects selected User Tasks without exposing the hidden branch record", () => {

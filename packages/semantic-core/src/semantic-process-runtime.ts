@@ -3,7 +3,7 @@ import type { Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { admit } from "./semantic-command-admission.js";
 import type { SemanticCommandOutcome } from "./semantic-command-admission.js";
-import { internalOperationPairIsIndependent } from "./internal-transition-footprint.js";
+import { internalOperationFrontierIsPairwiseIndependent } from "./internal-transition-footprint.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import { closeSupportedInternalOperations } from "./semantic-process-closure.js";
@@ -111,6 +111,7 @@ export type StimulusEvaluationResult = DeepReadonly<{
   ambiguousInternalChoice: boolean;
   admittedState: RuntimeState | null;
   selectedInternalSteps: AppliedInternalOperationStep[];
+  selectedInternalBatches: AppliedInternalOperationStep[][];
 }>;
 
 export const semanticProcessClosureLimit = 8;
@@ -570,6 +571,7 @@ export function evaluateStimulusWithSelectedSteps(
           ambiguousInternalChoice: false,
           admittedState: admission.state,
           selectedInternalSteps: [],
+          selectedInternalBatches: [],
         };
       }
       const closure = closeSupportedInternalOperations(
@@ -577,7 +579,11 @@ export function evaluateStimulusWithSelectedSteps(
         closureLimit,
         (current) => enabledInternalOperations(program, current),
         (current, enabled) =>
-          internalOperationPairIsIndependent(program, current, enabled),
+          internalOperationFrontierIsPairwiseIndependent(
+            program,
+            current,
+            enabled,
+          ),
       );
       return {
         result: {
@@ -588,6 +594,7 @@ export function evaluateStimulusWithSelectedSteps(
         ambiguousInternalChoice: closure.ambiguousInternalChoice,
         admittedState: admission.state,
         selectedInternalSteps: closure.steps,
+        selectedInternalBatches: closure.batches,
       };
     }
     case CommandOutcome.Rejected:
@@ -600,6 +607,7 @@ export function evaluateStimulusWithSelectedSteps(
         ambiguousInternalChoice: false,
         admittedState: null,
         selectedInternalSteps: [],
+        selectedInternalBatches: [],
       };
     default:
       return assertNever(admission.outcome);

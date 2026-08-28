@@ -604,6 +604,36 @@ test("Semantic-operation wire decoding covers every semantic variant", () => {
   );
 });
 
+test("internal scheduling-mode wire decoding covers every closed variant", () => {
+  const contract = readFileSync(
+    fileURLToPath(new URL("../BpmnSemantics/SemanticProcessContract.lean", import.meta.url)),
+    "utf8",
+  );
+  const decoder = readFileSync(
+    fileURLToPath(
+      new URL("../BpmnSemantics/SemanticProcessJson/Program.lean", import.meta.url),
+    ),
+    "utf8",
+  );
+  const expected = new Set(
+    inductiveConstructors(contract, "InternalSchedulingMode"),
+  );
+  const decoded = new Set(
+    declarationBody(decoder, "decodeInternalSchedulingMode")
+      .split(/\r?\n/u)
+      .flatMap((line) => {
+        const match = /^  \| "([^"]+)" =>/u.exec(line);
+        return match?.[1] === undefined ? [] : [match[1]];
+      }),
+  );
+
+  assert.deepEqual(
+    [...decoded].sort(compareCanonicalStrings),
+    [...expected].sort(compareCanonicalStrings),
+    "every InternalSchedulingMode constructor must have an exact Program decoder arm",
+  );
+});
+
 test("public-projection and graph-edge inventories match every variant explicitly", () => {
   for (const { path: relativePath, declaration } of exhaustiveVariantInventories) {
     const source = readFileSync(

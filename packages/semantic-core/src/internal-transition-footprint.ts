@@ -254,17 +254,46 @@ export function internalOperationPairIsIndependent(
   state: RuntimeState,
   candidates: ReadonlyArray<InternalTransitionCandidate>,
 ): boolean {
-  if (candidates.length !== 2) {
+  return candidates.length === 2 &&
+    internalOperationFrontierIsPairwiseIndependent(program, state, candidates);
+}
+
+/** Classifies a complete finite frontier through all pairwise footprint equations. */
+export function internalOperationFrontierIsPairwiseIndependent(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  candidates: ReadonlyArray<InternalTransitionCandidate>,
+): boolean {
+  if (candidates.length < 2) {
     return false;
   }
-  const left = candidates[0] === undefined
-    ? null
-    : deriveInternalTransitionFootprint(program, state, candidates[0]);
-  const right = candidates[1] === undefined
-    ? null
-    : deriveInternalTransitionFootprint(program, state, candidates[1]);
-  return left !== null && right !== null &&
-    internalTransitionFootprintsAreIndependent(left, right);
+  const footprints = candidates.map((candidate) =>
+    deriveInternalTransitionFootprint(program, state, candidate)
+  );
+  if (footprints.some((footprint) => footprint === null)) {
+    return false;
+  }
+  for (let leftIndex = 0; leftIndex < footprints.length; leftIndex += 1) {
+    const left = footprints[leftIndex];
+    if (left === null || left === undefined) {
+      return false;
+    }
+    for (
+      let rightIndex = leftIndex + 1;
+      rightIndex < footprints.length;
+      rightIndex += 1
+    ) {
+      const right = footprints[rightIndex];
+      if (
+        right === null ||
+        right === undefined ||
+        !internalTransitionFootprintsAreIndependent(left, right)
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 function waitFootprint(

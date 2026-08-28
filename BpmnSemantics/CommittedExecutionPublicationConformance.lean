@@ -52,7 +52,13 @@ theorem traced_start_erases_to_existing_applyStimulus :
 theorem admitted_start_trace_replays_to_exact_result :
     replayCommittedTransitions sequentialProgram initialState exactTrace = some tracedStart.result.state := by
   rw [← admitted_start_emits_exact_external_and_two_internal_transitions]
-  exact applyStimulusTraced_emitted_trace_replays _ _ _ _ (by decide +kernel)
+  rw [traced_start_erases_to_existing_applyStimulus]
+  change replayCommittedTransitions sequentialProgram initialState
+      (applyStimulusTraced scenarioClosureLimit sequentialProgram initialState
+        startStimulus).committedTransitions =
+    some (applyStimulus scenarioClosureLimit sequentialProgram initialState startStimulus).state
+  exact applyStimulusTraced_emitted_trace_replays scenarioClosureLimit sequentialProgram
+    initialState startStimulus (by decide +kernel)
 
 def droppedTrace : List CommittedTransition :=
   [.externalStimulus startStimulus, .internalOperation startRecord]

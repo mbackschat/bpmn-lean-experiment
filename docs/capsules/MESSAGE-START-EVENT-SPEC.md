@@ -296,7 +296,7 @@ No new CIB relationship, probe, profile delta, or retained result is created. Th
 
 ## Preservation obligation and common-mode risks
 
-The exact preservation claim is: every source/profile/scenario registration present in immutable pre-M2 baseline `7529150bf3a83de7e36734cf8d401924a0811b7d` retains its exact source bytes, profile bytes, admission result, checked graph, lowered program, scenario projection, and registry origin. The committed cyclic-control-flow baseline fixture and verifier remain read-only and must pass unchanged. The new profile is an additive post-baseline registration.
+The exact preservation claim is: every source/profile/scenario registration present in immutable pre-M2 baseline `7529150bf3a83de7e36734cf8d401924a0811b7d` retains its exact source bytes, profile bytes, admission result, checked graph, lowered program, scenario projection, and registry origin, subject only to the Program-wide required-field projection rule owned by the [cyclic-control-flow preservation obligation](CYCLIC-CONTROL-FLOW-SPEC.md#preservation-obligation-and-common-mode-risks). The committed cyclic-control-flow baseline fixture and verifier remain read-only and must pass unchanged. The new profile is an additive post-baseline registration.
 
 The primary common-mode risks are:
 

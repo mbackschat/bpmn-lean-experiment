@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  InternalSchedulingMode,
   MessageChannelKind,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -47,6 +48,7 @@ const program = {
     sourceSha256:
       "f920ed0454a56b6649d0ecaa915a0ab5b3ed4f3bb974fba9c6255039ecb801a2",
   },
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   processId,
   definitionScopes: [
     {

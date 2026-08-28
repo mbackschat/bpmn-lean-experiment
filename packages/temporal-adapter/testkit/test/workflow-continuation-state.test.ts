@@ -10,6 +10,7 @@ import {
   ActivityBodyKind,
   CommandOutcome,
   ControlStateKind,
+  InternalSchedulingMode,
   RuntimeStateDefect,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -56,6 +57,7 @@ const scopeId = "Scope_Process_Continuation";
 
 const program = {
   kind: SemanticProcessKind.SemanticProcess,
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "profile-continuation",

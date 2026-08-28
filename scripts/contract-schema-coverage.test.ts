@@ -65,3 +65,29 @@ test("gives every semantic operation and checked node kind a wire-schema branch"
     assert.deepEqual(absent, [], `${schema} has no branch for these kinds`);
   }
 });
+
+test("gives every internal scheduling mode an exact top-level schema value", async () => {
+  const source = await readFile(
+    `${projectRoot}/packages/semantic-core/src/semantic-process-contract.ts`,
+    "utf8",
+  );
+  const declared = declaredEnumValues(source, "InternalSchedulingMode");
+  assert.deepEqual(declared, [
+    "rejectObservableChoice",
+    "requireChoiceSchedule",
+  ]);
+
+  const document: unknown = JSON.parse(
+    await readFile(
+      `${projectRoot}/contracts/schemas/semantic-process.schema.json`,
+      "utf8",
+    ),
+  );
+  assert.ok(isRecord(document));
+  assert.ok(isRecord(document.properties));
+  const mode = document.properties.internalSchedulingMode;
+  assert.ok(isRecord(mode));
+  assert.deepEqual(mode.enum, declared);
+  assert.ok(Array.isArray(document.required));
+  assert.equal(document.required.includes("internalSchedulingMode"), true);
+});

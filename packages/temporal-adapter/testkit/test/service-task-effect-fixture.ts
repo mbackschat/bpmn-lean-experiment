@@ -6,6 +6,7 @@
  */
 import {
   EffectExecutionResultKind,
+  InternalSchedulingMode,
   ObservationRequestKind,
   ScenarioDocumentKind,
   SemanticOperationKind,
@@ -87,6 +88,7 @@ export function serviceTaskEffectInput(
   ] as const;
   const semanticProcess: SemanticProcessProgram = {
     kind: SemanticProcessKind.SemanticProcess,
+    internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
     identity: {
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
       semanticProfile: "cibseven-2.2.0-service-task-effect-draft",

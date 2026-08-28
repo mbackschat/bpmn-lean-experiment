@@ -122,6 +122,7 @@ def rootSyntheticProgram : Program :=
         sourceId := ⟨"terminate-root-synthetic"⟩
         sourceSha256 :=
           "2222222222222222222222222222222222222222222222222222222222222222" }
+    internalSchedulingMode := .rejectObservableChoice
     processId := ⟨"RootSynthetic"⟩
     definitionScopes :=
       [{ id := rootSyntheticScopeId, parentScopeId := none

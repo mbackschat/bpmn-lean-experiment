@@ -39,6 +39,11 @@ export enum SemanticProcessCompilerId {
   BpmnSourceSemanticProcess = "bpmn-source-semantic-process",
 }
 
+export enum InternalSchedulingMode {
+  RejectObservableChoice = "rejectObservableChoice",
+  RequireChoiceSchedule = "requireChoiceSchedule",
+}
+
 export enum SemanticOperationKind {
   Initiate = "initiate",
   InitiateMessage = "initiateMessage",
@@ -476,6 +481,7 @@ export type SemanticOperation =
 export type SemanticProcessProgram = DeepReadonly<{
   kind: SemanticProcessKind.SemanticProcess;
   identity: SemanticProcessIdentity;
+  internalSchedulingMode: InternalSchedulingMode;
   processId: string;
   definitionScopes: DefinitionScope[];
   operationScopes: OperationScopeOwnership[];

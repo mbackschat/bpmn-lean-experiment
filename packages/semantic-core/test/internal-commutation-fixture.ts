@@ -40,6 +40,7 @@ export const {
   InternalTransitionStateAtomKind,
   compareInternalTransitionPublicationSortKeys,
   deriveInternalTransitionFootprint,
+  internalOperationFrontierIsPairwiseIndependent,
   internalOperationPairIsIndependent,
   internalTransitionFootprintsAreIndependent,
 } = footprintModule;
@@ -226,7 +227,7 @@ export function closeFrontier(
     limit,
     (current) => enabledOperations(selectedProgram, current),
     (current, enabled) =>
-      internalOperationPairIsIndependent(
+      internalOperationFrontierIsPairwiseIndependent(
         selectedProgram,
         current,
         enabled,

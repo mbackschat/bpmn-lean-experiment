@@ -9,6 +9,7 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import type { BpmnSourceIdentity } from "@bpmn-lean/bpmn-source";
+import { InternalSchedulingMode } from "@bpmn-lean/semantic-core";
 import type { DeepReadonly } from "@bpmn-lean/semantic-core";
 
 import {
@@ -374,10 +375,19 @@ async function verifyCatalogEntry(entry: FrozenCatalogEntry): Promise<void> {
     `${entry.key} admission projection`,
   );
   requireDeepEqual(result.checkedProcess, entry.checkedProcess, `${entry.key} checked projection`);
+  const {
+    internalSchedulingMode,
+    ...baselineComparableSemanticProcess
+  } = result.semanticProcess;
+  requireEqual(
+    internalSchedulingMode,
+    InternalSchedulingMode.RejectObservableChoice,
+    `${entry.key} internal scheduling mode`,
+  );
   requireDeepEqual(
-    result.semanticProcess,
+    baselineComparableSemanticProcess,
     entry.semanticProcess,
-    `${entry.key} Semantic Process projection`,
+    `${entry.key} Semantic Process projection except the required post-baseline scheduling mode`,
   );
 }
 

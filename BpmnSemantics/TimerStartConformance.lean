@@ -65,6 +65,7 @@ def expectedProgram : Program :=
         semanticProfile := profileId
         sourceId := sourceIdentity.sourceId
         sourceSha256 := sourceIdentity.sourceSha256 }
+    internalSchedulingMode := .rejectObservableChoice
     processId
     definitionScopes := checkedProcess.definitionScopes
     operationScopes :=

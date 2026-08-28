@@ -18,7 +18,7 @@ The [sequential metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METAD
 
 The first interchange composition reuses the sequential User Task Process-data account while source admission retains standard notation. Lean/core results and live Temporal replacement, history, and replay agree. It adds no runtime field, IL operation, transition, observation, or CIB interpretation.
 
-`INTERNAL-COMMUTATION` replaces the User-Task exception with a footprint rule for User Task, Message, Timer, and effect pairs. Lean proves invariants, projectability, opposite enabledness, commutation, and canonical publication. TypeScript derives closed atom domains; its both-order oracle is test-only. Unsupported, differently sized, or colliding frontiers remain ambiguous. Pre-state/intermediate open-projection failure preserves closure without publication. No source/profile/host capability is added.
+`INTERNAL-COMMUTATION` requires a closed Program scheduling mode; existing profiles select reject. TypeScript atomically closes a pairwise-independent ordinary User Task, Message, Timer, or effect frontier and refuses an oversized batch before mutation. Lean retains the exact-pair proofs, adds the complete-frontier classifier, and checks all six orders of three tasks. Scheduled choice, region footprints, other families, and the arbitrary-batch theorem await checkpoint review.
 
 ## Implemented
 
@@ -146,7 +146,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 - adopted checked-source semantics and run-level observational lowering-preservation proof
 - either-target-fires and exactly-two enabledness at a two-token frontier
 - generalized enabled-transition, supported-closure, admission, observation, and stimulus-list correspondence remain unresolved
-- general multiple-enabled closure without an explicit semantic choice or checked commutation argument
+- scheduled choice and complete multiple-enabled closure beyond the ordinary arming-family footprint checkpoint
 - replay/host-attempt stability as a Lean proposition
 - general or repeated scopes, nested/heterogeneous/decimal values, effect faults, catch-all/multi-handler/ancestor Error search, expression languages, or exceptional propagation beyond one direct parent
 - TypeScript or Temporal correspondence proof

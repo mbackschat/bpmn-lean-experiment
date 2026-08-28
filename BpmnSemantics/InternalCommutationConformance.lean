@@ -40,12 +40,18 @@ private def userTaskB : SemanticOperation :=
     ⟨"place:user-b-input"⟩ ⟨"place:user-b-output"⟩
     { id := ⟨"B_UserTask"⟩, name := some "B" }
 
+private def userTaskC : SemanticOperation :=
+  .awaitUserTask ⟨"operation:C_UserTask"⟩ { elementId := ⟨"C_UserTask"⟩ }
+    ⟨"place:user-c-input"⟩ ⟨"place:user-c-output"⟩
+    { id := ⟨"C_UserTask"⟩, name := some "C" }
+
 private def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"internal-commutation-checkpoint"⟩
         sourceId := ⟨"internal-commutation-checkpoint"⟩
         sourceSha256 := "internal-commutation-checkpoint" }
+    internalSchedulingMode := .rejectObservableChoice
     processId := ⟨"Process_InternalCommutation"⟩
     definitionScopes := []
     operationScopes :=
@@ -79,10 +85,36 @@ private def userTaskPairState : RuntimeState :=
       [{ placeId := ⟨"place:user-input"⟩, owner }
       , { placeId := ⟨"place:user-b-input"⟩, owner }] }
 
+private def userTaskTripleProgram : Program :=
+  { program with
+    operations := [userTask, userTaskB, userTaskC]
+    operationScopes :=
+      [operationScope userTask.id, operationScope userTaskB.id,
+        operationScope userTaskC.id]
+    controlPlaceScopes :=
+      [inputScope ⟨"place:user-input"⟩, inputScope ⟨"place:user-b-input"⟩,
+        inputScope ⟨"place:user-c-input"⟩]
+    controlPlaces :=
+      [inputPlace ⟨"place:user-input"⟩, inputPlace ⟨"place:user-b-input"⟩,
+        inputPlace ⟨"place:user-c-input"⟩] }
+
+private def userTaskTripleState : RuntimeState :=
+  { state with
+    tokens :=
+      [{ placeId := ⟨"place:user-input"⟩, owner }
+      , { placeId := ⟨"place:user-b-input"⟩, owner }
+      , { placeId := ⟨"place:user-c-input"⟩, owner }] }
+
 private def fireTwo (candidate : Program) (before : RuntimeState)
     (first second : SemanticOperation) : Option RuntimeState := do
   let intermediate ← fire? candidate first before
   fire? candidate second intermediate
+
+private def fireThree (candidate : Program) (before : RuntimeState)
+    (first second third : SemanticOperation) : Option RuntimeState := do
+  let intermediate ← fire? candidate first before
+  let penultimate ← fire? candidate second intermediate
+  fire? candidate third penultimate
 
 /-- Both arms are independently enabled, so the closed two-operation footprint classifier must accept them. -/
 theorem mixed_pair_is_enabled_and_independent :
@@ -96,6 +128,22 @@ theorem ordinary_user_task_pair_has_footprints :
       (internalTransitionFootprint? userTaskPairProgram userTaskPairState userTaskB).isSome = true ∧
       internalOperationPairIndependent? userTaskPairProgram userTaskPairState
         [userTask, userTaskB] = true := by
+  decide +kernel
+
+/-- The first final-closure Red: all six permutations of three ordinary User Tasks reach one exact raw state, and the complete frontier classifier admits the batch. -/
+theorem ordinary_user_task_triple_commutes_under_all_permutations :
+    internalOperationFrontierPairwiseIndependent? userTaskTripleProgram
+        userTaskTripleState [userTask, userTaskB, userTaskC] = true ∧
+      fireThree userTaskTripleProgram userTaskTripleState userTask userTaskB userTaskC =
+        fireThree userTaskTripleProgram userTaskTripleState userTask userTaskC userTaskB ∧
+      fireThree userTaskTripleProgram userTaskTripleState userTask userTaskB userTaskC =
+        fireThree userTaskTripleProgram userTaskTripleState userTaskB userTask userTaskC ∧
+      fireThree userTaskTripleProgram userTaskTripleState userTask userTaskB userTaskC =
+        fireThree userTaskTripleProgram userTaskTripleState userTaskB userTaskC userTask ∧
+      fireThree userTaskTripleProgram userTaskTripleState userTask userTaskB userTaskC =
+        fireThree userTaskTripleProgram userTaskTripleState userTaskC userTask userTaskB ∧
+      fireThree userTaskTripleProgram userTaskTripleState userTask userTaskB userTaskC =
+        fireThree userTaskTripleProgram userTaskTripleState userTaskC userTaskB userTask := by
   decide +kernel
 
 private def calledInstanceId : SemanticId := ⟨"Instance_CalledMessage"⟩

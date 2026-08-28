@@ -77,6 +77,8 @@ function timerArtifacts(): Readonly<{
     },
     semanticProcess: {
       kind: semanticProcessKind,
+      internalSchedulingMode:
+        "rejectObservableChoice" as SemanticProcessProgram["internalSchedulingMode"],
       identity: {
         compiler: compilerKind,
         ...sourceIdentity,

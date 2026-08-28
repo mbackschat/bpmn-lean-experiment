@@ -1,4 +1,5 @@
 import {
+  InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   compareCanonicalStrings,
@@ -14,6 +15,7 @@ type RootScopedProgramInput = Omit<
   | "definitionScopes"
   | "operationScopes"
   | "controlPlaceScopes"
+  | "internalSchedulingMode"
   | "operations"
 > & Readonly<{
   operations: ReadonlyArray<SemanticOperation>;
@@ -42,6 +44,7 @@ export function rootScopedProgram(
   ].sort((left, right) => compareCanonicalStrings(left.id, right.id));
   return {
     ...input,
+    internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
     definitionScopes: [{
       id: scopeId,
       parentScopeId: null,

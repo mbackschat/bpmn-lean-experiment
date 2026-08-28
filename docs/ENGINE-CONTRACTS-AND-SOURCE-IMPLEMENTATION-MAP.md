@@ -64,6 +64,7 @@ The registered parallel Multi-Instance profile admits the same direct String col
 ### Semantic Process IL
 
 - Implemented draft spec for a checked source-facing graph
+- required closed `InternalSchedulingMode` with `rejectObservableChoice` and reserved `requireChoiceSchedule`; every existing source profile lowers explicitly to reject mode, while no profile yet admits scheduled choice
 - current JSON Schemas and boundary validators for typed `initiate`, `initiateMessage`, `initiateTimer`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitSequentialMultiInstanceUserTask`, `awaitParallelMultiInstanceUserTask`, `completeParallelMultiInstanceUserTask`, `awaitTimer`, `awaitMessage`, `awaitEventRace`, `awaitEffect`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `terminateScope`, `reachNoneEnd`, and `completeScope` operations
 - `choose` carries exactly two declaration-ordered typed Simple Boolean candidates and one distinct default
 - `selectMany` carries two canonically ordered typed Simple Boolean candidates plus one default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`

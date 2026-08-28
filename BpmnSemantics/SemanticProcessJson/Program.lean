@@ -26,6 +26,13 @@ private def decodeProgramIdentity (json : Json) :
         ← decodeSourceOverlayIdentity (← field json "sourceOverlay")
       sourceSha256 := ← stringField json "sourceSha256" }
 
+private def decodeInternalSchedulingMode (json : Json) :
+    Except String InternalSchedulingMode := do
+  match ← json.getStr? with
+  | "rejectObservableChoice" => pure .rejectObservableChoice
+  | "requireChoiceSchedule" => pure .requireChoiceSchedule
+  | mode => throw s!"unsupported internal scheduling mode {mode}"
+
 private def decodeSequenceFlowOrigin (json : Json) :
     Except String BpmnSequenceFlowOrigin := do
   requireObjectShape json ["elementId", "kind"]
@@ -577,10 +584,13 @@ private def decodeControlPlaceScopeOwnership (json : Json) :
 def decodeProgram (json : Json) : Except String Program := do
   requireObjectShape json
     ["controlPlaceScopes", "controlPlaces", "definitionScopes", "identity",
-      "kind", "operationScopes", "operations", "processId"]
+      "internalSchedulingMode", "kind", "operationScopes", "operations",
+      "processId"]
   expectStringField json "kind" "semanticProcess"
   pure
     { identity := ← decodeProgramIdentity (← field json "identity")
+      internalSchedulingMode :=
+        ← decodeInternalSchedulingMode (← field json "internalSchedulingMode")
       processId := ⟨← stringField json "processId"⟩
       definitionScopes :=
         ← decodeArray decodeDefinitionScope (← field json "definitionScopes")
