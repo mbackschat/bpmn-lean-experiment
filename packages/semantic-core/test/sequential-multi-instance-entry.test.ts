@@ -16,6 +16,7 @@ import { test } from "node:test";
 
 import {
   ActivityBodyKind,
+  RuntimeStateDefect,
   RuntimeStateRegression,
   SemanticOperationKind,
   VariableValueKind,
@@ -118,6 +119,13 @@ test("entry snapshots the collection once and generates only loop counter zero",
     "the output collection is not published before natural completion",
   );
   assert.deepEqual(runtimeStateDefects(reviewProgram, instanceId, state), []);
+  assert.equal(
+    runtimeStateDefects(reviewProgram, instanceId, state).includes(
+      RuntimeStateDefect.DuplicateActivityBodyClaim,
+    ),
+    false,
+    "sequential entry inserts one disjoint Activity body claim",
+  );
   assert.equal(
     runtimeStateRegressions(before, state).includes(
       RuntimeStateRegression.ActivityOccurrenceIssue,

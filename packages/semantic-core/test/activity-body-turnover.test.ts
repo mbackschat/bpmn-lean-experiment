@@ -16,6 +16,7 @@ import { test } from "node:test";
 import {
   ActivityBodyKind,
   CommandOutcome,
+  RuntimeStateDefect,
   activityOccurrenceForAttachedTimer,
   applyStimulus,
   initialState,
@@ -69,6 +70,12 @@ test("replacement withdraws the outgoing body wait and arms the incoming one", (
   assert.deepEqual(before.userTaskWaits.map(({ id }) => id), [taskId]);
 
   const after = replaced(before, armedRecord(before));
+
+  assert.equal(
+    defects(after).includes(RuntimeStateDefect.DuplicateActivityBodyClaim),
+    false,
+    "body replacement preserves unique Activity body claims",
+  );
 
   assert.equal(after.userTaskWaits.length, 1, "exactly one body wait is live at any time");
   const [wait] = after.userTaskWaits;

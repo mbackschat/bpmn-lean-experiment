@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
 import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 
 /-! # Parallel Multi-Instance shared runtime-state preservation
 
@@ -97,6 +98,35 @@ theorem pendingParallelSlotsFrom_identity (processInstanceId : SemanticId)
           obtain ⟨process, element, upper⟩ := ih (index + 1) slot tail
           exact ⟨process, element, by
             simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using upper⟩
+
+/-- The pending-slot constructor supplies the task-definition premise required by the generic
+parallel Activity insertion law. -/
+theorem insertPendingParallelActivity_preserves_activityBodyClaimsUnique (state : RuntimeState)
+    (arm : ParallelMultiInstanceArm) (instanceId : SemanticId) (taskHighWater : Nat)
+    (items : List String) (record : ActivityOccurrence)
+    (first : UserTaskInstanceId) (rest : List UserTaskInstanceId)
+    (pendingIds : parallelSlotTaskIds
+      (pendingParallelSlots instanceId arm.taskId taskHighWater items) = first :: rest)
+    (taskWaitAbsent : state.waits.any (fun wait => wait.task.id == arm.taskId) = false)
+    (recordsOwn : activityRecordsOwnLiveWork state = true)
+    (claimsUnique : activityBodyClaimsUnique state.activityOccurrences = true) :
+    activityBodyClaimsUnique
+      (insertActivityOccurrence { record with body := .parallelUserTasks first rest }
+        state.activityOccurrences) = true := by
+  apply insertParallelUserTaskActivity_preserves_activityBodyClaimsUnique state record first rest
+    arm.taskId
+  · intro task taskMem
+    have slotTask : task ∈ parallelSlotTaskIds
+        (pendingParallelSlots instanceId arm.taskId taskHighWater items) := by
+      rw [pendingIds]
+      exact taskMem
+    obtain ⟨slot, slotMem, sameTask⟩ := List.mem_map.mp slotTask
+    subst task
+    exact (pendingParallelSlotsFrom_identity instanceId arm.taskId taskHighWater 0 items slot
+      (by simpa [pendingParallelSlots] using slotMem)).2.1
+  · exact taskWaitAbsent
+  · exact recordsOwn
+  · exact claimsUnique
 
 theorem pendingParallelSlots_all_pending (processInstanceId : SemanticId)
     (taskId : TaskDefinitionId) (highWater index : Nat) (snapshot : List String) :
@@ -740,10 +770,11 @@ theorem sharedParallelEmpty_preserves_runtimeStateWellFormed (program : Program)
         tokens := addToken (removeToken before.tokens arm.input owner) arm.normalOutput owner
         variables := publishSharedParallelResults before arm [] } = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
+  obtain ⟨existing, claims⟩ := wellFormed
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
     bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, activityIds⟩,
     controllers⟩, sequentialBindings⟩, parallelBindings⟩, controllerIds⟩, notExhausted⟩,
-    lifecycle⟩ := wellFormed
+    lifecycle⟩ := existing
   let removed : RuntimeState :=
     { before with
       tokens := removeToken before.tokens arm.input owner
@@ -766,6 +797,7 @@ theorem sharedParallelEmpty_preserves_runtimeStateWellFormed (program : Program)
         variables := publishSharedParallelResults before arm [] } = true := by
     simp [parallelMultiInstanceProgramBindingsValid, noControllers] at parallelBindings ⊢
     exact parallelBindings
+  refine ⟨?_, claims⟩
   refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · simpa [removed] using positionAfter
   · exact races

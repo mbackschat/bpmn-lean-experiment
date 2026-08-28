@@ -24,6 +24,7 @@ import {
   applyInternalOperation,
   applyStimulus,
   initialState,
+  isGateAdmissibleRuntimeState,
   runtimeStateDefects,
 } from "@bpmn-lean/semantic-core";
 import type { ActivityOccurrence, RuntimeState } from "@bpmn-lean/semantic-core";
@@ -43,6 +44,20 @@ function armedState(): RuntimeState {
 
 function defects(state: RuntimeState): ReadonlyArray<string> {
   return runtimeStateDefects(boundedScopeProgram, instanceId, state);
+}
+
+function syntheticActivityOccurrence(
+  activityElementId: string,
+  owner: ActivityOccurrence["owner"],
+  body: ActivityOccurrence["body"],
+): ActivityOccurrence {
+  return {
+    id: { processInstanceId: instanceId, activityElementId, activation: 1 },
+    owner,
+    operationId: `operation:${activityElementId}`,
+    body,
+    attachedTimers: [],
+  };
 }
 
 test("the armed state is admitted, and its deadline is owned outside the child region", () => {
@@ -143,6 +158,8 @@ function withUnconsultedRecords(
 
 test("the fail-closed command gate refuses an unconsulted record, one class at a time", () => {
   const control = unconsultedControl();
+  const [liveTask] = control.userTaskWaits;
+  assert.ok(liveTask !== undefined, "arming must create one live task");
   assert.equal(
     applyStimulus(boundedScopeProgram, control, completeChildTask).outcome,
     CommandOutcome.Committed,
@@ -163,14 +180,19 @@ test("the fail-closed command gate refuses an unconsulted record, one class at a
     },
     {
       // Duplicate identity, with a live body so the body conjunct cannot fire instead. Two records
-      // of equal identity also satisfy canonical order, so that conjunct cannot fire either.
+      // of equal identity also satisfy canonical order. Their task and scope bodies are disjoint, so
+      // body-claim uniqueness cannot obscure the exact duplicate-identity attribution.
       defect: "duplicateActivityOccurrence",
       state: withUnconsultedRecords(control, (template) => {
-        const live = {
+        const taskBody = {
+          ...template,
+          body: { kind: ActivityBodyKind.UserTask, task: liveTask.id },
+        } as const;
+        const scopeBody = {
           ...template,
           body: { kind: ActivityBodyKind.ChildScope, scope: template.owner },
         } as const;
-        return [live, live];
+        return [taskBody, scopeBody];
       }),
     },
   ] as const;
@@ -398,15 +420,184 @@ test("two records claiming one attached deadline are refused as ambiguous", () =
   );
 });
 
+test("singular and parallel bodies cannot claim the same exact live task", () => {
+  const state = armedState();
+  const [task] = state.userTaskWaits;
+  assert.ok(task !== undefined, "arming must create one live task");
+
+  const singular = syntheticActivityOccurrence(
+    "Activity_Claim_Singular",
+    task.owner,
+    { kind: ActivityBodyKind.UserTask, task: task.id },
+  );
+  const parallel = syntheticActivityOccurrence(
+    "Activity_Claim_Parallel",
+    task.owner,
+    { kind: ActivityBodyKind.ParallelUserTasks, tasks: [task.id] },
+  );
+  const duplicateClaim: RuntimeState = {
+    ...state,
+    activityActivations: [
+      { elementId: parallel.id.activityElementId, count: 1 },
+      { elementId: singular.id.activityElementId, count: 1 },
+      ...state.activityActivations,
+    ],
+    activityOccurrences: [parallel, singular, ...state.activityOccurrences],
+  };
+
+  assert.deepEqual(
+    defects(duplicateClaim),
+    ["duplicateActivityBodyClaim"],
+    "the task claim must be the only violated Activity ownership predicate",
+  );
+  assert.equal(
+    isGateAdmissibleRuntimeState(boundedScopeProgram, instanceId, state),
+    true,
+    "the admitted control must pass the fail-closed gate",
+  );
+  assert.equal(
+    isGateAdmissibleRuntimeState(boundedScopeProgram, instanceId, duplicateClaim),
+    false,
+    "the distinct body-claim defect must be gated",
+  );
+});
+
+test("two distinct Activity identities cannot claim the same exact live child scope", () => {
+  const state = armedState();
+  const [record] = state.activityOccurrences;
+  assert.ok(
+    record?.body.kind === ActivityBodyKind.ChildScope,
+    "arming must create the child-scope Activity record",
+  );
+
+  const duplicateClaim = syntheticActivityOccurrence(
+    "Unrelated_Child_Scope_Claim",
+    record.owner,
+    record.body,
+  );
+  const ambiguous: RuntimeState = {
+    ...state,
+    activityActivations: [
+      ...state.activityActivations,
+      { elementId: duplicateClaim.id.activityElementId, count: 1 },
+    ],
+    activityOccurrences: [...state.activityOccurrences, duplicateClaim],
+  };
+
+  assert.deepEqual(
+    defects(ambiguous),
+    ["duplicateActivityBodyClaim"],
+    "the scope claim must be the only violated Activity ownership predicate",
+  );
+});
+
+test("multiple records may claim distinct exact live tasks", () => {
+  const state = armedState();
+  const [firstTask] = state.userTaskWaits;
+  assert.ok(firstTask !== undefined, "arming must create one live task");
+  const secondTask = {
+    ...firstTask,
+    id: { ...firstTask.id, activation: firstTask.id.activation + 1 },
+  };
+  const firstRecord = syntheticActivityOccurrence(
+    "Activity_Claim_A",
+    firstTask.owner,
+    { kind: ActivityBodyKind.UserTask, task: firstTask.id },
+  );
+  const secondRecord = syntheticActivityOccurrence(
+    "Activity_Claim_B",
+    secondTask.owner,
+    { kind: ActivityBodyKind.ParallelUserTasks, tasks: [secondTask.id] },
+  );
+
+  assert.deepEqual(defects({
+    ...state,
+    userTaskWaits: [firstTask, secondTask],
+    taskActivations: state.taskActivations.map((counter) => ({
+      ...counter,
+      count: secondTask.id.activation,
+    })),
+    activityActivations: [
+      { elementId: firstRecord.id.activityElementId, count: 1 },
+      { elementId: secondRecord.id.activityElementId, count: 1 },
+      ...state.activityActivations,
+    ],
+    activityOccurrences: [firstRecord, secondRecord, ...state.activityOccurrences],
+  }), []);
+});
+
+test("multiple records may claim distinct exact live child scopes", () => {
+  const state = armedState();
+  const [record] = state.activityOccurrences;
+  assert.ok(record?.body.kind === ActivityBodyKind.ChildScope);
+  const child = state.scopeOccurrences.find(({ id }) =>
+    id.definitionScopeId === record.body.scope.definitionScopeId
+  );
+  assert.ok(child !== undefined, "the claimed child scope must be live");
+  const secondChild = {
+    ...child,
+    id: { ...child.id, activation: child.id.activation + 1 },
+  };
+  const secondRecord = syntheticActivityOccurrence(
+    "Unrelated_Child_Scope_Claim",
+    record.owner,
+    { kind: ActivityBodyKind.ChildScope, scope: secondChild.id },
+  );
+
+  assert.deepEqual(defects({
+    ...state,
+    scopeOccurrences: [...state.scopeOccurrences, secondChild],
+    scopeActivations: state.scopeActivations.map((counter) =>
+      counter.elementId === child.id.definitionScopeId
+        ? { ...counter, count: secondChild.id.activation }
+        : counter
+    ),
+    activityActivations: [
+      ...state.activityActivations,
+      { elementId: secondRecord.id.activityElementId, count: 1 },
+    ],
+    activityOccurrences: [...state.activityOccurrences, secondRecord],
+  }), []);
+});
+
+test("one parallel body may repeat the same exact live task claim", () => {
+  const state = armedState();
+  const [task] = state.userTaskWaits;
+  assert.ok(task !== undefined, "arming must create one live task");
+  const repeated = syntheticActivityOccurrence(
+    "Activity_Claim_Parallel",
+    task.owner,
+    { kind: ActivityBodyKind.ParallelUserTasks, tasks: [task.id, task.id] },
+  );
+
+  assert.deepEqual(defects({
+    ...state,
+    activityActivations: [
+      { elementId: repeated.id.activityElementId, count: 1 },
+      ...state.activityActivations,
+    ],
+    activityOccurrences: [repeated, ...state.activityOccurrences],
+  }), []);
+});
+
 test("a duplicated record identity is refused, and the admitted control is not", () => {
   const state = armedState();
   const [record] = state.activityOccurrences;
-  assert.ok(record !== undefined);
+  const [task] = state.userTaskWaits;
+  assert.ok(record !== undefined && task !== undefined);
+  const sameIdentityWithDisjointBody: ActivityOccurrence = {
+    ...record,
+    body: { kind: ActivityBodyKind.UserTask, task: task.id },
+    attachedTimers: [],
+  };
 
   assert.deepEqual(defects(state), [], "the unperturbed armed state is the control");
-  assert.ok(
-    defects({ ...state, activityOccurrences: [record, record] })
-      .includes("duplicateActivityOccurrence"),
+  assert.deepEqual(
+    defects({
+      ...state,
+      activityOccurrences: [record, sameIdentityWithDisjointBody],
+    }),
+    ["duplicateActivityOccurrence"],
   );
 });
 

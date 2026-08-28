@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! # Activity body turnover
@@ -43,6 +43,50 @@ def replaceBodyIn (records : List ActivityOccurrence) (target : ActivityOccurren
     if sameActivityOccurrence candidate target then
       { candidate with body := .userTask incoming }
     else candidate
+
+/-- Replacing the one record selected by exact Activity identity preserves body-claim uniqueness
+when its incoming task claim is fresh from every unselected record. -/
+theorem replaceBodyIn_preserves_activityBodyClaimsUnique (state : RuntimeState)
+    (target : ActivityOccurrence) (incoming : OccurrenceId)
+    (claimsUnique : activityBodyClaimsUnique state.activityOccurrences = true)
+    (identitiesUnique : activityIdentitiesUnique state = true)
+    (targetMem : target ∈ state.activityOccurrences)
+    (fresh : ∀ chosen ∈ state.activityOccurrences,
+      ∀ other ∈ state.activityOccurrences,
+      sameActivityOccurrence chosen target = true →
+      sameActivityOccurrence other target = false →
+      activityBodyClaimsDisjoint { chosen with body := .userTask incoming } other = true) :
+    activityBodyClaimsUnique (replaceBodyIn state.activityOccurrences target incoming) = true := by
+  have targetOnce := List.all_eq_true.mp identitiesUnique target targetMem
+  simp only [occursOnce] at targetOnce
+  have selectionEq :
+      (state.activityOccurrences.filter fun candidate =>
+        sameActivityOccurrence candidate target) =
+      state.activityOccurrences.filter (sameActivityOccurrence target) := by
+    apply List.filter_congr
+    intro candidate _
+    simp only [sameActivityOccurrence]
+    congr 1
+    · congr 1 <;> exact decide_eq_decide.mpr eq_comm
+    · exact decide_eq_decide.mpr eq_comm
+  have atMostOne :
+      (state.activityOccurrences.filter fun candidate =>
+        sameActivityOccurrence candidate target).length ≤ 1 := by
+    rw [selectionEq]
+    have targetLength := of_decide_eq_true targetOnce
+    omega
+  unfold replaceBodyIn
+  apply activityBodyClaimsUnique_map_selected state.activityOccurrences
+    (fun candidate => sameActivityOccurrence candidate target)
+    (fun candidate =>
+      if sameActivityOccurrence candidate target then
+        { candidate with body := .userTask incoming }
+      else candidate) claimsUnique atMostOne
+  · intro candidate notSelected
+    simp [notSelected]
+  · intro chosen chosenMem other otherMem chosenSelected otherUnselected
+    simpa [chosenSelected] using fresh chosen chosenMem other otherMem
+      chosenSelected otherUnselected
 
 /-- The wait the replacement arms: the outgoing one at the next activation of its own element. -/
 def turnoverWait (state : RuntimeState) (wait : UserTaskWait) : UserTaskWait :=
@@ -502,6 +546,33 @@ theorem activityBodyLive_userTask (state : RuntimeState) (record : ActivityOccur
   · congr 1 <;> exact decide_eq_decide.mpr eq_comm
   · exact decide_eq_decide.mpr eq_comm
 
+/-- Every task claim of a live Activity record resolves to a concrete wait. -/
+theorem activityBodyTaskClaim_has_live_wait (state : RuntimeState)
+    (record : ActivityOccurrence) (task : OccurrenceId)
+    (recordsOwn : activityRecordsOwnLiveWork state = true)
+    (recordMem : record ∈ state.activityOccurrences)
+    (claimMem : task ∈ activityBodyTaskClaims record.body) :
+    ∃ wait ∈ state.waits, taskIdNamesWait task wait = true := by
+  have recordLive := List.all_eq_true.mp recordsOwn record recordMem
+  simp only [Bool.and_eq_true] at recordLive
+  have taskLive : (state.waits.filter (taskIdNamesWait task)).length = 1 := by
+    cases bodyShape : record.body with
+    | childScope scope => simp [activityBodyTaskClaims, bodyShape] at claimMem
+    | userTask body =>
+        simp only [activityBodyTaskClaims, bodyShape, List.mem_singleton] at claimMem
+        subst body
+        rw [activityBodyLive_userTask state record task bodyShape, decide_eq_true_eq]
+          at recordLive
+        exact recordLive.1
+    | parallelUserTasks first rest =>
+        simp only [activityBodyLive, bodyShape, List.all_eq_true] at recordLive
+        have live := recordLive.1 task (by simpa [activityBodyTaskClaims, bodyShape] using claimMem)
+        rw [taskIdNamesWait_filter_eq]
+        exact of_decide_eq_true live
+  have positive : 0 < (state.waits.filter (taskIdNamesWait task)).length := by omega
+  obtain ⟨wait, filtered⟩ := List.exists_mem_of_ne_nil _ (List.length_pos_iff.mp positive)
+  exact ⟨wait, (List.mem_filter.mp filtered).1, (List.mem_filter.mp filtered).2⟩
+
 /-- Whether a record's body excludes one exact live wait, including every member of a parallel body.
 
 This predicate is deliberately separate from `recordBodyNamesWait`: the latter owns the singular
@@ -512,6 +583,51 @@ def recordBodyExcludesWait (wait : UserTaskWait) (record : ActivityOccurrence) :
   | .parallelUserTasks first rest =>
       (first :: rest).all fun task => taskIdNamesWait task wait == false
   | .childScope _ => true
+
+/-- Claim uniqueness supplies the sole-owner fact that body turnover previously carried as an
+independent premise. -/
+theorem recordBodyExcludesWait_of_activityBodyClaimsUnique (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
+    (claimsUnique : activityBodyClaimsUnique state.activityOccurrences = true)
+    (recordMem : record ∈ state.activityOccurrences)
+    (recordBody : activityBodyTask? record = some body)
+    (namesWait : taskIdNamesWait body wait = true)
+    (other : ActivityOccurrence) (otherMem : other ∈ state.activityOccurrences)
+    (otherIdentity : sameActivityOccurrence other record = false) :
+    recordBodyExcludesWait wait other = true := by
+  have different : other ≠ record := by
+    intro equal
+    subst other
+    simp [sameActivityOccurrence] at otherIdentity
+  have disjoint := activityBodyClaimsUnique_pair claimsUnique otherMem recordMem different
+  have recordClaims : body ∈ activityBodyTaskClaims record.body := by
+    cases recordShape : record.body with
+    | userTask task =>
+        simp only [activityBodyTask?, recordShape, Option.some.injEq] at recordBody
+        subst task
+        simp [activityBodyTaskClaims]
+    | parallelUserTasks first rest => simp [activityBodyTask?, recordShape] at recordBody
+    | childScope scope => simp [activityBodyTask?, recordShape] at recordBody
+  have noNamedClaim : ∀ task ∈ activityBodyTaskClaims other.body,
+      taskIdNamesWait task wait = false := by
+    intro task taskMem
+    by_cases named : taskIdNamesWait task wait = true
+    · have sameClaim := taskIdNamesWait_injective named namesWait
+      subst task
+      exact False.elim
+        (activityBodyClaimsDisjoint_no_shared_task disjoint taskMem recordClaims)
+    · simp only [Bool.not_eq_true] at named
+      exact named
+  cases bodyShape : other.body with
+  | childScope scope => simp [recordBodyExcludesWait, bodyShape]
+  | userTask task =>
+      have excluded := noNamedClaim task (by simp [activityBodyTaskClaims, bodyShape])
+      simp [recordBodyExcludesWait, bodyShape, excluded]
+  | parallelUserTasks first rest =>
+      simp only [recordBodyExcludesWait, bodyShape, List.all_eq_true]
+      intro task taskMem
+      have excluded := noNamedClaim task (by simpa [activityBodyTaskClaims, bodyShape] using taskMem)
+      simp [excluded]
 
 private theorem taskBodyLive_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body task : OccurrenceId)

@@ -2,8 +2,8 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservati
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
 
-This module owns nonempty entry insertion, complete shared entry preservation, and the evaluator
-corollary. Closing preservation remains downstream and is not imported here.
+This module owns nonempty insertion and complete shared entry-step preservation. The evaluator
+corollary and closing preservation remain downstream and are not imported here.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -86,7 +86,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
       obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
         bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, activityIds⟩,
         controllers⟩, sequentialBindings⟩, parallelBindings⟩, controllerIds⟩, notExhausted⟩,
-        lifecycle⟩ := wellFormed
+        lifecycle⟩ := wellFormed.1
       have ownerFacts := runtimePositionValid_onlyTokenOwner_live_and_scope program
         expectedInstanceId before arm.input owner ownerScope position tokenOwner account.inputOwner
       have positionAfter : runtimePositionValid program expectedInstanceId successor = true :=
@@ -302,6 +302,10 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           pendingParallelSlots_all_pending instanceId arm.taskId taskHighWater 0 items
       have pendingIds : parallelSlotTaskIds slots = firstTask :: restTasks :=
         allPending.symm.trans pending
+      have claimsAfter : activityBodyClaimsUnique successor.activityOccurrences = true := by
+        simpa [successor, record, slots] using
+          insertPendingParallelActivity_preserves_activityBodyClaimsUnique before arm instanceId
+            taskHighWater items record firstTask restTasks pendingIds taskWaitAbsent bodies wellFormed.2
       have recordBodyLive : activityBodyLive timerState record = true := by
         simp only [activityBodyLive, record, List.all_eq_true, decide_eq_true_eq]
         intro task taskMember
@@ -781,28 +785,10 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           | _ => true) = true := by
         simp [successor, running]
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
-      exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
+      exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
         ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩,
         orderAfter⟩, bodiesAfter⟩, attachedAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
         sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
-        notExhaustedAfter⟩, lifecycleAfter⟩
-
-theorem enterSharedParallelMultiInstance_preserves_runtimeStateWellFormed (program : Program)
-    (expectedInstanceId : SemanticId) (arm : ParallelMultiInstanceArm)
-    (entryOperation : SemanticOperation)
-    (profile : program.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId)
-    (structural : programWellFormed program = true)
-    (capabilities : programProfileCapabilitiesValid program = true)
-    (entryMember : entryOperation ∈ program.operations)
-    (projects : ParallelMultiInstanceArm.ofOperation? entryOperation = some arm)
-    (before after : RuntimeState)
-    (wellFormed : runtimeStateWellFormed program expectedInstanceId before = true)
-    (success : enterSharedParallelMultiInstance? arm before = some after) :
-    runtimeStateWellFormed program expectedInstanceId after = true := by
-  obtain ⟨ownerScope, ⟨account⟩⟩ := sharedParallelProgramAccount_of_admission program arm
-    entryOperation profile structural capabilities entryMember projects
-  exact sharedParallelEntry_preserves_runtimeStateWellFormed program expectedInstanceId arm
-    ownerScope account before after (enterSharedParallelMultiInstance_sound arm before after success)
-      wellFormed
+        notExhaustedAfter⟩, lifecycleAfter⟩, claimsAfter⟩
 
 end BpmnSemantics.SemanticProcess

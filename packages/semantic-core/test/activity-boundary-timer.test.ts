@@ -18,6 +18,7 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  RuntimeStateDefect,
   RuntimeStateRegression,
   SemanticOperationKind,
   SemanticTransitionKind,
@@ -26,6 +27,7 @@ import {
   applyStimulusWithTrace,
   initialState,
   replayCommittedTransitions,
+  runtimeStateDefects,
   runtimeStateRegressions,
 } from "@bpmn-lean/semantic-core";
 
@@ -87,6 +89,13 @@ test("start arms the bounded task and its deadline together at logical time zero
   ]);
   assert.deepEqual(state.controlTokens, []);
   const pair = armingPair();
+  assert.equal(
+    runtimeStateDefects(boundedProgram, instanceId, pair.after).includes(
+      RuntimeStateDefect.DuplicateActivityBodyClaim,
+    ),
+    false,
+    "bounded User Task arming inserts a disjoint Activity body claim",
+  );
   assert.equal(
     runtimeStateRegressions(pair.before, pair.after).includes(
       RuntimeStateRegression.ActivityOccurrenceIssue,

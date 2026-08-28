@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.Incident
@@ -200,9 +200,9 @@ Soundness says the record a lookup answers really names the wait it was asked ab
 lookup answers at all: every lookup degrades to `none` when two records match, so "the pair any site
 reads is unique" is a separate claim, and it is the one a consumer actually relies on.
 
-The two directions are not symmetric, and the asymmetry is the useful part. The Timer direction follows
-from a conjunct this account enforces. The body direction does not: nothing refuses two records naming
-one body, so its premise is stated explicitly and is *not* a state invariant today.
+The Timer direction follows from `attachedTimersUnambiguous`. Task and child-scope completeness follow
+from `activityBodyClaimsUnique` and are owned by `ActivityBodyClaimUniqueness`; this module imports those
+theorems rather than restating their body-claim account.
 -/
 
 /-- A Timer wait an unambiguous state lists is found, so the lookup cannot degrade to `none`.
@@ -231,33 +231,6 @@ theorem activityOccurrenceForTimerWait_unique (state : RuntimeState) (wait : Tim
     have := singleton ▸ memFilter
     simpa using this
   simp [activityOccurrenceForTimerWait?, singleton, sameRecord]
-
-/-- The body direction, under a premise this account does not yet enforce.
-
-Stated with the bound as an explicit hypothesis rather than derived from a conjunct, because there is
-no conjunct: two records naming one body satisfy identity uniqueness, body liveness, and attached-wait
-unambiguity, so the account admits a state on which every body-keyed lookup degrades to `none`. No
-registered profile reaches it, and adding the refusal would broaden what this capsule refuses, so the
-premise is carried in the open here where a reader can see it. -/
-theorem activityOccurrenceForTaskWait_unique (state : RuntimeState) (wait : UserTaskWait)
-    (record : ActivityOccurrence)
-    (unambiguous :
-      (state.activityOccurrences.filter (recordBodyNamesWait wait)).length ≤ 1)
-    (mem : record ∈ state.activityOccurrences)
-    (body : ∃ task, activityBodyTask? record = some task ∧ taskIdNamesWait task wait = true) :
-    activityOccurrenceForTaskWait? state.activityOccurrences wait = some record := by
-  obtain ⟨task, bodyEq, names⟩ := body
-  have bodyMatches : recordBodyNamesWait wait record = true := by
-    simp [recordBodyNamesWait, bodyEq, names]
-  have memFilter : record ∈ state.activityOccurrences.filter (recordBodyNamesWait wait) :=
-    List.mem_filter.mpr ⟨mem, bodyMatches⟩
-  have positive := List.length_pos_of_mem memFilter
-  obtain ⟨only, singleton⟩ :=
-    List.length_eq_one_iff.mp (Nat.le_antisymm unambiguous positive)
-  have sameRecord : record = only := by
-    have := singleton ▸ memFilter
-    simpa using this
-  simp [activityOccurrenceForTaskWait?, singleton, sameRecord]
 
 /-! ## Sequential Multi-Instance controller binding
 
@@ -742,14 +715,16 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     controllersNotExhausted state &&
     (match state.control with
      | .notStarted => notStartedStateEmpty state
-     | _ => true)
+     | _ => true) &&
+    activityBodyClaimsUnique state.activityOccurrences
 
 theorem runtimeStateWellFormed_canonicalCollectionOrder (program : Program)
     (instanceId : SemanticId) (state : RuntimeState)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     canonicalCollectionOrder state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  exact wellFormed.1.1.1.1.1.1.1.1.1.2
+  obtain ⟨existing, _claims⟩ := wellFormed
+  exact existing.1.1.1.1.1.1.1.1.1.2
 
 /-- Association facts exposed by the composite runtime invariant. Consumers use this named
 projection instead of depending on the ordinal position of either conjunct. -/
@@ -758,7 +733,8 @@ theorem runtimeStateWellFormed_associationValidities (program : Program)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     eventRaceAssociationsValid state = true ∧ effectIncidentAssociationsValid state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  have associations := wellFormed.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1
+  obtain ⟨existing, _claims⟩ := wellFormed
+  have associations := existing.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1
   exact ⟨associations.1.2, associations.2⟩
 
 /-! ## Layer 3: monotonicity -/

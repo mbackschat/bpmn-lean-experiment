@@ -309,8 +309,8 @@ function isRuntimeState(value: unknown): value is RuntimeState {
  *
  * A continuation that loses, duplicates, or substitutes a record is invalid before Workflow
  * evaluation, because the record is the only thing joining a body to the handler waits attached to it.
- * The body is a closed two-arm union and each arm's payload is checked against its own identity shape,
- * so a task identity cannot be carried in a child-scope position.
+ * Every admitted body arm checks its payload against that arm's own identity shape, so a task
+ * identity cannot be carried in a child-scope position.
  */
 function isActivityOccurrence(value: unknown): boolean {
   return isRecord(value) &&

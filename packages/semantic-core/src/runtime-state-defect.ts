@@ -9,6 +9,7 @@ export const RuntimeStateDefect = {
   UndeclaredHiddenRecord: "undeclaredHiddenRecord",
   UnorderedCollection: "unorderedCollection",
   ActivityOccurrenceBodyAbsent: "activityOccurrenceBodyAbsent",
+  DuplicateActivityBodyClaim: "duplicateActivityBodyClaim",
   UnownedAttachedWait: "unownedAttachedWait",
   DuplicateActivityOccurrence: "duplicateActivityOccurrence",
   SequentialMultiInstanceControllerProfileMismatch:

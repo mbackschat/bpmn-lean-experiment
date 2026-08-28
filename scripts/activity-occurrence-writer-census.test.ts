@@ -23,6 +23,17 @@ const WriterClassification = {
 
 type WriterClassification = typeof WriterClassification[keyof typeof WriterClassification];
 
+const ClaimPreservation = {
+  Initializer: "initializer",
+  DisjointInsertion: "disjoint-insertion",
+  Removal: "removal",
+  BodyReplacement: "body-replacement",
+  MemberRemoval: "member-removal",
+  ProjectionPreserving: "claim-projection-preserving",
+} as const;
+
+type ClaimPreservation = typeof ClaimPreservation[keyof typeof ClaimPreservation];
+
 type WriterSite = Readonly<{
   key: string;
   language: SourceLanguage;
@@ -39,19 +50,27 @@ type Evidence = Readonly<{
 
 type WriterRecord = Readonly<{
   classification: WriterClassification;
+  claimPreservation: ClaimPreservation;
   evidence?: Evidence;
+  claimEvidence?: Evidence;
 }>;
 
 const writerRecords = new Map<string, WriterRecord>([
   ["BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean#replacedState@1", {
     classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.BodyReplacement,
     evidence: {
       relativePath: "BpmnSemantics/ActivityIssuingDisciplineConformance.lean",
       markers: ["theorem replacedState_activity_identity_discipline"],
     },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean",
+      markers: ["theorem replaceBodyIn_preserves_activityBodyClaimsUnique"],
+    },
   }],
   ["BpmnSemantics/SemanticProcess/BoundedScope.lean#BoundedScopeVictoryStep@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
     evidence: {
       relativePath: "BpmnSemantics/ActivityIssuingDisciplineConformance.lean",
       markers: ["theorem boundedScopeVictoryStep_activity_identity_discipline"],
@@ -59,6 +78,7 @@ const writerRecords = new Map<string, WriterRecord>([
   }],
   ["BpmnSemantics/SemanticProcess/BoundedScope.lean#completeBoundedScope?@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
     evidence: {
       relativePath: "BpmnSemantics/ActivityIssuingDisciplineConformance.lean",
       markers: ["theorem completeBoundedScope_activity_identity_discipline"],
@@ -66,13 +86,19 @@ const writerRecords = new Map<string, WriterRecord>([
   }],
   ["BpmnSemantics/SemanticProcess/BoundedScopeArming.lean#armScopeDeadline@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "BpmnSemantics/SemanticProcess/BoundedScopeArming.lean",
       markers: ["theorem armScopeDeadline_issues_fresh_activity", "activityIdentityIssuingDiscipline state"],
     },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityBodyClaimWriterPreservation.lean",
+      markers: ["theorem armScopeDeadline_preserves_activityBodyClaimsUnique"],
+    },
   }],
   ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#closeSharedParallelRegion@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
     evidence: {
       relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
       markers: ["theorem closeSharedParallelRegion_activity_identity_discipline"],
@@ -80,37 +106,59 @@ const writerRecords = new Map<string, WriterRecord>([
   }],
   ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#completeSharedParallelMultiInstance?@1", {
     classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.MemberRemoval,
     evidence: {
       relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
       markers: ["theorem replaceParallelRecordBody_activity_identity_discipline"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityBodyClaimWriterPreservation.lean",
+      markers: ["theorem replaceParallelRecordBody_preserves_activityBodyClaimsUnique"],
     },
   }],
   ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#enterSharedParallelMultiInstance?@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
       markers: ["theorem enterSharedParallelMultiInstance_issues_fresh_activity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean",
+      markers: ["theorem sharedParallelEntry_preserves_runtimeStateWellFormed"],
     },
   }],
   ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#SharedParallelMultiInstanceCompletionStep@1", {
     classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.MemberRemoval,
     evidence: {
       relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
       markers: ["theorem replaceParallelRecordBody_activity_identity_discipline"],
     },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityBodyClaimWriterPreservation.lean",
+      markers: ["theorem replaceParallelRecordBody_preserves_activityBodyClaimsUnique"],
+    },
   }],
   ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#SharedParallelMultiInstanceEntryStep@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean",
       markers: ["theorem enterSharedParallelMultiInstance_issues_fresh_activity"],
     },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean",
+      markers: ["theorem sharedParallelEntry_preserves_runtimeStateWellFormed"],
+    },
   }],
   ["BpmnSemantics/SemanticProcess/RuntimeState.lean#initialState@1", {
     classification: WriterClassification.Initializer,
+    claimPreservation: ClaimPreservation.Initializer,
   }],
   ["BpmnSemantics/SemanticProcess/ScopeCancellation.lean#cancelScopeSubtree@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
     evidence: {
       relativePath: "BpmnSemantics/ActivityIssuingDisciplineConformance.lean",
       markers: ["theorem cancelScopeSubtree_activity_identity_discipline"],
@@ -118,6 +166,7 @@ const writerRecords = new Map<string, WriterRecord>([
   }],
   ["BpmnSemantics/SemanticProcess/SequentialMultiInstanceRewrite.lean#finalCompletionState@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
     evidence: {
       relativePath: "BpmnSemantics/ActivityIssuingDisciplineConformance.lean",
       markers: ["theorem finalCompletionState_activity_identity_discipline"],
@@ -125,6 +174,7 @@ const writerRecords = new Map<string, WriterRecord>([
   }],
   ["BpmnSemantics/SemanticProcess/SequentialMultiInstanceRewrite.lean#interruptionState@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
     evidence: {
       relativePath: "BpmnSemantics/ActivityIssuingDisciplineConformance.lean",
       markers: ["theorem interruptionState_activity_identity_discipline"],
@@ -132,63 +182,99 @@ const writerRecords = new Map<string, WriterRecord>([
   }],
   ["BpmnSemantics/SemanticProcess/WaitActivation.lean#activateBoundedUserTask@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "BpmnSemantics/SemanticProcess/WaitActivation.lean",
       markers: ["theorem activateBoundedUserTask_issues_fresh_activity", "activityIdentityIssuingDiscipline state"],
     },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityBodyClaimWriterPreservation.lean",
+      markers: ["theorem activateBoundedUserTask_preserves_activityBodyClaimsUnique"],
+    },
   }],
   ["packages/semantic-core/src/activity-body-turnover.ts#replaceActivityBodyTask@1", {
     classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.BodyReplacement,
     evidence: {
       relativePath: "packages/semantic-core/test/activity-body-turnover.test.ts",
       markers: ["runtimeStateRegressions(before, after)", "preserving the exact outer identity"],
     },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/activity-body-turnover.test.ts",
+      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "body replacement preserves unique Activity body claims"],
+    },
   }],
   ["packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts#armBoundedScope@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "packages/semantic-core/test/subprocess-boundary-timer.test.ts",
       markers: ["runtimeStateRegressions(pair.before, pair.after)", "RuntimeStateRegression.ActivityOccurrenceIssue"],
     },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/subprocess-boundary-timer.test.ts",
+      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "bounded scope arming inserts a disjoint Activity body claim"],
+    },
   }],
   ["packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts#withdrawBoundedScopeDeadline@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-bounded-task-runtime.ts#armBoundedUserTask@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "packages/semantic-core/test/activity-boundary-timer.test.ts",
       markers: ["runtimeStateRegressions(pair.before, pair.after)", "RuntimeStateRegression.ActivityOccurrenceIssue"],
     },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/activity-boundary-timer.test.ts",
+      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "bounded User Task arming inserts a disjoint Activity body claim"],
+    },
   }],
   ["packages/semantic-core/src/semantic-process-bounded-task-runtime.ts#commitVictory@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-call-runtime.ts#removeCalledProcessTree@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-monitored-task-runtime.ts#armMonitoredUserTask@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
       markers: ["runtimeStateRegressions(pair.before, pair.after)", "RuntimeStateRegression.ActivityOccurrenceIssue"],
     },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
+      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "monitored User Task arming inserts a disjoint Activity body claim"],
+    },
   }],
   ["packages/semantic-core/src/semantic-process-monitored-task-runtime.ts#completeMonitoredUserTask@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-monitored-task-runtime.ts#spawnFromMonitoredUserTask@1", {
     classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.ProjectionPreserving,
     evidence: {
       relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
       markers: ["runtimeStateRegressions(state, spawned.state)", "preserves the exact host Activity identity"],
     },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
+      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "claim-projection-preserving spawn keeps every Activity body claim"],
+    },
   }],
   ["packages/semantic-core/src/semantic-process-parallel-multi-instance-runtime.ts#closeParallelMultiInstance@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-parallel-multi-instance-runtime.ts#completeParallelMultiInstanceChild@1", {
     classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.MemberRemoval,
     evidence: {
       relativePath: "packages/semantic-core/test/parallel-multi-instance-entry.test.ts",
       markers: [
@@ -196,9 +282,14 @@ const writerRecords = new Map<string, WriterRecord>([
         "parallel child turnover preserves the exact outer identity",
       ],
     },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/parallel-multi-instance-entry.test.ts",
+      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "parallel member removal preserves unique Activity body claims"],
+    },
   }],
   ["packages/semantic-core/src/semantic-process-parallel-multi-instance-runtime.ts#enterParallelMultiInstanceUserTask@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "packages/semantic-core/test/parallel-multi-instance-entry.test.ts",
       markers: [
@@ -206,25 +297,38 @@ const writerRecords = new Map<string, WriterRecord>([
         "RuntimeStateRegression.ActivityOccurrenceIssue",
       ],
     },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/parallel-multi-instance-entry.test.ts",
+      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "parallel entry inserts one disjoint multi-member Activity body"],
+    },
   }],
   ["packages/semantic-core/src/semantic-process-scope-cancellation.ts#removeScopeOccurrenceRegion@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts#completeSequentialMultiInstanceIteration@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts#enterSequentialMultiInstanceUserTask@1", {
     classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
       relativePath: "packages/semantic-core/test/sequential-multi-instance-entry.test.ts",
       markers: ["runtimeStateRegressions(before, state)", "RuntimeStateRegression.ActivityOccurrenceIssue"],
     },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/sequential-multi-instance-entry.test.ts",
+      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "sequential entry inserts one disjoint Activity body claim"],
+    },
   }],
   ["packages/semantic-core/src/semantic-process-sequential-multi-instance-runtime.ts#interruptSequentialMultiInstance@1", {
     classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-state.ts#initialState@1", {
     classification: WriterClassification.Initializer,
+    claimPreservation: ClaimPreservation.Initializer,
   }],
 ]);
 
@@ -545,6 +649,25 @@ function writerMatchesClassification(site: WriterSite, classification: WriterCla
   }
 }
 
+function writerMatchesClaimPreservation(
+  site: WriterSite,
+  classification: WriterClassification,
+  preservation: ClaimPreservation,
+): boolean {
+  switch (preservation) {
+    case ClaimPreservation.Initializer:
+      return classification === WriterClassification.Initializer;
+    case ClaimPreservation.DisjointInsertion:
+      return classification === WriterClassification.Issuer;
+    case ClaimPreservation.Removal:
+      return classification === WriterClassification.IdentityRemoving;
+    case ClaimPreservation.BodyReplacement:
+    case ClaimPreservation.MemberRemoval:
+    case ClaimPreservation.ProjectionPreserving:
+      return classification === WriterClassification.IdentityPreserving;
+  }
+}
+
 test("every production Activity-occurrence writer has one current classification", () => {
   const census = currentWriterCensus();
   assert.deepEqual(unclassifiedWriterKeys(census, writerRecords), []);
@@ -571,6 +694,31 @@ test("every classification still matches the writer shape and required evidence"
       const evidenceSource = read(record.evidence.relativePath);
       for (const marker of record.evidence.markers) {
         assert.ok(evidenceSource.includes(marker), `${site.key} evidence is missing: ${marker}`);
+      }
+    }
+  }
+});
+
+test("every writer declares a claim-preservation shape with evidence for non-structural rewrites", () => {
+  for (const site of currentWriterCensus()) {
+    const record = writerRecords.get(site.key);
+    assert.ok(record, site.key);
+    assert.equal(
+      writerMatchesClaimPreservation(site, record.classification, record.claimPreservation),
+      true,
+      site.key,
+    );
+    const needsEvidence = record.claimPreservation === ClaimPreservation.DisjointInsertion ||
+      record.claimPreservation === ClaimPreservation.BodyReplacement ||
+      record.claimPreservation === ClaimPreservation.MemberRemoval ||
+      record.claimPreservation === ClaimPreservation.ProjectionPreserving;
+    if (needsEvidence) {
+      assert.ok(record.claimEvidence, `${site.key} has no body-claim preservation evidence`);
+    }
+    if (record.claimEvidence !== undefined) {
+      const evidenceSource = read(record.claimEvidence.relativePath);
+      for (const marker of record.claimEvidence.markers) {
+        assert.ok(evidenceSource.includes(marker), `${site.key} claim evidence is missing: ${marker}`);
       }
     }
   }

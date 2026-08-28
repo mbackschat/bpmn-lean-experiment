@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   FlowNodeOccurrenceTerminalKind,
+  RuntimeStateDefect,
   RuntimeStateRegression,
   SemanticFlowNodeOccurrenceAnchorKind,
   VariableValueKind,
@@ -13,6 +14,7 @@ import {
   observeStableState,
   projectOpenFlowNodeOccurrences,
   requireCompleteFlowNodeOccurrenceLifecycles,
+  runtimeStateDefects,
   runtimeStateRegressions,
   type RuntimeState,
   type StartProcessStimulus,
@@ -51,6 +53,13 @@ test("parallel entry atomically opens one indexed task for every snapshotted ite
     ),
     false,
     "parallel entry issues the outer Activity above its predecessor high-water mark",
+  );
+  assert.equal(
+    runtimeStateDefects(parallelProgram, "ReviewInstance_1", entered.state).includes(
+      RuntimeStateDefect.DuplicateActivityBodyClaim,
+    ),
+    false,
+    "parallel entry inserts one disjoint multi-member Activity body",
   );
   const observed = observeStableState(parallelProgram, entered.state);
   assert.deepEqual(observed?.openMultiInstances, [{
@@ -127,6 +136,13 @@ test("all completion stores by index and publishes only when every child complet
     runtimeStateRegressions(entered.state, third.state),
     [],
     "parallel child turnover preserves the exact outer identity",
+  );
+  assert.equal(
+    runtimeStateDefects(parallelProgram, "ReviewInstance_1", third.state).includes(
+      RuntimeStateDefect.DuplicateActivityBodyClaim,
+    ),
+    false,
+    "parallel member removal preserves unique Activity body claims",
   );
 
   const first = applyStimulus(

@@ -19,6 +19,7 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  RuntimeStateDefect,
   RuntimeStateRegression,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -32,6 +33,7 @@ import {
   initialState,
   projectOpenUserTasks,
   replayCommittedTransitions,
+  runtimeStateDefects,
   runtimeStateRegressions,
 } from "@bpmn-lean/semantic-core";
 
@@ -107,6 +109,13 @@ test("start arms the monitored task and its deadline together at logical time ze
   assert.deepEqual(state.controlTokens, []);
   const pair = armingPair();
   assert.equal(
+    runtimeStateDefects(monitoredProgram, instanceId, pair.after).includes(
+      RuntimeStateDefect.DuplicateActivityBodyClaim,
+    ),
+    false,
+    "monitored User Task arming inserts a disjoint Activity body claim",
+  );
+  assert.equal(
     runtimeStateRegressions(pair.before, pair.after).includes(
       RuntimeStateRegression.ActivityOccurrenceIssue,
     ),
@@ -132,6 +141,13 @@ test("firing spawns the handler branch and preserves its host exactly", () => {
     runtimeStateRegressions(state, spawned.state),
     [],
     "withdrawing the handler preserves the exact host Activity identity",
+  );
+  assert.equal(
+    runtimeStateDefects(monitoredProgram, instanceId, spawned.state).includes(
+      RuntimeStateDefect.DuplicateActivityBodyClaim,
+    ),
+    false,
+    "claim-projection-preserving spawn keeps every Activity body claim",
   );
   assert.deepEqual(
     spawned.state.userTaskWaits.map(({ id }) => id.elementId).sort(),

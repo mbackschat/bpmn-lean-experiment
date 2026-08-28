@@ -16,6 +16,7 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  RuntimeStateDefect,
   RuntimeStateRegression,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -30,6 +31,7 @@ import {
   projectOpenTimers,
   projectOpenUserTasks,
   replayCommittedTransitions,
+  runtimeStateDefects,
   runtimeStateRegressions,
 } from "@bpmn-lean/semantic-core";
 import type { SemanticProcessProgram } from "@bpmn-lean/semantic-core";
@@ -129,6 +131,13 @@ test("start arms the child scope, its entry, and the deadline together", () => {
   ]);
   assert.deepEqual(state.controlTokens, []);
   const pair = armingPair();
+  assert.equal(
+    runtimeStateDefects(boundedScopeProgram, instanceId, pair.after).includes(
+      RuntimeStateDefect.DuplicateActivityBodyClaim,
+    ),
+    false,
+    "bounded scope arming inserts a disjoint Activity body claim",
+  );
   assert.equal(
     runtimeStateRegressions(pair.before, pair.after).includes(
       RuntimeStateRegression.ActivityOccurrenceIssue,

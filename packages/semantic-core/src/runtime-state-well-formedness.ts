@@ -7,6 +7,7 @@ import {
   ActivityBodyKind,
   compareActivityOccurrences,
   sameActivityOccurrence,
+  type ActivityBody,
   type ActivityOccurrence,
 } from "./activity-occurrence.js";
 import {
@@ -436,6 +437,27 @@ function sequentialMultiInstanceDefects(
   return defects;
 }
 
+function userTaskClaims(body: ActivityBody): ReadonlyArray<OccurrenceId> {
+  switch (body.kind) {
+    case ActivityBodyKind.UserTask:
+      return [body.task];
+    case ActivityBodyKind.ParallelUserTasks:
+      return body.tasks;
+    case ActivityBodyKind.ChildScope:
+      return [];
+  }
+}
+
+function childScopeClaims(body: ActivityBody): ReadonlyArray<ScopeOccurrenceId> {
+  switch (body.kind) {
+    case ActivityBodyKind.UserTask:
+    case ActivityBodyKind.ParallelUserTasks:
+      return [];
+    case ActivityBodyKind.ChildScope:
+      return [body.scope];
+  }
+}
+
 function activityOwnershipDefects(
   state: RuntimeState,
 ): ReadonlyArray<RuntimeStateDefect> {
@@ -463,6 +485,25 @@ function activityOwnershipDefects(
     );
   if (!state.activityOccurrences.every((record) => bodyLive(record) && listedTimerLive(record))) {
     defects.push(RuntimeStateDefect.ActivityOccurrenceBodyAbsent);
+  }
+
+  const duplicateBodyClaim = state.activityOccurrences.some((record, index) =>
+    state.activityOccurrences.some((other, otherIndex) =>
+      index < otherIndex &&
+      (
+        userTaskClaims(record.body).some((task) =>
+          userTaskClaims(other.body).some((otherTask) => sameOccurrence(task, otherTask))
+        ) ||
+        childScopeClaims(record.body).some((scope) =>
+          childScopeClaims(other.body).some((otherScope) =>
+            sameScopeOccurrence(scope, otherScope)
+          )
+        )
+      )
+    )
+  );
+  if (duplicateBodyClaim) {
+    defects.push(RuntimeStateDefect.DuplicateActivityBodyClaim);
   }
 
   const listed = (timer: TimerOccurrenceId): number =>
@@ -568,11 +609,12 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.DuplicateWaitIdentity,
   RuntimeStateDefect.LiveIdentityAboveCounter,
   RuntimeStateDefect.UnorderedCollection,
-  // All three are decidable from one state without the called definitions, which is what the gate
+  // All four are decidable from one state without the called definitions, which is what the gate
   // excludes program-agreement classes for. Leaving them out meant no boundary refused a record whose
   // body was gone, so a continuation could carry one across a Run and `AOO-REFUSE-01`'s state clause
   // held nowhere.
   RuntimeStateDefect.ActivityOccurrenceBodyAbsent,
+  RuntimeStateDefect.DuplicateActivityBodyClaim,
   RuntimeStateDefect.UnownedAttachedWait,
   RuntimeStateDefect.DuplicateActivityOccurrence,
   // Presence is decidable from the supplied program and one state, unlike the wait-declaration

@@ -533,7 +533,8 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     (prepared : prepareInternalArm? program state operation = some patch) :
     runtimeStateWellFormed program expectedInstanceId (applyInternalArmingPatch state patch) = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at stateAdmitted
-  obtain ⟨h16, terminal⟩ := stateAdmitted
+  obtain ⟨existing, claims⟩ := stateAdmitted
+  obtain ⟨h16, terminal⟩ := existing
   obtain ⟨h15, exhausted⟩ := h16
   obtain ⟨h14, controllerIdentities⟩ := h15
   obtain ⟨h13, parallelControllerBindings⟩ := h14
@@ -742,6 +743,14 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     have controlFrame : (applyInternalArmingPatch state patch).control = state.control := by
       cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
     rw [controlFrame, running]
+  have claimsAfter : activityBodyClaimsUnique
+      (applyInternalArmingPatch state patch).activityOccurrences = true := by
+    have recordsFrame :
+        (applyInternalArmingPatch state patch).activityOccurrences =
+          state.activityOccurrences := by
+      cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+    rw [recordsFrame]
+    exact claims
   have after2 := And.intro positionAfter eventAfter
   have after3 := And.intro after2 incidentAfter
   have after4 := And.intro after3 ownersAfter
@@ -759,7 +768,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
   have after16 := And.intro after15 unchangedAfter.2.2.2.1
   have after17 := And.intro after16 unchangedAfter.2.2.2.2
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
-  exact ⟨after17, terminalAfter⟩
+  exact ⟨⟨after17, terminalAfter⟩, claimsAfter⟩
 
 end InternalCommutation
 

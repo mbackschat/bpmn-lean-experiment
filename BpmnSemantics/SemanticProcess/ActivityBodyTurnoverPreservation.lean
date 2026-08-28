@@ -13,11 +13,8 @@ open BpmnSemantics
 
 /-- `AOO-TURNOVER-02`: the whole-state replacement carries a well-formed state to a well-formed state.
 
-`soleBody` says no *other* singular or parallel body names the wait being withdrawn. A well-formed
-pre-state can otherwise hold a second claimant whose body this transition removes. The parent account
-carries the same premise explicitly for its body-side lookup determinism, and it reappears here as a
-transition obligation. Freshness needs no premise here: the identity-bound conjunct and the definition
-of the next task activation derive it.
+The state invariant now supplies the sole-body fact for the outgoing wait. Freshness needs no premise
+here: the identity-bound conjunct and the definition of the next task activation derive it.
 
 The two controller-binding premises are deliberately profile-owned. Generic body turnover cannot
 infer which operation a controller means. Making those cross-family facts explicit avoids weakening
@@ -30,8 +27,8 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     (state : RuntimeState) (record : ActivityOccurrence) (wait : UserTaskWait)
     (body : OccurrenceId)
     (unique : state.waits.filter (taskIdNamesWait body) = [wait])
-    (soleBody : ∀ other ∈ state.activityOccurrences,
-      sameActivityOccurrence other record = false → recordBodyExcludesWait wait other = true)
+    (recordMem : record ∈ state.activityOccurrences)
+    (recordBody : activityBodyTask? record = some body)
     (controllerBindingPreserved : sequentialMultiInstanceProgramBindingsValid program
       (replacedState state record wait body) = true)
     (parallelBindingPreserved : parallelMultiInstanceProgramBindingsValid program
@@ -41,10 +38,12 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   have waitInFilter : wait ∈ state.waits.filter (taskIdNamesWait body) := by
     rw [unique]; simp
   have waitMem : wait ∈ state.waits := (List.mem_filter.mp waitInFilter).1
+  have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
+  obtain ⟨existing, claimsUnique⟩ := wellFormed
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
     bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, unique'⟩, owned⟩,
-    _bindings⟩, _parallelBindings⟩, controllerIds⟩, notExhausted⟩, lifecycle⟩ := wellFormed
+    _bindings⟩, _parallelBindings⟩, controllerIds⟩, notExhausted⟩, lifecycle⟩ := existing
   have fresh : ∀ candidate ∈ state.waits,
       userTaskWaitKeyMatches (turnoverWait state wait) candidate = false := by
     intro candidate mem
@@ -59,6 +58,24 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       omega
     · simp only [Bool.not_eq_true] at keyed
       exact keyed
+  have soleBody : ∀ other ∈ state.activityOccurrences,
+      sameActivityOccurrence other record = false → recordBodyExcludesWait wait other = true :=
+    recordBodyExcludesWait_of_activityBodyClaimsUnique state record wait body claimsUnique
+      recordMem recordBody namesWait
+  have claimsAfter : activityBodyClaimsUnique
+      (replacedState state record wait body).activityOccurrences = true := by
+    apply replaceBodyIn_preserves_activityBodyClaimsUnique state record
+      (turnoverBodyId state wait body) claimsUnique unique' recordMem
+    intro chosen _ other otherMem _ _
+    apply activityBodyClaimsDisjoint_userTask_of_not_mem
+    intro incomingMem
+    obtain ⟨candidate, candidateMem, hit⟩ :=
+      activityBodyTaskClaim_has_live_wait state other (turnoverBodyId state wait body)
+        bodies otherMem incomingMem
+    have keyed := turnoverBodyId_hit_is_turnover_key state wait body namesWait candidate hit
+    rw [fresh candidate candidateMem] at keyed
+    exact Bool.noConfusion keyed
+  refine ⟨?_, claimsAfter⟩
   refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · rw [runtimePositionValid_replacedState]; exact position
   · rw [eventRaceAssociationsValid_replacedState]; exact races
@@ -88,7 +105,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       exfalso
       rw [hc] at lifecycle
       simp only [notStartedStateEmpty, Bool.and_eq_true, List.isEmpty_iff] at lifecycle
-      exact List.ne_nil_of_mem waitMem lifecycle.1.1.1.1.1.1.1.1.1
+      exact List.ne_nil_of_mem waitMem lifecycle.1.1.1.1.1.1.1.1.1.1
     | running _ => rfl
     | completed _ => rfl
     | cancelled _ => rfl

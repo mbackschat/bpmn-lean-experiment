@@ -7,8 +7,10 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  ActivityBodyKind,
   CommandOutcome,
   ControlStateKind,
+  RuntimeStateDefect,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProfileId,
@@ -18,9 +20,16 @@ import {
   VariableValueKind,
   applyStimulus,
   initialState,
+  runtimeStateDefects,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { requireBpmnWorkflowContinuationStateV1 } from "@bpmn-lean/temporal-protocol";
+
+import {
+  boundedScopeProgram,
+  instanceId as boundedScopeInstanceId,
+  start as startBoundedScope,
+} from "../../../semantic-core/test/bounded-scope-fixture.ts";
 
 /**
  * What the Workflow chain accepts as a resumable committed checkpoint.
@@ -351,6 +360,98 @@ test("a carried User Task identity above its absent counter is refused", () => {
   const withoutIssuedCounter = { ...control, taskActivations: [] };
   assert.throws(
     () => requireBpmnWorkflowContinuationStateV1(withoutIssuedCounter, program, instanceId),
+    /RuntimeState is not one representable committed state/u,
+  );
+});
+
+test("two Activity records cannot carry the same User Task body claim across a Run boundary", () => {
+  const activity = {
+    id: {
+      processInstanceId: instanceId,
+      activityElementId: "UserTask_1",
+      activation: 1,
+    },
+    owner,
+    operationId: "Operation_UserTask",
+    body: { kind: ActivityBodyKind.UserTask, task: userTaskWait.id },
+    attachedTimers: [],
+  } as const;
+  const control = {
+    ...resumable,
+    userTaskWaits: [userTaskWait],
+    timerWaits: [],
+    activityOccurrences: [activity],
+    taskActivations: [{ elementId: "UserTask_1", count: 1 }],
+    timerActivations: [],
+    activityActivations: [{ elementId: "UserTask_1", count: 1 }],
+  } as const satisfies RuntimeState;
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationStateV1(control, program, instanceId),
+    control,
+  );
+
+  const forged = {
+    ...control,
+    activityOccurrences: [
+      activity,
+      {
+        ...activity,
+        id: { ...activity.id, activation: 2 },
+        attachedTimers: [],
+      },
+    ],
+    activityActivations: [{ elementId: "UserTask_1", count: 2 }],
+  } as const satisfies RuntimeState;
+  assert.deepEqual(
+    runtimeStateDefects(program, instanceId, forged),
+    [RuntimeStateDefect.DuplicateActivityBodyClaim],
+  );
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(forged, program, instanceId),
+    /RuntimeState is not one representable committed state/u,
+  );
+});
+
+test("two Activity records cannot carry the same child-scope claim across a Run boundary", () => {
+  const entered = applyStimulus(boundedScopeProgram, initialState, startBoundedScope);
+  assert.equal(entered.outcome, CommandOutcome.Committed);
+  const control = entered.state;
+  const [activity] = control.activityOccurrences;
+  assert.ok(activity?.body.kind === ActivityBodyKind.ChildScope);
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationStateV1(
+      control,
+      boundedScopeProgram,
+      boundedScopeInstanceId,
+    ),
+    control,
+  );
+
+  const forged = {
+    ...control,
+    activityOccurrences: [
+      activity,
+      {
+        ...activity,
+        id: { ...activity.id, activation: 2 },
+        attachedTimers: [],
+      },
+    ],
+    activityActivations: control.activityActivations.map((counter) => ({
+      ...counter,
+      count: 2,
+    })),
+  } as const satisfies RuntimeState;
+  assert.deepEqual(
+    runtimeStateDefects(boundedScopeProgram, boundedScopeInstanceId, forged),
+    [RuntimeStateDefect.DuplicateActivityBodyClaim],
+  );
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(
+      forged,
+      boundedScopeProgram,
+      boundedScopeInstanceId,
+    ),
     /RuntimeState is not one representable committed state/u,
   );
 });
