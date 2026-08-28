@@ -301,6 +301,30 @@ private theorem otherParallelRecord_eq_selected (program : Program)
       (by rw [otherClaims]; exact otherPending)
       (by rw [selectedClaims]; exact otherInSelected)
 
+structure ParallelClosingSelectionFacts (arm : ParallelMultiInstanceArm)
+    (state : RuntimeState) (controller : ParallelMultiInstanceController)
+    (record : ActivityOccurrence) : Prop where
+  controllersSingleton : state.parallelMultiInstanceControllers = [controller]
+  controllerMember : controller ∈ state.parallelMultiInstanceControllers
+  controllerElement : controller.id.activityElementId.value = arm.taskId.value
+  recordMember : record ∈ state.activityOccurrences
+  recordIdentity : parallelControllerNamesIdentity controller record.processInstanceId
+    ⟨record.activityElementId.value⟩ record.activation = true
+  region : parallelRegionValid arm state controller record = true
+
+structure ParallelCompletionClosingSelectionFacts (arm : ParallelMultiInstanceArm)
+    (state : RuntimeState) (taskId : UserTaskInstanceId)
+    (controller : ParallelMultiInstanceController) (record : ActivityOccurrence) : Prop
+    extends ParallelClosingSelectionFacts arm state controller record where
+  pendingSlotCount : pendingParallelSlotCount taskId controller.slots = 1
+  taskMember : taskId ∈ pendingParallelTaskIds controller.slots
+
+structure ParallelTimerClosingSelectionFacts (arm : ParallelMultiInstanceArm)
+    (state : RuntimeState) (timerId : TimerOccurrenceId)
+    (controller : ParallelMultiInstanceController) (record : ActivityOccurrence) : Prop
+    extends ParallelClosingSelectionFacts arm state controller record where
+  timerMember : timerId ∈ record.attachedTimers
+
 theorem completionControllers_singleton (program : Program)
     (expectedInstanceId instanceId : SemanticId) (arm : ParallelMultiInstanceArm)
     (ownerScope : DefinitionScopeId) (account : SharedParallelProgramAccount program arm ownerScope)
@@ -473,5 +497,70 @@ theorem timerControllers_singleton (program : Program)
     have controllerEq : controller = only := by simpa using controllerMember
     exact controllerEq.symm
   exact stateEq.trans (congrArg (fun value => [value]) onlyEq)
+
+theorem completionClosingSelectionFacts (program : Program)
+    (expectedInstanceId instanceId : SemanticId) (arm : ParallelMultiInstanceArm)
+    (ownerScope : DefinitionScopeId) (account : SharedParallelProgramAccount program arm ownerScope)
+    (state : RuntimeState) (taskId : UserTaskInstanceId)
+    (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
+    (running : state.control = .running instanceId)
+    (selectedController : parallelControllerForTask? arm state taskId = some controller)
+    (selectedRecord : parallelControllerRecord? state controller = some record)
+    (region : parallelRegionValid arm state controller record = true)
+    (wellFormed : runtimeStateWellFormed program expectedInstanceId state = true) :
+    ParallelCompletionClosingSelectionFacts arm state taskId controller record := by
+  obtain ⟨controllerMember, controllerElement, pendingSlotCount⟩ :=
+    selectedTaskController_member_and_shape arm state taskId controller selectedController
+  obtain ⟨recordMember, recordIdentity⟩ :=
+    selectedRecord_member_and_identity state controller record selectedRecord
+  exact {
+    toParallelClosingSelectionFacts := {
+      controllersSingleton := completionControllers_singleton program expectedInstanceId
+        instanceId arm ownerScope account state taskId controller record running
+        selectedController selectedRecord region wellFormed
+      controllerMember
+      controllerElement
+      recordMember
+      recordIdentity
+      region
+    }
+    pendingSlotCount
+    taskMember := pendingParallelSlotCount_positive_mem taskId controller.slots pendingSlotCount
+  }
+
+theorem timerClosingSelectionFacts (program : Program)
+    (expectedInstanceId instanceId : SemanticId) (arm : ParallelMultiInstanceArm)
+    (ownerScope : DefinitionScopeId) (account : SharedParallelProgramAccount program arm ownerScope)
+    (state : RuntimeState) (timerId : TimerOccurrenceId)
+    (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
+    (running : state.control = .running instanceId)
+    (selectedController : parallelControllerForTimer? arm state timerId = some controller)
+    (selectedRecord : parallelControllerRecord? state controller = some record)
+    (region : parallelRegionValid arm state controller record = true)
+    (wellFormed : runtimeStateWellFormed program expectedInstanceId state = true) :
+    ParallelTimerClosingSelectionFacts arm state timerId controller record := by
+  obtain ⟨controllerMember, controllerElement, selectedLookupRecord, selectedLookup,
+    timerContained⟩ :=
+    selectedTimerController_member_and_shape arm state timerId controller selectedController
+  rw [selectedRecord] at selectedLookup
+  have lookupRecordEq : selectedLookupRecord = record := Option.some.inj selectedLookup.symm
+  subst selectedLookupRecord
+  obtain ⟨recordMember, recordIdentity⟩ :=
+    selectedRecord_member_and_identity state controller record selectedRecord
+  have timerMember : timerId ∈ record.attachedTimers := by
+    simpa [List.contains_eq_mem] using timerContained
+  exact {
+    toParallelClosingSelectionFacts := {
+      controllersSingleton := timerControllers_singleton program expectedInstanceId instanceId
+        arm ownerScope account state timerId controller record running selectedController
+        selectedRecord region wellFormed
+      controllerMember
+      controllerElement
+      recordMember
+      recordIdentity
+      region
+    }
+    timerMember
+  }
 
 end BpmnSemantics.SemanticProcess
