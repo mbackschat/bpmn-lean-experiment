@@ -350,11 +350,25 @@ theorem completionControllers_singleton (program : Program)
     selectedParallelControllerForTask arm state taskId controller selectedController
   have allEqual : ∀ other ∈ state.parallelMultiInstanceControllers, other = controller := by
     intro other otherMember
-    obtain ⟨otherTask, entry, otherArm, otherRecord, otherWait, otherPending, entryMember,
-      projects, taskElement, _ownerScope, otherRecordMember, _otherNames, otherBody,
-      otherWaitMember, otherWaitId, otherWaitOwner, otherWaitTask⟩ :=
-      parallelMultiInstanceProgramBindingsValid_controller_witness program state other
-        parallelBindings otherMember
+    have facts := parallelMultiInstanceProgramBindingsValid_controller_facts program state other
+      parallelBindings otherMember
+    obtain ⟨entry, otherArm, otherRecord, _timer, _timerWait, _childWaits, otherTask,
+      otherWait, recordExact, operationExact, projects, _otherOwnerScope, _familyWellFormed,
+      otherBody, _childWaitsExact, _childWaitLength, _childWaitIdsUnique, _childWaitBindings,
+      _attachedTimer, _matchingTimerWait, _timerOwner, _timerElement, _timerOutput, otherPending,
+      otherWaitMember, otherWaitId, otherWaitOwner, otherWaitTask⟩ := facts.witnesses
+    have filteredEntry : entry ∈ program.operations.filter (fun operation =>
+        match ParallelMultiInstanceArm.ofOperation? operation with
+        | some candidate => candidate.taskId.value == other.id.activityElementId.value
+        | none => false) := by
+      exact operationExact.symm ▸ (by simp)
+    obtain ⟨entryMember, taskElement⟩ := List.mem_filter.mp filteredEntry
+    simp only [projects, beq_iff_eq] at taskElement
+    have filteredRecord : otherRecord ∈ state.activityOccurrences.filter (fun candidate =>
+        parallelControllerNamesIdentity other candidate.processInstanceId
+          ⟨candidate.activityElementId.value⟩ candidate.activation) := by
+      exact recordExact.symm ▸ (by simp)
+    obtain ⟨otherRecordMember, _otherNames⟩ := List.mem_filter.mp filteredRecord
     have recordEq := otherParallelRecord_eq_selected program expectedInstanceId instanceId arm
       ownerScope account state controller other record otherRecord otherTask entry otherArm
       otherWait running position owners claims region recordMember otherPending entryMember
@@ -447,11 +461,25 @@ theorem timerControllers_singleton (program : Program)
     selectedParallelControllerForTimer arm state timerId controller selectedController
   have allEqual : ∀ other ∈ state.parallelMultiInstanceControllers, other = controller := by
     intro other otherMember
-    obtain ⟨otherTask, entry, otherArm, otherRecord, otherWait, otherPending, entryMember,
-      projects, taskElement, _ownerScope, otherRecordMember, otherNames, otherBody,
-      otherWaitMember, otherWaitId, otherWaitOwner, otherWaitTask⟩ :=
-      parallelMultiInstanceProgramBindingsValid_controller_witness program state other
-        parallelBindings otherMember
+    have facts := parallelMultiInstanceProgramBindingsValid_controller_facts program state other
+      parallelBindings otherMember
+    obtain ⟨entry, otherArm, otherRecord, _timer, _timerWait, _childWaits, otherTask,
+      otherWait, recordExact, operationExact, projects, _otherOwnerScope, _familyWellFormed,
+      otherBody, _childWaitsExact, _childWaitLength, _childWaitIdsUnique, _childWaitBindings,
+      _attachedTimer, _matchingTimerWait, _timerOwner, _timerElement, _timerOutput, otherPending,
+      otherWaitMember, otherWaitId, otherWaitOwner, otherWaitTask⟩ := facts.witnesses
+    have filteredEntry : entry ∈ program.operations.filter (fun operation =>
+        match ParallelMultiInstanceArm.ofOperation? operation with
+        | some candidate => candidate.taskId.value == other.id.activityElementId.value
+        | none => false) := by
+      exact operationExact.symm ▸ (by simp)
+    obtain ⟨entryMember, taskElement⟩ := List.mem_filter.mp filteredEntry
+    simp only [projects, beq_iff_eq] at taskElement
+    have filteredRecord : otherRecord ∈ state.activityOccurrences.filter (fun candidate =>
+        parallelControllerNamesIdentity other candidate.processInstanceId
+          ⟨candidate.activityElementId.value⟩ candidate.activation) := by
+      exact recordExact.symm ▸ (by simp)
+    obtain ⟨otherRecordMember, otherNames⟩ := List.mem_filter.mp filteredRecord
     have recordEq := otherParallelRecord_eq_selected program expectedInstanceId instanceId arm
       ownerScope account state controller other record otherRecord otherTask entry otherArm
       otherWait running position owners claims region recordMember otherPending entryMember

@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
 
 /-! # Parallel Multi-Instance shared runtime well-formedness
 
@@ -211,67 +212,14 @@ theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
   · rw [controllers] at operationCompleteness
     exact List.all_eq_true.mp operationCompleteness
 
-private theorem pendingParallelTaskIds_sublist_parallelSlotTaskIds
-    (slots : List ParallelMultiInstanceSlot) :
-    List.Sublist (pendingParallelTaskIds slots) (parallelSlotTaskIds slots) := by
-  induction slots with
-  | nil => simp [pendingParallelTaskIds, parallelSlotTaskIds]
-  | cons slot rest ih =>
-      cases slot with
-      | pending taskId =>
-          simpa [pendingParallelTaskIds, parallelSlotTaskIds, ParallelMultiInstanceSlot.taskId]
-            using ih.cons_cons taskId
-      | completed taskId result =>
-          simpa [pendingParallelTaskIds, parallelSlotTaskIds, ParallelMultiInstanceSlot.taskId]
-            using ih.cons taskId
-
-private theorem nodup_subset_of_nodup_subset_length_eq [BEq α] [LawfulBEq α]
-    {left right : List α} (leftNodup : left.Nodup) (rightNodup : right.Nodup)
-    (included : left ⊆ right) (sameLength : left.length = right.length) :
-    right ⊆ left := by
-  induction left generalizing right with
-  | nil =>
-      have rightEmpty : right = [] := List.eq_nil_of_length_eq_zero (by simpa using sameLength.symm)
-      simp [rightEmpty]
-  | cons head tail ih =>
-      obtain ⟨headFresh, tailNodup⟩ := List.nodup_cons.mp leftNodup
-      have headMember : head ∈ right := included (by simp)
-      have tailIncluded : tail ⊆ right.erase head := by
-        intro candidate candidateMember
-        rw [rightNodup.mem_erase_iff]
-        exact ⟨fun same => headFresh (same ▸ candidateMember), included (by simp [candidateMember])⟩
-      have erasedLength : tail.length = (right.erase head).length := by
-        rw [List.length_erase_of_mem headMember]
-        simp only [List.length_cons] at sameLength
-        omega
-      have erasedIncluded := ih tailNodup (rightNodup.erase head) tailIncluded erasedLength
-      intro candidate candidateMember
-      by_cases same : candidate = head
-      · simp [same]
-      · exact List.mem_cons_of_mem head
-          (erasedIncluded ((rightNodup.mem_erase_iff).mpr ⟨same, candidateMember⟩))
-
-/-- Eliminate the private controller binding validator into one pending parallel task and the exact
-Program operation, Activity record, and child wait that bind it. -/
-theorem parallelMultiInstanceProgramBindingsValid_controller_witness
+/-- Eliminate the private controller binding validator into the exact Program, Activity, child-wait,
+and Timer-wait facts owned by one admitted controller. -/
+theorem parallelMultiInstanceProgramBindingsValid_controller_facts
     (program : Program) (state : RuntimeState)
     (controller : ParallelMultiInstanceController)
     (valid : parallelMultiInstanceProgramBindingsValid program state = true)
     (controllerMember : controller ∈ state.parallelMultiInstanceControllers) :
-    ∃ taskId entry arm record wait,
-      taskId ∈ pendingParallelTaskIds controller.slots ∧
-      entry ∈ program.operations ∧
-      ParallelMultiInstanceArm.ofOperation? entry = some arm ∧
-      arm.taskId.value = controller.id.activityElementId.value ∧
-      operationOwningScope? program entry.id = some record.owner.definitionScopeId ∧
-      record ∈ state.activityOccurrences ∧
-      parallelControllerNamesIdentity controller record.processInstanceId
-        ⟨record.activityElementId.value⟩ record.activation = true ∧
-      activityBodyParallelTasks? record = some (pendingParallelTaskIds controller.slots) ∧
-      wait ∈ state.waits ∧
-      (⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ : UserTaskInstanceId) =
-        taskId ∧
-      wait.owner = record.owner ∧ wait.task.id = arm.taskId := by
+    ParallelControllerProgramBindingFacts program state controller := by
   simp only [parallelMultiInstanceProgramBindingsValid, Bool.and_eq_true,
     List.all_eq_true] at valid
   have bound := valid.1.1.1 controller controllerMember
@@ -285,12 +233,6 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_witness
       cases remainingRecords with
       | cons next tail => simp at bound
       | nil =>
-          have filteredRecord : record ∈ state.activityOccurrences.filter (fun candidate =>
-              parallelControllerNamesIdentity controller candidate.processInstanceId
-                ⟨candidate.activityElementId.value⟩ candidate.activation) := by
-            rw [recordsEq]
-            simp
-          obtain ⟨recordMember, recordIdentity⟩ := List.mem_filter.mp filteredRecord
           generalize operationsEq : program.operations.filter (fun operation =>
             match ParallelMultiInstanceArm.ofOperation? operation with
             | some arm => arm.taskId.value == controller.id.activityElementId.value
@@ -301,18 +243,11 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_witness
               cases remainingOperations with
               | cons next tail => simp at bound
               | nil =>
-                  have filteredEntry : entry ∈ program.operations.filter (fun operation =>
-                      match ParallelMultiInstanceArm.ofOperation? operation with
-                      | some arm => arm.taskId.value == controller.id.activityElementId.value
-                      | none => false) := by
-                    rw [operationsEq]
-                    simp
-                  obtain ⟨entryMember, taskIdentity⟩ := List.mem_filter.mp filteredEntry
                   cases projects : ParallelMultiInstanceArm.ofOperation? entry with
                   | none => simp [projects] at bound
                   | some arm =>
                       simp only [projects, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq,
-                        List.all_eq_true] at bound taskIdentity
+                        List.all_eq_true] at bound
                       obtain ⟨⟨⟨⟨⟨ownerScope, runtimeValid⟩, body⟩, waitLength⟩,
                         waitIdsNodup⟩, waitBindings⟩ := bound
                       have pendingNonempty : ∃ taskId,
@@ -324,6 +259,7 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_witness
                         | userTask task => simp [activityBodyParallelTasks?, bodyShape] at body
                         | childScope scope => simp [activityBodyParallelTasks?, bodyShape] at body
                       obtain ⟨taskId, pendingMember⟩ := pendingNonempty
+                      have familyValid := runtimeValid
                       simp only [parallelMultiInstanceRuntimeWellFormed, Bool.and_eq_true,
                         decide_eq_true_eq, List.all_eq_true] at runtimeValid
                       have slotIdsNodup :
@@ -349,13 +285,68 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_witness
                       obtain ⟨wait, waitMember, waitId⟩ :=
                         List.mem_map.mp (pendingIncluded pendingMember)
                       obtain ⟨rawWaitMember, _⟩ := List.mem_filter.mp waitMember
-                      obtain ⟨⟨⟨⟨waitOwner, waitTask⟩, _⟩, _⟩, _⟩ :=
-                        (waitBindings wait waitMember).1
-                      refine ⟨taskId, entry, arm, record, wait, pendingMember, entryMember, projects,
-                        taskIdentity,
-                        ownerScope, recordMember, recordIdentity, body, rawWaitMember, ?_,
-                        waitOwner, waitTask⟩
-                      simpa only [parallelWaitTaskId] using waitId
+                      obtain ⟨waitBinding, timerBinding⟩ := waitBindings wait waitMember
+                      obtain ⟨⟨⟨⟨waitOwner, waitTask⟩, _waitName⟩, _waitMetadata⟩,
+                        _waitOutput⟩ := waitBinding
+                      cases attachedShape : record.attachedTimers with
+                      | nil => simp [attachedShape] at timerBinding
+                      | cons timer remainingTimers =>
+                          cases remainingTimers with
+                          | cons next tail => simp [attachedShape] at timerBinding
+                          | nil =>
+                              cases timerWaitsShape : state.timerWaits.filter
+                                  (timerIdNamesWait timer) with
+                              | nil => simp [attachedShape, timerWaitsShape] at timerBinding
+                              | cons timerWait remainingTimerWaits =>
+                                  cases remainingTimerWaits with
+                                  | cons next tail =>
+                                      simp [attachedShape, timerWaitsShape] at timerBinding
+                                  | nil =>
+                                      simp only [attachedShape, timerWaitsShape, Bool.and_eq_true,
+                                        beq_iff_eq] at timerBinding
+                                      obtain ⟨⟨timerOwner, timerElement⟩, timerOutput⟩ :=
+                                        timerBinding
+                                      have familyWellFormed : parallelMultiInstanceRuntimeWellFormed arm
+                                          { processInstanceId := controller.id.processInstanceId
+                                            controller := some controller
+                                            liveChildren := pendingParallelTaskIds controller.slots
+                                            lifetimeTimer := some timer
+                                            processBindings := state.variables.process.bindings
+                                            taskActivationHighWater := activationCount state arm.taskId
+                                            activityActivationHighWater :=
+                                              activityActivationCount state arm.taskId
+                                            timerActivationHighWater := timerActivationCount state
+                                              arm.boundaryTimer.elementId } = true := by
+                                        simpa [attachedShape] using familyValid
+                                      have childWaitsExact : state.waits.filter (fun candidate =>
+                                          (pendingParallelTaskIds controller.slots).contains
+                                            (⟨candidate.processInstanceId,
+                                              ⟨candidate.task.id.value⟩, candidate.activation⟩ :
+                                              UserTaskInstanceId)) = waits := by
+                                        rfl
+                                      have childWaitIdsUnique : (waits.map fun candidate =>
+                                          (⟨candidate.processInstanceId,
+                                            ⟨candidate.task.id.value⟩, candidate.activation⟩ :
+                                            UserTaskInstanceId)).Nodup := by
+                                        change (waits.map parallelWaitTaskId).Nodup
+                                        exact waitIdsNodup
+                                      have childWaitBindings : waits.all (fun candidate =>
+                                          candidate.owner == record.owner &&
+                                            candidate.task.id == arm.taskId &&
+                                            candidate.task.name == arm.taskName &&
+                                            candidate.metadata == none &&
+                                            candidate.output == arm.normalOutput) = true := by
+                                        apply List.all_eq_true.mpr
+                                        intro candidate candidateMember
+                                        have binding := (waitBindings candidate candidateMember).1
+                                        simpa only [Bool.and_eq_true, beq_iff_eq] using binding
+                                      refine ⟨⟨entry, arm, record, timer, timerWait, waits, taskId,
+                                        wait, recordsEq, operationsEq, projects, ownerScope,
+                                        familyWellFormed, body, childWaitsExact, waitLength,
+                                        childWaitIdsUnique, childWaitBindings, attachedShape,
+                                        timerWaitsShape, timerOwner, timerElement, timerOutput,
+                                        pendingMember, rawWaitMember, ?_, waitOwner, waitTask⟩⟩
+                                      simpa only [parallelWaitTaskId] using waitId
 
 /-- Under an exact one-arm program census, absence of that arm's controller excludes every parallel
 controller from a state admitted by the bidirectional program binding. -/

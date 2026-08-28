@@ -15,6 +15,48 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+/-- Pending task identities retain their relative order inside the complete slot-identity list. -/
+theorem pendingParallelTaskIds_sublist_parallelSlotTaskIds
+    (slots : List ParallelMultiInstanceSlot) :
+    List.Sublist (pendingParallelTaskIds slots) (parallelSlotTaskIds slots) := by
+  induction slots with
+  | nil => simp [pendingParallelTaskIds, parallelSlotTaskIds]
+  | cons slot rest ih =>
+      cases slot with
+      | pending taskId =>
+          simpa [pendingParallelTaskIds, parallelSlotTaskIds, ParallelMultiInstanceSlot.taskId]
+            using ih.cons_cons taskId
+      | completed taskId result =>
+          simpa [pendingParallelTaskIds, parallelSlotTaskIds, ParallelMultiInstanceSlot.taskId]
+            using ih.cons taskId
+
+/-- Equal-length duplicate-free lists with a one-way inclusion contain exactly the same values. -/
+theorem nodup_subset_of_nodup_subset_length_eq [BEq α] [LawfulBEq α]
+    {left right : List α} (leftNodup : left.Nodup) (rightNodup : right.Nodup)
+    (included : left ⊆ right) (sameLength : left.length = right.length) :
+    right ⊆ left := by
+  induction left generalizing right with
+  | nil =>
+      have rightEmpty : right = [] := List.eq_nil_of_length_eq_zero (by simpa using sameLength.symm)
+      simp [rightEmpty]
+  | cons head tail ih =>
+      obtain ⟨headFresh, tailNodup⟩ := List.nodup_cons.mp leftNodup
+      have headMember : head ∈ right := included (by simp)
+      have tailIncluded : tail ⊆ right.erase head := by
+        intro candidate candidateMember
+        rw [rightNodup.mem_erase_iff]
+        exact ⟨fun same => headFresh (same ▸ candidateMember), included (by simp [candidateMember])⟩
+      have erasedLength : tail.length = (right.erase head).length := by
+        rw [List.length_erase_of_mem headMember]
+        simp only [List.length_cons] at sameLength
+        omega
+      have erasedIncluded := ih tailNodup (rightNodup.erase head) tailIncluded erasedLength
+      intro candidate candidateMember
+      by_cases same : candidate = head
+      · simp [same]
+      · exact List.mem_cons_of_mem head
+          (erasedIncluded ((rightNodup.mem_erase_iff).mpr ⟨same, candidateMember⟩))
+
 /-- Exact Program and shared-runtime witnesses owned by one admitted Parallel Multi-Instance
 controller. The carrier is proof-only; the Program-wide operation census remains a separate
 aggregate fact. -/
