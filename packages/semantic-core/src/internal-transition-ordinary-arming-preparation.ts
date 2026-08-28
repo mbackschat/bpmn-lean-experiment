@@ -26,10 +26,17 @@ import {
   InternalOccurrenceKind,
 } from "./internal-transition-wait-census.js";
 import {
+  deriveInternalOrdinaryArmingPatch,
+  internalOrdinaryArmingPatchOccurrence,
+} from "./internal-transition-ordinary-arming-patch.js";
+import type {
+  InternalOrdinaryArmingOperation,
+  InternalOrdinaryArmingPatch,
+} from "./internal-transition-ordinary-arming-patch.js";
+import {
   SemanticOperationKind,
 } from "./semantic-process-contract.js";
 import type {
-  SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
@@ -47,21 +54,11 @@ import type {
 const InternalOperationTransitionKind =
   "internalOperation" as SemanticTransitionKind.InternalOperation;
 
-export type InternalOrdinaryArmingOperation = Extract<
-  SemanticOperation,
-  {
-    kind:
-      | SemanticOperationKind.AwaitUserTask
-      | SemanticOperationKind.AwaitMessage
-      | SemanticOperationKind.AwaitTimer
-      | SemanticOperationKind.AwaitEffect;
-  }
->;
-
 export type PreparedInternalOrdinaryArming = Readonly<{
   alternative: InternalOperationAlternative;
   operation: InternalOrdinaryArmingOperation;
   owner: ScopeOccurrenceId;
+  patch: InternalOrdinaryArmingPatch;
   footprint: InternalTransitionFootprint;
   publicationTemplate: InternalPublicationTemplate;
 }>;
@@ -79,7 +76,8 @@ export function deriveInternalOrdinaryArmingPreparation(
   }
   const footprint = deriveInternalTransitionFootprint(program, state, candidate);
   const processId = candidateProcessId(program, state, owner);
-  if (footprint === null || processId === null) {
+  const patch = deriveInternalOrdinaryArmingPatch(operation, state, owner);
+  if (footprint === null || processId === null || patch === null) {
     return null;
   }
   const committed = only(footprint.publications.filter(isCommittedTransition));
@@ -94,7 +92,11 @@ export function deriveInternalOrdinaryArmingPreparation(
     !sameScopeOccurrence(committed.owner, owner) ||
     pair.operationId !== operation.id ||
     pair.occurrence.kind !== occurrenceKind(operation) ||
-    !sameOccurrence(pair.occurrence.id, lifecycle.occurrence)
+    !sameOccurrence(pair.occurrence.id, lifecycle.occurrence) ||
+    !sameOccurrence(
+      pair.occurrence.id,
+      internalOrdinaryArmingPatchOccurrence(patch),
+    )
   ) {
     return null;
   }
@@ -103,6 +105,7 @@ export function deriveInternalOrdinaryArmingPreparation(
     alternative,
     operation,
     owner,
+    patch,
     footprint,
     publicationTemplate: {
       alternative,
@@ -134,7 +137,7 @@ export function deriveInternalOrdinaryArmingPreparation(
 }
 
 function ordinaryArmingOperation(
-  operation: SemanticOperation,
+  operation: InternalTransitionCandidate["operation"],
 ): InternalOrdinaryArmingOperation | null {
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask:

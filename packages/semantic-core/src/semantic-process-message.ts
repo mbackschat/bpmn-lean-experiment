@@ -1,4 +1,8 @@
 import {
+  applyInternalOrdinaryArmingPatch,
+  deriveInternalOrdinaryArmingPatch,
+} from "./internal-transition-ordinary-arming-patch.js";
+import {
   StimulusKind,
 } from "./contract.js";
 import type {
@@ -11,11 +15,8 @@ import {
 } from "./message-channel.js";
 import {
   addToken,
-  compareMessageWaits,
   ControlStateKind,
-  removeToken,
   sameOccurrence,
-  setActivationCount,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -30,35 +31,8 @@ export function createMessageWait(
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState {
-  if (state.control.kind !== ControlStateKind.Running) {
-    return state;
-  }
-  const activation =
-    (state.messageActivations.find(
-      ({ elementId }) => elementId === operation.message.elementId,
-    )?.count ?? 0) + 1;
-  return {
-    ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input, owner),
-    messageWaits: [
-      ...state.messageWaits,
-      {
-        id: {
-          processInstanceId: owner.processInstanceId,
-          elementId: operation.message.elementId,
-          activation,
-        },
-        owner,
-        channel: operation.message.channel,
-        output: operation.output,
-      },
-    ].sort(compareMessageWaits),
-    messageActivations: setActivationCount(
-      state.messageActivations,
-      operation.message.elementId,
-      activation,
-    ),
-  };
+  const patch = deriveInternalOrdinaryArmingPatch(operation, state, owner);
+  return patch === null ? state : applyInternalOrdinaryArmingPatch(state, patch);
 }
 
 export function deliverMessage(

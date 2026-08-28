@@ -9,6 +9,7 @@ import {
   initialState,
 } from "@bpmn-lean/semantic-core";
 import type {
+  AppliedInternalOperationStep,
   RuntimeState,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
@@ -34,6 +35,8 @@ type OrdinaryArmingPreparationModule =
   typeof import("../src/internal-transition-ordinary-arming-preparation.ts");
 type PublicationTemplateModule =
   typeof import("../src/internal-publication-template.ts");
+type OrdinaryArmingPatchModule =
+  typeof import("../src/internal-transition-ordinary-arming-patch.ts");
 
 const preparationModule = await import(
   new URL(
@@ -44,12 +47,19 @@ const preparationModule = await import(
 const publicationTemplateModule = await import(
   new URL("../dist/internal-publication-template.js", import.meta.url).href
 ) as PublicationTemplateModule;
+const patchModule = await import(
+  new URL(
+    "../dist/internal-transition-ordinary-arming-patch.js",
+    import.meta.url,
+  ).href
+) as OrdinaryArmingPatchModule;
 
 const { deriveInternalOrdinaryArmingPreparation } = preparationModule;
 const {
   InternalPublicationTemplateAnchorKind,
   instantiateInternalPublicationBatch,
 } = publicationTemplateModule;
+const { applyInternalOrdinaryArmingPatch } = patchModule;
 
 test("prepares every ordinary wait family with publication-time and an exact wait lifecycle", () => {
   const cases = [
@@ -122,7 +132,43 @@ test("prepares every ordinary wait family with publication-time and an exact wai
       ? started.anchor.id.elementId
       : null);
     assert.deepEqual(started?.owner, candidate.owner);
+    assert.deepEqual(
+      applyInternalOrdinaryArmingPatch(state, prepared.patch),
+      candidate.successor,
+      candidate.operation.kind,
+    );
   }
+});
+
+test("ordinary local patches preserve complete sibling preparation and commute in raw state", () => {
+  const [leftCandidate, rightCandidate] = enabledOperations(program, frontier);
+  assert.ok(leftCandidate !== undefined);
+  assert.ok(rightCandidate !== undefined);
+  const left = requirePrepared(deriveInternalOrdinaryArmingPreparation(
+    program,
+    frontier,
+    leftCandidate,
+  ));
+  const right = requirePrepared(deriveInternalOrdinaryArmingPreparation(
+    program,
+    frontier,
+    rightCandidate,
+  ));
+  const afterLeft = applyInternalOrdinaryArmingPatch(frontier, left.patch);
+  const afterRight = applyInternalOrdinaryArmingPatch(frontier, right.patch);
+
+  assert.deepEqual(
+    deriveInternalOrdinaryArmingPreparation(program, afterLeft, rightCandidate),
+    right,
+  );
+  assert.deepEqual(
+    deriveInternalOrdinaryArmingPreparation(program, afterRight, leftCandidate),
+    left,
+  );
+  assert.deepEqual(
+    applyInternalOrdinaryArmingPatch(afterLeft, right.patch),
+    applyInternalOrdinaryArmingPatch(afterRight, left.patch),
+  );
 });
 
 test("sorts ordinary arming templates before assigning command and transition identity", () => {
@@ -190,7 +236,7 @@ function armedCandidate(
 ): Readonly<{
   program: SemanticProcessProgram;
   state: RuntimeState;
-  candidate: InternalTransitionCandidate;
+  candidate: AppliedInternalOperationStep;
 }> {
   const started = applyStimulus(
     candidateProgram,

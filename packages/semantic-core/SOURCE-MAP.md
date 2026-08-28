@@ -39,7 +39,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-control-flow-runtime.ts](src/semantic-process-control-flow-runtime.ts) | Control-flow token transitions owning no wait, occurrence, or scope lifecycle |
 | [semantic-process-cyclic-control-flow-runtime.ts](src/semantic-process-cyclic-control-flow-runtime.ts) | Exclusive Merge token movement for the resumption-bounded cyclic capsule |
 | [semantic-process-scope-runtime.ts](src/semantic-process-scope-runtime.ts) | Token consumption at a scope-hosting Activity |
-| [semantic-process-wait-runtime.ts](src/semantic-process-wait-runtime.ts) | Construction of User Task, Timer, and Effect waits |
+| [semantic-process-wait-runtime.ts](src/semantic-process-wait-runtime.ts) | Ordinary User Task, Timer, and Effect arming entry points over the shared exact local-edit patch |
 | [bounded-wait-admission.ts](src/bounded-wait-admission.ts) | Well-formedness of the three boundary-deadline operations and their shared deadline arm |
 | [semantic-process-user-task-runtime.ts](src/semantic-process-user-task-runtime.ts) | The ordinary non-specialized User Task completion arm |
 | [semantic-process-activity-arming.ts](src/semantic-process-activity-arming.ts) | Shared exact Activity record, User Task wait, and attached Timer arming for both boundary-task families |
@@ -88,6 +88,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-transition-initiation-preparation.ts](src/internal-transition-initiation-preparation.ts) | Exact singleton Process-initiation owner, pending flag, root, output-token, and publication-time footprint without applying the transition |
 | [internal-publication-template.ts](src/internal-publication-template.ts) | Private numbering-free transition and lifecycle templates with canonical alternative sorting and late command, transition, and local-index instantiation |
 | [internal-transition-ordinary-arming-preparation.ts](src/internal-transition-ordinary-arming-preparation.ts) | Exact ordinary User Task, Message, Timer, and Effect arming footprints plus numbering-free transition and wait-lifecycle publications derived from the pre-state |
+| [internal-transition-ordinary-arming-patch.ts](src/internal-transition-ordinary-arming-patch.ts) | Exact local edits for ordinary wait arming, shared by pre-frontier preparation and the existing evaluator without whole-state replacement or successor-state inference |
 | [semantic-process-closure.ts](src/semantic-process-closure.ts) | Bounded closure over single-enabled and reviewed exact-two internal frontiers |
 | [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, stimulus admission, operation dispatch, closure, and `applyStimulus` |
 | [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts and trace replay validation |
