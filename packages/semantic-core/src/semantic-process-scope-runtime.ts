@@ -60,8 +60,9 @@ export type ChildScopeEntry = Readonly<{
  * token, refusing a second live occurrence of the same definition scope.
  *
  * Shared with the bounded-scope family, which arms a deadline on top of exactly this state change.
- * The two must not drift on activation ordinals: the deadline is paired to the child occurrence by
- * their equal counters, so a separately written entry would silently break that recovery.
+ * The two must not drift on child issuance: bounded arming stores this exact child identity beside
+ * its deadline in one Activity occurrence record, so a separately written entry would make the
+ * applied state disagree with the record selected from the pre-state.
  */
 export function enterChildScope(
   state: RuntimeState,
