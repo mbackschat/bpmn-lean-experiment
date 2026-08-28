@@ -476,7 +476,11 @@ function typeScriptObjectWriterLines(source: string): ReadonlySet<number> {
     if (token?.value !== "activityOccurrences" || braceKinds.at(-1) !== true) continue;
     const previous = tokens[index - 1]?.value;
     const next = tokens[index + 1]?.value;
-    if ((previous === "{" || previous === ",") && (next === ":" || next === "," || next === "}")) {
+    const valueStart = tokens[index + 2]?.value;
+    const declarativeObjectValue = next === ":" && valueStart === "{";
+    if (!declarativeObjectValue &&
+        (previous === "{" || previous === ",") &&
+        (next === ":" || next === "," || next === "}")) {
       writerLines.add(token.line);
     }
   }
@@ -756,6 +760,9 @@ test("the census parser sees independent writer forms without treating declarati
     "export interface State {",
     "  activityOccurrences: string[];",
     "}",
+    "export const fieldMetadata = {",
+    "  activityOccurrences: { leanField: 'activityOccurrences' },",
+    "};",
     "export function seeded(state: State): State {",
     "  const activityOccurrences = state.activityOccurrences.filter(Boolean);",
     "  return { activityOccurrences, };",
