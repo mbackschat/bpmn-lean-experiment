@@ -6,6 +6,7 @@ import {
   compareActivityOccurrences,
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { VariableValueKind } from "./contract.js";
 import type {
   CompleteUserTaskInstanceStimulus,
@@ -18,6 +19,7 @@ import {
   ParallelMultiInstanceSlotKind,
   parallelMultiInstanceControllerFor,
 } from "./parallel-multi-instance-controller.js";
+import type { ParallelMultiInstanceController } from "./parallel-multi-instance-controller.js";
 import {
   admittedParallelMultiInstanceChildResult,
   admittedParallelMultiInstanceCompletionPolicy,
@@ -48,11 +50,35 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 
-export function enterParallelMultiInstanceUserTask(
+export enum ParallelMultiInstanceEntryKind {
+  Armed = "armed",
+  Empty = "empty",
+}
+
+export type SelectedParallelMultiInstanceEntry = Readonly<
+  | {
+      kind: ParallelMultiInstanceEntryKind.Empty;
+      owner: ScopeOccurrenceId;
+      resultingTokens: RuntimeState["controlTokens"];
+      processBindings: ReadonlyArray<VariableBinding>;
+    }
+  | {
+      kind: ParallelMultiInstanceEntryKind.Armed;
+      owner: ScopeOccurrenceId;
+      resultingTokens: RuntimeState["controlTokens"];
+      record: ActivityOccurrence;
+      controller: ParallelMultiInstanceController;
+      taskWaits: RuntimeState["userTaskWaits"];
+      timerWait: RuntimeState["timerWaits"][number];
+    }
+>;
+
+/** Selects one exact parallel entry arm and every value it installs from the pre-state. */
+export function selectParallelMultiInstanceEntry(
   operation: AwaitParallelMultiInstanceUserTaskOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
-): RuntimeState | null {
+): SelectedParallelMultiInstanceEntry | null {
   if (state.control.kind !== ControlStateKind.Running) {
     return null;
   }
@@ -66,21 +92,14 @@ export function enterParallelMultiInstanceUserTask(
   const consumed = removeToken(state.controlTokens, operation.input, owner);
   if (collection.length === 0) {
     return {
-      ...state,
-      controlTokens: addToken(consumed, operation.normalOutput, owner),
-      parallelMultiInstanceControllers: [
-        ...(state.parallelMultiInstanceControllers ?? []),
-      ],
-      variables: {
-        ...state.variables,
-        process: {
-          bindings: publishCollection(
-            state.variables.process.bindings,
-            operation.data.output.dataObjectReferenceId,
-            [],
-          ),
-        },
-      },
+      kind: ParallelMultiInstanceEntryKind.Empty,
+      owner,
+      resultingTokens: addToken(consumed, operation.normalOutput, owner),
+      processBindings: publishCollection(
+        state.variables.process.bindings,
+        operation.data.output.dataObjectReferenceId,
+        [],
+      ),
     };
   }
 
@@ -93,7 +112,6 @@ export function enterParallelMultiInstanceUserTask(
     elementId: operation.task.elementId,
     activation: firstTaskActivation + index,
   }));
-  const finalTaskActivation = firstTaskActivation + taskIds.length - 1;
   const timerActivation = nextActivation(
     state.timerActivations,
     operation.boundaryTimer.elementId,
@@ -121,62 +139,113 @@ export function enterParallelMultiInstanceUserTask(
     return null;
   }
 
-  return {
-    ...state,
-    controlTokens: consumed,
-    activityOccurrences: [
-      ...state.activityOccurrences,
-      {
-        id: activityId,
-        owner,
-        operationId: operation.id,
-        body: {
-          kind: ActivityBodyKind.ParallelUserTasks,
-          tasks: [firstTask, ...remainingTasks],
-        } as const,
-        attachedTimers: [timerId],
-      },
-    ].sort(compareActivityOccurrences),
-    parallelMultiInstanceControllers: [
-      ...(state.parallelMultiInstanceControllers ?? []),
-      {
-        id: activityId,
-        snapshot: [...collection],
-        slots: taskIds.map((taskId) => ({
-          kind: ParallelMultiInstanceSlotKind.Pending,
-          taskId,
-        } as const)),
-      },
-    ].sort(compareParallelMultiInstanceControllers),
-    activityActivations: setActivationCount(
-      state.activityActivations,
-      operation.task.elementId,
-      activityActivation,
-    ),
-    userTaskWaits: [
-      ...state.userTaskWaits,
-      ...taskIds.map((id) => ({
-        id,
-        owner,
-        name: operation.task.name,
-        output: operation.normalOutput,
-      })),
-    ].sort(compareUserTaskWaits),
-    timerWaits: [
-      ...state.timerWaits,
-      { id: timerId, owner, deadlineMs, output: operation.boundaryTimer.output },
-    ].sort(compareTimerWaits),
-    taskActivations: setActivationCount(
-      state.taskActivations,
-      operation.task.elementId,
-      finalTaskActivation,
-    ),
-    timerActivations: setActivationCount(
-      state.timerActivations,
-      operation.boundaryTimer.elementId,
-      timerActivation,
-    ),
+  const record: ActivityOccurrence = {
+    id: activityId,
+    owner,
+    operationId: operation.id,
+    body: {
+      kind: ActivityBodyKind.ParallelUserTasks,
+      tasks: [firstTask, ...remainingTasks],
+    },
+    attachedTimers: [timerId],
   };
+  const controller: ParallelMultiInstanceController = {
+    id: activityId,
+    snapshot: [...collection],
+    slots: taskIds.map((taskId) => ({
+      kind: ParallelMultiInstanceSlotKind.Pending,
+      taskId,
+    })),
+  };
+  const taskWaits: RuntimeState["userTaskWaits"] = taskIds.map((id) => ({
+    id,
+    owner,
+    name: operation.task.name,
+    output: operation.normalOutput,
+  }));
+  const timerWait: RuntimeState["timerWaits"][number] = {
+    id: timerId,
+    owner,
+    deadlineMs,
+    output: operation.boundaryTimer.output,
+  };
+  return {
+    kind: ParallelMultiInstanceEntryKind.Armed,
+    owner,
+    resultingTokens: consumed,
+    record,
+    controller,
+    taskWaits,
+    timerWait,
+  };
+}
+
+export function enterParallelMultiInstanceUserTask(
+  operation: AwaitParallelMultiInstanceUserTaskOperation,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+): RuntimeState | null {
+  const selected = selectParallelMultiInstanceEntry(operation, state, owner);
+  if (selected === null) {
+    return null;
+  }
+  switch (selected.kind) {
+    case ParallelMultiInstanceEntryKind.Empty:
+      return {
+        ...state,
+        controlTokens: selected.resultingTokens,
+        parallelMultiInstanceControllers: [
+          ...(state.parallelMultiInstanceControllers ?? []),
+        ],
+        variables: {
+          ...state.variables,
+          process: { bindings: selected.processBindings },
+        },
+      };
+    case ParallelMultiInstanceEntryKind.Armed: {
+      const finalTask = selected.taskWaits.at(-1);
+      if (finalTask === undefined) {
+        return null;
+      }
+      return {
+        ...state,
+        controlTokens: selected.resultingTokens,
+        activityOccurrences: [
+          ...state.activityOccurrences,
+          selected.record,
+        ].sort(compareActivityOccurrences),
+        parallelMultiInstanceControllers: [
+          ...(state.parallelMultiInstanceControllers ?? []),
+          selected.controller,
+        ].sort(compareParallelMultiInstanceControllers),
+        activityActivations: setActivationCount(
+          state.activityActivations,
+          operation.task.elementId,
+          selected.record.id.activation,
+        ),
+        userTaskWaits: [
+          ...state.userTaskWaits,
+          ...selected.taskWaits,
+        ].sort(compareUserTaskWaits),
+        timerWaits: [
+          ...state.timerWaits,
+          selected.timerWait,
+        ].sort(compareTimerWaits),
+        taskActivations: setActivationCount(
+          state.taskActivations,
+          operation.task.elementId,
+          finalTask.id.activation,
+        ),
+        timerActivations: setActivationCount(
+          state.timerActivations,
+          operation.boundaryTimer.elementId,
+          selected.timerWait.id.activation,
+        ),
+      };
+    }
+    default:
+      return assertNever(selected);
+  }
 }
 
 export function completeParallelMultiInstanceChild(
@@ -448,4 +517,10 @@ function publishCollection(
     name,
     value: { kind: VariableValueKind.StringList, value: [...items] },
   }]);
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(
+    `Unsupported Parallel Multi-Instance entry: ${JSON.stringify(value)}`,
+  );
 }

@@ -127,6 +127,22 @@ function stateAtomParts(
       ];
     case InternalTransitionStateAtomKind.OpenWaitAnchor:
       return [atom.kind, ...occurrenceParts(atom.occurrence)];
+    case InternalTransitionStateAtomKind.ParallelController:
+      return [
+        atom.kind,
+        ...activityOccurrenceIdParts(atom.id),
+        ...scopeParts(atom.owner),
+      ];
+    case InternalTransitionStateAtomKind.ParallelControllerSlot:
+    case InternalTransitionStateAtomKind.ParallelControllerSnapshot:
+      return [
+        atom.kind,
+        ...activityOccurrenceIdParts(atom.id),
+        atom.index,
+        ...scopeParts(atom.owner),
+      ];
+    case InternalTransitionStateAtomKind.ParallelControllersPresence:
+      return [atom.kind];
     case InternalTransitionStateAtomKind.ProcessVariable:
       return [atom.kind, atom.name];
     case InternalTransitionStateAtomKind.ControlToken:
@@ -193,6 +209,13 @@ function stateAtomsConflict(
   ) {
     return activityAssociationsConflict(left.record, right.record);
   }
+  if (isParallelControllerAtom(left) && isParallelControllerAtom(right)) {
+    return controllerAtomsConflict(
+      left,
+      right,
+      InternalTransitionStateAtomKind.ParallelController,
+    );
+  }
   if (
     left.kind === InternalTransitionStateAtomKind.EventRaceAssociation &&
     right.kind === InternalTransitionStateAtomKind.EventRaceAssociation
@@ -208,16 +231,11 @@ function stateAtomsConflict(
       );
   }
   if (isSequentialControllerAtom(left) && isSequentialControllerAtom(right)) {
-    if (!sameActivityOccurrence(left.id, right.id)) {
-      return false;
-    }
-    if (
-      left.kind === InternalTransitionStateAtomKind.SequentialController ||
-      right.kind === InternalTransitionStateAtomKind.SequentialController
-    ) {
-      return true;
-    }
-    return left.kind === right.kind && left.index === right.index;
+    return controllerAtomsConflict(
+      left,
+      right,
+      InternalTransitionStateAtomKind.SequentialController,
+    );
   }
   if (compareStateAtoms(left, right) === 0) {
     return true;
@@ -250,6 +268,9 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.ActivityVariableScope:
     case InternalTransitionStateAtomKind.ControlToken:
     case InternalTransitionStateAtomKind.OpenWaitAnchor:
+    case InternalTransitionStateAtomKind.ParallelController:
+    case InternalTransitionStateAtomKind.ParallelControllerSlot:
+    case InternalTransitionStateAtomKind.ParallelControllerSnapshot:
     case InternalTransitionStateAtomKind.SelectedBranch:
     case InternalTransitionStateAtomKind.SequentialController:
     case InternalTransitionStateAtomKind.SequentialControllerOutput:
@@ -262,6 +283,7 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.EndIncrement:
     case InternalTransitionStateAtomKind.InitiationPending:
     case InternalTransitionStateAtomKind.LogicalTime:
+    case InternalTransitionStateAtomKind.ParallelControllersPresence:
     case InternalTransitionStateAtomKind.ProcessVariable:
     case InternalTransitionStateAtomKind.RuntimeControl:
     case InternalTransitionStateAtomKind.SequentialControllersPresence:
@@ -292,6 +314,24 @@ function activityOccurrenceIdParts(
   return [id.processInstanceId, id.activityElementId, id.activation];
 }
 
+type ParallelControllerAtom = Extract<
+  InternalTransitionStateAtom,
+  {
+    kind:
+      | InternalTransitionStateAtomKind.ParallelController
+      | InternalTransitionStateAtomKind.ParallelControllerSlot
+      | InternalTransitionStateAtomKind.ParallelControllerSnapshot;
+  }
+>;
+
+function isParallelControllerAtom(
+  atom: InternalTransitionStateAtom,
+): atom is ParallelControllerAtom {
+  return atom.kind === InternalTransitionStateAtomKind.ParallelController ||
+    atom.kind === InternalTransitionStateAtomKind.ParallelControllerSlot ||
+    atom.kind === InternalTransitionStateAtomKind.ParallelControllerSnapshot;
+}
+
 type SequentialControllerAtom = Extract<
   InternalTransitionStateAtom,
   {
@@ -308,6 +348,29 @@ function isSequentialControllerAtom(
   return atom.kind === InternalTransitionStateAtomKind.SequentialController ||
     atom.kind === InternalTransitionStateAtomKind.SequentialControllerOutput ||
     atom.kind === InternalTransitionStateAtomKind.SequentialControllerSnapshot;
+}
+
+function controllerAtomsConflict(
+  left: ParallelControllerAtom | SequentialControllerAtom,
+  right: ParallelControllerAtom | SequentialControllerAtom,
+  membershipKind:
+    | InternalTransitionStateAtomKind.ParallelController
+    | InternalTransitionStateAtomKind.SequentialController,
+): boolean {
+  if (!sameActivityOccurrence(left.id, right.id)) {
+    return false;
+  }
+  if (left.kind === membershipKind || right.kind === membershipKind) {
+    return true;
+  }
+  return left.kind === right.kind &&
+    controllerAtomIndex(left) === controllerAtomIndex(right);
+}
+
+function controllerAtomIndex(
+  atom: ParallelControllerAtom | SequentialControllerAtom,
+): number | null {
+  return "index" in atom ? atom.index : null;
 }
 
 function activityBodyParts(

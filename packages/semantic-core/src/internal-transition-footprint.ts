@@ -97,6 +97,20 @@ export type InternalTransitionStateAtom = Readonly<
       owner: ScopeOccurrenceId;
     }
   | {
+      kind: InternalTransitionStateAtomKind.ParallelController;
+      id: ActivityOccurrenceId;
+      owner: ScopeOccurrenceId;
+    }
+  | {
+      kind:
+        | InternalTransitionStateAtomKind.ParallelControllerSlot
+        | InternalTransitionStateAtomKind.ParallelControllerSnapshot;
+      id: ActivityOccurrenceId;
+      owner: ScopeOccurrenceId;
+      index: number;
+    }
+  | { kind: InternalTransitionStateAtomKind.ParallelControllersPresence }
+  | {
       kind: InternalTransitionStateAtomKind.ProcessVariable;
       name: string;
     }
