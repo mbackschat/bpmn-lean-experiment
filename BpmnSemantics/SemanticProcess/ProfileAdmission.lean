@@ -106,10 +106,9 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with terminateEnds := counts.terminateEnds + 1 }
     | .noneEndEvent .. => { counts with ends := counts.ends + 1 }
 
-private def operationCardinalities (operations : List SemanticOperation) :
-    ShapeCardinalities :=
-  operations.foldl (init := {}) fun counts operation =>
-    match operation with
+private def addOperationCardinality (counts : ShapeCardinalities)
+    (operation : SemanticOperation) : ShapeCardinalities :=
+  match operation with
     | .initiate .. => { counts with initiates := counts.initiates + 1 }
     | .initiateMessage .. =>
         { counts with messageInitiates := counts.messageInitiates + 1 }
@@ -151,6 +150,29 @@ private def operationCardinalities (operations : List SemanticOperation) :
         { counts with scopeTerminations := counts.scopeTerminations + 1 }
     | .completeScope .. =>
         { counts with scopeCompletions := counts.scopeCompletions + 1 }
+
+private def operationCardinalities (operations : List SemanticOperation) :
+    ShapeCardinalities :=
+  operations.foldl (init := {}) addOperationCardinality
+
+private def isEventRaceOperation : SemanticOperation → Bool
+  | .awaitEventRace .. => true
+  | _ => false
+
+private theorem operationCardinalities_eventRaces (operations : List SemanticOperation) :
+    (operationCardinalities operations).eventRaces =
+      (operations.filter isEventRaceOperation).length := by
+  unfold operationCardinalities
+  have foldCount : ∀ counts : ShapeCardinalities,
+      (operations.foldl addOperationCardinality counts).eventRaces =
+        counts.eventRaces + (operations.filter isEventRaceOperation).length := by
+    intro counts
+    induction operations generalizing counts with
+    | nil => simp
+    | cons operation rest ih =>
+        rw [List.foldl_cons, ih]
+        cases operation <;> simp [addOperationCardinality, isEventRaceOperation] <;> omega
+  simpa using foldCount {}
 
 private def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) :
     ShapeCardinalities :=
@@ -618,5 +640,51 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
           operationPayloadCapabilitiesValid
             program.identity.semanticProfile.value program.operations
     | none => false
+
+/-- The Parallel Multi-Instance profile's exact Program shape contains one definition scope.
+
+Downstream preservation proofs consume this semantic consequence rather than depending on the
+private cardinality representation used to decide profile admission. -/
+theorem parallelMultiInstanceProfile_has_one_definition_scope (program : Program)
+    (profile : program.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId)
+    (capabilities : programProfileCapabilitiesValid program = true) :
+    program.definitionScopes.length = 1 := by
+  simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at capabilities
+  have shape := capabilities.2
+  rw [profile] at shape
+  simp [programShape?, parallelMultiInstanceUserTaskProfileId,
+    sequentialMultiInstanceUserTaskProfileId] at shape
+  exact shape.1.1.1.1.1
+
+/-- The Parallel Multi-Instance profile admits no Event-Based Gateway race operation.
+
+This exposes only the operation-family consequence needed by shared runtime preservation. The exact
+private operation-cardinality record remains an implementation detail of profile admission. -/
+theorem parallelMultiInstanceProfile_has_no_event_race_operation (program : Program)
+    (profile : program.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId)
+    (capabilities : programProfileCapabilitiesValid program = true) :
+    ∀ operation ∈ program.operations,
+      match operation with
+      | .awaitEventRace .. => False
+      | _ => True := by
+  simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at capabilities
+  have shape := capabilities.2
+  rw [profile] at shape
+  simp [programShape?, parallelMultiInstanceUserTaskProfileId,
+    sequentialMultiInstanceUserTaskProfileId] at shape
+  have zero : (program.operations.filter isEventRaceOperation).length = 0 := by
+    have count := congrArg ShapeCardinalities.eventRaces shape.1.1.1.1.2
+    simpa [operationCardinalities_eventRaces, withScopeCompletions] using count
+  have empty : program.operations.filter isEventRaceOperation = [] :=
+    List.eq_nil_of_length_eq_zero zero
+  intro operation member
+  have excluded : isEventRaceOperation operation = false := by
+    apply Bool.eq_false_iff.mpr
+    intro selected
+    have present : operation ∈ program.operations.filter isEventRaceOperation :=
+      List.mem_filter.mpr ⟨member, selected⟩
+    rw [empty] at present
+    simp at present
+  cases operation <;> simp_all [isEventRaceOperation]
 
 end BpmnSemantics.SemanticProcess
