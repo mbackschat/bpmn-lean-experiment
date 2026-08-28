@@ -529,9 +529,11 @@ test("multiple records may claim distinct exact live tasks", () => {
 test("multiple records may claim distinct exact live child scopes", () => {
   const state = armedState();
   const [record] = state.activityOccurrences;
-  assert.ok(record?.body.kind === ActivityBodyKind.ChildScope);
+  assert.ok(record !== undefined, "arming must create one Activity record");
+  const claimedBody = record.body;
+  assert.ok(claimedBody.kind === ActivityBodyKind.ChildScope);
   const child = state.scopeOccurrences.find(({ id }) =>
-    id.definitionScopeId === record.body.scope.definitionScopeId
+    id.definitionScopeId === claimedBody.scope.definitionScopeId
   );
   assert.ok(child !== undefined, "the claimed child scope must be live");
   const secondChild = {
