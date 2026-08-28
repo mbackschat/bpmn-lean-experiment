@@ -3,10 +3,13 @@ import { test } from "node:test";
 
 import {
   ControlStateKind,
+  FlowNodeOccurrenceTerminalKind,
   MessageChannelKind,
+  SemanticFlowNodeOccurrenceAnchorKind,
   SemanticOperationKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  SemanticTransitionKind,
   applyInternalOperationStep,
   initialState,
 } from "@bpmn-lean/semantic-core";
@@ -28,6 +31,10 @@ import {
 type InitiationPreparationModule =
   typeof import("../src/internal-transition-initiation-preparation.ts");
 type FootprintModule = typeof import("../src/internal-transition-footprint.ts");
+type InitiationPatchModule =
+  typeof import("../src/internal-transition-initiation-patch.ts");
+type PublicationTemplateModule =
+  typeof import("../src/internal-publication-template.ts");
 
 const preparationModule = await import(
   new URL(
@@ -38,12 +45,23 @@ const preparationModule = await import(
 const footprintModule = await import(
   new URL("../dist/internal-transition-footprint.js", import.meta.url).href
 ) as FootprintModule;
+const initiationPatchModule = await import(
+  new URL(
+    "../dist/internal-transition-initiation-patch.js",
+    import.meta.url,
+  ).href
+) as InitiationPatchModule;
+const publicationTemplateModule = await import(
+  new URL("../dist/internal-publication-template.js", import.meta.url).href
+) as PublicationTemplateModule;
 
 const { deriveInternalInitiationPreparation } = preparationModule;
 const {
   InternalTransitionStateAtomKind,
   internalTransitionStateFootprintsAreIndependent,
 } = footprintModule;
+const { applyInternalInitiationPatch } = initiationPatchModule;
+const { instantiateInternalPublicationBatch } = publicationTemplateModule;
 
 const noneOperation = {
   ...operationBase("Start_None"),
@@ -59,7 +77,7 @@ const messageOperation = {
     interfaceOperationId: "Operation_Start",
     messageId: "Message_Start",
   },
-  outputs: ["place:Flow_Message_A", "place:Flow_Message_B"],
+  outputs: ["place:Flow_Message_B", "place:Flow_Message_A"],
 } as const;
 const timerOperation = {
   ...operationBase("Start_Timer"),
@@ -104,7 +122,9 @@ test("prepares each Process initiation from one exact pending root", () => {
         kind: InternalTransitionStateAtomKind.ControlToken,
         owner,
         placeId,
-      })),
+      })).sort((left, right) =>
+        left.placeId < right.placeId ? -1 : left.placeId > right.placeId ? 1 : 0
+      ),
     );
     assert.deepEqual(
       prepared.footprint.writes.find(({ kind }) =>
@@ -128,6 +148,75 @@ test("prepares each Process initiation from one exact pending root", () => {
       ),
       true,
     );
+    const applied = applyInternalOperationStep(program, operation, state);
+    assert.notEqual(applied, null);
+    assert.deepEqual(
+      applyInternalInitiationPatch(state, prepared.patch),
+      applied?.successor,
+    );
+    const instantiated = instantiateInternalPublicationBatch(
+      "command:initiation",
+      2,
+      [prepared.publicationTemplate],
+    );
+    assert.notEqual(instantiated, null);
+    const outputOrigins = prepared.outputs.map((placeId) => {
+      const place = program.controlPlaces.find(({ id }) => id === placeId);
+      assert.ok(place !== undefined);
+      return {
+        sequenceFlowId: place.origin.elementId,
+        owner,
+        multiplicity: 1,
+      };
+    }).sort((left, right) =>
+      left.sequenceFlowId < right.sequenceFlowId
+        ? -1
+        : left.sequenceFlowId > right.sequenceFlowId
+        ? 1
+        : 0
+    );
+    assert.deepEqual(instantiated?.[0], {
+      alternative: prepared.alternative,
+      transitionIndex: 2,
+      record: {
+        logicalTimeMs: state.logicalTimeMs,
+        transition: {
+          kind: SemanticTransitionKind.InternalOperation,
+          operationId: operation.id,
+          operationKind: operation.kind,
+          origin: operation.origin,
+          owner,
+        },
+        positionDelta: {
+          consumedTokens: [],
+          producedTokens: outputOrigins,
+          enteredScopes: [],
+          exitedScopes: [],
+        },
+      },
+      lifecycle: {
+        started: [{
+          anchor: {
+            kind: SemanticFlowNodeOccurrenceAnchorKind.Transition,
+            commandId: "command:initiation",
+            transitionIndex: 2,
+            localIndex: 0,
+          },
+          processId: program.processId,
+          elementId: operation.origin.elementId,
+          owner,
+        }],
+        ended: [{
+          anchor: {
+            kind: SemanticFlowNodeOccurrenceAnchorKind.Transition,
+            commandId: "command:initiation",
+            transitionIndex: 2,
+            localIndex: 0,
+          },
+          terminal: FlowNodeOccurrenceTerminalKind.Completed,
+        }],
+      },
+    });
   }
 });
 
@@ -156,8 +245,8 @@ test("the prepared outputs exactly predict the initiation successor", () => {
   assert.deepEqual(applied?.owner, owner);
   assert.equal(applied?.successor.initiationPending, false);
   assert.deepEqual(applied?.successor.controlTokens, [
-    { owner, placeId: messageOperation.outputs[0], multiplicity: 3 },
-    { owner, placeId: messageOperation.outputs[1], multiplicity: 1 },
+    { owner, placeId: "place:Flow_Message_A", multiplicity: 1 },
+    { owner, placeId: "place:Flow_Message_B", multiplicity: 3 },
   ]);
 });
 

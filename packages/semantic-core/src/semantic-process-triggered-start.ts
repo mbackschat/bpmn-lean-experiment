@@ -5,11 +5,11 @@ import type {
   StartProcessStimulus,
 } from "./contract.js";
 import { sameMessageChannel } from "./message-channel.js";
+import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-process-profile.js";
 import {
-  addToken,
   ControlStateKind,
   setActivationCount,
 } from "./semantic-process-state.js";
@@ -162,14 +162,10 @@ export function applyTriggeredStartOutputs(
   if (!state.initiationPending || rootOwner === undefined) {
     return null;
   }
-  return {
-    ...state,
-    initiationPending: false,
-    controlTokens: outputs.reduce(
-      (tokens, output) => addToken(tokens, output, rootOwner),
-      state.controlTokens,
-    ),
-  };
+  return applyInternalInitiationPatch(state, {
+    owner: rootOwner,
+    outputs,
+  });
 }
 
 function assertNever(value: never): never {

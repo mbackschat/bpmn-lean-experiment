@@ -4,6 +4,7 @@ import type { DeepReadonly } from "./deep-readonly.js";
 import { admit } from "./semantic-command-admission.js";
 import type { SemanticCommandOutcome } from "./semantic-command-admission.js";
 import { internalOperationFrontierIsPairwiseIndependent } from "./internal-transition-footprint.js";
+import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import { closeSupportedInternalOperations } from "./semantic-process-closure.js";
@@ -59,7 +60,6 @@ import {
   enterParallelMultiInstanceUserTask,
 } from "./semantic-process-parallel-multi-instance-runtime.js";
 import {
-  addToken,
   ControlStateKind,
   removeToken,
 } from "./semantic-process-state.js";
@@ -233,15 +233,10 @@ function applyInternalOperationState(
       return applyOwnedOperation(
         rootOwner,
         (owner) => state.initiationPending
-          ? {
-              ...state,
-              initiationPending: false,
-              controlTokens: addToken(
-                state.controlTokens,
-                operation.output,
-                owner,
-              ),
-            }
+          ? applyInternalInitiationPatch(state, {
+              owner,
+              outputs: [operation.output],
+            })
           : null,
         captureOwner,
       );
