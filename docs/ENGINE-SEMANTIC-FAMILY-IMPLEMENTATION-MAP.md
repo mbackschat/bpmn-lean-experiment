@@ -62,7 +62,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 - **superseded.** That exemption's reopen trigger fired: under admitted repetition the record and the ordinal reconstruction would legitimately disagree, and the relation would reject a correct publication
 - the effect body arm is unreachable and absent, since no registered family gives an Activity an effect body. Body turnover is no longer withdrawn; its status is the section below
 - preservation of the new conjuncts across the registered transition arms inherits [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) and is not re-declared
-- the stable `AOO-CLAIM-01` rule has not graduated from its [supporting proposal](ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md), because the first green implementation still awaits governed checkpoint review and its Parallel Multi-Instance closing consumer remains open
+- the stable `AOO-CLAIM-01` rule has not graduated from its [supporting proposal](ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md), because the approved checkpoint still awaits its Parallel Multi-Instance closing consumer and governed closure
 
 **Absent in evidence.**
 
