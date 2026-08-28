@@ -468,6 +468,17 @@ private theorem closeSharedParallelRegion_activity_identity_discipline (state : 
   exact removeParallelRecord_subset state.activityOccurrences record successor
     (by simpa [closeSharedParallelRegion] using present)
 
+def progressedSharedParallelCompletionState (state : RuntimeState)
+    (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
+    (taskId : UserTaskInstanceId) (result : String)
+    (pending : List UserTaskInstanceId) : RuntimeState :=
+  { state with
+    waits := removeParallelChildWaits state.waits [taskId]
+    activityOccurrences := replaceParallelRecordBody state.activityOccurrences record pending
+    parallelMultiInstanceControllers := insertParallelMultiInstanceController
+      { controller with slots := replacePendingParallelSlot controller.slots taskId result }
+      (removeParallelController state.parallelMultiInstanceControllers controller) }
+
 def completeSharedParallelMultiInstance? (arm : ParallelMultiInstanceArm)
     (state : RuntimeState) (taskId : UserTaskInstanceId)
     (submitted : List VariableBinding) : Option RuntimeState := do
@@ -495,14 +506,7 @@ def completeSharedParallelMultiInstance? (arm : ParallelMultiInstanceArm)
         match pending with
         | [] => none
         | _ :: _ =>
-            some
-              { state with
-                waits := removeParallelChildWaits state.waits [taskId]
-                activityOccurrences := replaceParallelRecordBody
-                  state.activityOccurrences record pending
-                parallelMultiInstanceControllers := insertParallelMultiInstanceController
-                  { controller with slots := updatedSlots }
-                  (removeParallelController state.parallelMultiInstanceControllers controller) }
+            some (progressedSharedParallelCompletionState state controller record taskId result pending)
 
 def interruptSharedParallelMultiInstance? (arm : ParallelMultiInstanceArm)
     (state : RuntimeState) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) :

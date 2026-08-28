@@ -104,7 +104,7 @@ const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem closeSharedParallelRegion_activity_identity_discipline"],
     },
   }],
-  ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#completeSharedParallelMultiInstance?@1", {
+  ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#progressedSharedParallelCompletionState@1", {
     classification: WriterClassification.IdentityPreserving,
     claimPreservation: ClaimPreservation.MemberRemoval,
     evidence: {

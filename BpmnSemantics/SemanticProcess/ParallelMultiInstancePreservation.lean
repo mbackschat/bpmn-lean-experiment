@@ -194,7 +194,7 @@ theorem completeSharedParallelMultiInstance_sound (arm : ParallelMultiInstanceAr
                         completedEq, pendingEq] at success
                     | cons first rest =>
                       simp [running, same, controllerEq, recordEq, region, accepted, conditionEq,
-                        completedEq, pendingEq] at success
+                        completedEq, pendingEq, progressedSharedParallelCompletionState] at success
                       cases success
                       exact .progresses before _ instanceId controller record result first rest
                         running same controllerEq recordEq region accepted conditionEq completedEq

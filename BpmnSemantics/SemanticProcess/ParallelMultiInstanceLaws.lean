@@ -214,17 +214,6 @@ private theorem completed_parallel_results_of_commuted_slots
   rw [leftCompleted] at rightCompleted
   exact Option.some.inj rightCompleted
 
-private def progressedSharedParallelCompletionState (state : RuntimeState)
-    (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
-    (taskId : UserTaskInstanceId) (result : String)
-    (pending : List UserTaskInstanceId) : RuntimeState :=
-  { state with
-    waits := removeParallelChildWaits state.waits [taskId]
-    activityOccurrences := replaceParallelRecordBody state.activityOccurrences record pending
-    parallelMultiInstanceControllers := insertParallelMultiInstanceController
-      { controller with slots := replacePendingParallelSlot controller.slots taskId result }
-      (removeParallelController state.parallelMultiInstanceControllers controller) }
-
 private theorem replace_parallel_record_body_rewritten_reference
     (records : List ActivityOccurrence) (record : ActivityOccurrence)
     (oldFirst newFirst : UserTaskInstanceId)
