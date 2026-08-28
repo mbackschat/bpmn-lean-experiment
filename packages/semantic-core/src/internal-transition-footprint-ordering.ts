@@ -10,7 +10,16 @@ import {
   InternalTransitionPublicationAtomKind,
   InternalTransitionStateAtomKind,
 } from "./internal-transition-footprint-vocabulary.js";
-import type { ScopeOccurrenceId } from "./semantic-process-state.js";
+import {
+  internalOccurrenceRegionContains,
+  internalOccurrenceRegionOwnsCall,
+  internalOccurrenceRegionsOverlap,
+} from "./internal-transition-region.js";
+import type { InternalOccurrenceRegion } from "./internal-transition-region.js";
+import type {
+  CalledProcessOccurrence,
+  ScopeOccurrenceId,
+} from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export function canonicalUniqueStateAtoms(
@@ -30,7 +39,7 @@ export function stateSetsAreDisjoint(
   right: ReadonlyArray<InternalTransitionStateAtom>,
 ): boolean {
   return left.every((leftAtom) =>
-    right.every((rightAtom) => compareStateAtoms(leftAtom, rightAtom) !== 0)
+    right.every((rightAtom) => !stateAtomsConflict(leftAtom, rightAtom))
   );
 }
 
@@ -92,6 +101,15 @@ function stateAtomParts(
     case InternalTransitionStateAtomKind.ActivityVariableScope:
     case InternalTransitionStateAtomKind.Wait:
       return [atom.kind, ...internalOccurrenceParts(atom.occurrence)];
+    case InternalTransitionStateAtomKind.CallAssociation:
+      return [atom.kind, ...callAssociationParts(atom.record)];
+    case InternalTransitionStateAtomKind.OccurrenceRegion:
+      return [
+        atom.kind,
+        ...scopeParts(atom.region.root),
+        atom.region.members.length,
+        ...atom.region.members.flatMap(scopeParts),
+      ];
     case InternalTransitionStateAtomKind.OpenWaitAnchor:
       return [atom.kind, ...occurrenceParts(atom.occurrence)];
     case InternalTransitionStateAtomKind.ControlToken:
@@ -102,6 +120,55 @@ function stateAtomParts(
       return [atom.kind, atom.instanceId];
     case InternalTransitionStateAtomKind.ScopeOccurrence:
       return [atom.kind, ...scopeParts(atom.owner)];
+    case InternalTransitionStateAtomKind.ScopeParent:
+      return [
+        atom.kind,
+        ...scopeParts(atom.occurrence),
+        ...(atom.parent === null ? ["no-parent"] : scopeParts(atom.parent)),
+      ];
+    default:
+      return assertNever(atom);
+  }
+}
+
+function stateAtomsConflict(
+  left: InternalTransitionStateAtom,
+  right: InternalTransitionStateAtom,
+): boolean {
+  if (compareStateAtoms(left, right) === 0) {
+    return true;
+  }
+  if (left.kind === InternalTransitionStateAtomKind.OccurrenceRegion) {
+    return occurrenceRegionConflictsWithAtom(left.region, right);
+  }
+  return right.kind === InternalTransitionStateAtomKind.OccurrenceRegion &&
+    occurrenceRegionConflictsWithAtom(right.region, left);
+}
+
+function occurrenceRegionConflictsWithAtom(
+  region: InternalOccurrenceRegion,
+  atom: InternalTransitionStateAtom,
+): boolean {
+  switch (atom.kind) {
+    case InternalTransitionStateAtomKind.OccurrenceRegion:
+      return internalOccurrenceRegionsOverlap(region, atom.region);
+    case InternalTransitionStateAtomKind.CallAssociation:
+      return internalOccurrenceRegionOwnsCall(region, atom.record);
+    case InternalTransitionStateAtomKind.ScopeParent:
+      return internalOccurrenceRegionContains(region, atom.occurrence) ||
+        (atom.parent !== null &&
+          internalOccurrenceRegionContains(region, atom.parent));
+    case InternalTransitionStateAtomKind.ActivityVariable:
+    case InternalTransitionStateAtomKind.ActivityVariableScope:
+    case InternalTransitionStateAtomKind.ControlToken:
+    case InternalTransitionStateAtomKind.OpenWaitAnchor:
+    case InternalTransitionStateAtomKind.ScopeOccurrence:
+    case InternalTransitionStateAtomKind.Wait:
+      return internalOccurrenceRegionContains(region, atom.owner);
+    case InternalTransitionStateAtomKind.Activation:
+    case InternalTransitionStateAtomKind.LogicalTime:
+    case InternalTransitionStateAtomKind.RuntimeControl:
+      return false;
     default:
       return assertNever(atom);
   }
@@ -188,6 +255,18 @@ function occurrenceParts(
     occurrence.processInstanceId,
     occurrence.elementId,
     occurrence.activation,
+  ];
+}
+
+function callAssociationParts(
+  record: CalledProcessOccurrence,
+): ReadonlyArray<string | number> {
+  return [
+    ...occurrenceParts(record.id),
+    ...scopeParts(record.caller),
+    record.calledProcessId,
+    ...scopeParts(record.calledRoot),
+    record.returnOperationId,
   ];
 }
 

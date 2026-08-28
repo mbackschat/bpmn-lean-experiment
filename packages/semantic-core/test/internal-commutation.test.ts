@@ -117,7 +117,7 @@ test("the mixed frontier carries every reviewed atom and publication fact", () =
     ),
   };
   const [effect] = enabledOperations(singleEffectProgram, effectFrontier);
-  assert.ok(effect !== undefined);
+  assert.ok(effect !== undefined && effect.owner !== null);
   if (effectFrontier.control.kind !== "running") {
     throw new TypeError("The effect footprint oracle requires a running state");
   }
@@ -151,6 +151,7 @@ test("the mixed frontier carries every reviewed atom and publication fact", () =
           activation: 1,
         },
       },
+      owner: effect.owner,
       name: "request",
     }],
   );
@@ -541,10 +542,12 @@ function expectedArmingFootprint(
   const wait = {
     kind: InternalTransitionStateAtomKind.Wait,
     occurrence,
+    owner: selectedOwner,
   } as const;
   const openWaitAnchor = {
     kind: InternalTransitionStateAtomKind.OpenWaitAnchor,
     occurrence: occurrence.id,
+    owner: selectedOwner,
   } as const;
   const reads = [
     activation,

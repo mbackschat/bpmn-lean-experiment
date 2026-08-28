@@ -24,6 +24,7 @@ import {
   operationIsUniqueWaitDeclarer,
 } from "./internal-transition-wait-census.js";
 export { InternalOccurrenceKind } from "./internal-transition-wait-census.js";
+import type { InternalOccurrenceRegion } from "./internal-transition-region.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   BpmnElementOrigin,
@@ -31,7 +32,11 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import { ControlStateKind, sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
-import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
+import type {
+  CalledProcessOccurrence,
+  RuntimeState,
+  ScopeOccurrenceId,
+} from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 
 export type InternalOccurrence = Readonly<{
@@ -48,11 +53,17 @@ export type InternalTransitionStateAtom = Readonly<
   | {
       kind: InternalTransitionStateAtomKind.ActivityVariable;
       occurrence: InternalOccurrence;
+      owner: ScopeOccurrenceId;
       name: string;
     }
   | {
       kind: InternalTransitionStateAtomKind.ActivityVariableScope;
       occurrence: InternalOccurrence;
+      owner: ScopeOccurrenceId;
+    }
+  | {
+      kind: InternalTransitionStateAtomKind.CallAssociation;
+      record: CalledProcessOccurrence;
     }
   | {
       kind: InternalTransitionStateAtomKind.ControlToken;
@@ -61,8 +72,13 @@ export type InternalTransitionStateAtom = Readonly<
     }
   | { kind: InternalTransitionStateAtomKind.LogicalTime }
   | {
+      kind: InternalTransitionStateAtomKind.OccurrenceRegion;
+      region: InternalOccurrenceRegion;
+    }
+  | {
       kind: InternalTransitionStateAtomKind.OpenWaitAnchor;
       occurrence: OccurrenceId;
+      owner: ScopeOccurrenceId;
     }
   | {
       kind: InternalTransitionStateAtomKind.RuntimeControl;
@@ -73,8 +89,14 @@ export type InternalTransitionStateAtom = Readonly<
       owner: ScopeOccurrenceId;
     }
   | {
+      kind: InternalTransitionStateAtomKind.ScopeParent;
+      occurrence: ScopeOccurrenceId;
+      parent: ScopeOccurrenceId | null;
+    }
+  | {
       kind: InternalTransitionStateAtomKind.Wait;
       occurrence: InternalOccurrence;
+      owner: ScopeOccurrenceId;
     }
 >;
 
@@ -360,6 +382,7 @@ function waitFootprint(
   const activityScope = {
     kind: InternalTransitionStateAtomKind.ActivityVariableScope,
     occurrence,
+    owner,
   } as const;
   if (
     occurrenceKind === InternalOccurrenceKind.Effect &&
@@ -383,10 +406,12 @@ function waitFootprint(
   const wait = {
     kind: InternalTransitionStateAtomKind.Wait,
     occurrence,
+    owner,
   } as const;
   const openWaitAnchor = {
     kind: InternalTransitionStateAtomKind.OpenWaitAnchor,
     occurrence: occurrence.id,
+    owner,
   } as const;
   const effectWrites: InternalTransitionStateAtom[] = occurrenceKind ===
       InternalOccurrenceKind.Effect
@@ -395,6 +420,7 @@ function waitFootprint(
         ...activityVariableNames.map((name) => ({
           kind: InternalTransitionStateAtomKind.ActivityVariable,
           occurrence,
+          owner,
           name,
         } as const)),
       ]
