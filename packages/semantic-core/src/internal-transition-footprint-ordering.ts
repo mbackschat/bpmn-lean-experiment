@@ -117,6 +117,8 @@ function stateAtomParts(
       ];
     case InternalTransitionStateAtomKind.OpenWaitAnchor:
       return [atom.kind, ...occurrenceParts(atom.occurrence)];
+    case InternalTransitionStateAtomKind.ProcessVariable:
+      return [atom.kind, atom.name];
     case InternalTransitionStateAtomKind.ControlToken:
       return [atom.kind, ...scopeParts(atom.owner), atom.placeId];
     case InternalTransitionStateAtomKind.EndCount:
@@ -126,6 +128,8 @@ function stateAtomParts(
       return [atom.kind];
     case InternalTransitionStateAtomKind.RuntimeControl:
       return [atom.kind, atom.instanceId];
+    case InternalTransitionStateAtomKind.SelectedBranch:
+      return [atom.kind, ...scopeParts(atom.owner), atom.selectionKey];
     case InternalTransitionStateAtomKind.ScopeOccurrence:
       return [atom.kind, ...scopeParts(atom.owner)];
     case InternalTransitionStateAtomKind.ScopeParent:
@@ -186,6 +190,7 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.ActivityVariableScope:
     case InternalTransitionStateAtomKind.ControlToken:
     case InternalTransitionStateAtomKind.OpenWaitAnchor:
+    case InternalTransitionStateAtomKind.SelectedBranch:
     case InternalTransitionStateAtomKind.ScopeOccurrence:
     case InternalTransitionStateAtomKind.Wait:
       return internalOccurrenceRegionContains(region, atom.owner);
@@ -194,6 +199,7 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.EndIncrement:
     case InternalTransitionStateAtomKind.InitiationPending:
     case InternalTransitionStateAtomKind.LogicalTime:
+    case InternalTransitionStateAtomKind.ProcessVariable:
     case InternalTransitionStateAtomKind.RuntimeControl:
       return false;
     default:

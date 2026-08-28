@@ -1,9 +1,12 @@
 /** Executable selected-branch split and join operations for structured Inclusive Gateway regions. */
+import type { VariableBinding } from "./contract.js";
 import type {
+  InclusiveCandidate,
+  InclusiveDefaultBranch,
   SelectManyOperation,
   SynchronizeSelectedOperation,
 } from "./semantic-process-contract.js";
-import { evaluateSimpleBooleanExpression } from "./simple-boolean-expression.js";
+import { evaluateSimpleBooleanExpressionWithRead } from "./simple-boolean-expression.js";
 import {
   addToken,
   compareSelectedBranchSets,
@@ -13,6 +16,7 @@ import {
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
+  SelectedBranchSet,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
@@ -27,28 +31,64 @@ export function selectMany(
   )) {
     return null;
   }
-  const selectedCandidates = operation.candidates.filter(({ condition }) =>
-    evaluateSimpleBooleanExpression(condition, state.variables.process.bindings)
+  const selection = selectInclusiveBranches(
+    operation,
+    state.variables.process.bindings,
   );
-  const selected = selectedCandidates.length === 0
-    ? [operation.defaultBranch]
-    : selectedCandidates;
-  const expectedInputs = selectedExpectedInputs(selected);
-  if (expectedInputs === null) {
+  if (selection === null) {
     return null;
   }
   const withoutInput = removeToken(state.controlTokens, operation.input, owner);
   return {
     ...state,
-    controlTokens: selected.reduce(
+    controlTokens: selection.selected.reduce(
       (tokens, branch) => addToken(tokens, branch.output, owner),
       withoutInput,
     ),
     selectedBranchSets: [
       ...state.selectedBranchSets,
-      { owner, selectionKey: operation.selectionKey, expectedInputs },
+      {
+        owner,
+        selectionKey: operation.selectionKey,
+        expectedInputs: selection.expectedInputs,
+      },
     ].sort(compareSelectedBranchSets),
   };
+}
+
+export type SelectedInclusiveBranches = Readonly<{
+  selected: ReadonlyArray<InclusiveCandidate | InclusiveDefaultBranch>;
+  expectedInputs: [string] | [string, string];
+  readVariables: ReadonlyArray<string>;
+}>;
+
+/** Evaluates every Inclusive candidate and retains its complete deterministic result. */
+export function selectInclusiveBranches(
+  operation: SelectManyOperation,
+  bindings: ReadonlyArray<VariableBinding>,
+): SelectedInclusiveBranches | null {
+  const readVariables: string[] = [];
+  const selectedCandidates = operation.candidates.filter(({ condition }) => {
+    const evaluated = evaluateSimpleBooleanExpressionWithRead(
+      condition,
+      bindings,
+    );
+    if (
+      evaluated.readVariable !== null &&
+      !readVariables.includes(evaluated.readVariable)
+    ) {
+      readVariables.push(evaluated.readVariable);
+    }
+    return evaluated.value;
+  });
+  const selected: ReadonlyArray<InclusiveCandidate | InclusiveDefaultBranch> =
+    selectedCandidates.length === 0
+      ? [operation.defaultBranch]
+      : selectedCandidates;
+  const expectedInputs = selectedExpectedInputs(selected);
+  return expectedInputs === null
+    ? null
+    : { selected, expectedInputs, readVariables };
 }
 
 function selectedExpectedInputs(
@@ -71,14 +111,8 @@ export function synchronizeSelected(
   operation: SynchronizeSelectedOperation,
   state: RuntimeState,
 ): RuntimeState | null {
-  const ready = state.selectedBranchSets.filter((record) =>
-    record.selectionKey === operation.selectionKey &&
-    record.expectedInputs.every((input) =>
-      ownedTokenMultiplicity(state.controlTokens, input, record.owner) > 0
-    )
-  );
-  const record = ready[0];
-  if (ready.length !== 1 || record === undefined) {
+  const record = selectSynchronizeSelected(operation, state);
+  if (record === null) {
     return null;
   }
   const remaining = record.expectedInputs.reduce(
@@ -90,4 +124,18 @@ export function synchronizeSelected(
     controlTokens: addToken(remaining, operation.output, record.owner),
     selectedBranchSets: state.selectedBranchSets.filter((candidate) => candidate !== record),
   };
+}
+
+/** Selects the one exact ready hidden branch record without consuming it. */
+export function selectSynchronizeSelected(
+  operation: SynchronizeSelectedOperation,
+  state: RuntimeState,
+): SelectedBranchSet | null {
+  const ready = state.selectedBranchSets.filter((record) =>
+    record.selectionKey === operation.selectionKey &&
+    record.expectedInputs.every((input) =>
+      ownedTokenMultiplicity(state.controlTokens, input, record.owner) > 0
+    )
+  );
+  return ready.length === 1 ? ready[0] ?? null : null;
 }

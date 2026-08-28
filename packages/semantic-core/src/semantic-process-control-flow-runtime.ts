@@ -6,9 +6,13 @@
  * That is the boundary: an operation that creates, cancels, or observes a wait belongs to its own
  * family module, and the dispatcher composes both.
  */
+import type { VariableBinding } from "./contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import type { SemanticOperation } from "./semantic-process-contract.js";
-import { evaluateSimpleBooleanExpression } from "./simple-boolean-expression.js";
+import type {
+  BpmnSequenceFlowOrigin,
+  SemanticOperation,
+} from "./semantic-process-contract.js";
+import { evaluateSimpleBooleanExpressionWithRead } from "./simple-boolean-expression.js";
 import {
   addToken,
   ControlStateKind,
@@ -116,18 +120,61 @@ export function choose(
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState {
-  const selected = operation.candidates.find(({ condition }) =>
-    evaluateSimpleBooleanExpression(
-      condition,
-      state.variables.process.bindings,
-    )
+  const selected = selectConditionalBranch(
+    operation,
+    state.variables.process.bindings,
   );
   return {
     ...state,
     controlTokens: addToken(
       removeToken(state.controlTokens, operation.input, owner),
-      selected?.output ?? operation.defaultOutput,
+      selected.output,
       owner,
     ),
   };
+}
+
+export type SelectedConditionalBranch = Readonly<{
+  output: string;
+  origin: BpmnSequenceFlowOrigin;
+  readVariables: ReadonlyArray<string>;
+}>;
+
+/** Selects the first true branch and retains only the evaluated condition prefix. */
+export function selectConditionalBranch(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.Choose }
+  >,
+  bindings: ReadonlyArray<VariableBinding>,
+): SelectedConditionalBranch {
+  const readVariables: string[] = [];
+  for (const candidate of operation.candidates) {
+    const evaluated = evaluateSimpleBooleanExpressionWithRead(
+      candidate.condition,
+      bindings,
+    );
+    addReadVariable(readVariables, evaluated.readVariable);
+    if (evaluated.value) {
+      return {
+        output: candidate.output,
+        origin: candidate.origin,
+        readVariables,
+      };
+    }
+  }
+  return {
+    output: operation.defaultOutput,
+    origin: operation.defaultOrigin,
+    readVariables,
+  };
+}
+
+function addReadVariable(
+  readVariables: string[],
+  name: string | null,
+): void {
+  if (name !== null && !readVariables.includes(name)) {
+    readVariables.push(name);
+  }
 }

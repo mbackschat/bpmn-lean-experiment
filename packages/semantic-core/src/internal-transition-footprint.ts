@@ -89,8 +89,17 @@ export type InternalTransitionStateAtom = Readonly<
       owner: ScopeOccurrenceId;
     }
   | {
+      kind: InternalTransitionStateAtomKind.ProcessVariable;
+      name: string;
+    }
+  | {
       kind: InternalTransitionStateAtomKind.RuntimeControl;
       instanceId: string;
+    }
+  | {
+      kind: InternalTransitionStateAtomKind.SelectedBranch;
+      owner: ScopeOccurrenceId;
+      selectionKey: string;
     }
   | {
       kind: InternalTransitionStateAtomKind.ScopeOccurrence;

@@ -33,6 +33,7 @@ import {
 } from "./semantic-process-error-runtime.js";
 import {
   selectMany,
+  selectSynchronizeSelected,
   synchronizeSelected,
 } from "./semantic-process-inclusive-gateway-runtime.js";
 import {
@@ -60,7 +61,6 @@ import {
 import {
   addToken,
   ControlStateKind,
-  ownedTokenMultiplicity,
   removeToken,
 } from "./semantic-process-state.js";
 import type {
@@ -410,10 +410,7 @@ function applyInternalOperationState(
       );
     }
     case SemanticOperationKind.SynchronizeSelected: {
-      const owner = synchronizeSelectedOwner(
-        operation.selectionKey,
-        state,
-      );
+      const owner = selectSynchronizeSelected(operation, state)?.owner;
       return applyOwnedOperation(
         owner,
         () => synchronizeSelected(operation, state),
@@ -485,19 +482,6 @@ function returnProcessOwner(
     record.id.elementId === operation.origin.elementId
   );
   return records.length === 1 ? records[0]?.calledRoot : undefined;
-}
-
-function synchronizeSelectedOwner(
-  selectionKey: string,
-  state: RuntimeState,
-): ScopeOccurrenceId | undefined {
-  const ready = state.selectedBranchSets.filter((record) =>
-    record.selectionKey === selectionKey &&
-    record.expectedInputs.every((input) =>
-      ownedTokenMultiplicity(state.controlTokens, input, record.owner) > 0
-    )
-  );
-  return ready.length === 1 ? ready[0]?.owner : undefined;
 }
 
 function completeScopeOwner(

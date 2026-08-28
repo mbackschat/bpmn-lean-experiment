@@ -12,22 +12,40 @@ export function evaluateSimpleBooleanExpression(
   expression: SimpleBooleanExpression,
   bindings: ReadonlyArray<VariableBinding>,
 ): boolean {
+  return evaluateSimpleBooleanExpressionWithRead(expression, bindings).value;
+}
+
+export type SimpleBooleanExpressionEvaluation = Readonly<{
+  value: boolean;
+  readVariable: string | null;
+}>;
+
+/** Evaluates one expression and retains its exact Process-variable dependency. */
+export function evaluateSimpleBooleanExpressionWithRead(
+  expression: SimpleBooleanExpression,
+  bindings: ReadonlyArray<VariableBinding>,
+): SimpleBooleanExpressionEvaluation {
   switch (expression.kind) {
     case SimpleBooleanExpressionKind.Literal:
-      return expression.value;
+      return { value: expression.value, readVariable: null };
     case SimpleBooleanExpressionKind.IsPresent:
-      return binding(bindings, expression.variable) !== undefined;
+      return {
+        value: binding(bindings, expression.variable) !== undefined,
+        readVariable: expression.variable,
+      };
     case SimpleBooleanExpressionKind.IsNull:
-      return (
-        binding(bindings, expression.variable)?.value.kind ===
-        VariableValueKind.Null
-      );
+      return {
+        value: binding(bindings, expression.variable)?.value.kind ===
+          VariableValueKind.Null,
+        readVariable: expression.variable,
+      };
     case SimpleBooleanExpressionKind.StringEquals: {
       const value = binding(bindings, expression.variable)?.value;
-      return (
-        value?.kind === VariableValueKind.String &&
-        value.value === expression.value
-      );
+      return {
+        value: value?.kind === VariableValueKind.String &&
+          value.value === expression.value,
+        readVariable: expression.variable,
+      };
     }
     default:
       return assertNever(expression);
