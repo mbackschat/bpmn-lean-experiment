@@ -20,6 +20,8 @@ import { parseWorkflowCode } from "@temporalio/worker/lib/worker.js";
 import { defaultPayloadConverter } from "@temporalio/workflow";
 
 import {
+  bpmnExecutionPublicationQueryName,
+  bpmnFlowNodeOccurrencesQueryName,
   bpmnCompleteUserTaskUpdateName,
   bpmnProcessWorkflowType,
   contentBoundUpdateId,
@@ -41,6 +43,16 @@ export type ParallelMultiInstanceDeadlineWitness = Readonly<{
   naturalCompletions: ReadonlyArray<Completion>;
   interruptedCompletions: ReadonlyArray<Completion>;
   sharedActivationCompletion: Completion;
+}>;
+
+export type ParallelMultiInstanceFirstFifoRun = Readonly<{
+  stimuli: readonly [
+    CompleteUserTaskInstanceStimulus,
+    CompleteUserTaskInstanceStimulus,
+  ];
+  updateIds: readonly [string, string];
+  mutationCompletion: Completion;
+  publicationCompletion: Completion;
 }>;
 
 export async function runParallelMultiInstanceDeadlineWitness(): Promise<ParallelMultiInstanceDeadlineWitness> {
@@ -90,6 +102,50 @@ export async function runParallelMultiInstanceDeadlineWitness(): Promise<Paralle
   };
 }
 
+/** Runs both exact FIFO orders and reads the retained aligned E1/E2 publications before disposal. */
+export async function runParallelMultiInstanceFirstFifoWitness(): Promise<
+  readonly [ParallelMultiInstanceFirstFifoRun, ParallelMultiInstanceFirstFifoRun]
+> {
+  const program = await compileProgram();
+  const fixture = parallelFixture(program, "first");
+  const bundle = parseWorkflowCode((await loadBpmnWorkflowBundle()).code);
+  const first = fixture.reviewCompletion(1, "accepted");
+  const second = fixture.reviewCompletion(2, "accepted");
+  const run = async (
+    stimuli: readonly [
+      CompleteUserTaskInstanceStimulus,
+      CompleteUserTaskInstanceStimulus,
+    ],
+  ): Promise<ParallelMultiInstanceFirstFifoRun> => {
+    const completions = await runDirectVmActivations({
+      bundle,
+      workflowType: bpmnProcessWorkflowType,
+      replaying: false,
+      taskQueue,
+      args: [
+        defaultPayloadConverter.toPayload(fixture.start),
+        defaultPayloadConverter.toPayload(program),
+      ],
+      readyJobs: stimuli.map(completionUpdateJob),
+      assertInitialization: requireOneLifetimeTimer,
+    }, [publicationQueryJobs()]);
+    const [mutationCompletion, publicationCompletion] = completions;
+    if (mutationCompletion === undefined || publicationCompletion === undefined) {
+      throw new TypeError("Parallel Multi-Instance FIFO witness lost an activation completion");
+    }
+    return {
+      stimuli,
+      updateIds: stimuli.map(contentBoundUpdateId) as [string, string],
+      mutationCompletion,
+      publicationCompletion,
+    };
+  };
+  return Promise.all([
+    run([first, second]),
+    run([second, first]),
+  ]);
+}
+
 function requireOneLifetimeTimer(completion: Completion): void {
   const timers = commands(completion).flatMap(({ startTimer }) =>
     startTimer === undefined || startTimer === null ? [] : [startTimer]
@@ -121,7 +177,36 @@ function deadlineTimerJob(): NonNullable<Activation["jobs"]>[number] {
   return { fireTimer: { seq: 1 } };
 }
 
-function parallelFixture(program: SemanticProcessProgram) {
+function publicationQueryJobs(): NonNullable<Activation["jobs"]> {
+  const request = defaultPayloadConverter.toPayload({ afterRevision: 0 });
+  // The pinned VM's query-only path bypasses protobuf conversion, so these two jobs must carry the
+  // generated oneof discriminant that ordinary mutating activations receive during conversion.
+  return [
+    {
+      variant: "queryWorkflow",
+      queryWorkflow: {
+        queryId: "parallel-first-e1",
+        queryType: bpmnExecutionPublicationQueryName,
+        arguments: [request],
+        headers: {},
+      },
+    },
+    {
+      variant: "queryWorkflow",
+      queryWorkflow: {
+        queryId: "parallel-first-e2",
+        queryType: bpmnFlowNodeOccurrencesQueryName,
+        arguments: [request],
+        headers: {},
+      },
+    },
+  ];
+}
+
+function parallelFixture(
+  program: SemanticProcessProgram,
+  completionPolicy: "all" | "first" = "all",
+) {
   const operation = program.operations.find(
     ({ kind }) => kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask,
   );
@@ -165,7 +250,7 @@ function parallelFixture(program: SemanticProcessProgram) {
       },
     }, {
       name: "completionPolicy",
-      value: { kind: VariableValueKind.String, value: "all" },
+      value: { kind: VariableValueKind.String, value: completionPolicy },
     }],
   };
   return { escalationCompletion, reviewCompletion, start } as const;
@@ -206,7 +291,13 @@ async function compileProgram(): Promise<SemanticProcessProgram> {
     semanticProfile: "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
   });
-  assert.equal(compilation.status, BpmnCompilationStatus.Accepted);
+  assert.equal(
+    compilation.status,
+    BpmnCompilationStatus.Accepted,
+    compilation.status === BpmnCompilationStatus.Rejected
+      ? JSON.stringify(compilation.diagnostics)
+      : undefined,
+  );
   if (compilation.status !== BpmnCompilationStatus.Accepted) {
     throw new Error("Parallel Multi-Instance deadline fixture was rejected");
   }
