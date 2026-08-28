@@ -214,7 +214,7 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Lean checked-graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 654 |
 | [Lean checked Process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 450 |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 230 |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 209 |
+| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 148 |
 | [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 270 |
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 71 |
 | [Lean checked Process JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 467 |
