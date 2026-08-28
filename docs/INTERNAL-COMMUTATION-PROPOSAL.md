@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: approved-with-required-edits
+Review: approved
 
 ## Decision question and boundary
 
@@ -319,8 +319,8 @@ Reopen before adding an atom domain or operation family, changing the region-ove
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6` | `fork-turns-none` | `approve-with-required-edits` | `280716b667da387c04356f43d40123f10e0e6aab, 905fba45833daafd2994f11dd23c0476419f64b9` |
+| Proposal | `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6` | `fork-turns-none` | `approve-with-required-edits` | `280716b667da387c04356f43d40123f10e0e6aab, 905fba45833daafd2994f11dd23c0476419f64b9, 543430f7ebc560572515dd2b3317a7a0e954ae9c, owner-authorized` |
 | Semantic checkpoint | `f4b09ba48054a2c059f06b92b3b4d2b4675a6117` | `fork-turns-none` | `approve-with-required-edits` | `a34df385863d706f36785282201703604720013f` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The first checkpoint proposal review targeted `95ee893fc7efef561d579c9c2ecd164eccae1187` and closed its required edits at `e65fa4fbd2b4303794398061d94c0602e54a4714`. The context-cold checkpoint reviewer then required one documentation correction separating unsupported, differently sized, or colliding frontiers from unavailable pre-state or intermediate open projection. The same reviewer approved correction target `a34df385863d706f36785282201703604720013f` with no remaining findings. Those immutable results continue to own the implemented Beta checkpoint. The materially amended final-closure account received two correction audits after its cold proposal review; the second retained only the corrected intra-directive predicate wording above, so the review remains blocked until the owner directs the next action under the two-round audit bound.
+The first checkpoint proposal review targeted `95ee893fc7efef561d579c9c2ecd164eccae1187` and closed its required edits at `e65fa4fbd2b4303794398061d94c0602e54a4714`. The context-cold checkpoint reviewer then required one documentation correction separating unsupported, differently sized, or colliding frontiers from unavailable pre-state or intermediate open projection. The same reviewer approved correction target `a34df385863d706f36785282201703604720013f` with no remaining findings. Those immutable results continue to own the implemented Beta checkpoint. The materially amended final-closure account received three correction audits after its cold proposal review; the owner authorized the third round, and the same reviewer approved target `543430f7ebc560572515dd2b3317a7a0e954ae9c` with every required finding closed.

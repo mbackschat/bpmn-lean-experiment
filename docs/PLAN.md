@@ -48,7 +48,7 @@ After the time-bounded live-demo delivery, the remaining MUE content IDs resume 
 
 Active work ID: `INTERNAL-COMMUTATION`.
 
-Next action: obtain owner direction under the two-round audit bound for the one remaining required finding in the [cold proposal review](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt): authorize a third same-thread audit of the corrected intra-directive predicate wording, redesign the target, or defer this stage. No owner approval or production implementation may proceed while the finding remains open.
+Next action: obtain owner approval for the independently approved [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md) before changing its lifecycle or beginning production implementation.
 
 Separate open changes outside the active item: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence.
 
