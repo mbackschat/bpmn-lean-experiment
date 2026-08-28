@@ -366,4 +366,170 @@ theorem runtimePositionValid_onlyTokenOwner_live_and_scope (program : Program)
           rw [placeOwner] at tokenValid
           cases unique : uniqueControlPlace? program token.placeId <;> simp_all
 
+/-- A running position over one definition scope has exactly one live scope occurrence. -/
+theorem runtimePositionValid_liveOccurrence_unique_of_single_definition_scope
+    (program : Program)
+    (expectedInstanceId instanceId : SemanticId)
+    (state : RuntimeState)
+    (running : state.control = .running instanceId)
+    (position : runtimePositionValid program expectedInstanceId state = true)
+    (singleScope : program.definitionScopes.length = 1)
+    (left right : ScopeOccurrenceId)
+    (leftLive : exactLiveOccurrence state left = true)
+    (rightLive : exactLiveOccurrence state right = true) :
+    left = right := by
+  classical
+  simp only [runtimePositionValid, Bool.and_eq_true] at position
+  have programValid : programWellFormed program = true := position.1.1
+  have lifecycleValid := position.2
+  unfold lifecyclePositionValid at lifecycleValid
+  simp only [running, runningPositionValid, Bool.and_eq_true] at lifecycleValid
+  obtain ⟨⟨⟨⟨_instanceIdentity, oneHostingRoot⟩, associations⟩, occurrencesValid⟩,
+    _tokensValid⟩ := lifecycleValid
+  obtain ⟨soleScope, scopesEq⟩ := List.length_eq_one_iff.mp singleScope
+
+  have soleParentNone : soleScope.parentScopeId = none := by
+    have forest := programWellFormed_scopeForest program programValid
+    cases parentEq : soleScope.parentScopeId with
+    | none => rfl
+    | some parent =>
+        simp [scopeForestWellFormed, scopesEq, parentEq] at forest
+
+  have liveOccurrence (id : ScopeOccurrenceId)
+      (live : exactLiveOccurrence state id = true) :
+      ∃ occurrence, occurrence ∈ state.scopeOccurrences ∧ occurrence.id = id := by
+    unfold exactLiveOccurrence at live
+    have liveLength := of_decide_eq_true live
+    obtain ⟨occurrence, singleton⟩ := List.length_eq_one_iff.mp liveLength
+    have filteredMember : occurrence ∈ state.scopeOccurrences.filter (fun candidate =>
+        decide (candidate.id = id)) := by
+      rw [singleton]
+      simp
+    obtain ⟨member, identity⟩ := List.mem_filter.mp filteredMember
+    simp only [decide_eq_true_eq] at identity
+    exact ⟨occurrence, member, identity⟩
+
+  have occurrenceIsRoot (occurrence : RuntimeScopeOccurrence)
+      (member : occurrence ∈ state.scopeOccurrences) :
+      occurrence.id.definitionScopeId = soleScope.id ∧ occurrence.parent = none := by
+    have occurrenceValid := List.all_eq_true.mp occurrencesValid occurrence member
+    simp only [Bool.and_eq_true] at occurrenceValid
+    have scopeValid := occurrenceValid.2
+    have scopeIdentity : soleScope.id = occurrence.id.definitionScopeId := by
+      by_cases equal : soleScope.id = occurrence.id.definitionScopeId
+      · exact equal
+      · simp [scopeOccurrenceValid, uniqueDefinitionScope?, scopesEq, equal] at scopeValid
+    have parentValid : runtimeParentValid program instanceId state soleScope occurrence = true := by
+      simp only [scopeOccurrenceValid, uniqueDefinitionScope?, scopesEq] at scopeValid
+      grind
+    have parentNone : occurrence.parent = none := by
+      unfold runtimeParentValid at parentValid
+      rw [soleParentNone] at parentValid
+      cases parentEq : occurrence.parent with
+      | none => rfl
+      | some parent => simp [parentEq] at parentValid
+    exact ⟨scopeIdentity.symm, parentNone⟩
+
+  have occurrenceUsesHostingInstance (occurrence : RuntimeScopeOccurrence)
+      (member : occurrence ∈ state.scopeOccurrences) :
+      occurrence.id.processInstanceId = instanceId := by
+    obtain ⟨occurrenceScope, occurrenceParent⟩ := occurrenceIsRoot occurrence member
+    by_cases sameInstance : occurrence.id.processInstanceId = instanceId
+    · exact sameInstance
+    ·
+      let scopes := state.scopeOccurrences
+      let calls := state.calledProcessOccurrences
+      cases state
+      cases running
+      unfold calledProcessAssociationsValid at associations
+      change (match some instanceId with
+        | none => false
+        | some _ => _) = true at associations
+      simp only at associations
+      generalize rootsEq : (scopes.filter fun candidate =>
+        decide ((candidate.parent.isNone &&
+          decide (candidate.id.processInstanceId = instanceId)) = true)) = roots at associations
+      cases roots with
+      | nil => simp at associations
+      | cons hostingRoot rest =>
+          cases rest with
+          | cons other tail => simp at associations
+          | nil =>
+              simp only [Bool.and_eq_true, List.all_eq_true] at associations
+              have rootValid := associations.1.2 occurrence member
+              simp [occurrenceParent, sameInstance] at rootValid
+              change (calls.filter fun candidate =>
+                decide (candidate.calledRoot = occurrence.id)).length = 1 at rootValid
+              obtain ⟨record, recordSingleton⟩ := List.length_eq_one_iff.mp rootValid
+              have recordFilteredMember : record ∈ calls.filter (fun candidate =>
+                  decide (candidate.calledRoot = occurrence.id)) := by
+                rw [recordSingleton]
+                simp
+              obtain ⟨recordMember, calledRootIdentity⟩ :=
+                List.mem_filter.mp recordFilteredMember
+              simp only [decide_eq_true_eq] at calledRootIdentity
+              have recordValid := associations.1.1 record recordMember
+              have differentDefinitionScope :
+                  record.calledRoot.definitionScopeId ≠ record.caller.definitionScopeId := by
+                grind
+              have callerLength :
+                  (scopes.filter fun candidate =>
+                    decide ((decide (candidate.id = record.caller) &&
+                      candidate.parent.isNone) = true)).length = 1 := by
+                grind
+              obtain ⟨callerOccurrence, callerSingleton⟩ :=
+                List.length_eq_one_iff.mp callerLength
+              have callerFilteredMember : callerOccurrence ∈
+                  scopes.filter (fun candidate =>
+                    decide ((decide (candidate.id = record.caller) &&
+                      candidate.parent.isNone) = true)) := by
+                rw [callerSingleton]
+                simp
+              obtain ⟨callerMember, callerFacts⟩ := List.mem_filter.mp callerFilteredMember
+              simp only [Bool.and_eq_true, decide_eq_true_eq] at callerFacts
+              have callerScope := (occurrenceIsRoot callerOccurrence callerMember).1
+              exfalso
+              apply differentDefinitionScope
+              rw [calledRootIdentity, occurrenceScope, ← callerFacts.1, callerScope]
+
+  unfold hostingRootCount at oneHostingRoot
+  have oneHostingRootLength := of_decide_eq_true oneHostingRoot
+  obtain ⟨hostingOccurrence, hostingSingleton⟩ :=
+    List.length_eq_one_iff.mp oneHostingRootLength
+  have hostingFilteredMember : hostingOccurrence ∈
+      state.scopeOccurrences.filter (fun occurrence =>
+        match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
+        | none => false
+        | some scope => hostingRoot program instanceId scope occurrence) := by
+    rw [hostingSingleton]
+    simp
+  obtain ⟨hostingMember, hostingAccepted⟩ := List.mem_filter.mp hostingFilteredMember
+  have hostingScope := (occurrenceIsRoot hostingOccurrence hostingMember).1
+  have hostingSole : hostingRoot program instanceId soleScope hostingOccurrence = true := by
+    simpa [uniqueDefinitionScope?, scopesEq, hostingScope] using hostingAccepted
+  have hostingOrigin : soleScope.originElementId.value = program.processId.value := by
+    simp only [hostingRoot, Bool.and_eq_true] at hostingSole
+    grind
+
+  obtain ⟨leftOccurrence, leftMember, leftIdentity⟩ := liveOccurrence left leftLive
+  obtain ⟨rightOccurrence, rightMember, rightIdentity⟩ := liveOccurrence right rightLive
+  have hostingMemberOf (occurrence : RuntimeScopeOccurrence)
+      (member : occurrence ∈ state.scopeOccurrences) :
+      occurrence ∈ state.scopeOccurrences.filter (fun candidate =>
+        match uniqueDefinitionScope? program candidate.id.definitionScopeId with
+        | none => false
+        | some scope => hostingRoot program instanceId scope candidate) := by
+    obtain ⟨scopeIdentity, parentNone⟩ := occurrenceIsRoot occurrence member
+    have processIdentity := occurrenceUsesHostingInstance occurrence member
+    apply List.mem_filter.mpr
+    refine ⟨member, ?_⟩
+    simp [uniqueDefinitionScope?, scopesEq, scopeIdentity, hostingRoot, parentNone,
+      processIdentity, soleParentNone, hostingOrigin]
+  have leftHosting := hostingMemberOf leftOccurrence leftMember
+  have rightHosting := hostingMemberOf rightOccurrence rightMember
+  rw [hostingSingleton] at leftHosting rightHosting
+  have occurrencesEqual : leftOccurrence = rightOccurrence := by simp_all
+  exact leftIdentity.symm.trans ((congrArg RuntimeScopeOccurrence.id occurrencesEqual).trans
+    rightIdentity)
+
 end BpmnSemantics.SemanticProcess
