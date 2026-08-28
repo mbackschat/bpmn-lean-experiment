@@ -1,5 +1,8 @@
 import type { OccurrenceId } from "./contract.js";
-import { ActivityBodyKind } from "./activity-occurrence.js";
+import {
+  ActivityBodyKind,
+  sameActivityOccurrence,
+} from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
 import type { PublicControlPositionDelta } from "./control-position-projection.js";
 import type {
@@ -137,6 +140,22 @@ function stateAtomParts(
       return [atom.kind, atom.instanceId];
     case InternalTransitionStateAtomKind.SelectedBranch:
       return [atom.kind, ...scopeParts(atom.owner), atom.selectionKey];
+    case InternalTransitionStateAtomKind.SequentialController:
+      return [
+        atom.kind,
+        ...activityOccurrenceIdParts(atom.id),
+        ...scopeParts(atom.owner),
+      ];
+    case InternalTransitionStateAtomKind.SequentialControllerOutput:
+    case InternalTransitionStateAtomKind.SequentialControllerSnapshot:
+      return [
+        atom.kind,
+        ...activityOccurrenceIdParts(atom.id),
+        atom.index,
+        ...scopeParts(atom.owner),
+      ];
+    case InternalTransitionStateAtomKind.SequentialControllersPresence:
+      return [atom.kind];
     case InternalTransitionStateAtomKind.ScopeOccurrence:
       return [atom.kind, ...scopeParts(atom.owner)];
     case InternalTransitionStateAtomKind.ScopeParent:
@@ -188,6 +207,18 @@ function stateAtomsConflict(
         right.record.timerOccurrenceId,
       );
   }
+  if (isSequentialControllerAtom(left) && isSequentialControllerAtom(right)) {
+    if (!sameActivityOccurrence(left.id, right.id)) {
+      return false;
+    }
+    if (
+      left.kind === InternalTransitionStateAtomKind.SequentialController ||
+      right.kind === InternalTransitionStateAtomKind.SequentialController
+    ) {
+      return true;
+    }
+    return left.kind === right.kind && left.index === right.index;
+  }
   if (compareStateAtoms(left, right) === 0) {
     return true;
   }
@@ -220,6 +251,9 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.ControlToken:
     case InternalTransitionStateAtomKind.OpenWaitAnchor:
     case InternalTransitionStateAtomKind.SelectedBranch:
+    case InternalTransitionStateAtomKind.SequentialController:
+    case InternalTransitionStateAtomKind.SequentialControllerOutput:
+    case InternalTransitionStateAtomKind.SequentialControllerSnapshot:
     case InternalTransitionStateAtomKind.ScopeOccurrence:
     case InternalTransitionStateAtomKind.Wait:
       return internalOccurrenceRegionContains(region, atom.owner);
@@ -230,6 +264,7 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.LogicalTime:
     case InternalTransitionStateAtomKind.ProcessVariable:
     case InternalTransitionStateAtomKind.RuntimeControl:
+    case InternalTransitionStateAtomKind.SequentialControllersPresence:
       return false;
     default:
       return assertNever(atom);
@@ -249,6 +284,30 @@ function activityAssociationParts(
     record.attachedTimers.length,
     ...record.attachedTimers.flatMap(occurrenceParts),
   ];
+}
+
+function activityOccurrenceIdParts(
+  id: ActivityOccurrence["id"],
+): ReadonlyArray<string | number> {
+  return [id.processInstanceId, id.activityElementId, id.activation];
+}
+
+type SequentialControllerAtom = Extract<
+  InternalTransitionStateAtom,
+  {
+    kind:
+      | InternalTransitionStateAtomKind.SequentialController
+      | InternalTransitionStateAtomKind.SequentialControllerOutput
+      | InternalTransitionStateAtomKind.SequentialControllerSnapshot;
+  }
+>;
+
+function isSequentialControllerAtom(
+  atom: InternalTransitionStateAtom,
+): atom is SequentialControllerAtom {
+  return atom.kind === InternalTransitionStateAtomKind.SequentialController ||
+    atom.kind === InternalTransitionStateAtomKind.SequentialControllerOutput ||
+    atom.kind === InternalTransitionStateAtomKind.SequentialControllerSnapshot;
 }
 
 function activityBodyParts(

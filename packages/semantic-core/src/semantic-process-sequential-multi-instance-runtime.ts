@@ -15,6 +15,7 @@ import {
   compareActivityOccurrences,
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { replaceActivityBodyTask } from "./activity-body-turnover.js";
 import { VariableValueKind } from "./contract.js";
 import type {
@@ -48,6 +49,7 @@ import {
   admittedSequentialMultiInstanceInputCollection,
   admittedSequentialMultiInstanceIterationResult,
 } from "./sequential-multi-instance-command-data-admission.js";
+import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
 
 /**
  * The exact ordered output collection, published once and never before natural completion.
@@ -85,11 +87,35 @@ function publishedCollection(
  * this occurrence, which is what makes the body's activation diverge from the handler's on the first
  * iteration boundary.
  */
-export function enterSequentialMultiInstanceUserTask(
+export enum SequentialMultiInstanceEntryKind {
+  Armed = "armed",
+  Empty = "empty",
+}
+
+export type SelectedSequentialMultiInstanceEntry = Readonly<
+  | {
+      kind: SequentialMultiInstanceEntryKind.Empty;
+      owner: ScopeOccurrenceId;
+      resultingTokens: RuntimeState["controlTokens"];
+      processBindings: ReadonlyArray<VariableBinding>;
+    }
+  | {
+      kind: SequentialMultiInstanceEntryKind.Armed;
+      owner: ScopeOccurrenceId;
+      resultingTokens: RuntimeState["controlTokens"];
+      record: ActivityOccurrence;
+      controller: SequentialMultiInstanceController;
+      taskWait: RuntimeState["userTaskWaits"][number];
+      timerWait: RuntimeState["timerWaits"][number];
+    }
+>;
+
+/** Selects the exact entry arm and every value it will install from one pre-state. */
+export function selectSequentialMultiInstanceEntry(
   operation: AwaitSequentialMultiInstanceUserTaskOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
-): RuntimeState | null {
+): SelectedSequentialMultiInstanceEntry | null {
   if (state.control.kind !== ControlStateKind.Running) {
     return null;
   }
@@ -104,21 +130,14 @@ export function enterSequentialMultiInstanceUserTask(
 
   if (collection.length === 0) {
     return {
-      ...state,
-      controlTokens: addToken(consumed, operation.normalOutput, owner),
-      sequentialMultiInstanceControllers: [
-        ...(state.sequentialMultiInstanceControllers ?? []),
-      ],
-      variables: {
-        ...state.variables,
-        process: {
-          bindings: publishedCollection(
-            state.variables.process.bindings,
-            operation.data.output.dataObjectReferenceId,
-            [],
-          ),
-        },
-      },
+      kind: SequentialMultiInstanceEntryKind.Empty,
+      owner,
+      resultingTokens: addToken(consumed, operation.normalOutput, owner),
+      processBindings: publishedCollection(
+        state.variables.process.bindings,
+        operation.data.output.dataObjectReferenceId,
+        [],
+      ),
     };
   }
 
@@ -151,52 +170,102 @@ export function enterSequentialMultiInstanceUserTask(
     activation: activityActivation,
   } as const;
 
-  return {
-    ...state,
-    controlTokens: consumed,
-    activityOccurrences: [
-      ...state.activityOccurrences,
-      {
-        id: activityId,
-        owner,
-        operationId: operation.id,
-        body: { kind: ActivityBodyKind.UserTask, task: taskId } as const,
-        attachedTimers: [timerId],
-      },
-    ].sort(compareActivityOccurrences),
-    sequentialMultiInstanceControllers: [
-      ...(state.sequentialMultiInstanceControllers ?? []),
-      { id: activityId, snapshot: [...collection], outputSlots: [] },
-    ].sort(compareSequentialMultiInstanceControllers),
-    activityActivations: setActivationCount(
-      state.activityActivations,
-      operation.task.elementId,
-      activityActivation,
-    ),
-    userTaskWaits: [
-      ...state.userTaskWaits,
-      {
-        id: taskId,
-        owner,
-        name: operation.task.name,
-        output: operation.normalOutput,
-      },
-    ].sort(compareUserTaskWaits),
-    timerWaits: [
-      ...state.timerWaits,
-      { id: timerId, owner, deadlineMs, output: operation.boundaryTimer.output },
-    ].sort(compareTimerWaits),
-    taskActivations: setActivationCount(
-      state.taskActivations,
-      operation.task.elementId,
-      taskActivation,
-    ),
-    timerActivations: setActivationCount(
-      state.timerActivations,
-      operation.boundaryTimer.elementId,
-      timerActivation,
-    ),
+  const record: ActivityOccurrence = {
+    id: activityId,
+    owner,
+    operationId: operation.id,
+    body: { kind: ActivityBodyKind.UserTask, task: taskId },
+    attachedTimers: [timerId],
   };
+  const controller: SequentialMultiInstanceController = {
+    id: activityId,
+    snapshot: [...collection],
+    outputSlots: [],
+  };
+  const taskWait: RuntimeState["userTaskWaits"][number] = {
+    id: taskId,
+    owner,
+    name: operation.task.name,
+    output: operation.normalOutput,
+  };
+  const timerWait: RuntimeState["timerWaits"][number] = {
+    id: timerId,
+    owner,
+    deadlineMs,
+    output: operation.boundaryTimer.output,
+  };
+  return {
+    kind: SequentialMultiInstanceEntryKind.Armed,
+    owner,
+    resultingTokens: consumed,
+    record,
+    controller,
+    taskWait,
+    timerWait,
+  };
+}
+
+export function enterSequentialMultiInstanceUserTask(
+  operation: AwaitSequentialMultiInstanceUserTaskOperation,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+): RuntimeState | null {
+  const selected = selectSequentialMultiInstanceEntry(operation, state, owner);
+  if (selected === null) {
+    return null;
+  }
+  switch (selected.kind) {
+    case SequentialMultiInstanceEntryKind.Empty:
+      return {
+        ...state,
+        controlTokens: selected.resultingTokens,
+        sequentialMultiInstanceControllers: [
+          ...(state.sequentialMultiInstanceControllers ?? []),
+        ],
+        variables: {
+          ...state.variables,
+          process: { bindings: selected.processBindings },
+        },
+      };
+    case SequentialMultiInstanceEntryKind.Armed:
+      return {
+        ...state,
+        controlTokens: selected.resultingTokens,
+        activityOccurrences: [
+          ...state.activityOccurrences,
+          selected.record,
+        ].sort(compareActivityOccurrences),
+        sequentialMultiInstanceControllers: [
+          ...(state.sequentialMultiInstanceControllers ?? []),
+          selected.controller,
+        ].sort(compareSequentialMultiInstanceControllers),
+        activityActivations: setActivationCount(
+          state.activityActivations,
+          operation.task.elementId,
+          selected.record.id.activation,
+        ),
+        userTaskWaits: [
+          ...state.userTaskWaits,
+          selected.taskWait,
+        ].sort(compareUserTaskWaits),
+        timerWaits: [
+          ...state.timerWaits,
+          selected.timerWait,
+        ].sort(compareTimerWaits),
+        taskActivations: setActivationCount(
+          state.taskActivations,
+          operation.task.elementId,
+          selected.taskWait.id.activation,
+        ),
+        timerActivations: setActivationCount(
+          state.timerActivations,
+          operation.boundaryTimer.elementId,
+          selected.timerWait.id.activation,
+        ),
+      };
+    default:
+      return assertNever(selected);
+  }
 }
 
 /**
@@ -435,4 +504,10 @@ export function isSequentialMultiInstanceBoundaryDefinition(
 ): boolean {
   return sequentialMultiInstanceBoundaryOperationFor(program, timerId) !==
     undefined;
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(
+    `Unsupported Sequential Multi-Instance entry: ${JSON.stringify(value)}`,
+  );
 }

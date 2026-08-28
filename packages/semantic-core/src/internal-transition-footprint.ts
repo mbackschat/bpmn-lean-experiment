@@ -1,5 +1,8 @@
 import type { OccurrenceId } from "./contract.js";
-import type { ActivityOccurrence } from "./activity-occurrence.js";
+import type {
+  ActivityOccurrence,
+  ActivityOccurrenceId,
+} from "./activity-occurrence.js";
 import type { PublicControlPositionDelta } from "./control-position-projection.js";
 import { candidateProcessId, operationIsSelectedFromProgram } from "./flow-node-occurrence-candidates.js";
 import {
@@ -106,6 +109,20 @@ export type InternalTransitionStateAtom = Readonly<
       owner: ScopeOccurrenceId;
       selectionKey: string;
     }
+  | {
+      kind: InternalTransitionStateAtomKind.SequentialController;
+      id: ActivityOccurrenceId;
+      owner: ScopeOccurrenceId;
+    }
+  | {
+      kind:
+        | InternalTransitionStateAtomKind.SequentialControllerOutput
+        | InternalTransitionStateAtomKind.SequentialControllerSnapshot;
+      id: ActivityOccurrenceId;
+      owner: ScopeOccurrenceId;
+      index: number;
+    }
+  | { kind: InternalTransitionStateAtomKind.SequentialControllersPresence }
   | {
       kind: InternalTransitionStateAtomKind.ScopeOccurrence;
       owner: ScopeOccurrenceId;
