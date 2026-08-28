@@ -74,15 +74,16 @@ The Lean and TypeScript representations may decompose the predicate differently,
 
 ## Preservation and writer criterion
 
-Every production write to `activityOccurrences` is in scope. The existing guarded Activity-occurrence writer census remains the membership owner and must grow one claim-preservation classification rather than acquiring a second prose census.
+Every production write to `activityOccurrences` is in scope. The existing guarded Activity-occurrence writer census remains the membership owner and must grow a claim-preservation axis on every existing writer record rather than acquiring a second prose census.
 
 The evidence obligation follows the write shape:
 
 - initialization is vacuous;
-- insertion proves every incoming body claim is absent from all pre-state records and, for a multi-member body, uses the family-owned member-distinctness result;
+- insertion proves every incoming body claim is absent from all pre-state records; repeated equal members inside the inserted record do not add another owner and require no generic distinctness premise;
 - deletion or filtering preserves uniqueness structurally;
 - an identity-preserving body rewrite proves its incoming claims exclude every untouched record;
 - removal of one or more members from a parallel body preserves uniqueness structurally;
+- a claim-projection-preserving record rewrite proves that every record keeps the same body claims even when non-body fields change; `spawnFromMonitoredUserTask` is the current witness because it clears `attachedTimers` while leaving every body unchanged;
 - a write that copies `activityOccurrences` unchanged uses a frame law;
 - any new write shape fails the census until it receives an explicit preservation account.
 
@@ -96,7 +97,7 @@ The first Red in each semantic implementation is a state with two distinct Activ
 
 The independent second Red is a state with two distinct Activity occurrence identities claiming the same live child scope. It must fail the same rule without relying on a User Task wait or a Parallel Multi-Instance controller.
 
-Positive structural witnesses retain two records with distinct task bodies, two records with distinct child scopes, and one record with a multi-member parallel body. The first two prove the rule is not a one-record restriction; the third proves body cardinality alone is not rejected.
+Positive structural witnesses retain two records with distinct task bodies, two records with distinct child scopes, and, outside Parallel Multi-Instance controller validation, one record whose parallel body repeats the same exact live task identity. Every existing sibling predicate remains satisfied. The first two prove the rule is not a one-record restriction; the repeated-member witness proves neither body cardinality nor intra-record member equality is rejected by `AOO-CLAIM-01`.
 
 Transition evidence covers the writer criterion rather than only the two hand-built negatives. At minimum it includes the shared User Task and bounded-scope issuer roots, Activity body turnover, sequential Multi-Instance turnover and closure, parallel Multi-Instance entry, progress, final completion, early completion, Timer interruption, scope cancellation, called-instance removal, and every other write found by the guarded census. Shared root writers are proved once and reused by their consumers.
 
@@ -117,7 +118,7 @@ Required:
 - one pairwise structural claim-uniqueness predicate in Lean and TypeScript covering singular User Task, parallel User Task, and child-scope bodies;
 - composition into production runtime-state well-formedness with a separate TypeScript defect class and fail-closed admission after preservation evidence;
 - the task-domain and scope-domain negatives with existing sibling predicates asserted intact;
-- positive multi-record and multi-member witnesses;
+- positive multi-record witnesses and one repeated-same-task single-record witness outside Parallel Multi-Instance binding;
 - one guarded writer classification and preservation evidence for every production `activityOccurrences` write shape;
 - derivation of body-side lookup determinism and the Activity-turnover sole-claimant fact from the new conjunct;
 - consumption by Parallel Multi-Instance entry and closing preservation;
@@ -137,7 +138,7 @@ Excluded:
 
 ## Evidence boundary and lifecycle
 
-This proposal changes runtime-state admission and the Lean proof boundary, so it requires an independent cold proposal review before owner approval or implementation. The first green implementation changes a top-level invariant, a gated defect class, and multiple transition-preservation obligations, so it requires the governed semantic-checkpoint review. Closure requires the stable rule to graduate into the Activity occurrence ownership specification and the proposal to retain only rationale and review chronology.
+This proposal changes runtime-state admission and the Lean proof boundary, so it requires an independent cold proposal review before owner approval or implementation. The first green implementation changes a top-level invariant, a gated defect class, and multiple transition-preservation obligations, so it requires the governed semantic-checkpoint review. Closure moves the stable rule into the Activity occurrence ownership specification. Residual rationale and review chronology move to `docs/archived/ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md`, or are deleted when Git retains everything useful, with the documentation registry and every inbound link updated atomically.
 
 Focused proposal verification is the documentation control plane, link and map routing, source hygiene, independent-review policy, and `git diff --check`. Focused implementation verification is the narrow Lean claim owner and affected transition owners, semantic-core well-formedness and Activity-family suites, the guarded Activity writer census, continuation validation, preservation lane, and `git diff --check`. The root runs the complete applicable gate and every path-selected clean-HEAD pre-push entry point at governed targets.
 
@@ -145,9 +146,9 @@ Focused proposal verification is the documentation control plane, link and map r
 
 While this proposal is pending, [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) and [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) must continue to state that body-claim uniqueness is absent. The [Parallel Multi-Instance proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) records that its unconditional closing-preservation theorem is blocked by that admitted alias and names this proposal as the selected supporting account. [PLAN.md](PLAN.md) keeps `PARALLEL-MULTI-INSTANCE` as the sole active work ID and routes the proposal review as that item's exact next action.
 
-Implementation changes the runtime/proof map, semantic-family map, Activity occurrence ownership specification, Parallel Multi-Instance proof account, TypeScript defect inventory, guarded writer census, and PLAN evidence. The stable `AOO-CLAIM-01` rule graduates into the Activity occurrence specification only after closure approval; this proposal does not become a second permanent authority for the same invariant.
+Implementation changes the runtime/proof map, semantic-family map, Activity occurrence ownership specification, Parallel Multi-Instance proof account, TypeScript defect inventory, guarded writer census, the stale continuation-decoder comment describing the body union, and PLAN evidence. The stable `AOO-CLAIM-01` rule graduates into the Activity occurrence specification only after closure approval; this proposal does not become a second permanent authority for the same invariant.
 
-Reopen before adding another Activity body arm, allowing one body occurrence to have joint semantic owners, making ownership time-sliced rather than state-local, adding a body domain whose identity equality is not exact structural equality, reconstructing Activity bodies from host state, or changing a writer so its body claims cannot be classified by insertion, deletion, replacement, member removal, or unchanged framing.
+Reopen before adding another Activity body arm, allowing one body occurrence to have joint semantic owners, making ownership time-sliced rather than state-local, adding a body domain whose identity equality is not exact structural equality, reconstructing Activity bodies from host state, or changing a writer so its body claims cannot be classified by insertion, deletion, body replacement, member removal, claim-projection-preserving record rewrite, or unchanged framing.
 
 ## Independent cold-review receipt
 
