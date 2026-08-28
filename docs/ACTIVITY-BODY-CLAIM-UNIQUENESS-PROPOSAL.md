@@ -2,8 +2,16 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
+
+## First green implementation checkpoint
+
+Committed source target `7e01fb0c` implements the selected pairwise rule in Lean and TypeScript without changing `ActivityBody`, `ActivityOccurrence`, `RuntimeState`, or any public observation. Lean owns the task and child-scope claim projections, pairwise predicate, lookup consequences, insertion/filter/rewrite laws, writer preservation, and kernel-decided task/scope negatives. TypeScript reports the distinct gated `DuplicateActivityBodyClaim` defect, retains the repeated-task single-record positive, and exercises every current Activity writer through the guarded claim-preservation axis.
+
+The Temporal continuation lane now refuses both a duplicated exact task claim and a duplicated exact child-scope claim before a resumed Workflow may select an owner. The new Lean conformance module passed under the pinned 3 GiB, one-CPU, no-additional-swap harness at `1,362,228` KiB peak RSS and `5.11` seconds, bound to the exact source bytes at `7e01fb0c`.
+
+This is a governed checkpoint, not closure. Parallel Multi-Instance entry consumes the new conjunct, while unconditional progress, final, early, and Timer closing preservation remain the next consumer. The stable rule remains owned here until closure review graduates it into the Activity occurrence ownership specification.
 
 ## Decision question and boundary
 
@@ -144,7 +152,7 @@ Focused proposal verification is the documentation control plane, link and map r
 
 ## Same-change owners and reopen conditions
 
-While this proposal is unimplemented, [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) and [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) must continue to state that body-claim uniqueness is absent. The [Parallel Multi-Instance proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) records that its unconditional closing-preservation theorem is blocked by that admitted alias and names this proposal as the selected supporting account. [PLAN.md](PLAN.md) keeps `PARALLEL-MULTI-INSTANCE` as the sole active work ID and routes implementation as that item's exact next action.
+Until closure review, [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) and [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) record the first green implementation without duplicating this proposal's stable rule. The [Parallel Multi-Instance proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) records that its unconditional closing-preservation theorem may now consume the supporting invariant after the governed checkpoint verdict. [PLAN.md](PLAN.md) keeps `PARALLEL-MULTI-INSTANCE` as the sole active work ID because the supporting invariant is part of that item's exact next action rather than a second programme item.
 
 Implementation changes the runtime/proof map, semantic-family map, Activity occurrence ownership specification, Parallel Multi-Instance proof account, TypeScript defect inventory, guarded writer census, the stale continuation-decoder comment describing the body union, and PLAN evidence. The stable `AOO-CLAIM-01` rule graduates into the Activity occurrence specification only after closure approval; this proposal does not become a second permanent authority for the same invariant.
 

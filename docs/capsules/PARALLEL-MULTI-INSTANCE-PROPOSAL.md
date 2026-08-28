@@ -114,7 +114,7 @@ The Lean lane is **proved** for the bounded transition family. It defines the pa
 
 Required theorems cover entry well-formedness; task-identity freshness and pairwise uniqueness; progress accounting; exact-slot preservation; all-complete commutation for two distinct pending tasks; index-ordered final aggregation; early-completion sibling withdrawal and output absence; Timer regional withdrawal and output absence; stale/duplicate refusal; evaluator soundness for every new relation arm; and preservation of the applicable runtime-state invariant.
 
-The entry-preservation half is implemented. The closing-preservation half exposed a pre-existing cross-family gap rather than a family-local proof obligation: current production well-formedness admits a distinct unrelated Activity record whose singular body claims one live parallel child. Progress removes that child and rewrites only the selected parallel record; final, early, and Timer closure remove the selected record and its regional children. Every route can therefore strand the unrelated record with a missing body. The same mechanism exists for two records claiming one child scope, and Activity body turnover already carries it as an explicit `soleBody` premise. The owner-approved [Activity body-claim uniqueness proposal](../ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md) owns the cross-family invariant. This capsule does not narrow its relation with a Parallel-specific premise and resumes unconditional closing preservation only after that supporting account is implemented.
+The entry-preservation half is implemented. The closing-preservation half exposed a pre-existing cross-family gap rather than a family-local proof obligation: production well-formedness admitted a distinct unrelated Activity record whose singular body claimed one live parallel child. Progress removed that child and rewrote only the selected parallel record; final, early, and Timer closure removed the selected record and its regional children. Every route could therefore strand the unrelated record with a missing body. The same mechanism existed for two records claiming one child scope, and Activity body turnover carried it as an explicit `soleBody` premise. The first green [Activity body-claim uniqueness checkpoint](../ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md#first-green-implementation-checkpoint) now rejects both aliases, derives lookup and turnover consequences, and preserves the rule across the current guarded writer set. This capsule does not narrow its relation with a Parallel-specific premise and resumes unconditional closing preservation after that supporting checkpoint's governed verdict.
 
 The bounded runtime-state successors for `completionPolicy="first"` may be equal after atomic controller removal, so no state-inequality theorem is claimed. The checked non-law is over the exact committed command and E1/E2 publication trace: completing A before B records A completed and B terminated, while completing B before A records B completed and A terminated. No proof may promote host scheduling to a priority rule.
 
@@ -198,7 +198,7 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Operation admission root](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 300 |
 | [Triggered-start root](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 628 |
 | [Semantic runtime composition root](../../packages/semantic-core/src/semantic-process-runtime.ts) | 211 |
-| [Runtime well-formedness composition root](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 220 |
+| [Runtime well-formedness composition root](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 181 |
 | [Internal transition footprint](../../packages/semantic-core/src/internal-transition-footprint.ts) | 372 |
 | [Internal wait census](../../packages/semantic-core/src/internal-transition-wait-census.ts) | 654 |
 | [Flow-node boundary-start projection](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts) | 563 |
@@ -229,16 +229,16 @@ Headroom is measured in nonblank lines before the 800-line review target. Parall
 | [Lean transition trace](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 245 |
 | [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 304 |
 | [Lean JSON composition root](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 313 |
-| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 54 |
+| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 76 |
 | [Lean well-formedness initialization](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 709 |
 | [Lean scope cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 646 |
 | [Lean Call Activity removal](../../BpmnSemantics/SemanticProcess/CallActivity.lean) | 258 |
 | [Lean canonical JSON string collection measure](../../BpmnSemantics/SemanticProcess/CanonicalJsonStringCollection.lean) | 755 |
 | [Lean sequential Multi-Instance compatibility](../../BpmnSemantics/SemanticProcess/SequentialMultiInstance.lean) | 667 |
-| [Lean Activity body turnover](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean) | 217 |
-| [Lean Activity turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 699 |
+| [Lean Activity body turnover](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean) | 104 |
+| [Lean Activity turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 682 |
 | [Lean commutation state frames](../../BpmnSemantics/SemanticProcess/InternalCommutationStateFrames.lean) | 177 |
-| [Lean commutation runtime preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 52 |
+| [Lean commutation runtime preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 43 |
 | [Lean commutation open projection](../../BpmnSemantics/SemanticProcess/InternalCommutationOpenProjection.lean) | 211 |
 | [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 488 |
 | [Lean semantic umbrella](../../BpmnSemantics/SemanticProcess.lean) | 759 |
@@ -265,9 +265,12 @@ The shared Lean collection measure and parallel responsibility owners are:
 - `ParallelMultiInstanceTransition.lean`, `ParallelMultiInstanceRuntimeWellFormedness.lean`, and `ParallelMultiInstanceFlowNodeOccurrence.lean`: family transition, well-formedness, and occurrence accounts.
 - `ParallelMultiInstancePreservation.lean`: family-local and shared evaluator soundness, admitted-program account extraction, and exact-state refusal.
 - `ParallelMultiInstanceRuntimeStatePreservation.lean`: reusable full-state insertion and withdrawal facts plus the empty-entry preservation case.
-- `ParallelMultiInstanceRuntimeStateEntryPreservation.lean`: nonempty entry insertion, the complete shared entry step-preservation theorem, and its evaluator corollary.
+- `ParallelMultiInstanceRuntimeStateEntryPreservation.lean`: nonempty entry insertion and the complete shared entry step-preservation theorem.
+- `ParallelMultiInstanceRuntimeStateEntryEvaluatorPreservation.lean`: the evaluator corollary over the independently buildable entry relation owner.
 - `ParallelMultiInstanceRuntimeStateClosingPreservation.lean`: progress replacement, final and early closure, Timer interruption, the complete shared completion and Timer step-preservation theorems, and their evaluator corollaries.
 - `ParallelMultiInstanceLaws.lean`: the family laws and non-laws.
+
+The separately owner-approved supporting invariant adds `ActivityBodyClaimUniqueness.lean`, `ActivityBodyClaimWriterPreservation.lean`, and `ActivityBodyClaimUniquenessConformance.lean`. Those owners remain governed by the [Activity body-claim uniqueness proposal](../ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md), not by this family's semantic account; this capsule consumes their reviewed result.
 
 Family wire decoding and encoding belong in `BpmnSemantics/SemanticProcessJson/ParallelMultiInstance.lean`, and executable witnesses belong in `BpmnSemantics/ParallelMultiInstanceConformance.lean`. Entry and Closing both import the reusable runtime-state owner; Closing does not import Entry. Listing authorizes a responsibility split but does not require an empty or redundant module; an unlisted new production owner is added to this inventory and reviewed before its first edit.
 
