@@ -119,6 +119,8 @@ function stateAtomParts(
       return [atom.kind, ...occurrenceParts(atom.occurrence)];
     case InternalTransitionStateAtomKind.ControlToken:
       return [atom.kind, ...scopeParts(atom.owner), atom.placeId];
+    case InternalTransitionStateAtomKind.EndCount:
+    case InternalTransitionStateAtomKind.EndIncrement:
     case InternalTransitionStateAtomKind.InitiationPending:
     case InternalTransitionStateAtomKind.LogicalTime:
       return [atom.kind];
@@ -141,6 +143,20 @@ function stateAtomsConflict(
   left: InternalTransitionStateAtom,
   right: InternalTransitionStateAtom,
 ): boolean {
+  if (
+    left.kind === InternalTransitionStateAtomKind.EndIncrement &&
+    right.kind === InternalTransitionStateAtomKind.EndIncrement
+  ) {
+    return false;
+  }
+  if (
+    (left.kind === InternalTransitionStateAtomKind.EndIncrement &&
+      right.kind === InternalTransitionStateAtomKind.EndCount) ||
+    (left.kind === InternalTransitionStateAtomKind.EndCount &&
+      right.kind === InternalTransitionStateAtomKind.EndIncrement)
+  ) {
+    return true;
+  }
   if (compareStateAtoms(left, right) === 0) {
     return true;
   }
@@ -174,6 +190,8 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.Wait:
       return internalOccurrenceRegionContains(region, atom.owner);
     case InternalTransitionStateAtomKind.Activation:
+    case InternalTransitionStateAtomKind.EndCount:
+    case InternalTransitionStateAtomKind.EndIncrement:
     case InternalTransitionStateAtomKind.InitiationPending:
     case InternalTransitionStateAtomKind.LogicalTime:
     case InternalTransitionStateAtomKind.RuntimeControl:

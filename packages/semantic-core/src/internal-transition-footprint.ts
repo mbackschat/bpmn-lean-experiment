@@ -75,6 +75,8 @@ export type InternalTransitionStateAtom = Readonly<
       owner: ScopeOccurrenceId;
       placeId: string;
     }
+  | { kind: InternalTransitionStateAtomKind.EndCount }
+  | { kind: InternalTransitionStateAtomKind.EndIncrement }
   | { kind: InternalTransitionStateAtomKind.InitiationPending }
   | { kind: InternalTransitionStateAtomKind.LogicalTime }
   | {

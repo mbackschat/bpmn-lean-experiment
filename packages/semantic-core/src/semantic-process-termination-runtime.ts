@@ -9,6 +9,7 @@ import {
   sameScopeOccurrence,
 } from "./semantic-process-state.js";
 import type {
+  RuntimeScopeOccurrence,
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
@@ -22,6 +23,30 @@ export function terminateScope(
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState | null {
+  const selected = selectScopeTermination(operation, state, owner);
+  if (selected === null) {
+    return null;
+  }
+  const terminated = removeScopeOccurrenceContents(state, selected.occurrence);
+  return {
+    ...terminated,
+    endOccurrences: state.endOccurrences + 1,
+  };
+}
+
+export type SelectedScopeTermination = Readonly<{
+  occurrence: RuntimeScopeOccurrence;
+}>;
+
+/** Selects the exact offered containing-scope occurrence without applying termination. */
+export function selectScopeTermination(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.TerminateScope }
+  >,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+): SelectedScopeTermination | null {
   if (
     state.control.kind !== ControlStateKind.Running ||
     owner.processInstanceId !== state.control.instanceId ||
@@ -37,10 +62,5 @@ export function terminateScope(
   if (selected.length !== 1 || occurrence === undefined) {
     return null;
   }
-
-  const terminated = removeScopeOccurrenceContents(state, occurrence);
-  return {
-    ...terminated,
-    endOccurrences: state.endOccurrences + 1,
-  };
+  return { occurrence };
 }

@@ -66,6 +66,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-transition-region.ts](src/internal-transition-region.ts) | Exact pre-state occurrence ownership through scope-parent and caller-to-called-root edges without applying a transition |
 | [internal-transition-return-preparation.ts](src/internal-transition-return-preparation.ts) | Exact Call-return region, association, and caller-output state footprint without applying the transition |
 | [internal-transition-scope-completion-preparation.ts](src/internal-transition-scope-completion-preparation.ts) | Exact scope-completion region, parent/root continuation, bounded Activity, and deadline state footprint without applying the transition |
+| [internal-transition-termination-preparation.ts](src/internal-transition-termination-preparation.ts) | Exact Terminate End retained-root region, offered token, and commutative End-increment state footprint without applying the transition |
 | [internal-transition-wait-census.ts](src/internal-transition-wait-census.ts) | Complete ordinary and composite wait-declarer census plus untagged open-anchor exclusion |
 | [internal-transition-footprint-vocabulary.ts](src/internal-transition-footprint-vocabulary.ts) | Closed internal state and publication atom discriminators |
 | [internal-transition-footprint-ordering.ts](src/internal-transition-footprint-ordering.ts) | Canonical atom and paired-publication ordering without locale collation |
