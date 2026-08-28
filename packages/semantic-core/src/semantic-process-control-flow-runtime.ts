@@ -11,9 +11,13 @@ import type { SemanticOperation } from "./semantic-process-contract.js";
 import { evaluateSimpleBooleanExpression } from "./simple-boolean-expression.js";
 import {
   addToken,
+  ControlStateKind,
+  ownedTokenMultiplicity,
   removeToken,
+  sameScopeOccurrence,
 } from "./semantic-process-state.js";
 import type {
+  RuntimeScopeOccurrence,
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
@@ -25,12 +29,48 @@ export function reachNoneEnd(
   >,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
-): RuntimeState {
+): RuntimeState | null {
+  const selected = selectNoneEnd(operation, state, owner);
+  if (selected === null) {
+    return null;
+  }
   return {
     ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input, owner),
+    controlTokens: removeToken(
+      state.controlTokens,
+      operation.input,
+      selected.occurrence.id,
+    ),
     endOccurrences: state.endOccurrences + 1,
   };
+}
+
+export type SelectedNoneEnd = Readonly<{
+  occurrence: RuntimeScopeOccurrence;
+}>;
+
+/** Selects one exact ordinary End offer without consuming it or incrementing the End count. */
+export function selectNoneEnd(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.ReachNoneEnd }
+  >,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+): SelectedNoneEnd | null {
+  if (
+    state.control.kind !== ControlStateKind.Running ||
+    ownedTokenMultiplicity(state.controlTokens, operation.input, owner) !== 1
+  ) {
+    return null;
+  }
+  const occurrences = state.scopeOccurrences.filter(({ id }) =>
+    sameScopeOccurrence(id, owner)
+  );
+  const occurrence = occurrences[0];
+  return occurrences.length === 1 && occurrence !== undefined
+    ? { occurrence }
+    : null;
 }
 
 export function duplicate(
