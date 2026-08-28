@@ -190,9 +190,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.ActivityBodyTurnoverConformance", peakResidentKib: 1382440, elapsedSeconds: 3.8 },
     {
       module: "BpmnSemantics.ActivityBodyClaimUniquenessConformance",
-      peakResidentKib: 1362228,
-      elapsedSeconds: 5.11,
-      measuredAtCommit: "7e01fb0c",
+      peakResidentKib: 1662532,
+      elapsedSeconds: 7.64,
+      measuredAtCommit: "95b011b1",
     },
     { module: "BpmnSemantics.ServiceTaskEffectConformance", peakResidentKib: 1349428, elapsedSeconds: 5.6 },
     { module: "BpmnSemantics.IntermediateCatchTimerConformance", peakResidentKib: 1296244, elapsedSeconds: 5.3 },
