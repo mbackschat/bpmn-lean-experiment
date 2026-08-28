@@ -188,6 +188,12 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.MappedBoundaryErrorConformance", peakResidentKib: 1463248, elapsedSeconds: 7.2 },
     { module: "BpmnSemantics.BooleanProcessDataConformance", peakResidentKib: 1405164, elapsedSeconds: 3.8 },
     { module: "BpmnSemantics.ActivityBodyTurnoverConformance", peakResidentKib: 1382440, elapsedSeconds: 3.8 },
+    {
+      module: "BpmnSemantics.ActivityBodyClaimUniquenessConformance",
+      peakResidentKib: 1362228,
+      elapsedSeconds: 5.11,
+      measuredAtCommit: "7e01fb0c",
+    },
     { module: "BpmnSemantics.ServiceTaskEffectConformance", peakResidentKib: 1349428, elapsedSeconds: 5.6 },
     { module: "BpmnSemantics.IntermediateCatchTimerConformance", peakResidentKib: 1296244, elapsedSeconds: 5.3 },
     { module: "BpmnSemantics.ParallelBalancedTopologyConformance", peakResidentKib: 1201352, elapsedSeconds: 2.9 },
