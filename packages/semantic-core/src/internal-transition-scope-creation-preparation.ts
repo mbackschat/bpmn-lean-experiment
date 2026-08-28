@@ -73,7 +73,7 @@ export function deriveInternalEnterScopePreparation(
   if (owner === undefined) {
     return null;
   }
-  const selected = selectChildScopeEntry(state, operation);
+  const selected = selectChildScopeEntry(state, owner, operation);
   if (
     selected === null ||
     !Number.isSafeInteger(selected.child.activation) ||

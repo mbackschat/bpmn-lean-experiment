@@ -68,7 +68,7 @@ export function enterChildScope(
   parent: ScopeOccurrenceId,
   entry: ChildScopeEntry,
 ): RuntimeState | null {
-  const selected = selectChildScopeEntry(state, entry);
+  const selected = selectChildScopeEntry(state, parent, entry);
   if (selected === null) {
     return null;
   }
@@ -101,6 +101,7 @@ export type SelectedChildScopeEntry = Readonly<{
 /** Selects the fresh child identity without applying token or scope insertion. */
 export function selectChildScopeEntry(
   state: RuntimeState,
+  parent: ScopeOccurrenceId,
   entry: ChildScopeEntry,
 ): SelectedChildScopeEntry | null {
   if (
@@ -116,7 +117,7 @@ export function selectChildScopeEntry(
       ({ elementId }) => elementId === entry.childScopeId,
     )?.count ?? 0) + 1;
   const child = {
-    processInstanceId: state.control.instanceId,
+    processInstanceId: parent.processInstanceId,
     definitionScopeId: entry.childScopeId,
     activation,
   };

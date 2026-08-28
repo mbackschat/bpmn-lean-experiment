@@ -37,6 +37,8 @@ import { controlPlace, operationBase } from "./semantic-program-parts.ts";
 type ScopeCreationPreparationModule =
   typeof import("../src/internal-transition-scope-creation-preparation.ts");
 type FootprintModule = typeof import("../src/internal-transition-footprint.ts");
+type ScopeRuntimeModule =
+  typeof import("../src/semantic-process-scope-runtime.ts");
 
 const preparationModule = await import(
   new URL(
@@ -47,6 +49,9 @@ const preparationModule = await import(
 const footprintModule = await import(
   new URL("../dist/internal-transition-footprint.js", import.meta.url).href
 ) as FootprintModule;
+const scopeRuntimeModule = await import(
+  new URL("../dist/semantic-process-scope-runtime.js", import.meta.url).href
+) as ScopeRuntimeModule;
 
 const {
   InternalScopeCreationResultKind,
@@ -58,6 +63,7 @@ const {
   InternalTransitionStateAtomKind,
   internalTransitionStateFootprintsAreIndependent,
 } = footprintModule;
+const { selectChildScopeEntry } = scopeRuntimeModule;
 
 const rootScopeId = "scope:Process_ScopeCreation";
 const childScopeA = "scope:Child_A";
@@ -241,6 +247,38 @@ test("call activation identity conflicts despite disjoint token places", () => {
     reads: [],
     writes: [{ ...exactActivation, elementId: "another-call" }],
   }), true);
+});
+
+test("mints a nested child in its called Process instance rather than the hosting root", () => {
+  const calledEntered = applyStimulus(
+    callActivityProgram,
+    initialState,
+    callActivityStart(),
+    2,
+  );
+  assert.equal(calledEntered.outcome, CommandOutcome.Committed);
+  assert.equal(calledEntered.internalStepBoundExceeded, true);
+  const calledRoot = {
+    processInstanceId: expectedCalledInstanceId,
+    definitionScopeId: calledScopeId,
+    activation: 1,
+  };
+
+  assert.deepEqual(selectChildScopeEntry(
+    calledEntered.state,
+    calledRoot,
+    {
+      input: "place:Called_Start",
+      childEntry: "place:Nested_Entry",
+      childScopeId: "scope:Nested_Called",
+    },
+  ), {
+    child: {
+      processInstanceId: expectedCalledInstanceId,
+      definitionScopeId: "scope:Nested_Called",
+      activation: 1,
+    },
+  });
 });
 
 function enterScopeOperation(
