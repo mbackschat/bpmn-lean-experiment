@@ -17,6 +17,17 @@ import type { EffectActivityImplementations } from "@bpmn-lean/temporal-testkit"
 import { withDeadline } from "./temporal-test-support.ts";
 
 const operationDeadlineMs = 10_000;
+const openTaskPollIntervalMs = 25;
+
+export type OpenTaskPollScheduler = Readonly<{
+  now: () => number;
+  delay: (durationMs: number) => Promise<void>;
+}>;
+
+const openTaskPollScheduler: OpenTaskPollScheduler = {
+  now: () => performance.now(),
+  delay,
+};
 
 export type WorkerLease = Readonly<{
   worker: Worker;
@@ -76,17 +87,22 @@ export async function stopBpmnTestWorker(
 export async function waitForOpenUserTaskIds(
   handle: WorkflowHandle,
   expectedElementIds: ReadonlyArray<string>,
+  scheduler: OpenTaskPollScheduler = openTaskPollScheduler,
 ): Promise<ReadonlyArray<OpenUserTask>> {
+  const deadlineMs = scheduler.now() + operationDeadlineMs;
   let latestError: unknown;
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  let latestTasks: ReadonlyArray<OpenUserTask> = [];
+  while (scheduler.now() < deadlineMs) {
     try {
       const tasks = await withDeadline(
         handle.query<ReadonlyArray<OpenUserTask>>(
           bpmnOpenUserTasksQueryName,
         ),
-        1_000,
+        Math.min(1_000, Math.max(1, deadlineMs - scheduler.now())),
         "open-task Query",
       );
+      latestError = undefined;
+      latestTasks = tasks;
       if (
         tasks.length === expectedElementIds.length &&
         tasks.every(
@@ -99,12 +115,16 @@ export async function waitForOpenUserTaskIds(
     } catch (error: unknown) {
       latestError = error;
     }
-    await delay(25);
+    const remainingMs = deadlineMs - scheduler.now();
+    if (remainingMs > 0) {
+      await scheduler.delay(Math.min(openTaskPollIntervalMs, remainingMs));
+    }
   }
   throw latestError instanceof Error
     ? latestError
     : new Error(
-        `Workflow did not expose User Tasks ${expectedElementIds.join(", ")}`,
+        `Workflow did not expose User Tasks ${expectedElementIds.join(", ")}; ` +
+          `latest was ${latestTasks.map(({ id }) => id.elementId).join(", ")}`,
       );
 }
 
