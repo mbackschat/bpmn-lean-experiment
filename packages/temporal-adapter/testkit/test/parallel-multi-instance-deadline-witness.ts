@@ -39,6 +39,11 @@ import type {
 const taskQueue = "parallel-multi-instance-deadline";
 const instanceId = "ParallelMultiInstance_deadline-witness";
 
+type DirectVmActivationJob = NonNullable<Activation["jobs"]>[number];
+type DirectVmQueryActivationJob = DirectVmActivationJob & {
+  variant: "queryWorkflow";
+};
+
 export type ParallelMultiInstanceDeadlineWitness = Readonly<{
   naturalCompletions: ReadonlyArray<Completion>;
   interruptedCompletions: ReadonlyArray<Completion>;
@@ -179,9 +184,9 @@ function deadlineTimerJob(): NonNullable<Activation["jobs"]>[number] {
 
 function publicationQueryJobs(): NonNullable<Activation["jobs"]> {
   const request = defaultPayloadConverter.toPayload({ afterRevision: 0 });
-  // The pinned VM's query-only path bypasses protobuf conversion, so these two jobs must carry the
-  // generated oneof discriminant that ordinary mutating activations receive during conversion.
-  return [
+  // The query-only VM path bypasses protobuf conversion, so it needs the oneof discriminant that
+  // conversion adds at runtime but the generated IWorkflowActivationJob interface omits.
+  const jobs: DirectVmQueryActivationJob[] = [
     {
       variant: "queryWorkflow",
       queryWorkflow: {
@@ -201,6 +206,7 @@ function publicationQueryJobs(): NonNullable<Activation["jobs"]> {
       },
     },
   ];
+  return jobs;
 }
 
 function parallelFixture(

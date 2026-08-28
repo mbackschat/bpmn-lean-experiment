@@ -37,6 +37,9 @@ const contributorGuidePath = fileURLToPath(
 const testingSpecPath = fileURLToPath(
   new URL("../docs/TESTING-SPEC.md", import.meta.url),
 );
+const rootPackageManifestPath = fileURLToPath(
+  new URL("../package.json", import.meta.url),
+);
 const checkedSourceRelationMainPath = fileURLToPath(
   new URL(
     "../BpmnSemantics/Experiments/CheckedSourceRelationMain.lean",
@@ -164,6 +167,16 @@ test("default verification includes the focused Temporal history gate", async ()
   await assertLineOccursOnce(
     verifyScriptPath,
     "./scripts/pnpm.sh run test:temporal:built",
+  );
+});
+
+test("the Temporal source gate typechecks directly executed harnesses first", async () => {
+  const manifest = JSON.parse(
+    await readFile(rootPackageManifestPath, "utf8"),
+  ) as { scripts?: Record<string, string> };
+  assert.equal(
+    manifest.scripts?.["test:temporal"],
+    "pnpm check:harness-types && pnpm build:temporal-adapter && pnpm test:temporal:built",
   );
 });
 
