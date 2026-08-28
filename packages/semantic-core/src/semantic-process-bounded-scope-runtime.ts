@@ -32,13 +32,15 @@ import {
 } from "./semantic-process-scope-cancellation.js";
 import {
   completeScope,
-  enterChildScope,
+  selectChildScopeEntry,
 } from "./semantic-process-scope-runtime.js";
 import {
   addToken,
+  compareScopeOccurrenceIds,
   compareTimerWaits,
   ControlStateKind,
   nextActivation,
+  removeToken,
   sameOccurrence,
   sameScopeOccurrence,
   setActivationCount,
@@ -58,6 +60,12 @@ type ArmedBoundedScope = Readonly<{
   deadline: SemanticTimerWait;
 }>;
 
+export type SelectedBoundedScopeArming = Readonly<{
+  child: RuntimeScopeOccurrence;
+  record: ActivityOccurrence;
+  deadline: SemanticTimerWait;
+}>;
+
 /**
  * Atomically creates the child scope occurrence, its entry token, and the deadline.
  *
@@ -70,67 +78,90 @@ export function armBoundedScope(
   state: RuntimeState,
   parent: ScopeOccurrenceId,
 ): RuntimeState | null {
-  const entered = enterChildScope(state, parent, operation);
-  if (entered === null) {
+  const selected = selectBoundedScopeArming(operation, state, parent);
+  if (selected === null) {
     return null;
   }
-  const activation = nextActivation(
-    entered.timerActivations,
+  return {
+    ...state,
+    controlTokens: addToken(
+      removeToken(state.controlTokens, operation.input, parent),
+      operation.childEntry,
+      selected.child.id,
+    ),
+    scopeOccurrences: [...state.scopeOccurrences, selected.child].sort(
+      (left, right) => compareScopeOccurrenceIds(left.id, right.id),
+    ),
+    scopeActivations: setActivationCount(
+      state.scopeActivations,
+      operation.childScopeId,
+      selected.child.id.activation,
+    ),
+    // The record is created in the same transition as the body and the deadline, because a state
+    // holding any two of the three is invalid rather than a resumption surface.
+    activityOccurrences: [...state.activityOccurrences, selected.record]
+      .sort(compareActivityOccurrences),
+    activityActivations: setActivationCount(
+      state.activityActivations,
+      operation.origin.elementId,
+      selected.record.id.activation,
+    ),
+    timerWaits: [...state.timerWaits, selected.deadline].sort(compareTimerWaits),
+    timerActivations: setActivationCount(
+      state.timerActivations,
+      operation.boundaryTimer.elementId,
+      selected.deadline.id.activation,
+    ),
+  };
+}
+
+/** Selects the complete child, Activity record, and parent-owned deadline from the pre-state. */
+export function selectBoundedScopeArming(
+  operation: EnterBoundedScopeOperation,
+  state: RuntimeState,
+  parent: ScopeOccurrenceId,
+): SelectedBoundedScopeArming | null {
+  const entry = selectChildScopeEntry(state, parent, operation);
+  if (entry === null) {
+    return null;
+  }
+  const deadlineActivation = nextActivation(
+    state.timerActivations,
     operation.boundaryTimer.elementId,
   );
-  const deadlineMs = entered.logicalTimeMs + operation.boundaryTimer.durationMs;
+  const activityActivation = nextActivation(
+    state.activityActivations,
+    operation.origin.elementId,
+  );
+  const deadlineMs = state.logicalTimeMs + operation.boundaryTimer.durationMs;
   if (!Number.isSafeInteger(deadlineMs)) {
     throw new RangeError("Timer deadline exceeds the safe integer boundary");
   }
-  const child = entered.scopeOccurrences.find(({ id, parent: owner }) =>
-    id.definitionScopeId === operation.childScopeId &&
-    owner !== null &&
-    sameScopeOccurrence(owner, parent)
-  );
-  if (child === undefined) {
-    return null;
-  }
-  const activityActivation = nextActivation(
-    entered.activityActivations,
-    operation.origin.elementId,
-  );
+  const child = { id: entry.child, parent };
   const deadlineId = {
     processInstanceId: parent.processInstanceId,
     elementId: operation.boundaryTimer.elementId,
-    activation,
+    activation: deadlineActivation,
   } as const;
   return {
-    ...entered,
-    // The record is created in the same transition as the body and the deadline, because a state
-    // holding any two of the three is invalid rather than a resumption surface.
-    activityOccurrences: [
-      ...entered.activityOccurrences,
-      {
-        id: {
-          processInstanceId: parent.processInstanceId,
-          activityElementId: operation.origin.elementId,
-          activation: activityActivation,
-        },
-        owner: parent,
-        operationId: operation.id,
-        body: { kind: ActivityBodyKind.ChildScope, scope: child.id } as const,
-        attachedTimers: [deadlineId],
+    child,
+    record: {
+      id: {
+        processInstanceId: parent.processInstanceId,
+        activityElementId: operation.origin.elementId,
+        activation: activityActivation,
       },
-    ].sort(compareActivityOccurrences),
-    activityActivations: setActivationCount(
-      entered.activityActivations,
-      operation.origin.elementId,
-      activityActivation,
-    ),
-    timerWaits: [
-      ...entered.timerWaits,
-      { id: deadlineId, owner: parent, deadlineMs, output: operation.boundaryTimer.output },
-    ].sort(compareTimerWaits),
-    timerActivations: setActivationCount(
-      entered.timerActivations,
-      operation.boundaryTimer.elementId,
-      activation,
-    ),
+      owner: parent,
+      operationId: operation.id,
+      body: { kind: ActivityBodyKind.ChildScope, scope: child.id },
+      attachedTimers: [deadlineId],
+    },
+    deadline: {
+      id: deadlineId,
+      owner: parent,
+      deadlineMs,
+      output: operation.boundaryTimer.output,
+    },
   };
 }
 
