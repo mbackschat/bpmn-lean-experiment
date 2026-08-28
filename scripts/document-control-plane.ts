@@ -168,6 +168,16 @@ export function planReviewOwnerPaths(resume: string): ReadonlyArray<string> {
   ];
 }
 
+/** Requires a governed route for review work without making review mandatory for every active item. */
+export function planReviewRoutingFindings(
+  resume: string,
+  owners: ReadonlyArray<PlanReviewOwner>,
+): ReadonlyArray<string> {
+  return owners.length === 0 && /\b(?:review|reviewer|reviewing|audit)\b/u.test(resume)
+    ? ["resume point names review work but routes to no governed review owner"]
+    : [];
+}
+
 const settledReviewVerdicts = new Set(["approve", "approve-with-required-edits", "reject"]);
 const pendingReviewWords = ["outstanding", "pending", "awaiting", "unreviewed"];
 

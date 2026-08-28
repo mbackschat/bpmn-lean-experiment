@@ -15,6 +15,7 @@ import {
   parseOrderedWork,
   planGateTokenFindings,
   planReviewOwnerPaths,
+  planReviewRoutingFindings,
   planReviewRestatementFindings,
   perFileSourceMapTrees,
   routeImplementationPath,
@@ -92,9 +93,7 @@ test("the plan never restates a review state its receipt owns", async () => {
       return { path: documentPath, verdict: row.verdict, target: row.target };
     }),
   );
-  // Anti-vacuity: the rule is only meaningful while the resume point actually routes to a governed
-  // owner, so an empty owner set is itself a finding rather than a silent pass.
-  assert.ok(owners.length > 0, "resume point routes to no governed review owner");
+  assert.deepEqual(planReviewRoutingFindings(resume, owners), []);
   assert.deepEqual(planReviewRestatementFindings(resume, owners), []);
 });
 
@@ -148,6 +147,30 @@ test("rejects a stale review state and a misplaced gate token", () => {
   assert.deepEqual(planGateTokenFindings(plan), [
     "gate token `test:temporal` belongs in Current evidence, which owns the command and exit status",
   ]);
+});
+
+test("requires a governed owner only when the resume point names review work", () => {
+  assert.deepEqual(
+    planReviewRoutingFindings(
+      "Next action: generate an evidence vector from existing owners.",
+      [],
+    ),
+    [],
+  );
+  assert.deepEqual(
+    planReviewRoutingFindings(
+      "Next action: obtain the required cold review before implementation.",
+      [],
+    ),
+    ["resume point names review work but routes to no governed review owner"],
+  );
+  assert.deepEqual(
+    planReviewRoutingFindings(
+      "Next action: obtain the required cold review before implementation.",
+      [{ path: "docs/EXAMPLE-PROPOSAL.md", verdict: "approve", target: "0123abc" }],
+    ),
+    [],
+  );
 });
 
 test("uses only structural implementation-map routes across maintained Markdown", async () => {
