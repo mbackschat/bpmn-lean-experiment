@@ -251,15 +251,15 @@ private theorem nodup_subset_of_nodup_subset_length_eq [BEq α] [LawfulBEq α]
       · exact List.mem_cons_of_mem head
           (erasedIncluded ((rightNodup.mem_erase_iff).mpr ⟨same, candidateMember⟩))
 
-/-- Eliminate the private controller binding validator into the exact Program operation, Activity
-record, and child wait that bind one chosen pending parallel task. -/
+/-- Eliminate the private controller binding validator into one pending parallel task and the exact
+Program operation, Activity record, and child wait that bind it. -/
 theorem parallelMultiInstanceProgramBindingsValid_controller_witness
     (program : Program) (state : RuntimeState)
-    (controller : ParallelMultiInstanceController) (taskId : UserTaskInstanceId)
+    (controller : ParallelMultiInstanceController)
     (valid : parallelMultiInstanceProgramBindingsValid program state = true)
-    (controllerMember : controller ∈ state.parallelMultiInstanceControllers)
-    (pendingMember : taskId ∈ pendingParallelTaskIds controller.slots) :
-    ∃ entry arm record wait,
+    (controllerMember : controller ∈ state.parallelMultiInstanceControllers) :
+    ∃ taskId entry arm record wait,
+      taskId ∈ pendingParallelTaskIds controller.slots ∧
       entry ∈ program.operations ∧
       ParallelMultiInstanceArm.ofOperation? entry = some arm ∧
       arm.taskId.value = controller.id.activityElementId.value ∧
@@ -315,6 +315,15 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_witness
                         List.all_eq_true] at bound taskIdentity
                       obtain ⟨⟨⟨⟨⟨ownerScope, runtimeValid⟩, body⟩, waitLength⟩,
                         waitIdsNodup⟩, waitBindings⟩ := bound
+                      have pendingNonempty : ∃ taskId,
+                          taskId ∈ pendingParallelTaskIds controller.slots := by
+                        cases bodyShape : record.body with
+                        | parallelUserTasks first rest =>
+                            simp [activityBodyParallelTasks?, bodyShape] at body
+                            exact ⟨first, by rw [← body]; simp⟩
+                        | userTask task => simp [activityBodyParallelTasks?, bodyShape] at body
+                        | childScope scope => simp [activityBodyParallelTasks?, bodyShape] at body
+                      obtain ⟨taskId, pendingMember⟩ := pendingNonempty
                       simp only [parallelMultiInstanceRuntimeWellFormed, Bool.and_eq_true,
                         decide_eq_true_eq, List.all_eq_true] at runtimeValid
                       have slotIdsNodup :
@@ -342,7 +351,8 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_witness
                       obtain ⟨rawWaitMember, _⟩ := List.mem_filter.mp waitMember
                       obtain ⟨⟨⟨⟨waitOwner, waitTask⟩, _⟩, _⟩, _⟩ :=
                         (waitBindings wait waitMember).1
-                      refine ⟨entry, arm, record, wait, entryMember, projects, taskIdentity,
+                      refine ⟨taskId, entry, arm, record, wait, pendingMember, entryMember, projects,
+                        taskIdentity,
                         ownerScope, recordMember, recordIdentity, body, rawWaitMember, ?_,
                         waitOwner, waitTask⟩
                       simpa only [parallelWaitTaskId] using waitId
