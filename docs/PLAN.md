@@ -48,7 +48,7 @@ After the time-bounded live-demo delivery, the remaining MUE content IDs resume 
 
 Active work ID: `INTERNAL-COMMUTATION`.
 
-Next action: amend the [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md) with the complete final-closure operation-family census, the criterion for enabled sets larger than two, and the representation of genuinely observable internal choice. Keep the implemented two-operation footprint checkpoint unchanged, generate a proposal-review packet from a committed target, and obtain a new cold proposal verdict before broadening production semantics.
+Next action: generate the cold proposal-review packet for the [internal commutation proposal](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) at immutable target `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6`, review the complete operation-family census, arbitrary-batch criterion, region-conflict account, and typed observable-choice input, and obtain a new isolated verdict before broadening production semantics.
 
 Separate open changes outside the active item: Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence.
 

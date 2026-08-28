@@ -244,8 +244,8 @@ Reopen before adding an atom domain or operation family, changing the region-ove
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `f4b09ba48054a2c059f06b92b3b4d2b4675a6117` | `fork-turns-none` | `approve-with-required-edits` | `a34df385863d706f36785282201703604720013f` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The first checkpoint proposal review targeted `95ee893fc7efef561d579c9c2ecd164eccae1187` and closed its required edits at `e65fa4fbd2b4303794398061d94c0602e54a4714`. The context-cold checkpoint reviewer then required one documentation correction separating unsupported, differently sized, or colliding frontiers from unavailable pre-state or intermediate open projection. The same reviewer approved correction target `a34df385863d706f36785282201703604720013f` with no remaining findings. Those immutable results continue to own the implemented Beta checkpoint; the receipt's Proposal row now belongs to the materially amended final-closure account and remains pending until its committed target is recorded and reviewed.
+The first checkpoint proposal review targeted `95ee893fc7efef561d579c9c2ecd164eccae1187` and closed its required edits at `e65fa4fbd2b4303794398061d94c0602e54a4714`. The context-cold checkpoint reviewer then required one documentation correction separating unsupported, differently sized, or colliding frontiers from unavailable pre-state or intermediate open projection. The same reviewer approved correction target `a34df385863d706f36785282201703604720013f` with no remaining findings. Those immutable results continue to own the implemented Beta checkpoint; the receipt's Proposal row now targets the materially amended final-closure account at `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6` and awaits its new cold verdict.
