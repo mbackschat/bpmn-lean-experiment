@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## First green implementation checkpoint
@@ -11,7 +11,7 @@ Committed source target `7e01fb0c` implements the selected pairwise rule in Lean
 
 The Temporal continuation lane now refuses both a duplicated exact task claim and a duplicated exact child-scope claim before a resumed Workflow may select an owner. The corrected Lean checkpoint binds bounded-scope preservation to the successful atomic arming path and exercises the scope collision against a live non-root child. Its conformance module passed under the pinned 3 GiB, one-CPU, no-additional-swap harness at `1,662,532` KiB peak RSS and `7.64` seconds, bound to the exact source bytes at `95b011b1`.
 
-This is a governed checkpoint, not closure. Parallel Multi-Instance entry consumes the new conjunct, while unconditional progress, final, early, and Timer closing preservation remain the next consumer. The stable rule remains owned here until closure review graduates it into the Activity occurrence ownership specification.
+This is an implemented closure target, not yet a graduated contract. Parallel Multi-Instance entry, progress, final, early, and Timer preservation consume the new conjunct without a family-specific premise, while command and continuation admission fail closed on either alias domain. The stable rule remains owned here until independent closure review graduates it into the Activity occurrence ownership specification.
 
 ## Decision question and boundary
 

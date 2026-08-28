@@ -44,6 +44,7 @@ The closure-reviewed [structured Human Work specification](BPM-PLATFORM-STRUCTUR
 - Engine-neutral committed execution with contiguous projection, overlap/gap/rebuild rules, authorized History/Diagram/export, independent operator audit, restart/privacy, and two-width evidence
 - E1-aligned flow-node lifecycle publication, live replay evidence, exact-version transactional occurrence projection, all-or-unavailable frequency and completed-duration aggregation, authorization-first HTTP, and accessible bpmn-js badges plus the same values in a table
 - MUE Preview Alpha exact start-data transport, reserved-start recovery, strict Sequential Multi-Instance progress decoding, browser-session-only Operations samples, and a production-bundle two-branch showcase that displays natural aggregation or Timer interruption from committed public state and replays every actual Workflow Run without exposing host identity
+- strict copied-contract decoding of the additive parallel Multi-Instance progress arm; the Alpha renderer and automated actor narrow explicitly to sequential mode, so engine compatibility broadens without adding a parallel Product 2 journey or mislabeling the existing preview
 
 ## Explicitly absent
 

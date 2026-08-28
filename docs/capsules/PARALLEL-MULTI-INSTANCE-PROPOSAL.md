@@ -2,10 +2,12 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Question and bounded outcome
+
+The exact bounded standards-only profile is implemented across source admission and lowering, Lean, the independently written TypeScript semantic core, canonical progress, E1/E2 publication, the differential pipeline, the production Temporal Workflow chain, the retained whole-model corpus, and Product 2's tolerant copied-contract boundary. Three registered schedules cover all-complete aggregation, first-complete sibling termination, and outer-Timer interruption. The real-service refinement witness additionally covers zero and one-item cases, pre-arming Continue-As-New, Worker replacement, accepted-result recovery, both task/Timer orders, exact terminal receipts, paired publication traversal, and replay of every Run. The closure cost, clean immutable closure gate, independent closure reviews, and proposal graduation remain open.
 
 The owner approval recorded at `095ee3f7` was first reopened on 2026-08-26 before implementation because the first Lean lane found closed-sum production consumers omitted from the reviewed owner inventory. Review target `dc21b7ce67fbaaef80a1682a15f05ce4d673a32f` returned `approve-with-required-edits`, correction audit `175cb04a3f002c71d0241fd66de07adaf7cab078` closed all findings, and implementation began under the corrected selection.
 
@@ -17,7 +19,7 @@ This proposal selects one standards-only profile. One private executable Process
 
 The same profile admits `completionPolicy="all"` and `completionPolicy="first"` as exact Process-start string bindings. Its BPMN `completionCondition` is Simple Boolean v1 `stringEquals(completionPolicy,"first")`. The `all` schedule completes every inner task and publishes the complete output collection. The `first` schedule closes after the first accepted completion and terminates any remaining inner instances. It publishes no Process output collection while any result slot is incomplete; the one-item case publishes its complete one-item output because no slot remains incomplete.
 
-The reviewed requirement ID is `BPMN-PARALLEL-MULTI-INSTANCE-01`. It remains `unsupported` while this proposal is unimplemented. The broad `BPMN-MECH-LOOP-01` family remains `unsupported` after this bounded slice closes.
+The reviewed requirement ID is `BPMN-PARALLEL-MULTI-INSTANCE-01`. Its requirement-ledger disposition is `supported` only for this exact bounded slice; the broad `BPMN-MECH-LOOP-01` family remains `unsupported`.
 
 ## Normative account and selected resolutions
 
@@ -114,7 +116,7 @@ The Lean lane is **proved** for the bounded transition family. It defines the pa
 
 Required theorems cover entry well-formedness; task-identity freshness and pairwise uniqueness; progress accounting; exact-slot preservation; all-complete commutation for two distinct pending tasks; index-ordered final aggregation; early-completion sibling withdrawal and output absence; Timer regional withdrawal and output absence; stale/duplicate refusal; evaluator soundness for every new relation arm; and preservation of the applicable runtime-state invariant.
 
-The entry-preservation half is implemented. The closing-preservation half exposed a pre-existing cross-family gap rather than a family-local proof obligation: production well-formedness admitted a distinct unrelated Activity record whose singular body claimed one live parallel child. Progress removed that child and rewrote only the selected parallel record; final, early, and Timer closure removed the selected record and its regional children. Every route could therefore strand the unrelated record with a missing body. The same mechanism existed for two records claiming one child scope, and Activity body turnover carried it as an explicit `soleBody` premise. The approved [Activity body-claim uniqueness checkpoint](../ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md#first-green-implementation-checkpoint) rejects both aliases, derives lookup and turnover consequences, and preserves the rule across the current guarded writer set. This capsule does not narrow its relation with a Parallel-specific premise and now resumes unconditional closing preservation.
+Entry, progress, final, early, and Timer routes now preserve the complete production runtime-state invariant through their declarative shared steps and executable evaluators. The closing proof exposed a pre-existing cross-family gap: production well-formedness admitted a distinct unrelated Activity record whose body claimed one live child removed by the selected route. The implemented [Activity body-claim uniqueness checkpoint](../ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md#first-green-implementation-checkpoint) rejects both User Task and child-scope aliases, derives lookup and turnover consequences, and preserves the rule across the guarded writer set. The Parallel proofs consume that general rule without adding a family-specific premise.
 
 The bounded runtime-state successors for `completionPolicy="first"` may be equal after atomic controller removal, so no state-inequality theorem is claimed. The checked non-law is over the exact committed command and E1/E2 publication trace: completing A before B records A completed and B terminated, while completing B before A records B completed and A terminated. No proof may promote host scheduling to a priority rule.
 
@@ -138,7 +140,7 @@ The host readiness descriptor joins one outer Activity, one controller, every pe
 
 The complete controller, snapshot, slots, counters, task identities, Timer identity, deadline, Process bindings, profile, and program identity are committed semantic state. A continuation that drops, duplicates, reorders, or substitutes any fact is invalid before Workflow evaluation.
 
-The existing sixteen-item, 512-byte item, and 8,192-byte canonical collection limits are candidate admission limits, not a capacity conclusion. Before profile registration, a private Temporal testkit probe must run the real production serializers and maximal parallel activation topology. Its independently measured Event, history-envelope, and activation-payload bounds must fit the project limits with the existing reserves. The selected limit `N` is the largest independently measured safe count at most sixteen. Exact `N` fit and `N + 1` refusal must be proved without state mutation on refusal; exact sixteen fit and seventeen refusal are the special case where `N = 16`.
+The registered limits are sixteen items, 512 UTF-8 bytes per item, and 8,192 canonical collection bytes. The retained production-serializer measure covers natural, Timer-interrupted, and one-transition early-completion topologies at sixteen, with deterministic maxima of 11 activation Events and 128,654 conservative History-envelope bytes. The pinned real service records maxima of 89 Run Events, 384,535 conservative History-envelope bytes, seven activation Events, and 19,991 canonical activation-payload bytes. Exact sixteen fits every selected reserve and seventeen is refused without state mutation.
 
 The executable refinement witnesses cover zero items; one item under `first`; three items completed out of index order under `all`; first completion under `first`; Timer interruption with multiple active children; task-first and Timer-first schedules; coalesced readiness with the selected typed failure and durable Update resolution; Worker replacement; accepted-result recovery; any permitted pre-arming Continue-As-New; terminal receipt equality; complete E1/E2 publication; and replay of every Run.
 
@@ -150,7 +152,18 @@ Temporal Event History, Workflow ID, Run ID, Update protocol details, and Contin
 
 The first Red is an exact parallel source rejected by current admission. Removing only the Multi-Instance characteristics yields an ordinary single User Task and cannot produce the required simultaneous task set. Further Reds distinguish all-complete order, first-complete cancellation, Timer-wide cancellation, empty input, batch identity freshness, stale identity refusal, and no partial output.
 
-Independent evidence includes normative and machine-readable source derivation; separately authored checked-graph expectations; Lean relations, laws, non-law, and evaluator soundness; an independently written TypeScript reducer; answer-free differential scenarios; E1/E2 occurrence publication; Temporal component, live-service, capacity, mutation, recovery, and replay evidence; and one credible project-owned whole model registered atomically with the supported profile.
+The closed evidence set keeps the following lanes distinct:
+
+| Claim | Independent evidence |
+|---|---|
+| Exact source and profile admission | Source compiler fixtures, separately authored checked-graph expectations, profile/schema gates, malformed-role and wrong-expression mutations, and old-profile refusal |
+| Normative parallel lifecycle and data mediation | BPMN clauses and machine-readable artifacts plus the stable rules above; no CIB semantic oracle or majority vote |
+| Declarative meaning and laws | Lean relations, evaluator soundness, complete runtime-state preservation for every route, all-policy commutation, first-policy trace non-law, and exact refusal facts |
+| TypeScript realization | Independently written semantic-core transitions, complete permutation and preservation matrices, and exact differential trace comparison with Lean |
+| Occurrence and publication accounting | E1/E2 lifecycle batches, public progress, paired publication validation, and mutations for completion-order aggregation, sibling retention, identity reuse, or incomplete output |
+| Durable refinement | Production Workflow-chain execution, pre-arming rollover, FIFO accepted Updates, Worker replacement, result recovery, both task/Timer schedules, typed coalesced refusal, exact receipts, capacity bounds, and replay of every Run |
+| Whole-model reach | One exact project-owned parallel-risk-review BPMN model under one digest, three retained schedules and corpus rows, one capability row, and generated corpus mapping |
+| Product 2 compatibility | Strict decoding of the additive parallel progress arm while the Alpha consumer explicitly remains sequential-only |
 
 Required mutations use schema-invalid lowercase `behavior="all"`, reverse completion order, aggregate by completion order, suppress the complete one-item `first` output, expose a partial output, change existing sequential observation bytes, drop an active iteration's task input or completion binding, retain a sibling after early completion, retain a sibling after Timer firing, reuse one child identity, mint a duplicate batch identity, advance the counter by only one, substitute the outer activation, reset the lifetime deadline, arm one Timer per child, drop a controller at continuation, accept a completed slot twice, advance either arm during coalesced readiness, reuse another scheduler-failure identity, strand the accepted coalesced Update, or let host iteration order choose a semantic winner.
 
@@ -286,7 +299,7 @@ Material existing oracles that grow or receive parallel-specific siblings are [s
 
 ## Epistemic closure and reopen conditions
 
-Established by proposal are the applicable normative clauses and artifacts, the exact source and profile boundary, direct-index aggregation, no-partial-output choice, explicit external ordering account, runtime ownership design, proved-lane obligation, CIB non-selection, and Temporal preflight. No implementation or support claim follows until the evidence matrix and governed reviews close.
+Established by implementation are the applicable normative clauses and artifacts, exact source and profile boundary, direct-index aggregation, no-partial-output choice, explicit accepted-stimulus ordering, runtime ownership, proved Lean transition and preservation account, independent TypeScript realization, E1/E2 publication, bounded durable refinement, retained corpus reach, and CIB non-selection. Governed closure review and graduation remain open.
 
 The nearest unsupported claim is parallel Multi-Instance for another Activity, another data shape, a different completion condition, partial output, Complex behavior, nesting, or CIB compatibility. The principal common-mode risk is that source, Lean, TypeScript, and Temporal share a mistaken indexed-controller account. Normative derivation, separately authored graph expectations, permutation and cancellation mutations, and host-capacity measurement constrain but do not eliminate it.
 
