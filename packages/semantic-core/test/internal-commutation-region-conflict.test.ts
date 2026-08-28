@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { ActivityBodyKind } from "@bpmn-lean/semantic-core";
+import type { ActivityOccurrence } from "../src/activity-occurrence.ts";
 import type {
   InternalTransitionFootprint,
   InternalTransitionStateAtom,
@@ -45,6 +47,10 @@ const calledRegion: InternalOccurrenceRegion = {
   root: calledRoot,
   members: [calledRoot],
 };
+const leftChildRegion: InternalOccurrenceRegion = {
+  root: leftChild,
+  members: [leftChild],
+};
 
 const callRecord: CalledProcessOccurrence = {
   id: {
@@ -56,6 +62,17 @@ const callRecord: CalledProcessOccurrence = {
   calledProcessId: calledRoot.definitionScopeId,
   calledRoot,
   returnOperationId: "operation:Return_Left",
+};
+const activityRecord: ActivityOccurrence = {
+  id: {
+    processInstanceId: left.processInstanceId,
+    activityElementId: "SubProcess_Left",
+    activation: 1,
+  },
+  owner: left,
+  operationId: "operation:Enter_LeftChild",
+  body: { kind: ActivityBodyKind.ChildScope, scope: leftChild },
+  attachedTimers: [],
 };
 
 test("overlapping occurrence regions conflict while disjoint siblings compose", () => {
@@ -157,6 +174,16 @@ test("a Call association is jointly owned by its caller and called root", () => 
   });
   assert.equal(independent(regionWrite(leftRegion), association), false);
   assert.equal(independent(regionWrite(calledRegion), association), false);
+  assert.equal(independent(regionWrite(rightRegion), association), true);
+});
+
+test("a child-scope Activity association is jointly owned by its container and body", () => {
+  const association = atomWrite({
+    kind: InternalTransitionStateAtomKind.ActivityAssociation,
+    record: activityRecord,
+  });
+  assert.equal(independent(regionWrite(leftRegion), association), false);
+  assert.equal(independent(regionWrite(leftChildRegion), association), false);
   assert.equal(independent(regionWrite(rightRegion), association), true);
 });
 

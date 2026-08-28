@@ -1,4 +1,6 @@
 import type { OccurrenceId } from "./contract.js";
+import { ActivityBodyKind } from "./activity-occurrence.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import type { PublicControlPositionDelta } from "./control-position-projection.js";
 import type {
   InternalOccurrence,
@@ -12,6 +14,7 @@ import {
 } from "./internal-transition-footprint-vocabulary.js";
 import {
   internalOccurrenceRegionContains,
+  internalOccurrenceRegionOwnsActivity,
   internalOccurrenceRegionOwnsCall,
   internalOccurrenceRegionsOverlap,
 } from "./internal-transition-region.js";
@@ -96,6 +99,8 @@ function stateAtomParts(
   switch (atom.kind) {
     case InternalTransitionStateAtomKind.Activation:
       return [atom.kind, atom.occurrenceKind, atom.elementId];
+    case InternalTransitionStateAtomKind.ActivityAssociation:
+      return [atom.kind, ...activityAssociationParts(atom.record)];
     case InternalTransitionStateAtomKind.ActivityVariable:
       return [atom.kind, ...internalOccurrenceParts(atom.occurrence), atom.name];
     case InternalTransitionStateAtomKind.ActivityVariableScope:
@@ -114,6 +119,7 @@ function stateAtomParts(
       return [atom.kind, ...occurrenceParts(atom.occurrence)];
     case InternalTransitionStateAtomKind.ControlToken:
       return [atom.kind, ...scopeParts(atom.owner), atom.placeId];
+    case InternalTransitionStateAtomKind.InitiationPending:
     case InternalTransitionStateAtomKind.LogicalTime:
       return [atom.kind];
     case InternalTransitionStateAtomKind.RuntimeControl:
@@ -152,6 +158,8 @@ function occurrenceRegionConflictsWithAtom(
   switch (atom.kind) {
     case InternalTransitionStateAtomKind.OccurrenceRegion:
       return internalOccurrenceRegionsOverlap(region, atom.region);
+    case InternalTransitionStateAtomKind.ActivityAssociation:
+      return internalOccurrenceRegionOwnsActivity(region, atom.record);
     case InternalTransitionStateAtomKind.CallAssociation:
       return internalOccurrenceRegionOwnsCall(region, atom.record);
     case InternalTransitionStateAtomKind.ScopeParent:
@@ -166,11 +174,44 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.Wait:
       return internalOccurrenceRegionContains(region, atom.owner);
     case InternalTransitionStateAtomKind.Activation:
+    case InternalTransitionStateAtomKind.InitiationPending:
     case InternalTransitionStateAtomKind.LogicalTime:
     case InternalTransitionStateAtomKind.RuntimeControl:
       return false;
     default:
       return assertNever(atom);
+  }
+}
+
+function activityAssociationParts(
+  record: ActivityOccurrence,
+): ReadonlyArray<string | number> {
+  return [
+    record.id.processInstanceId,
+    record.id.activityElementId,
+    record.id.activation,
+    ...scopeParts(record.owner),
+    record.operationId,
+    ...activityBodyParts(record),
+    record.attachedTimers.length,
+    ...record.attachedTimers.flatMap(occurrenceParts),
+  ];
+}
+
+function activityBodyParts(
+  record: ActivityOccurrence,
+): ReadonlyArray<string | number> {
+  switch (record.body.kind) {
+    case ActivityBodyKind.UserTask:
+      return [record.body.kind, ...occurrenceParts(record.body.task)];
+    case ActivityBodyKind.ParallelUserTasks:
+      return [
+        record.body.kind,
+        record.body.tasks.length,
+        ...record.body.tasks.flatMap(occurrenceParts),
+      ];
+    case ActivityBodyKind.ChildScope:
+      return [record.body.kind, ...scopeParts(record.body.scope)];
   }
 }
 

@@ -1,9 +1,11 @@
 export enum InternalTransitionStateAtomKind {
   Activation = "activation",
+  ActivityAssociation = "activityAssociation",
   ActivityVariable = "activityVariable",
   ActivityVariableScope = "activityVariableScope",
   CallAssociation = "callAssociation",
   ControlToken = "controlToken",
+  InitiationPending = "initiationPending",
   LogicalTime = "logicalTime",
   OccurrenceRegion = "occurrenceRegion",
   OpenWaitAnchor = "openWaitAnchor",

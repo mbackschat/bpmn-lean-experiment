@@ -21,6 +21,7 @@ import type {
 } from "./semantic-process-contract.js";
 import {
   ActivityBodyKind,
+  type ActivityOccurrence,
   activityOccurrenceForAttachedTimer,
   activityOccurrenceForScopeBody,
   compareActivityOccurrences,
@@ -155,39 +156,92 @@ export function completeScopeWithdrawingDeadline(
     : withdrawBoundedScopeDeadline(program, operation.scopeId, state, completed);
 }
 
+export enum ScopeCompletionWithdrawalKind {
+  Unbounded = "unbounded",
+  Bounded = "bounded",
+}
+
+export type ScopeCompletionWithdrawal = Readonly<
+  | { kind: ScopeCompletionWithdrawalKind.Unbounded }
+  | {
+      kind: ScopeCompletionWithdrawalKind.Bounded;
+      record: ActivityOccurrence;
+      timerWaits: ReadonlyArray<SemanticTimerWait>;
+    }
+>;
+
+/** Selects every exact bounded resource withdrawn by scope completion from the pre-state. */
+export function selectScopeCompletionWithdrawal(
+  program: SemanticProcessProgram,
+  completedScopeId: string,
+  state: RuntimeState,
+): ScopeCompletionWithdrawal | null {
+  const definitions = boundedScopeOperations(program).filter(
+    (operation) => operation.childScopeId === completedScopeId,
+  );
+  if (definitions.length === 0) {
+    return { kind: ScopeCompletionWithdrawalKind.Unbounded };
+  }
+  const definition = definitions.length === 1 ? definitions[0] : undefined;
+  const children = state.scopeOccurrences.filter(
+    ({ id }) => id.definitionScopeId === completedScopeId,
+  );
+  const child = children.length === 1 ? children[0] : undefined;
+  const record = child === undefined
+    ? undefined
+    : activityOccurrenceForScopeBody(state.activityOccurrences, child.id);
+  if (
+    definition === undefined ||
+    child === undefined ||
+    child.parent === null ||
+    record === undefined ||
+    record.operationId !== definition.id ||
+    !sameScopeOccurrence(record.owner, child.parent) ||
+    record.attachedTimers.length !== 1 ||
+    record.attachedTimers[0]?.elementId !== definition.boundaryTimer.elementId
+  ) {
+    return null;
+  }
+  const timerWaits = record.attachedTimers.flatMap((attached) => {
+    const matches = state.timerWaits.filter(({ id }) => sameOccurrence(id, attached));
+    const wait = matches.length === 1 ? matches[0] : undefined;
+    return wait !== undefined && sameScopeOccurrence(wait.owner, record.owner)
+      ? [wait]
+      : [];
+  });
+  return timerWaits.length === record.attachedTimers.length
+    ? { kind: ScopeCompletionWithdrawalKind.Bounded, record, timerWaits }
+    : null;
+}
+
 function withdrawBoundedScopeDeadline(
   program: SemanticProcessProgram,
   completedScopeId: string,
   before: RuntimeState,
   after: RuntimeState,
 ): RuntimeState | null {
-  const definition = boundedScopeOperations(program).find(
-    (operation) => operation.childScopeId === completedScopeId,
+  const selected = selectScopeCompletionWithdrawal(
+    program,
+    completedScopeId,
+    before,
   );
-  if (definition === undefined) {
-    return after;
-  }
-  // Read from the record rather than matching the Timer element under the parent scope. The previous
-  // form compared no activation at all, so it took whichever deadline of that element the collection
-  // held first; under any repetition that is the wrong one.
-  const child = before.scopeOccurrences.find(
-    ({ id }) => id.definitionScopeId === completedScopeId,
-  );
-  const record = child === undefined
-    ? undefined
-    : activityOccurrenceForScopeBody(before.activityOccurrences, child.id);
-  if (record === undefined) {
+  if (selected === null) {
     return null;
   }
-  return {
-    ...after,
-    timerWaits: after.timerWaits.filter(({ id }) =>
-      !record.attachedTimers.some((attached) => sameOccurrence(attached, id))
-    ),
-    activityOccurrences: after.activityOccurrences.filter(
-      (candidate) => !sameActivityOccurrence(candidate.id, record.id),
-    ),
-  };
+  switch (selected.kind) {
+    case ScopeCompletionWithdrawalKind.Unbounded:
+      return after;
+    case ScopeCompletionWithdrawalKind.Bounded:
+      return {
+        ...after,
+        timerWaits: after.timerWaits.filter(({ id }) =>
+          !selected.record.attachedTimers.some((attached) => sameOccurrence(attached, id))
+        ),
+        activityOccurrences: after.activityOccurrences.filter(
+          (candidate) => !sameActivityOccurrence(candidate.id, selected.record.id),
+        ),
+      };
+  }
 }
 
 /**

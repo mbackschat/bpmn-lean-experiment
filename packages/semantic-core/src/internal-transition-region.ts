@@ -2,6 +2,8 @@ import {
   compareScopeOccurrenceIds,
   sameScopeOccurrence,
 } from "./semantic-process-state.js";
+import { ActivityBodyKind } from "./activity-occurrence.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import type {
   CalledProcessOccurrence,
   RuntimeState,
@@ -84,6 +86,23 @@ export function internalOccurrenceRegionOwnsCall(
 ): boolean {
   return internalOccurrenceRegionContains(region, record.caller) ||
     internalOccurrenceRegionContains(region, record.calledRoot);
+}
+
+/** An Activity association is owned by its containing scope and any child-scope body it contains. */
+export function internalOccurrenceRegionOwnsActivity(
+  region: InternalOccurrenceRegion,
+  record: ActivityOccurrence,
+): boolean {
+  if (internalOccurrenceRegionContains(region, record.owner)) {
+    return true;
+  }
+  switch (record.body.kind) {
+    case ActivityBodyKind.UserTask:
+    case ActivityBodyKind.ParallelUserTasks:
+      return false;
+    case ActivityBodyKind.ChildScope:
+      return internalOccurrenceRegionContains(region, record.body.scope);
+  }
 }
 
 /** Creating a child depends on its live parent and conflicts with removing that parent's region. */

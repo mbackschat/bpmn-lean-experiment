@@ -113,6 +113,64 @@ export function completeScope(
   >,
   state: RuntimeState,
 ): RuntimeState | null {
+  const selected = selectScopeCompletion(operation, state);
+  if (selected === null) {
+    return null;
+  }
+  switch (selected.kind) {
+    case ScopeCompletionSelectionKind.Root:
+      return {
+        ...state,
+        control: {
+          kind: ControlStateKind.Completed,
+          instanceId: selected.instanceId,
+        },
+        scopeOccurrences: [],
+      };
+    case ScopeCompletionSelectionKind.Child:
+      return {
+        ...state,
+        controlTokens: addToken(
+          state.controlTokens,
+          selected.parentOutput,
+          selected.parent,
+        ),
+        scopeOccurrences: state.scopeOccurrences.filter(
+          (candidate) => candidate !== selected.occurrence,
+        ),
+      };
+  }
+}
+
+export enum ScopeCompletionSelectionKind {
+  Root = "root",
+  Child = "child",
+}
+
+export type SelectedScopeCompletion = Readonly<
+  | {
+      kind: ScopeCompletionSelectionKind.Root;
+      instanceId: string;
+      occurrence: RuntimeScopeOccurrence;
+      parent: null;
+    }
+  | {
+      kind: ScopeCompletionSelectionKind.Child;
+      instanceId: string;
+      occurrence: RuntimeScopeOccurrence;
+      parent: ScopeOccurrenceId;
+      parentOutput: string;
+    }
+>;
+
+/** Selects the exact quiescent occurrence and continuation facts without applying completion. */
+export function selectScopeCompletion(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.CompleteScope }
+  >,
+  state: RuntimeState,
+): SelectedScopeCompletion | null {
   if (state.control.kind !== ControlStateKind.Running) {
     return null;
   }
@@ -130,12 +188,10 @@ export function completeScope(
   if (occurrence.parent === null) {
     return operation.parentOutput === null && !state.initiationPending
       ? {
-          ...state,
-          control: {
-            kind: ControlStateKind.Completed,
-            instanceId: state.control.instanceId,
-          },
-          scopeOccurrences: [],
+          kind: ScopeCompletionSelectionKind.Root,
+          instanceId: state.control.instanceId,
+          occurrence,
+          parent: null,
         }
       : null;
   }
@@ -143,15 +199,11 @@ export function completeScope(
   return operation.parentOutput !== null &&
       state.scopeOccurrences.some(({ id }) => sameScopeOccurrence(id, parent))
     ? {
-        ...state,
-        controlTokens: addToken(
-          state.controlTokens,
-          operation.parentOutput,
-          parent,
-        ),
-        scopeOccurrences: state.scopeOccurrences.filter(
-          (candidate) => candidate !== occurrence,
-        ),
+        kind: ScopeCompletionSelectionKind.Child,
+        instanceId: state.control.instanceId,
+        occurrence,
+        parent,
+        parentOutput: operation.parentOutput,
       }
     : null;
 }

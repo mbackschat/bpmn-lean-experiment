@@ -1,4 +1,5 @@
 import type { OccurrenceId } from "./contract.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import type { PublicControlPositionDelta } from "./control-position-projection.js";
 import { candidateProcessId, operationIsSelectedFromProgram } from "./flow-node-occurrence-candidates.js";
 import {
@@ -51,6 +52,10 @@ export type InternalTransitionStateAtom = Readonly<
       elementId: string;
     }
   | {
+      kind: InternalTransitionStateAtomKind.ActivityAssociation;
+      record: ActivityOccurrence;
+    }
+  | {
       kind: InternalTransitionStateAtomKind.ActivityVariable;
       occurrence: InternalOccurrence;
       owner: ScopeOccurrenceId;
@@ -70,6 +75,7 @@ export type InternalTransitionStateAtom = Readonly<
       owner: ScopeOccurrenceId;
       placeId: string;
     }
+  | { kind: InternalTransitionStateAtomKind.InitiationPending }
   | { kind: InternalTransitionStateAtomKind.LogicalTime }
   | {
       kind: InternalTransitionStateAtomKind.OccurrenceRegion;
