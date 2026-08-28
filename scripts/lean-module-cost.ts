@@ -202,9 +202,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.ProcessStartDataConformance", peakResidentKib: 892876, elapsedSeconds: 4.1 },
     {
       module: "BpmnSemantics.ParallelMultiInstanceConformance",
-      peakResidentKib: 899088,
-      elapsedSeconds: 2.54,
-      measuredAtCommit: "0ec80b41",
+      peakResidentKib: 1440828,
+      elapsedSeconds: 4.45,
+      measuredAtCommit: "ec63bee3",
     },
     { module: "BpmnSemantics.Experiments.CheckedSourceFrontierConformance", peakResidentKib: 839556, elapsedSeconds: 3.9 },
     { module: "BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance", peakResidentKib: 831764, elapsedSeconds: 3.6 },
