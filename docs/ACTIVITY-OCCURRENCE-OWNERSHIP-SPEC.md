@@ -40,7 +40,7 @@ The single root fix is to record the ownership edge the state is missing, and to
 
 ## Selected account
 
-One runtime record per Activity occurrence that owns something. Its identity is distinct from every existing occurrence identity, its body is a closed two-arm union, and the waits attached to it are listed rather than inferred.
+One runtime record per Activity occurrence that owns something. Its identity is distinct from every existing occurrence identity, its body is a closed three-arm union, and the waits attached to it are listed rather than inferred.
 
 ```ts
 /** One activation of one admitted BPMN Activity. */
@@ -52,11 +52,16 @@ export type ActivityOccurrenceId = DeepReadonly<{
 
 export enum ActivityBodyKind {
   UserTask = "userTask",
+  ParallelUserTasks = "parallelUserTasks",
   ChildScope = "childScope",
 }
 
 export type ActivityBody =
   | DeepReadonly<{ kind: ActivityBodyKind.UserTask; task: UserTaskInstanceId }>
+  | DeepReadonly<{
+      kind: ActivityBodyKind.ParallelUserTasks;
+      tasks: [UserTaskInstanceId, ...UserTaskInstanceId[]];
+    }>
   | DeepReadonly<{ kind: ActivityBodyKind.ChildScope; scope: ScopeOccurrenceId }>;
 
 export type ActivityOccurrence = DeepReadonly<{
@@ -80,7 +85,7 @@ Four properties of that shape are load-bearing.
 
 **The body is a union, not a flag.** Interrupting and non-interrupting remain distinct operation kinds, and a body change is a new arm rather than a new boolean. Nothing in the record says whether a handler interrupts; that is an immutable program fact on the operation and stays there.
 
-**The existence condition is a property of the program, not of the state.** A record exists for exactly those Activity occurrences whose Activity carries a wait-producing attached handler in the admitted program, which under the registered profiles is exactly the three boundary-Timer families. Stating it over the state would be self-contradictory: `spawnFromMonitoredUserTask` withdraws the Timer and preserves its host, so a monitored record legitimately owns no attached wait while its body is still live, and a state-level condition would require the record to vanish exactly when it is still needed to identify the host. See [the first decision](#decisions-taken) for the alternative of recording every Activity occurrence and why it is rejected.
+**The existence condition is a property of the program, not of the state.** A record exists for exactly those Activity occurrences whose Activity carries a wait-producing attached handler in the admitted program: the three original boundary-Timer families and the registered sequential and parallel Multi-Instance User Tasks. Stating it over the state would be self-contradictory: `spawnFromMonitoredUserTask` withdraws the Timer and preserves its host, so a monitored record legitimately owns no attached wait while its body is still live, and a state-level condition would require the record to vanish exactly when it is still needed to identify the host. See [the first decision](#decisions-taken) for the alternative of recording every Activity occurrence and why it is rejected.
 
 ### What this account deliberately does not add
 
@@ -93,7 +98,7 @@ There is therefore no effect body arm in this slice. An effect arm would be unre
 Required:
 
 - one distinct Activity occurrence identity, its counter family, and its canonical collection order;
-- the closed two-arm body union and the listed attached-Timer collection;
+- the closed three-arm body union and the listed attached-Timer collection;
 - new well-formedness conjuncts for identity uniqueness, body liveness, attached-wait reachability, and owner agreement;
 - `activityOccurrences` added to the `RSI-ORDER-01` canonical-order conjunct, which its add sites satisfy because every insertion is canonical, and to `RSI-LIFE-01`'s explicit collection enumeration in `notStartedStateEmpty`, so a `notStarted` state holding a record is refused. Terminal emptiness needs no second enumeration and must not be given one: `RSI-LIFE-02` is `scopeOccurrences.isEmpty && tokens.isEmpty` with no collection list, so a terminal state holding a record is already refused derivatively, by the `RSI-TERM-01` path the invariant specification records, since `AOO-OWN-01` requires each record to name a live scope occurrence and `RSI-LIFE-02` leaves none;
 - `activityActivations` added to the `RSI-MONO-01` counter families in both the Lean relation and its executable core counterpart, which today enumerate exactly seven families plus `endOccurrences`;
@@ -114,7 +119,7 @@ Excluded:
 
 - any BPMN capability, operation kind, checked-source shape, profile, scenario, public observation field, or requirement-ledger disposition;
 - an effect body arm, a non-Timer attached handler, and a record for an Activity that owns nothing;
-- loop-controller payload: snapshots, counters, output slots, and progress projection stay in [the sequential Multi-Instance capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md), which references this identity rather than duplicating it;
+- loop-controller payload: snapshots, counters, output slots, and progress projection stay in the [sequential](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) and [parallel](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) Multi-Instance owners, which reference this identity rather than duplicating it;
 - repeated boundary firing, repeated outer activation, and concurrent occurrences of one Activity element, all of which this record makes expressible but none of which this slice admits;
 - **Superseded:** body replacement and any law about it, because no registered family replaced a body when this slice closed; it was the motivation for the record's shape rather than a proposition this slice could state. **Superseded:** [the amendment](archived/ACTIVITY-BODY-TURNOVER-PROPOSAL.md) states the replacement operation and two quantified laws over it; The amendment that reached it is folded into this document, so replacement and its two laws are Required above and `AOO-TURNOVER-02` through `AOO-TURNOVER-04` state them; the reasoning is kept because it records why the record's shape came before the transition.
 - preservation of the new conjuncts across the registered transition arms, which belongs to [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) and is reduced but not discharged here;
@@ -127,7 +132,7 @@ Excluded:
 |---|---|---|---|
 | Activity occurrence record | Created atomically with its body from the committed operation and the next Activity-element activation | Never; no field, no projection, no publication. It replaces a derivation inside the publication path without becoming publishable itself | Exists exactly while its body is live, for exactly those Activities the program gives a wait-producing attached handler; removed atomically with its body |
 | Activity occurrence identity | Process instance, Activity element, and the new per-element counter | Not in this slice. The first projection is the sequential Multi-Instance controller's `id`, whose approved public contract reuses this identity, and that is this capsule's own named reopen trigger reached by an amendment rather than by an admitted state | Strictly increasing at each current issuer and never reissued after removal under the implemented `RSI-BOUND-01`, `RSI-MONO-01`, and `RSI-ISSUE-01` combination, conditional on the guarded production-writer census remaining complete |
-| Body association | The task occurrence or child scope occurrence the arming transition created | The existing `openUserTasks` entry only | Exactly one live body per record; a record with none or two is invalid before evaluation |
+| Body association | The singular task occurrence, nonempty parallel task collection, or child scope occurrence the arming transition created | The existing `openUserTasks` entries only | Exactly one body arm per record; its singular task, every parallel task member, or its child scope is live, and an empty parallel collection is invalid before evaluation |
 | Attached-Timer list | The Timer occurrences armed with the Activity | The existing `openTimers` entries only | Every listed Timer is live and shares the record's owner. Empty is legal, and is the ordinary state after a non-interrupting firing, which is why record existence is a program-level condition rather than a state-level one |
 | `activityActivations` counter | Monotonic per Activity element | Never | Never rewound by removal or cancellation, like every existing counter family. Its incidental agreement with `taskActivations` and `scopeActivations` is asserted nowhere and read nowhere |
 
@@ -139,7 +144,7 @@ No record is a BPMN FlowNode occurrence. E1/E2 occurrence accounting is unchange
 |---|---|---|
 | `AOO-ID-01` | An Activity occurrence identity is `(processInstanceId, activityElementId, activation)`, minted from its own counter family, and shares neither type nor serialized shape with any task, Message, Timer, effect, race, or call identity. | Project representation |
 | `AOO-OWN-01` | A record names exactly one live scope occurrence, the one owning the Activity node, and every wait the record lists names that same scope occurrence as its owner. | Project ownership |
-| `AOO-BODY-01` | A record has exactly one live body: one live User Task wait or one live child scope occurrence. None and two are both invalid before evaluation. | Project ownership |
+| `AOO-BODY-01` | A record has exactly one body arm: one live User Task wait, one nonempty collection whose every User Task wait is live, or one live child scope occurrence. An absent body, empty parallel collection, or dead body member is invalid before evaluation. | Project ownership |
 | `AOO-ATTACH-01` | Every Timer wait is listed by **at most one** live record, and every listed Timer is live. | Project ownership |
 | `AOO-TURNOVER-02` | Replacing a body is one whole-state transition: the outgoing wait is withdrawn, the incoming wait is armed, the record names the incoming body, and every committed state is well-formed. This is a transition obligation, not a state predicate; no conjunct can express "no intermediate state exists". | Project semantics |
 | `AOO-TURNOVER-03` | Replacement preserves the record's identity, its owner, its operation ID, and its attached-wait list exactly. A handler armed before a replacement is the same handler occurrence after it, with its deadline unchanged. The operation ID is named because the Multi-Instance controller stops restating it and reads it from here; Lean's record omits the field, so the law is stated over the fields each language carries. | Project representation |
