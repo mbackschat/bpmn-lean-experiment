@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
+Lifecycle: archived
 Review: approved
 
 ## First green implementation checkpoint
@@ -11,7 +11,7 @@ Committed source target `7e01fb0c` implements the selected pairwise rule in Lean
 
 The Temporal continuation lane now refuses both a duplicated exact task claim and a duplicated exact child-scope claim before a resumed Workflow may select an owner. The corrected Lean checkpoint binds bounded-scope preservation to the successful atomic arming path and exercises the scope collision against a live non-root child. Its conformance module passed under the pinned 3 GiB, one-CPU, no-additional-swap harness at `1,662,532` KiB peak RSS and `7.64` seconds, bound to the exact source bytes at `95b011b1`.
 
-This is an implemented closure target, not yet a graduated contract. Parallel Multi-Instance entry, progress, final, early, and Timer preservation consume the new conjunct without a family-specific premise, while command and continuation admission fail closed on either alias domain. The stable rule remains owned here until independent closure review graduates it into the Activity occurrence ownership specification.
+This was the implemented closure target. Parallel Multi-Instance entry, progress, final, early, and Timer preservation consume the new conjunct without a family-specific premise, while command and continuation admission fail closed on either alias domain. Governed closure graduated the stable rule into the [Activity occurrence ownership specification](../ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#stable-semantic-rules); this archived proposal retains its rationale and review chronology without owning the current contract.
 
 ## Decision question and boundary
 
@@ -146,15 +146,15 @@ Excluded:
 
 ## Evidence boundary and lifecycle
 
-This proposal changes runtime-state admission and the Lean proof boundary, so it requires an independent cold proposal review before owner approval or implementation. The first green implementation changes a top-level invariant, a gated defect class, and multiple transition-preservation obligations, so it requires the governed semantic-checkpoint review. Closure moves the stable rule into the Activity occurrence ownership specification. Residual rationale and review chronology move to `docs/archived/ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md`, or are deleted when Git retains everything useful, with the documentation registry and every inbound link updated atomically.
+This proposal changed runtime-state admission and the Lean proof boundary, so it required an independent cold proposal review before owner approval or implementation. The first green implementation changed a top-level invariant, a gated defect class, and multiple transition-preservation obligations, so it required the governed semantic-checkpoint review. Closure moved the stable rule into the [Activity occurrence ownership specification](../ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#stable-semantic-rules), while this archived copy retains the residual rationale and review chronology.
 
-Focused proposal verification is the documentation control plane, link and map routing, source hygiene, independent-review policy, and `git diff --check`. Focused implementation verification is the narrow Lean claim owner and affected transition owners, semantic-core well-formedness and Activity-family suites, the guarded Activity writer census, continuation validation, preservation lane, and `git diff --check`. The root runs the complete applicable gate and every path-selected clean-HEAD pre-push entry point at governed targets.
+Focused proposal verification was the documentation control plane, link and map routing, source hygiene, independent-review policy, and `git diff --check`. Focused implementation verification was the narrow Lean claim owner and affected transition owners, semantic-core well-formedness and Activity-family suites, the guarded Activity writer census, continuation validation, preservation lane, and `git diff --check`. The root ran the complete applicable gate and every path-selected clean-HEAD pre-push entry point at governed targets.
 
 ## Same-change owners and reopen conditions
 
-Until closure review, [Activity occurrence ownership](ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md) and [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) record the approved checkpoint without duplicating this proposal's stable rule. The [Parallel Multi-Instance proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) consumes that result in its unconditional closing-preservation theorem. [PLAN.md](PLAN.md) keeps `PARALLEL-MULTI-INSTANCE` as the sole active work ID because the supporting invariant is part of that item rather than a second programme item.
+The [Activity occurrence ownership specification](../ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#stable-semantic-rules) owns the graduated rule, [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) owns exact current status, and the [Parallel Multi-Instance specification](../capsules/PARALLEL-MULTI-INSTANCE-SPEC.md) consumes the result in its unconditional closing-preservation theorem.
 
-Implementation changes the runtime/proof map, semantic-family map, Activity occurrence ownership specification, Parallel Multi-Instance proof account, TypeScript defect inventory, guarded writer census, the stale continuation-decoder comment describing the body union, and PLAN evidence. The stable `AOO-CLAIM-01` rule graduates into the Activity occurrence specification only after closure approval; this proposal does not become a second permanent authority for the same invariant.
+Implementation changed the runtime/proof map, semantic-family map, Activity occurrence ownership specification, Parallel Multi-Instance proof account, TypeScript defect inventory, guarded writer census, the continuation-decoder body-union comment, and PLAN evidence. The stable `AOO-CLAIM-01` rule is owned only by the active specification; this archived proposal is not a second authority.
 
 Reopen before adding another Activity body arm, allowing one body occurrence to have joint semantic owners, making ownership time-sliced rather than state-local, adding a body domain whose identity equality is not exact structural equality, reconstructing Activity bodies from host state, or changing a writer so its body claims cannot be classified by insertion, deletion, body replacement, member removal, claim-projection-preserving record rewrite, or unchanged framing.
 
@@ -164,4 +164,4 @@ Reopen before adding another Activity body arm, allowing one body occurrence to 
 |---|---|---|---|---|
 | Proposal | `9bc675a82a69e30f591c842243ef6648b9fd87d1` | `fork-turns-none` | `approve-with-required-edits` | `2d39af67b280f3af38ff0beb4ecc045df368e2b5` |
 | Semantic checkpoint | `957272ee90f2f843be58dc17c76b0f3a49c33853` | `fork-turns-none` | `approve-with-required-edits` | `95b011b13cdfd29a47bf6c29cf96bebff74ca569` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `a45ee3842c7457980abdbdca078f71249370597d` | `fork-turns-none` | `approve-with-required-edits` | `10a013ab38fbe01962b2fc13eb184b9f03d62f38, 0b060ab8f1d01d5a35f2bc8af569d4d859574adb` |

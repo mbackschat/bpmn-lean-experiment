@@ -52,7 +52,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 - the adapter pairs a boundary deadline through the record instead of whole-state wait cardinality, and the Workflow continuation decoder admits and structurally validates both new fields
 - Lean carries the representation, canonical order, lookups, region partition, and withdrawal-completeness laws
 - the Activity-only issuing discipline classifies every production record writer, proves strict freshness at the two Lean issuer roots, proves exact-identity preservation or subset removal for every other Lean writer, and checks every independent TypeScript issuer through a pair oracle without changing `ActivityOccurrenceId`
-- the first-green body-claim checkpoint rejects two distinct records claiming the same exact User Task or child scope, while preserving a repeated equal task inside one parallel body as one owner. Lean derives deterministic task/scope lookup and turnover preservation consequences; TypeScript reports the separate gated `DuplicateActivityBodyClaim` class
+- the stable `AOO-CLAIM-01` rule rejects two distinct records claiming the same exact User Task or child scope, while preserving a repeated equal task inside one parallel body as one owner. Lean derives deterministic task/scope lookup and turnover preservation consequences; TypeScript reports the separate gated `DuplicateActivityBodyClaim` class
 - the guarded writer census now classifies claim preservation independently of Activity identity issuance and requires explicit evidence for every disjoint insertion, body replacement, parallel-member removal, or claim-projection-preserving rewrite
 - the well-formedness predicate gains body liveness, attached-wait unambiguity, identity uniqueness, owner agreement, canonical order, and lifecycle emptiness in both languages, each with a negative whose siblings are asserted intact
 
@@ -62,7 +62,6 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 - **superseded.** That exemption's reopen trigger fired: under admitted repetition the record and the ordinal reconstruction would legitimately disagree, and the relation would reject a correct publication
 - the effect body arm is unreachable and absent, since no registered family gives an Activity an effect body. Body turnover is no longer withdrawn; its status is the section below
 - preservation of the new conjuncts across the registered transition arms inherits [the deliberately open lane](RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) and is not re-declared
-- the stable `AOO-CLAIM-01` rule has not graduated from its [supporting proposal](ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md), because its Parallel Multi-Instance closing consumer is implemented but both governed closures remain open
 
 **Absent in evidence.**
 
@@ -70,7 +69,7 @@ One runtime record per Activity occurrence that owns runtime state beyond its bo
 - the reachable schedule-level evidence is conservation, byte-identical retained results across the three families' six registered scenarios, which says nothing changed rather than that anything improved
 - positive schedule-level evidence for the join reduced to the enumerated five-producer guard with its one exempt oracle. `AOO-JOIN-03` now enumerates six with none exempt, and the guard's exclusion names one safe operand rather than three identifiers, so restoring the ordinal join in the migrated owner is caught. That narrows the evasion rather than closing it: the safe line is still matched whole, so a real join written beside the safe comparison escapes, which is why the enumeration carries the rule
 - no fixture rewinds `activityActivations`, so the new monotonicity family is asserted only positively by the five-schedule preservation lane. Both languages carry the family in their regression oracle; neither carries a negative that would fail if the family were dropped from it
-- the body-claim checkpoint's negative states are constructed invariant witnesses rather than reachable schedules. Its first public transition consumer now proves every Parallel Multi-Instance closing route preserves the complete invariant; independent governed closure remains required before the rule graduates
+- the stable body-claim rule's negative states are constructed invariant witnesses rather than reachable schedules. Its first public transition consumer proves every Parallel Multi-Instance closing route preserves the complete invariant
 - one defect label carries two rules: an owner disagreement under `AOO-OWN-01` is reported as the body-absence class, because the predicate pushes that label for both body liveness and listed-Timer liveness. The cross-owner test asserts only that the defect list is non-empty, so nothing pins the distinction
 - the two languages' stranding negatives are not negatives of the same state. Lean's is built over the bounded User Task fixture, whose owner and body share a scope, which is the arm where the stranding class cannot arise; the child-scope arm that actually strands a parent-owned deadline is covered only on the TypeScript side
 - the continuation decoder's populated parallel-body branch and duplicate task-claim and child-scope-claim refusal mutations are exercised. General valid recovery and replay remain shared host evidence rather than a second independently authored claim predicate
@@ -94,8 +93,8 @@ One Activity occurrence keeps its identity, owner, operation, and attached handl
 **Absent.**
 
 - the durable retained shape change is unversioned. It is permitted pre-release, but the Temporal preflight must name it before a history baseline is approved
-- the retained-pairing owner's empty result on ambiguous body lookup is now unreachable for a gate-admitted state because the first-green claim conjunct refuses the ambiguity. That consequence remains checkpoint-level until the supporting proposal closes
-- turnover now derives the sole-claimant fact from the first-green body-claim conjunct rather than accepting it independently. General issuing disciplines for User Task, Timer, Message, Effect, Event race, Call, or Scope identities remain absent
+- the retained-pairing owner's empty result on ambiguous body lookup is unreachable for a gate-admitted state because `AOO-CLAIM-01` refuses the ambiguity
+- turnover derives the sole-claimant fact from `AOO-CLAIM-01` rather than accepting it independently. General issuing disciplines for User Task, Timer, Message, Effect, Event race, Call, or Scope identities remain absent
 - the general preservation lane for every other transition family, which stays open
 
 **Absent in evidence.**
@@ -148,7 +147,7 @@ The [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE
 
 ## Parallel Multi-Instance User Task
 
-The [Parallel Multi-Instance proposal](capsules/PARALLEL-MULTI-INSTANCE-PROPOSAL.md) is **implemented awaiting closure review** for one exact collection-driven parallel User Task with direct String mediation, exact all-or-first completion policy, and one interrupting outer-lifetime `PT1S` Timer.
+The [Parallel Multi-Instance specification](capsules/PARALLEL-MULTI-INSTANCE-SPEC.md) is **implemented, independently closure-reviewed, and evidence-closed** for one exact collection-driven parallel User Task with direct String mediation, exact all-or-first completion policy, and one interrupting outer-lifetime `PT1S` Timer.
 
 **Implemented.** Source admission and lowering preserve the complete role graph and exact Simple Boolean completion expression. Lean and the independently written TypeScript core own one indexed controller, atomic bounded child generation, progress, final aggregation, early sibling termination, Timer interruption, exact refusal, and public progress. Lean proves evaluator soundness, complete runtime-state preservation on every route, all-policy commutation for distinct child completions, index-ordered aggregation, and the first-policy trace non-law. Complete permutation and mutation matrices bind the TypeScript realization and three answer-free scenarios agree across Lean, core, E1/E2 publication, and Temporal. The production Workflow chain preserves FIFO accepted stimulus order, handles pre-arming rollover and Worker replacement, recovers results, keeps task-first and Timer-first schedules explicit, fails closed on coalesced readiness, fits all maximal sixteen-item topologies, and replays every Run.
 
