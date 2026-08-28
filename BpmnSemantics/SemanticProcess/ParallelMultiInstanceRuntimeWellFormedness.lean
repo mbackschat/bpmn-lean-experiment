@@ -168,6 +168,107 @@ def parallelMultiInstanceProgramBindingsValid (program : Program) (state : Runti
                   (fun count controller =>
                     count + (pendingParallelTaskIds controller.slots).length) 0
 
+/-- Construct the complete Program binding for one parallel Multi-Instance controller from its exact
+record, operation, child-wait, Timer-wait, family-state, and Program-wide census facts. -/
+theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
+    (state : RuntimeState) (controller : ParallelMultiInstanceController)
+    (record : ActivityOccurrence) (entry : SemanticOperation) (arm : ParallelMultiInstanceArm)
+    (timer : TimerOccurrenceId) (timerWait : TimerWait) (childWaits : List UserTaskWait)
+    (controllers : state.parallelMultiInstanceControllers = [controller])
+    (controllerRecord : state.activityOccurrences.filter (fun candidate =>
+      parallelControllerNamesIdentity controller candidate.processInstanceId
+        ⟨candidate.activityElementId.value⟩ candidate.activation) = [record])
+    (matchingOperation : program.operations.filter (fun operation =>
+      match ParallelMultiInstanceArm.ofOperation? operation with
+      | some candidate => candidate.taskId.value == controller.id.activityElementId.value
+      | none => false) = [entry])
+    (projects : ParallelMultiInstanceArm.ofOperation? entry = some arm)
+    (ownerScope : operationOwningScope? program entry.id = some record.owner.definitionScopeId)
+    (familyWellFormed : parallelMultiInstanceRuntimeWellFormed arm
+      { processInstanceId := controller.id.processInstanceId
+        controller := some controller
+        liveChildren := pendingParallelTaskIds controller.slots
+        lifetimeTimer := some timer
+        processBindings := state.variables.process.bindings
+        taskActivationHighWater := activationCount state arm.taskId
+        activityActivationHighWater := activityActivationCount state arm.taskId
+        timerActivationHighWater := timerActivationCount state arm.boundaryTimer.elementId } = true)
+    (body : activityBodyParallelTasks? record = some (pendingParallelTaskIds controller.slots))
+    (childWaitsExact : state.waits.filter (fun wait =>
+      (pendingParallelTaskIds controller.slots).contains
+        (⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ : UserTaskInstanceId)) = childWaits)
+    (childWaitLength : childWaits.length = (pendingParallelTaskIds controller.slots).length)
+    (childWaitIdsUnique : (childWaits.map fun wait =>
+      (⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ : UserTaskInstanceId)).Nodup)
+    (childWaitBindings : childWaits.all (fun wait =>
+      wait.owner == record.owner && wait.task.id == arm.taskId &&
+        wait.task.name == arm.taskName && wait.metadata == none &&
+        wait.output == arm.normalOutput) = true)
+    (attachedTimer : record.attachedTimers = [timer])
+    (matchingTimerWait : state.timerWaits.filter (timerIdNamesWait timer) = [timerWait])
+    (timerOwner : timerWait.owner = record.owner)
+    (timerElement : timerWait.elementId = arm.boundaryTimer.elementId)
+    (timerOutput : timerWait.output = arm.boundaryTimer.output)
+    (operationCompleteness : program.operations.all (fun operation =>
+      match ParallelMultiInstanceArm.ofOperation? operation with
+      | none => true
+      | some candidate =>
+          match operationOwningScope? program operation.id with
+          | none => false
+          | some scopeId =>
+              let matchingControllers := state.parallelMultiInstanceControllers.filter fun current =>
+                current.id.activityElementId.value == candidate.taskId.value
+              let matchingRecords := state.activityOccurrences.filter fun candidateRecord =>
+                candidateRecord.activityElementId.value == candidate.taskId.value &&
+                  candidateRecord.owner.definitionScopeId == scopeId &&
+                  (activityBodyParallelTasks? candidateRecord).isSome
+              let matchingWaits := state.waits.filter fun wait =>
+                wait.task.id == candidate.taskId && wait.owner.definitionScopeId == scopeId
+              let matchingTimers := state.timerWaits.filter fun wait =>
+                wait.elementId == candidate.boundaryTimer.elementId &&
+                  wait.owner.definitionScopeId == scopeId
+              matchingControllers.length = matchingRecords.length &&
+                matchingControllers.length = matchingTimers.length &&
+                matchingWaits.length = matchingControllers.foldl
+                  (fun count current =>
+                    count + (pendingParallelTaskIds current.slots).length) 0) = true) :
+    parallelMultiInstanceProgramBindingsValid program state = true := by
+  simp only [parallelMultiInstanceProgramBindingsValid, controllers, Bool.and_eq_true,
+    List.all_eq_true]
+  refine ⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩
+  · intro current member
+    have same : current = controller := by simpa using member
+    subst current
+    have privateWaits : state.waits.filter (fun wait =>
+        (pendingParallelTaskIds controller.slots).contains (parallelWaitTaskId wait)) =
+        childWaits := by
+      simpa only [parallelWaitTaskId] using childWaitsExact
+    have privateWaitIdsUnique : (childWaits.map parallelWaitTaskId).Nodup := by
+      change (childWaits.map fun wait =>
+        (⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ : UserTaskInstanceId)).Nodup
+      exact childWaitIdsUnique
+    have childBindingsProp : ∀ wait ∈ childWaits,
+        (((wait.owner = record.owner ∧ wait.task.id = arm.taskId) ∧
+          wait.task.name = arm.taskName) ∧ wait.metadata = none) ∧
+          wait.output = arm.normalOutput := by
+      intro wait waitMember
+      have binding := List.all_eq_true.mp childWaitBindings wait waitMember
+      simpa only [Bool.and_eq_true, beq_iff_eq] using binding
+    unfold parallelControllerProgramBindingValid parallelRecordForController?
+    rw [controllerRecord, matchingOperation]
+    simp only [projects]
+    rw [ownerScope, attachedTimer, privateWaits]
+    simp [familyWellFormed, body, childWaitLength, privateWaitIdsUnique,
+      matchingTimerWait, timerOwner, timerElement, timerOutput]
+    exact childBindingsProp
+  · intro current member
+    have same : current = controller := by simpa using member
+    subst current
+    simp [sameParallelControllerIdentity]
+  · rfl
+  · rw [controllers] at operationCompleteness
+    exact List.all_eq_true.mp operationCompleteness
+
 /-- Under an exact one-arm program census, absence of that arm's controller excludes every parallel
 controller from a state admitted by the bidirectional program binding. -/
 theorem parallelControllers_absent_of_unique_entry (program : Program)
