@@ -92,9 +92,11 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   // Server-free component contracts run first so a break fails before any Temporal server starts,
   // and each lane globs the convention deciding its membership rather than naming files by hand.
   assert.equal(root["test:temporal:built:components"], "node --test --test-concurrency=4 packages/temporal-adapter/protocol/test/*.test.ts packages/temporal-adapter/workflow/test/*.test.ts packages/temporal-adapter/worker/test/*.test.ts");
-  assert.equal(root["test:temporal:built:concurrent"], "node --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts");
-  assert.equal(root["test:temporal:built:hosted"], "node --test packages/temporal-adapter/testkit/test/*.temporal-test.ts");
-  assert.equal(root["test:temporal:built:hosted-serial"], "node --test --test-concurrency=1 packages/temporal-adapter/testkit/test/*.temporal-serial-test.ts");
+  // Preserve file-level concurrency while excluding the Node 24 parallel-scavenger race exposed by
+  // Temporal's direct Workflow VM contexts during garbage collection.
+  assert.equal(root["test:temporal:built:concurrent"], "node --no-parallel-scavenge --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts");
+  assert.equal(root["test:temporal:built:hosted"], "node --no-parallel-scavenge --test packages/temporal-adapter/testkit/test/*.temporal-test.ts");
+  assert.equal(root["test:temporal:built:hosted-serial"], "node --no-parallel-scavenge --test --test-concurrency=1 packages/temporal-adapter/testkit/test/*.temporal-serial-test.ts");
   for (const lane of ["test:temporal:built:components", "test:temporal:built:concurrent", "test:temporal:built:hosted", "test:temporal:built:hosted-serial"]) {
     assert.doesNotMatch(root[lane] ?? "", /(?:^|\s)(?:pnpm\s+)?(?:run\s+)?build(?::|\s)/u, `${lane} must reuse prepared artifacts`);
   }

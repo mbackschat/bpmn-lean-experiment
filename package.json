@@ -161,9 +161,9 @@
     "test:temporal": "pnpm check:harness-types && pnpm build:temporal-adapter && pnpm test:temporal:built",
     "test:temporal:built": "pnpm test:temporal:built:components && pnpm test:temporal:built:concurrent && pnpm test:temporal:built:hosted && pnpm test:temporal:built:hosted-serial",
     "test:temporal:built:components": "node --test --test-concurrency=4 packages/temporal-adapter/protocol/test/*.test.ts packages/temporal-adapter/workflow/test/*.test.ts packages/temporal-adapter/worker/test/*.test.ts",
-    "test:temporal:built:concurrent": "node --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts",
-    "test:temporal:built:hosted": "node --test packages/temporal-adapter/testkit/test/*.temporal-test.ts",
-    "test:temporal:built:hosted-serial": "node --test --test-concurrency=1 packages/temporal-adapter/testkit/test/*.temporal-serial-test.ts",
+    "test:temporal:built:concurrent": "node --no-parallel-scavenge --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts",
+    "test:temporal:built:hosted": "node --no-parallel-scavenge --test packages/temporal-adapter/testkit/test/*.temporal-test.ts",
+    "test:temporal:built:hosted-serial": "node --no-parallel-scavenge --test --test-concurrency=1 packages/temporal-adapter/testkit/test/*.temporal-serial-test.ts",
     "test:timer-time-skipping": "pnpm build:temporal-adapter && node packages/temporal-adapter/testkit/calibration/timer-time-skipping.ts"
   },
   "devDependencies": {

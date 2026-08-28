@@ -17,6 +17,19 @@ import type {
 
 import { withDeadline } from "./temporal-test-support.ts";
 
+const workflowChainPollDeadlineMs = 20_000;
+const workflowChainPollIntervalMs = 25;
+
+export type WorkflowChainPollScheduler = Readonly<{
+  now: () => number;
+  delay: (durationMs: number) => Promise<void>;
+}>;
+
+const workflowChainPollScheduler: WorkflowChainPollScheduler = {
+  now: () => performance.now(),
+  delay,
+};
+
 export type WorkflowChainRun = Readonly<{
   runId: string;
   startedAt: number;
@@ -44,14 +57,19 @@ export async function waitForWorkflowChainRunCount(
   environment: TestWorkflowEnvironment,
   workflowId: string,
   expected: number,
+  scheduler: WorkflowChainPollScheduler = workflowChainPollScheduler,
 ): Promise<void> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    if ((await workflowChainRuns(environment, workflowId)).length === expected) {
-      return;
-    }
-    await delay(25);
+  let latest = 0;
+  const matched = await pollWorkflowChainObservation(async () => {
+    latest = (await workflowChainRuns(environment, workflowId)).length;
+    return latest === expected ? true : undefined;
+  }, scheduler);
+  if (matched === true) {
+    return;
   }
-  throw new Error(`Workflow chain did not reach ${expected} Runs`);
+  throw new Error(
+    `Workflow chain did not reach ${expected} Runs; latest was ${latest}`,
+  );
 }
 
 export async function waitForPublishedWorkflowChainState(
@@ -60,8 +78,9 @@ export async function waitForPublishedWorkflowChainState(
   semanticProcess: SemanticProcessProgram,
   processInstanceId: string,
   predicate: (state: StateObservation) => boolean,
+  scheduler: WorkflowChainPollScheduler = workflowChainPollScheduler,
 ): Promise<StateObservation> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  const state = await pollWorkflowChainObservation(async () => {
     let afterRevision = 0;
     for (let pageIndex = 0; pageIndex < 16; pageIndex += 1) {
       const result = await observeTemporalExecutionPublication(
@@ -75,7 +94,7 @@ export async function waitForPublishedWorkflowChainState(
         { afterRevision },
       );
       if (result.kind !== ExecutionPublicationResultKind.Available) {
-        break;
+        return undefined;
       }
       if (result.page.current !== null && predicate(result.page.current.state)) {
         return result.page.current.state;
@@ -85,7 +104,30 @@ export async function waitForPublishedWorkflowChainState(
       }
       afterRevision = result.page.pageThroughRevision;
     }
-    await delay(25);
+    return undefined;
+  }, scheduler);
+  if (state !== undefined) {
+    return state;
   }
   throw new Error("Workflow-chain publication did not reach the expected state");
+}
+
+async function pollWorkflowChainObservation<Result>(
+  observe: () => Promise<Result | undefined>,
+  scheduler: WorkflowChainPollScheduler,
+): Promise<Result | undefined> {
+  const deadlineMs = scheduler.now() + workflowChainPollDeadlineMs;
+  while (scheduler.now() < deadlineMs) {
+    const result = await observe();
+    if (result !== undefined) {
+      return result;
+    }
+    const remainingMs = deadlineMs - scheduler.now();
+    if (remainingMs > 0) {
+      await scheduler.delay(
+        Math.min(workflowChainPollIntervalMs, remainingMs),
+      );
+    }
+  }
+  return undefined;
 }

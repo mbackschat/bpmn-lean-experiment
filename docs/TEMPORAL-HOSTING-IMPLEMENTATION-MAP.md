@@ -99,6 +99,8 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 
 The separate protocol, client, Workflow, Worker, runner, and testkit packages under [`packages/temporal-adapter/`](../packages/temporal-adapter/), [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), and [Temporal evidence map](TEMPORAL-TEST-EVIDENCE-MAP.md) bind these claims. The [archived Workflow-chain proposal](archived/TEMPORAL-WORKFLOW-CHAIN-BOUNDS-PROPOSAL.md) retains the selected-design and review rationale.
 
+Workflow-chain readiness waits use the shared 20-second host-operation deadline rather than a fixed query-attempt count, so variable remote observation cost cannot shorten their allowed wall-clock interval. The correction is non-material under [the negative case](TESTING-SPEC.md#independent-cold-review-gate), changes no production or semantic contract, and is covered by the fake-clock [workflow-chain support guard](../packages/temporal-adapter/testkit/test/workflow-chain-test-support.test.ts) plus the complete Temporal package gate.
+
 ## Nearest unsupported claims
 
 - **Post-retention publication:** reconstruction or archive remains outside the bounded Workflow-chain contract, whose public result is `unavailable` after the selected retained Run disappears.
