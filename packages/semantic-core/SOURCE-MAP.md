@@ -63,6 +63,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [runtime-state-defect.ts](src/runtime-state-defect.ts) | Stable classes of malformed committed runtime state |
 | [runtime-state-collection-ordering.ts](src/runtime-state-collection-ordering.ts) | Internal canonical ordering for commutation-affected RuntimeState collections |
 | [internal-commutation-census.ts](src/internal-commutation-census.ts) | Exhaustive operation-family and cross-language RuntimeState atom-domain classification without enabling a transition |
+| [internal-transition-error-preparation.ts](src/internal-transition-error-preparation.ts) | Exact Error-interruption region, throwing token, and parent-handler-output state footprint without applying the transition |
 | [internal-transition-region.ts](src/internal-transition-region.ts) | Exact pre-state occurrence ownership through scope-parent and caller-to-called-root edges without applying a transition |
 | [internal-transition-return-preparation.ts](src/internal-transition-return-preparation.ts) | Exact Call-return region, association, and caller-output state footprint without applying the transition |
 | [internal-transition-scope-completion-preparation.ts](src/internal-transition-scope-completion-preparation.ts) | Exact scope-completion region, parent/root continuation, bounded Activity, and deadline state footprint without applying the transition |
