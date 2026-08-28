@@ -43,7 +43,6 @@ def checkedProcess : CheckedProcess :=
         sourceId := ⟨"expense-exception-review"⟩
         sourceSha256 :=
           "a904b67218ae2a72e4e48ae93a6a14350ac55b1ca5f63e5ddcb55e3c1c8c734e" }
-    internalSchedulingMode := .rejectObservableChoice
     processId
     definitionScopes := [rootDefinitionScope processId]
     nodeScopes := rootNodeScopes processId
@@ -120,6 +119,7 @@ def executionProgram : Program :=
         sourceId := ⟨"expense-exception-review"⟩
         sourceSha256 :=
           "a904b67218ae2a72e4e48ae93a6a14350ac55b1ca5f63e5ddcb55e3c1c8c734e" }
+    internalSchedulingMode := .rejectObservableChoice
     processId
     definitionScopes := [rootDefinitionScope processId]
     operationScopes := executionOperations.map fun operation =>

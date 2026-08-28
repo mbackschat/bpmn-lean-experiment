@@ -180,6 +180,16 @@ test("the Temporal source gate typechecks directly executed harnesses first", as
   );
 });
 
+test("the semantic package gate builds the complete Lean library before its test driver", async () => {
+  const manifest = JSON.parse(
+    await readFile(rootPackageManifestPath, "utf8"),
+  ) as { scripts?: Record<string, string> };
+  assert.equal(
+    manifest.scripts?.["test:semantic"],
+    "./scripts/lake.sh build && ./scripts/lake.sh test && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
+  );
+});
+
 test("hosted warm-pipeline budget has real headroom and the runner derives its deadline", async () => {
   const [pipelineTest, pipelineRunner, workflow] = await Promise.all([
     readFile(pipelineTestPath, "utf8"),

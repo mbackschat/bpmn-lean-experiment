@@ -244,7 +244,7 @@ theorem exact_definition_binding_is_admitted :
 /-- Lowering preserves the exact Start Event origin, full channel, and endpoint-derived output. -/
 theorem exact_lowering_preserves_message_start :
     lowerCheckedProcess checkedProcess = expectedProgram := by
-  decide +kernel
+  rfl
 
 /-- Message Start output lowering is a canonical projection of checked Sequence Flow endpoints. -/
 theorem exact_lowering_uses_only_checked_flow_endpoints :
