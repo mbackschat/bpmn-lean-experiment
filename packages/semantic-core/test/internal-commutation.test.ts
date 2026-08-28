@@ -379,7 +379,7 @@ test("same-effect declarers are refused beyond distinct operation and control id
   assert.deepEqual(closed.steps, []);
 });
 
-test("unsupported and larger frontiers fail closed", () => {
+test("unsupported and colliding larger frontiers fail closed", () => {
   const unsupported = closeFrontier(
     unsupportedProgram,
     unsupportedFrontier,

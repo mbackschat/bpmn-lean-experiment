@@ -146,6 +146,91 @@ theorem ordinary_user_task_triple_commutes_under_all_permutations :
         fireThree userTaskTripleProgram userTaskTripleState userTaskC userTaskB userTask := by
   decide +kernel
 
+private def selectiveConflictTaskC : SemanticOperation :=
+  .awaitUserTask ⟨"operation:C_UserTask"⟩ { elementId := ⟨"C_UserTask"⟩ }
+    ⟨"place:user-input"⟩ ⟨"place:user-c-output"⟩
+    { id := ⟨"C_UserTask"⟩, name := some "C" }
+
+private def selectiveConflictProgram : Program :=
+  { program with
+    operations := [userTask, userTaskB, selectiveConflictTaskC]
+    operationScopes :=
+      [operationScope userTask.id, operationScope userTaskB.id,
+        operationScope selectiveConflictTaskC.id]
+    controlPlaceScopes :=
+      [inputScope ⟨"place:user-input"⟩, inputScope ⟨"place:user-b-input"⟩]
+    controlPlaces :=
+      [inputPlace ⟨"place:user-input"⟩, inputPlace ⟨"place:user-b-input"⟩] }
+
+private def selectiveConflictState : RuntimeState :=
+  { state with
+    tokens :=
+      [{ placeId := ⟨"place:user-input"⟩, owner }
+      , { placeId := ⟨"place:user-b-input"⟩, owner }] }
+
+/-- The canonical first two operations commute, but the third competes for the first operation's exact input token, so a first-two-only classifier is unsound. -/
+theorem selective_later_pair_conflict_is_refused :
+    (fire? selectiveConflictProgram userTask selectiveConflictState).isSome = true ∧
+      (fire? selectiveConflictProgram userTaskB selectiveConflictState).isSome = true ∧
+      (fire? selectiveConflictProgram selectiveConflictTaskC selectiveConflictState).isSome =
+        true ∧
+      internalOperationFrontierPairwiseIndependent? selectiveConflictProgram
+        selectiveConflictState [userTask, userTaskB] = true ∧
+      internalOperationFrontierPairwiseIndependent? selectiveConflictProgram
+        selectiveConflictState [userTask, userTaskB, selectiveConflictTaskC] = false := by
+  decide +kernel
+
+private def selectiveConflictStart : SemanticOperation :=
+  .initiate ⟨"operation:0_SelectiveStart"⟩ { elementId := ⟨"SelectiveStart"⟩ }
+    ⟨"place:selective-start-to-fork"⟩
+
+private def selectiveConflictFork : SemanticOperation :=
+  .duplicate ⟨"operation:1_SelectiveFork"⟩ { elementId := ⟨"SelectiveFork"⟩ }
+    ⟨"place:selective-start-to-fork"⟩
+    [⟨"place:user-input"⟩, ⟨"place:user-b-input"⟩]
+
+private def selectiveConflictTraceProgram : Program :=
+  { selectiveConflictProgram with
+    definitionScopes :=
+      [ { id := owner.definitionScopeId, parentScopeId := none
+          originElementId := ⟨"Process_InternalCommutation"⟩ } ]
+    operations :=
+      [selectiveConflictStart, selectiveConflictFork, userTask, userTaskB,
+        selectiveConflictTaskC]
+    operationScopes :=
+      [operationScope selectiveConflictStart.id, operationScope selectiveConflictFork.id,
+        operationScope userTask.id, operationScope userTaskB.id,
+        operationScope selectiveConflictTaskC.id]
+    controlPlaceScopes :=
+      [inputScope ⟨"place:selective-start-to-fork"⟩,
+        inputScope ⟨"place:user-input"⟩, inputScope ⟨"place:user-b-input"⟩]
+    controlPlaces :=
+      [inputPlace ⟨"place:selective-start-to-fork"⟩,
+        inputPlace ⟨"place:user-input"⟩, inputPlace ⟨"place:user-b-input"⟩] }
+
+private def selectiveConflictTraceStart : Stimulus :=
+  .startProcess ⟨"start-selective-conflict"⟩
+    ⟨selectiveConflictTraceProgram.processId.value⟩ instanceId []
+
+private def selectiveConflictPreBatchState : RuntimeState :=
+  let started :=
+    (runningProgramStartState? selectiveConflictTraceProgram instanceId []).getD initialState
+  (runChoices selectiveConflictTraceProgram started
+    [selectiveConflictStart.id, selectiveConflictFork.id]).getD initialState
+
+private def selectiveConflictTrace : TracedStimulusResult :=
+  applyStimulusTraced scenarioClosureLimit selectiveConflictTraceProgram initialState
+    selectiveConflictTraceStart
+
+/-- Refusal preserves the exact state at the conflicting frontier and publishes none of the command's prior internal selections. -/
+theorem selective_later_pair_conflict_preserves_batch_start_and_selects_nothing :
+    selectiveConflictTrace.result.state = selectiveConflictPreBatchState ∧
+      selectiveConflictTrace.result.ambiguousInternalChoice = true ∧
+      selectiveConflictTrace.result.internalStepBoundExceeded = false ∧
+      selectiveConflictTrace.committedTransitions = [] ∧
+      selectiveConflictTrace.flowNodeOccurrenceLifecycles = [] := by
+  decide +kernel
+
 private def calledInstanceId : SemanticId := ⟨"Instance_CalledMessage"⟩
 
 private def calledOwner : ScopeOccurrenceId :=

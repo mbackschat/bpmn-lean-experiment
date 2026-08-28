@@ -277,7 +277,7 @@ The focused TypeScript gate owns the closure classifier and both-order oracle. T
 
 ## Final-closure evidence and adversarial oracles
 
-The first final-closure Red is a three-arm ordinary User Task frontier whose complete pairwise-independent footprints reach one equal canonical state under all six permutations. Current production reports ambiguity solely because the frontier is larger than two. The second is a four-arm User Task, Message, Timer, and effect frontier. Removing any one family preparation, comparing only the first two candidates, or letting batch order affect publication must fail independently.
+The first final-closure Red was a three-arm ordinary User Task frontier whose complete pairwise-independent footprints reach one equal canonical state under all six permutations. Production before the first final-implementation checkpoint reported ambiguity solely because the frontier was larger than two. The second is a four-arm User Task, Message, Timer, and effect frontier. Removing any one family preparation, comparing only the first two candidates, or letting batch order affect publication must fail independently.
 
 The region separator uses two enabled operations in disjoint sibling occurrences and a second state that moves one operation into the other's descendant occurrence. The sibling case must batch; the ancestor/descendant case must conflict even when every concrete pre-existing collection key differs. A mutation that compares only region-root equality must accept the wrong case and fail the oracle.
 
