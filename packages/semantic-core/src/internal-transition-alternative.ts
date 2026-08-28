@@ -27,6 +27,15 @@ export type InternalAlternative =
   | InternalOperationAlternative
   | InternalMergeInputAlternative;
 
+export function internalOperationAlternative(
+  operationId: string,
+): InternalOperationAlternative {
+  return {
+    kind: InternalAlternativeKind.Operation,
+    operationId,
+  };
+}
+
 export function internalMergeInputAlternative(
   operationId: string,
   owner: ScopeOccurrenceId,

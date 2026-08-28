@@ -66,6 +66,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-transition-alternative.ts](src/internal-transition-alternative.ts) | Exact operation and Exclusive Gateway merge-input alternative keys with canonical discriminator-first ordering |
 | [internal-transition-end-preparation.ts](src/internal-transition-end-preparation.ts) | Exact ordinary None End token and commutative End-increment state footprint without applying the transition |
 | [internal-transition-error-preparation.ts](src/internal-transition-error-preparation.ts) | Exact Error-interruption region, throwing token, and parent-handler-output state footprint without applying the transition |
+| [internal-transition-local-control-preparation.ts](src/internal-transition-local-control-preparation.ts) | Exact Parallel Gateway fork and join alternatives with complete pre-state token footprints |
 | [internal-transition-merge-preparation.ts](src/internal-transition-merge-preparation.ts) | Every exact offered Exclusive Gateway merge-input alternative and its pre-state token footprint without list-order selection |
 | [internal-transition-region.ts](src/internal-transition-region.ts) | Exact pre-state occurrence ownership through scope-parent and caller-to-called-root edges without applying a transition |
 | [internal-transition-return-preparation.ts](src/internal-transition-return-preparation.ts) | Exact Call-return region, association, and caller-output state footprint without applying the transition |
