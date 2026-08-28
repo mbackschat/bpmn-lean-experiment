@@ -1,4 +1,5 @@
 import BpmnSemantics.RuntimeStateActivityConformance
+import BpmnSemantics.SubProcessBoundaryTimerConformance
 
 /-! # Activity body-claim uniqueness conformance
 
@@ -56,28 +57,48 @@ theorem duplicate_task_body_claim_fails_only_the_claim_rule :
       activityIdentitiesUnique duplicateTaskBodyClaimState = true := by
   decide +kernel
 
-def firstScopeAliasRecord : ActivityOccurrence :=
-  { processInstanceId := instanceId
-    activityElementId := ⟨"ScopeAliasA"⟩
-    activation := 1
-    owner := rootScope
-    body := .childScope rootScope
-    attachedTimers := [] }
+def scopeInstanceId : SemanticId :=
+  SubProcessBoundaryTimerConformance.instanceId
 
-def secondScopeAliasRecord : ActivityOccurrence :=
-  { firstScopeAliasRecord with activityElementId := ⟨"ScopeAliasB"⟩ }
+def scopeProgram : Program :=
+  SubProcessBoundaryTimerConformance.program
+
+def scopeArmedState : RuntimeState :=
+  SubProcessBoundaryTimerConformance.armedState
+
+def scopeParent : ScopeOccurrenceId :=
+  rootScopeOccurrenceId scopeInstanceId SubProcessBoundaryTimerConformance.processId
+
+def liveChildScope : ScopeOccurrenceId :=
+  { processInstanceId := scopeInstanceId
+    definitionScopeId := SubProcessBoundaryTimerConformance.childScopeId
+    activation := 1
+  }
+
+theorem scope_negative_uses_a_live_non_root_child :
+    { id := liveChildScope, parent := some scopeParent } ∈ scopeArmedState.scopeOccurrences ∧
+      liveChildScope ≠ scopeParent := by
+  decide +kernel
+
+def scopeAliasRecord : ActivityOccurrence :=
+  { processInstanceId := scopeInstanceId
+    activityElementId := ⟨SubProcessBoundaryTimerConformance.childScopeId.value⟩
+    activation := 2
+    owner := scopeParent
+    body := .childScope liveChildScope
+    attachedTimers := [] }
 
 /-- Two distinct Activity records claim the same live child scope. -/
 def duplicateScopeBodyClaimState : RuntimeState :=
-  { armedState with
-    activityOccurrences := armedState.activityOccurrences ++
-      [firstScopeAliasRecord, secondScopeAliasRecord]
-    activityActivations := armedState.activityActivations ++
-      [ { taskId := ⟨"ScopeAliasA"⟩, count := 1 }
-      , { taskId := ⟨"ScopeAliasB"⟩, count := 1 } ] }
+  { scopeArmedState with
+    activityOccurrences := scopeArmedState.activityOccurrences ++ [scopeAliasRecord]
+    activityActivations := scopeArmedState.activityActivations.map fun activation =>
+      if activation.taskId.value = SubProcessBoundaryTimerConformance.childScopeId.value then
+        { activation with count := 2 }
+      else activation }
 
 theorem duplicate_scope_body_claim_is_refused :
-    runtimeStateWellFormed program instanceId duplicateScopeBodyClaimState = false := by
+    runtimeStateWellFormed scopeProgram scopeInstanceId duplicateScopeBodyClaimState = false := by
   decide +kernel
 
 theorem duplicate_scope_body_claim_fails_only_the_claim_rule :
@@ -101,10 +122,10 @@ def otherTaskClaimRecord : ActivityOccurrence :=
     body := .userTask otherTaskClaim }
 
 def otherScopeClaim : ScopeOccurrenceId :=
-  { rootScope with activation := 2 }
+  { liveChildScope with activation := 2 }
 
 def otherScopeClaimRecord : ActivityOccurrence :=
-  { secondScopeAliasRecord with
+  { scopeAliasRecord with
     body := .childScope otherScopeClaim }
 
 def repeatedTaskInsideOneRecord : ActivityOccurrence :=
@@ -115,7 +136,7 @@ def repeatedTaskInsideOneRecord : ActivityOccurrence :=
 repeated member inside one parallel body into a second owner. -/
 theorem distinct_records_and_one_repeated_parallel_body_are_admitted :
     activityBodyClaimsUnique [singularClaimRecord, otherTaskClaimRecord] = true ∧
-      activityBodyClaimsUnique [firstScopeAliasRecord, otherScopeClaimRecord] = true ∧
+      activityBodyClaimsUnique [scopeAliasRecord, otherScopeClaimRecord] = true ∧
       activityBodyClaimsUnique [repeatedTaskInsideOneRecord] = true := by
   decide +kernel
 

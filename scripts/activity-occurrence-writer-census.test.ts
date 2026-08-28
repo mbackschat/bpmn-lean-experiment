@@ -93,7 +93,7 @@ const writerRecords = new Map<string, WriterRecord>([
     },
     claimEvidence: {
       relativePath: "BpmnSemantics/SemanticProcess/ActivityBodyClaimWriterPreservation.lean",
-      markers: ["theorem armScopeDeadline_preserves_activityBodyClaimsUnique"],
+      markers: ["theorem armBoundedScopeState_preserves_activityBodyClaimsUnique"],
     },
   }],
   ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#closeSharedParallelRegion@1", {

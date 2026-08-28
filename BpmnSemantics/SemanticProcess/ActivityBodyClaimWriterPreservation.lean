@@ -143,6 +143,126 @@ theorem armScopeDeadline_preserves_activityBodyClaimsUnique (state : RuntimeStat
     state.activityOccurrences disjoint claimsUnique
   simpa [armScopeDeadline, issuedRecord] using preserved
 
+private theorem enterScopeState_success_preserves_activities_and_excludes_definition
+    (before entered : RuntimeState) (input childEntry : ControlPlaceId)
+    (childScopeId : DefinitionScopeId)
+    (success : enterScopeState? before input childEntry childScopeId = some entered) :
+    entered.activityOccurrences = before.activityOccurrences ∧
+      before.scopeOccurrences.any (fun occurrence =>
+        occurrence.id.definitionScopeId == childScopeId) = false := by
+  unfold enterScopeState? at success
+  cases owned : onlyTokenOwner? before input with
+  | none => simp [owned] at success
+  | some parent =>
+      cases running : before.control with
+      | notStarted => simp [owned, running] at success
+      | completed instanceId => simp [owned, running] at success
+      | cancelled instanceId => simp [owned, running] at success
+      | running instanceId =>
+          simp [owned, running] at success
+          obtain ⟨admitted, enteredEq⟩ := success
+          subst entered
+          refine ⟨rfl, ?_⟩
+          apply Bool.eq_false_iff.mpr
+          intro anyPrior
+          rw [List.any_eq_true] at anyPrior
+          obtain ⟨occurrence, occurrenceMem, sameDefinition⟩ := anyPrior
+          simp only [beq_iff_eq] at sameDefinition
+          exact admitted.2 occurrence occurrenceMem sameDefinition
+
+private theorem selectedBoundedChild_has_definition (entered : RuntimeState)
+    (parent child : ScopeOccurrenceId) (childScopeId : DefinitionScopeId)
+    (selected :
+      (entered.scopeOccurrences.find? fun occurrence =>
+        decide (occurrence.id.definitionScopeId = childScopeId) &&
+          decide (occurrence.parent = some parent)).map (·.id) = some child) :
+    child.definitionScopeId = childScopeId := by
+  cases found : (entered.scopeOccurrences.find? fun occurrence =>
+      decide (occurrence.id.definitionScopeId = childScopeId) &&
+        decide (occurrence.parent = some parent)) with
+  | none => simp [found] at selected
+  | some occurrence =>
+      have matched := List.find?_some found
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at matched
+      simp [found] at selected
+      cases selected
+      exact matched.1
+
+private theorem activityBodyScopeClaim_is_live (state : RuntimeState)
+    (record : ActivityOccurrence) (child : ScopeOccurrenceId)
+    (recordsOwn : activityRecordsOwnLiveWork state = true)
+    (recordMem : record ∈ state.activityOccurrences)
+    (claimed : child ∈ activityBodyScopeClaims record.body) :
+    exactLiveOccurrence state child = true := by
+  have owned := List.all_eq_true.mp recordsOwn record recordMem
+  simp only [Bool.and_eq_true] at owned
+  have bodyLive := owned.1
+  cases bodyEq : record.body with
+  | userTask task => simp [bodyEq, activityBodyScopeClaims] at claimed
+  | parallelUserTasks first rest => simp [bodyEq, activityBodyScopeClaims] at claimed
+  | childScope scope =>
+      simp [bodyEq, activityBodyScopeClaims] at claimed
+      subst child
+      simpa [activityBodyLive, bodyEq] using bodyLive
+
+/-- Successful bounded Sub-Process arming preserves body-claim uniqueness through the real atomic
+entry-and-deadline path. Scope entry excludes the selected child's definition from the pre-state,
+while body liveness makes every prior child-scope claim resolve to a pre-state occurrence. -/
+theorem armBoundedScopeState_preserves_activityBodyClaimsUnique (before after : RuntimeState)
+    (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
+    (boundaryTimer : BoundaryTimerArm)
+    (success : armBoundedScopeState? before input childEntry childScopeId boundaryTimer = some after)
+    (recordsOwn : activityRecordsOwnLiveWork before = true)
+    (claimsUnique : activityBodyClaimsUnique before.activityOccurrences = true) :
+    activityBodyClaimsUnique after.activityOccurrences = true := by
+  unfold armBoundedScopeState? at success
+  cases owned : onlyTokenOwner? before input with
+  | none => simp [owned] at success
+  | some parent =>
+      cases entry : enterScopeState? before input childEntry childScopeId with
+      | none => simp [owned, entry] at success
+      | some entered =>
+          cases selected :
+              (entered.scopeOccurrences.find? fun occurrence =>
+                decide (occurrence.id.definitionScopeId = childScopeId) &&
+                  decide (occurrence.parent = some parent)).map (·.id) with
+          | none => simp [owned, entry, selected] at success
+          | some child =>
+              simp [owned, entry, selected] at success
+              cases success
+              obtain ⟨activitiesFrame, noPriorDefinition⟩ :=
+                enterScopeState_success_preserves_activities_and_excludes_definition before entered
+                  input childEntry childScopeId entry
+              have childDefinition : child.definitionScopeId = childScopeId :=
+                selectedBoundedChild_has_definition entered parent child childScopeId selected
+              apply armScopeDeadline_preserves_activityBodyClaimsUnique
+              · intro record recordMem claimed
+                rw [activitiesFrame] at recordMem
+                have childLive := activityBodyScopeClaim_is_live before record child recordsOwn
+                  recordMem claimed
+                unfold exactLiveOccurrence at childLive
+                simp only [decide_eq_true_eq] at childLive
+                obtain ⟨occurrence, singleton⟩ := List.length_eq_one_iff.mp childLive
+                have occurrenceFiltered : occurrence ∈
+                    before.scopeOccurrences.filter (fun candidate =>
+                      decide (candidate.id = child)) := by
+                  rw [singleton]
+                  exact List.mem_cons_self
+                obtain ⟨occurrenceMem, occurrenceId⟩ := List.mem_filter.mp occurrenceFiltered
+                have occurrenceEq : occurrence.id = child := by
+                  simpa only [decide_eq_true_eq] using occurrenceId
+                have priorDefinition : before.scopeOccurrences.any (fun candidate =>
+                    candidate.id.definitionScopeId == childScopeId) = true := by
+                  rw [List.any_eq_true]
+                  refine ⟨occurrence, occurrenceMem, ?_⟩
+                  simp only [beq_iff_eq]
+                  exact (congrArg ScopeOccurrenceId.definitionScopeId occurrenceEq).trans
+                    childDefinition
+                rw [noPriorDefinition] at priorDefinition
+                contradiction
+              · rw [activitiesFrame]
+                exact claimsUnique
+
 /-- A multi-task insertion preserves uniqueness when all inserted children share a task definition
 that had no live wait before insertion. Body liveness then rules out a prior exact claim. -/
 theorem insertParallelUserTaskActivity_preserves_activityBodyClaimsUnique (state : RuntimeState)
