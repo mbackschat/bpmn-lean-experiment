@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # Parallel Multi-Instance conformance
 
@@ -28,27 +29,30 @@ def operationOrigin : BpmnElementOrigin :=
 
 def normalOutput : ControlPlaceId := ⟨"place:Flow_Review_Completed"⟩
 
+def dataDefinition : SequentialMultiInstanceDataDefinition :=
+  { input :=
+      { collectionItemDefinitionId := "ItemDefinition_StringList"
+        scalarItemDefinitionId := "ItemDefinition_String"
+        dataObjectId := "DataObject_InputItems"
+        dataObjectReferenceId := "DataObjectReference_InputItems"
+        loopDataInputId := "DataInput_Items"
+        inputDataItemId := "InputDataItem_CurrentItem"
+        taskDataInputId := "DataInput_CurrentItem"
+        collectionAssociationId := "DataInputAssociation_Items"
+        itemAssociationId := "DataInputAssociation_CurrentItem" }
+    output :=
+      { dataObjectId := "DataObject_OutputResults"
+        dataObjectReferenceId := "DataObjectReference_OutputResults"
+        taskDataOutputId := "DataOutput_CurrentResult"
+        outputDataItemId := "OutputDataItem_CurrentResult"
+        loopDataOutputId := "DataOutput_Results"
+        itemAssociationId := "DataOutputAssociation_CurrentResult"
+        collectionAssociationId := "DataOutputAssociation_Results" } }
+
 def entryOperation : SemanticOperation :=
   .awaitParallelMultiInstanceUserTask ⟨"operation:UserTask_Review"⟩ operationOrigin
     ⟨"place:Flow_Start_Review"⟩ ⟨"UserTask_Review"⟩ (some "Review item")
-    { input :=
-        { collectionItemDefinitionId := "ItemDefinition_StringList"
-          scalarItemDefinitionId := "ItemDefinition_String"
-          dataObjectId := "DataObject_InputItems"
-          dataObjectReferenceId := "DataObjectReference_InputItems"
-          loopDataInputId := "DataInput_Items"
-          inputDataItemId := "InputDataItem_CurrentItem"
-          taskDataInputId := "DataInput_CurrentItem"
-          collectionAssociationId := "DataInputAssociation_Items"
-          itemAssociationId := "DataInputAssociation_CurrentItem" }
-      output :=
-        { dataObjectId := "DataObject_OutputResults"
-          dataObjectReferenceId := "DataObjectReference_OutputResults"
-          taskDataOutputId := "DataOutput_CurrentResult"
-          outputDataItemId := "OutputDataItem_CurrentResult"
-          loopDataOutputId := "DataOutput_Results"
-          itemAssociationId := "DataOutputAssociation_CurrentResult"
-          collectionAssociationId := "DataOutputAssociation_Results" } }
+    dataDefinition
     normalOutput
     { elementId := ⟨"BoundaryTimer_Review"⟩
       durationMs := 1000
@@ -257,6 +261,131 @@ theorem stale_duplicate_and_wrong_owner_refuse :
 /-- Equal first-policy terminal states do not erase the command-addressed lifecycle distinction. -/
 theorem first_policy_order_is_a_trace_non_law :
     afterThirdFirst? = afterFirstFirst? ∧ thirdFirstDelta? ≠ firstFirstDelta? := by
+  decide +kernel
+
+def processId : ProcessId := ⟨"Process_ParallelMultiInstanceReview"⟩
+
+def rootScopeId : DefinitionScopeId := ⟨"scope:Process_ParallelMultiInstanceReview"⟩
+
+private def programOperations : List SemanticOperation :=
+  [ .reachNoneEnd ⟨"operation:EndEvent_Completed"⟩
+      { elementId := ⟨"EndEvent_Completed"⟩ } ⟨"place:Flow_Review_Completed"⟩
+  , .reachNoneEnd ⟨"operation:EndEvent_Interrupted"⟩
+      { elementId := ⟨"EndEvent_Interrupted"⟩ } ⟨"place:Flow_Escalation_End"⟩
+  , .initiate ⟨"operation:StartEvent_Review"⟩
+      { elementId := ⟨"StartEvent_Review"⟩ } ⟨"place:Flow_Start_Review"⟩
+  , .awaitUserTask ⟨"operation:UserTask_Escalation"⟩
+      { elementId := ⟨"UserTask_Escalation"⟩ } ⟨"place:Flow_Timer_Escalation"⟩
+      ⟨"place:Flow_Escalation_End"⟩
+      { id := ⟨"UserTask_Escalation"⟩
+        name := some "Handle interrupted review" }
+  , entryOperation
+  , completionOperation
+  , .completeScope ⟨"operation:complete-scope:scope:Process_ParallelMultiInstanceReview"⟩
+      { elementId := ⟨"Process_ParallelMultiInstanceReview"⟩ } rootScopeId none ]
+
+private def programControlPlaces : List ControlPlace :=
+  [ { id := ⟨"place:Flow_Escalation_End"⟩
+      origin := { elementId := ⟨"Flow_Escalation_End"⟩ } }
+  , { id := ⟨"place:Flow_Review_Completed"⟩
+      origin := { elementId := ⟨"Flow_Review_Completed"⟩ } }
+  , { id := ⟨"place:Flow_Start_Review"⟩
+      origin := { elementId := ⟨"Flow_Start_Review"⟩ } }
+  , { id := ⟨"place:Flow_Timer_Escalation"⟩
+      origin := { elementId := ⟨"Flow_Timer_Escalation"⟩ } } ]
+
+def program : Program :=
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := parallelMultiInstanceUserTaskProfileId
+        sourceId := ⟨"parallel-multi-instance-first-trace"⟩
+        sourceSha256 :=
+          "99f6c947d5836d44bb83503f0657e943ecf405c3d298688f12e1c5eaeb98c81e" }
+    processId
+    definitionScopes :=
+      [{ id := rootScopeId
+         parentScopeId := none
+         originElementId := ⟨"Process_ParallelMultiInstanceReview"⟩ }]
+    operationScopes := programOperations.map fun operation =>
+      { operationId := operation.id
+        scopeId := rootScopeId }
+    controlPlaceScopes := programControlPlaces.map fun place =>
+      { controlPlaceId := place.id
+        scopeId := rootScopeId }
+    controlPlaces := programControlPlaces
+    operations := programOperations }
+
+def programArm? : Option ParallelMultiInstanceArm :=
+  match program.operations.filterMap ParallelMultiInstanceArm.ofOperation? with
+  | [arm] => some arm
+  | _ => none
+
+def sharedPreEntry? : Option RuntimeState := do
+  let arm ← programArm?
+  let started ← runningProgramStartState? program ⟨"ParallelMultiInstance_Foundation"⟩
+    [ { name := arm.data.input.dataObjectReferenceId
+        value := .stringList ["Invoice_1", "Invoice_2", "Invoice_3"] }
+    , { name := "completionPolicy", value := .string "first" } ]
+  let owner ← rootScopeOccurrence? started
+  pure
+    { started with
+      initiationPending := false
+      tokens := [{ placeId := arm.input, owner }] }
+
+def sharedEnteredFirst? : Option RuntimeState := do
+  let arm ← programArm?
+  let before ← sharedPreEntry?
+  enterSharedParallelMultiInstance? arm before
+
+def completionStimulus (commandId : String) (activation : Nat) (result : String) : Stimulus :=
+  .completeUserTaskInstance ⟨commandId⟩ (taskId activation) (submittedResult result)
+
+def thirdFirstStimulus : Stimulus :=
+  completionStimulus "complete-third-first" 3 "Reviewed_3"
+
+def firstFirstStimulus : Stimulus :=
+  completionStimulus "complete-first-first" 1 "Reviewed_1"
+
+def sharedEnteredFirst : RuntimeState := sharedEnteredFirst?.getD initialState
+
+def thirdFirstTrace : TracedStimulusResult :=
+  applyStimulusTraced scenarioClosureLimit program sharedEnteredFirst thirdFirstStimulus
+
+def firstFirstTrace : TracedStimulusResult :=
+  applyStimulusTraced scenarioClosureLimit program sharedEnteredFirst firstFirstStimulus
+
+private def expectedWaitEnd (id : UserTaskInstanceId)
+    (terminal : FlowNodeOccurrenceTerminalKind) : UnnumberedFlowNodeOccurrenceEnd :=
+  { anchor := .wait id, terminal }
+
+def thirdFirstLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  canonicalFlowNodeOccurrenceDelta []
+    [ expectedWaitEnd (taskId 1) .cancelled
+    , expectedWaitEnd (taskId 2) .cancelled
+    , expectedWaitEnd (taskId 3) .completed ]
+
+def firstFirstLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  canonicalFlowNodeOccurrenceDelta []
+    [ expectedWaitEnd (taskId 1) .completed
+    , expectedWaitEnd (taskId 2) .cancelled
+    , expectedWaitEnd (taskId 3) .cancelled ]
+
+/-- The production shared evaluator reaches one terminal state for either accepted first winner, but
+the exact command-led E1 trace and completed-versus-cancelled E2 child identities remain distinct. -/
+theorem shared_first_policy_is_an_exact_command_and_occurrence_trace_non_law :
+    sharedEnteredFirst?.isSome = true ∧
+      thirdFirstTrace.result.outcome = .committed ∧
+      firstFirstTrace.result.outcome = .committed ∧
+      thirdFirstTrace.result.state = firstFirstTrace.result.state ∧
+      thirdFirstTrace.committedTransitions.head? =
+        some (.externalStimulus thirdFirstStimulus) ∧
+      firstFirstTrace.committedTransitions.head? =
+        some (.externalStimulus firstFirstStimulus) ∧
+      thirdFirstTrace.committedTransitions ≠ firstFirstTrace.committedTransitions ∧
+      thirdFirstTrace.flowNodeOccurrenceLifecycles.head? = some thirdFirstLifecycle ∧
+      firstFirstTrace.flowNodeOccurrenceLifecycles.head? = some firstFirstLifecycle ∧
+      thirdFirstTrace.flowNodeOccurrenceLifecycles ≠
+        firstFirstTrace.flowNodeOccurrenceLifecycles := by
   decide +kernel
 
 private def escapeClassCollection : List String :=
