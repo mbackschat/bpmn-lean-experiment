@@ -101,6 +101,16 @@ The separate protocol, client, Workflow, Worker, runner, and testkit packages un
 
 Workflow-chain readiness waits use the shared 20-second host-operation deadline rather than a fixed query-attempt count, so variable remote observation cost cannot shorten their allowed wall-clock interval. The correction is non-material under [the negative case](TESTING-SPEC.md#independent-cold-review-gate), changes no production or semantic contract, and is covered by the fake-clock [workflow-chain support guard](../packages/temporal-adapter/testkit/test/workflow-chain-test-support.test.ts) plus the complete Temporal package gate.
 
+The production refinement witnesses are not yet reliable under host load, and that budget correction covered only half the class. Measured on 2026-08-29 at engine head `3530da83`, `./scripts/pnpm.sh run test:temporal:built` failed 2 of 5 runs and the composed `test:pre-push:verify` 1 of 3.
+
+Three different tests failed with three different symptoms. The Sequential Multi-Instance natural path lost its scenario's real `PT1S` lifetime Timer to three completion round trips, then observed the engine correctly reject an interrupted task. The Parallel Multi-Instance serial witness exceeded the 20-second readiness deadline. The Workflow-chain Timer-rollover file died before its first result with no captured cause. The same tests pass in isolation and the hosted batch alone passed 3 of 3, so the mechanism is host load rather than any semantic change.
+
+These witnesses run on `createCachedLocalEnvironment`, a real host clock, so a model deadline shorter than the client work inside it makes a verdict depend on machine speed, which [the semantic invariants](../CLAUDE.md#semantic-invariants) require to be an explicit input instead.
+
+Raising a budget does not close it. The Sequential Multi-Instance deadline is the retained scenario's own `PT1S`, whose exact bytes bind the Lean, differential, and corpus lanes where logical time makes one second free. Correcting it therefore changes a closed capsule's retained model or its production witness, and needs an owner decision plus its own review rather than a wider timeout.
+
+Until then, treat a single red Temporal run as uninformative and re-run before concluding, and do not read a green as refinement evidence for a new capsule without repeating it.
+
 ## Nearest unsupported claims
 
 - **Post-retention publication:** reconstruction or archive remains outside the bounded Workflow-chain contract, whose public result is `unavailable` after the selected retained Run disappears.
