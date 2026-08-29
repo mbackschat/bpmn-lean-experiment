@@ -465,7 +465,9 @@ test(
     // A timing figure is only comparable against a run under similar load, and this project has
     // recorded a figure as uncontended that was taken on a busy host. Asserting the host block
     // exists is what keeps that checkable: the number travels with the load it was measured under,
-    // including into any document that quotes this line.
+    // including into any document that quotes this line. Comparability reads the pre-run sample,
+    // because the after sample blends inherited load with this gate's own parallelism and so
+    // answers a different question.
     assert.ok(report.host.cores >= 1, "the report must record the host it was measured on");
     assert.ok(
       Number.isFinite(report.host.loadAverage1m) && report.host.loadAverage1m >= 0,
@@ -476,10 +478,20 @@ test(
       report.host.loadAverage1m / report.host.cores,
       "load per core must be derived from the same sample it reports",
     );
+    assert.ok(
+      Number.isFinite(report.host.loadAverage1mAtStart) &&
+        report.host.loadAverage1mAtStart >= 0,
+      "the report must record the load the host was already under when the run began",
+    );
+    assert.equal(
+      report.host.loadPerCoreAtStart,
+      report.host.loadAverage1mAtStart / report.host.cores,
+      "start load per core must be derived from the same sample it reports",
+    );
     const warmSoftTarget = warmSoftTargetMsFor(pipelineCases.length);
     if (report.phaseMs.warmTotal >= warmSoftTarget) {
       console.log(
-        `BPMN_PIPELINE_WARM_SOFT_TARGET exceeded: ${report.phaseMs.warmTotal.toFixed(3)}ms against the ${warmSoftTarget}ms feedback target for ${pipelineCases.length} cases at loadPerCore ${report.host.loadPerCore.toFixed(2)}; a figure above roughly 1 is a contended host and not a comparable measurement`,
+        `BPMN_PIPELINE_WARM_SOFT_TARGET exceeded: ${report.phaseMs.warmTotal.toFixed(3)}ms against the ${warmSoftTarget}ms feedback target for ${pipelineCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)} rising to ${report.host.loadPerCore.toFixed(2)} during the run; a start figure above roughly 1 is a contended host and not a comparable measurement, while the rise is this gate's own parallelism`,
       );
     }
     assert.ok(
@@ -493,17 +505,17 @@ test(
         throw new Error("measured pipeline omitted cold timing");
       }
       const coldBudget = coldBudgetMsFor(pipelineCases.length);
-      if (!timingIsComparable(report.host.loadPerCore)) {
+      if (!timingIsComparable(report.host.loadPerCoreAtStart)) {
         // Reported and left uncounted rather than asserted. The cold phase builds before it measures,
         // so contention lands here first, and a red gate whose only content is a duration taken on a
         // busy host teaches a contributor to re-run rather than to look.
         console.log(
-          `BPMN_PIPELINE_COLD uncounted: ${coldTotal.toFixed(3)}ms against the ${coldBudget}ms ceiling for ${pipelineCases.length} cases at loadPerCore ${report.host.loadPerCore.toFixed(2)}`,
+          `BPMN_PIPELINE_COLD uncounted: ${coldTotal.toFixed(3)}ms against the ${coldBudget}ms ceiling for ${pipelineCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)}`,
         );
       } else {
         assert.ok(
           coldTotal < coldBudget,
-          `cold pipeline took ${coldTotal.toFixed(3)}ms against a ${coldBudget}ms ceiling for ${pipelineCases.length} cases at loadPerCore ${report.host.loadPerCore.toFixed(2)}`,
+          `cold pipeline took ${coldTotal.toFixed(3)}ms against a ${coldBudget}ms ceiling for ${pipelineCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)}`,
         );
       }
     } else {

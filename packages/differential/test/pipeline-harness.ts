@@ -65,6 +65,11 @@ export async function runPipelineCases(
     throw new TypeError("pipeline build mode is required");
   }
 
+  // Sampled before any pipeline work so it carries the load the host was already under. The
+  // after-phase sample below cannot do that: a one-minute average taken at the end blends whatever
+  // ran in the preceding minute with this gate's own parallelism, so it does not isolate external
+  // contention.
+  const loadAverage1mAtStart = loadavg()[0] ?? 0;
   const ingestionStarted = performance.now();
   const contexts = await loadAndCompileCases(cases);
   const ingestionMs = elapsedMs(ingestionStarted);
@@ -262,11 +267,17 @@ export async function runPipelineCases(
       temporalWorkflowIds: targets.temporal.workflowIds,
     },
     // Every wall-time figure above is only comparable against a run under similar load, and a
-    // reader cannot recover that from the timings. Sampled after the warm phase so it describes the
-    // load the run actually competed with; `loadPerCore` at or below roughly 1 is an idle host,
-    // while this project has recorded a 52-case figure as "uncontended" that was taken at 2.6.
+    // reader cannot recover that from the timings. Two samples are kept because one cannot answer
+    // the question: `loadPerCoreAtStart` is the external load the run had to compete with, while
+    // `loadPerCore` is sampled after the warm phase and blends that inherited load with this gate's
+    // own parallelism. Only the first decides comparability. On one 8-core host the after sample
+    // read 2.47 for a run started right after a full infrastructure gate and 0.83 for the same
+    // workload started quiet, so it tracks what preceded the run more than the run itself. This
+    // project has also recorded a 52-case figure as "uncontended" that the after sample took at 2.6.
     host: {
       cores: availableParallelism(),
+      loadAverage1mAtStart,
+      loadPerCoreAtStart: loadAverage1mAtStart / availableParallelism(),
       loadAverage1m: loadavg()[0] ?? 0,
       loadPerCore: (loadavg()[0] ?? 0) / availableParallelism(),
     },
