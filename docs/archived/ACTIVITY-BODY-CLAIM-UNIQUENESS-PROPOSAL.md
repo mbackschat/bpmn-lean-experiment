@@ -152,7 +152,7 @@ Focused proposal verification was the documentation control plane, link and map 
 
 ## Same-change owners and reopen conditions
 
-The [Activity occurrence ownership specification](../ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#stable-semantic-rules) owns the graduated rule, [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) owns exact current status, and the [Parallel Multi-Instance specification](../capsules/PARALLEL-MULTI-INSTANCE-SPEC.md) consumes the result in its unconditional closing-preservation theorem.
+The [Activity occurrence ownership specification](../ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#stable-semantic-rules) owns the graduated rule, [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) owns exact current status, and the [Parallel Multi-Instance specification](../capsules/PARALLEL-MULTI-INSTANCE-SPEC.md) consumes the result in its unconditional closing-preservation theorem.
 
 Implementation changed the runtime/proof map, semantic-family map, Activity occurrence ownership specification, Parallel Multi-Instance proof account, TypeScript defect inventory, guarded writer census, the continuation-decoder body-union comment, and PLAN evidence. The stable `AOO-CLAIM-01` rule is owned only by the active specification; this archived proposal is not a second authority.
 

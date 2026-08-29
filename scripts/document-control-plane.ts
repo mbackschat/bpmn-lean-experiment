@@ -10,6 +10,7 @@ export const AreaId = Object.freeze({
   EngineContractsSource: "ENGINE-CONTRACTS-SOURCE",
   EngineRuntimeProof: "ENGINE-RUNTIME-PROOF",
   EngineSemanticFamily: "ENGINE-SEMANTIC-FAMILY",
+  EngineSemanticInvariant: "ENGINE-SEMANTIC-INVARIANT",
   TemporalHosting: "TEMPORAL-HOSTING",
   BpmPlatform: "BPM-PLATFORM",
   AssuranceAdoption: "ASSURANCE-ADOPTION",

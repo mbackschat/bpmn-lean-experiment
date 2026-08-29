@@ -8,7 +8,7 @@ This adds no BPMN capability, operation kind, profile, scenario, or public obser
 
 Two claims are deliberately narrower than a reader might expect. Body turnover was excluded here and its reopen trigger has since fired: the replacement account is now part of this document as `AOO-TURNOVER-02` through `AOO-TURNOVER-04`, its reasoning is kept in [the archived turnover amendment](archived/ACTIVITY-BODY-TURNOVER-PROPOSAL.md), and every passage below that withdrew it as unreachable is marked as superseded rather than rewritten. Body-side lookup determinism and turnover's sole-claimant fact are derived from `AOO-CLAIM-01`; the rule's root-defect analysis and governed review chronology remain in the [archived body-claim amendment](archived/ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md).
 
-Exact implemented and absent status is owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership).
+Exact implemented and absent status is owned by [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#activity-occurrence-ownership).
 
 ## Question and current boundary
 
@@ -236,7 +236,7 @@ Both first reds are **state-level negatives, not schedules**, and that limit mus
 
 The direction that remains unenforced is stated rather than hidden: nothing refuses a state that drops a record while keeping the deadline it listed. The two opposite directions are refused, a record whose body is gone and a Timer claimed by two records, and this third one is absent from the mutation list below for the same reason it is absent from the conjuncts. Closing it needs the program, which is the boundary this capsule holds.
 
-One Required-list item is withdrawn rather than deferred. It asked for a **program-agreement** conjunct over `activityOccurrences`; none exists in either language, [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) already lists the six conjuncts that do exist without claiming it, and the capsule was the document out of step with both the code and its own detail map.
+One Required-list item is withdrawn rather than deferred. It asked for a **program-agreement** conjunct over `activityOccurrences`; none exists in either language, [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#activity-occurrence-ownership) already lists the six conjuncts that do exist without claiming it, and the capsule was the document out of step with both the code and its own detail map.
 
 Meaningful mutations: pair by ordinal equality again; drop the body-matching case from regional cancellation; keep a record after its body is withdrawn; withdraw a listed Timer without updating the list; mint the Activity identity from `taskActivations` instead of its own counter; alias the identity to `OccurrenceId`; carry a record across Continue-As-New without its body. Each must be caught by an oracle that does not share the mutated mechanism.
 

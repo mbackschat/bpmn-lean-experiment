@@ -118,6 +118,8 @@ The runtime-and-proof map was the exception twice, raised to 5,000 and then to 6
 
 The standing commitment was to split instead of raising a third time, and that is what happened. Per-family status moved to [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md) under its own area ID, which returned both maps below the default and retired the exception along with the unconfirmed decision behind it. The axis matters more than the split: a newly closed family now grows a map whose size is supposed to grow with families, instead of pushing a shared map past a threshold. When either map next reaches 4,000, the answer is another split on a stated axis rather than a raise, because a split is a routing change that needs a new area ID and is therefore visible in the router table, while a raise is one number an agent can move.
 
+That commitment was tested and kept. The family map reached 4,000 words while a closure-review correction was landing, which is the same squeeze that ended the second raise, and the owner chose the split over a raise to 5,000 on 2026-08-29 after the arithmetic showed 5,000 buying roughly three families. Cross-cutting mechanism status moved to [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md). The axis is what a section is about: a section belongs to the invariant map when its subject adds no BPMN capability, operation kind, profile, scenario, or public observation field, and to the family map when it closes one BPMN element family. Each map's size then grows with the thing it describes, and neither carries an exception.
+
 ## Project document homes
 
 | Information | Owner role |
