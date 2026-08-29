@@ -1,13 +1,13 @@
-# Activity data-input mediation proposal
+# Activity data-input mediation specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and bounded outcome
 
-The exact bounded standards-only profile is implemented across source admission and lowering, Lean, the independently written TypeScript semantic core, the profile-gated optional task-input observation, the differential pipeline, the production Temporal Workflow, the retained whole-model corpus, and Product 2's strict copied contract. Three registered scenarios cover a present string, an explicit null, and an absent source. The closure cost, clean immutable closure gate, independent closure review, and proposal graduation remain open.
+This capsule owns the implemented bounded standards-only profile across source admission and lowering, Lean, the independently written TypeScript semantic core, the profile-gated optional task-input observation, the differential pipeline, the production Temporal Workflow, the retained whole-model corpus, and Product 2's strict copied contract. Three registered scenarios cover a present string, an explicit null, and an absent source.
 
 What is the smallest standards-only data mechanism that makes one ordinary User Task wait for a required Process-scoped value, copies that value into an occurrence-owned Activity input, exposes the selected input to the task consumer, and disposes the local value with the Activity without selecting output mapping or a new Task-specific host effect?
 
@@ -161,31 +161,6 @@ Old profiles must keep byte-identical source-independent Programs and observatio
 
 The executable constraints mechanically resolved by `node scripts/what-binds.ts` include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [execution-publication contract coverage](../../scripts/execution-publication-contract-coverage.test.ts), [internal commutation census](../../scripts/internal-commutation-census.test.ts), [Activity occurrence writer census](../../scripts/activity-occurrence-writer-census.test.ts), [runtime collection removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [canonical ordering](../../scripts/canonical-ordering.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [model-corpus policy](../../scripts/bpmn-corpus-policy.test.ts), [document reviewability](../../scripts/document-reviewability.test.ts), and the [Workflow occurrence authority guard](../../scripts/workflow-occurrence-semantic-authority.test.ts). Focused oracles are the source compiler, semantic-core, Lean semantic, contract, differential pipeline, Temporal, model-corpus, and Product 2 strict-contract gates selected by [the testing specification](../TESTING-SPEC.md#focused-gate-matrix).
 
-### Owners this implementation grows
-
-The `OWNER` measurements below are the current nonblank counts reported by `node scripts/what-binds.ts`, refreshed as the implementation grows each owner. Implementation reruns `node scripts/what-binds.ts` before growing any owner. The 800-line soft target is the extraction threshold and 1,200 lines is the hard ceiling.
-
-| Owner | Current headroom |
-|---|---:|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 138 |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 190 |
-| [TypeScript source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 228 |
-| [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 252 |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 311 |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 505 |
-| [TypeScript RuntimeState contract](../../packages/semantic-core/src/semantic-process-state.ts) | 384 |
-| [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 398 |
-| [TypeScript scoped-data owner](../../packages/semantic-core/src/semantic-process-data.ts) | 536 |
-| [TypeScript checked element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 358 |
-| [TypeScript projected-key owner](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 464 |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 526 |
-
-`ProfileAdmission.lean` is the narrowest owner. If the exhaustive profile arm cannot fit cohesively in the headroom recorded above, extract the profile-specific rule before semantic implementation. `SemanticProcessContract.lean` receives only the reusable value and operation arm, source lowering delegates parsing to a new owner, scenario projection delegates the task-input projection if its complete addition reaches the soft target, and the RuntimeState contract receives only the owner-discriminator shape. New source, runtime, proof, and conformance modules hold behavior by responsibility.
-
-No size exception is requested.
-
-Same-change owners are this proposal, the [scoped-data specification](SCOPED-DATA-SPEC.md), [Activity occurrence ownership](../ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md), the [internal commutation proposal](../INTERNAL-COMMUTATION-PROPOSAL.md), the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), all applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), the semantic-core and source registries, the Lean module graph, the contract registry, model-corpus registry and generated map, capability disclosure, Product 2 About-page disclosure, capsule cost ledger, and [PLAN](../PLAN.md).
-
 ## Epistemic closure and reopen conditions
 
 Established by implementation are the normative direct-copy and unavailable-source rules, the exact machine-readable source cardinalities and their five named exclusions, the exact source and profile boundary, the explicit-null-is-present interpretation, the occurrence-owned local scope with its issuing-discipline freshness bound, the proved Lean transition and refusal account with evaluator soundness, the independently written TypeScript realization, three answer-free cross-language scenarios, real-service durable refinement, one retained whole model, and strict Product 2 decoding. Governed closure review and graduation remain open.
@@ -196,11 +171,9 @@ The nearest realistic counterexample starts with explicit null, activates no tas
 
 Reopen before adding another input or InputSet, selecting optional or while-executing input behavior, adding reevaluation ingress, changing the null interpretation, adding output mediation, choosing an ItemDefinition or external type system, extending the value domain, exposing general Activity-local variables, reusing the mechanism for another Task or Event, selecting a CIB relationship, changing owner discrimination, or changing the Temporal rollover boundary.
 
-The checkpoint review left three obligations for closure, and all three are now discharged. `ADINPUT-SCOPE-01` is stated as an issuing-discipline consequence rather than by amending the global predicate, whose quantified preservation is a deliberately open lane and so could not have supplied it. The family names the bound that every Activity-owned local scope sits at or below its own element's high-water mark, proves it at `initialState` and at `runningStartState`, proves both of its transitions preserve it, and derives owner freshness from it, so no call site has to justify `fresh` itself. The obligation is weakened rather than eliminated: both family transitions require `.running` control, so neither anchor enables an activation on its own, and every state where an activation is possible is reached through non-family transitions whose preservation of this bound is not proved here. Establishing the bound at an arbitrary reachable state remains part of the deliberately open global-predicate lane, and closure claims nothing more. The single-binding half follows from the same pair: the copy law fixes the activated occurrence's scope at exactly one binding, and freshness fixes that there is exactly one such scope. Canonical ordering alone could never have supplied either half, because `orderedBy` compares adjacent members without strictness and therefore admits duplicates. The adversarial negatives the account names are now retained. Duplicate and absent local owner refusing completion, and a well-formed command naming an activation the live wait does not carry, are checked at [the family's conformance module](../../BpmnSemantics/ActivityDataInputConformance.lean); each perturbs the committed active state rather than a terminal one, so no refusal can be attributed to the task already being gone, and an anchor fact ties the duplicated scope to the one activation actually produced. The five named source mutations are retained at [the source lock](../../packages/bpmn-source/test/activity-data-input-source.test.ts), each schema-valid against the pinned XSD, which admits an unbounded `sourceRef`, a `transformation` on a data association, and `property` and `loopCharacteristics` on any Activity. They refuse through one whole-model exact-shape reader and report one evidence string, so they establish the exclusion boundary rather than five independent per-feature rules; closure must not describe them as separate discriminators.
+`ADINPUT-SCOPE-01` is stated as an issuing-discipline consequence rather than by amending the global predicate, whose quantified preservation is a deliberately open lane and so could not have supplied it. The family names the bound that every Activity-owned local scope sits at or below its own element's high-water mark, proves it at `initialState` and at `runningStartState`, proves both of its transitions preserve it, and derives owner freshness from it, so no call site has to justify `fresh` itself. The obligation is weakened rather than eliminated: both family transitions require `.running` control, so neither anchor enables an activation on its own, and every state where an activation is possible is reached through non-family transitions whose preservation of this bound is not proved here. Establishing the bound at an arbitrary reachable state remains part of the deliberately open global-predicate lane, and closure claims nothing more. The single-binding half follows from the same pair: the copy law fixes the activated occurrence's scope at exactly one binding, and freshness fixes that there is exactly one such scope. Canonical ordering alone could never have supplied either half, because `orderedBy` compares adjacent members without strictness and therefore admits duplicates. The adversarial negatives the account names are retained. Duplicate and absent local owner refusing completion, and a well-formed command naming an activation the live wait does not carry, are checked at [the family's conformance module](../../BpmnSemantics/ActivityDataInputConformance.lean); each perturbs the committed active state rather than a terminal one, so no refusal can be attributed to the task already being gone, and an anchor fact ties the duplicated scope to the one activation actually produced. The five named source mutations are retained at [the source lock](../../packages/bpmn-source/test/activity-data-input-source.test.ts), each schema-valid against the pinned XSD, which admits an unbounded `sourceRef`, a `transformation` on a data association, and `property` and `loopCharacteristics` on any Activity. They refuse through one whole-model exact-shape reader and report one evidence string, so they establish the exclusion boundary rather than five independent per-feature rules; closure must not describe them as separate discriminators.
 
-Closure requires a commit-bounded cost row compared with the nearest scoped-data or User Task data increment, exact established and unsupported status in every routed map, meaningful mutations listed above, a clean complete gate, the conditional semantic-checkpoint review, and governed closure review. Proposal approval alone authorizes none of those claims.
-
-The cost row is bound at `f9f3f7bb..7349964e` in [the capsule cost ledger](../CAPSULE-COST-LEDGER.md). Both measures rose against the named User Task completion data comparator and both fell against the immediately preceding capsule; the removed process weight is recorded with the row.
+The commit-bounded cost is recorded at `f9f3f7bb..7349964e` in [the capsule cost ledger](../CAPSULE-COST-LEDGER.md). Both measures rose against the named User Task completion data comparator and both fell against the immediately preceding capsule; the removed process weight is recorded with the row.
 
 ## Independent cold-review receipt
 
@@ -208,4 +181,4 @@ The cost row is bound at `f9f3f7bb..7349964e` in [the capsule cost ledger](../CA
 |---|---|---|---|---|
 | Proposal | `3332a92f` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `adb23217` | `fork-turns-none` | `approve-with-required-edits` | `ede20831` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `cad23498` | `fork-turns-none` | `approve-with-required-edits` | `fb42ab1b` |

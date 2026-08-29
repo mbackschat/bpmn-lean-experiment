@@ -171,6 +171,14 @@ test("requires a governed owner only when the resume point names review work", (
     ),
     [],
   );
+  // A hyphenated compound is not review work: `\b` alone matches inside `invoice-review`.
+  assert.deepEqual(
+    planReviewRoutingFindings(
+      "Next action: register the invoice-review model and its peer-reviewed corpus row.",
+      [],
+    ),
+    [],
+  );
 });
 
 test("uses only structural implementation-map routes across maintained Markdown", async () => {

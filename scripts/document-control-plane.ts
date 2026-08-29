@@ -169,12 +169,20 @@ export function planReviewOwnerPaths(resume: string): ReadonlyArray<string> {
   ];
 }
 
-/** Requires a governed route for review work without making review mandatory for every active item. */
+/**
+ * Requires a governed route for review work without making review mandatory for every active item.
+ *
+ * The hyphen exclusions matter: `\b` treats `-` as a word boundary, so a plain word-boundary test
+ * matches any hyphenated compound built from a review word. A resume point naming the retained
+ * `invoice-review` model tripped this rule while naming no review work at all, which would have been
+ * answered by renaming a business model to satisfy a guard.
+ */
 export function planReviewRoutingFindings(
   resume: string,
   owners: ReadonlyArray<PlanReviewOwner>,
 ): ReadonlyArray<string> {
-  return owners.length === 0 && /\b(?:review|reviewer|reviewing|audit)\b/u.test(resume)
+  return owners.length === 0 &&
+      /(?<![\w-])(?:review|reviewer|reviewing|audit)(?![\w-])/u.test(resume)
     ? ["resume point names review work but routes to no governed review owner"]
     : [];
 }

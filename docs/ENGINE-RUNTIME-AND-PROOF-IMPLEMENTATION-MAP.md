@@ -18,7 +18,7 @@ The [sequential metadata specification](capsules/USER-TASK-ASSIGNMENT-FORM-METAD
 
 The first interchange composition reuses the sequential User Task Process-data account while source admission retains standard notation. Lean/core results and live Temporal replacement, history, and replay agree. It adds no runtime field, IL operation, transition, observation, or CIB interpretation.
 
-The [Activity data-input capsule](capsules/ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md) makes one User Task's entry depend on Process *data*. Lean, core, and public-observation evidence are green for readiness, the occurrence-owned copy, the absence-versus-null discriminator, and atomic disposal. It also produced the first stable state that is Running with a token and no ingress, which separated publication from progress across every profile.
+The [Activity data-input capsule](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) makes one User Task's entry depend on Process *data*. Lean, core, and public-observation evidence are green for readiness, the occurrence-owned copy, the absence-versus-null discriminator, and atomic disposal. It also produced the first stable state that is Running with a token and no ingress, which separated publication from progress across every profile.
 
 `INTERNAL-COMMUTATION` requires a closed Program scheduling mode; existing profiles select reject. TypeScript atomically closes a pairwise-independent ordinary User Task, Message, Timer, or effect frontier and refuses an oversized batch before mutation. Lean retains the exact-pair proofs, adds the complete-frontier classifier, and checks all six orders of three tasks. The checkpoint is independently approved; scheduled choice, regions, other families, and arbitrary-batch proof remain absent.
 

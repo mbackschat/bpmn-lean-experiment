@@ -6,7 +6,7 @@
 
 ## Role
 
-This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. Activity-local owners use one closed discriminated identity type so an effect occurrence and an Activity occurrence with equal coordinates remain distinct. This capsule's mapping account continues to use only the effect-occurrence arm; the [Activity data-input mediation proposal](ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md) owns the separate Activity-occurrence consumer and the one local projection that consumer publishes. The representation change itself changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.
+This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. Activity-local owners use one closed discriminated identity type so an effect occurrence and an Activity occurrence with equal coordinates remain distinct. This capsule's mapping account continues to use only the effect-occurrence arm; the [Activity data-input mediation specification](ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) owns the separate Activity-occurrence consumer and the one local projection that consumer publishes. The representation change itself changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.
 
 Exact implementation status belongs in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the runtime representation boundary belongs in [the Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md).
 
@@ -94,7 +94,7 @@ Activity-local bindings are never part of the canonical public `variables` obser
 
 ### `SDATA-OBSERVE-02`
 
-Every projection of an Activity-local binding is enumerated by an approved capsule. Committed effect arguments appear as `openEffects` arguments, and one live data-bearing task's copied DataInput appears as its `openUserTasks[].inputs` collection under [the Activity data-input capsule](ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md). No other local binding is projected, and a new projection requires its own approved capsule rather than a widening here.
+Every projection of an Activity-local binding is enumerated by an approved capsule. Committed effect arguments appear as `openEffects` arguments, and one live data-bearing task's copied DataInput appears as its `openUserTasks[].inputs` collection under [the Activity data-input capsule](ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md). No other local binding is projected, and a new projection requires its own approved capsule rather than a widening here.
 
 This identifier replaces the second half of the original `SDATA-OBSERVE-01`, whose blanket "no other local binding is projected" became a materially different proposition once an approved capsule added the second enumerated projection.
 
