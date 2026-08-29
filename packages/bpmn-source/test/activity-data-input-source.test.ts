@@ -6,7 +6,8 @@
  * the source by name, or admitted a second input would have to change these literals to pass.
  *
  * The refusal cases are the profile's exclusions made executable: each mutation is a model that is
- * still valid BPMN but is outside the reviewed slice.
+ * still valid BPMN but is outside the reviewed slice. They share one oracle, because admission reads
+ * a whole-model exact shape rather than checking features one at a time.
  */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -181,6 +182,55 @@ test("refuses every model outside the reviewed data-input slice", async () => {
       xml.replace(
         "<bpmn:dataInputRefs>DataInput_ReviewContext</bpmn:dataInputRefs>",
         "<bpmn:dataInputRefs>DataInput_ReviewContext</bpmn:dataInputRefs>\n          <bpmn:optionalInputRefs>DataInput_ReviewContext</bpmn:optionalInputRefs>",
+      ),
+    ],
+    // The five below are the profile's named exclusions made executable. Each is schema-valid BPMN:
+    // `sourceRef` is unbounded and `transformation` is admissible on a data association, and
+    // `property` and `loopCharacteristics` are admissible on any Activity.
+    //
+    // Admission reads one whole-model exact shape, so every case in this array refuses through that
+    // single match and reports the same evidence. They lock the exclusion boundary; they are not
+    // independent per-feature rules, and a reader must not infer that removing one feature check
+    // would let exactly one of them through.
+    [
+      "two association sources",
+      xml.replace(
+        "<bpmn:sourceRef>Property_ReviewContext</bpmn:sourceRef>",
+        "<bpmn:sourceRef>Property_ReviewContext</bpmn:sourceRef>\n        <bpmn:sourceRef>Property_Second</bpmn:sourceRef>",
+      ).replace(
+        '<bpmn:property id="Property_ReviewContext" />',
+        '<bpmn:property id="Property_ReviewContext" />\n    <bpmn:property id="Property_Second" />',
+      ),
+    ],
+    [
+      "source Property owned by the Activity rather than the Process",
+      xml.replace(
+        '<bpmn:property id="Property_ReviewContext" />\n',
+        "",
+      ).replace(
+        "<bpmn:ioSpecification",
+        '<bpmn:property id="Property_ReviewContext" />\n      <bpmn:ioSpecification',
+      ),
+    ],
+    [
+      "second input set",
+      xml.replace(
+        "</bpmn:inputSet>",
+        '</bpmn:inputSet>\n        <bpmn:inputSet id="InputSet_Second" />',
+      ),
+    ],
+    [
+      "association carrying a transformation",
+      xml.replace(
+        "<bpmn:targetRef>DataInput_ReviewContext</bpmn:targetRef>",
+        '<bpmn:targetRef>DataInput_ReviewContext</bpmn:targetRef>\n        <bpmn:transformation id="Transformation_Forbidden">context</bpmn:transformation>',
+      ),
+    ],
+    [
+      "repeated Activity",
+      xml.replace(
+        "</bpmn:userTask>",
+        '  <bpmn:standardLoopCharacteristics id="Loop_Forbidden" />\n    </bpmn:userTask>',
       ),
     ],
   ];
