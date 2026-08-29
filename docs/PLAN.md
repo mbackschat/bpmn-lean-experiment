@@ -46,7 +46,7 @@ Beta breadth now advances at `DATA-AND-TASK-MECHANISMS`. The approved Internal C
 
 Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
-Next action: bind the [Activity data-input mediation](capsules/ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md) closure cost row, run the clean-committed verification entry point against that target, and obtain the governed context-cold closure review, then graduate the proposal. Route `SEMANTIC-PROCESS-IL-SPEC`, `SCOPED-DATA-SPEC`, `ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC`, and `TESTING-SPEC` in the closure packet; the checkpoint packet under-routed all four.
+Next action: run the clean-committed verification entry point against the bound [Activity data-input mediation](capsules/ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md) closure target and obtain the governed context-cold closure review, then graduate the proposal. Route `SEMANTIC-PROCESS-IL-SPEC`, `SCOPED-DATA-SPEC`, `ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC`, and `TESTING-SPEC` in the closure packet; the checkpoint packet under-routed all four.
 
 Separate open changes outside the active item: Internal Commutation final closure, Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and workload isolation now held at Engine `v0.3`. Host load no longer blocks this capsule's refinement lane, because the raised deadline and its margin assertion are green and recorded by [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md).
 

@@ -200,6 +200,8 @@ The checkpoint review left three obligations for closure, and all three are now 
 
 Closure requires a commit-bounded cost row compared with the nearest scoped-data or User Task data increment, exact established and unsupported status in every routed map, meaningful mutations listed above, a clean complete gate, the conditional semantic-checkpoint review, and governed closure review. Proposal approval alone authorizes none of those claims.
 
+The cost row is bound at `f9f3f7bb..7349964e` in [the capsule cost ledger](../CAPSULE-COST-LEDGER.md). Both measures rose against the named User Task completion data comparator and both fell against the immediately preceding capsule; the removed process weight is recorded with the row.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
