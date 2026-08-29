@@ -239,8 +239,10 @@ def dataInputActivityOwner (state : RuntimeState) (instanceId : SemanticId)
 binding, named by the target DataInput identity and holding the selected source value unchanged.
 
 Stated over the selected binding rather than a literal, so a witness whose copied value happens to
-agree cannot stand in for the copy. Owner freshness is a hypothesis rather than a derived fact,
-because this law is about the copy and not about the issuing discipline that supplies it. -/
+agree cannot stand in for the copy. Owner freshness stays a hypothesis here so the law speaks only
+about the copy, but it is no longer an obligation a caller must discharge by hand:
+`issuedCountBoundSuppliesFreshOwner` derives it from a bound this family's own transitions preserve
+from `initialState`. -/
 theorem activationCopiesSelectedSourceExactly {state after : RuntimeState}
     {instanceId : SemanticId} {input output : ControlPlaceId}
     {taskId : TaskDefinitionId} {taskName : Option String}
@@ -480,5 +482,201 @@ theorem completeDataInputUserTask_activity_identity_discipline {program : Progra
                   obtain ⟨_, changed⟩ := step
                   cases changed
                   exact (List.mem_filter.mp present).1
+
+
+/-! ## The issuing-discipline consequence that supplies owner freshness
+
+`ADINPUT-SCOPE-01`'s uniqueness half rests on a freshness hypothesis that the global runtime-state
+predicate cannot supply, because its quantified preservation is a deliberately open lane. This
+section discharges it family-locally instead: the bound below is preserved by both of this family's
+transitions and implies the hypothesis, so `fresh` is a consequence of the issuing discipline rather
+than an assumption a caller must justify. -/
+
+/-- Every Activity-owned local scope sits at or below its own element's high-water mark.
+
+Effect-owned scopes are unconstrained here on purpose: they are numbered by a different counter, and
+constraining them would make this bound a claim about a family it does not govern. -/
+def activityScopesWithinIssuedCount (state : RuntimeState) : Prop :=
+  ∀ scope ∈ state.variables.activities,
+    ∀ owner : ActivityOccurrenceId, scope.owner = .activityOccurrence owner →
+      owner.activation ≤ activityActivationCount state ⟨owner.activityElementId.value⟩
+
+private theorem taskActivationCount_cons_self
+    (rest : List TaskActivation) (taskId : TaskDefinitionId) (count : Nat) :
+    taskActivationCount ({ taskId, count } :: rest) taskId = count := by
+  simp [taskActivationCount]
+
+private theorem taskActivationCount_filter_ne
+    (rest : List TaskActivation) {taskId other : TaskDefinitionId} (distinct : other ≠ taskId) :
+    taskActivationCount (rest.filter fun value => decide (value.taskId ≠ taskId)) other =
+      taskActivationCount rest other := by
+  induction rest with
+  | nil => simp [taskActivationCount]
+  | cons head tail ih =>
+      -- `decide (a ≠ b)` and `!decide (a = b)` are the same predicate in two normal forms, and the
+      -- goal reaches one while the induction hypothesis carries the other.
+      simp only [ne_eq, decide_not] at ih ⊢
+      by_cases kept : head.taskId = taskId
+      · have absent : ¬ (taskId = other) := fun same => distinct same.symm
+        simp [kept, taskActivationCount, absent, ih]
+      · simp [kept, taskActivationCount, ih]
+
+
+/-- Membership in a canonical insertion is membership in the original or the inserted scope. -/
+private theorem mem_insertActivityVariableScope
+    {inserted scope : ActivityVariableScope} {values : List ActivityVariableScope}
+    (present : scope ∈ insertActivityVariableScope inserted values) :
+    scope = inserted ∨ scope ∈ values := by
+  induction values with
+  | nil =>
+      simp only [insertActivityVariableScope, List.mem_singleton] at present
+      exact Or.inl present
+  | cons head tail ih =>
+      simp only [insertActivityVariableScope] at present
+      by_cases first : activityVariableScopeBefore inserted head = true
+      · rw [if_pos first] at present
+        simp only [List.mem_cons] at present
+        rcases present with same | rest
+        · exact Or.inl same
+        · exact Or.inr (List.mem_cons.mpr rest)
+      · rw [if_neg first] at present
+        simp only [List.mem_cons] at present
+        rcases present with same | rest
+        · exact Or.inr (by simp [same])
+        · rcases ih rest with same | tailMember
+          · exact Or.inl same
+          · exact Or.inr (by simp [tailMember])
+
+/-- `ADINPUT-SCOPE-01`. Freshness is a consequence of the bound rather than a caller obligation: the
+minted activation is one above its element's high-water mark, and the bound puts every live scope of
+that element at or below it. -/
+theorem issuedCountBoundSuppliesFreshOwner {state : RuntimeState}
+    {instanceId : SemanticId} {taskId : TaskDefinitionId}
+    (bound : activityScopesWithinIssuedCount state) :
+    ∀ scope ∈ state.variables.activities,
+      activityOccurrenceScopeMatches (dataInputActivityOwner state instanceId taskId) scope
+        = false := by
+  intro scope present
+  cases matched :
+      activityOccurrenceScopeMatches (dataInputActivityOwner state instanceId taskId) scope with
+  | false => rfl
+  | true =>
+      exfalso
+      simp only [activityOccurrenceScopeMatches, localDataOwnerMatches,
+        decide_eq_true_eq] at matched
+      have bounded :=
+        bound scope present (dataInputActivityOwner state instanceId taskId) matched.symm
+      simp only [dataInputActivityOwner] at bounded
+      exact Nat.not_succ_le_self _ bounded
+
+private theorem completionPreservesActivityActivations {program : Program}
+    {state after : RuntimeState} {processInstanceId : SemanticId}
+    {taskId : TaskDefinitionId} {activation : Nat}
+    (step : completeDataInputUserTask? program state processInstanceId taskId
+      activation = some after) :
+    after.activityActivations = state.activityActivations := by
+  unfold completeDataInputUserTask? at step
+  cases running : dataInputRunningInstance? state with
+  | none => simp [running] at step
+  | some instanceId =>
+      cases live : dataInputTaskWait? state processInstanceId taskId activation with
+      | none => simp [running, live] at step
+      | some task =>
+          cases record :
+              activityOccurrenceForTaskWait? state.activityOccurrences task with
+          | none => simp [running, live, record] at step
+          | some found =>
+              cases removed : removeActivityOccurrenceVariableScope state.variables
+                  { processInstanceId := found.processInstanceId
+                    activityElementId := ⟨found.activityElementId.value⟩
+                    activation := found.activation } with
+              | none => simp [running, live, record, removed] at step
+              | some variables =>
+                  simp [running, live, record, removed] at step
+                  obtain ⟨_, changed⟩ := step
+                  cases changed
+                  rfl
+
+/-- Completion removes one scope and touches no counter, so the bound survives by subset. -/
+theorem completeDataInputUserTask_preservesIssuedCountBound {program : Program}
+    {state after : RuntimeState} {processInstanceId : SemanticId}
+    {taskId : TaskDefinitionId} {activation : Nat}
+    (bound : activityScopesWithinIssuedCount state)
+    (step : completeDataInputUserTask? program state processInstanceId taskId
+      activation = some after) :
+    activityScopesWithinIssuedCount after := by
+  intro scope present owner owned
+  obtain ⟨_, variables, removed, changed⟩ := completionJoin step
+  simp only [activityActivationCount, completionPreservesActivityActivations step]
+  refine bound scope ?_ owner owned
+  rw [changed] at present
+  unfold removeActivityOccurrenceVariableScope at removed
+  split at removed
+  · cases removed
+    exact (List.mem_filter.mp present).left
+  · simp at removed
+
+/-- Arming raises its own element's mark and leaves every other element's alone, so no live scope's
+bound is invalidated by the update. -/
+private theorem activationCounterMonotone (state : RuntimeState)
+    (taskId element : TaskDefinitionId) :
+    taskActivationCount state.activityActivations element ≤
+      taskActivationCount
+        ({ taskId, count := taskActivationCount state.activityActivations taskId + 1 } ::
+          state.activityActivations.filter fun value => !decide (value.taskId = taskId))
+        element := by
+  by_cases same : element = taskId
+  · subst same
+    rw [taskActivationCount_cons_self]
+    exact Nat.le_succ _
+  · have head : ¬ (taskId = element) := fun eq => same eq.symm
+    simp only [taskActivationCount, head, ite_false]
+    have bridge :
+        (state.activityActivations.filter fun value => !decide (value.taskId = taskId)) =
+          state.activityActivations.filter fun value => decide (value.taskId ≠ taskId) := by
+      simp only [ne_eq, decide_not]
+    rw [bridge, taskActivationCount_filter_ne _ same]
+    exact Nat.le_refl _
+
+/-- Arming preserves the bound: the minted scope sits exactly at the new mark, and every scope that
+was already live keeps a mark that only rose. -/
+theorem activateDataInputUserTask_preservesIssuedCountBound {state after : RuntimeState}
+    {input output : ControlPlaceId} {taskId : TaskDefinitionId}
+    {taskName : Option String} {directInput : DirectActivityDataInput}
+    (bound : activityScopesWithinIssuedCount state)
+    (step : activateDataInputUserTask? state input output taskId taskName
+      directInput = some after) :
+    activityScopesWithinIssuedCount after := by
+  intro scope present owner owned
+  unfold activateDataInputUserTask? at step
+  cases token : onlyTokenOwner? state input with
+  | none => simp [token] at step
+  | some tokenOwner =>
+      cases running : dataInputRunningInstance? state with
+      | none => simp [token, running] at step
+      | some instanceId =>
+          cases available : dataInputSourceBinding? state directInput with
+          | none => simp [token, running, available] at step
+          | some source =>
+              simp [token, running, available] at step
+              cases step
+              simp only [addActivityOccurrenceVariableScope] at present
+              rcases mem_insertActivityVariableScope present with minted | earlier
+              · subst minted
+                simp only at owned
+                cases owned
+                simp only [activityActivationCount, taskActivationCount_cons_self]
+                exact Nat.le_refl _
+              · have prior := bound scope earlier owner owned
+                simp only [activityActivationCount] at prior ⊢
+                exact Nat.le_trans prior
+                  (activationCounterMonotone state taskId ⟨owner.activityElementId.value⟩)
+
+/-- The bound holds where every run starts, so the two preservation results above make it an
+invariant of this family rather than an assumption carried in from somewhere unproved. -/
+theorem initialState_activityScopesWithinIssuedCount :
+    activityScopesWithinIssuedCount initialState := by
+  intro scope present
+  simp [initialState, emptyScopedVariables] at present
 
 end BpmnSemantics.SemanticProcess
