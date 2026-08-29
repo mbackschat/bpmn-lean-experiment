@@ -204,9 +204,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.NonInterruptingBoundaryTimerConformance", peakResidentKib: 2176108, elapsedSeconds: 13.9 },
     {
       module: "BpmnSemantics.ActivityDataInputConformance",
-      peakResidentKib: 2168720,
-      elapsedSeconds: 8.63,
-      measuredAtCommit: "f92b61d4",
+      peakResidentKib: 2289900,
+      elapsedSeconds: 10.23,
+      measuredAtCommit: "085b36aa",
     },
     { module: "BpmnSemantics.ActivityBoundaryTimerConformance", peakResidentKib: 2146500, elapsedSeconds: 13.5 },
     {
