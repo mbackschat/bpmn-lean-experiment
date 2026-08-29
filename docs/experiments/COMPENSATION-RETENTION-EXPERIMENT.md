@@ -2,7 +2,7 @@
 
 ## Status
 
-**Status:** Opened 2026-08-29 by owner decision; not yet executed
+**Status:** Executed 2026-08-29; both halves answered; no representation correction required, and two bounds are recorded for the compensation capsule
 
 **Question:** Can a completed Activity occurrence's context be retained for later compensation without inverting the engine's layering and without invalidating the disposal rule every current Activity family relies on?
 
@@ -28,11 +28,13 @@ The current representation discards exactly that at exactly that moment. `Runtim
 
 ## Separating witness
 
-BPMN admits compensation an Activity does not declare. A Sub-Process carrying the `compensable` attribute has default compensation implicitly defined, which "recursively compensates all successfully completed Activities within that Sub-Process," and a throw Compensation Event that specifies no Activity in a global context compensates "all completed Activities in the Process." The error-handling default adds a third path: absent an Error Event Sub-Process for a particular error, compensation is called automatically for all contained Activities.
+BPMN admits compensation an Activity does not declare. Clauses 10.7.2 and 13.5.5 make a throw Compensation Event that specifies no Activity compensate "all completed Activities in the Process," and the metamodel admits exactly that form because `CompensateEventDefinition-activityRef` carries `lower="0"`.
 
-The witness is therefore one Process whose compensable Sub-Process contains a Multi-Instance Activity and at least one ordinary Activity that declares no handler of its own, compensated through the global form. Account 3 stated as "retain where a handler is attached" retains nothing for that ordinary Activity and nothing per instance, so it cannot produce the snapshots Clause 13.5.5 requires; the accounts separate on whether retention is decidable from an Activity's own declaration or only from its enclosing scope's.
+The witness is therefore one Process compensated through the global form, containing at least one ordinary Activity that declares nothing about compensation. Account 3 stated as "retain where a handler is attached" retains nothing for that Activity, so it cannot produce the snapshot Clause 13.5.5 requires; the accounts separate on whether retention is decidable from an Activity's own declaration or only from its enclosing scope's.
 
-The cost half uses the same witness. Sequential Multi-Instance already admits sixteen items, each with its own local context, and Clause 13.5.5 requires a separate snapshot per instance. That is the largest retention the closed corpus can already demand, and it is measurable against the bounds the [Sequential Multi-Instance capacity probe](../capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) established: 8,000 Events, 8 MiB of History, 2,240 activation Events, and 2 MiB of canonical activation payload, against measured maxima of 87 Events, 568,902 History-envelope bytes, and 246,799 payload bytes.
+Two further paths would widen the same conclusion and are checked rather than assumed, because a witness resting on an inadmissible attribute is not a witness. The prose `compensable` Sub-Process attribute and the Clause 13.5.5 unhandled-error default are examined in the result below.
+
+The cost half measures the largest retention the closed corpus can already demand, which is the registered Sequential Multi-Instance program at its admitted sixteen-item maximum, against the budget a retained record actually charges.
 
 ## Scope and exclusions
 
@@ -42,7 +44,7 @@ Excluded: compensation handlers, Compensation Event Sub-Processes, Compensation 
 
 ## Executable location and focused command
 
-No production surface changes. The normative half is answered from the pinned OMG corpus and its machine-readable CMOF/XSD, recorded here. The cost half extends the existing private testkit capacity-probe methodology and reports against the bounds above; it runs under `./scripts/pnpm.sh run test:temporal` if it lands as a probe, and is otherwise reported as a measurement in this document.
+No production surface changes, and no retained probe. The normative half is answered from the pinned OMG corpus and its machine-readable CMOF and XSD, cited in the result. The cost half was measured by driving the registered Sequential Multi-Instance program through the semantic core at its admitted sixteen-item maximum and sizing each committed state, using `JSON.stringify`, whose output differs from the adapter's sorted-key canonical encoder only in key order and therefore not in byte count. The figures are recorded below rather than kept as a gate, because nothing in the production surface changed and a retained probe would assert a bound no admitted profile yet has.
 
 ## Stop conditions
 
@@ -52,4 +54,34 @@ An outcome that corrects a current representation is material and opens the ordi
 
 ## Result
 
-Not yet executed.
+### Retention is scope-decided, not declaration-decided
+
+Account 3 stated as "retain where a compensation handler is attached" is unsound. `CompensateEventDefinition-activityRef` carries `lower="0"` in the CMOF, so a throw event that names no Activity is metamodel-admissible, and Clauses 10.7.2 and 13.5.5 make that global form compensate every completed Activity in the Process. An Activity that declares nothing about compensation is still compensable, so the retention set is a property of the enclosing scope.
+
+Two of the three paths that would have widened it further turn out not to. The `compensable` Sub-Process attribute exists only in prose at Clauses 10.7.1 and 13.5.5 and appears **nowhere** in `BPMN20.cmof` or `BPMN20.xsd`; `SubProcess` owns only `triggeredByEvent` and `artifacts` beyond `Activity`. No conforming document can set it, so that default-compensation path is a BPMN prose-to-metamodel inconsistency for the requirement ledger's compensation row to classify when that family is taken up, not a retention obligation. The Clause 13.5.5 "presumed abort" default, where an unhandled error compensates all contained Activities, is real but presently inert: no admitted profile can declare a compensation handler, so it compensates nothing observable. That qualifier is what keeps the closed Error capsules sound, and it expires the moment a profile admits a handler.
+
+Account 2 is refuted as stated, on layering rather than on cost.
+
+### The budget retention charges is 64 KiB, not 2 MiB
+
+Retention lives in committed runtime state, so it charges `CommittedRuntimeStateBytes`, a hard per-commit bound of 64 KiB checked before mutation, and not the 2 MiB retained trace and publication budget. Continue-As-New carries the whole `RuntimeState` forward, so rollover bounds Event History but cannot shed retention.
+
+Measured on the registered Sequential Multi-Instance program at its admitted sixteen-item maximum: peak committed state 2,626 bytes of the 65,536-byte bound, leaving 62,910 bytes; the state falls to 1,308 bytes at completion, and that fall is exactly what a retention account removes. One completion record carrying occurrence identity, owner, completion ordinal, and a single scalar snapshot binding encodes to 356 bytes. The ceiling is therefore about 176 retained records, against a normative requirement to retain every completed Activity in a compensable Process.
+
+### No representation correction is required now
+
+The current disposal facts are family- and profile-local rather than general laws, so a compensation-admitting profile can state a conditional rule without invalidating `completeActivityVariableScope`'s contract or the retained conformance results that lock disposal. Retention is also expressible additively rather than by redesign: `sequentialMultiInstanceControllers` already retains a whole input collection in runtime state for its controller's lifetime, which is the same shape of obligation, and optional program-specific state fields are an established pattern.
+
+The disposal rule the in-flight [Activity data-input capsule](../capsules/ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md) states may therefore close as written, because it is scoped to a no-compensation Activity context rather than asserted as the meaning of Activity completion.
+
+### Recorded for the compensation capsule
+
+Retention disposal attaches to scope close rather than Activity completion, because compensation remains possible for as long as the enclosing scope is open.
+
+The profile must admit an explicit retained-record bound, the way Multi-Instance admits its sixteen-item bound, and must state it against the 64 KiB committed-state budget rather than assume rollover absorbs it. A compensable Process whose completed-Activity count exceeds that bound is a refusal the profile owes, not a capacity surprise at run time.
+
+## What remains undecided
+
+The 356-byte record measures one scalar snapshot binding. Clause 13.5.5 gives a Compensation Event Sub-Process access to its parent's data at completion, so a realistic snapshot is the parent scope's bindings rather than one value, and the per-record figure grows with that scope's data. Sizing it needs an admitted compensation profile to exist, which is the compensation capsule's work rather than this experiment's.
+
+Whether a Multi-Instance Sub-Process, which Clause 13.5.5 requires to snapshot per instance, multiplies that figure by its instance count is unanswerable here for the same reason: no Multi-Instance Sub-Process is admitted today.
