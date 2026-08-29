@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and bounded outcome
 
@@ -200,6 +200,6 @@ Closure requires a commit-bounded cost row compared with the nearest scoped-data
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `3332a92f` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `3332a92f` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
