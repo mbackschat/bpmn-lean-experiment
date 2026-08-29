@@ -11,7 +11,7 @@ What is the smallest standards-only data mechanism that makes one ordinary User 
 
 This proposal selects one private executable Process containing a None Start Event, one data-bearing User Task, and one None End Event. The User Task has one required scalar `DataInput`, one `InputSet`, one empty `OutputSet`, and one direct `DataInputAssociation` from one Process-owned `Property`. A present Process binding, including explicit null, activates the User Task and copies the value once. An absent binding leaves the Activity ready at its incoming control place and creates no task, Activity occurrence, or local scope.
 
-The reviewed requirement ID is `BPMN-ACTIVITY-DATA-INPUT-01`. The implemented checkpoint carries it to `supported` for this bounded slice; Temporal refinement, differential/corpus, Product 2 adoption, and governed closure evidence complete the capsule. The broad `BPMN-MECH-DATA-01`, `BPMN-MECH-ACTIVITY-01`, and `BPMN-MECH-TASK-01` families remain unsupported after this bounded checkpoint.
+The reviewed requirement ID is `BPMN-ACTIVITY-DATA-INPUT-01`. The implemented checkpoint carries it to `supported` for this bounded slice and brings the differential and corpus lanes with it; the production Temporal refinement witness, Product 2 adoption, and governed closure evidence complete the capsule. The broad `BPMN-MECH-DATA-01`, `BPMN-MECH-ACTIVITY-01`, and `BPMN-MECH-TASK-01` families remain unsupported after this bounded checkpoint.
 
 ## Normative account and selected interpretation
 
@@ -100,7 +100,7 @@ Finite fixture evaluation may witness the three concrete values but may not repl
 
 ## CIB Seven relationship boundary
 
-No CIB relationship is selected. BPMN defines the direct-copy and unavailable-input rules, the source needs no `camunda:*` extension, no CIB compatibility claim is made, and the selected host result does not depend on CIB configuration. The external CIB invoice examples provide independent whole-model demand for Data Associations but use DataStoreReference and remain outside this exact source profile. Their shape does not authorize a project DataStore interpretation.
+No CIB relationship is selected *for this mechanism*. BPMN defines the direct-copy and unavailable-input rules, the source needs no `camunda:*` extension, no CIB compatibility claim is made, and the selected host result does not depend on CIB configuration. The profile artifact still names `CIB-AGR-0001` and `CIB-OP-0001` because every profile must name its reviewed relationship IDs, and those two cover only the reused User Task lifecycle this profile inherits. The external CIB invoice examples provide independent whole-model demand for Data Associations but use DataStoreReference and remain outside this exact source profile. Their shape does not authorize a project DataStore interpretation.
 
 The retained project-owned consumer is a real-world invoice-review model whose Process start supplies an invoice summary Property and whose reviewer task receives it through the standard DataInput. The broader CIB fixture counts show that User Task is already a high-reach Task family, but they do not prove this data semantics.
 
@@ -178,7 +178,7 @@ The `OWNER` measurements below are the current nonblank counts reported by `node
 | [TypeScript projected-key owner](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 464 |
 | [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 526 |
 
-`ProfileAdmission.lean` is the narrowest owner. If the exhaustive profile arm cannot fit cohesively in its 148-line headroom, extract the profile-specific rule before semantic implementation. `SemanticProcessContract.lean` receives only the reusable value and operation arm, source lowering delegates parsing to a new owner, scenario projection delegates the task-input projection if its complete addition reaches the soft target, and the RuntimeState contract receives only the owner-discriminator shape. New source, runtime, proof, and conformance modules hold behavior by responsibility.
+`ProfileAdmission.lean` is the narrowest owner. If the exhaustive profile arm cannot fit cohesively in the headroom recorded above, extract the profile-specific rule before semantic implementation. `SemanticProcessContract.lean` receives only the reusable value and operation arm, source lowering delegates parsing to a new owner, scenario projection delegates the task-input projection if its complete addition reaches the soft target, and the RuntimeState contract receives only the owner-discriminator shape. New source, runtime, proof, and conformance modules hold behavior by responsibility.
 
 No size exception is requested.
 

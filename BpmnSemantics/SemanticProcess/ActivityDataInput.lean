@@ -336,6 +336,60 @@ theorem undeclaredTaskRefusesCompletion (program : Program) (state : RuntimeStat
   unfold completeDataInputUserTask?
   simp [undeclared]
 
+private theorem dataInputTaskWait_sound {state : RuntimeState}
+    {processInstanceId : SemanticId} {taskId : TaskDefinitionId} {activation : Nat}
+    {task : UserTaskWait}
+    (found : dataInputTaskWait? state processInstanceId taskId activation = some task) :
+    task ∈ state.waits ∧ task.processInstanceId = processInstanceId ∧
+      task.task.id = taskId ∧ task.activation = activation := by
+  unfold dataInputTaskWait? at found
+  have selected := List.find?_some found
+  simp [Bool.and_eq_true, decide_eq_true_eq] at selected
+  obtain ⟨⟨sameInstance, sameTask⟩, sameActivation⟩ := selected
+  exact ⟨List.mem_of_find?_eq_some found, sameInstance, sameTask, sameActivation⟩
+
+/-- Every completion the evaluator produces is permitted by the declarative relation.
+
+This is a dispatcher and constructor-selection check, not an independent evidence lane: the relation
+states the same selection conditions the evaluator applies, and `preserved` is the evaluator's own
+result rather than a premise it could fail. What it does buy is that a later edit cannot quietly drop
+one of those conditions, because the relation would then no longer be inhabited by this term. -/
+theorem completeDataInputUserTask_sound (program : Program)
+    (before after : RuntimeState) (processInstanceId : SemanticId)
+    (taskId : TaskDefinitionId) (activation : Nat)
+    (success : completeDataInputUserTask? program before processInstanceId taskId
+      activation = some after) :
+    DataInputCompletionStep program before after := by
+  have hosted : ∃ instanceId, dataInputRunningInstance? before = some instanceId := by
+    cases running : dataInputRunningInstance? before with
+    | none =>
+        unfold completeDataInputUserTask? at success
+        simp [running] at success
+    | some instanceId => exact ⟨instanceId, rfl⟩
+  have waited :
+      ∃ task, dataInputTaskWait? before processInstanceId taskId activation = some task := by
+    cases live : dataInputTaskWait? before processInstanceId taskId activation with
+    | none =>
+        unfold completeDataInputUserTask? at success
+        cases running : dataInputRunningInstance? before with
+        | none => simp [running] at success
+        | some _ => simp [running, live] at success
+    | some task => exact ⟨task, rfl⟩
+  have declared : isDataInputTaskDefinition program taskId = true := by
+    cases undeclared : isDataInputTaskDefinition program taskId with
+    | false =>
+        rw [undeclaredTaskRefusesCompletion program before processInstanceId taskId
+          activation undeclared] at success
+        simp at success
+    | true => rfl
+  obtain ⟨instanceId, running⟩ := hosted
+  obtain ⟨task, live⟩ := waited
+  obtain ⟨mem, sameInstance, sameTask, sameActivation⟩ := dataInputTaskWait_sound live
+  exact .complete before instanceId task (dataInputRunningInstance_sound running) mem
+    (by rw [sameTask]; exact declared) after
+    (by rw [sameInstance, sameTask, sameActivation]; exact success)
+    (completionPreservesProcessScope success)
+
 /-- The successor's exact Activity record, so the issuing and claim laws below name one term. -/
 def dataInputActivityRecord (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (taskId : TaskDefinitionId) : ActivityOccurrence :=

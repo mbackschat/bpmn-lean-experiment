@@ -22,13 +22,12 @@ import type { ScopedVariables } from "./semantic-process-state.js";
  * The one-element input collection for this task occurrence, or `undefined` when it owns no local
  * data.
  *
- * An Activity-owned scope holding no binding is no local data, exactly as owning no scope is: the
- * runtime representation admits an empty scope for a family that has not copied into it, and a
- * projection describes the states that exist rather than constraining which ones may.
- *
- * Throws for a scope holding more than one binding. This profile admits one required scalar
- * DataInput, so a larger collection is a state the account cannot describe, and truncating it would
- * present partial data as the complete selected InputSet.
+ * A scope of any cardinality other than one answers absence, exactly as owning no scope does: an
+ * empty scope is no local data, and a larger one is a state this profile's single required scalar
+ * DataInput cannot describe, so publishing its first binding would present partial data as the
+ * complete selected InputSet. Refusing instead would make an unrepresentable state an infrastructure
+ * failure, which the semantic invariants keep separate from a semantic outcome, and would diverge
+ * from the reference interpreter, whose `selectedTaskInputs?` answers `none` for both.
  */
 export function projectSelectedTaskInputs(
   activityOccurrences: ReadonlyArray<ActivityOccurrence>,
@@ -43,11 +42,6 @@ export function projectSelectedTaskInputs(
   if (bindings === undefined) {
     return undefined;
   }
-  if (bindings.length > 1) {
-    throw new TypeError(
-      "Cannot publish an Activity data-input collection of more than one binding",
-    );
-  }
   const only = bindings[0];
-  return only === undefined ? undefined : [only];
+  return bindings.length === 1 && only !== undefined ? [only] : undefined;
 }

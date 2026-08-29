@@ -30,7 +30,7 @@ The [Activity data-input capsule](capsules/ACTIVITY-DATA-INPUT-MEDIATION-PROPOSA
 - effect activation creates the owned input scope; direct Activity data-input arming creates the Activity-occurrence-owned copy of one Process binding
 - success and matching Error completion require one exact owner, apply program-owned output mapping, and remove only that scope atomically
 - Process-only canonical variable projection; the selected one-element input collection of a live data-bearing task is the sole Activity-local fact reaching public observation
-- an Activity-owned scope holding no binding publishes no input collection, exactly as owning no scope does, while one holding more than one is refused rather than truncated
+- an Activity-owned scope of any cardinality but one publishes no input collection in either account, exactly as owning no scope does, rather than truncating a larger collection or failing the projection
 - cross-owner, missing-owner, duplicate-owner, private-local non-observability, closure-limit, data-independent-enabledness, and compile-time immutability guards
 - unchanged shared wire artifacts, canonical traces, effect transport, retained CIB evidence, and Temporal Commands
 

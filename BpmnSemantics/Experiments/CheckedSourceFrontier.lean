@@ -236,6 +236,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
             firstIncomingDisabled source state id noToken candidateArity.1
           cases control : state.control <;> simp [fireNode?, control, disabled]
       | some metadata => simp [nodeArityValid] at candidateArity
+  | dataInputUserTask id name directInput =>
+      simp [nodeArityValid] at candidateArity
   | sequentialMultiInstanceUserTask id name input output normalOutputFlowId
       boundaryTimer =>
       simp [nodeArityValid] at candidateArity

@@ -309,9 +309,10 @@ test("an Activity owning an empty scope publishes no input collection", () => {
   ]);
 });
 
-// The refusal is the account's boundary, not a defensive default: one required scalar DataInput is
-// the whole admitted InputSet, so publishing the first of two would present partial data as complete.
-test("a second locally owned binding is refused rather than truncated", () => {
+// Locks agreement with the reference interpreter, whose `selectedTaskInputs?` answers `none` for
+// every cardinality but one: publishing the first of two would present partial data as complete,
+// and throwing would turn an unrepresentable state into an infrastructure failure.
+test("a second locally owned binding publishes no input collection either", () => {
   const started = committed(initialState, startWithReviewContext);
   const scope = started.variables.activities[0];
   assert.ok(scope !== undefined);
@@ -332,8 +333,9 @@ test("a second locally owned binding is refused rather than truncated", () => {
     },
   };
 
-  assert.throws(
-    () => observeStableState(dataInputProgram, widened),
-    /more than one binding/u,
-  );
+  const observation = observeStableState(dataInputProgram, widened);
+
+  assert.deepEqual(observation?.openUserTasks.map(({ inputs }) => inputs), [
+    undefined,
+  ]);
 });

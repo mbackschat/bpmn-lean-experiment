@@ -56,6 +56,7 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
                 obtain ⟨remaining, parsed, rfl⟩ := result
                 simp [segmentNodes, ih _ _ parsed]
             | some metadata => simp [parseFrom, nodeResult] at result
+        | dataInputUserTask _ _ _ => simp [parseFrom, nodeResult] at result
         | sequentialMultiInstanceUserTask _ _ _ _ _ _ =>
             simp [parseFrom, nodeResult] at result
         | parallelMultiInstanceUserTask _ _ _ _ _ _ _ =>
