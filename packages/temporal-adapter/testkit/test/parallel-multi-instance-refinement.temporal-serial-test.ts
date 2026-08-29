@@ -3,11 +3,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  CanonicalObservationKind, CommandOutcome, SemanticOperationKind,
-  StimulusKind, VariableValueKind, runScenario,
+  CanonicalObservationKind, CommandOutcome, VariableValueKind, runScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
-  CanonicalObservation, CompleteUserTaskInstanceStimulus, FireTimerStimulus,
+  CanonicalObservation, CompleteUserTaskInstanceStimulus,
   Scenario, SemanticProcessProgram, StartProcessStimulus, StateObservation,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -21,7 +20,6 @@ import {
   loadBpmnWorkflowBundle, observeTemporalExecutionPublication,
   observeTemporalFlowNodeOccurrences, processTerminalReceiptFormatV1,
   processWorkflowId, readTestProcessTerminalResult, submitUserTaskCompletion,
-  timerFiringCommandId,
   workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-testkit";
 import type {
@@ -35,6 +33,13 @@ import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { WorkflowBundleWithSourceMap } from "@temporalio/worker";
 
 import { historyEvents } from "./temporal-history-facts.ts";
+import {
+  derivedCompletion, derivedStart, derivedTimer, escalationCompletion,
+  expectedInterruptedTrace, requireCompletion, requireParallelOperation,
+  requireStart, requireTimer,
+} from "./parallel-multi-instance-derived-schedules.ts";
+import type { ParallelOperation } from "./parallel-multi-instance-derived-schedules.ts";
+import { assertHostClockDeadlineMargin } from "./host-clock-deadline-margin.ts";
 import {
   compileExecutionInput, loadJson, temporalCacheDirectory, withDeadline,
 } from "./temporal-test-support.ts";
@@ -111,6 +116,11 @@ async function runNaturalRecovery(
   const expected = runScenario(scenario, program);
   const firstHandle = await startProductionWitness(environment, originalStart, program, 3);
   const workflowId = processWorkflowId(originalStart.instanceId);
+  // The outer deadline is armed on entry and logical time never advances here, so the completions
+  // below race a real host timer. Arming happens in the second Run, after the pre-arming rollover, so
+  // this instant precedes it and the measured span is an upper bound on what the timer actually
+  // bounded; the margin assertion fails early rather than late.
+  const armedAtMs = Date.now();
 
   await waitForWorkflowChainRunCount(environment, workflowId, 2);
   const preArmingRuns = await workflowChainRuns(environment, workflowId);
@@ -161,6 +171,11 @@ async function runNaturalRecovery(
       assert.deepEqual(requireLifetimeTimer(progress), lifetimeTimer);
     }
   }
+  assertHostClockDeadlineMargin({
+    label: "parallel Multi-Instance natural path",
+    elapsedMs: Date.now() - armedAtMs,
+    deadlineMs: lifetimeTimer.deadlineMs,
+  });
 
   const terminal = await withDeadline(
     readTestProcessTerminalResult(firstHandle),
@@ -291,7 +306,10 @@ async function runTaskFirstInterruption(
   const stale = requireCompletion(source, 3);
   const escalation = escalationCompletion(start.instanceId, "complete-task-first-escalation");
   const firstHandle = await startProductionWitness(environment, start, program);
-  await requireOpenParallelChildren(environment, program, start.instanceId, [1, 2, 3]);
+  const entered = await requireOpenParallelChildren(
+    environment, program, start.instanceId, [1, 2, 3],
+  );
+  const lifetimeTimer = requireLifetimeTimer(entered);
   await submit(environment, start.instanceId, completion, CommandOutcome.Committed);
   const progressed = await waitForParallelState(
     environment, processWorkflowId(start.instanceId), program, start.instanceId, 1, [1, 2],
@@ -302,7 +320,9 @@ async function runTaskFirstInterruption(
     ),
     false,
   );
-  await waitForEscalation(environment, program, start.instanceId, operation);
+  await waitForEscalation(
+    environment, program, start.instanceId, operation, lifetimeTimer.deadlineMs,
+  );
   await submit(environment, start.instanceId, stale, CommandOutcome.Rejected);
   await submit(environment, start.instanceId, escalation, CommandOutcome.Committed);
   const expectedTrace = expectedInterruptedTrace(source, program, escalation);
@@ -353,7 +373,10 @@ async function runTimerFirstInterruption(
   );
   assert.equal(armed.openTimers.length, 1);
   assert.equal(armed.openUserTasks.length, 3);
-  await waitForEscalation(environment, program, start.instanceId, operation);
+  await waitForEscalation(
+    environment, program, start.instanceId, operation,
+    requireLifetimeTimer(armed).deadlineMs,
+  );
   await submit(environment, start.instanceId, escalation, CommandOutcome.Committed);
   const terminal = await closeSchedule({
     environment,
@@ -475,9 +498,10 @@ async function waitForParallelState(
 async function waitForEscalation(
   environment: TestWorkflowEnvironment, program: SemanticProcessProgram,
   processInstanceId: string, operation: ParallelOperation,
+  armedDeadlineMs: number,
 ): Promise<StateObservation> {
   const handle = getTestProcessHandle(environment.client.workflow, processInstanceId);
-  await waitForOpenUserTaskIds(handle, ["UserTask_Escalation"]);
+  await waitForOpenUserTaskIds(handle, ["UserTask_Escalation"], undefined, armedDeadlineMs);
   const state = await waitForPublishedWorkflowChainState(
     environment,
     processWorkflowId(processInstanceId),
@@ -635,71 +659,10 @@ function assertHostTimers(
   }, expected);
 }
 
-function expectedInterruptedTrace(
-  source: Scenario, program: SemanticProcessProgram,
-  escalation: CompleteUserTaskInstanceStimulus,
-): ReadonlyArray<CanonicalObservation> {
-  const rejected = runScenario(source, program);
-  const completed = runScenario({
-    ...source, stimuli: [...source.stimuli.slice(0, -1), escalation],
-  }, program);
-  assert.deepEqual(rejected.trace.slice(0, -2), completed.trace.slice(0, -2));
-  assert.deepEqual(rejected.trace.at(-1), completed.trace.at(-3));
-  return [...rejected.trace, ...completed.trace.slice(-2)];
-}
 
-function derivedStart(
-  source: StartProcessStimulus, operation: ParallelOperation,
-  instanceId: string, commandId: string, items: readonly string[],
-  policy: "all" | "first",
-): StartProcessStimulus {
-  return {
-    ...source, commandId, instanceId,
-    initialVariables: [{
-      name: operation.data.input.dataObjectReferenceId,
-      value: { kind: VariableValueKind.StringList, value: [...items] },
-    }, {
-      name: "completionPolicy",
-      value: { kind: VariableValueKind.String, value: policy },
-    }],
-  };
-}
 
-function derivedCompletion(
-  source: CompleteUserTaskInstanceStimulus, processInstanceId: string,
-  commandId: string, activation: number, result: string,
-): CompleteUserTaskInstanceStimulus {
-  return {
-    ...source, commandId,
-    taskId: { ...source.taskId, processInstanceId, activation },
-    submittedValues: [{
-      name: source.submittedValues[0]?.name ?? "DataOutput_CurrentResult",
-      value: { kind: VariableValueKind.String, value: result },
-    }],
-  };
-}
 
-function derivedTimer(
-  source: FireTimerStimulus, processInstanceId: string,
-): FireTimerStimulus {
-  const timerId = { ...source.timerId, processInstanceId };
-  return {
-    ...source,
-    commandId: timerFiringCommandId(timerId, source.logicalTimeMs),
-    timerId,
-  };
-}
 
-function escalationCompletion(
-  processInstanceId: string, commandId: string,
-): CompleteUserTaskInstanceStimulus {
-  return {
-    kind: StimulusKind.CompleteUserTaskInstance,
-    commandId,
-    taskId: { processInstanceId, elementId: "UserTask_Escalation", activation: 1 },
-    submittedValues: [],
-  };
-}
 
 function requireNoPartialOutput(
   state: StateObservation, operation: ParallelOperation,
@@ -740,41 +703,9 @@ async function submit(
   );
 }
 
-function requireStart(scenario: Scenario): StartProcessStimulus {
-  const stimulus = scenario.stimuli[0];
-  if (stimulus?.kind !== StimulusKind.StartProcess) {
-    throw new TypeError("PMI scenario has no Process start");
-  }
-  return stimulus;
-}
 
-function requireCompletion(
-  scenario: Scenario, index: number,
-): CompleteUserTaskInstanceStimulus {
-  const stimulus = scenario.stimuli[index];
-  if (stimulus?.kind !== StimulusKind.CompleteUserTaskInstance) {
-    throw new TypeError(`PMI scenario has no completion ${String(index)}`);
-  }
-  return stimulus;
-}
 
-function requireTimer(scenario: Scenario): FireTimerStimulus {
-  const stimulus = scenario.stimuli[2];
-  if (stimulus?.kind !== StimulusKind.FireTimer) {
-    throw new TypeError("PMI interrupted scenario has no Timer firing");
-  }
-  return stimulus;
-}
 
-function requireParallelOperation(program: SemanticProcessProgram) {
-  const operation = program.operations.find(({ kind }) =>
-    kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask
-  );
-  if (operation?.kind !== SemanticOperationKind.AwaitParallelMultiInstanceUserTask) {
-    throw new TypeError("PMI program has no parallel Multi-Instance operation");
-  }
-  return operation;
-}
 
 function publicationShape(page: ExecutionPublicationPage | FlowNodeOccurrencePage) {
   return {
@@ -816,7 +747,6 @@ async function runHistoryLengths(
   }));
 }
 
-type ParallelOperation = ReturnType<typeof requireParallelOperation>;
 type WorkerSlot = { lease?: WorkerLease };
 type TimerFacts = Readonly<{ started: number; fired: number; cancelled: number }>;
 type ProductionClosure = Readonly<{

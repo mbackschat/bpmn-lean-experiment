@@ -91,7 +91,7 @@ test("entry snapshots the collection once and generates only loop counter zero",
   );
   assert.deepEqual(
     state.timerWaits.map(({ id, deadlineMs }) => ({ id, deadlineMs })),
-    [{ id: outerTimerId, deadlineMs: 1000 }],
+    [{ id: outerTimerId, deadlineMs: 5000 }],
     "one lifetime deadline, armed from outer entry",
   );
 

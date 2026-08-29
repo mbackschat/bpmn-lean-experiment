@@ -48,7 +48,7 @@ The progress view shows planned, completed, active, and pending counts plus the 
 
 The acceptance package owns an explicit automated preview actor as showcase code, not production semantics or Product 2 Work. The production-built browser deploys the exact retained BPMN bytes and starts the exact selected definition through the public Product 2 route. The actor reads Product 1's public current interaction before every command, uses the published task occurrence identity without constructing it, and submits the retained completion values through the ordinary content-bound Product 1 Update.
 
-For the natural journey, the actor submits `accepted`, `flagged`, and `archived` in the retained order, querying the public current interaction before each Update without waiting on intermediate browser polling. For the interrupted journey, it submits only the `accepted` Multi-Instance completion and waits for the production deadline scheduler to fire the exact `PT1S` Boundary Timer. After the browser observes the committed `fireTimer`, the actor queries the public current interaction, takes the published escalation-task occurrence identity, and submits its exact empty completion through the ordinary content-bound Product 1 Update. The browser never receives a Workflow ID, Run ID, Task Queue, Event History, Activity attempt, or private locator.
+For the natural journey, the actor submits `accepted`, `flagged`, and `archived` in the retained order, querying the public current interaction before each Update without waiting on intermediate browser polling. For the interrupted journey, it submits only the `accepted` Multi-Instance completion and waits for the production deadline scheduler to fire the exact `PT5S` Boundary Timer. After the browser observes the committed `fireTimer`, the actor queries the public current interaction, takes the published escalation-task occurrence identity, and submits its exact empty completion through the ordinary content-bound Product 1 Update. The browser never receives a Workflow ID, Run ID, Task Queue, Event History, Activity attempt, or private locator.
 
 The actor does not claim or complete the tasks through Product 2 Work because the exact source intentionally carries no Human Task metadata. Metadata-free tasks remain hidden from Work, and Alpha does not weaken that authorization and form boundary merely to make the demo interactive.
 
@@ -82,7 +82,7 @@ Optional after Alpha:
 Excluded:
 
 - Parallel Multi-Instance, a generalized start-data editor, new variable kinds, expressions, completion conditions, non-interrupting boundaries, compensation, or another MUE content obligation;
-- changing the exact BPMN source, `PT1S` duration, retained scenario stimuli, output rules, or `openMultiInstances` meaning;
+- changing the exact BPMN source, `PT5S` duration, retained scenario stimuli, output rules, or `openMultiInstances` meaning;
 - showing metadata-free tasks in Work, bypassing claim/form authorization, or presenting the automated actor as a human user;
 - reconstructing progress or interruption from state differences, task turnover, platform timestamps, CIB history, or Temporal Event History;
 - a new dashboard, primary navigation destination, private showcase HTTP API, mocked semantic response, screenshot-only acceptance, or an MUE-complete claim.

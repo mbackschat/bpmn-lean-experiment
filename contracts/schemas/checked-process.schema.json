@@ -801,7 +801,7 @@
               ],
               "properties": {
                 "elementId": { "$ref": "#/$defs/nonemptyString" },
-                "durationLiteral": { "const": "PT1S" },
+                "durationLiteral": { "const": "PT5S" },
                 "outputFlowId": { "$ref": "#/$defs/nonemptyString" }
               }
             }
@@ -855,7 +855,7 @@
               ],
               "properties": {
                 "elementId": { "$ref": "#/$defs/nonemptyString" },
-                "durationLiteral": { "const": "PT1S" },
+                "durationLiteral": { "const": "PT5S" },
                 "outputFlowId": { "$ref": "#/$defs/nonemptyString" }
               }
             }

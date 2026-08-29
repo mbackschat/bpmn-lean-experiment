@@ -111,7 +111,7 @@
       attachedToRef="UserTask_Review">
       <bpmn:outgoing>Flow_Timer_Escalation</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_Review">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5S</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow

@@ -208,7 +208,7 @@ theorem entry_arms_one_inner_task_one_lifetime_deadline_and_one_controller :
           (controller.snapshot, controller.outputSlots),
         state.tokens.map (·.placeId.value),
         state.variables.process.bindings.map (·.name))) =
-      some ([("UserTask_Review", 1)], [("BoundaryTimer_Review", 1, 1000)], [1],
+      some ([("UserTask_Review", 1)], [("BoundaryTimer_Review", 1, 5000)], [1],
         [(["Invoice_1", "Invoice_2", "Invoice_3"], [])], [],
           ["DataObjectReference_InputItems"]) := by
   decide +kernel
@@ -227,8 +227,8 @@ theorem iteration_advances_the_body_and_stands_the_deadline_still :
         state.activityOccurrences.map (·.activation),
         state.sequentialMultiInstanceControllers.map (·.outputSlots),
         state.variables.process.bindings.map (·.name))) =
-      [some ([2], [(1, 1000)], [1], [["Reviewed_1"]], ["DataObjectReference_InputItems"]),
-        some ([3], [(1, 1000)], [1], [["Reviewed_1", "Reviewed_2"]],
+      [some ([2], [(1, 5000)], [1], [["Reviewed_1"]], ["DataObjectReference_InputItems"]),
+        some ([3], [(1, 5000)], [1], [["Reviewed_1", "Reviewed_2"]],
           ["DataObjectReference_InputItems"])] := by
   decide +kernel
 
@@ -266,7 +266,7 @@ theorem interruption_discards_partial_results_and_publishes_nothing :
       some
         ([{ name := "DataObjectReference_InputItems"
             value := .stringList ["Invoice_1", "Invoice_2", "Invoice_3"] }],
-          0, 0, 0, 0, ["place:Flow_Timer_Escalation"], 1000) := by
+          0, 0, 0, 0, ["place:Flow_Timer_Escalation"], 5000) := by
   decide +kernel
 
 /-- The entered state with a second live deadline listed by the same Activity occurrence record.
@@ -294,7 +294,7 @@ def enteredWithSecondDeadline? : Option RuntimeState := do
 
 /-- Interruption withdraws every deadline the record listed, the one not yet due included.
 
-The second deadline stands at 2000 while the fired one is at 1000, so a post-state that keeps it live
+The second deadline stands at 6000 while the fired one is at 5000, so a post-state that keeps it live
 is exactly the stranding this withdrawal prevents: the record that named it is removed in the same
 step, leaving a wait no record owns. Both deadlines, the active task, the record, and the controller
 leave together, only the boundary route is enabled, and logical time advances to the fired instant
@@ -313,7 +313,7 @@ theorem interruption_withdraws_both_deadlines_the_record_listed :
           interrupted.activityOccurrences.length,
           interrupted.sequentialMultiInstanceControllers.length,
           interrupted.tokens.map (·.placeId.value), interrupted.logicalTimeMs)) =
-      some ([1000, 2000], 0, 0, 0, 0, ["place:Flow_Timer_Escalation"], 1000) := by
+      some ([5000, 6000], 0, 0, 0, 0, ["place:Flow_Timer_Escalation"], 5000) := by
   decide +kernel
 
 /-- `SMI-ENTER-01`, empty arm: no inner instance, no deadline, and the empty collection published.

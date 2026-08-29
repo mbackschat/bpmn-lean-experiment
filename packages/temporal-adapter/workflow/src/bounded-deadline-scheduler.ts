@@ -75,6 +75,15 @@ export type BoundedDeadlineFamily = Readonly<{
     semanticProcess: SemanticProcessProgram,
     timerId: OccurrenceId,
   ) => boolean;
+  /**
+   * The one remaining duration this family's committed deadline may carry.
+   *
+   * Each family admits one exact source lexeme, so its host deadline is one exact number. It belongs
+   * beside the invariant message that names it: a value shared across families reads as a host-wide
+   * constant, and raising one family's lexeme then leaves the checker refusing the model the profile
+   * admits, with a message still naming the old duration.
+   */
+  admittedRemainingMs: number;
   schedulerUnavailableFailureType: string;
   sharedActivationMessage: string;
   invariantMessage: string;
@@ -91,6 +100,7 @@ export type BoundedDeadlineFamily = Readonly<{
 export const boundedActivityDeadlineFamily: BoundedDeadlineFamily = Object
   .freeze({
     ownsDeadline: isBoundaryTimerDefinition,
+    admittedRemainingMs: 1_000,
     schedulerUnavailableFailureType:
       bpmnBoundedActivitySchedulerUnavailableFailureType,
     sharedActivationMessage:
@@ -105,6 +115,7 @@ export const boundedActivityDeadlineFamily: BoundedDeadlineFamily = Object
 
 export const boundedScopeDeadlineFamily: BoundedDeadlineFamily = Object.freeze({
   ownsDeadline: isBoundedScopeDeadlineDefinition,
+  admittedRemainingMs: 1_000,
   schedulerUnavailableFailureType:
     bpmnBoundedScopeSchedulerUnavailableFailureType,
   sharedActivationMessage:
@@ -128,6 +139,7 @@ export const boundedScopeDeadlineFamily: BoundedDeadlineFamily = Object.freeze({
 export const monitoredActivityDeadlineFamily: BoundedDeadlineFamily = Object
   .freeze({
     ownsDeadline: isMonitoredBoundaryTimerDefinition,
+    admittedRemainingMs: 1_000,
     schedulerUnavailableFailureType:
       bpmnMonitoredActivitySchedulerUnavailableFailureType,
     sharedActivationMessage:
@@ -144,12 +156,13 @@ export const monitoredActivityDeadlineFamily: BoundedDeadlineFamily = Object
 export const sequentialMultiInstanceDeadlineFamily: BoundedDeadlineFamily =
   Object.freeze({
     ownsDeadline: isSequentialMultiInstanceBoundaryDefinition,
+    admittedRemainingMs: 5_000,
     schedulerUnavailableFailureType:
       bpmnSequentialMultiInstanceSchedulerUnavailableFailureType,
     sharedActivationMessage:
       "Sequential Multi-Instance completion and its outer lifetime deadline shared one Workflow activation with no defined winner",
     invariantMessage:
-      "Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT1S outer-lifetime boundary deadline",
+      "Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT5S outer-lifetime boundary deadline",
     replacedRefusal:
       "Sequential Multi-Instance Activity attempted to replace its live outer deadline",
     identityChangedRefusal:
@@ -172,12 +185,13 @@ export const sequentialMultiInstanceDeadlineFamily: BoundedDeadlineFamily =
 export const parallelMultiInstanceDeadlineFamily: BoundedDeadlineFamily =
   Object.freeze({
     ownsDeadline: isParallelMultiInstanceBoundaryDefinition,
+    admittedRemainingMs: 5_000,
     schedulerUnavailableFailureType:
       bpmnParallelMultiInstanceSchedulerUnavailableFailureType,
     sharedActivationMessage:
       "Parallel Multi-Instance completion and its outer lifetime deadline shared one Workflow activation with no defined winner",
     invariantMessage:
-      "Managed parallel Multi-Instance Activity is not one controller, its complete active task set, and one exact PT1S outer-lifetime boundary deadline",
+      "Managed parallel Multi-Instance Activity is not one controller, its complete active task set, and one exact PT5S outer-lifetime boundary deadline",
     replacedRefusal:
       "Parallel Multi-Instance Activity attempted to replace its live outer deadline",
     identityChangedRefusal:
@@ -362,7 +376,7 @@ function requireManagedDeadline(
     pair === undefined ||
     !bodyLive ||
     !familyPairValid ||
-    pair.deadline.remainingMs !== 1_000
+    pair.deadline.remainingMs !== family.admittedRemainingMs
   ) {
     throw hostInvariantFailure(family.invariantMessage);
   }

@@ -1,6 +1,6 @@
 # BPMN 2.0.2 parallel Multi-Instance User Task draft profile
 
-This standards profile selects one private executable Process with one parallel Multi-Instance User Task, one once-evaluated ordered `StringList` input, atomic generation of all bounded inner User Task occurrences, scalar String completion per occurrence, index-ordered atomic `StringList` aggregation, and one interrupting `PT1S` Timer Boundary Event whose lifetime is the outer Activity.
+This standards profile selects one private executable Process with one parallel Multi-Instance User Task, one once-evaluated ordered `StringList` input, atomic generation of all bounded inner User Task occurrences, scalar String completion per occurrence, index-ordered atomic `StringList` aggregation, and one interrupting `PT5S` Timer Boundary Event whose lifetime is the outer Activity.
 
 The [profile artifact](profile.json) names BPMN 2.0.2 Clauses 10.3.8 and 13.3.7 plus Tables 10.29 and 10.30 for Multi-Instance Activity execution and runtime counters. Clauses 10.5.5, 10.5.6, 13.3.2, and 13.5.3 plus Tables 10.91, 10.92, 10.101, and 10.122 govern the exact interrupting Timer Boundary Event. Relationships `CIB-AGR-0001` and `CIB-OP-0001` govern only the reused User Task lifecycle and occurrence-identity mapping. This profile selects no CIB Multi-Instance behavior.
 

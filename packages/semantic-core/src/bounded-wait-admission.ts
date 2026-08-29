@@ -15,6 +15,7 @@
  */
 import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
 import type {
+  AdmittedBoundaryTimerDurationMs,
   AwaitBoundedUserTaskOperation,
   AwaitMonitoredUserTaskOperation,
   EnterBoundedScopeOperation,
@@ -139,17 +140,23 @@ export function isWellFormedBoundaryTimerArm(
   placeOrigins: ReadonlyMap<string, string>,
 ): value is {
   elementId: string;
-  durationMs: 1000;
+  durationMs: AdmittedBoundaryTimerDurationMs;
   output: string;
   origin: { kind: SemanticOriginKind.BpmnSequenceFlow; elementId: string };
 } {
   return isRecord(value) &&
     hasOnlyKeys(value, ["elementId", "durationMs", "output", "origin"]) &&
     isNonEmptyString(value.elementId) &&
-    value.durationMs === 1000 &&
+    isAdmittedBoundaryTimerDurationMs(value.durationMs) &&
     isPlaceReference(value.output, placeIds) &&
     isSequenceFlowOrigin(value.origin) &&
     placeOrigins.get(value.output) === value.origin.elementId;
+}
+
+function isAdmittedBoundaryTimerDurationMs(
+  value: unknown,
+): value is AdmittedBoundaryTimerDurationMs {
+  return value === 1000 || value === 5000;
 }
 
 function hostElementId(origin: unknown): string | undefined {

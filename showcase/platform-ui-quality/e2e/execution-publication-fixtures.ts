@@ -70,7 +70,7 @@ const alphaDefinition = {
   source: {
     ...definition.source,
     id: "sequential-multi-instance-review.bpmn",
-    sha256: "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+    sha256: "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
     byteLength: 5_681,
   },
   semanticProfile: "bpmn-2.0.2-sequential-multi-instance-user-task-draft",

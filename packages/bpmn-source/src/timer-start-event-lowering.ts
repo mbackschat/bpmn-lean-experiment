@@ -14,6 +14,7 @@ import {
   controlPlaceId,
   operationId,
 } from "./semantic-process-identifiers.js";
+import { normalizeTimerDurationMs } from "./timer-duration-normalization.js";
 
 /** Lowers the complete checked Timer Start identity and all outgoing control places. */
 export function lowerTimerStartEvent(
@@ -37,14 +38,7 @@ export function lowerTimerStartEvent(
       kind: SemanticOriginKind.BpmnElement,
       elementId: node.id,
     },
-    timer: { durationMs: normalizeDuration(node.durationLiteral) },
+    timer: { durationMs: normalizeTimerDurationMs(node.durationLiteral) },
     outputs: [first, ...rest],
   };
-}
-
-function normalizeDuration(durationLiteral: "PT1S"): 1000 {
-  switch (durationLiteral) {
-    case "PT1S":
-      return 1000;
-  }
 }

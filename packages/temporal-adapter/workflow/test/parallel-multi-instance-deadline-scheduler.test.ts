@@ -57,6 +57,6 @@ test("refuses a parallel Activity whose controller loses one live child", () => 
   assert.equal(scheduler().ownsCommittedDeadline(malformed), true);
   assert.throws(
     () => scheduler().reconcileCommittedState(malformed),
-    /Managed parallel Multi-Instance Activity is not one controller, its complete active task set, and one exact PT1S outer-lifetime boundary deadline/u,
+    /Managed parallel Multi-Instance Activity is not one controller, its complete active task set, and one exact PT5S outer-lifetime boundary deadline/u,
   );
 });

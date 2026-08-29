@@ -105,7 +105,7 @@ function requireOneLifetimeTimer(completion: Completion): void {
   assert.equal(timers[0]?.seq, 1);
   const timeout = timers[0]?.startToFireTimeout;
   assert.ok(timeout !== undefined && timeout !== null);
-  assert.equal(Number(timeout.seconds), 1);
+  assert.equal(Number(timeout.seconds), 5);
   assert.equal(timeout.nanos ?? 0, 0);
 }
 

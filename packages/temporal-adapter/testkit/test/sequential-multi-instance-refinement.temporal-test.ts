@@ -44,6 +44,7 @@ import {
   closeSequentialMultiInstanceProductionEvidence,
   sequentialMultiInstanceRunHistoryLengths,
 } from "./sequential-multi-instance-production-evidence.ts";
+import { assertHostClockDeadlineMargin } from "./host-clock-deadline-margin.ts";
 
 const naturalScenarioUrl = new URL("../../../../scenarios/sequential-multi-instance/natural.scenario.json", import.meta.url);
 const interruptedScenarioUrl = new URL("../../../../scenarios/sequential-multi-instance/interrupted.scenario.json", import.meta.url);
@@ -117,6 +118,11 @@ async function runNaturalRefinement(
     semanticProcess,
   );
   const workflowId = processWorkflowId(start.instanceId);
+  // The outer deadline is armed on entry and logical time never advances here, so the iterations
+  // below race a real host timer. Arming happens in the second Run, after the pre-arming rollover, so
+  // this instant precedes it and the measured span is an upper bound on what the timer actually
+  // bounded; the margin assertion fails early rather than late.
+  const armedAtMs = Date.now();
   await waitForWorkflowChainRunCount(environment, workflowId, 2);
 
   const firstState = await waitForIteration(
@@ -129,7 +135,7 @@ async function runNaturalRefinement(
     "contract",
   );
   const lifetimeTimer = requireLifetimeTimer(firstState);
-  assert.equal(lifetimeTimer.deadlineMs, 1_000);
+  assert.equal(lifetimeTimer.deadlineMs, 5_000);
 
   const currentHandle = getTestProcessHandle(
     environment.client.workflow,
@@ -176,6 +182,11 @@ async function runNaturalRefinement(
     "receipt",
   );
   assert.deepEqual(requireLifetimeTimer(thirdState), lifetimeTimer);
+  assertHostClockDeadlineMargin({
+    label: "sequential Multi-Instance natural path",
+    elapsedMs: Date.now() - armedAtMs,
+    deadlineMs: lifetimeTimer.deadlineMs,
+  });
   assert.deepEqual(
     await submitUserTaskCompletion(
       environment.client.workflow,
@@ -301,7 +312,12 @@ async function runInterruptedRefinement(
     environment.client.workflow,
     start.instanceId,
   );
-  await waitForOpenUserTaskIds(liveHandle, [escalationCompletion.taskId.elementId]);
+  await waitForOpenUserTaskIds(
+    liveHandle,
+    [escalationCompletion.taskId.elementId],
+    undefined,
+    lifetimeTimer.deadlineMs,
+  );
   const interruptedState = await waitForPublishedWorkflowChainState(
     environment,
     workflowId,

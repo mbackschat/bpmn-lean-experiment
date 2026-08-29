@@ -7,7 +7,7 @@ import type {
 const alphaProcessId = "Process_SequentialMultiInstanceReview";
 export const muePreviewAlphaSemanticProfile =
   "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
-const alphaSourceSha256 = "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4";
+const alphaSourceSha256 = "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff";
 
 export type MuePreviewAlphaStart = Readonly<{
   label: string;

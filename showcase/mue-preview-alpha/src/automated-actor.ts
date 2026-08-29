@@ -35,7 +35,7 @@ import {
 
 const alphaProcessId = "Process_SequentialMultiInstanceReview";
 const alphaSemanticProfile = "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
-const alphaSourceSha256 = "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4";
+const alphaSourceSha256 = "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff";
 const interactionDelayMs = 1;
 
 export const AlphaJourney = {
@@ -267,7 +267,7 @@ function requireLifetimeTimer(
     timer.id.processInstanceId !== processInstanceId ||
     timer.id.elementId !== lifetimeTimerElementId ||
     timer.id.activation !== 1 ||
-    timer.deadlineMs !== 1_000 ||
+    timer.deadlineMs !== 5_000 ||
     state.logicalTimeMs !== 0
   ) {
     throw new Error("Alpha publication has an invalid Sequential Multi-Instance lifetime Timer");
@@ -282,7 +282,7 @@ function isExactEscalationState(
   if (
     (state.openMultiInstances ?? []).length !== 0 ||
     state.openTimers.length !== 0 ||
-    state.logicalTimeMs !== 1_000 ||
+    state.logicalTimeMs !== 5_000 ||
     state.openUserTasks.length !== 1 ||
     task === undefined ||
     task.id.processInstanceId !== processInstanceId ||

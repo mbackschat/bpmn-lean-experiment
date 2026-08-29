@@ -107,7 +107,7 @@ export const reviewProgram = rootScopedProgram({
       normalOutput: "place:Flow_Normal",
       boundaryTimer: {
         elementId: "Boundary_Timer",
-        durationMs: 1000,
+        durationMs: 5000,
         output: "place:Flow_Boundary",
         origin: {
           kind: SemanticOriginKind.BpmnSequenceFlow,
@@ -275,5 +275,5 @@ export const fireOuterTimer = Object.freeze({
   kind: StimulusKind.FireTimer,
   commandId: "fire-outer-timer",
   timerId: outerTimerId,
-  logicalTimeMs: 1000,
+  logicalTimeMs: 5000,
 });

@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "sequential-multi-instance-review",
     "relativePath": "scenarios/sequential-multi-instance/process.bpmn",
-    "sha256": "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+    "sha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -48,13 +48,13 @@
     },
     {
       "kind": "fireTimer",
-      "commandId": "fire-timer-sha256:210f43869288fe9ebcfb6d589f63beeb08404fa9ca380557c7c322ee2a54a65a",
+      "commandId": "fire-timer-sha256:3c8522f4c6969c8ac276d710323681959ec4556d84fe121c8fc661a5865890a6",
       "timerId": {
         "processInstanceId": "SequentialMultiInstance_Interrupted",
         "elementId": "BoundaryTimer_Review",
         "activation": 1
       },
-      "logicalTimeMs": 1000
+      "logicalTimeMs": 5000
     },
     {
       "kind": "completeUserTaskInstance",

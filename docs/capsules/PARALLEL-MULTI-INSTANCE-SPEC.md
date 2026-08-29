@@ -10,7 +10,7 @@ The exact bounded standards-only profile is implemented across source admission 
 
 What is the smallest forward-compatible parallel Multi-Instance User Task account that adds genuine concurrent instance generation, deterministic collection aggregation, completion-condition cancellation, and durable hosting without reinterpreting the implemented sequential profile?
 
-This specification selects one standards-only profile. One private executable Process enters one collection-driven parallel Multi-Instance User Task, atomically generates all bounded inner User Task occurrences, and attaches one interrupting exact-`PT1S` Timer Boundary Event to the outer Activity. The normal route reaches one None End; the Timer route reaches one ordinary escalation User Task and then one None End.
+This specification selects one standards-only profile. One private executable Process enters one collection-driven parallel Multi-Instance User Task, atomically generates all bounded inner User Task occurrences, and attaches one interrupting exact-`PT5S` Timer Boundary Event to the outer Activity. The normal route reaches one None End; the Timer route reaches one ordinary escalation User Task and then one None End.
 
 The same profile admits `completionPolicy="all"` and `completionPolicy="first"` as exact Process-start string bindings. Its BPMN `completionCondition` is Simple Boolean v1 `stringEquals(completionPolicy,"first")`. The `all` schedule completes every inner task and publishes the complete output collection. The `first` schedule closes after the first accepted completion and terminates any remaining inner instances. It publishes no Process output collection while any result slot is incomplete; the one-item case publishes its complete one-item output because no slot remains incomplete.
 
@@ -40,7 +40,7 @@ OMG issues [BPMN21-391](https://issues.omg.org/issues/BPMN21-391) and [BPMN21-40
 
 ## Required, optional, and excluded
 
-**Required:** one private executable Process; one collection-driven parallel Multi-Instance User Task; the exact data-association graph inherited from the sequential profile; explicit Simple Boolean v1 at `Definitions.expressionLanguage`; exact `completionPolicy` start binding; explicit `isSequential="false"` and `behavior="All"`; one exact completion condition; one interrupting exact-`PT1S` outer Timer; one normal End; and one Timer-route escalation User Task plus End.
+**Required:** one private executable Process; one collection-driven parallel Multi-Instance User Task; the exact data-association graph inherited from the sequential profile; explicit Simple Boolean v1 at `Definitions.expressionLanguage`; exact `completionPolicy` start binding; explicit `isSequential="false"` and `behavior="All"`; one exact completion condition; one interrupting exact-`PT5S` outer Timer; one normal End; and one Timer-route escalation User Task plus End.
 
 **Optional:** zero through sixteen input items within the existing per-item and canonical collection byte bounds; arbitrary completion order expressed by the order of accepted exact task-completion stimuli; Worker replacement; one pre-arming Continue-As-New boundary if the new capacity owner proves it safe; and either admitted completion-policy value.
 

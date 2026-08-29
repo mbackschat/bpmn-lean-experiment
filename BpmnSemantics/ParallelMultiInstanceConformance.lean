@@ -55,7 +55,7 @@ def entryOperation : SemanticOperation :=
     dataDefinition
     normalOutput
     { elementId := ⟨"BoundaryTimer_Review"⟩
-      durationMs := 1000
+      durationMs := 5000
       output := ⟨"place:Flow_Timer_Escalation"⟩
       origin := { elementId := ⟨"Flow_Timer_Escalation"⟩ } }
     (.stringEquals "completionPolicy" "first")

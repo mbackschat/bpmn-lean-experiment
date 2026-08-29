@@ -385,7 +385,7 @@ function projectMultiInstanceNode(
     normalOutputFlowId: ids.normalFlow,
     boundaryTimer: {
       elementId: ids.boundary,
-      durationLiteral: "PT1S",
+      durationLiteral: "PT5S",
       outputFlowId: ids.boundaryFlow,
     },
   };
@@ -574,7 +574,7 @@ function hasExactBoundary(
     hasOnlyModelledKeys(definition, ["$type", "id", "timeDuration"]) &&
     duration !== undefined && duration.$type === bpmnTypes.formalExpressionType &&
     hasOnlyModelledKeys(duration, ["$type", "body"]) &&
-    duration.body === "PT1S";
+    duration.body === "PT5S";
 }
 
 function sameReferences(

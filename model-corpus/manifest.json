@@ -923,7 +923,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/sequential-multi-instance/process.bpmn",
-        "sha256": "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+        "sha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
         "scenarioRelativePath": "scenarios/sequential-multi-instance/natural.scenario.json",
         "license": "MIT"
       },
@@ -961,7 +961,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/sequential-multi-instance/process.bpmn",
-        "sha256": "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4",
+        "sha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
         "scenarioRelativePath": "scenarios/sequential-multi-instance/interrupted.scenario.json",
         "license": "MIT"
       },
@@ -1000,7 +1000,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/parallel-multi-instance/process.bpmn",
-        "sha256": "7daa0091981c095e916ed246b487157593dec3f328a20ea03d4a3995f0617286",
+        "sha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
         "scenarioRelativePath": "scenarios/parallel-multi-instance/all.scenario.json",
         "license": "MIT"
       },
@@ -1040,7 +1040,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/parallel-multi-instance/process.bpmn",
-        "sha256": "7daa0091981c095e916ed246b487157593dec3f328a20ea03d4a3995f0617286",
+        "sha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
         "scenarioRelativePath": "scenarios/parallel-multi-instance/first.scenario.json",
         "license": "MIT"
       },
@@ -1079,7 +1079,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/parallel-multi-instance/process.bpmn",
-        "sha256": "7daa0091981c095e916ed246b487157593dec3f328a20ea03d4a3995f0617286",
+        "sha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
         "scenarioRelativePath": "scenarios/parallel-multi-instance/interrupted.scenario.json",
         "license": "MIT"
       },

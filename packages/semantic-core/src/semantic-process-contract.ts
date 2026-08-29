@@ -228,6 +228,16 @@ export type AwaitEventRaceOperation = OperationBase &
   }>;
 
 /**
+ * The deadlines a boundary Timer arm may carry.
+ *
+ * Narrow on purpose: an admitted profile names one exact source lexeme, so a deadline outside this
+ * set means an unreviewed duration reached the program. A boundary deadline the host arms against
+ * its own clock is also a race the non-firing witness has to win, which is why widening this set is
+ * a reviewed change rather than an incidental one.
+ */
+export type AdmittedBoundaryTimerDurationMs = 1000 | 5000;
+
+/**
  * The boundary Timer deadline every deadline-owning operation carries alongside its own wait.
  *
  * The shape says nothing about interruption: whether firing ends the host is carried by the
@@ -241,7 +251,7 @@ export type AwaitEventRaceOperation = OperationBase &
  */
 export type BoundaryTimerArm = DeepReadonly<{
   elementId: string;
-  durationMs: 1000;
+  durationMs: AdmittedBoundaryTimerDurationMs;
   output: string;
   origin: BpmnSequenceFlowOrigin;
 }>;

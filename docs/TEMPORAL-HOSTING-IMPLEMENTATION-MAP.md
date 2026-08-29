@@ -107,9 +107,13 @@ Three different tests failed with three different symptoms. The Sequential Multi
 
 These witnesses run on `createCachedLocalEnvironment`, a real host clock, so a model deadline shorter than the client work inside it makes a verdict depend on machine speed, which [the semantic invariants](../CLAUDE.md#semantic-invariants) require to be an explicit input instead.
 
-Raising a budget does not close it. The Sequential Multi-Instance deadline is the retained scenario's own `PT1S`, whose exact bytes bind the Lean, differential, and corpus lanes where logical time makes one second free. Correcting it therefore changes a closed capsule's retained model or its production witness, and needs an owner decision plus its own review rather than a wider timeout.
+Raising a budget did not close it, because the deadline was the retained scenario's own, whose exact bytes bind the Lean, differential, and corpus lanes where logical time makes it free. Instrumentation on a quiet host measured the natural path at 328 to 355 ms of its 1,000 ms window, of which Worker replacement alone cost about 150 ms. The recorded four-core hosted-runner profile is about twice as slow as that machine, which leaves roughly 700 ms against 1,000 ms before any concurrency at all.
 
-Until then, treat a single red Temporal run as uninformative and re-run before concluding, and do not read a green as refinement evidence for a new capsule without repeating it.
+The owner approved raising both Multi-Instance outer-lifetime deadlines to `PT5S` on 2026-08-29. That is a profile-capability change rather than a timeout: the admitted lexeme, the checked graph, both lowerings, Lean admission and structural validation, the host admission class, and every retained schedule and digest move together.
+
+Duration alone would only move the same race further away, so both natural witnesses now assert their own margin against [the host-clock deadline ceiling](../packages/temporal-adapter/testkit/test/host-clock-deadline-margin.ts). A path that consumes more than half its host-armed deadline fails while headroom remains and reports the fraction, instead of surfacing later as the semantic symptom the schedule caused.
+
+Two findings from the same measurement remain open and are not addressed by the duration: the Parallel Multi-Instance serial witness exceeding its 20-second readiness deadline, and the Workflow-chain Timer-rollover file dying before its first result with no captured cause. Treat a single red Temporal run as uninformative and re-run before concluding.
 
 ## Nearest unsupported claims
 

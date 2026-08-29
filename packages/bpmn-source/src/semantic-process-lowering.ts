@@ -40,6 +40,7 @@ import {
 } from "./semantic-process-identifiers.js";
 import { lowerTerminateEndEvent } from "./terminate-end-event-lowering.js";
 import { lowerConfiguredTask } from "./configured-task-lowering.js";
+import { normalizeTimerDurationMs } from "./timer-duration-normalization.js";
 import {
   lowerSequentialMultiInstanceUserTask,
 } from "./sequential-multi-instance-lowering.js";
@@ -222,7 +223,7 @@ function lowerNode(
         output: requireOnly(outgoing, node.id, "outgoing"),
         timer: {
           elementId: node.id,
-          durationMs: normalizeTimerDuration(node.durationLiteral),
+          durationMs: normalizeTimerDurationMs(node.durationLiteral),
         },
       });
     case CheckedNodeKind.IntermediateCatchMessageEvent:
@@ -510,7 +511,7 @@ function lowerBoundaryTimerArm(
 ): BoundaryTimerArm {
   return {
     elementId: boundaryTimer.id,
-    durationMs: normalizeTimerDuration(boundaryTimer.durationLiteral),
+    durationMs: normalizeTimerDurationMs(boundaryTimer.durationLiteral),
     output: requireOnly(
       flowPlaces(source.sequenceFlows, boundaryTimer.id, "outgoing"),
       boundaryTimer.id,
@@ -536,13 +537,6 @@ function timerBoundaryFor(
       candidate.kind === CheckedNodeKind.TimerBoundaryEvent &&
       candidate.attachedToRef === activityId,
   );
-}
-
-function normalizeTimerDuration(durationLiteral: "PT1S"): 1000 {
-  switch (durationLiteral) {
-    case "PT1S":
-      return 1000;
-  }
 }
 
 function requireOnly(

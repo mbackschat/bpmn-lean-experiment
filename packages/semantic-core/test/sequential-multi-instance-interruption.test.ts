@@ -97,7 +97,7 @@ test("the outer deadline cancels the active task and discards the partial output
     false,
     "interruption publishes no Process-scope output, not even the partial one",
   );
-  assert.equal(after.logicalTimeMs, 1000, "the firing instant is the deadline");
+  assert.equal(after.logicalTimeMs, 5000, "the firing instant is the deadline");
   assert.deepEqual(
     after.controlTokens.map(({ placeId }) => placeId),
     ["place:Flow_Boundary"],

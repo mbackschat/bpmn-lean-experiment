@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "parallel-multi-instance-risk-review",
     "relativePath": "scenarios/parallel-multi-instance/process.bpmn",
-    "sha256": "7daa0091981c095e916ed246b487157593dec3f328a20ea03d4a3995f0617286",
+    "sha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
     "sourceOverlay": null
   },
   "stimuli": [

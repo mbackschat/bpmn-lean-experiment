@@ -73,7 +73,7 @@ function buildFixtures(base: MuePreviewAlphaFixtureBase) {
         multiplicity: 1,
       }],
       openUserTasks: [{ id: taskId, name: "Review item", state: "active" }],
-      openTimers: [{ id: timerId, deadlineMs: 1_000 }],
+      openTimers: [{ id: timerId, deadlineMs: 5_000 }],
       openMultiInstances: [{
         id: {
           processInstanceId: base.processInstanceId,
@@ -135,14 +135,14 @@ function buildFixtures(base: MuePreviewAlphaFixtureBase) {
     throughRevision: 6,
     transitions: [{
       revision: 6,
-      logicalTimeMs: 1_000,
+      logicalTimeMs: 5_000,
       transition: {
         kind: "externalStimulus",
         stimulus: {
           kind: "fireTimer",
           commandId: "fire-timer-alpha",
           timerId,
-          logicalTimeMs: 1_000,
+          logicalTimeMs: 5_000,
         },
       },
       positionDelta: base.emptyDelta,
@@ -174,7 +174,7 @@ function buildFixtures(base: MuePreviewAlphaFixtureBase) {
         kind: "completeUserTaskInstance",
         taskId: escalationTaskId,
       }],
-      logicalTimeMs: 1_000,
+      logicalTimeMs: 5_000,
     },
   } as const;
   const escalationCompletionBatch = completionBatch(
@@ -224,7 +224,7 @@ function completionBatch(
     throughRevision,
     transitions: [{
       revision: throughRevision,
-      logicalTimeMs: throughRevision === 7 ? 1_000 : 0,
+      logicalTimeMs: throughRevision === 7 ? 5_000 : 0,
       transition: {
         kind: "externalStimulus",
         stimulus: {

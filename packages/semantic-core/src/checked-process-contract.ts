@@ -191,7 +191,7 @@ export type CheckedNode =
       normalOutputFlowId: string;
       boundaryTimer: {
         elementId: string;
-        durationLiteral: "PT1S";
+        durationLiteral: "PT5S";
         outputFlowId: string;
       };
     }>
@@ -205,7 +205,7 @@ export type CheckedNode =
       normalOutputFlowId: string;
       boundaryTimer: {
         elementId: string;
-        durationLiteral: "PT1S";
+        durationLiteral: "PT5S";
         outputFlowId: string;
       };
     }>

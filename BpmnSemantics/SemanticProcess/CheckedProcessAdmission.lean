@@ -243,7 +243,7 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
           input.itemAssociationId, output.dataObjectId, output.dataObjectReferenceId,
           output.taskDataOutputId, output.outputDataItemId, output.loopDataOutputId,
           output.itemAssociationId, output.collectionAssociationId]
-      boundaryTimer.durationLiteral = "PT1S" &&
+      boundaryTimer.durationLiteral = "PT5S" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1 &&
         flows.any (fun flow => decide
           (flow.id = normalOutputFlowId && flow.sourceId = id)) &&

@@ -1930,7 +1930,7 @@
           "$ref": "#/$defs/nonemptyString"
         },
         "durationMs": {
-          "const": 1000
+          "enum": [1000, 5000]
         },
         "output": {
           "$ref": "#/$defs/nonemptyString"

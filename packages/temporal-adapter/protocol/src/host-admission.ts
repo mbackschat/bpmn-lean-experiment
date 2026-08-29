@@ -161,12 +161,12 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
     isAdmissibleIsolatedForm: (operation) =>
       operation.kind ===
         SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
-      operation.boundaryTimer.durationMs === 1_000,
+      operation.boundaryTimer.durationMs === 5_000,
     failure: {
       code: TemporalHostAdmissionFailureCode
         .SequentialMultiInstanceSchedulerUnavailable,
       evidence:
-        "The Temporal host admits only one isolated sequential Multi-Instance User Task with one exact PT1S outer-lifetime boundary Timer.",
+        "The Temporal host admits only one isolated sequential Multi-Instance User Task with one exact PT5S outer-lifetime boundary Timer.",
     },
   },
   {
@@ -174,12 +174,12 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
     isAdmissibleIsolatedForm: (operation) =>
       operation.kind ===
         SemanticOperationKind.AwaitParallelMultiInstanceUserTask &&
-      operation.boundaryTimer.durationMs === 1_000,
+      operation.boundaryTimer.durationMs === 5_000,
     failure: {
       code: TemporalHostAdmissionFailureCode
         .ParallelMultiInstanceSchedulerUnavailable,
       evidence:
-        "The Temporal host admits only one isolated parallel Multi-Instance User Task with one exact PT1S outer-lifetime boundary Timer.",
+        "The Temporal host admits only one isolated parallel Multi-Instance User Task with one exact PT5S outer-lifetime boundary Timer.",
     },
   },
 ];

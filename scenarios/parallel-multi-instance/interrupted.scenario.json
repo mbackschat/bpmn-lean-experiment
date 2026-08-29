@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "parallel-multi-instance-risk-review",
     "relativePath": "scenarios/parallel-multi-instance/process.bpmn",
-    "sha256": "7daa0091981c095e916ed246b487157593dec3f328a20ea03d4a3995f0617286",
+    "sha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -55,13 +55,13 @@
     },
     {
       "kind": "fireTimer",
-      "commandId": "fire-timer-sha256:0b76778d7e82769998b4033f224e8b06a07602d42ea344e742405922542b54e1",
+      "commandId": "fire-timer-sha256:20fc8593aad44fd72d99da0990a71c4310bfa90bcfd59983efa4a3f47d8c9083",
       "timerId": {
         "processInstanceId": "ParallelRiskReview_Interrupted",
         "elementId": "BoundaryTimer_Review",
         "activation": 1
       },
-      "logicalTimeMs": 1000
+      "logicalTimeMs": 5000
     },
     {
       "kind": "completeUserTaskInstance",

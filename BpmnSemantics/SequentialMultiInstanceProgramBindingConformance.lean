@@ -43,7 +43,7 @@ def checkedProcess : CheckedProcess :=
       { semanticProfile := sequentialMultiInstanceUserTaskProfileId
         sourceId := ⟨"sequential-multi-instance"⟩
         sourceSha256 :=
-          "9161c134984d42a04cd57d5ea161938a774705be2e955ade5302d5dde2afa6f4" }
+          "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff" }
     processId := ⟨"Process_SequentialMultiInstanceReview"⟩
     definitionScopes :=
       [rootDefinitionScope ⟨"Process_SequentialMultiInstanceReview"⟩]
@@ -62,7 +62,7 @@ def checkedProcess : CheckedProcess :=
       , .sequentialMultiInstanceUserTask ⟨"UserTask_Review"⟩ (some "Review item")
           dataDefinition.input dataDefinition.output ⟨"Flow_Review_Completed"⟩
           { elementId := ⟨"BoundaryTimer_Review"⟩
-            durationLiteral := "PT1S"
+            durationLiteral := "PT5S"
             outputFlowId := ⟨"Flow_Timer_Escalation"⟩ } ]
     sequenceFlows :=
       [ { id := ⟨"Flow_Escalation_End"⟩
@@ -214,7 +214,7 @@ theorem arm_is_the_declared_activity_and_its_boundary_deadline :
         arm.boundaryTimer.elementId.value, arm.boundaryTimer.durationMs,
         arm.boundaryTimer.output.value, arm.limits)) =
       some ("place:Flow_Start_Review", "UserTask_Review", "place:Flow_Review_Completed",
-        "BoundaryTimer_Review", 1000, "place:Flow_Timer_Escalation", profileLimits) := by
+        "BoundaryTimer_Review", 5000, "place:Flow_Timer_Escalation", profileLimits) := by
   decide +kernel
 
 def preEntryWith (items : List String) : Option RuntimeState := do
@@ -280,7 +280,7 @@ def publicTimerResult : StimulusResult :=
       { processInstanceId := instanceId
         elementId := ⟨"BoundaryTimer_Review"⟩
         activation := 1 }
-      1000)
+      5000)
 
 theorem public_start_enters_through_the_distinct_operation :
     publicStartResult.outcome = .committed ∧
@@ -327,7 +327,7 @@ theorem public_timer_dispatches_to_multi_instance_interruption_before_ordinary_t
       publicTimerResult.state.variables.process.bindings.map (fun binding => binding.name),
       publicTimerResult.state.logicalTimeMs) =
       (.committed, ["UserTask_Escalation"], 0, 0,
-        ["DataObjectReference_InputItems"], 1000) := by
+        ["DataObjectReference_InputItems"], 5000) := by
   decide +kernel
 
 private def submittedResult (result : String) : List VariableBinding :=
@@ -380,11 +380,11 @@ def timerOccurrence (activation : Nat) : TimerOccurrenceId :=
 
 def mismatchedTimerStimuli : List Stimulus :=
   [ .fireTimer ⟨"wrong-timer-process"⟩
-      { timerOccurrence 1 with processInstanceId := ⟨"Other_Instance"⟩ } 1000
+      { timerOccurrence 1 with processInstanceId := ⟨"Other_Instance"⟩ } 5000
   , .fireTimer ⟨"wrong-timer-element"⟩
-      { timerOccurrence 1 with elementId := ⟨"Other_Timer"⟩ } 1000
-  , .fireTimer ⟨"wrong-timer-activation"⟩ (timerOccurrence 2) 1000
-  , .fireTimer ⟨"wrong-timer-time"⟩ (timerOccurrence 1) 999 ]
+      { timerOccurrence 1 with elementId := ⟨"Other_Timer"⟩ } 5000
+  , .fireTimer ⟨"wrong-timer-activation"⟩ (timerOccurrence 2) 5000
+  , .fireTimer ⟨"wrong-timer-time"⟩ (timerOccurrence 1) 4999 ]
 
 theorem public_smi_dispatch_refuses_task_timer_and_stale_identity_mismatches_without_state_change :
     rejectedWithExactState initialState extraStartBindingStimulus = true ∧

@@ -104,7 +104,7 @@ test("admits the exact parallel Multi-Instance source", async () => {
     normalOutputFlowId: "Flow_Review_Completed",
     boundaryTimer: {
       elementId: "BoundaryTimer_Review",
-      durationLiteral: "PT1S",
+      durationLiteral: "PT5S",
       outputFlowId: "Flow_Timer_Escalation",
     },
   });

@@ -101,6 +101,15 @@ private def eventRaceMessageArm (source : CheckedProcess)
         channel := .operationMessage ⟨""⟩ ⟨""⟩ ⟨""⟩
         output := ⟨""⟩ }
 
+/-- Milliseconds for one admitted duration lexeme.
+
+An unadmitted lexeme normalizes to `0` rather than failing, because checked admission has already
+rejected it; a total function keeps lowering free of an error path the profile cannot reach. -/
+private def normalizeTimerDuration (durationLiteral : String) : Nat :=
+  if durationLiteral = "PT1S" then 1000
+  else if durationLiteral = "PT5S" then 5000
+  else 0
+
 private def eventRaceTimerArm (source : CheckedProcess)
     (gatewayId : NodeId) : EventRaceTimerArm :=
   match source.sequenceFlows.findSome? fun flow =>
@@ -113,7 +122,7 @@ private def eventRaceTimerArm (source : CheckedProcess)
   | some (flow, elementId, duration) =>
       { configurationOrigin := { elementId := flow.id }
         elementId
-        durationMs := if duration = "PT1S" then 1000 else 0
+        durationMs := normalizeTimerDuration duration
         output := firstPlace (outgoingPlaces source elementId) }
   | none =>
       { configurationOrigin := { elementId := ⟨""⟩ }
@@ -221,9 +230,6 @@ private def timerBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
           some (id, interruption, durationLiteral, outputFlowId)
         else none
     | _ => none
-
-private def normalizeTimerDuration (durationLiteral : String) : Nat :=
-  if durationLiteral = "PT1S" then 1000 else 0
 
 private def lowerNode (source : CheckedProcess) :
     CheckedNode → Option (SemanticOperation × DefinitionScopeId)
@@ -369,7 +375,7 @@ private def lowerNode (source : CheckedProcess) :
           (firstPlace (incomingPlaces source id))
           (firstPlace (outgoingPlaces source id))
           { elementId := id
-            durationMs := if durationLiteral = "PT1S" then 1000 else 0 }, scopeId)
+            durationMs := normalizeTimerDuration durationLiteral }, scopeId)
   | .intermediateCatchMessageEvent id channel =>
       if configuredByEventGateway source id then none
       else

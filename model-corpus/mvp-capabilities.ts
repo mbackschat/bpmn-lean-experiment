@@ -248,7 +248,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on sequential Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact PT1S outer-lifetime deadline preserved through task turnover; interruption withdraws the active task and publishes no partial output.",
+    restriction: "One exact PT5S outer-lifetime deadline preserved through task turnover; interruption withdraws the active task and publishes no partial output.",
     cibEvidence: notSelected,
   },
   {
@@ -256,7 +256,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on parallel Multi-Instance User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact PT1S outer-lifetime deadline preserved across concurrent progress; interruption terminates every remaining task and publishes no partial output.",
+    restriction: "One exact PT5S outer-lifetime deadline preserved across concurrent progress; interruption terminates every remaining task and publishes no partial output.",
     cibEvidence: notSelected,
   },
   {

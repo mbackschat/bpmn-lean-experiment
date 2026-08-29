@@ -19,6 +19,7 @@ import {
   operationId,
   parallelCompletionOperationId,
 } from "./semantic-process-identifiers.js";
+import { normalizeTimerDurationMs } from "./timer-duration-normalization.js";
 
 export function lowerParallelMultiInstanceUserTaskOperations(
   node: Extract<
@@ -98,7 +99,7 @@ function lowerParallelMultiInstanceBase(
     normalOutput: controlPlaceId(requireFlowId(normal[0])),
     boundaryTimer: {
       elementId: node.boundaryTimer.elementId,
-      durationMs: 1_000,
+      durationMs: normalizeTimerDurationMs(node.boundaryTimer.durationLiteral),
       output: controlPlaceId(requireFlowId(boundary[0])),
       origin: {
         kind: SemanticOriginKind.BpmnSequenceFlow,

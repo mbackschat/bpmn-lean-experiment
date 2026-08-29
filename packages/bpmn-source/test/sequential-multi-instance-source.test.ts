@@ -154,7 +154,7 @@ test("admits the exact sequential Multi-Instance source as one closed checked no
     normalOutputFlowId: "Flow_Review_Completed",
     boundaryTimer: {
       elementId: "BoundaryTimer_Review",
-      durationLiteral: "PT1S",
+      durationLiteral: "PT5S",
       outputFlowId: "Flow_Timer_Escalation",
     },
   });
@@ -174,7 +174,7 @@ test("admits the exact sequential Multi-Instance source as one closed checked no
     normalOutput: "place:Flow_Review_Completed",
     boundaryTimer: {
       elementId: "BoundaryTimer_Review",
-      durationMs: 1_000,
+      durationMs: 5_000,
       output: "place:Flow_Timer_Escalation",
       origin: {
         kind: "bpmnSequenceFlow",

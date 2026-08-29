@@ -58,7 +58,7 @@ const sequentialOperation = {
   normalOutput: "Place_Flow_1",
   boundaryTimer: {
     elementId: "Boundary_Timer_Review",
-    durationMs: 1_000,
+    durationMs: 5_000,
     output: "Place_Flow_1",
     origin: { kind: "bpmnSequenceFlow", elementId: "Flow_1" },
   },
@@ -134,7 +134,7 @@ const completionTransition = {
 
 const timerTransition = {
   revision: 4,
-  logicalTimeMs: 1_000,
+  logicalTimeMs: 5_000,
   transition: {
     kind: SemanticTransitionKind.ExternalStimulus,
     stimulus: {
@@ -145,7 +145,7 @@ const timerTransition = {
         elementId: sequentialOperation.boundaryTimer.elementId,
         activation: 1,
       },
-      logicalTimeMs: 1_000,
+      logicalTimeMs: 5_000,
     },
   },
   positionDelta: {

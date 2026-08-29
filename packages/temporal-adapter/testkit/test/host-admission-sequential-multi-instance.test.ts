@@ -59,7 +59,7 @@ test("admits one isolated sequential Multi-Instance lifetime deadline", async ()
         code: TemporalHostAdmissionFailureCode
           .SequentialMultiInstanceSchedulerUnavailable,
         evidence:
-          "The Temporal host admits only one isolated sequential Multi-Instance User Task with one exact PT1S outer-lifetime boundary Timer.",
+          "The Temporal host admits only one isolated sequential Multi-Instance User Task with one exact PT5S outer-lifetime boundary Timer.",
       },
     },
   );

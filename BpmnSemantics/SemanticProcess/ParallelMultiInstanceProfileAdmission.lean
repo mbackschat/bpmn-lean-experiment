@@ -33,7 +33,7 @@ private def exactParallelCheckedNode : CheckedNode → Bool
   | .parallelMultiInstanceUserTask _ _ _ _ condition _ boundaryTimer =>
       condition.language = simpleBooleanExpressionLanguage &&
         condition.body = "stringEquals(completionPolicy,\"first\")" &&
-        boundaryTimer.durationLiteral = "PT1S"
+        boundaryTimer.durationLiteral = "PT5S"
   | _ => false
 
 def checkedParallelMultiInstanceProfileMatches (source : CheckedProcess) : Bool :=
@@ -49,7 +49,7 @@ def parallelMultiInstanceExactEntry : SemanticOperation → Bool
   | .awaitParallelMultiInstanceUserTask _ origin _ taskId _ _ _ boundaryTimer condition limits =>
       origin.elementId.value = taskId.value &&
         condition = .stringEquals "completionPolicy" "first" &&
-        boundaryTimer.durationMs = 1000 &&
+        boundaryTimer.durationMs = 5000 &&
         limits =
           { maximumItems := 16
             maximumItemUtf8Bytes := 512

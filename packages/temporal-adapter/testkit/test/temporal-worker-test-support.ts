@@ -84,12 +84,26 @@ export async function stopBpmnTestWorker(
   }
 }
 
+/**
+ * Polls until the Workflow exposes exactly these open User Tasks, in this order.
+ *
+ * `armedDeadlineMs` extends the poll allowance by a deadline the model itself arms against the host
+ * clock, for a task that cannot appear until that deadline fires. Without it the allowance is spent
+ * on a wait the model prescribes, so the budget that remains for genuine host latency shrinks by the
+ * deadline's length and the failure names a missing task rather than a deliberate wait.
+ */
 export async function waitForOpenUserTaskIds(
   handle: WorkflowHandle,
   expectedElementIds: ReadonlyArray<string>,
   scheduler: OpenTaskPollScheduler = openTaskPollScheduler,
+  armedDeadlineMs = 0,
 ): Promise<ReadonlyArray<OpenUserTask>> {
-  const deadlineMs = scheduler.now() + operationDeadlineMs;
+  if (!Number.isFinite(armedDeadlineMs) || armedDeadlineMs < 0) {
+    throw new TypeError(
+      `armed deadline allowance must be a nonnegative duration, received ${armedDeadlineMs}`,
+    );
+  }
+  const deadlineMs = scheduler.now() + operationDeadlineMs + armedDeadlineMs;
   let latestError: unknown;
   let latestTasks: ReadonlyArray<OpenUserTask> = [];
   while (scheduler.now() < deadlineMs) {

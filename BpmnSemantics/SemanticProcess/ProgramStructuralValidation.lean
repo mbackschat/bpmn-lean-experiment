@@ -233,7 +233,7 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         identities.all nonempty &&
         identities.eraseDups.length = identities.length &&
         origin.elementId.value = task.id.value &&
-        boundaryTimer.durationMs = 1000 &&
+        boundaryTimer.durationMs = 5000 &&
         limits =
           { maximumItems := 16, maximumItemUtf8Bytes := 512,
             maximumCanonicalCollectionUtf8Bytes := 8192 } &&

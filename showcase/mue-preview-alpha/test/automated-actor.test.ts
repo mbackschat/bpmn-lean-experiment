@@ -274,7 +274,7 @@ function alphaReviewState(processInstanceId: string, loopCounter: number): State
     }],
     openTimers: [{
       id: occurrence(processInstanceId, lifetimeTimerElementId, 1),
-      deadlineMs: 1_000,
+      deadlineMs: 5_000,
     }],
     openMultiInstances: [{
       id: {
@@ -306,7 +306,7 @@ function alphaReviewState(processInstanceId: string, loopCounter: number): State
 function alphaEscalationState(processInstanceId: string): StateObservation {
   const taskId = occurrence(processInstanceId, escalationElementId, 1);
   return baseState(processInstanceId, {
-    logicalTimeMs: 1_000,
+    logicalTimeMs: 5_000,
     openUserTasks: [{
       id: taskId,
       name: "Escalate review",
@@ -322,7 +322,7 @@ function alphaTerminalState(
 ): StateObservation {
   return baseState(processInstanceId, {
     status: ProcessStatus.Completed,
-    logicalTimeMs: journey === AlphaJourney.Interrupted ? 1_000 : 0,
+    logicalTimeMs: journey === AlphaJourney.Interrupted ? 5_000 : 0,
     variables: journey === AlphaJourney.Natural ? [{
       name: outputBindingName,
       value: { kind: VariableValueKind.StringList, value: [...exactNaturalResults] },

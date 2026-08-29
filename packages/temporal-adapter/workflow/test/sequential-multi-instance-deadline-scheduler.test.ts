@@ -105,7 +105,7 @@ test("refuses a lifetime deadline detached from its exact outer controller", () 
         ...entered,
         sequentialMultiInstanceControllers: controllers,
       }),
-      /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT1S outer-lifetime boundary deadline/u,
+      /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT5S outer-lifetime boundary deadline/u,
     );
   }
 });
@@ -123,7 +123,7 @@ test("refuses a controller whose live body belongs to another Activity family", 
   };
   assert.throws(
     () => scheduler().reconcileCommittedState(malformed),
-    /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT1S outer-lifetime boundary deadline/u,
+    /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT5S outer-lifetime boundary deadline/u,
   );
 });
 
@@ -137,6 +137,6 @@ test("refuses a controller whose record names another program operation", () => 
   };
   assert.throws(
     () => scheduler().reconcileCommittedState(malformed),
-    /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT1S outer-lifetime boundary deadline/u,
+    /Managed sequential Multi-Instance Activity is not one controller, one active task, and one exact PT5S outer-lifetime boundary deadline/u,
   );
 });

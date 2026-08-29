@@ -14,6 +14,7 @@ import {
   controlPlaceId,
   operationId,
 } from "./semantic-process-identifiers.js";
+import { normalizeTimerDurationMs } from "./timer-duration-normalization.js";
 
 export function lowerSequentialMultiInstanceUserTask(
   node: Extract<
@@ -52,7 +53,7 @@ export function lowerSequentialMultiInstanceUserTask(
     normalOutput: controlPlaceId(requireFlowId(normal[0])),
     boundaryTimer: {
       elementId: node.boundaryTimer.elementId,
-      durationMs: 1_000,
+      durationMs: normalizeTimerDurationMs(node.boundaryTimer.durationLiteral),
       output: controlPlaceId(requireFlowId(boundary[0])),
       origin: {
         kind: SemanticOriginKind.BpmnSequenceFlow,
