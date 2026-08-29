@@ -63,13 +63,26 @@ type MultiInstanceDeadlineMs =
 const boundedDeadlineMs: BoundedDeadlineMs = 1000;
 const multiInstanceDeadlineMs: MultiInstanceDeadlineMs = 5000;
 
+// The assignments above only prove each number belongs; these prove nothing else does. Assigning
+// the extracted type back to the literal succeeds exactly when the family's arm carries that one
+// number, so a re-widened arm fails here on the deadline itself rather than only on an
+// `@ts-expect-error` line that an unrelated error would also satisfy. They are declared rather than
+// initialized because a `const` with a union annotation narrows to its initializer, which would
+// make the check read as the literal whatever the arm carried.
+declare const extractedBoundedDeadlineMs: BoundedDeadlineMs;
+declare const extractedMultiInstanceDeadlineMs: MultiInstanceDeadlineMs;
+const boundedDeadlineIsOnlyOneNumber: 1000 = extractedBoundedDeadlineMs;
+const multiInstanceDeadlineIsOnlyOneNumber: 5000 = extractedMultiInstanceDeadlineMs;
+
 export type {
   BoundedDeadlineMs,
   MultiInstanceDeadlineMs,
 };
 export {
+  boundedDeadlineIsOnlyOneNumber,
   boundedDeadlineMs,
   boundedTask,
+  multiInstanceDeadlineIsOnlyOneNumber,
   multiInstanceDeadlineMs,
   unionArm,
   wrongBoundedArm,

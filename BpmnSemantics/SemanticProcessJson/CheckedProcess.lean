@@ -123,7 +123,7 @@ private def decodeSequentialMultiInstanceOutput (json : Json) :
       itemAssociationId := ← stringField json "itemAssociationId"
       collectionAssociationId := ← stringField json "collectionAssociationId" }
 
-private def decodeCheckedSequentialMultiInstanceBoundaryTimer (json : Json) :
+private def decodeCheckedMultiInstanceBoundaryTimer (json : Json) :
     Except String CheckedSequentialMultiInstanceBoundaryTimer := do
   requireObjectShape json ["durationLiteral", "elementId", "outputFlowId"]
   let durationLiteral ← stringField json "durationLiteral"
@@ -208,7 +208,7 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← decodeSequentialMultiInstanceInput (← field json "input"))
           (← decodeSequentialMultiInstanceOutput (← field json "output"))
           ⟨← stringField json "normalOutputFlowId"⟩
-          (← decodeCheckedSequentialMultiInstanceBoundaryTimer
+          (← decodeCheckedMultiInstanceBoundaryTimer
             (← field json "boundaryTimer")))
   | "parallelMultiInstanceUserTask" =>
       requireObjectShape json
@@ -222,7 +222,7 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← decodeSequentialMultiInstanceOutput (← field json "output"))
           (← decodeRequiredCheckedCondition (← field json "completionCondition"))
           ⟨← stringField json "normalOutputFlowId"⟩
-          (← decodeCheckedSequentialMultiInstanceBoundaryTimer
+          (← decodeCheckedMultiInstanceBoundaryTimer
             (← field json "boundaryTimer")))
   | "intermediateCatchTimerEvent" =>
       requireObjectShape json ["durationLiteral", "id", "kind"]

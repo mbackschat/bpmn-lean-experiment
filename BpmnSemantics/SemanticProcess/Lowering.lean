@@ -105,9 +105,12 @@ private def eventRaceMessageArm (source : CheckedProcess)
 
 An unadmitted lexeme normalizes to `0` rather than failing, because checked admission has already
 rejected it; a total function keeps lowering free of an error path the profile cannot reach. `0` is
-not a silent result: every family that carries a duration pins its own exact milliseconds in program
-structural validation, so a lexeme this table forgets is refused there instead of executing an
-instant deadline. -/
+not a silent result: every operation this feeds pins its own exact milliseconds, in program
+structural validation directly or, for the parallel Multi-Instance arm it delegates, in
+`ParallelMultiInstanceProfileAdmission`, so a lexeme this table forgets is refused rather than
+executing an instant deadline. The table also cannot drift from the TypeScript one unnoticed,
+because definition admission requires `lowerCheckedProcess` to equal the submitted program exactly
+and TypeScript derives its admitted lexemes from its own table rather than restating them. -/
 private def normalizeTimerDuration (durationLiteral : String) : Nat :=
   if durationLiteral = "PT1S" then 1000
   else if durationLiteral = "PT5S" then 5000
