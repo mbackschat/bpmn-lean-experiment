@@ -1,4 +1,3 @@
-import type { PublicWorkTask } from "@bpmn-lean/platform-contracts";
 import type {
   PostgresqlRuntime,
   PostgresqlSession,

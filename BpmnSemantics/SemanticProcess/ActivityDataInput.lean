@@ -488,9 +488,16 @@ theorem completeDataInputUserTask_activity_identity_discipline {program : Progra
 
 `ADINPUT-SCOPE-01`'s uniqueness half rests on a freshness hypothesis that the global runtime-state
 predicate cannot supply, because its quantified preservation is a deliberately open lane. This
-section discharges it family-locally instead: the bound below is preserved by both of this family's
-transitions and implies the hypothesis, so `fresh` is a consequence of the issuing discipline rather
-than an assumption a caller must justify. -/
+section replaces it with a weaker and family-local one: the bound below implies the hypothesis and is
+preserved by both of this family's transitions, so `fresh` follows from the issuing discipline
+wherever the bound holds.
+
+The bound is anchored at both states a run can begin from, but neither anchor reaches an activation on
+its own: both family transitions require `.running` control, so `initialState` enables neither, and
+every state where an activation is possible is reached through non-family transitions whose
+preservation of this bound is not proved here. What is discharged is the obligation to justify
+`fresh` at each call site; establishing the bound at an arbitrary reachable state still belongs to the
+open global-predicate lane. -/
 
 /-- Every Activity-owned local scope sits at or below its own element's high-water mark.
 
@@ -672,11 +679,25 @@ theorem activateDataInputUserTask_preservesIssuedCountBound {state after : Runti
                 exact Nat.le_trans prior
                   (activationCounterMonotone state taskId ⟨owner.activityElementId.value⟩)
 
-/-- The bound holds where every run starts, so the two preservation results above make it an
-invariant of this family rather than an assumption carried in from somewhere unproved. -/
+/-- The bound holds before a Process starts, where no local scope exists at all.
+
+This anchor is the weaker of the two: no transition of this family is enabled at `.notStarted`
+control, so nothing is derived from it alone. -/
 theorem initialState_activityScopesWithinIssuedCount :
     activityScopesWithinIssuedCount initialState := by
   intro scope present
   simp [initialState, emptyScopedVariables] at present
+
+/-- The bound also holds at the started state, which is where a run that can reach an activation
+begins.
+
+`runningStartState` populates only the Process scope, so the Activity scopes are still empty and the
+activation counters are still unissued. Non-family transitions between here and an activation are
+outside this family's proof obligation. -/
+theorem runningStartState_activityScopesWithinIssuedCount
+    (instanceId : SemanticId) (initialVariables : List VariableBinding) :
+    activityScopesWithinIssuedCount (runningStartState instanceId initialVariables) := by
+  intro scope present
+  simp [runningStartState, initialState, emptyScopedVariables] at present
 
 end BpmnSemantics.SemanticProcess
