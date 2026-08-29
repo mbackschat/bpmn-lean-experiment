@@ -2,16 +2,18 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Question and bounded outcome
+
+The exact bounded standards-only profile is implemented across source admission and lowering, Lean, the independently written TypeScript semantic core, the profile-gated optional task-input observation, the differential pipeline, the production Temporal Workflow, the retained whole-model corpus, and Product 2's strict copied contract. Three registered scenarios cover a present string, an explicit null, and an absent source. The closure cost, clean immutable closure gate, independent closure review, and proposal graduation remain open.
 
 What is the smallest standards-only data mechanism that makes one ordinary User Task wait for a required Process-scoped value, copies that value into an occurrence-owned Activity input, exposes the selected input to the task consumer, and disposes the local value with the Activity without selecting output mapping or a new Task-specific host effect?
 
 This proposal selects one private executable Process containing a None Start Event, one data-bearing User Task, and one None End Event. The User Task has one required scalar `DataInput`, one `InputSet`, one empty `OutputSet`, and one direct `DataInputAssociation` from one Process-owned `Property`. A present Process binding, including explicit null, activates the User Task and copies the value once. An absent binding leaves the Activity ready at its incoming control place and creates no task, Activity occurrence, or local scope.
 
-The reviewed requirement ID is `BPMN-ACTIVITY-DATA-INPUT-01`. The implemented checkpoint carries it to `supported` for this bounded slice and brings the differential and corpus lanes with it; the production Temporal refinement witness and Product 2 adoption are implemented, and governed closure evidence completes the capsule. The broad `BPMN-MECH-DATA-01`, `BPMN-MECH-ACTIVITY-01`, and `BPMN-MECH-TASK-01` families remain unsupported after this bounded checkpoint.
+The reviewed requirement ID is `BPMN-ACTIVITY-DATA-INPUT-01`. Its requirement-ledger disposition is `supported` only for this exact bounded slice; the broad `BPMN-MECH-DATA-01`, `BPMN-MECH-ACTIVITY-01`, and `BPMN-MECH-TASK-01` families remain `unsupported`.
 
 ## Normative account and selected interpretation
 
@@ -132,7 +134,7 @@ No Continue-As-New boundary may split the atomic activation transition. A permit
 | TypeScript realization | Separately written readiness, copy, ownership, completion, and one-element input-collection observation logic plus focused state-preservation and negative tests; the commutation census admits the composite declarer while a focused test proves its checkpoint footprint remains unavailable |
 | Cross-language behavior | Answer-free present-string, present-null, and absent-source scenarios compared through exact canonical results without giving either runner an expected answer |
 | Runtime ownership | Activity writer census, body-claim invariant, local-owner discriminator mutation, runtime-state well-formedness, and collection-removal completeness |
-| Durable refinement | Real-service Worker-replacement, terminal receipt, exact Query input collection, and every-Run replay plus a direct-VM absence/null discriminator |
+| Durable refinement | One real service running all three scenarios on one compiled program: Worker replacement between arming and completion, the exact published input collection, host termination of the unavailable-source Run fabricating no transition, terminal receipts, and replay of both completed Runs |
 | Whole-model reach | One project-owned invoice-review model, exact pipeline binding, capability/restriction row, generated corpus map, and Product 2 About-page disclosure |
 | Product 2 compatibility | Strict optional input-collection decoding and copied-contract tests only; no presentation or browser claim |
 
@@ -186,7 +188,7 @@ Same-change owners are this proposal, the [scoped-data specification](SCOPED-DAT
 
 ## Epistemic closure and reopen conditions
 
-At proposal stage, established are the normative direct-copy and unavailable-source rules, the exact machine-readable source cardinalities, independent whole-model demand, the current representation gap, and Temporal feasibility using existing ingress and task completion. No implementation, support, cross-language agreement, durable refinement, or Product 2 readiness claim exists yet.
+Established by implementation are the normative direct-copy and unavailable-source rules, the exact machine-readable source cardinalities and their five named exclusions, the exact source and profile boundary, the explicit-null-is-present interpretation, the occurrence-owned local scope with its issuing-discipline freshness bound, the proved Lean transition and refusal account with evaluator soundness, the independently written TypeScript realization, three answer-free cross-language scenarios, real-service durable refinement, one retained whole model, and strict Product 2 decoding. Governed closure review and graduation remain open.
 
 The nearest unsupported claim is one DataOutput and DataOutputAssociation copying a completed Activity value back to Process scope. The principal common-mode risk is that source, Lean, TypeScript, and Temporal all share the proposal's chosen absence/null representation. The normative unavailable-source text, explicit null discriminator, strict wire mutations, and independent source graph constrain but do not eliminate that risk.
 
