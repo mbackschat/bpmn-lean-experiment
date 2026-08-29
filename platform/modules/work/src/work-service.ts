@@ -23,6 +23,7 @@ import type {
   WorkTaskReference,
 } from "./work-contracts.js";
 import {
+  projectEngineOpenWorkTask,
   projectVisibleSystemWorkTask,
   sortPublicWorkTasks,
 } from "./work-task-projection.js";
@@ -86,7 +87,9 @@ type WorkObservationGatewayPort = Readonly<{
     locator: string;
     hostingProcessInstanceId: string;
   }>): Promise<
-    | Readonly<{ status: "open"; openUserTasks: readonly PublicWorkTask["task"][] }>
+    // Declared as unknown because the engine's published task is a superset the Work contract
+    // narrows; typing it as the Work shape hid every engine field addition until the wire broke.
+    | Readonly<{ status: "open"; openUserTasks: readonly unknown[] }>
     | Readonly<{ status: "closed" | "unknown" | "unavailable" }>
   >;
 }>;
@@ -145,7 +148,10 @@ export class WorkService {
             if (tasks.length >= this.#options.limits.maxTasks) {
               throw new WorkSnapshotUnavailableError();
             }
-            const exactTask = structuredClone(task);
+            const exactTask = projectEngineOpenWorkTask(
+              task,
+              registration.instance,
+            );
             const reference = {
               hostingProcessInstanceId: registration.instance.processInstanceId,
               taskId: exactTask.id,

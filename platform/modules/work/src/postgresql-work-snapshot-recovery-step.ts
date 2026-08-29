@@ -18,7 +18,7 @@ import type {
   PreparedWorkSnapshotItem,
   PreparedWorkSnapshotTask,
 } from "./postgresql-work-snapshot-storage.js";
-import { snapshotOpenWorkTask } from "./work-task-projection.js";
+import { projectEngineOpenWorkTask } from "./work-task-projection.js";
 
 export const PostgresqlWorkSnapshotStepKind = {
   Complete: "complete",
@@ -67,7 +67,7 @@ type WorkObservationGateway = Readonly<{
     locator: string;
     hostingProcessInstanceId: string;
   }>): Promise<
-    | Readonly<{ status: "open"; openUserTasks: readonly PublicWorkTask["task"][] }>
+    | Readonly<{ status: "open"; openUserTasks: readonly unknown[] }>
     | Readonly<{ status: "closed" | "unknown" | "unavailable" }>
   >;
 }>;
@@ -151,7 +151,7 @@ export class PostgresqlWorkSnapshotRecoveryStep {
 
   async #prepareOpen(
     prepared: PreparedWorkSnapshotItem,
-    tasksValue: readonly PublicWorkTask["task"][],
+    tasksValue: readonly unknown[],
   ): Promise<PostgresqlWorkSnapshotStepResult> {
     if (!Array.isArray(tasksValue) || tasksValue.length > this.#options.maxTasks) {
       return failProducer();
@@ -160,7 +160,7 @@ export class PostgresqlWorkSnapshotRecoveryStep {
     const seen = new Set<string>();
     try {
       for (const taskValue of tasksValue) {
-        const task = snapshotOpenWorkTask(
+        const task = projectEngineOpenWorkTask(
           taskValue,
           prepared.currentRegistration.instance,
         );

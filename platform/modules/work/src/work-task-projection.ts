@@ -67,6 +67,37 @@ export function compareUnicodeScalarStrings(left: string, right: string): number
   return leftScalars.length - rightScalars.length;
 }
 
+/** The Product 1 open-task fields the Work contract owns and republishes. */
+const ownedEngineTaskKeys = ["id", "name", "state", "metadata"] as const;
+
+/**
+ * Narrows one engine-observed open task to the fields the Work contract owns.
+ *
+ * Product 1's published task grows with each semantic family, while the Work contract is a
+ * deliberate subset that Product 2 serializes and re-decodes strictly. Passing the engine value
+ * through therefore turned every engine field addition into a Work wire break rather than a value
+ * Work ignores: the Activity data-input family's `inputs` collection is the current example, and
+ * `metadata` was the previous one. Selecting the owned fields here keeps the strict decoder strict
+ * without teaching Work about semantics it does not present.
+ *
+ * A non-object reaches the decoder unchanged so that refusal stays owned by one place.
+ */
+export function projectEngineOpenWorkTask(
+  value: unknown,
+  hostingInstance: SystemWorkTask["registration"]["instance"],
+): SystemWorkTask["task"] {
+  return snapshotOpenWorkTask(
+    typeof value === "object" && value !== null
+      ? Object.fromEntries(
+        ownedEngineTaskKeys
+          .filter((key) => Object.hasOwn(value, key))
+          .map((key) => [key, Reflect.get(value, key)]),
+      )
+      : value,
+    hostingInstance,
+  );
+}
+
 /** Normalizes an untrusted Product 1 task into the exact public task contract. */
 export function snapshotOpenWorkTask(
   value: unknown,

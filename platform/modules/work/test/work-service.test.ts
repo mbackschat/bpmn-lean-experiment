@@ -6,6 +6,8 @@ import {
   TaskAuthorizationPolicy,
 } from "@bpmn-lean/platform-identity-policy";
 
+import { decodeWorkTaskSnapshot } from "@bpmn-lean/platform-contracts";
+
 import {
   WorkService,
   WorkSnapshotUnavailableError,
@@ -184,6 +186,32 @@ test("enforces both configured aggregation ceilings", async () => {
     });
     await assert.rejects(service.observeSystemTasks(), WorkSnapshotUnavailableError, example.name);
   }
+});
+
+test("narrows an engine-observed task to the fields the Work contract owns", async () => {
+  const service = createService({
+    "host-a": {
+      status: "open",
+      openUserTasks: [{
+        ...openTask("Review", "reviewers", 1),
+        // Published by the engine for the Activity data-input family. Work presents no Activity
+        // data, and the browser re-decodes this snapshot strictly, so carrying an engine field the
+        // Work contract does not own would refuse the whole page rather than ignore one value.
+        inputs: [{
+          name: "DataInput_ReviewContext",
+          value: { kind: "string", value: "invoice-4711" },
+        }],
+      }],
+    },
+  }, { registrations: [registration("host-a")] });
+
+  const snapshot = await service.listTasks();
+
+  assert.deepEqual(snapshot.tasks.map(({ task }) => task), [openTask("Review", "reviewers", 1)]);
+  assert.deepEqual(
+    decodeWorkTaskSnapshot(JSON.parse(JSON.stringify(snapshot)) as unknown),
+    snapshot,
+  );
 });
 
 type WorkObservation =
