@@ -599,6 +599,10 @@ Bounded checked-source relation experiment gate:
 ./scripts/lake.sh exe checkCheckedSourceRelationExperiment
 ```
 
+Every helper process a contributor or agent starts must be able to terminate itself. Bound it with `timeout`, an explicit deadline, or a fixed iteration count, so that an exception, a tool timeout, an interrupt, or a forgotten cleanup step cannot leave it running. Do not rely on a later `kill` as the only exit: the parent may never reach it, and a background job whose parent exits is reparented to `init` and outlives the session.
+
+Never recover those identities with `PIDS=$(jobs -p)`. Command substitution runs in a subshell that owns no jobs, so the variable is empty and the `kill` silently succeeds against nothing. Capture each `$!` immediately after its own `&` instead, and treat the bounded lifetime rather than the capture as the real guarantee. This rule exists because eight unbounded `while :; do :; done` load generators were started to measure a gate under CPU pressure, their `kill` matched nothing for exactly that reason, and they ran orphaned at ~80% CPU each until the owner noticed a load average above 100. Any measurement taken while they ran is contended and must be repeated. Sweep for strays before reporting a host measurement: a killed test run can also leave an ephemeral Temporal server behind.
+
 Before starting any JavaScript or TypeScript test or build, follow the [long-running-command policy](docs/TESTING-SPEC.md#long-running-javascript-and-typescript-commands). A command that may outlive one execution-tool yield or overflow transient output must retain recoverable evidence and be resumed after compaction rather than duplicated. Do not report such a command green until `node scripts/assert-command-receipt.ts <absolute-receipt-directory>` exits zero and prints its success verdict. Use pnpm, not npm. The adapter keeps strict checking for project source but sets `skipLibCheck: true` because the manifest-pinned Temporal declarations do not type-check under TypeScript 7.0.2; do not broaden that workaround to the semantic core.
 
 Always run:
