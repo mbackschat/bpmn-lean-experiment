@@ -267,9 +267,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformance", peakResidentKib: 772200, elapsedSeconds: 1.4 },
     {
       module: "BpmnSemantics.SemanticProcessJsonConformance",
-      peakResidentKib: 659076,
-      elapsedSeconds: 0.76,
-      measuredAtCommit: "826231ab",
+      peakResidentKib: 662580,
+      elapsedSeconds: 0.55,
+      measuredAtCommit: "ffbf7b24",
     },
     { module: "BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance", peakResidentKib: 646452, elapsedSeconds: 0.7 },
     { module: "BpmnSemantics.ActivityIssuingDisciplineConformance", peakResidentKib: 614068, elapsedSeconds: 0.8 },
