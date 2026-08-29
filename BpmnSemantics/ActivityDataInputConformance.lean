@@ -249,4 +249,58 @@ theorem submittedValuesPreserveTheActiveState :
         ambiguousInternalChoice := false } := by
   decide +kernel
 
+/-! ## Ownership and identity refusals against a live task
+
+`ADINPUT-REFUSE-01` over the three pre-states the account names but no retained fact reached: a
+duplicated local owner, an absent one, and a well-formed command naming an activation the live wait
+does not carry. Each perturbs the committed active state rather than a terminal one, so the refusal
+cannot be attributed to the task already being gone. -/
+
+private def activeState : RuntimeState := (runStart startWithContext).state
+
+private def reviewLocalScope : ActivityVariableScope :=
+  { owner := .activityOccurrence
+      { processInstanceId := reviewInstanceId
+        activityElementId := ⟨"UserTask_Review"⟩
+        activation := 1 }
+    bindings := [{ name := reviewDirectInput.targetDataInputId, value := presentContext.value }] }
+
+private def withLocalScopes (scopes : List ActivityVariableScope) : RuntimeState :=
+  { activeState with
+      variables := { activeState.variables with activities := scopes } }
+
+private def refused (state : RuntimeState) : StimulusResult :=
+  { outcome := .rejected
+    state := state
+    internalStepBoundExceeded := false
+    ambiguousInternalChoice := false }
+
+/-- The perturbed scope is the one the committed activation actually produced, so a refusal here is
+caused by its multiplicity rather than by a value the lookup would have rejected anyway. -/
+theorem activationProducesExactlyTheDuplicatedScope :
+    activeState.variables.activities = [reviewLocalScope] := by
+  decide +kernel
+
+theorem duplicateLocalOwnerRefusesCompletion :
+    applyStimulus scenarioClosureLimit reviewProgram
+        (withLocalScopes [reviewLocalScope, reviewLocalScope]) completeReview =
+      refused (withLocalScopes [reviewLocalScope, reviewLocalScope]) := by
+  decide +kernel
+
+theorem absentLocalOwnerRefusesCompletion :
+    applyStimulus scenarioClosureLimit reviewProgram (withLocalScopes []) completeReview =
+      refused (withLocalScopes []) := by
+  decide +kernel
+
+/-- A live wait exists and carries activation `1`, so this separates identity checking from the
+already-terminal case that [staleCompletionPreservesTheCommittedState] covers. -/
+theorem wrongActivationAgainstALiveWaitRefuses :
+    applyStimulus scenarioClosureLimit reviewProgram activeState
+        (.completeUserTaskInstance ⟨"complete-wrong-activation"⟩
+          { processInstanceId := reviewInstanceId
+            elementId := ⟨"UserTask_Review"⟩
+            activation := 2 } []) =
+      refused activeState := by
+  decide +kernel
+
 end BpmnSemantics.ActivityDataInputConformance
