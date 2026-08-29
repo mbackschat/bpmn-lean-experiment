@@ -306,16 +306,33 @@ function requireActiveWaits(value: unknown): Array<{ elementId: string; kind: st
   return waits;
 }
 
+const openUserTaskOptionalKeys = ["metadata", "inputs"] as const;
+
 function requireOpenUserTask(value: unknown, label: string) {
   requireObject(value, label);
-  const metadata = Object.hasOwn(value, "metadata");
-  exact(value, label, metadata ? ["id", "name", "state", "metadata"] : ["id", "name", "state"]);
+  const present = openUserTaskOptionalKeys.filter((key) => Object.hasOwn(value, key));
+  exact(value, label, ["id", "name", "state", ...present]);
   const id = requireOccurrence(readOwn(value, "id"), `${label}.id`);
   const name = readOwn(value, "name");
   if (name !== null) requireNonemptyString(name, `${label}.name`);
   if (readOwn(value, "state") !== "active") throw new TypeError(`${label}.state must be active`);
-  if (metadata) requireUserTaskMetadata(readOwn(value, "metadata"), `${label}.metadata`);
+  if (present.includes("metadata")) requireUserTaskMetadata(readOwn(value, "metadata"), `${label}.metadata`);
+  if (present.includes("inputs")) requireTaskInputs(readOwn(value, "inputs"), `${label}.inputs`);
   return { id };
+}
+
+/**
+ * Requires exactly the one published Activity DataInput binding.
+ *
+ * The admitted profile fills a single input, so an empty or longer collection is a producer defect
+ * rather than a shape to tolerate: accepting it here would let the platform present a task as having
+ * no Activity data when the engine says it has some.
+ */
+function requireTaskInputs(value: unknown, label: string): void {
+  if (!Array.isArray(value) || value.length !== 1) {
+    throw new TypeError(`${label} must publish exactly one Activity DataInput binding`);
+  }
+  requirePatch(value, label);
 }
 
 function requireOpenMessage(value: unknown, label: string) {

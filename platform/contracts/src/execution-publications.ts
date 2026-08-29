@@ -216,6 +216,7 @@ export const SemanticOperationKind = {
   InvokeProcess: "invokeProcess",
   ReturnProcess: "returnProcess",
   AwaitUserTask: "awaitUserTask",
+  AwaitDataInputUserTask: "awaitDataInputUserTask",
   AwaitBoundedUserTask: "awaitBoundedUserTask",
   AwaitMonitoredUserTask: "awaitMonitoredUserTask",
   AwaitSequentialMultiInstanceUserTask: "awaitSequentialMultiInstanceUserTask",
@@ -314,6 +315,20 @@ export type OpenUserTask = DeepReadonly<{
   name: string | null;
   state: "active";
   metadata?: UserTaskMetadata;
+  /**
+   * The Activity DataInputs the engine copied when this task occurrence became active.
+   *
+   * Published exactly for a task whose program fills an Activity data interface and absent
+   * otherwise, so every other family's publication bytes are unchanged. Each binding's `name` is the
+   * exact BPMN DataInput `id`, and its value is an engine observation of Activity-local data rather
+   * than a form schema, an authorization decision, or a view of the Process variables, which live in
+   * a different scope and may legitimately disagree with it.
+   *
+   * The platform copies this field through. It must not reconstruct the collection from
+   * `variables`, from a start payload, from the definition XML, or from a difference between two
+   * observed states.
+   */
+  inputs?: [VariableBinding];
 }>;
 
 export type OpenMessageSubscription = DeepReadonly<{
