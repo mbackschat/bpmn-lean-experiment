@@ -201,5 +201,5 @@ Closure requires a commit-bounded cost row compared with the nearest scoped-data
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `3332a92f` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `adb23217` | `fork-turns-none` | `approve-with-required-edits` | `ede20831` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
