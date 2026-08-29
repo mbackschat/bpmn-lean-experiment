@@ -230,7 +230,7 @@ type CheckedNode = DeepReadonly<
       normalOutputFlowId: string;
       boundaryTimer: {
         elementId: string;
-        durationLiteral: "PT1S";
+        durationLiteral: "PT5S";
         outputFlowId: string;
       };
     }
@@ -518,7 +518,7 @@ type SemanticOperation = DeepReadonly<
       };
       data: SequentialMultiInstanceDataDefinition;
       normalOutput: string;
-      boundaryTimer: BoundaryTimerArm;
+      boundaryTimer: BoundaryTimerArm<5000>;
       limits: SequentialMultiInstanceLimits;
     })
   | (OperationBase & {

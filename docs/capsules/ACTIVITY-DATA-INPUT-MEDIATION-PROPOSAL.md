@@ -167,9 +167,9 @@ The `OWNER` measurements below are the current nonblank counts reported by `node
 |---|---:|
 | [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 138 |
 | [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 190 |
-| [TypeScript source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 230 |
+| [TypeScript source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 228 |
 | [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 252 |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 313 |
+| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 311 |
 | [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 505 |
 | [TypeScript RuntimeState contract](../../packages/semantic-core/src/semantic-process-state.ts) | 384 |
 | [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 398 |

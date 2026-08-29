@@ -48,6 +48,7 @@ export function isWellFormedAwaitParallelMultiInstanceUserTaskOperation(
       value.boundaryTimer,
       placeIds,
       placeOrigins,
+      5000,
     ) ||
     !hasExactLimits(value.limits)
   ) {

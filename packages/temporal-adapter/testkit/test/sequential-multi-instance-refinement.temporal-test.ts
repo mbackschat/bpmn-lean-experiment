@@ -182,11 +182,6 @@ async function runNaturalRefinement(
     "receipt",
   );
   assert.deepEqual(requireLifetimeTimer(thirdState), lifetimeTimer);
-  assertHostClockDeadlineMargin({
-    label: "sequential Multi-Instance natural path",
-    elapsedMs: Date.now() - armedAtMs,
-    deadlineMs: lifetimeTimer.deadlineMs,
-  });
   assert.deepEqual(
     await submitUserTaskCompletion(
       environment.client.workflow,
@@ -195,6 +190,13 @@ async function runNaturalRefinement(
     ),
     semanticResult(completions[2]!, CommandOutcome.Committed),
   );
+  // Measured after the closing completion, because that round trip races the deadline like the
+  // others: had it lost, interruption would have withdrawn the task it completes.
+  assertHostClockDeadlineMargin({
+    label: "sequential Multi-Instance natural path",
+    elapsedMs: Date.now() - armedAtMs,
+    remainingMs: lifetimeTimer.deadlineMs - firstState.logicalTimeMs,
+  });
 
   const terminal = await withDeadline(
     readTestProcessTerminalResult(firstHandle),

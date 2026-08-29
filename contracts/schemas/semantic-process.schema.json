@@ -843,7 +843,9 @@
           "$ref": "#/$defs/nonemptyString"
         },
         "boundaryTimer": {
-          "$ref": "#/$defs/boundaryTimerArm"
+          "$ref": "#/$defs/boundaryTimerArm",
+          "type": "object",
+          "properties": { "durationMs": { "const": 5000 } }
         },
         "limits": {
           "$ref": "#/$defs/sequentialMultiInstanceLimits"
@@ -901,7 +903,11 @@
           "$ref": "#/$defs/parallelMultiInstanceCompletionCondition"
         },
         "normalOutput": { "$ref": "#/$defs/nonemptyString" },
-        "boundaryTimer": { "$ref": "#/$defs/boundaryTimerArm" },
+        "boundaryTimer": {
+          "$ref": "#/$defs/boundaryTimerArm",
+          "type": "object",
+          "properties": { "durationMs": { "const": 5000 } }
+        },
         "limits": { "$ref": "#/$defs/sequentialMultiInstanceLimits" }
       }
     },
@@ -1930,6 +1936,7 @@
           "$ref": "#/$defs/nonemptyString"
         },
         "durationMs": {
+          "description": "The union across every family that arms a boundary Timer. Each arming site narrows this to its own family's single admitted deadline, because a program carrying a sibling family's number is not admissible.",
           "enum": [1000, 5000]
         },
         "output": {
@@ -1968,7 +1975,9 @@
           "$ref": "#/$defs/boundedTaskArm"
         },
         "boundaryTimer": {
-          "$ref": "#/$defs/boundaryTimerArm"
+          "$ref": "#/$defs/boundaryTimerArm",
+          "type": "object",
+          "properties": { "durationMs": { "const": 1000 } }
         }
       }
     },
@@ -2000,7 +2009,9 @@
           "$ref": "#/$defs/boundedTaskArm"
         },
         "boundaryTimer": {
-          "$ref": "#/$defs/boundaryTimerArm"
+          "$ref": "#/$defs/boundaryTimerArm",
+          "type": "object",
+          "properties": { "durationMs": { "const": 1000 } }
         }
       }
     },
@@ -2036,7 +2047,9 @@
           "$ref": "#/$defs/nonemptyString"
         },
         "boundaryTimer": {
-          "$ref": "#/$defs/boundaryTimerArm"
+          "$ref": "#/$defs/boundaryTimerArm",
+          "type": "object",
+          "properties": { "durationMs": { "const": 1000 } }
         }
       }
     }

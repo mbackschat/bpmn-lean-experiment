@@ -241,6 +241,8 @@ Those source facts are diagnostic, not a compatibility decision. The standards p
 
 The exact CIB `2.2.0` public-service probe is now green. It establishes ordered distinct task turnover, zero-collection closure, one stable outer Timer, interrupting boundary routing, desired-cardinality counters present from outer entry, and absence of the declared standard output collection after scalar task-local results. The register classifies the lifecycle subset as `CIB-AGR-0011`, the counter choice as `CIB-INT-0002`, and missing output aggregation as limitation `CIB-LIM-0001`.
 
+The probe model deliberately keeps `PT1S` while the project profile admits `PT5S`. The probe never waits for expiry: it queries the one due Timer job and executes it through the management service, so the lexeme selects nothing but a valid duration that produces a job. Raising it there would change no observation and would only obscure that the project deadline is a host-scheduling margin rather than a semantic constant. The observed CIB facts are therefore duration-independent, and a future probe that does depend on real elapsed time must state that dependence rather than inherit this one's lexeme.
+
 The project profile remains standards-only. It retains the selected generated-instance counter and direct-index atomic output mediator, uses CIB only for the bounded agreement and separating limitation evidence, and has no CIB execution target for Multi-Instance semantics.
 
 ## Temporal hosting and refinement preflight

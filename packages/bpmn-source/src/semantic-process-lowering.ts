@@ -503,12 +503,14 @@ function flowPlaces(
  * The deadline arm every host Activity folds into its own operation.
  *
  * One owner across host kinds: the arm's shape is a wire contract, so a per-host copy would let the
- * two hosts drift on `durationMs` normalization or on which namespace `origin` carries.
+ * two hosts drift on `durationMs` normalization or on which namespace `origin` carries. The three
+ * hosts it serves share one admitted deadline, and the return type names it rather than the union,
+ * so a later host admitting a different lexeme fails here instead of at that host's operation.
  */
 function lowerBoundaryTimerArm(
   source: CheckedProcess,
   boundaryTimer: Extract<CheckedNode, { kind: CheckedNodeKind.TimerBoundaryEvent }>,
-): BoundaryTimerArm {
+): BoundaryTimerArm<1000> {
   return {
     elementId: boundaryTimer.id,
     durationMs: normalizeTimerDurationMs(boundaryTimer.durationLiteral),

@@ -104,7 +104,10 @@ private def eventRaceMessageArm (source : CheckedProcess)
 /-- Milliseconds for one admitted duration lexeme.
 
 An unadmitted lexeme normalizes to `0` rather than failing, because checked admission has already
-rejected it; a total function keeps lowering free of an error path the profile cannot reach. -/
+rejected it; a total function keeps lowering free of an error path the profile cannot reach. `0` is
+not a silent result: every family that carries a duration pins its own exact milliseconds in program
+structural validation, so a lexeme this table forgets is refused there instead of executing an
+instant deadline. -/
 private def normalizeTimerDuration (durationLiteral : String) : Nat :=
   if durationLiteral = "PT1S" then 1000
   else if durationLiteral = "PT5S" then 5000

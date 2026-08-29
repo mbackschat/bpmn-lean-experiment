@@ -79,11 +79,11 @@ type AwaitMonitoredUserTaskOperation = OperationBase & DeepReadonly<{
     name: string | null;
     output: string;
   };
-  boundaryTimer: BoundaryTimerArm;
+  boundaryTimer: BoundaryTimerArm<1000>;
 }>;
 ```
 
-`BoundaryTimerArm` stays byte-identical and shared with `awaitBoundedUserTask` and `enterBoundedScope`. What differs is the operation kind, and that difference is the whole semantic content: the kind is what selects a transition family whose firing preserves its host.
+`BoundaryTimerArm` stays byte-identical and shared with `awaitBoundedUserTask` and `enterBoundedScope`, at the same `1000` these three families admit. What differs is the operation kind, and that difference is the whole semantic content: the kind is what selects a transition family whose firing preserves its host. The arm is parameterized by its deadline because the Multi-Instance families later reused the shape at `5000`, so an unparameterized arm would have admitted each family carrying the other's number.
 
 Sharing the shape carries a documentation obligation the implementation must discharge rather than inherit. `BoundaryTimerArm`'s own contract currently reads “the interrupting deadline every bounded-wait operation owns”, the bounded-wait admission module document says the same, and both boundary-attachment predicates in checked-process admission are documented as interrupting-only. All four become false the moment a third family shares the shape, and a comment broader than its evidence is a defect under [the comment rules](../../CLAUDE.md#comments--document-semantic-surplus).
 

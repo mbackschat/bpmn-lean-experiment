@@ -228,12 +228,12 @@ export type AwaitEventRaceOperation = OperationBase &
   }>;
 
 /**
- * The deadlines a boundary Timer arm may carry.
+ * Every deadline any admitted profile gives a boundary Timer arm.
  *
- * Narrow on purpose: an admitted profile names one exact source lexeme, so a deadline outside this
- * set means an unreviewed duration reached the program. A boundary deadline the host arms against
- * its own clock is also a race the non-firing witness has to win, which is why widening this set is
- * a reviewed change rather than an incidental one.
+ * This is the union across families, never the type of one family's arm: each family names one exact
+ * source lexeme, so each carries one exact number. Using the union at an arm would let a program
+ * carry another family's deadline and still be well formed, which the reference interpreter would
+ * then reject, so an arm always instantiates {@link BoundaryTimerArm} at its own value instead.
  */
 export type AdmittedBoundaryTimerDurationMs = 1000 | 5000;
 
@@ -249,9 +249,11 @@ export type AdmittedBoundaryTimerDurationMs = 1000 | 5000;
  * `awaitTimer`. One owner because the wire schema and Lean's contract each share one arm shape too,
  * so a second spelling here would be a silent contract fork rather than a local style difference.
  */
-export type BoundaryTimerArm = DeepReadonly<{
+export type BoundaryTimerArm<
+  DurationMs extends AdmittedBoundaryTimerDurationMs,
+> = DeepReadonly<{
   elementId: string;
-  durationMs: AdmittedBoundaryTimerDurationMs;
+  durationMs: DurationMs;
   output: string;
   origin: BpmnSequenceFlowOrigin;
 }>;
@@ -271,7 +273,7 @@ export type AwaitBoundedUserTaskOperation = OperationBase &
       name: string | null;
       output: string;
     };
-    boundaryTimer: BoundaryTimerArm;
+    boundaryTimer: BoundaryTimerArm<1000>;
   }>;
 
 /**
@@ -292,7 +294,7 @@ export type AwaitMonitoredUserTaskOperation = OperationBase &
       name: string | null;
       output: string;
     };
-    boundaryTimer: BoundaryTimerArm;
+    boundaryTimer: BoundaryTimerArm<1000>;
   }>;
 
 /**
@@ -325,7 +327,7 @@ export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
     };
     data: SequentialMultiInstanceDataDefinition;
     normalOutput: string;
-    boundaryTimer: BoundaryTimerArm;
+    boundaryTimer: BoundaryTimerArm<5000>;
     limits: SequentialMultiInstanceLimits;
   }>;
 
@@ -340,7 +342,7 @@ export type AwaitParallelMultiInstanceUserTaskOperation = OperationBase &
     data: ParallelMultiInstanceDataDefinition;
     completionCondition: ParallelMultiInstanceCompletionCondition;
     normalOutput: string;
-    boundaryTimer: BoundaryTimerArm;
+    boundaryTimer: BoundaryTimerArm<5000>;
     limits: ParallelMultiInstanceLimits;
   }>;
 
@@ -370,7 +372,7 @@ export type EnterBoundedScopeOperation = OperationBase &
     input: string;
     childEntry: string;
     childScopeId: string;
-    boundaryTimer: BoundaryTimerArm;
+    boundaryTimer: BoundaryTimerArm<1000>;
   }>;
 
 export type InvokeProcessOperation = OperationBase &

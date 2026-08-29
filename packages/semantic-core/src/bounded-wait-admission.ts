@@ -74,7 +74,7 @@ function isWellFormedTaskHostedDeadline<
     !isNonEmptyString(value.task.elementId) ||
     (value.task.name !== null && !isNonEmptyString(value.task.name)) ||
     !isPlaceReference(value.task.output, placeIds) ||
-    !isWellFormedBoundaryTimerArm(value.boundaryTimer, placeIds, placeOrigins)
+    !isWellFormedBoundaryTimerArm(value.boundaryTimer, placeIds, placeOrigins, 1000)
   ) {
     return false;
   }
@@ -118,7 +118,7 @@ export function isWellFormedEnterBoundedScopeOperation(
     !isPlaceReference(value.childEntry, placeIds) ||
     !isNonEmptyString(value.childScopeId) ||
     !scopeOrigins.has(value.childScopeId) ||
-    !isWellFormedBoundaryTimerArm(value.boundaryTimer, placeIds, placeOrigins)
+    !isWellFormedBoundaryTimerArm(value.boundaryTimer, placeIds, placeOrigins, 1000)
   ) {
     return false;
   }
@@ -134,29 +134,34 @@ export function isWellFormedEnterBoundedScopeOperation(
       value.boundaryTimer.origin.elementId;
 }
 
-export function isWellFormedBoundaryTimerArm(
+/**
+ * Whether this is a well-formed boundary Timer arm carrying the caller's own admitted deadline.
+ *
+ * The deadline is a parameter rather than a shared constant because each family admits one exact
+ * source lexeme. Accepting the union of every family's deadline here would admit a program that
+ * carries a sibling family's number, which the reference interpreter rejects, so the two accounts
+ * would disagree about admission with nothing between them to say so.
+ */
+export function isWellFormedBoundaryTimerArm<
+  DurationMs extends AdmittedBoundaryTimerDurationMs,
+>(
   value: unknown,
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
+  admittedDurationMs: DurationMs,
 ): value is {
   elementId: string;
-  durationMs: AdmittedBoundaryTimerDurationMs;
+  durationMs: DurationMs;
   output: string;
   origin: { kind: SemanticOriginKind.BpmnSequenceFlow; elementId: string };
 } {
   return isRecord(value) &&
     hasOnlyKeys(value, ["elementId", "durationMs", "output", "origin"]) &&
     isNonEmptyString(value.elementId) &&
-    isAdmittedBoundaryTimerDurationMs(value.durationMs) &&
+    value.durationMs === admittedDurationMs &&
     isPlaceReference(value.output, placeIds) &&
     isSequenceFlowOrigin(value.origin) &&
     placeOrigins.get(value.output) === value.origin.elementId;
-}
-
-function isAdmittedBoundaryTimerDurationMs(
-  value: unknown,
-): value is AdmittedBoundaryTimerDurationMs {
-  return value === 1000 || value === 5000;
 }
 
 function hostElementId(origin: unknown): string | undefined {

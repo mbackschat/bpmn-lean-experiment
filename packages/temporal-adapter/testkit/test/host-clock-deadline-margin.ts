@@ -34,8 +34,14 @@ export type HostClockDeadlineMeasurement = Readonly<{
   label: string;
   /** Wall-clock milliseconds the racing path consumed. */
   elapsedMs: number;
-  /** The semantic deadline the host armed against its own clock, in milliseconds. */
-  deadlineMs: number;
+  /**
+   * Milliseconds the host actually armed, `deadlineMs - logicalTimeMs` at the arming observation.
+   *
+   * The absolute `deadlineMs` is the wrong budget and is only accidentally right: it equals the
+   * armed span exactly when logical time is still zero, which is true of today's conformance hosts
+   * and would silently overstate the margin under any schedule that advances it first.
+   */
+  remainingMs: number;
 }>;
 
 /**
@@ -48,21 +54,21 @@ export type HostClockDeadlineMeasurement = Readonly<{
 export function assertHostClockDeadlineMargin(
   measurement: HostClockDeadlineMeasurement,
 ): void {
-  const { label, elapsedMs, deadlineMs } = measurement;
+  const { label, elapsedMs, remainingMs } = measurement;
   if (!Number.isFinite(elapsedMs) || elapsedMs < 0) {
     throw new TypeError(
       `${label} reported a nonsensical elapsed time of ${elapsedMs}ms`,
     );
   }
-  if (!Number.isFinite(deadlineMs) || deadlineMs <= 0) {
+  if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
     throw new TypeError(
-      `${label} reported a nonsensical deadline of ${deadlineMs}ms`,
+      `${label} reported a nonsensical armed remainder of ${remainingMs}ms`,
     );
   }
-  const consumed = elapsedMs / deadlineMs;
+  const consumed = elapsedMs / remainingMs;
   assert.ok(
     consumed <= hostClockDeadlineMarginCeiling,
-    `${label} consumed ${(consumed * 100).toFixed(1)}% of its ${deadlineMs}ms ` +
+    `${label} consumed ${(consumed * 100).toFixed(1)}% of its ${remainingMs}ms ` +
       `host-armed deadline (${elapsedMs.toFixed(0)}ms), above the ` +
       `${(hostClockDeadlineMarginCeiling * 100).toFixed(0)}% margin ceiling; the witness is racing ` +
       "the host clock and will fail on slower or busier hardware before this model's semantics do",

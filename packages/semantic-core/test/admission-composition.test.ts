@@ -28,6 +28,23 @@ import {
   rootScopeOccurrence,
 } from "./root-scope-fixture.ts";
 import { parallelProgram } from "./parallel-multi-instance-fixture.ts";
+import { boundedProgram } from "./bounded-task-fixture.ts";
+
+/**
+ * The parallel runtime fixture in admissible form.
+ *
+ * Admission requires `operations` and `operationScopes` in identifier order, which that fixture does
+ * not carry because its own callers exercise execution rather than admission.
+ */
+const admittedParallelProgram: SemanticProcessProgram = {
+  ...parallelProgram,
+  operationScopes: [...parallelProgram.operationScopes].sort((left, right) =>
+    left.operationId < right.operationId ? -1 : left.operationId > right.operationId ? 1 : 0
+  ),
+  operations: [...parallelProgram.operations].sort((left, right) =>
+    left.id < right.id ? -1 : left.id > right.id ? 1 : 0
+  ),
+};
 import { reviewProgram } from "./sequential-multi-instance-fixture.ts";
 
 const compositionProfile =
@@ -176,6 +193,54 @@ test("admits one profile-selected timer and User Task composition through graph 
   );
 });
 
+/**
+ * The two directions of the same fact: an admitted deadline belongs to one family, never to the
+ * shape they share. Both arms decode through one arm validator, so a single admitted-duration union
+ * there would let each family carry the sibling's number and diverge from the reference
+ * interpreter, which admits only the exact source lexeme its own profile names.
+ */
+test("refuses each family's boundary deadline in the sibling family's arm", () => {
+  const bounded = boundedProgram.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitBoundedUserTask,
+  );
+  assert.ok(bounded?.kind === SemanticOperationKind.AwaitBoundedUserTask);
+  const borrowedByBoundedTask = {
+    ...boundedProgram,
+    operations: boundedProgram.operations.map((operation) =>
+      operation === bounded
+        ? {
+            ...bounded,
+            boundaryTimer: { ...bounded.boundaryTimer, durationMs: 5000 },
+          }
+        : operation
+    ),
+  };
+
+  const parallel = admittedParallelProgram.operations.find(
+    ({ kind }) =>
+      kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask,
+  );
+  assert.ok(
+    parallel?.kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask,
+  );
+  const borrowedByParallelTask = {
+    ...admittedParallelProgram,
+    operations: admittedParallelProgram.operations.map((operation) =>
+      operation === parallel
+        ? {
+            ...parallel,
+            boundaryTimer: { ...parallel.boundaryTimer, durationMs: 1000 },
+          }
+        : operation
+    ),
+  };
+
+  assert.equal(isWellFormedSemanticProcessProgram(boundedProgram), true);
+  assert.equal(isWellFormedSemanticProcessProgram(admittedParallelProgram), true);
+  assert.equal(isWellFormedSemanticProcessProgram(borrowedByBoundedTask), false);
+  assert.equal(isWellFormedSemanticProcessProgram(borrowedByParallelTask), false);
+});
+
 test("rejects a dangling control place independently of profile capability", () => {
   const timer = program.operations.find(
     ({ kind }) => kind === SemanticOperationKind.AwaitTimer,
@@ -195,15 +260,6 @@ test("rejects a dangling control place independently of profile capability", () 
 });
 
 test("rejects same-family wait declarer collisions without forbidding cross-family identifiers", () => {
-  const admittedParallelProgram: SemanticProcessProgram = {
-    ...parallelProgram,
-    operationScopes: [...parallelProgram.operationScopes].sort((left, right) =>
-      left.operationId < right.operationId ? -1 : left.operationId > right.operationId ? 1 : 0
-    ),
-    operations: [...parallelProgram.operations].sort((left, right) =>
-      left.id < right.id ? -1 : left.id > right.id ? 1 : 0
-    ),
-  };
   const withReusedMiTaskId = (
     candidate: SemanticProcessProgram,
   ): SemanticProcessProgram => ({

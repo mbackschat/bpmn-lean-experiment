@@ -127,8 +127,8 @@ private def decodeCheckedSequentialMultiInstanceBoundaryTimer (json : Json) :
     Except String CheckedSequentialMultiInstanceBoundaryTimer := do
   requireObjectShape json ["durationLiteral", "elementId", "outputFlowId"]
   let durationLiteral ← stringField json "durationLiteral"
-  if durationLiteral ≠ "PT1S" then
-    throw "Sequential Multi-Instance boundary Timer requires exact PT1S duration"
+  if durationLiteral ≠ "PT5S" then
+    throw "Multi-Instance boundary Timer requires exact PT5S duration"
   pure
     { elementId := ⟨← stringField json "elementId"⟩
       durationLiteral

@@ -174,7 +174,7 @@ async function runNaturalRecovery(
   assertHostClockDeadlineMargin({
     label: "parallel Multi-Instance natural path",
     elapsedMs: Date.now() - armedAtMs,
-    deadlineMs: lifetimeTimer.deadlineMs,
+    remainingMs: lifetimeTimer.deadlineMs - armed.logicalTimeMs,
   });
 
   const terminal = await withDeadline(
@@ -659,11 +659,6 @@ function assertHostTimers(
   }, expected);
 }
 
-
-
-
-
-
 function requireNoPartialOutput(
   state: StateObservation, operation: ParallelOperation,
 ): void {
@@ -702,10 +697,6 @@ async function submit(
     semanticResult(completion, outcome),
   );
 }
-
-
-
-
 
 function publicationShape(page: ExecutionPublicationPage | FlowNodeOccurrencePage) {
   return {

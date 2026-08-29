@@ -46,7 +46,7 @@ const operation = Object.freeze({
   normalOutput: "place:normal",
   boundaryTimer: {
     elementId: "Boundary_Timer",
-    durationMs: 1_000,
+    durationMs: 5_000,
     output: "place:boundary",
     origin: {
       kind: SemanticOriginKind.BpmnSequenceFlow,
@@ -89,6 +89,12 @@ test("rejects endpoint, identity, limit, and surplus substitutions", () => {
           elementId: "Flow_Normal",
         },
       },
+    },
+    // The three PT1S families arm the identical shape, so an admitted-duration union shared across
+    // families would accept this program while the reference interpreter refuses its source lexeme.
+    {
+      ...operation,
+      boundaryTimer: { ...operation.boundaryTimer, durationMs: 1_000 },
     },
     {
       ...operation,

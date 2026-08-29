@@ -13,13 +13,13 @@ import {
   hostClockDeadlineMarginCeiling,
 } from "./host-clock-deadline-margin.ts";
 
-const deadlineMs = 5_000;
+const remainingMs = 5_000;
 
 test("accepts a racing path exactly at the margin ceiling", () => {
   assertHostClockDeadlineMargin({
     label: "at the ceiling",
-    elapsedMs: deadlineMs * hostClockDeadlineMarginCeiling,
-    deadlineMs,
+    elapsedMs: remainingMs * hostClockDeadlineMarginCeiling,
+    remainingMs,
   });
 });
 
@@ -28,8 +28,8 @@ test("rejects a racing path just past the margin ceiling", () => {
     () =>
       assertHostClockDeadlineMargin({
         label: "past the ceiling",
-        elapsedMs: deadlineMs * hostClockDeadlineMarginCeiling + 1,
-        deadlineMs,
+        elapsedMs: remainingMs * hostClockDeadlineMarginCeiling + 1,
+        remainingMs,
       }),
     /past the ceiling consumed 50\.0% of its 5000ms host-armed deadline/,
   );
@@ -44,13 +44,13 @@ test("separates the deadline this repository raised from the one it replaced", (
     assertHostClockDeadlineMargin({
       label: "sequential Multi-Instance natural path",
       elapsedMs: hostedRunnerElapsedMs,
-      deadlineMs: 1_000,
+      remainingMs: 1_000,
     })
   );
   assertHostClockDeadlineMargin({
     label: "sequential Multi-Instance natural path",
     elapsedMs: hostedRunnerElapsedMs,
-    deadlineMs: 5_000,
+    remainingMs: 5_000,
   });
 });
 
@@ -60,16 +60,16 @@ test("rejects a measurement that cannot be a duration", () => {
       assertHostClockDeadlineMargin({
         label: "negative",
         elapsedMs: -1,
-        deadlineMs,
+        remainingMs,
       }),
     TypeError,
   );
   assert.throws(
     () =>
       assertHostClockDeadlineMargin({
-        label: "no deadline",
+        label: "no armed remainder",
         elapsedMs: 1,
-        deadlineMs: 0,
+        remainingMs: 0,
       }),
     TypeError,
   );
