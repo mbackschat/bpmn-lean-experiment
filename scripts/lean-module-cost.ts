@@ -145,9 +145,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.SequentialMultiInstanceConformance",
-      peakResidentKib: 3313908,
-      elapsedSeconds: 34.47,
-      measuredAtCommit: "0ec80b41",
+      peakResidentKib: 2909240,
+      elapsedSeconds: 30.35,
+      measuredAtCommit: "42f152de",
     },
     {
       module: "BpmnSemantics.FlowNodeOccurrenceLifecycleConformance",
@@ -159,9 +159,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 2898756, elapsedSeconds: 21.5 },
     {
       module: "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
-      peakResidentKib: 2881504,
-      elapsedSeconds: 31.01,
-      measuredAtCommit: "a52f0c39",
+      peakResidentKib: 2854664,
+      elapsedSeconds: 27.38,
+      measuredAtCommit: "42f152de",
     },
     {
       module: "BpmnSemantics.TimerStartConformance",
@@ -257,9 +257,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.ProcessStartDataConformance", peakResidentKib: 892876, elapsedSeconds: 4.1 },
     {
       module: "BpmnSemantics.ParallelMultiInstanceConformance",
-      peakResidentKib: 1444928,
-      elapsedSeconds: 6.27,
-      measuredAtCommit: "826231ab",
+      peakResidentKib: 1433212,
+      elapsedSeconds: 3.32,
+      measuredAtCommit: "42f152de",
     },
     { module: "BpmnSemantics.Experiments.CheckedSourceFrontierConformance", peakResidentKib: 839556, elapsedSeconds: 3.9 },
     { module: "BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance", peakResidentKib: 831764, elapsedSeconds: 3.6 },
