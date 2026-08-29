@@ -9,13 +9,14 @@ import {
   compareCanonicalStrings,
 } from "./wire.js";
 import { cloneVariableBinding } from "./variable-value.js";
-import {
-  sameOccurrence,
-} from "./semantic-process-state.js";
 import type {
   ScopedVariables,
 } from "./semantic-process-state.js";
 import { compareActivityVariableScopes } from "./runtime-state-collection-ordering.js";
+import {
+  createEffectLocalDataOwner,
+  matchesEffectLocalDataOwner,
+} from "./local-data-owner.js";
 
 export function evaluateInputMappings(
   mappings: ReadonlyArray<VariableMapping>,
@@ -50,14 +51,18 @@ export function addActivityVariableScope(
   owner: EffectOccurrenceId,
   bindings: ReadonlyArray<VariableBinding>,
 ): ScopedVariables {
-  if (variables.activities.some((scope) => sameOccurrence(scope.owner, owner))) {
+  if (
+    variables.activities.some((scope) =>
+      matchesEffectLocalDataOwner(scope.owner, owner)
+    )
+  ) {
     throw new TypeError("Activity-variable scope owner must be unique");
   }
   return {
     ...variables,
     activities: [
       ...variables.activities,
-      { owner, bindings: [...bindings] },
+      { owner: createEffectLocalDataOwner(owner), bindings: [...bindings] },
     ].sort(compareActivityVariableScopes),
   };
 }
@@ -76,7 +81,7 @@ export function completeActivityVariableScope(
   allowNull: boolean,
 ): ScopedVariables | null {
   const matching = variables.activities.filter((scope) =>
-    sameOccurrence(scope.owner, owner)
+    matchesEffectLocalDataOwner(scope.owner, owner)
   );
   if (matching.length !== 1) {
     return null;

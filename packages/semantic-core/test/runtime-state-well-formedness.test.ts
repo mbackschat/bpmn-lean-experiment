@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   applyStimulus,
   CommandOutcome,
+  createEffectLocalDataOwner,
   initialState,
   projectCurrentControlPositions,
   RuntimeStateDefect,
@@ -233,7 +234,7 @@ test("every commutation-affected collection requires canonical storage order", (
   const nextEffect = { ...effectWait, id: { ...effectWait.id, activation: 2 } };
   const nextEffectScope = {
     ...effectScope,
-    owner: { ...effectScope.owner, activation: 2 },
+    owner: createEffectLocalDataOwner(nextEffect.id),
   };
   const counterInversion = [
     { elementId: "z-counter", count: 1 },

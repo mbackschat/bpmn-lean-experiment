@@ -2,6 +2,7 @@ export * from "./contract.js";
 export * from "./activity-body-turnover.js";
 export * from "./flow-node-occurrence-retained-pairing.js";
 export * from "./activity-occurrence.js";
+export * from "./local-data-owner.js";
 export * from "./sequential-multi-instance-controller.js";
 export * from "./parallel-multi-instance-controller.js";
 export * from "./sequential-multi-instance-binding.js";

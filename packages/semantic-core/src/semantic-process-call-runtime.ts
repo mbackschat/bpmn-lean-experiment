@@ -19,6 +19,7 @@ import type {
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
+import { localDataOwnerProcessInstanceId } from "./local-data-owner.js";
 
 /** Encodes the caller, Call Activity, and activation with decimal UTF-8 byte lengths. */
 export function deriveCalledProcessInstanceId(
@@ -372,7 +373,8 @@ function removeCalledProcessTree(
     variables: {
       ...state.variables,
       activities: state.variables.activities.filter(
-        ({ owner }) => !removedInstanceIds.has(owner.processInstanceId),
+        ({ owner }) =>
+          !removedInstanceIds.has(localDataOwnerProcessInstanceId(owner)),
       ),
     },
   };

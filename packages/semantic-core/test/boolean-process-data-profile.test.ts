@@ -18,6 +18,7 @@ import {
   StimulusKind,
   VariableValueKind,
   applyStimulus,
+  createEffectLocalDataOwner,
   evaluateSimpleBooleanExpression,
   initialState,
   isWellFormedStimulus,
@@ -305,7 +306,7 @@ test("rejects Boolean effect success and BPMN Error patches with exact state pre
     }],
     variables: {
       process: waiting.variables.process,
-      activities: [{ owner: effectId, bindings: [] }],
+      activities: [{ owner: createEffectLocalDataOwner(effectId), bindings: [] }],
     },
   };
 

@@ -29,6 +29,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [user-task-metadata.ts](src/user-task-metadata.ts) | Assignment-only User Task metadata, wire-distinct from the legacy form-bearing arm |
 | [variable-value.ts](src/variable-value.ts) | Representation-neutral variable-value validation, cloning, ordering, and equality |
 | [semantic-process-data.ts](src/semantic-process-data.ts) | Effect-occurrence input mappings and Activity variable-scope lifecycle |
+| [local-data-owner.ts](src/local-data-owner.ts) | Closed effect-or-Activity ownership identity for Activity-local variable scopes |
 | [call-activity-admission.ts](src/call-activity-admission.ts) | Cross-definition invocation and return pairing |
 | [semantic-process-call-runtime.ts](src/semantic-process-call-runtime.ts) | Called-instance lifecycle and subtree cleanup |
 | [effect-transport-material.ts](src/effect-transport-material.ts) | Definition fields stable across compiler-only changes, deliberately distinct from semantic identity |

@@ -13,6 +13,7 @@ import {
   StimulusKind,
   advanceScenario,
   applyStimulus,
+  createEffectLocalDataOwner,
   deriveCalledProcessInstanceId,
   initialState,
 } from "@bpmn-lean/semantic-core";
@@ -99,11 +100,11 @@ test("does not publish cancellation with a residual Activity-local owner", () =>
       activities: [
         ...incident.variables.activities,
         {
-          owner: {
+          owner: createEffectLocalDataOwner({
             processInstanceId,
             elementId: "Residual_Activity",
             activation: 1,
-          },
+          }),
           bindings: [],
         },
       ],

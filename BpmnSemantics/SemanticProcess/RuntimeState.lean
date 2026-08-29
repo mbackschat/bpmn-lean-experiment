@@ -171,10 +171,10 @@ terminated is zero in every stable state; storing any of them would install exac
 second-disagreeing-fact defect the account above rejects for an Activity's active count. The
 derivations and their law live with the family, in `SequentialMultiInstance`.
 
-The identity is carried flat, in the three fields `ActivityOccurrence` carries it in. TypeScript nests
-the same triple behind an `ActivityOccurrenceId` that exists there to stop a task identity from being
-substituted for an Activity identity at compile time; Lean names no identity type for either side of
-that pair, so the flat spelling keeps one carrier rather than introducing a second.
+The identity is carried flat, in the three fields `ActivityOccurrence` carries it in. The public
+projection and local-data owner use `ActivityOccurrenceId` to prevent a task or effect identity from
+being substituted for an Activity identity; the runtime record keeps the flat spelling because its
+fields also participate directly in the internal body and owner invariants.
 
 The active task identity is not here. It lives in the Activity occurrence record's body, which this
 controller binds to by identity, so iteration turnover changes one fact in one place. -/

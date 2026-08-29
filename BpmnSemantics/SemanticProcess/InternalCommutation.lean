@@ -94,7 +94,27 @@ theorem effectAvailableRead_frame (state : RuntimeState) (left : InternalArmingP
       | userTask _ | message _ | timer _ => rfl
       | effect inserted _ =>
           have fields := occurrence_fields_differ (effectWaitOccurrence inserted) (effectWaitOccurrence queried) different
-          simp_all [InternalArmingWrite.available, InternalArmingWrite.occurrence, effectWaitOccurrence, applyInternalArmingPatch, List.not_any_eq_all_not, insertActivityVariableScope_eq_canonicalInsertBy, all_canonicalInsertBy, activityScopeMatches]
+          have ownerDifferent :
+              LocalDataOwner.effectOccurrence (effectWaitOccurrence queried) ≠
+                LocalDataOwner.effectOccurrence (effectWaitOccurrence inserted) := by
+            intro same
+            apply different
+            exact (LocalDataOwner.effectOccurrence.inj same).symm
+          have reverseFields := occurrence_fields_differ
+            (effectWaitOccurrence queried) (effectWaitOccurrence inserted)
+            (fun same => ownerDifferent (congrArg LocalDataOwner.effectOccurrence same))
+          have reverseFields' :
+              queried.processInstanceId ≠ inserted.processInstanceId ∨
+                queried.elementId.value ≠ inserted.elementId.value ∨
+                  queried.activation ≠ inserted.activation := by
+            rcases reverseFields with (process | element) | activation
+            · exact Or.inl process
+            · exact Or.inr (Or.inl element)
+            · exact Or.inr (Or.inr activation)
+          simp_all [InternalArmingWrite.available, InternalArmingWrite.occurrence,
+            effectWaitOccurrence, applyInternalArmingPatch,
+            List.not_any_eq_all_not, insertActivityVariableScope_eq_canonicalInsertBy,
+            all_canonicalInsertBy, activityScopeMatches, localDataOwnerMatches]
 
 theorem armingControlRead_frame (state : RuntimeState) (patch : InternalArmingPatch) : (applyInternalArmingPatch state patch).control = state.control := by cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
 theorem armingTimeRead_frame (state : RuntimeState) (patch : InternalArmingPatch) : (applyInternalArmingPatch state patch).logicalTimeMs = state.logicalTimeMs := by cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl

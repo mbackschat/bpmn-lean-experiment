@@ -131,9 +131,10 @@ theorem effectIncidentAssociationsValid_insertEffectFrame (state : RuntimeState)
           split <;> simp [rejected, ih]
     exact canonicalFrame state.effectWaits
   have activityFrame (predicate : ActivityVariableScope → Bool)
-      (rejected : predicate { owner := effectWaitOccurrenceId inserted, bindings } = false) :
+      (rejected : predicate
+        { owner := .effectOccurrence (effectWaitOccurrenceId inserted), bindings } = false) :
       (insertActivityVariableScope
-          { owner := effectWaitOccurrenceId inserted, bindings }
+          { owner := .effectOccurrence (effectWaitOccurrenceId inserted), bindings }
           state.variables.activities).filter predicate =
         state.variables.activities.filter predicate :=
     filter_insertActivityVariableScope_of_rejected predicate _ rejected _
@@ -160,11 +161,12 @@ theorem effectIncidentAssociationsValid_insertEffectFrame (state : RuntimeState)
             cases incident.wait
             simp_all [effectWaitOccurrenceId]
           have activityRejected : activityScopeMatches incident.id.effectId
-              { owner := effectWaitOccurrenceId inserted, bindings } = false := by
+              { owner := .effectOccurrence (effectWaitOccurrenceId inserted), bindings } = false := by
             apply Bool.eq_false_iff.mpr
             intro matched
             apply different
-            simp only [activityScopeMatches, decide_eq_true_eq] at matched
+            simp only [activityScopeMatches, localDataOwnerMatches,
+              decide_eq_true_eq] at matched
             cases inserted
             cases incident.id.effectId
             cases incident.wait

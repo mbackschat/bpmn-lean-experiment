@@ -380,7 +380,8 @@ def applyInternalArmingPatch (state : RuntimeState)
           wait.elementId wait.activation
         variables := { state.variables with
           activities := insertActivityVariableScope
-            { owner := effectWaitOccurrence wait, bindings } state.variables.activities } }
+            { owner := .effectOccurrence (effectWaitOccurrence wait), bindings }
+            state.variables.activities } }
 
 def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint :=
   let kind := patch.write.kind

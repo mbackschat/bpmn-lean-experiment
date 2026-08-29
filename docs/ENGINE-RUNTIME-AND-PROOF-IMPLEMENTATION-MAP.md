@@ -24,7 +24,7 @@ The first interchange composition reuses the sequential User Task Process-data a
 
 ### Runtime scoped data
 
-- One deeply immutable replacement representation in Lean and TypeScript with explicit Process bindings plus private Activity-local bindings owned by complete semantic effect occurrence
+- One immutable Lean/TypeScript representation with Process bindings and private local bindings owned by distinct complete effect or Activity occurrence arms; current mappings produce only effect owners
 - activation creates the owned input scope
 - success and matching Error completion require one exact owner, apply program-owned output mapping, and remove only that scope atomically
 - Process-only canonical projection

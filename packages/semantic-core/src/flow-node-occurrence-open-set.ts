@@ -51,6 +51,10 @@ import {
   parallelMultiInstanceBoundaryTimerBinding,
   parallelMultiInstanceTaskWaitMatches,
 } from "./flow-node-occurrence-parallel-multi-instance-open-set.js";
+import {
+  LocalDataOwnerKind,
+  matchesEffectLocalDataOwner,
+} from "./local-data-owner.js";
 
 const WaitAnchorKind = "wait" as SemanticFlowNodeOccurrenceAnchorKind.Wait;
 const ScopeAnchorKind = "scope" as SemanticFlowNodeOccurrenceAnchorKind.Scope;
@@ -447,16 +451,20 @@ function effectLocalScopesAreExact(state: RuntimeState): boolean {
     ...state.effectWaits,
     ...state.effectIncidents.map(({ wait }) => wait),
   ];
+  const effectScopes = state.variables.activities.filter(
+    ({ owner }) => owner.kind === LocalDataOwnerKind.EffectOccurrence,
+  );
   return waits.every((wait, index) =>
     waits.findIndex(({ id }) => sameOccurrence(id, wait.id)) === index &&
-    state.variables.activities.filter(({ owner }) =>
-      sameOccurrence(owner, wait.id)
+    effectScopes.filter(({ owner }) =>
+      matchesEffectLocalDataOwner(owner, wait.id)
     ).length === 1 &&
-    state.variables.activities.some(({ owner, bindings }) =>
-      sameOccurrence(owner, wait.id) && sameJson(bindings, wait.arguments)
+    effectScopes.some(({ owner, bindings }) =>
+      matchesEffectLocalDataOwner(owner, wait.id) &&
+      sameJson(bindings, wait.arguments)
     )
-  ) && state.variables.activities.every(({ owner }) =>
-    waits.filter(({ id }) => sameOccurrence(id, owner)).length === 1
+  ) && effectScopes.every(({ owner }) =>
+    waits.filter(({ id }) => matchesEffectLocalDataOwner(owner, id)).length === 1
   );
 }
 

@@ -135,6 +135,19 @@ private theorem occurrenceId_eq_of_fields (left right : OccurrenceId) (process :
   cases left with | mk leftProcess leftElement leftActivation => cases right with | mk rightProcess rightElement rightActivation =>
     congr <;> first | exact semanticId_eq_of_value_eq _ _ process | exact semanticId_eq_of_value_eq _ _ element | exact activation
 
+private theorem activityOccurrenceId_eq_of_fields (left right : ActivityOccurrenceId)
+    (process : left.processInstanceId.value = right.processInstanceId.value)
+    (element : left.activityElementId.value = right.activityElementId.value)
+    (activation : left.activation = right.activation) : left = right := by
+  cases left with
+  | mk leftProcess leftElement leftActivation =>
+      cases right with
+      | mk rightProcess rightElement rightActivation =>
+          congr <;> first
+            | exact semanticId_eq_of_value_eq _ _ process
+            | exact semanticId_eq_of_value_eq _ _ element
+            | exact activation
+
 private theorem scopeOccurrenceId_eq_of_fields (left right : ScopeOccurrenceId)
     (process : left.processInstanceId.value = right.processInstanceId.value)
     (scope : left.definitionScopeId.value = right.definitionScopeId.value)
@@ -592,19 +605,141 @@ theorem setEffectActivationCount_commutes_of_ordered (leftId rightId : NodeId) (
     fun equal => different (nodeId_eq_of_value_eq _ _ equal)
   simp only [setEffectActivationCount_eq_replace]; apply replaceByStringKey_commutes_of_ordered <;> assumption
 
-theorem activityVariableScopeBefore_chain (left right : ActivityVariableScope) : activityVariableScopeBefore left right =
-      armingLexStep left.owner.processInstanceId.value right.owner.processInstanceId.value
-        (armingLexStep left.owner.elementId.value right.owner.elementId.value
-          (decide (left.owner.activation < right.owner.activation))) := rfl
+private theorem localEffectOwnerBefore_chain (left right : EffectOccurrenceId) :
+    localEffectOwnerBefore left right =
+      armingLexStep left.processInstanceId.value right.processInstanceId.value
+        (armingLexStep left.elementId.value right.elementId.value
+          (decide (left.activation < right.activation))) := rfl
 
-theorem activityVariableScopeBefore_asymm (left right : ActivityVariableScope) :
-    activityVariableScopeBefore left right = true →
-      activityVariableScopeBefore right left = false := by
-  rw [activityVariableScopeBefore_chain, activityVariableScopeBefore_chain]
+private theorem localActivityOwnerBefore_chain (left right : ActivityOccurrenceId) :
+    localActivityOwnerBefore left right =
+      armingLexStep left.processInstanceId.value right.processInstanceId.value
+        (armingLexStep left.activityElementId.value right.activityElementId.value
+          (decide (left.activation < right.activation))) := rfl
+
+private theorem localEffectOwnerBefore_asymm (left right : EffectOccurrenceId) :
+    localEffectOwnerBefore left right = true →
+      localEffectOwnerBefore right left = false := by
+  rw [localEffectOwnerBefore_chain, localEffectOwnerBefore_chain]
   apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
   apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
   simp only [decide_eq_true_eq, decide_eq_false_iff_not]
   exact Nat.lt_asymm
+
+private theorem localActivityOwnerBefore_asymm (left right : ActivityOccurrenceId) :
+    localActivityOwnerBefore left right = true →
+      localActivityOwnerBefore right left = false := by
+  rw [localActivityOwnerBefore_chain, localActivityOwnerBefore_chain]
+  apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
+  apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
+  simp only [decide_eq_true_eq, decide_eq_false_iff_not]
+  exact Nat.lt_asymm
+
+private theorem localEffectOwnerBefore_trans (a b c : EffectOccurrenceId) :
+    localEffectOwnerBefore a b = true →
+      localEffectOwnerBefore b c = true →
+        localEffectOwnerBefore a c = true := by
+  rw [localEffectOwnerBefore_chain, localEffectOwnerBefore_chain,
+    localEffectOwnerBefore_chain]
+  apply armingLexStep_trans (fun _ _ => String.lt_asymm)
+    (fun _ _ _ => String.lt_trans)
+  apply armingLexStep_trans (fun _ _ => String.lt_asymm)
+    (fun _ _ _ => String.lt_trans)
+  simp only [decide_eq_true_eq]
+  exact Nat.lt_trans
+
+private theorem localActivityOwnerBefore_trans (a b c : ActivityOccurrenceId) :
+    localActivityOwnerBefore a b = true →
+      localActivityOwnerBefore b c = true →
+        localActivityOwnerBefore a c = true := by
+  rw [localActivityOwnerBefore_chain, localActivityOwnerBefore_chain,
+    localActivityOwnerBefore_chain]
+  apply armingLexStep_trans (fun _ _ => String.lt_asymm)
+    (fun _ _ _ => String.lt_trans)
+  apply armingLexStep_trans (fun _ _ => String.lt_asymm)
+    (fun _ _ _ => String.lt_trans)
+  simp only [decide_eq_true_eq]
+  exact Nat.lt_trans
+
+private theorem localEffectOwnerBefore_comparable (left right : EffectOccurrenceId)
+    (different : left ≠ right) :
+    localEffectOwnerBefore left right = true ∨
+      localEffectOwnerBefore right left = true := by
+  rw [localEffectOwnerBefore_chain, localEffectOwnerBefore_chain]
+  unfold armingLexStep
+  by_cases processSame : left.processInstanceId.value = right.processInstanceId.value
+  · by_cases elementSame : left.elementId.value = right.elementId.value
+    · have activationDifferent : left.activation ≠ right.activation :=
+        fun activationSame => different
+          (occurrenceId_eq_of_fields _ _ processSame elementSame activationSame)
+      simp [processSame, elementSame, nat_total _ _ activationDifferent]
+    · simp [processSame, elementSame, Ne.symm elementSame,
+        string_total _ _ elementSame]
+  · simp [processSame, Ne.symm processSame, string_total _ _ processSame]
+
+private theorem localActivityOwnerBefore_comparable (left right : ActivityOccurrenceId)
+    (different : left ≠ right) :
+    localActivityOwnerBefore left right = true ∨
+      localActivityOwnerBefore right left = true := by
+  rw [localActivityOwnerBefore_chain, localActivityOwnerBefore_chain]
+  unfold armingLexStep
+  by_cases processSame : left.processInstanceId.value = right.processInstanceId.value
+  · by_cases elementSame : left.activityElementId.value = right.activityElementId.value
+    · have activationDifferent : left.activation ≠ right.activation := by
+        exact fun activationSame => different
+          (activityOccurrenceId_eq_of_fields _ _ processSame elementSame activationSame)
+      simp [processSame, elementSame, nat_total _ _ activationDifferent]
+    · simp [processSame, elementSame, Ne.symm elementSame,
+        string_total _ _ elementSame]
+  · simp [processSame, Ne.symm processSame, string_total _ _ processSame]
+
+private theorem localDataOwnerBefore_asymm (left right : LocalDataOwner) :
+    localDataOwnerBefore left right = true →
+      localDataOwnerBefore right left = false := by
+  cases left <;> cases right <;> simp only [localDataOwnerBefore]
+  · exact localEffectOwnerBefore_asymm _ _
+  · simp
+  · simp
+  · exact localActivityOwnerBefore_asymm _ _
+
+private theorem localDataOwnerBefore_trans (a b c : LocalDataOwner) :
+    localDataOwnerBefore a b = true →
+      localDataOwnerBefore b c = true →
+        localDataOwnerBefore a c = true := by
+  cases a <;> cases b <;> cases c <;> simp only [localDataOwnerBefore]
+  · exact localEffectOwnerBefore_trans _ _ _
+  · simp
+  · simp
+  · simp
+  · simp
+  · simp
+  · simp
+  · exact localActivityOwnerBefore_trans _ _ _
+
+private theorem localDataOwnerBefore_comparable (left right : LocalDataOwner)
+    (different : left ≠ right) :
+    localDataOwnerBefore left right = true ∨
+      localDataOwnerBefore right left = true := by
+  cases left with
+  | effectOccurrence left =>
+      cases right with
+      | effectOccurrence right =>
+          simp only [localDataOwnerBefore]
+          apply localEffectOwnerBefore_comparable
+          exact fun same => different (congrArg LocalDataOwner.effectOccurrence same)
+      | activityOccurrence _ => simp [localDataOwnerBefore]
+  | activityOccurrence left =>
+      cases right with
+      | effectOccurrence _ => simp [localDataOwnerBefore]
+      | activityOccurrence right =>
+          simp only [localDataOwnerBefore]
+          apply localActivityOwnerBefore_comparable
+          exact fun same => different (congrArg LocalDataOwner.activityOccurrence same)
+
+theorem activityVariableScopeBefore_asymm (left right : ActivityVariableScope) :
+    activityVariableScopeBefore left right = true →
+      activityVariableScopeBefore right left = false :=
+  localDataOwnerBefore_asymm left.owner right.owner
 
 theorem insertActivityVariableScope_eq_canonicalInsertBy (scope : ActivityVariableScope) (values : List ActivityVariableScope) :
     insertActivityVariableScope scope values = canonicalInsertBy activityVariableScopeBefore scope values := by
@@ -619,28 +754,11 @@ theorem insertActivityVariableScope_commutes (left right : ActivityVariableScope
       insertActivityVariableScope right (insertActivityVariableScope left values) := by
   have transitive : ∀ a b c : ActivityVariableScope, activityVariableScopeBefore a b = true → activityVariableScopeBefore b c = true → activityVariableScopeBefore a c = true := by
     intro a b c
-    rw [activityVariableScopeBefore_chain, activityVariableScopeBefore_chain,
-      activityVariableScopeBefore_chain]
-    apply armingLexStep_trans (fun _ _ => String.lt_asymm) (fun _ _ _ => String.lt_trans)
-    apply armingLexStep_trans (fun _ _ => String.lt_asymm) (fun _ _ _ => String.lt_trans)
-    simp only [decide_eq_true_eq]
-    exact Nat.lt_trans
+    exact localDataOwnerBefore_trans a.owner b.owner c.owner
   have asymmetric : ∀ l r : ActivityVariableScope, activityVariableScopeBefore l r = true → activityVariableScopeBefore r l = false := by
-    intro l r
-    rw [activityVariableScopeBefore_chain, activityVariableScopeBefore_chain]
-    apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
-    apply armingLexStep_asymm (fun _ _ => String.lt_asymm)
-    simp only [decide_eq_true_eq, decide_eq_false_iff_not]
-    exact Nat.lt_asymm
+    exact activityVariableScopeBefore_asymm
   have comparable : activityVariableScopeBefore left right = true ∨ activityVariableScopeBefore right left = true := by
-    rw [activityVariableScopeBefore_chain, activityVariableScopeBefore_chain]
-    unfold armingLexStep
-    by_cases processSame : left.owner.processInstanceId.value = right.owner.processInstanceId.value
-    · by_cases elementSame : left.owner.elementId.value = right.owner.elementId.value
-      · have activationDifferent : left.owner.activation ≠ right.owner.activation := fun activationSame => different (occurrenceId_eq_of_fields _ _ processSame elementSame activationSame)
-        simp [processSame, elementSame, nat_total _ _ activationDifferent]
-      · simp [processSame, elementSame, Ne.symm elementSame, string_total _ _ elementSame]
-    · simp [processSame, Ne.symm processSame, string_total _ _ processSame]
+    exact localDataOwnerBefore_comparable left.owner right.owner different
   simp only [insertActivityVariableScope_eq_canonicalInsertBy]
   exact canonicalInsertBy_commutes_of_strict_order activityVariableScopeBefore asymmetric transitive left right comparable values
 

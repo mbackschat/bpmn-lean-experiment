@@ -19,6 +19,7 @@ import {
   VariableValueKind,
   advanceScenario,
   applyStimulus,
+  createEffectLocalDataOwner,
   effectIncidentAssociationsAreValid,
   enabledInternalOperationCount,
   initialState,
@@ -576,9 +577,9 @@ function richIncidentState(incident: RuntimeState): RuntimeState {
     variables: {
       process: incident.variables.process,
       activities: [
-        { owner: rootEffectId, bindings: [] },
+        { owner: createEffectLocalDataOwner(rootEffectId), bindings: [] },
         ...incident.variables.activities,
-        { owner: calledEffectId, bindings: [] },
+        { owner: createEffectLocalDataOwner(calledEffectId), bindings: [] },
       ],
     },
     taskActivations: [{ elementId: "Root_UserTask", count: 9 }],

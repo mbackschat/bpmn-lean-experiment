@@ -196,7 +196,8 @@ theorem literal_input_commits_exact_arguments :
 
 def expectedWaitingVariables : ScopedVariables :=
   { process := { bindings := [] }
-    activities := [{ owner := effectId, bindings := arguments }] }
+    activities :=
+      [{ owner := .effectOccurrence effectId, bindings := arguments }] }
 
 theorem activation_creates_complete_occurrence_owned_local_scope :
     waitingState.variables = expectedWaitingVariables := by
@@ -213,7 +214,8 @@ theorem completion_removes_only_the_matching_owned_scope :
         (successResult "example-result") =
       some
         { process := { bindings := [expectedVariable "example-result"] }
-          activities := [{ owner := secondEffectId, bindings := arguments }] } := by
+          activities :=
+            [{ owner := .effectOccurrence secondEffectId, bindings := arguments }] } := by
   decide +kernel
 
 theorem duplicate_owned_scope_is_rejected :
@@ -243,7 +245,7 @@ def privateLocalState : RuntimeState :=
     variables :=
       { process := expectedWaitingVariables.process
         activities :=
-          [{ owner := effectId
+          [{ owner := .effectOccurrence effectId
              bindings :=
                arguments ++
                  [{ name := "privateOnly", value := .string "secret" }] }] } }
@@ -318,7 +320,7 @@ theorem successful_result_maps_only_process_target (reference : String) :
         { process := { bindings := [expectedVariable reference] }
           activities := [] } := by
   simp [completeActivityVariableScope, expectedWaitingVariables,
-    activityScopeMatches, applyEffectResult, applyEffectPatch,
+    activityScopeMatches, localDataOwnerMatches, applyEffectResult, applyEffectPatch,
     outputMappings, successResult, expectedVariable]
 
 /-- Any typed patch outside the exact one-local-string contract is refused with exact semantic-state preservation. -/

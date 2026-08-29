@@ -230,7 +230,8 @@ def terminalStateWithActivityLocal : RuntimeState :=
     variables :=
       { emptyScopedVariables with
         activities :=
-          [{ owner := ConfiguredTaskConformance.effectId, bindings := [] }] } }
+          [{ owner := .effectOccurrence ConfiguredTaskConformance.effectId,
+             bindings := [] }] } }
 
 def configuredMissingActivityLocal : RuntimeState :=
   { ConfiguredTaskConformance.startedResult.state with
@@ -248,7 +249,9 @@ def configuredUnownedActivityLocal : RuntimeState :=
     variables :=
       { ConfiguredTaskConformance.startedResult.state.variables with
         activities := ConfiguredTaskConformance.startedResult.state.variables.activities ++
-          [{ owner := { ConfiguredTaskConformance.effectId with activation := 2 }, bindings := [] }] } }
+          [{ owner := .effectOccurrence
+              { ConfiguredTaskConformance.effectId with activation := 2 },
+             bindings := [] }] } }
 
 /-- Open projection rejects malformed scope trees, residual terminal locals, and every non-exact effect-local association. -/
 theorem independent_open_projection_rejects_every_runtime_validity_counterexample :

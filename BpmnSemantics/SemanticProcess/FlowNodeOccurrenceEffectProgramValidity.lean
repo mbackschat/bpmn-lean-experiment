@@ -77,11 +77,13 @@ theorem flowNodeOccurrenceEffectProgramValidity_wait_owner_ids (program : Progra
 
 private theorem activityScopeMatches_inserted_ne (left right : EffectOccurrenceId)
     (bindings : List VariableBinding) (different : left ≠ right) :
-    activityScopeMatches left { owner := right, bindings } = false := by
+    activityScopeMatches left
+      { owner := .effectOccurrence right, bindings } = false := by
   apply Bool.eq_false_iff.mpr
   intro matched
   apply different
-  simp only [activityScopeMatches, decide_eq_true_eq] at matched
+  simp only [activityScopeMatches, localDataOwnerMatches,
+    decide_eq_true_eq] at matched
   rcases left with ⟨⟨leftProcess⟩, ⟨leftElement⟩, leftActivation⟩
   rcases right with ⟨⟨rightProcess⟩, ⟨rightElement⟩, rightActivation⟩
   simp_all
@@ -119,12 +121,12 @@ private theorem effectLocalScopesExact_insert (state : RuntimeState) (inserted :
       simpa only [decide_eq_true_eq] using matched
     exact same.symm
   let insertedActivity : ActivityVariableScope :=
-    { owner := effectWaitOccurrenceId inserted, bindings }
+    { owner := .effectOccurrence (effectWaitOccurrenceId inserted), bindings }
   have insertedActivityFilter :
       (insertActivityVariableScope insertedActivity state.variables.activities).filter
           (activityScopeMatches (effectWaitOccurrenceId inserted)) = [insertedActivity] := by
     apply filter_insertActivityVariableScope_eq_singleton
-    · simp [insertedActivity, activityScopeMatches]
+    · simp [insertedActivity, activityScopeMatches, localDataOwnerMatches]
     · exact freshActivities
   have noPriorActivityMatch : beforeWaits.filter (fun wait =>
       activityScopeMatches (effectWaitOccurrenceId wait) insertedActivity) = [] := by
@@ -189,7 +191,7 @@ private theorem effectLocalScopesExact_insert (state : RuntimeState) (inserted :
     · simp only [decide_eq_true_eq]
       have selfMatch :
           activityScopeMatches (effectWaitOccurrenceId inserted) insertedActivity = true := by
-        simp [insertedActivity, activityScopeMatches]
+        simp [insertedActivity, activityScopeMatches, localDataOwnerMatches]
       have noPriorActivityLength := congrArg List.length noPriorActivityMatch
       simp only [List.length_nil] at noPriorActivityLength
       rw [List.filter_append, List.length_append, length_filter_insertEffectWait]

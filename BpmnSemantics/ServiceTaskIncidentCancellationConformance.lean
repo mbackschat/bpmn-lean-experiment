@@ -169,9 +169,9 @@ def cancellationCounterexampleState : RuntimeState :=
     variables :=
       { process := { bindings := preservedProcessBindings }
         activities :=
-          [ { owner := incidentId.effectId
+          [ { owner := .effectOccurrence incidentId.effectId
               bindings := [{ name := "suspended", value := .string "gone" }] }
-          , { owner := extraEffectId
+          , { owner := .effectOccurrence extraEffectId
               bindings := [{ name := "open", value := .string "gone" }] } ] }
     activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
     messageActivations := [{ elementId := ⟨"HistoryMessage"⟩, count := 6 }]
@@ -330,7 +330,7 @@ def residualActivityState : RuntimeState :=
     variables :=
       { incidentState.variables with
         activities := incidentState.variables.activities ++
-          [{ owner := extraEffectId
+          [{ owner := .effectOccurrence extraEffectId
              bindings := [{ name := "orphan", value := .string "live" }] }] } }
 
 def malformedDerivedRootOwner : ScopeOccurrenceId :=

@@ -187,7 +187,7 @@ def nestedCounterexampleState : RuntimeState :=
       { process :=
           { bindings := [{ name := "preserved", value := .string "yes" }] }
         activities :=
-          [{ owner :=
+          [{ owner := .effectOccurrence
               { processInstanceId := instanceId
                 elementId := ⟨"ChildEffect"⟩
                 activation := 1 }

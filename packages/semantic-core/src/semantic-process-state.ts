@@ -18,6 +18,7 @@ import type { ActivityOccurrence } from "./activity-occurrence.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
 import type { ParallelMultiInstanceController } from "./parallel-multi-instance-controller.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
+import type { LocalDataOwner } from "./local-data-owner.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export enum ControlStateKind {
@@ -125,9 +126,9 @@ export type ProcessVariableScope = DeepReadonly<{
   bindings: VariableBinding[];
 }>;
 
-/** Private bindings owned by one complete semantic effect occurrence. */
+/** Private bindings owned by one complete, explicitly discriminated semantic occurrence. */
 export type ActivityVariableScope = DeepReadonly<{
-  owner: EffectOccurrenceId;
+  owner: LocalDataOwner;
   bindings: VariableBinding[];
 }>;
 

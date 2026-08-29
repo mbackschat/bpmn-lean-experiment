@@ -6,7 +6,7 @@
 
 ## Role
 
-This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. It changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.
+This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. Activity-local owners use one closed discriminated identity type so an effect occurrence and an Activity occurrence with equal coordinates remain distinct. This capsule's mapping account continues to use only the effect-occurrence arm; the [Activity data-input mediation proposal](ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md) owns the separate Activity-occurrence consumer. The representation change itself changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.
 
 Exact implementation status belongs in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the runtime representation boundary belongs in [the Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md).
 
@@ -14,12 +14,13 @@ Exact implementation status belongs in the [`implementation-status-owner:ENGINE-
 
 Can the implemented data-mapping slices represent Process and Activity-local bindings as different owned scopes, with Activity-local state keyed by complete semantic effect-occurrence identity and removed atomically on effect completion, without changing the public Process-variable observation or adding a second runtime representation?
 
-The discriminator is two active effect occurrences that may use the same local variable name. Completing one occurrence must read and remove only the scope owned by that complete occurrence; a representation keyed only by element ID, activation ordinal, or variable name is insufficient.
+The primary discriminator is two active effect occurrences that may use the same local variable name. Completing one occurrence must read and remove only the scope owned by that complete occurrence; a representation keyed only by element ID, activation ordinal, or variable name is insufficient. The cross-family discriminator is an effect occurrence and an Activity occurrence with equal process, element, and activation coordinates: neither owner may match, remove, or satisfy the other's scope.
 
 ## Required scope
 
 - one `ScopedVariables` runtime value containing one Process scope and zero or more Activity-local scopes;
-- one Activity-local owner per active effect occurrence, identified by the complete tuple `(processInstanceId, elementId, activation)`;
+- one closed `LocalDataOwner` per Activity-local scope, with distinct `effectOccurrence` and `activityOccurrence` arms;
+- one effect-arm Activity-local owner per active mapped effect occurrence, identified by the complete tuple `(processInstanceId, elementId, activation)`;
 - effect activation creates the owned local scope from evaluated input mappings;
 - effect completion validates the result patch against the matching owned local scope, applies output mappings to Process scope, and removes only that local scope;
 - successful and matching-BPMN-Error effect results use the same scope lookup, patch validation, Process write, and cleanup mechanism;
@@ -44,8 +45,18 @@ type ProcessVariableScope = DeepReadonly<{
   bindings: VariableBinding[];
 }>;
 
+type LocalDataOwner =
+  | DeepReadonly<{
+      kind: "effectOccurrence";
+      id: EffectOccurrenceId;
+    }>
+  | DeepReadonly<{
+      kind: "activityOccurrence";
+      id: ActivityOccurrenceId;
+    }>;
+
 type ActivityVariableScope = DeepReadonly<{
-  owner: EffectOccurrenceId;
+  owner: LocalDataOwner;
   bindings: VariableBinding[];
 }>;
 
@@ -57,7 +68,7 @@ type ScopedVariables = DeepReadonly<{
 
 `RuntimeState.processVariables` is removed and replaced by `RuntimeState.variables: ScopedVariables`. The Lean runtime makes the same replacement with distinct `ProcessVariableScope`, `ActivityVariableScope`, and `ScopedVariables` structures.
 
-Activity scopes retain canonical complete occurrence-identity order by Process instance ID, element ID, and numeric activation, and are selected only by that complete occurrence tuple. Duplicate owners are invalid. Bindings within each scope retain the existing canonical variable-name order and duplicate-name refusal.
+Activity scopes retain canonical order first by owner discriminator, with `effectOccurrence` before `activityOccurrence`, and then by the complete identity within that arm. They are selected only by the discriminator plus complete occurrence identity. Duplicate owners are invalid, while equal coordinate values in different arms remain distinct. Bindings within each scope retain the existing canonical variable-name order and duplicate-name refusal.
 
 An effect wait retains its immutable public arguments because they are part of committed effect intent, transport identity, and `openEffects`. Its owned Activity-local scope is the private evaluation environment. Activation creates both from the same evaluated input mapping. Completion reads the private scope, merges the validated patch transiently, evaluates the program-owned output mapping, writes Process scope, and removes the private scope in one semantic transition.
 
@@ -71,7 +82,7 @@ Process bindings have one explicit Process owner. Only Process bindings enter ca
 
 ### `SDATA-ACTIVITY-01`
 
-Every active mapped effect occurrence owns exactly one Activity-local scope whose owner is the complete semantic effect-occurrence identity. Bare element ID, bare activation ordinal, host identity, and variable name are not scope identities.
+Every active mapped effect occurrence owns exactly one Activity-local scope through `LocalDataOwner.effectOccurrence` and the complete semantic effect-occurrence identity. `LocalDataOwner.activityOccurrence`, bare element ID, bare activation ordinal, host identity, and variable name cannot substitute for that effect owner.
 
 ### `SDATA-COMPLETE-01`
 
@@ -134,7 +145,7 @@ The nearest host counterexample is an adapter that flattens Activity-local bindi
 | Rule | Lean | TypeScript core | CIB Seven | Temporal | Negative witness |
 |---|---|---|---|---|---|
 | `SDATA-PROCESS-01` | Explicit Process scope in evaluator, laws, and observations | Replacement state and Process-only projection | Final Process variables remain engine-observed under existing profiles | Query and receipt preserve Process-only projection | Direct local patch does not equal mapped Process result |
-| `SDATA-ACTIVITY-01` | Activation and complete-owner laws | Exact owner type and two-owner test | No independent semantic-local-scope claim | Same committed scope survives Activity retry/replay | Element-only or activation-only owner collision |
+| `SDATA-ACTIVITY-01` | Activation and complete effect-owner laws plus distinct owner constructors | Closed owner union, equal-coordinate cross-arm discriminator, and two-effect-owner test | No independent semantic-local-scope claim | Both exact owner arms decode across continuation; the existing effect scope survives Activity retry/replay | Element-only, activation-only, flat-owner, or cross-arm collision |
 | `SDATA-COMPLETE-01` | Declarative completion relation and soundness bridge | Patch, mapping, and cleanup transition | Existing successful and caught-error host facts only | Activity result advances only through the core | Completing one owner leaves the other untouched |
 | `SDATA-OBSERVE-01` | Process-only observation theorem | Private-local projection mutation | No new evidence or lane claim | Query/receipt contain no local state | Add a private local binding and require unchanged canonical output |
 | `SDATA-REFUSE-01` | Missing/mismatched owner state-preservation law | Missing-owner and cross-owner rejection | No semantic completion-ingress claim | Adapter derives the occurrence from committed intent | Fallback to Process or another local scope |
@@ -146,13 +157,13 @@ CIB remains the source or host-realization lane for the existing mapping profile
 | Construct | Derivation and owner | Public projection | Lifecycle |
 |---|---|---|---|
 | Process variable scope | Semantic core from start and accepted mappings | Canonical `variables` | Created empty, updated by semantic mappings, retained through completion |
-| Activity variable scope | Semantic core from effect input mappings and complete occurrence identity | None generally; committed inputs remain explicit effect arguments | Created with effect activation, patched and removed atomically on matching completion |
-| Scope owner | Complete semantic effect occurrence | None beyond the already public effect occurrence | Same lifetime as the Activity-local scope |
+| Activity variable scope | Semantic core from the owning operation and one discriminated complete occurrence identity | None generally; committed effect inputs remain explicit effect arguments | Current mapping profiles create the effect arm with effect activation, then patch and remove it atomically on matching completion |
+| Scope owner | Closed `LocalDataOwner`; current mapping profiles use the complete semantic effect-occurrence arm | None beyond the separately selected public projection | Same lifetime as the Activity-local scope; regional cleanup matches the exact arm |
 | Transient patched local environment | Semantic core from owned bindings plus validated result patch | None | Exists only during one pure completion transition |
 
 ## Versioning and evidence consequences
 
-This is an atomic internal pre-release replacement. It changes the Lean and TypeScript runtime state shapes and Temporal's replayed in-memory state but not a current shared wire schema or retained history baseline. All producers, consumers, fixtures, and proofs change together. Existing scenario bytes, canonical results, retained CIB evidence, effect requests, command identities, and transport keys remain byte-identical.
+This is an atomic internal pre-release replacement. It changes the Lean and TypeScript runtime state shapes and Temporal's replayed in-memory state but not a current shared wire schema or retained history baseline. All current producers, consumers, continuation decoders, fixtures, and proofs change together. Existing scenario bytes, canonical results, retained CIB evidence, effect requests, command identities, and transport keys remain byte-identical.
 
 ## Stop conditions
 
@@ -160,4 +171,4 @@ Stop for owner direction if the replacement requires public Activity-local obser
 
 ## Owner decision
 
-The owner selected atomic replacement rather than an additive root-scope wrapper. Activity-local state remains non-public, local ownership uses complete semantic effect occurrence identity rather than activation ordinal, and every affected theorem is restated over explicit ownership rather than re-admitted as a root-only claim.
+The owner selected atomic replacement rather than an additive root-scope wrapper. Activity-local state remains non-public, local ownership uses a closed discriminator plus complete occurrence identity rather than activation ordinal, and every affected theorem is restated over explicit ownership rather than re-admitted as a root-only claim. Existing mappings remain effect-arm-only; adding an Activity-arm producer requires its separately approved semantic operation and evidence.

@@ -11,6 +11,7 @@ import {
   CommandOutcome,
   ControlStateKind,
   InternalSchedulingMode,
+  LocalDataOwnerKind,
   RuntimeStateDefect,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -19,6 +20,7 @@ import {
   SemanticProcessKind,
   StimulusKind,
   VariableValueKind,
+  applyInternalOperation,
   applyStimulus,
   initialState,
   runtimeStateDefects,
@@ -31,6 +33,10 @@ import {
   instanceId as boundedScopeInstanceId,
   start as startBoundedScope,
 } from "../../../semantic-core/test/bounded-scope-fixture.ts";
+import {
+  effectFrontier,
+  effectProgram,
+} from "../../../semantic-core/test/internal-commutation-fixture.ts";
 
 /**
  * What the Workflow chain accepts as a resumable committed checkpoint.
@@ -164,10 +170,164 @@ const resumable = {
   logicalTimeMs: 0,
 } as const satisfies RuntimeState;
 
+function effectOwnedContinuationFixture(): Readonly<{
+  processInstanceId: string;
+  program: SemanticProcessProgram;
+  state: RuntimeState;
+}> {
+  const operation = effectProgram.operations[0];
+  assert.ok(operation !== undefined);
+  const program: SemanticProcessProgram = {
+    ...effectProgram,
+    operations: [operation],
+    operationScopes: effectProgram.operationScopes.filter(
+      ({ operationId }) => operationId === operation.id,
+    ),
+  };
+  const state = applyInternalOperation(
+    program,
+    operation,
+    { ...effectFrontier, controlTokens: effectFrontier.controlTokens.slice(0, 1) },
+  );
+  assert.ok(state !== null);
+  assert.equal(state.variables.activities.length, 1);
+  assert.notEqual(state.control.kind, ControlStateKind.NotStarted);
+  if (state.control.kind === ControlStateKind.NotStarted) {
+    throw new TypeError("Effect continuation fixture did not start");
+  }
+  return { processInstanceId: state.control.instanceId, program, state };
+}
+
+function activityOwnedContinuationFixture(): Readonly<{
+  activity: RuntimeState["activityOccurrences"][number];
+  state: RuntimeState;
+}> {
+  const activity = {
+    id: {
+      processInstanceId: instanceId,
+      activityElementId: "UserTask_1",
+      activation: 1,
+    },
+    owner,
+    operationId: "Operation_UserTask",
+    body: { kind: ActivityBodyKind.UserTask, task: userTaskWait.id },
+    attachedTimers: [],
+  } as const;
+  return {
+    activity,
+    state: {
+      ...resumable,
+      userTaskWaits: [userTaskWait],
+      timerWaits: [],
+      activityOccurrences: [activity],
+      variables: {
+        ...resumable.variables,
+        activities: [{
+          owner: { kind: LocalDataOwnerKind.ActivityOccurrence, id: activity.id },
+          bindings: [],
+        }],
+      },
+      taskActivations: [{ elementId: "UserTask_1", count: 1 }],
+      timerActivations: [],
+      activityActivations: [{ elementId: "UserTask_1", count: 1 }],
+    },
+  };
+}
+
 test("a resumable checkpoint is accepted unchanged", () => {
   assert.deepEqual(
     requireBpmnWorkflowContinuationStateV1(resumable, program, instanceId),
     resumable,
+  );
+});
+
+test("an effect-local scope crosses continuation with its discriminated owner", () => {
+  const {
+    processInstanceId,
+    program: effectProgram,
+    state: waiting,
+  } = effectOwnedContinuationFixture();
+
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationStateV1(
+      waiting,
+      effectProgram,
+      processInstanceId,
+    ),
+    waiting,
+  );
+});
+
+test("an Activity-local scope crosses continuation with its distinct live record", () => {
+  const { state } = activityOwnedContinuationFixture();
+
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationStateV1(state, program, instanceId),
+    state,
+  );
+});
+
+test("continuation refuses the removed flat local-owner representation", () => {
+  const {
+    processInstanceId,
+    program: effectProgram,
+    state: waiting,
+  } = effectOwnedContinuationFixture();
+  const [scope] = waiting.variables.activities;
+  assert.ok(scope !== undefined && scope.owner.kind === "effectOccurrence");
+  const legacy = {
+    ...waiting,
+    variables: {
+      ...waiting.variables,
+      activities: [{ ...scope, owner: scope.owner.id }],
+    },
+  };
+
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(
+      legacy,
+      effectProgram,
+      processInstanceId,
+    ),
+    /Malformed committed RuntimeState continuation/u,
+  );
+});
+
+test("continuation refuses an Activity identity in the effect-owner arm", () => {
+  const {
+    processInstanceId,
+    program: effectProgram,
+    state: waiting,
+  } = effectOwnedContinuationFixture();
+  const [scope] = waiting.variables.activities;
+  assert.ok(scope !== undefined);
+  const substituted = {
+    ...waiting,
+    variables: {
+      ...waiting.variables,
+      activities: [{
+        ...scope,
+        owner: {
+          kind: LocalDataOwnerKind.EffectOccurrence,
+          id: {
+            processInstanceId,
+            activityElementId: scope.owner.kind === LocalDataOwnerKind.EffectOccurrence
+              ? scope.owner.id.elementId
+              : "unreachable",
+            activation: 1,
+          },
+        },
+      }],
+    },
+  };
+
+  assert.throws(
+    () => requireBpmnWorkflowContinuationStateV1(
+      substituted,
+      effectProgram,
+      processInstanceId,
+    ),
+    /Malformed committed RuntimeState continuation/u,
   );
 });
 
@@ -380,26 +540,7 @@ test("a carried User Task identity above its absent counter is refused", () => {
 });
 
 test("two Activity records cannot carry the same User Task body claim across a Run boundary", () => {
-  const activity = {
-    id: {
-      processInstanceId: instanceId,
-      activityElementId: "UserTask_1",
-      activation: 1,
-    },
-    owner,
-    operationId: "Operation_UserTask",
-    body: { kind: ActivityBodyKind.UserTask, task: userTaskWait.id },
-    attachedTimers: [],
-  } as const;
-  const control = {
-    ...resumable,
-    userTaskWaits: [userTaskWait],
-    timerWaits: [],
-    activityOccurrences: [activity],
-    taskActivations: [{ elementId: "UserTask_1", count: 1 }],
-    timerActivations: [],
-    activityActivations: [{ elementId: "UserTask_1", count: 1 }],
-  } as const satisfies RuntimeState;
+  const { activity, state: control } = activityOwnedContinuationFixture();
   assert.deepEqual(
     requireBpmnWorkflowContinuationStateV1(control, program, instanceId),
     control,

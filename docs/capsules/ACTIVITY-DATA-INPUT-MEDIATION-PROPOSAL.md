@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
 
 ## Question and bounded outcome
@@ -171,9 +171,9 @@ The `OWNER` measurements below are the current nonblank counts reported before t
 | [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 265 |
 | [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 344 |
 | [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 521 |
-| [TypeScript RuntimeState contract](../../packages/semantic-core/src/semantic-process-state.ts) | 385 |
+| [TypeScript RuntimeState contract](../../packages/semantic-core/src/semantic-process-state.ts) | 384 |
 | [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 411 |
-| [TypeScript scoped-data owner](../../packages/semantic-core/src/semantic-process-data.ts) | 601 |
+| [TypeScript scoped-data owner](../../packages/semantic-core/src/semantic-process-data.ts) | 596 |
 | [TypeScript checked element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 358 |
 | [TypeScript projected-key owner](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 464 |
 | [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 541 |

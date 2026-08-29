@@ -43,6 +43,7 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
+import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 
 export type InternalOccurrence = Readonly<{
   kind: InternalOccurrenceKind;
@@ -447,7 +448,7 @@ function waitFootprint(
   if (
     occurrenceKind === InternalOccurrenceKind.Effect &&
     state.variables.activities.some(({ owner: candidate }) =>
-      sameOccurrence(candidate, occurrence.id)
+      matchesEffectLocalDataOwner(candidate, occurrence.id)
     )
   ) {
     return null;

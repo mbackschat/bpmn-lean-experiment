@@ -3,12 +3,15 @@ import { test } from "node:test";
 
 import {
   CommandOutcome,
+  ActivityBodyKind,
   ControlStateKind,
   MessageChannelKind,
   SemanticOperationKind,
   VariableValueKind,
   applyInternalOperation,
   applyStimulus,
+  createActivityLocalDataOwner,
+  createEffectLocalDataOwner,
   enabledInternalOperationCount,
   initialState,
   isStableStateResumable,
@@ -259,6 +262,30 @@ test("regional termination removes every child owner while retaining the child r
     elementId: "SyntheticParentEffect",
     activation: 1,
   };
+  const calledEffect = {
+    processInstanceId: calledRoot.processInstanceId,
+    elementId: "SyntheticCalledEffect",
+    activation: 1,
+  };
+  const calledActivity = {
+    processInstanceId: calledRoot.processInstanceId,
+    activityElementId: "SyntheticCalledActivity",
+    activation: 1,
+  };
+  const withdrawnActivity = {
+    id: {
+      processInstanceId: terminateInstanceId,
+      activityElementId: "SyntheticChildActivity",
+      activation: 1,
+    },
+    owner: child.id,
+    operationId: "operation:SyntheticChildActivity",
+    body: {
+      kind: ActivityBodyKind.ChildScope,
+      scope: descendant,
+    },
+    attachedTimers: [],
+  } as const;
   const richState: RuntimeState = {
     ...waiting,
     scopeOccurrences: [
@@ -371,6 +398,10 @@ test("regional termination removes every child owner while retaining the child r
       calledRoot,
       returnOperationId: "operation:SyntheticReturn",
     }],
+    activityOccurrences: [
+      ...waiting.activityOccurrences,
+      withdrawnActivity,
+    ],
     variables: {
       process: {
         bindings: [{
@@ -379,8 +410,17 @@ test("regional termination removes every child owner while retaining the child r
         }],
       },
       activities: [
-        { owner: childEffect, bindings: [] },
-        { owner: parentEffect, bindings: [] },
+        { owner: createEffectLocalDataOwner(calledEffect), bindings: [] },
+        { owner: createEffectLocalDataOwner(childEffect), bindings: [] },
+        { owner: createEffectLocalDataOwner(parentEffect), bindings: [] },
+        {
+          owner: createActivityLocalDataOwner(calledActivity),
+          bindings: [],
+        },
+        {
+          owner: createActivityLocalDataOwner(withdrawnActivity.id),
+          bindings: [],
+        },
       ],
     },
     taskActivations: [{ elementId: "task", count: 9 }],
@@ -413,7 +453,7 @@ test("regional termination removes every child owner while retaining the child r
   assert.deepEqual(terminated.calledProcessOccurrences, []);
   assert.deepEqual(terminated.variables.process, richState.variables.process);
   assert.deepEqual(terminated.variables.activities, [
-    { owner: parentEffect, bindings: [] },
+    { owner: createEffectLocalDataOwner(parentEffect), bindings: [] },
   ]);
   assert.deepEqual(terminated.taskActivations, richState.taskActivations);
   assert.deepEqual(terminated.messageActivations, richState.messageActivations);

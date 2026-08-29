@@ -13,6 +13,7 @@ import {
   StimulusKind,
   applyInternalOperation,
   applyStimulus,
+  createEffectLocalDataOwner,
   enabledInternalOperationCount,
   initialState,
   isStableStateResumable,
@@ -413,7 +414,10 @@ test("regional interruption removes every child runtime owner and preserves root
     }],
     variables: {
       ...waiting.variables,
-      activities: [{ owner: effectId, bindings: [] }],
+      activities: [{
+        owner: createEffectLocalDataOwner(effectId),
+        bindings: [],
+      }],
     },
     taskActivations: [{ elementId: "preserved-task", count: 7 }],
     messageActivations: [{ elementId: "preserved-message", count: 5 }],

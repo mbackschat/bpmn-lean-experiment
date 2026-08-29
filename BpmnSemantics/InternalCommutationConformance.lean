@@ -370,7 +370,8 @@ private def incidentAnchorState : RuntimeState :=
          wait := incidentAnchorWait }]
     variables :=
       { state.variables with
-        activities := [{ owner := incidentAnchorOccurrence, bindings := [] }] } }
+        activities :=
+          [{ owner := .effectOccurrence incidentAnchorOccurrence, bindings := [] }] } }
 
 /-- Incident-retained waits occupy the same untagged public anchor domain as ordinary arms. -/
 theorem incident_anchor_refuses_ordinary_footprint :

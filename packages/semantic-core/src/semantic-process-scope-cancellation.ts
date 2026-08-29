@@ -25,6 +25,10 @@ import type {
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
+import {
+  matchesActivityLocalDataOwner,
+  matchesEffectLocalDataOwner,
+} from "./local-data-owner.js";
 
 /**
  * Removes every live runtime owner belonging to `attached` or one of its descendant occurrences.
@@ -140,7 +144,12 @@ function removeScopeOccurrenceRegion(
       ...withoutCalledProcesses.variables,
       activities: withoutCalledProcesses.variables.activities.filter(
         ({ owner }) =>
-          !interruptedEffects.some((effectId) => sameOccurrence(owner, effectId)),
+          !interruptedEffects.some((effectId) =>
+            matchesEffectLocalDataOwner(owner, effectId)
+          ) &&
+          !withdrawnRecords.some((record) =>
+            matchesActivityLocalDataOwner(owner, record.id)
+          ),
       ),
     },
   };

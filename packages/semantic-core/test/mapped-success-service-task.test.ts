@@ -17,6 +17,7 @@ import {
   applyInternalOperation,
   applyStimulus,
   completeActivityVariableScope,
+  createEffectLocalDataOwner,
   enabledInternalOperationCount,
   initialState,
   isStableStateResumable,
@@ -158,7 +159,7 @@ test("commits the literal input as immutable effect arguments", () => {
   assert.deepEqual(waiting.state.variables, {
     process: { bindings: [] },
     activities: [{
-      owner: effectId,
+      owner: createEffectLocalDataOwner(effectId),
       bindings: [{
         name: "requestValue",
         value: {
@@ -320,7 +321,7 @@ test("keys local scopes by complete occurrence and removes only the matching own
       }],
     },
     activities: [{
-      owner: secondOwner,
+      owner: createEffectLocalDataOwner(secondOwner),
       bindings: arguments_,
     }],
   });

@@ -9,6 +9,7 @@ import {
   applyInternalOperationStep,
   applyStimulus,
   applyStimulusWithTrace,
+  createEffectLocalDataOwner,
   initialState,
   isWellFormedSemanticProcessProgram,
   projectFlowNodeOccurrenceLifecycleDelta,
@@ -462,7 +463,7 @@ test("Activity-variable scopes insert by complete effect occurrence", () => {
 
   assert.deepEqual(
     variables.activities.map(({ owner: activityOwner }) => activityOwner),
-    [lowActivation, highActivation, highScalar],
+    [lowActivation, highActivation, highScalar].map(createEffectLocalDataOwner),
   );
 });
 

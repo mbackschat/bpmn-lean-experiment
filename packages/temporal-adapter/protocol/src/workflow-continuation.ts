@@ -1,6 +1,7 @@
 import {
   ActivityBodyKind,
   ControlStateKind,
+  LocalDataOwnerKind,
   MappingExpressionKind,
   SemanticOriginKind,
   enabledInternalOperationCount,
@@ -450,7 +451,19 @@ function isScopedVariables(value: unknown): boolean {
     isRecord(value.process) && hasOnlyKeys(value.process, ["bindings"]) &&
     isVariablePatch(value.process.bindings) && isList(value.activities, (activity) =>
       isRecord(activity) && hasOnlyKeys(activity, ["owner", "bindings"]) &&
-      isOccurrenceId(activity.owner) && isVariablePatch(activity.bindings));
+      isLocalDataOwner(activity.owner) && isVariablePatch(activity.bindings));
+}
+
+function isLocalDataOwner(value: unknown): boolean {
+  if (!isRecord(value) || !hasOnlyKeys(value, ["kind", "id"])) return false;
+  switch (value.kind) {
+    case LocalDataOwnerKind.EffectOccurrence:
+      return isOccurrenceId(value.id);
+    case LocalDataOwnerKind.ActivityOccurrence:
+      return isActivityOccurrenceId(value.id);
+    default:
+      return false;
+  }
 }
 
 function isActivationCounter(value: unknown): boolean {

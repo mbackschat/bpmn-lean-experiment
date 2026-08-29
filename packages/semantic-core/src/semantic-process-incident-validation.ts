@@ -17,6 +17,7 @@ import type {
   RuntimeState,
   SemanticEffectWait,
 } from "./semantic-process-state.js";
+import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 
 /** Requires either exact incident profile and its predecessor-equivalent Service Task shape. */
 export function programAllowsEffectIncidents(
@@ -61,7 +62,7 @@ export function effectIncidentAssociationsAreValid(
     sameScopeOccurrence(id, incident.wait.owner)
   );
   const localScopes = state.variables.activities.filter(({ owner }) =>
-    sameOccurrence(owner, incident.wait.id)
+    matchesEffectLocalDataOwner(owner, incident.wait.id)
   );
   return owningScopes.length === 1 && localScopes.length === 1;
 }
@@ -88,7 +89,7 @@ export function effectWaitCanBecomeIncident(
     sameScopeOccurrence(id, wait.owner)
   );
   const localScopes = state.variables.activities.filter(({ owner }) =>
-    sameOccurrence(owner, wait.id)
+    matchesEffectLocalDataOwner(owner, wait.id)
   );
   return matchingWaits.length === 1 &&
     state.control.kind === ControlStateKind.Running &&

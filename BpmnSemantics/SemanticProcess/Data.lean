@@ -14,9 +14,20 @@ structure ProcessVariableScope where
   bindings : List VariableBinding
   deriving Repr, DecidableEq
 
-/-- Private bindings owned by one complete semantic effect occurrence. -/
+/-- Complete semantic owner identity for one private local-data scope. -/
+inductive LocalDataOwner where
+  | effectOccurrence (id : EffectOccurrenceId)
+  | activityOccurrence (id : ActivityOccurrenceId)
+  deriving Repr, DecidableEq
+
+/-- Semantic Process instance named by either local-data owner arm. -/
+def LocalDataOwner.processInstanceId : LocalDataOwner → SemanticId
+  | .effectOccurrence id => id.processInstanceId
+  | .activityOccurrence id => id.processInstanceId
+
+/-- Private bindings owned by one complete semantic effect or Activity occurrence. -/
 structure ActivityVariableScope where
-  owner : EffectOccurrenceId
+  owner : LocalDataOwner
   bindings : List VariableBinding
   deriving Repr, DecidableEq
 
@@ -52,21 +63,48 @@ def mergeProcessVariableBindings
     (replacements ++ existing.filter fun binding =>
       !replacedNames.contains binding.name)
 
+/-- Exact equality for discriminated local-data owners. -/
+def localDataOwnerMatches (left right : LocalDataOwner) : Bool :=
+  decide (left = right)
+
+/-- Match only the effect-owned arm retained by the existing effect APIs. -/
 def activityScopeMatches (owner : EffectOccurrenceId)
     (scope : ActivityVariableScope) : Bool :=
-  decide (
-    scope.owner.processInstanceId = owner.processInstanceId &&
-      scope.owner.elementId.value = owner.elementId.value &&
-      scope.owner.activation = owner.activation)
+  localDataOwnerMatches (.effectOccurrence owner) scope.owner
 
-/-- Canonical order for complete effect-occurrence ownership. -/
-def activityVariableScopeBefore (left right : ActivityVariableScope) : Bool :=
-  if left.owner.processInstanceId.value ≠ right.owner.processInstanceId.value then
-    left.owner.processInstanceId.value < right.owner.processInstanceId.value
-  else if left.owner.elementId.value ≠ right.owner.elementId.value then
-    left.owner.elementId.value < right.owner.elementId.value
+/-- Canonical complete-identity order within the effect-owner arm. -/
+def localEffectOwnerBefore
+    (left right : EffectOccurrenceId) : Bool :=
+  if left.processInstanceId.value ≠ right.processInstanceId.value then
+    left.processInstanceId.value < right.processInstanceId.value
+  else if left.elementId.value ≠ right.elementId.value then
+    left.elementId.value < right.elementId.value
   else
-    left.owner.activation < right.owner.activation
+    left.activation < right.activation
+
+/-- Canonical complete-identity order within the Activity-owner arm. -/
+def localActivityOwnerBefore
+    (left right : ActivityOccurrenceId) : Bool :=
+  if left.processInstanceId.value ≠ right.processInstanceId.value then
+    left.processInstanceId.value < right.processInstanceId.value
+  else if left.activityElementId.value ≠ right.activityElementId.value then
+    left.activityElementId.value < right.activityElementId.value
+  else
+    left.activation < right.activation
+
+/-- Canonical discriminator-first order for complete local-data ownership. -/
+def localDataOwnerBefore (left right : LocalDataOwner) : Bool :=
+  match left, right with
+  | .effectOccurrence left, .effectOccurrence right =>
+      localEffectOwnerBefore left right
+  | .effectOccurrence _, .activityOccurrence _ => true
+  | .activityOccurrence _, .effectOccurrence _ => false
+  | .activityOccurrence left, .activityOccurrence right =>
+      localActivityOwnerBefore left right
+
+/-- Canonical order for complete discriminated local-data ownership. -/
+def activityVariableScopeBefore (left right : ActivityVariableScope) : Bool :=
+  localDataOwnerBefore left.owner right.owner
 
 def insertActivityVariableScope (scope : ActivityVariableScope) :
     List ActivityVariableScope → List ActivityVariableScope
@@ -82,7 +120,8 @@ def addActivityVariableScope (variables : ScopedVariables)
     (owner : EffectOccurrenceId)
     (bindings : List VariableBinding) : ScopedVariables :=
   { variables with
-    activities := insertActivityVariableScope { owner, bindings }
+    activities := insertActivityVariableScope
+      { owner := .effectOccurrence owner, bindings }
       variables.activities }
 
 def evaluateInputMappings : List VariableMapping →

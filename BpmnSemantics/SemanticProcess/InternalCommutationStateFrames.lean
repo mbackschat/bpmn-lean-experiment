@@ -332,7 +332,8 @@ theorem applyInternalArmingPatch_preserves_order (state : RuntimeState)
           (fun activation => !decide (activation.elementId = wait.elementId))
           state.effectActivations updateOrders.2.2.2.1
         have scopeOrder := orderedBy_insertActivityVariableScope_preserved
-          { owner := effectWaitOccurrence wait, bindings } state.variables.activities
+          { owner := .effectOccurrence (effectWaitOccurrence wait), bindings }
+          state.variables.activities
           updateOrders.2.2.2.2
         simp only [applyInternalArmingPatch, setEffectActivationCount]
         simp_all [orderedBy_insertEffectWait_preserved]
