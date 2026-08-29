@@ -46,7 +46,7 @@ Beta breadth now advances at `DATA-AND-TASK-MECHANISMS`. The approved Internal C
 
 Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
-Next action: take the governed cold proposal review of [the Activity data-output mediation proposal](capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-PROPOSAL.md) at target `4cf6d415`, close its required findings, then move it to `owner-approved` and implement. The owner approved in advance on 2026-08-30, so no further owner decision is needed once the review approves; the guard refuses that lifecycle until the Proposal receipt records an independent approval. `EVENT-SUBSCRIPTIONS` follows this item.
+Next action: implement [the Activity data-output mediation proposal](capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-PROPOSAL.md), which is owner-approved and carries its proposal receipt. Start red at the source reader with a model whose `DataOutput` id differs from its target `Property` id, because that inequality is the whole separating witness against name-merged completion. `EVENT-SUBSCRIPTIONS` follows this item.
 
 Separate open changes outside the active item: Internal Commutation final closure, Activity issuing-discipline closure and graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and workload isolation now held at Engine `v0.3`. Host load no longer blocks this capsule's refinement lane, because the raised deadline and its margin assertion are green and recorded by [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md).
 

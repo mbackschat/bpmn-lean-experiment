@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Question and bounded outcome
 
@@ -177,6 +177,6 @@ Reopen before adding a second output or OutputSet, admitting optional or while-e
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `4cf6d415` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `4cf6d415` | `fork-turns-none` | `approve-with-required-edits` | `07261f25, d92ca95d` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
