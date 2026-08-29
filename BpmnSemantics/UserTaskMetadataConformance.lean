@@ -349,6 +349,7 @@ theorem completion_is_metadata_irrelevant
   · decide +kernel
   · decide +kernel
   · decide +kernel
+  · decide +kernel
   · rfl
   · rfl
   · rfl

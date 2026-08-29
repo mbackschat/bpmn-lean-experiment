@@ -4,7 +4,7 @@ import {
   ControlStateKind,
   ProcessStatus,
   StimulusKind,
-  isStableStateResumable,
+  isStableStateSound,
   observeStableState,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -75,7 +75,7 @@ export function projectIncidentOperationsSnapshot(
       if (
         observation?.kind !== CanonicalObservationKind.State ||
         observation.status !== ProcessStatus.Running ||
-        !isStableStateResumable(state) ||
+        !isStableStateSound(state) ||
         observation.instanceId !== state.control.instanceId
       ) {
         throw invalidIncidentProjection("malformed committed running state");

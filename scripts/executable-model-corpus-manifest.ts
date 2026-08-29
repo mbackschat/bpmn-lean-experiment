@@ -81,6 +81,7 @@ const corpusMechanisms = new Set([
   "cyclicControlFlow",
   "dataAssociation",
   "diagramInterchange",
+  "directActivityDataInput",
   "earlyCompletion",
   "embeddedSubProcess",
   "errorPropagation",

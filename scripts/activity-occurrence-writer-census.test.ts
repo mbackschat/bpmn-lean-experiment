@@ -68,6 +68,26 @@ const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem replaceBodyIn_preserves_activityBodyClaimsUnique"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/ActivityDataInput.lean#activateDataInputUserTask?@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityDataInput.lean",
+      markers: ["theorem activateDataInputUserTask_issues_fresh_activity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityBodyClaimWriterPreservation.lean",
+      markers: ["theorem activateDataInputUserTask_preserves_activityBodyClaimsUnique"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/ActivityDataInput.lean#completeDataInputUserTask?@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityDataInput.lean",
+      markers: ["theorem completeDataInputUserTask_activity_identity_discipline"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/BoundedScope.lean#BoundedScopeVictoryStep@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
@@ -231,6 +251,28 @@ const writerRecords = new Map<string, WriterRecord>([
       relativePath: "packages/semantic-core/test/activity-boundary-timer.test.ts",
       markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "bounded User Task arming inserts a disjoint Activity body claim"],
     },
+  }],
+  ["packages/semantic-core/src/semantic-process-activity-data-input-runtime.ts#armDataInputUserTask@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "packages/semantic-core/test/activity-data-input.test.ts",
+      markers: [
+        "runtimeStateRegressions(initialState, started)",
+        "RuntimeStateRegression.ActivityOccurrenceIssue",
+      ],
+    },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/activity-data-input.test.ts",
+      markers: [
+        "RuntimeStateDefect.DuplicateActivityBodyClaim",
+        "data-input arming inserts a disjoint Activity body claim",
+      ],
+    },
+  }],
+  ["packages/semantic-core/src/semantic-process-activity-data-input-runtime.ts#completeDataInputUserTask@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-bounded-task-runtime.ts#commitVictory@1", {
     classification: WriterClassification.IdentityRemoving,

@@ -110,6 +110,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.StructuredHumanWork:
       return PreservationCapabilityKind.StructuredHumanWorkRendering;
     case SemanticProfileId.ActivityBoundaryTimer:
+    case SemanticProfileId.ActivityDataInputUserTask:
     case SemanticProfileId.CalledProcessCallActivity:
     case SemanticProfileId.ConfiguredTask:
     case SemanticProfileId.EmbeddedSubProcessCompletion:

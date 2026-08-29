@@ -457,6 +457,7 @@ function operationInputs(
     case SemanticOperationKind.EnterBoundedScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
@@ -485,6 +486,7 @@ function operationOutputs(
   switch (operation.kind) {
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.Synchronize:

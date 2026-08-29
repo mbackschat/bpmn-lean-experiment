@@ -21,6 +21,10 @@ abbrev userTaskAssignmentFormMetadataProfileId : ProfileId :=
 abbrev parallelUserTaskMetadataCheckpointProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft"⟩
 
+/-- Runtime-frozen identity of the owner-approved Activity data-input checkpoint. -/
+abbrev activityDataInputUserTaskProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-activity-data-input-user-task-draft"⟩
+
 /-- Runtime-frozen identity for the owner-approved structured Human Work profile. -/
 abbrev structuredHumanWorkProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-bpmn-lean-structured-human-work-draft"⟩
@@ -63,6 +67,10 @@ private inductive ProcessDataValueDomain where
           , userTaskProcessDataPreservedNotationProfileId.value
           , booleanProcessDataCheckpointProfileId.value
           , userTaskAssignmentFormMetadataProfileId.value
+          -- Explicit null is admitted here because absence and null are different pre-states for a
+          -- required Data Input, and the completion surface stays empty because this profile's
+          -- OutputSet selects no output mediation at all.
+          , activityDataInputUserTaskProfileId.value
           , structuredHumanWorkProfileId.value ] then
         .stringNull
       else

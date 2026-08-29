@@ -8,6 +8,7 @@ import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.TimerStart
 import BpmnSemantics.SemanticProcess.TerminateEnd
 import BpmnSemantics.SemanticProcess.MonitoredTask
+import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
@@ -168,6 +169,13 @@ inductive OperationStep (program : Program) :
   | awaitUserTask (id origin input output task) (before after : RuntimeState)
       (transition : awaitUserTaskState? before input output task = some after) :
       OperationStep program (.awaitUserTask id origin input output task) before after
+  | awaitDataInputUserTask (id origin input output taskId taskName directInput)
+      (before after : RuntimeState)
+      (transition : activateDataInputUserTask? before input output taskId taskName
+        directInput = some after) :
+      OperationStep program
+        (.awaitDataInputUserTask id origin input output taskId taskName directInput)
+        before after
   | awaitSequentialMultiInstanceUserTask
       (id origin input task data normalOutput boundaryTimer limits)
       (before after : RuntimeState)
@@ -286,6 +294,8 @@ def fire? (program : Program) (operation : SemanticOperation)
         callerOutput
   | .awaitUserTask _ _ input output task =>
       awaitUserTaskState? state input output task
+  | .awaitDataInputUserTask _ _ input output taskId taskName directInput =>
+      activateDataInputUserTask? state input output taskId taskName directInput
   | operation@(.awaitSequentialMultiInstanceUserTask ..) => do
       let arm ← SequentialMultiInstanceArm.ofOperation? operation
       enterSequentialMultiInstance? arm state
@@ -349,6 +359,7 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
     | exact .returnProcess _ _ _ _ _ before after
         (returnProcessState_sound _ _ _ _ _ _ _ result)
     | exact .awaitUserTask _ _ _ _ _ before after result
+    | exact .awaitDataInputUserTask _ _ _ _ _ _ _ before after result
     | rename_i id origin input task data normalOutput boundaryTimer limits
       let arm : SequentialMultiInstanceArm :=
         { input

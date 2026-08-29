@@ -11,7 +11,7 @@ What is the smallest standards-only data mechanism that makes one ordinary User 
 
 This proposal selects one private executable Process containing a None Start Event, one data-bearing User Task, and one None End Event. The User Task has one required scalar `DataInput`, one `InputSet`, one empty `OutputSet`, and one direct `DataInputAssociation` from one Process-owned `Property`. A present Process binding, including explicit null, activates the User Task and copies the value once. An absent binding leaves the Activity ready at its incoming control place and creates no task, Activity occurrence, or local scope.
 
-The reviewed requirement ID is `BPMN-ACTIVITY-DATA-INPUT-01`. It remains `unsupported` until the implementation and governed closure evidence exist. The broad `BPMN-MECH-DATA-01`, `BPMN-MECH-ACTIVITY-01`, and `BPMN-MECH-TASK-01` families remain unsupported after this bounded checkpoint.
+The reviewed requirement ID is `BPMN-ACTIVITY-DATA-INPUT-01`. The implemented checkpoint carries it to `supported` for this bounded slice; Temporal refinement, differential/corpus, Product 2 adoption, and governed closure evidence complete the capsule. The broad `BPMN-MECH-DATA-01`, `BPMN-MECH-ACTIVITY-01`, and `BPMN-MECH-TASK-01` families remain unsupported after this bounded checkpoint.
 
 ## Normative account and selected interpretation
 
@@ -161,22 +161,22 @@ The executable constraints mechanically resolved by `node scripts/what-binds.ts`
 
 ### Owners this implementation grows
 
-The `OWNER` measurements below are the current nonblank counts reported before the immutable proposal target is committed. Implementation reruns `node scripts/what-binds.ts` before growing any owner. The 800-line soft target is the extraction threshold and 1,200 lines is the hard ceiling.
+The `OWNER` measurements below are the current nonblank counts reported by `node scripts/what-binds.ts`, refreshed as the implementation grows each owner. Implementation reruns `node scripts/what-binds.ts` before growing any owner. The 800-line soft target is the extraction threshold and 1,200 lines is the hard ceiling.
 
 | Owner | Current headroom |
 |---|---:|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 148 |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 218 |
-| [TypeScript source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 234 |
-| [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 265 |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 344 |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 521 |
+| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 138 |
+| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 190 |
+| [TypeScript source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 225 |
+| [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 252 |
+| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 322 |
+| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 505 |
 | [TypeScript RuntimeState contract](../../packages/semantic-core/src/semantic-process-state.ts) | 384 |
-| [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 411 |
-| [TypeScript scoped-data owner](../../packages/semantic-core/src/semantic-process-data.ts) | 596 |
+| [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 398 |
+| [TypeScript scoped-data owner](../../packages/semantic-core/src/semantic-process-data.ts) | 536 |
 | [TypeScript checked element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 358 |
 | [TypeScript projected-key owner](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 464 |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 541 |
+| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 526 |
 
 `ProfileAdmission.lean` is the narrowest owner. If the exhaustive profile arm cannot fit cohesively in its 148-line headroom, extract the profile-specific rule before semantic implementation. `SemanticProcessContract.lean` receives only the reusable value and operation arm, source lowering delegates parsing to a new owner, scenario projection delegates the task-input projection if its complete addition reaches the soft target, and the RuntimeState contract receives only the owner-discriminator shape. New source, runtime, proof, and conformance modules hold behavior by responsibility.
 

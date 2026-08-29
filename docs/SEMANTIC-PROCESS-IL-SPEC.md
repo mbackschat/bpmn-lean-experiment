@@ -167,6 +167,13 @@ type UserTaskMetadata = DeepReadonly<{
   };
 }>;
 
+type DirectActivityDataInput = DeepReadonly<{
+  associationId: string;
+  sourcePropertyId: string;
+  targetDataInputId: string;
+  targetDataInputName: string | null;
+}>;
+
 type CheckedNode = DeepReadonly<
   | {
       kind: "noneStartEvent";
@@ -207,6 +214,12 @@ type CheckedNode = DeepReadonly<
       id: string;
       name: string | null;
       metadata?: UserTaskMetadata;
+    }
+  | {
+      kind: "dataInputUserTask";
+      id: string;
+      name: string | null;
+      directInput: DirectActivityDataInput;
     }
   | {
       kind: "sequentialMultiInstanceUserTask";
@@ -487,6 +500,16 @@ type SemanticOperation = DeepReadonly<
       };
     })
   | (OperationBase & {
+      kind: "awaitDataInputUserTask";
+      input: string;
+      output: string;
+      task: {
+        elementId: string;
+        name: string | null;
+      };
+      directInput: DirectActivityDataInput;
+    })
+  | (OperationBase & {
       kind: "awaitSequentialMultiInstanceUserTask";
       input: string;
       task: {
@@ -633,6 +656,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | ordinary embedded Sub-Process | `enterScope` with the child definition scope and child entry place |
 | exact in-document called-Process Call Activity | caller-owned `invokeProcess` with the distinct called root and called entry, plus called-owned `returnProcess` to the caller output |
 | User Task | `awaitUserTask`; the selected E2 profile copies exact optional passive metadata into `task.metadata` |
+| User Task with one required scalar DataInput filled by one direct Data Input Association | `awaitDataInputUserTask` carrying the association, source Property, and target DataInput identities; the task arm carries no metadata because that profile admits none |
 | exact collection-driven sequential Multi-Instance User Task with one interrupting outer-lifetime `PT1S` Timer | `awaitSequentialMultiInstanceUserTask` with the complete direct data role graph, exact task definition, normal output, boundary Timer arm, and fixed profile limits |
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
 | exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
@@ -691,6 +715,14 @@ An accepted `triggerTimerStart` stimulus must match the program Process and Time
 `awaitUserTask` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token and creates one semantic task occurrence bound to the task definition and occurrence identity. When the operation carries selected E2 metadata, the wait and public open-task observation copy that exact value; metadata is physically absent when the operation omits it.
 
 An accepted completion for that occurrence removes the wait and adds one token to the output control place. Metadata is passive and does not participate in occurrence matching, value admission, or transition choice. A completion for an unknown, stale, duplicate, or otherwise ineligible occurrence follows the capsule-owned command outcome rules, preserves the complete wait including metadata, and does not invent control-flow progress.
+
+### Activity data-input User Task wait
+
+`awaitDataInputUserTask` is enabled only when its input control place holds a token **and** the Process scope holds exactly one binding named by `directInput.sourcePropertyId`. Zero bindings and two bindings under one name are both unavailable, so the selected value never depends on collection order. A present binding whose value arm is `null` is available and is copied as explicit null: absence and null are different pre-states, and the profile's value domain admits both at Process start.
+
+Firing is atomic. It consumes the input token, creates the task occurrence and its wait, mints the Activity occurrence record with an empty attached-Timer list, and inserts one Activity-occurrence-owned local scope holding exactly `{ name: directInput.targetDataInputId, value: <the selected binding's value> }`. Process scope is unchanged: the association copies, it does not move.
+
+Completion accepts no submitted values, because the profile's OutputSet is empty. It disposes the wait, the Activity record, and the local scope together and adds one token to `output`. A record listing an attached Timer belongs to another family and is refused here rather than completed.
 
 ### Sequential Multi-Instance User Task
 

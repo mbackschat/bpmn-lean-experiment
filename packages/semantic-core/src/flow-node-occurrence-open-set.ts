@@ -340,6 +340,11 @@ function waitMatchesUserTask(
           operation.output === wait.output &&
           operation.task.name === wait.name &&
           sameJson(operation.task.metadata, wait.metadata);
+      case SemanticOperationKind.AwaitDataInputUserTask:
+        return operation.task.elementId === wait.id.elementId &&
+          operation.output === wait.output &&
+          operation.task.name === wait.name &&
+          wait.metadata === undefined;
       case SemanticOperationKind.AwaitBoundedUserTask:
       case SemanticOperationKind.AwaitMonitoredUserTask:
         return operation.task.elementId === wait.id.elementId &&

@@ -329,6 +329,16 @@ const dispatchFixtures = {
         ].join("\n"),
       ),
   },
+  activityDataInputUserTask: {
+    path: "the Activity data-input reader",
+    source: new URL(
+      "../../../scenarios/activity-data-input-user-task/process.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "activity-data-input-user-task",
+    semanticProfile: SemanticProfileId.ActivityDataInputUserTask,
+    find: '<bpmn:startEvent id="StartEvent_Review"',
+  },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 
 test("applies foreign-attribute admission through every registered compilation dispatch", async () => {

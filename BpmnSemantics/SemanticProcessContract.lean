@@ -145,6 +145,19 @@ structure CheckedSequentialMultiInstanceBoundaryTimer where
   outputFlowId : SequenceFlowId
   deriving Repr, DecidableEq
 
+/-- The reusable value one direct BPMN Data Input Association contributes to an Activity.
+
+Task-neutral, because Clause 10.4.2's direct copy is a property of the association rather than of the
+Activity that owns it. `sourcePropertyId` and `targetDataInputId` are exact source identities and are
+what readiness and copying resolve; `targetDataInputName` is carried for presentation only, so two
+Properties sharing a label cannot collide. -/
+structure DirectActivityDataInput where
+  associationId : String
+  sourcePropertyId : String
+  targetDataInputId : String
+  targetDataInputName : Option String
+  deriving Repr, DecidableEq
+
 /-- Inclusive runtime collection bounds selected by the bounded profile. -/
 structure SequentialMultiInstanceLimits where
   maximumItems : Nat
@@ -166,6 +179,11 @@ inductive CheckedNode where
       (durationLiteral : String) (outputFlowId : SequenceFlowId)
   | userTask (id : NodeId) (name : Option String)
       (metadata : Option UserTaskMetadata := none)
+  /-- A User Task whose one required DataInput is filled by one direct Data Input Association. A
+  distinct node rather than a flag on `userTask`, because plain readiness and data-dependent
+  readiness select different lowering clauses. -/
+  | dataInputUserTask (id : NodeId) (name : Option String)
+      (directInput : DirectActivityDataInput)
   | sequentialMultiInstanceUserTask
       (id : NodeId)
       (name : Option String)
@@ -219,6 +237,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
   | .userTask id _ _
+  | .dataInputUserTask id _ _
   | .sequentialMultiInstanceUserTask id _ _ _ _ _
   | .parallelMultiInstanceUserTask id _ _ _ _ _ _
   | .intermediateCatchTimerEvent id _
@@ -440,6 +459,16 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (output : ControlPlaceId)
       (task : UserTaskDefinition)
+  /-- One User Task occurrence whose entry both waits and fills one Activity data input. Separate from
+  `awaitUserTask` because enabledness depends on a Process binding this arm reads but never writes. -/
+  | awaitDataInputUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (output : ControlPlaceId)
+      (taskId : TaskDefinitionId)
+      (taskName : Option String)
+      (directInput : DirectActivityDataInput)
   | awaitSequentialMultiInstanceUserTask
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -574,6 +603,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .invokeProcess id _ _ _ _ _ _
   | .returnProcess id _ _ _ _
   | .awaitUserTask id _ _ _ _
+  | .awaitDataInputUserTask id _ _ _ _ _ _
   | .awaitSequentialMultiInstanceUserTask id _ _ _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask id _ _ _ _ _ _ _ _ _
   | .completeParallelMultiInstanceUserTask id _ _ _ _

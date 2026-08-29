@@ -57,6 +57,9 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "parallel-multi-instance-all",
   "parallel-multi-instance-first",
   "parallel-multi-instance-interrupted",
+  "activity-data-input-absent",
+  "activity-data-input-present",
+  "activity-data-input-null",
 ] as const);
 
 export type PipelineCaseId = typeof pipelineCaseIdRegistry[number];

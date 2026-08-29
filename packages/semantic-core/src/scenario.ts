@@ -23,6 +23,9 @@ import type {
   Stimulus,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import {
+  projectSelectedTaskInputs,
+} from "./activity-data-input-observation.js";
 import { projectOpenMultiInstances } from "./multi-instance-observation.js";
 import {
   supportsSemanticProcessExecution,
@@ -117,12 +120,22 @@ export function projectOpenUserTasks(
   state: RuntimeState,
 ): ReadonlyArray<OpenUserTask> {
   return state.userTaskWaits
-    .map((wait) => ({
-      id: wait.id,
-      name: wait.name,
-      state: UserTaskLifecycleState.Active,
-      ...(wait.metadata === undefined ? {} : { metadata: wait.metadata }),
-    }))
+    .map((wait) => {
+      const inputs = projectSelectedTaskInputs(
+        state.activityOccurrences,
+        state.variables,
+        wait.id,
+      );
+      return {
+        id: wait.id,
+        name: wait.name,
+        state: UserTaskLifecycleState.Active,
+        ...(wait.metadata === undefined ? {} : { metadata: wait.metadata }),
+        // Spread rather than assigned, so a task whose Activity owns no local data omits the key
+        // entirely and its canonical observation bytes are unchanged.
+        ...(inputs === undefined ? {} : { inputs }),
+      };
+    })
     .sort(compareOpenOccurrences);
 }
 

@@ -179,6 +179,109 @@ def applyEffectResult
       applyEffectPatch arguments outputMappings processBindings
         localPatch true
 
+/-- Match only the Activity-occurrence-owned arm used by the direct data-input family. -/
+def activityOccurrenceScopeMatches (owner : ActivityOccurrenceId)
+    (scope : ActivityVariableScope) : Bool :=
+  localDataOwnerMatches (.activityOccurrence owner) scope.owner
+
+/-- Add the copied data-input scope for one newly activated Activity occurrence. Separate from the effect entry point because substituting one owner family for the other is the alias this discriminator exists to prevent. -/
+def addActivityOccurrenceVariableScope (variables : ScopedVariables)
+    (owner : ActivityOccurrenceId)
+    (bindings : List VariableBinding) : ScopedVariables :=
+  { variables with
+    activities := insertActivityVariableScope
+      { owner := .activityOccurrence owner, bindings }
+      variables.activities }
+
+/-- The bindings of one Activity occurrence's unique local scope, or `none`. -/
+def activityOccurrenceVariableBindings (variables : ScopedVariables)
+    (owner : ActivityOccurrenceId) : Option (List VariableBinding) :=
+  match variables.activities.filter (activityOccurrenceScopeMatches owner) with
+  | [scope] => some scope.bindings
+  | _ => none
+
+/-- Remove one Activity occurrence's local scope, preserving Process scope and every other owner. A missing or duplicated owner returns `none` rather than removing what it found, so a state that lost the join refuses instead of committing a partial disposal. -/
+def removeActivityOccurrenceVariableScope (variables : ScopedVariables)
+    (owner : ActivityOccurrenceId) : Option ScopedVariables :=
+  match variables.activities.filter (activityOccurrenceScopeMatches owner) with
+  | [_] =>
+      some
+        { variables with
+          activities :=
+            variables.activities.filter fun scope =>
+              !activityOccurrenceScopeMatches owner scope }
+  | _ => none
+
+theorem filter_insertActivityVariableScope_of_rejected
+    (predicate : ActivityVariableScope → Bool) (inserted : ActivityVariableScope)
+    (rejected : predicate inserted = false) : ∀ values : List ActivityVariableScope,
+    (insertActivityVariableScope inserted values).filter predicate = values.filter predicate := by
+  intro values
+  induction values with
+  | nil => simp [insertActivityVariableScope, rejected]
+  | cons current rest ih =>
+      simp only [insertActivityVariableScope]
+      split
+      · simp [rejected]
+      · simp only [List.filter_cons, ih]
+
+theorem filter_insertActivityVariableScope_eq_singleton
+    (predicate : ActivityVariableScope → Bool) (inserted : ActivityVariableScope)
+    (accepted : predicate inserted = true)
+    (rejected : ∀ value ∈ values, predicate value = false) :
+    (insertActivityVariableScope inserted values).filter predicate = [inserted] := by
+  induction values with
+  | nil => simp [insertActivityVariableScope, accepted]
+  | cons current rest ih =>
+      simp only [insertActivityVariableScope]
+      have currentRejected := rejected current (by simp)
+      have restRejected : ∀ value ∈ rest, predicate value = false := by
+        intro value member
+        exact rejected value (by simp [member])
+      have restEmpty : rest.filter predicate = [] := List.filter_eq_nil_iff.mpr (by
+        intro value member acceptedValue
+        rw [restRejected value member] at acceptedValue
+        contradiction)
+      split
+      · simp [accepted, currentRejected, restEmpty]
+      · simp [currentRejected, ih restRejected]
+
+theorem all_insertActivityVariableScope (predicate : ActivityVariableScope → Bool)
+    (inserted : ActivityVariableScope) : ∀ values : List ActivityVariableScope,
+    (insertActivityVariableScope inserted values).all predicate =
+      (predicate inserted && values.all predicate) := by
+  intro values
+  induction values with
+  | nil => simp [insertActivityVariableScope]
+  | cons current rest ih =>
+      simp only [insertActivityVariableScope]
+      split <;> simp_all [Bool.and_left_comm]
+
+/-- Removing one Activity-local scope never touches Process scope. -/
+theorem removeActivityOccurrenceVariableScope_preserves_process
+    {variables result : ScopedVariables} {owner : ActivityOccurrenceId}
+    (removed : removeActivityOccurrenceVariableScope variables owner = some result) :
+    result.process = variables.process := by
+  unfold removeActivityOccurrenceVariableScope at removed
+  split at removed
+  · cases removed
+    rfl
+  · exact absurd removed (by simp)
+
+/-- A successful removal had exactly one scope for that owner and leaves none. -/
+theorem removeActivityOccurrenceVariableScope_disposes
+    {variables result : ScopedVariables} {owner : ActivityOccurrenceId}
+    (removed : removeActivityOccurrenceVariableScope variables owner = some result) :
+    (variables.activities.filter (activityOccurrenceScopeMatches owner)).length = 1 ∧
+      result.activities.filter (activityOccurrenceScopeMatches owner) = [] := by
+  unfold removeActivityOccurrenceVariableScope at removed
+  split at removed
+  · next singleton =>
+      cases removed
+      refine ⟨by rw [singleton]; rfl, ?_⟩
+      simp [List.filter_filter]
+  · exact absurd removed (by simp)
+
 /-- Validate one effect result against its unique owned local scope, map into Process scope, and remove only that local scope. Missing or duplicate owners return `none`. -/
 def completeActivityVariableScope
     (variables : ScopedVariables)

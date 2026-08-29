@@ -42,6 +42,8 @@ private structure OwnedWaitDefinitions where
 /-- Deliberately exhaustive with no wildcard: a new operation variant must decide here which public waits it exposes. A catch-all made a composite family's waits silently invisible to every observation instead of failing to compile. -/
 private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .awaitUserTask _ _ _ _ task => { tasks := [task] }
+  | .awaitDataInputUserTask _ _ _ _ taskId taskName _ =>
+      { tasks := [{ id := taskId, name := taskName }] }
   | .awaitTimer _ _ _ _ timer => { timers := [timer] }
   | .awaitMessage _ _ _ _ message => { messages := [message] }
   | .awaitEffect _ _ _ _ effect _ => { effects := [effect] }
@@ -183,6 +185,23 @@ private def activeWaits (program : Program) (state : RuntimeState) :
     sortActiveWaitsByElementId effectWaits ++
     sortActiveWaitsByElementId incidentWaits
 
+/-- The selected InputSet one live task occurrence publishes, or `none` when its Activity owns no
+local data.
+
+Read from the committed Activity record and its occurrence-owned scope only. A scope of any other
+cardinality answers `none` rather than a truncated collection, because publishing part of an InputSet
+would present partial data as the complete selection. -/
+private def selectedTaskInputs? (state : RuntimeState) (wait : UserTaskWait) :
+    Option (List VariableBinding) := do
+  let record ← activityOccurrenceForTaskWait? state.activityOccurrences wait
+  let bindings ← activityOccurrenceVariableBindings state.variables
+    { processInstanceId := record.processInstanceId
+      activityElementId := ⟨record.activityElementId.value⟩
+      activation := record.activation }
+  match bindings with
+  | [_] => some bindings
+  | _ => none
+
 private def openUserTasks (program : Program) (state : RuntimeState) :
     List OpenUserTask :=
   (taskDefinitions program).flatMap fun task =>
@@ -193,7 +212,8 @@ private def openUserTasks (program : Program) (state : RuntimeState) :
             activation := wait.activation }
         name := task.name
         state := .active
-        metadata := wait.metadata }
+        metadata := wait.metadata
+        inputs := selectedTaskInputs? state wait }
 
 private def openTimers (program : Program) (state : RuntimeState) :
     List OpenTimer :=

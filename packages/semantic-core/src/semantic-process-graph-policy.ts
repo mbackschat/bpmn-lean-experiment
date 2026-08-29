@@ -45,6 +45,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.TimerStart:
     case SemanticProfileId.MessageStart:
     case SemanticProfileId.ActivityBoundaryTimer:
+    case SemanticProfileId.ActivityDataInputUserTask:
     case SemanticProfileId.MappedBoundaryErrorServiceTask:
     case SemanticProfileId.CalledProcessCallActivity:
     case SemanticProfileId.MappedSuccessServiceTask:

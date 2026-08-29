@@ -5,6 +5,7 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 ## Artifact registry
 
 - [BPMN 2.0.2 Activity boundary Timer draft](bpmn-2.0.2-activity-boundary-timer-draft/README.md)
+- [BPMN 2.0.2 Activity data-input User Task draft](bpmn-2.0.2-activity-data-input-user-task-draft/README.md)
 - [BPMN 2.0.2 BPMN Lean configured Task effect draft](bpmn-2.0.2-bpmn-lean-configured-task-effect-draft/README.md)
 - [BPMN 2.0.2 BPMN Lean structured Human Work draft](bpmn-2.0.2-bpmn-lean-structured-human-work-draft/README.md)
 - [BPMN 2.0.2 bounded called-Process Call Activity draft](bpmn-2.0.2-called-process-call-activity-draft/README.md)

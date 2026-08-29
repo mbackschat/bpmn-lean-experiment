@@ -114,6 +114,9 @@ const expectedCapabilities = new Map<string, ProfileCapabilities>([
       stringNull,
     ),
   }],
+  [SemanticProfileId.ActivityDataInputUserTask, {
+    processStart: capability(stringNull, "process-start-string-null-data"),
+  }],
   [SemanticProfileId.ExclusiveGatewaySimpleBoolean, {
     processStart: capability(stringNull),
   }],

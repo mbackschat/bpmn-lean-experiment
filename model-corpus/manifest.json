@@ -1092,6 +1092,40 @@
       }
     },
     {
+      "id": "invoice-review-with-context",
+      "title": "Review an invoice with its supplied context",
+      "businessPurpose": "Hand a reviewer the invoice summary the Process already holds, so the review task cannot begin without the context it needs.",
+      "cloneFamily": "human-review-with-direct-data-input",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "directActivityDataInput",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/activity-data-input-user-task/process.bpmn",
+        "sha256": "d495a656950873515d17b25f4dd8a45bd4edcaceea85a30695b3d217d37e779d",
+        "scenarioRelativePath": "scenarios/activity-data-input-user-task/present.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-activity-data-input-user-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "activity-data-input-present",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact profile publishes a metadata-free User Task and its one selected input collection only; no honest claim-and-complete journey exists until an assignment/form extension or a different retained model does."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

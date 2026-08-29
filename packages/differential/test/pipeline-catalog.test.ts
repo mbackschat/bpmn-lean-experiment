@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import { test } from "node:test";
 
 import {
   CanonicalObservationKind,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
+import type { Scenario } from "@bpmn-lean/semantic-core";
 import {
   ComparisonKind,
   DifferentialTarget,
@@ -56,6 +58,8 @@ import {
 import { pipelineCaseIdRegistry } from "./pipeline-case-id-registry.ts";
 import {
   mutableClone,
+  projectRoot,
+  readJson,
 } from "./pipeline-target-support.ts";
 import {
   loadAndCompileCases,
@@ -83,6 +87,21 @@ test("binds the complete ordered pipeline inventory before target execution", ()
     false,
   );
   assert.equal(rejectedPipelineCaseId, unregisteredPipelineCaseId);
+});
+
+// Every target batch is keyed by scenario identity and every projection looks a result up by it, so
+// a case identity that names something else addresses a key space no producer builds.
+test("names every pipeline case after the scenario it runs", async () => {
+  const mismatched = (await Promise.all(
+    pipelineCases.map(async ({ id, scenarioRelativePath }) => {
+      const scenario = await readJson<Scenario>(
+        path.join(projectRoot, scenarioRelativePath),
+      );
+      return { id, scenarioId: scenario.id };
+    }),
+  )).filter(({ id, scenarioId }) => id !== scenarioId);
+
+  assert.deepEqual(mismatched, []);
 });
 
 test("every registered wait prefix ends at a canonical state", async () => {

@@ -225,6 +225,15 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
   | .userTask id _ _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
+  -- The three source identities are what the copy resolves by, so a shared one would let the
+  -- association read the DataInput it is meant to fill.
+  | .dataInputUserTask id _ directInput =>
+      let identities :=
+        [id.value, directInput.associationId, directInput.sourcePropertyId,
+          directInput.targetDataInputId]
+      identities.all nonempty &&
+        identities.eraseDups.length = identities.length &&
+        incomingCount flows id = 1 && outgoingCount flows id = 1
   | .sequentialMultiInstanceUserTask id _ input output normalOutputFlowId boundaryTimer =>
       let identities :=
         [id.value, boundaryTimer.elementId.value,

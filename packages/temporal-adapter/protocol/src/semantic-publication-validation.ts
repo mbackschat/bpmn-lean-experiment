@@ -334,10 +334,33 @@ function isState(
 }
 
 function isOpenUserTask(value: unknown): boolean {
-  return isRecord(value) && hasOnlyKeys(value,
-    Object.hasOwn(value, "metadata") ? ["id", "name", "state", "metadata"] : ["id", "name", "state"]) &&
+  if (!isRecord(value)) {
+    return false;
+  }
+  // Both optional keys are physically absent for profiles that publish neither, so the allowlist is
+  // built from what the value actually carries rather than from a widened fixed list.
+  const keys = ["id", "name", "state"];
+  if (Object.hasOwn(value, "metadata")) {
+    keys.push("metadata");
+  }
+  if (Object.hasOwn(value, "inputs")) {
+    keys.push("inputs");
+  }
+  return hasOnlyKeys(value, keys) &&
     isOccurrence(value.id) && (value.name === null || isNonEmpty(value.name)) &&
-    value.state === "active" && hasExactOptionalUserTaskMetadata(value);
+    value.state === "active" && hasExactOptionalUserTaskMetadata(value) &&
+    hasExactOptionalSelectedInputs(value);
+}
+
+/**
+ * The selected InputSet a data-bearing task publishes, when it publishes one.
+ *
+ * Exactly one binding, because the admitted profile fills exactly one required scalar DataInput; a
+ * longer collection would present partial data as a complete selection.
+ */
+function hasExactOptionalSelectedInputs(value: Record<string, unknown>): boolean {
+  return !Object.hasOwn(value, "inputs") ||
+    (Array.isArray(value.inputs) && value.inputs.length === 1 && isPatch(value.inputs));
 }
 
 function isOpenMessage(value: unknown): boolean {

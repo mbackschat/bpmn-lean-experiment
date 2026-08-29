@@ -261,6 +261,15 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : 
               have taskDifferent : candidateTask ≠ wait.task :=
                 fun same => different (congrArg UserTaskDefinition.id same)
               simp [different, taskDifferent]
+          | awaitDataInputUserTask candidateId candidateOrigin candidateInput candidateOutput
+              candidateTaskId candidateTaskName directInput =>
+              have different : candidateTaskId ≠ wait.task.id := by
+                intro same
+                apply familyMember
+                unfold userTaskWaitDeclarers
+                rw [List.mem_filter]
+                exact ⟨member, by simp [same]⟩
+              simp [different]
           | awaitBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
               have different : candidateTask.id ≠ wait.task.id := by
                 intro same

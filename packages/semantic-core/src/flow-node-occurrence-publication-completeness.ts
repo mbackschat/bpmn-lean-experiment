@@ -173,6 +173,7 @@ function internalDelta(
     case SemanticOperationKind.ReachNoneEnd:
       return lifecycleDelta([], [], [operationInstant], commandId, transitionIndex);
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitDataInputUserTask:
       return lifecycleDelta([
         requireWaitStart(supplied, processId, operation.task.elementId, owner),
       ]);

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_ActivityDataInputReview"
+  targetNamespace="https://bpmn-lean.org/scenarios/activity-data-input-review">
+  <bpmn:process id="Process_ActivityDataInputReview" isExecutable="true">
+    <bpmn:property id="Property_ReviewContext" />
+
+    <bpmn:startEvent id="StartEvent_Review">
+      <bpmn:outgoing>Flow_Start_Review</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Start_Review"
+      sourceRef="StartEvent_Review"
+      targetRef="UserTask_Review" />
+
+    <bpmn:userTask id="UserTask_Review" name="Review invoice">
+      <bpmn:incoming>Flow_Start_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Completed</bpmn:outgoing>
+      <bpmn:ioSpecification id="IoSpecification_Review">
+        <bpmn:dataInput id="DataInput_ReviewContext" name="Review context" />
+        <bpmn:inputSet id="InputSet_Review">
+          <bpmn:dataInputRefs>DataInput_ReviewContext</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_Review" />
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_ReviewContext">
+        <bpmn:sourceRef>Property_ReviewContext</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_ReviewContext</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow
+      id="Flow_Review_Completed"
+      sourceRef="UserTask_Review"
+      targetRef="EndEvent_Completed" />
+    <bpmn:endEvent id="EndEvent_Completed">
+      <bpmn:incoming>Flow_Review_Completed</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

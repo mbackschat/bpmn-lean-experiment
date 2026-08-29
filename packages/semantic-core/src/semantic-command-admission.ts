@@ -26,6 +26,10 @@ import {
   isBoundedTaskDefinition,
 } from "./semantic-process-bounded-task-runtime.js";
 import {
+  completeDataInputUserTask,
+  isDataInputTaskDefinition,
+} from "./semantic-process-activity-data-input-runtime.js";
+import {
   completeActivityVariableScope,
 } from "./semantic-process-data.js";
 import {
@@ -195,6 +199,12 @@ export function admit(
           state,
           stimulus,
         );
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
+      if (isDataInputTaskDefinition(program, stimulus.taskId)) {
+        const next = completeDataInputUserTask(program, state, stimulus);
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };

@@ -37,7 +37,7 @@ import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
   applyInternalOperationStep,
   evaluateStimulusWithSelectedSteps,
-  isStableStateResumable,
+  isStableStateSound,
 } from "./semantic-process-runtime.js";
 import type {
   AppliedInternalOperationStep,
@@ -120,7 +120,7 @@ export function applyStimulusWithTrace(
     result.internalStepBoundExceeded ||
     evaluation.ambiguousInternalChoice ||
     evaluation.admittedState === null ||
-    !isStableStateResumable(result.state) ||
+    !isStableStateSound(result.state) ||
     currentPositions === null
   ) {
     return noTrace(result);

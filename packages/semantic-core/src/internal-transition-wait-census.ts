@@ -81,6 +81,7 @@ function operationWaitDeclarations(
 ): ReadonlyArray<WaitDeclaration> {
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitDataInputUserTask:
       return [{
         family: InternalOccurrenceKind.UserTask,
         elementId: operation.task.elementId,

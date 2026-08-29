@@ -48,9 +48,10 @@ export const warmBudgetPerCaseMs = 1_300;
  * Stated as a total because the process deadlines below and the hosted-budget guard both read it
  * before any case list exists. [The budget guard](pipeline-budget.test.ts) ties it back to
  * `warmBudgetPerCaseMs` and the registered case count, so catalog growth fails there rather than
- * silently outrunning this number.
+ * silently outrunning this number. Raising it for a larger catalog keeps the declared per-case rate
+ * intact and must keep the hosted CI budget at least 50% above it.
  */
-export const defaultWarmBudgetMs = 75_000;
+export const defaultWarmBudgetMs = 78_000;
 
 /**
  * Load per core above which a timing figure is not a comparable measurement.

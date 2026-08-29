@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnoverPreservation
+import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.BoundedScopeArming
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.WaitActivation
@@ -113,6 +114,54 @@ theorem activateBoundedUserTask_preserves_activityBodyClaimsUnique (state : Runt
   have preserved := activityBodyClaimsUnique_insertActivityOccurrence issuedRecord
     state.activityOccurrences disjoint claimsUnique
   simpa [activateBoundedUserTask, issuedRecord] using preserved
+
+/-- Direct Activity data-input arming inserts a task claim above the live-task counter bound, so no
+existing live Activity record can already claim it.
+
+Separate from the bounded-task law rather than derived from it: this family attaches no handler, so
+its record is a different term even though the body claim it inserts is the same. -/
+theorem activateDataInputUserTask_preserves_activityBodyClaimsUnique
+    {state after : RuntimeState} {instanceId : SemanticId} {owner : ScopeOccurrenceId}
+    {input output : ControlPlaceId} {taskId : TaskDefinitionId}
+    {taskName : Option String} {directInput : DirectActivityDataInput}
+    (owned : onlyTokenOwner? state input = some owner)
+    (running : state.control = .running instanceId)
+    (available : (dataInputSourceBinding? state directInput).isSome = true)
+    (recordsOwn : activityRecordsOwnLiveWork state = true)
+    (bounds : runtimeStateIdentityBound state = true)
+    (claimsUnique : activityBodyClaimsUnique state.activityOccurrences = true)
+    (step : activateDataInputUserTask? state input output taskId taskName
+      directInput = some after) :
+    activityBodyClaimsUnique after.activityOccurrences = true := by
+  have inserted := activateDataInputUserTask_activityOccurrences owned running available step
+  have disjoint : state.activityOccurrences.all
+      (activityBodyClaimsDisjoint (dataInputActivityRecord state instanceId owner taskId)) =
+      true := by
+    simp only [List.all_eq_true]
+    intro existing existingMem
+    apply activityBodyClaimsDisjoint_userTask_of_not_mem
+      (dataInputActivityRecord state instanceId owner taskId) existing
+      { processInstanceId := instanceId
+        elementId := { value := taskId.value }
+        activation := activationCount state taskId + 1 }
+    intro claimed
+    obtain ⟨candidate, candidateMem, names⟩ := activityBodyTaskClaim_has_live_wait state existing
+      { processInstanceId := instanceId
+        elementId := { value := taskId.value }
+        activation := activationCount state taskId + 1 }
+      recordsOwn existingMem claimed
+    simp only [runtimeStateIdentityBound, Bool.and_eq_true] at bounds
+    have candidateBound := List.all_eq_true.mp bounds.1.1 candidate candidateMem
+    simp only [decide_eq_true_eq] at candidateBound
+    simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at names
+    have taskEq : candidate.task.id = taskId :=
+      taskDefinitionId_eq_of_value names.1.2.symm
+    rw [taskEq] at candidateBound
+    omega
+  have preserved := activityBodyClaimsUnique_insertActivityOccurrence
+    (dataInputActivityRecord state instanceId owner taskId) state.activityOccurrences disjoint
+    claimsUnique
+  simpa [inserted] using preserved
 
 /-- The Sub-Process deadline writer preserves uniqueness once the preceding scope-entry proof has
 established that its newly issued child is absent from every existing scope claim. -/

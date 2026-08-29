@@ -9,6 +9,7 @@
  *
  * The program is immutable; runtime state lives in `semantic-process-state.ts`.
  */
+import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -53,6 +54,7 @@ export enum SemanticOperationKind {
   InvokeProcess = "invokeProcess",
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
+  AwaitDataInputUserTask = "awaitDataInputUserTask",
   AwaitSequentialMultiInstanceUserTask = "awaitSequentialMultiInstanceUserTask",
   AwaitParallelMultiInstanceUserTask = "awaitParallelMultiInstanceUserTask",
   CompleteParallelMultiInstanceUserTask = "completeParallelMultiInstanceUserTask",
@@ -283,6 +285,26 @@ export type AwaitMonitoredUserTaskOperation = OperationBase &
     boundaryTimer: BoundaryTimerArm;
   }>;
 
+/**
+ * One User Task occurrence whose entry both waits and fills one occupied Activity data input.
+ *
+ * Separate from `awaitUserTask` because enabledness differs: this arm is enabled only while the
+ * Process binding named by `directInput.sourcePropertyId` exists, and firing it writes an
+ * Activity-owned local scope and an Activity occurrence record that the plain arm never produces.
+ * Its `output` is the sole normal outgoing route, taken by the completion command rather than here.
+ */
+export type AwaitDataInputUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitDataInputUserTask;
+    input: string;
+    output: string;
+    task: {
+      elementId: string;
+      name: string | null;
+    };
+    directInput: DirectActivityDataInput;
+  }>;
+
 export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
@@ -406,6 +428,7 @@ export type SemanticOperation =
           durationMs: 1000;
         };
       }>)
+  | AwaitDataInputUserTaskOperation
   | AwaitBoundedUserTaskOperation
   | AwaitMonitoredUserTaskOperation
   | AwaitSequentialMultiInstanceUserTaskOperation

@@ -43,6 +43,9 @@ import {
 import {
   compileParallelMultiInstanceCheckedProcess,
 } from "./parallel-multi-instance-source.js";
+import {
+  compileActivityDataInputCheckedProcess,
+} from "./activity-data-input-source.js";
 
 export const CompilationDispatchId = Object.freeze({
   Generic: "generic",
@@ -52,6 +55,7 @@ export const CompilationDispatchId = Object.freeze({
   UserTaskMetadata: "userTaskMetadata",
   SequentialMultiInstanceUserTask: "sequentialMultiInstanceUserTask",
   ParallelMultiInstanceUserTask: "parallelMultiInstanceUserTask",
+  ActivityDataInputUserTask: "activityDataInputUserTask",
 } as const);
 
 export type CompilationDispatchId =
@@ -151,6 +155,16 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
               "The Parallel Multi-Instance profile does not admit a source overlay.",
             ),
     },
+    {
+      id: CompilationDispatchId.ActivityDataInputUserTask,
+      semanticProfile: SemanticProfileId.ActivityDataInputUserTask,
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileActivityDataInputCheckedProcess(rootElement, source, null)
+          : unsupported(
+              "The Activity data-input profile does not admit a source overlay.",
+            ),
+    },
   ]);
 
 export function compileDispatchedCheckedProcess(
@@ -194,6 +208,7 @@ export function compileDispatchedCheckedProcess(
       );
     case CompilationDispatchId.SequentialMultiInstanceUserTask:
     case CompilationDispatchId.ParallelMultiInstanceUserTask:
+    case CompilationDispatchId.ActivityDataInputUserTask:
       return dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);

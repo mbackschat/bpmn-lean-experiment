@@ -6,7 +6,7 @@
 
 ## Role
 
-This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. Activity-local owners use one closed discriminated identity type so an effect occurrence and an Activity occurrence with equal coordinates remain distinct. This capsule's mapping account continues to use only the effect-occurrence arm; the [Activity data-input mediation proposal](ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md) owns the separate Activity-occurrence consumer. The representation change itself changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.
+This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. Activity-local owners use one closed discriminated identity type so an effect occurrence and an Activity occurrence with equal coordinates remain distinct. This capsule's mapping account continues to use only the effect-occurrence arm; the [Activity data-input mediation proposal](ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md) owns the separate Activity-occurrence consumer and the one local projection that consumer publishes. The representation change itself changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.
 
 Exact implementation status belongs in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the runtime representation boundary belongs in [the Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md).
 
@@ -90,7 +90,13 @@ Matching effect completion validates and evaluates only against the Activity-loc
 
 ### `SDATA-OBSERVE-01`
 
-Activity-local bindings are not part of the canonical public variable observation. Committed effect arguments retain their existing explicit `openEffects` projection; no other local binding is projected.
+Activity-local bindings are never part of the canonical public `variables` observation, which carries Process bindings only.
+
+### `SDATA-OBSERVE-02`
+
+Every projection of an Activity-local binding is enumerated by an approved capsule. Committed effect arguments appear as `openEffects` arguments, and one live data-bearing task's copied DataInput appears as its `openUserTasks[].inputs` collection under [the Activity data-input capsule](ACTIVITY-DATA-INPUT-MEDIATION-PROPOSAL.md). No other local binding is projected, and a new projection requires its own approved capsule rather than a widening here.
+
+This identifier replaces the second half of the original `SDATA-OBSERVE-01`, whose blanket "no other local binding is projected" became a materially different proposition once an approved capsule added the second enumerated projection.
 
 ### `SDATA-REFUSE-01`
 
@@ -148,6 +154,7 @@ The nearest host counterexample is an adapter that flattens Activity-local bindi
 | `SDATA-ACTIVITY-01` | Activation and complete effect-owner laws plus distinct owner constructors | Closed owner union, equal-coordinate cross-arm discriminator, and two-effect-owner test | No independent semantic-local-scope claim | Both exact owner arms decode across continuation; the existing effect scope survives Activity retry/replay | Element-only, activation-only, flat-owner, or cross-arm collision |
 | `SDATA-COMPLETE-01` | Declarative completion relation and soundness bridge | Patch, mapping, and cleanup transition | Existing successful and caught-error host facts only | Activity result advances only through the core | Completing one owner leaves the other untouched |
 | `SDATA-OBSERVE-01` | Process-only observation theorem | Private-local projection mutation | No new evidence or lane claim | Query/receipt contain no local state | Add a private local binding and require unchanged canonical output |
+| `SDATA-OBSERVE-02` | Selected-input projection over the committed Activity record and its owned scope | One-element input collection built from committed state only, and physically omitted for every task whose Activity owns no local data | No new evidence or lane claim | Query/receipt carry the published collection and no other local state | Name the input after its source Property, or publish an effect-owned scope through a task |
 | `SDATA-REFUSE-01` | Missing/mismatched owner state-preservation law | Missing-owner and cross-owner rejection | No semantic completion-ingress claim | Adapter derives the occurrence from committed intent | Fallback to Process or another local scope |
 
 CIB remains the source or host-realization lane for the existing mapping profiles and does not independently validate the project-owned scoped runtime representation.
@@ -157,8 +164,8 @@ CIB remains the source or host-realization lane for the existing mapping profile
 | Construct | Derivation and owner | Public projection | Lifecycle |
 |---|---|---|---|
 | Process variable scope | Semantic core from start and accepted mappings | Canonical `variables` | Created empty, updated by semantic mappings, retained through completion |
-| Activity variable scope | Semantic core from the owning operation and one discriminated complete occurrence identity | None generally; committed effect inputs remain explicit effect arguments | Current mapping profiles create the effect arm with effect activation, then patch and remove it atomically on matching completion |
-| Scope owner | Closed `LocalDataOwner`; current mapping profiles use the complete semantic effect-occurrence arm | None beyond the separately selected public projection | Same lifetime as the Activity-local scope; regional cleanup matches the exact arm |
+| Activity variable scope | Semantic core from the owning operation and one discriminated complete occurrence identity | None generally; committed effect inputs remain explicit effect arguments and one copied DataInput appears as its task's selected-input collection | Mapping profiles create the effect arm with effect activation, then patch and remove it atomically on matching completion; the data-input profile creates the Activity arm with the Activity record and removes both together |
+| Scope owner | Closed `LocalDataOwner`; mapping profiles use the complete semantic effect-occurrence arm and the data-input profile uses the complete Activity-occurrence arm | None beyond the separately selected public projection | Same lifetime as the Activity-local scope; regional cleanup matches the exact arm |
 | Transient patched local environment | Semantic core from owned bindings plus validated result patch | None | Exists only during one pure completion transition |
 
 ## Versioning and evidence consequences

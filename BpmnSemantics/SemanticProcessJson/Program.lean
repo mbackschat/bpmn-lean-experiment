@@ -63,6 +63,25 @@ def decodeTaskDefinition (json : Json) :
       name := ← decodeOptionalString (← field json "name")
       metadata }
 
+/-- Decode the data-input entry task identity. Separate from `decodeTaskDefinition` because this
+family carries no optional metadata arm, so accepting one here would admit a wire shape the
+operation cannot represent. -/
+private def decodeDataInputTaskDefinition (json : Json) :
+    Except String (TaskDefinitionId × Option String) := do
+  requireObjectShape json ["elementId", "name"]
+  pure (⟨← stringField json "elementId"⟩, ← decodeOptionalString (← field json "name"))
+
+/-- Decode one direct Data Input Association's exact source identities. -/
+private def decodeDirectActivityDataInput (json : Json) :
+    Except String DirectActivityDataInput := do
+  requireObjectShape json
+    ["associationId", "sourcePropertyId", "targetDataInputId", "targetDataInputName"]
+  pure
+    { associationId := ← stringField json "associationId"
+      sourcePropertyId := ← stringField json "sourcePropertyId"
+      targetDataInputId := ← stringField json "targetDataInputId"
+      targetDataInputName := ← decodeOptionalString (← field json "targetDataInputName") }
+
 private def decodeTimerDefinition (json : Json) :
     Except String TimerDefinition := do
   requireObjectShape json ["durationMs", "elementId"]
@@ -367,6 +386,20 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "output"⟩
           (← decodeTaskDefinition (← field json "task")))
+  | "awaitDataInputUserTask" =>
+      requireObjectShape json
+        ["directInput", "id", "input", "kind", "origin", "output", "task"]
+      let (taskId, taskName) ←
+        decodeDataInputTaskDefinition (← field json "task")
+      pure
+        (.awaitDataInputUserTask
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "output"⟩
+          taskId
+          taskName
+          (← decodeDirectActivityDataInput (← field json "directInput")))
   | "awaitSequentialMultiInstanceUserTask" =>
       requireObjectShape json
         ["boundaryTimer", "data", "id", "input", "kind", "limits", "normalOutput",

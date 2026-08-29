@@ -87,12 +87,17 @@ inductive UserTaskLifecycleState where
   | active
   deriving Repr, DecidableEq
 
-/-- Public projection of one open semantic User Task occurrence. -/
+/-- Public projection of one open semantic User Task occurrence.
+
+`inputs` is the selected InputSet the engine copied into this occurrence, absent for every task whose
+Activity owns no local data. It is an engine observation of committed state, not a form schema, and a
+consumer must read it rather than reconstruct it from the start payload or a state difference. -/
 structure OpenUserTask where
   id : UserTaskInstanceId
   name : Option String
   state : UserTaskLifecycleState
   metadata : Option UserTaskMetadata := none
+  inputs : Option (List VariableBinding) := none
   deriving Repr, DecidableEq
 
 inductive MessageChannel where

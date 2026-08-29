@@ -48,18 +48,28 @@ private def activeWaitJson (wait : ActiveWait) : Json :=
     , ("kind", waitKindJson wait.kind)
     , ("multiplicity", toJson wait.multiplicity) ]
 
+private def variableBindingJson (binding : VariableBinding) : Json :=
+  Json.mkObj
+    [ ("name", toJson binding.name)
+    , ("value", encodeVariableValue binding.value) ]
+
 private def userTaskLifecycleStateJson : UserTaskLifecycleState → Json
   | .active => toJson "active"
 
-/-- Encode one public User Task and omit metadata physically when the contract value is absent. -/
+/-- Encode one public User Task and omit metadata and selected inputs physically when the contract
+values are absent, so every profile that publishes neither keeps its existing canonical bytes. -/
 def encodeOpenUserTask (task : OpenUserTask) : Json :=
   let fields :=
     [ ("id", occurrenceIdJson task.id)
     , ("name", toJson task.name)
     , ("state", userTaskLifecycleStateJson task.state) ]
-  Json.mkObj <| match task.metadata with
+  let withMetadata := match task.metadata with
     | none => fields
     | some metadata => fields ++ [("metadata", encodeUserTaskMetadata metadata)]
+  Json.mkObj <| match task.inputs with
+    | none => withMetadata
+    | some inputs =>
+        withMetadata ++ [("inputs", jsonArray (inputs.map variableBindingJson))]
 
 private def messageChannelJson : MessageChannel → Json
   | .operationMessage interfaceId interfaceOperationId messageId =>
@@ -88,11 +98,6 @@ private def effectDescriptorJson (descriptor : EffectDescriptor) : Json :=
   Json.mkObj
     [ ("protocol", toJson descriptor.protocol)
     , ("operation", toJson descriptor.operation) ]
-
-private def variableBindingJson (binding : VariableBinding) : Json :=
-  Json.mkObj
-    [ ("name", toJson binding.name)
-    , ("value", encodeVariableValue binding.value) ]
 
 private def activityOccurrenceIdJson (id : ActivityOccurrenceId) : Json :=
   Json.mkObj

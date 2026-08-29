@@ -159,6 +159,7 @@
             "invokeProcess",
             "returnProcess",
             "awaitUserTask",
+            "awaitDataInputUserTask",
             "awaitBoundedUserTask",
             "awaitMonitoredUserTask",
             "awaitSequentialMultiInstanceUserTask",

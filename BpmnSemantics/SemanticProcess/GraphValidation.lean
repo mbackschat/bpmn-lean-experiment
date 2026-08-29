@@ -112,6 +112,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterBoundedScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
+  | .awaitDataInputUserTask _ _ input _ _ _ _
   | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
   | .awaitTimer _ _ input _ _
@@ -135,6 +136,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .invokeProcess _ _ _ _ _ output _
   | .returnProcess _ _ _ _ output
   | .awaitUserTask _ _ _ output _
+  | .awaitDataInputUserTask _ _ _ output _ _ _
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _
   | .synchronize _ _ _ output
@@ -320,6 +322,7 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .enterScope _ _ _ _ childScopeId
   | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
+  | .awaitDataInputUserTask ..
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..
   | .completeParallelMultiInstanceUserTask ..
@@ -402,6 +405,7 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
 /-- Closed Semantic Process resumption family, decided independently from the checked-source cut. -/
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitUserTask .. => true
+  | .awaitDataInputUserTask .. => true
   | .awaitSequentialMultiInstanceUserTask .. => true
   | .awaitParallelMultiInstanceUserTask .. => true
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..

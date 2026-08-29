@@ -60,6 +60,16 @@ export function candidateLongLivedStarts(
       ));
       return oneWaitStart(processId, operation.task.elementId, owner, wait?.id);
     }
+    case SemanticOperationKind.AwaitDataInputUserTask: {
+      const wait = only(after.userTaskWaits.filter((candidate) =>
+        candidate.id.elementId === operation.task.elementId &&
+        candidate.output === operation.output &&
+        candidate.name === operation.task.name &&
+        candidate.metadata === undefined &&
+        sameScopeOccurrence(candidate.owner, owner)
+      ));
+      return oneWaitStart(processId, operation.task.elementId, owner, wait?.id);
+    }
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask: {
       const wait = only(after.userTaskWaits.filter((candidate) =>

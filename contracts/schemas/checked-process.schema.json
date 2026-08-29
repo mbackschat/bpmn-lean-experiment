@@ -480,6 +480,33 @@
         }
       }
     },
+    "directActivityDataInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "associationId",
+        "sourcePropertyId",
+        "targetDataInputId",
+        "targetDataInputName"
+      ],
+      "properties": {
+        "associationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourcePropertyId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "targetDataInputId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "targetDataInputName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "node": {
       "oneOf": [
         {
@@ -700,6 +727,33 @@
             },
             "metadata": {
               "$ref": "#/$defs/userTaskMetadata"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "name",
+            "directInput"
+          ],
+          "properties": {
+            "kind": {
+              "const": "dataInputUserTask"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "directInput": {
+              "$ref": "#/$defs/directActivityDataInput"
             }
           }
         },

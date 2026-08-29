@@ -90,6 +90,8 @@ def effectWaitDeclarationKey (elementId : NodeId) : WaitDeclarationKey :=
 key per family because runtime well-formedness validates each wait family independently. -/
 def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .awaitUserTask _ _ _ _ task => [userTaskWaitDeclarationKey task.id]
+  | .awaitDataInputUserTask _ _ _ _ taskId _ _ =>
+      [userTaskWaitDeclarationKey taskId]
   | .awaitBoundedUserTask _ _ _ task boundaryTimer
   | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
       [userTaskWaitDeclarationKey task.id,
@@ -195,6 +197,23 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty task.id.value &&
         decide (origin.elementId.value = task.id.value) &&
         UserTaskMetadata.optionWellFormed task.metadata &&
+        placeExists places input &&
+        placeExists places output
+  -- The direct-input identities are exact source identities the copy resolves by, so they must be
+  -- present and mutually distinct: a shared identifier would let the association read the DataInput
+  -- it is meant to fill.
+  | .awaitDataInputUserTask id origin input output taskId taskName directInput =>
+      let identities :=
+        [taskId.value, directInput.associationId, directInput.sourcePropertyId,
+          directInput.targetDataInputId]
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        identities.all nonempty &&
+        identities.eraseDups.length = identities.length &&
+        decide (origin.elementId.value = taskId.value) &&
+        decide (taskName ≠ some "") &&
+        decide (directInput.targetDataInputName ≠ some "") &&
+        decide (input ≠ output) &&
         placeExists places input &&
         placeExists places output
   | .awaitSequentialMultiInstanceUserTask id origin input task data normalOutput
@@ -552,6 +571,7 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     (member : operation ∈ program.operations) :
     (match operation with
     | .awaitUserTask _ _ _ _ task => !task.id.value.isEmpty
+    | .awaitDataInputUserTask _ _ _ _ taskId _ _ => !taskId.value.isEmpty
     | .awaitMessage _ _ _ _ message => !message.elementId.value.isEmpty
     | .awaitTimer _ _ _ _ timer => !timer.elementId.value.isEmpty
     | .awaitEffect _ _ _ _ effect _ => !effect.elementId.value.isEmpty

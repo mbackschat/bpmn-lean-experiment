@@ -124,6 +124,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
+    id: "directDataInputUserTask",
+    family: "Activities",
+    element: "User Task with a direct Data Input",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One required scalar DataInput in one InputSet, filled by one direct Data Input Association from one Process Property, with an empty OutputSet; an absent source is unavailable data and explicit null is available.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "sequentialMultiInstanceUserTask",
     family: "Activities",
     element: "Sequential Multi-Instance User Task",

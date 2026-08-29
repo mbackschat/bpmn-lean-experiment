@@ -20,6 +20,7 @@ inductive SemanticOperationKind where
   | invokeProcess
   | returnProcess
   | awaitUserTask
+  | awaitDataInputUserTask
   | awaitSequentialMultiInstanceUserTask
   | awaitParallelMultiInstanceUserTask
   | completeParallelMultiInstanceUserTask
@@ -50,6 +51,7 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .invokeProcess .. => .invokeProcess
   | .returnProcess .. => .returnProcess
   | .awaitUserTask .. => .awaitUserTask
+  | .awaitDataInputUserTask .. => .awaitDataInputUserTask
   | .awaitSequentialMultiInstanceUserTask .. => .awaitSequentialMultiInstanceUserTask
   | .awaitParallelMultiInstanceUserTask .. => .awaitParallelMultiInstanceUserTask
   | .completeParallelMultiInstanceUserTask .. => .completeParallelMultiInstanceUserTask
@@ -79,6 +81,7 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .invokeProcess _ origin _ _ _ _ _
   | .returnProcess _ origin _ _ _
   | .awaitUserTask _ origin _ _ _
+  | .awaitDataInputUserTask _ origin _ _ _ _ _
   | .awaitSequentialMultiInstanceUserTask _ origin _ _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ origin _ _ _ _ _ _ _ _
   | .completeParallelMultiInstanceUserTask _ origin _ _ _

@@ -263,6 +263,19 @@ export type OpenUserTask = DeepReadonly<{
   name: string | null;
   state: UserTaskLifecycleState;
   metadata?: UserTaskMetadata;
+  /**
+   * The Activity DataInputs this task occurrence was activated with, when its program declares any.
+   *
+   * Present exactly for a task whose program fills an Activity data interface, and absent otherwise,
+   * so every existing profile's canonical observation bytes are unchanged. Each binding's `name` is
+   * the exact BPMN DataInput `id` and its value is the copy taken when the Activity became active.
+   *
+   * This is an engine observation of selected BPMN DataInput state, not a form schema, an
+   * authorization decision, or a view of general Activity-local variables, which stay private. A
+   * consumer must read it from this field rather than reconstruct it from a start payload, the
+   * definition XML, or a difference between two observed states.
+   */
+  inputs?: [VariableBinding];
 }>;
 
 export type CompleteUserTaskInstanceInteraction = DeepReadonly<{

@@ -213,6 +213,9 @@ function classifyHostOperation(
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.AwaitUserTask:
+    // Passive because the host schedules nothing for it: its readiness is decided entirely inside the
+    // semantic core from committed Process data, and it arms no deadline or host-visible effect.
+    case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.MergeExclusive:
     case SemanticOperationKind.Synchronize:

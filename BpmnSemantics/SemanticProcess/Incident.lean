@@ -61,51 +61,6 @@ theorem effectIncidentAssociationsValid_frame (before after : RuntimeState)
     effectWaitOwnerAssociationValid, controlFrame, scopesFrame, waitsFrame,
     activitiesFrame, incidentsFrame]
 
-theorem filter_insertActivityVariableScope_of_rejected
-    (predicate : ActivityVariableScope → Bool) (inserted : ActivityVariableScope)
-    (rejected : predicate inserted = false) : ∀ values : List ActivityVariableScope,
-    (insertActivityVariableScope inserted values).filter predicate = values.filter predicate := by
-  intro values
-  induction values with
-  | nil => simp [insertActivityVariableScope, rejected]
-  | cons current rest ih =>
-      simp only [insertActivityVariableScope]
-      split
-      · simp [rejected]
-      · simp only [List.filter_cons, ih]
-
-theorem filter_insertActivityVariableScope_eq_singleton
-    (predicate : ActivityVariableScope → Bool) (inserted : ActivityVariableScope)
-    (accepted : predicate inserted = true)
-    (rejected : ∀ value ∈ values, predicate value = false) :
-    (insertActivityVariableScope inserted values).filter predicate = [inserted] := by
-  induction values with
-  | nil => simp [insertActivityVariableScope, accepted]
-  | cons current rest ih =>
-      simp only [insertActivityVariableScope]
-      have currentRejected := rejected current (by simp)
-      have restRejected : ∀ value ∈ rest, predicate value = false := by
-        intro value member
-        exact rejected value (by simp [member])
-      have restEmpty : rest.filter predicate = [] := List.filter_eq_nil_iff.mpr (by
-        intro value member acceptedValue
-        rw [restRejected value member] at acceptedValue
-        contradiction)
-      split
-      · simp [accepted, currentRejected, restEmpty]
-      · simp [currentRejected, ih restRejected]
-
-theorem all_insertActivityVariableScope (predicate : ActivityVariableScope → Bool)
-    (inserted : ActivityVariableScope) : ∀ values : List ActivityVariableScope,
-    (insertActivityVariableScope inserted values).all predicate =
-      (predicate inserted && values.all predicate) := by
-  intro values
-  induction values with
-  | nil => simp [insertActivityVariableScope]
-  | cons current rest ih =>
-      simp only [insertActivityVariableScope]
-      split <;> simp_all [Bool.and_left_comm]
-
 /-- Adding a fresh ordinary effect occurrence preserves the existing incident association. -/
 theorem effectIncidentAssociationsValid_insertEffectFrame (state : RuntimeState)
     (inserted : EffectWait) (bindings : List VariableBinding)

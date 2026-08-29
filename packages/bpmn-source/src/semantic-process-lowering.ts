@@ -196,6 +196,15 @@ function lowerNode(
         },
       });
     }
+    case CheckedNodeKind.DataInputUserTask:
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.AwaitDataInputUserTask,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        task: { elementId: node.id, name: node.name },
+        directInput: node.directInput,
+      });
     case CheckedNodeKind.SequentialMultiInstanceUserTask:
       return scoped(lowerSequentialMultiInstanceUserTask(node, source));
     case CheckedNodeKind.ParallelMultiInstanceUserTask:

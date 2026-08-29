@@ -406,7 +406,10 @@ export async function runTemporalTargets(
     executions[index] = ordinaryExecutions[ordinaryIndex];
   }
   const results = new Map<string, TemporalCaseExecution>();
-  for (const [index, { pipelineCase }] of contexts.entries()) {
+  // Every target batch is keyed by scenario identity, because the comparison layer reads all of them
+  // with one key. Keying this map by pipeline case identity instead made a case whose two names
+  // differ fail as a missing Temporal result only after the whole batch had already run.
+  for (const [index, { pipelineCase, scenario }] of contexts.entries()) {
     const primary = executions[index * 2];
     const isolation = executions[index * 2 + 1];
     if (primary === undefined || isolation === undefined) {
@@ -414,7 +417,10 @@ export async function runTemporalTargets(
         `Temporal batch omitted execution ${pipelineCase.id}`,
       );
     }
-    results.set(pipelineCase.id, { primary, isolation });
+    if (results.has(scenario.id)) {
+      throw new Error(`Temporal batch repeated scenario ${scenario.id}`);
+    }
+    results.set(scenario.id, { primary, isolation });
   }
   return {
     results,

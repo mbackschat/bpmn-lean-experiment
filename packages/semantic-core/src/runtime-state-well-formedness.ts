@@ -109,6 +109,9 @@ function declaredElementIds(
   for (const operation of program.operations) {
     switch (operation.kind) {
       case SemanticOperationKind.AwaitUserTask:
+      // The data-input family arms an ordinary task wait; its own Activity record owns local data
+      // rather than a deadline, so it declares no Timer element.
+      case SemanticOperationKind.AwaitDataInputUserTask:
         userTask.add(operation.task.elementId);
         break;
       case SemanticOperationKind.AwaitBoundedUserTask:

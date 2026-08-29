@@ -6,6 +6,7 @@
  * rather than trusted, and nothing here has been resolved into control places or operations yet.
  * The Semantic Process IL lowered from it is owned by `semantic-process-contract.ts`.
  */
+import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -37,6 +38,7 @@ export enum CheckedNodeKind {
   BoundaryErrorEvent = "boundaryErrorEvent",
   TimerBoundaryEvent = "timerBoundaryEvent",
   UserTask = "userTask",
+  DataInputUserTask = "dataInputUserTask",
   SequentialMultiInstanceUserTask = "sequentialMultiInstanceUserTask",
   ParallelMultiInstanceUserTask = "parallelMultiInstanceUserTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
@@ -165,6 +167,20 @@ export type CheckedNode =
       id: string;
       name: string | null;
       metadata?: UserTaskMetadata;
+    }>
+  /**
+   * A User Task whose one required DataInput is filled by one direct Data Input Association.
+   *
+   * A distinct node rather than an optional field on `userTask`, because plain readiness and
+   * data-dependent readiness select different lowering clauses: an admitted plain User Task is
+   * enabled by its incoming token alone, and this one is not enabled until its source Property is
+   * bound. A flag would let a source acquire data-dependent readiness by matching a shape.
+   */
+  | DeepReadonly<{
+      kind: CheckedNodeKind.DataInputUserTask;
+      id: string;
+      name: string | null;
+      directInput: DirectActivityDataInput;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.SequentialMultiInstanceUserTask;

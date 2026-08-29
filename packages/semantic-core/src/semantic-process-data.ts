@@ -3,6 +3,7 @@ import type {
   EffectOccurrenceId,
   VariableBinding,
 } from "./contract.js";
+import type { ActivityOccurrenceId } from "./activity-occurrence.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import type { VariableMapping } from "./semantic-value-contract.js";
 import {
@@ -14,7 +15,9 @@ import type {
 } from "./semantic-process-state.js";
 import { compareActivityVariableScopes } from "./runtime-state-collection-ordering.js";
 import {
+  createActivityLocalDataOwner,
   createEffectLocalDataOwner,
+  matchesActivityLocalDataOwner,
   matchesEffectLocalDataOwner,
 } from "./local-data-owner.js";
 
@@ -65,6 +68,66 @@ export function addActivityVariableScope(
       { owner: createEffectLocalDataOwner(owner), bindings: [...bindings] },
     ].sort(compareActivityVariableScopes),
   };
+}
+
+/**
+ * Adds the Activity data-input scope for one newly activated Activity occurrence.
+ *
+ * Separate from the effect entry point rather than sharing one owner-taking function, because the two
+ * families mint different identities: substituting one for the other is exactly the alias this
+ * discriminated owner exists to make unrepresentable.
+ */
+export function addActivityOccurrenceVariableScope(
+  variables: ScopedVariables,
+  owner: ActivityOccurrenceId,
+  bindings: ReadonlyArray<VariableBinding>,
+): ScopedVariables {
+  if (
+    variables.activities.some((scope) =>
+      matchesActivityLocalDataOwner(scope.owner, owner)
+    )
+  ) {
+    throw new TypeError("Activity-occurrence local scope owner must be unique");
+  }
+  return {
+    ...variables,
+    activities: [
+      ...variables.activities,
+      {
+        owner: createActivityLocalDataOwner(owner),
+        bindings: bindings.map(cloneVariableBinding),
+      },
+    ].sort(compareActivityVariableScopes),
+  };
+}
+
+/** The bindings of one Activity occurrence's unique local scope, or `undefined`. */
+export function activityOccurrenceVariableBindings(
+  variables: ScopedVariables,
+  owner: ActivityOccurrenceId,
+): ReadonlyArray<VariableBinding> | undefined {
+  const matching = variables.activities.filter((scope) =>
+    matchesActivityLocalDataOwner(scope.owner, owner)
+  );
+  return matching.length === 1 ? matching[0]?.bindings : undefined;
+}
+
+/**
+ * Removes one Activity occurrence's local scope, preserving Process scope and every other owner.
+ *
+ * Returns `null` for a missing or duplicated owner rather than removing what it found, so a state
+ * that has lost the join refuses the command instead of committing a partial disposal.
+ */
+export function removeActivityOccurrenceVariableScope(
+  variables: ScopedVariables,
+  owner: ActivityOccurrenceId,
+): ScopedVariables | null {
+  const retained = variables.activities.filter((scope) =>
+    !matchesActivityLocalDataOwner(scope.owner, owner)
+  );
+  return variables.activities.length - retained.length === 1
+    ? { ...variables, activities: retained }
+    : null;
 }
 
 /**

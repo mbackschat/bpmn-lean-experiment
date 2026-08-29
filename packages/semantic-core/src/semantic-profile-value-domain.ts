@@ -124,6 +124,11 @@ function profileValueDomain(
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
       return surfaceValueDomain(surface, stringNullValueDomain);
+    case SemanticProfileId.ActivityDataInputUserTask:
+      // Explicit null is admitted at the start surface because absence and null are different
+      // pre-states here, and the completion surface stays empty because this profile's OutputSet is
+      // empty: it selects no output mediation at all.
+      return surfaceValueDomain(surface, stringNullValueDomain);
     case SemanticProfileId.ServiceTaskIncidentCancellation:
       return surfaceValueDomain(surface, stringValueDomain);
     case SemanticProfileId.UserTask:

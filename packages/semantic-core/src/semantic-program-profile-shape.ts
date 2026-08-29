@@ -56,6 +56,13 @@ export function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
+    case SemanticProfileId.ActivityDataInputUserTask:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitDataInputUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.StructuredHumanWork:
       return rootProgram([
         SemanticOperationKind.Initiate,

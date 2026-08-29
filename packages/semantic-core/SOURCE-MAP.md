@@ -46,6 +46,9 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-activity-arming.ts](src/semantic-process-activity-arming.ts) | Shared exact Activity record, User Task wait, and attached Timer arming for both boundary-task families |
 | [semantic-process-bounded-task-runtime.ts](src/semantic-process-bounded-task-runtime.ts) | A User Task occurrence owning an interrupting boundary Timer |
 | [semantic-process-monitored-task-runtime.ts](src/semantic-process-monitored-task-runtime.ts) | A User Task occurrence owning a non-interrupting boundary Timer |
+| [semantic-process-activity-data-input-runtime.ts](src/semantic-process-activity-data-input-runtime.ts) | A User Task occurrence whose entry waits on one Process binding and copies it into the Activity's own scope |
+| [activity-data-input-contract.ts](src/activity-data-input-contract.ts) | The Task-neutral value describing one direct Data Input Association |
+| [activity-data-input-observation.ts](src/activity-data-input-observation.ts) | The one-element selected-input collection an open task publishes |
 | [event-race-admission.ts](src/event-race-admission.ts) | Well-formedness of the event-race await operation |
 | [semantic-process-event-race-runtime.ts](src/semantic-process-event-race-runtime.ts) | Atomic replacement of one Gateway token with both waits and their ownership record |
 | [inclusive-gateway-admission.ts](src/inclusive-gateway-admission.ts) | Standalone contract and pairing admission for selected-branch synchronization |

@@ -25,6 +25,7 @@ private structure ShapeCardinalities where
   processInvokes : Nat := 0
   processReturns : Nat := 0
   userTasks : Nat := 0
+  dataInputUserTasks : Nat := 0
   messages : Nat := 0
   receiveTasks : Nat := 0
   timers : Nat := 0
@@ -75,6 +76,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with
           monitoredBoundaryTimers := counts.monitoredBoundaryTimers + 1 }
     | .userTask .. => { counts with userTasks := counts.userTasks + 1 }
+    | .dataInputUserTask .. =>
+        { counts with dataInputUserTasks := counts.dataInputUserTasks + 1 }
     | .sequentialMultiInstanceUserTask .. =>
         { counts with sequentialMultiInstanceUserTasks :=
             counts.sequentialMultiInstanceUserTasks + 1 }
@@ -122,6 +125,8 @@ private def addOperationCardinality (counts : ShapeCardinalities)
     | .returnProcess .. =>
         { counts with processReturns := counts.processReturns + 1 }
     | .awaitUserTask .. => { counts with userTasks := counts.userTasks + 1 }
+    | .awaitDataInputUserTask .. =>
+        { counts with dataInputUserTasks := counts.dataInputUserTasks + 1 }
     | .awaitSequentialMultiInstanceUserTask .. =>
         { counts with sequentialMultiInstanceUserTasks :=
             counts.sequentialMultiInstanceUserTasks + 1 }
@@ -201,6 +206,8 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
         ends := 2 })
   else if profile = parallelMultiInstanceUserTaskProfileId.value then
     some (1, { starts := 1, userTasks := 1, ends := 2 })
+  else if profile = activityDataInputUserTaskProfileId.value then
+    some (1, { starts := 1, dataInputUserTasks := 1, ends := 1 })
   else if profile = "bpmn-2.0.2-message-start-event-draft" then
     some (1, { messageStarts := 1, userTasks := 1, ends := 1 })
   else if profile = "bpmn-2.0.2-timer-start-event-draft" then
@@ -298,6 +305,9 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
         ends := 2 })
   else if profile = parallelMultiInstanceUserTaskProfileId.value then
     some (1, withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 2 })
+  else if profile = activityDataInputUserTaskProfileId.value then
+    some (1, withScopeCompletions 1
+      { initiates := 1, dataInputUserTasks := 1, ends := 1 })
   else if profile = "bpmn-2.0.2-message-start-event-draft" then
     some (1, withScopeCompletions 1
       { messageInitiates := 1, userTasks := 1, ends := 1 })

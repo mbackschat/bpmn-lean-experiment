@@ -80,6 +80,17 @@ def decodeCheckedUserTask (json : Json) : Except String CheckedNode := do
       (← decodeOptionalString (← field json "name"))
       metadata)
 
+/-- Decode one direct Data Input Association's exact source identities. -/
+private def decodeDirectActivityDataInput (json : Json) :
+    Except String DirectActivityDataInput := do
+  requireObjectShape json
+    ["associationId", "sourcePropertyId", "targetDataInputId", "targetDataInputName"]
+  pure
+    { associationId := ← stringField json "associationId"
+      sourcePropertyId := ← stringField json "sourcePropertyId"
+      targetDataInputId := ← stringField json "targetDataInputId"
+      targetDataInputName := ← decodeOptionalString (← field json "targetDataInputName") }
+
 private def decodeSequentialMultiInstanceInput (json : Json) :
     Except String SequentialMultiInstanceInputDefinition := do
   requireObjectShape json
@@ -179,6 +190,13 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ⟨← stringField json "outputFlowId"⟩)
   | "userTask" =>
       decodeCheckedUserTask json
+  | "dataInputUserTask" =>
+      requireObjectShape json ["directInput", "id", "kind", "name"]
+      pure
+        (.dataInputUserTask
+          ⟨← stringField json "id"⟩
+          (← decodeOptionalString (← field json "name"))
+          (← decodeDirectActivityDataInput (← field json "directInput")))
   | "sequentialMultiInstanceUserTask" =>
       requireObjectShape json
         ["boundaryTimer", "id", "input", "kind", "name", "normalOutputFlowId",

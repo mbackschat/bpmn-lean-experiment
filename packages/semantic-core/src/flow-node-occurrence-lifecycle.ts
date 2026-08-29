@@ -315,6 +315,7 @@ function internalLifecycle(
     case SemanticOperationKind.ReachNoneEnd:
       return instantOnly();
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:

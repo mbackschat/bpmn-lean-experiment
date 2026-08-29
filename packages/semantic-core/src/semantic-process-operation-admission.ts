@@ -48,6 +48,64 @@ import {
   isWellFormedAwaitParallelMultiInstanceUserTaskOperation,
 } from "./parallel-multi-instance-admission.js";
 
+/**
+ * The direct Data Input Association arm of one data-bearing User Task entry operation.
+ *
+ * The four identities are the exact source identities the runtime copy resolves by, so they must be
+ * present and mutually distinct: a shared identifier would let the association read the DataInput it
+ * is meant to fill, or let the task be disposed by another element's completion.
+ */
+function isWellFormedAwaitDataInputUserTaskOperation(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+): boolean {
+  if (
+    !hasOnlyKeys(value, [
+      "id",
+      "kind",
+      "origin",
+      "input",
+      "output",
+      "task",
+      "directInput",
+    ]) ||
+    !isPlaceReference(value.input, placeIds) ||
+    !isPlaceReference(value.output, placeIds) ||
+    value.input === value.output ||
+    !isRecord(value.task) ||
+    !hasOnlyKeys(value.task, ["elementId", "name"]) ||
+    !isRecord(value.origin) ||
+    !isNonEmptyString(value.task.elementId) ||
+    value.task.elementId !== value.origin.elementId ||
+    !isOptionalName(value.task.name) ||
+    !isRecord(value.directInput) ||
+    !hasOnlyKeys(value.directInput, [
+      "associationId",
+      "sourcePropertyId",
+      "targetDataInputId",
+      "targetDataInputName",
+    ]) ||
+    !isNonEmptyString(value.directInput.associationId) ||
+    !isNonEmptyString(value.directInput.sourcePropertyId) ||
+    !isNonEmptyString(value.directInput.targetDataInputId) ||
+    !isOptionalName(value.directInput.targetDataInputName)
+  ) {
+    return false;
+  }
+  const identities = [
+    value.task.elementId,
+    value.directInput.associationId,
+    value.directInput.sourcePropertyId,
+    value.directInput.targetDataInputId,
+  ];
+  return new Set(identities).size === identities.length;
+}
+
+/** A BPMN `name` this profile admits: physically absent as `null`, or a nonempty string. */
+function isOptionalName(value: unknown): boolean {
+  return value === null || isNonEmptyString(value);
+}
+
 /** Validates one operation independently of profile topology and graph reachability. */
 export function isWellFormedSemanticOperation(
   value: unknown,
@@ -124,6 +182,8 @@ export function isWellFormedSemanticOperation(
         value.task.elementId === value.origin.elementId &&
         (value.task.name === null || typeof value.task.name === "string")
       );
+    case SemanticOperationKind.AwaitDataInputUserTask:
+      return isWellFormedAwaitDataInputUserTaskOperation(value, placeIds);
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return isWellFormedAwaitSequentialMultiInstanceUserTaskOperation(
         value,

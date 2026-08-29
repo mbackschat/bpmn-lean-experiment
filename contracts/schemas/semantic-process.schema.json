@@ -715,6 +715,88 @@
         }
       }
     },
+    "directActivityDataInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "associationId",
+        "sourcePropertyId",
+        "targetDataInputId",
+        "targetDataInputName"
+      ],
+      "properties": {
+        "associationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourcePropertyId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "targetDataInputId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "targetDataInputName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "dataInputTaskDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "name"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "awaitDataInputUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "task",
+        "directInput"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitDataInputUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "$ref": "#/$defs/dataInputTaskDefinition"
+        },
+        "directInput": {
+          "$ref": "#/$defs/directActivityDataInput"
+        }
+      }
+    },
     "awaitSequentialMultiInstanceUserTask": {
       "type": "object",
       "additionalProperties": false,
@@ -1744,6 +1826,9 @@
         },
         {
           "$ref": "#/$defs/awaitUserTask"
+        },
+        {
+          "$ref": "#/$defs/awaitDataInputUserTask"
         },
         {
           "$ref": "#/$defs/awaitSequentialMultiInstanceUserTask"

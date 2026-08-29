@@ -104,6 +104,7 @@ function internalOperationStarts(
     case SemanticOperationKind.TerminateScope:
       return exactOrigin;
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
       return sameScope(owner, transitionOwner) &&
@@ -310,6 +311,7 @@ function operationPublishesNestedElement(
   const directlyOwned = operationScopeId === ownerScopeId;
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitDataInputUserTask:
       return directlyOwned && operation.task.elementId === elementId;
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:

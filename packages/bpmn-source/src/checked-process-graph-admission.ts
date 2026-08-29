@@ -149,6 +149,7 @@ function hasSelectedArity(
     case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.UserTask:
+    case CheckedNodeKind.DataInputUserTask:
     case CheckedNodeKind.SequentialMultiInstanceUserTask:
     case CheckedNodeKind.ParallelMultiInstanceUserTask:
     case CheckedNodeKind.IntermediateCatchTimerEvent:

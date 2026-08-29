@@ -17,6 +17,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
   | .userTask id _ _
+  | .dataInputUserTask id _ _
   | .sequentialMultiInstanceUserTask id _ _ _ _ _
   | .parallelMultiInstanceUserTask id _ _ _ _ _ _
   | .intermediateCatchTimerEvent id _
@@ -81,7 +82,7 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .timerBoundaryEvent id attachedToRef _ _ _ =>
       some { source := attachedToRef, target := id }
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
-  | .userTask .. | .intermediateCatchTimerEvent ..
+  | .userTask .. | .dataInputUserTask .. | .intermediateCatchTimerEvent ..
   | .sequentialMultiInstanceUserTask ..
   | .parallelMultiInstanceUserTask ..
   | .intermediateCatchMessageEvent .. | .receiveTask .. | .configuredTask ..
@@ -112,6 +113,7 @@ private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
 /-- Closed checked-source resumption family for the only profile that selects a cut graph. -/
 def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .userTask .. => true
+  | .dataInputUserTask .. => true
   | .sequentialMultiInstanceUserTask .. => true
   | .parallelMultiInstanceUserTask .. => true
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..

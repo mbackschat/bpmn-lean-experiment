@@ -28,6 +28,9 @@ import {
   completeScopeWithdrawingDeadline,
 } from "./semantic-process-bounded-scope-runtime.js";
 import { armBoundedUserTask } from "./semantic-process-bounded-task-runtime.js";
+import {
+  armDataInputUserTask,
+} from "./semantic-process-activity-data-input-runtime.js";
 import { armMonitoredUserTask } from "./semantic-process-monitored-task-runtime.js";
 import {
   throwError,
@@ -152,24 +155,49 @@ export function enabledInternalOperationCount(
 }
 
 /**
- * Classifies a state already known to be internally stable.
+ * Classifies a state already known to be internally stable as structurally sound.
  *
- * A running state is resumable only when one semantic wait exposes a possible
- * future ingress. Hidden tokens alone are not evidence of progress.
+ * Soundness is not liveness. A Running state whose only required data source is unavailable holds a
+ * control token, arms no wait, and admits no ingress that could ever move it, yet it is a committed
+ * semantic state that must stay observable and publishable; refusing it would make a stalled
+ * instance indistinguishable from one that never committed. Ask [isStableStateResumable] instead
+ * wherever the decision is whether the state can still be carried forward.
  */
-export function isStableStateResumable(state: RuntimeState): boolean {
+export function isStableStateSound(state: RuntimeState): boolean {
   switch (state.control.kind) {
     case ControlStateKind.NotStarted:
       return false;
     case ControlStateKind.Running:
       return eventRaceAssociationsAreValid(state) &&
         calledProcessAssociationsAreValid(state) &&
-        effectIncidentAssociationsAreValid(state) &&
-        (state.userTaskWaits.length > 0 ||
+        effectIncidentAssociationsAreValid(state);
+    case ControlStateKind.Completed:
+    case ControlStateKind.Cancelled:
+      return true;
+    default:
+      return assertNever(state.control);
+  }
+}
+
+/**
+ * Whether a sound stable state still exposes a possible future ingress.
+ *
+ * A running state is resumable only when one semantic wait exposes a possible
+ * future ingress. Hidden tokens alone are not evidence of progress.
+ */
+export function isStableStateResumable(state: RuntimeState): boolean {
+  if (!isStableStateSound(state)) {
+    return false;
+  }
+  switch (state.control.kind) {
+    case ControlStateKind.NotStarted:
+      return false;
+    case ControlStateKind.Running:
+      return state.userTaskWaits.length > 0 ||
         state.messageWaits.length > 0 ||
         state.timerWaits.length > 0 ||
         state.effectWaits.length > 0 ||
-        state.effectIncidents.length > 0);
+        state.effectIncidents.length > 0;
     case ControlStateKind.Completed:
     case ControlStateKind.Cancelled:
       return true;
@@ -294,6 +322,14 @@ function applyInternalOperationState(
       return applyOwnedOperation(
         taskOwner,
         (selected) => createUserTaskWait(operation, state, selected),
+        captureOwner,
+      );
+    }
+    case SemanticOperationKind.AwaitDataInputUserTask: {
+      const dataInputOwner = onlyTokenOwner(state, operation.input);
+      return applyOwnedOperation(
+        dataInputOwner,
+        (selected) => armDataInputUserTask(operation, state, selected),
         captureOwner,
       );
     }
