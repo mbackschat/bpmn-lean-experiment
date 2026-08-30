@@ -12,6 +12,8 @@ The registered parallel Multi-Instance profile admits the same direct String col
 
 The registered Activity data-input profile admits one exact invoice-review source whose User Task carries one required scalar `DataInput`, one `InputSet`, one empty `OutputSet`, and one direct `DataInputAssociation` from one Process `Property`. It lowers to one `dataInputUserTask` checked node and one `awaitDataInputUserTask` operation, and is registered with exact present-string, explicit-null, and absent-source scenarios.
 
+The registered Activity data-output profile admits one exact credit-underwriting source whose User Task carries one required scalar `DataOutput`, one `OutputSet` referencing it, one empty `InputSet`, and one direct `DataOutputAssociation` into one Process `Property`. It lowers to one `dataOutputUserTask` checked node and one `awaitDataOutputUserTask` operation, and is registered with exact supplied-string, supplied-null, and omitted-output scenarios.
+
 ## Implemented
 
 ### Wire contracts
@@ -63,6 +65,7 @@ The registered Activity data-input profile admits one exact invoice-review sourc
 - one registered interchange successor selects the CIB Seven User Task Process-data value domain and the standard-notation preservation capability while retaining predecessor checked-graph and IL content modulo exact source and profile identity; both predecessor profiles remain narrower
 - one registered standards-only parallel Multi-Instance profile selects explicit parallel `All`, exact `stringEquals(completionPolicy,"first")`, the direct String collection graph, one outer `PT5S` Timer, and the fixed 16-item/512-byte/8,192-canonical-byte bounds without selecting CIB execution
 - one registered standards-only Activity data-input profile selects one required scalar `DataInput`, one direct `DataInputAssociation` from one Process `Property`, an empty `OutputSet`, and a String-or-null Process-start value domain, with an empty User Task completion domain and no CIB execution target
+- one registered standards-only Activity data-output profile selects one required scalar `DataOutput`, one direct `DataOutputAssociation` into one Process `Property`, an empty `InputSet`, and a String-or-null User Task completion value domain, with an empty Process-start domain and no CIB execution target
 
 ### Semantic Process IL
 
@@ -95,6 +98,7 @@ The registered Activity data-input profile admits one exact invoice-review sourc
 - one exact sequential Multi-Instance User Task compiler for the reviewed batch-review graph, two ItemDefinitions, four DataObject/DataObjectReference declarations, reciprocal IO sets, four direct associations, explicit sequential `All` behavior, and one interrupting `PT5S` outer-lifetime Timer; the registered standards-only profile executes the exact lowered operation
 - one exact parallel Multi-Instance User Task compiler for the reviewed parallel-risk-review graph, the same direct role structure, explicit parallel `All`, one exact Simple Boolean completion condition, one `completionPolicy` start binding, and one interrupting `PT5S` outer-lifetime Timer
 - one exact direct Activity data-input compiler for the reviewed invoice-review graph: one Process `Property`, one required scalar `DataInput` carrying only `id` and `name`, one `InputSet` referencing exactly it, one empty `OutputSet`, and one `DataInputAssociation` whose `sourceRef` and `targetRef` resolve by object identity in the parser graph rather than by name
+- one exact direct Activity data-output compiler for the reviewed credit-underwriting graph, mirroring the input reader's object-identity resolution in the opposite direction: the Activity-owned `DataOutput` is the association's `sourceRef` and the Process `Property` is its `targetRef`, the `InputSet` is the empty one, and `optionalOutputRefs`, `whileExecutingOutputRefs`, and `inputSetRefs` are required absent because each would change what "required" means for the single declared member
 - one registered E2 source reader for exact URI-expanded `candidateGroups` plus one exact `formData/formField`, including local or root alternate prefixes, quote-aware raw duplicate-attribute parser-erasure refusal across quoted delimiters and line terminators, exact boundary-space and literal restrictions, checked-to-IL metadata binding, and physical omission on metadata-free tasks
 - reusable checked-source scope ownership, reference, arity, scope-local reachability, co-reachability, and profile-selected whole-graph or User-Task-cut acyclicity validation separated from profile mechanism/cardinality capability
 - explicit expression-language admission, strict five-form parsing, exact checked-body retention, and process-level Sequence Flow declaration order independent of gateway reference order

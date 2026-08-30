@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Question and bounded outcome
@@ -71,15 +71,15 @@ The public observation change is confined to canonical `variables`: the target P
 
 ## Stable semantic rules and separating witnesses
 
-| Rule | Statement |
-|---|---|
-| `ADOUTPUT-ENTRY-01` | A declared OutputSet never constrains Activity entry; the task activates on its incoming token alone |
-| `ADOUTPUT-FILL-01` | Completion fills the declared `DataOutput` by its exact id, and a submitted name that is not that id is refused |
-| `ADOUTPUT-ROUTE-01` | The `DataOutputAssociation`, not the submitted name, decides which Process `Property` receives the value |
-| `ADOUTPUT-ATOMIC-01` | Fill, association execution, local-scope disposal, record removal, and token production are one atomic transition |
-| `ADOUTPUT-REQUIRE-01` | A completion that does not make the single required output available is refused with exact state preservation. Availability is degenerate in this slice: it is decided entirely by command shape, so this rule and `ADOUTPUT-FILL-01` fail together and count as one evidence lane rather than two |
+| Rule | Statement | Implemented evidence |
+|---|---|---|
+| `ADOUTPUT-ENTRY-01` | A declared OutputSet never constrains Activity entry; the task activates on its incoming token alone | Lean `dataOutputTokenAloneActivates` and `dataOutputActivationArmsOneEmptyLocalScope`; the checked witnesses `tokenAloneActivatesWithNoProcessBinding` and `activationArmsOneEmptyActivityScope`; the core's `a declared OutputSet never delays entry` case; every registered scenario starting with no Process data |
+| `ADOUTPUT-FILL-01` | Completion fills the declared `DataOutput` by its exact id, and a submitted name that is not that id is refused | Lean `dataOutputWrongSubmissionRefusesFill` and the checked `submissionUnderTheTargetNameIsRefused` and `extraSubmittedOutputIsRefused`; the core's refusal cases; the `activity-data-output-omitted` pipeline case |
+| `ADOUTPUT-ROUTE-01` | The `DataOutputAssociation`, not the submitted name, decides which Process `Property` receives the value | Lean `dataOutputCompletionWritesTheAssociatedProperty` and the checked `completionWritesTheAssociatedPropertyOnly` and `declaredOutputAndAssociatedPropertyAreDistinct`; the `namePropertyAfterItsSource` seeded mutation; the real-service witness reading the published canonical trace |
+| `ADOUTPUT-ATOMIC-01` | Fill, association execution, local-scope disposal, record removal, and token production are one atomic transition | Lean `dataOutputCompletionDisposesOneLocalScope` and `completeDataOutputUserTask_activity_identity_discipline`; the checked `completionDisposesTaskRecordAndScopeTogether`; the core's one-transition case; the Activity-occurrence writer census rows |
+| `ADOUTPUT-REQUIRE-01` | A completion that does not make the single required output available is refused with exact state preservation. Availability is degenerate in this slice: it is decided entirely by command shape, so this rule and `ADOUTPUT-FILL-01` fail together and count as one evidence lane rather than two | Lean `dataOutputUnavailableRequiredOutputRefusesCompletion` and the checked `omittedRequiredOutputIsRefused`; the `writeTheRefusedOutput` seeded mutation; the real-service refusal-and-termination witness |
 
-The decisive separating witness is a model whose `DataOutput` id differs from its target `Property` id. Under the existing plain User Task completion, which merges `submittedValues` into Process bindings by their submitted name, completing with `DataOutput_Decision` writes a Process variable called `DataOutput_Decision`. Under this account it writes `Property_Decision`, because the association says so. The two accounts therefore disagree in canonical `variables`, which is the approved public observation boundary, and the disagreement is not a hidden microstep.
+The decisive separating witness is a model whose `DataOutput` id differs from its target `Property` id. Under the existing plain User Task completion, which merges `submittedValues` into Process bindings by their submitted name, completing with `DataOutput_Decision` writes a Process variable called `DataOutput_Decision`. Under this account it writes `Property_UnderwritingOutcome`, because the association says so. The two accounts therefore disagree in canonical `variables`, which is the approved public observation boundary, and the disagreement is not a hidden microstep.
 
 A second witness separates `ADOUTPUT-ENTRY-01` from the input capsule: this model's task activates with no Process binding present at all, where the input model would stay ready and create no task.
 
@@ -105,7 +105,7 @@ Delivery, ordering, deduplication, retry, and replay risks are the existing ones
 
 No Continue-As-New boundary may split the atomic completion transition. A permitted rollover before completion carries the Activity record, task wait, and local scope together; after rollover the core performs the same write.
 
-The smallest executable refinement witness starts the model, replaces the Worker while the task is open, completes with a name differing from the target Property, requires canonical `variables` to show the Property rather than the submitted name, obtains the terminal receipt, and replays every Run.
+The smallest executable refinement witness starts the model, replaces the Worker while the task is open, completes with a name differing from the target Property, requires canonical `variables` to show the Property rather than the submitted name, obtains the terminal receipt, and replays every Run. It is [implemented](../../packages/temporal-adapter/testkit/test/activity-data-output-temporal.test.ts) and runs all three registered scenarios against one live service and one compiled program. It reads the written Property out of the published canonical trace rather than through a new Query, because this capsule adds no observation surface: a routed write that is not visible in the contract the host already publishes is not visible at all. The same witness submits the omitted-output completion, requires the semantic refusal and an unchanged Property, then terminates that Run and requires its committed trace to be unchanged, which is this family's failure-and-cancellation obligation.
 
 ## Evidence strategy
 
@@ -163,7 +163,7 @@ Same-change owners are this proposal, the [input capsule](ACTIVITY-DATA-INPUT-ME
 
 ## Epistemic closure and reopen conditions
 
-Established by this proposal are the normative write-back and availability rules, the exact machine-readable cardinalities, the recorded Clause 10.4.2 versus Clause 13.3.2 destination inconsistency, the public separating witness against name-based completion, and Temporal feasibility using existing completion ingress. No implementation, support, cross-language agreement, durable refinement, or Product 2 claim exists yet.
+Established by this capsule are the normative write-back and availability rules, the exact machine-readable cardinalities, the recorded Clause 10.4.2 versus Clause 13.3.2 destination inconsistency, the public separating witness against name-based completion, and an implementation whose source admission, Lean account, independently written TypeScript core, three answer-free cross-language scenarios, retained whole model, and real-service refinement all agree. What remains unestablished is everything the slice excludes: no claim covers a second output or OutputSet, an optional or while-executing output, an Activity carrying both directions, another Task host, or any CIB relationship.
 
 The nearest unsupported claim is an Activity that both consumes and produces data. That does not require an IORule, which is not an admissible construct at all; it requires deciding whether the two capsules' local scopes coexist in one occurrence and how the input publication behaves when they do, and it is the natural third capsule.
 
