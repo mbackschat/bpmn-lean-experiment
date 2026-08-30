@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved-with-required-edits
 
 ## Question and bounded outcome
@@ -154,10 +154,10 @@ The `OWNER` measurements below are the nonblank counts reported by `node scripts
 |---|---:|
 | [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 128 |
 | [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 161 |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 287 |
-| [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 398 |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 488 |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 511 |
+| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 258 |
+| [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 363 |
+| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 469 |
+| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 496 |
 
 `ProfileAdmission.lean` and `SemanticProcessContract.lean` are the two narrowest owners and the ones both data capsules also flagged. Each new profile has fit within their headroom so far; the condition under which that stops applying is a measured count above the 800-line target after the exhaustive arm is written, and the answer then is to extract the profile-specific rule as its own behavior-preserving commit before adding semantics, never to compress the arm.
 
@@ -184,5 +184,5 @@ Reopen before admitting `structureRef` or any structured payload, a collection, 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `48cc5b49` | `fork-turns-none` | `approve-with-required-edits` | `89ea501e, 0c44fdbd` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `ba38efb8` | `fork-turns-none` | `approve-with-required-edits` | `c13901b5` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
