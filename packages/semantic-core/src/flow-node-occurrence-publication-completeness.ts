@@ -11,6 +11,7 @@
  * body turnover, refusing a correct publication. Reconstruction of the lifecycle itself is unchanged.
  */
 import type { DeepReadonly } from "./deep-readonly.js";
+import { ActivityHandlerKind } from "./activity-occurrence.js";
 import type { ActivityHandlerOccurrence } from "./activity-occurrence.js";
 import {
   FlowNodeOccurrenceTerminalKind,
@@ -195,7 +196,15 @@ function internalDelta(
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return failCompleteness();
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
-      return failCompleteness();
+      return lifecycleDelta([
+        requireWaitStart(supplied, processId, operation.task.elementId, owner),
+        requireWaitStart(
+          supplied,
+          processId,
+          operation.boundaryMessage.elementId,
+          owner,
+        ),
+      ]);
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
       return lifecycleDelta([
@@ -458,6 +467,52 @@ function retainedOpenSetIsExact(
   return open.every((entry, index) =>
     open.findIndex((candidate) => sameAnchor(candidate.anchor, entry.anchor)) === index &&
     retainedAnchorMatchesOccurrence(program, entry)
+  ) && retainedMessageBoundaryPairsAreExact(program, open);
+}
+
+function retainedMessageBoundaryPairsAreExact(
+  program: SemanticProcessProgram,
+  open: readonly OpenOccurrence[],
+): boolean {
+  const operations = program.operations.filter((operation) =>
+    operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask
+  );
+  const pairs = operations.flatMap((operation) =>
+    open.flatMap((host) => {
+      if (
+        host.anchor.kind !== SemanticFlowNodeOccurrenceAnchorKind.Wait ||
+        host.elementId !== operation.task.elementId ||
+        !operationOwnedBy(program, operation, host.owner)
+      ) return [];
+      const handler = host.attachedHandlers.length === 1 &&
+          host.attachedHandlers[0]?.kind === ActivityHandlerKind.Message
+        ? host.attachedHandlers[0]
+        : undefined;
+      if (handler === undefined) return [];
+      return open.filter((message) =>
+        message.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+        sameAnchor(message.anchor, {
+          kind: SemanticFlowNodeOccurrenceAnchorKind.Wait,
+          id: handler.occurrence,
+        }) &&
+        message.elementId === operation.boundaryMessage.elementId &&
+        message.processId === host.processId &&
+        sameScope(message.owner, host.owner)
+      ).map((message) => ({ host, message }));
+    })
+  );
+  const bounded = open.filter((entry) => operations.some((operation) =>
+    operationOwnedBy(program, operation, entry.owner) &&
+    (entry.elementId === operation.task.elementId ||
+      entry.elementId === operation.boundaryMessage.elementId)
+  ));
+  return bounded.every((entry) => pairs.filter(({ host, message }) =>
+    host === entry || message === entry
+  ).length === 1) && open.every((entry) =>
+    !entry.attachedHandlers.some(({ kind }) =>
+      kind === ActivityHandlerKind.Message
+    ) ||
+    pairs.filter(({ host }) => host === entry).length === 1
   );
 }
 

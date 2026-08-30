@@ -5,6 +5,10 @@
  * Current-open projection is a later oracle and is deliberately absent from this owner.
  */
 import type { OccurrenceId } from "./contract.js";
+import {
+  ActivityBodyKind,
+  ActivityHandlerKind,
+} from "./activity-occurrence.js";
 import { sameMessageChannel } from "./message-channel.js";
 import { evaluateInputMappings } from "./semantic-process-data.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -72,7 +76,12 @@ export function candidateLongLivedStarts(
       return oneWaitStart(processId, operation.task.elementId, owner, wait?.id);
     }
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
-      return null;
+      return messageBoundedUserTaskStarts(
+        after,
+        operation,
+        owner,
+        processId,
+      );
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask: {
       const wait = only(after.userTaskWaits.filter((candidate) =>
@@ -177,6 +186,64 @@ export function candidateLongLivedStarts(
     default:
       return assertNever(operation);
   }
+}
+
+function messageBoundedUserTaskStarts(
+  after: RuntimeState,
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitMessageBoundedUserTask }
+  >,
+  owner: ScopeOccurrenceId,
+  processId: string,
+): UnnumberedFlowNodeOccurrenceStart[] | null {
+  const record = only(after.activityOccurrences.filter((candidate) =>
+    candidate.operationId === operation.id &&
+    candidate.body.kind === ActivityBodyKind.UserTask &&
+    candidate.id.processInstanceId === owner.processInstanceId &&
+    candidate.id.activityElementId === operation.task.elementId &&
+    Number.isSafeInteger(candidate.id.activation) &&
+    candidate.id.activation > 0 &&
+    sameScopeOccurrence(candidate.owner, owner)
+  ));
+  const handler = record?.attachedHandlers.length === 1 &&
+      record.attachedHandlers[0]?.kind === ActivityHandlerKind.Message
+    ? record.attachedHandlers[0]
+    : undefined;
+  if (record === undefined || handler === undefined ||
+      record.body.kind !== ActivityBodyKind.UserTask) {
+    return null;
+  }
+  const bodyTask = record.body.task;
+  const task = only(after.userTaskWaits.filter((candidate) =>
+    sameOccurrence(candidate.id, bodyTask) &&
+    candidate.id.elementId === operation.task.elementId &&
+    candidate.name === operation.task.name &&
+    candidate.output === operation.task.output &&
+    candidate.metadata === undefined &&
+    sameScopeOccurrence(candidate.owner, owner)
+  ));
+  const message = only(after.messageWaits.filter((candidate) =>
+    sameOccurrence(candidate.id, handler.occurrence) &&
+    candidate.id.elementId === operation.boundaryMessage.elementId &&
+    candidate.output === operation.boundaryMessage.output &&
+    sameMessageChannel(candidate.channel, operation.boundaryMessage.channel) &&
+    sameScopeOccurrence(candidate.owner, owner)
+  ));
+  const taskStart = task === undefined
+    ? null
+    : waitStart(processId, operation.task.elementId, owner, task.id);
+  const messageStart = message === undefined
+    ? null
+    : waitStart(
+        processId,
+        operation.boundaryMessage.elementId,
+        owner,
+        message.id,
+      );
+  return taskStart === null || messageStart === null
+    ? null
+    : [taskStart, messageStart];
 }
 
 function eventRaceStarts(

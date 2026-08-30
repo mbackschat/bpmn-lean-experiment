@@ -7,10 +7,13 @@
  */
 import type { OccurrenceId } from "./contract.js";
 import {
+  ActivityBodyKind,
+  ActivityHandlerKind,
   activityBodyScope,
   activityBodyTask,
   activityOccurrenceForAttachedTimer,
 } from "./activity-occurrence.js";
+import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { sameMessageChannel } from "./message-channel.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
@@ -367,7 +370,12 @@ function waitMatchesUserTask(
           operation.task.name === wait.name &&
           wait.metadata === undefined;
       case SemanticOperationKind.AwaitMessageBoundedUserTask:
-        return false;
+        return messageBoundedRecordForTask(
+          program,
+          state,
+          operation,
+          wait.id,
+        ) !== undefined;
       case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
         return sequentialMultiInstanceTaskWaitMatches(state, operation, wait);
       case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
@@ -434,7 +442,75 @@ function waitMatchesMessage(
       )
       : []
   );
-  return ordinary.length + raced.length === 1;
+  const bounded = state.activityOccurrences.filter((record) =>
+    record.attachedHandlers.some((handler) =>
+      handler.kind === ActivityHandlerKind.Message &&
+      sameOccurrence(handler.occurrence, wait.id)
+    ) && messageBoundedRecordIsExact(program, state, record)
+  );
+  return ordinary.length + raced.length + bounded.length === 1;
+}
+
+function messageBoundedRecordForTask(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitMessageBoundedUserTask }
+  >,
+  taskId: OccurrenceId,
+): ActivityOccurrence | undefined {
+  return only(state.activityOccurrences.filter((record) =>
+    record.body.kind === ActivityBodyKind.UserTask &&
+    sameOccurrence(record.body.task, taskId) &&
+    record.operationId === operation.id &&
+    messageBoundedRecordIsExact(program, state, record)
+  ));
+}
+
+function messageBoundedRecordIsExact(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  record: ActivityOccurrence,
+): boolean {
+  const operation = only(program.operations.filter((candidate) =>
+    candidate.kind === SemanticOperationKind.AwaitMessageBoundedUserTask &&
+    candidate.id === record.operationId &&
+    operationOwnedBy(program, candidate, record.owner)
+  ));
+  const handler = record.attachedHandlers.length === 1 &&
+      record.attachedHandlers[0]?.kind === ActivityHandlerKind.Message
+    ? record.attachedHandlers[0]
+    : undefined;
+  if (
+    operation?.kind !== SemanticOperationKind.AwaitMessageBoundedUserTask ||
+    record.body.kind !== ActivityBodyKind.UserTask ||
+    handler === undefined ||
+    record.id.processInstanceId !== record.owner.processInstanceId ||
+    record.id.activityElementId !== operation.task.elementId ||
+    !Number.isSafeInteger(record.id.activation) ||
+    record.id.activation <= 0 ||
+    !ownerExists(state, record.owner)
+  ) {
+    return false;
+  }
+  const bodyTask = record.body.task;
+  const task = only(state.userTaskWaits.filter((wait) =>
+    sameOccurrence(wait.id, bodyTask) &&
+    wait.id.elementId === operation.task.elementId &&
+    wait.name === operation.task.name &&
+    wait.output === operation.task.output &&
+    wait.metadata === undefined &&
+    sameScopeOccurrence(wait.owner, record.owner)
+  ));
+  const message = only(state.messageWaits.filter((wait) =>
+    sameOccurrence(wait.id, handler.occurrence) &&
+    wait.id.elementId === operation.boundaryMessage.elementId &&
+    wait.output === operation.boundaryMessage.output &&
+    sameMessageChannel(wait.channel, operation.boundaryMessage.channel) &&
+    sameScopeOccurrence(wait.owner, record.owner)
+  ));
+  return task !== undefined && message !== undefined;
 }
 
 function timerWaitRole(

@@ -20,9 +20,11 @@ import type {
 } from "./flow-node-occurrence-lifecycle.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
+  AwaitMessageBoundedUserTaskOperation,
   SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
+import { sameMessageChannel } from "./message-channel.js";
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
 import type { UnnumberedCommittedTransitionRecord } from "./semantic-transition-trace.js";
 import { compareCanonicalStrings } from "./wire.js";
@@ -75,6 +77,19 @@ export function expectedExternalLifecycle(
       return lifecycleDelta();
     case StimulusKind.CompleteUserTaskInstance: {
       const completed = requireWait(open, stimulus.taskId);
+      const bounded = messageBoundaryPair(
+        program,
+        open,
+        completed,
+        "task",
+      );
+      if (bounded !== null) {
+        if (stimulus.submittedValues.length !== 0) failCompleteness();
+        return lifecycleDelta([], [
+          lifecycleEnd(bounded.host, FlowNodeOccurrenceTerminalKind.Completed),
+          lifecycleEnd(bounded.message, FlowNodeOccurrenceTerminalKind.Cancelled),
+        ]);
+      }
       const operation = multiInstanceOperationForWait(
         program,
         completed,
@@ -98,6 +113,32 @@ export function expectedExternalLifecycle(
     }
     case StimulusKind.DeliverMessage: {
       const message = requireWait(open, stimulus.subscriptionId);
+      const bounded = messageBoundaryPair(
+        program,
+        open,
+        message,
+        "message",
+      );
+      if (bounded !== null) {
+        if (!sameMessageChannel(
+          bounded.operation.boundaryMessage.channel,
+          stimulus.channel,
+        )) failCompleteness();
+        return lifecycleDelta(
+          [],
+          [
+            lifecycleEnd(bounded.host, FlowNodeOccurrenceTerminalKind.Cancelled),
+            lifecycleEnd(bounded.message, FlowNodeOccurrenceTerminalKind.Completed),
+          ],
+          [instantOccurrence(
+            bounded.host.processId,
+            bounded.operation.boundaryMessage.elementId,
+            bounded.host.owner,
+          )],
+          commandId,
+          transitionIndex,
+        );
+      }
       const pair = eventRacePair(program, open, message, "message");
       return pair === null
         ? lifecycleDelta([], [lifecycleEnd(message, FlowNodeOccurrenceTerminalKind.Completed)])
@@ -164,6 +205,86 @@ export function expectedExternalLifecycle(
     default:
       return assertNever(stimulus);
   }
+}
+
+type MessageBoundaryPair = Readonly<{
+  operation: AwaitMessageBoundedUserTaskOperation;
+  host: OpenOccurrence;
+  message: OpenOccurrence;
+}>;
+
+function messageBoundaryPair(
+  program: SemanticProcessProgram,
+  open: readonly OpenOccurrence[],
+  selected: OpenOccurrence,
+  role: "task" | "message",
+): MessageBoundaryPair | null {
+  const operations = program.operations.filter(
+    (operation): operation is AwaitMessageBoundedUserTaskOperation =>
+      operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask &&
+      operationOwnedBy(program, operation, selected.owner) &&
+      (role === "task"
+        ? operation.task.elementId === selected.elementId
+        : operation.boundaryMessage.elementId === selected.elementId),
+  );
+  if (operations.length > 1) failCompleteness();
+  const operation = operations[0];
+  if (operation === undefined) return null;
+  const host = role === "task"
+    ? selected
+    : requireUnique(open.filter((entry) =>
+        entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+        entry.elementId === operation.task.elementId &&
+        entry.processId === selected.processId &&
+        sameScope(entry.owner, selected.owner) &&
+        listsMessage(entry, selected.anchor)
+      ));
+  if (host.anchor.kind !== SemanticFlowNodeOccurrenceAnchorKind.Wait) {
+    failCompleteness();
+  }
+  const handler = host.attachedHandlers.length === 1 &&
+      host.attachedHandlers[0]?.kind === ActivityHandlerKind.Message
+    ? host.attachedHandlers[0]
+    : undefined;
+  if (handler === undefined) failCompleteness();
+  const message = role === "message"
+    ? selected
+    : requireUnique(open.filter((entry) =>
+        entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+        entry.elementId === operation.boundaryMessage.elementId &&
+        entry.processId === host.processId &&
+        sameScope(entry.owner, host.owner) &&
+        sameOccurrenceAnchor(entry.anchor, handler.occurrence)
+      ));
+  if (
+    message.anchor.kind !== SemanticFlowNodeOccurrenceAnchorKind.Wait ||
+    !sameOccurrenceAnchor(message.anchor, handler.occurrence) ||
+    host.elementId !== operation.task.elementId ||
+    message.elementId !== operation.boundaryMessage.elementId ||
+    host.processId !== message.processId ||
+    !sameScope(host.owner, message.owner)
+  ) failCompleteness();
+  return { operation, host, message };
+}
+
+function listsMessage(
+  host: OpenOccurrence,
+  message: SemanticFlowNodeOccurrenceAnchor,
+): boolean {
+  return message.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+    host.attachedHandlers.length === 1 &&
+    host.attachedHandlers[0]?.kind === ActivityHandlerKind.Message &&
+    sameOccurrenceAnchor(message, host.attachedHandlers[0].occurrence);
+}
+
+function sameOccurrenceAnchor(
+  anchor: SemanticFlowNodeOccurrenceAnchor,
+  id: OccurrenceId,
+): boolean {
+  return anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+    anchor.id.processInstanceId === id.processInstanceId &&
+    anchor.id.elementId === id.elementId &&
+    anchor.id.activation === id.activation;
 }
 
 /**

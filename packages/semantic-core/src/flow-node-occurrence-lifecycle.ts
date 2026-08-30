@@ -10,6 +10,10 @@ import {
   StimulusKind,
 } from "./contract.js";
 import type { OccurrenceId, Stimulus } from "./contract.js";
+import {
+  ActivityHandlerKind,
+  activityOccurrenceForTaskBody,
+} from "./activity-occurrence.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
@@ -49,6 +53,15 @@ import {
 import {
   isParallelMultiInstanceTaskDefinition,
 } from "./semantic-process-parallel-multi-instance-runtime.js";
+import {
+  isMessageBoundaryDefinition,
+  isMessageBoundedTaskDefinition,
+  messageBoundedPairForSubscription,
+} from "./semantic-process-message-bounded-task-runtime.js";
+import type {
+  MessageBoundedPair,
+} from "./semantic-process-message-bounded-task-runtime.js";
+import { sameMessageChannel } from "./message-channel.js";
 
 export enum FlowNodeOccurrenceTerminalKind {
   Completed = "completed",
@@ -201,6 +214,25 @@ function externalLifecycle(
     case StimulusKind.RetryIncident:
       return pieces();
     case StimulusKind.CompleteUserTaskInstance: {
+      if (isMessageBoundedTaskDefinition(program, stimulus.taskId)) {
+        const pair = messageBoundedPairForTask(
+          program,
+          before,
+          stimulus.taskId,
+        );
+        return pair === undefined || stimulus.submittedValues.length !== 0
+          ? null
+          : pieces([], [
+              {
+                anchor: waitAnchor(pair.task.id),
+                terminal: FlowNodeOccurrenceTerminalKind.Completed,
+              },
+              {
+                anchor: waitAnchor(pair.message.id),
+                terminal: FlowNodeOccurrenceTerminalKind.Cancelled,
+              },
+            ]);
+      }
       if (isParallelMultiInstanceTaskDefinition(program, stimulus.taskId)) {
         const change = parallelMultiInstanceCompletionOccurrences(
           program,
@@ -217,6 +249,34 @@ function externalLifecycle(
       return completed(stimulus.taskId);
     }
     case StimulusKind.DeliverMessage: {
+      if (isMessageBoundaryDefinition(program, stimulus.subscriptionId)) {
+        const pair = messageBoundedPairForSubscription(
+          program,
+          before,
+          stimulus.subscriptionId,
+        );
+        const boundary = pair === undefined
+          ? null
+          : candidateElementOccurrence(
+              program,
+              before,
+              pair.definition.boundaryMessage.elementId,
+              pair.record.owner,
+            );
+        return pair === undefined || boundary === null ||
+            !sameMessageChannel(pair.message.channel, stimulus.channel)
+          ? null
+          : pieces([], [
+              {
+                anchor: waitAnchor(pair.task.id),
+                terminal: FlowNodeOccurrenceTerminalKind.Cancelled,
+              },
+              {
+                anchor: waitAnchor(pair.message.id),
+                terminal: FlowNodeOccurrenceTerminalKind.Completed,
+              },
+            ], [boundary]);
+      }
       const race = only(before.eventRaces.filter(({ messageSubscriptionId }) => sameOccurrence(messageSubscriptionId, stimulus.subscriptionId)));
       return race === undefined
         ? completed(stimulus.subscriptionId)
@@ -330,8 +390,15 @@ function internalLifecycle(
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
-    case SemanticOperationKind.AwaitMessageBoundedUserTask:
-      return null;
+    case SemanticOperationKind.AwaitMessageBoundedUserTask: {
+      const starts = candidateLongLivedStarts(
+        program,
+        after,
+        operation,
+        owner,
+      );
+      return starts === null ? null : pieces(starts);
+    }
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return null;
     case SemanticOperationKind.AwaitEventRace: {
@@ -385,6 +452,31 @@ function internalLifecycle(
     default:
       return assertNever(operation);
   }
+}
+
+function messageBoundedPairForTask(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  taskId: OccurrenceId,
+): MessageBoundedPair | undefined {
+  const record = activityOccurrenceForTaskBody(
+    state.activityOccurrences,
+    taskId,
+  );
+  const handler = record?.attachedHandlers.length === 1 &&
+      record.attachedHandlers[0]?.kind === ActivityHandlerKind.Message
+    ? record.attachedHandlers[0]
+    : undefined;
+  if (record === undefined || handler === undefined) return undefined;
+  const pair = messageBoundedPairForSubscription(
+    program,
+    state,
+    handler.occurrence,
+  );
+  return pair !== undefined && pair.record === record &&
+      sameOccurrence(pair.task.id, taskId)
+    ? pair
+    : undefined;
 }
 
 type LifecyclePieces = Readonly<{
