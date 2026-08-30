@@ -20,9 +20,9 @@ private def dataOutputRunningInstance? (state : RuntimeState) :
   | .running instanceId => some instanceId
   | _ => none
 
-/-- `ADOUTPUT-ENTRY-01`. Consumes the incoming token and produces the task occurrence, its Activity record, and the empty occurrence-owned scope the completion will fill.
+/-- `ADOUTPUT-ENTRY-01`. Consumes the incoming token and produces the task occurrence, its Activity record, and an empty occurrence-owned scope.
 
-Deliberately reads no Process binding. The scope is created at entry rather than at completion so the Activity owns one lifetime rather than two, which is what lets `ADOUTPUT-ATOMIC-01`'s disposal remove a scope that existed for the whole occurrence. -/
+Deliberately reads no Process binding. The scope stays empty for the occurrence's whole lifetime: `ADOUTPUT-ATOMIC-01` fuses the fill with the association, so the submitted value reaches Process scope under the associated Property's id without ever being materialized here. Creating the container at entry rather than at completion is still what gives the Activity one lifetime rather than two, and it is the container later coverage needs when a construct finally has to read an output between its production and its copy. -/
 def activateDataOutputUserTask? (state : RuntimeState) (input output : ControlPlaceId)
     (taskId : TaskDefinitionId) (taskName : Option String) :
     Option RuntimeState := do

@@ -14,9 +14,11 @@ import {
   ProcessStatus,
   RuntimeStateDefect,
   RuntimeStateRegression,
+  SemanticOperationKind,
   VariableValueKind,
   applyStimulus,
   initialState,
+  isWellFormedSemanticProcessProgram,
   observeStableState,
   runtimeStateDefects,
   runtimeStateRegressions,
@@ -245,4 +247,38 @@ test("an equal-coordinate effect scope is neither read nor removed by the comple
       value: { kind: VariableValueKind.String, value: "approved" },
     },
   ]);
+});
+
+/**
+ * The capsule's nearest counterexample, locked where it is decidable.
+ *
+ * A model whose `DataOutput` and target `Property` carry one id would make the routed account and a
+ * name-merged account agree by coincidence, which is the confusion this family exists to rule out.
+ * The case cannot be reached from source, because both ends are `xsd:ID` and one document cannot
+ * declare the same id twice, so program admission is the only boundary that can refuse it. The
+ * unmutated program is asserted admissible in the same test, so a validator that refused everything
+ * would not pass here.
+ */
+test("a program merging the DataOutput and the target Property into one id is refused", () => {
+  const routed = dataOutputProgram.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitDataOutputUserTask,
+  );
+  assert.ok(routed?.kind === SemanticOperationKind.AwaitDataOutputUserTask);
+  const merged = {
+    ...dataOutputProgram,
+    operations: dataOutputProgram.operations.map((operation) =>
+      operation === routed
+        ? {
+            ...routed,
+            directOutput: {
+              ...routed.directOutput,
+              targetPropertyId: routed.directOutput.sourceDataOutputId,
+            },
+          }
+        : operation
+    ),
+  };
+
+  assert.equal(isWellFormedSemanticProcessProgram(dataOutputProgram), true);
+  assert.equal(isWellFormedSemanticProcessProgram(merged), false);
 });

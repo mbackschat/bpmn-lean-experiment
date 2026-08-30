@@ -65,12 +65,17 @@ type DataOutputTask = Readonly<{
 
 /**
  * `ADOUTPUT-ENTRY-01`. Consumes the incoming token and produces the task occurrence, its Activity
- * record, and the occurrence-owned scope the completion will fill.
+ * record, and an empty occurrence-owned scope.
  *
- * The scope is created empty and at entry rather than at completion so that the Activity owns one
- * lifetime rather than two: `ADOUTPUT-ATOMIC-01`'s disposal then removes a scope that has existed
- * for the whole occurrence, and every runtime-state invariant that pairs a record with its scope
- * holds while the task is open.
+ * The scope stays empty for the occurrence's whole lifetime. `ADOUTPUT-ATOMIC-01` fuses the fill
+ * with the association, so the submitted value reaches Process scope under the associated Property's
+ * id without ever being materialized here; a write-then-remove would be dead state.
+ *
+ * The container is created at entry rather than at completion so that the Activity owns one lifetime
+ * rather than two: `ADOUTPUT-ATOMIC-01`'s disposal then removes a scope that has existed for the
+ * whole occurrence, every runtime-state invariant that pairs a record with its scope holds while the
+ * task is open, and later coverage that must read an output between its production and its copy has
+ * the container it needs.
  */
 export function armDataOutputUserTask(
   operation: AwaitDataOutputUserTaskOperation,
