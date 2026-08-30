@@ -22,7 +22,6 @@ import {
 import type {
   AwaitPayloadMessageOperation,
   DeliverPayloadMessageStimulus,
-  MessageChannel,
   RuntimeState,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
@@ -43,10 +42,10 @@ const channel = Object.freeze({
   interfaceId: "Interface_ClearingHouse",
   interfaceOperationId: "Operation_ConfirmSettlement",
   messageId: "Message_SettlementConfirmed",
-});
+} as const satisfies AwaitPayloadMessageOperation["message"]["channel"]);
 
 function awaitPayloadMessage(
-  selectedChannel: MessageChannel = channel,
+  selectedChannel: AwaitPayloadMessageOperation["message"]["channel"] = channel,
 ): AwaitPayloadMessageOperation {
   return {
     ...operationBase("MessageCatch_SettlementConfirmed"),
@@ -148,15 +147,23 @@ const delivery = Object.freeze({
     kind: VariableValueKind.String,
     value: "settlement-reference-123",
   },
-}) satisfies DeliverPayloadMessageStimulus;
+} as const satisfies DeliverPayloadMessageStimulus);
 
 test("admits only the operation-addressed payload-catch IL identity chain", () => {
   assert.equal(isWellFormedSemanticProcessProgram(payloadProgram()), true);
+  const validOperation = awaitPayloadMessage();
+  const directMessageOperation = {
+    ...validOperation,
+    message: {
+      ...validOperation.message,
+      channel: {
+        kind: MessageChannelKind.DirectMessage,
+        messageId: channel.messageId,
+      },
+    },
+  } as unknown as AwaitPayloadMessageOperation;
   assert.equal(
-    isWellFormedSemanticProcessProgram(payloadProgram(awaitPayloadMessage({
-      kind: MessageChannelKind.DirectMessage,
-      messageId: channel.messageId,
-    }))),
+    isWellFormedSemanticProcessProgram(payloadProgram(directMessageOperation)),
     false,
   );
   assert.equal(

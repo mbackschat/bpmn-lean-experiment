@@ -181,6 +181,13 @@ type DirectActivityDataOutput = DeepReadonly<{
   targetPropertyId: string;
 }>;
 
+type DirectCatchEventPayloadOutput = DeepReadonly<{
+  associationId: string;
+  sourceDataOutputId: string;
+  sourceDataOutputName: string | null;
+  targetPropertyId: string;
+}>;
+
 type CheckedNode = DeepReadonly<
   | {
       kind: "noneStartEvent";
@@ -259,6 +266,15 @@ type CheckedNode = DeepReadonly<
         MessageChannel,
         { kind: typeof MessageChannelKind.OperationMessage }
       >;
+    }
+  | {
+      kind: "payloadMessageCatchEvent";
+      id: string;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
+      directOutput: DirectCatchEventPayloadOutput;
     }
   | {
       kind: "receiveTask";
@@ -563,6 +579,19 @@ type SemanticOperation = DeepReadonly<
       };
     })
   | (OperationBase & {
+      kind: "awaitPayloadMessage";
+      input: string;
+      output: string;
+      message: {
+        elementId: string;
+        channel: Extract<
+          MessageChannel,
+          { kind: typeof MessageChannelKind.OperationMessage }
+        >;
+      };
+      directOutput: DirectCatchEventPayloadOutput;
+    })
+  | (OperationBase & {
       kind: "awaitEffect";
       input: string;
       output: string;
@@ -637,7 +666,9 @@ type SemanticOperation = DeepReadonly<
 
 String identifiers are wire representations, not permission to treat distinct identifier domains interchangeably in Lean or implementation code. Lean must use distinct types for process, node, Sequence Flow, operation, control-place, task-definition, and task-occurrence identifiers where those domains can be confused.
 
-Semantic operation payloads carry their own element identifier when runtime occurrence identity depends on that element. For the single-occurrence `awaitUserTask`, `awaitTimer`, `awaitMessage`, and `awaitEffect` operations, that identifier is deliberately redundant with `origin.elementId`: program validation requires exact equality, runtime construction reads the semantic payload field, and source traceability reads `origin`. `awaitEventRace` instead originates at the Gateway and carries the distinct Message and Timer catch identities in its named arms; checked-definition binding requires each identity and configuration origin to match the corresponding checked branch. Future occurrence-producing operations must state which of these identity patterns they implement rather than derive runtime identity implicitly from provenance.
+Semantic operation payloads carry their own element identifier when runtime occurrence identity depends on that element. For the single-occurrence `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitPayloadMessage`, and `awaitEffect` operations, that identifier is deliberately redundant with `origin.elementId`: program validation requires exact equality, runtime construction reads the semantic payload field, and source traceability reads `origin`. `awaitEventRace` instead originates at the Gateway and carries the distinct Message and Timer catch identities in its named arms; checked-definition binding requires each identity and configuration origin to match the corresponding checked branch. Future occurrence-producing operations must state which of these identity patterns they implement rather than derive runtime identity implicitly from provenance.
+
+The `payloadMessageCatchEvent` and `awaitPayloadMessage` arms are admitted and lowered at the current semantic checkpoint, but runtime arming, delivery, and publication remain excluded until the capsule's later evidence lanes close.
 
 Definition scopes form one canonical acyclic ownership forest with one unique entry root whose `originElementId` equals `processId`. Existing profiles retain one rooted tree. The bounded Call Activity profile additionally has one distinct parentless called root selected by `calledProcessId`; `invokeProcess` and `returnProcess`, not a parent pointer or declaration order, connect it to the caller. Every checked node, Sequence Flow, operation, and control place has exactly one definition-scope owner. Scope ownership is definition data rather than runtime state, and embedded-scope entry, called-Process invocation, and their distinct completion strategies are explicit operations rather than implicit traversal of BPMN containment.
 
@@ -684,6 +715,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | exact collection-driven sequential Multi-Instance User Task with one interrupting outer-lifetime `PT5S` Timer | `awaitSequentialMultiInstanceUserTask` with the complete direct data role graph, exact task definition, normal output, boundary Timer arm, and fixed profile limits |
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
 | exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
+| exact operation-addressed Intermediate Catch Message Event with one required direct payload output | `awaitPayloadMessage` with Catch Event identity, resolved Interface/Operation/Message channel, and the association, source DataOutput, and target Property identities |
 | exact payload-free direct-Message Receive Task | `awaitMessage` with Receive Task identity and the resolved direct Message arm; no Interface or Operation is synthesized |
 | exact payload-free Service Task source shape | `awaitEffect` with the registered neutral Activity/probe descriptor and empty mappings |
 | exact configured Task extension profile | `awaitEffect` with the Activity/probe descriptor, empty mappings, no BPMN Error route, and endpoint-derived control places; distinct checked Task identity is retained before lowering |
@@ -861,7 +893,7 @@ The reusable Lean proof remains exact-two: firing either member of a classified 
 `WellFormedProgram` must establish at least:
 
 - process, definition-scope, operation, and control-place identifiers are nonempty and unique in their domains;
-- every family-tagged wait element identity has exactly one declaring operation across the complete Program. User Task declarers are `awaitUserTask`, `awaitBoundedUserTask`, `awaitMonitoredUserTask`, `awaitSequentialMultiInstanceUserTask`, and `awaitParallelMultiInstanceUserTask`; Message declarers are `awaitMessage` and `awaitEventRace`; Timer declarers are `awaitTimer`, both bounded User Task operations, both Multi-Instance entry operations, `enterBoundedScope`, and `awaitEventRace`; the sole effect declarer is `awaitEffect`. The same element text remains admissible across different wait families;
+- every family-tagged wait element identity has exactly one declaring operation across the complete Program. User Task declarers are `awaitUserTask`, `awaitBoundedUserTask`, `awaitMonitoredUserTask`, `awaitSequentialMultiInstanceUserTask`, and `awaitParallelMultiInstanceUserTask`; Message declarers are `awaitMessage`, `awaitPayloadMessage`, and `awaitEventRace`; Timer declarers are `awaitTimer`, both bounded User Task operations, both Multi-Instance entry operations, `enterBoundedScope`, and `awaitEventRace`; the sole effect declarer is `awaitEffect`. The same element text remains admissible across different wait families;
 - definition scopes form one canonical acyclic forest with exactly one entry root selected by `processId`; every node, Sequence Flow, operation, and control place has exactly one existing owner; every non-root scope is owned by exactly one `embeddedSubProcess`/`enterScope` pair; and every additional parentless root belongs to one exact `invokeProcess`/`returnProcess` pair;
 - every referenced control place exists;
 - every source origin required by the current profile is present and nonempty;
@@ -878,6 +910,7 @@ The reusable Lean proof remains exact-two: firing either member of a classified 
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
 - every `awaitSequentialMultiInstanceUserTask` has one existing input, one exact task origin and definition, the closed direct input/output role graph, one distinct existing normal output, one distinct exact-duration `1000` boundary Timer output with complete Sequence Flow origin, the fixed `16`/`512`/`8192` limits, one unique operation-scope owner, and the registered profile's exact operation/control-place cardinality;
 - every admitted `awaitMessage` has a Message-wait element matching its BPMN origin and exactly one closed channel arm: `operationMessage` requires nonempty Interface, Interface Operation, and Message identities, while `directMessage` requires only a nonempty Message identity and forbids Interface fields;
+- every admitted `awaitPayloadMessage` has distinct existing input and output places, a Message-wait element matching its BPMN origin, one complete `operationMessage` channel, and one direct output whose association, source DataOutput, and target Property identities are nonempty and whose source name is null or nonempty; the Catch Event, Message, association, DataOutput, and Property identities are pairwise distinct;
 - every admitted `awaitEffect` has a profile-permitted descriptor and the exact mapping pair for that descriptor;
 - mapping targets are nonempty and unique, literal inputs remain exact strings, and local-variable outputs refer only to the admitted result-local name;
 - every non-null `bpmnErrorRoute` has a nonempty exact code, a distinct existing boundary output, complete source provenance, and the exact profile-permitted handler/mapping combination;

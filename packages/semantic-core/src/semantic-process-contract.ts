@@ -362,7 +362,10 @@ export type AwaitPayloadMessageOperation = OperationBase &
     output: string;
     message: {
       elementId: string;
-      channel: MessageChannel;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
     };
     directOutput: DirectCatchEventPayloadOutput;
   }>;
