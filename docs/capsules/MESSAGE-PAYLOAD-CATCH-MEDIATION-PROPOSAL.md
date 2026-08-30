@@ -92,7 +92,7 @@ The public observation changes in exactly two places. Canonical `variables` gain
 | `MPAYLOAD-EQUIV-01` | Admission requires the `DataOutput`'s `itemSubjectRef` and the `Message`'s `itemRef` to resolve to the same `ItemDefinition` | Source mutations pointing them at two distinct `ItemDefinition` roots and at an unresolved one |
 | `MPAYLOAD-PUBLISH-01` | A payload-declaring subscription publishes the payload-bearing enabled interaction, so a caller learns the requirement from the published contract rather than from a refusal | An observation test requiring the payload-bearing arm for this profile and the payload-free arm for the closed one on the same wait shape |
 
-The decisive separating witness against the closed payload-free profile is the same graph with the four added elements: under the old profile the delivered Message produces a token and no binding, and under this one it produces a token and one Property binding. The two disagree in canonical `variables`, which is the approved public boundary.
+The decisive separating witness against the closed payload-free profile is the same graph with the five added elements: under the old profile the delivered Message produces a token and no binding, and under this one it produces a token and one Property binding. The two disagree in canonical `variables`, which is the approved public boundary.
 
 The decisive separating witness inside this capsule is the Account P1 pair: two deliveries on one program that differ only in whether a payload is present, one of which continues to the User Task and one of which leaves the Message subscription live.
 
