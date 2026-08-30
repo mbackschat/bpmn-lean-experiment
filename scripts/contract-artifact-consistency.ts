@@ -11,6 +11,9 @@ import type {
 import {
   requireUnicodeScalarString,
 } from "./strict-json.ts";
+import {
+  verifyActivityBoundaryMessageBindings,
+} from "./activity-boundary-message-artifact-consistency.ts";
 import { verifyMergeExclusiveBindings } from "./merge-exclusive-artifact-consistency.ts";
 import { verifyTerminateScopeBindings } from "./end-operation-artifact-consistency.ts";
 import { verifyEffectOperationBindings } from "./effect-operation-artifact-consistency.ts";
@@ -90,6 +93,9 @@ function referencedControlPlaces(
     case "returnProcess":
       return [operation.callerOutput];
     case "awaitUserTask":
+      return [operation.input, operation.output];
+    case "awaitMessageBoundedUserTask":
+      return [operation.input, operation.task.output, operation.boundaryMessage.output];
     case "awaitTimer":
     case "awaitMessage":
     case "awaitPayloadMessage":
@@ -222,6 +228,7 @@ export function verifyCanonicalDefinitionOrder(
       case "invokeProcess":
       case "returnProcess":
       case "awaitUserTask":
+      case "awaitMessageBoundedUserTask":
       case "awaitTimer":
       case "awaitMessage":
       case "awaitPayloadMessage":
@@ -440,6 +447,7 @@ export function verifyDefinitionReferences(
   verifyTerminateScopeBindings(checkedProcess, semanticProcess);
   verifyEffectOperationBindings(checkedProcess, semanticProcess);
   verifyPayloadMessageCatchBindings(checkedProcess, semanticProcess);
+  verifyActivityBoundaryMessageBindings(checkedProcess, semanticProcess);
 
   const placeIds = requireUniqueIds(
     "semantic process control places",

@@ -48,6 +48,45 @@ test("arming publishes the task and Message subscription without executing the B
   ), false);
 });
 
+test("independent completeness rejects a premature Boundary Event occurrence while arming", () => {
+  const armed = traceStart();
+  const transitionIndex = armed.committedTransitions.findIndex(({ transition }) =>
+    transition.kind === SemanticTransitionKind.InternalOperation &&
+    transition.operationKind === SemanticOperationKind.AwaitMessageBoundedUserTask
+  );
+  assert.notEqual(transitionIndex, -1);
+  const prematureAnchor = {
+    kind: SemanticFlowNodeOccurrenceAnchorKind.Transition,
+    commandId: start.commandId,
+    transitionIndex,
+    localIndex: 0,
+  } as const;
+  const premature = armed.flowNodeOccurrenceLifecycles.map(
+    (lifecycle, index): UnnumberedFlowNodeOccurrenceDelta => index === transitionIndex
+      ? {
+          started: [...lifecycle.started, {
+            anchor: prematureAnchor,
+            processId: program.processId,
+            elementId: "Withdrawal",
+            owner,
+          }],
+          ended: [...lifecycle.ended, {
+            anchor: prematureAnchor,
+            terminal: FlowNodeOccurrenceTerminalKind.Completed,
+          }],
+        }
+      : lifecycle,
+  );
+
+  assert.throws(() => requireCompleteFlowNodeOccurrenceLifecycles(
+    program,
+    [],
+    start.commandId,
+    armed.committedTransitions,
+    premature,
+  ), /complete lifecycle/u);
+});
+
 test("current-open projection requires the Activity record to own both paired waits", () => {
   const state = traceStart().result.state;
 
