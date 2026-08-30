@@ -23,6 +23,17 @@ import type {
 
 const scenarioRoot = "scenarios/activity-data-output-user-task";
 
+/**
+ * Index of the last `State` observation each scenario publishes, which is the observation every
+ * mutation below writes into.
+ *
+ * The two completing scenarios publish two more observations than the refusal, whose completion is
+ * rejected and therefore adds no activation or state. Copying the completed index into the refusal
+ * case points the expectation at an observation the mutation never touched, so the comparator reports
+ * a disagreement at the real index and the case fails for a reason unrelated to the seeded defect.
+ */
+const finalStateIndex = { completed: 4, refused: 2 } as const;
+
 function lastState(result: MutableScenarioResult): MutableStateObservation {
   const observation = [...result.trace].reverse().find(
     (candidate): candidate is MutableStateObservation =>
@@ -104,7 +115,7 @@ export const activityDataOutputPipelineCases = Object.freeze([
     namePropertyAfterItsSource,
     {
       kind: DisagreementKind.ObservationValue,
-      path: "trace[4].variables[0].name",
+      path: `trace[${finalStateIndex.completed}].variables[0].name`,
       expected: "Property_UnderwritingOutcome",
       actual: "DataOutput_Decision",
     },
@@ -115,7 +126,7 @@ export const activityDataOutputPipelineCases = Object.freeze([
     writeNullAsEmptyString,
     {
       kind: DisagreementKind.ObservationValue,
-      path: "trace[4].variables[0].value.kind",
+      path: `trace[${finalStateIndex.completed}].variables[0].value.kind`,
       expected: VariableValueKind.Null,
       actual: VariableValueKind.String,
     },
@@ -126,7 +137,7 @@ export const activityDataOutputPipelineCases = Object.freeze([
     writeTheRefusedOutput,
     {
       kind: DisagreementKind.ObservationValue,
-      path: "trace[4].variables.length",
+      path: `trace[${finalStateIndex.refused}].variables.length`,
       expected: 0,
       actual: 1,
     },
