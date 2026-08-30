@@ -36,7 +36,7 @@ The new ledger requirement is `BPMN-BOUNDARY-MESSAGE-01`. It remains `unsupporte
 
 ## Selected source profile
 
-One new immutable standards-only profile admits this shape class:
+One new immutable standards-only profile, registered identity `bpmn-2.0.2-activity-boundary-message-draft`, admits this shape class:
 
 ```text
 None Start → Review User Task ──normal──→ Normal follow-on User Task → None End A
@@ -69,7 +69,7 @@ The Message carries no `itemRef`, the Event owns no `DataOutput`, and delivery u
 The checked graph adds one closed node arm rather than a nullable attachment on every catch Event:
 
 ```ts
-type MessageBoundaryEventNode = Readonly<{
+type MessageBoundaryEventNode = DeepReadonly<{
   kind: CheckedNodeKind.MessageBoundaryEvent;
   id: string;
   attachedToRef: string;
@@ -82,7 +82,7 @@ type MessageBoundaryEventNode = Readonly<{
 The Semantic Process IL adds one operation arm rather than widening `AwaitBoundedUserTaskOperation`:
 
 ```ts
-type AwaitMessageBoundedUserTaskOperation = OperationBase & Readonly<{
+type AwaitMessageBoundedUserTaskOperation = OperationBase & DeepReadonly<{
   kind: SemanticOperationKind.AwaitMessageBoundedUserTask;
   input: string;
   task: {
@@ -116,10 +116,10 @@ enum ActivityHandlerKind {
 }
 
 type ActivityHandlerOccurrence =
-  | Readonly<{ kind: ActivityHandlerKind.Timer; occurrence: TimerOccurrenceId }>
-  | Readonly<{ kind: ActivityHandlerKind.Message; occurrence: MessageSubscriptionId }>;
+  | DeepReadonly<{ kind: ActivityHandlerKind.Timer; occurrence: TimerOccurrenceId }>
+  | DeepReadonly<{ kind: ActivityHandlerKind.Message; occurrence: MessageSubscriptionId }>;
 
-type ActivityOccurrence = Readonly<{
+type ActivityOccurrence = DeepReadonly<{
   id: ActivityOccurrenceId;
   owner: ScopeOccurrenceId;
   operationId: string;
@@ -138,11 +138,11 @@ The migration is behavior-preserving for all existing Timer families. It changes
 
 `ABMSG-ARM-01` — When one token reaches `AwaitMessageBoundedUserTask`, the transition consumes that token and atomically creates exactly one Activity occurrence, one User Task wait, and one payload-free Message subscription. Both waits share the Activity's scope owner, the Activity record owns the task as its body and the subscription as a Message handler, and all three identities advance their own high-water counters.
 
-`ABMSG-COMPLETE-01` — Exact completion of the live host User Task removes the task wait, its owned Message subscription, and the Activity occurrence in one committed transition, produces control only on `task.output`, and creates no Boundary Event occurrence.
+`ABMSG-COMPLETE-01` — Exact completion of the live host User Task with `submittedValues: []` removes the task wait, its owned Message subscription, and the Activity occurrence in one committed transition, produces control only on `task.output`, and creates no Boundary Event occurrence.
 
 `ABMSG-INTERRUPT-01` — Exact delivery to the live owned subscription consumes that subscription, cancels the host User Task and Activity occurrence in the same committed transition, and produces control only on `boundaryMessage.output`.
 
-`ABMSG-REFUSE-01` — A delivery with a wrong subscription identity or channel, a completion with a wrong task identity, or either losing stimulus after the competing transition is rejected and preserves the complete runtime state byte-for-byte.
+`ABMSG-REFUSE-01` — A payload-free delivery with a wrong subscription identity or channel, any `DeliverPayloadMessage` delivery against this payload-free subscription, a completion with a wrong task identity or non-empty `submittedValues`, or either losing stimulus after the competing transition is rejected and preserves the complete runtime state byte-for-byte.
 
 `ABMSG-OBSERVE-01` — Stable arming publishes the host User Task and open Message subscription separately. It does not publish the Boundary Event as an open flow-node occurrence. Message victory cancels the host task and starts/completes the Boundary Event in the same committed transition before publishing the boundary follow-on task; task victory completes the host task without creating a Boundary Event occurrence.
 
@@ -152,7 +152,7 @@ Source bytes, checked graph identity, immutable IL, runtime ownership, external 
 
 The open Message subscription is a semantic fact keyed by subscription identity and operation-addressed channel. The Temporal Signal callback that carries a delivery is transport state and is not a committed subscription or a semantic victory.
 
-The User Task completion Update and Message Signal are explicit competing inputs. Semantic state contains no implicit scheduler order, wall clock, Workflow Task identity, Event History position, or Run ID.
+The empty-submission User Task completion Update and payload-free Message Signal are explicit competing inputs. A non-empty completion and every payload-bearing Message delivery are refused rather than projected into an unmodeled data contract. Semantic state contains no implicit scheduler order, wall clock, Workflow Task identity, Event History position, or Run ID.
 
 The Boundary Event is a Flow Node but an armed subscription is not a running Boundary Event occurrence. `ABMSG-OBSERVE-01` distinguishes handler readiness from trigger occurrence so E2 publication cannot invent a long-running boundary-node duration.
 
@@ -172,8 +172,10 @@ Required laws are:
 - task victory withdraws the complete owned pair and produces only the normal route;
 - Message victory withdraws the complete owned pair and produces only the boundary route;
 - every issued task, subscription, and Activity identity is above its predecessor high-water mark, and every untouched counter is preserved;
-- wrong task identity, wrong subscription identity, and wrong channel are refused with exact state preservation;
-- final owned-handler withdrawal follows from the existing uniqueness and well-formedness premises, or the exact missing preservation premise is recorded rather than silently assumed.
+- wrong task identity, non-empty task submission, wrong subscription identity, wrong channel, and payload-bearing delivery are refused with exact state preservation;
+- final owned-handler withdrawal is proved under the existing explicit wait-identity uniqueness and runtime-state well-formedness hypotheses.
+
+Preservation of those uniqueness and well-formedness hypotheses across every reachable transition remains outside this capsule and stays an open runtime-invariant obligation. The `proved` lane therefore claims the conditional final-withdrawal theorem and does not weaken it to an implementation-time alternative.
 
 The nearest realistic checked non-law is commutation: completion followed by delivery and delivery followed by completion select different routes, so these inputs do not commute. In each sequential order the second stimulus is stale and must be rejected. No logical-time, fairness, liveness, or general correlation theorem is claimed.
 
@@ -183,10 +185,10 @@ One project-authored whole model uses a credible business narrative: an applican
 
 Two answer-free schedules use the exact same source bytes:
 
-1. Complete the review task. Assert that only the normal follow-on task is open, deliver the now-stale withdrawal Message while that follow-on keeps the Process open, assert rejection and exact stable-state preservation, then complete the normal follow-on.
-2. Deliver the withdrawal Message. Assert that only the boundary follow-on task is open, complete the now-stale review task while that follow-on keeps the Process open, assert rejection and exact stable-state preservation, then complete the boundary follow-on.
+1. Complete the review task with `submittedValues: []`. Assert that only the normal follow-on task is open, deliver the now-stale withdrawal Message while that follow-on keeps the Process open, assert rejection and exact stable-state preservation, then complete the normal follow-on with an empty submission.
+2. Deliver the payload-free withdrawal Message. Assert that only the boundary follow-on task is open, complete the now-stale review task with `submittedValues: []` while that follow-on keeps the Process open, assert rejection and exact stable-state preservation, then complete the boundary follow-on with an empty submission.
 
-Focused source and semantic negatives cover a wrong channel, delivery before arming, `cancelActivity="false"`, a payload-bearing Message, an inconsistent Message/Operation chain, a wrong `attachedToRef`, and an extra Boundary Event.
+Focused source and semantic negatives cover a wrong channel, delivery before arming, non-empty completion values, a `DeliverPayloadMessage` stimulus against the open payload-free subscription, `cancelActivity="false"`, a payload-bearing source Message, an inconsistent Message/Operation chain, a wrong `attachedToRef`, and an extra Boundary Event.
 
 Seeded mutations must include at least one instance of each mechanism defect: retain the losing subscription or task, route Message victory to the normal output, omit or misclassify the Activity handler owner, and publish a Boundary Event occurrence merely because its subscription is open.
 
@@ -198,13 +200,13 @@ If implementation needs CIB to choose correlation, subscription timing, cancella
 
 ## Temporal hosting and refinement preflight
 
-Durable ingress is the existing payload-free Message Signal and the existing content-bound User Task completion Update. The Signal handler may accept and ledger a delivery before the semantic core commits it; acceptance is not Message victory. The Update resolves from its existing command result path.
+Durable ingress is the existing payload-free Message Signal and the existing content-bound User Task completion Update with `submittedValues: []`. The Signal handler may accept and ledger a delivery before the semantic core commits it; acceptance is not Message victory. The Update resolves from its existing command result path. A payload-bearing Signal or non-empty completion reaches semantic admission and is refused with exact state preservation.
 
 The intended production lifecycle hosts both waits inside one Workflow. It adds no Temporal Activity, Child Workflow, BPMN timer, cancellation command, or external effect. BPMN interruption is the pure core transition that withdraws the task, subscription, and Activity record.
 
 The Temporal adapter adds one Message/Update boundary-readiness scheduler using the existing activation-tagged batching mechanism. It records an exact Message callback only while committed state contains the matching Message-bounded Activity and records an exact completion callback only for that same owned pair.
 
-After one activation drain, a batch with only one relevant input is submitted to the core. A batch containing both Message delivery and task completion for the same Activity has no portable BPMN winner and must fail closed with a distinct nonretryable failure type, provisionally `BPMN_MESSAGE_BOUNDED_ACTIVITY_SCHEDULER_UNAVAILABLE`. It must not inherit the SDK's Signal-before-Update job sorting as semantic priority.
+After one activation drain, a batch with only one relevant input is submitted to the core. A batch containing both Message delivery and task completion for the same Activity has no portable BPMN winner and must fail closed with the exact distinct nonretryable identity `bpmnMessageBoundedActivitySchedulerUnavailableFailureType = "BpmnMessageBoundedActivitySchedulerUnavailable"`. It must not inherit the SDK's Signal-before-Update job sorting as semantic priority.
 
 The smallest coalescing witness accepts both Signal and Update while no Worker is polling, starts a replacement Worker so both callbacks share one Workflow activation, and proves the Workflow fails closed without a semantic winner. Both client calls must settle rather than hang; the Workflow result/history must retain the typed failure identity. The Update client is not required to receive that exact type unless the live witness proves the SDK exposes it there.
 
@@ -219,9 +221,9 @@ Delivery ordering outside one coalesced activation remains server arrival order 
 | Rule | BPMN/profile evidence | Lean evidence | TypeScript evidence | Temporal evidence | Negative or mutation evidence |
 |---|---|---|---|---|---|
 | `ABMSG-ARM-01` | exact source, resolved attachment, omitted-true default, checked/IL binding | declarative arming relation, evaluator soundness, atomicity and counter laws | independent arming evaluator and exact collection delta | stable Query after Worker replacement | premature delivery, wrong attachment, missing owner mutation |
-| `ABMSG-COMPLETE-01` | User Task lifecycle plus handler lifetime | completion constructor and complete-withdrawal law | task-victory evaluator | accepted Update, replacement Worker, stale later Signal | retained-subscription and boundary-route mutations |
+| `ABMSG-COMPLETE-01` | User Task lifecycle plus handler lifetime | empty-submission completion constructor and complete-withdrawal law | task-victory evaluator admits only `submittedValues: []` | accepted empty Update, replacement Worker, stale later Signal | retained-subscription, boundary-route, and non-empty-submission mutations |
 | `ABMSG-INTERRUPT-01` | Clause 13.5.3 and distinct boundary Sequence Flow | Message-victory constructor and route law | delivery evaluator reusing `DeliverMessage` | accepted Signal, replacement Worker, replay | retained-task and normal-route mutations |
-| `ABMSG-REFUSE-01` | bounded direct-address profile | quantified refusal and state-preservation laws | wrong/stale identity and channel tests | stale Signal/Update settle through the public host contract | state-changing refusal mutations |
+| `ABMSG-REFUSE-01` | bounded direct-address and payload-free profile | quantified identity, channel, non-empty-submission, and payload-delivery refusal laws | wrong/stale identity, channel, completion-value, and `DeliverPayloadMessage` tests | stale and wrong-shape Signal/Update paths settle through the public host contract | state-changing refusal mutations |
 | `ABMSG-OBSERVE-01` | Boundary Event occurrence versus subscription readiness | transition-derived occurrence facts | E1/E2 lifecycle and stable observation | canonical Query and history/replay witness | open-boundary-publication mutation |
 
 The standards, Lean, TypeScript, and Temporal columns are separate claims. The registered differential target set is Lean, semantic core, and Temporal; CIB remains null. Agreement does not turn the TypeScript implementation into a proof or Temporal history into semantic authority.
@@ -260,7 +262,7 @@ Excluded: payload, `DataOutput`, `DataAssociation`, `ItemDefinition`, key correl
 
 This is an additive profile and operation but an atomic pre-release runtime-state representation migration. Existing scenario/profile/program bytes remain unchanged. Runtime-state schemas, TypeScript and Lean constructors, wire fixtures, codecs, Activity ownership predicates, Timer-family writers/readers, publication, state well-formedness, and adapter continuation state move together from `attachedTimers` to `attachedHandlers`; no mixed-version runtime state is admitted.
 
-The `what-binds` inventory requires the following executable guards and focused oracles: [document reviewability](../../scripts/document-reviewability.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [independent review policy](../../scripts/independent-review-policy.test.ts), [contract artifact projections](../../scripts/contract-artifact-projections.test.ts), [Activity occurrence joins](../../scripts/activity-occurrence-join.test.ts), [Activity occurrence writer census](../../scripts/activity-occurrence-writer-census.test.ts), [runtime collection-removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts), [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts), [product example configs](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts), [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts), [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts), [semantic review packet](../../scripts/semantic-review-packet.test.ts), [capsule cost](../../scripts/capsule-cost.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [internal commutation census](../../scripts/internal-commutation-census.test.ts), [activation readiness](../../packages/temporal-adapter/testkit/test/host-readiness-mechanism.test.ts), and the [SDK activation premise witness](../../packages/temporal-adapter/testkit/test/event-race-sdk-activation-premise.test.ts).
+The `what-binds` inventory requires the following executable guards and focused oracles: [document reviewability](../../scripts/document-reviewability.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [independent review policy](../../scripts/independent-review-policy.test.ts), [contract artifact projections](../../scripts/contract-artifact-projections.test.ts), [contract schema coverage](../../scripts/contract-schema-coverage.test.ts), [execution-publication contract coverage](../../scripts/execution-publication-contract-coverage.test.ts), [canonical ordering](../../scripts/canonical-ordering.test.ts), [BPMN corpus policy](../../scripts/bpmn-corpus-policy.test.ts), [Activity occurrence joins](../../scripts/activity-occurrence-join.test.ts), [Activity occurrence writer census](../../scripts/activity-occurrence-writer-census.test.ts), [runtime collection-removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts), [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts), [product example configs](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts), [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts), [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts), [semantic review packet](../../scripts/semantic-review-packet.test.ts), [capsule cost](../../scripts/capsule-cost.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [internal commutation census](../../scripts/internal-commutation-census.test.ts), [activation readiness](../../packages/temporal-adapter/testkit/test/host-readiness-mechanism.test.ts), and the [SDK activation premise witness](../../packages/temporal-adapter/testkit/test/event-race-sdk-activation-premise.test.ts).
 
 ### Owners this implementation grows
 
@@ -270,17 +272,39 @@ The reviewability threshold is 800 nonblank lines. Each figure is the mechanical
 |---|---:|---|
 | [`checked-process-contract.ts`](../../packages/semantic-core/src/checked-process-contract.ts) | 469 | add one closed checked-node arm; extract first only if the edit would cross 800 nonblank lines |
 | [`checked-element-projection.ts`](../../packages/bpmn-source/src/checked-element-projection.ts) | 358 | add Boundary Message projection and reference checks; extract first only if the edit would cross 800 |
+| [`compilation-dispatch.ts`](../../packages/bpmn-source/src/compilation-dispatch.ts) | 496 | register exact source compilation for the new profile; extract first only if the edit would cross 800 |
 | [`semantic-process-lowering.ts`](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 210 | add one lowering dispatch and keep family logic outside this owner if the edit would cross 800 |
 | [`semantic-process-contract.ts`](../../packages/semantic-core/src/semantic-process-contract.ts) | 258 | add one operation kind and union arm; extract first only if the edit would cross 800 |
+| [`semantic-profile-catalog.ts`](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 729 | add the exact registered profile identity; extract first only if the edit would cross 800 |
+| [`checked-process-profile-shape.ts`](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 518 | add the exact checked-node multiset; extract first only if the edit would cross 800 |
+| [`semantic-program-profile-shape.ts`](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 501 | add the exact operation multiset; extract first only if the edit would cross 800 |
+| [`semantic-process-operation-admission.ts`](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 139 | add exact operation well-formedness; extract family validation before an edit that would cross 800 |
+| [`semantic-process-graph-admission.ts`](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 212 | classify the new operation's input and outputs generically; extract first only if the edit would cross 800 |
 | [`activity-occurrence.ts`](../../packages/semantic-core/src/activity-occurrence.ts) | 587 | replace Timer-only attachment helpers with handler-family helpers; extract first only if the edit would cross 800 |
+| [`runtime-state-well-formedness.ts`](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 145 | resolve each handler discriminator to the matching wait family; extract handler-family validation before an edit that would cross 800 |
+| [`semantic-command-admission.ts`](../../packages/semantic-core/src/semantic-command-admission.ts) | 417 | route empty completion and both Message stimulus arms to exact admission/refusal; extract first only if the edit would cross 800 |
 | [`semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 176 | add dispatch only; the new family runtime belongs in a new owner, and any edit that would cross 800 requires extraction first |
+| [`flow-node-occurrence-lifecycle.ts`](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 200 | add the host-task and triggered Boundary Event lifecycle; extract first only if the edit would cross 800 |
+| [`flow-node-occurrence-publication-completeness.ts`](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts) | 319 | add the new operation to complete E1/E2 publication census; extract first only if the edit would cross 800 |
 | [`RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 252 | replace the Timer-only field with the handler-family sum/list; extract first only if the edit would cross 800 |
+| [`Lowering.lean`](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 189 | add independent checked-to-IL lowering; extract first only if the edit would cross 800 |
+| [`ProfileAdmission.lean`](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 102 | add the exact profile multiset; extract the new profile predicate before an edit that would cross 800 |
+| [`ProgramStructuralValidation.lean`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 201 | add exact operation structural validation; extract first only if the edit would cross 800 |
+| [`GraphValidation.lean`](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 60 | add only dispatcher coverage; extract the family graph rules before any edit that would cross 800 |
+| [`RuntimeStateWellFormed.lean`](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 126 | resolve handler-family ownership; extract the new handler predicates before an edit that would cross 800 |
+| [`Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 275 | decode and execute the two answer-free schedules; extract first only if the edit would cross 800 |
+| [`TransitionTrace.lean`](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 232 | classify the new operation and transition traces; extract first only if the edit would cross 800 |
+| [`FlowNodeOccurrenceLifecycle.lean`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 170 | add the matching Lean occurrence lifecycle; extract first only if the edit would cross 800 |
 | [`Transition.lean`](../../BpmnSemantics/SemanticProcess/Transition.lean) | 354 | add the new dispatcher arm; family relations and laws belong in new modules if this owner would cross 800 |
+| [`SemanticProcessJson/Program.lean`](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 147 | decode the new operation and migrated handler-family state; extract the operation decoder before an edit that would cross 800 |
+| [`contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 579 | add the exact nonretryable failure identity; extract first only if the edit would cross 800 |
+| [`workflow-continuation.ts`](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 282 | validate carried handler-family runtime state and profile identity; extract first only if the edit would cross 800 |
 | [`workflow-command-ingress.ts`](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 418 | route exact Signal/Update callbacks to the new scheduler; extract first only if the edit would cross 800 |
 | [`workflow-host-readiness.ts`](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 551 | register the new host-readiness owner; extract first only if the edit would cross 800 |
 | [`activation-tagged-readiness.ts`](../../packages/temporal-adapter/workflow/src/activation-tagged-readiness.ts) | 723 | reuse without semantic-family logic; it grows only if the generic contract proves insufficient, which is a redesign stop |
+| [`runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 260 | drive both winner schedules, both stale refusals, and the coalescing witness; extract the family runner before an edit that would cross 800 |
 
-New family-specific runtime, Lean relation/law, source-admission helper, and Temporal readiness-scheduler files must be routed through their package and implementation-map registries before use. [`SemanticProcessJson/Program.lean`](../../BpmnSemantics/SemanticProcessJson/Program.lean) and [`runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) are consumers without an `OWNER` headroom declaration; they may grow only within the repository source ceiling and must be added to `what-binds` again before editing.
+New family-specific runtime, Lean relation/law, source-admission helper, and Temporal readiness-scheduler files must be routed through their package and implementation-map registries before use. The Timer-family proof and runtime consumers found by the complete `attachedTimers` census must migrate mechanically to the discriminated handler representation; any consumer whose nonblank size grows is rerun through `what-binds` before that edit, and no consumer may retain a Timer-only ownership claim.
 
 ## Epistemic closure and reopen conditions
 
