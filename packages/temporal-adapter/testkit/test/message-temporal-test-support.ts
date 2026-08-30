@@ -40,6 +40,7 @@ import type {
   BpmnProcessWorkflow,
   CompletedProcessReceipt,
   DecodedWorkflowTerminalResult,
+  MessageDeliveryStimulus,
   TemporalHistory,
   WorkflowChainRecoveryEntry,
 } from "@bpmn-lean/temporal-testkit";
@@ -248,7 +249,7 @@ export async function completedMessageResult(
 
 export function expectedWorkflowChainRecoveryEntry(
   hostingProcessInstanceId: string,
-  stimulus: DeliverMessageStimulus | CompleteUserTaskInstanceStimulus,
+  stimulus: MessageDeliveryStimulus | CompleteUserTaskInstanceStimulus,
   outcome: CommandOutcome,
 ): WorkflowChainRecoveryEntry {
   const request = buildWorkflowChainRecoveryRequest(
@@ -272,7 +273,7 @@ export async function fetchMessageHistory(
 
 export function assertExactMessageSignals(
   history: TemporalHistory,
-  expected: ReadonlyArray<DeliverMessageStimulus>,
+  expected: ReadonlyArray<MessageDeliveryStimulus>,
 ): void {
   const signals = historyEvents(
     history,

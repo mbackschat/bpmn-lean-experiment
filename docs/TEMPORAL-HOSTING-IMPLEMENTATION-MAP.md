@@ -4,7 +4,7 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are evidenced, and Horizon 2 is closure-reviewed.
+One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced payload-free and payload-bearing Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are evidenced, and Horizon 2 is closure-reviewed.
 
 The implemented bounded Workflow-chain contract owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; stop-the-world deployment compatibility; and forced evidence. Every later repeating BPMN mechanism inherits this host boundary rather than reopening it. Temporal Run identity remains private.
 
@@ -17,7 +17,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - One semantic-lifetime Workflow receiving the start stimulus and admitted Semantic Process program
 - handle-free `started | rejected` production start after semantic and host admission; success exposes only the Process-instance ID
 - caller-configured Worker/client lifecycle with content-derived Workflow and command identities
-- one core-owned semantic loop with committed-state Query projection, User Task Update ingress, payload-free Message Signal ingress, durable Timer wakeup, bounded effect Activity, and retained result recovery
+- one core-owned semantic loop with committed-state Query projection, User Task Update ingress, one Message Signal carrying distinct payload-free and payload-bearing command arms, durable Timer wakeup, bounded effect Activity, and retained result recovery
 - exact duplicate, changed-content conflict, semantic refusal, closed/unknown separation, and committed-state-only acknowledgement
 - durable hosting for every closed family named in [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary), keeping embedded and called Process work inside one Workflow rather than assigning BPMN meaning to Child Workflows
 - passive `mergeExclusive` host admission; the finite cycle witness reuses User Task Update, survives replacement, recovers one result, refuses a stale occurrence, takes both back-edges and the default exit, observes no rollover suggestion, and replays without a new host mechanism
@@ -35,7 +35,8 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - Worker replacement, accepted-result recovery, exact Query and history assertions, replay, cleanup, and a separately bundled semantic or host-bypass mutation for each distinct mechanism
 - stop-the-world Workflow deployment admission: SHA-256 identities bind exact executable bundle bytes and fleet-visible Worker identities; the gate orders Product 1 ingress fencing, graceful old-Worker stop, empty authoritative poller inventory, candidate replay, candidate-only Workflow and Activity pollers, and ingress reopen; every failure stays fenced, a started bad candidate is stopped, and no old bundle is restarted automatically
 - deployment compatibility evidence: the candidate replays both a retained two-argument legacy history and all three v1 Runs before polling; the old bundle fails the closed v1 Run on the `bpmn-workflow-chain-v1` marker; mixed old/new or incomplete poller inventories are refused; the legacy open User Task then resumes under the candidate and reaches the exact semantic-core terminal state without changing public Product 1, BPMN, or CIB facts
-- forced Intermediate Catch Message rollover: a wrong-channel Signal is durably accepted and reduced once as semantic rejection immediately before Run 1 closes; the exact subscription and operation-addressed channel survive into Run 2; the valid delivery is sent only after that closure, commits once, and crosses into Run 3 as the trailing User Task; exact duplicate and changed-content recovery add no semantic transition; the closed v1 receipt, pure semantic-core trace, four exact Signal payloads, and all three replayed Runs preserve the registered standards-only Message profile and its unchanged User Task CIB premise
+- forced payload-free Intermediate Catch Message rollover: a wrong-channel rejection closes Run 1; the exact subscription survives into Run 2, its valid delivery opens the trailing User Task in Run 3, and duplicate/conflict recovery adds no semantic transition; exact receipt, pure trace, Signal bytes, and replay preserve the standards-only profile and unchanged CIB premise
+- forced Message payload catch rollover through the same Signal: payload-free refusal closes Run 1 with the subscription intact; a replacement Worker commits the scalar payload while changed content conflicts; the associated `Property` survives into Run 3; exact receipt, pure trace, Signal bytes, host-mechanism exclusions, and replay preserve Account P1 and payload-sensitive identity
 - forced Intermediate Catch Timer rollover: Run 1 closes before scheduling the committed definition-derived `PT1S` Timer; a fresh successor defers the still-triggered Event History threshold until it retains work, preserving the exact Timer occurrence, 1,000 ms deadline, and logical time zero; Run 2 records exactly one matched Timer-started/Timer-fired pair, derives one `fireTimer` stimulus, reaches the pure semantic-core terminal trace, and replays both Runs under the registered standards-only Timer profile and its unchanged `CIB-AGR-0004`/`CIB-CFG-0001` classifications
 - forced Service Task effect rollover: Run 1 closes with the committed effect occurrence, neutral descriptor, empty request arguments, and content-bound transport key before any Activity is scheduled; Run 2 exposes the same semantic wait while one probe Activity is held in flight, then records exactly one schedule/start/completion lifecycle, derives one `completeEffect` stimulus, reaches the pure semantic-core terminal trace with one external mutation, and replays both Runs under the registered success-only profile and unchanged `CIB-EXT-0001`/`CIB-CFG-0002` classifications
 - canonical start/completion data, effect transport, interaction/task projection, closed v1 receipts, private exact legacy normalization, and strict external-runtime configuration
@@ -76,7 +77,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - production canonical-observation API
 - protocol that imposes caller order on concurrent distinct commands
 - semantic policy copies in the Workflow
-- Message payloads, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
+- structured or collection-valued Message payloads, payload on another Event or Task locus, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
 - Message ingress broker/router, definition-version fanout, or multi-target publication receipt
 - committed Event History fixtures
 - engine-global task discovery through Search Attributes; Product 2 instead owns its current-task projection from published engine facts
@@ -92,7 +93,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
 - post-retention publication reconstruction or archive
-- timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload, key-based or global correlation, modeled throw, Message Flow, and other Message Event loci beyond the direct payload-free catch
+- timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload beyond the exact scalar Intermediate Catch Event slice, key-based or global correlation, modeled throw, Message Flow, and other Message Event loci
 - Multi-Instance hosting beyond the exact registered sequential and parallel User Task slices, including repeated or nested controllers, migration after an immutable history baseline, and a Workflow-chain policy that rolls over while a managed lifetime Timer is armed
 - immutable profile or production Event History compatibility
 - task inbox
@@ -125,4 +126,4 @@ The deadline change was independently reviewed. A context-cold sub-agent reviewe
 
 - **Post-retention publication:** reconstruction or archive remains outside the bounded Workflow-chain contract, whose public result is `unavailable` after the selected retained Run disappears.
 - **Workload isolation:** complete Horizon 3 with queue and Worker isolation, backpressure, tenant fairness, capacity observability, shared-store failover, representative mixed-model tests, and published throughput, latency, saturation, recovery, and cost evidence. More Workers or queue partitions alone do not constitute this result.
-- **Hosting breadth:** Message payload and routing, general Worker versioning, Activity heartbeats, Search Attributes, general cancellation recovery, and broader timer, effect, and expression families remain absent.
+- **Hosting breadth:** Message payload beyond the exact scalar Intermediate Catch Event slice and Message routing, general Worker versioning, Activity heartbeats, Search Attributes, general cancellation recovery, and broader timer, effect, and expression families remain absent.

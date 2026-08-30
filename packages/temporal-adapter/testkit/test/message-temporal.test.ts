@@ -21,6 +21,9 @@ import {
   exerciseIntermediateCatchMessageReverseOrder,
 } from "./intermediate-catch-message-temporal-cases.ts";
 import {
+  exercisePayloadMessageAcrossWorkflowChain,
+} from "./message-payload-temporal-cases.ts";
+import {
   replayMessageHistories,
   startMessageWorker,
   stopMessageWorker,
@@ -103,6 +106,10 @@ describe("Message Signal delivery", { concurrency: false }, () => {
 
   test("direct-channel erasure is observably rejected", async () => {
     await exerciseReceiveTaskChannelErasure(caseContext());
+  });
+
+  test("payload routing and refusal survive Worker replacement and continuation", async () => {
+    await exercisePayloadMessageAcrossWorkflowChain(caseContext());
   });
 
   function caseContext(): MessageTemporalCaseContext {
