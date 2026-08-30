@@ -194,6 +194,7 @@ function addIntermediateCatchCapability(
   switch (definition) {
     case "messageEventDefinition":
       capabilities.add("intermediateCatchMessageEvent");
+      addMessageCatchPayloadCapability(event, capabilities);
       return;
     case "timerEventDefinition":
       capabilities.add("intermediateCatchTimerEvent");
@@ -203,6 +204,26 @@ function addIntermediateCatchCapability(
         `unclassified executable BPMN Intermediate Catch Event variant ${definition ?? "none"}`,
       );
   }
+}
+
+function addMessageCatchPayloadCapability(
+  event: XmlElement,
+  capabilities: Set<MvpBpmnCapabilityId>,
+): void {
+  const payloadChildren = [
+    "dataOutput",
+    "dataOutputAssociation",
+    "outputSet",
+  ].filter((name) => hasDirectChild(event, name));
+  if (payloadChildren.length === 0) {
+    return;
+  }
+  if (payloadChildren.length !== 3) {
+    throw new TypeError(
+      "unclassified executable BPMN Message Catch Event payload mediation",
+    );
+  }
+  capabilities.add("messagePayloadCatchEvent");
 }
 
 function addBoundaryCapability(

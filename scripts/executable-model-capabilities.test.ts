@@ -27,6 +27,52 @@ test("distinguishes Timer Start from an Intermediate Catch Timer", () => {
   assert.ok(!timerCatch.includes("timerStartEvent"));
 });
 
+test("distinguishes a payload-bearing Message catch from a payload-free catch", () => {
+  const payloadCatch = detectExecutableBpmnCapabilities(`
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:process id="Process_Payload" isExecutable="true">
+        <bpmn:intermediateCatchEvent id="Catch_Payload">
+          <bpmn:dataOutput id="Payload" />
+          <bpmn:dataOutputAssociation>
+            <bpmn:sourceRef>Payload</bpmn:sourceRef>
+            <bpmn:targetRef>StoredPayload</bpmn:targetRef>
+          </bpmn:dataOutputAssociation>
+          <bpmn:outputSet><bpmn:dataOutputRefs>Payload</bpmn:dataOutputRefs></bpmn:outputSet>
+          <bpmn:messageEventDefinition />
+        </bpmn:intermediateCatchEvent>
+      </bpmn:process>
+    </bpmn:definitions>
+  `);
+  const payloadFreeCatch = detectExecutableBpmnCapabilities(`
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:process id="Process_PayloadFree" isExecutable="true">
+        <bpmn:intermediateCatchEvent id="Catch_PayloadFree">
+          <bpmn:messageEventDefinition />
+        </bpmn:intermediateCatchEvent>
+      </bpmn:process>
+    </bpmn:definitions>
+  `);
+
+  assert.equal(payloadCatch.includes("messagePayloadCatchEvent"), true);
+  assert.equal(
+    payloadFreeCatch.includes("messagePayloadCatchEvent"),
+    false,
+  );
+  assert.throws(
+    () => detectExecutableBpmnCapabilities(`
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+        <bpmn:process id="Process_PartialPayload" isExecutable="true">
+          <bpmn:intermediateCatchEvent id="Catch_PartialPayload">
+            <bpmn:dataOutput id="Payload" />
+            <bpmn:messageEventDefinition />
+          </bpmn:intermediateCatchEvent>
+        </bpmn:process>
+      </bpmn:definitions>
+    `),
+    /unclassified executable BPMN Message Catch Event payload mediation/u,
+  );
+});
+
 test("distinguishes boundary variants by interruption and attached element", () => {
   const capabilities = detectExecutableBpmnCapabilities(`
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">

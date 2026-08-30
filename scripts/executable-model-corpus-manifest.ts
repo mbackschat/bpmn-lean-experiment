@@ -96,6 +96,7 @@ const corpusMechanisms = new Set([
   "literalUserTaskAssignment",
   "mappedData",
   "messageStart",
+  "messagePayloadCatchMediation",
   "messageWait",
   "nonInterruptingBoundaryTimer",
   "orderedCollectionData",

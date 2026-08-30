@@ -432,6 +432,42 @@
       }
     },
     {
+      "id": "settlement-confirmation-review",
+      "title": "Review a confirmed settlement",
+      "businessPurpose": "Wait for the clearing house to confirm a settlement, record its reference on the case, and then hand the confirmed settlement to a reviewer.",
+      "cloneFamily": "message-payload-then-human-review",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "messageWait",
+        "messagePayloadCatchMediation",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/message-payload-catch/process.bpmn",
+        "sha256": "6f1177913a919a024719c7a91c207be70df1ded57852626bc8f4c25551ffc605",
+        "scenarioRelativePath": "scenarios/message-payload-catch/supplied-scalar.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-message-payload-catch-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "message-payload-catch-supplied-scalar",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Operation-addressed payload delivery and the metadata-free follow-up User Task are not yet one production browser journey."
+      }
+    },
+    {
       "id": "invoice-receipt-wait",
       "title": "Wait for an invoice receipt",
       "businessPurpose": "Keep an invoice case waiting until the expected addressed receipt message arrives.",

@@ -55,6 +55,14 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.match(html, /atomic index-ordered String-list output/iu);
   assert.match(
     html,
+    /Message Intermediate Catch Event with a direct Data Output/u,
+  );
+  assert.match(
+    html,
+    /absent payload is refused and leaves the subscription live/iu,
+  );
+  assert.match(
+    html,
     /Interrupting Timer Boundary Event on sequential Multi-Instance User Task/u,
   );
   assert.match(html, /publishes no partial output/iu);

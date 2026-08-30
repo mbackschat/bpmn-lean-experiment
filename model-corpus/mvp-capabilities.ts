@@ -236,6 +236,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notSelected,
   },
   {
+    id: "messagePayloadCatchEvent",
+    family: "Intermediate Catch Events",
+    element: "Message Intermediate Catch Event with a direct Data Output",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One operation-addressed subscription with one required scalar DataOutput in one OutputSet and one direct Data Output Association into a Process Property; String and explicit null payloads are written, while an absent payload is refused and leaves the subscription live.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "intermediateCatchTimerEvent",
     family: "Intermediate Catch Events",
     element: "Timer Intermediate Catch Event",
