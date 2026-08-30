@@ -49,6 +49,9 @@ import {
 import {
   compileActivityDataOutputCheckedProcess,
 } from "./activity-data-output-source.js";
+import {
+  compileMessagePayloadCatchCheckedProcess,
+} from "./message-payload-catch-source.js";
 
 export const CompilationDispatchId = Object.freeze({
   Generic: "generic",
@@ -60,6 +63,7 @@ export const CompilationDispatchId = Object.freeze({
   ParallelMultiInstanceUserTask: "parallelMultiInstanceUserTask",
   ActivityDataInputUserTask: "activityDataInputUserTask",
   ActivityDataOutputUserTask: "activityDataOutputUserTask",
+  MessagePayloadCatch: "messagePayloadCatch",
 } as const);
 
 export type CompilationDispatchId =
@@ -179,6 +183,16 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
               "The Activity data-output profile does not admit a source overlay.",
             ),
     },
+    {
+      id: CompilationDispatchId.MessagePayloadCatch,
+      semanticProfile: SemanticProfileId.MessagePayloadCatch,
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileMessagePayloadCatchCheckedProcess(rootElement, source, null)
+          : unsupported(
+              "The Message payload catch profile does not admit a source overlay.",
+            ),
+    },
   ]);
 
 export function compileDispatchedCheckedProcess(
@@ -224,6 +238,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.ParallelMultiInstanceUserTask:
     case CompilationDispatchId.ActivityDataInputUserTask:
     case CompilationDispatchId.ActivityDataOutputUserTask:
+    case CompilationDispatchId.MessagePayloadCatch:
       return dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);

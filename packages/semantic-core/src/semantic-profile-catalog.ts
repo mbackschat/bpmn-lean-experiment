@@ -35,6 +35,8 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.2.0-intermediate-catch-timer-draft",
   IntermediateCatchMessage:
     "bpmn-2.0.2-intermediate-catch-message-draft",
+  MessagePayloadCatch:
+    "bpmn-2.0.2-message-payload-catch-draft",
   MessageAddressedReceiveTask:
     "cibseven-2.2.0-message-addressed-receive-task-draft",
   NonInterruptingBoundaryTimer:

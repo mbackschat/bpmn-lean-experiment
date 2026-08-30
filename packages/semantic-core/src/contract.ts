@@ -41,6 +41,7 @@ export enum StimulusKind {
   TriggerTimerStart = "triggerTimerStart",
   CompleteUserTaskInstance = "completeUserTaskInstance",
   DeliverMessage = "deliverMessage",
+  DeliverPayloadMessage = "deliverPayloadMessage",
   FireTimer = "fireTimer",
   CompleteEffect = "completeEffect",
   ReportEffectFailure = "reportEffectFailure",
@@ -104,6 +105,27 @@ export type DeliverMessageStimulus = DeepReadonly<{
   commandId: string;
   subscriptionId: MessageSubscriptionId;
   channel: import("./semantic-value-contract.js").MessageChannel;
+}>;
+
+/**
+ * Delivers one Message together with the single payload value its subscription declares.
+ *
+ * A separate arm rather than an optional `payload` on `DeliverMessageStimulus`, so an absent payload
+ * is a choice of arm instead of a null at a field. That keeps a delivered explicit null a payload
+ * whose kind is null, which is the same presence-of-binding discipline the Activity data capsules
+ * use, and leaves every existing `deliverMessage` producer and consumer byte-identical.
+ *
+ * The payload participates in content-bound command identity. Two deliveries that differ only in
+ * payload are semantically distinct commands, so a host deriving an identity from `commandId` and
+ * `subscriptionId` alone would deduplicate the second into the first and lose a transition no public
+ * observation could recover.
+ */
+export type DeliverPayloadMessageStimulus = DeepReadonly<{
+  kind: StimulusKind.DeliverPayloadMessage;
+  commandId: string;
+  subscriptionId: MessageSubscriptionId;
+  channel: import("./semantic-value-contract.js").MessageChannel;
+  payload: VariableValue;
 }>;
 
 export type TimerOccurrenceId = OccurrenceId;
@@ -207,6 +229,7 @@ export type Stimulus =
   | ProcessStartStimulus
   | CompleteUserTaskInstanceStimulus
   | DeliverMessageStimulus
+  | DeliverPayloadMessageStimulus
   | FireTimerStimulus
   | CompleteEffectStimulus
   | ReportEffectFailureStimulus
@@ -289,6 +312,19 @@ export type DeliverMessageInteraction = DeepReadonly<{
   channel: import("./semantic-value-contract.js").MessageChannel;
 }>;
 
+/**
+ * The interaction a payload-declaring subscription publishes instead of `deliverMessage`.
+ *
+ * This is what makes the refusal of a payload-free delivery legible: a caller reads the requirement
+ * from the published contract rather than discovering it by being refused. The wait itself keeps its
+ * existing shape, so the two dispositions are distinguished here and nowhere else.
+ */
+export type DeliverPayloadMessageInteraction = DeepReadonly<{
+  kind: StimulusKind.DeliverPayloadMessage;
+  subscriptionId: MessageSubscriptionId;
+  channel: import("./semantic-value-contract.js").MessageChannel;
+}>;
+
 export type RetryIncidentInteraction = DeepReadonly<{
   kind: StimulusKind.RetryIncident;
   incidentId: EffectIncidentId;
@@ -303,6 +339,7 @@ export type CancelIncidentProcessInteraction = DeepReadonly<{
 export type EnabledInteraction =
   | CompleteUserTaskInstanceInteraction
   | DeliverMessageInteraction
+  | DeliverPayloadMessageInteraction
   | RetryIncidentInteraction
   | CancelIncidentProcessInteraction;
 

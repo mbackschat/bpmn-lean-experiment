@@ -13,6 +13,7 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 - [BPMN 2.0.2 Event-Based Gateway Message/Timer draft](bpmn-2.0.2-event-based-gateway-message-timer-draft/README.md)
 - [BPMN 2.0.2 structured Inclusive Gateway draft](bpmn-2.0.2-inclusive-gateway-selected-branches-draft/README.md)
 - [BPMN 2.0.2 Intermediate Catch Message draft](bpmn-2.0.2-intermediate-catch-message-draft/README.md)
+- [BPMN 2.0.2 Message payload catch mediation draft](bpmn-2.0.2-message-payload-catch-draft/README.md)
 - [BPMN 2.0.2 Message Start Event draft](bpmn-2.0.2-message-start-event-draft/README.md)
 - [BPMN 2.0.2 non-interrupting boundary Timer draft](bpmn-2.0.2-non-interrupting-boundary-timer-draft/README.md)
 - [BPMN 2.0.2 parallel Multi-Instance User Task draft](bpmn-2.0.2-parallel-multi-instance-user-task-draft/README.md)

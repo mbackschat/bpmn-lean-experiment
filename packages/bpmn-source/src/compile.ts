@@ -45,6 +45,9 @@ import {
   terminateEndContainmentCardinalities,
 } from "./terminate-end-event-source.js";
 import {
+  messagePayloadCatchContainmentCardinalities,
+} from "./message-payload-catch-source.js";
+import {
   carriesDuplicateCandidateGroupsAttribute,
   isUserTaskMetadataProfile,
   userTaskMetadataBindingValid,
@@ -195,7 +198,10 @@ export async function compileBpmnToSemanticProcess(
   const cardinalityMismatch = firstContainmentCardinalityMismatch(
     xml,
     imported.located,
-    terminateEndContainmentCardinalities(request.semanticProfile),
+    [
+      ...terminateEndContainmentCardinalities(request.semanticProfile),
+      ...messagePayloadCatchContainmentCardinalities(request.semanticProfile),
+    ],
   );
   if (cardinalityMismatch !== undefined) {
     return reject([

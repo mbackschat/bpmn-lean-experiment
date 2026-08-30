@@ -1,0 +1,106 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-message-payload-catch-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-one-required-direct-intermediate-catch-message-payload-output",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 8.5.2",
+      "Clause 10.4.1",
+      "Clause 10.5.1",
+      "Table 10.24",
+      "Table 10.25",
+      "Table 10.27",
+      "Table 10.52",
+      "Table 10.53",
+      "Table 10.54",
+      "Table 10.55",
+      "Table 10.99",
+      "Table 10.101",
+      "Table 10.102",
+      "Table 10.103",
+      "Table 10.107"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "item-definition",
+      "message-payload",
+      "interface-operation-input-message",
+      "intermediate-catch-message-event",
+      "one-required-scalar-event-data-output",
+      "one-output-set",
+      "direct-process-property-data-output-association",
+      "operation-addressed-message-subscription",
+      "occurrence-addressed-payload-delivery",
+      "association-routed-process-property-write",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "direct-subscription-addressing"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "multiple-event-outputs",
+    "multiple-output-sets",
+    "optional-output",
+    "while-executing-output",
+    "collection-and-nested-values",
+    "assignment",
+    "transformation",
+    "formal-expression",
+    "data-input",
+    "activity-data-mediation",
+    "message-name-routing",
+    "business-key-correlation",
+    "bpmn-correlation-key",
+    "modeled-message-throw",
+    "message-flow",
+    "collaboration",
+    "receive-task",
+    "send-task",
+    "boundary-message-event",
+    "message-start-event",
+    "message-end-event",
+    "parallel-multiple-event",
+    "repeated-message-activation",
+    "parallel-interaction",
+    "looping",
+    "multi-instance",
+    "sub-process-scope",
+    "call-activity-mappings",
+    "vendor-extensions",
+    "cib-message-compatibility",
+    "production-history-compatibility",
+    "bpmn-process-execution-conformance"
+  ]
+}

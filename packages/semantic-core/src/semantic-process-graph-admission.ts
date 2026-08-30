@@ -464,6 +464,7 @@ function operationInputs(
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect:
     case SemanticOperationKind.AwaitEventRace:
@@ -490,6 +491,7 @@ function operationOutputs(
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitDataOutputUserTask:
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.MergeExclusive:

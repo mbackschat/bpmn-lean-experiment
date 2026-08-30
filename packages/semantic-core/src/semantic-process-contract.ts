@@ -11,6 +11,7 @@
  */
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
+import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -63,6 +64,7 @@ export enum SemanticOperationKind {
   AwaitBoundedUserTask = "awaitBoundedUserTask",
   AwaitMonitoredUserTask = "awaitMonitoredUserTask",
   AwaitMessage = "awaitMessage",
+  AwaitPayloadMessage = "awaitPayloadMessage",
   AwaitTimer = "awaitTimer",
   AwaitEffect = "awaitEffect",
   Duplicate = "duplicate",
@@ -341,6 +343,30 @@ export type AwaitDataOutputUserTaskOperation = OperationBase &
     directOutput: DirectActivityDataOutput;
   }>;
 
+/**
+ * A Message subscription whose delivery must carry exactly one payload value.
+ *
+ * Arming is identical to `awaitMessage`: a declared `DataOutput` constrains the trigger's effect and
+ * never the subscription, so nothing here delays or narrows what the Event waits for. The two arms
+ * separate at delivery, where this one refuses a payload-free command and routes an accepted
+ * payload into the Process binding named by `directOutput.targetPropertyId`.
+ *
+ * The delivered value is never bound under `directOutput.sourceDataOutputId`. That id names the
+ * Event's own output, which has no lifetime a later state could observe, so materializing it would
+ * be dead state; the association alone decides the surviving name.
+ */
+export type AwaitPayloadMessageOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitPayloadMessage;
+    input: string;
+    output: string;
+    message: {
+      elementId: string;
+      channel: MessageChannel;
+    };
+    directOutput: DirectCatchEventPayloadOutput;
+  }>;
+
 export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
@@ -481,6 +507,7 @@ export type SemanticOperation =
           channel: MessageChannel;
         };
       }>)
+  | AwaitPayloadMessageOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.AwaitEffect;

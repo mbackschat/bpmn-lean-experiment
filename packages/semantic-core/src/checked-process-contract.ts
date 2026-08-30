@@ -8,6 +8,7 @@
  */
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
+import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -45,6 +46,7 @@ export enum CheckedNodeKind {
   ParallelMultiInstanceUserTask = "parallelMultiInstanceUserTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
+  PayloadMessageCatchEvent = "payloadMessageCatchEvent",
   ReceiveTask = "receiveTask",
   ServiceTask = "serviceTask",
   ConfiguredTask = "configuredTask",
@@ -238,6 +240,23 @@ export type CheckedNode =
         MessageChannel,
         { kind: typeof MessageChannelKind.OperationMessage }
       >;
+    }>
+  /**
+   * An Intermediate Catch Message Event that carries the delivered payload into Process scope.
+   *
+   * A separate arm rather than an optional field on `intermediateCatchMessageEvent`, because the two
+   * differ in what a delivery must carry rather than only in what it then does: a payload-free
+   * subscription accepts a delivery this one refuses. Keeping them apart lets every existing model
+   * lower to a byte-identical Program and keeps both dispositions exhaustively matched.
+   */
+  | DeepReadonly<{
+      kind: CheckedNodeKind.PayloadMessageCatchEvent;
+      id: string;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
+      directOutput: DirectCatchEventPayloadOutput;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.ReceiveTask;

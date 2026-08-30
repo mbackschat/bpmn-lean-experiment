@@ -318,6 +318,7 @@ function isProcessStartStimulus(
       return true;
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverPayloadMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:

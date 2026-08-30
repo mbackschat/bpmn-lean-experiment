@@ -8,6 +8,7 @@ export {
   isDataInputTaskDefinition,
 } from "./semantic-process-activity-data-input-runtime.js";
 export * from "./activity-data-output-contract.js";
+export * from "./catch-event-payload-contract.js";
 export {
   isDataOutputTaskDefinition,
 } from "./semantic-process-activity-data-output-runtime.js";

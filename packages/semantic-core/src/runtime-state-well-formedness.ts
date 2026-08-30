@@ -132,6 +132,7 @@ function declaredElementIds(
         timer.add(operation.timer.elementId);
         break;
       case SemanticOperationKind.AwaitMessage:
+      case SemanticOperationKind.AwaitPayloadMessage:
         message.add(operation.message.elementId);
         break;
       case SemanticOperationKind.AwaitEventRace:

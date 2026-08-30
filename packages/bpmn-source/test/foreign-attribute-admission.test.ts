@@ -349,6 +349,16 @@ const dispatchFixtures = {
     semanticProfile: SemanticProfileId.ActivityDataOutputUserTask,
     find: '<bpmn:startEvent id="StartEvent_Application"',
   },
+  messagePayloadCatch: {
+    path: "the Message payload catch reader",
+    source: new URL(
+      "../../../scenarios/message-payload-catch/process.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "message-payload-catch-process",
+    semanticProfile: SemanticProfileId.MessagePayloadCatch,
+    find: '<bpmn:startEvent id="StartEvent_PaymentInstructed"',
+  },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 
 test("applies foreign-attribute admission through every registered compilation dispatch", async () => {

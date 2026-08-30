@@ -88,6 +88,7 @@ function operationWaitDeclarations(
         elementId: operation.task.elementId,
       }];
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
       return [{
         family: InternalOccurrenceKind.Message,
         elementId: operation.message.elementId,

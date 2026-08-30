@@ -2,6 +2,7 @@ import {
   EffectOperation,
   EffectProtocol,
   MappingExpressionKind,
+  MessageChannelKind,
 } from "./semantic-value-contract.js";
 import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
 import type { SemanticOperation } from "./semantic-process-contract.js";
@@ -12,9 +13,7 @@ import {
   isWellFormedSelectManyOperation,
   isWellFormedSynchronizeSelectedOperation,
 } from "./inclusive-gateway-admission.js";
-import {
-  isMessageChannel,
-} from "./message-channel.js";
+import { isMessageChannel } from "./message-channel.js";
 import {
   compareCanonicalStrings,
   isWellFormedWireString,
@@ -148,6 +147,54 @@ function isWellFormedAwaitDataOutputUserTaskOperation(
   }
   const identities = [
     value.task.elementId,
+    value.directOutput.associationId,
+    value.directOutput.sourceDataOutputId,
+    value.directOutput.targetPropertyId,
+  ];
+  return new Set(identities).size === identities.length;
+}
+
+function isWellFormedAwaitPayloadMessageOperation(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+): boolean {
+  if (
+    !hasOnlyKeys(value, [
+      "id",
+      "kind",
+      "origin",
+      "input",
+      "output",
+      "message",
+      "directOutput",
+    ]) ||
+    !isPlaceReference(value.input, placeIds) ||
+    !isPlaceReference(value.output, placeIds) ||
+    value.input === value.output ||
+    !isRecord(value.origin) ||
+    !isRecord(value.message) ||
+    !hasOnlyKeys(value.message, ["elementId", "channel"]) ||
+    !isNonEmptyString(value.message.elementId) ||
+    value.message.elementId !== value.origin.elementId ||
+    !isMessageChannel(value.message.channel) ||
+    value.message.channel.kind !== MessageChannelKind.OperationMessage ||
+    !isRecord(value.directOutput) ||
+    !hasOnlyKeys(value.directOutput, [
+      "associationId",
+      "sourceDataOutputId",
+      "sourceDataOutputName",
+      "targetPropertyId",
+    ]) ||
+    !isNonEmptyString(value.directOutput.associationId) ||
+    !isNonEmptyString(value.directOutput.sourceDataOutputId) ||
+    !isOptionalName(value.directOutput.sourceDataOutputName) ||
+    !isNonEmptyString(value.directOutput.targetPropertyId)
+  ) {
+    return false;
+  }
+  const identities = [
+    value.message.elementId,
+    value.message.channel.messageId,
     value.directOutput.associationId,
     value.directOutput.sourceDataOutputId,
     value.directOutput.targetPropertyId,
@@ -292,6 +339,8 @@ export function isWellFormedSemanticOperation(
         value.message.elementId === value.origin.elementId &&
         isMessageChannel(value.message.channel)
       );
+    case SemanticOperationKind.AwaitPayloadMessage:
+      return isWellFormedAwaitPayloadMessageOperation(value, placeIds);
     case SemanticOperationKind.AwaitEffect:
       return (
         hasOnlyKeys(value, [

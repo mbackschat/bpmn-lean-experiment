@@ -95,6 +95,8 @@ export function candidateLongLivedStarts(
       ));
       return oneWaitStart(processId, operation.message.elementId, owner, wait?.id);
     }
+    case SemanticOperationKind.AwaitPayloadMessage:
+      return null;
     case SemanticOperationKind.AwaitTimer: {
       const deadlineMs = after.logicalTimeMs + operation.timer.durationMs;
       const wait = Number.isSafeInteger(deadlineMs)

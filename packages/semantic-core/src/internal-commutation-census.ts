@@ -27,6 +27,7 @@ export function semanticOperationInternalFamily(
       return InternalOperationFamily.ProcessInitiation;
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect:
       return InternalOperationFamily.OrdinaryWaitArming;

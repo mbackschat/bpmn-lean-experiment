@@ -155,6 +155,7 @@ function hasSelectedArity(
     case CheckedNodeKind.ParallelMultiInstanceUserTask:
     case CheckedNodeKind.IntermediateCatchTimerEvent:
     case CheckedNodeKind.IntermediateCatchMessageEvent:
+    case CheckedNodeKind.PayloadMessageCatchEvent:
     case CheckedNodeKind.ReceiveTask:
     case CheckedNodeKind.ServiceTask:
     case CheckedNodeKind.ConfiguredTask:

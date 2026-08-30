@@ -14,6 +14,8 @@ import { MessageChannelKind } from "./semantic-value-contract.js";
 import {
   isVariablePatch,
   sameVariablePatch,
+  isVariableValue,
+  sameVariableValue,
 } from "./variable-value.js";
 
 export function stimulusCommandId(stimulus: Stimulus): string {
@@ -23,6 +25,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
     case StimulusKind.TriggerTimerStart:
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverPayloadMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:
@@ -76,6 +79,14 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.commandId === right.commandId &&
         sameOccurrenceId(left.subscriptionId, right.subscriptionId) &&
         sameMessageChannel(left.channel, right.channel)
+      );
+    case StimulusKind.DeliverPayloadMessage:
+      return (
+        right.kind === StimulusKind.DeliverPayloadMessage &&
+        left.commandId === right.commandId &&
+        sameOccurrenceId(left.subscriptionId, right.subscriptionId) &&
+        sameMessageChannel(left.channel, right.channel) &&
+        sameVariableValue(left.payload, right.payload)
       );
     case StimulusKind.FireTimer:
       return (
@@ -203,6 +214,20 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isNonEmptyString(value.commandId) &&
         isOccurrenceId(value.subscriptionId) &&
         isMessageChannel(value.channel)
+      );
+    case StimulusKind.DeliverPayloadMessage:
+      return (
+        hasOnlyKeys(value, [
+          "kind",
+          "commandId",
+          "subscriptionId",
+          "channel",
+          "payload",
+        ]) &&
+        isNonEmptyString(value.commandId) &&
+        isOccurrenceId(value.subscriptionId) &&
+        isMessageChannel(value.channel) &&
+        isVariableValue(value.payload)
       );
     case StimulusKind.FireTimer:
       return (

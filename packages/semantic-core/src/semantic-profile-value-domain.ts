@@ -174,6 +174,7 @@ function profileValueDomain(
     case SemanticProfileId.EmbeddedSubProcessCompletion:
     case SemanticProfileId.EventBasedGatewayMessageTimer:
     case SemanticProfileId.IntermediateCatchMessage:
+    case SemanticProfileId.MessagePayloadCatch:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MessageAddressedReceiveTask:
     case SemanticProfileId.MessageStart:
@@ -230,6 +231,8 @@ export function profileAllowsStimulusValueDomain(
     case StimulusKind.DeliverMessage:
     case StimulusKind.FireTimer:
       return true;
+    case StimulusKind.DeliverPayloadMessage:
+      return false;
     default:
       return assertNever(stimulus);
   }

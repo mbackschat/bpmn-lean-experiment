@@ -384,6 +384,7 @@ function waitMatchesUserTask(
       case SemanticOperationKind.ReturnProcess:
       case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       case SemanticOperationKind.AwaitMessage:
+      case SemanticOperationKind.AwaitPayloadMessage:
       case SemanticOperationKind.AwaitTimer:
       case SemanticOperationKind.AwaitEffect:
       case SemanticOperationKind.AwaitEventRace:

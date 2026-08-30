@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_MessagePayloadSettlement"
+  targetNamespace="https://bpmn-lean.org/scenarios/message-payload-settlement">
+  <bpmn:itemDefinition id="ItemDefinition_SettlementReference" />
+  <bpmn:message
+    id="Message_SettlementConfirmed"
+    name="Settlement confirmed"
+    itemRef="ItemDefinition_SettlementReference" />
+  <bpmn:interface id="Interface_ClearingHouse" name="Clearing house">
+    <bpmn:operation id="Operation_ConfirmSettlement" name="Confirm settlement">
+      <bpmn:inMessageRef>Message_SettlementConfirmed</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_MessagePayloadSettlement" isExecutable="true">
+    <bpmn:property id="Property_SettlementReference" />
+
+    <bpmn:startEvent id="StartEvent_PaymentInstructed">
+      <bpmn:outgoing>Flow_Instructed_Confirm</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Instructed_Confirm"
+      sourceRef="StartEvent_PaymentInstructed"
+      targetRef="MessageCatch_SettlementConfirmed" />
+
+    <bpmn:intermediateCatchEvent id="MessageCatch_SettlementConfirmed">
+      <bpmn:incoming>Flow_Instructed_Confirm</bpmn:incoming>
+      <bpmn:outgoing>Flow_Confirm_Review</bpmn:outgoing>
+      <bpmn:dataOutput
+        id="DataOutput_ConfirmedReference"
+        name="Confirmed settlement reference"
+        itemSubjectRef="ItemDefinition_SettlementReference" />
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_SettlementReference">
+        <bpmn:sourceRef>DataOutput_ConfirmedReference</bpmn:sourceRef>
+        <bpmn:targetRef>Property_SettlementReference</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:outputSet id="OutputSet_SettlementConfirmed">
+        <bpmn:dataOutputRefs>DataOutput_ConfirmedReference</bpmn:dataOutputRefs>
+      </bpmn:outputSet>
+      <bpmn:messageEventDefinition
+        id="MessageEventDefinition_SettlementConfirmed"
+        messageRef="Message_SettlementConfirmed"
+        operationRef="Operation_ConfirmSettlement" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Confirm_Review"
+      sourceRef="MessageCatch_SettlementConfirmed"
+      targetRef="UserTask_ReviewSettlement" />
+
+    <bpmn:userTask id="UserTask_ReviewSettlement" name="Review settlement">
+      <bpmn:incoming>Flow_Confirm_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Recorded</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow
+      id="Flow_Review_Recorded"
+      sourceRef="UserTask_ReviewSettlement"
+      targetRef="EndEvent_SettlementRecorded" />
+
+    <bpmn:endEvent id="EndEvent_SettlementRecorded">
+      <bpmn:incoming>Flow_Review_Recorded</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

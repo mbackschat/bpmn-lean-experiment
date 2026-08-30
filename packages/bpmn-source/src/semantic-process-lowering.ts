@@ -246,6 +246,15 @@ function lowerNode(
         output: requireOnly(outgoing, node.id, "outgoing"),
         message: { elementId: node.id, channel: node.channel },
       });
+    case CheckedNodeKind.PayloadMessageCatchEvent:
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.AwaitPayloadMessage,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        message: { elementId: node.id, channel: node.channel },
+        directOutput: node.directOutput,
+      });
     case CheckedNodeKind.ReceiveTask:
       return scoped({
         ...base,

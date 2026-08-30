@@ -75,6 +75,13 @@ export function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         end,
       ]);
+    case SemanticProfileId.MessagePayloadCatch:
+      return rootChecked([
+        start,
+        CheckedNodeKind.PayloadMessageCatchEvent,
+        CheckedNodeKind.UserTask,
+        end,
+      ]);
     case SemanticProfileId.MessageAddressedReceiveTask:
       return rootChecked([
         start,

@@ -104,6 +104,8 @@ export function expectedExternalLifecycle(
             lifecycleEnd(pair, FlowNodeOccurrenceTerminalKind.Cancelled),
           ]);
     }
+    case StimulusKind.DeliverPayloadMessage:
+      return failCompleteness();
     case StimulusKind.FireTimer: {
       const timer = findWait(open, stimulus.timerId);
       if (timer !== null) {

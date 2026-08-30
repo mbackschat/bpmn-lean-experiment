@@ -242,6 +242,8 @@ export function admit(
         ? { outcome: CommandOutcome.Rejected, state }
         : { outcome: CommandOutcome.Committed, state: next };
     }
+    case StimulusKind.DeliverPayloadMessage:
+      return { outcome: CommandOutcome.Rejected, state };
     case StimulusKind.FireTimer: {
       if (isEventRaceTimerDefinition(program, stimulus.timerId)) {
         const next = winEventRaceWithTimer(program, state, stimulus);

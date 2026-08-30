@@ -225,6 +225,8 @@ function externalLifecycle(
           { anchor: waitAnchor(race.timerOccurrenceId), terminal: FlowNodeOccurrenceTerminalKind.Cancelled },
         ]);
     }
+    case StimulusKind.DeliverPayloadMessage:
+      return null;
     case StimulusKind.FireTimer: {
       const race = only(before.eventRaces.filter(({ timerOccurrenceId }) => sameOccurrence(timerOccurrenceId, stimulus.timerId)));
       if (race !== undefined) {
@@ -327,6 +329,8 @@ function internalLifecycle(
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
+    case SemanticOperationKind.AwaitPayloadMessage:
+      return null;
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return null;
     case SemanticOperationKind.AwaitEventRace: {
