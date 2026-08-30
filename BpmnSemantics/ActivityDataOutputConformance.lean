@@ -66,6 +66,29 @@ private def underwritingProgram : Program :=
 private def underwritingInstanceId : SemanticId :=
   ⟨"ActivityDataOutputInstance_1"⟩
 
+/-- A checked process identical to the registered one except that the declared `DataOutput` and its
+target `Property` share one identity. No BPMN document can express this, because both ends are
+`xsd:ID`, so admission of the lowered Program is the only boundary that can refuse it. -/
+private def mergedIdentityCheckedProcess : CheckedProcess :=
+  { underwritingCheckedProcess with
+    nodes :=
+      [ .noneEndEvent ⟨"EndEvent_Recorded"⟩
+      , .noneStartEvent ⟨"StartEvent_Application"⟩
+      , .dataOutputUserTask ⟨"UserTask_Decide"⟩ (some "Decide credit application")
+          { decisionDirectOutput with
+            targetPropertyId := decisionDirectOutput.sourceDataOutputId } ] }
+
+/-- `ADOUTPUT-ROUTE-01`'s precondition made executable rather than merely asserted.
+
+Equal identities would let a name-merged completion satisfy every routed expectation in this module
+by coincidence. The registered program is admissible and the merged one is not, so the refusal is
+the identity rule rather than a validator that rejects everything. -/
+theorem mergedOutputAndPropertyIdentityIsStructurallyRejected :
+    (programWellFormed underwritingProgram,
+      programWellFormed (lowerCheckedProcess mergedIdentityCheckedProcess)) =
+      (true, false) := by
+  decide +kernel
+
 /-- The only start this capsule registers: no Process data at all, which is exactly the state in
 which the sibling input model creates neither a task nor an Activity record. -/
 private def startUnderwriting : Stimulus :=
@@ -112,8 +135,11 @@ theorem activationConsumesTheIncomingToken :
       [(⟨"place:Flow_Application_Decide"⟩, 0), (⟨"place:Flow_Decide_Recorded"⟩, 0)] := by
   decide +kernel
 
-/-- `ADOUTPUT-ENTRY-01`. The Activity owns exactly one local scope and it is empty: this family arms
-the container at entry and the completion supplies its content. -/
+/-- `ADOUTPUT-ENTRY-01`. The Activity owns exactly one local scope and it is empty.
+
+The container is armed at entry rather than at completion so the Activity owns one lifetime rather
+than two. It stays empty for that whole lifetime, because `ADOUTPUT-ATOMIC-01` fuses the fill with
+the association and the submitted value reaches Process scope without passing through here. -/
 theorem activationArmsOneEmptyActivityScope :
     started.state.variables.activities =
       [{ owner := decideActivityOwner, bindings := [] }] := by
