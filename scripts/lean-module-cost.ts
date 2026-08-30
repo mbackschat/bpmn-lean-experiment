@@ -135,6 +135,7 @@ export const leanModuleCostRecord = {
     "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
     "BpmnSemantics.CallActivityConformance",
     "BpmnSemantics.TerminateEndEventConformance",
+    "BpmnSemantics.ParallelUserTaskMetadataCompositionConformance",
   ],
   rows: [
     {
@@ -176,7 +177,12 @@ export const leanModuleCostRecord = {
       measuredAtCommit: "b9c1c586",
     },
     { module: "BpmnSemantics.RuntimeStateActivityConformance", peakResidentKib: 2792548, elapsedSeconds: 30.5 },
-    { module: "BpmnSemantics.ParallelUserTaskMetadataCompositionConformance", peakResidentKib: 2718336, elapsedSeconds: 24.6 },
+    {
+      module: "BpmnSemantics.ParallelUserTaskMetadataCompositionConformance",
+      peakResidentKib: 3282876,
+      elapsedSeconds: 52.46,
+      measuredAtCommit: "d78cafd3",
+    },
     {
       module: "BpmnSemantics.SemanticProcessAdmissionConformance",
       peakResidentKib: 2713164,
@@ -227,9 +233,15 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.UserTaskMetadataConformance",
-      peakResidentKib: 1648308,
-      elapsedSeconds: 8.16,
-      measuredAtCommit: "f92b61d4",
+      peakResidentKib: 1810116,
+      elapsedSeconds: 10.37,
+      measuredAtCommit: "d78cafd3",
+    },
+    {
+      module: "BpmnSemantics.ActivityDataOutputConformance",
+      peakResidentKib: 1963524,
+      elapsedSeconds: 9.39,
+      measuredAtCommit: "d78cafd3",
     },
     { module: "BpmnSemantics.ReceiveTaskConformance", peakResidentKib: 1679876, elapsedSeconds: 19.3 },
     { module: "BpmnSemantics.RuntimeStateIdentityBoundConformance", peakResidentKib: 1676016, elapsedSeconds: 10.7 },
