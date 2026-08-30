@@ -183,6 +183,6 @@ Reopen before admitting `structureRef` or any structured payload, a collection, 
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `48cc5b49` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `48cc5b49` | `fork-turns-none` | `approve-with-required-edits` | `89ea501e, 0c44fdbd` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
