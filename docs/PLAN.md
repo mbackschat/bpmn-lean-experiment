@@ -39,8 +39,8 @@ Beta breadth now advances at `DATA-AND-TASK-MECHANISMS`. The approved Internal C
 
 ## Current evidence
 
-- Activity data-output proposal target. Command: `./scripts/pnpm.sh run test:infrastructure`. Status: `exit 0`. Date: `2026-08-30`. Commit: `4cf6d415`, recording `dirty:false`. Elapsed `53000` ms with output SHA-256 `49b581bd8c3598115c2834a5514a17ca085c935d565cc39af54e54527918d978`, run through the durable receipt wrapper against a clean committed head. This is a documentation-only target, so the infrastructure gate is the applicable one; the review packet routes the IL, scoped-data, Activity-occurrence, sibling-capsule, and evidence-lane owner sections.
-- Repository verified floor. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-08-30`. Commit: `0b06ca91`, recording `dirty:false`. Elapsed `330000` ms. This is the last complete verification and covers the graduated data-input capsule, the semantic-map split, and the Product 2 Work narrowing.
+- Activity data-output closure target. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-08-30`. Commit: `92d523bb`, recording `dirty:false`. Elapsed `915000` ms with output SHA-256 `01e6a4ad30e0755ea3010787c7ed3aa81e82b1d125a8681d74c37e3ad2b3104a`, run through the durable receipt wrapper against a clean committed head on a quiet host. This is the complete ordinary GitHub verification entry point and covers Lean, the semantic core, BPMN source, contracts, the registered differential pipeline, both CIB releases, Temporal refinement, and replay.
+- Activity data-output semantic checkpoint. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-08-30`. Commit: `f65a4228`, recording `dirty:false`. Elapsed `305000` ms with output SHA-256 `3a88e0b1fdb594e085d9174ad519b5e348d4d7496cc842b8d4e0e6e37083b40b`. This is the reviewed checkpoint target; the same gate had failed twice before it, once on an experiment matcher the default Lake target does not compile and once on a host-clock margin under load average 85.
 
 ## Exact resume point
 
