@@ -163,6 +163,7 @@
             "awaitDataInputUserTask",
             "awaitDataOutputUserTask",
             "awaitBoundedUserTask",
+            "awaitMessageBoundedUserTask",
             "awaitMonitoredUserTask",
             "awaitSequentialMultiInstanceUserTask",
             "awaitParallelMultiInstanceUserTask",

@@ -32,6 +32,21 @@ function failClosedOperationNames(completenessSource: string): ReadonlyArray<str
   });
 }
 
+function leanPublishedOperations(
+  publicationSource: string,
+): ReadonlyMap<string, string> {
+  return new Map(
+    [...publicationSource.matchAll(
+      /\|\s+\.([A-Za-z0-9_]+)\s+=>\s+some\s+\(toJson\s+"([^"]+)"\)/gu,
+    )].map((match) => {
+      const [, name, value] = match;
+      assert.ok(name !== undefined);
+      assert.ok(value !== undefined);
+      return [name, value];
+    }),
+  );
+}
+
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 test("validates the closed page, result, and full-export structures", async () => {
@@ -66,7 +81,13 @@ test("validates the closed page, result, and full-export structures", async () =
 });
 
 test("covers every stimulus, operation, result, and safe-integer branch", async () => {
-  const [schema, contractSource, programSource, completenessSource] = await Promise.all([
+  const [
+    schema,
+    contractSource,
+    programSource,
+    completenessSource,
+    leanPublicationSource,
+  ] = await Promise.all([
     readSchema("semantic-publication.schema.json"),
     readFile(`${projectRoot}/packages/semantic-core/src/contract.ts`, "utf8"),
     readFile(`${projectRoot}/packages/semantic-core/src/semantic-process-contract.ts`, "utf8"),
@@ -74,11 +95,16 @@ test("covers every stimulus, operation, result, and safe-integer branch", async 
       `${projectRoot}/packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts`,
       "utf8",
     ),
+    readFile(
+      `${projectRoot}/BpmnSemantics/SemanticProcessJson/Publication.lean`,
+      "utf8",
+    ),
   ]);
   const schemaText = JSON.stringify(schema);
   const stimuli = declaredEnumValues(contractSource, "StimulusKind");
   const operations = declaredEnumMembers(programSource, "SemanticOperationKind");
   const failClosed = new Set(failClosedOperationNames(completenessSource));
+  const leanPublished = leanPublishedOperations(leanPublicationSource);
   assert.ok(stimuli.length >= 10, "StimulusKind extraction lost current variants");
   assert.ok(operations.length >= 20, "SemanticOperationKind extraction lost current variants");
   for (const name of failClosed) {
@@ -99,9 +125,14 @@ test("covers every stimulus, operation, result, and safe-integer branch", async 
         !schemaText.includes(`\"${value}\"`),
         `schema carries ${value} although its completeness arm fails closed`,
       );
+      assert.ok(
+        !leanPublished.has(value),
+        `Lean publishes ${value} although its completeness arm fails closed`,
+      );
       continue;
     }
     assert.ok(schemaText.includes(`\"${value}\"`), `schema omits ${value}`);
+    assert.equal(leanPublished.get(value), value, `Lean publication omits ${value}`);
   }
   for (const value of [
     "externalStimulus",

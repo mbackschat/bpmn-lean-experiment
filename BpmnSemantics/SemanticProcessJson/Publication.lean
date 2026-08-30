@@ -48,14 +48,13 @@ private def operationKindJson : SemanticOperationKind → Option Json
       some (toJson "awaitSequentialMultiInstanceUserTask")
   | .awaitParallelMultiInstanceUserTask =>
       some (toJson "awaitParallelMultiInstanceUserTask")
-  | .completeParallelMultiInstanceUserTask =>
-      some (toJson "completeParallelMultiInstanceUserTask")
+  | .completeParallelMultiInstanceUserTask => none
   | .awaitTimer => some (toJson "awaitTimer")
   | .awaitMessage => some (toJson "awaitMessage")
   | .awaitPayloadMessage => some (toJson "awaitPayloadMessage")
   | .awaitEventRace => some (toJson "awaitEventRace")
   | .awaitBoundedUserTask => some (toJson "awaitBoundedUserTask")
-  | .awaitMessageBoundedUserTask => none
+  | .awaitMessageBoundedUserTask => some (toJson "awaitMessageBoundedUserTask")
   | .awaitMonitoredUserTask => some (toJson "awaitMonitoredUserTask")
   | .awaitEffect => some (toJson "awaitEffect")
   | .duplicate => some (toJson "duplicate")
