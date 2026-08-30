@@ -52,6 +52,8 @@ const processDataPreservedNotationProfileId =
   "cibseven-2.2.0-user-task-process-data-preserved-notation-draft";
 const sequentialMultiInstanceProfileId =
   "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
+const messagePayloadCatchProfileId =
+  "bpmn-2.0.2-message-payload-catch-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -158,6 +160,62 @@ test("registers Process data with preserved notation through the existing User T
           { name: "reviewNote", value: { kind: "null" } },
         ],
       }],
+      effectHandlers: [],
+    },
+  );
+});
+
+test("registers Message payload catch through the existing Message driver", async () => {
+  assert.equal(registeredProfiles.includes(messagePayloadCatchProfileId), true);
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) => path.basename(file) === "message-payload-catch.json")
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  assert.deepEqual(
+    {
+      source: config.bpmn.file,
+      sourceId: config.bpmn.sourceId,
+      semanticProfile: config.bpmn.semanticProfile,
+      process: config.process,
+      interactions: config.interactions,
+      effectHandlers: config.effectHandlers,
+    },
+    {
+      source: path.join(
+        projectRoot,
+        "scenarios/message-payload-catch/process.bpmn",
+      ),
+      sourceId: "message-payload-catch-process",
+      semanticProfile: messagePayloadCatchProfileId,
+      process: {
+        instanceId: "MvpExample_message_payload_catch_1",
+        initialVariables: [],
+      },
+      interactions: [
+        {
+          kind: "deliverPayloadMessage",
+          channel: {
+            kind: "operationMessage",
+            interfaceId: "Interface_ClearingHouse",
+            interfaceOperationId: "Operation_ConfirmSettlement",
+            messageId: "Message_SettlementConfirmed",
+          },
+          payload: {
+            kind: "string",
+            value: "settlement-reference-123",
+          },
+          delayMs: 250,
+        },
+        {
+          kind: "completeUserTaskInstance",
+          elementId: "UserTask_ReviewSettlement",
+          delayMs: 250,
+          inputVariableNames: [],
+          submittedValues: [],
+        },
+      ],
       effectHandlers: [],
     },
   );

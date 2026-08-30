@@ -1,0 +1,46 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/message-payload-catch/process.bpmn",
+    "sourceId": "message-payload-catch-process",
+    "semanticProfile": "bpmn-2.0.2-message-payload-catch-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_message_payload_catch_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "deliverPayloadMessage",
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "Interface_ClearingHouse",
+        "interfaceOperationId": "Operation_ConfirmSettlement",
+        "messageId": "Message_SettlementConfirmed"
+      },
+      "payload": {
+        "kind": "string",
+        "value": "settlement-reference-123"
+      },
+      "delayMs": 250
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ReviewSettlement",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}
