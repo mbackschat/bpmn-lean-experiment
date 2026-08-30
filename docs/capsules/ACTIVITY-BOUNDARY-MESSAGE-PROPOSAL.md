@@ -354,7 +354,7 @@ Closure requires every evidence lane and guard named above, the complete applica
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `7efbf69a` | `fork-turns-none` | `approve-with-required-edits` | `1949fb45, 76181f8a` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `bbd2801a` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The cold proposal review required six corrections: close the public stimulus domain, use deep immutability, state the exact conditional Lean theorem, finalize the profile and failure identities, complete the producer/consumer/guard inventory, and route the Product 2 capability owner. The same reviewer closed five findings at `1949fb45` and approved the exact 75-path migration census at `76181f8a`; neither round changed the selected behavior, public observation, exclusions, or evidence strategy.
