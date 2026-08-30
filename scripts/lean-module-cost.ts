@@ -129,6 +129,7 @@ export const leanModuleCostRecord = {
   },
   nearCapModules: [
     "BpmnSemantics.MessageStartConformance",
+    "BpmnSemantics.MessagePayloadCatchConformance",
     "BpmnSemantics.SequentialMultiInstanceConformance",
     "BpmnSemantics.FlowNodeOccurrenceLifecycleConformance",
     "BpmnSemantics.RuntimeStateWellFormedConformance",
@@ -136,6 +137,7 @@ export const leanModuleCostRecord = {
     "BpmnSemantics.CallActivityConformance",
     "BpmnSemantics.TerminateEndEventConformance",
     "BpmnSemantics.ParallelUserTaskMetadataCompositionConformance",
+    "BpmnSemantics.TimerStartConformance",
   ],
   rows: [
     {
@@ -143,6 +145,12 @@ export const leanModuleCostRecord = {
       peakResidentKib: 3116780,
       elapsedSeconds: 33.77,
       measuredAtCommit: "826231ab",
+    },
+    {
+      module: "BpmnSemantics.MessagePayloadCatchConformance",
+      peakResidentKib: 3108244,
+      elapsedSeconds: 24.96,
+      measuredAtCommit: "9ea2a203",
     },
     {
       module: "BpmnSemantics.SequentialMultiInstanceConformance",
@@ -166,9 +174,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.TimerStartConformance",
-      peakResidentKib: 2785532,
-      elapsedSeconds: 25.5,
-      measuredAtCommit: "826231ab",
+      peakResidentKib: 2910352,
+      elapsedSeconds: 22.02,
+      measuredAtCommit: "9ea2a203",
     },
     {
       module: "BpmnSemantics.ServiceTaskIncidentCancellationConformance",
@@ -279,9 +287,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformance", peakResidentKib: 772200, elapsedSeconds: 1.4 },
     {
       module: "BpmnSemantics.SemanticProcessJsonConformance",
-      peakResidentKib: 662580,
-      elapsedSeconds: 0.55,
-      measuredAtCommit: "ffbf7b24",
+      peakResidentKib: 675372,
+      elapsedSeconds: 0.76,
+      measuredAtCommit: "9ea2a203",
     },
     { module: "BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance", peakResidentKib: 646452, elapsedSeconds: 0.7 },
     { module: "BpmnSemantics.ActivityIssuingDisciplineConformance", peakResidentKib: 614068, elapsedSeconds: 0.8 },
