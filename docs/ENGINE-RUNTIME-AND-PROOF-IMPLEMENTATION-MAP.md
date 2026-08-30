@@ -22,6 +22,8 @@ The [Activity data-input capsule](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md
 
 The Message payload catch account is implemented, independently closure-reviewed, and evidence-closed. Lean adds the declarative delivery relation, evaluator-soundness bridge, exact routed/refusal witnesses, and quantified `runtimeStateWellFormed` preservation; strict shared and Lean JSON decoders and encoders lock the additive checked-node, IL-operation, stimulus, interaction, and publication-kind arms. Three answer-free cases agree across Lean, the independently written core, and Temporal; payload-sensitive durable identity, forced continuation, Worker replacement, recovery, terminal receipts, replay, and one retained whole model cover the host and corpus lanes without selecting CIB Message behavior.
 
+The semantic-family owner above owns the in-progress first-green Activity boundary Message checkpoint; it creates no closed-family or hosting claim here.
+
 `INTERNAL-COMMUTATION` requires a closed Program scheduling mode; existing profiles select reject. TypeScript atomically closes a pairwise-independent ordinary User Task, Message, Timer, or effect frontier and refuses an oversized batch before mutation. Lean retains the exact-pair proofs, adds the complete-frontier classifier, and checks all six orders of three tasks. The checkpoint is independently approved; scheduled choice, regions, other families, and arbitrary-batch proof remain absent.
 
 ## Implemented

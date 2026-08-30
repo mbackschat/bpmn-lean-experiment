@@ -44,6 +44,9 @@ import { projectInclusiveGateway } from "./inclusive-gateway-source.js";
 import { projectEventBasedGateway } from "./event-based-gateway-source.js";
 import { projectTimerBoundaryEvent } from "./timer-boundary-event-source.js";
 import {
+  projectMessageBoundaryEvent,
+} from "./message-boundary-event-source.js";
+import {
   projectIntermediateCatchMessage,
 } from "./intermediate-catch-message-source.js";
 import {
@@ -126,7 +129,12 @@ export function projectCheckedNodes(
             }
           : undefined;
       case bpmnTypes.boundaryEventType:
-        return projectTimerBoundaryEvent(
+        return projectMessageBoundaryEvent(
+          element,
+          id,
+          flows,
+          rootSelection.messageArtifacts,
+        ) ?? projectTimerBoundaryEvent(
           element,
           id,
           flows,

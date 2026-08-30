@@ -1,8 +1,9 @@
 import {
+  ActivityHandlerKind,
   FlowNodeOccurrenceTerminalKind as SemanticTerminalKind,
   ScenarioStepKind,
   SemanticFlowNodeOccurrenceAnchorKind,
-  attachedTimersForBodyAnchor,
+  attachedHandlersForBodyAnchor,
   compareCanonicalStrings,
   isWellFormedWireString,
   requireCompleteFlowNodeOccurrenceLifecycles,
@@ -10,6 +11,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
+  ActivityHandlerOccurrence,
   OccurrenceId,
   RetainedFlowNodeOccurrence,
   RuntimeState,
@@ -49,7 +51,7 @@ type RetainedOpenFlowNodeOccurrence = DeepReadonly<{
    * coexist: the relation sees no semantic state, and the published delta cannot carry the pairing
    * without changing a wire schema. Empty for every occurrence that no record lists.
    */
-  attachedTimers: OccurrenceId[];
+  attachedHandlers: ActivityHandlerOccurrence[];
 }>;
 
 export type FlowNodeOccurrencePublicationState = DeepReadonly<{
@@ -155,7 +157,7 @@ export function accumulateFlowNodeOccurrencePublication(
     committedAtEpochMs,
     transitions: [first, ...transitions.slice(1)],
   };
-  const refreshed = refreshAttachedTimers(retained, step.state);
+  const refreshed = refreshAttachedHandlers(retained, step.state);
   const currentOpen = refreshed
     .map(({ occurrence }) => cloneOpen(occurrence))
     .sort((left, right) => comparePublicId(left.id, right.id));
@@ -229,8 +231,8 @@ function numberLifecycleDelta(
       anchor: cloneAnchor(semanticStart.anchor),
       occurrence: { ...publicStart, startedAtEpochMs: committedAtEpochMs },
       // Written once below, from the committed post-state, for every entry rather than only for the
-      // ones this command opened. See `refreshAttachedTimers`.
-      attachedTimers: [],
+      // ones this command opened. See `refreshAttachedHandlers`.
+      attachedHandlers: [],
     });
   }
   const ended: FlowNodeOccurrenceEnd[] = [];
@@ -451,7 +453,7 @@ function cloneRetained(
   return {
     anchor: cloneAnchor(value.anchor),
     occurrence: cloneOpen(value.occurrence),
-    attachedTimers: value.attachedTimers.map(cloneOccurrenceId),
+    attachedHandlers: value.attachedHandlers.map(cloneActivityHandler),
   };
 }
 
@@ -472,15 +474,26 @@ function cloneRetained(
  * was written at the end of the previous one, so it is exactly that command's pre-state view, which is
  * the view a firing deadline must be resolved against.
  */
-function refreshAttachedTimers(
+function refreshAttachedHandlers(
   retained: ReadonlyArray<RetainedOpenFlowNodeOccurrence>,
   committed: RuntimeState,
 ): RetainedOpenFlowNodeOccurrence[] {
   return retained.map((entry) => ({
     ...entry,
-    attachedTimers: attachedTimersForBodyAnchor(committed, entry.anchor)
-      .map(cloneOccurrenceId),
+    attachedHandlers: attachedHandlersForBodyAnchor(committed, entry.anchor)
+      .map(cloneActivityHandler),
   }));
+}
+
+function cloneActivityHandler(
+  value: ActivityHandlerOccurrence,
+): ActivityHandlerOccurrence {
+  switch (value.kind) {
+    case ActivityHandlerKind.Timer:
+      return { kind: value.kind, occurrence: { ...value.occurrence } };
+    case ActivityHandlerKind.Message:
+      return { kind: value.kind, occurrence: { ...value.occurrence } };
+  }
 }
 
 function cloneOccurrenceId(value: OccurrenceId): OccurrenceId {
@@ -499,7 +512,7 @@ function toCoreRetained(
     processId: value.occurrence.processId,
     elementId: value.occurrence.elementId,
     owner: value.occurrence.owner,
-    attachedTimers: value.attachedTimers,
+    attachedHandlers: value.attachedHandlers,
   };
 }
 

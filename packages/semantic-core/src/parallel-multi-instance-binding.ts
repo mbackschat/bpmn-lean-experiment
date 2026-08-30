@@ -1,6 +1,7 @@
 /** The complete program-to-runtime binding of every open parallel Multi-Instance controller. */
 import {
   activityBodyParallelTasks,
+  attachedTimerOccurrences,
   attachedTimerWaits,
   sameActivityOccurrence,
   sameOccurrenceId,
@@ -85,7 +86,7 @@ export function parallelMultiInstanceBindingForController(
     return matches.length === 1 && matches[0] !== undefined ? [matches[0]] : [];
   });
   const timerWaits = attachedTimerWaits(record, state.timerWaits);
-  const [timerId] = record.attachedTimers;
+  const [timerId] = attachedTimerOccurrences(record);
   const [timerWait] = timerWaits;
   const allTaskIdsUnique = controller.slots.every((slot, index) =>
     controller.slots.every((other, otherIndex) =>
@@ -125,7 +126,7 @@ export function parallelMultiInstanceBindingForController(
       (slot.kind !== ParallelMultiInstanceSlotKind.Completed ||
         utf8ByteLength(slot.result) <= operation.limits.maximumItemUtf8Bytes)
     ) ||
-    record.attachedTimers.length !== 1 ||
+    record.attachedHandlers.length !== 1 ||
     timerWaits.length !== 1 ||
     timerId === undefined ||
     timerWait === undefined ||

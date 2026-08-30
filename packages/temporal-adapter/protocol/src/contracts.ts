@@ -82,6 +82,8 @@ export enum TemporalHostAdmissionFailureCode {
    * that licenses it, so one code per host class keeps the two separately falsifiable.
    */
   BoundedActivitySchedulerUnavailable = "boundedActivitySchedulerUnavailable",
+  /** Distinct because Message/Update co-readiness is not a Timer deadline race. */
+  MessageBoundedActivitySchedulerUnavailable = "messageBoundedActivitySchedulerUnavailable",
   /**
    * Deliberately distinct from `BoundedActivitySchedulerUnavailable`.
    *

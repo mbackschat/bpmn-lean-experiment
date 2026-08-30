@@ -36,6 +36,7 @@ Run the focused package gate:
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the exact closure-reviewed composed profile and evidence boundary.
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 assignment-only metadata and typed completion-value boundary.
 - [Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) owns the exact registered controller, transition, observation, and exclusion boundary.
+- [Interrupting Activity boundary Message proposal](../../docs/capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md) owns the tagged handler representation and the exact task-versus-Message semantic transition boundary.
 - [Message payload catch mediation specification](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) owns the distinct payload-delivery stimulus, Event-owned direct-output contract, pure-core routed delivery, proved Lean account, strict wires, full differential cases, and Temporal refinement.
 - [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../../docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) records the exact implemented and absent surface.
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the verification and evidence boundaries.

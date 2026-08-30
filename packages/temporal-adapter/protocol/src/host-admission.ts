@@ -88,6 +88,7 @@ const HostOperationClass = {
   HostDrivenWait: "hostDrivenWait",
   ManagedEventRace: "managedEventRace",
   BoundedActivityWait: "boundedActivityWait",
+  MessageBoundedActivityWait: "messageBoundedActivityWait",
   BoundedScopeWait: "boundedScopeWait",
   MonitoredActivityWait: "monitoredActivityWait",
   SequentialMultiInstanceActivityWait: "sequentialMultiInstanceActivityWait",
@@ -132,6 +133,16 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
       code: TemporalHostAdmissionFailureCode.BoundedActivitySchedulerUnavailable,
       evidence:
         "The Temporal host admits only one isolated bounded User Task with an exact PT1S boundary Timer.",
+    },
+  },
+  {
+    operationClass: HostOperationClass.MessageBoundedActivityWait,
+    isAdmissibleIsolatedForm: () => false,
+    failure: {
+      code: TemporalHostAdmissionFailureCode
+        .MessageBoundedActivitySchedulerUnavailable,
+      evidence:
+        "The Temporal host has not installed the Message/Update co-readiness scheduler for a Message-bounded User Task.",
     },
   },
   {
@@ -198,6 +209,8 @@ function classifyHostOperation(
       return HostOperationClass.ManagedEventRace;
     case SemanticOperationKind.AwaitBoundedUserTask:
       return HostOperationClass.BoundedActivityWait;
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
+      return HostOperationClass.MessageBoundedActivityWait;
     case SemanticOperationKind.EnterBoundedScope:
       return HostOperationClass.BoundedScopeWait;
     // Managed rather than a token split, even though firing creates a second live branch: the split

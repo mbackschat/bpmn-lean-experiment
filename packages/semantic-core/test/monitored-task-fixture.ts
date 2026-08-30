@@ -3,7 +3,7 @@
  *
  * Hand-built to the shape `@bpmn-lean/bpmn-source` lowers, so consumers depend on no compiler. It is
  * the smallest program in which an Activity occurrence record's attached-handler list *changes while
- * its body stays open*: firing the reminder empties `attachedTimers` and the host User Task wait
+ * its body stays open*: firing the reminder empties `attachedHandlers` and the host User Task wait
  * survives. That is the one shape that separates a retained snapshot of the list from a derivation of
  * it, which is why this fixture is shared rather than private to one family test.
  */

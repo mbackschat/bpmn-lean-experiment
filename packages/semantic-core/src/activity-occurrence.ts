@@ -10,11 +10,12 @@
  *
  * Existence is a property of the *program*, not of the state. A record exists for an Activity whose
  * program gives it a wait-producing attached handler, and it then lives exactly as long as its body.
- * The distinction is load-bearing: firing a non-interrupting deadline empties `attachedTimers` while
+ * The distinction is load-bearing: firing a non-interrupting deadline empties `attachedHandlers` while
  * the host task is still live, so a state-level condition would delete the record at the moment it is
  * still the only thing identifying the host.
  */
 import type {
+  MessageSubscriptionId,
   OccurrenceId,
   TimerOccurrenceId,
   UserTaskInstanceId,
@@ -56,6 +57,23 @@ export type ActivityBody =
     }>
   | DeepReadonly<{ kind: ActivityBodyKind.ChildScope; scope: ScopeOccurrenceId }>;
 
+/** The runtime family of one handler owned by an Activity occurrence. */
+export enum ActivityHandlerKind {
+  Timer = "timer",
+  Message = "message",
+}
+
+/** One closed, tagged attached-handler identity. */
+export type ActivityHandlerOccurrence =
+  | DeepReadonly<{
+      kind: ActivityHandlerKind.Timer;
+      occurrence: TimerOccurrenceId;
+    }>
+  | DeepReadonly<{
+      kind: ActivityHandlerKind.Message;
+      occurrence: MessageSubscriptionId;
+    }>;
+
 /**
  * What one Activity occurrence owns.
  *
@@ -64,17 +82,16 @@ export type ActivityBody =
  * than by the mechanical argument its capsule had to use, namely that a child-owned deadline would
  * leave the child permanently non-quiescent.
  *
- * `attachedTimers` names Timer occurrences and not a union of handler families, because Timer is the
- * only attached-handler family that produces a wait. A union arm would not add safety either, since
- * every wait identity is the same structural shape; what prevents a foreign identity here is the
- * well-formedness conjunct requiring each entry to resolve in `timerWaits`.
+ * `attachedHandlers` is tagged because the handler families share one structural identity shape. The
+ * discriminator prevents a Message subscription from resolving as a Timer merely because their three
+ * identity fields happen to agree.
  */
 export type ActivityOccurrence = DeepReadonly<{
   id: ActivityOccurrenceId;
   owner: ScopeOccurrenceId;
   operationId: string;
   body: ActivityBody;
-  attachedTimers: TimerOccurrenceId[];
+  attachedHandlers: ActivityHandlerOccurrence[];
 }>;
 
 export function sameActivityOccurrence(
@@ -153,11 +170,7 @@ export function activityOccurrenceForAttachedTimer(
   timer: TimerOccurrenceId,
 ): ActivityOccurrence | undefined {
   return only(occurrences.filter((record) =>
-    record.attachedTimers.some((candidate) =>
-      candidate.processInstanceId === timer.processInstanceId &&
-      candidate.elementId === timer.elementId &&
-      candidate.activation === timer.activation
-    )
+    attachedTimerOccurrences(record).some((candidate) => sameOccurrenceId(candidate, timer))
   ));
 }
 
@@ -207,12 +220,21 @@ export function activityBodyTaskWait<Wait extends { readonly id: UserTaskInstanc
     : only(userTaskWaits.filter(({ id }) => sameOccurrenceId(id, body)));
 }
 
+/** The Timer identities a record's tagged handler list names, in the list's order. */
+export function attachedTimerOccurrences(
+  record: ActivityOccurrence,
+): ReadonlyArray<TimerOccurrenceId> {
+  return record.attachedHandlers.flatMap((attached) =>
+    attached.kind === ActivityHandlerKind.Timer ? [attached.occurrence] : []
+  );
+}
+
 /** The live Timer waits a record's attached list names, in the list's order. */
 export function attachedTimerWaits<Wait extends { readonly id: TimerOccurrenceId }>(
   record: ActivityOccurrence,
   timerWaits: ReadonlyArray<Wait>,
 ): ReadonlyArray<Wait> {
-  return record.attachedTimers.flatMap((attached) => {
+  return attachedTimerOccurrences(record).flatMap((attached) => {
     const wait = only(timerWaits.filter(({ id }) => sameOccurrenceId(id, attached)));
     return wait === undefined ? [] : [wait];
   });

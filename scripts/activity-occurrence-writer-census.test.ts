@@ -344,7 +344,7 @@ function writerMatchesClassification(site: WriterSite, classification: WriterCla
     case WriterClassification.IdentityPreserving:
       return /activityOccurrences\s*:=\s*(?:replaceBodyIn|replaceParallelRecordBody)/su.test(site.source);
     case WriterClassification.IdentityRemoving:
-      return /activityOccurrences\s*:=.*(?:\.filter|filter\s|retainedByRegion|removeParallelRecord)/su.test(site.source);
+      return /activityOccurrences\s*:=.*(?:\.filter|\.erase|filter\s|retainedByRegion|removeParallelRecord)/su.test(site.source);
   }
 }
 

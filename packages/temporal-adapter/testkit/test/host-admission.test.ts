@@ -7,6 +7,7 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   EffectOperation,
   EffectProtocol,
   SemanticProfileId,
@@ -134,6 +135,24 @@ test("classifies Message and User Task as passive ingress in either operation or
       kind: TemporalHostCapabilityResultKind.Admitted,
     },
   );
+});
+
+test("fails closed before the Message-bounded Activity scheduler is installed", async () => {
+  const program = await compileFixture(
+    "../../../../scenarios/activity-boundary-message/process.bpmn",
+    "activity-boundary-message-host-admission",
+    ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  );
+
+  assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Rejected,
+    failure: {
+      code: TemporalHostAdmissionFailureCode
+        .MessageBoundedActivitySchedulerUnavailable,
+      evidence:
+        "The Temporal host has not installed the Message/Update co-readiness scheduler for a Message-bounded User Task.",
+    },
+  });
 });
 
 test("classifies a resumption-bounded Exclusive Merge as passive", async () => {

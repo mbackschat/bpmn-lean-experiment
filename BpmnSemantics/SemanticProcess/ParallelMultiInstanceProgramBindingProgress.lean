@@ -355,7 +355,7 @@ theorem parallelMultiInstanceProgramBindingsValid_progress
     have priorMember : wait ∈ childWaits := (List.mem_filter.mp waitMember).1
     have priorBinding := List.all_eq_true.mp childWaitBindings wait priorMember
     simpa [updatedRecord] using priorBinding
-  · simpa [updatedRecord] using attachedTimer
+  · simpa [updatedRecord, ActivityOccurrence.timerHandlerOccurrences] using attachedTimer
   · exact matchingTimerWait
   · simpa [updatedRecord] using timerOwner
   · exact timerElement

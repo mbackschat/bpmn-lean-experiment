@@ -6,7 +6,10 @@ import type {
   Stimulus,
   VariableBinding,
 } from "./contract.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 import { isVariablePatch } from "./variable-value.js";
 
 export enum VariableWriteSurface {
@@ -16,7 +19,8 @@ export enum VariableWriteSurface {
 }
 
 type SemanticProfile =
-  typeof SemanticProfileId[keyof typeof SemanticProfileId];
+  | typeof SemanticProfileId[keyof typeof SemanticProfileId]
+  | typeof ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID;
 
 const emptyValueDomain: ReadonlyArray<VariableValueKind> = Object.freeze([]);
 const stringValueDomain = Object.freeze([VariableValueKind.String]);
@@ -45,8 +49,11 @@ const scalarValueDomain = Object.freeze([
   VariableValueKind.Null,
 ]);
 
-const registeredSemanticProfiles: ReadonlySet<string> = new Set(
-  Object.values(SemanticProfileId),
+const admittedSemanticProfiles: ReadonlySet<string> = new Set(
+  [
+    ...Object.values(SemanticProfileId),
+    ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  ],
 );
 
 /** Selects which typed Process-data values one profile admits at one external write surface. */
@@ -57,7 +64,7 @@ export function profileAllowsVariableBindings(
 ): boolean {
   if (
     !isVariablePatch(bindings) ||
-    !isRegisteredSemanticProfile(semanticProfile)
+    !isAdmissionProfile(semanticProfile)
   ) {
     return false;
   }
@@ -66,10 +73,10 @@ export function profileAllowsVariableBindings(
     bindings.every(({ value }) => allowedKinds.includes(value.kind));
 }
 
-function isRegisteredSemanticProfile(
+function isAdmissionProfile(
   semanticProfile: string,
 ): semanticProfile is SemanticProfile {
-  return registeredSemanticProfiles.has(semanticProfile);
+  return admittedSemanticProfiles.has(semanticProfile);
 }
 
 function surfaceValueDomain(
@@ -175,6 +182,7 @@ function profileValueDomain(
         structuredHumanWorkValueDomain,
       );
     case SemanticProfileId.ActivityBoundaryTimer:
+    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.CalledProcessCallActivity:
     case SemanticProfileId.ConfiguredTask:
     case SemanticProfileId.EmbeddedSubProcessCompletion:

@@ -303,8 +303,11 @@ function activityAssociationParts(
     ...scopeParts(record.owner),
     record.operationId,
     ...activityBodyParts(record),
-    record.attachedTimers.length,
-    ...record.attachedTimers.flatMap(occurrenceParts),
+    record.attachedHandlers.length,
+    ...record.attachedHandlers.flatMap((handler) => [
+      handler.kind,
+      ...occurrenceParts(handler.occurrence),
+    ]),
   ];
 }
 

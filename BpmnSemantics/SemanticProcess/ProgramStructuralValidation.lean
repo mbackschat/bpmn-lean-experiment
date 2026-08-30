@@ -97,6 +97,9 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
       [userTaskWaitDeclarationKey task.id,
         timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage =>
+      [userTaskWaitDeclarationKey task.id,
+        messageWaitDeclarationKey boundaryMessage.elementId]
   | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundaryTimer _ =>
       [userTaskWaitDeclarationKey task.id,
         timerWaitDeclarationKey boundaryTimer.elementId]
@@ -338,6 +341,24 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
             place.origin = boundaryTimer.origin)) &&
         placeExists places input &&
         placeExists places task.output
+  | .awaitMessageBoundedUserTask id origin input task boundaryMessage =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty task.id.value &&
+        nonempty boundaryMessage.elementId.value &&
+        nonempty boundaryMessage.origin.elementId.value &&
+        decide (origin.elementId.value = task.id.value) &&
+        (match boundaryMessage.channel with
+        | .operationMessage .. => boundaryMessage.channel.identifiersNonempty
+        | .directMessage .. => false) &&
+        decide (
+          task.id.value ≠ boundaryMessage.elementId.value ∧
+          task.output ≠ boundaryMessage.output ∧
+          input ≠ task.output ∧ input ≠ boundaryMessage.output) &&
+        places.any (fun place =>
+          decide (place.id = boundaryMessage.output ∧
+            place.origin = boundaryMessage.origin)) &&
+        placeExists places input && placeExists places task.output
   | .awaitEffect id origin input output effect bpmnErrorRoute =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

@@ -128,7 +128,7 @@ def activityBodyScope? (record : ActivityOccurrence) : Option ScopeOccurrenceId 
 
 /-- Whether a record lists one exact Timer occurrence among the handlers attached to it. -/
 def recordAttaches (record : ActivityOccurrence) (timer : OccurrenceId) : Bool :=
-  record.attachedTimers.contains timer
+  record.timerHandlerOccurrences.contains timer
 
 /-- The unique record listing one Timer occurrence, or `none`.
 
@@ -157,7 +157,7 @@ def activityOccurrenceForScope? (records : List ActivityOccurrence) (scope : Sco
 
 /-- Every Timer occurrence the given records list, in record and list order. -/
 def attachedTimersOf (records : List ActivityOccurrence) : List OccurrenceId :=
-  records.flatMap (·.attachedTimers)
+  records.flatMap (·.timerHandlerOccurrences)
 
 /-- Whether one Timer occurrence identity names one live Timer wait.
 
@@ -168,6 +168,12 @@ def timerIdNamesWait (timer : OccurrenceId) (wait : TimerWait) : Bool :=
   timer.processInstanceId == wait.processInstanceId &&
     timer.elementId.value == wait.elementId.value &&
     timer.activation == wait.activation
+
+/-- Whether one Message occurrence identity names one live Message wait. -/
+def messageIdNamesWait (message : OccurrenceId) (wait : MessageWait) : Bool :=
+  message.processInstanceId == wait.processInstanceId &&
+    message.elementId.value == wait.elementId.value &&
+    message.activation == wait.activation
 
 /-- Whether one task occurrence identity names one live User Task wait.
 
@@ -203,10 +209,26 @@ def activityOccurrenceForTaskWait? (records : List ActivityOccurrence) (wait : U
 def anyTimerIdNamesWait (timers : List OccurrenceId) (wait : TimerWait) : Bool :=
   timers.any (timerIdNamesWait · wait)
 
+/-- Whether any of the given Message occurrence identities names one live Message wait. -/
+def anyMessageIdNamesWait (messages : List OccurrenceId) (wait : MessageWait) : Bool :=
+  messages.any (messageIdNamesWait · wait)
+
+/-- Whether any Activity occurrence claims one live Message wait as an attached handler. -/
+def activityRecordsAttachMessageWait (records : List ActivityOccurrence) (wait : MessageWait) : Bool :=
+  records.any fun record => anyMessageIdNamesWait record.messageHandlerOccurrences wait
+
 /-- The unique record listing one live Timer wait, or `none`. Wait-keyed sibling of `activityOccurrenceForTimer?`. -/
 def activityOccurrenceForTimerWait? (records : List ActivityOccurrence) (wait : TimerWait) :
     Option ActivityOccurrence :=
-  match records.filter fun record => anyTimerIdNamesWait record.attachedTimers wait with
+  match records.filter fun record => anyTimerIdNamesWait record.timerHandlerOccurrences wait with
+  | [record] => some record
+  | _ => none
+
+/-- The unique record listing one live Message wait, or `none`. -/
+def activityOccurrenceForMessageWait? (records : List ActivityOccurrence) (wait : MessageWait) :
+    Option ActivityOccurrence :=
+  match records.filter fun record =>
+      anyMessageIdNamesWait record.messageHandlerOccurrences wait with
   | [record] => some record
   | _ => none
 
@@ -223,7 +245,7 @@ def RecordJoins (records : List ActivityOccurrence)
     (task : UserTaskWait) (timer : TimerWait) : Prop :=
   ∃ record ∈ records,
     (∃ body, activityBodyTask? record = some body ∧ taskIdNamesWait body task = true) ∧
-    ∃ deadline ∈ record.attachedTimers, timerIdNamesWait deadline timer = true
+    ∃ deadline ∈ record.timerHandlerOccurrences, timerIdNamesWait deadline timer = true
 
 /-! ## Lookup soundness
 
@@ -272,13 +294,28 @@ theorem activityOccurrenceForTimerWait_sound {records : List ActivityOccurrence}
     {wait : TimerWait} {record : ActivityOccurrence}
     (found : activityOccurrenceForTimerWait? records wait = some record) :
     record ∈ records ∧
-      ∃ deadline ∈ record.attachedTimers, timerIdNamesWait deadline wait = true := by
+      ∃ deadline ∈ record.timerHandlerOccurrences, timerIdNamesWait deadline wait = true := by
   unfold activityOccurrenceForTimerWait? at found
   split at found
   · next singleton =>
       cases found
       obtain ⟨mem, holds⟩ := mem_of_filter_eq_singleton singleton
       exact ⟨mem, by simpa [anyTimerIdNamesWait, List.any_eq_true] using holds⟩
+  · exact absurd found (by simp)
+
+/-- A record answered for a Message wait is in the state and lists that wait in the Message family. -/
+theorem activityOccurrenceForMessageWait_sound {records : List ActivityOccurrence}
+    {wait : MessageWait} {record : ActivityOccurrence}
+    (found : activityOccurrenceForMessageWait? records wait = some record) :
+    record ∈ records ∧
+      ∃ subscription ∈ record.messageHandlerOccurrences,
+        messageIdNamesWait subscription wait = true := by
+  unfold activityOccurrenceForMessageWait? at found
+  split at found
+  · next singleton =>
+      cases found
+      obtain ⟨mem, holds⟩ := mem_of_filter_eq_singleton singleton
+      exact ⟨mem, by simpa [anyMessageIdNamesWait, List.any_eq_true] using holds⟩
   · exact absurd found (by simp)
 
 /-! ## Withdrawal completeness
@@ -369,7 +406,7 @@ theorem withdrawn_records_carry_their_attached_timers
     (cancelled : ScopeOccurrenceId → Bool) (records : List ActivityOccurrence)
     (record : ActivityOccurrence) (timer : OccurrenceId)
     (withdrawn : record ∈ withdrawnByRegion cancelled records)
-    (attached : timer ∈ record.attachedTimers) :
+    (attached : timer ∈ record.timerHandlerOccurrences) :
     timer ∈ attachedTimersOf (withdrawnByRegion cancelled records) := by
   simp only [attachedTimersOf, List.mem_flatMap]
   exact ⟨record, withdrawn, attached⟩

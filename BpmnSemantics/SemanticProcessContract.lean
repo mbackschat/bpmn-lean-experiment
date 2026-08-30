@@ -200,6 +200,9 @@ inductive CheckedNode where
   | timerBoundaryEvent (id attachedToRef : NodeId)
       (interruption : BoundaryInterruption)
       (durationLiteral : String) (outputFlowId : SequenceFlowId)
+  | messageBoundaryEvent (id attachedToRef : NodeId)
+      (interruption : BoundaryInterruption)
+      (channel : MessageChannel) (outputFlowId : SequenceFlowId)
   | userTask (id : NodeId) (name : Option String)
       (metadata : Option UserTaskMetadata := none)
   /-- A User Task whose one required DataInput is filled by one direct Data Input Association. A
@@ -266,6 +269,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
+  | .messageBoundaryEvent id _ _ _ _
   | .userTask id _ _
   | .dataInputUserTask id _ _
   | .dataOutputUserTask id _ _
@@ -387,6 +391,14 @@ structure BoundedTaskArm where
 structure BoundaryTimerArm where
   elementId : NodeId
   durationMs : Nat
+  output : ControlPlaceId
+  origin : BpmnSequenceFlowOrigin
+  deriving Repr, DecidableEq
+
+/-- The exact operation-addressed interrupting Message handler attached to one User Task. -/
+structure BoundaryMessageArm where
+  elementId : NodeId
+  channel : MessageChannel
   output : ControlPlaceId
   origin : BpmnSequenceFlowOrigin
   deriving Repr, DecidableEq
@@ -574,6 +586,12 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (task : BoundedTaskArm)
       (boundaryTimer : BoundaryTimerArm)
+  | awaitMessageBoundedUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (task : BoundedTaskArm)
+      (boundaryMessage : BoundaryMessageArm)
   | awaitMonitoredUserTask
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -663,6 +681,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .awaitPayloadMessage id _ _ _ _ _
   | .awaitEventRace id _ _ _ _
   | .awaitBoundedUserTask id _ _ _ _
+  | .awaitMessageBoundedUserTask id _ _ _ _
   | .awaitMonitoredUserTask id _ _ _ _
   | .awaitEffect id _ _ _ _ _
   | .duplicate id _ _ _

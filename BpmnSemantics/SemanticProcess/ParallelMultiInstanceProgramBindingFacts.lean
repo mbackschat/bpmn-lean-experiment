@@ -97,7 +97,7 @@ structure ParallelControllerProgramBindingFacts (program : Program) (state : Run
       wait.owner == record.owner && wait.task.id == arm.taskId &&
         wait.task.name == arm.taskName && wait.metadata == none &&
         wait.output == arm.normalOutput) = true ∧
-    record.attachedTimers = [timer] ∧
+    record.timerHandlerOccurrences = [timer] ∧
     state.timerWaits.filter (timerIdNamesWait timer) = [timerWait] ∧
     timerWait.owner = record.owner ∧
     timerWait.elementId = arm.boundaryTimer.elementId ∧

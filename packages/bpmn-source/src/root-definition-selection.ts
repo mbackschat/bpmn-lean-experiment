@@ -1,4 +1,5 @@
 import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   SemanticProfileId,
   isWellFormedWireString,
@@ -99,6 +100,7 @@ export function selectRootDefinitions(
     case SemanticProfileId.MessageStart:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.EventBasedGatewayMessageTimer:
+    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
       return selected(selectMessageRoots(rootElements, process));
     case SemanticProfileId.MessageAddressedReceiveTask:
       return selected(selectDirectMessageRoots(rootElements, process));

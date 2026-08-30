@@ -58,6 +58,10 @@ export {
   isBoundedTaskDefinition,
 } from "./semantic-process-bounded-task-runtime.js";
 export {
+  isMessageBoundaryDefinition,
+  isMessageBoundedTaskDefinition,
+} from "./semantic-process-message-bounded-task-runtime.js";
+export {
   isBoundedScopeDeadlineDefinition,
 } from "./semantic-process-bounded-scope-runtime.js";
 export {

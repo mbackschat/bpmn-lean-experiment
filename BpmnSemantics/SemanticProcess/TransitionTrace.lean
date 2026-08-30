@@ -30,6 +30,7 @@ inductive SemanticOperationKind where
   | awaitPayloadMessage
   | awaitEventRace
   | awaitBoundedUserTask
+  | awaitMessageBoundedUserTask
   | awaitMonitoredUserTask
   | awaitEffect
   | duplicate
@@ -63,6 +64,7 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .awaitPayloadMessage .. => .awaitPayloadMessage
   | .awaitEventRace .. => .awaitEventRace
   | .awaitBoundedUserTask .. => .awaitBoundedUserTask
+  | .awaitMessageBoundedUserTask .. => .awaitMessageBoundedUserTask
   | .awaitMonitoredUserTask .. => .awaitMonitoredUserTask
   | .awaitEffect .. => .awaitEffect
   | .duplicate .. => .duplicate
@@ -95,6 +97,7 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .awaitPayloadMessage _ origin _ _ _ _
   | .awaitEventRace _ origin _ _ _
   | .awaitBoundedUserTask _ origin _ _ _
+  | .awaitMessageBoundedUserTask _ origin _ _ _
   | .awaitMonitoredUserTask _ origin _ _ _
   | .awaitEffect _ origin _ _ _ _
   | .duplicate _ origin _ _

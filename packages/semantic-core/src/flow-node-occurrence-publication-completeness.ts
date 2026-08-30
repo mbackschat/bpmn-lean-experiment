@@ -11,6 +11,7 @@
  * body turnover, refusing a correct publication. Reconstruction of the lifecycle itself is unchanged.
  */
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { ActivityHandlerOccurrence } from "./activity-occurrence.js";
 import {
   FlowNodeOccurrenceTerminalKind,
   SemanticFlowNodeOccurrenceAnchorKind,
@@ -26,7 +27,6 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
-import type { OccurrenceId } from "./contract.js";
 import { stimulusCommandId } from "./stimulus.js";
 import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import type {
@@ -58,7 +58,7 @@ export type RetainedFlowNodeOccurrence = DeepReadonly<{
   elementId: string;
   owner: ScopeOccurrenceId;
   /** The handler occurrences the Activity occurrence record listed when this body opened. */
-  attachedTimers: OccurrenceId[];
+  attachedHandlers: ActivityHandlerOccurrence[];
 }>;
 
 /** Requires every supplied delta to be the complete lifecycle of its exact E1 transition. */
@@ -69,12 +69,12 @@ export function requireCompleteFlowNodeOccurrenceLifecycles(
   transitions: readonly UnnumberedCommittedTransitionRecord[],
   supplied: readonly UnnumberedFlowNodeOccurrenceDelta[],
 ): void {
-  const open = retained.map(({ anchor, processId, elementId, owner, attachedTimers }) => ({
+  const open = retained.map(({ anchor, processId, elementId, owner, attachedHandlers }) => ({
     anchor,
     processId,
     elementId,
     owner,
-    attachedTimers,
+    attachedHandlers,
   }));
   const first = transitions[0];
   if (!retainedOpenSetIsExact(program, open)) {
@@ -193,6 +193,8 @@ function internalDelta(
         owner,
       ));
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      return failCompleteness();
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
       return failCompleteness();
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
@@ -432,7 +434,7 @@ function applyCompleteDelta(
     // external stimulus and therefore the first transition of its own command, so an occurrence
     // opened here cannot be the host of a deadline that fires here. The retained set carries the
     // anchor for every host that can be.
-    open.push({ ...start, attachedTimers: [] });
+    open.push({ ...start, attachedHandlers: [] });
   }
   for (const terminal of lifecycle.ended) {
     const matches = open.flatMap((entry, index) =>

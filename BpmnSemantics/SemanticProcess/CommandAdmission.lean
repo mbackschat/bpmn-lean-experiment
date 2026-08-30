@@ -9,6 +9,7 @@ import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.MessagePayload
+import BpmnSemantics.SemanticProcess.MessageBoundedTask
 
 /-! # Semantic Process external command admission
 
@@ -140,6 +141,15 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                       { outcome := .rejected, state }
                 | none => { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
+          else if isMessageBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
+            match completeMessageBoundedUserTask? program state taskId.processInstanceId
+                ⟨taskId.elementId.value⟩ taskId.activation submittedValues with
+            | some successor =>
+                if taskId.processInstanceId = instanceId then
+                  { outcome := .committed, state := successor }
+                else
+                  { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
           else if isBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
             match completeBoundedUserTask? program state taskId.processInstanceId
                 ⟨taskId.elementId.value⟩ taskId.activation with
@@ -209,7 +219,12 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
   | .deliverMessage _ subscriptionId channel =>
       match state.control with
       | .running instanceId =>
-          match deliverMessage program state subscriptionId channel with
+          let delivery :=
+            if isMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
+              interruptMessageBoundedUserTask? program state subscriptionId channel
+            else
+              deliverMessage program state subscriptionId channel
+          match delivery with
           | some successor =>
               if subscriptionId.processInstanceId = instanceId then
                 { outcome := .committed, state := successor }

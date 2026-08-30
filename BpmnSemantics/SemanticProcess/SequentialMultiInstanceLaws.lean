@@ -274,7 +274,7 @@ theorem interruption_strands_no_deadline_its_record_listed {arm : SequentialMult
     {timer : TimerOccurrenceId} {logicalTimeMs : Nat} {before after : RuntimeState}
     (step : SequentialMultiInstanceInterruptionStep arm timer logicalTimeMs before after) :
     ∃ record ∈ before.activityOccurrences, recordAttaches record timer = true ∧
-      ∀ wait ∈ after.timerWaits, anyTimerIdNamesWait record.attachedTimers wait = false := by
+      ∀ wait ∈ after.timerWaits, anyTimerIdNamesWait record.timerHandlerOccurrences wait = false := by
   cases step with
   | interrupts _ record _ _ _ _ _ _ recordLive attaches =>
       exact ⟨record, recordLive, attaches, fun _ retained =>

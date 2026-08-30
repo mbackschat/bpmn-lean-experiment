@@ -21,6 +21,7 @@ import {
   SemanticOperationKind,
   VariableValueKind,
   applyInternalOperation,
+  attachedTimerOccurrences,
   runtimeStateDefects,
   runtimeStateRegressions,
   sequentialMultiInstanceControllerFor,
@@ -103,7 +104,7 @@ test("entry snapshots the collection once and generates only loop counter zero",
     kind: ActivityBodyKind.UserTask,
     task: innerTaskId(0),
   });
-  assert.deepEqual(record.attachedTimers, [outerTimerId]);
+  assert.deepEqual(attachedTimerOccurrences(record), [outerTimerId]);
 
   const controller = sequentialMultiInstanceControllerFor(
     state.sequentialMultiInstanceControllers ?? [],

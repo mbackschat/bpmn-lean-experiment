@@ -41,8 +41,11 @@ const crossedBody: ActivityBody = { kind: ActivityBodyKind.UserTask, scope: scop
 // @ts-expect-error An Activity occurrence identity is deeply immutable
 occurrence.id.activation = 2;
 
-// @ts-expect-error The attached-Timer list of an Activity occurrence is deeply immutable
-occurrence.attachedTimers.push(occurrence.attachedTimers[0]);
+// @ts-expect-error The attached-handler list of an Activity occurrence is deeply immutable
+occurrence.attachedHandlers.push(occurrence.attachedHandlers[0]);
+
+// @ts-expect-error An attached-handler identity is deeply immutable
+occurrence.attachedHandlers[0]!.occurrence.activation = 2;
 
 export type Constructed = [
   typeof wideningTask,

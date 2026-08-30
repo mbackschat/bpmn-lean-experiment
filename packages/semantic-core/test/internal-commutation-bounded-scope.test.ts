@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   CommandOutcome,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -90,7 +91,10 @@ test("prepares the child, parent relation, Activity, deadline, counters, and tok
       kind: ActivityBodyKind.ChildScope,
       scope: prepared.child.id,
     },
-    attachedTimers: [prepared.deadline.id],
+    attachedHandlers: [{
+      kind: ActivityHandlerKind.Timer,
+      occurrence: prepared.deadline.id,
+    }],
   });
   assert.equal(prepared.deadline.owner, prepared.parent);
   assert.deepEqual(activationWrites(prepared.footprint), [

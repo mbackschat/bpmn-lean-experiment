@@ -54,7 +54,7 @@ def activateDataOutputUserTask? (state : RuntimeState) (input output : ControlPl
             { processInstanceId := instanceId
               elementId := ⟨taskId.value⟩
               activation := taskActivation }
-          attachedTimers := [] } state.activityOccurrences
+          attachedHandlers := [] } state.activityOccurrences
       activityActivations :=
         { taskId, count := activityActivation } ::
           state.activityActivations.filter fun value =>
@@ -130,7 +130,7 @@ def completeDataOutputUserTask? (program : Program) (state : RuntimeState)
     { processInstanceId := record.processInstanceId
       activityElementId := ⟨record.activityElementId.value⟩
       activation := record.activation }
-  if record.attachedTimers.isEmpty then
+  if record.timerHandlerOccurrences.isEmpty then
     pure
       { state with
         waits := state.waits.erase task
@@ -446,7 +446,7 @@ def dataOutputActivityRecord (state : RuntimeState) (instanceId : SemanticId)
       { processInstanceId := instanceId
         elementId := ⟨taskId.value⟩
         activation := activationCount state taskId + 1 }
-    attachedTimers := [] }
+    attachedHandlers := [] }
 
 /-- The successor's exact Activity collection, expressed over the record above. -/
 theorem activateDataOutputUserTask_activityOccurrences {state after : RuntimeState}

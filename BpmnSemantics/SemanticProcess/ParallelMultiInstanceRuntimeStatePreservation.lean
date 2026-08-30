@@ -380,16 +380,6 @@ theorem mem_insertParallelChildWaits_shape (arm : ParallelMultiInstanceArm)
             constructor <;> rfl
           · exact Or.inl old
 
-theorem insertActivityOccurrence_eq_canonicalInsertBy (record : ActivityOccurrence) :
-    ∀ records, insertActivityOccurrence record records =
-      canonicalInsertBy activityOccurrenceBefore record records := by
-  intro records
-  induction records with
-  | nil => rfl
-  | cons current rest ih =>
-      simp only [insertActivityOccurrence, canonicalInsertBy]
-      split <;> simp_all
-
 theorem pendingParallelChildWaits_unique_from (arm : ParallelMultiInstanceArm)
     (owner : ScopeOccurrenceId) (processInstanceId : SemanticId) (highWater : Nat)
     (snapshot : List String) (index : Nat) (waits : List UserTaskWait)
@@ -541,7 +531,7 @@ theorem sequential_controllers_absent (program : Program) (state : RuntimeState)
                   | some body =>
                       body.processInstanceId == record.processInstanceId &&
                         body.elementId.value == task.id.value &&
-                        match state.waits.filter (taskIdNamesWait body), record.attachedTimers with
+                        match state.waits.filter (taskIdNamesWait body), record.timerHandlerOccurrences with
                         | [wait], [timerId] =>
                             wait.owner == record.owner && wait.task.id == task.id &&
                               wait.task.name == task.name && wait.metadata == none &&
@@ -755,71 +745,5 @@ theorem insertNextActivity_preserves_identityBound (state : RuntimeState)
       ⟨old.activityElementId.value⟩
     rw [activityActivationCount_set_other _ _ _ _ different]
     exact prior
-
-theorem sharedParallelEmpty_preserves_runtimeStateWellFormed (program : Program)
-    (expectedInstanceId : SemanticId) (arm : ParallelMultiInstanceArm)
-    (ownerScope : DefinitionScopeId) (account : SharedParallelProgramAccount program arm ownerScope)
-    (before : RuntimeState) (instanceId : SemanticId) (owner : ScopeOccurrenceId)
-    (running : before.control = .running instanceId)
-    (tokenOwner : onlyTokenOwner? before arm.input = some owner)
-    (controllerAbsent : before.parallelMultiInstanceControllers.any (fun controller =>
-      controller.id.activityElementId.value == arm.taskId.value) = false)
-    (wellFormed : runtimeStateWellFormed program expectedInstanceId before = true) :
-    runtimeStateWellFormed program expectedInstanceId
-      { before with
-        tokens := addToken (removeToken before.tokens arm.input owner) arm.normalOutput owner
-        variables := publishSharedParallelResults before arm [] } = true := by
-  simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
-  obtain ⟨existing, claims⟩ := wellFormed
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
-    bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, activityIds⟩,
-    controllers⟩, sequentialBindings⟩, parallelBindings⟩, controllerIds⟩, notExhausted⟩,
-    lifecycle⟩ := existing
-  let removed : RuntimeState :=
-    { before with
-      tokens := removeToken before.tokens arm.input owner
-      variables := publishSharedParallelResults before arm [] }
-  have ownerFacts := runtimePositionValid_onlyTokenOwner_live_and_scope program
-    expectedInstanceId before arm.input owner ownerScope position tokenOwner account.inputOwner
-  have removedPosition : runtimePositionValid program expectedInstanceId removed = true :=
-    runtimePositionValid_removeToken_frame program expectedInstanceId before removed arm.input owner
-      position tokenOwner rfl rfl rfl rfl
-  have ownerLive : exactLiveOccurrence removed owner = true := by
-    simpa [removed, exactLiveOccurrence] using ownerFacts.1
-  have positionAfter := runtimePositionValid_addToken program expectedInstanceId removed
-    arm.normalOutput owner removedPosition ownerLive account.normalOutputDeclared (by
-      simpa [ownerFacts.2] using account.normalOutputOwner)
-  have noControllers := admitted_parallel_controllers_absent program arm ownerScope account before
-    parallelBindings controllerAbsent
-  have parallelAfter : parallelMultiInstanceProgramBindingsValid program
-      { before with
-        tokens := addToken (removeToken before.tokens arm.input owner) arm.normalOutput owner
-        variables := publishSharedParallelResults before arm [] } = true := by
-    simp [parallelMultiInstanceProgramBindingsValid, noControllers] at parallelBindings ⊢
-    exact parallelBindings
-  refine ⟨?_, claims⟩
-  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · simpa [removed] using positionAfter
-  · exact races
-  · exact incidents
-  · exact owners
-  · exact identities
-  · exact bounds
-  · exact declarations
-  · exact hidden
-  · exact order
-  · exact bodies
-  · exact attached
-  · exact activityIds
-  · exact controllers
-  · rw [sequentialMultiInstanceProgramBindingsValid_frame program before
-      { before with
-        tokens := addToken (removeToken before.tokens arm.input owner) arm.normalOutput owner
-        variables := publishSharedParallelResults before arm [] } rfl rfl rfl rfl]
-    exact sequentialBindings
-  · exact parallelAfter
-  · exact controllerIds
-  · exact notExhausted
-  · simp [running]
 
 end BpmnSemantics.SemanticProcess

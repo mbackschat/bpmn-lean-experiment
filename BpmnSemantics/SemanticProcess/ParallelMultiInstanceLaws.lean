@@ -304,6 +304,8 @@ private theorem closed_shared_parallel_completions_commute
   · rw [leftPending, rightPending]
     exact remove_parallel_child_wait_singletons_commute state.waits left right
   constructor
+  · rfl
+  constructor
   · simp only [remove_parallel_record_rewritten_reference]
     rw [remove_parallel_record_after_body_rewrite, remove_parallel_record_after_body_rewrite]
   constructor

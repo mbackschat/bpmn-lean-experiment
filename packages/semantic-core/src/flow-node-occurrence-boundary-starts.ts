@@ -71,6 +71,8 @@ export function candidateLongLivedStarts(
       ));
       return oneWaitStart(processId, operation.task.elementId, owner, wait?.id);
     }
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
+      return null;
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask: {
       const wait = only(after.userTaskWaits.filter((candidate) =>

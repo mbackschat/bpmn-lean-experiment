@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
  *
  * `taskActivations` is keyed by task element, `scopeActivations` by definition scope, and
  * `timerActivations` by Timer element. Two of them agree only while each of their elements is armed
- * once per arming of the other, and nothing in `RuntimeState` asserted that. Six sites spent three
+ * once per arming of the other, and nothing in `RuntimeState` asserted that. Seven sites spent three
  * different keys on that one agreement, and none reported an ambiguity when it broke: each silently
  * found a different sibling or none.
  *
@@ -33,6 +33,7 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const pairingOwners = [
   "packages/semantic-core/src/semantic-process-bounded-task-runtime.ts",
   "packages/semantic-core/src/semantic-process-monitored-task-runtime.ts",
+  "packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts",
   "packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts",
   "packages/semantic-core/src/flow-node-occurrence-open-set.ts",
   "packages/semantic-core/src/flow-node-occurrence-retained-pairing.ts",
@@ -42,6 +43,7 @@ const pairingOwners = [
 /** The Lean family modules that recover a body-to-handler pair. */
 const leanPairingOwners = [
   "BpmnSemantics/SemanticProcess/BoundedTask.lean",
+  "BpmnSemantics/SemanticProcess/MessageBoundedTask.lean",
   "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
   "BpmnSemantics/SemanticProcess/BoundedScope.lean",
 ] as const;
@@ -54,7 +56,7 @@ const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|Recor
  * `=` rather than `===`, and it must not match a *same-family* identity check. Those compare a wait's
  * activation against a submitted occurrence identity's, which is a wrong-identity refusal and not a
  * join, so the pattern requires both sides to end in `.activation` and excludes a right-hand side
- * naming a submitted identity parameter.
+ * naming one of the submitted task, Timer, or Message occurrence identity parameters.
  *
  * That exclusion is line-scoped, and the closure review named the hole: a genuine cross-family join
  * written on a line that also mentions any excluded identifier evades this pattern. Naming the safe
@@ -64,7 +66,7 @@ const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|Recor
  * rule in both languages, and the residual hole is recorded rather than claimed closed.
  */
 const leanCrossFamilyJoin =
-  /\.activation\s*=\s*(?!.*\b(?:timerId|taskId|submitted)\b)[A-Za-z_][\w.]*\.activation\b/u;
+  /\.activation\s*=\s*(?!.*\b(?:timerId|taskId|subscriptionId|submitted)\b)[A-Za-z_][\w.]*\.activation\b/u;
 
 /**
  * A join across two counter families, written in TypeScript.
@@ -83,13 +85,14 @@ const leanCrossFamilyJoin =
 const crossFamilyJoin = /\.activation\s*===\s*[A-Za-z_$][\w$.]*\.activation\b/u;
 
 /** The one same-family identity comparison the enumerated owners are allowed to contain. */
-const retainedListIdentity = /^\s*attached\.activation\s*===\s*timerId\.activation\b/u;
+const retainedListIdentity =
+  /^\s*attached\.occurrence\.activation\s*===\s*(?:timerId|messageId)\.activation\b/u;
 
 function joinsAcrossFamilies(line: string): boolean {
   return crossFamilyJoin.test(line) && !retainedListIdentity.test(line);
 }
 
-const recordLookup = /activityOccurrenceFor|activityBody(Task|Scope)|attachedTimers/u;
+const recordLookup = /activityOccurrenceFor|activityBody(Task|Scope)|attachedHandlers/u;
 
 function lines(file: string): ReadonlyArray<string> {
   return readFileSync(path.join(projectRoot, file), "utf8").split("\n");
@@ -104,8 +107,8 @@ function joinSites(file: string): ReadonlyArray<string> {
 test("every enumerated pairing owner resolves its pair through the ownership record", () => {
   assert.equal(
     pairingOwners.length,
-    6,
-    "four transition owners across three family runtimes, the open-set binding, the retained-pairing owner, and the completeness relation",
+    7,
+    "five transition owners across four family runtimes, the open-set binding, the retained-pairing owner, and the completeness relation",
   );
   assert.deepEqual(pairingOwners.flatMap(joinSites), []);
   for (const owner of pairingOwners) {
@@ -154,14 +157,15 @@ test("the pattern separates a cross-family join from a cardinality check", () =>
     "  entry.anchor.id.activation === 1 &&",
     "  left.activation - right.activation;",
     // The retained handler read: an identity equality inside one family, and the only safe shape.
-    "    attached.activation === timerId.activation);",
+    "    attached.occurrence.activation === timerId.activation);",
+    "    attached.occurrence.activation === messageId.activation);",
     // The join this capsule removed. It mentions a submitted identity too, so a line-scoped
     // exclusion would have stopped catching its regression.
     "        entry.anchor.id.activation === timerId.activation &&",
   ];
   assert.deepEqual(
     sample.flatMap((line, index) => joinsAcrossFamilies(line) ? [index] : []),
-    [0, 4],
+    [0, 5],
     "the removed join stays flagged while the retained-list identity comparison does not",
   );
 });

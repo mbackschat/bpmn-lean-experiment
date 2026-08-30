@@ -156,14 +156,17 @@ def activityBodyLive (state : RuntimeState) (record : ActivityOccurrence) : Bool
             decide (wait.activation = task.activation)).length = 1
   | .childScope scope => exactLiveOccurrence state scope
 
-/-- `AOO-BODY-01` and `AOO-OWN-01`. Every record has exactly one live body, and every Timer it lists
-is live under the record's own owner. -/
+/-- `AOO-BODY-01` and `AOO-OWN-01`. Every record has exactly one live body, and each attached handler
+resolves only in its tagged wait family under the record's own owner. -/
 def activityRecordsOwnLiveWork (state : RuntimeState) : Bool :=
   state.activityOccurrences.all fun record =>
     activityBodyLive state record &&
-      record.attachedTimers.all fun timer =>
+      record.timerHandlerOccurrences.all (fun timer =>
         state.timerWaits.any fun wait =>
-          timerIdNamesWait timer wait && decide (wait.owner = record.owner)
+          timerIdNamesWait timer wait && decide (wait.owner = record.owner)) &&
+      record.messageHandlerOccurrences.all fun message =>
+        state.messageWaits.any fun wait =>
+          messageIdNamesWait message wait && decide (wait.owner = record.owner)
 
 /-- `AOO-ATTACH-01`. No Timer wait is claimed by two records.
 
@@ -173,15 +176,24 @@ stay admitted. -/
 def attachedTimersUnambiguous (state : RuntimeState) : Bool :=
   state.timerWaits.all fun wait =>
     (state.activityOccurrences.filter fun record =>
-      anyTimerIdNamesWait record.attachedTimers wait).length ≤ 1
+      anyTimerIdNamesWait record.timerHandlerOccurrences wait).length ≤ 1
+
+/-- `AOO-ATTACH-02`. No Message wait is claimed by two Activity records. Standalone Message waits
+remain valid because this is an at-most-one rule, parallel to the Timer family. -/
+def attachedMessagesUnambiguous (state : RuntimeState) : Bool :=
+  state.activityOccurrences.all fun record =>
+    record.messageHandlerOccurrences.all fun subscription =>
+      (state.activityOccurrences.filter fun candidate =>
+        candidate.messageHandlerOccurrences.contains subscription).length ≤ 1
 
 theorem activityRecordsOwnLiveWork_frame (before after : RuntimeState)
     (scopes : after.scopeOccurrences = before.scopeOccurrences)
-    (tasks : after.waits = before.waits) (timers : after.timerWaits = before.timerWaits)
+    (tasks : after.waits = before.waits) (messages : after.messageWaits = before.messageWaits)
+    (timers : after.timerWaits = before.timerWaits)
     (records : after.activityOccurrences = before.activityOccurrences) :
     activityRecordsOwnLiveWork after = activityRecordsOwnLiveWork before := by
   simp [activityRecordsOwnLiveWork, activityBodyLive, exactLiveOccurrence,
-    scopes, tasks, timers, records]
+    scopes, tasks, messages, timers, records]
 
 theorem attachedTimersUnambiguous_frame (before after : RuntimeState)
     (timers : after.timerWaits = before.timerWaits)
@@ -216,14 +228,14 @@ theorem activityOccurrenceForTimerWait_unique (state : RuntimeState) (wait : Tim
     (unambiguous : attachedTimersUnambiguous state = true)
     (waitLive : wait ∈ state.timerWaits)
     (mem : record ∈ state.activityOccurrences)
-    (names : anyTimerIdNamesWait record.attachedTimers wait = true) :
+    (names : anyTimerIdNamesWait record.timerHandlerOccurrences wait = true) :
     activityOccurrenceForTimerWait? state.activityOccurrences wait = some record := by
   have bound : (state.activityOccurrences.filter fun candidate =>
-      anyTimerIdNamesWait candidate.attachedTimers wait).length ≤ 1 := by
+      anyTimerIdNamesWait candidate.timerHandlerOccurrences wait).length ≤ 1 := by
     have := List.all_eq_true.mp unambiguous wait waitLive
     simpa using this
   have memFilter : record ∈ state.activityOccurrences.filter fun candidate =>
-      anyTimerIdNamesWait candidate.attachedTimers wait := List.mem_filter.mpr ⟨mem, names⟩
+      anyTimerIdNamesWait candidate.timerHandlerOccurrences wait := List.mem_filter.mpr ⟨mem, names⟩
   have positive := List.length_pos_of_mem memFilter
   obtain ⟨only, singleton⟩ :=
     List.length_eq_one_iff.mp (Nat.le_antisymm bound positive)
@@ -272,7 +284,7 @@ def sequentialMultiInstanceControllerProgramBindingValid (program : Program)
             | some body =>
                 body.processInstanceId == record.processInstanceId &&
                   body.elementId.value == task.id.value &&
-                  match state.waits.filter (taskIdNamesWait body), record.attachedTimers with
+                  match state.waits.filter (taskIdNamesWait body), record.timerHandlerOccurrences with
                   | [wait], [timerId] =>
                       wait.owner == record.owner && wait.task.id == task.id &&
                         wait.task.name == task.name && wait.metadata == none &&
@@ -437,6 +449,7 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
     | .completeParallelMultiInstanceUserTask ..
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEffect ..
+    | .awaitMessageBoundedUserTask ..
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
@@ -451,6 +464,8 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
     | .awaitPayloadMessage _ _ _ _ message _ =>
         decide (message.elementId = elementId)
     | .awaitEventRace _ _ _ message _ => decide (message.elementId = elementId)
+    | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage =>
+        decide (boundaryMessage.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
@@ -468,6 +483,7 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
   program.operations.filter fun
     | .awaitUserTask _ _ _ _ task => decide (task.id = taskId)
     | .awaitBoundedUserTask _ _ _ task _ => decide (task.id = taskId)
+    | .awaitMessageBoundedUserTask _ _ _ task _ => decide (task.id = taskId)
     | .awaitMonitoredUserTask _ _ _ task _ => decide (task.id = taskId)
     | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
         decide (task.id = taskId)
@@ -496,6 +512,7 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace ..
     | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
+    | .awaitMessageBoundedUserTask ..
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
@@ -657,6 +674,7 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     canonicalCollectionOrder state &&
     activityRecordsOwnLiveWork state &&
     attachedTimersUnambiguous state &&
+    attachedMessagesUnambiguous state &&
     activityIdentitiesUnique state &&
     controllersOwnLiveActivity state &&
     sequentialMultiInstanceProgramBindingsValid program state &&
@@ -674,7 +692,7 @@ theorem runtimeStateWellFormed_canonicalCollectionOrder (program : Program)
     canonicalCollectionOrder state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
   obtain ⟨existing, _claims⟩ := wellFormed
-  exact existing.1.1.1.1.1.1.1.1.1.2
+  exact existing.1.1.1.1.1.1.1.1.1.1.2
 
 /-- Association facts exposed by the composite runtime invariant. Consumers use this named
 projection instead of depending on the ordinal position of either conjunct. -/
@@ -684,7 +702,7 @@ theorem runtimeStateWellFormed_associationValidities (program : Program)
     eventRaceAssociationsValid state = true ∧ effectIncidentAssociationsValid state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
   obtain ⟨existing, _claims⟩ := wellFormed
-  have associations := existing.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1
+  have associations := existing.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1
   exact ⟨associations.1.2, associations.2⟩
 
 /-! ## Layer 3: monotonicity -/

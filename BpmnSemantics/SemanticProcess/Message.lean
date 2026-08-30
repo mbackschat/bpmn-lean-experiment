@@ -38,6 +38,7 @@ inductive MessageDeliveryStep :
         state.messageWaits.find? (messageOccurrenceMatches subscriptionId) =
           some wait)
       (callerChannel : wait.channel = channel)
+      (unattached : activityRecordsAttachMessageWait state.activityOccurrences wait = false)
       (definition : messageDefinitionMatches program wait = true) :
       MessageDeliveryStep program state subscriptionId channel
         { state with
@@ -60,6 +61,7 @@ def deliverMessage (program : Program) (state : RuntimeState)
   | some wait =>
       if state.eventRaces.any (eventRaceHasMessage · wait) then
         eventRaceMessageWinner? program state subscriptionId channel
+      else if activityRecordsAttachMessageWait state.activityOccurrences wait then none
       else if wait.channel = channel && messageDefinitionMatches program wait then
           some
             { state with
@@ -86,13 +88,17 @@ theorem deliverMessage_sound
         (eventRaceMessageWinnerState_sound program state successor
           subscriptionId channel success)
     · split at success
-      · rename_i accepted
-        cases success
-        have callerChannel : wait.channel = channel := by
-          exact of_decide_eq_true (Bool.and_eq_true_iff.mp accepted).1
-        exact .commit program state subscriptionId channel wait occurrence
-          callerChannel (Bool.and_eq_true_iff.mp accepted).2
       · contradiction
+      · rename_i unattached
+        split at success
+        · rename_i accepted
+          cases success
+          have callerChannel : wait.channel = channel := by
+            exact of_decide_eq_true (Bool.and_eq_true_iff.mp accepted).1
+          exact .commit program state subscriptionId channel wait occurrence
+            callerChannel (Bool.eq_false_iff.mpr unattached)
+            (Bool.and_eq_true_iff.mp accepted).2
+        · contradiction
 
 /-- Isolated state used to state direct Message-delivery laws over the complete public subscription identity and channel. -/
 def singletonMessageWaitingState (wait : MessageWait)

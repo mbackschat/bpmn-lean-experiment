@@ -298,6 +298,7 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitDataOutputUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.Synchronize:

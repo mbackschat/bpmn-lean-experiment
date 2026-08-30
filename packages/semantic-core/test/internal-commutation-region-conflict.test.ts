@@ -72,7 +72,7 @@ const activityRecord: ActivityOccurrence = {
   owner: left,
   operationId: "operation:Enter_LeftChild",
   body: { kind: ActivityBodyKind.ChildScope, scope: leftChild },
-  attachedTimers: [],
+  attachedHandlers: [],
 };
 
 test("overlapping occurrence regions conflict while disjoint siblings compose", () => {

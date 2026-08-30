@@ -39,6 +39,7 @@ export enum CheckedNodeKind {
   CallActivity = "callActivity",
   BoundaryErrorEvent = "boundaryErrorEvent",
   TimerBoundaryEvent = "timerBoundaryEvent",
+  MessageBoundaryEvent = "messageBoundaryEvent",
   UserTask = "userTask",
   DataInputUserTask = "dataInputUserTask",
   DataOutputUserTask = "dataOutputUserTask",
@@ -164,6 +165,17 @@ export type CheckedNode =
       attachedToRef: string;
       interruption: BoundaryInterruption;
       durationLiteral: "PT1S";
+      outputFlowId: string;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.MessageBoundaryEvent;
+      id: string;
+      attachedToRef: string;
+      interruption: BoundaryInterruption.Interrupting;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
       outputFlowId: string;
     }>
   | DeepReadonly<{

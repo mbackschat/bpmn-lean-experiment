@@ -118,7 +118,7 @@ def parentOwnedDeadline? (state : RuntimeState) (child parent : ScopeOccurrenceI
   match activityOccurrenceForScope? state.activityOccurrences child with
   | none => none
   | some record =>
-      match record.attachedTimers.find? fun candidate =>
+      match record.timerHandlerOccurrences.find? fun candidate =>
           decide (candidate.elementId.value = boundaryTimer.elementId.value) with
       | none => none
       | some attached =>
@@ -202,7 +202,7 @@ def BoundedScopePairing (program : Program) (records : List ActivityOccurrence)
     operation.2.elementId = deadline.elementId ∧
     ∃ record ∈ records,
       activityBodyScope? record = some child ∧
-      ∃ attached ∈ record.attachedTimers, timerIdNamesWait attached deadline = true
+      ∃ attached ∈ record.timerHandlerOccurrences, timerIdNamesWait attached deadline = true
 
 /-- Declarative victory relation with exactly two constructors, one per arm.
 
@@ -247,7 +247,7 @@ private theorem boundedScopeChildFor_matches (state : RuntimeState)
     child.definitionScopeId = childScopeId ∧
       ∃ record ∈ state.activityOccurrences,
         activityBodyScope? record = some child ∧
-        ∃ attached ∈ record.attachedTimers, timerIdNamesWait attached deadline = true := by
+        ∃ attached ∈ record.timerHandlerOccurrences, timerIdNamesWait attached deadline = true := by
   unfold boundedScopeChildFor? at found
   split at found
   · exact absurd found (by simp)
@@ -340,7 +340,7 @@ private theorem parentOwnedDeadline_matches (state : RuntimeState)
       deadline.elementId = boundaryTimer.elementId ∧
       ∃ record ∈ state.activityOccurrences,
         activityBodyScope? record = some child ∧
-        ∃ attached ∈ record.attachedTimers, timerIdNamesWait attached deadline = true := by
+        ∃ attached ∈ record.timerHandlerOccurrences, timerIdNamesWait attached deadline = true := by
   unfold parentOwnedDeadline? at found
   split at found
   · exact absurd found (by simp)

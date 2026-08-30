@@ -101,6 +101,7 @@ def parseFrom (source : CheckedProcess) :
       | some (.callActivity ..)
       | some (.boundaryErrorEvent ..)
       | some (.timerBoundaryEvent ..)
+      | some (.messageBoundaryEvent ..)
       | some (.errorEndEvent ..)
       | some (.terminateEndEvent ..)
       | some (.intermediateCatchMessageEvent ..)
@@ -153,6 +154,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .callActivity ..
   | .boundaryErrorEvent ..
   | .timerBoundaryEvent ..
+  | .messageBoundaryEvent ..
   | .errorEndEvent .. => false
   | .terminateEndEvent .. => false
   | .intermediateCatchTimerEvent _ durationLiteral =>

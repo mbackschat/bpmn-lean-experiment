@@ -366,6 +366,8 @@ function waitMatchesUserTask(
           operation.task.output === wait.output &&
           operation.task.name === wait.name &&
           wait.metadata === undefined;
+      case SemanticOperationKind.AwaitMessageBoundedUserTask:
+        return false;
       case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
         return sequentialMultiInstanceTaskWaitMatches(state, operation, wait);
       case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityBodyKind,
+  ActivityHandlerKind,
   CommandOutcome,
   ControlStateKind,
   MessageChannelKind,
@@ -14,10 +16,12 @@ import {
   initialState,
   isStableStateResumable,
   isWellFormedSemanticProcessProgram,
+  runtimeStateDefects,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeliverMessageStimulus,
+  RuntimeState,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
@@ -183,6 +187,37 @@ test("activates one exact Message subscription and delivers it once", () => {
   });
   assert.equal(stale.outcome, CommandOutcome.Rejected);
   assert.deepEqual(stale.state, delivered.state);
+});
+
+test("direct delivery refuses a Message wait claimed by an Activity occurrence", () => {
+  const waiting = applyStimulus(program, initialState, start).state;
+  const ordinarySuccessor = applyStimulus(program, waiting, delivery).state;
+  const owner = rootScopeOccurrence(program.processId, start.instanceId);
+  const attached: RuntimeState = {
+    ...waiting,
+    userTaskWaits: ordinarySuccessor.userTaskWaits,
+    taskActivations: ordinarySuccessor.taskActivations,
+    activityOccurrences: [{
+      id: {
+        processInstanceId: start.instanceId,
+        activityElementId: completion.taskId.elementId,
+        activation: 1,
+      },
+      owner,
+      operationId: "operation:UserTask_Approve",
+      body: { kind: ActivityBodyKind.UserTask, task: completion.taskId },
+      attachedHandlers: [{
+        kind: ActivityHandlerKind.Message,
+        occurrence: subscriptionId,
+      }],
+    }],
+    activityActivations: [{ elementId: completion.taskId.elementId, count: 1 }],
+  };
+  assert.deepEqual(runtimeStateDefects(program, start.instanceId, attached), []);
+
+  const rejected = applyStimulus(program, attached, delivery);
+  assert.equal(rejected.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(rejected.state, attached);
 });
 
 test("rejects every subscription or channel mismatch with exact state preservation", () => {

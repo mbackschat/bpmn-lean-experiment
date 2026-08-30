@@ -292,7 +292,7 @@ def finalCompletionState (arm : SequentialMultiInstanceArm) (state : RuntimeStat
     tokens := addToken state.tokens arm.normalOutput record.owner
     waits := state.waits.filter fun candidate => !taskIdNamesWait body candidate
     timerWaits := state.timerWaits.filter fun candidate =>
-      !anyTimerIdNamesWait record.attachedTimers candidate
+      !anyTimerIdNamesWait record.timerHandlerOccurrences candidate
     activityOccurrences := state.activityOccurrences.filter fun candidate =>
       !sameActivityOccurrence candidate record
     sequentialMultiInstanceControllers := state.sequentialMultiInstanceControllers.filter
@@ -326,7 +326,7 @@ def interruptionState (arm : SequentialMultiInstanceArm) (state : RuntimeState)
     tokens := addToken state.tokens arm.boundaryTimer.output record.owner
     waits := state.waits.filter fun candidate => !taskIdNamesWait body candidate
     timerWaits := state.timerWaits.filter fun candidate =>
-      !anyTimerIdNamesWait record.attachedTimers candidate
+      !anyTimerIdNamesWait record.timerHandlerOccurrences candidate
     activityOccurrences := state.activityOccurrences.filter fun candidate =>
       !sameActivityOccurrence candidate record
     sequentialMultiInstanceControllers := state.sequentialMultiInstanceControllers.filter

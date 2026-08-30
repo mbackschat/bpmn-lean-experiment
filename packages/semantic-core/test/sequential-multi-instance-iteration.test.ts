@@ -25,10 +25,12 @@ import { test } from "node:test";
 
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   RuntimeStateDefect,
   SemanticOperationKind,
   VariableValueKind,
   applyInternalOperation,
+  attachedTimerOccurrences,
   completeSequentialMultiInstanceIteration,
   interruptSequentialMultiInstance,
   runtimeStateDefects,
@@ -125,7 +127,7 @@ test("a non-final completion replaces the body and preserves the outer deadline"
   const [record] = after.activityOccurrences;
   assert.ok(record !== undefined);
   assert.deepEqual(record.id, outerActivityId, "the outer identity is not re-armed");
-  assert.deepEqual(record.attachedTimers, [outerTimerId]);
+  assert.deepEqual(attachedTimerOccurrences(record), [outerTimerId]);
   assert.deepEqual(record.body, {
     kind: ActivityBodyKind.UserTask,
     task: innerTaskId(1),
@@ -150,7 +152,7 @@ test("the body's activation diverges from its handler's after one iteration", ()
   const bodyActivation = record.body.kind === ActivityBodyKind.UserTask
     ? record.body.task.activation
     : -1;
-  const [attached] = record.attachedTimers;
+  const [attached] = attachedTimerOccurrences(record);
 
   assert.equal(bodyActivation, 2, "the inner task advanced");
   assert.equal(attached?.activation, 1, "its handler did not");
@@ -249,7 +251,10 @@ function withSecondAttachedTimer(state: RuntimeState): RuntimeState {
     ),
     activityOccurrences: [{
       ...record,
-      attachedTimers: [...record.attachedTimers, second],
+      attachedHandlers: [
+        ...record.attachedHandlers,
+        { kind: ActivityHandlerKind.Timer, occurrence: second },
+      ],
     }],
   };
 }

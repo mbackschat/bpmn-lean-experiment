@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -112,7 +113,7 @@ function armedState(
       owner,
       operationId: "operation:Task_ReviewClaim",
       body: { kind: ActivityBodyKind.UserTask, task: taskId },
-      attachedTimers: [deadlineId],
+      attachedHandlers: [{ kind: ActivityHandlerKind.Timer, occurrence: deadlineId }],
     }],
     userTaskWaits: [
       { id: taskId, owner, name: "Review claim", output: "place:Reviewed" },

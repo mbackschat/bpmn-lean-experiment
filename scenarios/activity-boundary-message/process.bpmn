@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_ActivityBoundaryMessage"
+  targetNamespace="https://bpmn-lean.local/scenarios/activity-boundary-message">
+  <bpmn:message id="Message_ApplicationWithdrawal" name="Application withdrawal"/>
+  <bpmn:interface id="Interface_ApplicationMessages" name="Application messages">
+    <bpmn:operation id="Operation_ReceiveApplicationWithdrawal" name="Receive application withdrawal">
+      <bpmn:inMessageRef>Message_ApplicationWithdrawal</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_ActivityBoundaryMessage" name="Review application with withdrawal" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="ReviewApplication" name="Review application">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Normal</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Withdrawal" name="Application withdrawn" attachedToRef="ReviewApplication">
+      <bpmn:outgoing>Flow_Boundary</bpmn:outgoing>
+      <bpmn:messageEventDefinition
+        id="MessageEventDefinition_ApplicationWithdrawal"
+        messageRef="Message_ApplicationWithdrawal"
+        operationRef="Operation_ReceiveApplicationWithdrawal"/>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="RecordReviewCompletion" name="Record review completion">
+      <bpmn:incoming>Flow_Normal</bpmn:incoming>
+      <bpmn:outgoing>Flow_Normal_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="HandleWithdrawal" name="Handle withdrawal">
+      <bpmn:incoming>Flow_Boundary</bpmn:incoming>
+      <bpmn:outgoing>Flow_Boundary_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="NormalEnd">
+      <bpmn:incoming>Flow_Normal_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="BoundaryEnd">
+      <bpmn:incoming>Flow_Boundary_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="ReviewApplication"/>
+    <bpmn:sequenceFlow id="Flow_Normal" sourceRef="ReviewApplication" targetRef="RecordReviewCompletion"/>
+    <bpmn:sequenceFlow id="Flow_Normal_End" sourceRef="RecordReviewCompletion" targetRef="NormalEnd"/>
+    <bpmn:sequenceFlow id="Flow_Boundary" sourceRef="Withdrawal" targetRef="HandleWithdrawal"/>
+    <bpmn:sequenceFlow id="Flow_Boundary_End" sourceRef="HandleWithdrawal" targetRef="BoundaryEnd"/>
+  </bpmn:process>
+</bpmn:definitions>

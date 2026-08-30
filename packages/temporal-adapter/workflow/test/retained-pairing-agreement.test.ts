@@ -8,7 +8,7 @@
  * state, and this is the schedule that separates them.
  *
  * A non-interrupting boundary Timer is the one shape where a record's handler list changes while its
- * body stays open: firing the reminder empties `attachedTimers` and the host User Task wait survives.
+ * body stays open: firing the reminder empties `attachedHandlers` and the host User Task wait survives.
  * A cache written once when the body opened would still name the withdrawn reminder, so the decoder
  * would refuse a correct publication and Continue-As-New would fail on a legal state.
  *
@@ -21,7 +21,7 @@ import test from "node:test";
 import {
   ScenarioStepKind,
   advanceScenario,
-  attachedTimersForBodyAnchor,
+  attachedHandlersForBodyAnchor,
   initialState,
 } from "@bpmn-lean/semantic-core";
 
@@ -65,10 +65,10 @@ function commit(state, occurrences, execution, stimulus, committedAtEpochMs) {
 /** What the continuation decoder recomputes, for every retained entry. */
 function disagreements(occurrences, state) {
   return occurrences.retainedOpen.flatMap((entry) => {
-    const expected = attachedTimersForBodyAnchor(state, entry.anchor);
-    return JSON.stringify(entry.attachedTimers) === JSON.stringify(expected)
+    const expected = attachedHandlersForBodyAnchor(state, entry.anchor);
+    return JSON.stringify(entry.attachedHandlers) === JSON.stringify(expected)
       ? []
-      : [{ anchor: entry.anchor, retained: entry.attachedTimers, expected }];
+      : [{ anchor: entry.anchor, retained: entry.attachedHandlers, expected }];
   });
 }
 
@@ -84,8 +84,8 @@ test("the retained handler list tracks the record through a non-interrupting fir
   // Anti-vacuity: arming must have cached a handler, or the comparison below is between two empties
   // and would hold for an accumulator that caches nothing.
   assert.equal(
-    carried.occurrences.retainedOpen.filter(({ attachedTimers }) =>
-      attachedTimers.length === 1
+    carried.occurrences.retainedOpen.filter(({ attachedHandlers }) =>
+      attachedHandlers.length === 1
     ).length,
     1,
     "arming must cache exactly one host carrying its reminder",

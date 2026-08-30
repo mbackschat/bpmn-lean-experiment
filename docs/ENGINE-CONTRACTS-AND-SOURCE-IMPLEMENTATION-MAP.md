@@ -16,6 +16,8 @@ The registered Activity data-output profile admits one exact credit-underwriting
 
 The implemented Message payload catch profile admits one exact operation-addressed Intermediate Catch Message Event whose Message and Event DataOutput resolve to the same scalar ItemDefinition object, whose required OutputSet and direct association resolve by object identity, and whose target is one distinct Process Property. It lowers to a distinct `payloadMessageCatchEvent` checked node and `awaitPayloadMessage` operation; Lean and the independently written TypeScript core execute the reviewed account, and the strict shared and Lean codecs preserve its additive wire shapes. Three registered answer-free scenarios distinguish a supplied scalar, explicit null, and an absent payload across the full Lean/core/Temporal pipeline, and one retained whole model binds the same exact compiler path. CIB Message behavior remains unselected.
 
+The first-green interrupting Activity boundary Message checkpoint admits one exact omission-only, payload-free Message Boundary Event on one User Task under the admission-only identity `bpmn-2.0.2-activity-boundary-message-draft`. It adds the strict checked `messageBoundaryEvent` and IL `awaitMessageBoundedUserTask` arms, exact source reference and attachment validation, and deterministic lowering with distinct normal and boundary outputs. The identity is deliberately outside the product `SemanticProfileId` registry until the semantic-checkpoint review approves the account; no profile artifact, registered scenario, differential case, or product example exists yet.
+
 ## Implemented
 
 ### Wire contracts
@@ -42,6 +44,7 @@ The implemented Message payload catch profile admits one exact operation-address
 - exhaustive schema-depth CIB fidelity classification for all twelve top-level state fields and every nested field, with exact schema/table path equality rejecting any top-level or nested omission
 - required `openMessageSubscriptions`, `openTimers`, and separate `openEffects`
 - typed `deliverMessage`, `fireTimer`, and `completeEffect`
+- strict checked `messageBoundaryEvent` and Semantic Process `awaitMessageBoundedUserTask` schema arms for the admission-only Activity boundary Message checkpoint
 - registered literal-generation-1 effect-incident identity, strict `reportEffectFailure` and `retryIncident` stimuli, required `openIncidents`, incident active waits, and retry interactions, including nested public occurrence-equality validation outside JSON Schema
 - JavaScript-safe non-negative integer maxima
 - exact non-normalized Unicode-scalar identifier order
@@ -68,6 +71,7 @@ The implemented Message payload catch profile admits one exact operation-address
 - one registered standards-only parallel Multi-Instance profile selects explicit parallel `All`, exact `stringEquals(completionPolicy,"first")`, the direct String collection graph, one outer `PT5S` Timer, and the fixed 16-item/512-byte/8,192-canonical-byte bounds without selecting CIB execution
 - one registered standards-only Activity data-input profile selects one required scalar `DataInput`, one direct `DataInputAssociation` from one Process `Property`, an empty `OutputSet`, and a String-or-null Process-start value domain, with an empty User Task completion domain and no CIB execution target
 - one registered standards-only Activity data-output profile selects one required scalar `DataOutput`, one direct `DataOutputAssociation` into one Process `Property`, an empty `InputSet`, and a String-or-null User Task completion value domain, with an empty Process-start domain and no CIB execution target
+- one admission-only Activity boundary Message checkpoint identity selects the exact empty Process-start and User Task-completion value domains without entering the product profile registry
 
 ### Semantic Process IL
 
@@ -77,6 +81,7 @@ The implemented Message payload catch profile admits one exact operation-address
 - `choose` carries exactly two declaration-ordered typed Simple Boolean candidates and one distinct default
 - `selectMany` carries two canonically ordered typed Simple Boolean candidates plus one default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`
 - `awaitEventRace` carries one named operation-addressed Message arm and one named exact-`PT1S` Timer arm with their configuration-flow origins, catch identities, and distinct winner outputs; its configuration Flows are not control places
+- `awaitMessageBoundedUserTask` carries one User Task body and one operation-addressed payload-free Message handler with distinct normal and boundary outputs under one Activity-owned operation
 - `mergeExclusive` carries a canonical nonempty input collection and one output, with reusable per-offered-token declarative pass-through and a unique-offer executable subset; only the registered cycle profile fixes its input count at three
 - ordinary `awaitUserTask.task` carries exact optional passive E2 metadata under the registered assignment/form profile; bounded and monitored User Task operations remain unchanged
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted scope ownership, condition, mapping, route, and exact source data
@@ -101,6 +106,7 @@ The implemented Message payload catch profile admits one exact operation-address
 - one exact parallel Multi-Instance User Task compiler for the reviewed parallel-risk-review graph, the same direct role structure, explicit parallel `All`, one exact Simple Boolean completion condition, one `completionPolicy` start binding, and one interrupting `PT5S` outer-lifetime Timer
 - one exact direct Activity data-input compiler for the reviewed invoice-review graph: one Process `Property`, one required scalar `DataInput` carrying only `id` and `name`, one `InputSet` referencing exactly it, one empty `OutputSet`, and one `DataInputAssociation` whose `sourceRef` and `targetRef` resolve by object identity in the parser graph rather than by name
 - one exact direct Activity data-output compiler for the reviewed credit-underwriting graph, mirroring the input reader's object-identity resolution in the opposite direction: the Activity-owned `DataOutput` is the association's `sourceRef` and the Process `Property` is its `targetRef`, the `InputSet` is the empty one, and `optionalOutputRefs`, `whileExecutingOutputRefs`, and `inputSetRefs` are required absent because each would change what "required" means for the single declared member
+- one checkpoint compiler for an omission-only interrupting, payload-free Message Boundary Event on one User Task, resolving `attachedToRef`, `messageRef`, and `operationRef` through the parser graph and refusing explicit `cancelActivity`, payload, misattachment, a mismatched definition chain, or a second handler
 - one registered E2 source reader for exact URI-expanded `candidateGroups` plus one exact `formData/formField`, including local or root alternate prefixes, quote-aware raw duplicate-attribute parser-erasure refusal across quoted delimiters and line terminators, exact boundary-space and literal restrictions, checked-to-IL metadata binding, and physical omission on metadata-free tasks
 - reusable checked-source scope ownership, reference, arity, scope-local reachability, co-reachability, and profile-selected whole-graph or User-Task-cut acyclicity validation separated from profile mechanism/cardinality capability
 - explicit expression-language admission, strict five-form parsing, exact checked-body retention, and process-level Sequence Flow declaration order independent of gateway reference order
@@ -136,6 +142,7 @@ This section owns a cross-cutting admission rule that no single capsule owns, be
 
 ### Semantic profile
 
+- registered Activity boundary Message profile artifact, scenario catalog membership, differential pipeline case, retained whole-model capability row, and product example; the checkpoint identity remains admission-only until review
 - general CIB parallel compatibility beyond the exact metadata composition
 - first production compatibility baseline
 - full requirement classification
@@ -152,6 +159,7 @@ This section owns a cross-cutting admission rule that no single capsule owns, be
 ### BPMN source
 
 - General BPMN compiler, arbitrary graph admission or scope nesting, cycles outside the exact registered User Task cycle profile, concurrent Multi-Merge execution, Standard Loop Characteristics, sequential or parallel Multi-Instance beyond the exact registered User Task/data/completion/Timer slices, other Exclusive Gateway topology/cardinality, general FormalExpression/JUEL/XPath, Service Task/data/error bindings beyond the approved exact shapes, catch-all/multi-handler/ancestor Error search, timer forms beyond each family's exact admitted lexeme, which is `PT5S` for the two Multi-Instance outer-lifetime Timers and `PT1S` elsewhere, addressless/operation-addressed/instantiating/data-bearing Receive Task, Message payload beyond the exact one-output catch-Event source/checked/IL/runtime profile, Message key/global correlation/throw/flow or other Message Event loci, external/imported/deployed Call targets, Global Tasks, Call data/mapping/version/tenant/recursion/repetition, synchronous parser CPU isolation, non-UTF-8 decoder, source locations, general extension semantics, DI-preserving export, complete CMOF binding, deployment store
+- Message Boundary forms beyond the exact admission-only Activity checkpoint
 - multiple or mixed Message Start Events, Event Sub-Process start, explicit `isInterrupting`, referenced or repeated MessageEventDefinitions, payload, Message Flow execution, routing, buffering, correlation, or definition-version fanout
 - An element on refusals over the document or checked graph, on unsupported values of consumed keys, or on nested event-definition and mapping-child failures that have no separately reviewed inventory. Those remain `unsupportedModel` records with `element: null`. Preserved material is retained only in the exact source bytes, with no query surface or public projection
 - The whole BPMN data family, and foreign content at every undeclared locus. A mapped Service Task overlay may declare only exact inert expanded-name/element-type pairs; unconsumed attributes, wildcards, and whole-type exemptions reject

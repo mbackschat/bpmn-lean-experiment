@@ -60,7 +60,7 @@ def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
         activation := activityActivation
         owner
         body := .childScope child
-        attachedTimers := [deadlineId] } state.activityOccurrences
+        attachedHandlers := [.timer deadlineId] } state.activityOccurrences
     activityActivations :=
       { taskId := { value := childScopeId.value }, count := activityActivation } ::
         state.activityActivations.filter fun value =>

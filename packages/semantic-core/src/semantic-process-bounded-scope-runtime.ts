@@ -21,6 +21,9 @@ import type {
 } from "./semantic-process-contract.js";
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
+  attachedTimerOccurrences,
+  attachedTimerWaits,
   type ActivityOccurrence,
   activityOccurrenceForAttachedTimer,
   activityOccurrenceForScopeBody,
@@ -154,7 +157,7 @@ export function selectBoundedScopeArming(
       owner: parent,
       operationId: operation.id,
       body: { kind: ActivityBodyKind.ChildScope, scope: child.id },
-      attachedTimers: [deadlineId],
+      attachedHandlers: [{ kind: ActivityHandlerKind.Timer, occurrence: deadlineId }],
     },
     deadline: {
       id: deadlineId,
@@ -228,19 +231,15 @@ export function selectScopeCompletionWithdrawal(
     record === undefined ||
     record.operationId !== definition.id ||
     !sameScopeOccurrence(record.owner, child.parent) ||
-    record.attachedTimers.length !== 1 ||
-    record.attachedTimers[0]?.elementId !== definition.boundaryTimer.elementId
+    record.attachedHandlers.length !== 1 ||
+    attachedTimerOccurrences(record)[0]?.elementId !== definition.boundaryTimer.elementId
   ) {
     return null;
   }
-  const timerWaits = record.attachedTimers.flatMap((attached) => {
-    const matches = state.timerWaits.filter(({ id }) => sameOccurrence(id, attached));
-    const wait = matches.length === 1 ? matches[0] : undefined;
-    return wait !== undefined && sameScopeOccurrence(wait.owner, record.owner)
-      ? [wait]
-      : [];
-  });
-  return timerWaits.length === record.attachedTimers.length
+  const timerWaits = attachedTimerWaits(record, state.timerWaits).filter((wait) =>
+    sameScopeOccurrence(wait.owner, record.owner)
+  );
+  return timerWaits.length === record.attachedHandlers.length
     ? { kind: ScopeCompletionWithdrawalKind.Bounded, record, timerWaits }
     : null;
 }
@@ -266,7 +265,7 @@ function withdrawBoundedScopeDeadline(
       return {
         ...after,
         timerWaits: after.timerWaits.filter(({ id }) =>
-          !selected.record.attachedTimers.some((attached) => sameOccurrence(attached, id))
+          !attachedTimerOccurrences(selected.record).some((attached) => sameOccurrence(attached, id))
         ),
         activityOccurrences: after.activityOccurrences.filter(
           (candidate) => !sameActivityOccurrence(candidate.id, selected.record.id),

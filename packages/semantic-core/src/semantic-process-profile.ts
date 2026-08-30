@@ -22,6 +22,7 @@ import {
 } from "./user-task-metadata.js";
 
 export {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
@@ -104,7 +105,8 @@ export function profileAllowsCheckedProcessShape(
     definitionScopeCount === required.definitionScopeCount &&
     sameCardinalities(nodes.map(({ kind }) => kind), required.nodeKinds) &&
     nodes.every((node) =>
-      node.kind !== CheckedNodeKind.TimerBoundaryEvent ||
+      (node.kind !== CheckedNodeKind.TimerBoundaryEvent &&
+        node.kind !== CheckedNodeKind.MessageBoundaryEvent) ||
       node.interruption === required.boundaryInterruption
     ) &&
     nodes.every((node) =>

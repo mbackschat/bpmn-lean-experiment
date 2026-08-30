@@ -29,6 +29,9 @@ import {
 } from "./semantic-process-bounded-scope-runtime.js";
 import { armBoundedUserTask } from "./semantic-process-bounded-task-runtime.js";
 import {
+  armMessageBoundedUserTask,
+} from "./semantic-process-message-bounded-task-runtime.js";
+import {
   armDataInputUserTask,
 } from "./semantic-process-activity-data-input-runtime.js";
 import {
@@ -399,6 +402,14 @@ function applyInternalOperationState(
       return applyOwnedOperation(
         boundedOwner,
         (selected) => armBoundedUserTask(operation, state, selected),
+        captureOwner,
+      );
+    }
+    case SemanticOperationKind.AwaitMessageBoundedUserTask: {
+      const boundedOwner = onlyTokenOwner(state, operation.input);
+      return applyOwnedOperation(
+        boundedOwner,
+        (selected) => armMessageBoundedUserTask(operation, state, selected),
         captureOwner,
       );
     }

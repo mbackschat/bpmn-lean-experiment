@@ -52,6 +52,7 @@ export function isAdmittedCheckedProcess(
     ) &&
     errorNodesHaveDirectHandlers(graph, admittedGraph.nodeScopes) &&
     boundaryTimersAttachToDeadlineOwners(graph, admittedGraph.nodeScopes) &&
+    boundaryMessagesAttachToUserTasks(graph, admittedGraph.nodeScopes) &&
     hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
@@ -300,6 +301,37 @@ function boundaryTimersAttachToDeadlineOwners(
     return host !== undefined &&
       nodeScopes.get(deadline.id) === nodeScopes.get(host.id) &&
       hosts.filter((candidate) => candidate === host.id).length === 1;
+  });
+}
+
+/** Every Message handler has one same-scope User Task owner and its projected outgoing Flow. */
+function boundaryMessagesAttachToUserTasks(
+  graph: CheckedProcessGraph,
+  nodeScopes: ReadonlyMap<string, string>,
+): boolean {
+  const handlers = graph.nodes.filter(
+    (node): node is Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.MessageBoundaryEvent }
+    > => node.kind === CheckedNodeKind.MessageBoundaryEvent,
+  );
+  const attachedHostIds = handlers.map(({ attachedToRef }) => attachedToRef);
+  return handlers.every((handler) => {
+    const host = graph.nodes.find(
+      (candidate): candidate is Extract<
+        CheckedNode,
+        { kind: CheckedNodeKind.UserTask }
+      > =>
+        candidate.id === handler.attachedToRef &&
+        candidate.kind === CheckedNodeKind.UserTask,
+    );
+    return host !== undefined &&
+      nodeScopes.get(handler.id) === nodeScopes.get(host.id) &&
+      attachedHostIds.filter((candidate) => candidate === host.id).length === 1 &&
+      graph.flows.some(
+        ({ id, sourceId }) =>
+          id === handler.outputFlowId && sourceId === handler.id,
+      );
   });
 }
 

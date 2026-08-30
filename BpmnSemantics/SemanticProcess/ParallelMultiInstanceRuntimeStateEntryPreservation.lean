@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEmptyPreservation
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
 
@@ -66,7 +66,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           activation := activityActivation
           owner
           body := .parallelUserTasks firstTask restTasks
-          attachedTimers := [timerId] }
+          attachedHandlers := [.timer timerId] }
       let successor : RuntimeState :=
         { before with
           tokens := removeToken before.tokens arm.input owner
@@ -83,10 +83,11 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
             activityActivation }
       change runtimeStateWellFormed program expectedInstanceId successor = true
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
-        bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, activityIds⟩,
-        controllers⟩, sequentialBindings⟩, parallelBindings⟩, controllerIds⟩, notExhausted⟩,
-        lifecycle⟩ := wellFormed.1
+      obtain ⟨existing, claims⟩ := wellFormed
+      obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
+        bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, timersUnambiguous⟩,
+        messagesUnambiguous⟩, activityIds⟩, controllers⟩, sequentialBindings⟩,
+        parallelBindings⟩, controllerIds⟩, notExhausted⟩, lifecycle⟩ := existing
       have ownerFacts := runtimePositionValid_onlyTokenOwner_live_and_scope program
         expectedInstanceId before arm.input owner ownerScope position tokenOwner account.inputOwner
       have positionAfter : runtimePositionValid program expectedInstanceId successor = true :=
@@ -162,7 +163,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           attachedTimersUnambiguous timerState = true := by
         have attachedChild : attachedTimersUnambiguous childState = true := by
           change attachedTimersUnambiguous before = true
-          exact attached
+          exact timersUnambiguous
         have preserved := InternalCommutation.activityRecords_insertFreshTimerWait childState
           timerWait timerFresh childFacts.2 attachedChild
         constructor
@@ -305,7 +306,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
       have claimsAfter : activityBodyClaimsUnique successor.activityOccurrences = true := by
         simpa [successor, record, slots] using
           insertPendingParallelActivity_preserves_activityBodyClaimsUnique before arm instanceId
-            taskHighWater items record firstTask restTasks pendingIds taskWaitAbsent bodies wellFormed.2
+            taskHighWater items record firstTask restTasks pendingIds taskWaitAbsent bodies claims
       have recordBodyLive : activityBodyLive timerState record = true := by
         simp only [activityBodyLive, record, List.all_eq_true, decide_eq_true_eq]
         intro task taskMember
@@ -342,10 +343,11 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
             taskDefinitionId_eq_iff_value_eq, identity.2.1, eq_comm]
         rw [filterEq]
         simpa [occursOnce] using unique
-      have recordTimersLive : record.attachedTimers.all (fun timer =>
+      have recordTimersLive : record.timerHandlerOccurrences.all (fun timer =>
           timerState.timerWaits.any fun wait =>
             timerIdNamesWait timer wait && decide (wait.owner = record.owner)) = true := by
-        simp only [record, List.all_cons, List.all_nil, Bool.and_true, List.any_eq_true]
+        simp only [record, ActivityOccurrence.timerHandlerOccurrences, List.filterMap,
+          List.all_cons, List.all_nil, Bool.and_true, List.any_eq_true]
         refine ⟨timerWait, ?_, ?_⟩
         · exact (mem_canonicalInsertBy timerWaitBefore timerWait timerWait
             childState.timerWaits).mpr (Or.inl rfl)
@@ -358,20 +360,21 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         rcases (mem_canonicalInsertBy activityOccurrenceBefore record candidate
           before.activityOccurrences).mp member with new | old
         · subst candidate
-          exact ⟨by simpa [activityBodyLive, successor, timerState, childState]
+          exact ⟨⟨by simpa [activityBodyLive, successor, timerState, childState]
               using recordBodyLive,
-            by simpa [successor, timerState, childState] using recordTimersLive⟩
+            by simpa [successor, timerState, childState] using recordTimersLive⟩,
+            by simp [record, ActivityOccurrence.messageHandlerOccurrences]⟩
         · have prior := List.all_eq_true.mp timerSemantic.1 candidate (by
             simpa [timerState, childState] using old)
           simpa [activityBodyLive, successor, timerState, childState, exactLiveOccurrence] using prior
       have insertedTimerUnclaimed : ∀ old ∈ before.activityOccurrences,
-          anyTimerIdNamesWait old.attachedTimers timerWait = false := by
+          anyTimerIdNamesWait old.timerHandlerOccurrences timerWait = false := by
         intro old oldMember
         apply Bool.eq_false_iff.mpr
         intro insertedNamed
         have recordsChild := childFacts.2
         simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true] at recordsChild
-        obtain ⟨_, attachedOld⟩ := recordsChild old (by simpa [childState] using oldMember)
+        obtain ⟨⟨_, attachedOld⟩, _⟩ := recordsChild old (by simpa [childState] using oldMember)
         simp only [anyTimerIdNamesWait, List.any_eq_true] at insertedNamed
         obtain ⟨oldTimerId, oldTimerMember, insertedMatch⟩ := insertedNamed
         simp only [List.any_eq_true] at attachedOld
@@ -393,33 +396,39 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           waitMember with new | old
         · subst wait
           change ((insertActivityOccurrence record before.activityOccurrences).filter (fun old =>
-            anyTimerIdNamesWait old.attachedTimers timerWait)).length ≤ 1
+            anyTimerIdNamesWait old.timerHandlerOccurrences timerWait)).length ≤ 1
           rw [insertActivityOccurrence_eq_canonicalInsertBy,
             length_filter_canonicalInsertBy]
           have empty : before.activityOccurrences.filter (fun old =>
-              anyTimerIdNamesWait old.attachedTimers timerWait) = [] :=
+              anyTimerIdNamesWait old.timerHandlerOccurrences timerWait) = [] :=
             List.filter_eq_nil_iff.mpr fun old member holds => by
               rw [insertedTimerUnclaimed old member] at holds
               contradiction
-          have claimed : anyTimerIdNamesWait record.attachedTimers timerWait = true := by
-            simp [record, timerId, timerWait, anyTimerIdNamesWait, timerIdNamesWait]
+          have claimed : anyTimerIdNamesWait record.timerHandlerOccurrences timerWait = true := by
+            simp [record, ActivityOccurrence.timerHandlerOccurrences, timerId, timerWait,
+              anyTimerIdNamesWait, timerIdNamesWait]
           rw [claimed, empty]
           simp
         · change ((insertActivityOccurrence record before.activityOccurrences).filter
-            (fun candidate => anyTimerIdNamesWait candidate.attachedTimers wait)).length ≤ 1
+            (fun candidate => anyTimerIdNamesWait candidate.timerHandlerOccurrences wait)).length ≤ 1
           rw [insertActivityOccurrence_eq_canonicalInsertBy,
             length_filter_canonicalInsertBy]
-          have rejected : anyTimerIdNamesWait record.attachedTimers wait = false := by
+          have rejected : anyTimerIdNamesWait record.timerHandlerOccurrences wait = false := by
             apply Bool.eq_false_iff.mpr
             intro claimed
-            simp only [record, anyTimerIdNamesWait, List.any_cons, List.any_nil,
-              Bool.or_false, timerIdNamesWait, timerId, Bool.and_eq_true, beq_iff_eq] at claimed
+            simp only [record, ActivityOccurrence.timerHandlerOccurrences, List.filterMap,
+              anyTimerIdNamesWait, List.any_cons, List.any_nil, Bool.or_false, timerIdNamesWait,
+              timerId, Bool.and_eq_true, beq_iff_eq] at claimed
             exact oldTimerDifferent wait old
               (congrArg NodeId.mk claimed.1.2).symm
           have prior := List.all_eq_true.mp timerSemantic.2 wait (by
             exact (mem_canonicalInsertBy timerWaitBefore timerWait wait
               childState.timerWaits).mpr (Or.inr (by simpa [childState] using old)))
           simpa [rejected, timerState, childState] using prior
+      have messagesUnambiguousAfter : attachedMessagesUnambiguous successor = true := by
+        simpa [attachedMessagesUnambiguous, successor] using
+          insertActivityOccurrence_preserves_attachedMessagesUnambiguous_of_empty before record
+            (by simp [record, ActivityOccurrence.messageHandlerOccurrences]) messagesUnambiguous
       simp only [canonicalCollectionOrder, Bool.and_eq_true] at order
       obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨taskOrder, activationOrder⟩, messageWaitOrder⟩,
         timerWaitOrder⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
@@ -750,8 +759,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
       have activityIdsAfter : activityIdentitiesUnique successor = true := by
         simp only [activityIdentitiesUnique]
         change (insertActivityOccurrence record before.activityOccurrences).all
-          (occursOnce sameActivityOccurrence
-            (insertActivityOccurrence record before.activityOccurrences)) = true
+          (occursOnce sameActivityOccurrence (insertActivityOccurrence record before.activityOccurrences)) = true
         rw [insertActivityOccurrence_eq_canonicalInsertBy]
         apply InternalCommutation.occurrenceKeysUnique_canonicalInsertBy
           activityOccurrenceBefore sameActivityOccurrence record before.activityOccurrences
@@ -772,8 +780,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         · simp [sameActivityOccurrence]
       have controllersAfter : controllersOwnLiveActivity successor = true := by
         simp [controllersOwnLiveActivity, successor, noSequentialControllers]
-      have sequentialBindingsAfter : sequentialMultiInstanceProgramBindingsValid program
-          successor = true := by
+      have sequentialBindingsAfter : sequentialMultiInstanceProgramBindingsValid program successor = true := by
         apply sequential_bindings_of_no_sequential_operation program successor noSequentialOperation
         simp [successor, noSequentialControllers]
       have controllerIdsAfter : controllerIdentitiesUnique successor = true := by
@@ -785,10 +792,9 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           | _ => true) = true := by
         simp [successor, running]
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
-      exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
-        ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩,
-        orderAfter⟩, bodiesAfter⟩, attachedAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
-        sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
-        notExhaustedAfter⟩, lifecycleAfter⟩, claimsAfter⟩
-
+      exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩, ownersAfter⟩,
+        identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩, orderAfter⟩, bodiesAfter⟩,
+        attachedAfter⟩, messagesUnambiguousAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
+        sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩, notExhaustedAfter⟩,
+        lifecycleAfter⟩, claimsAfter⟩
 end BpmnSemantics.SemanticProcess

@@ -159,9 +159,10 @@ function lowerNode(
     }
     case CheckedNodeKind.BoundaryErrorEvent:
       return [];
-    // The deadline has no operation of its own: it is owned by the Activity it is attached to, so
-    // nothing in the program can express the two waits as unrelated siblings.
+    // An attached handler has no operation of its own: its Activity owns both competing waits, so
+    // nothing in the program can express them as unrelated siblings.
     case CheckedNodeKind.TimerBoundaryEvent:
+    case CheckedNodeKind.MessageBoundaryEvent:
       return [];
     case CheckedNodeKind.UserTask: {
       const boundaryTimer = timerBoundaryFor(source, node.id);
@@ -183,6 +184,35 @@ function lowerNode(
             output: requireOnly(outgoing, node.id, "outgoing"),
           },
           boundaryTimer: lowerBoundaryTimerArm(source, boundaryTimer),
+        });
+      }
+      const boundaryMessage = messageBoundaryFor(source, node.id);
+      if (boundaryMessage !== undefined) {
+        if (node.metadata !== undefined) {
+          return [];
+        }
+        return scoped({
+          ...base,
+          kind: SemanticOperationKind.AwaitMessageBoundedUserTask,
+          input: requireOnly(incoming, node.id, "incoming"),
+          task: {
+            elementId: node.id,
+            name: node.name,
+            output: requireOnly(outgoing, node.id, "outgoing"),
+          },
+          boundaryMessage: {
+            elementId: boundaryMessage.id,
+            channel: boundaryMessage.channel,
+            output: requireOnly(
+              flowPlaces(source.sequenceFlows, boundaryMessage.id, "outgoing"),
+              boundaryMessage.id,
+              "outgoing",
+            ),
+            origin: {
+              kind: SemanticOriginKind.BpmnSequenceFlow,
+              elementId: boundaryMessage.outputFlowId,
+            },
+          },
         });
       }
       return scoped({
@@ -555,6 +585,21 @@ function timerBoundaryFor(
       { kind: CheckedNodeKind.TimerBoundaryEvent }
     > =>
       candidate.kind === CheckedNodeKind.TimerBoundaryEvent &&
+      candidate.attachedToRef === activityId,
+  );
+}
+
+/** The Message Boundary Event attached to this User Task, when the profile admitted one. */
+function messageBoundaryFor(
+  source: CheckedProcess,
+  activityId: string,
+): Extract<CheckedNode, { kind: CheckedNodeKind.MessageBoundaryEvent }> | undefined {
+  return source.nodes.find(
+    (candidate): candidate is Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.MessageBoundaryEvent }
+    > =>
+      candidate.kind === CheckedNodeKind.MessageBoundaryEvent &&
       candidate.attachedToRef === activityId,
   );
 }

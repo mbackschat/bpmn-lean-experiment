@@ -154,6 +154,54 @@ function isWellFormedAwaitDataOutputUserTaskOperation(
   return new Set(identities).size === identities.length;
 }
 
+function isWellFormedAwaitMessageBoundedUserTaskOperation(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+  placeOrigins: ReadonlyMap<string, string>,
+): boolean {
+  if (
+    !hasOnlyKeys(value, [
+      "id",
+      "kind",
+      "origin",
+      "input",
+      "task",
+      "boundaryMessage",
+    ]) ||
+    !isPlaceReference(value.input, placeIds) ||
+    !isRecord(value.origin) ||
+    !isRecord(value.task) ||
+    !hasOnlyKeys(value.task, ["elementId", "name", "output"]) ||
+    !isNonEmptyString(value.task.elementId) ||
+    !isOptionalName(value.task.name) ||
+    !isPlaceReference(value.task.output, placeIds) ||
+    !isRecord(value.boundaryMessage) ||
+    !hasOnlyKeys(value.boundaryMessage, [
+      "elementId",
+      "channel",
+      "output",
+      "origin",
+    ]) ||
+    !isNonEmptyString(value.boundaryMessage.elementId) ||
+    !isMessageChannel(value.boundaryMessage.channel) ||
+    value.boundaryMessage.channel.kind !== MessageChannelKind.OperationMessage ||
+    !isPlaceReference(value.boundaryMessage.output, placeIds) ||
+    !isRecord(value.boundaryMessage.origin) ||
+    !hasOnlyKeys(value.boundaryMessage.origin, ["kind", "elementId"]) ||
+    value.boundaryMessage.origin.kind !== SemanticOriginKind.BpmnSequenceFlow ||
+    !isNonEmptyString(value.boundaryMessage.origin.elementId)
+  ) {
+    return false;
+  }
+  return value.origin.elementId === value.task.elementId &&
+    value.task.elementId !== value.boundaryMessage.elementId &&
+    value.input !== value.task.output &&
+    value.input !== value.boundaryMessage.output &&
+    value.task.output !== value.boundaryMessage.output &&
+    placeOrigins.get(value.boundaryMessage.output) ===
+      value.boundaryMessage.origin.elementId;
+}
+
 function isWellFormedAwaitPayloadMessageOperation(
   value: Record<string, unknown>,
   placeIds: ReadonlySet<string>,
@@ -419,6 +467,12 @@ export function isWellFormedSemanticOperation(
       return isWellFormedAwaitEventRaceOperation(value, placeIds, placeOrigins);
     case SemanticOperationKind.AwaitBoundedUserTask:
       return isWellFormedAwaitBoundedUserTaskOperation(
+        value,
+        placeIds,
+        placeOrigins,
+      );
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
+      return isWellFormedAwaitMessageBoundedUserTaskOperation(
         value,
         placeIds,
         placeOrigins,

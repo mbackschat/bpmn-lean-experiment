@@ -22,7 +22,7 @@ theorem activityRecords_insertUserTaskWait (state : RuntimeState)
   simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true] at records ⊢
   intro record member
   have prior := records record member
-  refine ⟨?_, ?_⟩
+  refine ⟨⟨?_, prior.1.2⟩, prior.2⟩
   · have taskBodyPreserved (body : OccurrenceId)
         (priorCount : (state.waits.filter fun wait =>
           decide (wait.processInstanceId = body.processInstanceId) &&
@@ -56,21 +56,30 @@ theorem activityRecords_insertUserTaskWait (state : RuntimeState)
     | childScope scope =>
         simp only [activityBodyLive, bodyEq]
         change exactLiveOccurrence state scope = true
-        simpa [activityBodyLive, bodyEq] using prior.1
+        simpa [activityBodyLive, bodyEq] using prior.1.1
     | userTask body =>
         simp only [activityBodyLive, bodyEq]
         simpa only [decide_eq_true_eq] using taskBodyPreserved body (by
-          simpa [activityBodyLive, bodyEq] using prior.1)
+          simpa [activityBodyLive, bodyEq] using prior.1.1)
     | parallelUserTasks first rest =>
         simp only [activityBodyLive, bodyEq, List.all_eq_true] at prior ⊢
         intro body bodyMember
         have preserved := taskBodyPreserved body (by
-          simpa only [decide_eq_true_eq] using prior.1 body bodyMember)
+          simpa only [decide_eq_true_eq] using prior.1.1 body bodyMember)
         simpa only [decide_eq_true_eq] using preserved
-  · change ∀ timer, timer ∈ record.attachedTimers →
-        (state.timerWaits.any fun wait =>
-          timerIdNamesWait timer wait && decide (wait.owner = record.owner)) = true
-    exact prior.2
+
+theorem activityRecords_insertMessageWait (state : RuntimeState) (inserted : MessageWait)
+    (records : activityRecordsOwnLiveWork state = true) :
+    activityRecordsOwnLiveWork
+      { state with messageWaits := insertMessageWait inserted state.messageWaits } = true := by
+  simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true] at records ⊢
+  intro record member
+  obtain ⟨bodyTimers, messages⟩ := records record member
+  refine ⟨by simpa [activityBodyLive, exactLiveOccurrence] using bodyTimers, ?_⟩
+  intro message attached
+  simp only [List.any_eq_true] at messages ⊢
+  obtain ⟨old, oldMember, named⟩ := messages message attached
+  exact ⟨old, (mem_canonicalInsertBy _ _ _ _).2 (Or.inr oldMember), named⟩
 
 theorem sole_user_task_declarer_excludes_smi (program : Program)
     (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
@@ -165,13 +174,13 @@ theorem activityRecords_insertFreshTimerWait (state : RuntimeState) (inserted : 
       attachedTimersUnambiguous
         { state with timerWaits := insertTimerWait inserted state.timerWaits } = true := by
   have unclaimed : ∀ record ∈ state.activityOccurrences,
-      anyTimerIdNamesWait record.attachedTimers inserted = false := by
+      anyTimerIdNamesWait record.timerHandlerOccurrences inserted = false := by
     intro record recordMember
     apply Bool.eq_false_iff.mpr
     intro insertedNamed
     simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true,
       List.any_eq_true] at records
-    obtain ⟨_, attached⟩ := records record recordMember
+    obtain ⟨⟨_, attached⟩, _⟩ := records record recordMember
     simp only [anyTimerIdNamesWait, List.any_eq_true] at insertedNamed
     obtain ⟨timerId, timerMember, insertedMatch⟩ := insertedNamed
     obtain ⟨old, oldMember, oldMatch⟩ := attached timerId timerMember
@@ -187,8 +196,8 @@ theorem activityRecords_insertFreshTimerWait (state : RuntimeState) (inserted : 
   constructor
   · simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true] at records ⊢
     intro record member
-    obtain ⟨body, attached⟩ := records record member
-    refine ⟨by simpa [activityBodyLive, exactLiveOccurrence] using body, ?_⟩
+    obtain ⟨⟨body, attached⟩, messages⟩ := records record member
+    refine ⟨⟨by simpa [activityBodyLive, exactLiveOccurrence] using body, ?_⟩, messages⟩
     intro timer timerMember
     simp only [List.any_eq_true] at attached ⊢
     obtain ⟨old, oldMember, named⟩ := attached timer timerMember
@@ -197,7 +206,7 @@ theorem activityRecords_insertFreshTimerWait (state : RuntimeState) (inserted : 
       Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at attachments ⊢
     refine ⟨?_, attachments⟩
     have empty : state.activityOccurrences.filter
-        (fun record => anyTimerIdNamesWait record.attachedTimers inserted) = [] :=
+        (fun record => anyTimerIdNamesWait record.timerHandlerOccurrences inserted) = [] :=
       List.filter_eq_nil_iff.mpr fun record member holds => by
         rw [unclaimed record member] at holds
         contradiction
@@ -534,13 +543,14 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     runtimeStateWellFormed program expectedInstanceId (applyInternalArmingPatch state patch) = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at stateAdmitted
   obtain ⟨existing, claims⟩ := stateAdmitted
-  obtain ⟨h16, terminal⟩ := existing
-  obtain ⟨h15, exhausted⟩ := h16
-  obtain ⟨h14, controllerIdentities⟩ := h15
-  obtain ⟨h13, parallelControllerBindings⟩ := h14
-  obtain ⟨h12, controllerBindings⟩ := h13
-  obtain ⟨h11, controllers⟩ := h12
-  obtain ⟨h10, activityIdentities⟩ := h11
+  obtain ⟨h17, terminal⟩ := existing
+  obtain ⟨h16, exhausted⟩ := h17
+  obtain ⟨h15, controllerIdentities⟩ := h16
+  obtain ⟨h14, parallelControllerBindings⟩ := h15
+  obtain ⟨h13, controllerBindings⟩ := h14
+  obtain ⟨h12, controllers⟩ := h13
+  obtain ⟨h11, activityIdentities⟩ := h12
+  obtain ⟨h10, messagesUnambiguous⟩ := h11
   obtain ⟨h9, timers⟩ := h10
   obtain ⟨h8, records⟩ := h9
   obtain ⟨h7, order⟩ := h8
@@ -569,6 +579,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
         effectIncidentAssociationsValid (applyInternalArmingPatch state patch) = true ∧
         activityRecordsOwnLiveWork (applyInternalArmingPatch state patch) = true ∧
         attachedTimersUnambiguous (applyInternalArmingPatch state patch) = true ∧
+        attachedMessagesUnambiguous (applyInternalArmingPatch state patch) = true ∧
         sequentialMultiInstanceProgramBindingsValid program
           (applyInternalArmingPatch state patch) = true ∧
         parallelMultiInstanceProgramBindingsValid program
@@ -576,13 +587,14 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     cases writeEq : patch.write with
     | userTask inserted =>
         simp only [writeEq] at userTaskNoninterference
-        refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+        refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
         · simpa [applyInternalArmingPatch, writeEq, eventRaceAssociationsValid] using eventRaces
         · simpa [applyInternalArmingPatch, writeEq, effectIncidentAssociationsValid,
             effectIncidentAssociationValid, effectWaitOwnerAssociationValid] using incidents
         · simpa [applyInternalArmingPatch, writeEq, activityRecordsOwnLiveWork,
             activityBodyLive, exactLiveOccurrence] using userTaskNoninterference.1
         · simpa [applyInternalArmingPatch, writeEq, attachedTimersUnambiguous] using timers
+        · simpa [applyInternalArmingPatch, writeEq, attachedMessagesUnambiguous] using messagesUnambiguous
         · simpa [applyInternalArmingPatch, writeEq,
             sequentialMultiInstanceProgramBindingsValid,
             sequentialMultiInstanceControllerProgramBindingsValid,
@@ -591,14 +603,16 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
         · exact parallelBindingsPreserved
     | message inserted =>
         simp only [writeEq] at keyFresh
-        refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+        refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
         · simpa [applyInternalArmingPatch, writeEq, eventRaceAssociationsValid] using
             eventRaces_insertMessageWait state inserted keyFresh eventRaces
         · simpa [applyInternalArmingPatch, writeEq, effectIncidentAssociationsValid,
             effectIncidentAssociationValid, effectWaitOwnerAssociationValid] using incidents
         · simpa [applyInternalArmingPatch, writeEq, activityRecordsOwnLiveWork,
-            activityBodyLive, exactLiveOccurrence] using records
+            activityBodyLive, exactLiveOccurrence] using
+            activityRecords_insertMessageWait state inserted records
         · simpa [applyInternalArmingPatch, writeEq, attachedTimersUnambiguous] using timers
+        · simpa [applyInternalArmingPatch, writeEq, attachedMessagesUnambiguous] using messagesUnambiguous
         · simpa [applyInternalArmingPatch, writeEq,
             sequentialMultiInstanceProgramBindingsValid,
             sequentialMultiInstanceControllerProgramBindingsValid,
@@ -608,7 +622,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     | timer inserted =>
         simp only [writeEq] at keyFresh
         have timerFacts := activityRecords_insertFreshTimerWait state inserted keyFresh records timers
-        refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+        refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
         · simpa [applyInternalArmingPatch, writeEq, eventRaceAssociationsValid] using
             eventRaces_insertTimerWait state inserted keyFresh eventRaces
         · simpa [applyInternalArmingPatch, writeEq, effectIncidentAssociationsValid,
@@ -616,6 +630,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
         · simpa [applyInternalArmingPatch, writeEq, activityRecordsOwnLiveWork,
             activityBodyLive, exactLiveOccurrence] using timerFacts.1
         · simpa [applyInternalArmingPatch, writeEq, attachedTimersUnambiguous] using timerFacts.2
+        · simpa [applyInternalArmingPatch, writeEq, attachedMessagesUnambiguous] using messagesUnambiguous
         · let timerState : RuntimeState :=
             { state with timerWaits := insertTimerWait inserted state.timerWaits }
           have timerBindings : sequentialMultiInstanceProgramBindingsValid program
@@ -634,7 +649,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
           exact timerBindings
         · exact parallelBindingsPreserved
     | effect inserted bindings =>
-        refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+        refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
         · simpa [applyInternalArmingPatch, writeEq, eventRaceAssociationsValid] using eventRaces
         · obtain ⟨_, anchorAbsent⟩ :=
             prepared_arm_anchor_shape program state operation patch prepared
@@ -672,13 +687,14 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
         · simpa [applyInternalArmingPatch, writeEq, activityRecordsOwnLiveWork,
             activityBodyLive, exactLiveOccurrence] using records
         · simpa [applyInternalArmingPatch, writeEq, attachedTimersUnambiguous] using timers
+        · simpa [applyInternalArmingPatch, writeEq, attachedMessagesUnambiguous] using messagesUnambiguous
         · simpa [applyInternalArmingPatch, writeEq,
             sequentialMultiInstanceProgramBindingsValid,
             sequentialMultiInstanceControllerProgramBindingsValid,
             sequentialMultiInstanceControllerProgramBindingValid,
             sequentialMultiInstanceOperationBindingComplete] using controllerBindings
         · exact parallelBindingsPreserved
-  obtain ⟨eventAfter, incidentAfter, recordsAfter, timersAfter, bindingsAfter,
+  obtain ⟨eventAfter, incidentAfter, recordsAfter, timersAfter, messagesAfter, bindingsAfter,
     parallelBindingsAfter⟩ := semanticAfter
   have liveRunning := prepared_arm_live_running program state operation patch prepared
   have writeOwner := (prepared_arm_selection_unique program state operation patch prepared).2.2
@@ -761,14 +777,15 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
   have after9 := And.intro after8 orderAfter
   have after10 := And.intro after9 recordsAfter
   have after11 := And.intro after10 timersAfter
-  have after12 := And.intro after11 unchangedAfter.2.1
-  have after13 := And.intro after12 unchangedAfter.2.2.1
-  have after14 := And.intro after13 bindingsAfter
-  have after15 := And.intro after14 parallelBindingsAfter
-  have after16 := And.intro after15 unchangedAfter.2.2.2.1
-  have after17 := And.intro after16 unchangedAfter.2.2.2.2
+  have after12 := And.intro after11 messagesAfter
+  have after13 := And.intro after12 unchangedAfter.2.1
+  have after14 := And.intro after13 unchangedAfter.2.2.1
+  have after15 := And.intro after14 bindingsAfter
+  have after16 := And.intro after15 parallelBindingsAfter
+  have after17 := And.intro after16 unchangedAfter.2.2.2.1
+  have after18 := And.intro after17 unchangedAfter.2.2.2.2
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
-  exact ⟨⟨after17, terminalAfter⟩, claimsAfter⟩
+  exact ⟨⟨after18, terminalAfter⟩, claimsAfter⟩
 
 end InternalCommutation
 

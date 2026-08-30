@@ -1,5 +1,6 @@
 import {
-  attachedTimersForBodyAnchor,
+  ActivityHandlerKind,
+  attachedHandlersForBodyAnchor,
   isWellFormedWireString,
   observeStableState,
   projectCurrentControlPositions,
@@ -8,7 +9,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
-  OccurrenceId,
+  ActivityHandlerOccurrence,
   RuntimeState,
   SemanticFlowNodeOccurrenceAnchor,
   SemanticProcessIdentity,
@@ -83,7 +84,7 @@ export type BpmnWorkflowContinuationPublicationV1 = DeepReadonly<{
     retainedOpen: Array<{
       anchor: SemanticFlowNodeOccurrenceAnchor;
       occurrence: OpenFlowNodeOccurrence;
-      attachedTimers: OccurrenceId[];
+      attachedHandlers: ActivityHandlerOccurrence[];
     }>;
     lastCommittedAtEpochMs: number | null;
   };
@@ -337,7 +338,7 @@ export function requireWorkflowPublicationSegmentDescriptorV1(
 /**
  * Whether the retained accumulator agrees with the runtime state it claims to describe.
  *
- * `attachedTimers` is recomputed from the state's Activity occurrence records rather than trusted,
+ * `attachedHandlers` is recomputed from the state's Activity occurrence records rather than trusted,
  * because a continuation payload is untrusted input and this field is what the completeness relation
  * pairs a boundary Timer through. Admitting a forged pairing would let a restored Workflow attribute a
  * deadline to the wrong host, which is the failure the ordinal join it replaces could not produce.
@@ -356,13 +357,14 @@ function retainedOpenMatchesRuntime(
   const anchors = new Set<string>();
   return retained.every((entry) => {
     if (!isRecord(entry) ||
-      !hasOnlyKeys(entry, ["anchor", "occurrence", "attachedTimers"]) ||
+      !hasOnlyKeys(entry, ["anchor", "occurrence", "attachedHandlers"]) ||
       !isAnchor(entry.anchor) || !isRecord(entry.occurrence) ||
-      !Array.isArray(entry.attachedTimers) ||
+      !Array.isArray(entry.attachedHandlers) ||
+      !entry.attachedHandlers.every(isActivityHandlerOccurrence) ||
       !isSafe(entry.occurrence.startedAtEpochMs, 0) ||
       Number(entry.occurrence.startedAtEpochMs) > lastCommittedAtEpochMs) return false;
-    if (canonicalWorkflowChainJson(entry.attachedTimers) !==
-      canonicalWorkflowChainJson(attachedTimersForBodyAnchor(state, entry.anchor))) return false;
+    if (canonicalWorkflowChainJson(entry.attachedHandlers) !==
+      canonicalWorkflowChainJson(attachedHandlersForBodyAnchor(state, entry.anchor))) return false;
     const key = canonicalWorkflowChainJson(entry.anchor);
     if (anchors.has(key)) return false;
     anchors.add(key);
@@ -396,6 +398,12 @@ function isOccurrenceId(value: unknown): boolean {
     "processInstanceId", "elementId", "activation",
   ]) && isNonemptyString(value.processInstanceId) &&
     isNonemptyString(value.elementId) && isSafe(value.activation, 1);
+}
+
+function isActivityHandlerOccurrence(value: unknown): boolean {
+  return isRecord(value) && hasOnlyKeys(value, ["kind", "occurrence"]) &&
+    (value.kind === ActivityHandlerKind.Timer || value.kind === ActivityHandlerKind.Message) &&
+    isOccurrenceId(value.occurrence);
 }
 
 function isScopeId(value: unknown): boolean {

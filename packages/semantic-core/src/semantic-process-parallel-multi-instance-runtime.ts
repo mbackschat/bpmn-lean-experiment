@@ -1,5 +1,7 @@
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
+  attachedTimerOccurrences,
   activityBodyParallelTasks,
   activityOccurrenceForAttachedTimer,
   activityOccurrenceForTaskBody,
@@ -147,7 +149,7 @@ export function selectParallelMultiInstanceEntry(
       kind: ActivityBodyKind.ParallelUserTasks,
       tasks: [firstTask, ...remainingTasks],
     },
-    attachedTimers: [timerId],
+    attachedHandlers: [{ kind: ActivityHandlerKind.Timer, occurrence: timerId }],
   };
   const controller: ParallelMultiInstanceController = {
     id: activityId,
@@ -482,7 +484,7 @@ function closeParallelMultiInstance(
       !controller.slots.some((slot) => sameOccurrence(id, slot.taskId))
     ),
     timerWaits: state.timerWaits.filter(({ id }) =>
-      !record.attachedTimers.some((timerId) => sameOccurrence(id, timerId))
+      !attachedTimerOccurrences(record).some((timerId) => sameOccurrence(id, timerId))
     ),
     activityOccurrences: state.activityOccurrences.filter((candidate) =>
       !sameActivityOccurrence(candidate.id, record.id)

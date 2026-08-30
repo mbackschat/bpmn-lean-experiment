@@ -31,6 +31,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .awaitDataInputUserTask _ _ _ _ _ _ _
   | .awaitDataOutputUserTask _ _ _ _ _ _ _
   | .awaitBoundedUserTask _ _ _ _ _
+  | .awaitMessageBoundedUserTask _ _ _ _ _
   | .awaitMonitoredUserTask _ _ _ _ _
   | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ _ _ _

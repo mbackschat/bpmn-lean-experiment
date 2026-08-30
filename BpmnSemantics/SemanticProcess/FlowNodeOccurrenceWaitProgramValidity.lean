@@ -19,6 +19,7 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
       | .awaitUserTask _ _ _ output task =>
           output = wait.output && task = wait.task && wait.metadata = task.metadata
       | .awaitBoundedUserTask _ _ _ task _
+      | .awaitMessageBoundedUserTask _ _ _ task _
       | .awaitMonitoredUserTask _ _ _ task _ =>
           task.id = wait.task.id && task.name = wait.task.name && task.output = wait.output &&
             wait.task.metadata.isNone && wait.metadata.isNone
@@ -45,6 +46,9 @@ private def messageWaitValid (program : Program) (state : RuntimeState)
           message.elementId = wait.elementId && message.channel = wait.channel && output = wait.output
       | .awaitPayloadMessage _ _ _ output message _ =>
           message.elementId = wait.elementId && message.channel = wait.channel && output = wait.output
+      | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage =>
+          boundaryMessage.elementId = wait.elementId &&
+            boundaryMessage.channel = wait.channel && boundaryMessage.output = wait.output
       | .awaitEventRace _ origin _ message _ =>
           message.elementId = wait.elementId && message.channel = wait.channel &&
             message.output = wait.output && state.eventRaces.any fun race =>
@@ -293,6 +297,12 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : 
                 apply familyMember
                 simp [userTaskWaitDeclarers, member, same]
               simp [different]
+          | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
+              have different : candidateTask.id ≠ wait.task.id := by
+                intro same
+                apply familyMember
+                simp [userTaskWaitDeclarers, member, same]
+              simp [different]
           | awaitSequentialMultiInstanceUserTask candidateId candidateOrigin candidateInput
               candidateTask data normalOutput boundary limits =>
               have different : candidateTask.id ≠ wait.task.id := by
@@ -360,6 +370,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryMessage (program : P
         | .awaitPayloadMessage _ _ _ output candidate _ =>
             candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
               output = wait.output
+        | .awaitMessageBoundedUserTask _ _ _ _ boundary =>
+            boundary.elementId = wait.elementId && boundary.channel = wait.channel &&
+              boundary.output = wait.output
         | .awaitEventRace _ candidateOrigin _ candidate _ =>
             candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
               candidate.output = wait.output && state.eventRaces.any fun race =>
@@ -397,6 +410,12 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryMessage (program : P
               simp [different]
           | awaitEventRace candidateId candidateOrigin candidateInput candidateMessage candidateTimer =>
               have different : candidateMessage.elementId ≠ wait.elementId := by
+                intro same
+                apply familyMember
+                simp [messageWaitDeclarers, member, same]
+              simp [different]
+          | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
+              have different : boundary.elementId ≠ wait.elementId := by
                 intro same
                 apply familyMember
                 simp [messageWaitDeclarers, member, same]
@@ -465,6 +484,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertPayloadMessage (program : Pr
         | .awaitPayloadMessage _ _ _ output candidate _ =>
             candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
               output = wait.output
+        | .awaitMessageBoundedUserTask _ _ _ _ boundary =>
+            boundary.elementId = wait.elementId && boundary.channel = wait.channel &&
+              boundary.output = wait.output
         | .awaitEventRace _ candidateOrigin _ candidate _ =>
             candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
               candidate.output = wait.output && state.eventRaces.any fun race =>
@@ -502,6 +524,12 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertPayloadMessage (program : Pr
               simp [different]
           | awaitEventRace candidateId candidateOrigin candidateInput candidateMessage candidateTimer =>
               have different : candidateMessage.elementId ≠ wait.elementId := by
+                intro same
+                apply familyMember
+                simp [messageWaitDeclarers, member, same]
+              simp [different]
+          | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
+              have different : boundary.elementId ≠ wait.elementId := by
                 intro same
                 apply familyMember
                 simp [messageWaitDeclarers, member, same]

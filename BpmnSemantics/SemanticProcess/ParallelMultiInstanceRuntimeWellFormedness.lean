@@ -51,7 +51,7 @@ private def parallelControllerProgramBindingValid (program : Program) (state : R
                   { processInstanceId := controller.id.processInstanceId
                     controller := some controller
                     liveChildren := pending
-                    lifetimeTimer := match record.attachedTimers with
+                    lifetimeTimer := match record.timerHandlerOccurrences with
                       | [timer] => some timer
                       | _ => none
                     processBindings := state.variables.process.bindings
@@ -65,7 +65,7 @@ private def parallelControllerProgramBindingValid (program : Program) (state : R
                   wait.owner == record.owner && wait.task.id == arm.taskId &&
                     wait.task.name == arm.taskName && wait.metadata == none &&
                     wait.output == arm.normalOutput &&
-                match record.attachedTimers with
+                match record.timerHandlerOccurrences with
                 | [timer] =>
                     match state.timerWaits.filter (timerIdNamesWait timer) with
                     | [wait] =>
@@ -147,7 +147,7 @@ theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
       wait.owner == record.owner && wait.task.id == arm.taskId &&
         wait.task.name == arm.taskName && wait.metadata == none &&
         wait.output == arm.normalOutput) = true)
-    (attachedTimer : record.attachedTimers = [timer])
+    (attachedTimer : record.timerHandlerOccurrences = [timer])
     (matchingTimerWait : state.timerWaits.filter (timerIdNamesWait timer) = [timerWait])
     (timerOwner : timerWait.owner = record.owner)
     (timerElement : timerWait.elementId = arm.boundaryTimer.elementId)
@@ -288,7 +288,7 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_facts
                       obtain ⟨waitBinding, timerBinding⟩ := waitBindings wait waitMember
                       obtain ⟨⟨⟨⟨waitOwner, waitTask⟩, _waitName⟩, _waitMetadata⟩,
                         _waitOutput⟩ := waitBinding
-                      cases attachedShape : record.attachedTimers with
+                      cases attachedShape : record.timerHandlerOccurrences with
                       | nil => simp [attachedShape] at timerBinding
                       | cons timer remainingTimers =>
                           cases remainingTimers with
@@ -535,7 +535,7 @@ theorem parallelMultiInstanceProgramBindingsValid_insertUserTaskWait_frame
                           { processInstanceId := controller.id.processInstanceId
                             controller := some controller
                             liveChildren := pendingParallelTaskIds controller.slots
-                            lifetimeTimer := match record.attachedTimers with
+                            lifetimeTimer := match record.timerHandlerOccurrences with
                               | [timer] => some timer
                               | _ => none
                             processBindings := state.variables.process.bindings
@@ -716,7 +716,7 @@ theorem parallelMultiInstanceProgramBindingsValid_insertTimerWait_frame
                       simp only [parallelMultiInstanceRuntimeWellFormed,
                         Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at runtimeValid
                       have attachedTimerValid := runtimeValid.1.1.2
-                      cases attachedEq : record.attachedTimers with
+                      cases attachedEq : record.timerHandlerOccurrences with
                       | nil => simp [attachedEq] at attachedTimerValid
                       | cons timer rest =>
                           cases rest with

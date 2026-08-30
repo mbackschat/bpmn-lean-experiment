@@ -9,6 +9,7 @@ import type {
 } from "./flow-node-occurrence-lifecycle.js";
 import type { OpenOccurrence } from "./flow-node-occurrence-publication-external-completeness.js";
 import type { OccurrenceId } from "./contract.js";
+import { ActivityHandlerKind } from "./activity-occurrence.js";
 import type {
   AwaitParallelMultiInstanceUserTaskOperation,
   SemanticProcessProgram,
@@ -24,16 +25,17 @@ export function parallelMultiInstanceCompletionEnds(
   supplied: UnnumberedFlowNodeOccurrenceDelta,
   completed: OpenOccurrence,
 ): UnnumberedFlowNodeOccurrenceEnd[] | null {
-  if (completed.attachedTimers.length !== 1) return null;
-  const timer = completed.attachedTimers[0]!;
-  const siblings = open.filter((entry) =>
-    entry !== completed &&
-    entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
-    entry.processId === completed.processId &&
-    entry.elementId === completed.elementId &&
-    sameScopeOccurrence(entry.owner, completed.owner) &&
-    entry.attachedTimers.length === 1 &&
-    sameOccurrence(entry.attachedTimers[0]!, timer));
+  const timer = onlyAttachedTimer(completed);
+  if (timer === undefined) return null;
+  const siblings = open.filter((entry) => {
+    const siblingTimer = onlyAttachedTimer(entry);
+    return entry !== completed &&
+      entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+      entry.processId === completed.processId &&
+      entry.elementId === completed.elementId &&
+      sameScopeOccurrence(entry.owner, completed.owner) &&
+      siblingTimer !== undefined && sameOccurrence(siblingTimer, timer);
+  });
   const suppliedSiblingEnds = supplied.ended.filter(({ anchor }) =>
     anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
     siblings.some((entry) =>
@@ -77,7 +79,16 @@ export function parallelMultiInstanceBoundaryHosts(
 }
 
 function listsTimer(entry: OpenOccurrence, timerId: OccurrenceId): boolean {
-  return entry.attachedTimers.some((attached) => sameOccurrence(attached, timerId));
+  return entry.attachedHandlers.some((attached) =>
+    attached.kind === ActivityHandlerKind.Timer && sameOccurrence(attached.occurrence, timerId)
+  );
+}
+
+function onlyAttachedTimer(entry: OpenOccurrence): OccurrenceId | undefined {
+  const [handler] = entry.attachedHandlers;
+  return entry.attachedHandlers.length === 1 && handler?.kind === ActivityHandlerKind.Timer
+    ? handler.occurrence
+    : undefined;
 }
 
 function operationOwnedBy(

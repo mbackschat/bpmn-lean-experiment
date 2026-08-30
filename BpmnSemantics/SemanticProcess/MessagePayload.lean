@@ -106,6 +106,7 @@ def deliverPayloadMessage (program : Program) (state : RuntimeState)
   | none => none
   | some wait =>
       if state.eventRaces.any (eventRaceHasMessage · wait) then none
+      else if activityRecordsAttachMessageWait state.activityOccurrences wait then none
       else if wait.channel = channel then
         if variableValueAdmitted program.identity.semanticProfile .messagePayload payload then
           match payloadMessageOperation? program wait with
@@ -137,6 +138,7 @@ inductive PayloadMessageDeliveryStep :
       (occurrence : before.messageWaits.find?
         (payloadMessageOccurrenceMatches subscriptionId) = some wait)
       (ordinary : before.eventRaces.any (eventRaceHasMessage · wait) = false)
+      (unattached : activityRecordsAttachMessageWait before.activityOccurrences wait = false)
       (callerChannel : wait.channel = channel)
       (scalar : variableValueAdmitted program.identity.semanticProfile
         .messagePayload payload = true)
@@ -168,6 +170,9 @@ theorem deliverPayloadMessage_sound (program : Program) (before after : RuntimeS
   · contradiction
   rename_i ordinary
   split at success
+  · contradiction
+  rename_i unattached
+  split at success
   · rename_i callerChannel
     split at success
     · rename_i scalar
@@ -177,8 +182,8 @@ theorem deliverPayloadMessage_sound (program : Program) (before after : RuntimeS
       obtain ⟨operation, directOutput⟩ := entry
       cases success
       exact .commit program before subscriptionId channel payload wait operation
-        directOutput occurrence (Bool.eq_false_iff.mpr ordinary) callerChannel scalar
-          declarer
+        directOutput occurrence (Bool.eq_false_iff.mpr ordinary)
+          (Bool.eq_false_iff.mpr unattached) callerChannel scalar declarer
     · contradiction
   · contradiction
 

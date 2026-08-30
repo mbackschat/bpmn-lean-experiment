@@ -166,7 +166,7 @@ private def monitoredTaskForTask? (program : Program) (state : RuntimeState)
     { task
       timer := do
         let record ← activityOccurrenceForTaskWait? state.activityOccurrences task
-        let deadline ← record.attachedTimers.find? fun candidate =>
+        let deadline ← record.timerHandlerOccurrences.find? fun candidate =>
           decide (candidate.elementId.value = operation.2.2.elementId.value)
         state.timerWaits.find? fun candidate =>
           timerIdNamesWait deadline candidate &&
@@ -299,7 +299,7 @@ private theorem monitoredTaskForTask_pairing (program : Program)
       cases recFound : activityOccurrenceForTaskWait? state.activityOccurrences task with
       | none => simp [recFound] at timerFound
       | some record =>
-          cases dlFound : record.attachedTimers.find? (fun candidate =>
+          cases dlFound : record.timerHandlerOccurrences.find? (fun candidate =>
               decide (candidate.elementId.value = op.2.2.elementId.value)) with
           | none => simp [recFound, dlFound] at timerFound
           | some deadline =>

@@ -51,6 +51,7 @@ const consumers = [
   { source: "terminate-end-event-source.ts", anchor: "projectTerminateEndEvent", elementName: "element", shape: "TerminateEndEvent" },
   { source: "subprocess-error-source.ts", anchor: "projectBoundaryErrorEvent", elementName: "element", shape: "BoundaryEvent" },
   { source: "timer-boundary-event-source.ts", anchor: "projectTimerBoundaryEvent", elementName: "element", shape: "BoundaryEvent" },
+  { source: "message-boundary-event-source.ts", anchor: "projectMessageBoundaryEvent", elementName: "element", shape: "BoundaryEvent" },
   { source: "mapped-service-task-source.ts", anchor: "projectMappedSuccessServiceTask", elementName: "value", shape: "MappedSuccessServiceTask" },
   { source: "mapped-service-task-source.ts", anchor: "projectMappedBoundaryServiceTask", elementName: "value", shape: "MappedBoundaryServiceTask" },
   { source: "mapped-service-task-source.ts", anchor: "projectPlainNode", elementName: "value", shape: "PlainNode" },

@@ -35,6 +35,7 @@ Run the focused compiler gate:
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the exact closure-reviewed two-task source restriction.
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 candidate-group projection and execution-neutral Rendering preservation boundary.
 - [Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) owns the exact registered source, checked graph, lowering, and runtime contract.
+- [Interrupting Activity boundary Message proposal](../../docs/capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md) owns the omission-only Message handler source shape and its atomic Activity lowering.
 - [Message payload catch mediation specification](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) owns the exact Event DataOutput source chain, checked node, and lowered IL boundary.
 - [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](../../docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) records the exact accepted and rejected surface.
 - [Executable model corpus](../../model-corpus/README.md) exercises this production compiler against retained and external whole models.

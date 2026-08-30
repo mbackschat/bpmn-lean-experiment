@@ -12,7 +12,7 @@ The union of these sections is not a coverage figure. BPMN requirement coverage,
 
 ## Implemented
 
-The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, and the implemented Message payload Catch Event. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
+The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, the implemented Message payload Catch Event, and the in-progress Activity boundary Message checkpoint. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
 
 ## Explicitly absent
 
@@ -25,6 +25,14 @@ The [capsule registry](capsules/README.md), the Lean modules under [`BpmnSemanti
 ## Nearest unsupported claims
 
 Reading these sections together supports no cross-family theorem. A mechanism two families share is established only where each section says so independently, and this map is where such a split becomes visible rather than where it is resolved. A mechanism recorded in the invariant map is likewise established for a family only where that family's section says so.
+
+## Interrupting Activity boundary Message checkpoint
+
+The [interrupting Activity boundary Message proposal](capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md) has reached its mandatory **first-green semantic checkpoint** for one payload-free, operation-addressed interrupting Message Boundary Event on one User Task. The checkpoint is not evidence-closed and does not register a product profile.
+
+**Implemented at checkpoint.** Omission-only source admission, strict checked `messageBoundaryEvent`, IL `awaitMessageBoundedUserTask`, shared schemas, deterministic lowering, Lean and independently written TypeScript execution, tagged Activity-handler ownership, atomic task/subscription arming, exact task and Message victories, and wrong-family/channel/identity/payload/premature/stale refusal are green. Existing Timer owners and Temporal continuation state use the tagged handler sum without adding Message-boundary publication or scheduling semantics.
+
+**Absent.** Semantic-checkpoint approval; product profile artifact and `SemanticProfileId` registration; scenario, differential, corpus, requirement-ledger, and Product 2 disclosure; public occurrence publication for the new operation; the Temporal Message/Update co-readiness scheduler, live history, and replay; CIB behavior; payload, key/global correlation, buffering, Message Flow routing, another Activity host, another handler, or non-interrupting Message behavior.
 
 ## Interrupting Activity boundary Timer
 

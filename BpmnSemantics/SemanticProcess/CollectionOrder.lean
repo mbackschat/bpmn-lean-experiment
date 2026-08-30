@@ -352,6 +352,67 @@ theorem all_of_map_eq {α β : Type} (key : α → β) (p : α → Bool) (q : β
     exact hp a
   rw [expand left, expand right, h]
 
+/-- Message-handler ambiguity depends only on the sequence of Message-handler projections. -/
+theorem attachedMessagesUnambiguous_of_handler_map_eq
+    (before after : List ActivityOccurrence)
+    (handlers : after.map (fun record => record.messageHandlerOccurrences) =
+      before.map (fun record => record.messageHandlerOccurrences)) :
+    after.all (fun record =>
+      record.messageHandlerOccurrences.all fun subscription =>
+        (after.filter fun candidate =>
+          candidate.messageHandlerOccurrences.contains subscription).length ≤ 1) =
+      before.all (fun record =>
+        record.messageHandlerOccurrences.all fun subscription =>
+          (before.filter fun candidate =>
+            candidate.messageHandlerOccurrences.contains subscription).length ≤ 1) := by
+  have counts : ∀ subscription,
+      (after.filter fun candidate =>
+        candidate.messageHandlerOccurrences.contains subscription).length =
+      (before.filter fun candidate =>
+        candidate.messageHandlerOccurrences.contains subscription).length := by
+    intro subscription
+    simp only [← List.countP_eq_length_filter]
+    change after.countP ((fun messageHandlers : List OccurrenceId =>
+        messageHandlers.contains subscription) ∘
+          fun record => record.messageHandlerOccurrences) =
+      before.countP ((fun messageHandlers : List OccurrenceId =>
+        messageHandlers.contains subscription) ∘
+          fun record => record.messageHandlerOccurrences)
+    rw [← List.countP_map, ← List.countP_map, handlers]
+  let afterPredicate : ActivityOccurrence → Bool := fun record =>
+    record.messageHandlerOccurrences.all fun subscription =>
+      (after.filter fun candidate =>
+        candidate.messageHandlerOccurrences.contains subscription).length ≤ 1
+  let beforePredicate : ActivityOccurrence → Bool := fun record =>
+    record.messageHandlerOccurrences.all fun subscription =>
+      (before.filter fun candidate =>
+        candidate.messageHandlerOccurrences.contains subscription).length ≤ 1
+  let projectedPredicate : List OccurrenceId → Bool := fun messageHandlers =>
+    messageHandlers.all fun subscription =>
+      (after.filter fun candidate =>
+        candidate.messageHandlerOccurrences.contains subscription).length ≤ 1
+  have moved := all_of_map_eq
+    (fun record : ActivityOccurrence => record.messageHandlerOccurrences)
+    afterPredicate projectedPredicate (fun _ => rfl) after before handlers
+  have samePredicate : afterPredicate = beforePredicate := by
+    funext record
+    simp only [afterPredicate, beforePredicate]
+    congr 1
+    funext subscription
+    rw [counts subscription]
+  exact moved.trans (congrArg (fun predicate => before.all predicate) samePredicate)
+
+/-- Activity insertion is the generic canonical insert specialized to the runtime-state order. -/
+theorem insertActivityOccurrence_eq_canonicalInsertBy (record : ActivityOccurrence) :
+    ∀ records, insertActivityOccurrence record records =
+      canonicalInsertBy activityOccurrenceBefore record records := by
+  intro records
+  induction records with
+  | nil => rfl
+  | cons current rest ih =>
+      simp only [insertActivityOccurrence, canonicalInsertBy]
+      split <;> simp_all
+
 /-- An adjacent-pair check whose comparator factors through a key is decided by the key sequence. -/
 theorem orderedBy_of_map_eq {α β : Type} (key : α → β) (before : α → α → Bool)
     (keyBefore : β → β → Bool) (hb : ∀ a b, before a b = keyBefore (key a) (key b))
@@ -528,6 +589,29 @@ theorem length_filter_canonicalInsertBy (before : α → α → Bool) (p : α �
         split
         · simp [rejected]
         · cases currentEq : p current <;> simp [rejected, currentEq, ih]
+
+/-- Inserting an Activity with no Message handler cannot introduce a Message-subscription claimant. -/
+theorem insertActivityOccurrence_preserves_attachedMessagesUnambiguous_of_empty
+    (state : RuntimeState) (record : ActivityOccurrence)
+    (empty : record.messageHandlerOccurrences = [])
+    (unambiguous : attachedMessagesUnambiguous state = true) :
+    attachedMessagesUnambiguous
+      { state with activityOccurrences := insertActivityOccurrence record state.activityOccurrences } =
+      true := by
+  simp only [attachedMessagesUnambiguous, List.all_eq_true,
+    decide_eq_true_eq] at unambiguous ⊢
+  intro candidate candidateMem
+  rw [insertActivityOccurrence_eq_canonicalInsertBy] at candidateMem
+  rcases (mem_canonicalInsertBy activityOccurrenceBefore record candidate
+    state.activityOccurrences).mp candidateMem with new | old
+  · subst candidate
+    simp [empty]
+  · intro subscription subscriptionMem
+    have prior := unambiguous candidate old subscription subscriptionMem
+    rw [insertActivityOccurrence_eq_canonicalInsertBy,
+      length_filter_canonicalInsertBy]
+    have rejected : subscription ∉ record.messageHandlerOccurrences := by simp [empty]
+    simpa [rejected] using prior
 
 theorem filter_canonicalInsertBy_rejected (before : α → α → Bool) (p : α → Bool)
     (value : α) (values : List α) (rejected : p value = false) :

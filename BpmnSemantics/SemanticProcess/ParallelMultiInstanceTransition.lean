@@ -223,7 +223,7 @@ def parallelControllerForTimer? (arm : ParallelMultiInstanceArm)
   match state.parallelMultiInstanceControllers.filter fun controller =>
       controller.id.activityElementId.value = arm.taskId.value &&
         match parallelControllerRecord? state controller with
-        | some record => record.attachedTimers.contains timerId
+        | some record => record.timerHandlerOccurrences.contains timerId
         | none => false with
   | [controller] => some controller
   | _ => none
@@ -264,7 +264,7 @@ def parallelRegionValid (arm : ParallelMultiInstanceArm) (state : RuntimeState)
     wait.owner == record.owner && wait.task.id == arm.taskId
   let regionTimers := state.timerWaits.filter fun wait =>
     wait.owner == record.owner && wait.elementId == arm.boundaryTimer.elementId
-  let lifetimeTimer := match record.attachedTimers with
+  let lifetimeTimer := match record.timerHandlerOccurrences with
     | [timer] => some timer
     | _ => none
   parallelMultiInstanceRuntimeWellFormed arm
@@ -285,7 +285,7 @@ def parallelRegionValid (arm : ParallelMultiInstanceArm) (state : RuntimeState)
       wait.owner == record.owner && wait.task.id == arm.taskId &&
         wait.task.name == arm.taskName && wait.metadata == none &&
         wait.output == arm.normalOutput &&
-    match record.attachedTimers, regionTimers with
+    match record.timerHandlerOccurrences, regionTimers with
     | [timer], [wait] =>
         timerIdNamesWait timer wait && wait.output == arm.boundaryTimer.output
     | _, _ => false
@@ -419,7 +419,7 @@ def enterSharedParallelMultiInstance? (arm : ParallelMultiInstanceArm)
                   activation := activityActivation
                   owner
                   body := .parallelUserTasks first rest
-                  attachedTimers := [timerId] } state.activityOccurrences
+                  attachedHandlers := [.timer timerId] } state.activityOccurrences
               parallelMultiInstanceControllers := insertParallelMultiInstanceController controller
                 state.parallelMultiInstanceControllers
               activations := setActivationCount state.activations arm.taskId
@@ -440,7 +440,7 @@ private theorem enterSharedParallelMultiInstance_issues_fresh_activity (state : 
             activation := activityActivationCount state arm.taskId + 1
             owner
             body := .parallelUserTasks first rest
-            attachedTimers := [timerId] } state.activityOccurrences } = true := by
+            attachedHandlers := [.timer timerId] } state.activityOccurrences } = true := by
   apply activityIdentityIssuingDiscipline_insertActivityOccurrence
   exact Nat.lt_succ_self _
 
@@ -450,7 +450,7 @@ def closeSharedParallelRegion (state : RuntimeState)
   { state with
     tokens := addToken state.tokens output record.owner
     waits := removeParallelChildWaits state.waits (pendingParallelTaskIds controller.slots)
-    timerWaits := match record.attachedTimers with
+    timerWaits := match record.timerHandlerOccurrences with
       | [timer] => removeParallelTimer state.timerWaits timer
       | _ => state.timerWaits
     activityOccurrences := removeParallelRecord state.activityOccurrences record
@@ -605,7 +605,7 @@ inductive SharedParallelMultiInstanceEntryStep (arm : ParallelMultiInstanceArm) 
               activation := activityActivation
               owner
               body := .parallelUserTasks firstTask restTasks
-              attachedTimers := [timerId] } before.activityOccurrences
+              attachedHandlers := [.timer timerId] } before.activityOccurrences
           parallelMultiInstanceControllers := insertParallelMultiInstanceController controller
             before.parallelMultiInstanceControllers
           activations := setActivationCount before.activations arm.taskId

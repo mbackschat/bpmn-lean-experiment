@@ -129,6 +129,42 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem armBoundedScopeState_preserves_activityBodyClaimsUnique"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/MessageBoundedTask.lean#MessageBoundedTaskVictoryStep@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MessageBoundedTask.lean",
+      markers: ["theorem messageBoundedTaskVictory_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MessageBoundedTask.lean#MessageBoundedTaskVictoryStep@2", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MessageBoundedTask.lean",
+      markers: ["theorem messageBoundedTaskVictory_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MessageBoundedTask.lean#activateMessageBoundedUserTask@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MessageBoundedTask.lean",
+      markers: ["theorem activateMessageBoundedUserTask_issues_fresh_activity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MessageBoundedTaskLaws.lean",
+      markers: ["theorem activateMessageBoundedUserTask_preserves_activityBodyClaimsUnique"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MessageBoundedTask.lean#commitMessageBoundedVictory@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MessageBoundedTask.lean",
+      markers: ["theorem commitMessageBoundedVictory_activity_identity_discipline"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceTransition.lean#closeSharedParallelRegion@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
@@ -318,6 +354,28 @@ export const writerRecords = new Map<string, WriterRecord>([
     claimPreservation: ClaimPreservation.Removal,
   }],
   ["packages/semantic-core/src/semantic-process-monitored-task-runtime.ts#completeMonitoredUserTask@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+  }],
+  ["packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts#armMessageBoundedUserTask@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "packages/semantic-core/test/activity-boundary-message.test.ts",
+      markers: [
+        "runtimeStateRegressions(initialState, state)",
+        "RuntimeStateRegression.ActivityOccurrenceIssue",
+      ],
+    },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/activity-boundary-message.test.ts",
+      markers: [
+        "RuntimeStateDefect.DuplicateActivityBodyClaim",
+        "Message-bounded User Task arming inserts a disjoint Activity body claim",
+      ],
+    },
+  }],
+  ["packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts#commitVictory@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
   }],

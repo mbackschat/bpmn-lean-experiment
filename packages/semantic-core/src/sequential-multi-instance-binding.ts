@@ -9,6 +9,7 @@
  */
 import {
   activityBodyTaskWait,
+  attachedTimerOccurrences,
   attachedTimerWaits,
   sameActivityOccurrence,
   sameOccurrenceId,
@@ -68,7 +69,7 @@ export function sequentialMultiInstanceBindingForController(
   );
   const taskWait = activityBodyTaskWait(record, state.userTaskWaits);
   const timerWaits = attachedTimerWaits(record, state.timerWaits);
-  const [timerId] = record.attachedTimers;
+  const [timerId] = attachedTimerOccurrences(record);
   const [timerWait] = timerWaits;
   if (
     record.operationId !== operation.id ||
@@ -81,7 +82,7 @@ export function sequentialMultiInstanceBindingForController(
     taskWait.metadata !== undefined ||
     taskWait.output !== operation.normalOutput ||
     !sameOwner(taskWait.owner, record.owner) ||
-    record.attachedTimers.length !== 1 ||
+    record.attachedHandlers.length !== 1 ||
     timerWaits.length !== 1 ||
     timerId === undefined ||
     timerWait === undefined ||

@@ -64,16 +64,16 @@ export const retainedParallelMultiInstanceHistoryMeasurement:
     exactLimitAdmitted: true,
     limitPlusOneRefusedWithoutMutation: true,
     topologies: [
-      measured(ParallelMultiInstanceCapacityTopology.Natural, 83_558, 128_614),
+      measured(ParallelMultiInstanceCapacityTopology.Natural, 83_590, 128_646),
       measured(
         ParallelMultiInstanceCapacityTopology.TimerInterruption,
-        83_598,
-        128_654,
+        83_630,
+        128_686,
       ),
       measured(
         ParallelMultiInstanceCapacityTopology.EarlyCompletion,
-        83_598,
-        128_654,
+        83_630,
+        128_686,
       ),
     ],
   });

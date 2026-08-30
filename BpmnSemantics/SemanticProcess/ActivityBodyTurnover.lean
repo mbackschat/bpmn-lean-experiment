@@ -32,9 +32,9 @@ open BpmnSemantics
 Bundled rather than stated field by field so one equation carries the whole `AOO-TURNOVER-03`
 obligation, and so the canonical order key is visibly a projection of it. -/
 def activityOccurrenceFrame (record : ActivityOccurrence) :
-    SemanticId × NodeId × Nat × ScopeOccurrenceId × List OccurrenceId :=
+    SemanticId × NodeId × Nat × ScopeOccurrenceId × List ActivityHandler :=
   (record.processInstanceId, record.activityElementId, record.activation,
-    record.owner, record.attachedTimers)
+    record.owner, record.attachedHandlers)
 
 /-- Rewrites one record's body, leaving every other record and every framed field alone. -/
 def replaceBodyIn (records : List ActivityOccurrence) (target : ActivityOccurrence)
@@ -563,10 +563,11 @@ theorem activityBodyTaskClaim_has_live_wait (state : RuntimeState)
         subst body
         rw [activityBodyLive_userTask state record task bodyShape, decide_eq_true_eq]
           at recordLive
-        exact recordLive.1
+        exact recordLive.1.1
     | parallelUserTasks first rest =>
         simp only [activityBodyLive, bodyShape, List.all_eq_true] at recordLive
-        have live := recordLive.1 task (by simpa [activityBodyTaskClaims, bodyShape] using claimMem)
+        have live := recordLive.1.1 task
+          (by simpa [activityBodyTaskClaims, bodyShape] using claimMem)
         rw [taskIdNamesWait_filter_eq]
         exact of_decide_eq_true live
   have positive : 0 < (state.waits.filter (taskIdNamesWait task)).length := by omega
@@ -694,16 +695,11 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
   have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
   simp only [activityRecordsOwnLiveWork, List.all_eq_true] at holds ⊢
   intro candidate mem
-  show (activityBodyLive (replacedState state record wait body) candidate &&
-    candidate.attachedTimers.all fun timer =>
-      (replacedState state record wait body).timerWaits.any fun timerWait =>
-        timerIdNamesWait timer timerWait && decide (timerWait.owner = candidate.owner)) = true
   obtain ⟨other, memOther, rebuilt⟩ := List.mem_map.mp mem
   have priorHolds := holds other memOther
   simp only [Bool.and_eq_true] at priorHolds
-  simp only [Bool.and_eq_true]
-  refine ⟨?_, ?_⟩
-  · by_cases h : sameActivityOccurrence other record = true
+  have bodyAfter : activityBodyLive (replacedState state record wait body) candidate = true := by
+    by_cases h : sameActivityOccurrence other record = true
     · -- The rewritten record. Its new body is the wait just armed, and freshness makes it unique.
       have shape : candidate.body = .userTask (turnoverBodyId state wait body) := by
         rw [← rebuilt]; simp [h]
@@ -725,11 +721,11 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
       subst same
       cases bodyShape : candidate.body with
       | childScope scope =>
-        have prior := priorHolds.1
+        have prior := priorHolds.1.1
         simp only [activityBodyLive, bodyShape] at prior ⊢
         exact prior
       | userTask task =>
-        have prior := priorHolds.1
+        have prior := priorHolds.1.1
         rw [activityBodyLive_userTask _ _ _ bodyShape, decide_eq_true_eq] at prior
         rw [activityBodyLive_userTask _ _ _ bodyShape]
         simp only [decide_eq_true_eq]
@@ -737,7 +733,7 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
         simp only [recordBodyExcludesWait, bodyShape, beq_iff_eq] at excluded
         exact taskBodyLive_replacedState state record wait body task unique fresh excluded prior
       | parallelUserTasks first rest =>
-        have prior := priorHolds.1
+        have prior := priorHolds.1.1
         simp only [activityBodyLive, bodyShape, List.all_eq_true] at prior ⊢
         intro task taskMem
         have excluded := soleBody candidate memOther h
@@ -749,12 +745,28 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
         rw [← taskIdNamesWait_filter_eq]
         exact taskBodyLive_replacedState state record wait body task unique fresh
           (excluded task taskMem) priorTask
-  · -- The attached list and the owner are framed, and the Timer waits are untouched.
-    have frameEq : candidate.attachedTimers = other.attachedTimers ∧
+  have timerAfter : candidate.timerHandlerOccurrences.all (fun timer =>
+      (replacedState state record wait body).timerWaits.any fun timerWait =>
+        timerIdNamesWait timer timerWait && decide (timerWait.owner = candidate.owner)) = true := by
+    have frameEq : candidate.timerHandlerOccurrences = other.timerHandlerOccurrences ∧
         candidate.owner = other.owner := by
       rw [← rebuilt]
-      by_cases h : sameActivityOccurrence other record = true <;> simp [h]
+      by_cases h : sameActivityOccurrence other record = true <;>
+        simp [h, ActivityOccurrence.timerHandlerOccurrences]
+    rw [frameEq.1, frameEq.2]
+    exact priorHolds.1.2
+  have messageAfter : candidate.messageHandlerOccurrences.all (fun message =>
+      (replacedState state record wait body).messageWaits.any fun messageWait =>
+        messageIdNamesWait message messageWait &&
+          decide (messageWait.owner = candidate.owner)) = true := by
+    have frameEq : candidate.messageHandlerOccurrences = other.messageHandlerOccurrences ∧
+        candidate.owner = other.owner := by
+      rw [← rebuilt]
+      by_cases h : sameActivityOccurrence other record = true <;>
+        simp [h, ActivityOccurrence.messageHandlerOccurrences]
     rw [frameEq.1, frameEq.2]
     exact priorHolds.2
+  simp only [Bool.and_eq_true]
+  exact ⟨⟨bodyAfter, timerAfter⟩, messageAfter⟩
 
 end BpmnSemantics.SemanticProcess

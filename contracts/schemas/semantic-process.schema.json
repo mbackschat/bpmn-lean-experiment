@@ -2003,6 +2003,9 @@
           "$ref": "#/$defs/awaitBoundedUserTask"
         },
         {
+          "$ref": "#/$defs/awaitMessageBoundedUserTask"
+        },
+        {
           "$ref": "#/$defs/awaitMonitoredUserTask"
         },
         {
@@ -2123,6 +2126,62 @@
           "$ref": "#/$defs/boundaryTimerArm",
           "type": "object",
           "properties": { "durationMs": { "const": 1000 } }
+        }
+      }
+    },
+    "boundaryMessageArm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "channel",
+        "output",
+        "origin"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "channel": {
+          "$ref": "#/$defs/operationMessageChannel"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        }
+      }
+    },
+    "awaitMessageBoundedUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "task",
+        "boundaryMessage"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitMessageBoundedUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "$ref": "#/$defs/boundedTaskArm"
+        },
+        "boundaryMessage": {
+          "$ref": "#/$defs/boundaryMessageArm"
         }
       }
     },

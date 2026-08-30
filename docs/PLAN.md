@@ -46,7 +46,7 @@ Beta breadth advances at `EVENT-SUBSCRIPTIONS`. The [Message payload catch speci
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: implement the owner-approved [interrupting Activity boundary Message proposal](capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md) through source admission/lowering, then Lean/core. Pause the first green Lean/core target for mandatory semantic-checkpoint review before downstream lanes. The [Message payload catch specification](capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) remains closed and green.
+Next action: commit and independently review the first-green source/checked/IL/Lean/core checkpoint for the owner-approved [interrupting Activity boundary Message proposal](capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md). Keep product profile registration, scenario/differential/corpus work, occurrence publication, and the Temporal Message/Update scheduler paused until the semantic-checkpoint verdict approves the target. The [Message payload catch specification](capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) remains closed and green.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 

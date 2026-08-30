@@ -16,6 +16,7 @@ import {
   ActivityBodyKind,
   activityOccurrenceForAttachedTimer,
   activityOccurrenceForTaskBody,
+  attachedTimerOccurrences,
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
@@ -179,7 +180,7 @@ function boundedPairForRecord(
   }
   const body = record.body.task;
   const task = state.userTaskWaits.find(({ id }) => sameOccurrence(id, body));
-  const [attached] = record.attachedTimers;
+  const [attached] = attachedTimerOccurrences(record);
   const timer = attached === undefined
     ? undefined
     : state.timerWaits.find(({ id }) => sameOccurrence(id, attached));

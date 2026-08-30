@@ -211,7 +211,7 @@ function activityOwnedContinuationFixture(): Readonly<{
     owner,
     operationId: "Operation_UserTask",
     body: { kind: ActivityBodyKind.UserTask, task: userTaskWait.id },
-    attachedTimers: [],
+    attachedHandlers: [],
   } as const;
   return {
     activity,
@@ -553,7 +553,7 @@ test("two Activity records cannot carry the same User Task body claim across a R
       {
         ...activity,
         id: { ...activity.id, activation: 2 },
-        attachedTimers: [],
+        attachedHandlers: [],
       },
     ],
     activityActivations: [{ elementId: "UserTask_1", count: 2 }],
@@ -590,7 +590,7 @@ test("two Activity records cannot carry the same child-scope claim across a Run 
       {
         ...activity,
         id: { ...activity.id, activation: 2 },
-        attachedTimers: [],
+        attachedHandlers: [],
       },
     ],
     activityActivations: control.activityActivations.map((counter) => ({

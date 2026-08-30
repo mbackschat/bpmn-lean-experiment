@@ -37,7 +37,7 @@ def parallelAliasRecord : ActivityOccurrence :=
     activation := 1
     owner := rootScope
     body := .parallelUserTasks taskClaim []
-    attachedTimers := [] }
+    attachedHandlers := [] }
 
 /-- One singular and one parallel record claim the same live User Task. -/
 def duplicateTaskBodyClaimState : RuntimeState :=
@@ -86,7 +86,7 @@ def scopeAliasRecord : ActivityOccurrence :=
     activation := 2
     owner := scopeParent
     body := .childScope liveChildScope
-    attachedTimers := [] }
+    attachedHandlers := [] }
 
 /-- Two distinct Activity records claim the same live child scope. -/
 def duplicateScopeBodyClaimState : RuntimeState :=

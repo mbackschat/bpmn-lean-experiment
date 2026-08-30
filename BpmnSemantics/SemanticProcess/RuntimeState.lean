@@ -138,15 +138,25 @@ inductive ActivityBody where
   | childScope (scope : ScopeOccurrenceId)
   deriving Repr, DecidableEq
 
+/-- The closed family tag for a wait attached to one Activity occurrence.
+
+Timer and Message occurrences intentionally carry the same identity atom. The constructor is the
+family discriminator: a same-shaped Message identity cannot be consumed as a Timer merely because
+its coordinates agree. -/
+inductive ActivityHandler where
+  | timer (occurrence : OccurrenceId)
+  | message (occurrence : OccurrenceId)
+  deriving Repr, DecidableEq
+
 /-- What one Activity occurrence owns: its body, and the handler waits attached to it.
 
 `owner` is the scope occurrence containing the Activity node, and every wait listed here shares it.
 That is what makes a bounded Sub-Process deadline parent-owned by derivation rather than by the
 mechanical argument that a child-owned deadline would leave the child permanently non-quiescent.
 
-`attachedTimers` names Timer occurrences rather than a union of handler families, because Timer is the
-only attached-handler family that produces a wait. What keeps a foreign identity out is the
-well-formedness conjunct requiring each entry to resolve in `timerWaits`, not the field's type.
+`attachedHandlers` is a closed tagged family because Timer and Message occurrences have the same
+identity shape. The tag, together with the family-specific well-formedness lookup, prevents a
+same-coordinate Message subscription from satisfying Timer ownership.
 
 This carries no operation identity, and that is a deliberate divergence from the TypeScript record
 rather than an omission. The semantic core reads the operation off the record to find its definition;
@@ -160,8 +170,20 @@ structure ActivityOccurrence where
   activation : Nat
   owner : ScopeOccurrenceId
   body : ActivityBody
-  attachedTimers : List OccurrenceId
+  attachedHandlers : List ActivityHandler
   deriving Repr, DecidableEq
+
+/-- The Timer-only projection of one Activity's attached handlers, preserving handler order. -/
+def ActivityOccurrence.timerHandlerOccurrences (record : ActivityOccurrence) : List OccurrenceId :=
+  record.attachedHandlers.filterMap fun
+    | .timer occurrence => some occurrence
+    | .message _ => none
+
+/-- The Message-only projection of one Activity's attached handlers, preserving handler order. -/
+def ActivityOccurrence.messageHandlerOccurrences (record : ActivityOccurrence) : List OccurrenceId :=
+  record.attachedHandlers.filterMap fun
+    | .timer _ => none
+    | .message occurrence => some occurrence
 
 /-- The outer controller of one sequential Multi-Instance Activity occurrence.
 

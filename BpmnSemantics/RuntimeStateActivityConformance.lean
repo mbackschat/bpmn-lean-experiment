@@ -54,6 +54,19 @@ theorem ambiguous_attached_timer_fails_attachment_with_identity_intact :
     attachedTimersUnambiguous ambiguousAttachedTimerState = false ∧
       activityIdentitiesUnique ambiguousAttachedTimerState = true := by decide +kernel
 
+/-- A Message handler with the same occurrence coordinates as a live Timer cannot satisfy Timer ownership. -/
+def sameShapedMessageHandlerState : RuntimeState :=
+  { armedState with
+    activityOccurrences := armedState.activityOccurrences.map fun record =>
+      { record with
+        attachedHandlers := record.attachedHandlers.map fun
+          | .timer occurrence => .message occurrence
+          | handler => handler } }
+
+theorem same_shaped_message_handler_is_not_a_timer_owner :
+    runtimeStateWellFormed program instanceId sameShapedMessageHandlerState = false := by
+  decide +kernel
+
 /-- `A3`, violating `AOO-ID-01`: one Activity occurrence identity carried twice. -/
 def duplicateActivityIdentityState : RuntimeState :=
   { armedState with

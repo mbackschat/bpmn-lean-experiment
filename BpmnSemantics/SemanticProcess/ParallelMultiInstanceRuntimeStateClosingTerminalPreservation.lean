@@ -435,11 +435,25 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
   let after := closeSharedParallelRegion before controller record output variables
   change runtimeStateWellFormed program expectedInstanceId after = true
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
-    bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, activityIds⟩,
-    _controllers⟩, sequentialBindings⟩, parallelBindings⟩, _controllerIds⟩,
-    _notExhausted⟩, _lifecycle⟩ := wellFormed.1
-  have claims := wellFormed.2
+  obtain ⟨existing, claims⟩ := wellFormed
+  obtain ⟨h17, _lifecycle⟩ := existing
+  obtain ⟨h16, _notExhausted⟩ := h17
+  obtain ⟨h15, _controllerIds⟩ := h16
+  obtain ⟨h14, parallelBindings⟩ := h15
+  obtain ⟨h13, sequentialBindings⟩ := h14
+  obtain ⟨h12, _controllers⟩ := h13
+  obtain ⟨h11, activityIds⟩ := h12
+  obtain ⟨h10, messagesUnambiguous⟩ := h11
+  obtain ⟨h9, timersUnambiguous⟩ := h10
+  obtain ⟨h8, bodies⟩ := h9
+  obtain ⟨h7, order⟩ := h8
+  obtain ⟨h6, hidden⟩ := h7
+  obtain ⟨h5, declarations⟩ := h6
+  obtain ⟨h4, bounds⟩ := h5
+  obtain ⟨h3, identities⟩ := h4
+  obtain ⟨h2, owners⟩ := h3
+  obtain ⟨h1, incidents⟩ := h2
+  obtain ⟨position, races⟩ := h1
   have bindingFacts := parallelMultiInstanceProgramBindingsValid_controller_facts program before
     controller parallelBindings selection.controllerMember
   obtain ⟨entry, boundArm, boundRecord, timer, timerWait, _childWaits, _pendingTask,
@@ -642,86 +656,110 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
       exact activityBodyClaimsDisjoint_no_shared_task disjoint taskMember
         (by rw [oldClaims]; exact removed)
     constructor
-    · cases shape : candidate.body with
-      | childScope scope =>
-          simpa [activityBodyLive, shape, after, closeSharedParallelRegion,
-            exactLiveOccurrence] using prior.1
-      | userTask task =>
-          simp only [activityBodyTaskClaims, shape, List.mem_singleton] at claimNotRemoved
-          simp only [activityBodyLive, shape, decide_eq_true_eq] at prior ⊢
-          change ((removeParallelChildWaits before.waits
-            (pendingParallelTaskIds controller.slots)).filter
-              (fun wait => decide (wait.processInstanceId = task.processInstanceId) &&
-                decide (wait.task.id.value = task.elementId.value) &&
-                decide (wait.activation = task.activation))).length = 1
-          rw [← activityBodyWaitFilter_eq
-            (removeParallelChildWaits before.waits
-              (pendingParallelTaskIds controller.slots)) task]
-          rw [removeParallelChildWaits_lookup_of_not_mem before.waits _ task
-            (claimNotRemoved task (by simp))]
-          rw [activityBodyWaitFilter_eq before.waits task]
-          exact prior.1
-      | parallelUserTasks first rest =>
-          simp only [activityBodyLive, shape, List.all_eq_true, decide_eq_true_eq] at prior ⊢
-          intro task taskMember
-          simp only [after, closeSharedParallelRegion, attachedTimer]
-          rw [← activityBodyWaitFilter_eq
-            (removeParallelChildWaits before.waits
-              (pendingParallelTaskIds controller.slots)) task]
-          rw [removeParallelChildWaits_lookup_of_not_mem before.waits _ task
-            (claimNotRemoved task (by simpa [activityBodyTaskClaims, shape] using taskMember))]
-          rw [activityBodyWaitFilter_eq before.waits task]
-          exact prior.1 task taskMember
-    · simp only [List.all_eq_true] at prior ⊢
-      intro candidateTimer candidateTimerMember
-      obtain ⟨wait, waitMember, candidateBinding⟩ :=
-        List.any_eq_true.mp (prior.2 candidateTimer candidateTimerMember)
-      simp only [Bool.and_eq_true] at candidateBinding
-      obtain ⟨candidateNames, sameOwner⟩ := candidateBinding
-      have selectedRejected : timerIdNamesWait timer wait = false := by
-        apply Bool.eq_false_iff.mpr
-        intro selectedNames
-        have selectedClaim : anyTimerIdNamesWait record.attachedTimers wait = true := by
-          simp [attachedTimer, anyTimerIdNamesWait, selectedNames]
-        have candidateClaim : anyTimerIdNamesWait candidate.attachedTimers wait = true := by
-          simp only [anyTimerIdNamesWait, List.any_eq_true]
-          exact ⟨candidateTimer, candidateTimerMember, candidateNames⟩
-        have bound := of_decide_eq_true (List.all_eq_true.mp attached wait waitMember)
-        have selectedIn : record ∈ before.activityOccurrences.filter (fun current =>
-            anyTimerIdNamesWait current.attachedTimers wait) :=
-          List.mem_filter.mpr ⟨selection.recordMember, selectedClaim⟩
-        have candidateIn : candidate ∈ before.activityOccurrences.filter (fun current =>
-            anyTimerIdNamesWait current.attachedTimers wait) :=
-          List.mem_filter.mpr ⟨candidateMember, candidateClaim⟩
-        obtain ⟨only, singleton⟩ := List.length_eq_one_iff.mp
-          (Nat.le_antisymm bound (List.length_pos_of_mem selectedIn))
-        have selectedEq : record = only := by simpa [singleton] using selectedIn
-        have candidateEq : candidate = only := by simpa [singleton] using candidateIn
-        exact different (candidateEq.trans selectedEq.symm)
-      apply List.any_eq_true.mpr
-      have retainedWait : wait ∈ removeParallelTimer before.timerWaits timer :=
-        List.mem_filter.mpr ⟨waitMember, by simp [selectedRejected]⟩
-      exact ⟨wait, by simpa [after, closeSharedParallelRegion, attachedTimer] using retainedWait,
-        by simp [candidateNames, sameOwner]⟩
+    · constructor
+      · cases shape : candidate.body with
+        | childScope scope =>
+            simpa [activityBodyLive, shape, after, closeSharedParallelRegion,
+              exactLiveOccurrence] using prior.1.1
+        | userTask task =>
+            simp only [activityBodyTaskClaims, shape, List.mem_singleton] at claimNotRemoved
+            simp only [activityBodyLive, shape, decide_eq_true_eq] at prior ⊢
+            change ((removeParallelChildWaits before.waits
+              (pendingParallelTaskIds controller.slots)).filter
+                (fun wait => decide (wait.processInstanceId = task.processInstanceId) &&
+                  decide (wait.task.id.value = task.elementId.value) &&
+                  decide (wait.activation = task.activation))).length = 1
+            rw [← activityBodyWaitFilter_eq
+              (removeParallelChildWaits before.waits
+                (pendingParallelTaskIds controller.slots)) task]
+            rw [removeParallelChildWaits_lookup_of_not_mem before.waits _ task
+              (claimNotRemoved task (by simp))]
+            rw [activityBodyWaitFilter_eq before.waits task]
+            exact prior.1.1
+        | parallelUserTasks first rest =>
+            simp only [activityBodyLive, shape, List.all_eq_true,
+              decide_eq_true_eq] at prior ⊢
+            intro task taskMember
+            simp only [after, closeSharedParallelRegion, attachedTimer]
+            rw [← activityBodyWaitFilter_eq
+              (removeParallelChildWaits before.waits
+                (pendingParallelTaskIds controller.slots)) task]
+            rw [removeParallelChildWaits_lookup_of_not_mem before.waits _ task
+              (claimNotRemoved task (by simpa [activityBodyTaskClaims, shape] using taskMember))]
+            rw [activityBodyWaitFilter_eq before.waits task]
+            exact prior.1.1 task taskMember
+      · simp only [List.all_eq_true] at prior ⊢
+        intro candidateTimer candidateTimerMember
+        obtain ⟨wait, waitMember, candidateBinding⟩ :=
+          List.any_eq_true.mp (prior.1.2 candidateTimer candidateTimerMember)
+        simp only [Bool.and_eq_true] at candidateBinding
+        obtain ⟨candidateNames, sameOwner⟩ := candidateBinding
+        have selectedRejected : timerIdNamesWait timer wait = false := by
+          apply Bool.eq_false_iff.mpr
+          intro selectedNames
+          have selectedClaim : anyTimerIdNamesWait record.timerHandlerOccurrences wait = true := by
+            simp [attachedTimer, anyTimerIdNamesWait, selectedNames]
+          have candidateClaim : anyTimerIdNamesWait candidate.timerHandlerOccurrences wait = true := by
+            simp only [anyTimerIdNamesWait, List.any_eq_true]
+            exact ⟨candidateTimer, candidateTimerMember, candidateNames⟩
+          have bound := of_decide_eq_true
+            (List.all_eq_true.mp timersUnambiguous wait waitMember)
+          have selectedIn : record ∈ before.activityOccurrences.filter (fun current =>
+              anyTimerIdNamesWait current.timerHandlerOccurrences wait) :=
+            List.mem_filter.mpr ⟨selection.recordMember, selectedClaim⟩
+          have candidateIn : candidate ∈ before.activityOccurrences.filter (fun current =>
+              anyTimerIdNamesWait current.timerHandlerOccurrences wait) :=
+            List.mem_filter.mpr ⟨candidateMember, candidateClaim⟩
+          obtain ⟨only, singleton⟩ := List.length_eq_one_iff.mp
+            (Nat.le_antisymm bound (List.length_pos_of_mem selectedIn))
+          have selectedEq : record = only := by simpa [singleton] using selectedIn
+          have candidateEq : candidate = only := by simpa [singleton] using candidateIn
+          exact different (candidateEq.trans selectedEq.symm)
+        apply List.any_eq_true.mpr
+        have retainedWait : wait ∈ removeParallelTimer before.timerWaits timer :=
+          List.mem_filter.mpr ⟨waitMember, by simp [selectedRejected]⟩
+        exact ⟨wait, by simpa [after, closeSharedParallelRegion, attachedTimer] using retainedWait,
+          by simp [candidateNames, sameOwner]⟩
+    · simpa [after, closeSharedParallelRegion] using prior.2
   have attachedAfter : attachedTimersUnambiguous after = true := by
-    simp only [attachedTimersUnambiguous, List.all_eq_true] at attached ⊢
+    simp only [attachedTimersUnambiguous, List.all_eq_true] at timersUnambiguous ⊢
     intro wait waitAfter
     have retained : wait ∈ removeParallelTimer before.timerWaits timer := by
       simpa [after, closeSharedParallelRegion, attachedTimer] using waitAfter
     have waitMember : wait ∈ before.timerWaits := (List.mem_filter.mp retained).1
-    have prior := attached wait waitMember
+    have prior := timersUnambiguous wait waitMember
     have filteredFrame :
         (removeParallelRecord before.activityOccurrences record).filter (fun candidate =>
-          anyTimerIdNamesWait candidate.attachedTimers wait) =
+          anyTimerIdNamesWait candidate.timerHandlerOccurrences wait) =
         (before.activityOccurrences.filter (fun candidate =>
-          anyTimerIdNamesWait candidate.attachedTimers wait)).filter (fun candidate =>
+          anyTimerIdNamesWait candidate.timerHandlerOccurrences wait)).filter (fun candidate =>
             !sameActivityOccurrence candidate record) := by
       simp [removeParallelRecord, List.filter_filter, Bool.and_comm]
     simp only [decide_eq_true_eq]
     change ((removeParallelRecord before.activityOccurrences record).filter (fun candidate =>
-      anyTimerIdNamesWait candidate.attachedTimers wait)).length ≤ 1
+      anyTimerIdNamesWait candidate.timerHandlerOccurrences wait)).length ≤ 1
     rw [filteredFrame]
     exact Nat.le_trans List.filter_sublist.length_le (of_decide_eq_true prior)
+  have messagesUnambiguousAfter : attachedMessagesUnambiguous after = true := by
+    simp only [attachedMessagesUnambiguous, List.all_eq_true,
+      decide_eq_true_eq] at messagesUnambiguous ⊢
+    intro candidate candidateAfter subscription subscriptionMember
+    have retained : candidate ∈ removeParallelRecord before.activityOccurrences record := by
+      simpa [after, closeSharedParallelRegion] using candidateAfter
+    have candidateMember : candidate ∈ before.activityOccurrences :=
+      (List.mem_filter.mp retained).1
+    have prior := messagesUnambiguous candidate candidateMember subscription subscriptionMember
+    have filteredFrame :
+        (removeParallelRecord before.activityOccurrences record).filter (fun current =>
+          current.messageHandlerOccurrences.contains subscription) =
+        (before.activityOccurrences.filter (fun current =>
+          current.messageHandlerOccurrences.contains subscription)).filter (fun current =>
+            !sameActivityOccurrence current record) := by
+      simp [removeParallelRecord, List.filter_filter, Bool.and_comm]
+    change ((removeParallelRecord before.activityOccurrences record).filter (fun current =>
+      current.messageHandlerOccurrences.contains subscription)).length ≤ 1
+    rw [filteredFrame]
+    exact Nat.le_trans List.filter_sublist.length_le prior
   have activityIdsAfter : activityIdentitiesUnique after = true := by
     simp only [activityIdentitiesUnique, after, closeSharedParallelRegion]
     change (removeParallelRecord before.activityOccurrences record).all
@@ -757,9 +795,10 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
       activityBodyClaimsUnique_filter before.activityOccurrences
         (fun candidate => !sameActivityOccurrence candidate record) claims
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
-  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
+  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
     ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩,
-    orderAfter⟩, bodiesAfter⟩, attachedAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
+    orderAfter⟩, bodiesAfter⟩, attachedAfter⟩, messagesUnambiguousAfter⟩,
+    activityIdsAfter⟩, controllersAfter⟩,
     sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
     notExhaustedAfter⟩, lifecycleAfter⟩, claimsAfter⟩
 

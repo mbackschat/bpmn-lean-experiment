@@ -2,12 +2,16 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved-with-required-edits
 
 ## Question
 
 What is the smallest standards-only slice in which one payload-free interrupting Message Boundary Event is attached to one User Task, the task and Message subscription are armed as one Activity occurrence, and whichever exact input wins withdraws the losing wait and follows only its own route?
+
+## Implementation checkpoint
+
+The first green source, checked-graph, Semantic Process IL, Lean, and independently written TypeScript-core checkpoint is implemented. Product profile registration, scenario and differential evidence, occurrence publication, and the Temporal Message/Update scheduler remain paused until the mandatory semantic-checkpoint review is approved.
 
 ## Selection basis
 
@@ -266,39 +270,39 @@ The `what-binds` inventory requires the following executable guards and focused 
 
 ### Owners this implementation grows
 
-The reviewability threshold is 800 nonblank lines. Each figure is the mechanically measured remaining headroom at proposal time; the guard recomputes it.
+The reviewability threshold is 800 nonblank lines. Each figure is the mechanically measured remaining headroom at the current implementation target; the guard recomputes it.
 
 | Owner | Headroom | Structural condition |
 |---|---:|---|
-| [`checked-process-contract.ts`](../../packages/semantic-core/src/checked-process-contract.ts) | 469 | add one closed checked-node arm; extract first only if the edit would cross 800 nonblank lines |
-| [`checked-element-projection.ts`](../../packages/bpmn-source/src/checked-element-projection.ts) | 358 | add Boundary Message projection and reference checks; extract first only if the edit would cross 800 |
+| [`checked-process-contract.ts`](../../packages/semantic-core/src/checked-process-contract.ts) | 457 | add one closed checked-node arm; extract first only if the edit would cross 800 nonblank lines |
+| [`checked-element-projection.ts`](../../packages/bpmn-source/src/checked-element-projection.ts) | 350 | add Boundary Message projection and reference checks; extract first only if the edit would cross 800 |
 | [`compilation-dispatch.ts`](../../packages/bpmn-source/src/compilation-dispatch.ts) | 496 | register exact source compilation for the new profile; extract first only if the edit would cross 800 |
-| [`semantic-process-lowering.ts`](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 210 | add one lowering dispatch and keep family logic outside this owner if the edit would cross 800 |
-| [`semantic-process-contract.ts`](../../packages/semantic-core/src/semantic-process-contract.ts) | 258 | add one operation kind and union arm; extract first only if the edit would cross 800 |
-| [`semantic-profile-catalog.ts`](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 729 | add the exact registered profile identity; extract first only if the edit would cross 800 |
-| [`checked-process-profile-shape.ts`](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 518 | add the exact checked-node multiset; extract first only if the edit would cross 800 |
-| [`semantic-program-profile-shape.ts`](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 501 | add the exact operation multiset; extract first only if the edit would cross 800 |
-| [`semantic-process-operation-admission.ts`](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 139 | add exact operation well-formedness; extract family validation before an edit that would cross 800 |
-| [`semantic-process-graph-admission.ts`](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 212 | classify the new operation's input and outputs generically; extract first only if the edit would cross 800 |
-| [`activity-occurrence.ts`](../../packages/semantic-core/src/activity-occurrence.ts) | 587 | replace Timer-only attachment helpers with handler-family helpers; extract first only if the edit would cross 800 |
-| [`runtime-state-well-formedness.ts`](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 145 | resolve each handler discriminator to the matching wait family; extract handler-family validation before an edit that would cross 800 |
-| [`semantic-command-admission.ts`](../../packages/semantic-core/src/semantic-command-admission.ts) | 417 | route empty completion and both Message stimulus arms to exact admission/refusal; extract first only if the edit would cross 800 |
-| [`semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 176 | add dispatch only; the new family runtime belongs in a new owner, and any edit that would cross 800 requires extraction first |
-| [`flow-node-occurrence-lifecycle.ts`](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 200 | add the host-task and triggered Boundary Event lifecycle; extract first only if the edit would cross 800 |
-| [`flow-node-occurrence-publication-completeness.ts`](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts) | 319 | add the new operation to complete E1/E2 publication census; extract first only if the edit would cross 800 |
-| [`RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 252 | replace the Timer-only field with the handler-family sum/list; extract first only if the edit would cross 800 |
-| [`Lowering.lean`](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 189 | add independent checked-to-IL lowering; extract first only if the edit would cross 800 |
-| [`ProfileAdmission.lean`](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 102 | add the exact profile multiset; extract the new profile predicate before an edit that would cross 800 |
-| [`ProgramStructuralValidation.lean`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 201 | add exact operation structural validation; extract first only if the edit would cross 800 |
-| [`GraphValidation.lean`](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 60 | add only dispatcher coverage; extract the family graph rules before any edit that would cross 800 |
-| [`RuntimeStateWellFormed.lean`](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 126 | resolve handler-family ownership; extract the new handler predicates before an edit that would cross 800 |
-| [`Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 275 | decode and execute the two answer-free schedules; extract first only if the edit would cross 800 |
-| [`TransitionTrace.lean`](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 232 | classify the new operation and transition traces; extract first only if the edit would cross 800 |
-| [`FlowNodeOccurrenceLifecycle.lean`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 170 | add the matching Lean occurrence lifecycle; extract first only if the edit would cross 800 |
-| [`Transition.lean`](../../BpmnSemantics/SemanticProcess/Transition.lean) | 354 | add the new dispatcher arm; family relations and laws belong in new modules if this owner would cross 800 |
-| [`SemanticProcessJson/Program.lean`](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 147 | decode the new operation and migrated handler-family state; extract the operation decoder before an edit that would cross 800 |
-| [`contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 579 | add the exact nonretryable failure identity; extract first only if the edit would cross 800 |
-| [`workflow-continuation.ts`](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 282 | validate carried handler-family runtime state and profile identity; extract first only if the edit would cross 800 |
+| [`semantic-process-lowering.ts`](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 166 | add one lowering dispatch and keep family logic outside this owner if the edit would cross 800 |
+| [`semantic-process-contract.ts`](../../packages/semantic-core/src/semantic-process-contract.ts) | 236 | add one operation kind and union arm; extract first only if the edit would cross 800 |
+| [`semantic-profile-catalog.ts`](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 726 | add the exact registered profile identity; extract first only if the edit would cross 800 |
+| [`checked-process-profile-shape.ts`](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 505 | add the exact checked-node multiset; extract first only if the edit would cross 800 |
+| [`semantic-program-profile-shape.ts`](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 488 | add the exact operation multiset; extract first only if the edit would cross 800 |
+| [`semantic-process-operation-admission.ts`](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 86 | add exact operation well-formedness; extract family validation before an edit that would cross 800 |
+| [`semantic-process-graph-admission.ts`](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 208 | classify the new operation's input and outputs generically; extract first only if the edit would cross 800 |
+| [`activity-occurrence.ts`](../../packages/semantic-core/src/activity-occurrence.ts) | 568 | replace Timer-only attachment helpers with handler-family helpers; extract first only if the edit would cross 800 |
+| [`runtime-state-well-formedness.ts`](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 117 | resolve each handler discriminator to the matching wait family; extract handler-family validation before an edit that would cross 800 |
+| [`semantic-command-admission.ts`](../../packages/semantic-core/src/semantic-command-admission.ts) | 403 | route empty completion and both Message stimulus arms to exact admission/refusal; extract first only if the edit would cross 800 |
+| [`semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts) | 165 | add dispatch only; the new family runtime belongs in a new owner, and any edit that would cross 800 requires extraction first |
+| [`flow-node-occurrence-lifecycle.ts`](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 198 | add the host-task and triggered Boundary Event lifecycle; extract first only if the edit would cross 800 |
+| [`flow-node-occurrence-publication-completeness.ts`](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts) | 317 | add the new operation to complete E1/E2 publication census; extract first only if the edit would cross 800 |
+| [`RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 234 | replace the Timer-only field with the handler-family sum/list; extract first only if the edit would cross 800 |
+| [`Lowering.lean`](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 166 | add independent checked-to-IL lowering; extract first only if the edit would cross 800 |
+| [`ProfileAdmission.lean`](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 81 | add the exact profile multiset; extract the new profile predicate before an edit that would cross 800 |
+| [`ProgramStructuralValidation.lean`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 180 | add exact operation structural validation; extract first only if the edit would cross 800 |
+| [`GraphValidation.lean`](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 55 | add only dispatcher coverage; extract the family graph rules before any edit that would cross 800 |
+| [`RuntimeStateWellFormed.lean`](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 109 | resolve handler-family ownership; extract the new handler predicates before an edit that would cross 800 |
+| [`Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 274 | decode and execute the two answer-free schedules; extract first only if the edit would cross 800 |
+| [`TransitionTrace.lean`](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 229 | classify the new operation and transition traces; extract first only if the edit would cross 800 |
+| [`FlowNodeOccurrenceLifecycle.lean`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 168 | add the matching Lean occurrence lifecycle; extract first only if the edit would cross 800 |
+| [`Transition.lean`](../../BpmnSemantics/SemanticProcess/Transition.lean) | 343 | add the new dispatcher arm; family relations and laws belong in new modules if this owner would cross 800 |
+| [`SemanticProcessJson/Program.lean`](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 129 | decode the new operation and migrated handler-family state; extract the operation decoder before an edit that would cross 800 |
+| [`contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 577 | add the exact nonretryable failure identity; extract first only if the edit would cross 800 |
+| [`workflow-continuation.ts`](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 276 | validate carried handler-family runtime state and profile identity; extract first only if the edit would cross 800 |
 | [`workflow-command-ingress.ts`](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 418 | route exact Signal/Update callbacks to the new scheduler; extract first only if the edit would cross 800 |
 | [`workflow-host-readiness.ts`](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 551 | register the new host-readiness owner; extract first only if the edit would cross 800 |
 | [`activation-tagged-readiness.ts`](../../packages/temporal-adapter/workflow/src/activation-tagged-readiness.ts) | 723 | reuse without semantic-family logic; it grows only if the generic contract proves insufficient, which is a redesign stop |
@@ -340,6 +344,8 @@ No closure cost is claimed at proposal time. At closure, [`capsule-cost.ts`](../
 ## Stage boundary
 
 The first green Lean and semantic-core target is a mandatory semantic checkpoint because this capsule adds a transition family, changes Activity ownership representation, and changes a proof boundary. No Temporal or publication implementation may cross that checkpoint before its independent review is approved.
+
+That first green target has now been reached. The implemented Temporal changes are limited to carrying the tagged handler representation and rejecting this admission-only profile with `MessageBoundedActivitySchedulerUnavailable`; they add no scheduler or publication meaning.
 
 Closure requires every evidence lane and guard named above, the complete applicable gate on a clean committed target, an exact reflection/cost record, and an independent closure review. The proposal may graduate to `-SPEC` only after the reviewed current contract and all evidence owners agree.
 

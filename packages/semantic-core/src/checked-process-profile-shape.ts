@@ -3,7 +3,10 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
 } from "./checked-process-contract.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 import {
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
 } from "./sequential-multi-instance-contract.js";
@@ -153,6 +156,16 @@ export function requiredCheckedProcessShape(
         start,
         CheckedNodeKind.UserTask,
         CheckedNodeKind.TimerBoundaryEvent,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+      ], BoundaryInterruption.Interrupting);
+    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
+      return rootChecked([
+        start,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.MessageBoundaryEvent,
         CheckedNodeKind.UserTask,
         CheckedNodeKind.UserTask,
         end,

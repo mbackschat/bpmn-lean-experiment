@@ -10,15 +10,17 @@ import type {
 } from "./activity-occurrence.js";
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
 
-/** Whether two records compete for one Activity identity, body member, or attached Timer. */
+/** Whether two records compete for one Activity identity, body member, or attached handler. */
 export function activityAssociationsConflict(
   left: ActivityOccurrence,
   right: ActivityOccurrence,
 ): boolean {
   return sameActivityOccurrence(left.id, right.id) ||
     activityBodiesConflict(left.body, right.body) ||
-    left.attachedTimers.some((timer) =>
-      right.attachedTimers.some((other) => sameOccurrenceId(timer, other))
+    left.attachedHandlers.some((handler) =>
+      right.attachedHandlers.some((other) =>
+        handler.kind === other.kind && sameOccurrenceId(handler.occurrence, other.occurrence)
+      )
     );
 }
 

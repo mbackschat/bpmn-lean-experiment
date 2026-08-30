@@ -209,6 +209,17 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← decodeBoundaryInterruption (← stringField json "interruption"))
           (← stringField json "durationLiteral")
           ⟨← stringField json "outputFlowId"⟩)
+  | "messageBoundaryEvent" =>
+      requireObjectShape json
+        ["attachedToRef", "channel", "id", "interruption", "kind",
+          "outputFlowId"]
+      pure
+        (.messageBoundaryEvent
+          ⟨← stringField json "id"⟩
+          ⟨← stringField json "attachedToRef"⟩
+          (← decodeBoundaryInterruption (← stringField json "interruption"))
+          (← decodeOperationMessageChannel (← field json "channel"))
+          ⟨← stringField json "outputFlowId"⟩)
   | "userTask" =>
       decodeCheckedUserTask json
   | "dataInputUserTask" =>

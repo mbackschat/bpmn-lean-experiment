@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityHandlerKind,
   CommandOutcome,
   FlowNodeOccurrenceTerminalKind,
   RuntimeStateDefect,
@@ -258,7 +259,10 @@ test("first completion publishes the selected child as completed and every sibli
     entered.result.state,
   )?.map((entry) => ({
     ...entry,
-    attachedTimers: [fireOuterTimer.timerId],
+    attachedHandlers: [{
+      kind: ActivityHandlerKind.Timer,
+      occurrence: fireOuterTimer.timerId,
+    }],
   }));
   assert.ok(retained !== undefined && retained !== null);
   assert.doesNotThrow(() => requireCompleteFlowNodeOccurrenceLifecycles(

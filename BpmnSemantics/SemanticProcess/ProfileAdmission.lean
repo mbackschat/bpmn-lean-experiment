@@ -20,6 +20,7 @@ private structure ShapeCardinalities where
   callActivities : Nat := 0
   boundaryErrors : Nat := 0
   boundaryTimers : Nat := 0
+  boundaryMessages : Nat := 0
   monitoredBoundaryTimers : Nat := 0
   scopeEntries : Nat := 0
   processInvokes : Nat := 0
@@ -44,6 +45,7 @@ private structure ShapeCardinalities where
   synchronizeSelected : Nat := 0
   eventRaces : Nat := 0
   boundedUserTasks : Nat := 0
+  messageBoundedUserTasks : Nat := 0
   monitoredUserTasks : Nat := 0
   sequentialMultiInstanceUserTasks : Nat := 0
   boundedScopeEntries : Nat := 0
@@ -77,6 +79,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .timerBoundaryEvent _ _ .nonInterrupting _ _ =>
         { counts with
           monitoredBoundaryTimers := counts.monitoredBoundaryTimers + 1 }
+    | .messageBoundaryEvent .. =>
+        { counts with boundaryMessages := counts.boundaryMessages + 1 }
     | .userTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .dataInputUserTask .. =>
         { counts with dataInputUserTasks := counts.dataInputUserTasks + 1 }
@@ -147,6 +151,8 @@ private def addOperationCardinality (counts : ShapeCardinalities)
     | .awaitEventRace .. => { counts with eventRaces := counts.eventRaces + 1 }
     | .awaitBoundedUserTask .. =>
         { counts with boundedUserTasks := counts.boundedUserTasks + 1 }
+    | .awaitMessageBoundedUserTask .. =>
+        { counts with messageBoundedUserTasks := counts.messageBoundedUserTasks + 1 }
     | .awaitMonitoredUserTask .. =>
         { counts with monitoredUserTasks := counts.monitoredUserTasks + 1 }
     | .awaitEffect .. => { counts with effects := counts.effects + 1 }
@@ -297,6 +303,9 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1,
       { starts := 1, boundaryTimers := 1, userTasks := 3, ends := 2 })
+  else if profile = "bpmn-2.0.2-activity-boundary-message-draft" then
+    some (1,
+      { starts := 1, boundaryMessages := 1, userTasks := 3, ends := 2 })
   else if profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft" then
     some (1,
       { starts := 1, monitoredBoundaryTimers := 1, userTasks := 3, ends := 2 })
@@ -407,6 +416,9 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, boundedUserTasks := 1, userTasks := 2, ends := 2 })
+  else if profile = "bpmn-2.0.2-activity-boundary-message-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, messageBoundedUserTasks := 1, userTasks := 2, ends := 2 })
   else if profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, monitoredUserTasks := 1, userTasks := 2, ends := 2 })
@@ -641,6 +653,15 @@ private def operationPayloadCapabilitiesValid (profile : String)
                 message.channel.identifiersNonempty && identities.all (fun id => !id.isEmpty) &&
                   identities.eraseDups.length = identities.length &&
                   decide (directOutput.sourceDataOutputName ≠ some "")
+            | .directMessage .. => false
+      | _ => true
+  else if profile = "bpmn-2.0.2-activity-boundary-message-draft" then
+    operations.all fun
+      | .awaitMessageBoundedUserTask _ origin _ task boundaryMessage =>
+          origin.elementId.value = task.id.value &&
+            boundaryMessage.channel.identifiersNonempty &&
+            match boundaryMessage.channel with
+            | .operationMessage .. => true
             | .directMessage .. => false
       | _ => true
   else if profile = "bpmn-2.0.2-timer-start-event-draft" then

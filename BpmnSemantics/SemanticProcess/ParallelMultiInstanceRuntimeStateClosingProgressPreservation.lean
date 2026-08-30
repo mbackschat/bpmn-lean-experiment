@@ -216,11 +216,25 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     ownerScope account before taskId controller record running selectedController selectedRecord
     regionValid wellFormed
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
-    bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, activityIds⟩,
-    _controllers⟩, sequentialBindings⟩, parallelBindings⟩, _controllerIds⟩,
-    _notExhausted⟩, _lifecycle⟩ := wellFormed.1
-  have claims := wellFormed.2
+  obtain ⟨existing, claims⟩ := wellFormed
+  obtain ⟨h17, _lifecycle⟩ := existing
+  obtain ⟨h16, _notExhausted⟩ := h17
+  obtain ⟨h15, _controllerIds⟩ := h16
+  obtain ⟨h14, parallelBindings⟩ := h15
+  obtain ⟨h13, sequentialBindings⟩ := h14
+  obtain ⟨h12, _controllers⟩ := h13
+  obtain ⟨h11, activityIds⟩ := h12
+  obtain ⟨h10, messagesUnambiguous⟩ := h11
+  obtain ⟨h9, timersUnambiguous⟩ := h10
+  obtain ⟨h8, bodies⟩ := h9
+  obtain ⟨h7, order⟩ := h8
+  obtain ⟨h6, hidden⟩ := h7
+  obtain ⟨h5, declarations⟩ := h6
+  obtain ⟨h4, bounds⟩ := h5
+  obtain ⟨h3, identities⟩ := h4
+  obtain ⟨h2, owners⟩ := h3
+  obtain ⟨h1, incidents⟩ := h2
+  obtain ⟨position, races⟩ := h1
   have oldBody : activityBodyParallelTasks? record =
       some (pendingParallelTaskIds controller.slots) := by
     have region := selection.region
@@ -265,7 +279,7 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
           simp only [activityBodyLive, shape, List.all_eq_true, decide_eq_true_eq] at recordLive
           have oldList : oldFirst :: oldRest = pendingParallelTaskIds controller.slots := by
             simpa [activityBodyParallelTasks?, shape] using oldBody
-          have oldCount := recordLive.1 task
+          have oldCount := recordLive.1.1 task
             (by rw [oldList]; exact (pendingFacts task member).1)
           rw [activityBodyWaitFilter_eq before.waits task]
           exact oldCount
@@ -277,12 +291,17 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     exact oldCount
   have selectedLive : activityBodyLive after
         { record with body := .parallelUserTasks firstPending restPending } &&
-      record.attachedTimers.all (fun timer =>
+      record.timerHandlerOccurrences.all (fun timer =>
         after.timerWaits.any fun wait =>
           timerIdNamesWait timer wait &&
+            decide (wait.owner = record.owner)) &&
+      record.messageHandlerOccurrences.all (fun message =>
+        after.messageWaits.any fun wait =>
+          messageIdNamesWait message wait &&
             decide (wait.owner = record.owner)) = true := by
     simp only [Bool.and_eq_true]
-    exact ⟨selectedBodyLive, by simpa [after] using recordLive.2⟩
+    exact ⟨⟨selectedBodyLive, by simpa [after] using recordLive.1.2⟩,
+      by simpa [after] using recordLive.2⟩
   have bodiesAfter : activityRecordsOwnLiveWork after = true := by
     simp only [activityRecordsOwnLiveWork, List.all_eq_true]
     intro candidate member
@@ -294,7 +313,8 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     · have originalEq := sameActivityOccurrence_member_eq before record original activityIds
           selection.recordMember originalMember selected
       subst original
-      simpa [selected] using selectedLive
+      simpa [selected, ActivityOccurrence.timerHandlerOccurrences,
+        ActivityOccurrence.messageHandlerOccurrences] using selectedLive
     · simp only [Bool.not_eq_true] at selected
       have prior := List.all_eq_true.mp bodies original originalMember
       simp only [Bool.and_eq_true] at prior
@@ -314,10 +334,10 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
         | childScope scope =>
             simp only [activityBodyLive, shape]
             change exactLiveOccurrence before scope = true
-            simpa [activityBodyLive, shape] using prior.1
+            simpa [activityBodyLive, shape] using prior.1.1
         | userTask task =>
             simp only [activityBodyTaskClaims, shape, List.mem_singleton] at excludesTarget
-            have priorBody := prior.1
+            have priorBody := prior.1.1
             simp only [activityBodyLive, shape, decide_eq_true_eq] at priorBody
             simp only [activityBodyLive, shape, decide_eq_true_eq]
             rw [← activityBodyWaitFilter_eq after.waits task]
@@ -336,8 +356,8 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
             rw [removeParallelChildWaits_lookup_of_ne before.waits taskId task
               (excludesTarget task (by simpa [activityBodyTaskClaims, shape] using taskMember))]
             rw [activityBodyWaitFilter_eq before.waits task]
-            exact prior.1 task taskMember
-      simp [selected, bodyAfter, after, prior.2]
+            exact prior.1.1 task taskMember
+      simp [selected, bodyAfter, after, prior.1.2, prior.2]
   have positionAfter : runtimePositionValid program expectedInstanceId after = true := by
     change runtimePositionValid program expectedInstanceId before = true
     exact position
@@ -458,23 +478,34 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     · simp [after, selection.controllersSingleton, removeParallelController,
         insertParallelMultiInstanceController, parallelMultiInstanceControllersOrdered]
   have attachedAfter : attachedTimersUnambiguous after = true := by
-    simp only [attachedTimersUnambiguous, List.all_eq_true] at attached ⊢
+    simp only [attachedTimersUnambiguous, List.all_eq_true] at timersUnambiguous ⊢
     intro wait member
-    have prior := attached wait (by simpa [after] using member)
+    have prior := timersUnambiguous wait (by simpa [after] using member)
     simp only [← List.countP_eq_length_filter] at prior ⊢
     have mapped := replaceParallelRecordBody_map_of_frame
-      (fun candidate => anyTimerIdNamesWait candidate.attachedTimers wait)
+      (fun candidate => anyTimerIdNamesWait candidate.timerHandlerOccurrences wait)
       (fun _ _ _ => rfl) before.activityOccurrences record firstPending restPending
     have counts := congrArg (List.countP id) mapped
     have countEq :
         (replaceParallelRecordBody before.activityOccurrences record
           (firstPending :: restPending)).countP
-            (anyTimerIdNamesWait ·.attachedTimers wait) =
+            (anyTimerIdNamesWait ·.timerHandlerOccurrences wait) =
           before.activityOccurrences.countP
-            (anyTimerIdNamesWait ·.attachedTimers wait) := by
+            (anyTimerIdNamesWait ·.timerHandlerOccurrences wait) := by
       simpa [List.countP_map] using counts
     rw [countEq]
     exact prior
+  have messagesUnambiguousAfter : attachedMessagesUnambiguous after = true := by
+    have handlers : after.activityOccurrences.map (fun candidate =>
+          candidate.messageHandlerOccurrences) =
+        before.activityOccurrences.map (fun candidate => candidate.messageHandlerOccurrences) := by
+      simpa [after] using replaceParallelRecordBody_map_of_frame
+        (fun candidate => candidate.messageHandlerOccurrences)
+        (fun _ _ _ => rfl) before.activityOccurrences record firstPending restPending
+    simp only [attachedMessagesUnambiguous]
+    rw [attachedMessagesUnambiguous_of_handler_map_eq before.activityOccurrences
+      after.activityOccurrences handlers]
+    exact messagesUnambiguous
   have activityIdsAfter : activityIdentitiesUnique after = true := by
     simp only [activityIdentitiesUnique]
     have preserved := all_occursOnce_of_map_eq
@@ -521,9 +552,10 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     exact replaceParallelRecordBody_preserves_activityBodyClaimsUnique before record firstPending
       restPending claims activityIds selection.recordMember remainingClaims
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
-  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
+  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
     ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩,
-    orderAfter⟩, bodiesAfter⟩, attachedAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
+    orderAfter⟩, bodiesAfter⟩, attachedAfter⟩, messagesUnambiguousAfter⟩,
+    activityIdsAfter⟩, controllersAfter⟩,
     sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
     notExhaustedAfter⟩, lifecycleAfter⟩, claimsAfter⟩
 

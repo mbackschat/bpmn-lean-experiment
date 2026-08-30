@@ -7,6 +7,7 @@ import {
   SemanticOriginKind,
   VariableValueKind,
   applyStimulus,
+  attachedTimerOccurrences,
   initialState,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -91,7 +92,7 @@ test("prepares the complete parallel controller, children, deadline, and snapsho
     kind: "parallelUserTasks",
     tasks: prepared.taskWaits.map(({ id }) => id),
   });
-  assert.deepEqual(prepared.record.attachedTimers, [prepared.timerWait.id]);
+  assert.deepEqual(attachedTimerOccurrences(prepared.record), [prepared.timerWait.id]);
   assert.deepEqual(activationWrites(prepared.footprint), [
     { occurrenceKind: InternalOccurrenceKind.Activity, elementId: operation.task.elementId },
     { occurrenceKind: InternalOccurrenceKind.Timer, elementId: operation.boundaryTimer.elementId },

@@ -10,6 +10,8 @@ The implemented bounded Workflow-chain contract owns project Event History, payl
 
 Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, Query-response, terminal-result, Event History, aggregate continuation, and 128-Run bounds are active before speculative exposure, scheduling, or return. Retry and conflict precede lifetime capacity, semantic terminal state and accepted-handler draining precede terminal-envelope capacity, and no public contract or host identity changes.
 
+The first-green Activity boundary Message checkpoint changes only private handler carry and fail-closed host admission; its family map owns the paused downstream boundary.
+
 ## Implemented
 
 ### Temporal adapter
@@ -63,7 +65,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 - the independently checkpoint-approved Activity-family issuing amendment changes no host mechanism or carried shape: existing continuation state already transports each Activity occurrence beside its high-water mark. Its semantic pair oracle and guarded writer discharge prevent a retired Activity identity from being reintroduced after restore or ordinary evaluation; Timer and task issuing disciplines remain separate open obligations
 - Workflow-chain lifetime capacity: a valid required 128th Run carries 127 contiguous retained descriptors plus complete state, recovery, and publication; a required 129th successor fails nonretryably as typed chain capacity before the current segment directory is read or extended; an incoming ordinal 129 remains a distinct fail-closed continuation defect; descriptor-directory and Run limits remain independent and no ordinal or Run ID enters a public result
 - private paired E1/E2 per-Run publication segments with strict descriptor/directory validation and SHA-bound continuation; immutable latest selection followed by an exact selected-Run Query; Run-local pages; selected retained-Run loss mapped to `unavailable`; legacy fallback only for `QueryNotRegisteredError`; and live evidence over Run 1 `0..8`, Run 2 `8..12`, Run 3 `12..16`, cursor pages `0/4/8/12/16`, two occurrence identities spanning Run boundaries, unchanged terminal receipt, no public Workflow/Run identity, and replay of all three Runs
-- the retained open flow-node occurrence set carries `retainedOpen[].attachedTimers`, a per-entry handler list added by [the body-turnover amendment](archived/ACTIVITY-BODY-TURNOVER-PROPOSAL.md) so the publication completeness relation pairs a firing deadline to its host through the Activity occurrence record instead of an activation ordinal. It is Workflow state that crosses Continue-As-New and reaches no schema, scenario, retained evidence, or published byte, and its bytes count against the existing 64 KiB continuation-and-directory bound rather than a new one
+- retained open flow-node occurrences carry `retainedOpen[].attachedHandlers`, a closed tagged Timer-or-Message list. Publication consumes only Timer tags and rejects the new operation. The private Workflow state crosses Continue-As-New, reaches no public artifact, and counts against the existing 64 KiB continuation-and-directory bound
 - that field has one writer, which derives it from the committed post-state after every command for every retained entry, and the continuation decoder recomputes the same derivation and refuses a payload that disagrees, so the restore boundary is where a forged pairing is caught
 - it carries **no version marker**, which the pre-release policy permits while no immutable history baseline is approved. At the first durable baseline a retained accumulator written before the field existed decodes as absent rather than empty and the decoder's exact-key check refuses it, so that baseline owes either a migration for the retained set or an explicit statement that no pre-field history is supported
 - selected-Run Query-response capacity: a 192 KiB canonical UTF-8 ceiling at producer and client boundaries; the producer returns the largest complete aligned E1/E2 batch prefix that fits, never splits a command batch or Run segment, and withholds current/open snapshots until the page reaches the immutable head; exact-fit, one-byte-lower, oversized-client, malformed-pair, deterministic-remainder, and real BPMN cycle evidence preserve the original semantic-core batches unchanged
@@ -73,6 +75,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 
 ### Temporal adapter
 
+- Activity boundary Message scheduling, coalesced Signal/Update arbitration, occurrence publication, live history, and replay; host admission rejects the checkpoint profile before scheduling
 - retained result beyond Temporal retention
 - production canonical-observation API
 - protocol that imposes caller order on concurrent distinct commands

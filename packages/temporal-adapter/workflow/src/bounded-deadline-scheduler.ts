@@ -24,6 +24,7 @@ import {
   activityBodyScope,
   activityBodyParallelTasks,
   activityBodyTaskWait,
+  attachedTimerOccurrences,
   attachedTimerWaits,
   isBoundaryTimerDefinition,
   isBoundedScopeDeadlineDefinition,
@@ -327,7 +328,7 @@ function managedPair(
   family: BoundedDeadlineFamily,
 ): Readonly<{ deadline: DurableTimer; record: ActivityOccurrence }> | undefined {
   const owned = state.activityOccurrences.flatMap((record) =>
-    record.attachedTimers.flatMap((attached) =>
+    attachedTimerOccurrences(record).flatMap((attached) =>
       family.ownsDeadline(semanticProcess, attached) ? [{ record, attached }] : []
     )
   );

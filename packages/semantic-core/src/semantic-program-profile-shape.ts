@@ -1,6 +1,9 @@
 /** Exact Semantic Process operation multisets admitted by reviewed semantic profiles. */
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 
 export type RequiredProgramShape = Readonly<{
   definitionScopeCount: number;
@@ -184,6 +187,16 @@ export function requiredProgramShape(
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitBoundedUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
+    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitMessageBoundedUserTask,
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.ReachNoneEnd,

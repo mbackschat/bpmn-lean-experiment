@@ -13,6 +13,7 @@ import {
 } from "./semantic-process-call-runtime.js";
 import {
   ActivityBodyKind,
+  attachedTimerOccurrences,
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
@@ -71,7 +72,7 @@ function removeScopeOccurrenceRegion(
     isInterrupted(owner) ||
     (body.kind === ActivityBodyKind.ChildScope && isInterrupted(body.scope));
   const withdrawnRecords = state.activityOccurrences.filter(isInterruptedRecord);
-  const withdrawnTimers = withdrawnRecords.flatMap(({ attachedTimers }) => attachedTimers);
+  const withdrawnTimers = withdrawnRecords.flatMap(attachedTimerOccurrences);
 
   const interruptedEffects = state.effectWaits
     .filter(({ owner }) => isInterrupted(owner))

@@ -163,6 +163,15 @@ private def decodeBoundaryTimerArm (json : Json) :
       output := ⟨← stringField json "output"⟩
       origin := ← decodeSequenceFlowOrigin (← field json "origin") }
 
+private def decodeBoundaryMessageArm (json : Json) :
+    Except String BoundaryMessageArm := do
+  requireObjectShape json ["channel", "elementId", "origin", "output"]
+  pure
+    { elementId := ⟨← stringField json "elementId"⟩
+      channel := ← decodeOperationMessageChannel (← field json "channel")
+      output := ⟨← stringField json "output"⟩
+      origin := ← decodeSequenceFlowOrigin (← field json "origin") }
+
 private def decodeSequentialMultiInstanceTask (json : Json) :
     Except String SequentialMultiInstanceTaskDefinition := do
   requireObjectShape json ["elementId", "name"]
@@ -536,6 +545,16 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           (← decodeBoundedTaskArm (← field json "task"))
           (← decodeBoundaryTimerArm (← field json "boundaryTimer")))
+  | "awaitMessageBoundedUserTask" =>
+      requireObjectShape json
+        ["boundaryMessage", "id", "input", "kind", "origin", "task"]
+      pure
+        (.awaitMessageBoundedUserTask
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          (← decodeBoundedTaskArm (← field json "task"))
+          (← decodeBoundaryMessageArm (← field json "boundaryMessage")))
   | "awaitMonitoredUserTask" =>
       requireObjectShape json
         ["boundaryTimer", "id", "input", "kind", "origin", "task"]

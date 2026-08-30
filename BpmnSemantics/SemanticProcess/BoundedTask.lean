@@ -87,7 +87,7 @@ private def boundedPairForTask? (program : Program) (state : RuntimeState)
   let operation ← (boundedTaskOperations program).find? fun candidate =>
     decide (candidate.2.1.id = task.task.id)
   let record ← activityOccurrenceForTaskWait? state.activityOccurrences task
-  let deadline ← record.attachedTimers.find? fun candidate =>
+  let deadline ← record.timerHandlerOccurrences.find? fun candidate =>
     decide (candidate.elementId.value = operation.2.2.elementId.value)
   let timer ← state.timerWaits.find? fun candidate =>
     timerIdNamesWait deadline candidate && decide (candidate.elementId = operation.2.2.elementId)
@@ -192,7 +192,7 @@ private theorem boundedPairForTask_pairing (program : Program)
       cases recFound : activityOccurrenceForTaskWait? state.activityOccurrences task with
       | none => simp [opFound, recFound] at found
       | some record =>
-          cases dlFound : record.attachedTimers.find? (fun candidate =>
+          cases dlFound : record.timerHandlerOccurrences.find? (fun candidate =>
               decide (candidate.elementId.value = op.2.2.elementId.value)) with
           | none => simp [opFound, recFound, dlFound] at found
           | some deadline =>

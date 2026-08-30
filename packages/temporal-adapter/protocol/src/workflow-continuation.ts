@@ -1,5 +1,6 @@
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   ControlStateKind,
   LocalDataOwnerKind,
   MappingExpressionKind,
@@ -315,12 +316,18 @@ function isRuntimeState(value: unknown): value is RuntimeState {
  */
 function isActivityOccurrence(value: unknown): boolean {
   return isRecord(value) &&
-    hasOnlyKeys(value, ["id", "owner", "operationId", "body", "attachedTimers"]) &&
+    hasOnlyKeys(value, ["id", "owner", "operationId", "body", "attachedHandlers"]) &&
     isActivityOccurrenceId(value.id) &&
     isScopeId(value.owner) &&
     isNonemptyString(value.operationId) &&
     isActivityBody(value.body) &&
-    isList(value.attachedTimers, isOccurrenceId);
+    isList(value.attachedHandlers, isActivityHandlerOccurrence);
+}
+
+function isActivityHandlerOccurrence(value: unknown): boolean {
+  return isRecord(value) && hasOnlyKeys(value, ["kind", "occurrence"]) &&
+    (value.kind === ActivityHandlerKind.Timer || value.kind === ActivityHandlerKind.Message) &&
+    isOccurrenceId(value.occurrence);
 }
 
 function isSequentialMultiInstanceController(value: unknown): boolean {

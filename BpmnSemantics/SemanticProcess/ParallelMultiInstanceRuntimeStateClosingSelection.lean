@@ -39,13 +39,13 @@ private theorem selectedParallelControllerForTimer
     state.parallelMultiInstanceControllers.filter (fun controller =>
       decide (controller.id.activityElementId.value = arm.taskId.value) &&
         match parallelControllerRecord? state controller with
-        | some record => record.attachedTimers.contains timerId
+        | some record => record.timerHandlerOccurrences.contains timerId
         | none => false) = [controller] := by
   unfold parallelControllerForTimer? at selected
   let candidates := state.parallelMultiInstanceControllers.filter (fun candidate =>
     decide (candidate.id.activityElementId.value = arm.taskId.value) &&
       match parallelControllerRecord? state candidate with
-      | some record => record.attachedTimers.contains timerId
+      | some record => record.timerHandlerOccurrences.contains timerId
       | none => false)
   change (match candidates with | [candidate] => some candidate | _ => none) =
     some controller at selected
@@ -140,12 +140,12 @@ private theorem selectedTimerController_member_and_shape (arm : ParallelMultiIns
     controller ∈ state.parallelMultiInstanceControllers ∧
       controller.id.activityElementId.value = arm.taskId.value ∧
       ∃ record, parallelControllerRecord? state controller = some record ∧
-        record.attachedTimers.contains timerId = true := by
+        record.timerHandlerOccurrences.contains timerId = true := by
   have singleton := selectedParallelControllerForTimer arm state timerId controller selected
   have member : controller ∈ state.parallelMultiInstanceControllers.filter (fun candidate =>
       decide (candidate.id.activityElementId.value = arm.taskId.value) &&
         match parallelControllerRecord? state candidate with
-        | some record => record.attachedTimers.contains timerId
+        | some record => record.timerHandlerOccurrences.contains timerId
         | none => false) := by
     rw [singleton]
     simp
@@ -323,7 +323,7 @@ structure ParallelTimerClosingSelectionFacts (arm : ParallelMultiInstanceArm)
     (state : RuntimeState) (timerId : TimerOccurrenceId)
     (controller : ParallelMultiInstanceController) (record : ActivityOccurrence) : Prop
     extends ParallelClosingSelectionFacts arm state controller record where
-  timerMember : timerId ∈ record.attachedTimers
+  timerMember : timerId ∈ record.timerHandlerOccurrences
 
 theorem completionControllers_singleton (program : Program)
     (expectedInstanceId instanceId : SemanticId) (arm : ParallelMultiInstanceArm)
@@ -338,10 +338,24 @@ theorem completionControllers_singleton (program : Program)
     state.parallelMultiInstanceControllers = [controller] := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
   obtain ⟨existing, claims⟩ := wellFormed
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, _races⟩, _incidents⟩, owners⟩,
-    _identities⟩, _bounds⟩, _declarations⟩, _hidden⟩, _order⟩, _bodies⟩, _attached⟩,
-    _activityIds⟩, _controllers⟩, _sequentialBindings⟩, parallelBindings⟩, _controllerIds⟩,
-    _notExhausted⟩, _lifecycle⟩ := existing
+  obtain ⟨h17, _lifecycle⟩ := existing
+  obtain ⟨h16, _notExhausted⟩ := h17
+  obtain ⟨h15, _controllerIds⟩ := h16
+  obtain ⟨h14, parallelBindings⟩ := h15
+  obtain ⟨h13, _sequentialBindings⟩ := h14
+  obtain ⟨h12, _controllers⟩ := h13
+  obtain ⟨h11, _activityIds⟩ := h12
+  obtain ⟨h10, _messagesUnambiguous⟩ := h11
+  obtain ⟨h9, _timersUnambiguous⟩ := h10
+  obtain ⟨h8, _bodies⟩ := h9
+  obtain ⟨h7, _order⟩ := h8
+  obtain ⟨h6, _hidden⟩ := h7
+  obtain ⟨h5, _declarations⟩ := h6
+  obtain ⟨h4, _bounds⟩ := h5
+  obtain ⟨h3, _identities⟩ := h4
+  obtain ⟨h2, owners⟩ := h3
+  obtain ⟨h1, _incidents⟩ := h2
+  obtain ⟨position, _races⟩ := h1
   obtain ⟨controllerMember, _element, selectedCount⟩ :=
     selectedTaskController_member_and_shape arm state taskId controller selectedController
   obtain ⟨recordMember, selectedNames⟩ :=
@@ -443,10 +457,24 @@ theorem timerControllers_singleton (program : Program)
     state.parallelMultiInstanceControllers = [controller] := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
   obtain ⟨existing, claims⟩ := wellFormed
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, _races⟩, _incidents⟩, owners⟩,
-    _identities⟩, _bounds⟩, _declarations⟩, _hidden⟩, _order⟩, _bodies⟩, _attached⟩,
-    _activityIds⟩, _controllers⟩, _sequentialBindings⟩, parallelBindings⟩, _controllerIds⟩,
-    _notExhausted⟩, _lifecycle⟩ := existing
+  obtain ⟨h17, _lifecycle⟩ := existing
+  obtain ⟨h16, _notExhausted⟩ := h17
+  obtain ⟨h15, _controllerIds⟩ := h16
+  obtain ⟨h14, parallelBindings⟩ := h15
+  obtain ⟨h13, _sequentialBindings⟩ := h14
+  obtain ⟨h12, _controllers⟩ := h13
+  obtain ⟨h11, _activityIds⟩ := h12
+  obtain ⟨h10, _messagesUnambiguous⟩ := h11
+  obtain ⟨h9, _timersUnambiguous⟩ := h10
+  obtain ⟨h8, _bodies⟩ := h9
+  obtain ⟨h7, _order⟩ := h8
+  obtain ⟨h6, _hidden⟩ := h7
+  obtain ⟨h5, _declarations⟩ := h6
+  obtain ⟨h4, _bounds⟩ := h5
+  obtain ⟨h3, _identities⟩ := h4
+  obtain ⟨h2, owners⟩ := h3
+  obtain ⟨h1, _incidents⟩ := h2
+  obtain ⟨position, _races⟩ := h1
   obtain ⟨controllerMember, selectedElement, selectedLookupRecord, selectedLookup,
     timerContained⟩ :=
     selectedTimerController_member_and_shape arm state timerId controller selectedController
@@ -455,7 +483,7 @@ theorem timerControllers_singleton (program : Program)
   subst selectedLookupRecord
   obtain ⟨recordMember, selectedNames⟩ :=
     selectedRecord_member_and_identity state controller record selectedRecord
-  have timerMember : timerId ∈ record.attachedTimers := by
+  have timerMember : timerId ∈ record.timerHandlerOccurrences := by
     simpa [List.contains_eq_mem] using timerContained
   have selectedSingleton :=
     selectedParallelControllerForTimer arm state timerId controller selectedController
@@ -499,7 +527,7 @@ theorem timerControllers_singleton (program : Program)
     have otherFiltered : other ∈ state.parallelMultiInstanceControllers.filter (fun candidate =>
         decide (candidate.id.activityElementId.value = arm.taskId.value) &&
           match parallelControllerRecord? state candidate with
-          | some found => found.attachedTimers.contains timerId
+          | some found => found.timerHandlerOccurrences.contains timerId
           | none => false) := by
       apply List.mem_filter.mpr
       refine ⟨otherMember, ?_⟩
@@ -509,7 +537,7 @@ theorem timerControllers_singleton (program : Program)
   have allSelected : state.parallelMultiInstanceControllers.filter (fun candidate =>
       decide (candidate.id.activityElementId.value = arm.taskId.value) &&
         match parallelControllerRecord? state candidate with
-        | some found => found.attachedTimers.contains timerId
+        | some found => found.timerHandlerOccurrences.contains timerId
         | none => false) = state.parallelMultiInstanceControllers := by
     apply List.filter_eq_self.mpr
     intro other otherMember
@@ -575,7 +603,7 @@ theorem timerClosingSelectionFacts (program : Program)
   subst selectedLookupRecord
   obtain ⟨recordMember, recordIdentity⟩ :=
     selectedRecord_member_and_identity state controller record selectedRecord
-  have timerMember : timerId ∈ record.attachedTimers := by
+  have timerMember : timerId ∈ record.timerHandlerOccurrences := by
     simpa [List.contains_eq_mem] using timerContained
   exact {
     toParallelClosingSelectionFacts := {

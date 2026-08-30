@@ -2,9 +2,15 @@ import {
   SemanticOperationKind,
   type SemanticProcessProgram,
 } from "./semantic-process-contract.js";
-import type { OccurrenceId, TimerOccurrenceId } from "./contract.js";
+import type {
+  MessageSubscriptionId,
+  OccurrenceId,
+  TimerOccurrenceId,
+} from "./contract.js";
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
+  attachedTimerOccurrences,
   compareActivityOccurrences,
   sameActivityOccurrence,
   type ActivityBody,
@@ -124,6 +130,10 @@ function declaredElementIds(
       case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
         userTask.add(operation.task.elementId);
         timer.add(operation.boundaryTimer.elementId);
+        break;
+      case SemanticOperationKind.AwaitMessageBoundedUserTask:
+        userTask.add(operation.task.elementId);
+        message.add(operation.boundaryMessage.elementId);
         break;
       case SemanticOperationKind.EnterBoundedScope:
         timer.add(operation.boundaryTimer.elementId);
@@ -514,13 +524,21 @@ function activityOwnershipDefects(
           .filter(({ id }) => sameScopeOccurrence(id, body.scope)).length === 1;
     }
   };
-  const listedTimerLive = (record: ActivityOccurrence): boolean =>
-    record.attachedTimers.every((timer) =>
-      state.timerWaits.some(({ id, owner }) =>
-        sameOccurrence(id, timer) && sameScopeOccurrence(owner, record.owner)
-      )
-    );
-  if (!state.activityOccurrences.every((record) => bodyLive(record) && listedTimerLive(record))) {
+  const listedHandlersLive = (record: ActivityOccurrence): boolean =>
+    record.attachedHandlers.every((handler) => {
+      const waits = handler.kind === ActivityHandlerKind.Timer
+        ? state.timerWaits
+        : state.messageWaits;
+      return waits.some(({ id, owner }) =>
+        sameOccurrence(id, handler.occurrence) &&
+        sameScopeOccurrence(owner, record.owner)
+      );
+    });
+  if (
+    !state.activityOccurrences.every((record) =>
+      bodyLive(record) && listedHandlersLive(record)
+    )
+  ) {
     defects.push(RuntimeStateDefect.ActivityOccurrenceBodyAbsent);
   }
 
@@ -543,14 +561,24 @@ function activityOwnershipDefects(
     defects.push(RuntimeStateDefect.DuplicateActivityBodyClaim);
   }
 
-  const listed = (timer: TimerOccurrenceId): number =>
+  const listedTimer = (timer: TimerOccurrenceId): number =>
     state.activityOccurrences.filter((record) =>
-      record.attachedTimers.some((candidate) => sameOccurrence(candidate, timer))
+      attachedTimerOccurrences(record).some((candidate) => sameOccurrence(candidate, timer))
     ).length;
-  // Only a Timer an Activity occurrence claims can be judged here. A Timer that belongs to no
-  // Activity at all — an Intermediate Catch Timer, or an event-race arm — is listed by no record and
-  // must stay admitted, so the criterion is "at most one" rather than "exactly one".
-  if (!state.timerWaits.every(({ id }) => listed(id) <= 1)) {
+  const listedMessage = (message: MessageSubscriptionId): number =>
+    state.activityOccurrences.filter((record) =>
+      record.attachedHandlers.some((handler) =>
+        handler.kind === ActivityHandlerKind.Message &&
+        sameOccurrence(handler.occurrence, message)
+      )
+    ).length;
+  // Only a wait an Activity occurrence claims can be judged here. An ordinary catch, event-race
+  // arm, or other unattached wait is listed by no record and remains admitted, so the criterion is
+  // "at most one" rather than "exactly one".
+  if (
+    !state.timerWaits.every(({ id }) => listedTimer(id) <= 1) ||
+    !state.messageWaits.every(({ id }) => listedMessage(id) <= 1)
+  ) {
     defects.push(RuntimeStateDefect.UnownedAttachedWait);
   }
 

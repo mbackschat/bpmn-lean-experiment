@@ -6,6 +6,8 @@ import {
 import type {
   OccurrenceId,
 } from "./contract.js";
+import { ActivityHandlerKind } from "./activity-occurrence.js";
+import type { ActivityHandlerOccurrence } from "./activity-occurrence.js";
 import {
   FlowNodeOccurrenceTerminalKind,
   SemanticFlowNodeOccurrenceAnchorKind,
@@ -32,7 +34,7 @@ import {
 /**
  * One open flow-node occurrence as this relation sees it.
  *
- * `attachedTimers` is the retained half of the Activity occurrence record: the handler occurrences the
+ * `attachedHandlers` is the retained half of the Activity occurrence record: the handler occurrences the
  * record listed at the moment this body opened. It exists because the alternative is an ordinal join.
  * Pairing a boundary Timer to its host by activation equality holds only while an Activity is armed
  * once per body, and body turnover is exactly the state where that fails: the host advances and the
@@ -50,7 +52,7 @@ export type OpenOccurrence = Readonly<{
   processId: string;
   elementId: string;
   owner: ScopeOccurrenceId;
-  attachedTimers: readonly OccurrenceId[];
+  attachedHandlers: readonly ActivityHandlerOccurrence[];
 }>;
 
 export function expectedExternalLifecycle(
@@ -174,10 +176,11 @@ export function expectedExternalLifecycle(
  * occurrence record was introduced to express.
  */
 function listsTimer(entry: OpenOccurrence, timerId: OccurrenceId): boolean {
-  return entry.attachedTimers.some((attached) =>
-    attached.processInstanceId === timerId.processInstanceId &&
-    attached.elementId === timerId.elementId &&
-    attached.activation === timerId.activation);
+  return entry.attachedHandlers.some((attached) =>
+    attached.kind === ActivityHandlerKind.Timer &&
+    attached.occurrence.processInstanceId === timerId.processInstanceId &&
+    attached.occurrence.elementId === timerId.elementId &&
+    attached.occurrence.activation === timerId.activation);
 }
 
 function boundaryTimerLifecycle(

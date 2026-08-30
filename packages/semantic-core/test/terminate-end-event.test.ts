@@ -284,7 +284,7 @@ test("regional termination removes every child owner while retaining the child r
       kind: ActivityBodyKind.ChildScope,
       scope: descendant,
     },
-    attachedTimers: [],
+    attachedHandlers: [],
   } as const;
   const richState: RuntimeState = {
     ...waiting,

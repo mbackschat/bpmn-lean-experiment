@@ -61,6 +61,7 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
         timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
+  | .awaitMessageBoundedUserTask .. => {}
   | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundaryTimer _ =>
       { tasks := [{ id := task.id, name := task.name }]
         timers :=

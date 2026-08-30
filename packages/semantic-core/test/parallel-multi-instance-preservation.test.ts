@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   CommandOutcome,
   FlowNodeOccurrenceTerminalKind,
   RuntimeStateDefect,
@@ -360,7 +361,7 @@ test("a child identity cannot be substituted across two live controllers", () =>
       ...firstRecord.body,
       tasks: secondTaskIds as [typeof secondTaskIds[number], ...typeof secondTaskIds[number][]],
     },
-    attachedTimers: [secondTimer.id],
+    attachedHandlers: [{ kind: ActivityHandlerKind.Timer, occurrence: secondTimer.id }],
   };
   const secondWaits = firstState.userTaskWaits.map((wait, index) => ({
     ...wait,

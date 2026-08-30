@@ -9,13 +9,14 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityHandlerKind,
   FlowNodeOccurrenceTerminalKind,
   SemanticFlowNodeOccurrenceAnchorKind,
   SemanticOperationKind,
   SemanticTransitionKind,
   applyInternalOperation,
   applyStimulusWithTrace,
-  attachedTimersForBodyAnchor,
+  attachedHandlersForBodyAnchor,
   completeSequentialMultiInstanceIteration,
   foldFlowNodeOccurrenceLifecycleDelta,
   initialState,
@@ -196,7 +197,7 @@ test("resolves a firing boundary deadline to its host through the retained handl
   // Anti-vacuity: the arming command must have retained a handler, or the assertion below would hold
   // for a relation that reads nothing.
   assert.equal(
-    retained.filter(({ attachedTimers }) => attachedTimers.length === 1).length,
+    retained.filter(({ attachedHandlers }) => attachedHandlers.length === 1).length,
     1,
     "arming must retain exactly one host carrying its deadline",
   );
@@ -224,7 +225,7 @@ test("a retained host that lists no handler makes a correct deadline publication
     [],
     startBounded.commandId,
     started,
-  ).map((entry) => ({ ...entry, attachedTimers: [] }));
+  ).map((entry) => ({ ...entry, attachedHandlers: [] }));
 
   const fired = applyStimulusWithTrace(boundedProgram, started.result.state, fireDeadline);
   assert.throws(() => requireCompleteFlowNodeOccurrenceLifecycles(
@@ -377,7 +378,10 @@ test("keeps sequential Multi-Instance deadline interruption exact", () => {
   const first = enterSequential(startSequential).entered;
   const nonFinal = completeSequential(first, 0);
   const interrupted = projectSequentialInterruption(nonFinal.after);
-  const retained = retainedInner(1, [outerTimerId]);
+  const retained = retainedInner(1, [{
+    kind: ActivityHandlerKind.Timer,
+    occurrence: outerTimerId,
+  }]);
   const record = externalRecord(fireOuterTimer);
   assert.doesNotThrow(() => requireCompleteFlowNodeOccurrenceLifecycles(
     reviewProgram,
@@ -507,9 +511,9 @@ function innerStart(counter: number) {
 
 function retainedInner(
   counter: number,
-  attachedTimers: RetainedFlowNodeOccurrence["attachedTimers"] = [],
+  attachedHandlers: RetainedFlowNodeOccurrence["attachedHandlers"] = [],
 ): RetainedFlowNodeOccurrence {
-  return { ...innerStart(counter), attachedTimers };
+  return { ...innerStart(counter), attachedHandlers };
 }
 
 function externalRecord(
@@ -591,7 +595,7 @@ function requireAndFold(
     // boundary Timer unpairable, so it is the accumulator's obligation rather than test scaffolding.
     open = next.map((entry) => ({
       ...entry,
-      attachedTimers: attachedTimersForBodyAnchor(traced.result.state, entry.anchor),
+      attachedHandlers: attachedHandlersForBodyAnchor(traced.result.state, entry.anchor),
     }));
   }
   return open;

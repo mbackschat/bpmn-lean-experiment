@@ -103,7 +103,7 @@ export function armDataOutputUserTask(
     owner,
     operationId: operation.id,
     body: { kind: ActivityBodyKind.UserTask, task: taskId },
-    attachedTimers: [],
+    attachedHandlers: [],
   };
   const wait: SemanticUserTaskWait = {
     id: taskId,
@@ -265,7 +265,7 @@ function dataOutputTaskFor(
   );
   return definition === undefined || wait === undefined ||
       record === undefined || record.operationId !== definition.id ||
-      record.attachedTimers.length !== 0
+      record.attachedHandlers.length !== 0
     ? undefined
     : { definition, record, wait };
 }

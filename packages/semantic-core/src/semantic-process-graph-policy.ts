@@ -2,7 +2,10 @@
 import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 import {
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
 } from "./sequential-multi-instance-contract.js";
@@ -45,6 +48,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.TimerStart:
     case SemanticProfileId.MessageStart:
     case SemanticProfileId.ActivityBoundaryTimer:
+    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityDataInputUserTask:
     case SemanticProfileId.ActivityDataOutputUserTask:
     case SemanticProfileId.MappedBoundaryErrorServiceTask:

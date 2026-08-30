@@ -21,6 +21,7 @@ import {
   ActivityBodyKind,
   activityOccurrenceForAttachedTimer,
   activityOccurrenceForTaskBody,
+  attachedTimerOccurrences,
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
@@ -157,7 +158,7 @@ export function spawnFromMonitoredUserTask(
     // here, exactly when it is the only thing still identifying the host.
     activityOccurrences: state.activityOccurrences.map((candidate) =>
       sameActivityOccurrence(candidate.id, monitored.record.id)
-        ? { ...candidate, attachedTimers: [] }
+        ? { ...candidate, attachedHandlers: [] }
         : candidate
     ),
     logicalTimeMs: monitored.timer.deadlineMs,
@@ -257,7 +258,7 @@ function monitoredTaskForRecord(
   if (task === undefined) {
     return undefined;
   }
-  const [attached] = record.attachedTimers;
+  const [attached] = attachedTimerOccurrences(record);
   return {
     definition,
     record,

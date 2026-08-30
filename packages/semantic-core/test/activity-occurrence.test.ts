@@ -18,9 +18,12 @@ import { test } from "node:test";
 
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   CommandOutcome,
   SemanticOperationKind,
   SemanticOriginKind,
+  activityOccurrenceForAttachedTimer,
+  attachedTimerWaits,
   applyInternalOperation,
   applyStimulus,
   initialState,
@@ -56,7 +59,7 @@ function syntheticActivityOccurrence(
     owner,
     operationId: `operation:${activityElementId}`,
     body,
-    attachedTimers: [],
+    attachedHandlers: [],
   };
 }
 
@@ -151,7 +154,7 @@ function withUnconsultedRecords(
     activityOccurrences: [...state.activityOccurrences, ...build({
       ...armed,
       id: { ...armed.id, activityElementId: unconsultedElementId, activation: 1 },
-      attachedTimers: [],
+      attachedHandlers: [],
     })],
   };
 }
@@ -223,7 +226,7 @@ test("the ambiguity class is gated but has no transition-independent witness her
   const ambiguous = withUnconsultedRecords(control, (template) => [{
     ...template,
     body: { kind: ActivityBodyKind.ChildScope, scope: template.owner },
-    attachedTimers: control.activityOccurrences[0]?.attachedTimers ?? [],
+    attachedHandlers: control.activityOccurrences[0]?.attachedHandlers ?? [],
   }]);
   assert.ok(defects(ambiguous).includes("unownedAttachedWait"));
 });
@@ -590,7 +593,7 @@ test("a duplicated record identity is refused, and the admitted control is not",
   const sameIdentityWithDisjointBody: ActivityOccurrence = {
     ...record,
     body: { kind: ActivityBodyKind.UserTask, task: task.id },
-    attachedTimers: [],
+    attachedHandlers: [],
   };
 
   assert.deepEqual(defects(state), [], "the unperturbed armed state is the control");
@@ -639,4 +642,33 @@ test("a state whose Activity and task counters disagree stays admitted", () => {
     }),
     [],
   );
+});
+
+test("a same-shaped Message handler cannot masquerade as an attached Timer", () => {
+  const timerId = {
+    processInstanceId: instanceId,
+    elementId: "Boundary_Timer",
+    activation: 1,
+  };
+  const messageOnly: ActivityOccurrence = {
+    ...syntheticActivityOccurrence(
+      "Activity_Message_Handler",
+      armedState().scopeOccurrences[0]!.id,
+      {
+        kind: ActivityBodyKind.UserTask,
+        task: {
+          processInstanceId: instanceId,
+          elementId: "Activity_Message_Handler",
+          activation: 1,
+        },
+      },
+    ),
+    attachedHandlers: [{
+      kind: ActivityHandlerKind.Message,
+      occurrence: timerId,
+    }],
+  };
+
+  assert.equal(activityOccurrenceForAttachedTimer([messageOnly], timerId), undefined);
+  assert.deepEqual(attachedTimerWaits(messageOnly, [{ id: timerId }]), []);
 });

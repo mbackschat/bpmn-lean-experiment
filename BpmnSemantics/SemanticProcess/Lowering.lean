@@ -237,6 +237,14 @@ private def timerBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
         else none
     | _ => none
 
+private def messageBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
+    Option (NodeId × BoundaryInterruption × MessageChannel × SequenceFlowId) :=
+  source.nodes.findSome? fun
+    | .messageBoundaryEvent id attachedToRef interruption channel outputFlowId =>
+        if attachedToRef = activityId then some (id, interruption, channel, outputFlowId)
+        else none
+    | _ => none
+
 private def lowerNode (source : CheckedProcess) :
     CheckedNode → Option (SemanticOperation × DefinitionScopeId)
   | .noneStartEvent id =>
@@ -306,11 +314,26 @@ private def lowerNode (source : CheckedProcess) :
   -- The deadline has no operation of its own: it belongs to the Activity it is attached to, so no
   -- program can express the two waits as unrelated siblings.
   | .timerBoundaryEvent .. => none
+  | .messageBoundaryEvent .. => none
   | .userTask id name metadata =>
-      match timerBoundaryFor source id, metadata with
+      match messageBoundaryFor source id, timerBoundaryFor source id, metadata with
+      | some (messageId, .interrupting, channel, outputFlowId), none, none =>
+          checkedNodeScopeId? source id |>.map fun scopeId =>
+          (.awaitMessageBoundedUserTask
+            (nodeOperationId id)
+            { elementId := id }
+            (firstPlace (incomingPlaces source id))
+            { id := ⟨id.value⟩
+              name
+              output := firstPlace (outgoingPlaces source id) }
+            { elementId := messageId
+              channel
+              output := firstPlace (outgoingPlaces source messageId)
+              origin := { elementId := outputFlowId } }, scopeId)
+      | some _, _, _ => none
       -- The disposition selects the operation kind, and that kind is the whole difference: one
       -- family's firing removes the task occurrence and the other's preserves it.
-      | some (timerId, interruption, durationLiteral, outputFlowId), none =>
+      | none, some (timerId, interruption, durationLiteral, outputFlowId), none =>
           checkedNodeScopeId? source id |>.map fun scopeId =>
           ((match interruption with
             | .interrupting => SemanticOperation.awaitBoundedUserTask
@@ -325,8 +348,8 @@ private def lowerNode (source : CheckedProcess) :
               durationMs := normalizeTimerDuration durationLiteral
               output := firstPlace (outgoingPlaces source timerId)
               origin := { elementId := outputFlowId } }, scopeId)
-      | some _, some _ => none
-      | none, _ =>
+      | none, some _, some _ => none
+      | none, none, _ =>
           checkedNodeScopeId? source id |>.map fun scopeId =>
           (.awaitUserTask
             (nodeOperationId id)
@@ -528,7 +551,8 @@ theorem lowering_preserves_user_task_resumption_cut
     (metadata : Option UserTaskMetadata)
     (scopeId : DefinitionScopeId)
     (scope : checkedNodeScopeId? source id = some scopeId)
-    (unbounded : timerBoundaryFor source id = none) :
+    (unbounded : timerBoundaryFor source id = none)
+    (noMessageBoundary : messageBoundaryFor source id = none) :
     ∃ operation,
       lowerNode source (.userTask id name metadata) = some (operation, scopeId) ∧
         checkedNodeIsResumptionCut (.userTask id name metadata) = true ∧
@@ -539,7 +563,7 @@ theorem lowering_preserves_user_task_resumption_cut
       (firstPlace (incomingPlaces source id))
       (firstPlace (outgoingPlaces source id))
       { id := ⟨id.value⟩, name, metadata }, ?_, rfl, rfl⟩
-  simp [lowerNode, unbounded, scope]
+  simp [lowerNode, unbounded, noMessageBoundary, scope]
 
 private def lowerScopeCompletion (source : CheckedProcess)
     (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=

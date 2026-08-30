@@ -16,6 +16,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
+  | .messageBoundaryEvent id _ _ _ _
   | .userTask id _ _
   | .dataInputUserTask id _ _
   | .dataOutputUserTask id _ _
@@ -81,7 +82,8 @@ private def checkedEdges (source : CheckedProcess)
 /-- Keyed on attachment, not on trigger kind: every boundary Event is reachable only through the Activity it is attached to, so a family added here without its edge would leave its own node unreachable. -/
 private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .boundaryErrorEvent id attachedToRef _ _
-  | .timerBoundaryEvent id attachedToRef _ _ _ =>
+  | .timerBoundaryEvent id attachedToRef _ _ _
+  | .messageBoundaryEvent id attachedToRef _ _ _ =>
       some { source := attachedToRef, target := id }
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .userTask .. | .dataInputUserTask .. | .dataOutputUserTask ..
@@ -122,7 +124,7 @@ def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .sequentialMultiInstanceUserTask .. => true
   | .parallelMultiInstanceUserTask .. => true
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
-  | .boundaryErrorEvent .. | .timerBoundaryEvent ..
+  | .boundaryErrorEvent .. | .timerBoundaryEvent .. | .messageBoundaryEvent ..
   | .intermediateCatchTimerEvent .. | .intermediateCatchMessageEvent ..
   | .payloadMessageCatchEvent ..
   | .receiveTask .. | .configuredTask .. | .serviceTask .. | .parallelGateway ..

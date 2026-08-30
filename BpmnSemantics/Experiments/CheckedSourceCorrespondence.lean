@@ -124,7 +124,8 @@ private def correspondenceOperationSupported : SemanticOperation → Bool
   | .awaitParallelMultiInstanceUserTask ..
   | .completeParallelMultiInstanceUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace ..
-  | .awaitBoundedUserTask .. | .awaitMonitoredUserTask .. | .awaitEffect ..
+  | .awaitBoundedUserTask .. | .awaitMessageBoundedUserTask ..
+  | .awaitMonitoredUserTask .. | .awaitEffect ..
   | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .terminateScope .. => false
 

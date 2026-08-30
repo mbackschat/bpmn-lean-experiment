@@ -162,6 +162,7 @@ function hasSelectedArity(
       return incoming === 1 && outgoing === 1;
     case CheckedNodeKind.BoundaryErrorEvent:
     case CheckedNodeKind.TimerBoundaryEvent:
+    case CheckedNodeKind.MessageBoundaryEvent:
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {
@@ -308,6 +309,7 @@ function attachedBoundaryHost(node: CheckedNode): string | undefined {
   switch (node.kind) {
     case CheckedNodeKind.BoundaryErrorEvent:
     case CheckedNodeKind.TimerBoundaryEvent:
+    case CheckedNodeKind.MessageBoundaryEvent:
       return node.attachedToRef;
     default:
       return undefined;

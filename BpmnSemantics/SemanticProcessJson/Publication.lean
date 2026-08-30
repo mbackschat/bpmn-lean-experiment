@@ -33,40 +33,41 @@ private def manualStartStimulusJson? : Stimulus → Option Json
             jsonArray (initialVariables.map variableBindingJson)) ]
   | _ => none
 
-private def operationKindJson : SemanticOperationKind → Json
-  | .initiate => toJson "initiate"
-  | .initiateMessage => toJson "initiateMessage"
-  | .initiateTimer => toJson "initiateTimer"
-  | .enterScope => toJson "enterScope"
-  | .enterBoundedScope => toJson "enterBoundedScope"
-  | .invokeProcess => toJson "invokeProcess"
-  | .returnProcess => toJson "returnProcess"
-  | .awaitUserTask => toJson "awaitUserTask"
-  | .awaitDataInputUserTask => toJson "awaitDataInputUserTask"
-  | .awaitDataOutputUserTask => toJson "awaitDataOutputUserTask"
+private def operationKindJson : SemanticOperationKind → Option Json
+  | .initiate => some (toJson "initiate")
+  | .initiateMessage => some (toJson "initiateMessage")
+  | .initiateTimer => some (toJson "initiateTimer")
+  | .enterScope => some (toJson "enterScope")
+  | .enterBoundedScope => some (toJson "enterBoundedScope")
+  | .invokeProcess => some (toJson "invokeProcess")
+  | .returnProcess => some (toJson "returnProcess")
+  | .awaitUserTask => some (toJson "awaitUserTask")
+  | .awaitDataInputUserTask => some (toJson "awaitDataInputUserTask")
+  | .awaitDataOutputUserTask => some (toJson "awaitDataOutputUserTask")
   | .awaitSequentialMultiInstanceUserTask =>
-      toJson "awaitSequentialMultiInstanceUserTask"
+      some (toJson "awaitSequentialMultiInstanceUserTask")
   | .awaitParallelMultiInstanceUserTask =>
-      toJson "awaitParallelMultiInstanceUserTask"
+      some (toJson "awaitParallelMultiInstanceUserTask")
   | .completeParallelMultiInstanceUserTask =>
-      toJson "completeParallelMultiInstanceUserTask"
-  | .awaitTimer => toJson "awaitTimer"
-  | .awaitMessage => toJson "awaitMessage"
-  | .awaitPayloadMessage => toJson "awaitPayloadMessage"
-  | .awaitEventRace => toJson "awaitEventRace"
-  | .awaitBoundedUserTask => toJson "awaitBoundedUserTask"
-  | .awaitMonitoredUserTask => toJson "awaitMonitoredUserTask"
-  | .awaitEffect => toJson "awaitEffect"
-  | .duplicate => toJson "duplicate"
-  | .synchronize => toJson "synchronize"
-  | .mergeExclusive => toJson "mergeExclusive"
-  | .choose => toJson "choose"
-  | .selectMany => toJson "selectMany"
-  | .synchronizeSelected => toJson "synchronizeSelected"
-  | .throwError => toJson "throwError"
-  | .reachNoneEnd => toJson "reachNoneEnd"
-  | .terminateScope => toJson "terminateScope"
-  | .completeScope => toJson "completeScope"
+      some (toJson "completeParallelMultiInstanceUserTask")
+  | .awaitTimer => some (toJson "awaitTimer")
+  | .awaitMessage => some (toJson "awaitMessage")
+  | .awaitPayloadMessage => some (toJson "awaitPayloadMessage")
+  | .awaitEventRace => some (toJson "awaitEventRace")
+  | .awaitBoundedUserTask => some (toJson "awaitBoundedUserTask")
+  | .awaitMessageBoundedUserTask => none
+  | .awaitMonitoredUserTask => some (toJson "awaitMonitoredUserTask")
+  | .awaitEffect => some (toJson "awaitEffect")
+  | .duplicate => some (toJson "duplicate")
+  | .synchronize => some (toJson "synchronize")
+  | .mergeExclusive => some (toJson "mergeExclusive")
+  | .choose => some (toJson "choose")
+  | .selectMany => some (toJson "selectMany")
+  | .synchronizeSelected => some (toJson "synchronizeSelected")
+  | .throwError => some (toJson "throwError")
+  | .reachNoneEnd => some (toJson "reachNoneEnd")
+  | .terminateScope => some (toJson "terminateScope")
+  | .completeScope => some (toJson "completeScope")
 
 private def scopeOccurrenceIdJson (id : ScopeOccurrenceId) : Json :=
   Json.mkObj
@@ -83,11 +84,12 @@ private def originJson (origin : BpmnElementOrigin) : Json :=
     [ ("kind", toJson "bpmnElement")
     , ("elementId", toJson origin.elementId.value) ]
 
-private def internalTransitionJson (record : InternalTransitionRecord) : Json :=
-  Json.mkObj
+private def internalTransitionJson (record : InternalTransitionRecord) : Option Json := do
+  let kind ← operationKindJson record.operationKind
+  pure <| Json.mkObj
     [ ("kind", toJson "internalOperation")
     , ("operationId", toJson record.operationId.value)
-    , ("operationKind", operationKindJson record.operationKind)
+    , ("operationKind", kind)
     , ("origin", originJson record.origin)
     , ("owner", scopeOccurrenceIdJson record.owner) ]
 
@@ -96,7 +98,7 @@ private def committedTransitionJson? : CommittedTransition → Option Json
       pure <| Json.mkObj
         [ ("kind", toJson "externalStimulus")
         , ("stimulus", ← manualStartStimulusJson? stimulus) ]
-  | .internalOperation record => some (internalTransitionJson record)
+  | .internalOperation record => internalTransitionJson record
 
 private def tokenPositionJson (position : PublicControlTokenPosition) : Json :=
   Json.mkObj

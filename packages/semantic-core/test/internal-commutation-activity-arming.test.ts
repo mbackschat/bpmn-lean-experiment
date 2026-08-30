@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   CommandOutcome,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -89,7 +90,10 @@ test("prepares both boundary-task families through one complete Activity arming 
         kind: ActivityBodyKind.UserTask,
         task: prepared.taskWait.id,
       },
-      attachedTimers: [prepared.timerWait.id],
+      attachedHandlers: [{
+        kind: ActivityHandlerKind.Timer,
+        occurrence: prepared.timerWait.id,
+      }],
     });
     assert.deepEqual(activationWrites(prepared.footprint), [
       { occurrenceKind: InternalOccurrenceKind.Activity, elementId: operation.task.elementId },
@@ -138,12 +142,18 @@ test("conflicts on Activity identity, body ownership, and attached Timer ownersh
       kind: ActivityBodyKind.UserTask,
       task: { ...prepared.taskWait.id, elementId: "AnotherTask" },
     },
-    attachedTimers: [{ ...prepared.timerWait.id, elementId: "AnotherTimer" }],
+    attachedHandlers: [{
+      kind: ActivityHandlerKind.Timer,
+      occurrence: { ...prepared.timerWait.id, elementId: "AnotherTimer" },
+    }],
   } as const;
   const sameBody = {
     ...record,
     id: { ...record.id, activityElementId: "AnotherActivity" },
-    attachedTimers: [{ ...prepared.timerWait.id, elementId: "AnotherTimer" }],
+    attachedHandlers: [{
+      kind: ActivityHandlerKind.Timer,
+      occurrence: { ...prepared.timerWait.id, elementId: "AnotherTimer" },
+    }],
   } as const;
   const sameTimer = {
     ...record,
@@ -163,7 +173,10 @@ test("conflicts on Activity identity, body ownership, and attached Timer ownersh
         { ...prepared.taskWait.id, elementId: "ParallelSibling" },
       ],
     },
-    attachedTimers: [{ ...prepared.timerWait.id, elementId: "AnotherTimer" }],
+    attachedHandlers: [{
+      kind: ActivityHandlerKind.Timer,
+      occurrence: { ...prepared.timerWait.id, elementId: "AnotherTimer" },
+    }],
   } as const;
 
   for (const candidate of [

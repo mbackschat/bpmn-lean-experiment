@@ -1,5 +1,8 @@
 /** Closed profile selection for material retained in exact BPMN source without execution meaning. */
-import { SemanticProfileId } from "@bpmn-lean/semantic-core";
+import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "@bpmn-lean/semantic-core";
 
 import type {
   OpaquePropertyRetention,
@@ -25,10 +28,14 @@ enum PreservationCapabilityKind {
 }
 
 type SemanticProfile =
-  typeof SemanticProfileId[keyof typeof SemanticProfileId];
+  | typeof SemanticProfileId[keyof typeof SemanticProfileId]
+  | typeof ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID;
 
-const registeredSemanticProfiles: ReadonlySet<string> = new Set(
-  Object.values(SemanticProfileId),
+const admittedSemanticProfiles: ReadonlySet<string> = new Set(
+  [
+    ...Object.values(SemanticProfileId),
+    ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  ],
 );
 
 /**
@@ -84,7 +91,7 @@ const structuredHumanWorkRendering: PreservationCapability = Object.freeze({
 export function preservationCapability(
   semanticProfile: string,
 ): PreservationCapability | undefined {
-  if (!registeredSemanticProfiles.has(semanticProfile)) {
+  if (!admittedSemanticProfiles.has(semanticProfile)) {
     return undefined;
   }
   const kind = preservationCapabilityKind(semanticProfile as SemanticProfile);
@@ -110,6 +117,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.StructuredHumanWork:
       return PreservationCapabilityKind.StructuredHumanWorkRendering;
     case SemanticProfileId.ActivityBoundaryTimer:
+    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityDataInputUserTask:
     case SemanticProfileId.ActivityDataOutputUserTask:
     case SemanticProfileId.CalledProcessCallActivity:

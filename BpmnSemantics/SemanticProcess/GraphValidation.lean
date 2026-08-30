@@ -120,6 +120,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitMessage _ _ input _ _ | .awaitPayloadMessage _ _ input _ _ _
   | .awaitEventRace _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _
+  | .awaitMessageBoundedUserTask _ _ input _ _
   | .awaitMonitoredUserTask _ _ input _ _
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
@@ -154,6 +155,8 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitBoundedUserTask _ _ _ task boundaryTimer
   | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
       [task.output, boundaryTimer.output]
+  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage =>
+      [task.output, boundaryMessage.output]
   | .synchronizeSelected _ _ _ output _ => [output]
   | .enterScope _ _ _ childEntry _ => [childEntry]
   -- The boundary route is token-carrying and lands in the parent scope, unlike the child entry.
@@ -334,6 +337,7 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .completeParallelMultiInstanceUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
+  | .awaitMessageBoundedUserTask ..
   | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected ..
@@ -415,6 +419,7 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitDataOutputUserTask .. => true
   | .awaitSequentialMultiInstanceUserTask .. => true
   | .awaitParallelMultiInstanceUserTask .. => true
+  | .awaitMessageBoundedUserTask .. => true
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
   | .invokeProcess .. | .returnProcess .. | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
   | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..

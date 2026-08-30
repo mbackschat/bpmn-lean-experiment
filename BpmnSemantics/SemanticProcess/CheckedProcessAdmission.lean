@@ -223,6 +223,13 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       durationLiteral = "PT1S" &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
+  | .messageBoundaryEvent id _ interruption channel outputFlowId =>
+      interruption = .interrupting &&
+        (match channel with
+        | .operationMessage .. => channel.identifiersNonempty
+        | .directMessage .. => false) &&
+        incomingCount flows id = 0 && outgoingCount flows id = 1 &&
+        flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
   | .userTask id _ _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
   -- The three source identities are what the copy resolves by, so a shared one would let the
@@ -359,6 +366,22 @@ def checkedBoundaryTimerAttachmentValid (source : CheckedProcess) : Bool :=
           (hosts.filter (· = attachedToRef)).length = 1
     | _ => true
 
+/-- Every admitted Message boundary Event is the sole interrupting Message handler of one same-scope
+User Task. The Message node is not an independently lowered catch operation. -/
+def checkedBoundaryMessageAttachmentValid (source : CheckedProcess) : Bool :=
+  let hosts := source.nodes.filterMap fun
+    | .messageBoundaryEvent _ attachedToRef _ _ _ => some attachedToRef
+    | _ => none
+  source.nodes.all fun
+    | .messageBoundaryEvent id attachedToRef .interrupting _ _ =>
+        (source.nodes.any fun
+          | .userTask hostId _ none => hostId = attachedToRef
+          | _ => false) &&
+        checkedNodeScopeId? source id == checkedNodeScopeId? source attachedToRef &&
+        (hosts.filter (· = attachedToRef)).length = 1
+    | .messageBoundaryEvent .. => false
+    | _ => true
+
 /-- Independent static admission for the exact currently implemented checked-graph profiles. -/
 def checkedWellFormed (source : CheckedProcess) : Bool :=
   nonempty source.identity.semanticProfile.value &&
@@ -398,6 +421,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
     checkedEventRaceConfigurationValid source &&
     checkedErrorHandlersValid source &&
     checkedBoundaryTimerAttachmentValid source &&
+    checkedBoundaryMessageAttachmentValid source &&
     checkedProfileCapabilitiesValid source &&
     checkedProcessGraphWellFormed source
 

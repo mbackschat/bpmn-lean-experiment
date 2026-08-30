@@ -2,6 +2,7 @@ import {
   applyInternalOrdinaryArmingPatch,
   deriveInternalOrdinaryArmingPatch,
 } from "./internal-transition-ordinary-arming-patch.js";
+import { ActivityHandlerKind } from "./activity-occurrence.js";
 import {
   StimulusKind,
 } from "./contract.js";
@@ -61,6 +62,13 @@ export function messageWaitRequiresPayload(
         return operation.message.elementId === wait.id.elementId &&
           operation.output === wait.output &&
           sameMessageChannel(operation.message.channel, wait.channel);
+      case SemanticOperationKind.AwaitMessageBoundedUserTask:
+        return operation.boundaryMessage.elementId === wait.id.elementId &&
+          operation.boundaryMessage.output === wait.output &&
+          sameMessageChannel(
+            operation.boundaryMessage.channel,
+            wait.channel,
+          );
       case SemanticOperationKind.AwaitEventRace:
         return operation.message.elementId === wait.id.elementId &&
           operation.message.output === wait.output &&
@@ -95,7 +103,8 @@ export function deliverMessage(
   );
   if (
     wait === undefined ||
-    !sameMessageChannel(wait.channel, stimulus.channel)
+    !sameMessageChannel(wait.channel, stimulus.channel) ||
+    messageWaitIsAttachedToActivity(state, wait)
   ) {
     return null;
   }
@@ -142,7 +151,8 @@ export function deliverPayloadMessage(
   const wait = waits.length === 1 ? waits[0] : undefined;
   if (
     wait === undefined ||
-    !sameMessageChannel(wait.channel, stimulus.channel)
+    !sameMessageChannel(wait.channel, stimulus.channel) ||
+    messageWaitIsAttachedToActivity(state, wait)
   ) {
     return null;
   }
@@ -182,4 +192,17 @@ export function deliverPayloadMessage(
       },
     },
   };
+}
+
+/** Direct catch delivery never consumes a handler wait owned by an Activity occurrence. */
+function messageWaitIsAttachedToActivity(
+  state: RuntimeState,
+  wait: RuntimeState["messageWaits"][number],
+): boolean {
+  return state.activityOccurrences.some((record) =>
+    record.attachedHandlers.some((handler) =>
+      handler.kind === ActivityHandlerKind.Message &&
+      sameOccurrence(handler.occurrence, wait.id)
+    )
+  );
 }

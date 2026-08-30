@@ -112,7 +112,7 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
   have semanticStep := deliverPayloadMessage_sound program before after subscriptionId channel
     payload success
   cases semanticStep with
-  | commit wait operation directOutput occurrence ordinary callerChannel scalar declarer =>
+  | commit wait operation directOutput occurrence ordinary unattached callerChannel scalar declarer =>
       have waitMember : wait ∈ before.messageWaits := List.mem_of_find?_eq_some occurrence
       obtain ⟨operationMember, id, origin, input, message, operationEq, elementEq, channelEq,
         ownerScope⟩ := payloadMessageOperation?_facts program wait operation directOutput declarer
@@ -166,7 +166,8 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       obtain ⟨aggregate, sequentialBindings⟩ := aggregate
       obtain ⟨aggregate, controllers⟩ := aggregate
       obtain ⟨aggregate, activityIds⟩ := aggregate
-      obtain ⟨aggregate, attached⟩ := aggregate
+      obtain ⟨aggregate, attachedMessages⟩ := aggregate
+      obtain ⟨aggregate, attachedTimers⟩ := aggregate
       obtain ⟨aggregate, bodies⟩ := aggregate
       obtain ⟨aggregate, order⟩ := aggregate
       obtain ⟨aggregate, hidden⟩ := aggregate
@@ -248,10 +249,27 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
         simpa [settled, framed] using orderedBy_erase messageWaitBefore
           messageWaitBefore_compose wait before.messageWaits messageOrder
       have bodiesAfter : activityRecordsOwnLiveWork settled = true := by
-        simpa [settled, framed, activityRecordsOwnLiveWork, activityBodyLive,
-          exactLiveOccurrence] using bodies
-      have attachedAfter : attachedTimersUnambiguous settled = true := by
-        simpa [settled, framed, attachedTimersUnambiguous] using attached
+        simp only [settled, framed, activityRecordsOwnLiveWork, List.all_eq_true,
+          Bool.and_eq_true, List.any_eq_true, decide_eq_true_eq] at bodies ⊢
+        intro record recordMember
+        obtain ⟨⟨bodyLive, timersLive⟩, messagesLive⟩ := bodies record recordMember
+        refine ⟨⟨bodyLive, timersLive⟩, ?_⟩
+        intro message messageMember
+        obtain ⟨candidate, candidateMember, candidateNames, candidateOwner⟩ :=
+          messagesLive message messageMember
+        have recordUnattached := List.any_eq_false.mp unattached record recordMember
+        have messageUnattached := List.any_eq_false.mp
+          (Bool.eq_false_iff.mpr recordUnattached) message messageMember
+        have candidateDifferent : candidate ≠ wait := by
+          intro equal
+          subst candidate
+          simp [messageUnattached] at candidateNames
+        exact ⟨candidate, by simpa [candidateDifferent] using candidateMember,
+          candidateNames, candidateOwner⟩
+      have attachedTimersAfter : attachedTimersUnambiguous settled = true := by
+        simpa [settled, framed, attachedTimersUnambiguous] using attachedTimers
+      have attachedMessagesAfter : attachedMessagesUnambiguous settled = true := by
+        simpa [settled, framed, attachedMessagesUnambiguous] using attachedMessages
       have activityIdsAfter : activityIdentitiesUnique settled = true := by
         simpa [settled, framed, activityIdentitiesUnique] using activityIds
       have controllersAfter : controllersOwnLiveActivity settled = true := by
@@ -298,10 +316,24 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       have claimsAfter : activityBodyClaimsUnique settled.activityOccurrences = true := by
         simpa [settled, framed] using claims
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
-      exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
-        ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩,
-        orderAfter⟩, bodiesAfter⟩, attachedAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
-        sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
-        notExhaustedAfter⟩, lifecycleAfter⟩, claimsAfter⟩
+      refine ⟨?_, claimsAfter⟩
+      refine ⟨?_, lifecycleAfter⟩
+      refine ⟨?_, notExhaustedAfter⟩
+      refine ⟨?_, controllerIdsAfter⟩
+      refine ⟨?_, parallelBindingsAfter⟩
+      refine ⟨?_, sequentialBindingsAfter⟩
+      refine ⟨?_, controllersAfter⟩
+      refine ⟨?_, activityIdsAfter⟩
+      refine ⟨?_, attachedMessagesAfter⟩
+      refine ⟨?_, attachedTimersAfter⟩
+      refine ⟨?_, bodiesAfter⟩
+      refine ⟨?_, orderAfter⟩
+      refine ⟨?_, hiddenAfter⟩
+      refine ⟨?_, declarationsAfter⟩
+      refine ⟨?_, boundsAfter⟩
+      refine ⟨?_, identitiesAfter⟩
+      refine ⟨?_, ownersAfter⟩
+      refine ⟨?_, incidentsAfter⟩
+      exact ⟨positionAfter, racesAfter⟩
 
 end BpmnSemantics.SemanticProcess

@@ -50,7 +50,7 @@ step may start from, and no law in this capsule consumes it, so
 for every admitted state, and `attachedDeadlinesLive_of_activityRecordsOwnLiveWork` is that
 derivation. -/
 def AttachedDeadlinesLive (state : RuntimeState) : Prop :=
-  ∀ record ∈ state.activityOccurrences, ∀ deadline ∈ record.attachedTimers,
+  ∀ record ∈ state.activityOccurrences, ∀ deadline ∈ record.timerHandlerOccurrences,
     ∃ live ∈ state.timerWaits, timerIdNamesWait deadline live = true
 
 /-- `AttachedDeadlinesLive` is the runtime-state invariant's own conjunct, not a new assumption. -/
@@ -59,7 +59,7 @@ theorem attachedDeadlinesLive_of_activityRecordsOwnLiveWork {state : RuntimeStat
   intro record recordLive deadline attached
   simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true, List.any_eq_true,
     decide_eq_true_eq] at invariant
-  obtain ⟨_, attachedAll⟩ := invariant record recordLive
+  obtain ⟨⟨_, attachedAll⟩, _⟩ := invariant record recordLive
   obtain ⟨live, liveMem, holds⟩ := attachedAll deadline attached
   exact ⟨live, liveMem, holds.1⟩
 

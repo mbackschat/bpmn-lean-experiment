@@ -392,7 +392,7 @@ test("controllers and records share one canonical order, including where locale 
       kind: ActivityBodyKind.UserTask,
       task: { processInstanceId: instanceId, elementId: "t", activation: 1 },
     },
-    attachedTimers: [],
+    attachedHandlers: [],
   });
 
   assert.equal(

@@ -330,6 +330,8 @@ function internalLifecycle(
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
+      return null;
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return null;
     case SemanticOperationKind.AwaitEventRace: {

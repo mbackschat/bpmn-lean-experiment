@@ -1,6 +1,7 @@
 /** Shared arming mechanism for one User Task Activity and its attached Timer. */
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   compareActivityOccurrences,
 } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
@@ -78,7 +79,7 @@ export function selectActivityArming(
       owner,
       operationId: operation.id,
       body: { kind: ActivityBodyKind.UserTask, task: taskId },
-      attachedTimers: [timerId],
+      attachedHandlers: [{ kind: ActivityHandlerKind.Timer, occurrence: timerId }],
     },
     taskWait: {
       id: taskId,

@@ -62,6 +62,7 @@ export enum SemanticOperationKind {
   AwaitParallelMultiInstanceUserTask = "awaitParallelMultiInstanceUserTask",
   CompleteParallelMultiInstanceUserTask = "completeParallelMultiInstanceUserTask",
   AwaitBoundedUserTask = "awaitBoundedUserTask",
+  AwaitMessageBoundedUserTask = "awaitMessageBoundedUserTask",
   AwaitMonitoredUserTask = "awaitMonitoredUserTask",
   AwaitMessage = "awaitMessage",
   AwaitPayloadMessage = "awaitPayloadMessage",
@@ -280,6 +281,27 @@ export type AwaitBoundedUserTaskOperation = OperationBase &
     boundaryTimer: BoundaryTimerArm<1000>;
   }>;
 
+/** One User Task occurrence that owns an interrupting payload-free Message subscription. */
+export type AwaitMessageBoundedUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitMessageBoundedUserTask;
+    input: string;
+    task: {
+      elementId: string;
+      name: string | null;
+      output: string;
+    };
+    boundaryMessage: {
+      elementId: string;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
+      output: string;
+      origin: BpmnSequenceFlowOrigin;
+    };
+  }>;
+
 /**
  * One User Task occurrence that owns a non-interrupting boundary Timer deadline.
  *
@@ -496,6 +518,7 @@ export type SemanticOperation =
   | AwaitDataInputUserTaskOperation
   | AwaitDataOutputUserTaskOperation
   | AwaitBoundedUserTaskOperation
+  | AwaitMessageBoundedUserTaskOperation
   | AwaitMonitoredUserTaskOperation
   | AwaitSequentialMultiInstanceUserTaskOperation
   | AwaitParallelMultiInstanceUserTaskOperation

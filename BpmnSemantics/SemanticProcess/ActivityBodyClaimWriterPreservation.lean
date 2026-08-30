@@ -87,10 +87,11 @@ theorem activateBoundedUserTask_preserves_activityBodyClaimsUnique (state : Runt
         { processInstanceId := instanceId
           elementId := { value := task.id.value }
           activation := activationCount state task.id + 1 }
-      attachedTimers :=
-        [{ processInstanceId := instanceId
-           elementId := { value := boundaryTimer.elementId.value }
-           activation := timerActivationCount state boundaryTimer.elementId + 1 }] }
+      attachedHandlers :=
+        [.timer
+          { processInstanceId := instanceId
+            elementId := { value := boundaryTimer.elementId.value }
+            activation := timerActivationCount state boundaryTimer.elementId + 1 }] }
   have disjoint : state.activityOccurrences.all (activityBodyClaimsDisjoint issuedRecord) = true := by
     simp only [List.all_eq_true]
     intro existing existingMem
@@ -227,10 +228,11 @@ theorem armScopeDeadline_preserves_activityBodyClaimsUnique (state : RuntimeStat
       activation := activityActivationCount state { value := childScopeId.value } + 1
       owner
       body := .childScope child
-      attachedTimers :=
-        [{ processInstanceId := owner.processInstanceId
-           elementId := { value := boundaryTimer.elementId.value }
-           activation := timerActivationCount state boundaryTimer.elementId + 1 }] }
+      attachedHandlers :=
+        [.timer
+          { processInstanceId := owner.processInstanceId
+            elementId := { value := boundaryTimer.elementId.value }
+            activation := timerActivationCount state boundaryTimer.elementId + 1 }] }
   have disjoint : state.activityOccurrences.all (activityBodyClaimsDisjoint issuedRecord) = true := by
     simp only [List.all_eq_true]
     intro existing existingMem
@@ -293,7 +295,7 @@ private theorem activityBodyScopeClaim_is_live (state : RuntimeState)
     exactLiveOccurrence state child = true := by
   have owned := List.all_eq_true.mp recordsOwn record recordMem
   simp only [Bool.and_eq_true] at owned
-  have bodyLive := owned.1
+  have bodyLive := owned.1.1
   cases bodyEq : record.body with
   | userTask task => simp [bodyEq, activityBodyScopeClaims] at claimed
   | parallelUserTasks first rest => simp [bodyEq, activityBodyScopeClaims] at claimed

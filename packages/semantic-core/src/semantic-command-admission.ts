@@ -26,6 +26,12 @@ import {
   isBoundedTaskDefinition,
 } from "./semantic-process-bounded-task-runtime.js";
 import {
+  completeMessageBoundedUserTask,
+  interruptMessageBoundedUserTask,
+  isMessageBoundaryDefinition,
+  isMessageBoundedTaskDefinition,
+} from "./semantic-process-message-bounded-task-runtime.js";
+import {
   completeDataInputUserTask,
   isDataInputTaskDefinition,
 } from "./semantic-process-activity-data-input-runtime.js";
@@ -188,6 +194,12 @@ export function admit(
         : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.CompleteUserTaskInstance: {
+      if (isMessageBoundedTaskDefinition(program, stimulus.taskId)) {
+        const next = completeMessageBoundedUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       if (isBoundedTaskDefinition(program, stimulus.taskId)) {
         const next = completeBoundedUserTask(program, state, stimulus);
         return next === null
@@ -240,7 +252,9 @@ export function admit(
     case StimulusKind.DeliverMessage: {
       const next = isEventRaceMessageDefinition(program, stimulus.subscriptionId)
         ? winEventRaceWithMessage(program, state, stimulus)
-        : deliverMessage(program, state, stimulus);
+        : isMessageBoundaryDefinition(program, stimulus.subscriptionId)
+          ? interruptMessageBoundedUserTask(program, state, stimulus)
+          : deliverMessage(program, state, stimulus);
       return next === null
         ? { outcome: CommandOutcome.Rejected, state }
         : { outcome: CommandOutcome.Committed, state: next };

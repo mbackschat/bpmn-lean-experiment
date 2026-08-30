@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityBodyKind,
+  ActivityHandlerKind,
   CommandOutcome,
   MessageChannelKind,
   ProcessStatus,
@@ -25,6 +27,7 @@ import {
 import type {
   AwaitPayloadMessageOperation,
   DeliverPayloadMessageStimulus,
+  RuntimeState,
   SemanticProcessProgram,
   VariableValue,
 } from "@bpmn-lean/semantic-core";
@@ -249,6 +252,39 @@ test("routes the payload through the association and completes the catch atomica
   });
   assert.equal(stale.outcome, CommandOutcome.Rejected);
   assert.deepEqual(stale.state, payloadResult.state);
+});
+
+test("payload delivery refuses a Message wait claimed by an Activity occurrence", () => {
+  const program = payloadProgram();
+  const waiting = applyStimulus(program, initialState, start).state;
+  const ordinarySuccessor = applyStimulus(program, waiting, delivery).state;
+  const task = ordinarySuccessor.userTaskWaits[0];
+  assert.ok(task !== undefined);
+  const attached: RuntimeState = {
+    ...waiting,
+    userTaskWaits: ordinarySuccessor.userTaskWaits,
+    taskActivations: ordinarySuccessor.taskActivations,
+    activityOccurrences: [{
+      id: {
+        processInstanceId: instanceId,
+        activityElementId: "UserTask_ReviewSettlement",
+        activation: 1,
+      },
+      owner,
+      operationId: "operation:UserTask_ReviewSettlement",
+      body: { kind: ActivityBodyKind.UserTask, task: task.id },
+      attachedHandlers: [{
+        kind: ActivityHandlerKind.Message,
+        occurrence: subscriptionId,
+      }],
+    }],
+    activityActivations: [{ elementId: "UserTask_ReviewSettlement", count: 1 }],
+  };
+  assert.deepEqual(runtimeStateDefects(program, instanceId, attached), []);
+
+  const rejected = applyStimulus(program, attached, delivery);
+  assert.equal(rejected.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(rejected.state, attached);
 });
 
 test("commits every scalar payload including explicit null and refuses a collection", () => {

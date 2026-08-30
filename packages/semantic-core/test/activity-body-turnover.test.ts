@@ -18,6 +18,7 @@ import {
   CommandOutcome,
   RuntimeStateDefect,
   activityOccurrenceForAttachedTimer,
+  attachedTimerOccurrences,
   applyStimulus,
   initialState,
   replaceActivityBodyTask,
@@ -61,7 +62,7 @@ function armedRecord(state: RuntimeState) {
   const [record] = state.activityOccurrences;
   assert.ok(record !== undefined, "arming must create one record");
   assert.equal(record.body.kind, ActivityBodyKind.UserTask);
-  assert.equal(record.attachedTimers.length, 1);
+  assert.equal(record.attachedHandlers.length, 1);
   return record;
 }
 
@@ -96,8 +97,8 @@ test("replacement preserves the record's identity, owner, operation, and attache
   assert.deepEqual(afterRecord.owner, record.owner);
   assert.equal(afterRecord.operationId, record.operationId);
   assert.deepEqual(
-    afterRecord.attachedTimers,
-    record.attachedTimers,
+    afterRecord.attachedHandlers,
+    record.attachedHandlers,
     "AOO-TURNOVER-03: a handler armed before a replacement is the same handler after it",
   );
   assert.deepEqual(
@@ -132,7 +133,7 @@ test("replacement advances the body's counter family and not the Activity's", ()
  */
 test("after replacement the body and its handler disagree, and only the record still pairs them", () => {
   const before = armed();
-  const deadline = armedRecord(before).attachedTimers[0];
+  const deadline = attachedTimerOccurrences(armedRecord(before))[0];
   assert.ok(deadline !== undefined);
   assert.equal(
     before.userTaskWaits[0]?.id.activation,

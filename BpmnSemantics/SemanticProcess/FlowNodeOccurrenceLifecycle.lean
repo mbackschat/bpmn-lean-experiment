@@ -160,6 +160,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
       | _ => none
   | .synchronizeSelected _ _ _ _ selectionKey => selectedJoinOwner? state selectionKey
   | .returnProcess id origin _ _ _ => uniqueReturnOwner? state id origin
+  | .awaitMessageBoundedUserTask .. => none
   | .completeParallelMultiInstanceUserTask .. => none
   | .completeScope _ _ scopeId _ => uniqueCompletingScopeOwner? state scopeId
 
@@ -631,6 +632,7 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
         | [wait] => some wait
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateUserTaskStart? program operation owner wait] [])
+  | .awaitMessageBoundedUserTask .. => none
   | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
       let activation := activationForTask before task.id + 1
       match after.waits.filter fun wait => decide (wait.owner = owner && wait.task.id = task.id &&

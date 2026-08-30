@@ -53,7 +53,7 @@ private def cancelledActivity : ActivityOccurrence :=
       { processInstanceId := instanceId
         elementId := ⟨"Sibling"⟩
         activation := 1 }
-    attachedTimers := [] }
+    attachedHandlers := [] }
 
 private def unrelatedActivity : ActivityOccurrence :=
   { processInstanceId := instanceId
@@ -64,7 +64,7 @@ private def unrelatedActivity : ActivityOccurrence :=
       { processInstanceId := instanceId
         elementId := ⟨"Outer"⟩
         activation := 1 }
-    attachedTimers := [] }
+    attachedHandlers := [] }
 
 private def cancelledController : SequentialMultiInstanceController :=
   { processInstanceId := instanceId

@@ -73,7 +73,7 @@ def interruptedAfterFirstResult? : Option RuntimeState := do
   let arm ← arm?
   let state ← afterFirstResult?
   let record ← state.activityOccurrences.head?
-  let timer ← record.attachedTimers.head?
+  let timer ← record.timerHandlerOccurrences.head?
   let deadline ← state.timerWaits.find? (timerIdNamesWait timer)
   interruptSequentialMultiInstance? arm state timer deadline.deadlineMs
 
@@ -278,14 +278,15 @@ record's own owner, which is the state `attachedTimersUnambiguous` admits. -/
 def enteredWithSecondDeadline? : Option RuntimeState := do
   let state ← entered?
   let record ← state.activityOccurrences.head?
-  let fired ← record.attachedTimers.head?
+  let fired ← record.timerHandlerOccurrences.head?
   let deadline ← state.timerWaits.find? (timerIdNamesWait fired)
   pure
     { state with
       activityOccurrences :=
         [{ record with
-            attachedTimers :=
-              record.attachedTimers ++ [{ fired with activation := fired.activation + 1 }] }]
+            attachedHandlers :=
+              record.attachedHandlers ++
+                [.timer { fired with activation := fired.activation + 1 }] }]
       timerWaits :=
         state.timerWaits ++
           [{ deadline with
@@ -304,7 +305,7 @@ theorem interruption_withdraws_both_deadlines_the_record_listed :
       let arm ← arm?
       let state ← enteredWithSecondDeadline?
       let record ← state.activityOccurrences.head?
-      let fired ← record.attachedTimers.head?
+      let fired ← record.timerHandlerOccurrences.head?
       let deadline ← state.timerWaits.find? (timerIdNamesWait fired)
       let interrupted ← interruptSequentialMultiInstance? arm state fired deadline.deadlineMs
       pure
@@ -407,7 +408,7 @@ theorem firing_the_deadline_off_its_committed_instant_is_refused :
       let arm ← arm?
       let state ← afterFirstResult?
       let record ← state.activityOccurrences.head?
-      let timer ← record.attachedTimers.head?
+      let timer ← record.timerHandlerOccurrences.head?
       let deadline ← state.timerWaits.find? (timerIdNamesWait timer)
       interruptSequentialMultiInstance? arm state timer (deadline.deadlineMs + 1)) = none := by
   decide +kernel

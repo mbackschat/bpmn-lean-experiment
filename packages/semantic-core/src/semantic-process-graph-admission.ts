@@ -462,6 +462,7 @@ function operationInputs(
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
@@ -512,8 +513,11 @@ function operationOutputs(
     // the deadline wins, unlike an Event-Based Gateway's configuration flows. The monitored family
     // declares the same two outputs, though it can produce both within one run rather than one.
     case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
-      return [operation.task.output, operation.boundaryTimer.output];
+      return operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask
+        ? [operation.task.output, operation.boundaryMessage.output]
+        : [operation.task.output, operation.boundaryTimer.output];
     case SemanticOperationKind.EnterScope:
       return [operation.childEntry];
     // The normal route is deliberately absent, exactly as for `enterScope`: it is the child scope's

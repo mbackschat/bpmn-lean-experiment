@@ -11,6 +11,17 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+/-- Body turnover frames Message handlers, so it cannot add another claimant for a subscription. -/
+private theorem attachedMessagesUnambiguous_replacedState (state : RuntimeState)
+    (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
+    attachedMessagesUnambiguous (replacedState state record wait body) =
+      attachedMessagesUnambiguous state := by
+  simp only [attachedMessagesUnambiguous, replacedState]
+  apply attachedMessagesUnambiguous_of_handler_map_eq
+  exact replaceBodyIn_map_of_frame
+    (fun candidate => candidate.messageHandlerOccurrences) (fun _ _ => rfl)
+    state.activityOccurrences record (turnoverBodyId state wait body)
+
 /-- `AOO-TURNOVER-02`: the whole-state replacement carries a well-formed state to a well-formed state.
 
 The state invariant now supplies the sole-body fact for the outgoing wait. Freshness needs no premise
@@ -41,9 +52,24 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
   obtain ⟨existing, claimsUnique⟩ := wellFormed
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
-    bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, attached⟩, unique'⟩, owned⟩,
-    _bindings⟩, _parallelBindings⟩, controllerIds⟩, notExhausted⟩, lifecycle⟩ := existing
+  obtain ⟨h17, lifecycle⟩ := existing
+  obtain ⟨h16, notExhausted⟩ := h17
+  obtain ⟨h15, controllerIds⟩ := h16
+  obtain ⟨h14, parallelBindings⟩ := h15
+  obtain ⟨h13, bindings⟩ := h14
+  obtain ⟨h12, owned⟩ := h13
+  obtain ⟨h11, activityIdentities⟩ := h12
+  obtain ⟨h10, messagesUnambiguous⟩ := h11
+  obtain ⟨h9, timersUnambiguous⟩ := h10
+  obtain ⟨h8, bodies⟩ := h9
+  obtain ⟨h7, order⟩ := h8
+  obtain ⟨h6, hidden⟩ := h7
+  obtain ⟨h5, declarations⟩ := h6
+  obtain ⟨h4, bounds⟩ := h5
+  obtain ⟨h3, identities⟩ := h4
+  obtain ⟨h2, owners⟩ := h3
+  obtain ⟨h1, incidents⟩ := h2
+  obtain ⟨position, races⟩ := h1
   have fresh : ∀ candidate ∈ state.waits,
       userTaskWaitKeyMatches (turnoverWait state wait) candidate = false := by
     intro candidate mem
@@ -65,7 +91,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   have claimsAfter : activityBodyClaimsUnique
       (replacedState state record wait body).activityOccurrences = true := by
     apply replaceBodyIn_preserves_activityBodyClaimsUnique state record
-      (turnoverBodyId state wait body) claimsUnique unique' recordMem
+      (turnoverBodyId state wait body) claimsUnique activityIdentities recordMem
     intro chosen _ other otherMem _ _
     apply activityBodyClaimsDisjoint_userTask_of_not_mem
     intro incomingMem
@@ -75,29 +101,55 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     have keyed := turnoverBodyId_hit_is_turnover_key state wait body namesWait candidate hit
     rw [fresh candidate candidateMem] at keyed
     exact Bool.noConfusion keyed
-  refine ⟨?_, claimsAfter⟩
-  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · rw [runtimePositionValid_replacedState]; exact position
-  · rw [eventRaceAssociationsValid_replacedState]; exact races
-  · rw [effectIncidentAssociationsValid_replacedState]; exact incidents
-  · exact waitOwnersLive_replacedState state record wait body waitMem owners
-  · exact waitIdentitiesUnique_replacedState state record wait body fresh identities
-  · exact runtimeStateIdentityBound_replacedState state record wait body bounds
-  · exact waitDeclarationsValid_replacedState program instanceId state record wait body waitMem
-      declarations
-  · rw [hiddenRecordDeclarationsValid_replacedState]; exact hidden
-  · exact canonicalCollectionOrder_replacedState state record wait body order
-  · exact activityRecordsOwnLiveWork_replacedState state record wait body unique
-      fresh soleBody bodies
-  · rw [attachedTimersUnambiguous_replacedState]; exact attached
-  · rw [activityIdentitiesUnique_replacedState]; exact unique'
-  · rw [controllersOwnLiveActivity_replacedState]; exact owned
-  · exact controllerBindingPreserved
-  · exact parallelBindingPreserved
-  · rw [controllerIdentitiesUnique_replacedState]; exact controllerIds
-  · rw [controllersNotExhausted_replacedState]; exact notExhausted
-  · -- The lifecycle clause. A live wait exists, so the pre-state cannot have been `notStarted`, and
-    -- the control field itself is untouched.
+  have positionAfter : runtimePositionValid program instanceId
+      (replacedState state record wait body) = true := by
+    rw [runtimePositionValid_replacedState]
+    exact position
+  have racesAfter : eventRaceAssociationsValid (replacedState state record wait body) = true := by
+    rw [eventRaceAssociationsValid_replacedState]
+    exact races
+  have incidentsAfter : effectIncidentAssociationsValid
+      (replacedState state record wait body) = true := by
+    rw [effectIncidentAssociationsValid_replacedState]
+    exact incidents
+  have ownersAfter := waitOwnersLive_replacedState state record wait body waitMem owners
+  have identitiesAfter := waitIdentitiesUnique_replacedState state record wait body fresh identities
+  have boundsAfter := runtimeStateIdentityBound_replacedState state record wait body bounds
+  have declarationsAfter := waitDeclarationsValid_replacedState program instanceId state record wait
+    body waitMem declarations
+  have hiddenAfter : hiddenRecordDeclarationsValid program
+      (replacedState state record wait body) = true := by
+    rw [hiddenRecordDeclarationsValid_replacedState]
+    exact hidden
+  have orderAfter := canonicalCollectionOrder_replacedState state record wait body order
+  have bodiesAfter := activityRecordsOwnLiveWork_replacedState state record wait body unique
+    fresh soleBody bodies
+  have timersAfter : attachedTimersUnambiguous (replacedState state record wait body) = true := by
+    rw [attachedTimersUnambiguous_replacedState]
+    exact timersUnambiguous
+  have messagesAfter : attachedMessagesUnambiguous (replacedState state record wait body) = true := by
+    rw [attachedMessagesUnambiguous_replacedState]
+    exact messagesUnambiguous
+  have activityIdentitiesAfter : activityIdentitiesUnique
+      (replacedState state record wait body) = true := by
+    rw [activityIdentitiesUnique_replacedState]
+    exact activityIdentities
+  have ownedAfter : controllersOwnLiveActivity (replacedState state record wait body) = true := by
+    rw [controllersOwnLiveActivity_replacedState]
+    exact owned
+  have controllerIdsAfter : controllerIdentitiesUnique
+      (replacedState state record wait body) = true := by
+    rw [controllerIdentitiesUnique_replacedState]
+    exact controllerIds
+  have notExhaustedAfter : controllersNotExhausted
+      (replacedState state record wait body) = true := by
+    rw [controllersNotExhausted_replacedState]
+    exact notExhausted
+  have lifecycleAfter :
+      (match (replacedState state record wait body).control with
+       | .notStarted => notStartedStateEmpty (replacedState state record wait body)
+       | _ => true) = true := by
+    -- A live wait excludes `notStarted`; turnover frames the control field.
     have sameControl : (replacedState state record wait body).control = state.control := rfl
     rw [sameControl]
     cases hc : state.control with
@@ -109,6 +161,24 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     | running _ => rfl
     | completed _ => rfl
     | cancelled _ => rfl
+  have after2 := And.intro positionAfter racesAfter
+  have after3 := And.intro after2 incidentsAfter
+  have after4 := And.intro after3 ownersAfter
+  have after5 := And.intro after4 identitiesAfter
+  have after6 := And.intro after5 boundsAfter
+  have after7 := And.intro after6 declarationsAfter
+  have after8 := And.intro after7 hiddenAfter
+  have after9 := And.intro after8 orderAfter
+  have after10 := And.intro after9 bodiesAfter
+  have after11 := And.intro after10 timersAfter
+  have after12 := And.intro after11 messagesAfter
+  have after13 := And.intro after12 activityIdentitiesAfter
+  have after14 := And.intro after13 ownedAfter
+  have after15 := And.intro after14 controllerBindingPreserved
+  have after16 := And.intro after15 parallelBindingPreserved
+  have after17 := And.intro after16 controllerIdsAfter
+  have after18 := And.intro after17 notExhaustedAfter
+  exact ⟨⟨after18, lifecycleAfter⟩, claimsAfter⟩
 
 /-- The resolver answers with the state rewrite exactly when the state holds a record naming a unique
 live body.

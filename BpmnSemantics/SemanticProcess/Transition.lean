@@ -16,6 +16,7 @@ import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import BpmnSemantics.SemanticProcess.MessageBoundedTask
 
 /-! # Semantic Process internal transitions
 
@@ -229,6 +230,11 @@ inductive OperationStep (program : Program) :
         BoundedTaskArmingStep before input task boundaryTimer after) :
       OperationStep program
         (.awaitBoundedUserTask id origin input task boundaryTimer) before after
+  | awaitMessageBoundedUserTask (id origin input task boundaryMessage)
+      (before after : RuntimeState)
+      (transition : MessageBoundedTaskArmingStep before input task boundaryMessage after) :
+      OperationStep program
+        (.awaitMessageBoundedUserTask id origin input task boundaryMessage) before after
   | awaitMonitoredUserTask (id origin input task boundaryTimer)
       (before after : RuntimeState)
       (transition :
@@ -332,6 +338,8 @@ def fire? (program : Program) (operation : SemanticOperation)
       awaitEventRaceState? state origin input message timer
   | .awaitBoundedUserTask _ _ input task boundaryTimer =>
       armBoundedUserTaskState? state input task boundaryTimer
+  | .awaitMessageBoundedUserTask _ _ input task boundaryMessage =>
+      armMessageBoundedUserTaskState? state input task boundaryMessage
   | .awaitMonitoredUserTask _ _ input task boundaryTimer =>
       armMonitoredUserTaskState? state input task boundaryTimer
   | .awaitEffect _ _ input output effect route =>
@@ -412,6 +420,9 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
           (by simpa [fire?, awaitEventRaceState?] using result))
     | exact OperationStep.awaitBoundedUserTask _ _ _ _ _ before after
         (armBoundedUserTaskState_sound before after _ _ _
+          (by simpa [fire?] using result))
+    | exact OperationStep.awaitMessageBoundedUserTask _ _ _ _ _ before after
+        (armMessageBoundedUserTaskState_sound before after _ _ _
           (by simpa [fire?] using result))
     | exact OperationStep.awaitMonitoredUserTask _ _ _ _ _ before after
         (armMonitoredUserTaskState_sound before after _ _ _

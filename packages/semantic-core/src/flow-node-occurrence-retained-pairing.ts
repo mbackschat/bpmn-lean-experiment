@@ -15,9 +15,9 @@ import {
   activityOccurrenceForScopeBody,
   activityOccurrenceForTaskBody,
 } from "./activity-occurrence.js";
+import type { ActivityHandlerOccurrence } from "./activity-occurrence.js";
 import { SemanticFlowNodeOccurrenceAnchorKind } from "./flow-node-occurrence-lifecycle.js";
 import type { SemanticFlowNodeOccurrenceAnchor } from "./flow-node-occurrence-lifecycle.js";
-import type { TimerOccurrenceId } from "./contract.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 
 /**
@@ -26,17 +26,17 @@ import type { RuntimeState } from "./semantic-process-state.js";
  * Empty for every anchor no record lists. A `CallActivity` or `Transition` anchor is never an Activity
  * body, so neither is looked up rather than being looked up and missing.
  */
-export function attachedTimersForBodyAnchor(
+export function attachedHandlersForBodyAnchor(
   state: RuntimeState,
   anchor: SemanticFlowNodeOccurrenceAnchor,
-): ReadonlyArray<TimerOccurrenceId> {
+): ReadonlyArray<ActivityHandlerOccurrence> {
   switch (anchor.kind) {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait:
       return activityOccurrenceForTaskBody(state.activityOccurrences, anchor.id)
-        ?.attachedTimers ?? [];
+        ?.attachedHandlers ?? [];
     case SemanticFlowNodeOccurrenceAnchorKind.Scope:
       return activityOccurrenceForScopeBody(state.activityOccurrences, anchor.id)
-        ?.attachedTimers ?? [];
+        ?.attachedHandlers ?? [];
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
     case SemanticFlowNodeOccurrenceAnchorKind.Transition:
       return [];

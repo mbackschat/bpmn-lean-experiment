@@ -9,6 +9,8 @@
  */
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
+  attachedTimerOccurrences,
   activityBodyTask,
   activityOccurrenceForAttachedTimer,
   activityOccurrenceForTaskBody,
@@ -175,7 +177,7 @@ export function selectSequentialMultiInstanceEntry(
     owner,
     operationId: operation.id,
     body: { kind: ActivityBodyKind.UserTask, task: taskId },
-    attachedTimers: [timerId],
+    attachedHandlers: [{ kind: ActivityHandlerKind.Timer, occurrence: timerId }],
   };
   const controller: SequentialMultiInstanceController = {
     id: activityId,
@@ -353,7 +355,7 @@ export function completeSequentialMultiInstanceIteration(
     // that identifies it, so a head-only withdrawal would strand it; Lean's `finalCompletionState`
     // filters this same whole list.
     timerWaits: state.timerWaits.filter(({ id }) =>
-      !record.attachedTimers.some((timerId) => sameOccurrence(id, timerId))
+      !attachedTimerOccurrences(record).some((timerId) => sameOccurrence(id, timerId))
     ),
     activityOccurrences: state.activityOccurrences.filter((candidate) =>
       !sameActivityOccurrence(candidate.id, record.id)
@@ -466,7 +468,7 @@ export function interruptSequentialMultiInstance(
     // admit more than one live attached Timer. The fired deadline is a member of this list by
     // construction, since the record was located through it.
     timerWaits: state.timerWaits.filter(({ id }) =>
-      !record.attachedTimers.some((timerId) => sameOccurrence(id, timerId))
+      !attachedTimerOccurrences(record).some((timerId) => sameOccurrence(id, timerId))
     ),
     activityOccurrences: state.activityOccurrences.filter((candidate) =>
       !sameActivityOccurrence(candidate.id, record.id)

@@ -68,23 +68,26 @@ private theorem runtimeStateWellFormed_position (program : Program) (instanceId 
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     runtimePositionValid program instanceId state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨h16, _⟩ := wellFormed
-  obtain ⟨h15, _⟩ := h16
-  obtain ⟨h14, _⟩ := h15
-  obtain ⟨h13, _⟩ := h14
-  obtain ⟨h12, _⟩ := h13
-  obtain ⟨h11, _⟩ := h12
-  obtain ⟨h10, _⟩ := h11
-  obtain ⟨h9, _⟩ := h10
-  obtain ⟨h8, _⟩ := h9
-  obtain ⟨h7, _⟩ := h8
-  obtain ⟨h6, _⟩ := h7
-  obtain ⟨h5, _⟩ := h6
-  obtain ⟨h4, _⟩ := h5
-  obtain ⟨h3, _⟩ := h4
-  obtain ⟨h2, _⟩ := h3
-  obtain ⟨h1, _⟩ := h2
-  exact h1.1.1
+  obtain ⟨existing, _claimsUnique⟩ := wellFormed
+  obtain ⟨h17, _lifecycle⟩ := existing
+  obtain ⟨h16, _notExhausted⟩ := h17
+  obtain ⟨h15, _controllerIds⟩ := h16
+  obtain ⟨h14, _parallelBindings⟩ := h15
+  obtain ⟨h13, _bindings⟩ := h14
+  obtain ⟨h12, _owned⟩ := h13
+  obtain ⟨h11, _activityIdentities⟩ := h12
+  obtain ⟨h10, _messagesUnambiguous⟩ := h11
+  obtain ⟨h9, _timersUnambiguous⟩ := h10
+  obtain ⟨h8, _bodies⟩ := h9
+  obtain ⟨h7, _order⟩ := h8
+  obtain ⟨h6, _hidden⟩ := h7
+  obtain ⟨h5, _declarations⟩ := h6
+  obtain ⟨h4, _bounds⟩ := h5
+  obtain ⟨h3, _identities⟩ := h4
+  obtain ⟨h2, _owners⟩ := h3
+  obtain ⟨h1, _incidents⟩ := h2
+  obtain ⟨position, _eventRaces⟩ := h1
+  exact position
 
 private theorem acceptedInternalPublicationPair_prepared (program : Program)
     (expectedInstanceId commandId : SemanticId) (footprintState before : RuntimeState)
