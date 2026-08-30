@@ -130,6 +130,7 @@ export const leanModuleCostRecord = {
   nearCapModules: [
     "BpmnSemantics.MessageStartConformance",
     "BpmnSemantics.MessagePayloadCatchConformance",
+    "BpmnSemantics.RuntimeStateActivityConformance",
     "BpmnSemantics.SequentialMultiInstanceConformance",
     "BpmnSemantics.FlowNodeOccurrenceLifecycleConformance",
     "BpmnSemantics.RuntimeStateWellFormedConformance",
@@ -154,9 +155,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.SequentialMultiInstanceConformance",
-      peakResidentKib: 2909240,
-      elapsedSeconds: 30.35,
-      measuredAtCommit: "42f152de",
+      peakResidentKib: 3338752,
+      elapsedSeconds: 36.56,
+      measuredAtCommit: "519c7c5e",
     },
     {
       module: "BpmnSemantics.FlowNodeOccurrenceLifecycleConformance",
@@ -184,7 +185,12 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 27.55,
       measuredAtCommit: "b9c1c586",
     },
-    { module: "BpmnSemantics.RuntimeStateActivityConformance", peakResidentKib: 2792548, elapsedSeconds: 30.5 },
+    {
+      module: "BpmnSemantics.RuntimeStateActivityConformance",
+      peakResidentKib: 3203744,
+      elapsedSeconds: 45.46,
+      measuredAtCommit: "519c7c5e",
+    },
     {
       module: "BpmnSemantics.ParallelUserTaskMetadataCompositionConformance",
       peakResidentKib: 3282876,
@@ -209,9 +215,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.IntermediateCatchMessageConformance", peakResidentKib: 2225108, elapsedSeconds: 11.7 },
     {
       module: "BpmnSemantics.TerminateEndEventConformance",
-      peakResidentKib: 2994020,
-      elapsedSeconds: 31.03,
-      measuredAtCommit: "b9c1c586",
+      peakResidentKib: 2897976,
+      elapsedSeconds: 60.83,
+      measuredAtCommit: "519c7c5e",
     },
     { module: "BpmnSemantics.SemanticProcessConformance", peakResidentKib: 2203824, elapsedSeconds: 8.9 },
     { module: "BpmnSemantics.ServiceTaskIncidentRetryConformance", peakResidentKib: 2179620, elapsedSeconds: 13.8 },
@@ -241,9 +247,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.UserTaskMetadataConformance",
-      peakResidentKib: 1810116,
-      elapsedSeconds: 10.37,
-      measuredAtCommit: "d78cafd3",
+      peakResidentKib: 1782132,
+      elapsedSeconds: 23.74,
+      measuredAtCommit: "519c7c5e",
     },
     {
       module: "BpmnSemantics.ActivityDataOutputConformance",
@@ -260,9 +266,15 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.ActivityBodyTurnoverConformance", peakResidentKib: 1382440, elapsedSeconds: 3.8 },
     {
       module: "BpmnSemantics.ActivityBodyClaimUniquenessConformance",
-      peakResidentKib: 1662532,
-      elapsedSeconds: 7.64,
-      measuredAtCommit: "95b011b1",
+      peakResidentKib: 1617012,
+      elapsedSeconds: 16.83,
+      measuredAtCommit: "519c7c5e",
+    },
+    {
+      module: "BpmnSemantics.ActivityBoundaryMessageConformance",
+      peakResidentKib: 1989332,
+      elapsedSeconds: 19.52,
+      measuredAtCommit: "519c7c5e",
     },
     { module: "BpmnSemantics.ServiceTaskEffectConformance", peakResidentKib: 1349428, elapsedSeconds: 5.6 },
     { module: "BpmnSemantics.IntermediateCatchTimerConformance", peakResidentKib: 1296244, elapsedSeconds: 5.3 },
