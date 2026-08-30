@@ -55,6 +55,9 @@ import {
 import {
   pipelineCases,
 } from "./pipeline-cases.ts";
+import {
+  messagePayloadCatchLeanCoreCases,
+} from "./message-payload-catch-lean-core-cases.ts";
 import { pipelineCaseIdRegistry } from "./pipeline-case-id-registry.ts";
 import {
   mutableClone,
@@ -140,12 +143,99 @@ test("registers the incident cancellation scenario in the pipeline catalog", () 
   );
 });
 
+test("stages the three Message payload scenarios outside the full pipeline", () => {
+  assert.doesNotThrow(() =>
+    verifyPipelineRegistration(
+      artifactCases,
+      normativeArtifactCases,
+      pipelineCases,
+      messagePayloadCatchLeanCoreCases,
+    )
+  );
+  assert.deepEqual(
+    messagePayloadCatchLeanCoreCases.map(({ id, cib }) => ({ id, cib })),
+    [
+      { id: "message-payload-catch-supplied-scalar", cib: null },
+      { id: "message-payload-catch-supplied-null", cib: null },
+      { id: "message-payload-catch-absent-payload", cib: null },
+    ],
+  );
+  const stagedIds = new Set(
+    messagePayloadCatchLeanCoreCases.map(({ id }) => id),
+  );
+  assert.equal(pipelineCases.some(({ id }) => stagedIds.has(id)), false);
+});
+
+test("rejects incomplete, duplicated, CIB-backed, or unprotected staged registration", () => {
+  const [stagedCase] = messagePayloadCatchLeanCoreCases;
+  const [fullCase] = pipelineCases;
+  assert.ok(stagedCase !== undefined);
+  assert.ok(fullCase !== undefined);
+  assert.throws(
+    () =>
+      verifyPipelineRegistration(
+        artifactCases,
+        normativeArtifactCases,
+        pipelineCases,
+        messagePayloadCatchLeanCoreCases.filter((candidate) =>
+          candidate !== stagedCase
+        ),
+      ),
+    /missing from pipeline or staged catalog.*supplied-scalar/u,
+  );
+  assert.throws(
+    () =>
+      verifyPipelineRegistration(
+        artifactCases,
+        normativeArtifactCases,
+        pipelineCases,
+        [...messagePayloadCatchLeanCoreCases, {
+          ...stagedCase,
+          scenarioRelativePath: fullCase.scenarioRelativePath,
+        }],
+      ),
+    /full and staged semantic scenarios contains duplicates/u,
+  );
+  assert.throws(
+    () =>
+      verifyPipelineRegistration(
+        artifactCases,
+        normativeArtifactCases,
+        pipelineCases,
+        messagePayloadCatchLeanCoreCases.map((candidate) =>
+          candidate === stagedCase
+            ? {
+              ...candidate,
+              cib: { evidenceRelativePath: "unexpected-cib-evidence.json" },
+            }
+            : candidate
+        ),
+      ),
+    /staged semantic case declares CIB evidence.*supplied-scalar/u,
+  );
+  assert.throws(
+    () =>
+      verifyPipelineRegistration(
+        artifactCases,
+        normativeArtifactCases,
+        pipelineCases,
+        messagePayloadCatchLeanCoreCases.map((candidate) =>
+          candidate === stagedCase
+            ? { ...candidate, injectMutation: undefined }
+            : candidate
+        ),
+      ),
+    /staged semantic case has no seeded mutation.*supplied-scalar/u,
+  );
+});
+
 test("registers every Event race artifact once with exact Temporal refinement", () => {
   assert.doesNotThrow(() =>
     verifyPipelineRegistration(
       artifactCases,
       normativeArtifactCases,
       pipelineCases,
+      messagePayloadCatchLeanCoreCases,
     )
   );
   assert.deepEqual(
@@ -175,6 +265,7 @@ test("registers the bounded Call Activity artifact once with exact Temporal refi
       artifactCases,
       normativeArtifactCases,
       pipelineCases,
+      messagePayloadCatchLeanCoreCases,
     )
   );
   assert.deepEqual(
@@ -199,6 +290,7 @@ test("registers the operation-addressed Message Start artifact once with exact T
       artifactCases,
       normativeArtifactCases,
       pipelineCases,
+      messagePayloadCatchLeanCoreCases,
     )
   );
   assert.deepEqual(
@@ -547,6 +639,7 @@ test("rejects an omitted or identity-unprotected Call Activity catalog entry", (
         artifactCases,
         normativeArtifactCases,
         pipelineCases.filter(({ id }) => id !== callCase.id),
+        messagePayloadCatchLeanCoreCases,
       ),
     /registered scenario missing from pipeline.*called-process-call-activity/u,
   );
@@ -560,6 +653,7 @@ test("rejects an omitted or identity-unprotected Call Activity catalog entry", (
             ? { ...pipelineCase, injectMutation: undefined }
             : pipelineCase
         ),
+        messagePayloadCatchLeanCoreCases,
       ),
     /pipeline case has no seeded mutation.*called-process-call-activity/u,
   );
@@ -574,6 +668,7 @@ test("rejects an omitted, duplicated, or unprotected Event race catalog entry", 
         artifactCases,
         normativeArtifactCases,
         pipelineCases.filter(({ id }) => id !== messageCase.id),
+        messagePayloadCatchLeanCoreCases,
       ),
     /registered scenario missing from pipeline.*message-wins/u,
   );
@@ -583,6 +678,7 @@ test("rejects an omitted, duplicated, or unprotected Event race catalog entry", 
         artifactCases,
         normativeArtifactCases,
         [...pipelineCases, messageCase],
+        messagePayloadCatchLeanCoreCases,
       ),
     /pipeline scenarios contains duplicates.*message-wins/u,
   );
@@ -596,6 +692,7 @@ test("rejects an omitted, duplicated, or unprotected Event race catalog entry", 
             ? { ...pipelineCase, injectMutation: undefined }
             : pipelineCase
         ),
+        messagePayloadCatchLeanCoreCases,
       ),
     /pipeline case has no seeded mutation.*message-wins/u,
   );

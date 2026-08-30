@@ -14,6 +14,7 @@ import {
 import { verifyMergeExclusiveBindings } from "./merge-exclusive-artifact-consistency.ts";
 import { verifyTerminateScopeBindings } from "./end-operation-artifact-consistency.ts";
 import { verifyEffectOperationBindings } from "./effect-operation-artifact-consistency.ts";
+import { verifyPayloadMessageCatchBindings } from "./message-payload-catch-artifact-consistency.ts";
 import {
   referencedStartControlPlaces,
   verifyCanonicalStartOperationOrder,
@@ -91,6 +92,7 @@ function referencedControlPlaces(
     case "awaitUserTask":
     case "awaitTimer":
     case "awaitMessage":
+    case "awaitPayloadMessage":
     case "awaitEffect":
       return [operation.input, operation.output];
     case "duplicate":
@@ -222,6 +224,7 @@ export function verifyCanonicalDefinitionOrder(
       case "awaitUserTask":
       case "awaitTimer":
       case "awaitMessage":
+      case "awaitPayloadMessage":
       case "awaitEffect":
       case "throwError":
       case "reachNoneEnd":
@@ -436,6 +439,7 @@ export function verifyDefinitionReferences(
   );
   verifyTerminateScopeBindings(checkedProcess, semanticProcess);
   verifyEffectOperationBindings(checkedProcess, semanticProcess);
+  verifyPayloadMessageCatchBindings(checkedProcess, semanticProcess);
 
   const placeIds = requireUniqueIds(
     "semantic process control places",
@@ -485,7 +489,8 @@ export function verifyDefinitionReferences(
       );
     }
     if (
-      operation.kind === "awaitMessage" &&
+      (operation.kind === "awaitMessage" ||
+        operation.kind === "awaitPayloadMessage") &&
       operation.message.elementId !== operation.origin.elementId
     ) {
       throw new Error(

@@ -199,6 +199,202 @@ test("binds checked Message node kinds to their exact channel arms", async () =>
   }), false);
 });
 
+test("binds payload Message definitions to distinct exact output and channel schemas", async () => {
+  const checkedSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/checked-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const semanticSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/semantic-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const ajv = new Ajv2020({ strict: true });
+  const node = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: checkedSchema.$defs,
+    $ref: "#/$defs/node",
+  });
+  const operation = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: semanticSchema.$defs,
+    $ref: "#/$defs/operation",
+  });
+  const operationChannel = {
+    kind: "operationMessage",
+    interfaceId: "Interface_1",
+    interfaceOperationId: "Operation_1",
+    messageId: "Message_1",
+  } as const;
+  const directChannel = {
+    kind: "directMessage",
+    messageId: "Message_1",
+  } as const;
+  const directOutput = {
+    associationId: "Association_1",
+    sourceDataOutputId: "DataOutput_1",
+    sourceDataOutputName: null,
+    targetPropertyId: "Property_1",
+  } as const;
+  const checkedNode = {
+    kind: "payloadMessageCatchEvent",
+    id: "CatchEvent_1",
+    channel: operationChannel,
+    directOutput,
+  } as const;
+  const semanticOperation = {
+    id: "operation:CatchEvent_1",
+    kind: "awaitPayloadMessage",
+    origin: { kind: "bpmnElement", elementId: "CatchEvent_1" },
+    input: "place:Flow_In",
+    output: "place:Flow_Out",
+    message: {
+      elementId: "CatchEvent_1",
+      channel: operationChannel,
+    },
+    directOutput,
+  } as const;
+
+  for (const definitions of [checkedSchema.$defs, semanticSchema.$defs]) {
+    const payloadOutput = definitions.directCatchEventPayloadOutput;
+    assert.ok(isRecord(payloadOutput));
+    assert.deepEqual(payloadOutput.required, [
+      "associationId",
+      "sourceDataOutputId",
+      "sourceDataOutputName",
+      "targetPropertyId",
+    ]);
+    assert.ok(isRecord(payloadOutput.properties));
+    assert.deepEqual(Object.keys(payloadOutput.properties), payloadOutput.required);
+  }
+  const checkedNodeDefinition = checkedSchema.$defs.node;
+  assert.ok(isRecord(checkedNodeDefinition));
+  assert.ok(Array.isArray(checkedNodeDefinition.oneOf));
+  const payloadNodeDefinition = checkedNodeDefinition.oneOf.find((candidate) => {
+    if (!isRecord(candidate) || !isRecord(candidate.properties)) {
+      return false;
+    }
+    const kind = candidate.properties.kind;
+    return isRecord(kind) && kind.const === "payloadMessageCatchEvent";
+  });
+  assert.ok(isRecord(payloadNodeDefinition));
+  assert.ok(isRecord(payloadNodeDefinition.properties));
+  assert.deepEqual(payloadNodeDefinition.required, [
+    "kind",
+    "id",
+    "channel",
+    "directOutput",
+  ]);
+  const checkedDirectOutput = payloadNodeDefinition.properties.directOutput;
+  assert.ok(isRecord(checkedDirectOutput));
+  assert.equal(checkedDirectOutput.$ref, "#/$defs/directCatchEventPayloadOutput");
+  const payloadOperationDefinition = semanticSchema.$defs.awaitPayloadMessage;
+  assert.ok(isRecord(payloadOperationDefinition));
+  assert.ok(isRecord(payloadOperationDefinition.properties));
+  const semanticDirectOutput = payloadOperationDefinition.properties.directOutput;
+  assert.ok(isRecord(semanticDirectOutput));
+  assert.equal(semanticDirectOutput.$ref, "#/$defs/directCatchEventPayloadOutput");
+
+  assert.equal(node(checkedNode), true);
+  assert.equal(operation(semanticOperation), true);
+  assert.equal(node({ ...checkedNode, channel: directChannel }), false);
+  assert.equal(operation({
+    ...semanticOperation,
+    message: { ...semanticOperation.message, channel: directChannel },
+  }), false);
+  assert.equal(node({
+    ...checkedNode,
+    directOutput: {
+      associationId: directOutput.associationId,
+      sourceDataOutputId: directOutput.sourceDataOutputId,
+      sourceDataOutputName: directOutput.sourceDataOutputName,
+    },
+  }), false);
+  assert.equal(operation({
+    ...semanticOperation,
+    directOutput: { ...directOutput, unexpected: true },
+  }), false);
+});
+
+test("keeps payload-bearing Message stimulus and enabled interaction arms exact", async () => {
+  const schemaDocument = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/scenario.schema.json`, "utf8"),
+  ) as Readonly<Record<string, unknown>> & {
+    readonly $defs: Readonly<Record<string, unknown>>;
+  };
+  const schema = schemaDocument.$defs;
+  const ajv = new Ajv2020({ strict: true });
+  const deliverMessage = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: schema,
+    $ref: "#/$defs/deliverMessage",
+  });
+  const deliverPayloadMessage = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: schema,
+    $ref: "#/$defs/deliverPayloadMessage",
+  });
+  const enabledDeliverPayloadMessage = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: schema,
+    $ref: "#/$defs/enabledDeliverPayloadMessage",
+  });
+  const base = {
+    commandId: "command-1",
+    subscriptionId: {
+      processInstanceId: "instance-1",
+      elementId: "CatchEvent_1",
+      activation: 1,
+    },
+    channel: { kind: "directMessage", messageId: "Message_1" },
+  } as const;
+  const payloadDelivery = {
+    ...base,
+    kind: "deliverPayloadMessage",
+    payload: { kind: "null" },
+  } as const;
+
+  assert.ok(isRecord(schemaDocument.properties));
+  const stimuli = schemaDocument.properties.stimuli;
+  assert.ok(isRecord(stimuli));
+  assert.ok(isRecord(stimuli.items));
+  assert.ok(Array.isArray(stimuli.items.oneOf));
+  assert.equal(stimuli.items.oneOf.some((arm) =>
+    isRecord(arm) && arm.$ref === "#/$defs/deliverPayloadMessage"
+  ), true);
+  const stateObservation = schema.stateObservation;
+  assert.ok(isRecord(stateObservation));
+  assert.ok(isRecord(stateObservation.properties));
+  const enabledInteractions = stateObservation.properties.enabledInteractions;
+  assert.ok(isRecord(enabledInteractions));
+  assert.ok(isRecord(enabledInteractions.items));
+  assert.ok(Array.isArray(enabledInteractions.items.oneOf));
+  assert.equal(enabledInteractions.items.oneOf.some((arm) =>
+    isRecord(arm) && arm.$ref === "#/$defs/enabledDeliverPayloadMessage"
+  ), true);
+
+  assert.equal(deliverPayloadMessage(payloadDelivery), true);
+  assert.equal(deliverPayloadMessage({
+    kind: payloadDelivery.kind,
+    commandId: base.commandId,
+    subscriptionId: base.subscriptionId,
+    channel: base.channel,
+  }), false);
+  assert.equal(deliverMessage({
+    ...base,
+    kind: "deliverMessage",
+    payload: payloadDelivery.payload,
+  }), false);
+  assert.equal(enabledDeliverPayloadMessage({
+    kind: payloadDelivery.kind,
+    subscriptionId: base.subscriptionId,
+    channel: base.channel,
+  }), true);
+  assert.equal(enabledDeliverPayloadMessage({
+    kind: payloadDelivery.kind,
+    subscriptionId: base.subscriptionId,
+    channel: base.channel,
+    payload: payloadDelivery.payload,
+  }), false);
+});
+
 test("binds Inclusive Gateway node directions and operation tuple arities", async () => {
   const checkedSchema = JSON.parse(
     await readFile(`${projectRoot}/contracts/schemas/checked-process.schema.json`, "utf8"),

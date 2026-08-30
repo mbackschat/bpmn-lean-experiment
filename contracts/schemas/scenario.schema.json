@@ -83,6 +83,9 @@
             "$ref": "#/$defs/deliverMessage"
           },
           {
+            "$ref": "#/$defs/deliverPayloadMessage"
+          },
+          {
             "$ref": "#/$defs/fireTimer"
           },
           {
@@ -617,6 +620,34 @@
         }
       }
     },
+    "deliverPayloadMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "subscriptionId",
+        "channel",
+        "payload"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deliverPayloadMessage"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "subscriptionId": {
+          "$ref": "#/$defs/messageSubscriptionId"
+        },
+        "channel": {
+          "$ref": "#/$defs/messageChannel"
+        },
+        "payload": {
+          "$ref": "#/$defs/variableValue"
+        }
+      }
+    },
     "timerOccurrenceId": {
       "$ref": "#/$defs/occurrenceId"
     },
@@ -1067,6 +1098,26 @@
         }
       }
     },
+    "enabledDeliverPayloadMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "subscriptionId",
+        "channel"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deliverPayloadMessage"
+        },
+        "subscriptionId": {
+          "$ref": "#/$defs/messageSubscriptionId"
+        },
+        "channel": {
+          "$ref": "#/$defs/messageChannel"
+        }
+      }
+    },
     "enabledRetryIncident": {
       "type": "object",
       "additionalProperties": false,
@@ -1399,6 +1450,9 @@
               },
               {
                 "$ref": "#/$defs/enabledDeliverMessage"
+              },
+              {
+                "$ref": "#/$defs/enabledDeliverPayloadMessage"
               },
               {
                 "$ref": "#/$defs/enabledRetryIncident"

@@ -9,6 +9,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   BpmnCompilationStatus,
@@ -22,8 +23,10 @@ import type {
   AcceptedBpmnCompilation,
   BpmnSourceLimits,
 } from "@bpmn-lean/bpmn-source";
+import { verifyDefinitionArtifacts } from "../../../scripts/contract-artifacts.ts";
 
 const payloadProfile = "bpmn-2.0.2-message-payload-catch-draft";
+const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const sourceUrl = new URL(
   "../../../scenarios/message-payload-catch/process.bpmn",
   import.meta.url,
@@ -73,6 +76,12 @@ test("admits one direct catch-Event payload output and lowers it", async () => {
   const result = requireAccepted(await compile(await readFile(sourceUrl)));
 
   assert.equal(isWellFormedSemanticProcessProgram(result.semanticProcess), true);
+  await assert.doesNotReject(
+    verifyDefinitionArtifacts(projectRoot, {
+      checkedProcess: result.checkedProcess,
+      semanticProcess: result.semanticProcess,
+    }),
+  );
   assert.deepEqual(
     result.checkedProcess.nodes.find(
       ({ id }) => id === "MessageCatch_SettlementConfirmed",

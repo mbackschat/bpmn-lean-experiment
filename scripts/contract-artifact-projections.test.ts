@@ -229,6 +229,7 @@ test("binds canonical semantic instance identity to the start stimulus", async (
         interaction.taskId.processInstanceId = state.instanceId;
         break;
       case "deliverMessage":
+      case "deliverPayloadMessage":
         interaction.subscriptionId.processInstanceId =
           state.instanceId;
         break;

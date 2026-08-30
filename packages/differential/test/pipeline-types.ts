@@ -101,28 +101,35 @@ export type CibPipelineConfiguration = DeepReadonly<{
   effectExecutionSchedule: CibEffectExecutionSchedule;
 }>;
 
-export type PipelineCase<Id extends string = PipelineCaseId> = DeepReadonly<{
+export type SemanticDifferentialCase<Id extends string = string> = DeepReadonly<{
   id: Id;
   scenarioRelativePath: string;
   bpmnRelativePath: string;
-  workflowIdPrefix: string;
   cib: CibPipelineConfiguration | null;
+  injectMutation: (result: MutableScenarioResult) => void;
+  expectedInjectedDisagreement: ObservationValueDisagreement;
+}>;
+
+export type PipelineCase<Id extends string = PipelineCaseId> = DeepReadonly<
+  SemanticDifferentialCase<Id> & {
+  workflowIdPrefix: string;
   expectedWaitTraceLength: number;
   completionDelivery: TemporalCompletionDelivery;
   temporalRelation: TemporalCaseRelation;
   executionSchedule: TemporalExecutionSchedule;
   effectSchedules: TemporalEffectSchedulePair | null;
   replaySelection: PipelineReplaySelection;
-  injectMutation: (result: MutableScenarioResult) => void;
-  expectedInjectedDisagreement: ObservationValueDisagreement;
-}>;
+  }
+>;
 
 export type RetainedEvidence = Readonly<{
   result: ScenarioResult;
 }>;
 
-export type PipelineContext = Readonly<{
-  pipelineCase: PipelineCase;
+export type PipelineContext<
+  Case extends SemanticDifferentialCase = PipelineCase,
+> = Readonly<{
+  pipelineCase: Case;
   scenario: Scenario;
   retainedEvidence: RetainedEvidence | null;
   checkedProcess: AcceptedBpmnCompilation["checkedProcess"];

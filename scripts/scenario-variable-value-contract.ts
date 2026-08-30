@@ -6,6 +6,8 @@ const sequentialMultiInstanceProfile =
   "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
 const parallelMultiInstanceProfile =
   "bpmn-2.0.2-parallel-multi-instance-user-task-draft";
+const messagePayloadCatchProfile =
+  "bpmn-2.0.2-message-payload-catch-draft";
 
 export type ScenarioVariableValueContractInput = Readonly<{
   profile: string;
@@ -28,6 +30,12 @@ export function verifyScenarioVariableValueContract(
     for (const binding of patch.bindings) {
       if (binding === null || typeof binding !== "object") continue;
       const value = (binding as { readonly value?: unknown }).value;
+      if (
+        patch.surface === "payload" &&
+        (value === null || typeof value !== "object")
+      ) {
+        throw new TypeError("Message payload must be a tagged value");
+      }
       if (value !== null && typeof value === "object") {
         const tagged = value as {
           readonly kind?: unknown;
@@ -39,6 +47,9 @@ export function verifyScenarioVariableValueContract(
       requireByteCeiling(binding, 20_480, "binding");
     }
     requireByteCeiling(patch.bindings, 65_536, "patch");
+    if (patch.surface === "payload") {
+      requireByteCeiling(stimulus, 65_536, "stimulus");
+    }
   }
 }
 
@@ -195,9 +206,13 @@ function requireExactBinding(
 
 function verifyProfileValue(
   profile: string,
-  surface: "start" | "completion" | "effect",
+  surface: "start" | "completion" | "effect" | "payload",
   tagged: Readonly<{ kind?: unknown; value?: unknown }>,
 ): void {
+  if (surface === "payload") {
+    verifyMessagePayloadValue(profile, tagged);
+    return;
+  }
   switch (tagged.kind) {
     case "integer":
       if (
@@ -231,6 +246,50 @@ function verifyProfileValue(
       );
     default:
       return;
+  }
+}
+
+function verifyMessagePayloadValue(
+  profile: string,
+  tagged: Readonly<{ kind?: unknown; value?: unknown }>,
+): void {
+  if (profile !== messagePayloadCatchProfile) {
+    throw new TypeError(
+      "payload-bearing Message delivery is only admitted for the Message payload catch profile",
+    );
+  }
+  switch (tagged.kind) {
+    case "boolean":
+      if (typeof tagged.value !== "boolean") {
+        throw new TypeError("Boolean Message payload must carry a Boolean value");
+      }
+      return;
+    case "integer":
+      if (
+        Object.is(tagged.value, -0) ||
+        !Number.isSafeInteger(tagged.value) ||
+        Number(tagged.value) < 0
+      ) {
+        throw new TypeError(
+          "Integer Message payload must be a non-negative safe integer",
+        );
+      }
+      return;
+    case "string":
+      if (typeof tagged.value !== "string") {
+        throw new TypeError("String Message payload must carry a String value");
+      }
+      requireUnicodeScalarString(tagged.value, "String Message payload");
+      return;
+    case "null":
+      if (Object.hasOwn(tagged, "value")) {
+        throw new TypeError("Null Message payload carries no value field");
+      }
+      return;
+    default:
+      throw new TypeError(
+        "Message payload catch admits only Boolean, Integer, String, and Null payloads",
+      );
   }
 }
 
@@ -283,6 +342,11 @@ function variablePatch(stimulus: Readonly<Record<string, unknown>>) {
         bindings: (stimulus.result as {
           readonly localPatch: ReadonlyArray<unknown>;
         }).localPatch,
+      } as const;
+    case "deliverPayloadMessage":
+      return {
+        surface: "payload",
+        bindings: [{ value: stimulus.payload }],
       } as const;
     default:
       return undefined;

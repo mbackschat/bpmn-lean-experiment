@@ -294,6 +294,7 @@ function isSupportedScenario(value: unknown): value is Scenario {
         (stimulus) =>
           stimulus.kind === StimulusKind.CompleteUserTaskInstance ||
           stimulus.kind === StimulusKind.DeliverMessage ||
+          stimulus.kind === StimulusKind.DeliverPayloadMessage ||
           stimulus.kind === StimulusKind.FireTimer ||
           stimulus.kind === StimulusKind.CompleteEffect ||
           stimulus.kind === StimulusKind.ReportEffectFailure ||

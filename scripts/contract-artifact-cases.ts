@@ -157,6 +157,18 @@ export const normativeArtifactCases = Object.freeze([
   }),
   Object.freeze({
     scenarioRelativePath:
+      "scenarios/message-payload-catch/supplied-scalar.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/message-payload-catch/supplied-null.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/message-payload-catch/absent-payload.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
       "scenarios/inclusive-gateway-selected-branches/one-true.scenario.json",
   }),
   Object.freeze({

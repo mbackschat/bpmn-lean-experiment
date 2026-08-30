@@ -1,0 +1,73 @@
+{
+  "kind": "scenario",
+  "id": "message-payload-catch-supplied-scalar",
+  "profile": "bpmn-2.0.2-message-payload-catch-draft",
+  "bpmn": {
+    "id": "message-payload-catch-process",
+    "relativePath": "scenarios/message-payload-catch/process.bpmn",
+    "sha256": "6f1177913a919a024719c7a91c207be70df1ded57852626bc8f4c25551ffc605",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-message-payload-catch-supplied-scalar",
+      "processId": "Process_MessagePayloadSettlement",
+      "instanceId": "MessagePayloadCatchSuppliedScalar",
+      "initialVariables": []
+    },
+    {
+      "kind": "deliverPayloadMessage",
+      "commandId": "deliver-message-payload-catch-supplied-scalar",
+      "subscriptionId": {
+        "processInstanceId": "MessagePayloadCatchSuppliedScalar",
+        "elementId": "MessageCatch_SettlementConfirmed",
+        "activation": 1
+      },
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "Interface_ClearingHouse",
+        "interfaceOperationId": "Operation_ConfirmSettlement",
+        "messageId": "Message_SettlementConfirmed"
+      },
+      "payload": {
+        "kind": "string",
+        "value": "settlement-reference-123"
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-message-payload-catch-supplied-scalar",
+      "taskId": {
+        "processInstanceId": "MessagePayloadCatchSuppliedScalar",
+        "elementId": "UserTask_ReviewSettlement",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.5.2",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.5.1",
+      "BPMN 2.0.2 Table 10.82"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

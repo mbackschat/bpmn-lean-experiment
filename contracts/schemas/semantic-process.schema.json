@@ -769,6 +769,33 @@
         }
       }
     },
+    "directCatchEventPayloadOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "associationId",
+        "sourceDataOutputId",
+        "sourceDataOutputName",
+        "targetPropertyId"
+      ],
+      "properties": {
+        "associationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceDataOutputId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceDataOutputName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "targetPropertyId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "dataTaskDefinition": {
       "type": "object",
       "additionalProperties": false,
@@ -1071,6 +1098,55 @@
         },
         "message": {
           "$ref": "#/$defs/messageDefinition"
+        }
+      }
+    },
+    "awaitPayloadMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "message",
+        "directOutput"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitPayloadMessage"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "message": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "elementId",
+            "channel"
+          ],
+          "properties": {
+            "elementId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "channel": {
+              "$ref": "#/$defs/operationMessageChannel"
+            }
+          }
+        },
+        "directOutput": {
+          "$ref": "#/$defs/directCatchEventPayloadOutput"
         }
       }
     },
@@ -1916,6 +1992,9 @@
         },
         {
           "$ref": "#/$defs/awaitMessage"
+        },
+        {
+          "$ref": "#/$defs/awaitPayloadMessage"
         },
         {
           "$ref": "#/$defs/awaitEventRace"
