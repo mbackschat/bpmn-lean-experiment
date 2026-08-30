@@ -181,4 +181,4 @@ Reopen before admitting `structureRef` or any structured payload, a collection, 
 |---|---|---|---|---|
 | Proposal | `48cc5b49` | `fork-turns-none` | `approve-with-required-edits` | `89ea501e, 0c44fdbd` |
 | Semantic checkpoint | `ba38efb8` | `fork-turns-none` | `approve-with-required-edits` | `c13901b5` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `32337c43` | `not-recorded` | `pending` | `not-applicable` |
