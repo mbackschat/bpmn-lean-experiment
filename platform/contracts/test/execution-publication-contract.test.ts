@@ -41,6 +41,83 @@ test("decodes one exact page and every closed result arm", () => {
   }
 });
 
+test("accepts an additive payload Message stimulus with an explicit-null payload", () => {
+  const payloadPage = payloadStimulusPublicationPage();
+
+  assert.deepEqual(
+    decodeExecutionPublicationPage(payloadPage, {
+      ...publicationIdentity,
+      afterRevision: 1,
+      limit: 1,
+    }),
+    payloadPage,
+  );
+});
+
+test("keeps payload absence and malformed values distinct from an explicit-null payload", () => {
+  assert.throws(
+    () => decodePayloadStimulusPage(payloadStimulusPublicationPage({ includePayload: false })),
+    /public fields/u,
+  );
+  assert.throws(
+    () => decodePayloadStimulusPage(payloadStimulusPublicationPage({ payload: { kind: "null", value: null } })),
+    /public fields/u,
+  );
+  const extra = payloadStimulusPublicationPage();
+  Object.assign(extra.batches[0]!.transitions[0]!.transition.stimulus, { privatePayload: true });
+  assert.throws(() => decodePayloadStimulusPage(extra), /public fields/u);
+});
+
+test("keeps the old payload-free Message stimulus exact", () => {
+  const payloadFree = payloadStimulusPublicationPage({
+    kind: "deliverMessage",
+    includePayload: false,
+  });
+  assert.deepEqual(decodePayloadStimulusPage(payloadFree), payloadFree);
+  assert.throws(
+    () => decodePayloadStimulusPage(payloadStimulusPublicationPage({ kind: "deliverMessage" })),
+    /public fields/u,
+  );
+});
+
+test("matches each open Message subscription to exactly one delivery interaction", () => {
+  for (const kind of ["deliverMessage", "deliverPayloadMessage"]) {
+    const page = messageStatePublicationPage(kind);
+    assert.deepEqual(decodePublicationPage(page), page);
+  }
+
+  rejectMessageState((state) => state.enabledInteractions.pop(), /must be an object|open occurrences/u);
+  rejectMessageState((state) => state.enabledInteractions.reverse(), /public fields|order or kind/u);
+  rejectMessageState((state) => {
+    state.enabledInteractions[1] = { ...state.enabledInteractions[1]!, kind: "fireTimer" };
+  }, /order or kind/u);
+  rejectMessageState((state) => {
+    state.enabledInteractions[1] = {
+      ...state.enabledInteractions[1]!,
+      subscriptionId: {
+        processInstanceId: publicationIdentity.processInstanceId,
+        elementId: "OtherCatch",
+        activation: 1,
+      },
+    };
+  }, /identity drift/u);
+  rejectMessageState((state) => {
+    state.enabledInteractions[1] = {
+      ...state.enabledInteractions[1]!,
+      channel: { kind: "directMessage", messageId: "OtherMessage" },
+    };
+  }, /identity drift/u);
+  rejectMessageState((state) => {
+    state.enabledInteractions[1] = {
+      ...state.enabledInteractions[1]!,
+      payload: { kind: "null" },
+    };
+  }, /public fields/u);
+  rejectMessageState((state) => {
+    state.enabledInteractions.push({ ...state.enabledInteractions[1]!, kind: "deliverMessage" });
+  }, /public fields|order or kind|open occurrences/u);
+});
+
 test("accepts the exact sequential Multi-Instance progress publication", () => {
   const livePage = sequentialMultiInstancePublicationPage();
 
@@ -266,6 +343,27 @@ test("validates internal-operation, state, and public-position classes recursive
       afterRevision: 0,
     }),
     internalPage,
+  );
+
+  const payloadAwaitPage = {
+    ...internalPage,
+    batches: [{
+      ...internalPage.batches[0]!,
+      transitions: [
+        internalPage.batches[0]!.transitions[0]!,
+        {
+          ...internal,
+          transition: { ...internal.transition, operationKind: "awaitPayloadMessage" },
+        },
+      ],
+    }],
+  };
+  assert.deepEqual(
+    decodeExecutionPublicationPage(payloadAwaitPage, {
+      ...publicationIdentity,
+      afterRevision: 0,
+    }),
+    payloadAwaitPage,
   );
 
   assert.throws(
@@ -552,4 +650,110 @@ function rejectSequentialState(
   const page = sequentialMultiInstancePublicationPage();
   mutate(page.current.state);
   assert.throws(() => decodeSequentialPage(page), expected);
+}
+
+function payloadStimulusPublicationPage(options: {
+  kind?: string;
+  payload?: unknown;
+  includePayload?: boolean;
+} = {}) {
+  const page = executionPublicationPage();
+  const kind = options.kind ?? "deliverPayloadMessage";
+  const includePayload = options.includePayload ?? true;
+  const baseStimulus = {
+    kind,
+    commandId: "deliver-payload",
+    subscriptionId: {
+      processInstanceId: publicationIdentity.processInstanceId,
+      elementId: "CatchMessage",
+      activation: 1,
+    },
+    channel: { kind: "directMessage", messageId: "PayloadMessage" },
+  };
+  const stimulus = includePayload
+    ? { ...baseStimulus, payload: options.payload ?? { kind: "null" } }
+    : baseStimulus;
+  return {
+    ...page,
+    requestedAfterRevision: 1,
+    pageThroughRevision: 2,
+    headRevision: 2,
+    batches: [{
+      commandId: "deliver-payload",
+      fromRevision: 1,
+      throughRevision: 2,
+      transitions: [{
+        revision: 2,
+        logicalTimeMs: 0,
+        transition: { kind: "externalStimulus", stimulus },
+        positionDelta: {
+          consumedTokens: [],
+          producedTokens: [],
+          enteredScopes: [],
+          exitedScopes: [],
+        },
+      }],
+    }],
+    current: { ...page.current!, revision: 2 },
+  };
+}
+
+function decodePayloadStimulusPage(page: ReturnType<typeof payloadStimulusPublicationPage>) {
+  return decodeExecutionPublicationPage(page, {
+    ...publicationIdentity,
+    afterRevision: 1,
+    limit: 1,
+  });
+}
+
+function messageStatePublicationPage(kind = "deliverPayloadMessage") {
+  const page = executionPublicationPage();
+  const taskId = {
+    processInstanceId: publicationIdentity.processInstanceId,
+    elementId: "ReviewTask",
+    activation: 1,
+  };
+  const subscriptionId = {
+    processInstanceId: publicationIdentity.processInstanceId,
+    elementId: "CatchMessage",
+    activation: 1,
+  };
+  const channel = { kind: "directMessage", messageId: "PayloadMessage" };
+  const enabledInteractions: Array<Record<string, unknown>> = [
+    { kind: "completeUserTaskInstance", taskId },
+    { kind, subscriptionId, channel },
+  ];
+  return {
+    ...page,
+    current: {
+      ...page.current!,
+      state: {
+        ...page.current!.state,
+        activeWaits: [
+          { elementId: taskId.elementId, kind: "userTask", multiplicity: 1 },
+          { elementId: subscriptionId.elementId, kind: "message", multiplicity: 1 },
+        ],
+        openUserTasks: [{ id: taskId, name: "Review", state: "active" }],
+        openMessageSubscriptions: [{ id: subscriptionId, channel }],
+        enabledInteractions,
+      },
+    },
+  };
+}
+
+function decodePublicationPage(page: ReturnType<typeof messageStatePublicationPage>) {
+  return decodeExecutionPublicationPage(page, {
+    ...publicationIdentity,
+    afterRevision: 0,
+    limit: 1,
+  });
+}
+
+function rejectMessageState(
+  mutate: (state: ReturnType<typeof messageStatePublicationPage>["current"]["state"]) => unknown,
+  expected: RegExp,
+): void {
+  const page = messageStatePublicationPage();
+  mutate(page.current.state);
+  assert.throws(() => decodePublicationPage(page), expected);
 }

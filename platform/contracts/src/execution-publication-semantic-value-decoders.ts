@@ -109,6 +109,12 @@ export function requirePublicationStimulus(
       requireOccurrence(readOwn(value, "subscriptionId"), `${label}.subscriptionId`);
       requireChannel(readOwn(value, "channel"), `${label}.channel`);
       return;
+    case StimulusKind.DeliverPayloadMessage:
+      exact(value, label, ["kind", "commandId", "subscriptionId", "channel", "payload"]);
+      requireOccurrence(readOwn(value, "subscriptionId"), `${label}.subscriptionId`);
+      requireChannel(readOwn(value, "channel"), `${label}.channel`);
+      requirePublicationVariableValue(readOwn(value, "payload"), `${label}.payload`);
+      return;
     case StimulusKind.FireTimer:
       exact(value, label, ["kind", "commandId", "timerId", "logicalTimeMs"]);
       requireOccurrence(readOwn(value, "timerId"), `${label}.timerId`);
@@ -387,7 +393,7 @@ function requireEnabledInteractions(
     if (!sameOccurrence(requireOccurrence(readOwn(item, "taskId"), "enabled task identity"), task.id)) throw new TypeError("enabled task identity drift");
   }
   for (const message of messages) {
-    const item = requireInteraction(value[index++], StimulusKind.DeliverMessage, ["kind", "subscriptionId", "channel"]);
+    const item = requireMessageInteraction(value[index++]);
     if (!sameOccurrence(requireOccurrence(readOwn(item, "subscriptionId"), "enabled message identity"), message.id) ||
       !sameChannel(requireChannel(readOwn(item, "channel"), "enabled message channel"), message.channel)) {
       throw new TypeError("enabled message identity drift");
@@ -407,6 +413,16 @@ function requireEnabledInteractions(
     }
   }
   if (index !== value.length) throw new TypeError("enabledInteractions do not match open occurrences");
+}
+
+function requireMessageInteraction(value: unknown): object {
+  requireObject(value, "enabled interaction");
+  exact(value, "enabled interaction", ["kind", "subscriptionId", "channel"]);
+  const kind = readOwn(value, "kind");
+  if (kind !== StimulusKind.DeliverMessage && kind !== StimulusKind.DeliverPayloadMessage) {
+    throw new TypeError("enabled interaction order or kind is invalid");
+  }
+  return value;
 }
 
 function requireInteraction(value: unknown, kind: string, keys: string[]): object {

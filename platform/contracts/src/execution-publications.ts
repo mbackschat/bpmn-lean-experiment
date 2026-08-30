@@ -134,6 +134,7 @@ export const StimulusKind = {
   TriggerTimerStart: "triggerTimerStart",
   CompleteUserTaskInstance: "completeUserTaskInstance",
   DeliverMessage: "deliverMessage",
+  DeliverPayloadMessage: "deliverPayloadMessage",
   FireTimer: "fireTimer",
   CompleteEffect: "completeEffect",
   ReportEffectFailure: "reportEffectFailure",
@@ -175,6 +176,13 @@ export type Stimulus = DeepReadonly<
       commandId: string;
       subscriptionId: OccurrenceId;
       channel: MessageChannel;
+    }
+  | {
+      kind: typeof StimulusKind.DeliverPayloadMessage;
+      commandId: string;
+      subscriptionId: OccurrenceId;
+      channel: MessageChannel;
+      payload: VariableValue;
     }
   | {
       kind: typeof StimulusKind.FireTimer;
@@ -223,6 +231,7 @@ export const SemanticOperationKind = {
   AwaitSequentialMultiInstanceUserTask: "awaitSequentialMultiInstanceUserTask",
   AwaitParallelMultiInstanceUserTask: "awaitParallelMultiInstanceUserTask",
   AwaitMessage: "awaitMessage",
+  AwaitPayloadMessage: "awaitPayloadMessage",
   AwaitTimer: "awaitTimer",
   AwaitEffect: "awaitEffect",
   Duplicate: "duplicate",
@@ -396,6 +405,11 @@ export type EnabledInteraction = DeepReadonly<
   | { kind: typeof StimulusKind.CompleteUserTaskInstance; taskId: OccurrenceId }
   | {
       kind: typeof StimulusKind.DeliverMessage;
+      subscriptionId: OccurrenceId;
+      channel: MessageChannel;
+    }
+  | {
+      kind: typeof StimulusKind.DeliverPayloadMessage;
       subscriptionId: OccurrenceId;
       channel: MessageChannel;
     }
