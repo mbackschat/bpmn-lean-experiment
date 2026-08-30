@@ -29,6 +29,6 @@ The Message payload catch scenarios are registered in the full Lean/core/Tempora
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the two closure-reviewed composed schedules and their selected mutations.
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the three normative M6 schedules and their value-kind, ordered-list, and resolution mutations.
 - [Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) owns the registered natural and interrupted Lean/core/Temporal relations.
-- [Message payload catch proposal](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-PROPOSAL.md) owns the supplied-scalar, supplied-null, and absent-payload Lean/core/Temporal relations.
+- [Message payload catch capsule](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-PROPOSAL.md) owns the supplied-scalar, supplied-null, and absent-payload Lean/core/Temporal relations.
 
 Run `./scripts/pnpm.sh run test:pipeline` when a change affects the complete registered cross-target pipeline.
