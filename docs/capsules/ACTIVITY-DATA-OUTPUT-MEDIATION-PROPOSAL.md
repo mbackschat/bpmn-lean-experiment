@@ -184,5 +184,5 @@ Reopen before adding a second output or OutputSet, admitting optional or while-e
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `4cf6d415` | `fork-turns-none` | `approve-with-required-edits` | `07261f25, d92ca95d` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `f65a4228` | `fork-turns-none` | `approve-with-required-edits` | `90281eba` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

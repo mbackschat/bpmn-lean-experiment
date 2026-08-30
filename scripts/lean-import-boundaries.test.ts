@@ -11,13 +11,28 @@ import {
 
 const semanticProcessUmbrella = "BpmnSemantics/SemanticProcess.lean";
 const externalA12ResearchTree = "adoption/a12/legacy/source-tree/";
-const checkedNodeOwner = "BpmnSemantics/SemanticProcessContract.lean";
 const experimentTree = "BpmnSemantics/Experiments/";
 
-/** Constructor names of the checked-source node union, in declaration order. */
-export function checkedNodeConstructors(source: string): ReadonlyArray<string> {
+/**
+ * The project-owned unions an experiment file may decide, and the module that declares them.
+ *
+ * Both live in the same owner today, but the pair is the point rather than the path: the class this
+ * guard reports is a new constructor silently leaving an experiment matcher non-exhaustive, and that
+ * class belongs to every union the tree matches on. Restricting it to `CheckedNode` let a new
+ * `SemanticOperation` constructor break the tree with the guard green.
+ */
+const decidedUnions: ReadonlyArray<Readonly<{ name: string; owner: string }>> = [
+  { name: "CheckedNode", owner: "BpmnSemantics/SemanticProcessContract.lean" },
+  { name: "SemanticOperation", owner: "BpmnSemantics/SemanticProcessContract.lean" },
+];
+
+/** Constructor names of one project-owned union, in declaration order. */
+export function leanUnionConstructors(
+  source: string,
+  union: string,
+): ReadonlyArray<string> {
   const body =
-    analyzeLeanSource(source).code.split("inductive CheckedNode where")[1] ?? "";
+    analyzeLeanSource(source).code.split(`inductive ${union} where`)[1] ?? "";
   const names: string[] = [];
   for (const line of body.split(/\r?\n/u)) {
     if (/^\S/u.test(line) && names.length > 0) {
@@ -36,28 +51,34 @@ function patternArmConstructors(
   code: string,
 ): ReadonlyArray<string> {
   // Pattern position only. A fixture builds nodes as `, .userTask ⟨"Task_A"⟩ …`, which names the
-  // same constructor while deciding nothing, so an arm must open its own line.
+  // same constructor while deciding nothing, so the name must follow a `|`. It need not open the
+  // line: a frozen-surface classifier writes several alternatives per arm as `| .a .. | .b ..`, and
+  // counting only the line-leading one put such a file below the coverage threshold and made it
+  // invisible. `<|` and `||` are excluded because neither introduces a pattern.
   return constructors.filter((name) =>
-    new RegExp(`^\\s*\\|\\s*(some\\s*\\(\\s*)?\\.?${name}\\b`, "mu").test(code)
+    new RegExp(
+      `(?<![<|>])\\|(?!\\|)\\s*(some\\s*\\(\\s*)?\\.?${name}\\b`,
+      "mu",
+    ).test(code)
   );
 }
 
 /**
- * Checked-node constructors an experiment matcher fails to decide.
+ * Constructors of one union that an experiment matcher fails to decide.
  *
  * The compiler already rejects a missing arm, but only in the experiment executables `verify.sh`
  * builds: the default Lake target does not import this tree, so `./scripts/lake.sh build` and
  * `./scripts/lake.sh test` both pass while it is broken, and a focused Lean gate reports green. This
  * reports the same class from source text in the build-free gate, seconds after the edit.
  *
- * A file counts as deciding the union when its pattern arms name more than half of it, which today
- * separates six matchers naming all twenty-five from three files naming at most three. That is a
+ * A file counts as deciding the union when its pattern arms name more than half of it. That is a
  * coverage heuristic rather than a parse of each match block, chosen because a file-level wildcard
  * test reads one match's `| _ => none` as covering another match in the same file, which is exactly
  * the file that broke. The compiler in `verify.sh` remains the deciding oracle; this moves the
  * feedback earlier.
  */
-export function unmatchedCheckedNodeConstructors(
+export function unmatchedUnionConstructors(
+  union: string,
   constructors: ReadonlyArray<string>,
   sourcePath: string,
   source: string,
@@ -67,7 +88,7 @@ export function unmatchedCheckedNodeConstructors(
     return [];
   }
   const code = analyzeLeanSource(source).code;
-  if (!/\bCheckedNode\b/u.test(code)) {
+  if (!new RegExp(`\\b${union}\\b`, "u").test(code)) {
     return [];
   }
   const decided = patternArmConstructors(constructors, code);
@@ -76,7 +97,7 @@ export function unmatchedCheckedNodeConstructors(
   }
   return constructors
     .filter((name) => !decided.includes(name))
-    .map((name) => `${normalizedPath}: ${name}`);
+    .map((name) => `${normalizedPath}: ${union}.${name}`);
 }
 
 export function broadSemanticProcessImports(
@@ -136,7 +157,7 @@ test("separates a checked-node matcher from a fixture that only builds nodes", (
     "def unrelated : Nat := 0",
     "  | notAConstructor",
   ].join("\n");
-  const constructors = checkedNodeConstructors(union);
+  const constructors = leanUnionConstructors(union, "CheckedNode");
   assert.deepEqual(constructors, [
     "noneStartEvent",
     "dataInputUserTask",
@@ -150,7 +171,8 @@ test("separates a checked-node matcher from a fixture that only builds nodes", (
     "  , .dataInputUserTask ⟨\"Review\"⟩ none directInput ]",
   ].join("\n");
   assert.deepEqual(
-    unmatchedCheckedNodeConstructors(
+    unmatchedUnionConstructors(
+      "CheckedNode",
       constructors,
       "BpmnSemantics/Experiments/Fixture.lean",
       fixture,
@@ -169,16 +191,18 @@ test("separates a checked-node matcher from a fixture that only builds nodes", (
     "  | _ => none",
   ].join("\n");
   assert.deepEqual(
-    unmatchedCheckedNodeConstructors(
+    unmatchedUnionConstructors(
+      "CheckedNode",
       constructors,
       "BpmnSemantics/Experiments/Probe.lean",
       matcher,
     ),
-    ["BpmnSemantics/Experiments/Probe.lean: dataInputUserTask"],
+    ["BpmnSemantics/Experiments/Probe.lean: CheckedNode.dataInputUserTask"],
     "a wildcard in a second match must not read as covering the first",
   );
   assert.deepEqual(
-    unmatchedCheckedNodeConstructors(
+    unmatchedUnionConstructors(
+      "CheckedNode",
       constructors,
       "BpmnSemantics/SemanticProcess/Lowering.lean",
       matcher,
@@ -188,19 +212,73 @@ test("separates a checked-node matcher from a fixture that only builds nodes", (
   );
 });
 
-test("every experiment matcher decides each checked node the union declares", () => {
-  const constructors = checkedNodeConstructors(
-    readFileSync(checkedNodeOwner, "utf8"),
-  );
-  assert.ok(
-    constructors.includes("dataInputUserTask"),
-    "the union parser must find real constructors before the inventory means anything",
+/**
+ * The exact shape that hid a broken file: several alternatives on one arm, and `<|` beside them.
+ *
+ * A frozen-surface classifier writes `| .a .. | .b .. => false`. Counting only the alternative that
+ * opens the line put the file under the coverage threshold, so the guard returned nothing while the
+ * tree did not compile.
+ */
+test("counts every alternative of a multi-constructor arm", () => {
+  const constructors = ["initiate", "awaitUserTask", "duplicate"];
+  const classifier = [
+    "def supported : SemanticOperation → Bool",
+    "  | .initiate .. | .awaitUserTask .. => true",
+    "  | .duplicate .. => false",
+  ].join("\n");
+  assert.deepEqual(
+    unmatchedUnionConstructors(
+      "SemanticOperation",
+      constructors,
+      "BpmnSemantics/Experiments/Classifier.lean",
+      classifier,
+    ),
+    [],
   );
 
-  const violations = readWorktreeSources(worktreeLeanSourceFiles()).flatMap(
-    ({ path, source }) =>
-      unmatchedCheckedNodeConstructors(constructors, path, source),
+  const missingOne = [
+    "def supported : SemanticOperation → Bool",
+    "  | .initiate .. | .awaitUserTask .. => true",
+    "  | _ => false",
+  ].join("\n");
+  assert.deepEqual(
+    unmatchedUnionConstructors(
+      "SemanticOperation",
+      constructors,
+      "BpmnSemantics/Experiments/Classifier.lean",
+      missingOne,
+    ),
+    ["BpmnSemantics/Experiments/Classifier.lean: SemanticOperation.duplicate"],
   );
+
+  const application = [
+    "def sample : List SemanticOperation :=",
+    "  [ build <| .initiate id, build <| .awaitUserTask id, build <| .duplicate id ]",
+  ].join("\n");
+  assert.deepEqual(
+    unmatchedUnionConstructors(
+      "SemanticOperation",
+      constructors,
+      "BpmnSemantics/Experiments/Fixture.lean",
+      application,
+    ),
+    [],
+    "`<|` applies a constructor and decides nothing",
+  );
+});
+
+test("every experiment matcher decides each constructor its unions declare", () => {
+  const sources = readWorktreeSources(worktreeLeanSourceFiles());
+  const violations = decidedUnions.flatMap(({ name, owner }) => {
+    const constructors = leanUnionConstructors(readFileSync(owner, "utf8"), name);
+    assert.ok(
+      constructors.length > 1,
+      `the union parser must find real ${name} constructors before the inventory means anything`,
+    );
+    return sources.flatMap(({ path, source }) =>
+      unmatchedUnionConstructors(name, constructors, path, source),
+    );
+  });
 
   assert.deepEqual(
     violations,
