@@ -1,6 +1,6 @@
 # Activity data-output User Task scenarios
 
-This directory contains one exact BPMN 2.0.2 credit-underwriting source and three answer-free scenarios for the [Activity data-output mediation proposal](../../docs/capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-PROPOSAL.md). The User Task declares one required scalar `DataOutput`, one empty `InputSet`, one `OutputSet` referencing exactly that output, and one direct `DataOutputAssociation` into the Process-owned `Property_UnderwritingOutcome`.
+This directory contains one exact BPMN 2.0.2 credit-underwriting source and three answer-free scenarios for the [Activity data-output mediation specification](../../docs/capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md). The User Task declares one required scalar `DataOutput`, one empty `InputSet`, one `OutputSet` referencing exactly that output, and one direct `DataOutputAssociation` into the Process-owned `Property_UnderwritingOutcome`.
 
 Every scenario starts with no Process data at all. That is deliberate rather than incidental: a declared `OutputSet` constrains completion and never entry, so the task must activate in a Process whose Property is unbound, which is exactly the state in which the sibling data-input model creates nothing.
 

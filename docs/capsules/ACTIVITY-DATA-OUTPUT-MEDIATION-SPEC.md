@@ -1,15 +1,15 @@
-# Activity data-output mediation proposal
+# Activity data-output mediation specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved-with-required-edits
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and bounded outcome
 
 What is the smallest standards-only data mechanism that lets one ordinary User Task declare a produced value, fill it from the completion command, and copy it into Process scope through a declared Data Association, without selecting expressions, optional or while-executing outputs, multiple OutputSets, or a new Task host?
 
-This proposal selects one private executable Process containing a None Start Event, one data-bearing User Task, and one None End Event. The User Task carries one required scalar `DataOutput`, one `OutputSet` referencing exactly it, one empty `InputSet`, and one direct `DataOutputAssociation` from that `DataOutput` to one Process-owned `Property`. Completion supplies exactly that one output by its `DataOutput` id; the association decides which Property receives it.
+This capsule owns one implemented private executable Process containing a None Start Event, one data-bearing User Task, and one None End Event. The User Task carries one required scalar `DataOutput`, one `OutputSet` referencing exactly it, one empty `InputSet`, and one direct `DataOutputAssociation` from that `DataOutput` to one Process-owned `Property`. Completion supplies exactly that one output by its `DataOutput` id; the association decides which Property receives it.
 
 This is the write-back half of the closed [Activity data-input mediation specification](ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md), which named it as the nearest unsupported claim. The reviewed requirement ID is `BPMN-ACTIVITY-DATA-OUTPUT-01`. Its requirement-ledger disposition is `supported` only for this exact bounded slice; the broad `BPMN-MECH-DATA-01`, `BPMN-MECH-ACTIVITY-01`, and `BPMN-MECH-TASK-01` families remain `unsupported`.
 
@@ -143,30 +143,6 @@ The BPMN layer owns the write-back proposition, its completion boundary, and Out
 This is a pre-release additive profile. It adds one profile artifact, one checked-node arm, one Semantic Process operation arm, one source reader, scenarios, one retained model, pipeline entries, and documentation owners. It adds no runtime collection, no observation field, and no wire-schema field beyond the checked and IL arms, so no current producer or consumer is replaced. No compatibility reader, version switch, or parallel RuntimeState shape is permitted under [the contract evolution policy](../../contracts/README.md#evolution-policy) and [the pre-release evolution policy](../PROJECT-DESIGN.md#pre-release-evolution-policy).
 
 The executable constraints mechanically resolved by `node scripts/what-binds.ts` include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [execution-publication contract coverage](../../scripts/execution-publication-contract-coverage.test.ts), [internal commutation census](../../scripts/internal-commutation-census.test.ts), [Activity occurrence writer census](../../scripts/activity-occurrence-writer-census.test.ts), [runtime collection removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [canonical ordering](../../scripts/canonical-ordering.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [model-corpus policy](../../scripts/bpmn-corpus-policy.test.ts), and [document reviewability](../../scripts/document-reviewability.test.ts). Focused oracles are the source compiler, semantic-core, Lean semantic, contract, differential pipeline, Temporal, and model-corpus gates selected by [the testing specification](../TESTING-SPEC.md#focused-gate-matrix).
-
-### Owners this implementation grows
-
-The `OWNER` measurements below are the nonblank counts reported by `node scripts/what-binds.ts` and are re-measured as implementation grows each owner, so the table always states the remaining headroom rather than the headroom this capsule started from. The 800-line soft target is the extraction threshold and 1,200 lines is the hard ceiling.
-
-| Owner | Current headroom |
-|---|---:|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 128 |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 161 |
-| [TypeScript source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 219 |
-| [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 252 |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 287 |
-| [TypeScript checked element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 358 |
-| [TypeScript projected-key owner](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 464 |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 488 |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 511 |
-| [TypeScript scoped-data owner](../../packages/semantic-core/src/semantic-process-data.ts) | 536 |
-
-`ProfileAdmission.lean` is the narrowest owner and the one the input capsule also flagged. Its exhaustive profile arm fit within the headroom, so no extraction was required; had it not, the profile-specific rule would have been extracted as its own behavior-preserving change rather than added under a size squeeze. New source, runtime, proof, and conformance modules hold behavior by responsibility; the completion family gets its own module rather than growing [the input family's owner](../../BpmnSemantics/SemanticProcess/ActivityDataInput.lean).
-
-No size exception is requested.
-
-Same-change owners are this proposal, the [input capsule](ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md), Product 2's copied published contract at [`execution-publications.ts`](../../platform/contracts/src/execution-publications.ts), the [scoped-data specification](SCOPED-DATA-SPEC.md), [Activity occurrence ownership](../ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md), the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), all applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), the semantic-core and source registries, the Lean module graph, the contract registry, model-corpus registry and generated map, capability disclosure, Product 2 About-page disclosure, capsule cost ledger, and [PLAN](../PLAN.md).
-
 ## Epistemic closure and reopen conditions
 
 Established by this capsule are the normative write-back and availability rules, the exact machine-readable cardinalities, the recorded Clause 10.4.2 versus Clause 13.3.2 destination inconsistency, the public separating witness against name-based completion, and an implementation whose source admission, Lean account, independently written TypeScript core, three answer-free cross-language scenarios, retained whole model, and real-service refinement all agree. What remains unestablished is everything the slice excludes: no claim covers a second output or OutputSet, an optional or while-executing output, an Activity carrying both directions, another Task host, or any CIB relationship.
@@ -185,4 +161,4 @@ Reopen before adding a second output or OutputSet, admitting optional or while-e
 |---|---|---|---|---|
 | Proposal | `4cf6d415` | `fork-turns-none` | `approve-with-required-edits` | `07261f25, d92ca95d` |
 | Semantic checkpoint | `f65a4228` | `fork-turns-none` | `approve-with-required-edits` | `90281eba` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `4f5825c1` | `fork-turns-none` | `approve-with-required-edits` | `f9004d49` |
