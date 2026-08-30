@@ -39,7 +39,7 @@ Beta breadth now advances at `EVENT-SUBSCRIPTIONS`, whose first checkpoint is [t
 
 ## Current evidence
 
-- Current verified floor. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-08-30`. Commit: `0f1ae5dd`, recording `dirty:false`. Elapsed `296000` ms with output SHA-256 `c5c18465cd1f4485426d9052697a52dd29c0da1ce274cc67a73f86da42b5e056`, run through the durable receipt wrapper against a clean committed head on a quiet host. This is the complete ordinary GitHub verification entry point and covers Lean, the semantic core, BPMN source, contracts, the registered differential pipeline, both CIB releases, Temporal refinement, and replay.
+- Current verified floor. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-08-30`. Commit: `b4f6f26f`, recording `dirty:false`. Elapsed `296000` ms with output SHA-256 `795a27b00e7c01900268048048a78836269ac87d1fa73a8d7a7a5244d5d0c8c8`, run through the durable receipt wrapper against a clean committed head on a quiet host. This is the complete ordinary GitHub verification entry point and covers Lean, the semantic core, BPMN source, contracts, the registered differential pipeline, both CIB releases, Temporal refinement, and replay.
 - Activity data-output closure target. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-08-30`. Commit: `92d523bb`, recording `dirty:false`. Elapsed `915000` ms with output SHA-256 `01e6a4ad30e0755ea3010787c7ed3aa81e82b1d125a8681d74c37e3ad2b3104a`. This is the reviewed closure target's gate; the graduated head above adds only the rename and the receipt row.
 
 ## Exact resume point
