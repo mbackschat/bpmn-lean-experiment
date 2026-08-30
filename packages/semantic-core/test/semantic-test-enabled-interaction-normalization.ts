@@ -16,6 +16,7 @@ export function normalizeEnabledInteraction(
         taskId: normalizeOccurrence(interaction.taskId),
       };
     case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverPayloadMessage:
       return {
         ...interaction,
         subscriptionId: normalizeOccurrence(interaction.subscriptionId),

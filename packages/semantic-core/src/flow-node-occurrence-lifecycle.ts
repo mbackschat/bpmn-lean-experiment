@@ -226,7 +226,7 @@ function externalLifecycle(
         ]);
     }
     case StimulusKind.DeliverPayloadMessage:
-      return null;
+      return completed(stimulus.subscriptionId);
     case StimulusKind.FireTimer: {
       const race = only(before.eventRaces.filter(({ timerOccurrenceId }) => sameOccurrence(timerOccurrenceId, stimulus.timerId)));
       if (race !== undefined) {
@@ -324,13 +324,12 @@ function internalLifecycle(
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
-    case SemanticOperationKind.AwaitPayloadMessage:
-      return null;
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return null;
     case SemanticOperationKind.AwaitEventRace: {

@@ -234,6 +234,7 @@ export function deriveInternalTransitionFootprint(
         state.userTaskWaits.map(({ id }) => id),
       );
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
       return waitFootprint(
         program,
         state,
@@ -296,7 +297,6 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitDataOutputUserTask:
-    case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.Duplicate:
@@ -392,6 +392,7 @@ function waitFootprint(
       kind:
         | SemanticOperationKind.AwaitUserTask
         | SemanticOperationKind.AwaitMessage
+        | SemanticOperationKind.AwaitPayloadMessage
         | SemanticOperationKind.AwaitTimer
         | SemanticOperationKind.AwaitEffect;
     }

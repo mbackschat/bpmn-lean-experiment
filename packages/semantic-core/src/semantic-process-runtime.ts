@@ -370,8 +370,14 @@ function applyInternalOperationState(
         captureOwner,
       );
     }
-    case SemanticOperationKind.AwaitPayloadMessage:
-      return null;
+    case SemanticOperationKind.AwaitPayloadMessage: {
+      const messageOwner = onlyTokenOwner(state, operation.input);
+      return applyOwnedOperation(
+        messageOwner,
+        (selected) => createMessageWait(operation, state, selected),
+        captureOwner,
+      );
+    }
     case SemanticOperationKind.AwaitTimer: {
       const timerOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(

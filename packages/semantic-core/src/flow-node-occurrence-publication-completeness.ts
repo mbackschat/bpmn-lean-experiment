@@ -200,11 +200,10 @@ function internalDelta(
         requireWaitStart(supplied, processId, operation.task.elementId, owner),
       ]);
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
       return lifecycleDelta([
         requireWaitStart(supplied, processId, operation.message.elementId, owner),
       ]);
-    case SemanticOperationKind.AwaitPayloadMessage:
-      return failCompleteness();
     case SemanticOperationKind.AwaitTimer:
       return lifecycleDelta([
         requireWaitStart(supplied, processId, operation.timer.elementId, owner),

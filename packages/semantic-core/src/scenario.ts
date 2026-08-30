@@ -10,6 +10,7 @@ import {
 import type {
   ActiveWait,
   CanonicalObservation,
+  EnabledInteraction,
   OpenUserTask,
   OpenMessageSubscription,
   OpenTimer,
@@ -32,6 +33,7 @@ import {
   supportsSemanticProcessScenario,
 } from "./semantic-process-admission.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import {
   incidentStateAllowsDispatch,
   openEffectIncidentAssociationIsValid,
@@ -39,6 +41,9 @@ import {
 import {
   incidentCancellationEligibility,
 } from "./semantic-process-incident-cancellation.js";
+import {
+  messageWaitRequiresPayload,
+} from "./semantic-process-message.js";
 import {
   ControlStateKind,
   initialState,
@@ -201,7 +206,8 @@ export function observeStableState(
     case ControlStateKind.Cancelled: {
       const cancellation = incidentCancellationEligibility(program, state, null);
       const multiInstances = projectOpenMultiInstances(program, state);
-      if (multiInstances === null) {
+      const messageInteractions = projectEnabledMessageInteractions(program, state);
+      if (multiInstances === null || messageInteractions === null) {
         return null;
       }
       return {
@@ -225,13 +231,7 @@ export function observeStableState(
             kind: StimulusKind.CompleteUserTaskInstance,
             taskId: task.id,
           } as const)),
-          ...projectOpenMessageSubscriptions(state).map(
-            (subscription) => ({
-              kind: StimulusKind.DeliverMessage,
-              subscriptionId: subscription.id,
-              channel: subscription.channel,
-            } as const),
-          ),
+          ...messageInteractions,
           ...projectOpenIncidents(state).map((incident) => ({
             kind: StimulusKind.RetryIncident,
             incidentId: incident.id,
@@ -252,6 +252,30 @@ export function observeStableState(
     default:
       return assertNever(state.control);
   }
+}
+
+function projectEnabledMessageInteractions(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): ReadonlyArray<EnabledInteraction> | null {
+  const interactions: EnabledInteraction[] = [];
+  for (const wait of state.messageWaits) {
+    const requiresPayload = program.identity.semanticProfile ===
+        SemanticProfileId.MessagePayloadCatch
+      ? messageWaitRequiresPayload(program, state, wait)
+      : false;
+    if (requiresPayload === null) {
+      return null;
+    }
+    interactions.push({
+      kind: requiresPayload
+        ? StimulusKind.DeliverPayloadMessage
+        : StimulusKind.DeliverMessage,
+      subscriptionId: wait.id,
+      channel: wait.channel,
+    });
+  }
+  return interactions;
 }
 
 function processStatus(

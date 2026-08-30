@@ -412,7 +412,8 @@ function waitMatchesMessage(
 ): boolean {
   if (!ownerExists(state, wait.owner)) return false;
   const ordinary = program.operations.filter((operation) =>
-    operation.kind === SemanticOperationKind.AwaitMessage &&
+    (operation.kind === SemanticOperationKind.AwaitMessage ||
+      operation.kind === SemanticOperationKind.AwaitPayloadMessage) &&
     operation.message.elementId === wait.id.elementId &&
     operation.output === wait.output &&
     sameMessageChannel(operation.message.channel, wait.channel) &&

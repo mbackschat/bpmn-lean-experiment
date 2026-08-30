@@ -52,7 +52,10 @@ import {
 import {
   incidentStateAllowsDispatch,
 } from "./semantic-process-incident-validation.js";
-import { deliverMessage } from "./semantic-process-message.js";
+import {
+  deliverMessage,
+  deliverPayloadMessage,
+} from "./semantic-process-message.js";
 import {
   admitMessageStart,
 } from "./semantic-process-message-start.js";
@@ -242,8 +245,12 @@ export function admit(
         ? { outcome: CommandOutcome.Rejected, state }
         : { outcome: CommandOutcome.Committed, state: next };
     }
-    case StimulusKind.DeliverPayloadMessage:
-      return { outcome: CommandOutcome.Rejected, state };
+    case StimulusKind.DeliverPayloadMessage: {
+      const next = deliverPayloadMessage(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
+    }
     case StimulusKind.FireTimer: {
       if (isEventRaceTimerDefinition(program, stimulus.timerId)) {
         const next = winEventRaceWithTimer(program, state, stimulus);

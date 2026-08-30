@@ -38,6 +38,12 @@ const structuredHumanWorkValueDomain = Object.freeze([
   VariableValueKind.Integer,
   VariableValueKind.StringList,
 ]);
+const scalarValueDomain = Object.freeze([
+  VariableValueKind.Boolean,
+  VariableValueKind.Integer,
+  VariableValueKind.String,
+  VariableValueKind.Null,
+]);
 
 const registeredSemanticProfiles: ReadonlySet<string> = new Set(
   Object.values(SemanticProfileId),
@@ -232,7 +238,8 @@ export function profileAllowsStimulusValueDomain(
     case StimulusKind.FireTimer:
       return true;
     case StimulusKind.DeliverPayloadMessage:
-      return false;
+      return semanticProfile === SemanticProfileId.MessagePayloadCatch &&
+        scalarValueDomain.includes(stimulus.payload.kind);
     default:
       return assertNever(stimulus);
   }

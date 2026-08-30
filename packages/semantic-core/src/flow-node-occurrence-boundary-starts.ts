@@ -86,7 +86,8 @@ export function candidateLongLivedStarts(
       return sequentialMultiInstanceEntryStarts(after, operation, owner, processId);
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
       return parallelMultiInstanceEntryStarts(after, operation, owner, processId);
-    case SemanticOperationKind.AwaitMessage: {
+    case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage: {
       const wait = only(after.messageWaits.filter((candidate) =>
         candidate.id.elementId === operation.message.elementId &&
         candidate.output === operation.output &&
@@ -95,8 +96,6 @@ export function candidateLongLivedStarts(
       ));
       return oneWaitStart(processId, operation.message.elementId, owner, wait?.id);
     }
-    case SemanticOperationKind.AwaitPayloadMessage:
-      return null;
     case SemanticOperationKind.AwaitTimer: {
       const deadlineMs = after.logicalTimeMs + operation.timer.durationMs;
       const wait = Number.isSafeInteger(deadlineMs)

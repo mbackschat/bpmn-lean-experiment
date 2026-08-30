@@ -149,6 +149,7 @@ test("both orders expose the approved stable public observations", () => {
         case StimulusKind.CompleteUserTaskInstance:
           return interaction;
         case StimulusKind.DeliverMessage:
+        case StimulusKind.DeliverPayloadMessage:
           throw new Error(
             "parallel User Task state exposed a Message interaction",
           );

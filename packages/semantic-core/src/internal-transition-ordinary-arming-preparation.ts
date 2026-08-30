@@ -142,6 +142,7 @@ function ordinaryArmingOperation(
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect:
       return operation;
@@ -157,6 +158,7 @@ function occurrenceKind(
     case SemanticOperationKind.AwaitUserTask:
       return InternalOccurrenceKind.UserTask;
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
       return InternalOccurrenceKind.Message;
     case SemanticOperationKind.AwaitTimer:
       return InternalOccurrenceKind.Timer;

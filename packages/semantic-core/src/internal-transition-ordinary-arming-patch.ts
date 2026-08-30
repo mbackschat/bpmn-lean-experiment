@@ -61,6 +61,7 @@ export type InternalOrdinaryArmingOperation = Extract<
     kind:
       | SemanticOperationKind.AwaitUserTask
       | SemanticOperationKind.AwaitMessage
+      | SemanticOperationKind.AwaitPayloadMessage
       | SemanticOperationKind.AwaitTimer
       | SemanticOperationKind.AwaitEffect;
   }
@@ -96,7 +97,8 @@ export function deriveInternalOrdinaryArmingPatch(
         },
       };
     }
-    case SemanticOperationKind.AwaitMessage: {
+    case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage: {
       const activation = nextActivation(
         state.messageActivations,
         operation.message.elementId,

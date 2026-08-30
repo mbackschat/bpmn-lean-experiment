@@ -10,6 +10,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   AppliedInternalOperationStep,
+  AwaitPayloadMessageOperation,
   RuntimeState,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
@@ -70,6 +71,7 @@ test("prepares every ordinary wait family with publication-time and an exact wai
     })),
     armedCandidate(receiveTaskProgram, "receive-preparation"),
     armedCandidate(configuredTaskProgram, "effect-preparation"),
+    payloadMessageArmingCase(),
   ];
 
   assert.deepEqual(
@@ -77,6 +79,7 @@ test("prepares every ordinary wait family with publication-time and an exact wai
     new Set([
       SemanticOperationKind.AwaitUserTask,
       SemanticOperationKind.AwaitMessage,
+      SemanticOperationKind.AwaitPayloadMessage,
       SemanticOperationKind.AwaitTimer,
       SemanticOperationKind.AwaitEffect,
     ]),
@@ -139,6 +142,37 @@ test("prepares every ordinary wait family with publication-time and an exact wai
     );
   }
 });
+
+function payloadMessageArmingCase(): Readonly<{
+  program: SemanticProcessProgram;
+  state: RuntimeState;
+  candidate: AppliedInternalOperationStep;
+}> {
+  const ordinary = armedCandidate(receiveTaskProgram, "payload-preparation");
+  assert.ok(
+    ordinary.candidate.operation.kind === SemanticOperationKind.AwaitMessage,
+  );
+  const operation = {
+    ...ordinary.candidate.operation,
+    kind: SemanticOperationKind.AwaitPayloadMessage,
+    directOutput: {
+      associationId: "DataOutputAssociation_Payload",
+      sourceDataOutputId: "DataOutput_Payload",
+      sourceDataOutputName: "Payload",
+      targetPropertyId: "Property_Payload",
+    },
+  } as const satisfies AwaitPayloadMessageOperation;
+  return {
+    program: {
+      ...ordinary.program,
+      operations: ordinary.program.operations.map((candidate) =>
+        candidate.id === operation.id ? operation : candidate
+      ),
+    },
+    state: ordinary.state,
+    candidate: { ...ordinary.candidate, operation },
+  };
+}
 
 test("ordinary local patches preserve complete sibling preparation and commute in raw state", () => {
   const [leftCandidate, rightCandidate] = enabledOperations(program, frontier);
