@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.CommandAdmission
 import BpmnSemantics.SemanticProcess.InternalCommutationCensus
 import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.MessageBoundedTaskLaws
 import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
@@ -10,8 +11,8 @@ import BpmnSemantics.SemanticProcess.Transition
 /-! # Interrupting Activity boundary Message conformance
 
 Kernel-decided witnesses bind the exact source identity to its distinct checked and IL arms, then
-exercise atomic same-owner arming, both exclusive victories, the refusal matrix, and the tagged
-handler adversary. Public Flow Node occurrence publication remains outside this checkpoint.
+exercise atomic same-owner arming, both exclusive victories, the refusal matrix, the tagged handler
+adversary, and exact Flow Node occurrence publication.
 -/
 
 namespace BpmnSemantics.ActivityBoundaryMessageConformance
@@ -194,6 +195,29 @@ def taskId : UserTaskInstanceId :=
 def subscriptionId : MessageSubscriptionId :=
   { processInstanceId := instanceId, elementId := ⟨"Withdrawal"⟩, activation := 1 }
 
+def taskStart : OpenSemanticFlowNodeOccurrence :=
+  { anchor := .wait taskId
+    processId := checkedProcess.processId
+    elementId := ⟨"ReviewApplication"⟩
+    owner }
+
+def subscriptionStart : OpenSemanticFlowNodeOccurrence :=
+  { anchor := .wait subscriptionId
+    processId := checkedProcess.processId
+    elementId := ⟨"Withdrawal"⟩
+    owner }
+
+theorem armed_open_occurrences_are_exactly_task_and_subscription :
+    projectOpenFlowNodeOccurrences? program armedState =
+      some [taskStart, subscriptionStart] := by
+  decide +kernel
+
+theorem arming_publishes_both_waits_and_no_boundary_transition :
+    flowNodeOccurrenceDeltaForOperation? program beforeArming armedState
+        messageBoundedOperation ⟨"arm-boundary-message"⟩ 0 =
+      some (canonicalFlowNodeOccurrenceDelta [taskStart, subscriptionStart] []) := by
+  decide +kernel
+
 def afterTaskVictory : RuntimeState :=
   { armedState with
     waits := []
@@ -227,6 +251,32 @@ theorem message_victory_evaluator_is_sound :
     MessageBoundedTaskVictoryStep program armedState afterMessageVictory :=
   interruptMessageBoundedUserTask_sound program armedState afterMessageVictory subscriptionId
     channel message_victory_uses_only_the_boundary_route
+
+theorem task_victory_completes_task_and_cancels_subscription :
+    flowNodeOccurrenceDeltaForStimulus? program armedState afterTaskVictory
+        (.completeUserTaskInstance ⟨"complete-review"⟩ taskId []) 0 =
+      some (canonicalFlowNodeOccurrenceDelta []
+        [ { anchor := .wait taskId, terminal := .completed }
+        , { anchor := .wait subscriptionId, terminal := .cancelled } ]) := by
+  decide +kernel
+
+theorem message_victory_cancels_task_and_completes_boundary_atomically :
+    flowNodeOccurrenceDeltaForStimulus? program armedState afterMessageVictory
+        (.deliverMessage ⟨"deliver-withdrawal"⟩ subscriptionId channel) 0 =
+      some (instantaneousFlowNodeOccurrenceDeltaWithEnds ⟨"deliver-withdrawal"⟩ 0
+        [{ processId := checkedProcess.processId, elementId := ⟨"Withdrawal"⟩, owner }]
+        [ { anchor := .wait taskId, terminal := .cancelled }
+        , { anchor := .wait subscriptionId, terminal := .completed } ]) := by
+  decide +kernel
+
+def mismatchedPairState : RuntimeState :=
+  { armedState with
+    messageWaits := armedState.messageWaits.map fun wait => { wait with activation := 2 }
+    messageActivations := [{ elementId := ⟨"Withdrawal"⟩, count := 2 }] }
+
+theorem independently_projected_open_set_rejects_a_mismatched_pair :
+    projectOpenFlowNodeOccurrences? program mismatchedPairState = none := by
+  decide +kernel
 
 theorem both_victory_writers_issue_no_activity_identity :
     activityIdentityIssuingDiscipline armedState afterTaskVictory = true ∧
