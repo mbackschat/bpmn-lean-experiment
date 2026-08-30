@@ -272,9 +272,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.ActivityBoundaryMessageConformance",
-      peakResidentKib: 1989332,
-      elapsedSeconds: 19.52,
-      measuredAtCommit: "519c7c5e",
+      peakResidentKib: 2140468,
+      elapsedSeconds: 13.53,
+      measuredAtCommit: "6862e573",
     },
     { module: "BpmnSemantics.ServiceTaskEffectConformance", peakResidentKib: 1349428, elapsedSeconds: 5.6 },
     { module: "BpmnSemantics.IntermediateCatchTimerConformance", peakResidentKib: 1296244, elapsedSeconds: 5.3 },
