@@ -39,14 +39,14 @@ Beta breadth advances at `EVENT-SUBSCRIPTIONS`. The [Message payload catch speci
 
 ## Current evidence
 
+- Activity boundary Message semantic checkpoint. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-08-31`. Commit: `c4de0166`, clean target. Output SHA-256: `20be938a4adfa15d361de9a7f53f6a828a96772486ba6e67bd3dfb697f99dc73`. The same reviewer approved its correction audit; the capsule owns the exact receipt.
 - Message payload closure implementation. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-08-30`. Commit: `0c34aace`, recording `dirty:false`. Elapsed `302104` ms with output SHA-256 `8c373c401d676751ea0cac913f874df4eb5b54d08e88aff14bfc083285b3fc16`, retained under the durable receipt contract. This complete ordinary GitHub verification entry point covers Lean, the semantic core, source and contracts, both CIB releases, all 66 registered cross-target cases, 77 live Temporal histories, and replay. The pipeline timing result is non-comparable because the final load was `1.056` per core, so it is correctness evidence and not a performance baseline.
-- Message payload semantic checkpoint. Command: `./scripts/pnpm.sh run test:semantic-core`. Status: `exit 0`. Date: `2026-08-30`. Commit: `9ea2a203`. Elapsed `10664` ms; all `567` tests pass. At the same commit, the three affected cold Lean targets exited `0` in the pinned one-CPU, 3 GiB, no-swap audit container. Exact rows and provenance belong to [the Lean module-cost record](../scripts/lean-module-cost.ts); Message payload and Timer Start require near-cap disclosure, while strict JSON remains below the threshold.
 
 ## Exact resume point
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: commit and independently review the first-green source/checked/IL/Lean/core checkpoint for the owner-approved [interrupting Activity boundary Message proposal](capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md). Keep product profile registration, scenario/differential/corpus work, occurrence publication, and the Temporal Message/Update scheduler paused until the semantic-checkpoint verdict approves the target. The [Message payload catch specification](capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) remains closed and green.
+Next action: implement and commit occurrence publication for the independently approved [interrupting Activity boundary Message proposal](capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md). Arming publishes the host task and subscription, never an open Boundary Event; task victory selects only normal flow, while Message victory cancels the host, atomically starts and completes the Boundary Event, and selects only boundary flow. Profile, scenario, differential, corpus, and Temporal scheduling lanes follow before closure.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 

@@ -11,7 +11,7 @@ What is the smallest standards-only slice in which one payload-free interrupting
 
 ## Implementation checkpoint
 
-The first green source, checked-graph, Semantic Process IL, Lean, and independently written TypeScript-core checkpoint is implemented. Product profile registration, scenario and differential evidence, occurrence publication, and the Temporal Message/Update scheduler remain paused until the mandatory semantic-checkpoint review is approved.
+The first green source, checked-graph, Semantic Process IL, Lean, and independently written TypeScript-core checkpoint is implemented and independently approved. Product profile registration, scenario and differential evidence, occurrence publication, and the Temporal Message/Update scheduler may now proceed under the reviewed account; closure remains unreached.
 
 ## Selection basis
 
@@ -354,7 +354,9 @@ Closure requires every evidence lane and guard named above, the complete applica
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `7efbf69a` | `fork-turns-none` | `approve-with-required-edits` | `1949fb45, 76181f8a` |
-| Semantic checkpoint | `bbd2801a` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `bbd2801a` | `fork-turns-none` | `approve-with-required-edits` | `c4de0166` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The cold proposal review required six corrections: close the public stimulus domain, use deep immutability, state the exact conditional Lean theorem, finalize the profile and failure identities, complete the producer/consumer/guard inventory, and route the Product 2 capability owner. The same reviewer closed five findings at `1949fb45` and approved the exact 75-path migration census at `76181f8a`; neither round changed the selected behavior, public observation, exclusions, or evidence strategy.
+
+The context-cold semantic-checkpoint review targeted `bbd2801a` and required the official XSD form for `operationRef`, placement of the checked Message Boundary Event arm in the node schema union, exact fixture-independent host-first topology in every independent checked/program admission path, and complete assurance-map routing in the review packet. The same reviewer approved correction target `c4de0166` with all four findings closed and no change to the selected account, public contract, exclusions, or evidence strategy; the concurrent clean-target gate passed with output SHA-256 `20be938a4adfa15d361de9a7f53f6a828a96772486ba6e67bd3dfb697f99dc73`.
