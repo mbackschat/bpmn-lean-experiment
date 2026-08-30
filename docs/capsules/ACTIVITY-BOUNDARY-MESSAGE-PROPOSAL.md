@@ -62,7 +62,7 @@ The exact source contract is:
 - Message Event Definition `messageRef` and `operationRef` values that resolve to the same Message/Operation chain;
 - no parser warning, extension, item definition, payload association, data object, expression, Collaboration, Participant, Message Flow, additional event definition, additional boundary handler, loop, Multi-Instance characteristic, or nested scope.
 
-Admission compares the exact checked-node and operation multisets, resolved references, attachment, and generic graph reachability. It must not special-case one fixture's ids or preserve a whole-model topology predicate after the generic facts above settle the selected class.
+Admission compares the exact checked-node and operation multisets, resolved references, attachment, generic graph reachability, and a profile-local exact topology predicate. The topology predicate must remain fixture-ID-independent: cardinalities, attachment, and reachability alone also admit a graph that reaches a follow-on task before the host and therefore arms the boundary Message subscription late.
 
 The omitted `cancelActivity` lexeme is the only admitted form for this capsule. Explicit `true` is conforming but deferred so source bytes and default handling have one exact witness. Every false lexeme is rejected.
 
@@ -292,7 +292,7 @@ The reviewability threshold is 800 nonblank lines. Each figure is the mechanical
 | [`flow-node-occurrence-publication-completeness.ts`](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts) | 317 | add the new operation to complete E1/E2 publication census; extract first only if the edit would cross 800 |
 | [`RuntimeState.lean`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 234 | replace the Timer-only field with the handler-family sum/list; extract first only if the edit would cross 800 |
 | [`Lowering.lean`](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 166 | add independent checked-to-IL lowering; extract first only if the edit would cross 800 |
-| [`ProfileAdmission.lean`](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 81 | add the exact profile multiset; extract the new profile predicate before an edit that would cross 800 |
+| [`ProfileAdmission.lean`](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 20 | keep the exact profile multiset and topology predicate together; extract this profile before any further growth would cross 800 |
 | [`ProgramStructuralValidation.lean`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 180 | add exact operation structural validation; extract first only if the edit would cross 800 |
 | [`GraphValidation.lean`](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 55 | add only dispatcher coverage; extract the family graph rules before any edit that would cross 800 |
 | [`RuntimeStateWellFormed.lean`](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 109 | resolve handler-family ownership; extract the new handler predicates before an edit that would cross 800 |

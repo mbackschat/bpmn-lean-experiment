@@ -337,38 +337,6 @@
           "additionalProperties": false,
           "required": [
             "kind",
-            "id",
-            "attachedToRef",
-            "interruption",
-            "channel",
-            "outputFlowId"
-          ],
-          "properties": {
-            "kind": {
-              "const": "messageBoundaryEvent"
-            },
-            "id": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "attachedToRef": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "interruption": {
-              "const": "interrupting"
-            },
-            "channel": {
-              "$ref": "#/$defs/operationMessageChannel"
-            },
-            "outputFlowId": {
-              "$ref": "#/$defs/nonemptyString"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
             "name"
           ],
           "properties": {
@@ -749,6 +717,38 @@
             },
             "error": {
               "$ref": "#/$defs/errorReference"
+            },
+            "outputFlowId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "attachedToRef",
+            "interruption",
+            "channel",
+            "outputFlowId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "messageBoundaryEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "attachedToRef": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "interruption": {
+              "const": "interrupting"
+            },
+            "channel": {
+              "$ref": "#/$defs/operationMessageChannel"
             },
             "outputFlowId": {
               "$ref": "#/$defs/nonemptyString"

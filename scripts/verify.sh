@@ -8,6 +8,7 @@ cd "$project_root"
 representative_bpmn_path="scenarios/user-task-discovery-completion/process.bpmn"
 timer_start_bpmn_path="packages/bpmn-source/test/fixtures/timer-start-event.bpmn"
 configured_task_bpmn_path="packages/bpmn-source/test/fixtures/configured-task.bpmn"
+activity_boundary_message_bpmn_path="scenarios/activity-boundary-message/process.bpmn"
 
 verify_common() {
   ./scripts/doctor.sh verify
@@ -16,7 +17,8 @@ verify_common() {
   ./scripts/validate-bpmn-xml.sh \
     "$representative_bpmn_path" \
     "$timer_start_bpmn_path" \
-    "$configured_task_bpmn_path"
+    "$configured_task_bpmn_path" \
+    "$activity_boundary_message_bpmn_path"
 }
 
 verify_lean() {

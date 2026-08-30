@@ -21,8 +21,9 @@
       <bpmn:outgoing>Flow_Boundary</bpmn:outgoing>
       <bpmn:messageEventDefinition
         id="MessageEventDefinition_ApplicationWithdrawal"
-        messageRef="Message_ApplicationWithdrawal"
-        operationRef="Operation_ReceiveApplicationWithdrawal"/>
+        messageRef="Message_ApplicationWithdrawal">
+        <bpmn:operationRef>Operation_ReceiveApplicationWithdrawal</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:userTask id="RecordReviewCompletion" name="Record review completion">
       <bpmn:incoming>Flow_Normal</bpmn:incoming>

@@ -9,10 +9,12 @@ import {
   MessageChannelKind,
   RuntimeStateDefect,
   RuntimeStateRegression,
+  SemanticOperationKind,
   StimulusKind,
   VariableValueKind,
   applyStimulus,
   initialState,
+  profileAllowsProgramShape,
   runtimeStateDefects,
   runtimeStateRegressions,
 } from "@bpmn-lean/semantic-core";
@@ -28,6 +30,40 @@ import {
   taskId,
   withdrawalChannel,
 } from "./activity-boundary-message-fixture.ts";
+
+test("profile admission refuses a program that arms the Message handler late", () => {
+  const lateArmingOperations = program.operations.map((operation) => {
+    switch (operation.kind) {
+      case SemanticOperationKind.AwaitMessageBoundedUserTask:
+        return {
+          ...operation,
+          input: "place:Flow_Normal",
+          task: { ...operation.task, output: "place:Flow_Normal_End" },
+        };
+      case SemanticOperationKind.AwaitUserTask:
+        return operation.task.elementId === "RecordReviewCompletion"
+          ? {
+            ...operation,
+            input: "place:Flow_Start",
+            output: "place:Flow_Normal",
+          }
+          : operation;
+      default:
+        return operation;
+    }
+  });
+
+  assert.equal(profileAllowsProgramShape(
+    program.identity.semanticProfile,
+    program.operations,
+    program.definitionScopes.length,
+  ), true);
+  assert.equal(profileAllowsProgramShape(
+    program.identity.semanticProfile,
+    lateArmingOperations,
+    program.definitionScopes.length,
+  ), false);
+});
 
 function armed() {
   const started = applyStimulus(program, initialState, start);

@@ -1,4 +1,5 @@
 import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
@@ -53,6 +54,7 @@ export function isAdmittedCheckedProcess(
     errorNodesHaveDirectHandlers(graph, admittedGraph.nodeScopes) &&
     boundaryTimersAttachToDeadlineOwners(graph, admittedGraph.nodeScopes) &&
     boundaryMessagesAttachToUserTasks(graph, admittedGraph.nodeScopes) &&
+    hasSelectedActivityBoundaryMessageTopology(semanticProfile, graph) &&
     hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
@@ -333,6 +335,67 @@ function boundaryMessagesAttachToUserTasks(
           id === handler.outputFlowId && sourceId === handler.id,
       );
   });
+}
+
+function hasSelectedActivityBoundaryMessageTopology(
+  semanticProfile: string,
+  graph: CheckedProcessGraph,
+): boolean {
+  if (semanticProfile !== ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID) {
+    return true;
+  }
+  const starts = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.NoneStartEvent }> =>
+      node.kind === CheckedNodeKind.NoneStartEvent,
+  );
+  const handlers = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.MessageBoundaryEvent }> =>
+      node.kind === CheckedNodeKind.MessageBoundaryEvent,
+  );
+  const tasks = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.UserTask }> =>
+      node.kind === CheckedNodeKind.UserTask,
+  );
+  const ends = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.NoneEndEvent }> =>
+      node.kind === CheckedNodeKind.NoneEndEvent,
+  );
+  const start = starts[0];
+  const handler = handlers[0];
+  if (
+    starts.length !== 1 || start === undefined ||
+    handlers.length !== 1 || handler === undefined ||
+    tasks.length !== 3 || ends.length !== 2 || graph.flows.length !== 5
+  ) {
+    return false;
+  }
+  const host = tasks.find(({ id }) => id === handler.attachedToRef);
+  const followUps = tasks.filter(({ id }) => id !== handler.attachedToRef);
+  const onlyOutgoing = (sourceId: string) => {
+    const matches = graph.flows.filter(
+      (flow) => flow.sourceId === sourceId && flow.condition === null,
+    );
+    return matches.length === 1 ? matches[0] : undefined;
+  };
+  const startFlow = onlyOutgoing(start.id);
+  const hostFlow = host === undefined ? undefined : onlyOutgoing(host.id);
+  const handlerFlow = onlyOutgoing(handler.id);
+  const normalFollowUp = followUps.find(({ id }) => id === hostFlow?.targetId);
+  const boundaryFollowUp = followUps.find(({ id }) => id === handlerFlow?.targetId);
+  const normalEndFlow = normalFollowUp === undefined
+    ? undefined
+    : onlyOutgoing(normalFollowUp.id);
+  const boundaryEndFlow = boundaryFollowUp === undefined
+    ? undefined
+    : onlyOutgoing(boundaryFollowUp.id);
+  const endIds = new Set(ends.map(({ id }) => id));
+  return host !== undefined && startFlow?.targetId === host.id &&
+    handlerFlow?.id === handler.outputFlowId &&
+    normalFollowUp !== undefined && boundaryFollowUp !== undefined &&
+    normalFollowUp.id !== boundaryFollowUp.id &&
+    normalEndFlow !== undefined && boundaryEndFlow !== undefined &&
+    normalEndFlow.targetId !== boundaryEndFlow.targetId &&
+    endIds.has(normalEndFlow.targetId) && endIds.has(boundaryEndFlow.targetId);
 }
 
 function errorNodesHaveDirectHandlers(

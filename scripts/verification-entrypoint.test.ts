@@ -364,6 +364,15 @@ test("default verification XSD-validates the Configured Task fixture", async () 
   );
 });
 
+test("default verification XSD-validates the Activity boundary Message source", async () => {
+  const source = await readFile(verifyScriptPath, "utf8");
+
+  assert.match(
+    source,
+    /scenarios\/activity-boundary-message\/process\.bpmn/u,
+  );
+});
+
 test("default verification executes the self-building checked-source proof experiment once", async () => {
   const source = await readFile(verifyScriptPath, "utf8");
   await assertLineOccursOnce(

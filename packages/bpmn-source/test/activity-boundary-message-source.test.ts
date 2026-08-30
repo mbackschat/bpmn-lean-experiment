@@ -9,6 +9,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
+import { Ajv2020 } from "ajv/dist/2020.js";
+
 import {
   BpmnCompilationStatus,
   CheckedNodeKind,
@@ -102,6 +104,38 @@ test("lowers one Message-bounded User Task with distinct normal and boundary rou
   );
 });
 
+test("binds the compiler output to the checked-process schema only as a node", async () => {
+  const result = await compile(source);
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  if (result.status !== BpmnCompilationStatus.Accepted) {
+    return;
+  }
+  const schema = JSON.parse(await readFile(
+    new URL(
+      "../../../contracts/schemas/checked-process.schema.json",
+      import.meta.url,
+    ),
+    "utf8",
+  )) as Record<string, unknown> & { $defs: Record<string, unknown> };
+  const ajv = new Ajv2020({ strict: true });
+  const validateProcess = ajv.compile(schema);
+  const validateMappingExpression = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: schema.$defs,
+    $ref: "#/$defs/mappingExpression",
+  });
+  const handler = result.checkedProcess.nodes.find(
+    ({ kind }) => kind === CheckedNodeKind.MessageBoundaryEvent,
+  );
+  assert.ok(handler !== undefined);
+  assert.equal(
+    validateProcess(result.checkedProcess),
+    true,
+    JSON.stringify(validateProcess.errors),
+  );
+  assert.equal(validateMappingExpression(handler), false);
+});
+
 test("derives the exact OperationMessage channel from resolved definition references", async () => {
   const renamed = source
     .replaceAll("Interface_ApplicationMessages", "Interface_Renamed")
@@ -156,12 +190,57 @@ test("refuses a mismatched Message and Operation chain", async () => {
       ].join("\n"),
     )
     .replace(
-      'operationRef="Operation_ReceiveApplicationWithdrawal"',
-      'operationRef="Operation_ReceiveOther"',
+      "<bpmn:operationRef>Operation_ReceiveApplicationWithdrawal</bpmn:operationRef>",
+      "<bpmn:operationRef>Operation_ReceiveOther</bpmn:operationRef>",
     );
   assert.notEqual(mismatched, source);
 
   const result = await compile(mismatched);
+
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+});
+
+test("refuses a topology that arms the Message handler after a follow-on task", async () => {
+  const reordered = source
+    .replace(
+      [
+        '    <bpmn:userTask id="ReviewApplication" name="Review application">',
+        "      <bpmn:incoming>Flow_Start</bpmn:incoming>",
+        "      <bpmn:outgoing>Flow_Normal</bpmn:outgoing>",
+      ].join("\n"),
+      [
+        '    <bpmn:userTask id="ReviewApplication" name="Review application">',
+        "      <bpmn:incoming>Flow_Normal</bpmn:incoming>",
+        "      <bpmn:outgoing>Flow_Normal_End</bpmn:outgoing>",
+      ].join("\n"),
+    )
+    .replace(
+      [
+        '    <bpmn:userTask id="RecordReviewCompletion" name="Record review completion">',
+        "      <bpmn:incoming>Flow_Normal</bpmn:incoming>",
+        "      <bpmn:outgoing>Flow_Normal_End</bpmn:outgoing>",
+      ].join("\n"),
+      [
+        '    <bpmn:userTask id="RecordReviewCompletion" name="Record review completion">',
+        "      <bpmn:incoming>Flow_Start</bpmn:incoming>",
+        "      <bpmn:outgoing>Flow_Normal</bpmn:outgoing>",
+      ].join("\n"),
+    )
+    .replace(
+      '    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="ReviewApplication"/>',
+      '    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="RecordReviewCompletion"/>',
+    )
+    .replace(
+      '    <bpmn:sequenceFlow id="Flow_Normal" sourceRef="ReviewApplication" targetRef="RecordReviewCompletion"/>',
+      '    <bpmn:sequenceFlow id="Flow_Normal" sourceRef="RecordReviewCompletion" targetRef="ReviewApplication"/>',
+    )
+    .replace(
+      '    <bpmn:sequenceFlow id="Flow_Normal_End" sourceRef="RecordReviewCompletion" targetRef="NormalEnd"/>',
+      '    <bpmn:sequenceFlow id="Flow_Normal_End" sourceRef="ReviewApplication" targetRef="NormalEnd"/>',
+    );
+  assert.notEqual(reordered, source);
+
+  const result = await compile(reordered);
 
   assert.equal(result.status, BpmnCompilationStatus.Rejected);
 });
@@ -183,7 +262,9 @@ test("refuses payload, misattachment, and additional boundary handlers", async (
     [
       '    <bpmn:boundaryEvent id="ExtraWithdrawal" attachedToRef="ReviewApplication">',
       "      <bpmn:outgoing>Flow_ExtraBoundary</bpmn:outgoing>",
-      '      <bpmn:messageEventDefinition id="MessageEventDefinition_ExtraWithdrawal" messageRef="Message_ApplicationWithdrawal" operationRef="Operation_ReceiveApplicationWithdrawal"/>',
+      '      <bpmn:messageEventDefinition id="MessageEventDefinition_ExtraWithdrawal" messageRef="Message_ApplicationWithdrawal">',
+      "        <bpmn:operationRef>Operation_ReceiveApplicationWithdrawal</bpmn:operationRef>",
+      "      </bpmn:messageEventDefinition>",
       "    </bpmn:boundaryEvent>",
       '    <bpmn:userTask id="HandleExtraWithdrawal" name="Handle extra withdrawal">',
       "      <bpmn:incoming>Flow_ExtraBoundary</bpmn:incoming>",

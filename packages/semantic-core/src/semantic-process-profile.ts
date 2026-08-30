@@ -10,7 +10,10 @@ import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   requiredProgramShape,
 } from "./semantic-program-profile-shape.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
@@ -79,6 +82,8 @@ function profileAllowsProgramOperationDetails(
           operation.kind !== SemanticOperationKind.MergeExclusive ||
           operation.inputs.length === 3,
       );
+    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
+      return hasExactActivityBoundaryMessageProgram(operations);
     case SemanticProfileId.ConfiguredTask:
     case SemanticProfileId.ServiceTaskIncident:
     case SemanticProfileId.ServiceTaskIncidentCancellation:
@@ -93,6 +98,44 @@ function profileAllowsProgramOperationDetails(
     default:
       return true;
   }
+}
+
+function hasExactActivityBoundaryMessageProgram(
+  operations: ReadonlyArray<SemanticOperation>,
+): boolean {
+  const starts = operations.filter(
+    (operation): operation is Extract<SemanticOperation, { kind: SemanticOperationKind.Initiate }> =>
+      operation.kind === SemanticOperationKind.Initiate,
+  );
+  const bounded = operations.filter(
+    (operation): operation is Extract<SemanticOperation, { kind: SemanticOperationKind.AwaitMessageBoundedUserTask }> =>
+      operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask,
+  );
+  const tasks = operations.filter(
+    (operation): operation is Extract<SemanticOperation, { kind: SemanticOperationKind.AwaitUserTask }> =>
+      operation.kind === SemanticOperationKind.AwaitUserTask,
+  );
+  const ends = operations.filter(
+    (operation): operation is Extract<SemanticOperation, { kind: SemanticOperationKind.ReachNoneEnd }> =>
+      operation.kind === SemanticOperationKind.ReachNoneEnd,
+  );
+  const start = starts[0];
+  const host = bounded[0];
+  if (
+    starts.length !== 1 || start === undefined || bounded.length !== 1 ||
+    host === undefined || tasks.length !== 2 || ends.length !== 2
+  ) {
+    return false;
+  }
+  const normalFollowUp = tasks.find(({ input }) => input === host.task.output);
+  const boundaryFollowUp = tasks.find(
+    ({ input }) => input === host.boundaryMessage.output,
+  );
+  return start.output === host.input && normalFollowUp !== undefined &&
+    boundaryFollowUp !== undefined && normalFollowUp.id !== boundaryFollowUp.id &&
+    ends.filter(({ input }) => input === normalFollowUp.output).length === 1 &&
+    ends.filter(({ input }) => input === boundaryFollowUp.output).length === 1 &&
+    normalFollowUp.output !== boundaryFollowUp.output;
 }
 
 export function profileAllowsCheckedProcessShape(

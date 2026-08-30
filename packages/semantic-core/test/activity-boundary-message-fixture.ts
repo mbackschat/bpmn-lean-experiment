@@ -28,7 +28,7 @@ export const program = rootScopedProgram({
     sourceId: "activity-boundary-message",
     sourceOverlay: null,
     sourceSha256:
-      "27e018b3f16ae4d270065abcb92d37a1618e89a386958dd3763c245e94efb193",
+      "5481e9dd1639c9bdf5b640b7cbeff7b6d44c6b6b661756c743b50efa7319fd16",
   },
   processId: "Process_ActivityBoundaryMessage",
   controlPlaces: [

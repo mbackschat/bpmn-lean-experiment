@@ -215,6 +215,10 @@ def serviceTaskIncidentCheckpointProfileId : ProfileId :=
 def serviceTaskIncidentCancellationCheckpointProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-service-task-incident-cancellation-draft"⟩
 
+/-- Runtime-frozen identity of the Activity boundary Message checkpoint. -/
+def activityBoundaryMessageCheckpointProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-activity-boundary-message-draft"⟩
+
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   if profile = sequentialMultiInstanceUserTaskProfileId.value then
     some (1,
@@ -303,7 +307,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1,
       { starts := 1, boundaryTimers := 1, userTasks := 3, ends := 2 })
-  else if profile = "bpmn-2.0.2-activity-boundary-message-draft" then
+  else if profile = activityBoundaryMessageCheckpointProfileId.value then
     some (1,
       { starts := 1, boundaryMessages := 1, userTasks := 3, ends := 2 })
   else if profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft" then
@@ -416,7 +420,7 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, boundedUserTasks := 1, userTasks := 2, ends := 2 })
-  else if profile = "bpmn-2.0.2-activity-boundary-message-draft" then
+  else if profile = activityBoundaryMessageCheckpointProfileId.value then
     some (1, withScopeCompletions 1
       { initiates := 1, messageBoundedUserTasks := 1, userTasks := 2, ends := 2 })
   else if profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft" then
@@ -511,6 +515,42 @@ private def checkedOutgoingPorts (source : CheckedProcess) (nodeId : NodeId) :
   source.sequenceFlows.filterMap fun flow =>
     if flow.sourceId = nodeId then some flow.id else none
 
+private def checkedOnlyOutgoingFlow? (source : CheckedProcess) (nodeId : NodeId) :
+    Option CheckedSequenceFlow :=
+  match source.sequenceFlows.filter fun flow => decide (flow.sourceId = nodeId) with
+  | [flow] => if flow.condition.isNone then some flow else none
+  | _ => none
+
+private def checkedActivityBoundaryMessageTopologyValid (source : CheckedProcess) : Bool :=
+  if source.identity.semanticProfile = activityBoundaryMessageCheckpointProfileId then
+    match source.nodes.filterMap (fun | .noneStartEvent id => some id | _ => none),
+        source.nodes.filterMap (fun
+          | .messageBoundaryEvent id host _ _ output => some (id, host, output)
+          | _ => none),
+        source.nodes.filterMap (fun | .userTask id _ _ => some id | _ => none),
+        source.nodes.filterMap (fun | .noneEndEvent id => some id | _ => none) with
+    | [start], [(boundary, host, handlerOutput)], tasks, [endA, endB] =>
+        match tasks.filter (fun id => decide (id ≠ host)) with
+        | [left, right] =>
+            match checkedOnlyOutgoingFlow? source start,
+                checkedOnlyOutgoingFlow? source host,
+                checkedOnlyOutgoingFlow? source boundary,
+                checkedOnlyOutgoingFlow? source left,
+                checkedOnlyOutgoingFlow? source right with
+            | some startFlow, some hostFlow, some boundaryFlow, some leftFlow,
+                some rightFlow =>
+                let distinctEnds :=
+                  (leftFlow.targetId = endA && rightFlow.targetId = endB) ||
+                  (leftFlow.targetId = endB && rightFlow.targetId = endA)
+                source.sequenceFlows.length = 5 && startFlow.targetId = host &&
+                  boundaryFlow.id = handlerOutput && distinctEnds &&
+                  ((hostFlow.targetId = left && boundaryFlow.targetId = right) ||
+                    (hostFlow.targetId = right && boundaryFlow.targetId = left))
+            | _, _, _, _, _ => false
+        | _ => false
+    | _, _, _, _ => false
+  else true
+
 private def parallelTopologyProfile (profile : ProfileId) : Bool :=
   profile.value = "parallel-fork-join-draft" ||
     profile = parallelUserTaskMetadataCheckpointProfileId
@@ -576,6 +616,29 @@ private def programParallelTopologyValid (program : Program) : Bool :=
     | _, _, _, _, _ => false
   else true
 
+private def programActivityBoundaryMessageTopologyValid (program : Program) : Bool :=
+  if program.identity.semanticProfile = activityBoundaryMessageCheckpointProfileId then
+    match program.operations.filterMap (fun | .initiate _ _ output => some output | _ => none),
+        program.operations.filterMap (fun
+          | .awaitMessageBoundedUserTask _ _ input task handler =>
+              some (input, task.output, handler.output)
+          | _ => none),
+        program.operations.filterMap (fun
+          | .awaitUserTask _ _ input output _ => some (input, output)
+          | _ => none),
+        program.operations.filterMap (fun | .reachNoneEnd _ _ input => some input | _ => none) with
+    | [startOutput], [(hostInput, normalOutput, boundaryOutput)],
+        [(leftInput, leftOutput), (rightInput, rightOutput)], [endAInput, endBInput] =>
+        startOutput = hostInput &&
+          exactPortSet (program.controlPlaces.map fun place => place.id)
+            [startOutput, normalOutput, boundaryOutput, leftOutput, rightOutput] &&
+          ((normalOutput = leftInput && boundaryOutput = rightInput) ||
+            (normalOutput = rightInput && boundaryOutput = leftInput)) &&
+          ((leftOutput = endAInput && rightOutput = endBInput) ||
+            (leftOutput = endBInput && rightOutput = endAInput))
+    | _, _, _, _ => false
+  else true
+
 private def exactUncheckedEdge (source : CheckedProcess)
     (sourceId targetId : NodeId) : Bool :=
   source.sequenceFlows.any fun flow =>
@@ -628,6 +691,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
           nodeCardinalities source.nodes = shape &&
           checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
           checkedParallelTopologyValid source &&
+          checkedActivityBoundaryMessageTopologyValid source &&
           structuredHumanWorkCheckedTopologyValid source &&
           configuredTaskCheckedPayloadValid source
     | none => false
@@ -655,7 +719,7 @@ private def operationPayloadCapabilitiesValid (profile : String)
                   decide (directOutput.sourceDataOutputName ≠ some "")
             | .directMessage .. => false
       | _ => true
-  else if profile = "bpmn-2.0.2-activity-boundary-message-draft" then
+  else if profile = activityBoundaryMessageCheckpointProfileId.value then
     operations.all fun
       | .awaitMessageBoundedUserTask _ origin _ task boundaryMessage =>
           origin.elementId.value = task.id.value &&
@@ -703,6 +767,7 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
           programUserTaskMetadataValid program.identity.semanticProfile
             program.operations &&
           programParallelTopologyValid program &&
+          programActivityBoundaryMessageTopologyValid program &&
           structuredHumanWorkProgramTopologyValid program &&
           operationPayloadCapabilitiesValid
             program.identity.semanticProfile.value program.operations
@@ -721,7 +786,7 @@ theorem parallelMultiInstanceProfile_has_one_definition_scope (program : Program
   rw [profile] at shape
   simp [programShape?, parallelMultiInstanceUserTaskProfileId,
     sequentialMultiInstanceUserTaskProfileId] at shape
-  exact shape.1.1.1.1.1
+  exact shape.1.1.1.1.1.1
 
 /-- The Parallel Multi-Instance profile admits no Event-Based Gateway race operation.
 
@@ -740,7 +805,7 @@ theorem parallelMultiInstanceProfile_has_no_event_race_operation (program : Prog
   simp [programShape?, parallelMultiInstanceUserTaskProfileId,
     sequentialMultiInstanceUserTaskProfileId] at shape
   have zero : (program.operations.filter isEventRaceOperation).length = 0 := by
-    have count := congrArg ShapeCardinalities.eventRaces shape.1.1.1.1.2
+    have count := congrArg ShapeCardinalities.eventRaces shape.1.1.1.1.1.2
     simpa [operationCardinalities_eventRaces, withScopeCompletions] using count
   have empty : program.operations.filter isEventRaceOperation = [] :=
     List.eq_nil_of_length_eq_zero zero

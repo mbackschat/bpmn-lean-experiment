@@ -30,7 +30,7 @@ def checkedProcess : CheckedProcess :=
       { semanticProfile := ⟨"bpmn-2.0.2-activity-boundary-message-draft"⟩
         sourceId := ⟨"activity-boundary-message"⟩
         sourceSha256 :=
-          "27e018b3f16ae4d270065abcb92d37a1618e89a386958dd3763c245e94efb193" }
+          "5481e9dd1639c9bdf5b640b7cbeff7b6d44c6b6b661756c743b50efa7319fd16" }
     processId := ⟨"Process_ActivityBoundaryMessage"⟩
     definitionScopes := [rootDefinitionScope ⟨"Process_ActivityBoundaryMessage"⟩]
     nodeScopes := rootNodeScopes ⟨"Process_ActivityBoundaryMessage"⟩
@@ -82,6 +82,30 @@ theorem source_and_lowering_are_admitted :
       lowerCheckedProcess checkedProcess = program ∧
       programWellFormed program = true ∧
       programProfileCapabilitiesValid program = true := by
+  decide +kernel
+
+def lateArmingCheckedProcess : CheckedProcess :=
+  { checkedProcess with
+    sequenceFlows :=
+      [ { id := ⟨"Flow_Boundary"⟩, sourceId := ⟨"Withdrawal"⟩,
+          targetId := ⟨"HandleWithdrawal"⟩ }
+      , { id := ⟨"Flow_Boundary_End"⟩, sourceId := ⟨"HandleWithdrawal"⟩,
+          targetId := ⟨"BoundaryEnd"⟩ }
+      , { id := ⟨"Flow_Normal"⟩, sourceId := ⟨"RecordReviewCompletion"⟩,
+          targetId := ⟨"ReviewApplication"⟩ }
+      , { id := ⟨"Flow_Normal_End"⟩, sourceId := ⟨"ReviewApplication"⟩,
+          targetId := ⟨"NormalEnd"⟩ }
+      , { id := ⟨"Flow_Start"⟩, sourceId := ⟨"Start"⟩,
+          targetId := ⟨"RecordReviewCompletion"⟩ } ] }
+
+def lateArmingProgram : Program := lowerCheckedProcess lateArmingCheckedProcess
+
+theorem late_arming_checked_process_is_refused :
+    checkedWellFormed lateArmingCheckedProcess = false := by
+  decide +kernel
+
+theorem late_arming_program_profile_is_refused :
+    programProfileCapabilitiesValid lateArmingProgram = false := by
   decide +kernel
 
 theorem boundary_message_is_grouped_only_with_its_host :
