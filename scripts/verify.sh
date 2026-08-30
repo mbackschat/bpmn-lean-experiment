@@ -32,6 +32,7 @@ verify_runtime() {
   ./scripts/pnpm.sh run test:bpmn-source:built
   ./scripts/test-cibseven-oracle.sh
   ./scripts/pnpm.sh run test:differential:built
+  ./scripts/pnpm.sh run test:message-payload-lean-core:built
   ./scripts/pnpm.sh run test:temporal:built
 }
 

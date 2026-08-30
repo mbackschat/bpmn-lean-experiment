@@ -117,6 +117,7 @@ function internalOperationStarts(
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return false;
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
       return sameScope(owner, transitionOwner) &&
         operation.message.elementId === value.elementId;
     case SemanticOperationKind.AwaitTimer:
@@ -172,6 +173,7 @@ function externalStimulusStarts(
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
     case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverPayloadMessage:
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
     case StimulusKind.CancelIncidentProcess:
@@ -334,6 +336,7 @@ function operationPublishesNestedElement(
     case SemanticOperationKind.EnterBoundedScope:
       return directlyOwned && operation.boundaryTimer.elementId === elementId;
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
       return directlyOwned && operation.message.elementId === elementId;
     case SemanticOperationKind.AwaitTimer:
       return directlyOwned && operation.timer.elementId === elementId;

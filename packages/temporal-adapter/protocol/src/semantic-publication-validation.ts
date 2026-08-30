@@ -237,6 +237,7 @@ function stimulusMatchesPage(
       return stimulus.logicalTimeMs === logicalTime;
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverPayloadMessage:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
@@ -322,7 +323,7 @@ function isState(
       program,
     )) ||
     !isPatch(value.variables) || !isActiveWaits(value.activeWaits) ||
-    !isEnabledInteractions(value.enabledInteractions, value)) {
+    !isEnabledInteractions(value.enabledInteractions, value, program)) {
     return false;
   }
   return value.status === ProcessStatus.Running || [
@@ -398,7 +399,11 @@ function isActiveWaits(value: unknown): boolean {
       compareCanonicalStrings(String(a.elementId), String(b.elementId)));
 }
 
-function isEnabledInteractions(value: unknown, state: Record<string, unknown>): boolean {
+function isEnabledInteractions(
+  value: unknown,
+  state: Record<string, unknown>,
+  program: SemanticProcessProgram | null,
+): boolean {
   if (!Array.isArray(value) || !value.every((item) => isRecord(item))) {
     return false;
   }
@@ -414,8 +419,14 @@ function isEnabledInteractions(value: unknown, state: Record<string, unknown>): 
   }
   for (const message of messages) {
     const item = value[index++];
+    const expectedKind = program === null
+      ? null
+      : messageInteractionKind(program, message);
     if (!isRecord(item) || !hasOnlyKeys(item, ["kind", "subscriptionId", "channel"]) ||
-      item.kind !== StimulusKind.DeliverMessage ||
+      (program === null
+        ? item.kind !== StimulusKind.DeliverMessage &&
+          item.kind !== StimulusKind.DeliverPayloadMessage
+        : expectedKind === null || item.kind !== expectedKind) ||
       !sameOccurrence(item.subscriptionId, message.id) ||
       !isMessageChannel(item.channel) || !isMessageChannel(message.channel) ||
       !sameMessageChannel(item.channel, message.channel)) return false;
@@ -433,6 +444,29 @@ function isEnabledInteractions(value: unknown, state: Record<string, unknown>): 
       !incidents.some(({ id }) => sameIncident(cancel.incidentId, id))) return false;
   }
   return index === value.length;
+}
+
+function messageInteractionKind(
+  program: SemanticProcessProgram,
+  message: Record<string, unknown>,
+): StimulusKind.DeliverMessage | StimulusKind.DeliverPayloadMessage | null {
+  const elementId = isRecord(message.id) ? message.id.elementId : null;
+  const declarers = program.operations.filter((operation) => {
+    switch (operation.kind) {
+      case SemanticOperationKind.AwaitMessage:
+      case SemanticOperationKind.AwaitPayloadMessage:
+      case SemanticOperationKind.AwaitEventRace:
+        return operation.message.elementId === elementId;
+      default:
+        return false;
+    }
+  });
+  if (declarers.length !== 1) {
+    return null;
+  }
+  return declarers[0]?.kind === SemanticOperationKind.AwaitPayloadMessage
+    ? StimulusKind.DeliverPayloadMessage
+    : StimulusKind.DeliverMessage;
 }
 
 function isTokenList(

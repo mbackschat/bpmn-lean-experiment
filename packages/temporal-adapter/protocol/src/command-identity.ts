@@ -10,6 +10,7 @@ import type {
   MessageChannel,
   Stimulus,
   VariableBinding,
+  VariableValue,
 } from "@bpmn-lean/semantic-core";
 import type {
   CanonicalTupleValue,
@@ -71,6 +72,18 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
           stimulus.subscriptionId.activation,
         ],
         messageChannelTuple(stimulus.channel),
+      ]);
+    case StimulusKind.DeliverPayloadMessage:
+      return encodeCommandTuple([
+        stimulus.kind,
+        stimulus.commandId,
+        [
+          stimulus.subscriptionId.processInstanceId,
+          stimulus.subscriptionId.elementId,
+          stimulus.subscriptionId.activation,
+        ],
+        messageChannelTuple(stimulus.channel),
+        variableValueTuple(stimulus.payload),
       ]);
     case StimulusKind.FireTimer:
       return encodeCommandTuple([
@@ -178,31 +191,25 @@ function effectResultTuple(
 function variableBindingTuple(
   binding: VariableBinding,
 ): ReadonlyArray<import("./canonical-encoding.js").CanonicalTupleValue> {
-  switch (binding.value.kind) {
+  return [binding.name, variableValueTuple(binding.value)];
+}
+
+function variableValueTuple(
+  value: VariableValue,
+): ReadonlyArray<import("./canonical-encoding.js").CanonicalTupleValue> {
+  switch (value.kind) {
     case VariableValueKind.Boolean:
-      return [
-        binding.name,
-        [binding.value.kind, binding.value.value],
-      ];
+      return [value.kind, value.value];
     case VariableValueKind.String:
-      return [
-        binding.name,
-        [binding.value.kind, binding.value.value],
-      ];
+      return [value.kind, value.value];
     case VariableValueKind.Integer:
-      return [
-        binding.name,
-        [binding.value.kind, binding.value.value],
-      ];
+      return [value.kind, value.value];
     case VariableValueKind.StringList:
-      return [
-        binding.name,
-        [binding.value.kind, [...binding.value.value]],
-      ];
+      return [value.kind, [...value.value]];
     case VariableValueKind.Null:
-      return [binding.name, [binding.value.kind]];
+      return [value.kind];
     default:
-      return assertNever(binding.value);
+      return assertNever(value);
   }
 }
 

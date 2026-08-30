@@ -220,6 +220,7 @@ function classifyHostOperation(
     // semantic core from committed Process data, and it arms no deadline or host-visible effect.
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.MergeExclusive:
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.SynchronizeSelected:

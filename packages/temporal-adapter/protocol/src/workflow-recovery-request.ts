@@ -17,6 +17,7 @@ export type ExternallyRetryableStimulus = Extract<Stimulus, {
   kind:
     | StimulusKind.CompleteUserTaskInstance
     | StimulusKind.DeliverMessage
+    | StimulusKind.DeliverPayloadMessage
     | StimulusKind.RetryIncident
     | StimulusKind.CancelIncidentProcess;
 }>;
@@ -41,6 +42,7 @@ export function buildWorkflowChainRecoveryRequest(
       // the canonical stimulus digest.
       break;
     case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverPayloadMessage:
       requireProcessInstanceIdentity(
         processInstanceId,
         stimulus.subscriptionId.processInstanceId,
