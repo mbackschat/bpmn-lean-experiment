@@ -14,7 +14,7 @@ Run the pure comparator gate:
 ./scripts/pnpm.sh run test:differential
 ```
 
-The Message payload catch scenarios use a separate staged Lean/core comparison until their Temporal refinement is implemented. This keeps them out of the full pipeline registry and avoids treating an unhosted case as exact Temporal evidence:
+The Message payload catch scenarios are registered in the full Lean/core/Temporal pipeline. Run the narrower Lean/core diagnostic when the change cannot affect hosting:
 
 ```sh
 ./scripts/pnpm.sh run test:message-payload-lean-core
@@ -29,6 +29,6 @@ The Message payload catch scenarios use a separate staged Lean/core comparison u
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the two closure-reviewed composed schedules and their selected mutations.
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the three normative M6 schedules and their value-kind, ordered-list, and resolution mutations.
 - [Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) owns the registered natural and interrupted Lean/core/Temporal relations.
-- [Message payload catch proposal](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-PROPOSAL.md) owns the staged supplied-scalar, supplied-null, and absent-payload Lean/core relations.
+- [Message payload catch proposal](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-PROPOSAL.md) owns the supplied-scalar, supplied-null, and absent-payload Lean/core/Temporal relations.
 
 Run `./scripts/pnpm.sh run test:pipeline` when a change affects the complete registered cross-target pipeline.

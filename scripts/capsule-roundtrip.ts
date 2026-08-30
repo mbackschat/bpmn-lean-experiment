@@ -209,7 +209,6 @@ export function verifyPipelineRegistration(
   cibArtifacts: ReadonlyArray<CibArtifactRegistration>,
   normativeArtifacts: ReadonlyArray<NormativeArtifactRegistration>,
   pipeline: ReadonlyArray<PipelineRegistration>,
-  stagedSemanticCatalog: ReadonlyArray<PipelineRegistration> = [],
 ): void {
   const registeredScenarios = [
     ...cibArtifacts.map(({ scenarioRelativePath }) => scenarioRelativePath),
@@ -220,44 +219,29 @@ export function verifyPipelineRegistration(
     ({ scenarioRelativePath }) => scenarioRelativePath,
   );
   requireNoDuplicates("pipeline scenarios", pipelineScenarios);
-  const stagedScenarios = stagedSemanticCatalog.map(
-    ({ scenarioRelativePath }) => scenarioRelativePath,
+  const pipelineByScenario = new Map(
+    pipeline.map((entry) => [entry.scenarioRelativePath, entry] as const),
   );
-  requireNoDuplicates("staged semantic scenarios", stagedScenarios);
-  const semanticCatalog = [...pipeline, ...stagedSemanticCatalog];
-  const semanticScenarios = [...pipelineScenarios, ...stagedScenarios];
-  requireNoDuplicates("full and staged semantic scenarios", semanticScenarios);
-  const semanticByScenario = new Map(
-    semanticCatalog.map((entry) => [entry.scenarioRelativePath, entry] as const),
-  );
-  const semanticSet = new Set(semanticScenarios);
+  const pipelineSet = new Set(pipelineScenarios);
   const registeredSet = new Set(registeredScenarios);
   const missingFromPipeline = sorted(
-    registeredScenarios.filter((relativePath) => !semanticSet.has(relativePath)),
+    registeredScenarios.filter((relativePath) => !pipelineSet.has(relativePath)),
   );
   if (missingFromPipeline.length > 0) {
     throw new Error(
-      `registered scenario missing from pipeline or staged catalog: ${missingFromPipeline.join(", ")}`,
+      `registered scenario missing from pipeline: ${missingFromPipeline.join(", ")}`,
     );
   }
   const unknownPipelineCases = sorted(
-    semanticScenarios.filter((relativePath) => !registeredSet.has(relativePath)),
+    pipelineScenarios.filter((relativePath) => !registeredSet.has(relativePath)),
   );
   if (unknownPipelineCases.length > 0) {
     throw new Error(
       `pipeline scenario missing from artifact registry: ${unknownPipelineCases.join(", ")}`,
     );
   }
-
-  for (const stagedCase of stagedSemanticCatalog) {
-    if (stagedCase.cib !== null) {
-      throw new Error(
-        `staged semantic case declares CIB evidence: ${stagedCase.scenarioRelativePath}`,
-      );
-    }
-  }
   for (const artifact of cibArtifacts) {
-    const pipelineCase = semanticByScenario.get(artifact.scenarioRelativePath);
+    const pipelineCase = pipelineByScenario.get(artifact.scenarioRelativePath);
     if (pipelineCase?.cib?.evidenceRelativePath !== artifact.evidenceRelativePath) {
       throw new Error(
         `pipeline CIB evidence route differs from registry for ${artifact.scenarioRelativePath}`,
@@ -265,7 +249,7 @@ export function verifyPipelineRegistration(
     }
   }
   for (const artifact of normativeArtifacts) {
-    const pipelineCase = semanticByScenario.get(artifact.scenarioRelativePath);
+    const pipelineCase = pipelineByScenario.get(artifact.scenarioRelativePath);
     if (pipelineCase?.cib !== null) {
       throw new Error(
         `normative-only pipeline case declares CIB evidence: ${artifact.scenarioRelativePath}`,
@@ -276,13 +260,6 @@ export function verifyPipelineRegistration(
     if (typeof pipelineCase.injectMutation !== "function") {
       throw new Error(
         `pipeline case has no seeded mutation: ${pipelineCase.scenarioRelativePath}`,
-      );
-    }
-  }
-  for (const stagedCase of stagedSemanticCatalog) {
-    if (typeof stagedCase.injectMutation !== "function") {
-      throw new Error(
-        `staged semantic case has no seeded mutation: ${stagedCase.scenarioRelativePath}`,
       );
     }
   }

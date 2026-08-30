@@ -37,9 +37,6 @@ import {
   verifyPipelineRegistration,
 } from "../../../scripts/capsule-roundtrip.ts";
 import {
-  messagePayloadCatchLeanCoreCases,
-} from "./message-payload-catch-lean-core-cases.ts";
-import {
   cibMavenBuildDirectory,
 } from "./pipeline-cib-targets.ts";
 import { settleOwnedLanes } from "./pipeline-parallel.ts";
@@ -74,7 +71,6 @@ test("covers the complete artifact registry with exact evidence routes and seede
       artifactCases,
       normativeArtifactCases,
       pipelineCases,
-      messagePayloadCatchLeanCoreCases,
     ),
   );
 });

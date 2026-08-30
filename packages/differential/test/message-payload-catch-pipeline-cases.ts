@@ -1,22 +1,28 @@
-/** Staged Lean/core Message payload cases and their public-observation mutations. */
+/** Full pipeline Message payload cases and their public-observation mutations. */
 import {
   CanonicalObservationKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import { DisagreementKind } from "@bpmn-lean/differential";
+import {
+  TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
+} from "@bpmn-lean/temporal-testkit";
+
+import {
+  PipelineReplaySelection,
+  TemporalCaseRelation,
+} from "./pipeline-types.ts";
 
 import type {
   MutableScenarioResult,
   MutableStateObservation,
   ObservationValueDisagreement,
-  SemanticDifferentialCase,
+  PipelineCase,
 } from "./pipeline-types.ts";
 
 const scenarioRoot = "scenarios/message-payload-catch";
 const finalStateIndex = 4;
-
-type MessagePayloadCatchLeanCoreCase =
-  SemanticDifferentialCase & Readonly<{ cib: null }>;
 
 function finalState(result: MutableScenarioResult): MutableStateObservation {
   const observation = result.trace[finalStateIndex];
@@ -71,22 +77,29 @@ function removeRetainedSubscription(result: MutableScenarioResult): void {
 }
 
 function messagePayloadCatchCase(
-  id: string,
+  id: PipelineCase["id"],
   scenarioFile: string,
-  injectMutation: SemanticDifferentialCase["injectMutation"],
+  injectMutation: PipelineCase["injectMutation"],
   expectedInjectedDisagreement: ObservationValueDisagreement,
-): MessagePayloadCatchLeanCoreCase {
+): PipelineCase {
   return Object.freeze({
     id,
     scenarioRelativePath: `${scenarioRoot}/${scenarioFile}`,
     bpmnRelativePath: `${scenarioRoot}/process.bpmn`,
+    workflowIdPrefix: id,
     cib: null,
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    replaySelection: PipelineReplaySelection.Primary,
     injectMutation,
     expectedInjectedDisagreement,
   });
 }
 
-export const messagePayloadCatchLeanCoreCases = Object.freeze([
+export const messagePayloadCatchPipelineCases = Object.freeze([
   messagePayloadCatchCase(
     "message-payload-catch-supplied-scalar",
     "supplied-scalar.scenario.json",

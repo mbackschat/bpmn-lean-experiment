@@ -39,6 +39,9 @@ import {
   messagePipelineCases,
 } from "./message-pipeline-cases.ts";
 import {
+  messagePayloadCatchPipelineCases,
+} from "./message-payload-catch-pipeline-cases.ts";
+import {
   inclusiveGatewayPipelineCases,
 } from "./inclusive-gateway-pipeline-cases.ts";
 import {
@@ -558,6 +561,7 @@ export const pipelineCases = Object.freeze([
   timerUserTaskCompositionCase(),
   ...interchangeAdmissionPipelineCases,
   ...messagePipelineCases,
+  ...messagePayloadCatchPipelineCases,
   simpleBooleanGatewayCase(),
   ...inclusiveGatewayPipelineCases,
   ...eventBasedGatewayPipelineCases,

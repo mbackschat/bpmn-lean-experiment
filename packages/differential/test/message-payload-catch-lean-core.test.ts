@@ -26,8 +26,8 @@ import {
 } from "@bpmn-lean/differential";
 
 import {
-  messagePayloadCatchLeanCoreCases,
-} from "./message-payload-catch-lean-core-cases.ts";
+  messagePayloadCatchPipelineCases,
+} from "./message-payload-catch-pipeline-cases.ts";
 import { mutableClone } from "./pipeline-target-support.ts";
 import {
   loadAndCompileCases,
@@ -36,7 +36,7 @@ import {
 } from "./semantic-differential-targets.ts";
 
 test("runs the three Message payload cases through the semantic core", async () => {
-  const contexts = await loadAndCompileCases(messagePayloadCatchLeanCoreCases);
+  const contexts = await loadAndCompileCases(messagePayloadCatchPipelineCases);
   for (const { scenario, semanticProcess } of contexts) {
     assert.equal(
       supportsSemanticProcessScenario(scenario, semanticProcess),
@@ -141,7 +141,7 @@ test("runs the three Message payload cases through the semantic core", async () 
 });
 
 test("compares the three Message payload cases between Lean and the semantic core", async () => {
-  const contexts = await loadAndCompileCases(messagePayloadCatchLeanCoreCases);
+  const contexts = await loadAndCompileCases(messagePayloadCatchPipelineCases);
   const temporaryDirectory = await mkdtemp(
     path.join(tmpdir(), "bpmn-message-payload-lean-core-"),
   );
